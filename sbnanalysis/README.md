@@ -22,6 +22,18 @@ One runs a processor by calling a framework-wide binary, like this:
 
     sbn -c CONFIG.json MyAnalysis_MySelection INPUT1.root INPUT2.root
 
+Documentation
+-------------
+The code is fully documented with Doxygen. To build it, run
+
+    doxygen doc/Doxyfile
+
+The output HTML documentation is placed in `doc/html/index.html`.
+
+*Note to developers:* All code in `sbnanalysis` should be completely
+documented with Doxygen-compatible comments. Please build the
+documentation before committing to check for anything missing.
+
 Building
 --------
 The build process is managed by [CMake](https://cmake.org). A number of
@@ -45,6 +57,10 @@ To build the software:
     mkdir build && cd build  # A directory for build products
     cmake ..  # Configure the build system
     make install  # Build
+    source bin/setup_sbnanalysis.sh  # Set up environment
+
+Note that the setup script `setup_sbnanalysis.sh` is created during the
+build and contains absolute paths to the installation location.
 
 The `cmake` command accepts many useful options. For example:
 

@@ -17,15 +17,25 @@ ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") 
 ProcessorBase::~ProcessorBase() {}
 
 
-void ProcessorBase::Setup(Json::Value* /*config*/) {
+void ProcessorBase::Setup(Json::Value* config) {
+  // Open the output file and create the standard event tree
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
+
+  // Load configuration parameters
+  fTruthTag = { "generator" };
+
+  if (config) {
+    fTruthTag = { (*config)["ProcessorBase"].get("MCTruthTag", "generator").asString() };
+    fOutputFilename = (*config)["ProcessorBase"].get("OutputFile", "output.root").asString();
+  }
 }
 
 
 void ProcessorBase::Teardown() {
+  // Write the standard tree and close the output file
   fOutputFile->cd();
   fTree->Write();
   fOutputFile->Close();
@@ -53,9 +63,8 @@ void ProcessorBase::ProcessFiles(std::vector<std::string> filenames,
 
 
 void ProcessorBase::FillEventTree(gallery::Event& ev) {
-  art::InputTag mctruths_tag = { "generator" };
- 
-  auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth> >(mctruths_tag);
+  // Get MCTruth information
+  auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
   fTree->GetEntry(fEventIndex);
 
@@ -96,7 +105,7 @@ void ProcessorBase::FillEventTree(gallery::Event& ev) {
       fsp.energy = particle.Momentum(0).Energy();
       fsp.momentum = particle.Momentum(0).Vect();
 
-      interaction.hadrons.push_back(fsp);
+      interaction.finalstate.push_back(fsp);
     }
 
     fEvent->interactions.push_back(interaction);

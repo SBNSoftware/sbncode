@@ -16,24 +16,19 @@ ExampleSelection::ExampleSelection() : SelectionBase(), fNuCount(0) {}
 
 
 void ExampleSelection::Initialize(Json::Value* config) {
-  // Here you name the thing that "produced" the data product that you want to
-  // look at. In our event dump we see two things:
-  //
-  // GenieGen.. | corsika..... | .... | std::vector<simb::MCTruth>.... | ....1
-  // GenieGen.. | generator... | .... | std::vector<simb::MCTruth>.... | ....1
-  //
-  // This means that if you want to look at the simb::MCTruth data product
-  // there are two "producers." We want to look at neutrinos so we choose
-  // "generator" if you wanted to look at cosmics you could pick "coriska."
-  mctruths_tag = { "generator" };
-
   // Make a histogram
   fNuVertexXZHist = new TH2D("nu_vtx_XZ", "",
                              100, -1000, 1000, 100, -1000, 1000);
 
   // Load configuration parameters
-  fMyParam = (*config)["ExampleAnalysis"].get("parameter", 0).asInt();
-  
+  fMyParam = 0;
+  fTruthTag = { "generator" };
+
+  if (config) {
+    fMyParam = (*config)["ExampleAnalysis"].get("parameter", 0).asInt();
+    fTruthTag = { (*config)["ExampleAnalysis"].get("MCTruthTag", "generator").asString() };
+  }
+
   // Add custom branches
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
@@ -44,32 +39,34 @@ void ExampleSelection::Initialize(Json::Value* config) {
 
 
 void ExampleSelection::Finalize() {
+  // Output our histograms to the ROOT file
   fOutputFile->cd();
   fNuVertexXZHist->Write();
 }
 
 
 void ExampleSelection::ProcessEvent(gallery::Event& ev) {
-  // Grab the data product that you want from the event
-  auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth>>(mctruths_tag);
+  // Grab a data product from the event
+  auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
 
-  // Fill in the custom branch (e.g. number of neutrino interactions)
-  fNuCount = mctruths.size();
+  // Fill in the custom branches
+  fNuCount = mctruths.size();  // Number of neutrinos in this event
   fMyVar = fMyParam;
   
-  // Now we'll iterate through these 
+  // Iterate through the neutrinos
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);
 
-    // Now for each simb::MCTruth we look at two things      
+    // Fill neutrino vertex position histogram
     fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(),
                           mctruth.GetNeutrino().Nu().Vz());
   }
 }
 
-
   }  // namespace ExampleAnalysis
 }  // namespace ana
 
+
+// This line must be included for all selections!
 DECLARE_SBN_PROCESSOR(ana::ExampleAnalysis::ExampleSelection)
 

@@ -7,7 +7,7 @@
 #include <core/ProcessorBase.hh>
 
 int main(int argc, char* argv[]) {
-  // Command line arguments
+  // Parse command line arguments
   char* configfile = NULL;
   int c;
 

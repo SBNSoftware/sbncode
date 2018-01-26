@@ -11,9 +11,18 @@
 
 namespace core {
 
+/**
+ * \class core::SelectionBase
+ * \brief Base class for event selections
+ *
+ * See core::ProcessorBase for more details.
+ */
 class SelectionBase : public ProcessorBase {
 public:
+  /** Constructor. */
   SelectionBase();
+
+  /** Destructor. */
   virtual ~SelectionBase();
 };
 
