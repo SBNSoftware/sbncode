@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 2.8)
+project(sbnanalysis)
+
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE PATH "default install path" FORCE )
+endif()
+
+set(BUILD_SHARED_LIBS ON)
+
+list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
+find_package(ROOT REQUIRED COMPONENTS RIO Net)
+include(${ROOT_USE_FILE})
+
+include_directories(${PROJECT_SOURCE_DIR})
+
+ADD_SUBDIRECTORY(ana)
+ADD_SUBDIRECTORY(io)
+#ADD_SUBDIRECTORY(util)
+
+
