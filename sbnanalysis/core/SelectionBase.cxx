@@ -1,10 +1,10 @@
 #include "SelectionBase.hh"
 
-namespace io {
+namespace core {
 
 SelectionBase::SelectionBase() : ProcessorBase() {} 
 
 SelectionBase::~SelectionBase() {}
 
-}  // namespace io
+}  // namespace core
 

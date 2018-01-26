@@ -9,29 +9,32 @@
 
 #include <iostream>
 #include "canvas/Utilities/InputTag.h"
-#include "io/SelectionBase.hh"
+#include "core/SelectionBase.hh"
 
-class TH1F;
 class TH2D;
 
 namespace ana {
   namespace ExampleAnalysis {
 
-class ExampleSelection : public io::SelectionBase {
+class ExampleSelection : public core::SelectionBase {
 public:
   ExampleSelection();
-  virtual ~ExampleSelection();
+  void Initialize(Json::Value* config=NULL);
+  void Finalize();
   void ProcessEvent(gallery::Event& ev);
-
-  int fMyVar;
-  std::vector<double> fMyVector;
 
 protected:
   art::InputTag mctruths_tag;
-  TH1F* n_nu_hist;
-  TH1F* nu_pdg_hist;
-  TH2D* nu_vtx_YZ_hist;
-  TH2D* nu_vtx_XZ_hist;
+
+  // Configuration parameters
+  int fMyParam;
+
+  // Custom data branches
+  int fNuCount;
+  int fMyVar;
+
+  // Histograms
+  TH2D* fNuVertexXZHist;
 };
 
   }  // namespace ExampleAnalysis

@@ -5,10 +5,11 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "json/json.h"
 #include "Event.hh"
 #include "ProcessorBase.hh"
 
-namespace io {
+namespace core {
 
 ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") {}
 
@@ -16,7 +17,7 @@ ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") 
 ProcessorBase::~ProcessorBase() {}
 
 
-void ProcessorBase::Initialize() {
+void ProcessorBase::Setup(Json::Value* /*config*/) {
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fEvent = new Event();
@@ -24,20 +25,30 @@ void ProcessorBase::Initialize() {
 }
 
 
-void ProcessorBase::Finalize() {
+void ProcessorBase::Teardown() {
   fOutputFile->cd();
   fTree->Write();
   fOutputFile->Close();
 }
 
 
-void ProcessorBase::ProcessFile(std::vector<std::string> filenames) {
+void ProcessorBase::ProcessFiles(std::vector<std::string> filenames,
+                                 Json::Value* config) {
+  // Setup
+  Setup(config);
+  Initialize(config);
+
+  // Event loop
   for (gallery::Event ev(filenames); !ev.atEnd(); ev.next()) {
     FillEventTree(ev);
     ProcessEvent(ev);
     fTree->Fill();
     fEventIndex++;
   }
+
+  // Finalize
+  Finalize();
+  Teardown();
 }
 
 
@@ -92,5 +103,5 @@ void ProcessorBase::FillEventTree(gallery::Event& ev) {
   }
 }
 
-}  // namespace io
+}  // namespace core
 

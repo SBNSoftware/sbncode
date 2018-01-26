@@ -15,7 +15,7 @@ include(${ROOT_USE_FILE})
 include_directories(${PROJECT_SOURCE_DIR})
 
 ADD_SUBDIRECTORY(ana)
-ADD_SUBDIRECTORY(io)
+ADD_SUBDIRECTORY(core)
 #ADD_SUBDIRECTORY(util)
 
 

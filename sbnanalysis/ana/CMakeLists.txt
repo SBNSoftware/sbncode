@@ -9,6 +9,7 @@ include_directories( $ENV{GALLERY_INC} )
 include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
+include_directories( $ENV{JSONCPP_INC} )
 
 link_directories(
   $ENV{CANVAS_LIB}

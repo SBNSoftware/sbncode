@@ -1,5 +1,5 @@
-#ifndef __sbnanalysis_io_SelectionBase__
-#define __sbnanalysis_io_SelectionBase__
+#ifndef __sbnanalysis_core_SelectionBase__
+#define __sbnanalysis_core_SelectionBase__
 
 /**
  * A generic processor that writes an sbnanalysis tree.
@@ -9,7 +9,7 @@
 
 #include "ProcessorBase.hh"
 
-namespace io {
+namespace core {
 
 class SelectionBase : public ProcessorBase {
 public:
@@ -17,7 +17,7 @@ public:
   virtual ~SelectionBase();
 };
 
-}  // namespace io
+}  // namespace core
 
-#endif  // __sbnanalysis_io_SelectionBase__
+#endif  // __sbnanalysis_core_SelectionBase__
 

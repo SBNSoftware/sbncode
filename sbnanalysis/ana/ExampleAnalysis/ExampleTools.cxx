@@ -3,9 +3,8 @@
 namespace ana {
   namespace ExampleAnalysis {
 
-int hello() {
-  std::cout << "hello" << std::endl;
-  return 42;
+void hello() {
+  std::cout << "Hello!" << std::endl;
 }
 
   }  // namespace ExampleAnalysis

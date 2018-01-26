@@ -12,6 +12,7 @@ include_directories( $ENV{GALLERY_INC} )
 include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
+include_directories( $ENV{JSONCPP_INC} )
 
 link_directories(
   $ENV{CANVAS_LIB}
@@ -20,18 +21,32 @@ link_directories(
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
+  $ENV{JSONCPP_LIB}
 )
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx sbn_eventdict.cxx)
 
-target_link_libraries(sbnanalysis_Processor ${ROOT_LIBRARIES})
+target_link_libraries(
+  sbnanalysis_Processor
+  ${ROOT_LIBRARIES}
+  canvas
+  cetlib
+  gallery
+  nusimdata_SimulationBase
+  larcoreobj_SummaryData
+  lardataobj_RecoBase
+)
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
 add_custom_command(TARGET sbnanalysis_Processor POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   libsbn_eventdict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
 
+add_executable(sbn sbn.cxx)
+target_link_libraries(sbn sbnanalysis_Processor jsoncpp)
+
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
+install(TARGETS sbn DESTINATION bin)
 
