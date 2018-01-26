@@ -20,6 +20,9 @@ int main(int argc, char* argv[]) {
 
   proc.Initialize();
 
+  proc.AddBranch("myvar", &proc.fMyVar);
+  proc.AddBranch("myvector", &proc.fMyVector);
+
   proc.ProcessFile(filenames);
 
   proc.Finalize();

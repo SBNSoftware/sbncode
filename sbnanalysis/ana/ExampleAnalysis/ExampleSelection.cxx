@@ -2,6 +2,7 @@
 #include <vector>
 #include <TH1F.h>
 #include <TH2D.h>
+#include <TRandom.h>
 #include "gallery/ValidHandle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -11,7 +12,7 @@
 namespace ana {
   namespace ExampleAnalysis {
 
-ExampleSelection::ExampleSelection() : SelectionBase() {
+ExampleSelection::ExampleSelection() : SelectionBase(), fMyVar(0) {
   // Here you name the thing that "produced" the data product that you want to
   // look at. In our event dump we see two things:
   //
@@ -66,6 +67,10 @@ void ExampleSelection::ProcessEvent(gallery::Event& ev) {
     nu_vtx_XZ_hist->Fill(mctruth.GetNeutrino().Nu().Vx(),
                          mctruth.GetNeutrino().Nu().Vz());
   }
+
+  // Fill in custom variables
+  fMyVar++;
+  fMyVector = { gRandom->Gaus(), gRandom->Gaus() };
 }
 
 

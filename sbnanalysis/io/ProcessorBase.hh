@@ -11,6 +11,7 @@
 #include <vector>
 #include "gallery/Event.h"
 
+class TBranch;
 class TFile;
 class TTree;
 class Event;
@@ -29,7 +30,10 @@ public:
 
   virtual void Finalize();
 
-  virtual void AddBranch() {}
+  template<class T>
+  TBranch* AddBranch(std::string name, T* obj) {
+    return fTree->Branch(name.c_str(), obj);
+  }
 
   virtual void ProcessEvent(gallery::Event& ev) = 0;
 

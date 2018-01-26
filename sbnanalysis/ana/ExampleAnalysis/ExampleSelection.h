@@ -7,6 +7,7 @@
  * Author: A. Mastbaum <mastbaum@uchicago.edu>
  */
 
+#include <iostream>
 #include "canvas/Utilities/InputTag.h"
 #include "io/SelectionBase.hh"
 
@@ -21,6 +22,9 @@ public:
   ExampleSelection();
   virtual ~ExampleSelection();
   void ProcessEvent(gallery::Event& ev);
+
+  int fMyVar;
+  std::vector<double> fMyVector;
 
 protected:
   art::InputTag mctruths_tag;
