@@ -13,5 +13,7 @@
 #pragma link C++ class std::vector<Event::FinalStateParticle>+;
 #pragma link C++ class std::map<std::string, std::vector<double> >+;
 
+#pragma link C++ class std::vector<TLorentzVector>+;
+
 #endif
 

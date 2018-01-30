@@ -26,10 +26,12 @@ link_directories(
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 
-add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx sbn_eventdict.cxx)
+add_library(sbnanalysis_Event sbn_eventdict.cxx)
+add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx)
 
 target_link_libraries(
   sbnanalysis_Processor
+  sbnanalysis_Event
   ${ROOT_LIBRARIES}
   canvas
   cetlib
@@ -40,13 +42,14 @@ target_link_libraries(
 )
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
-add_custom_command(TARGET sbnanalysis_Processor POST_BUILD
+add_custom_command(TARGET sbnanalysis_Event POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   libsbn_eventdict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_executable(sbn sbn.cxx)
-target_link_libraries(sbn sbnanalysis_Processor jsoncpp)
+target_link_libraries(sbn sbnanalysis_Processor sbnanalysis_Event jsoncpp)
 
+install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 

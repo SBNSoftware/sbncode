@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Loading processor " << libname << "..." << std::endl;
 
-  void* handle = dlopen("lib/libsbnanalysis_ExampleAnalysis_ExampleSelection.so", RTLD_LAZY);
+  void* handle = dlopen(libpath, RTLD_LAZY);
   if (!handle) {
     std::cerr << "Processor " << libname << " not found in SBN_LIB_DIR " << libdir << std::endl;
     return 1;

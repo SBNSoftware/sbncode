@@ -4,11 +4,16 @@
 #include "lardataobj/MCBase/MCTrack.h"
 #include "TH2F.h"
 #include "TDatabasePDG.h"
-#include "TSUtil.h"
+#include "Util.h"
 
 namespace ana {
-namespace lee_truth_selection {
-namespace tsutil {
+  namespace lee_truth_selection {
+    namespace util {
+
+std::ostream& operator<<(std::ostream& os, const PIDParticle& dt) {
+  os << dt.pdg << "(" << dt.evis << ")";
+  return os;
+}
 
 // From J. Zennamo's pion selection
 const double fv_x_lo =    0.0, fv_x_hi =  256.35;
@@ -16,21 +21,21 @@ const double fv_y_lo = -116.5, fv_y_hi =  116.50;
 const double fv_z_lo =    0.0, fv_z_hi = 1036.80;
 
 
-bool inFV(const sim::MCShower& s) {
+bool InFV(const sim::MCShower& s) {
   return (s.End().X() > fv_x_lo && s.End().X() < fv_x_hi &&
           s.End().Y() > fv_y_lo && s.End().Y() < fv_y_hi &&
           s.End().Z() > fv_z_lo && s.End().Z() < fv_z_hi);
 }
 
 
-bool inFV(const sim::MCTrack& t) {
+bool InFV(const sim::MCTrack& t) {
   return (t.End().X() > fv_x_lo && t.End().X() < fv_x_hi &&
           t.End().Y() > fv_y_lo && t.End().Y() < fv_y_hi &&
           t.End().Z() > fv_z_lo && t.End().Z() < fv_z_hi);
 }
 
 
-bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
+bool IsFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
                     float distance) {
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector showStart = show.Start().Position();
@@ -38,7 +43,7 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
 }
 
 
-bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
+bool IsFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
                     float distance) {
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector trkStart = track.Start().Position();
@@ -46,7 +51,7 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
 }
 
 
-double eccqe(const TLorentzVector& inp_v, float energy_distortion, float angle_distortion) {
+double ECCQE(const TLorentzVector& inp_v, float energy_distortion) {
   double e_dist = (double) energy_distortion;
   // Based on D. Kaleko, LowEnergyExcess LArLite module ECCQECalculator
   double M_n = 939.565; // MeV/c^2
@@ -58,9 +63,7 @@ double eccqe(const TLorentzVector& inp_v, float energy_distortion, float angle_d
   double me2 = M_e * M_e;
   double mnb = M_n - bindingE;
 
-  // mess around with lorentz vector
   TLorentzVector v(inp_v);
-  v.SetTheta( v.Theta() + angle_distortion);
 
   double l_energy = v.E() + e_dist;
 
@@ -76,7 +79,7 @@ double eccqe(const TLorentzVector& inp_v, float energy_distortion, float angle_d
 }
 
 
-double get_pdg_mass(const int pdg) {
+double GetPDGMass(const int pdg) {
   if (!gPDGTable) {
     gPDGTable = new TDatabasePDG;
   }
@@ -94,31 +97,7 @@ double get_pdg_mass(const int pdg) {
   }
 }
 
-bool is_shower_pdgid(int pdg) {
-  return (pdg == 11 || pdg == 22);
-}
+    }  // namespace util
+  }  // namespace lee_truth_selection
+}  // namespace ana
 
-TH2F* HistDEdx(const sim::MCTrack& t, const std::string name, int lowbin) {
-  TH2F* h = new TH2F(name.c_str(), ";Residual range (cm?);dE/dx (MeV/cm)",
-                     100, 0, 200, 100, 0, 10);
-
-  double s = 0;  // Track length
-  TLorentzVector pos = t.End().Position();  // Start from end, work back
-
-  for (long k=t.size()-2; k>=0; k--) {
-    double dedx = t.dEdx()[k];
-    if (h->GetXaxis()->FindBin(s) >= lowbin &&
-        h->GetYaxis()->FindBin(dedx) >= lowbin) {
-      h->Fill(s, dedx);
-    }
-
-    s += (pos.Vect() - t[k].Position().Vect()).Mag();
-    pos = t[k].Position();
-  }
-
-  return h;
-}
-
-}  // namespace tsutil
-}
-}

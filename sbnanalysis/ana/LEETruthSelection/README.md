@@ -1,22 +1,11 @@
-Truth-Based 1l1p Selection
-==========================
-A. Mastbaum <mastbaum@uchicago.edu>, 2017/08/13
-
-Updated: G. Putnam <grayputnam@uchicago.edu> on 2018/01/22
+Truth-Based LEE Selection
+=========================
+A truth-based selection for Monte Carlo studies of low-energy excess
+signals and sensitivity.
 
 Loop through MCTracks and MCShowers, building a list of tracks on
 showers using truth variables which can be configured to be distorted,
 then selected based on that list.  
-
-Selection code is built as a standalone executable which uses Gallery as
-a library. Scans through Monte Carlo events and produces an output root
-file which stores both truth level information and the distorted
-information. Usage information below.
-
-Code to generate histograms and covariance plots from this output is
-build as a gallery-framework module and is run using a python script.
-Further code to generate plots live in a number of python scripts. Usage
-information below.
 
 Tools
 -----
@@ -48,4 +37,9 @@ See README for `SBNAnalysis`
 *Configuration Arguments*
 
 Arguments are set w/ a config json file. See source for arguments.
+
+Authors
+-------
+A. Mastbaum <mastbaum@uchicago.edu>, 2017/08/13
+G. Putnam <grayputnam@uchicago.edu>, 2018/01/22
 
