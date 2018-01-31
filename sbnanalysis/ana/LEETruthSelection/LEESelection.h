@@ -50,8 +50,9 @@ public:
    * Process one event.
    *
    * \param ev A single event, as a gallery::Event
+   * \returns True if event passes the selection
    */
-  void ProcessEvent(gallery::Event& ev);
+  bool ProcessEvent(gallery::Event& ev);
 
   float nextTrackEnergyDistortion(float this_energy);
   float nextShowerEnergyDistortion(float this_energy);

@@ -45,7 +45,7 @@ void ExampleSelection::Finalize() {
 }
 
 
-void ExampleSelection::ProcessEvent(gallery::Event& ev) {
+bool ExampleSelection::ProcessEvent(gallery::Event& ev) {
   if (fEventCounter % 10 == 0) {
     std::cout << "ExampleSelection: Processing event " << fEventCounter << std::endl;
   }
@@ -66,6 +66,8 @@ void ExampleSelection::ProcessEvent(gallery::Event& ev) {
     fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(),
                           mctruth.GetNeutrino().Nu().Vz());
   }
+
+  return true;
 }
 
   }  // namespace ExampleAnalysis

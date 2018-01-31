@@ -108,7 +108,7 @@ int LEESelection::nextParticleID(float energy, int true_pdgid) {
 */
 }
 
-void LEESelection::ProcessEvent(gallery::Event& ev) {
+bool LEESelection::ProcessEvent(gallery::Event& ev) {
   // Get handles for event data
   art::InputTag gtruth_tag(fConfig.mctruth_producer);
 
@@ -145,173 +145,182 @@ void LEESelection::ProcessEvent(gallery::Event& ev) {
   }
 
   // Loop through MC truth interactions
-  for(size_t i=0; i<mctruth_list.size(); i++) {
-    const simb::MCTruth& mctruth = mctruth_list.at(i);
-    const simb::GTruth& gtruth = gtruth_list.at(i);
+  if (mctruth_list.empty()) {
+    return false;
+  }
 
-    size_t ntracks = 0;
-    size_t nshowers = 0;
+  // FIXME: Write a vector of OutputData objects to the output tree
+  if (mctruth_list.size() > 1) {
+    std::cerr << "LEESelection: Multiple neutrinos in event, processing first one only!" << std::endl;
+  }
 
-    // Keep track of event particle content (currently a little redundant)
-    std::vector<PIDParticle> particles_found;
-    std::vector<PIDParticle> particles_true;
+  const simb::MCTruth& mctruth = mctruth_list.at(0);
+  const simb::GTruth& gtruth = gtruth_list.at(0);
 
-    // Loop through MC tracks
-    for (size_t j=0; j<mctrack_list.size(); j++) {
-      const sim::MCTrack& mct = mctrack_list.at(j);
+  size_t ntracks = 0;
+  size_t nshowers = 0;
 
-      // Track properties
-      double tlen = (mct.End().Position().Vect() - mct.Start().Position().Vect()).Mag();
-      bool isEmpty = mct.empty();
-      bool isFromNuVtx = util::IsFromNuVertex(mctruth, mct);
-      bool isPrimary = mct.Process() == "primary";
-      int tpdg = mct.PdgCode();
-      float tke = mct.Start().E() - util::GetPDGMass(mct.PdgCode());
+  // Keep track of event particle content (currently a little redundant)
+  std::vector<PIDParticle> particles_found;
+  std::vector<PIDParticle> particles_true;
 
-      // Track PID
-      float energy_distortion = nextTrackEnergyDistortion(tke);
-      int tpid = nextParticleID(tke + energy_distortion, tpdg);
+  // Loop through MC tracks
+  for (size_t j=0; j<mctrack_list.size(); j++) {
+    const sim::MCTrack& mct = mctrack_list.at(j);
 
-      // Truth track cuts
-      if (GoodObject(isFromNuVtx, isPrimary, tpdg, tke)) {
-        particles_true.push_back({
-          tpdg,
-          tpdg,
-          mct.Start().Momentum(),
-          tke,
-          util::ECCQE(mct.Start().Momentum()),
-          tlen,
-          !util::InFV(mct),
-          mct.TrackID()
-        });
+    // Track properties
+    double tlen = (mct.End().Position().Vect() - mct.Start().Position().Vect()).Mag();
+    bool isEmpty = mct.empty();
+    bool isFromNuVtx = util::IsFromNuVertex(mctruth, mct);
+    bool isPrimary = mct.Process() == "primary";
+    int tpdg = mct.PdgCode();
+    float tke = mct.Start().E() - util::GetPDGMass(mct.PdgCode());
 
-        // Truth info on # of tracks
-        ntracks++;
-      }
+    // Track PID
+    float energy_distortion = nextTrackEnergyDistortion(tke);
+    int tpid = nextParticleID(tke + energy_distortion, tpdg);
 
-      // PID track cuts
-      if (GoodObject(isFromNuVtx, isPrimary, tpdg, tke + energy_distortion)) {
-        particles_found.push_back({
-          tpid,
-          tpdg,
-          mct.Start().Momentum(),
-          tke + energy_distortion,
-          util::ECCQE(mct.Start().Momentum(), energy_distortion),
-          tlen,
-          !util::InFV(mct),
-          mct.TrackID()
-        });
-      }
-    } 
+    // Truth track cuts
+    if (GoodObject(isFromNuVtx, isPrimary, tpdg, tke)) {
+      particles_true.push_back({
+        tpdg,
+        tpdg,
+        mct.Start().Momentum(),
+        tke,
+        util::ECCQE(mct.Start().Momentum()),
+        tlen,
+        !util::InFV(mct),
+        mct.TrackID()
+      });
 
-    // Loop through MC showers
-    for (size_t j=0; j<mcshower_list.size(); j++) {
-      const sim::MCShower& mcs = mcshower_list.at(j);
-
-      // Shower properties
-      double slen = (mcs.End().Position().Vect() - mcs.Start().Position().Vect()).Mag();
-      bool isFromNuVtx = util::IsFromNuVertex(mctruth, mcs);
-      bool isPrimary = mcs.Process() == "primary";
-      int spdg = mcs.PdgCode();
-      float ske = mcs.Start().E() - util::GetPDGMass(mcs.PdgCode());
-
-      // Shower PID
-      float energy_distortion = nextShowerEnergyDistortion(ske);
-      int spid = nextParticleID(ske + energy_distortion, spdg); 
-
-      // Apply shower cuts
-      if (GoodObject(isFromNuVtx, isPrimary, spdg, ske)) {
-        particles_true.push_back({
-          spdg,
-          spdg,
-          mcs.Start().Momentum(),
-          ske,
-          util::ECCQE(mcs.Start().Momentum()),
-          slen,
-          !util::InFV(mcs),
-          mcs.TrackID()
-        });
-
-        // Truth info on # of showers
-        nshowers++;
-      }
-
-      // PID shower cuts
-      if (GoodObject(isFromNuVtx, isPrimary, spdg, ske + energy_distortion)) {
-        particles_found.push_back({
-          spid,
-          spdg,
-          mcs.Start().Momentum(),
-          ske + energy_distortion,
-          util::ECCQE(mcs.Start().Momentum(), energy_distortion),
-          slen,
-          !util::InFV(mcs),
-          mcs.TrackID()
-        });
-      }
+      // Truth info on # of tracks
+      ntracks++;
     }
 
-    // Classify the event (found/true 1e/1m)
-    bool f_1e = false;
-    bool t_1e = false;
-    bool f_1m = false;
-    bool t_1m = false;
-
-    for (auto sel : fConfig.selections) {
-      f_1e |= TestSelection(particles_found, 11, sel);
-      t_1e |= TestSelection(particles_true, 11, sel);
-      f_1m |= TestSelection(particles_found, 13, sel);
-      t_1m |= TestSelection(particles_true, 13, sel);
-    }
-
-    // Print out details for mis-IDs
-    if ((f_1e && !t_1e) || (f_1m && !t_1m)) {
-      std::cout << "true: " << mctruth.GetNeutrino().Nu().E() * 1000
-                << "[" << mctruth.GetNeutrino().InteractionType() << "] ";
-      for (size_t k=0; k<particles_true.size(); k++) {
-        std::cout << particles_true[k] << " ";
-      }
-      std::cout << std::endl;
-      std::cout << "pid: " << ntracks << " tracks, "
-                           << nshowers << " showers; ";
-      for (size_t k=0; k<particles_found.size(); k++) {
-        std::cout << particles_found[k] << " ";
-      }
-      std::cout << std::endl;
-    }
-
-    // Fill output data
-    fOutputData.np = GetNp(particles_found);
-    fOutputData.ntrk = GetNtracks(particles_found);
-    fOutputData.bnbweight = wbnb;
-    fOutputData.dataset = fConfig.dataset_id;
-
-    fOutputData.track_pdg.clear();
-    fOutputData.track_pdg_true.clear();
-    fOutputData.track_evis.clear();
-    fOutputData.track_momentum.clear();
-
-    for (size_t k=0; k<particles_found.size(); k++) {
-      PIDParticle& p = particles_found[k];
-
-      if (p.pdg == 11 || p.pdg == 13) {
-        // Primary lepton
-        fOutputData.lpid = p.pdg;
-        fOutputData.lpdg = p.pdgtrue;
-        fOutputData.lexit = p.exiting;
-        fOutputData.levis = p.evis;
-        fOutputData.lmomentum = p.p;
-        fOutputData.eccqe = p.eccqe;
-      }
-      else {
-        // Tracks
-        fOutputData.track_pdg.push_back(p.pdg);
-        fOutputData.track_pdg_true.push_back(p.pdgtrue);
-        fOutputData.track_evis.push_back(p.evis);
-        fOutputData.track_momentum.push_back(p.p);
-      }
+    // PID track cuts
+    if (GoodObject(isFromNuVtx, isPrimary, tpdg, tke + energy_distortion)) {
+      particles_found.push_back({
+        tpid,
+        tpdg,
+        mct.Start().Momentum(),
+        tke + energy_distortion,
+        util::ECCQE(mct.Start().Momentum(), energy_distortion),
+        tlen,
+        !util::InFV(mct),
+        mct.TrackID()
+      });
     }
   }
+
+  // Loop through MC showers
+  for (size_t j=0; j<mcshower_list.size(); j++) {
+    const sim::MCShower& mcs = mcshower_list.at(j);
+
+    // Shower properties
+    double slen = (mcs.End().Position().Vect() - mcs.Start().Position().Vect()).Mag();
+    bool isFromNuVtx = util::IsFromNuVertex(mctruth, mcs);
+    bool isPrimary = mcs.Process() == "primary";
+    int spdg = mcs.PdgCode();
+    float ske = mcs.Start().E() - util::GetPDGMass(mcs.PdgCode());
+
+    // Shower PID
+    float energy_distortion = nextShowerEnergyDistortion(ske);
+    int spid = nextParticleID(ske + energy_distortion, spdg);
+
+    // Apply shower cuts
+    if (GoodObject(isFromNuVtx, isPrimary, spdg, ske)) {
+      particles_true.push_back({
+        spdg,
+        spdg,
+        mcs.Start().Momentum(),
+        ske,
+        util::ECCQE(mcs.Start().Momentum()),
+        slen,
+        !util::InFV(mcs),
+        mcs.TrackID()
+      });
+
+      // Truth info on # of showers
+      nshowers++;
+    }
+
+    // PID shower cuts
+    if (GoodObject(isFromNuVtx, isPrimary, spdg, ske + energy_distortion)) {
+      particles_found.push_back({
+        spid,
+        spdg,
+        mcs.Start().Momentum(),
+        ske + energy_distortion,
+        util::ECCQE(mcs.Start().Momentum(), energy_distortion),
+        slen,
+        !util::InFV(mcs),
+        mcs.TrackID()
+      });
+    }
+  }
+
+  // Classify the event (found/true 1e/1m)
+  bool f_1e = false;
+  bool t_1e = false;
+  bool f_1m = false;
+  bool t_1m = false;
+
+  for (auto sel : fConfig.selections) {
+    f_1e |= TestSelection(particles_found, 11, sel);
+    t_1e |= TestSelection(particles_true, 11, sel);
+    f_1m |= TestSelection(particles_found, 13, sel);
+    t_1m |= TestSelection(particles_true, 13, sel);
+  }
+
+  // Print out details for mis-IDs
+  if ((f_1e && !t_1e) || (f_1m && !t_1m)) {
+    std::cout << "true: " << mctruth.GetNeutrino().Nu().E() * 1000
+              << "[" << mctruth.GetNeutrino().InteractionType() << "] ";
+    for (size_t k=0; k<particles_true.size(); k++) {
+      std::cout << particles_true[k] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "pid: " << ntracks << " tracks, "
+                         << nshowers << " showers; ";
+    for (size_t k=0; k<particles_found.size(); k++) {
+      std::cout << particles_found[k] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  // Fill output data
+  fOutputData.np = GetNp(particles_found);
+  fOutputData.ntrk = GetNtracks(particles_found);
+  fOutputData.bnbweight = wbnb;
+  fOutputData.dataset = fConfig.dataset_id;
+
+  fOutputData.track_pdg.clear();
+  fOutputData.track_pdg_true.clear();
+  fOutputData.track_evis.clear();
+  fOutputData.track_momentum.clear();
+
+  for (size_t k=0; k<particles_found.size(); k++) {
+    PIDParticle& p = particles_found[k];
+
+    if (p.pdg == 11 || p.pdg == 13) {
+      // Primary lepton
+      fOutputData.lpid = p.pdg;
+      fOutputData.lpdg = p.pdgtrue;
+      fOutputData.lexit = p.exiting;
+      fOutputData.levis = p.evis;
+      fOutputData.lmomentum = p.p;
+      fOutputData.eccqe = p.eccqe;
+    }
+    else {
+      // Tracks
+      fOutputData.track_pdg.push_back(p.pdg);
+      fOutputData.track_pdg_true.push_back(p.pdgtrue);
+      fOutputData.track_evis.push_back(p.evis);
+      fOutputData.track_momentum.push_back(p.p);
+    }
+  }
+
+  return f_1e || f_1m;
 }
 
   }  // namespace LEETruthSelection

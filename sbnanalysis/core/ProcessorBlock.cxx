@@ -25,8 +25,10 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
   for (gallery::Event ev(filenames); !ev.atEnd(); ev.next()) {
     for (auto it : fProcessors) {
       it.first->BuildEventTree(ev);
-      it.first->ProcessEvent(ev);
-      it.first->FillTree();
+      bool accept = it.first->ProcessEvent(ev);
+      if (accept) {
+        it.first->FillTree();
+      }
     }
   }
 

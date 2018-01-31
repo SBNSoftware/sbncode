@@ -63,9 +63,13 @@ public:
   /**
    * Process one event.
    *
+   * This also serves as a filter: if the function results false, it acts as a
+   * filter and the event is not written out.
+   *
    * \param ev The event, as a gallery::Event
+   * \returns True if event passes filter
    */
-  virtual void ProcessEvent(gallery::Event& ev) = 0;
+  virtual bool ProcessEvent(gallery::Event& ev) = 0;
 
 protected:
   /**
