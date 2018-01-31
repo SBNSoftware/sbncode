@@ -18,7 +18,7 @@ class TDatabasePDG;
 class TH2F;
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 /**
  * \struct PIDParticle
@@ -37,6 +37,13 @@ struct PIDParticle {
   /** Output stream operator to print a PIDParticle. */
   friend std::ostream& operator<<(std::ostream& os, const PIDParticle& dt);
 };
+
+
+std::ostream& operator<<(std::ostream& os, const PIDParticle& dt) {
+  os << dt.pdg << "(" << dt.evis << ")";
+  return os;
+}
+
 
 /** Collection of utilities for the LEE truth selection */
 namespace util {
@@ -108,7 +115,7 @@ double GetPDGMass(const int pdg);
 
 
 }  // namespace util
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_LEETruthSelection_Util__

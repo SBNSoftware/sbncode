@@ -5,7 +5,7 @@
 #include "Cuts.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 int GetNp(std::vector<PIDParticle>& p) {
   return std::count_if(p.begin(), p.end(), PDGTest({2212}));
@@ -76,6 +76,6 @@ bool KineticEnergyThreshold(int pdg, float ke) {
   return false;
 }
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 

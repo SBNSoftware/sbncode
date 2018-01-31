@@ -12,7 +12,7 @@
 namespace ana {
   namespace ExampleAnalysis {
 
-ExampleSelection::ExampleSelection() : SelectionBase(), fNuCount(0) {}
+ExampleSelection::ExampleSelection() : SelectionBase(), fNuCount(0), fEventCounter(0) {}
 
 
 void ExampleSelection::Initialize(Json::Value* config) {
@@ -46,6 +46,11 @@ void ExampleSelection::Finalize() {
 
 
 void ExampleSelection::ProcessEvent(gallery::Event& ev) {
+  if (fEventCounter % 10 == 0) {
+    std::cout << "ExampleSelection: Processing event " << fEventCounter << std::endl;
+  }
+  fEventCounter++;
+
   // Grab a data product from the event
   auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
 

@@ -3,7 +3,7 @@
 #include "Config.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 Config::Config(Json::Value* config) {
   Initialize(config);
@@ -75,6 +75,6 @@ void Config::Initialize(Json::Value* config) {
   }*/
 }
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 

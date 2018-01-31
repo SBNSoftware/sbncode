@@ -7,13 +7,8 @@
 #include "Util.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
     namespace util {
-
-std::ostream& operator<<(std::ostream& os, const PIDParticle& dt) {
-  os << dt.pdg << "(" << dt.evis << ")";
-  return os;
-}
 
 // From J. Zennamo's pion selection
 const double fv_x_lo =    0.0, fv_x_hi =  256.35;
@@ -98,6 +93,6 @@ double GetPDGMass(const int pdg) {
 }
 
     }  // namespace util
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 

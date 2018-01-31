@@ -42,27 +42,13 @@ void ProcessorBase::Teardown() {
 }
 
 
-void ProcessorBase::ProcessFiles(std::vector<std::string> filenames,
-                                 Json::Value* config) {
-  // Setup
-  Setup(config);
-  Initialize(config);
-
-  // Event loop
-  for (gallery::Event ev(filenames); !ev.atEnd(); ev.next()) {
-    FillEventTree(ev);
-    ProcessEvent(ev);
-    fTree->Fill();
-    fEventIndex++;
-  }
-
-  // Finalize
-  Finalize();
-  Teardown();
+void ProcessorBase::FillTree() {
+  fTree->Fill();
+  fEventIndex++;
 }
 
 
-void ProcessorBase::FillEventTree(gallery::Event& ev) {
+void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Get MCTruth information
   auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 

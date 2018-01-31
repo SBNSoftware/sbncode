@@ -60,6 +60,8 @@ public:
   void ProcessEvent(gallery::Event& ev);
 
 protected:
+  unsigned fEventCounter;  //!< Count processed events
+
   /** Configuration parameters */
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
   int fMyParam;  //!< A parameter from the configuration file

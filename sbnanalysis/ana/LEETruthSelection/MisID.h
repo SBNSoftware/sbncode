@@ -12,7 +12,7 @@
 #include "Util.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 
 /**
@@ -142,7 +142,7 @@ void checkParticleIDRates() {
 
 }
   
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_LEETruthSelection_MisID__

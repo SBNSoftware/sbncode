@@ -14,7 +14,7 @@ namespace Json {
 }
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 /** Event categories. */
 enum EventType {
@@ -23,7 +23,8 @@ enum EventType {
 
 
 /**
- * Configuration management.
+ * \class Config
+ * \brief Configuration management.
  */
 class Config {
 public:
@@ -68,7 +69,7 @@ public:
   std::string mctrack_producer;  //!< MC track producer
 };
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_LEETruthSelection_Config__

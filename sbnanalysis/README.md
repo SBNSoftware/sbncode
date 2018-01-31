@@ -20,7 +20,15 @@ JSON file.
 
 One runs a processor by calling a framework-wide binary, like this:
 
-    sbn -c CONFIG.json MyAnalysis_MySelection INPUT1.root INPUT2.root
+    sbn -m MyAnalysis_MySelection -c CONFIG.json INPUT1.root INPUT2.root
+
+Multiple processors can be run at the same time, and configurations are
+optional. For example:
+
+    sbn -m PROC1 -c CONFIG1 -m PROC2 -m PROC3 -c CONFIG3 INPUT.root
+
+Note that the order matters: the configuration applies to the processor
+it follows.
 
 Documentation
 -------------
@@ -170,21 +178,22 @@ Finally, new source code must be added to the library definitions in the
 The analysis code is run over a set of files using a framework-level
 executable:
 
-    sbn PROCESSOR -c CONFIGURATION INPUT_DEFINITION
+    sbn -m PROCESSOR [-c CONFIG] [-m PROCESSOR [-c CONFIG] ...] INPUT
 
     PROCESSOR - Name of processor, typically AnalysisName_SelectionName
-    CONFIGURATION - Configuration file
-    INPUT_DEFINITION - Input files (see note)
+    CONFIG - JSON configuration file
+    INPUT - Input files (see note)
 
 The configuration file contains settings which are passed to the selection
 processor's `Initialize` function.
 
-The input files can be defined as a ROOT file (ending in .root), a
-SAM definition (no extension), or a file list (any other extension).
+The input files can be defined as one or more ROOT files (ending in .root).
+Support is planned for file lists and SAM dataset definitions in future
+versions.
 
 To run the above example (after building):
 
-    sbn ExampleAnalysis_ExampleSelection input.root
+    sbn -m ExampleAnalysis_ExampleSelection input.root
 
 ### Analyzing the Output
 
@@ -198,7 +207,7 @@ To read the output files in ROOT, one must load the event dictionary, which
 is stored in `libsbnanalysis_Processor.so`. Compiled code should link to this
 library, and on the ROOT command line one can run:
 
-    .L lib/libsbnanalysis_Processor.so
+    .L lib/libsbnanalysis_Event.so
 
 Now, we can open the file in a `TBrowser`:
 
@@ -207,7 +216,7 @@ Now, we can open the file in a `TBrowser`:
 One can make plots interactively, or analyze this tree with a ROOT macro or
 script. For example, in the ROOT console:
 
-    root [0] .L lib/libsbnanalysis_Processor.so
+    root [0] .L lib/libsbnanalysis_Event.so
     root [1] TFile f("output.root")
     root [2] sbnana->Draw("interactions.lepton.energy")
 

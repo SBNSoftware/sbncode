@@ -16,7 +16,7 @@
 #include "Util.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 /**
  * \class LEESelection
@@ -90,7 +90,7 @@ protected:
   //EnergyMap<PDGConfusionMatrix> fMisIDMap;  //!< Particle mis-ID mapping
 };
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_LEETruthSelection_LEESelection__

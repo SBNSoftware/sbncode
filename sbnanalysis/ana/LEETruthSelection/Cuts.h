@@ -12,9 +12,12 @@
 #include "Util.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
-/** A functor to test a PIDParticle's PDG code. */
+/**
+ * \class PDGTest
+ * \brief A functor to test a PIDParticle's PDG code.
+ */
 class PDGTest {
 public:
   PDGTest(std::vector<int> _pdg) : pdg(_pdg) {}
@@ -23,7 +26,7 @@ public:
   }
 
 private:
-  std::vector<int> pdg;
+  std::vector<int> pdg;  //!< PDGs of interest
 };
 
 
@@ -87,7 +90,7 @@ bool GoodObject(bool isFromNuVertex, bool isPrimaryProcess, int pdg, float ke);
  */
 bool KineticEnergyThreshold(int pdg, float ke);
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_LEETruthSelection_Cuts__

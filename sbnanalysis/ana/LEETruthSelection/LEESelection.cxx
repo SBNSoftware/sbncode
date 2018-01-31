@@ -23,7 +23,7 @@
 #include "LEESelection.h"
 
 namespace ana {
-  namespace lee_truth_selection {
+  namespace LEETruthSelection {
 
 void LEESelection::Initialize(Json::Value* config) {
   // Load configuration
@@ -314,9 +314,9 @@ void LEESelection::ProcessEvent(gallery::Event& ev) {
   }
 }
 
-  }  // namespace lee_truth_selection
+  }  // namespace LEETruthSelection
 }  // namespace ana
 
 // This line must be included for all selections!
-DECLARE_SBN_PROCESSOR(ana::lee_truth_selection::LEESelection)
+DECLARE_SBN_PROCESSOR(ana::LEETruthSelection::LEESelection)
 
