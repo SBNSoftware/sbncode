@@ -103,9 +103,11 @@ The selection code must define the following methods:
 * `void Finalize()`: Perform analysis-specific tear-down, such as computing
   statistics and writing histograms to the output file.
 
-* `void ProcessEvent(gallery::Event& ev)`: Perform the event-level analysis,
+* `bool ProcessEvent(gallery::Event& ev)`: Perform the event-level analysis,
   such as filling histograms and setting the variables corresponding to the
   custom branches (they will filled -- written to the tree --  automatically).
+  The return value is used for event filtering: if `ProcessEvent` returns
+  false, the event is not written to the output tree.
 
 The user is free to add arbitrary branches to the default output ROOT tree,
 using the method `void AddBranch(std::string name, T* object)` where the first
@@ -127,7 +129,7 @@ public:
   ExampleSelection();
   void Initialize();
   void Finalize();
-  void ProcessEvent(gallery::Event& ev);
+  bool ProcessEvent(gallery::Event& ev);
 
 protected:
   int fMyVar;  // For a custom branch
@@ -155,7 +157,7 @@ namespace ana {
     void ExampleSelection::Finalize() {}
 
     // Event processing
-    void ExampleSelection::ProcessEvent(gallery::Event& ev) {
+    bool ExampleSelection::ProcessEvent(gallery::Event& ev) {
       // ... Process the gallery::Event ...
       fMyVar = 42;  // Fill in the custom branch
     }
