@@ -18,19 +18,19 @@ ProcessorBase::~ProcessorBase() {}
 
 
 void ProcessorBase::Setup(Json::Value* config) {
+  // Load configuration parameters
+  fTruthTag = { "generator" };
+
+  if (config) {
+    fTruthTag = { config->get("MCTruthTag", "generator").asString() };
+    fOutputFilename = config->get("OutputFile", "output.root").asString();
+  }
+
   // Open the output file and create the standard event tree
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
-
-  // Load configuration parameters
-  fTruthTag = { "generator" };
-
-  if (config) {
-    fTruthTag = { (*config)["ProcessorBase"].get("MCTruthTag", "generator").asString() };
-    fOutputFilename = (*config)["ProcessorBase"].get("OutputFile", "output.root").asString();
-  }
 }
 
 
