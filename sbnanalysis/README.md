@@ -160,6 +160,7 @@ namespace ana {
     bool ExampleSelection::ProcessEvent(gallery::Event& ev) {
       // ... Process the gallery::Event ...
       fMyVar = 42;  // Fill in the custom branch
+      return true;
     }
   }  // namespace ExampleAnalysis
 }  // namespace ana
