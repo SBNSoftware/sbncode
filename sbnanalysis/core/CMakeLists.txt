@@ -53,14 +53,14 @@ install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 
-if (DEFINED ENV{SBNANA_STATIC_PROCESSOR})
-  set(STATIC SBNProcessor_$ENV{SBNANA_STATIC_PROCESSOR})
+if (DEFINED SBNANA_COMPILED_PROCESSOR)
+  set(STATICEXE SBNProcessor_${SBNANA_COMPILED_PROCESSOR})
   include_directories( ${CMAKE_INSTALL_PREFIX}/lib )
   link_directories(
     ${CMAKE_INSTALL_PREFIX}/lib
   )
-  add_executable(${STATIC} static.cxx)
-  target_link_libraries(${STATIC} sbnanalysis_Processor jsoncpp sbnanalysis_$ENV{SBNANA_STATIC_PROCESSOR})
-  install(TARGETS ${STATIC} DESTINATION bin)
+  add_executable(${STATICEXE} static.cxx)
+  target_link_libraries(${STATICEXE} sbnanalysis_Processor jsoncpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
+  install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()
 
