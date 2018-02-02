@@ -56,10 +56,13 @@ public:
    * Process one event.
    *
    * \param ev A single event, as a gallery::Event
+   * \return True to keep event
    */
-  void ProcessEvent(gallery::Event& ev);
+  bool ProcessEvent(gallery::Event& ev);
 
 protected:
+  unsigned fEventCounter;  //!< Count processed events
+
   /** Configuration parameters */
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
   int fMyParam;  //!< A parameter from the configuration file

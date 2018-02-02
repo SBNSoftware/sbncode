@@ -18,19 +18,19 @@ ProcessorBase::~ProcessorBase() {}
 
 
 void ProcessorBase::Setup(Json::Value* config) {
+  // Load configuration parameters
+  fTruthTag = { "generator" };
+
+  if (config) {
+    fTruthTag = { config->get("MCTruthTag", "generator").asString() };
+    fOutputFilename = config->get("OutputFile", "output.root").asString();
+  }
+
   // Open the output file and create the standard event tree
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
-
-  // Load configuration parameters
-  fTruthTag = { "generator" };
-
-  if (config) {
-    fTruthTag = { (*config)["ProcessorBase"].get("MCTruthTag", "generator").asString() };
-    fOutputFilename = (*config)["ProcessorBase"].get("OutputFile", "output.root").asString();
-  }
 }
 
 
@@ -42,27 +42,13 @@ void ProcessorBase::Teardown() {
 }
 
 
-void ProcessorBase::ProcessFiles(std::vector<std::string> filenames,
-                                 Json::Value* config) {
-  // Setup
-  Setup(config);
-  Initialize(config);
-
-  // Event loop
-  for (gallery::Event ev(filenames); !ev.atEnd(); ev.next()) {
-    FillEventTree(ev);
-    ProcessEvent(ev);
-    fTree->Fill();
-    fEventIndex++;
-  }
-
-  // Finalize
-  Finalize();
-  Teardown();
+void ProcessorBase::FillTree() {
+  fTree->Fill();
+  fEventIndex++;
 }
 
 
-void ProcessorBase::FillEventTree(gallery::Event& ev) {
+void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Get MCTruth information
   auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 

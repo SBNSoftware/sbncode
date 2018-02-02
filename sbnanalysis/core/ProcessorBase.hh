@@ -30,6 +30,7 @@ namespace core {
  * \brief A generic tree-writing event-by-event processor.
  */
 class ProcessorBase {
+friend class ProcessorBlock;
 public:
   /** Constructor */
   ProcessorBase();
@@ -38,13 +39,9 @@ public:
   virtual ~ProcessorBase();
 
   /**
-   * Process a set of files.
-   *
-   * \param filenames A list of art ROOT files to process
-   * \param config A configuration as a JSON object
+   * Fill the tree and increment the event index.
    */
-  virtual void ProcessFiles(std::vector<std::string> filenames,
-                            Json::Value* config=NULL);
+  virtual void FillTree();
 
   /**
    * Add a branch to the output tree.
@@ -66,10 +63,15 @@ public:
   /**
    * Process one event.
    *
+   * This also serves as a filter: if the function results false, it acts as a
+   * filter and the event is not written out.
+   *
    * \param ev The event, as a gallery::Event
+   * \returns True if event passes filter
    */
-  virtual void ProcessEvent(gallery::Event& ev) = 0;
+  virtual bool ProcessEvent(gallery::Event& ev) = 0;
 
+protected:
   /**
    * Perform user-level initialization.
    *
@@ -80,7 +82,6 @@ public:
   /** Perform user-level finalization. */
   virtual void Finalize() = 0;
 
-protected:
   /**
    * Perform framework-level initialization.
    *
@@ -96,7 +97,7 @@ protected:
    *
    * \param ev The current gallery event
   */
-  void FillEventTree(gallery::Event& ev);
+  void BuildEventTree(gallery::Event& ev);
 
   unsigned long fEventIndex;  //!< An incrementing index
   std::string fOutputFilename;  //!< The output filename
@@ -110,9 +111,12 @@ protected:
 
 
 /** Macro to create plugin library for user-defined Processors. */
-#define DECLARE_SBN_PROCESSOR(classname) \
-extern "C" core::ProcessorBase* CreateObject() { return (core::ProcessorBase*) new classname; } \
-extern "C" void DestroyObject(classname* o) { delete o; }
+#define DECLARE_SBN_PROCESSOR(classname) extern "C" { \
+core::ProcessorBase* CreateProcessorObject() { return (core::ProcessorBase*) new classname; } \
+classname* CreateObject() { return new classname; } \
+void DestroyObject(classname* o) { delete o; } \
+struct export_table { classname* (*create)(void); void (*destroy)(classname*); }; \
+struct export_table exports = { CreateObject, DestroyObject }; }
 
 #endif  // __sbnanalysis_core_ProcessorBase__
 
