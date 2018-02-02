@@ -15,12 +15,13 @@ using namespace core;
 extern "C" {
   extern ProcessorBase* CreateProcessorObject();
   extern void DestroyProcessorObject(ProcessorBase* proc); 
-  extern struct processor_export_table processor_exports;
+  extern struct ProcessorBase::export_table exports;
 }
 
 /** Load a Processor. */
-inline Main::export_table* LoadProcessor() {
-  return (Main::export_table *) &processor_exports;
+inline ProcessorBase::export_table* LoadProcessor() {
+  return &exports;
+  //return (ProcessorBase::export_table *) &exports;
 }
 
 int main(int argc, char* argv[]) {

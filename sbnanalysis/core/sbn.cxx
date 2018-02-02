@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << "Configuring... " << std::endl;
   for (size_t i=0; i<processors.size(); i++) {
-    Main::export_table* exp = Main::LoadProcessor(processors[i]);
+    ProcessorBase::export_table* exp = Main::LoadProcessor(processors[i]);
 
     Json::Value* config = Main::LoadConfig(config_names[i]);
     configs[i] = config;

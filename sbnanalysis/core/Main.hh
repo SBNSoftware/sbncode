@@ -17,12 +17,6 @@ namespace core {
 class Main {
   public:
 
-  struct export_table {
-    core::ProcessorBase* (*create)(void);
-    void (*destroy)(core::ProcessorBase*);
-  };
-
-
   struct ProcessorDef {
     char* name;
     struct export_table* exports;
@@ -35,7 +29,7 @@ class Main {
 
   static core::ProcessorBlock InitializeBlock(std::vector<Json::Value*> &export_tables, std::vector<core::ProcessorBase*> &processors); 
 
-  static export_table* LoadProcessor(char* libname);
+  static core::ProcessorBase::export_table* LoadProcessor(char* libname);
 };
 }
 

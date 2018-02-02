@@ -43,7 +43,7 @@ ProcessorBlock Main::InitializeBlock(std::vector<Json::Value*> &configs, std::ve
 } 
 
 /** Load a Processor. */
-Main::export_table* Main::LoadProcessor(char* libname) {
+ProcessorBase::export_table* Main::LoadProcessor(char* libname) {
   std::cout << "Loading processor: " << libname << "... ";
 
   char* libdir = getenv("SBN_LIB_DIR");
@@ -60,7 +60,7 @@ Main::export_table* Main::LoadProcessor(char* libname) {
     exit(1);
   }
 
-  export_table* exports = (export_table*) dlsym(handle, "exports");
+  ProcessorBase::export_table* exports = (ProcessorBase::export_table*) dlsym(handle, "exports");
 
   if (exports) {
     std::cout << "OK" << std::endl;
