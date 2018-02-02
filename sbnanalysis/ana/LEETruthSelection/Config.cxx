@@ -22,7 +22,6 @@ void Config::Initialize(Json::Value* config) {
   dataset_id = cfg.get("dataset_id", 0).asInt();
   track_energy_distortion = cfg.get("track_energy_distortion", 0).asFloat();
   shower_energy_distortion = cfg.get("shower_energy_distortion", 0).asFloat();
-  do_misid = cfg.get("do_misid", false).asBool();
 
   // Selections
   accept_1l1p = cfg.get("accept_1l1p", true).asBool();
@@ -49,15 +48,14 @@ void Config::Initialize(Json::Value* config) {
   mcshower_producer = cfg.get("mcshower_producer", "mcreco").asString();
   mctrack_producer = cfg.get("mctrack_producer", "mcreco").asString();
 
-  /*
-  bool has_misids = false;
+  // Parricle Id matrix
+  // Load Matrix entries into vectors
   std::vector<float> energy_range;
   std::vector<std::vector<int> > true_pdgids;
   std::vector<std::vector<int> > test_pdgids;
   std::vector<std::vector<float> > id_rates;
-  if (cfg->isMember("do_misid")) {
-    has_misids = true;
-    auto inner = (*cfg)["do_misid"];
+  if (cfg.isMember("misid")) {
+    auto inner = cfg["misid"];
     for (auto energy: inner["energy_range"]) {
       float value = energy.asFloat();
       energy_range.push_back(value);
@@ -72,7 +70,23 @@ void Config::Initialize(Json::Value* config) {
         id_rates[size-1].push_back(id_tuple[2].asFloat());
       }
     } 
-  }*/
+    
+    // set the energy binning of the id matrix and fill in entries
+    pdgid_matrix.set_energies(new std::vector<float>(energy_range));
+    for (int i = 0; i < energy_range.size(); i++) {
+      float energy = energy_range[i];
+      for (int j = 0; j < true_pdgids[i].size(); i++) {
+        int true_pdgid = true_pdgids[i][j];
+        int test_pdgid = test_pdgids[i][j];
+        float id_rate = id_rates[i][j];
+        pdgid_matrix.get(energy)->add(true_pdgid, test_pdgid, id_rate);
+      }
+    }
+    // check that all particles have a chance to be id'd as _something_ of 1.0
+    for (int i = 0; i < energy_range.size(); i++) {
+      (*pdgid_matrix._objs)[i].check();
+    } 
+  }
 }
 
   }  // namespace LEETruthSelection

@@ -97,15 +97,12 @@ float LEESelection::nextShowerEnergyDistortion(float this_energy) {
 }
 
 int LEESelection::nextParticleID(float energy, int true_pdgid) {
-  return true_pdgid;
-/*
-  if (!_particle_misid.is_set()) {
+  if (!fConfig.pdgid_matrix.is_set()) {
     return true_pdgid;
   }
   else {
-    return _particle_misid.get(energy)->particle_id(true_pdgid, _random(_gen));
+    return fConfig.pdgid_matrix.get(energy)->particle_id(true_pdgid, gRandom->Uniform());
   }
-*/
 }
 
 bool LEESelection::ProcessEvent(gallery::Event& ev) {

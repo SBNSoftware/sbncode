@@ -8,6 +8,7 @@
  * Author: A. Mastbaum, G. Putnam
  */
 
+#include <map>
 #include <algorithm>
 #include "Util.h"
 
@@ -100,7 +101,7 @@ public:
   /** Set the energy ranges being considered -- should be called before calling get() */
   inline void set_energies(std::vector<float> *energies) {
     _energies = energies;
-    _objs = new std::vector<T>(energies.size());
+    _objs = new std::vector<T>(energies->size());
   }
 
   inline bool is_set() {
@@ -125,23 +126,6 @@ public:
   std::vector<T> *_objs;
 };
 
-// get the next particle id based on confusion rates set by the PDGConfusionMatrix at that energy
-int nextParticleID(float energy, int true_pdgid);
-
-// add in particle id rates to the different energy ranges
-void addParticleIDRate(int true_pdgid, int test_pdgid, float rate, float energy)
-    { _particle_misid.get(energy)->add(true_pdgid, test_pdgid, rate); }
-
-void setParticleIDEnergyRange(std::vector<float> range) 
-    { _particle_misid.set_energies(new std::vector<float>(range)); }
-
-void checkParticleIDRates() {
-  for (unsigned i = 0; i < _particle_misid._objs->size(); i++) {
-    (*_particle_misid._objs)[i].check();
-  } 
-
-}
-  
   }  // namespace LEETruthSelection
 }  // namespace ana
 

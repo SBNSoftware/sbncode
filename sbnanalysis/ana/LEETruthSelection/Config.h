@@ -8,6 +8,7 @@
 #define __sbnanalysis_ana_LEETruthSelection_Config__
 
 #include "Util.h"
+#include "MisID.h"
 
 namespace Json {
   class Value;
@@ -52,7 +53,9 @@ public:
   int dataset_id;  //!< An identifier written to the output tree
   float track_energy_distortion;  //!< Amount to smear the track energy
   float shower_energy_distortion;  //!< Amount to smear the shower energy
-  bool do_misid;  //!< Enable particle mis-IDs
+
+  /** Particle ID Matrix (binned by energy) */
+  ana::LEETruthSelection::EnergyMap<ana::LEETruthSelection::PDGConfusionMatrix> pdgid_matrix;
 
   /** Selection types */
   bool accept_1l1p;  //!< Enable 1l1p selection
