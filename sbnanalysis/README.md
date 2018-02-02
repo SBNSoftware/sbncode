@@ -81,7 +81,7 @@ The `cmake` command accepts many useful options. For example:
 In addition, it is possible to configure `cmake` to compile one of your
 processors into a standalone executable which can be easy to run on,
 e.g., the grid. To do this, run `cmake
--DSBNANA_COMPILED_PROCESSOR=$YOUR_PROCESSOR_NAME`. Then, everytime you
+-DSBNANA_COMPILED_PROCESSOR=YOUR_PROCESSOR_NAME`. Then, everytime you
 build the software, your processor will get built as a standalone
 executable. To unset building a standalone executable, run `cmake
 -USBNANA_COMPILED_PROCESSOR`. 
