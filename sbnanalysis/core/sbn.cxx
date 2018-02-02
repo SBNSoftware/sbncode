@@ -8,79 +8,14 @@
 #include <json/json.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
+#include <core/Main.hh>
 
-struct export_table {
-  core::ProcessorBase* (*create)(void);
-  void (*destroy)(core::ProcessorBase*);
-};
-
-
-struct ProcessorDef {
-  char* name;
-  struct export_table* exports;
-  Json::Value* config;
-  core::ProcessorBase* proc;
-};
-
-
-/** Load a Processor. */
-export_table* LoadProcessor(char* libname) {
-  std::cout << "Loading processor: " << libname << "... ";
-
-  char* libdir = getenv("SBN_LIB_DIR");
-  char libpath[1000];
-  snprintf(libpath, 1000, "%s/libsbnanalysis_%s.so", libdir, libname);
-
-  void* handle = dlopen(libpath, RTLD_NOW);
-  if (!handle) {
-    std::cout << "ERROR" << std::endl;
-    std::cerr << "Error loading processor " << libpath << ": \n\n"
-              << dlerror()
-              << "\n\nSBN_LIB_DIR = " << libdir
-              << std::endl;
-    exit(1);
-  }
-
-  export_table* exports = (export_table*) dlsym(handle, "exports");
-
-  if (exports) {
-    std::cout << "OK" << std::endl;
-  }
-  else {
-    std::cout << "ERROR" << std::endl;
-    std::cerr << "Invalid library " << libname << ". Not a Processor?" << std::endl;
-    exit(1);
-  }
-
-  return exports;
-}
-
-
-/** Load JSON configuration file if provided. */
-Json::Value* LoadConfig(char* configfile) {
-  Json::Value* config = NULL;
-
-  if (configfile) {
-    std::cout << "Loading configuration: " << configfile << "... ";
-    std::ifstream configstream(configfile, std::ifstream::binary);
-    config = new Json::Value;
-    Json::Reader reader;
-    bool r = reader.parse(configstream, *(config));
-    if (!r) {
-      std::cerr << "Error parsing configuration file " << configfile << std::endl;
-      exit(2);
-    }
-    std::cout << "OK" << std::endl;
-  }
-
-  return config;
-}
-
+using namespace core;
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
   std::vector<char*> processors;
-  std::map<unsigned, char*> configs;
+  std::map<unsigned, char*> config_names;
 
   int c;
   unsigned procindex = 0;
@@ -91,7 +26,7 @@ int main(int argc, char* argv[]) {
         procindex++;
         break;
       case 'c':
-        configs[procindex-1] = optarg;
+        config_names[procindex-1] = optarg;
         break;
       case '?':
         if (optopt == 'c' || optopt == 'm')
@@ -120,30 +55,26 @@ int main(int argc, char* argv[]) {
   assert(!filenames.empty());
 
   // Setup
-  core::ProcessorBlock block;
-  std::vector<export_table*> exports(processors.size());
-  std::vector<core::ProcessorBase*> procs(processors.size());
+  std::vector<ProcessorBase*> procs(processors.size());
+  std::vector<Json::Value*> configs(processors.size());
 
   std::cout << "Configuring... " << std::endl;
   for (size_t i=0; i<processors.size(); i++) {
-    export_table* exp = LoadProcessor(processors[i]);
-    exports[i] = exp;
+    Main::export_table* exp = Main::LoadProcessor(processors[i]);
 
-    Json::Value* config = LoadConfig(configs[i]);
+    Json::Value* config = Main::LoadConfig(config_names[i]);
+    configs[i] = config;
 
-    core::ProcessorBase* proc = exp->create();
+    ProcessorBase* proc = exp->create();
     procs[i] = proc;
-
-    block.AddProcessor(proc, config);
   }
+
+  ProcessorBlock block = Main::InitializeBlock(configs, procs);
 
   std::cout << "Running... " << std::endl;
   block.ProcessFiles(filenames);
 
-  for (size_t i=0; i<processors.size(); i++) {
-    exports[i]->destroy(procs[i]);
-  }
-
+  block.DestroyProcessors();
   std::cout << "Done!" << std::endl;
 
   return 0;

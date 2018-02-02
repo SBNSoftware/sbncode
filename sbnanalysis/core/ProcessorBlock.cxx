@@ -39,5 +39,12 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
   }
 }
 
+
+void ProcessorBlock::DestroyProcessors() {
+  for (auto it: fProcessors) {
+    delete it.first;
+  }
+}
+
 }  // namespace core
 

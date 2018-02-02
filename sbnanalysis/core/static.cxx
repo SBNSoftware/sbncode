@@ -8,66 +8,33 @@
 #include <json/json.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
+#include <core/Main.hh>
 
-struct export_table {
-  core::ProcessorBase* (*create)(void);
-  void (*destroy)(core::ProcessorBase*);
-};
-
-struct ProcessorDef {
-  char* name;
-  struct export_table* exports;
-  Json::Value* config;
-  core::ProcessorBase* proc;
-};
-
+using namespace core;
 
 extern "C" {
-  extern core::ProcessorBase* CreateProcessorObject();
-  extern void DestroyProcessorObject(core::ProcessorBase* proc); 
+  extern ProcessorBase* CreateProcessorObject();
+  extern void DestroyProcessorObject(ProcessorBase* proc); 
   extern struct processor_export_table processor_exports;
 }
 
 /** Load a Processor. */
-export_table* LoadProcessor() {
-  return (export_table *) &processor_exports;
+inline Main::export_table* LoadProcessor() {
+  return (Main::export_table *) &processor_exports;
 }
-
-
-/** Load JSON configuration file if provided. */
-Json::Value* LoadConfig(char* configfile) {
-  Json::Value* config = NULL;
-
-  if (configfile) {
-    std::cout << "Loading configuration: " << configfile << "... ";
-    std::ifstream configstream(configfile, std::ifstream::binary);
-    config = new Json::Value;
-    Json::Reader reader;
-    bool r = reader.parse(configstream, *(config));
-    if (!r) {
-      std::cerr << "Error parsing configuration file " << configfile << std::endl;
-      exit(2);
-    }
-    std::cout << "OK" << std::endl;
-  }
-
-  return config;
-}
-
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
-  std::map<unsigned, char*> configs;
+  std::vector<char*> config_names;
 
   int c;
-  unsigned procindex = 0;
   while ((c=getopt(argc, argv, "c:")) != -1) {
     switch (c) {
       case 'c':
-        configs[procindex-1] = optarg;
+        config_names.push_back(optarg);
         break;
       case '?':
-        if (optopt == 'c' || optopt == 'm')
+        if (optopt == 'c')
           fprintf(stderr, "Option -%c requires an argument.\n", optopt);
         else if (isprint(optopt))
           fprintf(stderr, "Unknown option `-%c'.\n", optopt);
@@ -80,7 +47,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (argc - optind < 1) {
-    std::cout << "Usage: " << argv[0] << " [-m PROCESSOR [-c CONFIG]] "
+    std::cout << "Usage: " << argv[0] << " [-c [Config]] "
               << "INPUTDEF [...]" << std::endl;
     return 0;
   }
@@ -93,32 +60,24 @@ int main(int argc, char* argv[]) {
   assert(!filenames.empty());
 
   // Setup
-  core::ProcessorBlock block;
-  std::vector<export_table*> exports(configs.size());
-  std::vector<core::ProcessorBase*> procs(configs.size());
+  int n_processors = config_names.size() == 0 ? 1 : config_names.size();
+  std::vector<Json::Value*> configs(n_processors);
+  std::vector<ProcessorBase*> procs(n_processors);
 
   std::cout << "Configuring... " << std::endl;
-  for (size_t i=0; i<procs.size(); i++) {
-    export_table* exp = LoadProcessor();
-    exports[i] = exp;
+  for (size_t i=0; i<n_processors; i++) {
+    Json::Value* config = config_names.size() == 0 ? NULL : Main::LoadConfig(config_names[i]);
 
-    Json::Value* config = LoadConfig(configs[i]);
-
-    core::ProcessorBase* proc = exp->create();
-    procs[i] = proc;
-
-    block.AddProcessor(proc, config);
+    procs.push_back(LoadProcessor()->create());
+    configs.push_back(config);
   }
 
+  ProcessorBlock block = Main::InitializeBlock(configs, procs);
   std::cout << "Running... " << std::endl;
   block.ProcessFiles(filenames);
 
-  for (size_t i=0; i<procs.size(); i++) {
-    exports[i]->destroy(procs[i]);
-  }
-
+  block.DestroyProcessors();
   std::cout << "Done!" << std::endl;
 
   return 0;
 }
-

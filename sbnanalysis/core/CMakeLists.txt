@@ -27,7 +27,7 @@ link_directories(
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Event sbn_eventdict.cxx)
-add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx)
+add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx Main.cxx)
 
 target_link_libraries(
   sbnanalysis_Processor

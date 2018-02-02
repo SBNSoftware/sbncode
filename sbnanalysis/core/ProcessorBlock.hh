@@ -46,6 +46,12 @@ public:
    */
   virtual void ProcessFiles(std::vector<std::string> filenames);
 
+  /**
+   * Tear down all processors owned by the block.
+   * 
+   */
+  virtual void DestroyProcessors();
+
 protected:
   /** Processors and their configurations. */
   std::vector<std::pair<ProcessorBase*, Json::Value*> > fProcessors;
