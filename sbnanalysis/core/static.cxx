@@ -5,7 +5,10 @@
 #include <dlfcn.h>
 #include <json/json.h>
 #include <core/ProcessorBase.hh>
-#include CMAKE_PROCESSOR_INCLUDE
+
+extern "C" {
+  extern core::ProcessorBase* CreateObject();
+}
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
@@ -56,13 +59,10 @@ int main(int argc, char* argv[]) {
   }
   assert(!filenames.empty());
 
-  void (*destroy)(core::ProcessorBase*);
-  destroy = (void (*)(core::ProcessorBase*)) DestroyObject;
-
   // Run the Processor
   core::ProcessorBase* proc = (core::ProcessorBase*) CreateObject();
   proc->ProcessFiles(filenames, config);
-  destroy(proc);
+  delete proc;
 
   std::cout << "Done!" << std::endl;
 

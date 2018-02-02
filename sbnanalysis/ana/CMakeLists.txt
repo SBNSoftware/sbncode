@@ -20,21 +20,6 @@ link_directories(
   $ENV{LARDATAOBJ_LIB}
 )
 
-if (DEFINED ENV{SBNANA_STATIC_PROCESSOR})
-  add_definitions(-DCMAKE_PROCESSOR_INCLUDE=\"$ENV{SBNANA_STATIC_PROCESSOR}.h\")
-
-  Message(STATUS ${CMAKE_INSTALL_PREFIX}/lib/libsbnanalysis_ExampleAnalysis_ExampleSelection.so)
-  include_directories( ${CMAKE_INSTALL_PREFIX}/lib )
-  link_directories(
-    $ENV{JSONCPP_LIB}
-    ${CMAKE_INSTALL_PREFIX}/lib
-  )
-  add_executable(static static.cxx)
-  target_link_libraries(static sbnanalysis_Processor jsoncpp sbnanalysis_ExampleAnalysis_ExampleSelection)
-  install(TARGETS static DESTINATION bin)
-endif()
-
-
 add_subdirectory(ExampleAnalysis)
 
 

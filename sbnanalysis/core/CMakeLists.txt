@@ -47,6 +47,17 @@ add_custom_command(TARGET sbnanalysis_Processor POST_BUILD
 add_executable(sbn sbn.cxx)
 target_link_libraries(sbn sbnanalysis_Processor jsoncpp)
 
+if (DEFINED ENV{SBNANA_STATIC_PROCESSOR})
+  set(STATIC SBNProcessor_$ENV{SBNANA_STATIC_PROCESSOR})
+  include_directories( ${CMAKE_INSTALL_PREFIX}/lib )
+  link_directories(
+    ${CMAKE_INSTALL_PREFIX}/lib
+  )
+  add_executable(${STATIC} static.cxx)
+  target_link_libraries(${STATIC} sbnanalysis_Processor jsoncpp sbnanalysis_$ENV{SBNANA_STATIC_PROCESSOR})
+  install(TARGETS ${STATIC} DESTINATION bin)
+endif()
+
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 

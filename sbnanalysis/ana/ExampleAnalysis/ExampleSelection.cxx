@@ -67,4 +67,6 @@ void ExampleSelection::ProcessEvent(gallery::Event& ev) {
 }  // namespace ana
 
 
+// This line must be included for all selections!
+DECLARE_SBN_PROCESSOR(ana::ExampleAnalysis::ExampleSelection)
 

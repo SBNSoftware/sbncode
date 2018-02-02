@@ -77,6 +77,4 @@ protected:
 
 #endif  // __sbnanalysis_ana_ExampleAnalysis_ExampleSelection__
 
-// This line must be included for all selections!
-DECLARE_SBN_PROCESSOR(ana::ExampleAnalysis::ExampleSelection)
 
