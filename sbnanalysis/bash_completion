@@ -12,11 +12,13 @@ _sbn_complete() {
   cur_word="${COMP_WORDS[COMP_CWORD]}"
   # get the previous word (to check if it is looking for processor) 
   prev_word="${COMP_WORDS[COMP_CWORD-1]}" 
-  if [[ ${prev_word} == -m ]] ; then 
-    COMPREPLY=( $(ls "${SBN_LIB_DIR}" | sed -n -e 's/^lib//p' | sed -n -e 's/\.so//p' | grep "${cur_word}"))
-  else 
-    COMPREPLY=( $(ls | grep "${cur_word}") )
+  if ! [ -z ${SBN_LIB_DIR+x} ]; then
+    if [[ ${prev_word} == -m ]] ; then 
+      COMPREPLY=( $(ls "${SBN_LIB_DIR}" | sed -n -e 's/^libsbnanalysis_//p' | sed -n -e 's/\.so//p' | grep "${cur_word}"))
+      return 0;
+    fi
   fi
+  COMPREPLY=( $(ls | grep "${cur_word}") )
 
   return 0;
 }
