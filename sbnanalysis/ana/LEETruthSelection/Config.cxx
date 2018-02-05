@@ -48,7 +48,7 @@ void Config::Initialize(Json::Value* config) {
   mcshower_producer = cfg.get("mcshower_producer", "mcreco").asString();
   mctrack_producer = cfg.get("mctrack_producer", "mcreco").asString();
 
-  // Parricle Id matrix
+  // Particle ID matrix
   // Load Matrix entries into vectors
   std::vector<float> energy_range;
   std::vector<std::vector<int> > true_pdgids;
@@ -71,7 +71,7 @@ void Config::Initialize(Json::Value* config) {
       }
     } 
     
-    // set the energy binning of the id matrix and fill in entries
+    // Set the energy binning of the id matrix and fill in entries
     pdgid_matrix.set_energies(new std::vector<float>(energy_range));
     for (int i = 0; i < energy_range.size(); i++) {
       float energy = energy_range[i];
@@ -82,7 +82,7 @@ void Config::Initialize(Json::Value* config) {
         pdgid_matrix.get(energy)->add(true_pdgid, test_pdgid, id_rate);
       }
     }
-    // check that all particles have a chance to be id'd as _something_ of 1.0
+    // Check that all particles have a chance to be id'd as _something_ of 1.0
     for (int i = 0; i < energy_range.size(); i++) {
       (*pdgid_matrix._objs)[i].check();
     } 

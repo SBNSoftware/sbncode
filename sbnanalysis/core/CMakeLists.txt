@@ -27,7 +27,7 @@ link_directories(
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Event sbn_eventdict.cxx)
-add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx Main.cxx)
+add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx Loader.cxx)
 
 target_link_libraries(
   sbnanalysis_Processor
@@ -59,7 +59,7 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
   link_directories(
     ${CMAKE_INSTALL_PREFIX}/lib
   )
-  add_executable(${STATICEXE} static.cxx)
+  add_executable(${STATICEXE} sbn_static.cxx)
   target_link_libraries(${STATICEXE} sbnanalysis_Processor jsoncpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
   install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()

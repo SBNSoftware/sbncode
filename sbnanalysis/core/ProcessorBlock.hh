@@ -11,7 +11,6 @@
 
 #include <string>
 #include <vector>
-#include "ProcessorBase.hh"
 
 namespace Json {
   class Value;
@@ -34,6 +33,8 @@ public:
   /**
    * Add a processor to the block.
    *
+   * Note that the ProcessorBlock takes ownership of the Processor.
+   *
    * \param processor The processor
    * \param config The configuration, if any
    */
@@ -46,11 +47,8 @@ public:
    */
   virtual void ProcessFiles(std::vector<std::string> filenames);
 
-  /**
-   * Tear down all processors owned by the block.
-   * 
-   */
-  virtual void DestroyProcessors();
+  /** Delete all processors owned by the block. */
+  virtual void DeleteProcessors();
 
 protected:
   /** Processors and their configurations. */

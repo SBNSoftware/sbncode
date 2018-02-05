@@ -10,19 +10,18 @@
 #include <core/ProcessorBlock.hh>
 #include <core/Main.hh>
 
-using namespace core;
-
 extern "C" {
-  extern ProcessorBase* CreateProcessorObject();
-  extern void DestroyProcessorObject(ProcessorBase* proc); 
-  extern struct ProcessorBase::export_table exports;
+  extern core::ProcessorBase* CreateProcessorObject();
+  extern void DestroyProcessorObject(core::ProcessorBase* proc); 
+  extern struct core::export_table exports;
 }
+
 
 /** Load a Processor. */
-inline ProcessorBase::export_table* LoadProcessor() {
+inline core::export_table* LoadProcessor() {
   return &exports;
-  //return (ProcessorBase::export_table *) &exports;
 }
+
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
@@ -61,19 +60,21 @@ int main(int argc, char* argv[]) {
   assert(!filenames.empty());
 
   // Setup
-  int n_processors = config_names.size() == 0 ? 1 : config_names.size();
+  int n_processors = config_names.empty() ? 1 : config_names.size();
   std::vector<Json::Value*> configs(n_processors);
-  std::vector<ProcessorBase*> procs(n_processors);
+  std::vector<core::ProcessorBase*> procs(n_processors);
 
   std::cout << "Configuring... " << std::endl;
   for (size_t i=0; i<n_processors; i++) {
-    Json::Value* config = config_names.size() == 0 ? NULL : Main::LoadConfig(config_names[i]);
-
-    procs.push_back(LoadProcessor()->create());
-    configs.push_back(config);
+    procs[i] = LoadProcessor()->create();
+    configs[i] = config_names.empty() ? NULL : core::LoadConfig(config_names[i]);
   }
 
-  ProcessorBlock block = Main::InitializeBlock(configs, procs);
+  core::ProcessorBlock block;
+  for (int i=0; i<procs.size(); i++) {
+    block.AddProcessor(procs[i], configs[i]);
+  }
+
   std::cout << "Running... " << std::endl;
   block.ProcessFiles(filenames);
 
@@ -82,3 +83,4 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
+

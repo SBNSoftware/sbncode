@@ -7,6 +7,7 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "json/json.h"
 #include "Event.hh"
+#include "Loader.hh"
 #include "ProcessorBase.hh"
 
 namespace core {
@@ -15,6 +16,24 @@ ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") 
 
 
 ProcessorBase::~ProcessorBase() {}
+
+
+void ProcessorBase::FillTree() {
+  fTree->Fill();
+  fEventIndex++;
+}
+
+
+void ProcessorBase::Initialize(char* config) {
+  Json::Value* cfg = LoadConfig(config);
+  Initialize(cfg);
+}
+
+
+void ProcessorBase::Setup(char* config) {
+  Json::Value* cfg = LoadConfig(config);
+  Setup(cfg);
+}
 
 
 void ProcessorBase::Setup(Json::Value* config) {
@@ -39,12 +58,6 @@ void ProcessorBase::Teardown() {
   fOutputFile->cd();
   fTree->Write();
   fOutputFile->Close();
-}
-
-
-void ProcessorBase::FillTree() {
-  fTree->Fill();
-  fEventIndex++;
 }
 
 

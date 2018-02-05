@@ -80,4 +80,3 @@ protected:
 
 #endif  // __sbnanalysis_ana_ExampleAnalysis_ExampleSelection__
 
-

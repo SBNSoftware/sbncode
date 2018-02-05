@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include "gallery/Event.h"
+#include "Loader.hh"
 
 class TBranch;
 class TFile;
@@ -32,12 +33,6 @@ namespace core {
 class ProcessorBase {
 friend class ProcessorBlock;
 public:
-  /** Struct containing (Macro defined) creation/deletion operations */
-  struct export_table {
-    ProcessorBase* (*create)(void);
-    void (*destroy)(ProcessorBase*);
-  };
-
   /** Constructor */
   ProcessorBase();
 
@@ -64,8 +59,6 @@ public:
     return fTree->Branch(name.c_str(), obj);
   }
 
-  /** User-defined functions. */
-
   /**
    * Process one event.
    *
@@ -81,12 +74,26 @@ protected:
   /**
    * Perform user-level initialization.
    *
+   * \param config A configuration, as a JSON filename.
+   */
+  virtual void Initialize(char* config=NULL);
+
+  /**
+   * Perform user-level initialization.
+   *
    * \param config A configuration, as a JSON object.
    */
   virtual void Initialize(Json::Value* config=NULL) = 0;
 
   /** Perform user-level finalization. */
   virtual void Finalize() = 0;
+
+  /**
+   * Perform framework-level initialization.
+   *
+   * \param config A configuration as a JSON filename.
+   */
+  virtual void Setup(char* config=NULL);
 
   /**
    * Perform framework-level initialization.
@@ -118,9 +125,9 @@ protected:
 
 /** Macro to create plugin library for user-defined Processors. */
 #define DECLARE_SBN_PROCESSOR(classname) extern "C" { \
-core::ProcessorBase* CreateProcessorObject() { return (core::ProcessorBase*) new classname; } \
+core::ProcessorBase* CreateProcessorObject() { return new classname; } \
 void DestroyProcessorObject(core::ProcessorBase* o) { delete o; } \
-struct core::ProcessorBase::export_table exports = { CreateProcessorObject, DestroyProcessorObject };}
+struct core::export_table exports = { CreateProcessorObject, DestroyProcessorObject };}
 
 #endif  // __sbnanalysis_core_ProcessorBase__
 

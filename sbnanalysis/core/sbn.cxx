@@ -8,9 +8,7 @@
 #include <json/json.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
-#include <core/Main.hh>
-
-using namespace core;
+#include <core/Loader.hh>
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
@@ -55,26 +53,25 @@ int main(int argc, char* argv[]) {
   assert(!filenames.empty());
 
   // Setup
-  std::vector<ProcessorBase*> procs(processors.size());
+  std::vector<core::ProcessorBase*> procs(processors.size());
   std::vector<Json::Value*> configs(processors.size());
 
   std::cout << "Configuring... " << std::endl;
-  for (size_t i=0; i<processors.size(); i++) {
-    ProcessorBase::export_table* exp = Main::LoadProcessor(processors[i]);
-
-    Json::Value* config = Main::LoadConfig(config_names[i]);
-    configs[i] = config;
-
-    ProcessorBase* proc = exp->create();
-    procs[i] = proc;
+  for (size_t i=0; i<procs.size(); i++) {
+    core::export_table* exp = core::LoadProcessor(processors[i]);
+    procs[i] = exp->create();
+    configs[i] = core::LoadConfig(config_names[i]);
   }
 
-  ProcessorBlock block = Main::InitializeBlock(configs, procs);
+  core::ProcessorBlock block;
+  for (int i=0; i<procs.size(); i++) {
+    block.AddProcessor(procs[i], configs[i]);
+  }
 
   std::cout << "Running... " << std::endl;
   block.ProcessFiles(filenames);
 
-  block.DestroyProcessors();
+  block.DeleteProcessors();
   std::cout << "Done!" << std::endl;
 
   return 0;

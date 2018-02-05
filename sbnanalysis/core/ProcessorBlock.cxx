@@ -8,11 +8,15 @@ namespace core {
 
 ProcessorBlock::ProcessorBlock() {}
 
+
 ProcessorBlock::~ProcessorBlock() {}
 
-void ProcessorBlock::AddProcessor(ProcessorBase* processor, Json::Value* config) {
+
+void ProcessorBlock::AddProcessor(ProcessorBase* processor,
+                                  Json::Value* config) {
   fProcessors.push_back({processor, config});
 }
+
 
 void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
   // Setup
@@ -40,8 +44,8 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
 }
 
 
-void ProcessorBlock::DestroyProcessors() {
-  for (auto it: fProcessors) {
+void ProcessorBlock::DeleteProcessors() {
+  for (auto it : fProcessors) {
     delete it.first;
   }
 }
