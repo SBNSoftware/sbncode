@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# TO USE: copy this to your ~/.bash_completion and add "complete -F _sbn_complete sbn" to your .bashrc
+# 
+# I've spent a little time trying to figure out how to integrate this into the build system,
+# but I haven't figured out a good way to do it
+
+_sbn_complete() {
+  local cur_word prev_word
+
+  # get the current word in the terminal
+  cur_word="${COMP_WORDS[COMP_CWORD]}"
+  # get the previous word (to check if it is looking for processor) 
+  prev_word="${COMP_WORDS[COMP_CWORD-1]}" 
+  if ! [ -z ${SBN_LIB_DIR+x} ]; then
+    if [[ ${prev_word} == -m ]] ; then 
+      COMPREPLY=( $(ls "${SBN_LIB_DIR}" | sed -n -e 's/^libsbnanalysis_//p' | sed -n -e 's/\.so//p' | grep "${cur_word}"))
+      return 0;
+    fi
+  fi
+  COMPREPLY=( $(ls | grep "${cur_word}") )
+
+  return 0;
+}
