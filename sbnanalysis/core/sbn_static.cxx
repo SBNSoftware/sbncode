@@ -8,7 +8,6 @@
 #include <json/json.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
-#include <core/Main.hh>
 
 extern "C" {
   extern core::ProcessorBase* CreateProcessorObject();
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]) {
   std::cout << "Running... " << std::endl;
   block.ProcessFiles(filenames);
 
-  block.DestroyProcessors();
+  block.DeleteProcessors();
   std::cout << "Done!" << std::endl;
 
   return 0;
