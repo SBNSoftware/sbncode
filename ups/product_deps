@@ -1,0 +1,65 @@
+# This @product_deps@ file defines dependencies for this package. 
+
+# The *parent* line must the first non-commented line and defines this product and version
+# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
+parent sbncode v06_67_01
+defaultqual e15
+
+# These optional lines define the installed directories where headers,
+# libraries, and executables will be found.
+# Use them only if your product does not conform to the defaults
+#
+# Format: directory_type directory_path directory_name
+#
+# The only recognized values of the first field are fcldir, gdmldir, incdir, libdir, and bindir
+# The only recognized values of the second field are product_dir, fq_dir, and -
+# The third field is not constrained.
+#
+# Defaults:
+# incdir  product_dir  include
+# fcldir  product_dir  fcl
+# libdir  fq_dir       lib
+# bindir  fq_dir       bin
+# gdmldir -  
+# fwdir   -  
+#
+incdir  product_dir  include
+libdir  fq_dir       lib
+bindir  fq_dir       bin
+gdmldir product_dir
+fcldir  product_dir
+fwdir   product_dir scripts
+
+
+# With "product  version" table below, we now define dependencies
+# Add the dependent product and version
+
+product          version
+sbndcode         v06_67_01
+uboonecode       v06_67_01
+#icaruscode       v06_67_01
+
+# list products required ONLY for the build
+# any products here must NOT have qualifiers
+only_for_build  cetbuildtools   v6_01_01
+
+# We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
+# Make the table by adding columns before "notes". 
+qualifier     sbndcode    uboonecode  notes
+e15:debug     e15:debug   e15:debug   -nq-
+e15:prof      e15:prof    e15:prof    -nq-
+e14:debug     e14:debug   e14:debug   -nq-
+e14:prof      e14:prof    e14:prof    -nq-
+
+# table fragment to set FW_SEARCH_PATH needed to find XML files:
+table_fragment_begin
+    # currently, XML pandora files are installed in 'scripts':
+    pathPrepend(FW_SEARCH_PATH, ${SBNCODE_DIR}/scripts)
+table_fragment_end
+
+# Preserve tabs and formatting in emacs and vi / vim:
+
+### Local Variables:
+### tab-width: 8
+### End:
+

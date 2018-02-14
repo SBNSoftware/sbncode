@@ -1,0 +1,85 @@
+# NO USER-SERVICEABLE PARTS BELOW.
+#
+# There should be as little as possible here,
+# with most of the heavy lifting done by other small scripts
+#
+# When sourcing this file from a script, you may have to tell this
+# source file where it is via the fw_db shell (or env) variable.
+# I.e.:
+#    set fw_db=/some/path; source /some/path/this_file
+# or  fw_db=/some/path; . /some/path/this_file
+
+test $?shell = 1 && set ss=csh || ss=sh
+#echo Shell type is $ss.
+
+# make some things similar. need to use set_ because sh builtin set would hide function set
+# Note: perhaps the trickiest thing in this file is the sh set_ function tries to return the same status
+#       as at the start of the function (which most likely is the result of a back-tick expression
+test "$ss" = csh && alias set_ set && alias vecho_ 'if ($?vv == 1) echo \!*' || eval 'vecho_() { test -n "${vv-}" && echo "$@"; return 0; }'
+test "$ss" =  sh && eval 'set_() { sts=$?;for xx in "$@";do var=`expr "$xx" : "\([^=]*\)"`;val=`expr "$xx" : "[^=]*=\(.*\)"`;eval "$var=\"$val\"";done;return $sts; }'
+test "$ss" =  sh && eval 'setenv() { export $1;eval "$1=\"\${2-}\""; }; source() { file=$1; shift; . $file "$@"; }; unsetenv_() { unset "$@"; }'
+test "$ss" =  sh && eval 'tnotnull() { eval "test -n \"\${$1-}\""; }'                             && eval 'nullout() { "$@" >/dev/null 2>&1; }'
+test "$ss" = csh && alias tnotnull "eval '"'test $?'"\!* -eq 1' && eval '"'test -n "$'"\!*"'"'"'" && alias nullout "\!* >& /dev/null" && alias unsetenv_ unsetenv
+test "$ss" = csh && alias return exit
+
+set_ msg1='ERROR: You MUST setup ups'
+test -z $UPS_DIR && ( echo ""; echo "$msg1"; echo "" ) && return
+
+set_ msg3='ERROR: You MUST specify either -o, -p, or -d'
+set_ msg4='Usage: setup_deps <-d|-o|-p> <qualifier list>'
+test -z "$1" && ( echo ""; echo "$msg4"; echo "$msg3"; echo "" ) && return
+
+# make sure we know where this script lives
+# now if we were passed a path or if not, we can figure it out (maybe if we are interactive)
+#   bash, zsh, ksh and tcsh pass params to a source file, csh does not. but someone will be writing csh scripts
+set_ msg2='Please set shell or env. variable fw_db (to be the path to the framework source code). Fix this and other errors may go away.'
+tnotnull fw_db && set_ db=`sh -c "cd $fw_db >/dev/null 2>&1 && pwd"` && vecho_ 'setting db from fw_db variable' || set_ db=
+
+test -z "$db" && tnotnull BASH_SOURCE && set_ me=`dirname $BASH_SOURCE` && set_ db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via BASH_SOURCE'
+
+# history is applicable only for interactive t/csh
+test -z "$db" -a "$ss" = csh && test $?history = 0 && set history=5  # make sure history 1 works
+test -z "$db" -a "$ss" = csh && set me=`history 1|sed 's/^[     0-9:]*//'` && test -n "$me" && set me=`dirname $me[2]` \
+    && set db=`sh -c "cd $me >/dev/null 2>&1 && pwd"` && vecho_ 'setting db via interactive history'
+#echo This script lives in $db
+
+test -z "$db" && echo "$msg2" || vecho_ "db=$db"
+test -n "$db" && setenv CETPKG_SOURCE `dirname $db`
+
+# make sure we know the current directory
+set_ myname=`whoami`
+setenv CETPKG_BUILD /tmp/$myname/setup_deps
+rm -rf $CETPKG_BUILD
+mkdir -p $CETPKG_BUILD
+#echo Build directory is $CETPKG_BUILD
+
+echo The source code directory is $CETPKG_SOURCE
+
+set_ msg5='ERROR: setup of required products has failed'
+
+echo ----------- check this block for errors -----------------------
+set_ setup_fail="false"
+set_ cetb=` grep only_for_build $CETPKG_SOURCE/ups/product_deps | grep cetbuildtools | awk '{ print $2 }' `
+set_ cetv=` grep only_for_build $CETPKG_SOURCE/ups/product_deps | grep cetbuildtools | awk '{ print $3 }' `
+#echo Found $cetb $cetv
+setup -B $cetb $cetv
+test "$?" = 0 || set_ setup_fail="true"
+setenv UPS_OVERRIDE -B
+# now get the rest of the products
+set_ cmd="$CETBUILDTOOLS_DIR/bin/set_dev_products $CETPKG_SOURCE $CETPKG_BUILD $*"
+#echo Ready to run $cmd
+source `$cmd`
+#echo "$cmd returned $setup_fail"
+test "$setup_fail" = "true" && echo "$msg5"
+test "$setup_fail" = "true" && return 1
+test -e "diag_report" && cat diag_report
+echo ----------------------------------------------------------------
+
+# final sanity check and report
+source $CETBUILDTOOLS_DIR/bin/set_dep_check_report
+
+# cleanup before exiting
+test "$ss" = csh && unalias tnotnull nullout set_ vecho_ return
+unset ss db me thisdir msg1 msg2 msg3 msg4 msg5 setup_fail
+unset set_ setenv unsetenv_ tnotnull nullout vecho_
+
