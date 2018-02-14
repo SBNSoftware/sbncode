@@ -51,7 +51,7 @@ cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
 find_ups_product( sbndcode v06_67_00 )
-find_ups_product( uboonecodecode v06_67_00 )
+find_ups_product( uboonecode v06_67_00 )
 #find_ups_product( icaruscode v06_67_00 )
 
 # macros for dictionary and simple_plugin
@@ -62,13 +62,13 @@ include(BuildPlugins)
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(sbncode)
 # subdirectory for test code
-add_subdirectory(test)
+#add_subdirectory(test)
 # ups - table and config files
 add_subdirectory(ups)
 # fcl - contains job level fcl files (useful for the MCC)
 add_subdirectory(fcl)
 # subdirectory for scripts
-add_subdirectory(bin)
+#add_subdirectory(bin)
 
 # packaging utility
 include(UseCPack)
