@@ -1,0 +1,10 @@
+#include "standard_g4_icarus.fcl"
+#include "eventweight_sbn.fcl"
+
+process_name: G4
+
+outputs.out1.fileName: "%ifb_%tc_g4.root"
+
+physics.producers.eventweight: @local::sbn_eventweight
+physics.simulate: [ @sequence::physics.simulate, eventweight ]
+

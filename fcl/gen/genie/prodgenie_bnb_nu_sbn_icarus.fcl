@@ -8,6 +8,6 @@ physics.producers.generator.EventsPerSpill: 0
 physics.producers.generator.TopVolume: "volCryostat"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
-physics.producers.generator.FluxSearchPaths: "<FIXME>"
-physics.producers.generator.FluxFiles: [ "gsimple_configB-v1_5e7POT*.root" ]
+physics.producers.generator.FluxSearchPaths: "/pnfs/larsoft/persistent/scratch/zarko-expires20171031/"
+physics.producers.generator.FluxFiles: [ "converted_beammc_icarus_*.root" ]
 
