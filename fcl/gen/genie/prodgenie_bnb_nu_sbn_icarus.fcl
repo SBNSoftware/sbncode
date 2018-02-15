@@ -1,0 +1,13 @@
+#include "simulation_genie_icarus_simple.fcl"
+
+process_name: GenieGen
+
+outputs.out1.fileName: "prodgenie_bnb_nu_sbn_icarus_%tc_gen.root"
+
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.TopVolume: "volCryostat"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxSearchPaths: "<FIXME>"
+physics.producers.generator.FluxFiles: [ "gsimple_configB-v1_5e7POT*.root" ]
+

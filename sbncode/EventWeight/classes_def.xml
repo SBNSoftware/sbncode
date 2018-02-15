@@ -1,0 +1,7 @@
+<lcgdict>
+  <class name="sbncode::evwgh::MCEventWeight" classVersion="10"/>
+  <class name="std::map<std::string, std::vector<double> >"/>
+  <class name="std::vector<sbncode::evwgh::MCEventWeight>"/>
+  <class name="art::Wrapper<sbncode::evwgh::MCEventWeight>"/>
+  <class name="art::Wrapper<std::vector<sbncode::evwgh::MCEventWeight> >"/>
+</lcgdict>

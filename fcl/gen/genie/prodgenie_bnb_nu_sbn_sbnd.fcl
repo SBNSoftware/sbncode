@@ -1,0 +1,14 @@
+#include "prodgenie_sbnd.fcl"
+
+process_name: GenieGen
+
+outputs.out1.fileName: "prodgenie_bnb_nu_sbn_sbnd_%tc_gen.root"
+
+physics.producers.generator.EventsPerSpill: 0
+#physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.TopVolume: "volCryostat"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbnd/persistent/fluxFiles/bnb/gsimple/v2_8_6d/configB-v1/april07/neutrinoMode/"
+physics.producers.generator.FluxFiles: [ "gsimple_configB-v1_5e7POT*.root" ]
+

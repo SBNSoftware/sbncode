@@ -37,7 +37,7 @@ fwdir   product_dir scripts
 product          version
 sbndcode         v06_67_01
 uboonecode       v06_67_01
-#icaruscode       v06_67_01
+icaruscode       v06_67_01
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers

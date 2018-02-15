@@ -1,0 +1,43 @@
+#include "services_microboone.fcl"
+#include "seedservice_microboone.fcl"
+#include "eventweight_microboone.fcl"
+
+process_name: EventWeight
+
+services: {
+  TimeTracker: {}
+  MemoryTracker: {}
+    ignoreTotal: 1
+  }
+  RandomNumberGenerator: {}
+  FileCatalogMetadata: @local::art_file_catalog_mc
+  NuRandomService: @local::microboone_seedservice
+}
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+ producers: {
+   eventweight:  @local::microboone_eventweight
+   rns: {
+     module_type: "RandomNumberSaver"
+   }
+ }
+ 
+ simulate: [ rns, eventweight ]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_eventweight.root"
+   dataTier: "detector-simulated"
+   compressionLevel: 1
+ }
+}
+
