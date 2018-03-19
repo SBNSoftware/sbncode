@@ -24,3 +24,4 @@ link_directories(
 
 add_subdirectory(ExampleAnalysis)
 add_subdirectory(LEETruthSelection)
+add_subdirectory(SBNProposal)
