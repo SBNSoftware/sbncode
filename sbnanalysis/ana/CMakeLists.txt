@@ -10,7 +10,7 @@ include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
-include_directories( $ENV{UBOONECODE_INC} )
+#include_directories( $ENV{UBOONECODE_INC} )
 
 link_directories(
   $ENV{CANVAS_LIB}
@@ -23,5 +23,5 @@ link_directories(
 )
 
 add_subdirectory(ExampleAnalysis)
-add_subdirectory(LEETruthSelection)
+#add_subdirectory(LEETruthSelection)
 add_subdirectory(SBNProposal)
