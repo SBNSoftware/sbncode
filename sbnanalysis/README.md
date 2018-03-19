@@ -53,7 +53,7 @@ files on a host with CVMFS access:
 
     source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
     setup sbndcode v06_65_00 -q e14:prof
-    source /cvmfs/sbnd.opensciencegrid.org/products/uboone/setup_uboone.sh
+    source source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh
     setup uboonecode v06_65_00 -q e14:prof
     setup gallery v1_06_04 -q e14:prof:nu
     setup cmake v3_9_0
