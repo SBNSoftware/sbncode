@@ -118,6 +118,7 @@ protected:
   TTree* fTree;  //!< The output ROOT tree
   Event* fEvent;  //!< The standard output event data structure
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
+  art::InputTag fWeightTag;  //!< art tag for MCEventWeight information
 };
 
 }  // namespace core

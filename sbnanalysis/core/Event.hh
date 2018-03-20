@@ -23,6 +23,12 @@
  */
 class Event {
 public:
+  /** Maximum number of interactions. */
+  static const size_t kMaxInteractions = 3;
+
+  /** Maximum number of final state particles. */
+  static const size_t kMaxFinalState = 50;
+
   /**
    * \class Event::Metadata
    * \brief Event-level information
@@ -70,22 +76,35 @@ public:
    */
   class Interaction {
   public:
+    /** Constructor. */
+    Interaction() : nfinalstate(0) {}
+
     Neutrino neutrino;  //!< The neutrino
     FinalStateParticle lepton;  //!< The primary final state lepton
-    std::vector<FinalStateParticle> finalstate;  //!< The other final state particles
+    size_t nfinalstate;  //!< Number of other final state particles
+
+    /** The other final state particles. */
+    FinalStateParticle finalstate[kMaxFinalState];
+
+    /**
+     * Event weights.
+     *
+     * This is a map from the weight calculator name to the list of weights
+     * for all the sampled universes.
+     */
+    std::map<std::string, std::vector<double> > weights;
   };
 
-  Metadata metadata;  //!< Event metadata
-  std::vector<Interaction> interactions;  //!< All interactions
+  /** Constructor. */
+  Event() : ninteractions(0) {}
 
-  /**
-   * Event weights.
-   *
-   * This is a map from the weight calculator name to the list of weights
-   * for all the sampled universes.
-   */
-  std::map<std::string, std::vector<double> > weights;
+  Metadata metadata;  //!< Event metadata
+  size_t ninteractions;  //!< Number of interactions
+  Interaction interactions[kMaxInteractions];  //!< All interactions
 };
+
+const size_t Event::kMaxInteractions;
+const size_t Event::kMaxFinalState;
 
 #endif  // __sbnanalysis_core_Event__
 
