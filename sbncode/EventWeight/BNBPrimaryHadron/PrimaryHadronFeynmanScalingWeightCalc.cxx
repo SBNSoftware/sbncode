@@ -9,8 +9,8 @@
 //    Current person adding comments and functions is Joseph Zennamo (jaz8600@fnal.gov)
 //
 
-#include "../WeightCalcCreator.h"
-#include "../WeightCalc.h"
+#include "larsim/EventWeight/Base/WeightCalcCreator.h"
+#include "larsim/EventWeight/Base/WeightCalc.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"

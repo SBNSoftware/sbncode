@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories($ENV{NUTOOLS_INC})
+include_directories($ENV{LARSIM_INC})
 include_directories($ENV{GENIE_INC}/GENIE)
 file(GLOB WGHCALCFILES *WeightCalc*)
 

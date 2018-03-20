@@ -33,6 +33,7 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
       if (accept) {
         it.first->FillTree();
       }
+      it.first->EventCleanup();
     }
   }
 

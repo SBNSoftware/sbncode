@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories($ENV{NUTOOLS_INC})
+include_directories($ENV{LARSIM_INC})
 include_directories($ENV{GENIE_INC}/GENIE)
 
 file(GLOB WGHCALCFILES *WeightCalc* Factory*)
@@ -8,6 +9,7 @@ art_make_library(
   LIBRARY_NAME sbncode_WeightCalculators 
   SOURCE ${WGHCALCFILES}
   LIBRARIES
+    larsim_EventWeight_Base
     lardata_Utilities
     nutools_NuReweight_art
     nutools_NuReweight
@@ -32,6 +34,7 @@ art_make(
   LIBRARY_NAME sbncode_EventWeight
   EXCLUDE ${WGHCALCFILES}
   LIB_LIBRARIES
+    larsim_EventWeight_Base
     sbncode_BNBPrimaryHadronWeightCalculators
     sbncode_WeightCalculators
     ${Boost_SYSTEM_LIBRARY}

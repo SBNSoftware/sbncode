@@ -50,11 +50,14 @@ configured using [ups](https://cdcvs.fnal.gov/redmine/projects/ups/wiki).
 
 For example, to configure an environment for reading SBND or MicroBooNE
 files on a host with CVMFS access:
-
+    
     source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
-    setup sbndcode v06_65_00 -q e14:prof
-    source /cvmfs/sbnd.opensciencegrid.org/products/uboone/setup_uboone.sh
-    setup uboonecode v06_65_00 -q e14:prof
+    source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh
+    source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
+
+Then setup your favorite, non-conflicting, <sbnd/icarus/uboone>code releases.
+Then do:
+    
     setup gallery v1_06_04 -q e14:prof:nu
     setup cmake v3_9_0
     setup jsoncpp v1_7_7a -q e14:prof

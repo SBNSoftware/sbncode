@@ -10,7 +10,7 @@ include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
-#include_directories( $ENV{UBOONECODE_INC} )
+include_directories( $ENV{UBOONECODE_INC} )
 
 link_directories(
   $ENV{CANVAS_LIB}
@@ -22,8 +22,15 @@ link_directories(
   ${CMAKE_INSTALL_DIR}/lib
 )
 
-add_subdirectory(ExampleAnalysis)
-add_subdirectory(TruthSelection)
-#add_subdirectory(LEETruthSelection)
-add_subdirectory(SBNProposal)
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(sbnanalysis_util_Covariance Covariance.cxx)
+target_link_libraries(sbnanalysis_util_Covariance ${ROOT_LIBRARIES})
+
+add_executable(sbn-cov sbn_cov.cxx)
+target_link_libraries(sbn-cov sbnanalysis_util_Covariance sbnanalysis_Event)
+
+install(TARGETS sbnanalysis_util_Covariance DESTINATION lib)
+install(TARGETS sbn-cov DESTINATION bin)
 

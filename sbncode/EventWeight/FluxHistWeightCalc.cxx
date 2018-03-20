@@ -1,5 +1,4 @@
-#include "WeightCalcCreator.h"
-#include "WeightCalc.h"
+#include "larsim/EventWeight/Base/WeightCalc.h"
 
 #include <iostream>
 
@@ -20,7 +19,7 @@
 
 namespace sbncode {
 namespace evwgh {
-  class FluxHistWeightCalc : public WeightCalc
+  class FluxHistWeightCalc : public ::evwgh::WeightCalc
   {
   public:
     FluxHistWeightCalc();
@@ -147,6 +146,9 @@ namespace evwgh {
     }
     return weight;
   }
-  REGISTER_WEIGHTCALC(FluxHistWeightCalc)
+
 }
 }
+
+REGISTER_WEIGHTCALC(sbncode::evwgh::FluxHistWeightCalc)
+
