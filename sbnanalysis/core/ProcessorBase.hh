@@ -45,6 +45,11 @@ public:
   virtual void FillTree();
 
   /**
+   * Cleanup any objects that were filled per event
+   */
+  virtual void EventCleanup();
+
+  /**
    * Add a branch to the output tree.
    *
    * Called in user subclasses to augment the default event tree.
