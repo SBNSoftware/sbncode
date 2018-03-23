@@ -2,9 +2,11 @@
 #include <TFile.h>
 #include <TTree.h>
 #include "gallery/ValidHandle.h"
+#include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "nusimdata/SimulationBase/GTruth.h"
 #include "json/json.h"
 #include "Event.hh"
 #include "Loader.hh"
@@ -68,6 +70,10 @@ void ProcessorBase::Teardown() {
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Get MCTruth information
   auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  
+  gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
+  ev.getByLabel(fTruthTag,gtruths_handle);
+  bool genie_truth_is_valid = gtruths_handle.isValid();
 
   fTree->GetEntry(fEventIndex);
 
@@ -78,10 +84,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     // Neutrino
     const simb::MCNeutrino& nu = mctruth.GetNeutrino();
-    interaction.neutrino.ccnc = nu.CCNC();
+    interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode()!=simb::kWeakMix);
+    interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode()!=simb::kWeakMix);
     interaction.neutrino.pdg = nu.Nu().PdgCode();
     interaction.neutrino.targetPDG = nu.Target();
-    interaction.neutrino.intcode = nu.Mode();
+    interaction.neutrino.genie_intcode = nu.Mode();
     interaction.neutrino.bjorkenX = nu.X();
     interaction.neutrino.inelasticityY = nu.Y();
     interaction.neutrino.q2 = nu.QSqr();
@@ -110,7 +117,15 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
       interaction.finalstate.push_back(fsp);
     }
-
+    
+    // GENIE specific
+    if (genie_truth_is_valid) {
+      auto const& gtruth = gtruths_handle->at(i);
+      TLorentzVector q_nucframe = gtruth.fFShadSystP4-gtruth.fHitNucP4;
+      interaction.neutrino.modq = q_nucframe.P();
+      interaction.neutrino.q0   = q_nucframe.E();
+    }
+    
     fEvent->interactions.push_back(interaction);
   }
 }
