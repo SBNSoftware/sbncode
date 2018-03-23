@@ -40,17 +40,30 @@ public:
    */
   class Neutrino {
   public:
-    bool ccnc;  //!< CC (true) or NC (false)
-    int pdg;  //!< PDG code of neutrino
-    int targetPDG;  //!< PDG code of struck target
-    int intcode;  //!< Interaction code (as for LArSoft MCNeutrino)
-    double bjorkenX;  //!< Bjorken x
+    bool isnc;             //!< same as LArSoft "ccnc" - 0=CC, 1=NC
+    bool iscc;             //!< CC (true) or NC/interference (false)
+    int pdg;               //!< PDG code of probe neutrino
+    int targetPDG;         //!< PDG code of struck target
+    int genie_intcode;     //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
+    double bjorkenX;       //!< Bjorken x
     double inelasticityY;  //!< Inelasticity y
-    double q2;  //!< Q squared
-    double w;  //!< Hadronic invariant mass W
-    double t;  //!< Kinematic t
-    double energy;  //!< Neutrino energy
-    TVector3 momentum;  //!< Neutrino three-momentum
+    double Q2;             //!< Q squared
+    double q0;             //!< q0, struck nucleon rest frame
+    double modq;           //!< |q|, struck nucleon rest frame
+    double q0_lab;         //!< q0, lab frame
+    double modq_lab;       //!< |q|, lab frame
+    double w;              //!< Hadronic invariant mass W
+    double t;              //!< Kinematic t
+    double energy;         //!< Neutrino energy (GeV)
+    TVector3 momentum;     //!< Neutrino three-momentum
+    
+    static const int kUnfilled = -999; //!< Value all members are initialised to.
+    Neutrino() : isnc(0), iscc(0),
+     pdg(kUnfilled),targetPDG(kUnfilled),genie_intcode(kUnfilled),
+     bjorkenX(kUnfilled),inelasticityY(kUnfilled),Q2(kUnfilled),
+     q0(kUnfilled),modq(kUnfilled),q0_lab(kUnfilled),modq_lab(kUnfilled),
+     w(kUnfilled),t(kUnfilled),energy(kUnfilled),
+     momentum(kUnfilled,kUnfilled,kUnfilled) {};
   };
 
   /**
