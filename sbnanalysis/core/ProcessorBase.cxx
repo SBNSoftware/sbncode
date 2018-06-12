@@ -27,7 +27,9 @@ void ProcessorBase::FillTree() {
   fEventIndex++;
 }
 
-void ProcessorBase::EventCleanup() {}
+void ProcessorBase::EventCleanup() {
+  fEvent->interactions.clear();
+}
 
 
 void ProcessorBase::Initialize(char* config) {

@@ -39,6 +39,13 @@ public:
     /** Constructor. */
     Metadata() : run(kUnfilled), subrun(kUnfilled), eventID(kUnfilled) {}
 
+    /** Reset members to defaults. */
+    void Init() {
+      run = kUnfilled;
+      subrun = kUnfilled;
+      eventID = kUnfilled;
+    }
+
     int run;  //!< Run ID
     int subrun;  //!< Subrun ID
     int eventID;  //!< Event ID
