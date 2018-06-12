@@ -1,0 +1,5 @@
+#include "prodgenie_bnb_nu_sbn_icarus.fcl"
+
+outputs.out1.fileName: "prodgenie_bnb_nue_sbn_icarus_%tc_gen.root"
+physics.producers.generator.MixerConfig: "map 12:14 -12:-14 14:12 -14:-12"
+

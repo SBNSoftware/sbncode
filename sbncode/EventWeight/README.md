@@ -6,12 +6,6 @@ GENIE interaction model systematics (using GENIE ReWeight via nutools), and
 additional systematic uncertainties (e.g. cross section ratio uncertainties
 due to second-class currents).
 
-This package has been imported (with some modifications) from uboonecode, the
-MicroBooNE LArSoft package.
-
-Authors
--------
-Contributors to the initial (uboonecode) implementation include: R. Castillo
-Fernandez, L. Garren, M. Del Tutto, A. Mastbaum, J. Zennamo, H. Greenlee, and
-J. Stock.
+This package references the BNB flux reweighting code in uboonecode, and GENIE
+reweighting in larsim (LArSoft).
 

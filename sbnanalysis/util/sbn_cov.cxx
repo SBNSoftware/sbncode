@@ -4,13 +4,9 @@
 
 int main(int argc, char* argv[]) {
   util::Covariance cov;
-  cov.AddInputFile("sbnd/output_ccnum.root");
-  cov.AddInputFile("sbnd/output_ccnue.root");
-  cov.AddInputFile("uboone/output_ccnum.root");
-  cov.AddInputFile("uboone/output_ccnue.root");
-  cov.AddInputFile("icarus/output_ccnum.root");
-  cov.AddInputFile("icarus/output_ccnue.root");
-  //cov.AddWeight("genie_qema_Genie");
+  cov.SetOutputFile(argv[1]);
+  cov.AddInputFile(argv[2]);
+  cov.AddInputFile(argv[3]);
 
   cov.AddWeight("kminus_PrimaryHadronNormalization");
   cov.AddWeight("kplus_PrimaryHadronFeynmanScaling");
@@ -26,7 +22,6 @@ int main(int argc, char* argv[]) {
   cov.AddWeight("expskin_FluxUnisim");
   cov.AddWeight("horncurrent_FluxUnisim");
 
-  cov.SetOutputFile("./out.root");
   cov.init();
   cov.analyze();
 

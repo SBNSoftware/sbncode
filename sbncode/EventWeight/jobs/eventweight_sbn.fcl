@@ -1,5 +1,18 @@
-sbn_eventweight: {
-  module_type: "sbncode/EventWeight/EventWeight"
+##########################################################
+## BNB beam-related, from MicroBooNE implementation of
+## MiniBooNE flux model.
+##
+## References:
+##
+##   * MicroBooNE DocDB 7866 (J. Zennamo)
+##   * MicroBooNE DocDB 8058 (J. Zennamo)
+##
+## Maintainer: J. Zennamo (jzennamo@uchicago.edu)
+##
+##########################################################
+
+sbn_flux_eventweight: {
+  module_type: "UBEventWeight"
  
   # Throw exception if weight outside limits
   min_weight: 0
@@ -7,18 +20,6 @@ sbn_eventweight: {
  
   genie_module_label: generator  
  
-  ##########################################################
-  ## Beam-related
-  ##
-  ## References:
-  ##
-  ##   * MicroBooNE DocDB 7866 (J. Zennamo)
-  ##   * MicroBooNE DocDB 8058 (J. Zennamo)
-  ##
-  ## Maintainer: J. Zennamo (jzennamo@uchicago.edu)
-  ##
-  ##########################################################
-
   weight_functions_beam: [
     bnbcorrection, horncurrent, expskin,
     piplus, piminus, kplus, kzero, kminus,
@@ -26,72 +27,205 @@ sbn_eventweight: {
     nucleontotxsec, nucleonqexsec, nucleoninexsec
   ]
 
+  horncurrent: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_horn175ka_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_horn173ka_rgen610.6_flux.root"
+    parameter_list: ["horncurrent"]      
+    random_seed: 1000
+    scale_factor_pos:1  
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+ 
+  pioninexsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
+    parameter_list: ["pioninexsec"]      
+    random_seed: 1001
+    scale_factor_pos:1  
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  nucleontotxsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleontotxsec"]      
+    random_seed: 1002
+    scale_factor_pos:1  
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  nucleonqexsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleonqexse"]      
+    random_seed: 1003
+    scale_factor_pos:0.333 #From MiniBooNE 
+    scale_factor_neg:0.573 #From MiniBooNE
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  nucleoninexsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleoninexsec"]      
+    random_seed: 1004
+    scale_factor_pos:1
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  pionqexsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
+    parameter_list: ["pionqexsec"]      
+    random_seed: 1005
+    scale_factor_pos:0.292 #From MiniBooNE  
+    scale_factor_neg:0.585 #From MiniBooNE
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  piontotxsec: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
+    parameter_list: ["piontotxsec"]      
+    random_seed: 1006
+    scale_factor_pos:1  
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
+  expskin: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    parameter_list: ["expskin"]      
+    random_seed: 1007
+    scale_factor_pos:1  
+    scale_factor_neg:1
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    mode: multisim
+    number_of_multisims: 1000        
+    use_MiniBooNE_random_numbers: false
+  }
+
   bnbcorrection: {
     type: FluxHist
-    cv_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/gsimple_uboone_flux.root"
-    rw_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/redecay_uboone_flux.root"
-    random_seed: 1
+    ### To Flux without K+ Constraint
+    #cv_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/gsimple_uboone_flux.root"
+    #rw_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/redecay_uboone_flux.root"
+    ### To Flux with K+ Constraint
+    cv_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_09.7.2017_470_rwhist/bnb_oldflux_volAVTPC.root"
+    rw_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_09.7.2017_470_rwhist/bnb_newflux_volAVTPC.root"
+    random_seed: 1008
     mode: reweight
     number_of_multisims: 1
   }
-  
+ 
   piplus: {
     type: PrimaryHadronSWCentralSplineVariation
-    random_seed: 2
+    random_seed: 1009
     parameter_list: ["piplus"]
     parameter_sigma: 1 
     mode: multisim
     scale_factor: 1
     number_of_multisims: 1000
     PrimaryHadronGeantCode: 211 # geant code for particle production on Be
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
-    ExternalFit: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+    use_MiniBooNE_random_numbers: false
   }
-  
+ 
   piminus: {
     type: PrimaryHadronSWCentralSplineVariation
-    random_seed: 3
+    random_seed: 1010
     parameter_list: ["piminus"]
     parameter_sigma: 1 
     mode: multisim
     scale_factor: 1
     number_of_multisims: 1000
     PrimaryHadronGeantCode: -211 # geant code for particle production on Be
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
-    ExternalFit: "beamData/ExternalData/BNBExternalData_uBooNE.root"
-  }
-  
-  kplus: {
-    type: PrimaryHadronFeynmanScaling
-    random_seed: 4
-    parameter_list: ["kplus"]
-    parameter_sigma: 1 
-    mode: multisim
-    scale_factor: 2
-    number_of_multisims: 1000
-    PrimaryHadronGeantCode: 321 # geant code for particle production on Be
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+    use_MiniBooNE_random_numbers: false
   }
  
+  kplus: {
+    type: PrimaryHadronFeynmanScaling
+    random_seed: 1011
+    parameter_sigma: 1 
+    mode: multisim
+    number_of_multisims: 1000
+    PrimaryHadronGeantCode: 321 # geant code for particle production on Be
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    ### Uncertainties without SciBooNE Contraint
+    #parameter_list: ["kplusOld"]
+    #scale_factor: 2   
+    #ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_KPlus_withoutSciBooNE.root"
+    ### Uncertainties with SciBooNE Constraint
+    parameter_list: ["kplus"]
+    scale_factor: 1         
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE.root"  
+    use_MiniBooNE_random_numbers: false
+  }
+
   kzero: {
     type: PrimaryHadronSanfordWang
-    random_seed: 5
+    random_seed: 1012
     parameter_list: ["kzero"]
     parameter_sigma: 1
     mode: multisim
     scale_factor: 1
     number_of_multisims: 1000
-    PrimaryHadronGeantCode: [130, 310, 311] # geant code for particle production on Be
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    PrimaryHadronGeantCode: [130, 310, 311] # MiniBooNE only reweighted GEANT CODE = 10
+    weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+    use_MiniBooNE_random_numbers: false
   }
- 
+
   kminus: {
     type: PrimaryHadronNormalization
-    random_seed: 6
+    random_seed: 1013
     parameter_list: ["kminus"]
     parameter_sigma: 1
     mode: multisim
@@ -99,142 +233,51 @@ sbn_eventweight: {
     number_of_multisims: 1000
     PrimaryHadronGeantCode: -321 # geant code for particle production on Be
     weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
+    use_MiniBooNE_random_numbers: false
   }
- 
-  horncurrent: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_horn175ka_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_horn173ka_rgen610.6_flux.root"
-    random_seed: 7
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
-  
-  pioninexsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
-    random_seed: 8
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  nucleontotxsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
-    random_seed: 9
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  nucleonqexsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
-    random_seed: 10
-    scale_factor_pos: 0.333 #From MiniBooNE 
-    scale_factor_neg: 0.573 #From MiniBooNE
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  nucleoninexsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
-    random_seed: 11
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  pionqexsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
-    random_seed: 12
-    scale_factor_pos: 0.292 #From MiniBooNE  
-    scale_factor_neg: 0.585 #From MiniBooNE
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  piontotxsec: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
-    random_seed: 13
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
- 
-  expskin: {
-    type: FluxUnisim
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
-    random_seed: 14
-    scale_factor_pos: 1  
-    scale_factor_neg: 1
-    weight_calculator: "MiniBooNE" # "MicroBooNE" OR "MiniBooNE"
-    mode: multisim
-    number_of_multisims: 1000
-  }
-  
- 
-  ##########################################################
-  ## GENIE-related
-  ##
-  ## One function is defined for each GENIE parameter.
-  ##
-  ## If *pm1sigma* is specifed:
-  ##
-  ##     Two weights will be evaluated for each parameter,
-  ##     one with +1 sigma the other with -1 sigma, it
-  ##     doesn't matter what you write in parameter_sigma
-  ##     and number _of_multisims if pm1sigma is specifed
-  ##
-  ## Defining one function for each parameter means that
-  ## the reweighting procedure is done separately for each
-  ## parameter. We can define one function with more
-  ## parameters in parameter_list and in this case the
-  ## reweight will be done simultaneously for all the
-  ## parameters specified.
-  ##
-  ## A list of available parameters is in GenieWeightCalc.cxx
-  ##
-  ## References:
-  ##
-  ##   * E.g. MicroBooNE DocDB 5464 (M. Del Tutto, A. Furmanski)
-  ##
-  ## Maintainer: Cross Sections Working Group
-  ##
-  ##########################################################
+}
 
+sbn_flux_eventweight.weight_functions: [
+  @sequence::sbn_flux_eventweight.weight_functions_beam
+]
+
+
+##########################################################
+## GENIE-related
+##
+## One function is defined for each GENIE parameter.
+##
+## If *pm1sigma* is specifed:
+##
+##     Two weights will be evaluated for each parameter,
+##     one with +1 sigma the other with -1 sigma, it
+##     doesn't matter what you write in parameter_sigma
+##     and number _of_multisims if pm1sigma is specifed
+##
+## Defining one function for each parameter means that
+## the reweighting procedure is done separately for each
+## parameter. We can define one function with more
+## parameters in parameter_list and in this case the
+## reweight will be done simultaneously for all the
+## parameters specified.
+##
+## A list of available parameters is in GenieWeightCalc.cxx
+##
+## References:
+##
+##   * E.g. MicroBooNE DocDB 5464 (M. Del Tutto, A. Furmanski)
+##
+##########################################################
+
+sbn_genie_eventweight: {
+  module_type: "EventWeight"
+ 
+  # Throw exception if weight outside limits
+  min_weight: 0
+  max_weight: 100
+ 
+  genie_module_label: generator  
+ 
   weight_functions_genie: [
     genie_qema, genie_qevec,
     genie_ncelAxial, genie_ncelEta,
@@ -629,65 +672,9 @@ sbn_eventweight: {
     mode: multisim
     number_of_multisims: 1000
   }
- 
- 
-  ##########################################################
-  ## nue/numu Cross Section Ratio
-  ##
-  ## References:
-  ##
-  ##   * MicroBooNE DocDB 7896 (A. Furmanski)
-  ##   * MicroBooNE DocDB 7899 (L. Jiang, A. Mastbaum)
-  ##   * M. Day, K.S. McFarland, PRD 86 053003 (2012)
-  ##
-  ## Maintainer: Libo Jiang (jiangl@fnal.gov)
-  ##
-  ##########################################################
-
-  weight_functions_xsr: [ xsr_scc_Fv3, xsr_scc_Fa3 ]
- 
-  xsr_scc_Fv3: {
-    type: XSecRatio
-    histogram_file: "xsData/xsRatio/numu_nue_xsratio_2dhists.root"
-    random_seed: 54
-    parameter_list: ["Fv3"]
-    parameter_sigma: [ 1 ]
-    mode: multisim
-    number_of_multisims: 100
-  }
- 
-  xsr_scc_Fa3: {
-    type: XSecRatio
-    histogram_file: "xsData/xsRatio/numu_nue_xsratio_2dhists.root"
-    random_seed: 55
-    parameter_list: ["Fa3"]
-    parameter_sigma: [ 1 ]
-    mode: multisim
-    number_of_multisims: 100
-  }
- 
-  # Single function to reweight all cross section ratio parameters at once
-  xsr_all: {
-    type: XSecRatio
-    histogram_file: "xsData/xsRatio/numu_nue_xsratio_2dhists.root"
-    random_seed: 56
-    parameter_list: ["Fv3", "Fa3"]
-    parameter_sigma: [1, 1]
-    mode: multisim
-    number_of_multisims: 100
-  }
-
 }
 
-
-##########################################################
-## All available weight functions
-##########################################################
-
-sbn_eventweight.weight_functions: [
-  @sequence::sbn_eventweight.weight_functions_beam,
-  genie_qema
-  #@sequence::sbn_eventweight.weight_functions_genie
-  #@sequence::sbn_eventweight.weight_functions_xsr
+sbn_genie_eventweight.weight_functions: [
+  @sequence::sbn_genie_eventweight.weight_functions_genie
 ]
- 
+

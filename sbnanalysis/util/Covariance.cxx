@@ -182,10 +182,10 @@ void Covariance::init() {
 
   samples.push_back(new EventSample("nd_numu"));
   samples.push_back(new EventSample("nd_nue"));
-  samples.push_back(new EventSample("ub_numu"));
-  samples.push_back(new EventSample("ub_nue"));
-  samples.push_back(new EventSample("fd_numu"));
-  samples.push_back(new EventSample("fd_nue"));
+  //samples.push_back(new EventSample("ub_numu"));
+  //samples.push_back(new EventSample("ub_nue"));
+  //samples.push_back(new EventSample("fd_numu"));
+  //samples.push_back(new EventSample("fd_nue"));
 
   std::cout << "Covariance: Initialized. Weights: ";
   for (auto it : use_weights) {
@@ -212,7 +212,7 @@ for (size_t ii=0; ii<fInputFiles.size(); ii++) {
   for (long k=0; k<_tree->GetEntries(); k++) {
     _tree->GetEntry(k);
 
-    if (event->ninteractions == 0) {
+    if (event->interactions.empty()) {
       continue;
     }
 
@@ -237,6 +237,7 @@ for (size_t ii=0; ii<fInputFiles.size(); ii++) {
           use_weights.find(it.first) != use_weights.end()) {
         for (size_t i=0; i<weights.size(); i++) {
           weights[i] *= it.second[i];
+          std::cout << it.first << " " << it.second[0] << std::endl;
         }
       }
     }

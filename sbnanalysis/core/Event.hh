@@ -16,6 +16,13 @@
 #include <vector>
 #include <TTree.h>
 #include <TVector3.h>
+#include <canvas/Persistency/Common/Wrapper.h>
+
+/** art Wrapper instance to help the build. */
+art::Wrapper<std::vector<std::map<std::string, std::vector<double> > > > a;
+
+/** Value for uninitialized defaults. */
+static const int kUnfilled = kUnfilled;
 
 /**
  * \class Event
@@ -23,18 +30,15 @@
  */
 class Event {
 public:
-  /** Maximum number of interactions. */
-  static const size_t kMaxInteractions = 3;
-
-  /** Maximum number of final state particles. */
-  static const size_t kMaxFinalState = 50;
-
   /**
    * \class Event::Metadata
    * \brief Event-level information
    */
   class Metadata {
   public:
+    /** Constructor. */
+    Metadata() : run(kUnfilled), subrun(kUnfilled), eventID(kUnfilled) {}
+
     int run;  //!< Run ID
     int subrun;  //!< Subrun ID
     int eventID;  //!< Event ID
@@ -46,17 +50,30 @@ public:
    */
   class Neutrino {
   public:
-    bool ccnc;  //!< CC (true) or NC (false)
-    int pdg;  //!< PDG code of neutrino
-    int targetPDG;  //!< PDG code of struck target
-    int intcode;  //!< Interaction code (as for LArSoft MCNeutrino)
-    double bjorkenX;  //!< Bjorken x
+    /** Constructor. */
+    Neutrino()
+      : isnc(false), iscc(false), pdg(0), targetPDG(0), genie_intcode(0),
+        bjorkenX(kUnfilled), inelasticityY(kUnfilled), Q2(kUnfilled),
+        q0(kUnfilled), modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
+        w(kUnfilled), t(kUnfilled), energy(kUnfilled),
+        momentum(kUnfilled, kUnfilled, kUnfilled) {}
+
+    bool isnc;             //!< same as LArSoft "ccnc" - 0=CC, 1=NC
+    bool iscc;             //!< CC (true) or NC/interference (false)
+    int pdg;               //!< PDG code of probe neutrino
+    int targetPDG;         //!< PDG code of struck target
+    int genie_intcode;     //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
+    double bjorkenX;       //!< Bjorken x
     double inelasticityY;  //!< Inelasticity y
-    double q2;  //!< Q squared
-    double w;  //!< Hadronic invariant mass W
-    double t;  //!< Kinematic t
-    double energy;  //!< Neutrino energy
-    TVector3 momentum;  //!< Neutrino three-momentum
+    double Q2;             //!< Q squared
+    double q0;             //!< q0, struck nucleon rest frame
+    double modq;           //!< |q|, struck nucleon rest frame
+    double q0_lab;         //!< q0, lab frame
+    double modq_lab;       //!< |q|, lab frame
+    double w;              //!< Hadronic invariant mass W
+    double t;              //!< Kinematic t
+    double energy;         //!< Neutrino energy (GeV)
+    TVector3 momentum;     //!< Neutrino three-momentum
   };
 
   /**
@@ -65,6 +82,11 @@ public:
    */
   class FinalStateParticle {
   public:
+    /** Constructor. */
+    FinalStateParticle()
+      : pdg(kUnfilled), energy(kUnfilled),
+        momentum(kUnfilled, kUnfilled, kUnfilled) {}
+
     int pdg;  //!< PDG Code
     double energy;  //!< Energy
     TVector3 momentum;  //!< Three-momentum
@@ -76,15 +98,11 @@ public:
    */
   class Interaction {
   public:
-    /** Constructor. */
-    Interaction() : nfinalstate(0) {}
-
     Neutrino neutrino;  //!< The neutrino
     FinalStateParticle lepton;  //!< The primary final state lepton
-    size_t nfinalstate;  //!< Number of other final state particles
 
     /** The other final state particles. */
-    FinalStateParticle finalstate[kMaxFinalState];
+    std::vector<FinalStateParticle> finalstate; //!< Final state particles
 
     /**
      * Event weights.
@@ -95,16 +113,9 @@ public:
     std::map<std::string, std::vector<double> > weights;
   };
 
-  /** Constructor. */
-  Event() : ninteractions(0) {}
-
   Metadata metadata;  //!< Event metadata
-  size_t ninteractions;  //!< Number of interactions
-  Interaction interactions[kMaxInteractions];  //!< All interactions
+  std::vector<Interaction> interactions; //!< All interactions
 };
-
-const size_t Event::kMaxInteractions;
-const size_t Event::kMaxFinalState;
 
 #endif  // __sbnanalysis_core_Event__
 
