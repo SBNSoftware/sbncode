@@ -1,24 +1,27 @@
 #!/bin/bash
 
-# TO USE: copy this to your ~/.bash_completion and add "complete -F _sbn_complete sbn" to your .bashrc
+# TO USE: copy this to your ~/.bash_completion file
 # 
 # I've spent a little time trying to figure out how to integrate this into the build system,
 # but I haven't figured out a good way to do it
 
+#!/bin/bash
 _sbn_complete() {
-  local cur_word prev_word
+  local cur prev
+  _get_comp_words_by_ref cur prev
 
-  # get the current word in the terminal
-  cur_word="${COMP_WORDS[COMP_CWORD]}"
-  # get the previous word (to check if it is looking for processor) 
-  prev_word="${COMP_WORDS[COMP_CWORD-1]}" 
+  COMPREPLY=()
+
   if ! [ -z ${SBN_LIB_DIR+x} ]; then
-    if [[ ${prev_word} == -m ]] ; then 
-      COMPREPLY=( $(ls "${SBN_LIB_DIR}" | sed -n -e 's/^libsbnanalysis_//p' | sed -n -e 's/\.so//p' | grep "${cur_word}"))
+    if [[ ${prev} == -m ]] ; then
+      COMPREPLY=( $(ls "${SBN_LIB_DIR}" | sed -n -e 's/^libsbnanalysis_//p' | sed -n -e 's/\.so//p' | grep "${cur}"))
       return 0;
     fi
   fi
-  COMPREPLY=( $(ls | grep "${cur_word}") )
 
+  # fall back to built in completion
+  _filedir
   return 0;
 }
+complete -F _sbn_complete sbn
+
