@@ -13,6 +13,7 @@
 #include <vector>
 #include "gallery/Event.h"
 #include "Loader.hh"
+#include "Event.hh"
 
 class TBranch;
 class TFile;
@@ -71,9 +72,13 @@ public:
    * filter and the event is not written out.
    *
    * \param ev The event, as a gallery::Event
+   * \param reco Reco interactions, to be populated by the user
    * \returns True if event passes filter
    */
-  virtual bool ProcessEvent(gallery::Event& ev) = 0;
+  virtual bool ProcessEvent(const gallery::Event& ev, std::vector<Event::Interaction>& reco) = 0;
+
+  /** Pointer to reco event information */
+  std::vector<Event::Interaction>* fReco;  //!< Reco interaction list
 
 protected:
   /**

@@ -28,7 +28,9 @@ void ProcessorBase::FillTree() {
 }
 
 void ProcessorBase::EventCleanup() {
-  fEvent->interactions.clear();
+  fEvent->metadata.Init();
+  fEvent->truth.clear();
+  fEvent->reco.clear();
 }
 
 
@@ -61,6 +63,7 @@ void ProcessorBase::Setup(Json::Value* config) {
   fTree->AutoSave("overwrite");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
+  fReco = &fEvent->reco;
 }
 
 
@@ -155,7 +158,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.q0 = q_nucframe.E();
     }
 
-    fEvent->interactions.push_back(interaction);
+    fEvent->truth.push_back(interaction);
   }
 }
 

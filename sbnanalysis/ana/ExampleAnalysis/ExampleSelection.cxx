@@ -8,6 +8,7 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
+#include "core/Event.hh"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -45,7 +46,7 @@ void ExampleSelection::Finalize() {
 }
 
 
-bool ExampleSelection::ProcessEvent(gallery::Event& ev) {
+bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::Interaction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "ExampleSelection: Processing event " << fEventCounter << std::endl;
   }

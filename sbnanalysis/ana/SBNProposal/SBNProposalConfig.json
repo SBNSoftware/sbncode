@@ -1,7 +1,0 @@
-{
-  "OutputFile": "output_ExampleAnalysis_ExampleSelection.root",
-  "ExampleAnalysis": {
-    "parameter": 42
-  }
-}
-

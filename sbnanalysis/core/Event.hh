@@ -19,10 +19,11 @@
 #include <canvas/Persistency/Common/Wrapper.h>
 
 /** art Wrapper instance to help the build. */
-art::Wrapper<std::vector<std::map<std::string, std::vector<double> > > > a;
+extern art::Wrapper<std::vector<std::map<std::string, std::vector<double> > > > a;
 
 /** Value for uninitialized defaults. */
-static const int kUnfilled = kUnfilled;
+extern int kUnfilled;
+
 
 /**
  * \class Event
@@ -121,7 +122,8 @@ public:
   };
 
   Metadata metadata;  //!< Event metadata
-  std::vector<Interaction> interactions; //!< All interactions
+  std::vector<Interaction> truth; //!< All truth interactions
+  std::vector<Interaction> reco; //!< Reconstructed interactions
 };
 
 #endif  // __sbnanalysis_core_Event__

@@ -17,6 +17,7 @@
 #include <iostream>
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
+#include "core/Event.hh"
 
 // Forward declarations
 class TH2D;
@@ -56,9 +57,10 @@ public:
    * Process one event.
    *
    * \param ev A single event, as a gallery::Event
+   * \param reco Reconstructed interactions
    * \return True to keep event
    */
-  bool ProcessEvent(gallery::Event& ev);
+  bool ProcessEvent(const gallery::Event& ev, std::vector<Event::Interaction>& reco);
 
 protected:
   unsigned fEventCounter;  //!< Count processed events
