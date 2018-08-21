@@ -50,6 +50,7 @@ target_link_libraries(
   nusimdata_SimulationBase
   larcoreobj_SummaryData
   lardataobj_RecoBase
+  lardataobj_MCBase
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
   ${ROOT_LIBRARIES}
