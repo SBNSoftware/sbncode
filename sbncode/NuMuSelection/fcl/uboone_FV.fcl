@@ -1,0 +1,35 @@
+BEGIN_PROLOG
+
+NuMuSelectionFiducialVolumeSettings: {
+
+  # First entry are the borders for the first volume,
+  # second entry for the second fiducial volume
+
+  BorderXLow:   [12., 12.]
+  BorderXHigh:  [12., 12.]
+  BorderYLow:   [35., 35.]
+  BorderYHigh:  [35., 35.]
+  BorderZLow:   [25., 775.]
+  BorderZHigh:  [220., 85.]
+
+  useRelativePos: true
+
+}
+
+NuMuSelectionFiducialVolumeCosmicSettings: {
+
+  # First entry are the borders for the first volume,
+  # second entry for the second fiducial volume
+
+  BorderXLow:   [10.]
+  BorderXHigh:  [10.]
+  BorderYLow:   [30.]
+  BorderYHigh:  [30.]
+  BorderZLow:   [20.]
+  BorderZHigh:  [20.]
+
+  useRelativePos: true
+
+}
+
+END_PROLOG

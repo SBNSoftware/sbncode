@@ -44,6 +44,7 @@ add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx Pro
 target_link_libraries(
   sbnanalysis_Processor
   sbnanalysis_Event
+  sbnanalysis_util_Interaction
   canvas
   cetlib
   gallery

@@ -12,6 +12,7 @@
 #include "json/json.h"
 #include "Event.hh"
 #include "Loader.hh"
+#include "util/Interaction.hh"
 #include "ProcessorBase.hh"
 
 namespace core {
@@ -54,6 +55,9 @@ void ProcessorBase::Setup(Json::Value* config) {
   if (config) {
     fTruthTag = { config->get("MCTruthTag", "generator").asString() };
     fWeightTag = { config->get("MCWeightTag", "eventweight").asString() };
+    fMCTrackTag = { config->get("MCTrackTag", "mcreco").asString() };
+    fMCShowerTag = { config->get("MCShowerTag", "mcreco").asString() };
+    fMCParticleTag = { config->get("MCParticleTag", "largeant").asString() };
     fOutputFilename = config->get("OutputFile", "output.root").asString();
   }
 
@@ -100,6 +104,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     auto const& mctruth = mctruths.at(i);
 
+    // TODO: What to do with cosmic MC?
+    // For now, ignore them
+    if (!mctruth.NeutrinoSet()) continue;
+
     // Weights
     if (hasWeights) {
       interaction.weights = wgh->at(i).fWeight;
@@ -124,6 +132,9 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     interaction.lepton.pdg = lepton.PdgCode();
     interaction.lepton.energy = lepton.Momentum(0).Energy();
     interaction.lepton.momentum = lepton.Momentum(0).Vect();
+
+    // get CCQE energy from lepton info
+    interaction.neutrino.eccqe = util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
     TLorentzVector q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);

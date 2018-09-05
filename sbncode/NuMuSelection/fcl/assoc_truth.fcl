@@ -1,0 +1,9 @@
+#include "fiducial_volume_settings.fcl"
+BEGIN_PROLOG
+
+AssocTruth: {
+  module_type: "AssocTruthProducer"
+  FiducialVolumeSettings: @local::NuMuSelectionFiducialVolumeCosmicSettings
+}
+
+END_PROLOG

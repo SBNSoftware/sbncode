@@ -31,7 +31,7 @@ void NueSelection::Initialize(Json::Value* config) {
 void NueSelection::Finalize() {}
 
 
-bool NueSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::Interaction>& reco) {
+bool NueSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "NueSelection: Processing event " << fEventCounter << " "
               << "(" << fNuCount << " neutrinos selected)"
@@ -45,12 +45,11 @@ bool NueSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::Int
 
   // Iterate through the neutrinos
   for (size_t i=0; i<mctruths.size(); i++) {
-    Event::Interaction interaction;
     auto const& mctruth = mctruths.at(i);
     const simb::MCNeutrino& nu = mctruth.GetNeutrino();
 
     if (nu.CCNC() == simb::kCC && nu.Mode() == 0 && nu.Nu().PdgCode() == 12) {
-      Event::Interaction interaction = TruthReco(mctruth);
+      Event::RecoInteraction interaction(TruthReco(mctruth), i);
       reco.push_back(interaction);
     }
   }
