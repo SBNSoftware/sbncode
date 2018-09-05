@@ -8,9 +8,9 @@
 
 #include "Utilities.h"
 
-#include "uboone/LLBasicTool/GeoAlgo/GeoAABox.h"
-#include "uboone/LLBasicTool/GeoAlgo/GeoAlgo.h"
-#include "uboone/LLBasicTool/GeoAlgo/GeoLineSegment.h"
+#include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
+#include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
+#include "ubcore/LLBasicTool/GeoAlgo/GeoLineSegment.h"
 
 namespace ana {
   namespace SBNOsc {

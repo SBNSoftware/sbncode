@@ -21,7 +21,7 @@
 
 #include "core/Event.hh"
 
-#include "uboone/LLBasicTool/GeoAlgo/GeoAABox.h"
+#include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 
 namespace ana {
   namespace SBNOsc {

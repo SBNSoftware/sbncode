@@ -28,8 +28,7 @@ target_link_libraries(sbnanalysis_SBNOsc_NueSelection sbnanalysis_SBNOsc_Utiliti
 target_link_libraries(sbnanalysis_SBNOsc_NumuSelection 
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOsc_classes
-  # include uboone stuff
-  uboonecode_uboone_BasicTool_GeoAlgo
+  ubana_BasicTool_GeoAlgo
 )
 target_link_libraries(sbnanalysis_SBNOsc_Chi2Sensitivity sbnanalysis_SBNOsc_Covariance)
 

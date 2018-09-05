@@ -10,14 +10,13 @@ include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
-# include stuff from uboonecode
-include_directories( $ENV{UBOONECODE_INC} )
+include_directories( $ENV{UBCORE_INC} )
 
 # determine location of uboonecode
-if (DEFINED ENV{UBOONECODE_LIB})
-  set(UBOONE_PATH $ENV{UBOONECODE_LIB})
+if (DEFINED ENV{UBCORE_LIB})
+  set(UBCORE_PATH $ENV{UBCORE_LIB})
 else()
-  set(UBOONE_PATH $ENV{MRB_BUILDDIR}/uboonecode/lib/)
+  set(UBCORE_PATH $ENV{MRB_BUILDDIR}/ubcore/lib/)
 endif()
 
 link_directories(
@@ -27,7 +26,7 @@ link_directories(
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
-  ${UBOONE_PATH}
+  ${UBCORE_PATH}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
