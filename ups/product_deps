@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v06_80_00
+parent sbncode v06_85_00
 defaultqual e15
 
 # These optional lines define the installed directories where headers,
@@ -35,9 +35,9 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-sbndcode         v06_80_00
-uboonecode       v06_80_00
-icaruscode       v06_80_00
+sbndcode         v06_85_00
+uboonecode       v06_85_00
+icaruscode       v06_85_00
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -45,11 +45,9 @@ only_for_build  cetbuildtools   v6_01_01
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
-qualifier     sbndcode    uboonecode  notes
-e15:debug     e15:debug   e15:debug   -nq-
-e15:prof      e15:prof    e15:prof    -nq-
-e14:debug     e14:debug   e14:debug   -nq-
-e14:prof      e14:prof    e14:prof    -nq-
+qualifier     sbndcode    uboonecode  icaruscode notes
+e15:debug     e15:debug   e15:debug   e15:debug  -nq-
+e15:prof      e15:prof    e15:prof    e15:prof   -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
