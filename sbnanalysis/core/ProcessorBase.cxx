@@ -102,31 +102,35 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.weights = wgh->at(i).fWeight;
     }
 
-    // Neutrino
-    const simb::MCNeutrino& nu = mctruth.GetNeutrino();
-    interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
-    interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
-    interaction.neutrino.pdg = nu.Nu().PdgCode();
-    interaction.neutrino.targetPDG = nu.Target();
-    interaction.neutrino.genie_intcode = nu.Mode();
-    interaction.neutrino.bjorkenX = nu.X();
-    interaction.neutrino.inelasticityY = nu.Y();
-    interaction.neutrino.Q2 = nu.QSqr();
-    interaction.neutrino.w = nu.W();
-    interaction.neutrino.energy = nu.Nu().EndMomentum().Energy();
-    interaction.neutrino.momentum = nu.Nu().EndMomentum().Vect();
+    TLorentzVector q_labframe;
 
-    // Primary lepton
-    const simb::MCParticle& lepton = nu.Lepton();
-    interaction.lepton.pdg = lepton.PdgCode();
-    interaction.lepton.energy = lepton.Momentum(0).Energy();
-    interaction.lepton.momentum = lepton.Momentum(0).Vect();
+    if (mctruth.NeutrinoSet()) {
+      // Neutrino
+      const simb::MCNeutrino& nu = mctruth.GetNeutrino();
+      interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
+      interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
+      interaction.neutrino.pdg = nu.Nu().PdgCode();
+      interaction.neutrino.targetPDG = nu.Target();
+      interaction.neutrino.genie_intcode = nu.Mode();
+      interaction.neutrino.bjorkenX = nu.X();
+      interaction.neutrino.inelasticityY = nu.Y();
+      interaction.neutrino.Q2 = nu.QSqr();
+      interaction.neutrino.w = nu.W();
+      interaction.neutrino.energy = nu.Nu().EndMomentum().Energy();
+      interaction.neutrino.momentum = nu.Nu().EndMomentum().Vect();
+
+      // Primary lepton
+      const simb::MCParticle& lepton = nu.Lepton();
+      interaction.lepton.pdg = lepton.PdgCode();
+      interaction.lepton.energy = lepton.Momentum(0).Energy();
+      interaction.lepton.momentum = lepton.Momentum(0).Vect();
+
+      q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
+      interaction.neutrino.q0_lab = q_labframe.E();
+      interaction.neutrino.modq_lab = q_labframe.P();
+    }
 
     // Hadronic system
-    TLorentzVector q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
-    interaction.neutrino.q0_lab = q_labframe.E();
-    interaction.neutrino.modq_lab = q_labframe.P();
-
     for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {
       Event::FinalStateParticle fsp;
       const simb::MCParticle& particle = mctruth.GetParticle(iparticle);

@@ -46,10 +46,25 @@ int main(int argc, char* argv[]) {
   }
 
   // Process input file definition
+  std::string filedef = argv[optind];
+  std::string list_suffix = ".list";
   std::vector<std::string> filenames;
-  for (int i=optind; i<argc; i++) {
-    filenames.push_back(argv[i]);
+
+  if (std::equal(list_suffix.rbegin(), list_suffix.rend(), filedef.rbegin())) {
+    // File list
+    std::ifstream infile(filedef);
+    std::string filename;
+    while (infile >> filename) {
+      filenames.push_back(filename);
+    }
   }
+  else {
+    // Files listed on command line
+    for (int i=optind; i<argc; i++) {
+      filenames.push_back(argv[i]);
+    }
+  }
+
   assert(!filenames.empty());
 
   // Setup
