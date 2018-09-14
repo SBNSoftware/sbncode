@@ -1,8 +1,8 @@
-#include "prodgenie_common_uboone.fcl"
+#include "prodgenie_common_cosmic_uboone.fcl"
 
 process_name: GenieGen
 
-outputs.out1.fileName: "prodgenie_bnb_nu_sbn_uboone_%tc_gen.root"
+outputs.out1.fileName: "prodgenie_bnb_nu_cosmic_sbn_uboone_%tc_gen.root"
 
 services.IFDH: {}
 physics.producers.generator: @local::microboone_genie_simple

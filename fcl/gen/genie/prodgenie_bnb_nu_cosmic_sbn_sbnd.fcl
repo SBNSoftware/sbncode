@@ -1,8 +1,8 @@
-#include "prodgenie_sbnd.fcl"
+#include "prodgenie_bnb_nu_cosmic_sbnd.fcl"
 
 process_name: GenieGen
 
-outputs.out1.fileName: "prodgenie_bnb_nu_sbn_sbnd_%tc_gen.root"
+outputs.out1.fileName: "prodgenie_bnb_nu_cosmic_sbn_sbnd_%tc_gen.root"
 
 services.IFDH: {}
 physics.producers.generator.FluxCopyMethod: "IFDH"
