@@ -3,12 +3,10 @@ add_subdirectory(fcl)
 
 art_make(
           MODULE_LIBRARIES 
-			   uboonecode_uboone_BasicTool_GeoAlgo
-
-
+                           ubana_BasicTool_GeoAlgo
 			   larcorealg_Geometry
                            larcore_Geometry_Geometry_service
-                           larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
+                           nutools_ParticleNavigation lardataobj_Simulation
                            #larsim_MCCheater_BackTracker_service
                            lardata_Utilities
                            larevt_Filters
