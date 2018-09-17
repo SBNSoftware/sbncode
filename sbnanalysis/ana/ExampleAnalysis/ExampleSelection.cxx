@@ -64,8 +64,10 @@ bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event:
     auto const& mctruth = mctruths.at(i);
 
     // Fill neutrino vertex position histogram
-    fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(),
-                          mctruth.GetNeutrino().Nu().Vz());
+    if (mctruth.NeutrinoSet()) {
+      fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(),
+                            mctruth.GetNeutrino().Nu().Vz());
+    }
   }
 
   return true;

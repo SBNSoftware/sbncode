@@ -1,0 +1,5 @@
+#include "prodgenie_bnb_nu_cosmic_sbn_icarus.fcl"
+
+outputs.out1.fileName: "prodgenie_bnb_intrinsic_nue_cosmic_sbn_icarus_%tc_gen.root"
+physics.producers.generator.GenFlavors: [12,-12]
+
