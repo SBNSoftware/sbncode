@@ -1,3 +1,5 @@
+#include <cmath>
+#include <TVector3.h>
 #include "Interaction.hh"
 
 namespace util {

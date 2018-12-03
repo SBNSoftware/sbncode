@@ -1,6 +1,8 @@
 #ifndef __sbnanalysis_util_Interaction__
 #define __sbnanalysis_util_Interaction__
 
+#include <TVector3.h>
+
 namespace util {
 
 /**

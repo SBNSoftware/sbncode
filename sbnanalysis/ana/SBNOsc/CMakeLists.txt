@@ -5,6 +5,7 @@ project(SBNOsc)
 # parent CMakeLists.txt, one directory up).
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories($ENV{LARCOREALG_INC})
 
 # Declare libraries to build
 # Note that the library names (the first argument) should follow the convention
