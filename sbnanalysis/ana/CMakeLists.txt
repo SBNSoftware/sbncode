@@ -10,6 +10,7 @@ include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
+include_directories( $ENV{UBCORE_INC} )
 
 link_directories(
   $ENV{CANVAS_LIB}
@@ -18,9 +19,10 @@ link_directories(
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
+  $ENV{UBCORE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
 add_subdirectory(ExampleAnalysis)
-add_subdirectory(SBNProposal)
+add_subdirectory(SBNOsc)
 

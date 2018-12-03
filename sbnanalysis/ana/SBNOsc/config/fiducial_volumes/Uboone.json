@@ -1,0 +1,40 @@
+// Note: jsoncpp supports C-like comments but it's not in the standard so this may break other parsers....
+
+// Larsoft geometry uboone active volume:
+// (-1.55,-115.53,0.1) -- (254.8,117.47,1036.9)
+//
+// "proposal_fiducial_volumes" is the fiducial volume used in the SBN proposal (for the numu analysis)
+//
+// "experiment_fiducial_volumes" is taking the uboone FV from the UBXSec analysis
+{
+  "proposal_fiducial_volumes": [
+     {
+      "xmin": 13.45,
+      "ymin": -100.53,
+      "zmin": 47.6,
+      "xmax": 239.8,
+      "ymax": 102.47,
+      "zmax": 989.4
+     }
+   ],
+
+   "experiment_fiducial_volumes": [
+     // first FV is the upstream one (relative to beam direction)
+     {
+      "xmin": 10.45,
+      "ymin": -80.53,
+      "zmin": 25.1,
+      "xmax": 242.8,
+      "ymax": 82.47,
+      "zmax": 675.1
+     },
+     {
+      "xmin": 10.45,
+      "ymin": -80.53,
+      "zmin": 775.1,
+      "xmax": 242.8,
+      "ymax": 82.47,
+      "zmax": 951.9
+     }
+   ]
+}

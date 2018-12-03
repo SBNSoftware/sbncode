@@ -32,7 +32,7 @@ ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 find_library(LARSIM_BASE_LIBRARY larsim_EventWeight_Base HINTS $ENV{LARSIM_LIB})
 find_library(LARSIM_BASE_DICT larsim_EventWeight_Base_dict HINTS $ENV{LARSIM_LIB})
 
-add_library(sbnanalysis_Event sbn_eventdict.cxx)
+add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx Event.cxx)
 target_link_libraries(
   sbnanalysis_Event
   ${LARSIM_BASE_LIBRARY}
@@ -44,12 +44,14 @@ add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx Pro
 target_link_libraries(
   sbnanalysis_Processor
   sbnanalysis_Event
+  sbnanalysis_util_Interaction
   canvas
   cetlib
   gallery
   nusimdata_SimulationBase
   larcoreobj_SummaryData
   lardataobj_RecoBase
+  lardataobj_MCBase
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
   ${ROOT_LIBRARIES}
@@ -64,7 +66,7 @@ add_executable(sbn sbn.cxx)
 target_link_libraries(
   sbn
   sbnanalysis_Processor
-  sbnanalysis_Event
+  #sbnanalysis_Event
   jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}

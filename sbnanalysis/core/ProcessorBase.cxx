@@ -12,11 +12,13 @@
 #include "json/json.h"
 #include "Event.hh"
 #include "Loader.hh"
+#include "util/Interaction.hh"
 #include "ProcessorBase.hh"
 
 namespace core {
 
-ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") {}
+ProcessorBase::ProcessorBase()
+    : fEventIndex(0), fOutputFilename("output.root") {}
 
 
 ProcessorBase::~ProcessorBase() {}
@@ -28,7 +30,9 @@ void ProcessorBase::FillTree() {
 }
 
 void ProcessorBase::EventCleanup() {
-  fEvent->interactions.clear();
+  fEvent->metadata.Init();
+  fEvent->truth.clear();
+  fEvent->reco.clear();
 }
 
 
@@ -52,6 +56,9 @@ void ProcessorBase::Setup(Json::Value* config) {
   if (config) {
     fTruthTag = { config->get("MCTruthTag", "generator").asString() };
     fWeightTag = { config->get("MCWeightTag", "eventweight").asString() };
+    fMCTrackTag = { config->get("MCTrackTag", "mcreco").asString() };
+    fMCShowerTag = { config->get("MCShowerTag", "mcreco").asString() };
+    fMCParticleTag = { config->get("MCParticleTag", "largeant").asString() };
     fOutputFilename = config->get("OutputFile", "output.root").asString();
   }
 
@@ -61,6 +68,7 @@ void ProcessorBase::Setup(Json::Value* config) {
   fTree->AutoSave("overwrite");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
+  fReco = &fEvent->reco;
 }
 
 
@@ -76,7 +84,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Get MCTruth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
-  
+
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag,gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
@@ -96,6 +104,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     Event::Interaction interaction;
 
     auto const& mctruth = mctruths.at(i);
+
+    // TODO: What to do with cosmic MC?
+    // For now, ignore them
+    if (!mctruth.NeutrinoSet()) continue;
 
     // Weights
     if (hasWeights) {
@@ -130,6 +142,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.modq_lab = q_labframe.P();
     }
 
+    // Get CCQE energy from lepton info
+    interaction.neutrino.eccqe = \
+      util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
+
     // Hadronic system
     for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {
       Event::FinalStateParticle fsp;
@@ -159,7 +175,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.q0 = q_nucframe.E();
     }
 
-    fEvent->interactions.push_back(interaction);
+    fEvent->truth.push_back(interaction);
   }
 }
 

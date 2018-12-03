@@ -1,0 +1,47 @@
+// Note: jsoncpp supports C-like comments but it's not in the standard so this may break other parsers....
+
+// Larsoft geometry uboone active volume:
+// TPC0: (-364.49,-173.41,-909.950652) -- (-216.29,143.41,879.950652)
+// TPC1: (-216.14,-173.41,-909.950652) -- (-67.94,143.41,879.950652)
+// TPC2: (67.94,-173.41,-909.950652) -- (216.14,143.41,879.950652)
+// TPC3: (216.29,-173.41,-909.950652) -- (364.49,143.41,879.950652)
+//
+// 2 croystats, each w/ split in drift direction -> 4 TPC's
+//
+// "proposal_fiducial_volumes" is the fiducial volume from the SBN proposal (for the numu analysis)
+{
+  "proposal_fiducial_volumes": [
+     {
+      "xmin": -356.24,
+      "ymin": -158.41,
+      "zmin": -867.450652,
+      "xmax": -224.54,
+      "ymax": -128.41,
+      "zmax": 837.450652
+     },
+     {
+      "xmin": -207.89,
+      "ymin": -158.41,
+      "zmin": -867.450652,
+      "xmax": -76.19,
+      "ymax": -128.41,
+      "zmax": 837.450652
+     },
+     {
+      "xmin": 76.19,
+      "ymin": -158.41,
+      "zmin": -867.450652,
+      "xmax": 207.89,
+      "ymax": -128.41,
+      "zmax": 837.450652
+     },
+     {
+      "xmin": 224.54,
+      "ymin": -158.41,
+      "zmin": -867.450652,
+      "xmax": 356.24,
+      "ymax": -128.41,
+      "zmax": 837.450652
+     }
+   ]
+}

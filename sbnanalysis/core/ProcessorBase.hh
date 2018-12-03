@@ -13,6 +13,7 @@
 #include <vector>
 #include "gallery/Event.h"
 #include "Loader.hh"
+#include "Event.hh"
 
 class TBranch;
 class TFile;
@@ -71,9 +72,13 @@ public:
    * filter and the event is not written out.
    *
    * \param ev The event, as a gallery::Event
+   * \param reco Reco interactions, to be populated by the user
    * \returns True if event passes filter
    */
-  virtual bool ProcessEvent(gallery::Event& ev) = 0;
+  virtual bool ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco) = 0;
+
+  /** Pointer to reco event information */
+  std::vector<Event::RecoInteraction>* fReco;  //!< Reco interaction list
 
 protected:
   /**
@@ -124,6 +129,9 @@ protected:
   Event* fEvent;  //!< The standard output event data structure
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
   art::InputTag fWeightTag;  //!< art tag for MCEventWeight information
+  art::InputTag fMCTrackTag; //!< art tag for MCTrack
+  art::InputTag fMCShowerTag; //!< art tag for MCShower
+  art::InputTag fMCParticleTag; //!< art tag for MCParticle
 };
 
 }  // namespace core
