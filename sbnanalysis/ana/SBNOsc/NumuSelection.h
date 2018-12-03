@@ -6,7 +6,7 @@
  *
  * SBN nue selection.
  *
- * Author: 
+ * Author:
  */
 
 #include <iostream>
@@ -73,7 +73,7 @@ public:
       t_is_contained(false),
       t_contained_length(-1),
       t_length(-1),
-      t_pdgid(-1) 
+      t_pdgid(-1)
       {}*/
   };
 
@@ -95,8 +95,8 @@ protected:
     TH1D *h_numu_ccqe; //!< histogram w/ CCQE energy veriable [GeV]
     TH1D *h_numu_trueE; //!< histogram w/ truth energy variable [GeV]
     TH1D *h_numu_visibleE; //!< histogram w/ visible energy variable (total muon momentum + kinetic hadron energy) [GeV]
-    TH1D *h_numu_true_v_visibleE; //!< histogram w/ difference of visible and truth energy [GeV] 
-    TH1D *h_numu_t_is_contained; //!< histogram w/ whether associated track is contained in FV 
+    TH1D *h_numu_true_v_visibleE; //!< histogram w/ difference of visible and truth energy [GeV]
+    TH1D *h_numu_t_is_contained; //!< histogram w/ whether associated track is contained in FV
     TH1D *h_numu_contained_L; //!< histogram w/ FV contained length of track in CC event [cm]
     TH1D *h_numu_t_length; //!< histogram w/ total length of associated track [cm]
     TH1D *h_numu_t_is_muon; //!< histogram of whether associated track is a muon
@@ -107,28 +107,28 @@ protected:
 
   static const unsigned nCuts = 4; //!< number of cuts
 
-  /* Applies FV cut 
+  /* Applies FV cut
   * \param v The neutrino interaction vertex
-  * \return Whether to apply FV cut on neutrino 
+  * \return Whether to apply FV cut on neutrino
   *
   * */
   bool passFV(const TVector3 &v) { return !_config.doFVCut ||containedInFV(v); }
 
-  /** Applies reco-truth vertex matching cut 
+  /** Applies reco-truth vertex matching cut
  * \param truth_v Truth vertex vector
  * \param reco_v Reconstructed vertex vector
  * \return Whether to apply reco-truth vertex matching cut: true == passed cut
  * */
   bool passRecoVertex(const TVector3 &truth_v, const TVector3 &reco_v);
 
-  /** Applies truth length cut 
+  /** Applies truth length cut
  *  \param length Distance travelled by lepton
  *  \param stop_in_tpc Whether the lepton stopped in the TPC volume
  *  \return Whether to apply length cut: true == passed cut
  * */
   bool passMinLength(double length, bool stop_in_tpc);
 
-  /** Run Selection on a neutrino 
+  /** Run Selection on a neutrino
  *  \param ev The gallery event.
  *  \param mctruth The mctruth object associated with the currently considered interaction.
  *  \param truth_ind The index into the vector of MCTruth objects in the gallery event from which the "mctruth" object is
@@ -138,7 +138,7 @@ protected:
  * */
   std::array<bool, nCuts> Select(const gallery::Event& ev, const simb::MCTruth& mctruth, unsigned truth_ind, const NumuSelection::NuMuInteraction &intInfo);
 
-  /** Get associated interaction information from monte carlo 
+  /** Get associated interaction information from monte carlo
  * \param ev The gallery event.
  * \param mctruth The mctruth object associated with the currently considered interaction.
  *
@@ -147,7 +147,7 @@ protected:
   NuMuInteraction interactionInfo(const gallery::Event& ev, const simb::MCTruth &mctruth);
 
  /** Get the interaction info associated with a track. This works right now because
- * all interaction info comes from the primary track. Might have to re-think structure 
+ * all interaction info comes from the primary track. Might have to re-think structure
  * going forward.
  *
  * \param track The primary track.
@@ -155,7 +155,7 @@ protected:
  */
   NuMuInteraction trackInfo(const sim::MCTrack &track);
 
-  /** Helper function -- whether point is contained in fiducial volume list 
+  /** Helper function -- whether point is contained in fiducial volume list
  * \param v The point vector.
  *
  * \return Whether the point is contained in the configured list of fiducial volumes.
@@ -166,7 +166,7 @@ protected:
   unsigned _nu_count;  //!< Count selected events
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
 
-  /** Names of cuts 
+  /** Names of cuts
  * \return List of names of cuts (for histogram names)
  * */
   static const std::array<std::string, nCuts> cutNames() {

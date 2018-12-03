@@ -6,7 +6,7 @@
  *
  * SBN nue selection.
  *
- * Author: 
+ * Author:
  */
 
 #include <iostream>

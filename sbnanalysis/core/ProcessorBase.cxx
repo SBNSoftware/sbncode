@@ -17,7 +17,8 @@
 
 namespace core {
 
-ProcessorBase::ProcessorBase() : fEventIndex(0), fOutputFilename("output.root") {}
+ProcessorBase::ProcessorBase()
+    : fEventIndex(0), fOutputFilename("output.root") {}
 
 
 ProcessorBase::~ProcessorBase() {}
@@ -83,7 +84,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Get MCTruth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
-  
+
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag,gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
@@ -141,8 +142,9 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.modq_lab = q_labframe.P();
     }
 
-    // get CCQE energy from lepton info
-    interaction.neutrino.eccqe = util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
+    // Get CCQE energy from lepton info
+    interaction.neutrino.eccqe = \
+      util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
     for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {

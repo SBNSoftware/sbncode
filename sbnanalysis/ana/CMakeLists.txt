@@ -12,13 +12,6 @@ include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
 include_directories( $ENV{UBCORE_INC} )
 
-# determine location of uboonecode
-if (DEFINED ENV{UBCORE_LIB})
-  set(UBCORE_PATH $ENV{UBCORE_LIB})
-else()
-  set(UBCORE_PATH $ENV{MRB_BUILDDIR}/ubcore/lib/)
-endif()
-
 link_directories(
   $ENV{CANVAS_LIB}
   $ENV{CETLIB_LIB}
@@ -26,7 +19,7 @@ link_directories(
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
-  ${UBCORE_PATH}
+  $ENV{UBCORE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 

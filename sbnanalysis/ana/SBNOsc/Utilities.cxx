@@ -52,13 +52,15 @@ Event::Interaction TruthReco(const simb::MCTruth& mctruth) {
   return interaction;
 }
 
-double ECCQE(const TVector3& l_momentum, double l_energy, double energy_distortion, double angle_distortion) {
+
+double ECCQE(const TVector3& l_momentum, double l_energy,
+             double energy_distortion, double angle_distortion) {
   // Based on D. Kaleko, LowEnergyExcess LArLite module ECCQECalculator
   double M_n = 0.939565; // GeV/c^2
   double M_p = 0.938272; // GeV/c^2
   double M_e = 0.000511; // GeV/c^2
   double bindingE = 0.0300; // GeV
-  
+
   double mp2 = M_p * M_p;
   double me2 = M_e * M_e;
   double mnb = M_n - bindingE;
@@ -75,14 +77,17 @@ double ECCQE(const TVector3& l_momentum, double l_energy, double energy_distorti
   return enu_top / enu_bot;
 }
 
-double NuMuOscillation(double numu_energy, double numu_dist, double osc_dm2, double osc_angle) {
+
+double NuMuOscillation(double numu_energy, double numu_dist,
+                       double osc_dm2, double osc_angle) {
   double overlap = sin(2*osc_angle);
   double energy_factor = sin(1.27 * osc_dm2 * numu_dist / numu_energy);
   return 1 - overlap * overlap * energy_factor * energy_factor;
-
 }
 
-double containedLength(const TVector3 &v0, const TVector3 &v1, const std::vector<geoalgo::AABox> &boxes) {
+
+double containedLength(const TVector3 &v0, const TVector3 &v1,
+                       const std::vector<geoalgo::AABox> &boxes) {
   static const geoalgo::GeoAlgo algo;
 
   // if points are the same, return 0
@@ -106,13 +111,13 @@ double containedLength(const TVector3 &v0, const TVector3 &v1, const std::vector
       length = (v1 - v0).Mag();
       break;
     }
-    // one contained -- have to find intersection point (which must exist) 
+    // one contained -- have to find intersection point (which must exist)
     if (n_contained == 1) {
       auto intersections = algo.Intersection(line, box);
       assert(intersections.size() == 1); // must have one intersection
       // get TVector at intersection point
       TVector3 int_tv(intersections.at(0).ToTLorentzVector().Vect());
-      length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() ); 
+      length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() );
     }
     // none contained -- either must have zero or two intersections
     if (n_contained == 0) {
@@ -129,8 +134,11 @@ double containedLength(const TVector3 &v0, const TVector3 &v1, const std::vector
   return length;
 }
 
-double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 
-    double track_threshold, double shower_threshold) {
+
+double visibleEnergy(const simb::MCTruth &mctruth,
+                     const std::vector<sim::MCTrack> &mctrack_list,
+                     const std::vector<sim::MCShower> &mcshower_list,
+                     double track_threshold, double shower_threshold) {
   double visible_E = 0;
 
   // total up visible energy from tracks...
@@ -159,8 +167,10 @@ double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrac
   return visible_E;
 }
 
+
 // define global static const PDGTable to be used by helper functions
 static const TDatabasePDG *PDGTable(new TDatabasePDG);
+
 
 double PDGMass(int pdg) {
   // regular particle
@@ -177,6 +187,7 @@ double PDGMass(int pdg) {
   }
 }
 
+
 double PDGCharge(int pdg) {
   // regular particle
   if (pdg < 1000000000) {
@@ -190,13 +201,17 @@ double PDGCharge(int pdg) {
   }
 }
 
-bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show, float distance)  {
+
+bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
+                    float distance)  {
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector showStart = show.Start().Position();
   return (showStart - nuVtx).Mag() < distance;
 }
 
-bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track, float distance) {
+
+bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
+                    float distance) {
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector trkStart = track.Start().Position();
   return (trkStart - nuVtx).Mag() < distance;

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <cmath> 
+#include <cmath>
 #include <vector>
 
 #include <json/json.h>
@@ -26,10 +26,10 @@
 namespace ana {
   namespace SBNOsc {
 
-NumuSelection::NumuSelection() : 
-  SelectionBase(), 
-  _event_counter(0), 
-  _nu_count(0), 
+NumuSelection::NumuSelection() :
+  SelectionBase(),
+  _event_counter(0),
+  _nu_count(0),
   _interactionInfo(new std::vector<NuMuInteraction>) {}
 
 double aaBoxesMin(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
@@ -69,15 +69,15 @@ void NumuSelection::Initialize(Json::Value* config) {
     _root_histos[i].h_numu_true_v_visibleE = new TH1D(("numu_true_v_visibleE_" + cut_names[i]).c_str(), "numu_true_v_visibleE", 100, -10, 10);
     _root_histos[i].h_numu_t_length = new TH1D(("numu_t_length_" + cut_names[i]).c_str(), "numu_t_length", 101, -10, 1000);
     _root_histos[i].h_numu_contained_L = new TH1D(("numu_contained_L_" + cut_names[i]).c_str(), "numu_contained_L", 101, -10 , 1000);
-    _root_histos[i].h_numu_t_is_contained = new TH1D(("t_is_contained_" + cut_names[i]).c_str(), "t_is_contained", 3, -1.5, 1.5); 
+    _root_histos[i].h_numu_t_is_contained = new TH1D(("t_is_contained_" + cut_names[i]).c_str(), "t_is_contained", 3, -1.5, 1.5);
     _root_histos[i].h_numu_t_is_muon = new TH1D(("t_is_muon_" + cut_names[i]).c_str(), "t_is_muon", 3, -1.5, 1.5);
-    _root_histos[i].h_numu_Vxy = new TH2D(("numu_Vxy_" + cut_names[i]).c_str(), "numu_Vxy", 
+    _root_histos[i].h_numu_Vxy = new TH2D(("numu_Vxy_" + cut_names[i]).c_str(), "numu_Vxy",
       20, aaBoxesMin(_config.active_volumes, 0), aaBoxesMax(_config.active_volumes, 0),
       20, aaBoxesMin(_config.active_volumes, 1), aaBoxesMax(_config.active_volumes, 1));
-    _root_histos[i].h_numu_Vxz = new TH2D(("numu_Vxz_" + cut_names[i]).c_str(), "numu_Vxz", 
+    _root_histos[i].h_numu_Vxz = new TH2D(("numu_Vxz_" + cut_names[i]).c_str(), "numu_Vxz",
       20, aaBoxesMin(_config.active_volumes, 0), aaBoxesMax(_config.active_volumes, 0),
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
-    _root_histos[i].h_numu_Vyz = new TH2D(("numu_Vyz_" + cut_names[i]).c_str(), "numu_Vyz", 
+    _root_histos[i].h_numu_Vyz = new TH2D(("numu_Vyz_" + cut_names[i]).c_str(), "numu_Vyz",
       20, aaBoxesMin(_config.active_volumes, 1), aaBoxesMax(_config.active_volumes, 1),
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
   }
@@ -158,7 +158,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::Re
 
     // pass iff pass each cut
     bool pass_selection = std::find(selection.begin(), selection.end(), false) == selection.end();
-    if (pass_selection) { 
+    if (pass_selection) {
       // store interaction in reco tree
       reco.push_back(reco_interaction);
       // store local info
@@ -167,7 +167,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::Re
       _nu_count++;
       selected = true;
     }
-    
+
     // fill histos
     for (size_t select_i=0; select_i < selection.size(); select_i++) {
       if (selection[select_i]) {
@@ -200,21 +200,21 @@ NumuSelection::NuMuInteraction NumuSelection::trackInfo(const sim::MCTrack &trac
   //
   // If size != 0, then we have to check fiducial volume
   bool contained_in_FV = track.size() > 0;
-  int pdgid = track.PdgCode(); 
+  int pdgid = track.PdgCode();
 
   // Get the length and determine if any point leaves the fiducial volume
   TLorentzVector pos = track.Start().Position();
   for (int i = 1; i < track.size(); i++) {
     // update if track is contained
     if (contained_in_FV) contained_in_FV = containedInFV(pos.Vect());
-      
+
     // update length
     contained_length += containedLength(track[i].Position().Vect(), pos.Vect(), _config.fiducial_volumes);
     length += (track[i].Position().Vect() - pos.Vect()).Mag();
-      
+
     pos = track[i].Position();
   }
-  
+
   return NumuSelection::NuMuInteraction({contained_in_FV, contained_length, length, pdgid});
 }
 
@@ -241,7 +241,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
       std::cout << "Process: " << mct.Process() << std::endl;
     }
     std::cout << "\nSHOWERS:\n";
-    for (auto const &mcs: mcshower_list) { 
+    for (auto const &mcs: mcshower_list) {
       std::cout << "SHOWER:\n";
       std::cout << "PDG: " << mcs.PdgCode() << std::endl;
       std::cout << "Vertex: " << isFromNuVertex(mctruth, mcs) << std::endl;
@@ -265,14 +265,14 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
       track_ind = i;
       break;
     }
-  } 
-  // if there's no lepton, look for a pi+ that can "fake" a muon 
+  }
+  // if there's no lepton, look for a pi+ that can "fake" a muon
   // if there's multiple, get the longest one
   if (track_ind == -1) {
     double track_contained_length = -1;
     for (int i = 0; i < mctrack_list.size(); i++) {
       if (isFromNuVertex(mctruth, mctrack_list[i]) && abs(mctrack_list[i].PdgCode()) == 211 && mctrack_list[i].Process() == "primary") {
-        double this_contained_length = trackInfo(mctrack_list[i]).t_contained_length; 
+        double this_contained_length = trackInfo(mctrack_list[i]).t_contained_length;
         if (track_contained_length < 0 || this_contained_length > track_contained_length) {
           track_ind = i;
           track_contained_length = this_contained_length;
@@ -284,7 +284,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
   return (track_ind != -1) ? trackInfo(mctrack_list[track_ind]) : NumuSelection::NuMuInteraction({false, -1, -1, -1});
 }
 
-std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Event& ev, const simb::MCTruth& mctruth, 
+std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Event& ev, const simb::MCTruth& mctruth,
       unsigned truth_ind, const NumuSelection::NuMuInteraction &intInfo) {
   // get the neutrino
   const simb::MCNeutrino& nu = mctruth.GetNeutrino();
@@ -305,7 +305,7 @@ std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Even
     truth_v[0] = nu.Nu().Vx();
     truth_v[1] = nu.Nu().Vy();
     truth_v[2] = nu.Nu().Vz();
-  
+
     // get the reco vertex information
     auto const pfp_handle = ev.getValidHandle<std::vector<recob::PFParticle>>("pandoraNu");
     art::FindMany<recob::Vertex> fvtx(pfp_handle, ev, "pandoraNu");
@@ -314,7 +314,7 @@ std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Even
     // neutrino will only have one associated vetex
     auto vertex = vertices[0]->position();
     TVector3 reco_v(vertex.X(), vertex.Y(), vertex.Z());
-    
+
     pass_reco_vertex = passRecoVertex(nu.Nu().Position().Vect(), reco_v);
   }
 
@@ -336,7 +336,7 @@ std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Even
 }
 
 bool NumuSelection::containedInFV(const TVector3 &v) {
-  geoalgo::Point_t p(v); 
+  geoalgo::Point_t p(v);
   for (auto const& FV: _config.fiducial_volumes) {
     if (FV.Contain(p)) return true;
   }

@@ -11,7 +11,7 @@
 
 extern "C" {
   extern core::ProcessorBase* CreateProcessorObject();
-  extern void DestroyProcessorObject(core::ProcessorBase* proc); 
+  extern void DestroyProcessorObject(core::ProcessorBase* proc);
   extern struct core::export_table exports;
 }
 

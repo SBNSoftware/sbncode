@@ -133,16 +133,24 @@ public:
       /** Fill in truth information -- leaves other fields unset */
       explicit RecoInteraction(const Interaction &t, int index): truth(t), truth_index(index)  {}
       Interaction truth; //!< Contains truth level information about interaction
-      int truth_index; //!< Index into the vector of truth interaction objects in the Event (same as the index into MCTruth objects). Equal to -1 if there is no corresponding truth interaction.
-      double reco_energy; //!< User defined reconstructed energy of neutrino. Units in GeV to keep consistent w/ Interaction class.
+
+      /**
+       * Index into the vector of truth interaction objects in the Event
+       * (same as the index into MCTruth objects). Equal to -1 if there is
+       * no corresponding truth interaction.
+       */
+      int truth_index;
+
+      /**
+       * User defined reconstructed energy of neutrino. Units in GeV to keep
+       * consistent w/ Interaction class. */
+      double reco_energy;
   };
 
   Metadata metadata;  //!< Event metadata
   std::vector<Interaction> truth; //!< All truth interactions
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 };
-
-
 
 #endif  // __sbnanalysis_core_Event__
 

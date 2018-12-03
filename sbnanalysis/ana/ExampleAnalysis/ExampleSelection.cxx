@@ -58,7 +58,7 @@ bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event:
   // Fill in the custom branches
   fNuCount = mctruths.size();  // Number of neutrinos in this event
   fMyVar = fMyParam;
-  
+
   // Iterate through the neutrinos
   for (size_t i=0; i<mctruths.size(); i++) {
     auto const& mctruth = mctruths.at(i);

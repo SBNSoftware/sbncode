@@ -2,7 +2,7 @@
 
 namespace core {
 
-SelectionBase::SelectionBase() : ProcessorBase() {} 
+SelectionBase::SelectionBase() : ProcessorBase() {}
 
 SelectionBase::~SelectionBase() {}
 
