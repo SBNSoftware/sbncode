@@ -48,15 +48,18 @@ The build process is managed by [CMake](https://cmake.org). A number of
 dependencies are required to read art ROOT files, which are most easily
 configured using [ups](https://cdcvs.fnal.gov/redmine/projects/ups/wiki).
 
-For example, to configure an environment for reading SBND or MicroBooNE
-files on a host with CVMFS access:
+A shell script which installs sbncode (and sbnanalysis) in a new mrb
+working area is provided in `env`.
+
+To set things up manually, start by configuring an environment for reading
+SBND or MicroBooNE files on a host with CVMFS access:
     
     source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
     source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh
     source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
 
 Then setup your favorite, non-conflicting, <sbnd/icarus/uboone>code releases.
-Then do:
+Then set up the appropriate versions of gallery, cmake, and jsoncpp, e.g.:
     
     setup gallery v1_06_04 -q e14:prof:nu
     setup cmake v3_9_0
@@ -143,7 +146,9 @@ public:
   ExampleSelection();
   void Initialize();
   void Finalize();
-  bool ProcessEvent(gallery::Event& ev);
+  bool ProcessEvent(const gallery::Event& ev,
+                    const std::vector<Event::Interaction> &truth,
+                    std::vector<Event::RecoInteraction>& reco);
 
 protected:
   int fMyVar;  // For a custom branch
@@ -171,7 +176,10 @@ namespace ana {
     void ExampleSelection::Finalize() {}
 
     // Event processing
-    bool ExampleSelection::ProcessEvent(gallery::Event& ev) {
+    bool ExampleSelection::ProcessEvent(
+        const gallery::Event& ev,
+        const std::vector<Event::Interaction>& truth,
+        std::vector<Event::RecoInteraction>& reco) {
       // ... Process the gallery::Event ...
       fMyVar = 42;  // Fill in the custom branch
       return true;

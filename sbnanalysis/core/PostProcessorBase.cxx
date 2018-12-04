@@ -14,17 +14,20 @@ PostProcessorBase::PostProcessorBase(): fEvent(NULL) {}
 
 PostProcessorBase::~PostProcessorBase() {}
 
+
 void PostProcessorBase::Initialize(char* config) {
   Json::Value* cfg = LoadConfig(config);
   Initialize(cfg);
 }
+
 
 void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
   for (auto const& fname: inputFiles) {
     // get ROOT file
     TFile f(fname.c_str());
     if (f.IsZombie()) {
-      std::cerr << "Failed openning file: " << fname << ". Cleaning up and exiting." << std::endl;
+      std::cerr << "Failed openning file: " << fname << ". "
+                << "Cleaning up and exiting." << std::endl;
       break;
     }
 
@@ -41,8 +44,10 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
 
     FileCleanup(fEventTree);
   } 
+
   // teardown
   Finalize();
 }
+
 }  // namespace core
 

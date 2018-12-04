@@ -39,12 +39,13 @@ public:
   /** Destructor */
   virtual ~PostProcessorBase();
 
-  /** run 
- *
- * \param filelist The list of files to be processed by this PostProcessor
- *
- * */
+  /**
+   * Run
+   *
+   * \param filelist The list of files to be processed by this PostProcessor
+   */
   void Run(std::vector<std::string> filelist);
+
   /**
    * Perform user-level initialization.
    *
@@ -53,7 +54,6 @@ public:
   void Initialize(char* config=NULL);
 
 protected:
-
   /**
    * Process one event.
    *
@@ -61,20 +61,23 @@ protected:
    */
   virtual void ProcessEvent(const Event *event) = 0;
 
-  /** setup anything needed per file 
- *
- * \param eventTree the TTree associated with the sbncode event.
- * Use this TTree to set branch addresses for everything other than
- * the sbncode event. 
- *
- * Files are guaranteed to be processed in the order they are specified on
- * the command line for sbn-postprocess
- * */
-  virtual void FileSetup(TTree *eventTree) {} 
-  /** any cleanup needed per file 
- *
- * \param eventTree the TTree associated with the sbncode event.
- * */
+  /**
+   * Setup anything needed per file
+   *
+   * \param eventTree the TTree associated with the sbncode event.
+   * Use this TTree to set branch addresses for everything other than
+   * the sbncode event.
+   *
+   * Files are guaranteed to be processed in the order they are specified on
+   * the command line for sbn-postprocess
+   */
+  virtual void FileSetup(TTree *eventTree) {}
+
+  /**
+   * Any cleanup needed per file
+   *
+   * \param eventTree the TTree associated with the sbncode event.
+   */
   virtual void FileCleanup(TTree *eventTree) {}
 
   /**
@@ -87,8 +90,8 @@ protected:
   /** Perform user-level finalization. Called after all events have been processed. */
   virtual void Finalize() {}
 
-  Event *fEvent;
-  TTree *fEventTree;
+  Event* fEvent;
+  TTree* fEventTree;
 };
 
 }  // namespace core

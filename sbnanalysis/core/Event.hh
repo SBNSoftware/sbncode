@@ -125,14 +125,16 @@ public:
 
   /**
    * \class RecoInteraction
-   * \brief Contains truth level information and additional fields for user-defined reconstruction information
+   * \brief Contains truth level information and additional fields for
+   * user-defined reconstruction information
    */
   class RecoInteraction {
     public:
       /** Default Constructor */
       RecoInteraction(): truth_index(-1) {}
       /** Fill in truth information -- leaves other fields unset */
-      explicit RecoInteraction(const Interaction &t, int index): truth(t), truth_index(index)  {}
+      explicit RecoInteraction(const Interaction &t, int index)
+          : truth(t), truth_index(index)  {}
       Interaction truth; //!< Contains truth level information about interaction
 
       /**

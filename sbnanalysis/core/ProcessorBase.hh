@@ -75,7 +75,9 @@ public:
    * \param reco Reco interactions, to be populated by the user
    * \returns True if event passes filter
    */
-  virtual bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) = 0;
+  virtual bool ProcessEvent(const gallery::Event& ev,
+                            const std::vector<Event::Interaction> &truth,
+                            std::vector<Event::RecoInteraction>& reco) = 0;
 
   /** Pointer to reco event information */
   std::vector<Event::RecoInteraction>* fReco;  //!< Reco interaction list
