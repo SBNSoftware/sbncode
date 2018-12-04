@@ -50,16 +50,37 @@ void ProcessorBase::Setup(char* config) {
 
 void ProcessorBase::Setup(Json::Value* config) {
   // Load configuration parameters
-  fTruthTag = { "generator" };
-  fWeightTag = { "eventweight" };
-
+  //
+  // With configuration file provided
   if (config) {
     fTruthTag = { config->get("MCTruthTag", "generator").asString() };
-    fWeightTag = { config->get("MCWeightTag", "eventweight").asString() };
     fMCTrackTag = { config->get("MCTrackTag", "mcreco").asString() };
     fMCShowerTag = { config->get("MCShowerTag", "mcreco").asString() };
     fMCParticleTag = { config->get("MCParticleTag", "largeant").asString() };
     fOutputFilename = config->get("OutputFile", "output.root").asString();
+
+    // get the weights (can supply multiple producers)
+    Json::Value weight_tag_config = config->get("MCWeightTags", "eventweight");
+    // supply single value
+    if (weight_tag_config.isString()) {
+      fWeightTags = { { weight_tag_config.asString() } };
+    }
+    // supply multiple values
+    else {
+      for (const Json::Value &str: weight_tag_config) {
+        fWeightTags.emplace_back(str.asString());
+      }
+    }
+  }
+  // Default -- no config file provided
+  else {
+    fTruthTag = { "generator" };
+    fWeightTags = {{ "eventweight" }};
+    
+    fMCTrackTag = {"mcreco"};
+    fMCShowerTag = {"mcreco"};
+    fMCParticleTag = {"largeant"};
+    fOutputFilename = "output.root";
   }
 
   // Open the output file and create the standard event tree
@@ -90,11 +111,16 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
   // Get MCEventWeight information
-  gallery::Handle<std::vector<evwgh::MCEventWeight> > wgh;
-  bool hasWeights = ev.getByLabel(fWeightTag, wgh);
-
-  if (hasWeights) {
-    assert(wgh->size() == mctruths.size());
+  std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
+  for (auto const &weightTag: fWeightTags) {
+    gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
+    bool hasWeights = ev.getByLabel(weightTag, this_wgh);
+    // coherence check
+    if (hasWeights) {
+      assert(this_wgh->size() == mctruths.size());
+    }
+    // store the weights
+    wghs.push_back(this_wgh);
   }
 
   fTree->GetEntry(fEventIndex);
@@ -109,9 +135,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     // For now, ignore them
     if (!mctruth.NeutrinoSet()) continue;
 
-    // Weights
-    if (hasWeights) {
-      interaction.weights = wgh->at(i).fWeight;
+    // Combine Weights
+    for (auto const &wgh: wghs) {
+      // Insert the weights for each individual EventWeight object into the 
+      // Event class "master" weight list
+      interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
     }
 
     TLorentzVector q_labframe;
@@ -130,6 +158,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.w = nu.W();
       interaction.neutrino.energy = nu.Nu().EndMomentum().Energy();
       interaction.neutrino.momentum = nu.Nu().EndMomentum().Vect();
+      interaction.neutrino.position = nu.Nu().Position().Vect();
 
       // Primary lepton
       const simb::MCParticle& lepton = nu.Lepton();

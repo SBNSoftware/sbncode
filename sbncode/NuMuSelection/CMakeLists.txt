@@ -1,6 +1,8 @@
 add_subdirectory(DataTypes)
 add_subdirectory(fcl)
 
+include_directories($ENV{UBCORE_LIB})
+
 art_make(
           MODULE_LIBRARIES 
                            ubana_BasicTool_GeoAlgo

@@ -38,6 +38,7 @@ product          version
 sbndcode         v07_11_00
 uboonecode       v07_11_00
 icaruscode       v07_11_00
+ubcore           v07_11_00
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -45,9 +46,9 @@ only_for_build  cetbuildtools   v7_04_00
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
-qualifier     sbndcode    uboonecode  icaruscode notes
-e17:debug     e17:debug   e17:debug   e17:debug  -nq-
-e17:prof      e17:prof    e17:prof    e17:prof   -nq-
+qualifier     sbndcode    uboonecode  icaruscode    ubcore  notes
+e17:debug     e17:debug   e17:debug   e17:debug     e17:debug   -nq-
+e17:prof      e17:prof    e17:prof    e17:prof      e17:prof    -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin

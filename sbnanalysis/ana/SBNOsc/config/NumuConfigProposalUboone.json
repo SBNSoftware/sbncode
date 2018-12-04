@@ -1,0 +1,38 @@
+{
+  "OutputFile": "output_SBNOsc_NumuSelection_Proposal_Uboone.root",
+  "MCWeightTags": ["fluxeventweight", "genieeventweight"],
+  //"MCWeightTags": ["fluxeventweight"],
+  "NumuSelection": {
+    "acceptShakyTracks": true,
+    "verbose": false,
+    "doFVCut": true,
+    // Using Uboone UBXSec analysis volume
+    "fiducial_volumes": [
+     {
+      "xmin": 13.45,
+      "ymin": -100.53,
+      "zmin": 15.1,
+      "xmax": 239.8,
+      "ymax": 102.47,
+      "zmax": 956.9
+     }
+   ],
+     "active_volumes": [{
+      "xmin": -1.55,
+      "ymin": -115.53,
+      "zmin": 0.1,
+      "xmax": 254.8,
+      "ymax": 117.47,
+      "zmax": 1036.9
+     }],
+     "minLengthContainedTrack": 50, // value taken from proposal
+     "minLengthExitingTrack": 100, // value taken from proposal
+     "trackVisibleEnergyThreshold": 0.021, // [GeV] taken from pospoal
+     "showerEnergyDistortion": 0.05, // not sure about this one
+     "trackEnergyDistortion": 0.05, // taken from proposal
+     "leptonEnergyDistortionContained": 0.02, // needs update
+     "leptonEnergyDistortionLeavingA": 0.102, // from joseph email
+     "leptonEnergyDistortionLeavingB": 0.000612 // from joseph email
+   }
+}
+

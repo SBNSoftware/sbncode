@@ -60,7 +60,9 @@ public:
    * \param reco Reconstructed interactions
    * \return True to keep event
    */
-  bool ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco);
+  bool ProcessEvent(const gallery::Event& ev,
+                    const std::vector<Event::Interaction>& truth,
+                    std::vector<Event::RecoInteraction>& reco);
 
 protected:
   unsigned fEventCounter;  //!< Count processed events

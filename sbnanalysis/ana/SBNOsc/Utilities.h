@@ -124,6 +124,44 @@ double ECCQE(const TVector3& l_momentum, double l_energy,
              double energy_distortion=0., double angle_distortion=0.);
 
 
+/** 
+ * \class Struct containing information used in calculation of visible Energy
+ *
+ */
+struct VisibleEnergyCalculator {
+  int lepton_pdgid; //!< PDGID of lepton in the interaction. Used to add 
+    // in energy corresponding to lepton mass for CC events (and confused NC
+    // events). If you don't want to add in a lepton mass to the energy
+    // accounting, set it to 0. 
+  double track_threshold; //!< Energy threshold of track energy counted in calculation [GeV].
+  double shower_threshold; //!< Energy threshold of shower energy counted in calculation [GeV].
+  double track_energy_distortion; //!< Distortion of energies of tracks (%).
+  double shower_energy_distortion; //!< Distortion of energies of showers (%).
+    
+  double lepton_energy_distortion_contained; //!< Distortion of energies of primary lepton whose tracks are contained within the TPC (%).
+  double lepton_energy_distortion_leaving_A; //!< Parameter in function to calculate primary lepton energy resolution. 
+      // (%) = -A * Log(B * L)  where L is the lepton contained length
+  double lepton_energy_distortion_leaving_B; //!< Parameter in function to calculate primary lepton energy resolution.
+      // (%) = -A * Log(B * L)  where L is the lepton contained length
+  int lepton_index; //!< Index of lepton in the mctrack object
+  bool lepton_contained; //!< True if primary lepton's track is contained within TPC.
+  double lepton_contained_length; //!< Length of section of primary lepton's track that is contained within the TPC.
+
+  VisibleEnergyCalculator(): 
+    lepton_pdgid(0),
+    track_threshold(0),
+    shower_threshold(0),
+    track_energy_distortion(0),
+    shower_energy_distortion(0),
+    lepton_energy_distortion_contained(0),
+    lepton_energy_distortion_leaving_A(0),
+    lepton_energy_distortion_leaving_B(0),
+    lepton_contained(false),
+    lepton_contained_length(1)
+  {}
+};
+
+
 /**
  * Get the "visible" energy from a neutrino interaction. Is equal to sum of
  * non-neutral hadronic kinetic energies and lepton total energies.
@@ -132,19 +170,23 @@ double ECCQE(const TVector3& l_momentum, double l_energy,
  * \param mctruth The MCTruth object corresponding to the interaction.
  * \param mctrack_list Vector of MCTrack objects in the gallery event.
  * \param mcshower_list Vector of MCShower objects in the gallery event.
- * \param track_threshold Energy threshold of track energy counted in
- *        calculation [GeV].
- * \param shower_treshold Energy threshold of shower energy counted in
- *        calculation [GeV].
+ * \param calculator Struct containing values to be used in energy calculation
+ * \param smeared_lepton_energy lepton energy to be used in calculation -- will default to smearLeptonEnergy(mctruth, calculator) if not set
+ *
  * \return Visble energy in GeV.
- */
-double visibleEnergy(const simb::MCTruth &mctruth,
-                     const std::vector<sim::MCTrack> &mctrack_list,
-                     const std::vector<sim::MCShower> &mcshower_list,
-                     double track_threshold=0., double shower_threshold=0.);
+ * */
+double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
+    const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
+
+
+/** Get the smeared energy from a lepton.
+ * \param mctrack The MCTrack object corresponding to the lepton
+ * \param calculator Struct containing values to be used in energy calculation
+ *
+ * */
+double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
   }  // namespace SBNOsc
 }  // namespace ana
 
 #endif  // __sbnanalysis_ana_SBNOsc_Utilities__
-

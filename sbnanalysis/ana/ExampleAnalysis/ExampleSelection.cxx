@@ -24,7 +24,8 @@
 namespace ana {
   namespace ExampleAnalysis {
 
-ExampleSelection::ExampleSelection() : SelectionBase(), fNuCount(0), fEventCounter(0) {}
+ExampleSelection::ExampleSelection()
+    : SelectionBase(), fNuCount(0), fEventCounter(0) {}
 
 
 void ExampleSelection::Initialize(Json::Value* config) {
@@ -38,7 +39,8 @@ void ExampleSelection::Initialize(Json::Value* config) {
 
   if (config) {
     fMyParam = (*config)["ExampleAnalysis"].get("parameter", 0).asInt();
-    fTruthTag = { (*config)["ExampleAnalysis"].get("MCTruthTag", "generator").asString() };
+    fTruthTag = \
+      { (*config)["ExampleAnalysis"].get("MCTruthTag", "generator").asString() };
   }
 
   // Add custom branches
@@ -78,14 +80,19 @@ void ExampleSelection::Finalize() {
 }
 
 
-bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco) {
+bool ExampleSelection::ProcessEvent(
+    const gallery::Event& ev,
+    const std::vector<Event::Interaction>& truth,
+    std::vector<Event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
-    std::cout << "ExampleSelection: Processing event " << fEventCounter << std::endl;
+    std::cout << "ExampleSelection: Processing event "
+              << fEventCounter << std::endl;
   }
   fEventCounter++;
 
   // Grab a data product from the event
-  auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
+  auto const& mctruths = \
+    *ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
 
   // Fill in the custom branches
   fNuCount = mctruths.size();  // Number of neutrinos in this event
