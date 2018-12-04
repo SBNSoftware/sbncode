@@ -75,6 +75,9 @@ protected:
 
   /** Histograms */
   TH2D* fNuVertexXZHist;  //!< Neutrino vertex XZ projection
+
+  /** Services */
+  geo::GeometryCore* fGeoService;  //!< Geometry service
 };
 
   }  // namespace ExampleAnalysis
