@@ -11,18 +11,30 @@ include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{FHICLCPP_INC} )
 include_directories( $ENV{UBCORE_INC} )
+include_directories( $ENV{CLHEP_INC} )
+include_directories( $ENV{LARCOREALG_INC} )
+include_directories( $ENV{LARDATAALG_INC} )
+include_directories( $ENV{ICARUSCODE_INC} )
+include_directories( $ENV{FHICLCPP_INC} )
+include_directories( $ENV{MESSAGEFACILITY_INC} )
 
 link_directories(
+  $ENV{MESSAGEFACILITY_LIB}
+  $ENV{FHICLCPP_LIB}
   $ENV{CANVAS_LIB}
+  $ENV{CANVAS_ROOT_IO_LIB}
+  $ENV{CETLIB_EXCEPT_LIB}
   $ENV{CETLIB_LIB}
   $ENV{GALLERY_LIB}
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
   $ENV{UBCORE_LIB}
-  $ENV{FHICLCPP_LIB}
-  $ENV{UBCORE_LIB}
   $ENV{LARSIM_LIB}
+  $ENV{LARCOREALG_LIB}
+  $ENV{LARDATAALG_LIB}
+  $ENV{LARDATA_LIB}
+  $ENV{ICARUSCODE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
