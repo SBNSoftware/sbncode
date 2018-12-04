@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "TDatabasePDG.h"
+#include "TRandom.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
@@ -11,6 +12,8 @@
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoLineSegment.h"
+
+#include <TMath.h>
 
 namespace ana {
   namespace SBNOsc {
@@ -114,10 +117,45 @@ double containedLength(const TVector3 &v0, const TVector3 &v1,
     // one contained -- have to find intersection point (which must exist)
     if (n_contained == 1) {
       auto intersections = algo.Intersection(line, box);
-      assert(intersections.size() == 1); // must have one intersection
-      // get TVector at intersection point
-      TVector3 int_tv(intersections.at(0).ToTLorentzVector().Vect());
-      length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() );
+      // Because of floating point errors, it can sometimes happen
+      // that there is 1 contained point but no "Intersections"
+      // if one of the points is right on the edge
+      if (intersections.size() == 0) {
+        // determine which point is on the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        assert(p0_edge || p1_edge);
+        // contained one is on edge -- can treat both as not contained
+        //
+        // In this case, no length
+        if ((p0_edge && box.Contain(p0)) || (box.Contain(p1) && p1_edge))
+          continue;
+        // un-contaned one is on edge -- treat both as contained
+        else if ((p0_edge && box.Contain(p1)) || (box.Contain(p0) && p1_edge)) {
+	  length = (v1 - v0).Mag();
+	  break;
+        }
+        else {
+          assert(false); // bad
+        }
+      }
+      // floating point errors can also falsely cause 2 intersection points
+      //
+      // in this case, one of the intersections must be very close to the 
+      // "contained" point, so the total contained length will be about
+      // the same as the distance between the two intersection points
+      else if (intersections.size() == 2) {
+        length += (intersections.at(0).ToTLorentzVector().Vect() - intersections.at(1).ToTLorentzVector().Vect()).Mag();
+        continue;
+      }
+      // "Correct"/ideal case -- 1 intersection point
+      else if (intersections.size() == 1) {
+        // get TVector at intersection point
+        TVector3 int_tv(intersections.at(0).ToTLorentzVector().Vect());
+        length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() ); 
+      }
+      else assert(false); // bad
     }
     // none contained -- either must have zero or two intersections
     if (n_contained == 0) {
@@ -135,36 +173,93 @@ double containedLength(const TVector3 &v0, const TVector3 &v1,
 }
 
 
-double visibleEnergy(const simb::MCTruth &mctruth,
-                     const std::vector<sim::MCTrack> &mctrack_list,
-                     const std::vector<sim::MCShower> &mcshower_list,
-                     double track_threshold, double shower_threshold) {
+double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 
+    const VisibleEnergyCalculator &calculator, bool include_showers) {
   double visible_E = 0;
 
+  // set up distortion if need be
+  TRandom rand;
+
+  // primary leptron track
+  const sim::MCTrack *lepton_track = NULL;
+  bool lepton_track_exists = false;
+
   // total up visible energy from tracks...
+  unsigned ind = 0;
   for (auto const &mct: mctrack_list) {
-    // ignore neutral particles
-    if (isFromNuVertex(mctruth, mct) && abs(PDGCharge(mct.PdgCode())) > 1e-4) {
-      double mass = (mct.PdgCode() == 13 || mct.PdgCode() == 11) ? 0:PDGMass(mct.PdgCode());
-      double this_visible_energy = mct.Start().E() - mass;
-      if (this_visible_energy > track_threshold) {
-        visible_E += this_visible_energy;
-      }
+    // ignore particles not from nu vertex, non primary particles, and uncharged particles
+    if (!isFromNuVertex(mctruth, mct) || abs(PDGCharge(mct.PdgCode())) < 1e-4 || mct.Process() != "primary")
+       continue;
+    // account for primary lepton later
+    if ((abs(mct.PdgCode()) == 13 || abs(mct.PdgCode()) == 11) && calculator.lepton_index == ind) {
+      continue;
     }
+
+    double mass = PDGMass(mct.PdgCode());
+    double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
+    if (calculator.track_energy_distortion > 1e-4) {
+      this_visible_energy = rand.Gaus(this_visible_energy, calculator.track_energy_distortion*this_visible_energy);
+      // clamp to 0
+      this_visible_energy = std::max(this_visible_energy, 0.);
+    }
+    if (this_visible_energy > calculator.track_threshold) {
+      visible_E += this_visible_energy;
+    }
+    ind ++;
   }
 
   // ...and showers
-  for (auto const &mcs: mcshower_list) {
-    if (isFromNuVertex(mctruth, mcs) && abs(PDGCharge(mcs.PdgCode())) > 1e-4) {
-      double mass = (mcs.PdgCode() == 13 || mcs.PdgCode() == 11) ? 0:PDGMass(mcs.PdgCode());
-      double this_visible_energy = mcs.Start().E() - mass;
-      if (this_visible_energy > shower_threshold) {
+  if (include_showers) {
+    for (auto const &mcs: mcshower_list) {
+      // ignore particles not from nu vertex, non primary particles, and uncharged particles
+      if (!isFromNuVertex(mctruth, mcs) || abs(PDGCharge(mcs.PdgCode())) < 1e-4 || mcs.Process() != "primary")
+        continue; 
+      // account for primary lepton later
+      if ((abs(mcs.PdgCode()) == 13 || abs(mcs.PdgCode()) == 11) && isFromNuVertex(mctruth, mcs))
+        continue; 
+
+      double mass = PDGMass(mcs.PdgCode());
+      double this_visible_energy = (mcs.Start().E() - mass) / 1000. /* MeV to GeV */;
+      if (calculator.shower_energy_distortion > 1e-4) {
+        this_visible_energy = rand.Gaus(this_visible_energy, calculator.shower_energy_distortion*this_visible_energy);
+        // clamp to 0
+        this_visible_energy = std::max(this_visible_energy, 0.);
+      }
+      if (this_visible_energy > calculator.shower_threshold) {
         visible_E += this_visible_energy;
       }
     }
   }
 
+  // ...and primary lepton energy (for CC events)
+  // only add in extra here if identified "lepton" is actually a lepton
+  if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 13 || abs(mctrack_list[calculator.lepton_index].PdgCode()) == 11)) {
+    visible_E += smearLeptonEnergy(mctrack_list[calculator.lepton_index], calculator);
+  }
+
   return visible_E;
+}
+
+
+double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
+  // setup distortion
+  TRandom rand;
+
+  double smearing_percentage;
+  if (calculator.lepton_contained) {
+    smearing_percentage = calculator.lepton_energy_distortion_contained;
+  } else {
+    double A = calculator.lepton_energy_distortion_leaving_A;
+    double B = calculator.lepton_energy_distortion_leaving_B;
+    smearing_percentage = -A * TMath::Log(B * calculator.lepton_contained_length);
+  }
+  // smear visible energy
+  double lepton_visible_energy = (mct.Start().E()) / 1000.; /* MeV to GeV */
+  double smeared_lepton_visible_energy = rand.Gaus(lepton_visible_energy, smearing_percentage * lepton_visible_energy);
+  // clamp to 0
+  smeared_lepton_visible_energy = std::max(smeared_lepton_visible_energy, 0.);
+
+  return smeared_lepton_visible_energy;
 }
 
 

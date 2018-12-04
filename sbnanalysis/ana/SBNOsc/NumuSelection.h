@@ -16,6 +16,8 @@
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
 
+#include "Utilities.h"
+
 #include "TH1D.h"
 #include "TDatabasePDG.h"
 #include "TGraph.h"
@@ -62,10 +64,12 @@ public:
 
   /** Additional information used by the selection per neutrino interaction */
   struct NuMuInteraction {
-    bool t_is_contained; //!< whether the (maybe faked) lepton track is totally contained in the fiducial volume
-    double t_contained_length; //!< the length of the (maybe faked) lepton track contained in the fiducial volume [cm]
+    bool t_is_contained; //!< whether the (maybe faked) lepton track is totally contained in the active volume
+    double t_contained_length; //!< the length of the (maybe faked) lepton track contained in the active volume [cm]
     double t_length; //!< total length of (maybe faked) lepton track [cm]
     int t_pdgid; //!< PDGID of primary track (muon or pi+)
+    double t_energy_true; //!< True energy of primary track [GeV]
+    double t_energy_smeared; //!< Smeared energy of primary track [GeV]
 
     // default constructor -- fills with bogus info
     /*
@@ -85,9 +89,20 @@ protected:
     std::vector<geoalgo::AABox> active_volumes; //!< List of active volumes
     double vertexDistanceCut; //!< Value of max distance [cm] between truth and reconstructed vertex. Will not apply cut if value is negative.
     bool verbose; //!< Whether to print out info associated w/ selection.
+    bool acceptShakyTracks; //!< Whether to calculate length of tracks that don't have all points generated
+    bool trajPointLength; //!< Whether to use trajectory points to calculate length
     double minLengthContainedTrack; //!< Minimum length [cm] of contained tracks. Will not apply cut if value is negative.
     double minLengthExitingTrack; //!< Minimum length [cm] of exiting tracks.  Will not apply cut if value is negative.
     double trackVisibleEnergyThreshold; //!< Energy threshold for track to be acounted in visible energy calculation [GeV].
+    double showerEnergyDistortion; //!< Energy distortion of showers for visible energy calculation (%).
+    double trackEnergyDistortion; //!< Energy distortion of tracks for visible energy calculation (%).
+    double leptonEnergyDistortionContained; //<! Energy distortion of lepton (primary track) for visible energy calculation (%).
+    double leptonEnergyDistortionLeavingA; //!< Parameter to be used in the energy distortion of primary lepton for visible energy calculation. 
+      // (%) = -A * Log(B * L)  where L is the lepton contained length
+    double leptonEnergyDistortionLeavingB; //!< Parameter to be used in the energy distortion of primary lepton for visible energy calculation. 
+      // (%) = -A * Log(B * L)  where L is the lepton contained length
+    bool cutKMEC; //!< Whether to remove MEC events (useful for studying difference w.r.t. proposal)
+    bool onlyKMEC; //!< Whether to remove all non-MEC events
   };
 
   /** Histograms made for output */
@@ -95,17 +110,26 @@ protected:
     TH1D *h_numu_ccqe; //!< histogram w/ CCQE energy veriable [GeV]
     TH1D *h_numu_trueE; //!< histogram w/ truth energy variable [GeV]
     TH1D *h_numu_visibleE; //!< histogram w/ visible energy variable (total muon momentum + kinetic hadron energy) [GeV]
-    TH1D *h_numu_true_v_visibleE; //!< histogram w/ difference of visible and truth energy [GeV]
-    TH1D *h_numu_t_is_contained; //!< histogram w/ whether associated track is contained in FV
+    TH1D *h_numu_true_v_visibleE; //!< histogram w/ difference of visible and truth energy [GeV] 
+    TH1D *h_numu_t_is_contained; //!< histogram w/ whether associated track is contained in AV
     TH1D *h_numu_contained_L; //!< histogram w/ FV contained length of track in CC event [cm]
     TH1D *h_numu_t_length; //!< histogram w/ total length of associated track [cm]
     TH1D *h_numu_t_is_muon; //!< histogram of whether associated track is a muon
+    //TH1D *h_numu_m_energy_true; //!< histogram of truth energy of muon (excludes background pions)
+    //TH1D *h_numu_m_energy_smeared; //!< histogram of smeared energy of muon (excludes background pions)
     TH2D *h_numu_Vxy; //!< 2D x-y vertex histogram [cm]
     TH2D *h_numu_Vxz; //!< 2D x-z vertex histogram [cm]
     TH2D *h_numu_Vyz; //!< 2D y-z vertex histogram [cm]
   };
 
-  static const unsigned nCuts = 4; //!< number of cuts
+  // helper struct holding track info -- see NumuInteraction for variable details
+  struct TrackInfo {
+    bool t_is_contained; //!< whether the (maybe faked) lepton track is totally contained in the active volume
+    double t_contained_length; //!< the length of the (maybe faked) lepton track contained in the active volume [cm]
+    double t_length; //!< total length of (maybe faked) lepton track [cm]
+  };
+
+  static const unsigned nCuts = 5; //!< number of cuts
 
   /* Applies FV cut
   * \param v The neutrino interaction vertex
@@ -144,7 +168,7 @@ protected:
  *
  * \return NuMuInteraction object containing information from the mctruth object
  * */
-  NuMuInteraction interactionInfo(const gallery::Event& ev, const simb::MCTruth &mctruth);
+  NuMuInteraction interactionInfo(const gallery::Event& ev, const simb::MCTruth &mctruth, VisibleEnergyCalculator &calculator);
 
  /** Get the interaction info associated with a track. This works right now because
  * all interaction info comes from the primary track. Might have to re-think structure
@@ -153,7 +177,7 @@ protected:
  * \param track The primary track.
  * \return Interaction info filled in from this track.
  */
-  NuMuInteraction trackInfo(const sim::MCTrack &track);
+  TrackInfo trackInfo(const sim::MCTrack &track);
 
   /** Helper function -- whether point is contained in fiducial volume list
  * \param v The point vector.
@@ -161,6 +185,13 @@ protected:
  * \return Whether the point is contained in the configured list of fiducial volumes.
  * */
   bool containedInFV(const TVector3 &v);
+
+  /** Helper function -- whether point is contained in active volume list 
+ * \param v The point vector.
+ *
+ * \return Whether the point is contained in the configured list of active volumes.
+ * */
+  bool containedInAV(const TVector3 &v);
 
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
@@ -170,7 +201,7 @@ protected:
  * \return List of names of cuts (for histogram names)
  * */
   static const std::array<std::string, nCuts> cutNames() {
-    return {"Track", "FV", "min_L", "reco_V"};
+    return {"MEC", "AV", "Track", "FV", "min_L"};
   }
 
   Config _config; //!< The config
