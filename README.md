@@ -12,3 +12,8 @@ This package contains code for SBN-wide simulation and analysis. This includes:
 Note that the `sbnanalysis` subpackage is built separately; see the included
 README for more information.
 
+# Rhiannon's branch
+
+Merging the SBND selection tool functionality into the SBNCode framework
+
+WORK IN PROGRESS
