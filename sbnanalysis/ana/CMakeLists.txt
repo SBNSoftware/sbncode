@@ -18,6 +18,7 @@ include_directories( $ENV{LARCOREALG_INC} )
 include_directories( $ENV{LARDATAALG_INC} )
 include_directories( $ENV{ICARUSCODE_INC} )
 include_directories( $ENV{SBNDCODE_INC} )
+include_directories( $ENV{ICARUSCODE_INC} )
 include_directories( $ENV{MESSAGEFACILITY_INC} )
 
 link_directories(
@@ -39,9 +40,8 @@ link_directories(
   $ENV{LARRECO_LIB}
   $ENV{ICARUSCODE_LIB}
   $ENV{SBNDCODE_LIB}
-  $ENV{FHICLCPP_LIB}
-  $ENV{UBCORE_LIB}
   $ENV{LARSIM_LIB}
+  $ENV{ICARUSCODE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
