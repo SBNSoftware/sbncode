@@ -42,6 +42,38 @@ export_table* LoadProcessor(char* libname) {
   return exports;
 }
 
+export_table_postprocess* LoadPostProcessor(char* libname) {
+  std::cout << "Loading post-processor: " << libname << "... ";
+
+  char* libdir = getenv("SBN_LIB_DIR");
+  char libpath[1000];
+  snprintf(libpath, 1000, "%s/libsbnanalysis_%s.so", libdir, libname);
+
+  void* handle = dlopen(libpath, RTLD_NOW);
+  if (!handle) {
+    std::cout << "ERROR" << std::endl;
+    std::cerr << "Error loading post-processor " << libname << ": \n\n"
+              << dlerror()
+              << "\n\nSBN_LIB_DIR = " << libdir
+              << std::endl;
+    exit(1);
+  }
+
+  export_table_postprocess* exports = (export_table_postprocess*) dlsym(handle, "exports");
+
+  if (exports) {
+    std::cout << "OK" << std::endl;
+  }
+  else {
+    std::cout << "ERROR" << std::endl;
+    std::cerr << "Invalid library " << libpath << ". "
+              << "Not a PostProcessor?" << std::endl;
+    exit(1);
+  }
+
+  return exports;
+}
+
 
 Json::Value* LoadConfig(char* configfile) {
   Json::Value* config = NULL;

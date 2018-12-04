@@ -314,4 +314,3 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
 
   }  // namespace SBNOsc
 }  // namespace ana
-

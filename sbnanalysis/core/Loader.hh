@@ -19,6 +19,7 @@ namespace Json {
 namespace core {
 
 class ProcessorBase;
+class PostProcessorBase;
 
 /**
  * \struct export_table
@@ -32,6 +33,17 @@ struct export_table {
   void (*destroy)(ProcessorBase*);
 };
 
+/**
+ * \struct export_table_postprocess
+ * \brief Struct containing (macro defined) creation/deletion operations
+ */
+struct export_table_postprocess {
+  /** Function to create an PostProcessor instance. */
+  PostProcessorBase* (*create)(void);
+
+  /** Function to delete an PostProcessor instance. */
+  void (*destroy)(PostProcessorBase*);
+};
 
 /**
  * Load a processor from a shared library.
@@ -40,6 +52,14 @@ struct export_table {
  * \returns A table of exported hooks for creating/deleting instances
  */
 export_table* LoadProcessor(char* libname);
+
+/**
+ * Load a post-processor from a shared library.
+ *
+ * \param libpath Path to the shared library
+ * \returns A table of exported hooks for creating/deleting instances
+ */
+export_table_postprocess* LoadPostProcessor(char* libname);
 
 
 /**

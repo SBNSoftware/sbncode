@@ -83,6 +83,7 @@ public:
     double eccqe;          //!< CCQE energy
     double energy;         //!< Neutrino energy (GeV)
     TVector3 momentum;     //!< Neutrino three-momentum
+    TVector3 position;     //!< Neutrino interaction position
   };
 
   /**

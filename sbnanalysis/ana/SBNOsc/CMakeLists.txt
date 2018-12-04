@@ -6,6 +6,10 @@ project(SBNOsc)
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories($ENV{LARCOREALG_INC})
+include_directories($ENV{LARSIM_INC})
+
+find_library(LARSIM_BASE_LIBRARY larsim_EventWeight_Base HINTS $ENV{LARSIM_LIB})
+find_library(LARSIM_BASE_DICT larsim_EventWeight_Base_dict HINTS $ENV{LARSIM_LIB})
 
 # Declare libraries to build
 # Note that the library names (the first argument) should follow the convention
@@ -33,25 +37,6 @@ target_link_libraries(sbnanalysis_SBNOsc_NumuSelection
 )
 target_link_libraries(sbnanalysis_SBNOsc_Chi2Sensitivity sbnanalysis_SBNOsc_Covariance)
 
-# Build executables
-add_executable(sbn-cov sbn-cov.cxx)
-target_link_libraries(
-  sbn-cov
-  sbnanalysis_SBNOsc_Covariance
-  sbnanalysis_Event
-  ${ROOT_LIBRARIES}
-)
-
-add_executable(sbn-sensitivity sbn-sensitivity.cxx)
-target_link_libraries(
-  sbn-sensitivity
-  sbnanalysis_SBNOsc_Chi2Sensitivity
-  sbnanalysis_SBNOsc_Covariance
-  sbnanalysis_Event
-  ${ROOT_LIBRARIES}
-)
-
-
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOsc_Utilities DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_NueSelection DESTINATION lib)
@@ -60,7 +45,3 @@ install(TARGETS sbnanalysis_SBNOsc_Covariance DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_Chi2Sensitivity DESTINATION lib)
 
 install(TARGETS sbnanalysis_SBNOsc_classes DESTINATION lib)
-
-install(TARGETS sbn-cov DESTINATION bin/sbnosc)
-install(TARGETS sbn-sensitivity DESTINATION bin/sbnosc)
-

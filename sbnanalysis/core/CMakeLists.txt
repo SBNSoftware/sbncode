@@ -1,6 +1,13 @@
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+# determine location of larsim
+if (DEFINED ENV{LARSIM_LIB})
+  set(LARSIM_PATH $ENV{LARSIM_LIB})
+else()
+  set(LARSIM_PATH $ENV{MRB_BUILDDIR}/larsim/lib/)
+endif()
+
 include_directories(${ROOT_INCLUDE_DIRS})
 include_directories($ENV{ART_INC})
 include_directories($ENV{NUTOOLS_INC})
@@ -24,13 +31,13 @@ link_directories(
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
   $ENV{JSONCPP_LIB}
-  $ENV{LARSIM_LIB}
+  ${LARSIM_PATH}
 )
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 
-find_library(LARSIM_BASE_LIBRARY larsim_EventWeight_Base HINTS $ENV{LARSIM_LIB})
-find_library(LARSIM_BASE_DICT larsim_EventWeight_Base_dict HINTS $ENV{LARSIM_LIB})
+find_library(LARSIM_BASE_LIBRARY larsim_EventWeight_Base HINTS ${LARSIM_PATH})
+find_library(LARSIM_BASE_DICT larsim_EventWeight_Base_dict HINTS ${LARSIM_PATH})
 
 add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx Event.cxx)
 target_link_libraries(
@@ -40,7 +47,7 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
-add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx Loader.cxx)
+add_library(sbnanalysis_Processor SHARED ProcessorBase.cxx SelectionBase.cxx ProcessorBlock.cxx Loader.cxx PostProcessorBase.cxx)
 target_link_libraries(
   sbnanalysis_Processor
   sbnanalysis_Event
@@ -73,9 +80,21 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
+add_executable(sbn-postprocess sbn-postprocess.cxx)
+target_link_libraries(
+  sbn-postprocess
+  sbnanalysis_Processor
+  #sbnanalysis_Event
+  jsoncpp
+  ${LARSIM_BASE_LIBRARY}
+  ${LARSIM_BASE_DICT}
+  ${ROOT_LIBRARIES}
+)
+
 install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
+install(TARGETS sbn-postprocess DESTINATION bin)
 
 if (DEFINED SBNANA_COMPILED_PROCESSOR)
   set(STATICEXE SBNProcessor_${SBNANA_COMPILED_PROCESSOR})

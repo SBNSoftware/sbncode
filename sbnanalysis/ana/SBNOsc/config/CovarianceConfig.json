@@ -1,0 +1,129 @@
+{
+    "EventSamples": [
+        {
+            "name": "SBND #nu_{#mu}",
+            "binlims": [ 0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0 ],
+	    "Distance": 0.1,
+	    "DetX": [ -190.9, 190.9 ],
+	    "DetY": [ -185., 185. ],
+	    "DetZ": [ 15., 415. ],
+            "OscType": 2,
+	    "TrueELims": [ 0.1, 7.1 ],
+	    "NumTrueEBins": 25,
+	    "NumDistanceBinsPerMeter": 10,
+
+            "scalefactor": 872.04636063146393
+        },
+        
+        {
+            "name": "MicroBooNE #nu_{#mu}",
+            "binlims": [ 0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0 ],
+	    "Distance": 0.47,
+	    "DetX": [ 13.45, 239.8 ],
+	    "DetY": [ -100.53, 102.47 ],
+	    "DetZ": [ 15.1, 956.9 ],
+            "OscType": 2,
+	    "TrueELims": [ 0.1, 7.1 ],
+	    "NumTrueEBins": 25,
+	    "NumDistanceBinsPerMeter": 10,
+
+            "scalefactor": 59.944567837783559 
+        },
+        
+        {
+            "name": "ICARUS #nu_{#mu}",
+            "binlims": [ 0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0 ],
+	    "Distance": 0.6,
+	    "DetX": [ -356.24, 356.24 ],
+	    "DetY": [ -158.41, 128.41 ],
+	    "DetZ": [ -894.950652, 799.950652],
+            "OscType": 2,
+	    "TrueELims": [ 0.1, 7.1 ],
+	    "NumTrueEBins": 25,
+	    "NumDistanceBinsPerMeter": 10,
+
+            "scalefactor": 242.10472643449802
+        }
+        
+    ],
+    
+    "Covariance": {
+        "OutputFile": "cov.root",
+        "NumAltUnis": 1000,
+        "UniformWeights": ["bnbcorrection_FluxHist"],
+        "WeightKey": [
+	  "expskin_FluxUnisim",
+	  "genie_DISAth_Genie",
+	  "genie_DISBth_Genie",
+	  "genie_DISCv1u_Genie",
+	  "genie_DISCv2u_Genie",
+	  "genie_FermiGasModelKf_Genie",
+	  "genie_FermiGasModelSf_Genie",
+	  "genie_FormZone_Genie",
+	  "genie_IntraNukeNabs_Genie",
+	  "genie_IntraNukeNcex_Genie",
+	  "genie_IntraNukeNel_Genie",
+	  "genie_IntraNukeNinel_Genie",
+	  "genie_IntraNukeNmfp_Genie",
+	  "genie_IntraNukeNpi_Genie",
+	  "genie_IntraNukePIabs_Genie",
+	  "genie_IntraNukePIcex_Genie",
+	  "genie_IntraNukePIel_Genie",
+	  "genie_IntraNukePIinel_Genie",
+	  "genie_IntraNukePImfp_Genie",
+	  "genie_IntraNukePIpi_Genie",
+	  "genie_NC_Genie",
+	  "genie_NonResRvbarp1pi_Genie",
+	  "genie_NonResRvbarp2pi_Genie",
+	  "genie_NonResRvp1pi_Genie",
+	  "genie_NonResRvp2pi_Genie",
+	  "genie_ResDecayEta_Genie",
+	  "genie_ResDecayGamma_Genie",
+	  "genie_ResDecayTheta_Genie",
+	  "genie_ccresAxial_Genie",
+	  "genie_ccresVector_Genie",
+	  "genie_cohMA_Genie",
+	  "genie_cohR0_Genie",
+	  "genie_ncelAxial_Genie",
+	  "genie_ncelEta_Genie",
+	  "genie_ncresAxial_Genie",
+	  "genie_ncresVector_Genie",
+	  "genie_qema_Genie",
+	  "horncurrent_FluxUnisim",
+	  "kminus_PrimaryHadronNormalization",
+	  "kplus_PrimaryHadronFeynmanScaling",
+	  "kzero_PrimaryHadronSanfordWang",
+	  "nucleoninexsec_FluxUnisim",
+	  "nucleonqexsec_FluxUnisim",
+	  "nucleontotxsec_FluxUnisim",
+	  "piminus_PrimaryHadronSWCentralSplineVariation",
+	  "pioninexsec_FluxUnisim",
+	  "pionqexsec_FluxUnisim",
+	  "piontotxsec_FluxUnisim",
+	  "piplus_PrimaryHadronSWCentralSplineVariation"
+         ],
+        
+        "EnergyType": "Reco",
+        
+        "SelectionEfficiency": 0.8,
+        "BackgroundRejection": 0.
+    },
+    
+    "Sensitivity": {
+        "EnergyType": "Reco",
+        "SelectionEfficiency": 0.8,
+        "OutputFile": "chi2.root",
+        "UniformWeights": ["bnbcorrection_FluxHist"],
+        "NumDm2": 300,
+        "LogDm2Lims": [ -2.0, 2.0 ],
+        "NumSin": 300,
+        "LogSinLims": [ -3.0, 0.0 ],
+        "SaveOscillations": [
+          [0.11, 0.44],
+          [0.11, 1.1],
+          [0.11, 6.],
+          [0.11, 20.]
+        ]
+    }
+    
+}

@@ -46,7 +46,7 @@ void ExampleSelection::Finalize() {
 }
 
 
-bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco) {
+bool ExampleSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "ExampleSelection: Processing event " << fEventCounter << std::endl;
   }
@@ -79,4 +79,3 @@ bool ExampleSelection::ProcessEvent(const gallery::Event& ev, std::vector<Event:
 
 // This line must be included for all selections!
 DECLARE_SBN_PROCESSOR(ana::ExampleAnalysis::ExampleSelection)
-

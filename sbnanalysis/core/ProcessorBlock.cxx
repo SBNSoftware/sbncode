@@ -30,7 +30,7 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
     for (auto it : fProcessors) {
       it.first->BuildEventTree(ev);
 
-      bool accept = it.first->ProcessEvent(ev, *it.first->fReco);
+      bool accept = it.first->ProcessEvent(ev, it.first->fEvent->truth, *it.first->fReco);
 
       if (accept) {
         it.first->FillTree();

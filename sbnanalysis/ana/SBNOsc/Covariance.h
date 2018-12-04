@@ -5,34 +5,88 @@
  * \file Covariance.h
  */
 
+#include "json/json.h"
+#include "core/PostProcessorBase.hh"
+
 #include <string>
 #include <vector>
+#include <map>
+#include <string>
+#include <iostream>
+#include <cassert>
+
+#include <TFile.h>
+#include <TTree.h>
+#include <TH1D.h>
+#include <TH2D.h>
+#include <TH3D.h>
+#include <TMatrixDSym.h>
 
 class TTree;
 
 namespace ana {
-  namespace SBNOsc {
+namespace SBNOsc {
 
-class EventSample {
-public:
-  /** Constructor. */
-  EventSample(TTree* _tree, float scaleFactor)
-    : tree(_tree), fScaleFactor(scaleFactor) {}
+class Covariance: public core::PostProcessorBase {
+    public:
+        // Constructor
+        Covariance() {}
 
-  EventSample(std::vector<std::string> filenames, float fScaleFactor);
+        // implementing PostProcessor
+        void FileCleanup(TTree *eventTree);
+        void Initialize(Json::Value *config);
+        void ProcessEvent(const Event *event);
+        void Finalize() { GetCovs(); Write(); }
 
-  TTree* tree;  //!< Event tree
-  float fScaleFactor;  //!< Factor for POT (etc.) scaling
+        // API Functions
+        void GetCovs();
+        void Write();
+
+        // build the covariance matrix
+        TMatrixDSym CovarianceMatrix();
+        
+        // Output
+        TH2D *cov; //!< Covariance Matrix
+        TH2D *fcov; //!< Fractional Covariance Matrix
+        TH2D *corr; //!< Correlation Matrix
+
+    
+    private:
+        class EventSample {
+          public:
+    
+	    /** Constructors. */
+	    EventSample(const Json::Value &config, unsigned nUniverses);
+	    
+	    double fScaleFactor;         //!< Factor for POT (etc.) scaling
+	    std::vector <double> fBins; //!< Energy bin limits
+	    TH1D *fCentralValue; //!< central value histogram
+	    std::vector<TH1D *> fUniverses; //!< histogram per systematic universe
+	    std::string fName; //!< Name for the sample
+        };
+
+        // config
+        std::vector<std::string> fWeightKeys;
+        std::vector<std::string> fUniformWeights;
+        int fNumAltUnis;
+        std::string fEnergyType;
+        
+        double fSelectionEfficiency;
+        double fBackgroundRejection;
+        std::string fOutputFile;
+
+        bool fSaveCentralValue;
+        bool fSaveUniverses;
+
+        // file counter
+        unsigned fSampleIndex;
+
+        // Stored Event Samples
+        std::vector<EventSample> fEventSamples;
+        
 };
 
+}   // namespace SBNOsc
+}   // namespace ana
 
-class Covariance {
-public:
-  Covariance(std::vector<EventSample> samples);
-};
-
-  }  // namespace SBNOsc
-}  // namespace ana
-
-#endif  // __sbnanalysis_ana_SBNOsc_Covariance__
-
+#endif// __sbnanalysis_ana_SBNOsc_Covariance__
