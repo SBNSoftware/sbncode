@@ -9,7 +9,7 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
-#include "json/json.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "Event.hh"
 #include "Loader.hh"
 #include "util/Interaction.hh"
@@ -37,46 +37,48 @@ void ProcessorBase::EventCleanup() {
 
 
 void ProcessorBase::Initialize(char* config) {
-  Json::Value* cfg = LoadConfig(config);
+  fhicl::ParameterSet* cfg = LoadConfig(config);
   Initialize(cfg);
 }
 
 
 void ProcessorBase::Setup(char* config) {
-  Json::Value* cfg = LoadConfig(config);
+  fhicl::ParameterSet* cfg = LoadConfig(config);
   Setup(cfg);
 }
 
 
-void ProcessorBase::Setup(Json::Value* config) {
+void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   // Load configuration parameters
-  //
+
   // With configuration file provided
   if (config) {
-    fTruthTag = { config->get("MCTruthTag", "generator").asString() };
-    fMCTrackTag = { config->get("MCTrackTag", "mcreco").asString() };
-    fMCShowerTag = { config->get("MCShowerTag", "mcreco").asString() };
-    fMCParticleTag = { config->get("MCParticleTag", "largeant").asString() };
-    fOutputFilename = config->get("OutputFile", "output.root").asString();
+    fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
+    fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
+    fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
+    fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
+    fOutputFilename = config->get<std::string>("OutputFile", "output.root");
 
-    // get the weights (can supply multiple producers)
-    Json::Value weight_tag_config = config->get("MCWeightTags", "eventweight");
-    // supply single value
-    if (weight_tag_config.isString()) {
-      fWeightTags = { { weight_tag_config.asString() } };
-    }
-    // supply multiple values
-    else {
-      for (const Json::Value &str: weight_tag_config) {
-        fWeightTags.emplace_back(str.asString());
+    // Get the event weight tags (can supply multiple producers)
+    fWeightTags = {};
+    if (config->has_key("MCWeightTags")) {
+      if (config->is_key_to_atom("MCWeightTags")) {
+        std::string weight_tag = config->get<std::string>("MCWeightTags");
+        fWeightTags = { { weight_tag } };
+      }
+      else if (config->is_key_to_sequence("MCWeightTags")) {
+        std::vector<std::string> weight_tags = \
+          config->get<std::vector<std::string> >("MCWeightTags");
+        for (size_t i=0; i<weight_tags.size(); i++) {
+          fWeightTags.emplace_back(weight_tags[i]);
+        }
       }
     }
   }
   // Default -- no config file provided
   else {
     fTruthTag = { "generator" };
-    fWeightTags = {{ "eventweight" }};
-    
+    fWeightTags = {};
     fMCTrackTag = {"mcreco"};
     fMCShowerTag = {"mcreco"};
     fMCParticleTag = {"largeant"};
@@ -112,15 +114,18 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
-  for (auto const &weightTag: fWeightTags) {
-    gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
-    bool hasWeights = ev.getByLabel(weightTag, this_wgh);
-    // coherence check
-    if (hasWeights) {
-      assert(this_wgh->size() == mctruths.size());
+
+  if (!fWeightTags.empty()) {
+    for (auto const &weightTag: fWeightTags) {
+      gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
+      bool hasWeights = ev.getByLabel(weightTag, this_wgh);
+      // coherence check
+      if (hasWeights) {
+        assert(this_wgh->size() == mctruths.size());
+      }
+      // store the weights
+      wghs.push_back(this_wgh);
     }
-    // store the weights
-    wghs.push_back(this_wgh);
   }
 
   fTree->GetEntry(fEventIndex);
@@ -136,10 +141,12 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     if (!mctruth.NeutrinoSet()) continue;
 
     // Combine Weights
-    for (auto const &wgh: wghs) {
-      // Insert the weights for each individual EventWeight object into the 
-      // Event class "master" weight list
-      interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+    if (!wghs.empty()) {
+      for (auto const &wgh: wghs) {
+        // Insert the weights for each individual EventWeight object into the 
+        // Event class "master" weight list
+        interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+      }
     }
 
     TLorentzVector q_labframe;

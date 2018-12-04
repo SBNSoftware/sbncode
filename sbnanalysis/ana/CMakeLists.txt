@@ -9,7 +9,7 @@ include_directories( $ENV{GALLERY_INC} )
 include_directories( $ENV{LARCOREOBJ_INC} )
 include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
-include_directories( $ENV{JSONCPP_INC} )
+include_directories( $ENV{FHICLCPP_INC} )
 include_directories( $ENV{UBCORE_INC} )
 
 link_directories(
@@ -20,7 +20,7 @@ link_directories(
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARDATAOBJ_LIB}
   $ENV{UBCORE_LIB}
-  $ENV{JSONCPP_LIB}
+  $ENV{FHICLCPP_LIB}
   $ENV{UBCORE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )

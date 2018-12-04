@@ -46,9 +46,9 @@ public:
    * Here we load configuration parameters, set up histograms for output, and
    * add our own branches to the output tree.
    *
-   * \param config A configuration, as a JSON object
+   * \param config A configuration, as FHiCL ParameterSet object
    */
-  void Initialize(Json::Value* config=NULL);
+  void Initialize(fhicl::ParameterSet* config=NULL);
 
   /** Finalize and write objects to the output file. */
   void Finalize();

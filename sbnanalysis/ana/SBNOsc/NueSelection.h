@@ -31,9 +31,9 @@ public:
   /**
    * Initialization.
    *
-   * \param config A configuration, as a JSON object
+   * \param config A configuration, as a FHiCL ParameterSet object
    */
-  void Initialize(Json::Value* config=NULL);
+  void Initialize(fhicl::ParameterSet* config=NULL);
 
   /** Finalize and write objects to the output file. */
   void Finalize();

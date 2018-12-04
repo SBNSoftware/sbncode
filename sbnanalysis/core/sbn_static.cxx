@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 #include <dlfcn.h>
-#include <json/json.h>
+#include <fhiclcpp/ParameterSet.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
 
@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 
   // Setup
   int n_processors = config_names.empty() ? 1 : config_names.size();
-  std::vector<Json::Value*> configs(n_processors);
+  std::vector<fhicl::ParameterSet*> configs(n_processors);
   std::vector<core::ProcessorBase*> procs(n_processors);
 
   std::cout << "Configuring... " << std::endl;

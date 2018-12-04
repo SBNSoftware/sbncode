@@ -17,7 +17,6 @@
 #include <TH3D.h>
 #include <THStack.h>
 #include <TROOT.h>
-// #include <TTree.h>
 #include <TCanvas.h>
 #include <TMath.h>
 #include <TCanvas.h>
@@ -26,14 +25,11 @@
 namespace ana {
 namespace SBNOsc {
 
-Covariance::EventSample::EventSample(const Json::Value &config, unsigned nUniverses) {
+Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned nUniverses) {
     // get configuration stuff
-    Json::Value bins = config.get("binlims", "");
-    for (auto const& bin: bins) {
-      fBins.push_back(bin.asDouble());
-    }
-    fName = config.get("name", "").asString(); 
-    fScaleFactor = config.get("scalefactor", 0.).asDouble();
+    fBins = config.get<std::vector<double> >("binlims");
+    fName = config.get<std::string>("name", "");
+    fScaleFactor = config.get<double>("scalefactor", 1.0);
 
     // setup histograms
     std::string cv_title = fName + " Central Value";
@@ -70,47 +66,46 @@ std::vector <double> GetUniWeights(const std::map <std::string, std::vector <dou
 }
 
 
-void Covariance::Initialize(Json::Value *config) {
+void Covariance::Initialize(fhicl::ParameterSet* config) {
     // must have config
     assert(config != NULL);
     // Weight and universe stuff
     // WeightKey can either be the name of a single weight, or a name signifying a list of weights,
     // or a list of weights to be oscillated
     
-    Json::Value configWeightKey = (*config)["Covariance"].get("WeightKey", ""); 
-    for (auto const& keyName: configWeightKey) {
-        fWeightKeys.push_back(keyName.asString());
-    }
+    fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("Covariance");
+
+    fWeightKeys = pconfig.get<std::vector<std::string> >("WeightKey");
 
     // uniformly applied weights
-    if ((*config)["Sensitivity"].isMember("UniformWeights") &&
-        (*config)["Sensitivity"]["UniformWeights"].isArray()) {
-        for (auto const &key: (*config)["Sensitivity"]["UniformWeights"]) {
-            fUniformWeights.push_back(key.asString());
-        }
+    if (pconfig.is_key_to_sequence("UniformWeights")) {
+      fUniformWeights = pconfig.get<std::vector<std::string> >("UniformWeights");
     }
 
     // number of universes to be used
-    fNumAltUnis = (*config)["Covariance"].get("NumAltUnis", 0).asInt();
+    fNumAltUnis = pconfig.get<int>("NumAltUnis", 0);
     
     // Type of energy
-    fEnergyType = (*config)["Covariance"].get("EnergyType", "").asString();
+    fEnergyType = pconfig.get<std::string>("EnergyType", "Reco");
     
     // Further selection and rejection 'efficiencies'
-    fSelectionEfficiency = (*config)["Covariance"].get("SelectionEfficiency", 1.0).asDouble();
-    fBackgroundRejection = (*config)["Covariance"].get("BackgroundRejection", 0.0).asDouble();
+    fSelectionEfficiency = pconfig.get<double>("SelectionEfficiency", 1.0);
+    fBackgroundRejection = pconfig.get<double>("BackgroundRejection", 0.0);
     
     // get event samples
-    Json::Value configEventSamples = (*config)["EventSamples"];
-    for (auto const& sample: configEventSamples) {
-        fEventSamples.emplace_back(sample, fNumAltUnis);
+    std::vector<fhicl::ParameterSet> configEventSamples = \
+      pconfig.get<std::vector<fhicl::ParameterSet> >("EventSamples");
+    for (const fhicl::ParameterSet& sample : configEventSamples) {
+      fEventSamples.emplace_back(sample, fNumAltUnis);
     }
     
     // set output directory
-    fOutputFile = (*config)["Covariance"].get("OutputFile", "").asString();
+    fOutputFile = pconfig.get<std::string>("OutputFile", "");
+
     // whether to save things
-    fSaveCentralValue = (*config)["Covariance"].get("SaveCentralValue", false).asBool();
-    fSaveUniverses = (*config)["Covariance"].get("SaveUniverses", false).asBool();
+    fSaveCentralValue = pconfig.get<bool>("SaveCentralValue", false);
+    fSaveUniverses = pconfig.get<bool>("SaveUniverses", false);
+
     // start out at the zeroth sample
     fSampleIndex = 0;
 }

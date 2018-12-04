@@ -107,7 +107,7 @@ std::vector<double> Chi2Sensitivity::EventSample::Background() const {
 }
 
 // Initialize
-void Chi2Sensitivity::Initialize(Json::Value *config) {
+void Chi2Sensitivity::Initialize(fhicl::ParameterSet* config) {
     //// Get parameters from config file
     //// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -116,86 +116,86 @@ void Chi2Sensitivity::Initialize(Json::Value *config) {
 
     // initialize covariance
     fCovariance.Initialize(config);
-    
+
     // Output directory
-    fOutputFile = (*config)["Sensitivity"].get("OutputFile", "").asString();
-    
+    fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("Sensitivity");
+    fOutputFile = pconfig.get<std::string>("OutputFile", "output.root");
+
     // Get energy from covariance
-    fEnergyType = (*config)["Sensitivity"].get("EnergyType", "").asString(); 
-    
+    fEnergyType = pconfig.get<std::string>("EnergyType", "Reco");
+
     // Further selection and rejection 'efficiencies'
-    fSelectionEfficiency = (*config)["Sensitivity"].get("SelectionEfficiency", 1.0).asDouble();
-    fBackgroundRejection = (*config)["Sensitivity"].get("BackgroundRejection", 0.0).asDouble();
-    
+    fSelectionEfficiency = pconfig.get<double>("SelectionEfficiency", 1.0);
+    fBackgroundRejection = pconfig.get<double>("BackgroundRejection", 0.0);
+
     // Event Samples
-    for (auto const &json: (*config)["EventSamples"]) {
-        fEventSamples.emplace_back(json);
+    std::vector<fhicl::ParameterSet> samples = \
+      pconfig.get<std::vector<fhicl::ParameterSet> >("EventSamples");
+    for (const fhicl::ParameterSet& sample: samples) {
+      fEventSamples.emplace_back(sample);
     }
-    
+
     // Phase space parameters
-    fNumDm2 = (*config)["Sensitivity"].get("NumDm2", -1).asInt();
-    fLogDm2Lims = {};
-    for (auto binlim : (*config)["Sensitivity"]["LogDm2Lims"]) {
-        fLogDm2Lims.push_back(binlim.asDouble());
+    fNumDm2 = pconfig.get<int>("NumDm2", 50);
+    fLogDm2Lims = pconfig.get<std::vector<double> >("LogDm2Lims");
+    fNumSin = pconfig.get<int>("NumSin", 50);
+    fLogSinLims = pconfig.get<std::vector<double> >("LogSinLims");
+
+    // Whether to save stuff
+    fSavePDFs = pconfig.get<bool>("SavePDFs", true);
+    fSaveSignal = pconfig.get<bool>("SaveSignal", true);
+    fSaveBackground = pconfig.get<bool>("SaveBackground", true);
+
+    if (pconfig.is_key_to_sequence("SaveOscillations")) {
+      std::vector<std::vector<double> > pairs = \
+        pconfig.get<std::vector<std::vector<double> > >("SaveOscillations");
+      for (size_t i=0; i<pairs.size(); i++) {
+        fSaveOscillations.push_back({ pairs[i].at(0), pairs[i].at(1) });
+      }
     }
-    fNumSin = (*config)["Sensitivity"].get("NumSin", -1).asInt();
-    fLogSinLims = {};
-    for (auto binlim : (*config)["Sensitivity"]["LogSinLims"]) {
-        fLogSinLims.push_back(binlim.asDouble());
-    }
-    
-    
-    // whether to save stuff
-    fSavePDFs = (*config)["Sensitivity"].get("SavePDFs", true).asBool();
-    fSaveSignal = (*config)["Sensitivity"].get("SaveSignal", true).asBool();
-    fSaveBackground = (*config)["Sensitivity"].get("SaveBackground", true).asBool();
-    if ((*config)["Sensitivity"].isMember("SaveOscillations") &&
-        (*config)["Sensitivity"]["SaveOscillations"].isArray()) {
-        for (auto const &osc_pair: (*config)["Sensitivity"]["SaveOscillations"]) {
-            fSaveOscillations.push_back({osc_pair[0].asDouble(), osc_pair[1].asDouble()});
-        }
-    }
-    // uniformly applied weights
-    if ((*config)["Sensitivity"].isMember("UniformWeights") &&
-        (*config)["Sensitivity"]["UniformWeights"].isArray()) {
-        for (auto const &key: (*config)["Sensitivity"]["UniformWeights"]) {
-            fUniformWeights.push_back(key.asString());
-        }
+
+    // Uniformly applied weights
+    if (pconfig.is_key_to_sequence("UniformWeights")) {
+      fUniformWeights = pconfig.get<std::vector<std::string> >("UniformWeights");
     }
 
     // start at 0th event sample
     fSampleIndex = 0;
 }
 
-Chi2Sensitivity::EventSample::EventSample(const Json::Value &config) {
+Chi2Sensitivity::EventSample::EventSample(const fhicl::ParameterSet& config) {
     // scaling stuff
-    fName = config.get("name", "").asString();
-    fScaleFactor = config.get("scalefactor", 0.).asDouble(); 
+    fName = config.get<std::string>("name", "");
+    fScaleFactor = config.get<double>("scalefactor", 0.);
 
     // setup detector stuff
-    fDistance = config.get("Distance", "").asDouble();
-    fXlim[0] = config["DetX"][0].asDouble();
-    fXlim[1] = config["DetX"][1].asDouble();
-    fYlim[0] = config["DetY"][0].asDouble();
-    fYlim[1] = config["DetY"][1].asDouble();
-    fZlim[0] = config["DetZ"][0].asDouble();
-    fZlim[1] = config["DetZ"][1].asDouble();
+    fDistance = config.get<double>("Distance", 0);
+    std::vector<double> xlim = config.get<std::vector<double> >("DetX");
+    std::vector<double> ylim = config.get<std::vector<double> >("DetY");
+    std::vector<double> zlim = config.get<std::vector<double> >("DetZ");
+    fXlim[0] = xlim[0];
+    fXlim[1] = xlim[1];
+    fYlim[0] = ylim[0];
+    fYlim[1] = ylim[1];
+    fZlim[0] = zlim[0];
+    fZlim[1] = zlim[1];
 
     // oscillation type
-    fOscType = config.get("OscType", 0).asInt();
+    fOscType = config.get<int>("OscType", 0);
 
     // bins of things
     //
     // Reco energy
-    Json::Value bins = config.get("binlims", "");
+    std::vector<double> bins = config.get<std::vector<double> >("binlims");
     for (auto const& bin: bins) {
-        fBins.push_back(bin.asDouble());
+        fBins.push_back(bin);
     }
 
     // True energy
-    double minTrueE = config["TrueELims"][0].asDouble();
-    double maxTrueE = config["TrueELims"][1].asDouble();
-    int numTrueEBinLimits = config.get("NumTrueEBins", 1).asInt() + 1;
+    std::vector<double> truee = config.get<std::vector<double> >("TrueELims");
+    double minTrueE = truee.at(0);
+    double maxTrueE = truee.at(1);
+    int numTrueEBinLimits = config.get<int>("NumTrueEBins", 1) + 1;
     double trueE_binwidth = (maxTrueE - minTrueE) / numTrueEBinLimits;
     for (int i = 0; i < numTrueEBinLimits; i ++) {
         fTrueEBins.push_back(minTrueE + i * trueE_binwidth);
@@ -204,7 +204,7 @@ Chi2Sensitivity::EventSample::EventSample(const Json::Value &config) {
     // distance
     //
     // Take distance along z-axis as limits
-    int numBinsPerMeter = config.get("NumDistanceBinsPerMeter", 1).asInt(); 
+    int numBinsPerMeter = config.get<int>("NumDistanceBinsPerMeter", 1);
     double numBinsPerCM = numBinsPerMeter * 0.01; // unit conversion
     unsigned n_bins = (unsigned) ((fZlim[1] - fZlim[0]) * numBinsPerCM) + 1; /* round up to be on the safe side */ 
     unsigned n_limits = n_bins + 1;

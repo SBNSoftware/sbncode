@@ -2,7 +2,7 @@
 #include <cmath>
 #include <vector>
 
-#include <json/json.h>
+#include "fhiclcpp/ParameterSet.h"
 
 #include <TH2D.h>
 #include <TH1D.h>
@@ -40,32 +40,50 @@ double aaBoxesMax(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
   return std::max_element(boxes.begin(), boxes.end(), [dim](auto &lhs, auto &rhs) { return lhs.Max()[dim] < rhs.Max()[dim]; })->Max()[dim];
 }
 
-void NumuSelection::Initialize(Json::Value* config) {
+void NumuSelection::Initialize(fhicl::ParameterSet* config) {
   if (config) {
+    fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NumuSelection");
+
     // setup active volume bounding boxes
-    auto AVs = (*config)["NumuSelection"]["active_volumes"];
-    for (auto AV: AVs) {
-      _config.active_volumes.emplace_back(AV["xmin"].asDouble(), AV["ymin"].asDouble(), AV["zmin"].asDouble(), AV["xmax"].asDouble(), AV["ymax"].asDouble(), AV["zmax"].asDouble());
+    std::vector<fhicl::ParameterSet> AVs = \
+      pconfig.get<std::vector<fhicl::ParameterSet> >("active_volumes");
+    for (auto const& AV : AVs) {
+      double xmin = AV.get<double>("xmin");
+      double ymin = AV.get<double>("ymin");
+      double zmin = AV.get<double>("zmin");
+      double xmax = AV.get<double>("xmax");
+      double ymax = AV.get<double>("ymax");
+      double zmax = AV.get<double>("zmax");
+      _config.active_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
     }
-    auto FVs = (*config)["NumuSelection"]["fiducial_volumes"];
-    for (auto FV: FVs) {
-      _config.fiducial_volumes.emplace_back(FV["xmin"].asDouble(), FV["ymin"].asDouble(), FV["zmin"].asDouble(), FV["xmax"].asDouble(), FV["ymax"].asDouble(), FV["zmax"].asDouble());
+
+    std::vector<fhicl::ParameterSet> FVs = \
+      pconfig.get<std::vector<fhicl::ParameterSet> >("fiducial_volumes");
+    for (auto const& FV : FVs) {
+      double xmin = FV.get<double>("xmin");
+      double ymin = FV.get<double>("ymin");
+      double zmin = FV.get<double>("zmin");
+      double xmax = FV.get<double>("xmax");
+      double ymax = FV.get<double>("ymax");
+      double zmax = FV.get<double>("zmax");
+      _config.fiducial_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
     }
-    _config.doFVCut = (*config)["NumuSelection"].get("doFVcut", true).asBool();
-    _config.trajPointLength = (*config)["NumuSelection"].get("trajPointLength", false).asBool();
-    _config.vertexDistanceCut = (*config)["NumuSelection"].get("vertexDistance", -1).asDouble();
-    _config.minLengthContainedTrack = (*config)["NumuSelection"].get("minLengthContainedTrack", -1).asDouble();
-    _config.minLengthExitingTrack = (*config)["NumuSelection"].get("minLengthExitingTrack", -1).asDouble();
-    _config.trackVisibleEnergyThreshold = (*config)["NumuSelection"].get("trackVisibleEnergyThreshold", 0.).asDouble();
-    _config.showerEnergyDistortion = (*config)["NumuSelection"].get("showerEnergyDistortion", 0.).asDouble();
-    _config.trackEnergyDistortion = (*config)["NumuSelection"].get("trackEnergyDistortion", 0.).asDouble();
-    _config.leptonEnergyDistortionContained = (*config)["NumuSelection"].get("leptonEnergyDistortionContained", 0.).asDouble();
-    _config.leptonEnergyDistortionLeavingA = (*config)["NumuSelection"].get("leptonEnergyDistortionLeavingA", 0.).asDouble();
-    _config.leptonEnergyDistortionLeavingB = (*config)["NumuSelection"].get("leptonEnergyDistortionLeavingB", 0.).asDouble();
-    _config.acceptShakyTracks = (*config)["NumuSelection"].get("acceptShakyTracks", false).asBool();
-    _config.verbose = (*config)["NumuSelection"].get("verbose", false).asBool();
-    _config.cutKMEC = (*config)["NumuSelection"].get("cutKMEC", false).asBool();
-    _config.onlyKMEC = (*config)["NumuSelection"].get("onlyKMEC", false).asBool();
+
+    _config.doFVCut = pconfig.get<bool>("doFVcut", true);
+    _config.trajPointLength = pconfig.get<bool>("trajPointLength", false);
+    _config.vertexDistanceCut = pconfig.get<double>("vertexDistance", -1);
+    _config.minLengthContainedTrack = pconfig.get<double>("minLengthContainedTrack", -1);
+    _config.minLengthExitingTrack = pconfig.get<double>("minLengthExitingTrack", -1);
+    _config.trackVisibleEnergyThreshold = pconfig.get<double>("trackVisibleEnergyThreshold", 0.);
+    _config.showerEnergyDistortion = pconfig.get<double>("showerEnergyDistortion", 0.);
+    _config.trackEnergyDistortion = pconfig.get<double>("trackEnergyDistortion", 0.);
+    _config.leptonEnergyDistortionContained = pconfig.get<double>("leptonEnergyDistortionContained", 0.);
+    _config.leptonEnergyDistortionLeavingA = pconfig.get<double>("leptonEnergyDistortionLeavingA", 0.);
+    _config.leptonEnergyDistortionLeavingB = pconfig.get<double>("leptonEnergyDistortionLeavingB", 0.);
+    _config.acceptShakyTracks = pconfig.get<bool>("acceptShakyTracks", false);
+    _config.verbose = pconfig.get<bool>("verbose", false);
+    _config.cutKMEC = pconfig.get<bool>("cutKMEC", false);
+    _config.onlyKMEC = pconfig.get<bool>("onlyKMEC", false);
   }
 
   // Setup histo's for root output

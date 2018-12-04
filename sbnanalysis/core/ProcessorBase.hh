@@ -20,8 +20,8 @@ class TFile;
 class TTree;
 class Event;
 
-namespace Json {
-  class Value;
+namespace fhicl {
+  class ParameterSet;
 }
 
 /** Core framework functionality. */
@@ -95,7 +95,7 @@ protected:
    *
    * \param config A configuration, as a JSON object.
    */
-  virtual void Initialize(Json::Value* config=NULL) = 0;
+  virtual void Initialize(fhicl::ParameterSet* config=NULL) = 0;
 
   /** Perform user-level finalization. */
   virtual void Finalize() = 0;
@@ -112,7 +112,7 @@ protected:
    *
    * \param config A configuration as a JSON object
    */
-  virtual void Setup(Json::Value* config=NULL);
+  virtual void Setup(fhicl::ParameterSet* config=NULL);
 
   /** Perform framework-level finalization. */
   virtual void Teardown();

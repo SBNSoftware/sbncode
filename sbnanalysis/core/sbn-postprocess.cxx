@@ -5,7 +5,6 @@
 #include <map>
 #include <vector>
 #include <dlfcn.h>
-#include <json/json.h>
 #include <core/PostProcessorBase.hh>
 #include <core/Loader.hh>
 

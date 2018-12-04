@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <TH2D.h>
-#include <json/json.h>
+#include "fhiclcpp/ParameterSet.h"
 #include "gallery/ValidHandle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -17,7 +17,7 @@ ExampleSelection::ExampleSelection()
     : SelectionBase(), fNuCount(0), fEventCounter(0) {}
 
 
-void ExampleSelection::Initialize(Json::Value* config) {
+void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   // Make a histogram
   fNuVertexXZHist = new TH2D("nu_vtx_XZ", "",
                              100, -1000, 1000, 100, -1000, 1000);
@@ -27,9 +27,13 @@ void ExampleSelection::Initialize(Json::Value* config) {
   fTruthTag = { "generator" };
 
   if (config) {
-    fMyParam = (*config)["ExampleAnalysis"].get("parameter", 0).asInt();
+    fhicl::ParameterSet pconfig = \
+      config->get<fhicl::ParameterSet>("ExampleAnalysis");
+
+    fMyParam = pconfig.get<int>("parameter", 0);
+
     fTruthTag = \
-      { (*config)["ExampleAnalysis"].get("MCTruthTag", "generator").asString() };
+      { pconfig.get<std::string>("MCTruthTag", "generator") };
   }
 
   // Add custom branches
