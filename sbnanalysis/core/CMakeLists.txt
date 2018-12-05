@@ -19,6 +19,8 @@ include_directories($ENV{LARRECO_INC})
 include_directories($ENV{LARCORE_INC})
 include_directories($ENV{LARCOREALG_INC})
 include_directories($ENV{LARDATA_INC})
+include_directories($ENV{LARCOREALG_INC})
+include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{LARDATAOBJ_INC})
 include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{NUSIMDATA_INC})
@@ -44,6 +46,8 @@ link_directories(
   $ENV{LARDATAALG_LIB}
   $ENV{FHICLCPP_LIB}
   $ENV{MESSAGEFACILITY_LIB}
+  $ENV{LARDATAALG_LIB}
+  $ENV{JSONCPP_LIB}
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
@@ -73,6 +77,7 @@ add_library(
 )
 
 add_library(
+<<<<<<< HEAD
   sbnanalysis_ProviderManager SHARED
   ProviderManager.cxx
 )
@@ -83,6 +88,15 @@ target_link_libraries(
   lardataalg_DetectorInfo
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
+=======
+  sbnanalysis_ServiceManager SHARED
+  ServiceManager.cxx
+)
+
+target_link_libraries(
+  sbnanalysis_ServiceManager
+  larcorealg_Geometry
+  lardataalg_DetectorInfo
   icaruscode_Geometry
   ubcore_Geometry
   sbnd_Geometry
@@ -96,6 +110,7 @@ target_link_libraries(
   sbnanalysis_util_Interaction
   sbnanalysis_util_RecoUtil
   sbnanalysis_ProviderManager
+  sbnanalysis_ServiceManager
   canvas
   cetlib
   gallery
@@ -136,6 +151,7 @@ add_custom_command(TARGET sbnanalysis_Event POST_BUILD
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
 add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
+add_custom_command(TARGET sbnanalysis_ServiceManager POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
 
@@ -172,6 +188,9 @@ target_link_libraries(
   ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
   ${MF_MESSAGELOGGER}
+  jsoncpp
+  ${LARSIM_BASE_LIBRARY}
+  ${LARSIM_BASE_DICT}
   ${ROOT_LIBRARIES}
 )
 
@@ -185,12 +204,16 @@ target_link_libraries(
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
   larsim_Simulation 
+  jsoncpp
+  ${LARSIM_BASE_LIBRARY}
+  ${LARSIM_BASE_DICT}
   ${ROOT_LIBRARIES}
 )
 
 install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
+install(TARGETS sbnanalysis_ServiceManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 install(TARGETS sbn-postprocess DESTINATION bin)
 
@@ -204,4 +227,3 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
   target_link_libraries(${STATICEXE} sbnanalysis_Processor fhiclcpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
   install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()
-
