@@ -42,15 +42,11 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
 
-  // Get access to services
+  // Get access to services (use kSBND, kUBOONE, or kICARUS)
   fServiceManager = new core::ServiceManager(core::kICARUS);
-  std::cout << "Detector: " << fServiceManager->GetGeometryService()->DetectorName() << std::endl;
-
-  core::ServiceManager* fServiceManager2 = new core::ServiceManager(core::kSBND);
-  std::cout << "Detector: " << fServiceManager2->GetGeometryService()->DetectorName() << std::endl;
-
-  core::ServiceManager* fServiceManager3 = new core::ServiceManager(core::kUBOONE);
-  std::cout << "Detector: " << fServiceManager3->GetGeometryService()->DetectorName() << std::endl;
+  std::cout << "Detector: "
+            << fServiceManager->GetGeometryService()->DetectorName()
+            << std::endl;
 
   // Use some library code
   hello();
