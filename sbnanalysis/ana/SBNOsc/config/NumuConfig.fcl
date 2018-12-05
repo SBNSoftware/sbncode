@@ -1,49 +1,172 @@
-OutputFile: "output_SBNOsc_NumuSelection.root"
+BEGIN_PROLOG
+// standard configurations to be used in proposal sensitivity
 
-NumuSelection: {
-  verbose: false
-  doFVCut: true
+eventweight_tags: ["fluxeventweight", "genieeventweight"]
 
-  // Using Uboone UBXSec analysis volume
-  fiducial_volumes: [
-    // first FV is the upstream one (relative to beam direction)
+SBND_fiducial_volumes: [
     {
-      xmin: 10.45
-      ymin: -80.53
-      zmin: 25.1
-      xmax: 242.8
-      ymax: 82.47
-      zmax: 675.1
+      xmin: -190.9
+      ymin: -185
+      zmin: 15.
+      xmax: 5.6
+      ymax: 185
+      zmax: 415.
     },
     {
-      xmin: 10.45
-      ymin: -80.53
-      zmin: 775.1
-      xmax: 242.8
-      ymax: 82.47
-      zmax: 951.9
+      xmin: 10.9
+      ymin: -185
+      zmin: 15.
+      xmax: 190.9
+      ymax: 185
+      zmax: 415.
     }
-  ]
+]
 
-  active_volumes: [
+SBND_active_volumes: [
     {
-     xmin: -1.55
-     ymin: -115.53
-     zmin: 0.1
-     xmax: 254.8
-     ymax: 117.47
-     zmax: 1036.9
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 500.
     }
-  ]
+]
 
-  minLengthContainedTrack: 50, // value taken from proposal
-  minLengthExitingTrack: 100, // value taken from proposal
-  trackVisibleEnergyThreshold: 0.021, // [GeV] taken from pospoal
-  
-  showerEnergyDistortion: 0.05, // value taken from tech note by J. Zennamo and C. Adams
-  trackEnergyDistortion: 0.05, // same as above
-  leptonEnergyDistortionContained: 0.02, // same as above
-  leptonEnergyDistortionLeavingA: 0.0, // dp/p = -Alog(BL) in tech note. Still needs to be set
-  leptonEnergyDistortionLeavingB: 0.0, // same as above
+// fiducial volume of SBND used in proposal
+SBND_Proposal_fiducial_volumes: [
+     {
+      xmin: -190.9
+      ymin: -185
+      zmin: 15.
+      xmax: 5.6
+      ymax: 185
+      zmax: 290.
+     },
+     {
+      xmin: 10.9
+      ymin: -185
+      zmin: 15.
+      xmax: 190.9
+      ymax: 185
+      zmax: 290.
+     }
+
+]
+
+// active volume of SBND used in proposal
+SBND_Proposal_active_volumes: [
+     {
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 365.0
+     }
+]
+
+MicroBooNE_fiducial_volumes: [
+    {
+      xmin: 13.45
+      ymin: -100.53
+      zmin: 15.1
+      xmax: 239.8
+      ymax: 102.47
+      zmax: 956.9
+    }
+]
+
+MicroBooNE_active_volumes: [
+    {
+      xmin: -1.55
+      ymin: -115.53
+      zmin: 0.1
+      xmax: 254.8
+      ymax: 117.47
+      zmax: 1036.9
+    }
+]
+
+ICARUS_fiducial_volumes: [
+     {
+       xmin: -356.24
+       ymin: -158.41
+       zmin: -894.950652
+       xmax: -224.54
+       ymax: 128.41
+       zmax: 799.950652
+     },
+     {
+       xmin: -207.89
+       ymin: -158.41
+       zmin: -894.950652
+       xmax: -76.19
+       ymax: 128.41
+       zmax: 799.950652
+     },
+     {
+       xmin: 76.19
+       ymin: -158.41
+       zmin: -894.950652
+       xmax: 207.89
+       ymax: 128.41
+       zmax: 799.950652
+     },
+     {
+       xmin: 224.54
+       ymin: -158.41
+       zmin: -894.950652
+       xmax: 356.24
+       ymax: 128.41
+       zmax: 799.950652
+     }
+]
+
+ICARUS_active_volumes: [
+    {
+      xmin: -364.49
+      ymin: -173.41
+      zmin: -909.950652
+      xmax: -67.94
+      ymax: 143.41
+      zmax: 879.950652
+    },
+    {
+      xmin: 67.94
+      ymin: -173.41
+      zmin: -909.950652
+      xmax: 364.49
+      ymax: 143.41
+      zmax: 879.950652
+    }
+]
+
+standard_cuts: {
+  acceptShakyTracks: false
+  doFVCut: true
+  minLengthContainedTrack: 50 // value taken from proposal
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
 }
 
+standard_cuts_noMEC: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  doFVCut: true
+  minLengthContainedTrack: 50 // value taken from proposal
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+
+}
+END_PROLOG
