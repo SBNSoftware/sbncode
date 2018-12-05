@@ -15,6 +15,7 @@ include_directories( $ENV{CLHEP_INC} )
 include_directories( $ENV{LARCOREALG_INC} )
 include_directories( $ENV{LARDATAALG_INC} )
 include_directories( $ENV{ICARUSCODE_INC} )
+include_directories( $ENV{SBNDCODE_INC} )
 include_directories( $ENV{FHICLCPP_INC} )
 include_directories( $ENV{MESSAGEFACILITY_INC} )
 
@@ -32,9 +33,12 @@ link_directories(
   $ENV{UBCORE_LIB}
   $ENV{LARSIM_LIB}
   $ENV{LARCOREALG_LIB}
-  $ENV{LARDATAALG_LIB}
+  $ENV{LARCOREALG_LIB}
   $ENV{LARDATA_LIB}
   $ENV{ICARUSCODE_LIB}
+  $ENV{SBNDCODE_LIB}
+  $ENV{JSONCPP_LIB}
+  $ENV{UBCORE_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 

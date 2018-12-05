@@ -1,0 +1,13 @@
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "larproperties.fcl"
+#include "detectorproperties_sbnd.fcl"
+
+services: {
+  message:                   @local::sbnd_message_services_interactive
+  Geometry:                  @local::sbnd_geo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+}
+

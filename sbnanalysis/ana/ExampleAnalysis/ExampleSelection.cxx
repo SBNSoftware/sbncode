@@ -6,21 +6,12 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
-#include "larcorealg/Geometry/StandaloneGeometrySetup.h"
-#include "larcorealg/Geometry/GeometryCore.h"
-#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
-#include "larcorealg/Geometry/StandaloneBasicSetup.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandardTestHelpers.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "lardataalg/DetectorInfo/DetectorClocksStandardTestHelpers.h"
-#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
-#include "lardataalg/DetectorInfo/LArPropertiesStandardTestHelpers.h"
-#include "lardataalg/DetectorInfo/LArPropertiesStandard.h"
-#include "fhiclcpp/ParameterSet.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
+#include "core/ServiceManager.hh"
+#include "larcorealg/Geometry/GeometryCore.h"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -52,29 +43,18 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
 
+  // Get access to services
+  fServiceManager = new core::ServiceManager(core::kICARUS);
+  std::cout << "Detector: " << fServiceManager->GetGeometryService()->DetectorName() << std::endl;
+
+  core::ServiceManager* fServiceManager2 = new core::ServiceManager(core::kSBND);
+  std::cout << "Detector: " << fServiceManager2->GetGeometryService()->DetectorName() << std::endl;
+
+  core::ServiceManager* fServiceManager3 = new core::ServiceManager(core::kUBOONE);
+  std::cout << "Detector: " << fServiceManager3->GetGeometryService()->DetectorName() << std::endl;
+
   // Use some library code
   hello();
-
-  // Set up a service
-  fhicl::ParameterSet fconfig = lar::standalone::ParseConfiguration("galleryAnalysis.fcl");
-  auto geom = \
-    lar::standalone::SetupGeometry<geo::ChannelMapIcarusAlg>(fconfig.get<fhicl::ParameterSet>("services.Geometry"));
-
-  auto larp = testing::setupProvider<detinfo::LArPropertiesStandard>(
-    fconfig.get<fhicl::ParameterSet>("services.LArPropertiesService"));
-  auto detclk = testing::setupProvider<detinfo::DetectorClocksStandard>(
-    fconfig.get<fhicl::ParameterSet>("services.DetectorClocksService"));
-  auto detp = testing::setupProvider<detinfo::DetectorPropertiesStandard>(
-    fconfig.get<fhicl::ParameterSet>("services.DetectorPropertiesService"),
-    detinfo::DetectorPropertiesStandard::providers_type {
-      geom.get(),
-      static_cast<detinfo::LArProperties const*>(larp.get()),
-      static_cast<detinfo::DetectorClocks const*>(detclk.get())
-    });
-
-  fGeoService = geom.get();
-
-  std::cout << "NTPC = " << fGeoService->DetectorName() << " " << fGeoService->TotalMass() << " " << fGeoService->Ncryostats() << std::endl;
 }
 
 
