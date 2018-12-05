@@ -12,9 +12,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # source files.
 add_library(sbnanalysis_SelectionTool_ObjectBuilder SHARED ObjectBuilder.cxx)
 
-# Define library linking
-target_link_libraries(sbnanalysis_SelectionTool_ObjectBuilder sbnanalysis_SelectionTool_ExampleTools)
-
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SelectionTool_ObjectBuilder DESTINATION lib)
 
