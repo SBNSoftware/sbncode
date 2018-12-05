@@ -32,7 +32,7 @@ namespace ana {
      * \class ObjectBuilder
      * \brief Building selection tool objects from gallery/LArSoft reco events
      */
-    class ObjectBuilder : public core::SelectionBase {
+    class ObjectBuilder {
       public:
 
         /** Constructor. */

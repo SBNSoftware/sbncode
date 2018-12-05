@@ -33,3 +33,10 @@ install(TARGETS sbnanalysis_SelectionAnalysis_AnalysisMain DESTINATION lib)
 install(TARGETS sbnanalysis_SelectionAnalysis_classes DESTINATION lib)
 
 add_subdirectory(config)
+add_library(sbnanalysis_SelectionAnalysis_TestDuringMerge SHARED TestDuringMerge.cxx)
+
+# Define library linking
+target_link_libraries(sbnanalysis_SelectionAnalysis_TestDuringMerge sbnanalysis_SelectionTool_ObjectBuilder)
+
+# Install all libraries to the main "lib" directory
+install(TARGETS sbnanalysis_SelectionAnalysis_TestDuringMerge DESTINATION lib)
