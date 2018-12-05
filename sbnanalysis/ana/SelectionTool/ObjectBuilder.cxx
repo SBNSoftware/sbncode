@@ -14,16 +14,19 @@ namespace ana {
     ObjectBuilder::ObjectBuilder() : SelectionBase() {}
 
 
+    //void ObjectBuilder::Initialize(Json::Value* config) {
     void ObjectBuilder::Initialize(fhicl::ParameterSet const &p) {
+      // Initialise the objects we are accessing
+
       // Handle labels                                                                
-      m_generator_label              = p.get<std::string>("TruthLabel");              
-      m_geant_label                  = p.get<std::string>("G4Label");                 
-      m_pandora_label                = p.get<std::string>("PandoraLabel");            
-      m_reco_track_label             = p.get<std::string>("RecoTrackLabel");          
-      m_reco_shower_label            = p.get<std::string>("RecoShowerLabel");         
-      m_reco_track_calorimetry_label = p.get<std::string>("RecoTrackCalorimetryLabel");
-      m_reco_track_particleid_label  = p.get<std::string>("RecoTrackParticleIDLabel");
-      m_hit_label                    = p.get<std::string>("HitLabel");                
+      fGeneratorLabel;            = p.get<art::InputTag>("TruthLabel");              
+      fGeantLabel;                = p.get<art::InputTag>("G4Label");                 
+      fPandoraLabel;              = p.get<art::InputTag>("PandoraLabel");            
+      fRecoTrackLabel;            = p.get<art::InputTag>("RecoTrackLabel");          
+      fRecoShowerLabel;           = p.get<art::InputTag>("RecoShowerLabel");         
+      fRecoTrackCalorimetryLabel; = p.get<art::InputTag>("RecoTrackCalorimetryLabel");
+      fRecoTrackParticleidLabel;  = p.get<art::InputTag>("RecoTrackParticleIDLabel");
+      fHitLabel;                  = p.get<art::InputTag>("HitLabel");                
     }
 
 
