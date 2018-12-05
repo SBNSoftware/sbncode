@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-namespace Json {
-  class Value;
+namespace fhicl {
+  class ParameterSet;
 }
 
 namespace core {
@@ -38,7 +38,7 @@ public:
    * \param processor The processor
    * \param config The configuration, if any
    */
-  virtual void AddProcessor(ProcessorBase* processor, Json::Value* config);
+  virtual void AddProcessor(ProcessorBase* processor, fhicl::ParameterSet* config);
 
   /**
    * Process a set of files.
@@ -52,7 +52,7 @@ public:
 
 protected:
   /** Processors and their configurations. */
-  std::vector<std::pair<ProcessorBase*, Json::Value*> > fProcessors;
+  std::vector<std::pair<ProcessorBase*, fhicl::ParameterSet*> > fProcessors;
 };
 
 }  // namespace core

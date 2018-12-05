@@ -1,6 +1,6 @@
 #include <string>
 #include <vector>
-#include <json/json.h>
+#include "fhiclcpp/ParameterSet.h"
 #include "ProcessorBase.hh"
 #include "ProcessorBlock.hh"
 
@@ -13,7 +13,7 @@ ProcessorBlock::~ProcessorBlock() {}
 
 
 void ProcessorBlock::AddProcessor(ProcessorBase* processor,
-                                  Json::Value* config) {
+                                  fhicl::ParameterSet* config) {
   fProcessors.push_back({processor, config});
 }
 

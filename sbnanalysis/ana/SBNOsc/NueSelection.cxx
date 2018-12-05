@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <TH2D.h>
-#include <json/json.h>
+#include "fhiclcpp/ParameterSet.h"
 #include "gallery/ValidHandle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -16,12 +16,14 @@ namespace ana {
 NueSelection::NueSelection() : SelectionBase(), fEventCounter(0), fNuCount(0) {}
 
 
-void NueSelection::Initialize(Json::Value* config) {
+void NueSelection::Initialize(fhicl::ParameterSet* config) {
   // Load configuration parameters
   fTruthTag = { "generator" };
 
+  fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("SBNOsc");
+
   if (config) {
-    fTruthTag = { (*config)["SBNOsc"].get("MCTruthTag", "generator").asString() };
+    fTruthTag = { pconfig.get<std::string>("MCTruthTag", "generator") };
   }
 
   hello();

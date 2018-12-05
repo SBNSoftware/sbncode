@@ -25,9 +25,9 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         // Constructor
         Chi2Sensitivity() {}
         // Implement post-processor
-        void Initialize(Json::Value *config);
-        void ProcessEvent(const Event *event);
-        void FileCleanup(TTree *eventTree);
+        void Initialize(fhicl::ParameterSet* config);
+        void ProcessEvent(const Event* event);
+        void FileCleanup(TTree* eventTree);
 
         void Finalize() { fCovariance.Finalize(); GetChi2(); GetContours(); Write(); }
 
@@ -48,7 +48,7 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         class EventSample {
           public:
             // Constructor
-            EventSample(const Json::Value &config);
+            EventSample(const fhicl::ParameterSet& config);
             // Oscillate Signal counts into 1D Histogram
             std::vector<double> Oscillate(double sinth, double dm2) const;
             // Get Vector of Signal counts

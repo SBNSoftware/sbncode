@@ -2,7 +2,7 @@
 #include <TBranch.h>
 #include <TFile.h>
 #include <TTree.h>
-#include "json/json.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "Event.hh"
 #include "Loader.hh"
 #include "PostProcessorBase.hh"
@@ -16,7 +16,7 @@ PostProcessorBase::~PostProcessorBase() {}
 
 
 void PostProcessorBase::Initialize(char* config) {
-  Json::Value* cfg = LoadConfig(config);
+  fhicl::ParameterSet* cfg = LoadConfig(config);
   Initialize(cfg);
 }
 

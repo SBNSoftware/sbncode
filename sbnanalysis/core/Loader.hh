@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-namespace Json {
-  class Value;
+namespace fhicl {
+  class ParameterSet;
 }
 
 namespace core {
@@ -68,7 +68,7 @@ export_table_postprocess* LoadPostProcessor(char* libname);
  * \param config Path to the JSON file
  * \returns Configuration as a JSON object
  */
-Json::Value* LoadConfig(char* configfile);
+fhicl::ParameterSet* LoadConfig(char* configfile);
 
 
 /**
@@ -78,7 +78,7 @@ Json::Value* LoadConfig(char* configfile);
 struct ProcessorDef {
   char* name;  //!< Name of the Processor
   struct export_table* exports;  //!< Table for ctor/dtor access
-  Json::Value* config;  //!< Configuration as an object
+  fhicl::ParameterSet* config;  //!< Configuration as an object
   core::ProcessorBase* proc;  //!< Pointer to the processor
 };
 

@@ -18,7 +18,7 @@ include_directories($ENV{LARCOREALG_INC})
 include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{LARDATAOBJ_INC})
 include_directories($ENV{NUSIMDATA_INC})
-include_directories($ENV{JSONCPP_INC})
+include_directories($ENV{FHICLCPP_INC})
 include_directories($ENV{LARSIM_INC})
 include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
@@ -36,7 +36,7 @@ link_directories(
   $ENV{LARCOREALG_LIB}
   $ENV{LARDATAOBJ_LIB}
   $ENV{LARDATAALG_LIB}
-  $ENV{JSONCPP_LIB}
+  $ENV{FHICLCPP_LIB}
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
@@ -48,8 +48,8 @@ ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
 add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx Event.cxx)
 target_link_libraries(
   sbnanalysis_Event
-  ${LARSIM_BASE_LIBRARY}
-  ${LARSIM_BASE_DICT}
+  larsim_EventWeight_Base
+  larsim_EventWeight_Base_dict
   ${ROOT_LIBRARIES}
 )
 
@@ -109,9 +109,11 @@ add_executable(sbn sbn.cxx)
 target_link_libraries(
   sbn
   sbnanalysis_Processor
-  jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
+  fhiclcpp
+  larsim_EventWeight_Base
+  larsim_EventWeight_Base_dict
   ${ROOT_LIBRARIES}
 )
 
@@ -119,9 +121,11 @@ add_executable(sbn-postprocess sbn-postprocess.cxx)
 target_link_libraries(
   sbn-postprocess
   sbnanalysis_Processor
-  jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
+  fhiclcpp
+  larsim_EventWeight_Base
+  larsim_EventWeight_Base_dict
   ${ROOT_LIBRARIES}
 )
 
@@ -138,7 +142,7 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
     ${CMAKE_INSTALL_PREFIX}/lib
   )
   add_executable(${STATICEXE} sbn_static.cxx)
-  target_link_libraries(${STATICEXE} sbnanalysis_Processor jsoncpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
+  target_link_libraries(${STATICEXE} sbnanalysis_Processor fhiclcpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
   install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()
 

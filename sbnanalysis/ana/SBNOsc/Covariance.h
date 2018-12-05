@@ -5,7 +5,7 @@
  * \file Covariance.h
  */
 
-#include "json/json.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "core/PostProcessorBase.hh"
 
 #include <string>
@@ -34,7 +34,7 @@ class Covariance: public core::PostProcessorBase {
 
         // implementing PostProcessor
         void FileCleanup(TTree *eventTree);
-        void Initialize(Json::Value *config);
+        void Initialize(fhicl::ParameterSet *config);
         void ProcessEvent(const Event *event);
         void Finalize() { GetCovs(); Write(); }
 
@@ -56,7 +56,7 @@ class Covariance: public core::PostProcessorBase {
           public:
     
 	    /** Constructors. */
-	    EventSample(const Json::Value &config, unsigned nUniverses);
+	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses);
 	    
 	    double fScaleFactor;         //!< Factor for POT (etc.) scaling
 	    std::vector <double> fBins; //!< Energy bin limits

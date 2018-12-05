@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 #include <dlfcn.h>
-#include <json/json.h>
+#include <cetlib/filepath_maker.h>
+#include <fhiclcpp/make_ParameterSet.h>
+#include <fhiclcpp/ParameterSet.h>
 #include <core/ProcessorBase.hh>
 #include <core/ProcessorBlock.hh>
 
@@ -75,20 +77,14 @@ export_table_postprocess* LoadPostProcessor(char* libname) {
 }
 
 
-Json::Value* LoadConfig(char* configfile) {
-  Json::Value* config = NULL;
+fhicl::ParameterSet* LoadConfig(char* configfile) {
+  fhicl::ParameterSet* config = NULL;
 
   if (configfile) {
     std::cout << "Loading configuration: " << configfile << "... ";
-    std::ifstream configstream(configfile, std::ifstream::binary);
-    config = new Json::Value;
-    Json::Reader reader;
-    bool r = reader.parse(configstream, *(config));
-    if (!r) {
-      std::cerr << "Error parsing configuration file "
-                << configfile << std::endl;
-      exit(2);
-    }
+    config = new fhicl::ParameterSet;
+    cet::filepath_maker maker;
+    fhicl::make_ParameterSet(configfile, maker, *config);
     std::cout << "OK" << std::endl;
   }
 
