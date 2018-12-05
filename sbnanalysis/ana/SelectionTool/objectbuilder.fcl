@@ -4,15 +4,6 @@ objectBuilder:
 { 
   module_type:                "ObjectBuilder"
 
-  DetectorHalfLengthX: 400.
-  DetectorHalfLengthY: 400.
-  DetectorHalfLengthZ: 500.
-  CoordinateOffsetX: 200.
-  CoordinateOffsetY: 200.
-  CoordinateOffsetZ: 0.
-  SelectedBorderX: 10.
-  SelectedBorderY: 20.
-  SelectedBorderZ: 10.
   TruthLabel:                "generator"
   G4Label:                   "largeant"
   PandoraLabel:              "pandora"

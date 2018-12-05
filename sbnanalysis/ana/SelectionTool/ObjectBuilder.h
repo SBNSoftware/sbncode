@@ -44,6 +44,16 @@ namespace ana {
          * Here we load configuration parameters, set up histograms for output, and
          * add our own branches to the output tree.
          *
+         * \param config A configuration, as a JSON object
+         */
+        //void Initialize(Json::Value* config);
+        
+        /**
+         * Initialization. (ONCE FHICL HAS BEEN MERGED)
+         *
+         * Here we load configuration parameters, set up histograms for output, and
+         * add our own branches to the output tree.
+         *
          * \param config A configuration, as a FHICL object, same as in LArSoft
          */
         void Initialize(fhicl::ParameterSet const &p);
@@ -60,16 +70,19 @@ namespace ana {
          */
         bool ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco);
 
+
+      protected:
+
         // Member variables from the external fhicl file
         // Handle labels                                                                
-        std::string m_generator_label;                                                  
-        std::string m_geant_label;                                                      
-        std::string m_pandora_label;                                                    
-        std::string m_reco_track_label;                                                 
-        std::string m_reco_shower_label;                                                
-        std::string m_reco_track_calorimetry_label;                                     
-        std::string m_reco_track_particleid_label;                                      
-        std::string m_hit_label; 
+        art::InputTag fGeneratorLabel;                                                  
+        art::InputTag fGeantLabel;                                                      
+        art::InputTag fPandoraLabel;                                                    
+        art::InputTag fRecoTrackLabel;                                                 
+        art::InputTag fRecoShowerLabel;                                                
+        art::InputTag fRecoTrackCalorimetryLabel;                                     
+        art::InputTag fRecoTrackParticleidLabel;                                      
+        art::InputTag fHitLabel; 
 
     }; // ObjectBuilder class
   }  // namespace SelectionTool

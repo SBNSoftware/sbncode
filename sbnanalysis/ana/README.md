@@ -25,3 +25,7 @@ This will eventually change to be cleaner, but is just a hub for now
 
 These directories may eventually be spread across 'core' 'ana' and 'utils' in
 sbnanalysis. Keeping it all in one place while it is merged
+
+
+Location of the test reco file used to debug the merge:
+/pnfs/sbnd/mc/reco/artroot/pre-production/MCP0.9/prodgenie_nu_singleinteraction_tpc_gsimple-configd-v1/sbndcode/v07_07_00_2_MCP0_9/run_number/00/00/00/06/subrun_number/00/00/00/00/reco-a095595c-af52-435a-9fb0-ea86e7f9f3d5.root
