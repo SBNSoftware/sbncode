@@ -30,7 +30,6 @@ ServiceManager::ServiceManager(Detector det, std::string fcl) {
 
   fhicl::ParameterSet cfg;
 
-
   // Geometry: Load the correct geo::GeometryCore subclass for each detector
   std::unique_ptr<geo::GeometryCore> pgeom = NULL;
 
@@ -46,13 +45,15 @@ ServiceManager::ServiceManager(Detector det, std::string fcl) {
     case kUBOONE: {
       fcl = (fcl == "" ? "gallery_services_uboone.fcl" : fcl);
       cfg = lar::standalone::ParseConfiguration(fcl, policy);
-      fhicl::ParameterSet pset_geo = \
+      fhicl::ParameterSet pset = \
         cfg.get<fhicl::ParameterSet>("services.Geometry");
-      fhicl::ParameterSet pset_geohelper = \
-        cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface");
+      // For MicroBooNE, we also need to initialize the channel map with the
+      // optical detector channel mapping
+      std::shared_ptr<geo::ChannelMapUBooNEAlg> channelMap = \
+        std::make_shared<geo::ChannelMapUBooNEAlg>(
+          cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
       pgeom = \
-        lar::standalone::SetupGeometry<geo::ChannelMapUBooNEAlg>(
-          pset_geo, pset_geohelper);
+        lar::standalone::SetupGeometryWithChannelMapping(pset, channelMap);
       }
       break;
     case kICARUS: {
