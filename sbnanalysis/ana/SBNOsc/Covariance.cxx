@@ -94,7 +94,7 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     
     // get event samples
     std::vector<fhicl::ParameterSet> configEventSamples = \
-      pconfig.get<std::vector<fhicl::ParameterSet> >("EventSamples");
+      config->get<std::vector<fhicl::ParameterSet> >("EventSamples");
     for (const fhicl::ParameterSet& sample : configEventSamples) {
       fEventSamples.emplace_back(sample, fNumAltUnis);
     }
