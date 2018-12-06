@@ -2,9 +2,6 @@
 
 EventSamples: [
   @local::sbnd_event_sample, @local::uboone_event_sample, @local::icarus_event_sample
-  //{@table::sbnd_event_sample}, 
-  //{@table::uboone_event_sample}, 
-  //{@table::icarus_event_sample}
 ]
 
 Covariance: {
