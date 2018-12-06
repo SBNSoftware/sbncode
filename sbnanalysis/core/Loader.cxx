@@ -83,7 +83,7 @@ fhicl::ParameterSet* LoadConfig(char* configfile) {
   if (configfile) {
     std::cout << "Loading configuration: " << configfile << "... ";
     config = new fhicl::ParameterSet;
-    cet::filepath_lookup_after1 maker("FHICL_FILE_PATH");
+    cet::filepath_lookup_nonabsolute maker("FHICL_FILE_PATH");
     fhicl::make_ParameterSet(configfile, maker, *config);
     std::cout << "OK" << std::endl;
   }
