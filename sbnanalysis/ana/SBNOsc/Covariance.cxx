@@ -25,7 +25,7 @@
 namespace ana {
 namespace SBNOsc {
 
-Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned nUniverses) {
+Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned nUniverses, unsigned nVariations) {
     // get configuration stuff
     fBins = config.get<std::vector<double> >("binlims");
     fName = config.get<std::string>("name", "");
@@ -35,11 +35,14 @@ Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned
     std::string cv_title = fName + " Central Value";
     fCentralValue = new TH1D(cv_title.c_str(), cv_title.c_str(), fBins.size() - 1, &fBins[0]);
 
-    for (unsigned i = 0; i < nUniverses; i++) {
-      std::string uni_title = fName + " Universe " + std::to_string(i);
-      fUniverses.push_back(
-        new TH1D(uni_title.c_str(), uni_title.c_str(), fBins.size() - 1, &fBins[0])
-      );
+    for (unsigned var_i = 0; var_i < nVariations; var_i++) {
+      fUniverses.emplace_back();
+      for (unsigned i = 0; i < nUniverses; i++) {
+        std::string uni_title = fName + " Variation " + std::to_string(var_i) + " Universe " + std::to_string(i);
+        fUniverses[var_i].push_back(
+          new TH1D(uni_title.c_str(), uni_title.c_str(), fBins.size() - 1, &fBins[0])
+        );
+      }
     }
 
 }
@@ -75,7 +78,8 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("Covariance");
 
-    fWeightKeys = pconfig.get<std::vector<std::string> >("WeightKey");
+    fWeightKeys = pconfig.get<std::vector<std::vector<std::string>>>("WeightKey");
+    fNVariations = fWeightKeys.size();
 
     // uniformly applied weights
     if (pconfig.is_key_to_sequence("UniformWeights")) {
@@ -91,12 +95,17 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     // Further selection and rejection 'efficiencies'
     fSelectionEfficiency = pconfig.get<double>("SelectionEfficiency", 1.0);
     fBackgroundRejection = pconfig.get<double>("BackgroundRejection", 0.0);
+
+    // maximum weight for covariance calculation
+    // If an event has any weight larger than this value, it will be 
+    // thrown away for the purposes of covariance construction
+    fWeightMax = pconfig.get<double>("WeightMax", -1.);
     
     // get event samples
     std::vector<fhicl::ParameterSet> configEventSamples = \
       config->get<std::vector<fhicl::ParameterSet> >("EventSamples");
     for (const fhicl::ParameterSet& sample : configEventSamples) {
-      fEventSamples.emplace_back(sample, fNumAltUnis);
+      fEventSamples.emplace_back(sample, fNumAltUnis, fNVariations);
     }
     
     // set output directory
@@ -137,14 +146,35 @@ void Covariance::ProcessEvent(const Event *event) {
         }
     
         // Get weights for each alternative universe
-        std::vector <double> uweights = GetUniWeights(event->truth[truth_ind].weights, fWeightKeys, fNumAltUnis);
+        std::vector<std::vector <double>> uweights; 
+        for (std::vector<std::string> &weight_keys: fWeightKeys) {
+          uweights.push_back(
+            GetUniWeights(event->truth[truth_ind].weights, weight_keys, fNumAltUnis)
+          );
+        }
+
+        // see if weight is too big
+        if (fWeightMax > 0) {
+          double max_weight = 0;
+          for (std::vector<double> &weights: uweights) {
+            double this_max_weight = *std::max_element(weights.begin(), weights.end());
+            if (this_max_weight > max_weight) max_weight = this_max_weight;
+          }
+          if (max_weight > fWeightMax) {
+            std::cout << "Weight (" << max_weight << ") over cap (" << fWeightMax << 
+              ") for event with energy (" << nuE << ") in sample " << fEventSamples[fSampleIndex].fName << std::endl;
+            continue;
+          }
+        }
     
         // Add to base and bkg count histogram
         fEventSamples[fSampleIndex].fCentralValue->Fill(nuE, wgt);
     
         // Fill alternative universe histograms
-        for (int u = 0; u < uweights.size(); u++) {
-            fEventSamples[fSampleIndex].fUniverses[u]->Fill(nuE, wgt*uweights[u]);
+        for (unsigned variation = 0; variation < uweights.size(); variation++) {
+          for (int u = 0; u < uweights[variation].size(); u++) {
+              fEventSamples[fSampleIndex].fUniverses[variation][u]->Fill(nuE, wgt*uweights[variation][u]);
+          }
         }
     }
 }
@@ -156,6 +186,10 @@ void Covariance::FileCleanup(TTree *eventTree) {
 }
 
 void Covariance::GetCovs() {
+    for (unsigned i = 0; i < fNVariations; i++) GetCovPerVariation(i);
+}
+
+void Covariance::GetCovPerVariation(unsigned variation) {
     
     //// Get covariances, fractional covariances and correlation coefficients
     //// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -168,9 +202,12 @@ void Covariance::GetCovs() {
        num_bins += sample.fCentralValue->GetNbinsX();
     }
     
+
+    std::string covariance_name = "Covariance "  + std::to_string(variation);
+    std::string fractional_covariance_name = "Fractional Covariance "  + std::to_string(variation);
     // Covariance and fractional covariance
-    cov = new TH2D("Covariance", "Covariance", num_bins, 0, num_bins, num_bins, 0, num_bins);
-    fcov = new TH2D("Fractional Covariance", "Fractional Covariance", num_bins, 0, num_bins, num_bins, 0, num_bins);
+    cov.emplace_back(covariance_name.c_str(), covariance_name.c_str(), num_bins, 0, num_bins, num_bins, 0, num_bins);
+    fcov.emplace_back(fractional_covariance_name.c_str(), fractional_covariance_name.c_str(), num_bins, 0, num_bins, num_bins, 0, num_bins);
 
     // indexes into covariance
     unsigned cov_i = 0;
@@ -188,8 +225,8 @@ void Covariance::GetCovs() {
                     double cov_value = 0.; 
                     for (int u = 0; u < fNumAltUnis; u++) {
                         // get variations
-                        double i_variation = sample_i.fUniverses[u]->GetBinContent(sample_i_bin_index+1);
-                        double j_variation = sample_j.fUniverses[u]->GetBinContent(sample_j_bin_index+1);
+                        double i_variation = sample_i.fUniverses[variation][u]->GetBinContent(sample_i_bin_index+1);
+                        double j_variation = sample_j.fUniverses[variation][u]->GetBinContent(sample_j_bin_index+1);
                         cov_value += (i_central - i_variation) * (j_central - j_variation);
                     }
                     // average
@@ -205,8 +242,8 @@ void Covariance::GetCovs() {
                     }
 
                     // save values
-                    cov->SetBinContent(cov_i + 1, cov_j + 1, cov_value);
-                    fcov->SetBinContent(cov_i + 1, cov_j + 1, fcov_value);
+                    cov[variation].SetBinContent(cov_i + 1, cov_j + 1, cov_value);
+                    fcov[variation].SetBinContent(cov_i + 1, cov_j + 1, fcov_value);
                     // update covariance position
                     cov_j ++;
                 }
@@ -218,14 +255,16 @@ void Covariance::GetCovs() {
         }
     } 
 
+    std::string correlation_name = "Correlation " + std::to_string(variation);
+
     // Pearson Correlation Coefficients
-    corr = new TH2D("Correlation", "Correlation", num_bins, 0, num_bins, num_bins, 0, num_bins);
+    corr.emplace_back(correlation_name.c_str(), correlation_name.c_str(), num_bins, 0, num_bins, num_bins, 0, num_bins);
     
     for (int i = 0; i < num_bins; i++) {
-        double covii = cov->GetBinContent(i+1, i+1);
+        double covii = cov[variation].GetBinContent(i+1, i+1);
         for (int j = 0; j < num_bins; j++) {
-            double covjj = cov->GetBinContent(j+1, j+1);
-            double covij = cov->GetBinContent(i+1, j+1);
+            double covjj = cov[variation].GetBinContent(j+1, j+1);
+            double covij = cov[variation].GetBinContent(i+1, j+1);
 
             double corrij;
             // handle case where covariance is 0
@@ -235,12 +274,12 @@ void Covariance::GetCovs() {
             else {
                 corrij = covij / TMath::Sqrt(covii*covjj);
             }
-            corr->SetBinContent(i+1, j+1, corrij);
+            corr[variation].SetBinContent(i+1, j+1, corrij);
         }
     }
     
     // Add bin labels
-    std::vector <TH2D*> hists = {cov, fcov, corr};
+    std::vector <TH2D*> hists = {&cov[variation], &fcov[variation], &corr[variation]};
     unsigned bin = 0;
     for (auto const &sample: fEventSamples) {
         // Set label
@@ -267,9 +306,10 @@ void Covariance::Write() {
     TFile *output = TFile::Open(fOutputFile.c_str(), "recreate");
     assert(output && output->IsOpen());
     
-    cov->Write();
-    fcov->Write();
-    corr->Write();
+    for (TH2D &h: cov) h.Write();
+    for (TH2D &h: fcov) h.Write();
+    for (TH2D &h: corr) h.Write();
+
     // write histos
     if (fSaveCentralValue) {
       for (auto const &sample: fEventSamples) {
@@ -278,8 +318,10 @@ void Covariance::Write() {
     }
     if (fSaveUniverses) {
         for (auto const &sample: fEventSamples) {
-            for (TH1D *h: sample.fUniverses) {
-                h->Write();
+            for (unsigned i =0; i < fNVariations; i++) {
+              for (TH1D *h: sample.fUniverses[i]) {
+                  h->Write();
+              }
             }
         }
     }
@@ -289,10 +331,11 @@ void Covariance::Write() {
 
 // Turn the covariance TH2D into a matrix -- include stat uncertainty
 TMatrixDSym Covariance::CovarianceMatrix() {
-    TMatrixDSym E_mat(cov->GetNbinsX());
-    for (int i = 0; i < cov->GetNbinsX(); i++) {
-        for (int j = 0; j < cov->GetNbinsY(); j++) {
-            E_mat[i][j] = cov->GetBinContent(i+1, j+1);
+    TMatrixDSym E_mat(cov[0].GetNbinsX());
+    for (int i = 0; i < cov[0].GetNbinsX(); i++) {
+        for (int j = 0; j < cov[0].GetNbinsY(); j++) {
+            E_mat[i][j] = 0.; // zero-initialize
+            for (TH2D &cov_histo: cov)  E_mat[i][j] += cov_histo.GetBinContent(i+1, j+1); // add all systematics
             // add statistical uncertainty
             if (i == j) {
                 unsigned stat_ind = i;
