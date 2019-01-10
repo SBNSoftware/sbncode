@@ -179,4 +179,6 @@ proposal_numu_selection_rejection: 0.0
 
 proposal_numu_energy_type: "Reco"
 
+weight_max: 10000.
+
 END_PROLOG

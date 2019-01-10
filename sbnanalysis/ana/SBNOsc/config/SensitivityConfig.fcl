@@ -13,6 +13,7 @@ Covariance: {
   EnergyType: @local::proposal_numu_energy_type
   SelectionEfficiency: @local::proposal_numu_selection_efficiency
   BackgroundRejection: @local::proposal_numu_selection_rejection
+  WeightMax: @local::weight_max
 }
 
 Sensitivity: {
