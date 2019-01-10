@@ -1,4 +1,4 @@
-#include "NumuConfig.json"
+#include "NumuConfig.fcl"
 
 OutputFile: "output_SBNOsc_NumuSelection_Proposal_Uboone.root"
 
