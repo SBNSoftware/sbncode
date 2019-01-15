@@ -167,6 +167,8 @@ standard_cuts_noMEC: {
   leptonEnergyDistortionContained: 0.02 // needs update
   leptonEnergyDistortionLeavingA: 0.102 // from joseph email
   leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
-
 }
+
+standard_uniformWeights: ["bnbcorrection_FluxHist"]
+
 END_PROLOG
