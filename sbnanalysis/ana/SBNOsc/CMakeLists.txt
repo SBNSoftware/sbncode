@@ -1,6 +1,8 @@
 # Define the subproject name
 project(SBNOsc)
 
+add_subdirectory(PandoraTesting)
+
 # Directories where includes are found (in addition to those defined in the
 # parent CMakeLists.txt, one directory up).
 include_directories(${CMAKE_SOURCE_DIR})
