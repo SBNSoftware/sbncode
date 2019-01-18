@@ -61,12 +61,14 @@ public:
     std::string draw_str;
     std::string HitTag;
     std::string RecoTrackTag;
+    std::string RecoVertexTag;
   }; 
 
   class TrackProjection {
     public:
     std::vector<TGraph *> tracks; //!< TGraph of each individual graph
     std::unique_ptr<TMultiGraph> graph; //!< graph of all the tracks
+    std::vector<TGraph *> vertices; //!< collection of vertices
     std::string name;
 
     TrackProjection(std::string name):
@@ -74,13 +76,18 @@ public:
       name(name)
       {}
 
-    void Draw(Config &config, const char *draw_str, unsigned axis0, unsigned axis1) const {
-      TCanvas c(name.c_str(), name.c_str(), 600, 400);
+    void Draw(Config &config, unsigned axis0, unsigned axis1) const {
+      TCanvas c(name.c_str(), name.c_str(), 1200, 800);
       c.cd();
-      graph->Draw(draw_str);
+      // draw the multigraph thingy
+      graph->Draw("ALP");
       c.Update();
       graph->GetHistogram()->GetXaxis()->SetLimits(aaBoxesMin(config.active_volumes, axis0), aaBoxesMax(config.active_volumes, axis0));
       graph->GetHistogram()->GetYaxis()->SetRangeUser(aaBoxesMin(config.active_volumes, axis1), aaBoxesMax(config.active_volumes, axis1));
+      // draw all the vertex plots
+      for (size_t i = 0; i < vertices.size(); i++) {
+        vertices[i]->Draw("P");
+      }
       c.Update();
       c.Write();
     }
@@ -96,13 +103,25 @@ public:
       xy("xy proj event: " + std::to_string(event_index)),
       xz("xz proj event: " + std::to_string(event_index)),
       yz("yz proj event: " + std::to_string(event_index)) {}
-  };
 
+    std::array<TGraph *, 3> addVertex(TVector3 &point) {
+      double x = point.X();
+      double y = point.Y();
+      double z = point.Z();
 
-  class ProjectionGraphs {
-    public:
-    std::array<TGraph *, 3> graphs; 
-    ProjectionGraphs(std::vector<TVector3> &points, TrackPlot *plots) {
+      // a graph with one point...
+      TGraph *g_xy = new TGraph(1, &x, &y);
+      TGraph *g_xz = new TGraph(1, &x, &z);
+      TGraph *g_yz = new TGraph(1, &y, &z);
+
+      xy.vertices.push_back(g_xy);
+      xz.vertices.push_back(g_xz);
+      yz.vertices.push_back(g_yz);
+
+      return {g_xy, g_xz, g_yz};
+    }
+
+    std::array<TGraph *, 3> addTrack(std::vector<TVector3> &points) {
       // first get each position in x, y, z
       std::vector<double> xs;
       std::vector<double> ys;
@@ -115,57 +134,24 @@ public:
       }
 
       // set up the tgraphs
-      TGraph *xy = new TGraph(xs.size(), &xs[0], &ys[0]);
-      TGraph *xz = new TGraph(xs.size(), &xs[0], &zs[0]);
-      TGraph *yz = new TGraph(xs.size(), &ys[0], &zs[0]);
+      TGraph *g_xy = new TGraph(xs.size(), &xs[0], &ys[0]);
+      TGraph *g_xz = new TGraph(xs.size(), &xs[0], &zs[0]);
+      TGraph *g_yz = new TGraph(xs.size(), &ys[0], &zs[0]);
 
       // add to the multigraph -- which now takes ownership of the TGraph
-      if (plots != NULL) {
-        plots->xy.graph->Add(xy, "");
-        plots->xz.graph->Add(xz, "");
-        plots->yz.graph->Add(yz, "");
-        plots->xy.tracks.push_back(xy);
-        plots->xz.tracks.push_back(xz);
-        plots->yz.tracks.push_back(yz);
-      }
+      xy.graph->Add(g_xy, "");
+      xz.graph->Add(g_xz, "");
+      yz.graph->Add(g_yz, "");
+      xy.tracks.push_back(g_xy);
+      xz.tracks.push_back(g_xz);
+      yz.tracks.push_back(g_yz);
+      
 
       // save them for the user if necessary
-      graphs = {xy, xz, yz};
-    }
-  };
-/*
-  class WireProjectionGraphs {
-    public:
-      std::vector<std::vector<TGraph *>> graphs;
-      WireProjectionGraphs(std::vector<recob::Hit> &hits, unsigned n_planes, TrackPlot *plots):
-        graphs({}, n_planes)
-      {
-        // data for each plane
-        std::vector<std::vector<double>> times({}, n_planes);
-        std::vector<std::vector<double>> channels({}, n_planes);
-        for (auto const &hit: hits) {
-          // get plane index
-          unsigned plane = hit.WireID().planeID();
-          // get channel and time
-          double channel = hit.Channel();
-          double time = hit.PeakTime();
-          // store
-          channels[plane].push_back(channel);
-          times[plane].push_back(time);
-        }
+      return {g_xy, g_xz, g_yz};
+     }
 
-        // save all the plots
-        for (unsigned i = 0; i < times.size(); i++) {
-          TGraph *this_graph = new TGraph(channels[i].size(), &channels[0], &times[0]);
-          if (plots != NULL) {
-            plots->planes[i].Add(this_graph, "");
-          }
-          // for later if necessary
-          graphs[i].push_back(this_graph);
-        }
-      }
   };
-*/
 
   std::vector<TrackPlot> _event_plots;
   unsigned _event_index;
