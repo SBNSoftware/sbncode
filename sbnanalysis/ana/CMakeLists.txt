@@ -22,6 +22,7 @@ link_directories(
   $ENV{UBCORE_LIB}
   $ENV{FHICLCPP_LIB}
   $ENV{UBCORE_LIB}
+  $ENV{LARSIM_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
