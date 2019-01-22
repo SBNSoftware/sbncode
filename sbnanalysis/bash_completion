@@ -24,4 +24,4 @@ _sbn_complete() {
   return 0;
 }
 complete -F _sbn_complete sbn
-
+complete -F _sbn_complete sbn-postprocess
