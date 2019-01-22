@@ -43,8 +43,6 @@ link_directories(
 )
 
 add_subdirectory(ExampleAnalysis)
-add_subdirectory(SelectionTool)
-add_subdirectory(SelectionObjects)
 add_subdirectory(SelectionAnalysis)
 add_subdirectory(SBNOsc)
 

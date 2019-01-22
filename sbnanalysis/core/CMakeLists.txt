@@ -151,3 +151,5 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
   install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()
 
+add_subdirectory(SelectionObjects)
+
