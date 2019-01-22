@@ -13,7 +13,6 @@ include_directories($ENV{LARSIM_INC})
 # Declare libraries to build
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
-# source files.
 add_library(sbnanalysis_SelectionAnalysis_AnalysisMain SHARED AnalysisMain.cxx)
 
 # Add in ROOT dictionary

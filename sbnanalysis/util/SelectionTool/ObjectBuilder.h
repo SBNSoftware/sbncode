@@ -1,5 +1,5 @@
-#ifndef __sbnanalysis_ana_SelectionTool_ObjectBuilder__
-#define __sbnanalysis_ana_SelectionTool_ObjectBuilder__
+#ifndef __sbnanalysis_util_SelectionTool_ObjectBuilder__
+#define __sbnanalysis_util_SelectionTool_ObjectBuilder__
 
 /**
  * \file ObjectBuilder.h
@@ -22,8 +22,8 @@
 
 // Forward declarations go here
 
-/** All analysis code is defined in namespace "ana" */
-namespace ana {
+/** All analysis code is defined in namespace "util" */
+namespace util {
 
   /** Code specific to the SelectionTool. */
   namespace SelectionTool {
@@ -32,7 +32,7 @@ namespace ana {
      * \class ObjectBuilder
      * \brief Building selection tool objects from gallery/LArSoft reco events
      */
-    class ObjectBuilder {
+    class ObjectBuilder : public core::SelectionBase {
       public:
 
         /** Constructor. */
@@ -56,7 +56,7 @@ namespace ana {
          *
          * \param config A configuration, as a FHICL object, same as in LArSoft
          */
-        void Initialize(fhicl::ParameterSet const &p);
+        void Initialize(fhicl::ParameterSet *p);
 
         /** Finalize and write objects to the output file. */
         void Finalize();
@@ -65,28 +65,27 @@ namespace ana {
          * Process one event.
          *
          * \param ev A single event, as a gallery::Event
-         * \param reco Reconstructed interactions
          * \return True to keep event
          */
-        bool ProcessEvent(const gallery::Event& ev, std::vector<Event::RecoInteraction>& reco);
+        bool ProcessEvent(const gallery::Event& ev);
 
 
       protected:
 
         // Member variables from the external fhicl file
         // Handle labels                                                                
-        art::InputTag fGeneratorLabel;                                                  
-        art::InputTag fGeantLabel;                                                      
-        art::InputTag fPandoraLabel;                                                    
-        art::InputTag fRecoTrackLabel;                                                 
-        art::InputTag fRecoShowerLabel;                                                
-        art::InputTag fRecoTrackCalorimetryLabel;                                     
-        art::InputTag fRecoTrackParticleidLabel;                                      
-        art::InputTag fHitLabel; 
+        std::string fGeneratorLabel;                                                  
+        std::string fGeantLabel;                                                      
+        std::string fPandoraLabel;                                                    
+        std::string fRecoTrackLabel;                                                 
+        std::string fRecoShowerLabel;                                                
+        std::string fRecoTrackCalorimetryLabel;                                     
+        std::string fRecoTrackParticleidLabel;                                      
+        std::string fHitLabel; 
 
     }; // ObjectBuilder class
   }  // namespace SelectionTool
-}  // namespace ana
+}  // namespace util
 
-#endif  // __sbnanalysis_ana_SelectionTool_ObjectBuilder__
+#endif  // __sbnanalysis_util_SelectionTool_ObjectBuilder__
 
