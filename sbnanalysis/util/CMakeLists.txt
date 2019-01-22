@@ -30,3 +30,5 @@ target_link_libraries(sbnanalysis_util_Interaction ${ROOT_LIBRARIES})
 
 install(TARGETS sbnanalysis_util_Interaction DESTINATION lib)
 
+add_subdirectory(SelectionTool)
+

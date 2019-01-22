@@ -10,10 +10,3 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
-add_library(sbnanalysis_SelectionAnalysis_TestDuringMerge SHARED TestDuringMerge.cxx)
-
-# Define library linking
-target_link_libraries(sbnanalysis_SelectionAnalysis_TestDuringMerge sbnanalysis_SelectionTool_ObjectBuilder)
-
-# Install all libraries to the main "lib" directory
-install(TARGETS sbnanalysis_SelectionAnalysis_TestDuringMerge DESTINATION lib)
