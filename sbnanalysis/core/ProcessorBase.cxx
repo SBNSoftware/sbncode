@@ -183,7 +183,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
-    for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {
+    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
       Event::FinalStateParticle fsp;
       const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
 
