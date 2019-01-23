@@ -14,6 +14,7 @@ find_package(ROOT REQUIRED COMPONENTS RIO Net)
 include(${ROOT_USE_FILE})
 
 include_directories(${PROJECT_SOURCE_DIR})
+include_directories($ENV{HEP_CONCURRENCY_INC})
 
 ADD_SUBDIRECTORY(ana)
 ADD_SUBDIRECTORY(core)
