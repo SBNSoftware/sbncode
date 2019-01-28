@@ -5,6 +5,8 @@ project(SelectionAnalysis)
 # parent CMakeLists.txt, one directory up).
 include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+##include_directories($ENV{LARCOREALG_INC})
+##include_directories($ENV{LARSIM_INC})
 
 # FOR LARSOFT CMAKE NEEDS
 include_directories($ENV{LARCOREALG_INC})
@@ -26,6 +28,11 @@ target_link_libraries(sbnanalysis_SelectionAnalysis_AnalysisMain
   sbnanalysis_SelectionAnalysis_classes
   ubana_BasicTool_GeoAlgo  
 )
+##add_custom_command(TARGET sbnanalysis_SelectionAnalysis_classes POST_BUILD
+##  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+## libSelectionAnalysis_dict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
+
+target_link_libraries(sbnanalysis_SelectionAnalysis_AnalysisMain)
 
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SelectionAnalysis_AnalysisMain DESTINATION lib)
