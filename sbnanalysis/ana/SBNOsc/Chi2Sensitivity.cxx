@@ -130,7 +130,7 @@ void Chi2Sensitivity::Initialize(fhicl::ParameterSet* config) {
 
     // Event Samples
     std::vector<fhicl::ParameterSet> samples = \
-      pconfig.get<std::vector<fhicl::ParameterSet> >("EventSamples");
+      config->get<std::vector<fhicl::ParameterSet> >("EventSamples");
     for (const fhicl::ParameterSet& sample: samples) {
       fEventSamples.emplace_back(sample);
     }

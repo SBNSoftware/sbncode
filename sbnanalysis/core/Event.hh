@@ -126,15 +126,23 @@ public:
   /**
    * \class RecoInteraction
    * \brief Contains truth level information and additional fields for
-   * user-defined reconstruction information
+   * selection-defined reconstruction information
    */
   class RecoInteraction {
     public:
       /** Default Constructor */
-      RecoInteraction(): truth_index(-1) {}
-      /** Fill in truth information -- leaves other fields unset */
-      explicit RecoInteraction(const Interaction &t, int index)
-          : truth(t), truth_index(index)  {}
+      RecoInteraction(): 
+        truth_index(-1), 
+        reco_energy(kUnfilled),
+        weight(1.) {}
+
+      /** Fill in truth information -- other fields set as in default */
+      explicit RecoInteraction(const Interaction &t, int index): 
+        truth(t), 
+        truth_index(index),
+        reco_energy(kUnfilled),
+        weight(1.) {}
+
       Interaction truth; //!< Contains truth level information about interaction
 
       /**
@@ -145,9 +153,14 @@ public:
       int truth_index;
 
       /**
-       * User defined reconstructed energy of neutrino. Units in GeV to keep
+       * Selection defined reconstructed energy of neutrino. Units in GeV to keep
        * consistent w/ Interaction class. */
       double reco_energy;
+
+      /**
+       * Selection defined weight of reconstructed interaction to be used by downstream
+       * analyis. */
+      double weight;  
   };
 
   Metadata metadata;  //!< Event metadata
