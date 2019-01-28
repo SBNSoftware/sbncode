@@ -240,6 +240,33 @@ double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrac
   return visible_E;
 }
 
+std::vector<double> FlavourEnergyDeposition(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list){
+
+  std::vector<double> visibleEnergy;
+  double energy_sum = 0;
+
+  //Add up the track energy 
+  for(auto const &mct: mctrack_list) {
+        double mass = PDGMass(mct.PdgCode());
+	double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
+	energy_sum += this_visible_energy;
+	std::cout << "Track PdgCode: " << mct.PdgCode() << " mass: " << mass << " Energy: " << this_visible_energy << std::endl;
+  }
+  visibleEnergy.push_back(energy_sum);
+
+  energy_sum = 0;
+  //Add up the shower energy 
+  for (auto const &mcs: mcshower_list) {
+    double mass = PDGMass(mcs.PdgCode());
+    double this_visible_energy = (mcs.Start().E() - mass) / 1000. /* MeV to GeV */;
+    std::cout << "Shower PdgCode: " << mcs.PdgCode() << " mass: " << mass << " Energy: " << this_visible_energy << std::endl;
+    energy_sum += this_visible_energy;
+  }
+  visibleEnergy.push_back(energy_sum);
+
+  return visibleEnergy;
+}
+
 
 double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
   // setup distortion

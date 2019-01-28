@@ -178,6 +178,10 @@ struct VisibleEnergyCalculator {
 double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
     const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
 
+/** 
+ * Get the seperate hadronic and leptonic energy from the event. The first element in the vector is the hadronic energy the second is the leptonic. 
+ * */
+std::vector<double> FlavourEnergyDeposition(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list);
 
 /** Get the smeared energy from a lepton.
  * \param mctrack The MCTrack object corresponding to the lepton

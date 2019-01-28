@@ -9,9 +9,18 @@
 LAR_VERSION="v07_11_00"
 LAR_QUAL="e17:prof"
 
+# Check we're in a good location
+#ALLOWED="/sbnd/app/users/*"
+#if [[ ${PWD} != *"${ALLOWED}"* ]]; then
+#  echo "Please move to a location inside appp."
+#  exit
+#fi
+
 # Set up the environment
 TOPDIR=${PWD}
 cat << EOF > ${TOPDIR}/setup_sbncode-${LAR_VERSION}.sh
+echo "Your Experiment is ${HOSTNAME%%gpvm*}"
+
 source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh
 setup uboonecode ${LAR_VERSION} -q ${LAR_QUAL}
 source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
@@ -19,6 +28,17 @@ setup sbndcode ${LAR_VERSION} -q ${LAR_QUAL}
 unsetup larbatch
 source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
 setup icaruscode ${LAR_VERSION} -q ${LAR_QUAL}
+
+if [ "${HOSTNAME%%gpvm*}"  == "sbnd" ]; then
+    source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
+elif [ "${HOSTNAME%%gpvm*}"  == "uboone" ]; then
+    source /cvmfs/uboone.opensciencegrid.org/products/setup_uboone.sh
+elif [ "${HOSTNAME%%gpvm*}"  == "icarus" ]; then
+    source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
+else
+    echo "Sorry. Are you not on a gpvm?"
+    exit
+fi
 EOF
 
 source setup_sbncode-${LAR_VERSION}.sh
