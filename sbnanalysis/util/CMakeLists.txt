@@ -77,5 +77,3 @@ target_link_libraries(
 install(TARGETS sbnanalysis_util_Interaction DESTINATION lib)
 install(TARGETS sbnanalysis_util_RecoUtil DESTINATION lib)
 
-add_subdirectory(SelectionTool)
-
