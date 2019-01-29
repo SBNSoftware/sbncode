@@ -7,7 +7,6 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "AnalysisMain.h"
-#include "util/SelectionTool/ObjectBuilder.h"
 #include "core/Event.hh"
 
 namespace ana {

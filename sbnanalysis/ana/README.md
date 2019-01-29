@@ -1,30 +1,28 @@
-# SelectionTool
+# Selection Functionality
 
-Directory to hold the tool which fills the selection objects and functions
+## core
 
-Works at the back end of the selection procedure and should not be included as 
-part of the analysis of the events
+Added to the definition of Event and it's corresponding classes
+- Metadata
+- Neutrino
+- FinalStateParticle
+- Interaction
+- RecoInteraction
 
-Prevously used to fill ROOT TTrees in LArSoft which were passed to selection
-objects outside of LArSoft
+Objects will be built to hold all interaction information given by LArSoft for the whole reconstruction chain
 
-# SelectionObjects
+## util
 
-Directory to hold the objects used in the selection procedure
+Helper classes to hold
+- PID functionality
+- General analysis helper functions
+- Other useful functionality for high-level analyses
 
-These objects are filled in the SelectionTool and will be used by the
-SelectionAnalysis
+## ana/SelectionAnalysis
 
-# SelectionAnalysis
+Analysis macros which use selection functionality live here
 
-Directory to hold the ROOT macros currently used for analysis
-
-This will eventually change to be cleaner, but is just a hub for now
-
----------------------------------------------------------------------------------
-
-These directories may eventually be spread across 'core' 'ana' and 'utils' in
-sbnanalysis. Keeping it all in one place while it is merged
+---------------------------------------------------------------------------------------------------------------
 
 Location of the test reco file used to debug the merge:
 /pnfs/sbnd/mc/reco/artroot/pre-production/MCP0.9/prodgenie_nu_singleinteraction_tpc_gsimple-configd-v1/sbndcode/v07_07_00_2_MCP0_9/run_number/00/00/00/06/subrun_number/00/00/00/00/reco-a095595c-af52-435a-9fb0-ea86e7f9f3d5.root
