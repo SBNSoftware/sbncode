@@ -4,6 +4,6 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 build
-doc/html
+doc/*
 *.swp
 *.root
