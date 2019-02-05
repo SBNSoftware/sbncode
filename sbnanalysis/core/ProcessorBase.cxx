@@ -242,7 +242,7 @@ namespace core {
     gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
     ev.getByLabel(fTruthTag, gtruths_handle);
     bool genie_truth_is_valid = gtruths_handle.isValid();
-    
+
     // Get MCEventWeight information
     std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
@@ -258,7 +258,7 @@ namespace core {
         wghs.push_back(this_wgh);
       }// Weight tags loop
     }// Weight tags
-    
+
     // Get MCFlux information
     gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
     ev.getByLabel(fFluxTag, mcflux_handle);
@@ -301,7 +301,7 @@ namespace core {
     // Populate event tree
     for (size_t i=0; i<mctruthssize; i++) {
       Event::Interaction interaction;
-      
+
       auto const& mctruth = mctruths.at(i);
       //std::vector< art::Ptr<simb::MCParticle> > mcp_assn = fmcp.at(i);
 
@@ -325,7 +325,7 @@ namespace core {
         interaction.neutrino.parentDecayVtx = \
                                               TVector3(flux.fvx, flux.fvy, flux.fvz);
       }
-      
+
       TLorentzVector q_labframe;
 
       if (mctruth.NeutrinoSet()) {

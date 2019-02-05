@@ -19,8 +19,6 @@ include_directories($ENV{LARRECO_INC})
 include_directories($ENV{LARCORE_INC})
 include_directories($ENV{LARCOREALG_INC})
 include_directories($ENV{LARDATA_INC})
-include_directories($ENV{LARCOREALG_INC})
-include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{LARDATAOBJ_INC})
 include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{NUSIMDATA_INC})
@@ -48,6 +46,7 @@ link_directories(
   $ENV{MESSAGEFACILITY_LIB}
   $ENV{LARDATAALG_LIB}
   $ENV{JSONCPP_LIB}
+  $ENV{MESSAGEFACILITY_LIB}
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
@@ -194,6 +193,20 @@ target_link_libraries(
   jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
+  larsim_Simulation 
+  lardataobj_Simulation
+  lardataalg_DetectorInfo
+  sbndcode_RecoUtils
+  art_Persistency_Common canvas
+  art_Utilities canvas
+  ${CLHEP_Geometry}
+  ${ART_FRAMEWORK_CORE}                                  
+  ${ART_FRAMEWORK_PRINCIPAL}                             
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}                     
+  ${ART_FRAMEWORK_SERVICES_BASIC}                        
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+  ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
 )
 
@@ -210,6 +223,7 @@ target_link_libraries(
   jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
+  larsim_Simulation 
   ${ROOT_LIBRARIES}
 )
 
