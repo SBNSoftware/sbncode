@@ -6,15 +6,19 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "AnalysisMain.h"
 #include "core/Event.hh"
+#include "core/ProviderManager.hh"
+#include "util/Interaction.hh"
 
 namespace ana {
   namespace SelectionAnalysis {
 
     AnalysisMain::AnalysisMain() : 
       fEventCounter(0),
-      fGeneratorLabel(""){}
+      fGeneratorLabel(""),
+      fGeantLabel(""){}
 
     void AnalysisMain::Initialize(fhicl::ParameterSet* config) {
       std::cout << " Initialising " << std::endl;
@@ -22,7 +26,13 @@ namespace ana {
         fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("SelectionAnalysis");
 
         fGeneratorLabel = pconfig.get<std::string>("GeneratorLabel", "");
-        std::cout << " Generator label: " << fGeneratorLabel << std::endl;
+        fGeantLabel     = pconfig.get<std::string>("GeantLabel", "");
+
+      }
+      if (fProviderManager) {
+        std::cout << "Detector: "
+          << fProviderManager->GetGeometryProvider()->DetectorName()
+          << std::endl;
       }
     }
 
@@ -35,7 +45,9 @@ namespace ana {
       const gallery::Event& ev,
       const std::vector<Event::Interaction>& truth,
       std::vector<Event::RecoInteraction>& reco) {
-    
+
+      int start = static_cast<int>(time(NULL));
+
       if (fEventCounter % 10 == 0)
         std::cout << "AnalysisMain: Processing event " << fEventCounter << std::endl;
 
