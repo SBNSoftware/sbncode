@@ -63,10 +63,10 @@ export_table_postprocess* LoadPostProcessor(char* libname);
 
 
 /**
- * Load configuration from JSON file to object.
+ * Load configuration from FHICL file to object.
  *
- * \param config Path to the JSON file
- * \returns Configuration as a JSON object
+ * \param config Path to the FHICL file
+ * \returns Configuration as a FHICL object
  */
 fhicl::ParameterSet* LoadConfig(char* configfile);
 

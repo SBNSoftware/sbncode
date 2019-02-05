@@ -17,6 +17,7 @@
 #include <TTree.h>
 #include <TVector3.h>
 #include "Experiment.hh"
+#include <canvas/Persistency/Common/Wrapper.h>
 
 /**
  * \class Event
@@ -88,15 +89,51 @@ public:
    * \brief Final state particle information
    */
   class FinalStateParticle {
-  public:
-    /** Constructor. */
-    FinalStateParticle()
-      : pdg(kUnfilled), energy(kUnfilled),
-        momentum(kUnfilled, kUnfilled, kUnfilled) {}
+    public:
+      /** Default Constructor. */
+      FinalStateParticle()
+        : mc_id(kUnfilled), pdg(kUnfilled), energy(kUnfilled), trans_mom(kUnfilled),
+        momentum(kUnfilled, kUnfilled, kUnfilled),
+        vertex(kUnfilled, kUnfilled, kUnfilled),
+        end(kUnfilled, kUnfilled, kUnfilled){}
 
-    int pdg;  //!< PDG Code
-    double energy;  //!< Energy
-    TVector3 momentum;  //!< Three-momentum
+      int mc_id;         //|< MC ID, for MC particles it corresponds to itself, for reco particles it corresponds to the truth-matched MC particle 
+      int pdg;           //!< PDG Code
+      double energy;     //!< Energy
+      double trans_mom;  //!< Transverse momentum
+      TVector3 momentum; //!< Three-momentum
+      TVector3 vertex;   //!< Vertex position of the particle
+      TVector3 end;      //!< End position of the particle
+
+  };
+
+  /** 
+   * \class  Event::FinalStateReconstructedParticle
+   * \brief  Reconstructed final state particle, inherits from FinalStateParticle as it will share most variables
+   */
+  class FinalStateReconstructedParticle : public FinalStateParticle {
+    public:
+      /** Default Constructor **/
+      FinalStateReconstructedParticle()
+        : hits(kUnfilled), mc_id_hits(kUnfilled), mc_id_energy(kUnfilled), mc_id_charge(kUnfilled), 
+        mcs_momentum_muon(kUnfilled), 
+        range_momentum_muon(kUnfilled), range_momentum_proton(kUnfilled),
+        range_momentum_pion(kUnfilled),
+        chi2_muon(kUnfilled), chi2_proton(kUnfilled), chi2_pion(kUnfilled),
+        pida(kUnfilled) {}
+
+      int hits;                     //!< Number of hits associated with the particle 
+      int mc_id_hits;               //!< Associated MCParticle ID from hits
+      int mc_id_energy;             //!< Associated MCParticle ID from energy
+      int mc_id_charge;             //!< Associated MCParticle ID from charge
+      double mcs_momentum_muon;     //!< multiple coulomb scattering momentum is the particle  is an escaping muon
+      double range_momentum_muon;   //!< range momentum if the particle is a contained muon 
+      double range_momentum_proton; //!< range momentum if the particle is a contained proton
+      double range_momentum_pion;   //!< range momentum if the particle is a contained pion
+      double chi2_proton;           //!< chi2 under the proton hypothesis          
+      double chi2_muon;             //!< chi2 under the muon hypothesis            
+      double chi2_pion;             //!< chi2 under the pion hypothesis            
+      double pida;                  //!< PIDA value of the particle
   };
 
   /**
@@ -104,20 +141,20 @@ public:
    * \brief All truth information associated with one neutrino interaction
    */
   class Interaction {
-  public:
-    Neutrino neutrino;  //!< The neutrino
-    FinalStateParticle lepton;  //!< The primary final state lepton
+    public:
+      Neutrino neutrino;  //!< The neutrino
+      FinalStateParticle lepton;  //!< The primary final state lepton
 
-    /** The other final state particles. */
-    std::vector<FinalStateParticle> finalstate; //!< Final state particles
+      /** The other final state particles. */
+      std::vector<FinalStateParticle> finalstate; //!< Final state particles
 
-    /**
-     * Event weights.
-     *
-     * This is a map from the weight calculator name to the list of weights
-     * for all the sampled universes.
-     */
-    std::map<std::string, std::vector<double> > weights;
+      /**
+       * Event weights.
+       *
+       * This is a map from the weight calculator name to the list of weights
+       * for all the sampled universes.
+       */
+      std::map<std::string, std::vector<double> > weights;
   };
 
   /**
@@ -141,6 +178,9 @@ public:
         weight(1.) {}
 
       Interaction truth; //!< Contains truth level information about interaction
+
+      /** The reconstructed final state particle **/
+      std::vector<FinalStateReconstructedParticle> recofinalstate; //!< Reconstructed final state particles
 
       /**
        * Index into the vector of truth interaction objects in the Event
@@ -166,7 +206,9 @@ public:
 
   Experiment experiment;  //!< Experiment identifier
 
-  static const int kUnfilled = -99999;  //!< Value for unfilled variables
+  static const int kUnfilled = -99999; //!< Value for undefined defaults
+
+
 };
 
 #endif  // __sbnanalysis_core_Event__

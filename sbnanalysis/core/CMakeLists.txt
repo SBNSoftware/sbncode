@@ -6,6 +6,7 @@ include_directories($ENV{ART_INC})
 include_directories($ENV{BOOST_INC})
 include_directories($ENV{NUTOOLS_INC})
 include_directories($ENV{FHICLCPP_INC})
+include_directories($ENV{MESSAGEFACILITY_INC})
 include_directories($ENV{CANVAS_INC})
 include_directories($ENV{CANVAS_ROOT_IO_INC})
 include_directories($ENV{CETLIB_INC})
@@ -14,11 +15,13 @@ include_directories($ENV{GALLERY_INC})
 include_directories($ENV{CLHEP_INC})
 include_directories($ENV{LARCORE_INC})
 include_directories($ENV{LARCOREOBJ_INC})
+include_directories($ENV{LARRECO_INC})
+include_directories($ENV{LARCORE_INC})
 include_directories($ENV{LARCOREALG_INC})
-include_directories($ENV{LARDATAALG_INC})
+include_directories($ENV{LARDATA_INC})
 include_directories($ENV{LARDATAOBJ_INC})
+include_directories($ENV{LARDATAALG_INC})
 include_directories($ENV{NUSIMDATA_INC})
-include_directories($ENV{FHICLCPP_INC})
 include_directories($ENV{LARSIM_INC})
 include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
@@ -26,6 +29,7 @@ include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
 
 link_directories(
+  $ENV{ART_LIB}
   $ENV{BOOST_LIB}
   $ENV{CANVAS_LIB}
   $ENV{CETLIB_LIB}
@@ -34,13 +38,17 @@ link_directories(
   $ENV{LARCORE_LIB}
   $ENV{LARCOREOBJ_LIB}
   $ENV{LARCOREALG_LIB}
+  $ENV{LARRECO_LIB}
+  $ENV{LARDATA_LIB}
   $ENV{LARDATAOBJ_LIB}
   $ENV{LARDATAALG_LIB}
   $ENV{FHICLCPP_LIB}
+  $ENV{MESSAGEFACILITY_LIB}
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
   $ENV{ICARUSCODE_LIB}
+  $ENV{NUTOOLS_LIB}
 )
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
@@ -50,6 +58,8 @@ target_link_libraries(
   sbnanalysis_Event
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
+  larsim_Simulation 
+  lardataobj_Simulation
   ${ROOT_LIBRARIES}
 )
 
@@ -90,10 +100,27 @@ target_link_libraries(
   gallery
   nusimdata_SimulationBase
   larcoreobj_SummaryData
+  larcorealg_Geometry
+  larcore_Geometry_Geometry_service
   lardataobj_RecoBase
+  lardataobj_AnalysisBase
   lardataobj_MCBase
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
+  larsim_Simulation 
+  lardataobj_Simulation
+  lardataalg_DetectorInfo
+  sbndcode_RecoUtils
+  ${CLHEP_Geometry}
+  art_Persistency_Common canvas
+  art_Utilities canvas
+  ${ART_FRAMEWORK_CORE}                                  
+  ${ART_FRAMEWORK_PRINCIPAL}                             
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}                     
+  ${ART_FRAMEWORK_SERVICES_BASIC}                        
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+  ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
 )
 
@@ -114,8 +141,28 @@ target_link_libraries(
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
   fhiclcpp
+  nusimdata_SimulationBase
+  larcoreobj_SummaryData
+  larcorealg_Geometry
+  larcore_Geometry_Geometry_service
+  lardataobj_RecoBase
+  lardataobj_MCBase
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
+  larsim_Simulation 
+  lardataobj_Simulation
+  lardataalg_DetectorInfo
+  sbndcode_RecoUtils
+  art_Persistency_Common canvas
+  art_Utilities canvas
+  ${CLHEP_Geometry}
+  ${ART_FRAMEWORK_CORE}                                  
+  ${ART_FRAMEWORK_PRINCIPAL}                             
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}                     
+  ${ART_FRAMEWORK_SERVICES_BASIC}                        
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+  ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
 )
 
@@ -128,6 +175,7 @@ target_link_libraries(
   fhiclcpp
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
+  larsim_Simulation 
   ${ROOT_LIBRARIES}
 )
 
