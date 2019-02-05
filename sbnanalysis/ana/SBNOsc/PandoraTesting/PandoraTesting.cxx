@@ -92,6 +92,8 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
     _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
 
+    _config.reco_vertex_cluster_distance = pconfig.get<double>("vertexClusterDistance", 5.0);
+
     // get tag names
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
@@ -120,6 +122,8 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
     _root_histos[i].h_numu_Vyz = new TH2D(("numu_Vyz_" + cut_names[i]).c_str(), "numu_Vyz",
       20, aaBoxesMin(_config.active_volumes, 1), aaBoxesMax(_config.active_volumes, 1),
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
+    _root_histos[i].h_numu_contained_L_sig = new TH1D(("numu_contained_L_sig_" + cut_names[i]).c_str(), "numu_contained_L_sig", 101, -10 , 1000);
+    _root_histos[i].h_numu_contained_L_bkg = new TH1D(("numu_contained_L_bkg_" + cut_names[i]).c_str(), "numu_contained_L_bkg", 101, -10 , 1000);
   }
 
   // set up TGraph keeping track of cut counts
@@ -150,6 +154,8 @@ void PandoraTesting::Finalize() {
     _root_histos[i].h_numu_Vxy->Write();
     _root_histos[i].h_numu_Vxz->Write();
     _root_histos[i].h_numu_Vyz->Write();
+    _root_histos[i].h_numu_contained_L_sig->Write();
+    _root_histos[i].h_numu_contained_L_bkg->Write();
   }
   _cut_counts->Write();
 }
@@ -224,6 +230,9 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
     if (is_signal) {
       weight *= _config.selectionEfficiency;
     }
+    //for(std::map<std::string,std::vector<double>>::iterator it = interaction.weights.begin(); it != interaction.weights.end(); ++it) {
+    //  std::cout << it->first <<std::endl;
+    //}
     // apply uniofrm weights (e.g. bnbcorrection)
     for (auto const &key: _config.uniformWeights) {
        weight *= interaction.weights.at(key)[0];
@@ -236,7 +245,7 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
     RecoInteractionInfo reco_interaction_info = Reconstruct(ev, mctruth, i, clustered);
 
     // run selection
-    std::array<bool, PandoraTesting::nCuts> selection = Select(ev, mctruth, i, intInfo);
+    std::array<bool, PandoraTesting::nCuts> selection = Select(ev, mctruth, i, intInfo, clustered);
 
     // pass iff pass each cut
     bool pass_selection = std::find(selection.begin(), selection.end(), false) == selection.end();
@@ -266,6 +275,12 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
         _root_histos[select_i].h_numu_Vxy->Fill(nu.Nu().Vx(), nu.Nu().Vy());
         _root_histos[select_i].h_numu_Vxz->Fill(nu.Nu().Vx(), nu.Nu().Vz());
         _root_histos[select_i].h_numu_Vyz->Fill(nu.Nu().Vy(), nu.Nu().Vz());
+        if (isSignal(interaction)) {
+          _root_histos[select_i].h_numu_contained_L_sig->Fill(intInfo.t_contained_length);
+        }
+        else { // is bkg
+          _root_histos[select_i].h_numu_contained_L_bkg->Fill(intInfo.t_contained_length);
+        }
 
         // also update cut count
         _cut_counts->SetPoint(select_i+1, select_i+1, _cut_counts->GetY()[select_i+1] + 1);
@@ -528,7 +543,7 @@ PandoraTesting::RecoInteractionInfo PandoraTesting::Reconstruct(const gallery::E
 }
 
 std::array<bool, PandoraTesting::nCuts> PandoraTesting::Select(const gallery::Event& ev, const simb::MCTruth& mctruth,
-      unsigned truth_ind, const PandoraTesting::NuMuInteraction &intInfo) {
+      unsigned truth_ind, const PandoraTesting::NuMuInteraction &intInfo, const std::vector<ClusteredVertex> &reco_vertices) {
   // get the neutrino
   const simb::MCNeutrino& nu = mctruth.GetNeutrino();
 
@@ -542,24 +557,7 @@ std::array<bool, PandoraTesting::nCuts> PandoraTesting::Select(const gallery::Ev
   bool pass_min_length = passMinLength(intInfo.t_contained_length, intInfo.t_is_contained);
 
   // pass vertex reconstruction cut
-  bool pass_reco_vertex = true;
-  if (_config.vertexDistanceCut > 0) {
-    double truth_v[3];
-    truth_v[0] = nu.Nu().Vx();
-    truth_v[1] = nu.Nu().Vy();
-    truth_v[2] = nu.Nu().Vz();
-
-    // get the reco vertex information
-    auto const pfp_handle = ev.getValidHandle<std::vector<recob::PFParticle>>("pandoraNu");
-    art::FindMany<recob::Vertex> fvtx(pfp_handle, ev, "pandoraNu");
-    // index of truth info is same as index of vertex info
-    std::vector<const recob::Vertex*> vertices = fvtx.at(truth_ind);
-    // neutrino will only have one associated vetex
-    auto vertex = vertices[0]->position();
-    TVector3 reco_v(vertex.X(), vertex.Y(), vertex.Z());
-
-    pass_reco_vertex = passRecoVertex(nu.Nu().Position().Vect(), reco_v);
-  }
+  bool pass_reco_vertex = passRecoVertex(nu.Nu().Position().Vect(), reco_vertices);
 
   // print selection information
   if (_config.verbose) {
@@ -572,6 +570,14 @@ std::array<bool, PandoraTesting::nCuts> PandoraTesting::Select(const gallery::Ev
     std::cout << "pass Reco: " << pass_reco_vertex << std::endl;
     std::cout << "Length: " << intInfo.t_contained_length << " Contained: " << intInfo.t_is_contained << std::endl;
     std::cout << "pass Length: " << pass_min_length << std::endl;
+
+    std::cout << "Vertex: " << nu.Nu().Position().Vect().X() << " " << nu.Nu().Position().Vect().Y() << " " << nu.Nu().Position().Vect().Z() << std::endl;
+    for (auto const &v: reco_vertices) {
+      std::cout << "Clustered vertex: " << v.mean.X() << " " << v.mean.Y() << " " << v.mean.Z() << std::endl;
+      for (auto const &vv: v.vertices) {
+        std::cout << "Component vertex: " << vv.X() << " " << vv.Y() << " " << vv.Z() << std::endl;
+      }
+    } 
   }
 
   // TEMP: add in an active volume cut
@@ -581,7 +587,14 @@ std::array<bool, PandoraTesting::nCuts> PandoraTesting::Select(const gallery::Ev
   bool pass_kMEC = !(_config.cutKMEC && nu.Mode() == simb::kMEC) && !(_config.onlyKMEC && nu.Mode() != simb::kMEC);
 
   // retrun list of cuts
-  return {pass_kMEC, pass_AV && pass_kMEC, pass_valid_track && pass_kMEC && pass_AV, pass_valid_track && pass_kMEC && pass_AV && pass_FV, pass_valid_track && pass_kMEC && pass_AV && pass_FV && pass_min_length};
+  return {
+    pass_kMEC, 
+    pass_AV && pass_kMEC,
+    pass_valid_track && pass_kMEC && pass_AV,
+    pass_valid_track && pass_kMEC && pass_AV && pass_FV,
+    pass_valid_track && pass_kMEC && pass_AV && pass_FV && pass_min_length,
+    pass_valid_track && pass_kMEC && pass_AV && pass_FV && pass_min_length && pass_reco_vertex
+  };
 }
 
 bool PandoraTesting::containedInAV(const TVector3 &v) {
@@ -600,10 +613,16 @@ bool PandoraTesting::containedInFV(const TVector3 &v) {
   return false;
 }
 
-bool PandoraTesting::passRecoVertex(const TVector3 &truth_v, const TVector3 &reco_v) {
+bool PandoraTesting::passRecoVertex(const TVector3 &truth_v, const std::vector<ClusteredVertex> &vertices) {
   if (_config.vertexDistanceCut < 0) return true;
 
-  return (truth_v - reco_v).Mag() < _config.vertexDistanceCut;
+  for (auto const &v: vertices) {
+    if ((truth_v - v.mean).Mag() < _config.vertexDistanceCut) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool PandoraTesting::passMinLength(double length, bool stop_in_tpc) {

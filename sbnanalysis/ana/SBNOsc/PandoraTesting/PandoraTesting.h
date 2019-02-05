@@ -159,6 +159,8 @@ protected:
     TH2D *h_numu_Vxy; //!< 2D x-y vertex histogram [cm]
     TH2D *h_numu_Vxz; //!< 2D x-z vertex histogram [cm]
     TH2D *h_numu_Vyz; //!< 2D y-z vertex histogram [cm]
+    TH1D *h_numu_contained_L_sig;
+    TH1D *h_numu_contained_L_bkg;
   };
 
   // helper struct holding track info -- see NumuInteraction for variable details
@@ -168,7 +170,7 @@ protected:
     double t_length; //!< total length of (maybe faked) lepton track [cm]
   };
 
-  static const unsigned nCuts = 5; //!< number of cuts
+  static const unsigned nCuts = 6; //!< number of cuts
 
   RecoEventInfo EventReconstructionInfo(const gallery::Event &ev, std::vector<ClusteredVertex> &vertices);
   RecoInteractionInfo Reconstruct(const gallery::Event &ev, const simb::MCTruth &mctruth, unsigned truth_ind, std::vector<ClusteredVertex> &vertices);
@@ -186,7 +188,7 @@ protected:
  * \param reco_v Reconstructed vertex vector
  * \return Whether to apply reco-truth vertex matching cut: true == passed cut
  * */
-  bool passRecoVertex(const TVector3 &truth_v, const TVector3 &reco_v);
+  bool passRecoVertex(const TVector3 &truth_v, const std::vector<ClusteredVertex> &vertices);
 
   /** Applies truth length cut
  *  \param length Distance travelled by lepton
@@ -203,7 +205,13 @@ protected:
  *
  *  \return A list containing whether the interaction passed each cut (ordered in the same way as the "cutNames()")
  * */
-  std::array<bool, nCuts> Select(const gallery::Event& ev, const simb::MCTruth& mctruth, unsigned truth_ind, const PandoraTesting::NuMuInteraction &intInfo);
+  std::array<bool, nCuts> Select(
+    const gallery::Event& ev,
+    const simb::MCTruth& mctruth, 
+    unsigned truth_ind,
+    const PandoraTesting::NuMuInteraction &intInfo,
+    const std::vector<ClusteredVertex> &reco_vertices
+  );
 
   /** Get associated interaction information from monte carlo
  * \param ev The gallery event.
@@ -236,6 +244,8 @@ protected:
  * */
   bool containedInAV(const TVector3 &v);
 
+  bool isSignal(const Event::Interaction &interaction) { return interaction.neutrino.iscc; }
+
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
@@ -244,7 +254,7 @@ protected:
  * \return List of names of cuts (for histogram names)
  * */
   static const std::array<std::string, nCuts> cutNames() {
-    return {"MEC", "AV", "Track", "FV", "min_L"};
+    return {"MEC", "AV", "Track", "FV", "min_L", "Reco"};
   }
 
   Config _config; //!< The config
