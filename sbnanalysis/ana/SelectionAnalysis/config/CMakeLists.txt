@@ -1,0 +1,4 @@
+INSTALL(FILES SelectionConfig.fcl
+  DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/fcl
+)

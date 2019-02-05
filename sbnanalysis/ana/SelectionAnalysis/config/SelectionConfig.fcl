@@ -1,0 +1,23 @@
+###include "backtrackerservice.fcl"  
+###include "particleinventoryservice.fcl" 
+                                                                                   
+OutputFile: "SelectionAnalysisOutput.root" 
+ExperimentID: 0
+
+###services: {                                                                       
+### BackTrackerService:  @local::standard_backtrackerservice                        
+### ParticleInventoryService: @local::standard_particleinventoryservice             
+###} 
+
+SelectionAnalysis:
+{
+  MCTruthTag:                "generator"
+  MCParticleTag:             "largeant"
+  HitTag:                    "gaushit"
+  PFParticleTag:             "pandora"
+  RecoTrackTag:              "pandoraTrack"
+  RecoShowerTag:             "emshower"
+  VertexTag:                 "pandora"
+  RecoTrackCalorimetryTag:   "pandoraCalo"
+  RecoTrackParticleIDTag:    "pandoraPid"
+}

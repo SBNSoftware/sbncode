@@ -18,6 +18,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
+#include "core/Experiment.hh"
 
 /** All analysis code is defined in namespace "ana" */
 namespace ana {
@@ -64,16 +65,15 @@ namespace ana {
         unsigned fEventCounter;  //!< Count processed events
 
         /** Configuration parameters */
-        /** Handle labels **/                            
+        /** Handle labels **/                           
         std::string fGeneratorLabel;             ///< Generator label
-
-//      std::string fGeantLabel;                 ///< Geant label   
-//      std::string fPandoraLabel;               ///< Pandora label                           
-//      std::string fRecoTrackLabel;             ///< Reconstructed track object label                  
-//      std::string fRecoShowerLabel;            ///< Reconstructed shower object label
-//      std::string fRecoTrackCalorimetryLabel;  ///< Calorimetry label for reconstructed track object associations
-//      std::string fRecoTrackParticleidLabel;   ///< Particle ID label for reconstructed track object associations
-//      std::string fHitLabel;                   ///< Hit label
+        std::string fGeantLabel;                 ///< Geant label   
+//        std::string fPandoraLabel;               ///< Pandora label                           
+//        std::string fRecoTrackLabel;             ///< Reconstructed track object label                  
+//        std::string fRecoShowerLabel;            ///< Reconstructed shower object label
+//        std::string fRecoTrackCalorimetryLabel;  ///< Calorimetry label for reconstructed track object associations
+//        std::string fRecoTrackParticleidLabel;   ///< Particle ID label for reconstructed track object associations
+//        std::string fHitLabel;                   ///< Hit label
 
     }; // AnalysisMain class
   }  // namespace SelectionAnalysis
