@@ -92,8 +92,8 @@ def get_setup_script_path():
     SBNUTIL  = "/sbncode/sbnutil/"
     SCRIPT_DIR = SRCS + SBNUTIL
 
-    if os.path.isfile(SCRIPT_DIR+"setup_sbncode.sh"):
-        setup_script = SCRIPT_DIR+"setup_sbncode.sh"
+    if os.path.isfile(SCRIPT_DIR+"setup_sbncode_grid-v08_03_00.sh"):
+        setup_script = SCRIPT_DIR+"setup_sbncode_grid-v08_03_00.sh"
     else:
         raise RuntimeError, "Could not find setup script at "+SCRIPT_DIR
     

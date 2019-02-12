@@ -1,5 +1,17 @@
 #include "prodgenie_bnb_nu_cosmic_sbn_sbnd.fcl"
 
+process_name: GenieGen
+
 outputs.out1.fileName: "prodgenie_bnb_intrinsic_nue_cosmic_sbn_sbnd_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.TopVolume: "volCryostat"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/sbnd/configD-v1_april07_neutrinoMode"
+physics.producers.generator.FluxFiles: [ "converted_beammc_sbnd*.root" ]
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+
 physics.producers.generator.GenFlavors: [12,-12]
 

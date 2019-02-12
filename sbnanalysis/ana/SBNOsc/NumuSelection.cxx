@@ -41,6 +41,7 @@ double aaBoxesMax(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
 }
 
 void NumuSelection::Initialize(fhicl::ParameterSet* config) {
+
   if (config) {
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NumuSelection");
 

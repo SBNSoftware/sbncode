@@ -107,6 +107,15 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
 bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
                             float distance=5.0);
 
+/**
+ * Returns whether a mc particle object is from a netrino vertex
+ * \param mc MCTruth corresponding to neutrino interaction
+ * \param particle The object to be matched
+ * \param distance between track start and interaction vertex
+ * \return Whether track/shower object is from neutrino vertex
+ */
+  
+bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle* &particle, float distance=5.0);
 
 /**
  * Calculate CCQE energy from associated lepton information (and optional
@@ -181,7 +190,7 @@ double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrac
 /** 
  * Get the seperate hadronic and leptonic energy from the event. The first element in the vector is the hadronic energy the second is the leptonic. 
  * */
-std::vector<double> FlavourEnergyDeposition(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list);
+ std::vector<double> FlavourEnergyDeposition(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
 /** Get the smeared energy from a lepton.
  * \param mctrack The MCTrack object corresponding to the lepton

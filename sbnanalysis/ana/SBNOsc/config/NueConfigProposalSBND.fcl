@@ -1,49 +1,12 @@
+#include "NumuConfig.fcl"    
+
 OutputFile: "output_SBNOsc_NumuSelection_Proposal_SBND.root"
 
-MCWeightTags: ["fluxeventweight", "genieeventweight"]
-
-NumuSelection: {
-  acceptShakyTracks: true
-  verbose: false
-  doFVCut: true
-
-  fiducial_volumes: [
-    {
-      xmin: -190.9
-      ymin: -185
-      zmin: 15.
-      xmax: 5.6
-      ymax: 185
-      zmax: 415.
-    },
-    {
-      xmin: 10.9
-      ymin: -185
-      zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      zmax: 415.
-    }
-  ]
-
-  active_volumes: [
-    {
-      xmin: -199.15
-      ymin: -200.
-      zmin: 0.0
-      xmax: 199.15
-      ymax: 200.
-      zmax: 500.
-    }
-  ]
- 
-  minLengthContainedTrack: 50, // value taken from proposal
-  minLengthExitingTrack: 100, // value taken from proposal
-  trackVisibleEnergyThreshold: 0.021, // [GeV] taken from pospoal
-  showerEnergyDistortion: 0.05, // not sure about this one
-  trackEnergyDistortion: 0.05, // taken from proposal
-  leptonEnergyDistortionContained: 0.02, // needs update
-  leptonEnergyDistortionLeavingA: 0.102, // from joseph email
-  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+NueSelection: {
+  fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
+  active_volumes: @local::SBND_Proposal_active_volumes 
+  #@table::standard_cuts_noMEC
+  #uniformWeights: @local::standard_uniformWeights
+  constantWeight: 1.21 // Scale up all event to account for r=110m (now) -> 100m (then) 
 }
 

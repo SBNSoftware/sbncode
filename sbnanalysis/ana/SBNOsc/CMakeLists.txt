@@ -19,14 +19,18 @@ add_library(sbnanalysis_SBNOsc_Covariance SHARED Covariance.cxx)
 add_library(sbnanalysis_SBNOsc_Chi2Sensitivity SHARED Chi2Sensitivity.cxx)
 
 # Add in ROOT dictionary
-ROOT_GENERATE_DICTIONARY(SBNOsc_dict NumuSelection.h LINKDEF linkdef.h)
+ROOT_GENERATE_DICTIONARY(SBNOsc_dict NumuSelection.h NueSelection.h LINKDEF linkdef.h)
 add_library(sbnanalysis_SBNOsc_classes SHARED SBNOsc_dict.cxx)
 add_custom_command(TARGET sbnanalysis_SBNOsc_classes POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   libSBNOsc_dict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
 
 # Define library linking
-target_link_libraries(sbnanalysis_SBNOsc_NueSelection sbnanalysis_SBNOsc_Utilities)
+target_link_libraries(sbnanalysis_SBNOsc_NueSelection 
+   sbnanalysis_SBNOsc_Utilities
+   sbnanalysis_SBNOsc_classes
+   ubana_BasicTool_GeoAlgo
+)
 target_link_libraries(sbnanalysis_SBNOsc_NumuSelection
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOsc_classes
