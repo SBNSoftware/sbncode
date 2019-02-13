@@ -15,6 +15,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
+#include "core/ServiceManager.hh"
 
 #include "../Utilities.h"
 
@@ -24,10 +25,16 @@
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
+#include "lardataobj/RecoBase/Vertex.h"
 
 // take the geobox stuff from uboonecode
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
+
+#include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+
+#include "larcore/Geometry/Geometry.h"
+
 
 class TH2D;
 
@@ -65,11 +72,13 @@ public:
   /** Additional information used by the selection per neutrino interaction */
   struct NuMuInteraction {
     bool t_is_contained; //!< whether the (maybe faked) lepton track is totally contained in the active volume
+    bool t_cross_tpc;
     double t_contained_length; //!< the length of the (maybe faked) lepton track contained in the active volume [cm]
     double t_length; //!< total length of (maybe faked) lepton track [cm]
     int t_pdgid; //!< PDGID of primary track (muon or pi+)
     double t_energy_true; //!< True energy of primary track [GeV]
     double t_energy_smeared; //!< Smeared energy of primary track [GeV]
+    double t_open_angle;
 
     // default constructor -- fills with bogus info
     /*
@@ -89,7 +98,33 @@ public:
 
   /** Reconstructed Information about interaction */
   struct RecoInteractionInfo {
+    int n_track_clustered_vertices;
     double reco_vertex_distance;
+  };
+
+  // helper struct -- a clustered vertex
+  struct ClusteredVertex {
+    TVector3 mean;
+    std::vector<TVector3> vertices;
+    void CalcMean() {
+      double x = 0;
+      double y = 0;
+      double z = 0;
+      for (const TVector3 &v: vertices) {
+        x += v.X() / vertices.size();
+        y += v.Y() / vertices.size();
+        z += v.Z() / vertices.size();
+      }
+      mean = TVector3(x, y, z);
+    }
+  };
+
+  /** Reconstructed information about each particle */
+  struct RecoParticle {
+    bool p_is_clear_cosmic;
+    bool p_is_neutrino; 
+    double p_nu_score;
+    std::vector<ClusteredVertex> vertices;
   };
 
 protected:
@@ -121,29 +156,18 @@ protected:
 
     double reco_vertex_cluster_distance; //!< Distance over which to cluster vertices
 
+    // CRT configs
+    double crt_time_limit;
+    double crt_avg_hit_dist;
+    bool crt_use_top_plane;
+    double crt_dist_limit;
+
     std::string HitTag;
     std::string RecoTrackTag;
     std::string RecoVertexTag;
-
+    std::string PFParticleTag;
   };
 
-
-  // helper struct -- a clustered vertex
-  struct ClusteredVertex {
-    TVector3 mean;
-    std::vector<TVector3> vertices;
-    void CalcMean() {
-      double x = 0;
-      double y = 0;
-      double z = 0;
-      for (const TVector3 &v: vertices) {
-        x += v.X() / vertices.size();
-        y += v.Y() / vertices.size();
-        z += v.Z() / vertices.size();
-      }
-      mean = TVector3(x, y, z);
-    }
-  };
 
   /** Histograms made for output */
   struct RootHistos {
@@ -161,11 +185,16 @@ protected:
     TH2D *h_numu_Vyz; //!< 2D y-z vertex histogram [cm]
     TH1D *h_numu_contained_L_sig;
     TH1D *h_numu_contained_L_bkg;
+    TH1D *h_numu_open_angle_sig;
+    TH1D *h_numu_open_angle_bkg;
+    TH1D *h_numu_cross_TPC_sig;
+    TH1D *h_numu_cross_TPC_bkg;
   };
 
   // helper struct holding track info -- see NumuInteraction for variable details
   struct TrackInfo {
     bool t_is_contained; //!< whether the (maybe faked) lepton track is totally contained in the active volume
+    bool t_cross_tpc;
     double t_contained_length; //!< the length of the (maybe faked) lepton track contained in the active volume [cm]
     double t_length; //!< total length of (maybe faked) lepton track [cm]
   };
@@ -173,8 +202,10 @@ protected:
   static const unsigned nCuts = 6; //!< number of cuts
 
   RecoEventInfo EventReconstructionInfo(const gallery::Event &ev, std::vector<ClusteredVertex> &vertices);
-  RecoInteractionInfo Reconstruct(const gallery::Event &ev, const simb::MCTruth &mctruth, unsigned truth_ind, std::vector<ClusteredVertex> &vertices);
-  std::vector<ClusteredVertex> ClusterVertices(const gallery::Event &event);
+  RecoInteractionInfo Reconstruct(const gallery::Event &ev, const simb::MCTruth &mctruth, unsigned truth_ind, std::vector<ClusteredVertex> &vertices, int track_ind);
+  std::vector<PandoraTesting::RecoParticle> ReconstructionInfo(const gallery::Event &event);
+  std::vector<PandoraTesting::ClusteredVertex> ClusterVertices(const std::vector<const recob::Vertex *> &reco_vertices);
+  std::vector<PandoraTesting::ClusteredVertex> SelectVertices(const std::vector<PandoraTesting::RecoParticle>& reco_particles);
 
   /* Applies FV cut
   * \param v The neutrino interaction vertex
@@ -219,7 +250,9 @@ protected:
  *
  * \return NuMuInteraction object containing information from the mctruth object
  * */
-  NuMuInteraction interactionInfo(const gallery::Event& ev, const simb::MCTruth &mctruth, VisibleEnergyCalculator &calculator);
+  NuMuInteraction interactionInfo(const gallery::Event& ev, const simb::MCTruth &mctruth, int track_ind, VisibleEnergyCalculator &calculator);
+
+  int GetNeutrinoTrack(const gallery::Event &ev, const simb::MCTruth &mctruth);
 
  /** Get the interaction info associated with a track. This works right now because
  * all interaction info comes from the primary track. Might have to re-think structure
@@ -246,6 +279,20 @@ protected:
 
   bool isSignal(const Event::Interaction &interaction) { return interaction.neutrino.iscc; }
 
+  geo::TPCID GetTPCIndex(const TVector3 &v) {
+    for (auto const &cryo: _manager->GetGeometryService()->IterateCryostats()) {
+      geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryService()->begin_TPC(cryo.ID()), 
+                                      tend = _manager->GetGeometryService()->end_TPC(cryo.ID());
+      while (iTPC != tend) {
+        geo::TPCGeo const& TPC = *iTPC;
+        if (TPC.ContainsPosition(v)) return TPC.ID();
+        iTPC++;
+      }
+    }
+    return geo::TPCID(geo::CryostatID::getInvalidID(), geo::TPCID::getInvalidID());
+    // return _manager->GetGeometryService()->FindTPCAtPosition(v);
+  }
+
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
@@ -261,9 +308,12 @@ protected:
 
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder
   std::vector<RecoInteractionInfo> *_recoInteractionInfo;
+  std::vector<RecoParticle> *_recoParticles;
   RecoEventInfo _recoEventInfo;
+  core::ServiceManager *_manager;
 
   RootHistos _root_histos[nCuts]; //!< Histos (one group per cut)
+
 };
 
   }  // namespace SBNOsc

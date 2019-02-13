@@ -13,12 +13,20 @@ target_link_libraries(sbnanalysis_SBNOsc_PandoraViewer
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_PandoraTesting_classes
   ubana_BasicTool_GeoAlgo
+  sbndcode_CRT
+  sbndcode_CRTProducts
+  sbndcode_CRTUtils
+  sbndcode_CRT_CRTProducts_dict
 )
 
 target_link_libraries(sbnanalysis_SBNOsc_PandoraTesting
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_PandoraTesting_classes
   ubana_BasicTool_GeoAlgo
+  sbndcode_CRT
+  sbndcode_CRTProducts
+  sbndcode_CRTUtils
+  sbndcode_CRT_CRTProducts_dict
 )
 
 # Add in ROOT dictionary

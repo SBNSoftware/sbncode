@@ -10,5 +10,7 @@
 #pragma link C++ class ana::SBNOsc::PandoraTesting::RecoInteractionInfo+;
 #pragma link C++ class std::vector<ana::SBNOsc::PandoraTesting::RecoInteractionInfo>+;
 #pragma link C++ class ana::SBNOsc::PandoraTesting::RecoEventInfo+;
+#pragma link C++ class ana::SBNOsc::PandoraTesting::RecoParticle+;
+#pragma link C++ class std::vector<ana::SBNOsc::PandoraTesting::RecoParticle>+;
 
 #endif

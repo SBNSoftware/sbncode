@@ -1,3 +1,5 @@
+#include <list>
+#include <string>
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -20,9 +22,16 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
+
 #include "core/Event.hh"
 #include "PandoraTesting.h"
 #include "../Utilities.h"
+
+#include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+
+#include "larcore/Geometry/Geometry.h"
 
 namespace ana {
   namespace SBNOsc {
@@ -32,7 +41,8 @@ PandoraTesting::PandoraTesting() :
   _event_counter(0),
   _nu_count(0),
   _interactionInfo(new std::vector<NuMuInteraction>),
-  _recoInteractionInfo(new std::vector<RecoInteractionInfo>) {}
+  _recoInteractionInfo(new std::vector<RecoInteractionInfo>),
+  _recoParticles(new std::vector<RecoParticle>) {}
 
 double aaBoxesMin(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
   return std::min_element(boxes.begin(), boxes.end(), [dim](auto &lhs, auto &rhs) { return lhs.Min()[dim] < rhs.Min()[dim]; })->Min()[dim];
@@ -72,7 +82,7 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
     }
 
     _config.doFVCut = pconfig.get<bool>("doFVcut", true);
-    _config.trajPointLength = pconfig.get<bool>("trajPointLength", false);
+    _config.trajPointLength = pconfig.get<bool>("trajPointLength", true);
     _config.vertexDistanceCut = pconfig.get<double>("vertexDistance", -1);
     _config.minLengthContainedTrack = pconfig.get<double>("minLengthContainedTrack", -1);
     _config.minLengthExitingTrack = pconfig.get<double>("minLengthExitingTrack", -1);
@@ -94,10 +104,19 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
 
     _config.reco_vertex_cluster_distance = pconfig.get<double>("vertexClusterDistance", 5.0);
 
+    // crt stuff
+    _config.crt_time_limit = pconfig.get<double>("CRT_time_limit", 0.2); // from SBND CRT Track Producer
+    _config.crt_avg_hit_dist = pconfig.get<double>("CRT_avg_hit_dist", 30.); // from SBND CRT Track Producer
+    _config.crt_use_top_plane = pconfig.get<bool>("CRT_use_top_plane", true); // from SBND CRT Track Producer
+    _config.crt_dist_limit = pconfig.get<double>("CRT_dist_limit", 25.); // from SBND CRT Track Producer
+
     // get tag names
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
+    _config.PFParticleTag = config->get<std::string>("PFParticleTag", "pandora");
+
+
   }
 
   // Setup histo's for root output
@@ -124,6 +143,10 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
     _root_histos[i].h_numu_contained_L_sig = new TH1D(("numu_contained_L_sig_" + cut_names[i]).c_str(), "numu_contained_L_sig", 101, -10 , 1000);
     _root_histos[i].h_numu_contained_L_bkg = new TH1D(("numu_contained_L_bkg_" + cut_names[i]).c_str(), "numu_contained_L_bkg", 101, -10 , 1000);
+    _root_histos[i].h_numu_open_angle_sig = new TH1D(("numu_open_angle_sig_" + cut_names[i]).c_str(), "numu_open_angle_sig", 60, 0., 2 * TMath::Pi());
+    _root_histos[i].h_numu_open_angle_bkg = new TH1D(("numu_open_angle_bkg_" + cut_names[i]).c_str(), "numu_open_angle_bkg", 60, 0.,2 * TMath::Pi());
+    _root_histos[i].h_numu_cross_TPC_sig = new TH1D(("numu_cross_TPC_sig_" + cut_names[i]).c_str(), "numu_cross_TPC_sig", 3, -1.5, 1.5);
+    _root_histos[i].h_numu_cross_TPC_bkg = new TH1D(("numu_cross_TPC_bkg_" + cut_names[i]).c_str(), "numu_cross_TPC_bkg", 3, -1.5, 1.5);
   }
 
   // set up TGraph keeping track of cut counts
@@ -133,6 +156,10 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
   fTree->Branch("numu_interaction", &_interactionInfo);
   fTree->Branch("reco_interaction", &_recoInteractionInfo);
   fTree->Branch("reco_event", &_recoEventInfo);
+  fTree->Branch("reco_particles", &_recoParticles);
+
+  // setup services manager
+  _manager = new core::ServiceManager(core::Detector::kSBND);
 
   hello();
 }
@@ -156,6 +183,10 @@ void PandoraTesting::Finalize() {
     _root_histos[i].h_numu_Vyz->Write();
     _root_histos[i].h_numu_contained_L_sig->Write();
     _root_histos[i].h_numu_contained_L_bkg->Write();
+    _root_histos[i].h_numu_open_angle_sig->Write();
+    _root_histos[i].h_numu_open_angle_bkg->Write();
+    _root_histos[i].h_numu_cross_TPC_sig->Write();
+    _root_histos[i].h_numu_cross_TPC_bkg->Write();
   }
   _cut_counts->Write();
 }
@@ -172,6 +203,7 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
   _event_counter++;
   _interactionInfo->clear();
   _recoInteractionInfo->clear();
+  _recoParticles->clear();
 
   // Get truth
   auto const& mctruths = \
@@ -186,7 +218,11 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
   _cut_counts->SetPoint(0, 0, _cut_counts->GetY()[0] + mctruths.size());
 
   // cluster the vertices in the reco info
-  std::vector<ClusteredVertex> clustered = ClusterVertices(ev); 
+  std::vector<RecoParticle> reco_particles = ReconstructionInfo(ev);
+  _recoParticles->insert(_recoParticles->begin(), reco_particles.begin(), reco_particles.end());
+
+  // select good vertices
+  std::vector<ClusteredVertex> clustered = SelectVertices(reco_particles);
 
   // get reconstruction infor for the whole event
   _recoEventInfo = EventReconstructionInfo(ev, clustered);
@@ -213,9 +249,11 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
 
     // Get selection-specific info
     //
+    // Get the neutrino track index
+    int track_ind = GetNeutrinoTrack(ev, mctruth);
     // Start with the interaction stuff
     // This also sets the lepton variables in the calculator
-    NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
+    NuMuInteraction intInfo = interactionInfo(ev, mctruth, track_ind, calculator);
 
     double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
 
@@ -242,7 +280,7 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
     reco_interaction.weight = weight;
 
     // get the reconstruction information
-    RecoInteractionInfo reco_interaction_info = Reconstruct(ev, mctruth, i, clustered);
+    RecoInteractionInfo reco_interaction_info = Reconstruct(ev, mctruth, i, clustered, track_ind);
 
     // run selection
     std::array<bool, PandoraTesting::nCuts> selection = Select(ev, mctruth, i, intInfo, clustered);
@@ -277,9 +315,13 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
         _root_histos[select_i].h_numu_Vyz->Fill(nu.Nu().Vy(), nu.Nu().Vz());
         if (isSignal(interaction)) {
           _root_histos[select_i].h_numu_contained_L_sig->Fill(intInfo.t_contained_length);
+          _root_histos[select_i].h_numu_open_angle_sig->Fill(intInfo.t_open_angle);
+          _root_histos[select_i].h_numu_cross_TPC_sig->Fill(intInfo.t_cross_tpc);
         }
         else { // is bkg
           _root_histos[select_i].h_numu_contained_L_bkg->Fill(intInfo.t_contained_length);
+          _root_histos[select_i].h_numu_open_angle_bkg->Fill(intInfo.t_open_angle);
+          _root_histos[select_i].h_numu_cross_TPC_bkg->Fill(intInfo.t_cross_tpc);
         }
 
         // also update cut count
@@ -295,6 +337,8 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
 PandoraTesting::TrackInfo PandoraTesting::trackInfo(const sim::MCTrack &track) {
   double contained_length = 0;
   double length = 0;
+  bool crosses_tpc = false;
+
   // If the interaction is outside the active volume, then g4 won't generate positions for the track.
   // So size == 0 => outside FV
   //
@@ -321,6 +365,9 @@ PandoraTesting::TrackInfo PandoraTesting::trackInfo(const sim::MCTrack &track) {
     if (active_volume_index >= 0) {
       volumes.push_back(_config.active_volumes[active_volume_index]);
     }
+
+    // get initial TPC of track
+    geo::TPCID last_tpc_id = GetTPCIndex(pos.Vect());
     
     for (int i = 1; i < track.size(); i++) {
       // update if track is contained
@@ -329,6 +376,13 @@ PandoraTesting::TrackInfo PandoraTesting::trackInfo(const sim::MCTrack &track) {
       // update length
       contained_length += containedLength(track[i].Position().Vect(), pos.Vect(), volumes);
       length += (track[i].Position().Vect() - pos.Vect()).Mag();
+
+      // check if track has crossed TPC
+      if (containedInAV(pos.Vect())) {
+        geo::TPCID this_tpc_id = GetTPCIndex(pos.Vect());
+        if (this_tpc_id && last_tpc_id && this_tpc_id != last_tpc_id) crosses_tpc = true;
+        last_tpc_id = this_tpc_id;
+      }
       
       pos = track[i].Position();
     }
@@ -342,6 +396,10 @@ PandoraTesting::TrackInfo PandoraTesting::trackInfo(const sim::MCTrack &track) {
     length = (track.Start().Position().Vect() - track.End().Position().Vect()).Mag();
     contained_in_AV = containedInAV(track.Start().Position().Vect()) && containedInAV(track.End().Position().Vect());
 
+    geo::TPCID start_tpc_id = GetTPCIndex(track.Start().Position().Vect());
+    geo::TPCID end_tpc_id = GetTPCIndex(track.End().Position().Vect());
+    crosses_tpc = start_tpc_id && end_tpc_id && start_tpc_id != end_tpc_id;
+
     //std::cout << "WARNING: SHAKY TRACK." << std::endl;
     //std::cout << "CONTAINED IN FV: " << contained_in_AV << std::endl;
     //std::cout << "CONTAINED LENGTH: " << contained_length << std::endl; 
@@ -352,42 +410,15 @@ PandoraTesting::TrackInfo PandoraTesting::trackInfo(const sim::MCTrack &track) {
     //std::cout << "START: " << start.X() << " " << start.Y() << " " << start.Z() << std::endl;
     //std::cout << "END: " << end.X() << " " << end.Y() << " " << end.Z() << std::endl;
   }
-  return PandoraTesting::TrackInfo({contained_in_AV, contained_length, length});
+  return PandoraTesting::TrackInfo({contained_in_AV, crosses_tpc, contained_length, length});
 }
 
-PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::Event &ev, const simb::MCTruth &mctruth, VisibleEnergyCalculator &calculator) {
+int PandoraTesting::GetNeutrinoTrack(const gallery::Event &ev, const simb::MCTruth &mctruth) {
   // get handle to tracks and showers
   auto const& mctrack_list = \
     *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
   auto const& mcshower_list = \
     *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
-
-  // print out track/shower info
-  if (_config.verbose) {
-    std::cout << "\n\nINTERACTION:\n";
-    std::cout << "MODE: " << mctruth.GetNeutrino().Mode() << std::endl;
-    std::cout << "CC: " << mctruth.GetNeutrino().CCNC() << std::endl;
-    std::cout << "\nTRACKS:\n";
-    for (auto const &mct: mctrack_list) {
-      std::cout << "TRACK:\n";
-      std::cout << "PDG: " << mct.PdgCode() << std::endl;
-      std::cout << "Vertex: " << isFromNuVertex(mctruth, mct) << std::endl;
-      std::cout << "Energy: " << mct.Start().E() << std::endl;
-      std::cout << "Kinetic: " << mct.Start().E() - PDGMass(mct.PdgCode()) << std::endl;
-      std::cout << "Length: " << (mct.Start().Position().Vect() - mct.End().Position().Vect()).Mag() << std::endl;
-      std::cout << "Process: " << mct.Process() << std::endl;
-    }
-    std::cout << "\nSHOWERS:\n";
-    for (auto const &mcs: mcshower_list) {
-      std::cout << "SHOWER:\n";
-      std::cout << "PDG: " << mcs.PdgCode() << std::endl;
-      std::cout << "Vertex: " << isFromNuVertex(mctruth, mcs) << std::endl;
-      std::cout << "Energy: " << mcs.Start().E() << std::endl;
-      std::cout << "Kinetic: " << mcs.Start().E() - PDGMass(mcs.PdgCode()) << std::endl;
-      std::cout << "Length: " << (mcs.Start().Position().Vect() - mcs.End().Position().Vect()).Mag() << std::endl;
-      std::cout << "Process: " << mcs.Process() << std::endl;
-    }
-  }
 
   // and particles
   auto const& mcparticle_list = \
@@ -414,14 +445,15 @@ PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::E
         if (track_ind == -1 || mctrack_list[track_ind].Start().E() < mctrack_list[i].Start().E()) {
           track_ind = i;
         }
-        //double this_contained_length = trackInfo(mctrack_list[i]).t_contained_length; 
-        //if (track_contained_length < 0 || this_contained_length > track_contained_length) {
-        //  track_ind = i;
-        // track_contained_length = this_contained_length;
-        //}
       }
     }
   }
+  return track_ind;
+}
+
+PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::Event &ev, const simb::MCTruth &mctruth, int track_ind, VisibleEnergyCalculator &calculator) {
+  auto const& mctrack_list = \
+    *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
 
   // if there's no track, return nonsense
   if (track_ind == -1) {
@@ -429,7 +461,7 @@ PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::E
     calculator.lepton_contained = false;
     calculator.lepton_contained_length = -1;
     calculator.lepton_index = -1;
-    return PandoraTesting::NuMuInteraction({false, -1, -1, -1, -1, -1});
+    return PandoraTesting::NuMuInteraction({false, false, -1, -1, -1, -1, -1, -1});
   }
   // otherwise get the track info and energy info
   else {
@@ -445,14 +477,88 @@ PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::E
     double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
-    return PandoraTesting::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy});
+    // opening angle
+    double open_angle = mctruth.GetNeutrino().Nu().Momentum().Vect().Angle(mctrack_list[track_ind].Start().Momentum().Vect());
+
+    return PandoraTesting::NuMuInteraction({t_info.t_is_contained, t_info.t_cross_tpc, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy, open_angle});
   }
 }
 
-std::vector<PandoraTesting::ClusteredVertex> PandoraTesting::ClusterVertices(const gallery::Event &event) {
+std::vector<PandoraTesting::ClusteredVertex> PandoraTesting::SelectVertices(const std::vector<PandoraTesting::RecoParticle>& reco_particles) {
+  std::vector<PandoraTesting::ClusteredVertex> ret;
+  for (auto const &particle: reco_particles) {
+     if (particle.p_is_neutrino) {
+       ret.insert(ret.begin(), particle.vertices.begin(), particle.vertices.end());
+     }
+  }
+  return ret;
+}
+
+std::vector<PandoraTesting::RecoParticle> PandoraTesting::ReconstructionInfo(const gallery::Event &event) {
   // reco vertices
   auto const& reco_vertices = \
     *event.getValidHandle<std::vector<recob::Vertex>>(_config.RecoVertexTag);
+
+  // get the PFParticles
+  auto const &pfp_handle = \
+    event.getValidHandle<std::vector<recob::PFParticle>>(_config.PFParticleTag);
+
+  // use these to get all the vertices
+  art::FindMany<recob::Vertex> pfp_vertices(pfp_handle, event, "pandora");
+  // and the metadata
+  art::FindMany<larpandoraobj::PFParticleMetadata> pfp_metadatas(pfp_handle, event, "pandora");
+
+  // get the CRT hits
+  //gallery::ValidHandle<std::vector<sbnd::crt::CRTHit>> crt_hits = \
+  //  event.getValidHandle<std::vector<sbnd::crt::CRTHit>>("crthit");
+
+  // ret
+  std::vector<PandoraTesting::RecoParticle> ret;
+
+  // iterate over all of the pfparticles
+  for (size_t i = 0; i < pfp_handle->size(); i++) {
+    // new reco particle
+    PandoraTesting::RecoParticle this_particle;
+
+    // get the PFParticle
+    const recob::PFParticle& this_pfp = pfp_handle->at(i);
+    // get the metadata
+    const larpandoraobj::PFParticleMetadata* this_metadata = pfp_metadatas.at(i).at(0);
+    // and the properties dict
+    auto const &properties = this_metadata->GetPropertiesMap();
+    // get the reco vertices
+    const std::vector<const recob::Vertex*> &this_vertices = pfp_vertices.at(i);
+
+    // cluster the vertices
+    this_particle.vertices = ClusterVertices(this_vertices);
+
+    // access pandora special values
+    if (properties.count("IsClearCosmic")) {
+      this_particle.p_is_clear_cosmic = properties.at("IsClearCosmic");
+    }
+    else {
+      this_particle.p_is_clear_cosmic = false;
+    }
+    if (properties.count("NuScore")) {
+      this_particle.p_nu_score = properties.at("NuScore");
+    }
+    else {
+      this_particle.p_nu_score = -1;
+    }
+    if (properties.count("IsNeutrino")) {
+      this_particle.p_is_neutrino = properties.at("IsNeutrino");
+    }
+    else {
+      this_particle.p_is_neutrino = false;
+    }
+
+    ret.push_back(std::move(this_particle));
+  }
+
+  return ret;
+}
+
+std::vector<PandoraTesting::ClusteredVertex> PandoraTesting::ClusterVertices(const std::vector<const recob::Vertex*> &reco_vertices) {
 
   // returned
   std::vector<ClusteredVertex> ret;
@@ -472,7 +578,7 @@ std::vector<PandoraTesting::ClusteredVertex> PandoraTesting::ClusterVertices(con
         // found a new vertex to cluster! Make a new cluster
         ClusteredVertex vert;
         // setup this vertex
-        auto pos = reco_vertices[vertex_i].position();
+        auto pos = reco_vertices[vertex_i]->position();
         vert.vertices.emplace_back(pos.X(), pos.Y(), pos.Z());
 
         // seed with a single vertex, re-run until no more are pulled in
@@ -481,7 +587,7 @@ std::vector<PandoraTesting::ClusteredVertex> PandoraTesting::ClusterVertices(con
           added = false;
           for (size_t vertex_j = 0; vertex_j < reco_vertices.size(); vertex_j++) {
             if (!clustered.count(vertex_j)) {
-              auto this_pos = reco_vertices[vertex_j].position();
+              auto this_pos = reco_vertices[vertex_j]->position();
               TVector3 this_vertex(this_pos.X(), this_pos.Y(), this_pos.Z());
               bool do_cluster = false;
               for (TVector3 &vertex: vert.vertices) {
@@ -515,7 +621,7 @@ PandoraTesting::RecoEventInfo PandoraTesting::EventReconstructionInfo(const gall
   return ret;
 }
 
-PandoraTesting::RecoInteractionInfo PandoraTesting::Reconstruct(const gallery::Event &ev, const simb::MCTruth &mctruth, unsigned truth_ind, std::vector<PandoraTesting::ClusteredVertex> &vertices) {
+PandoraTesting::RecoInteractionInfo PandoraTesting::Reconstruct(const gallery::Event &ev, const simb::MCTruth &mctruth, unsigned truth_ind, std::vector<PandoraTesting::ClusteredVertex> &vertices, int track_ind) {
   // get the hits
   auto const& gaus_hits = \
     *ev.getValidHandle<std::vector<recob::Hit>>(_config.HitTag);
@@ -523,6 +629,10 @@ PandoraTesting::RecoInteractionInfo PandoraTesting::Reconstruct(const gallery::E
   // get the reco tracks
   auto const &reco_tracks = \
     *ev.getValidHandle<std::vector<recob::Track>>(_config.RecoTrackTag);
+
+  // and the truth tracks
+  auto const& mctrack_list = \
+    *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
 
   // get the location of this neutrino
   TVector3 truth_vertex =  mctruth.GetNeutrino().Nu().Trajectory().Position(0).Vect();
@@ -536,9 +646,29 @@ PandoraTesting::RecoInteractionInfo PandoraTesting::Reconstruct(const gallery::E
     }
   }
 
+  // get the number of vertices within tolerance if there is a valid track
+  int n_track_clustered_vertices = 0;
+  if (track_ind >= 0 && mctrack_list[track_ind].size() > 0) {
+    for (const ClusteredVertex &v: vertices) {
+      const sim::MCTrack &track = mctrack_list[track_ind];
+      TVector3 pos = track[0].Position().Vect();
+      for (int i = 1; i < track.size(); i++) {
+        TVector3 this_pos = track[i].Position().Vect();
+        if (closestDistance(pos, this_pos, v.mean) < 5.0) {
+          n_track_clustered_vertices += 1;
+          break;
+        }
+      }
+    }
+  }
+  else {
+    n_track_clustered_vertices = -1;
+  }
+
   RecoInteractionInfo ret;
   ret.reco_vertex_distance = distance_to_reco_vertex;
-  
+  ret.n_track_clustered_vertices = n_track_clustered_vertices;
+
   return ret;
 }
 

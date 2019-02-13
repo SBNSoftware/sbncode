@@ -157,6 +157,9 @@ public:
   unsigned _event_index;
   Config _config;
 
+  //art::ServicesManager *_services_manager;
+  //art::ActivityRegistry _registry;
+
 };
 
   }  // namespace SBNOsc
