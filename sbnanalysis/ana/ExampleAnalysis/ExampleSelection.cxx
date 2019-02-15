@@ -10,6 +10,8 @@
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
+#include "core/ServiceManager.hh"
+#include "larcorealg/Geometry/GeometryCore.h"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -40,6 +42,12 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   // Add custom branches
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
+
+  // Get access to services (use kSBND, kUBOONE, or kICARUS)
+  fServiceManager = new core::ServiceManager(core::kICARUS);
+  std::cout << "Detector: "
+            << fServiceManager->GetGeometryService()->DetectorName()
+            << std::endl;
 
   // Use some library code
   hello();
