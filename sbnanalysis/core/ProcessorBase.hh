@@ -165,7 +165,6 @@ protected:
   trkf::TrajectoryMCSFitter* fMCSFitter;       //!< MCS momentum fitter
   trkf::TrackMomentumCalculator fRangeFitter;  //!< Range momentum fitter
  
-
 };
 
 }  // namespace core

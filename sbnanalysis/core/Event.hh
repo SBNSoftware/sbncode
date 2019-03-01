@@ -19,6 +19,18 @@
 #include "Experiment.hh"
 #include <canvas/Persistency/Common/Wrapper.h>
 
+/** Identifier for known experiments. */
+typedef enum {
+  kExpSBND,
+  kExpMicroBooNE,
+  kExpICARUS,
+  kExpDUNEND,
+  kExpDUNEFD,
+  kExpLArIAT,
+  kExpOther = 1000
+} Experiment;
+
+
 /**
  * \class Event
  * \brief The standard event data definition.
@@ -205,8 +217,7 @@ public:
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 
   Experiment experiment;  //!< Experiment identifier
-  static const int kUnfilled = -99999; //!< Value for undefined defaults
-
+  static const int kUnfilled = -99999;  //!< Value for unfilled variables
 };
 
 #endif  // __sbnanalysis_core_Event__

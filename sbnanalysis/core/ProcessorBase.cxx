@@ -161,7 +161,8 @@ namespace core {
     fSubRunTree->AutoSave("overwrite");
     fSubRun = new SubRun();
     fSubRunTree->Branch("subruns", &fSubRun);
-  }
+
+  } //Setup with config
 
   void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     // FIXME: This should use official gallery subrun access once available.
@@ -199,8 +200,7 @@ namespace core {
           << std::endl;
       }
     }
-  }
-
+  } // UpdateSubruns
 
   void ProcessorBase::Teardown() {
     // Write the standard tree and close the output file
@@ -208,8 +208,7 @@ namespace core {
     fTree->Write("sbnana", TObject::kOverwrite);
     fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
     fOutputFile->Close();
-  }
-
+  }// Teardown
 
   void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     // Add any new subruns to the subrun tree
@@ -283,7 +282,7 @@ namespace core {
     maxx.clear();
     maxy.clear();
     maxz.clear();
-   
+
     geo::GeometryCore::TPC_id_iterator iTPC = geom->begin_TPC_id(),
       tend = geom->end_TPC_id();
     while (iTPC != tend) {
@@ -295,9 +294,9 @@ namespace core {
       minx.push_back(tpcgeo->MinX()); maxx.push_back(tpcgeo->MaxX());
       miny.push_back(tpcgeo->MinY()); maxy.push_back(tpcgeo->MaxY());
       minz.push_back(tpcgeo->MinZ()); maxz.push_back(tpcgeo->MaxZ());
-    ++iTPC;
+      ++iTPC;
     } // Loop over the TPCs
-    
+
     // Populate event tree
     for (size_t i=0; i<mctruthssize; i++) {
       Event::Interaction interaction;
@@ -482,23 +481,23 @@ namespace core {
               bool does_vtx_escape(false);
               for(unsigned int b = 0; b < minx.size(); ++b){
                 if(  (track_vtx_x > minx[b])
-                  || (track_vtx_x < minx[b])
-                  || (track_vtx_y > miny[b])
-                  || (track_vtx_y < miny[b])
-                  || (track_vtx_z > minz[b])
-                  || (track_vtx_z < minz[b])) does_vtx_escape = true;
+                    || (track_vtx_x < minx[b])
+                    || (track_vtx_y > miny[b])
+                    || (track_vtx_y < miny[b])
+                    || (track_vtx_z > minz[b])
+                    || (track_vtx_z < minz[b])) does_vtx_escape = true;
               }
 
               bool does_end_escape(false);
               for(unsigned int b = 0; b < minx.size(); ++b){
                 if(  (track_end_x > minx[b])
-                  || (track_end_x < minx[b])
-                  || (track_end_y > miny[b])
-                  || (track_end_y < miny[b])
-                  || (track_end_z > minz[b])
-                  || (track_end_z < minz[b])) does_end_escape = true;
+                    || (track_end_x < minx[b])
+                    || (track_end_y > miny[b])
+                    || (track_end_y < miny[b])
+                    || (track_end_z > minz[b])
+                    || (track_end_z < minz[b])) does_end_escape = true;
               }
-              
+
               bool one_end_escapes = true;
               if(does_vtx_escape && does_end_escape)   one_end_escapes = false;
               if(!does_vtx_escape && !does_end_escape) one_end_escapes = false;
@@ -554,18 +553,18 @@ namespace core {
                   fsrp.mcs_momentum_muon     = 0.;
                   double reco_momentum_muon, reco_momentum_proton;
                   if(one_end_escapes){
-                    recob::MCSFitResult mcs_result = fMCSFitter.fitMcs(*trk_assn[i]);
-                    reco_momentum_muon = mcs_result.bestMomentum();
-                    if(reco_momentum_muon < 0) fsrp.mcs_momentum_muon = 0.;
-                    fsrp.mcs_momentum_muon = reco_momentum_muon;
+                  recob::MCSFitResult mcs_result = fMCSFitter.fitMcs(*trk_assn[i]);
+                  reco_momentum_muon = mcs_result.bestMomentum();
+                  if(reco_momentum_muon < 0) fsrp.mcs_momentum_muon = 0.;
+                  fsrp.mcs_momentum_muon = reco_momentum_muon;
                   }
                   else if(!does_vtx_escape && !does_end_escape){
-                    reco_momentum_muon   = fRangeFitter.GetTrackMomentum(length, 13);
-                    reco_momentum_proton = fRangeFitter.GetTrackMomentum(length, 2212);
-                    if(reco_momentum_muon   == 0) fsrp.range_momentum_muon   = 0.;
-                    if(reco_momentum_proton == 0) fsrp.range_momentum_proton = 0.;
-                    fsrp.range_momentum_muon   = reco_momentum_muon;
-                    fsrp.range_momentum_proton = reco_momentum_proton;
+                  reco_momentum_muon   = fRangeFitter.GetTrackMomentum(length, 13);
+                  reco_momentum_proton = fRangeFitter.GetTrackMomentum(length, 2212);
+                  if(reco_momentum_muon   == 0) fsrp.range_momentum_muon   = 0.;
+                  if(reco_momentum_proton == 0) fsrp.range_momentum_proton = 0.;
+                  fsrp.range_momentum_muon   = reco_momentum_muon;
+                  fsrp.range_momentum_proton = reco_momentum_proton;
                   }
                   */
 
@@ -578,5 +577,5 @@ namespace core {
       } // pfparticles
       fEvent->reco.push_back(reconstructed_interaction);
     } // neutrinos
-  } // BuildEventTree
-} // namespace core
+    } // BuildEventTree
+  } // namespace core
