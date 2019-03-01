@@ -125,6 +125,7 @@ protected:
   void BuildEventTree(gallery::Event& ev);
 
   unsigned long fEventIndex;  //!< An incrementing index
+  Experiment fExperimentID;  //!< Experiment identifier
   std::string fOutputFilename;  //!< The output filename
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree

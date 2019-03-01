@@ -53,6 +53,8 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 
   // With configuration file provided
   if (config) {
+    fExperimentID = \
+      static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
     fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
@@ -77,6 +79,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   }
   // Default -- no config file provided
   else {
+    fExperimentID = kExpOther;
     fTruthTag = { "generator" };
     fWeightTags = {};
     fMCTrackTag = {"mcreco"};
@@ -131,6 +134,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   fTree->GetEntry(fEventIndex);
 
   // Populate event tree
+  fEvent->experiment = fExperimentID;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     Event::Interaction interaction;
 
