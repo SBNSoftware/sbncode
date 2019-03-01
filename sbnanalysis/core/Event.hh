@@ -16,18 +16,7 @@
 #include <vector>
 #include <TTree.h>
 #include <TVector3.h>
-
-/** Identifier for known experiments. */
-typedef enum {
-  kExpSBND,
-  kExpMicroBooNE,
-  kExpICARUS,
-  kExpDUNEND,
-  kExpDUNEFD,
-  kExpLArIAT,
-  kExpOther = 1000
-} Experiment;
-
+#include "Experiment.hh"
 
 /**
  * \class Event
