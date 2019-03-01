@@ -1,16 +1,19 @@
 #include <algorithm>
 #include <TBranch.h>
 #include <TFile.h>
+#include <TLeaf.h>
 #include <TTree.h>
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "Event.hh"
+#include "SubRun.hh"
 #include "Loader.hh"
 #include "util/Interaction.hh"
 #include "ProcessorBase.hh"
@@ -90,11 +93,57 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 
   // Open the output file and create the standard event tree
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
+
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fTree->AutoSave("overwrite");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
+
+  // Create the output subrun tree
+  fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
+  fSubRunTree->AutoSave("overwrite");
+  fSubRun = new SubRun();
+  fSubRunTree->Branch("subruns", &fSubRun);
+}
+
+
+void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
+  // FIXME: This should use official gallery subrun access once available.
+  // N.B. Implementation is fragile and depends on the naming of the subrun
+  // producer (generator__GenieGen), can be made a fcl parameter.
+  TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
+
+  art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
+  srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
+
+  for (long i=0; i<srtree->GetEntries(); i++) {
+    srtree->GetEntry(i);
+    int runid = sraux->run();
+    int subrunid = sraux->subRun();
+    std::pair<int, int> id = { runid, subrunid };
+
+    // Add subrun if not in cache
+    if (fSubRunCache.find(id) == fSubRunCache.end()) {
+      TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
+      double pot = potLeaf ? potLeaf->GetValue() : -1;
+      TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
+      double goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
+      TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
+      int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
+      TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
+      int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
+
+      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
+      fSubRunTree->Fill();
+
+      fSubRunCache.insert(id);
+
+      std::cout << "Subrun " << runid << "/" << subrunid << " added "
+                << "(good POT = " << goodpot << ")"
+                << std::endl;
+    }
+  }
 }
 
 
@@ -102,11 +151,15 @@ void ProcessorBase::Teardown() {
   // Write the standard tree and close the output file
   fOutputFile->cd();
   fTree->Write("sbnana", TObject::kOverwrite);
+  fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
   fOutputFile->Close();
 }
 
 
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
+  // Add any new subruns to the subrun tree
+  UpdateSubRuns(ev);
+
   // Get MCTruth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);

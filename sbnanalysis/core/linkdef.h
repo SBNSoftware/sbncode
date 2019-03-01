@@ -6,6 +6,7 @@
 #pragma link C++ nestedclasses;
 
 #pragma link C++ class Event+;
+#pragma link C++ class SubRun+;
 #pragma link C++ class Event::Metadata+;
 #pragma link C++ class Event::Interaction+;
 #pragma link C++ class Event::Neutrino+;
