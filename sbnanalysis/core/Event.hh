@@ -17,6 +17,18 @@
 #include <TTree.h>
 #include <TVector3.h>
 
+/** Identifier for known experiments. */
+typedef enum {
+  kExpSBND,
+  kExpMicroBooNE,
+  kExpICARUS,
+  kExpDUNEND,
+  kExpDUNEFD,
+  kExpLArIAT,
+  kExpOther = 1000
+} Experiment;
+
+
 /**
  * \class Event
  * \brief The standard event data definition.
@@ -158,6 +170,8 @@ public:
   Metadata metadata;  //!< Event metadata
   std::vector<Interaction> truth; //!< All truth interactions
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
+
+  Experiment experiment;  //!< Experiment identifier
 
   static const int kUnfilled = -99999;  //!< Value for unfilled variables
 };
