@@ -30,7 +30,6 @@ typedef enum {
   kExpOther = 1000
 } Experiment;
 
-
 /**
  * \class Event
  * \brief The standard event data definition.

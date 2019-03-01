@@ -136,17 +136,6 @@ namespace core {
       fOutputFilename = "output.root";
     }
 
-    // Set up the provider manager for known experiments
-    std::vector<Experiment> exps = ProviderManager::GetValidExperiments();
-    if (std::find(exps.begin(), exps.end(), fExperimentID) != exps.end()) {
-      fProviderManager = new ProviderManager(fExperimentID, fProviderConfig);
-    }
-    else {
-      std::cout << "ProcessorBase::Setup: "
-        << "Unknown experiment, no ProviderManager is available."
-        << std::endl;
-    }
-
     // Open the output file and create the standard event tree
     fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
 
@@ -161,8 +150,7 @@ namespace core {
     fSubRunTree->AutoSave("overwrite");
     fSubRun = new SubRun();
     fSubRunTree->Branch("subruns", &fSubRun);
-
-  } //Setup with config
+  }
 
   void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     // FIXME: This should use official gallery subrun access once available.
