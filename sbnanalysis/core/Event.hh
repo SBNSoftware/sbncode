@@ -205,9 +205,7 @@ public:
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 
   Experiment experiment;  //!< Experiment identifier
-
   static const int kUnfilled = -99999; //!< Value for undefined defaults
-
 
 };
 
