@@ -16,14 +16,6 @@
 #include <vector>
 #include <TTree.h>
 #include <TVector3.h>
-#include <canvas/Persistency/Common/Wrapper.h>
-
-/** art Wrapper instance to help the build. */
-extern art::Wrapper<std::vector<std::map<std::string, std::vector<double> > > > a;
-
-/** Value for uninitialized defaults. */
-extern int kUnfilled;
-
 
 /**
  * \class Event
@@ -166,6 +158,8 @@ public:
   Metadata metadata;  //!< Event metadata
   std::vector<Interaction> truth; //!< All truth interactions
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
+
+  static const int kUnfilled = -99999;  //!< Value for unfilled variables
 };
 
 #endif  // __sbnanalysis_core_Event__
