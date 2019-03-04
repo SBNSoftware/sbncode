@@ -6,6 +6,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
@@ -13,6 +14,7 @@
 #include "core/ProviderManager.hh"
 #include "core/ServiceManager.hh"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "core/ProviderManager.hh"
 
 namespace ana {
   namespace ExampleAnalysis {

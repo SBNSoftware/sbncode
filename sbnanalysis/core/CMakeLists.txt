@@ -77,7 +77,6 @@ add_library(
 )
 
 add_library(
-<<<<<<< HEAD
   sbnanalysis_ProviderManager SHARED
   ProviderManager.cxx
 )
@@ -88,15 +87,18 @@ target_link_libraries(
   lardataalg_DetectorInfo
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
-=======
   sbnanalysis_ServiceManager SHARED
   ServiceManager.cxx
+  sbnanalysis_ProviderManager SHARED
+  ProviderManager.cxx
 )
 
 target_link_libraries(
-  sbnanalysis_ServiceManager
+  sbnanalysis_ProviderManager
   larcorealg_Geometry
   lardataalg_DetectorInfo
+  larsim_MCCheater_ParticleInventory
+  larsim_MCCheater_BackTracker
   icaruscode_Geometry
   ubcore_Geometry
   sbnd_Geometry
@@ -111,6 +113,7 @@ target_link_libraries(
   sbnanalysis_util_RecoUtil
   sbnanalysis_ProviderManager
   sbnanalysis_ServiceManager
+  sbnanalysis_ProviderManager
   canvas
   cetlib
   gallery

@@ -164,7 +164,6 @@ protected:
   art::InputTag fRecoTrackParticleIDTag;       //!< art tag for Reconstructed track pid
   trkf::TrajectoryMCSFitter* fMCSFitter;       //!< MCS momentum fitter
   trkf::TrackMomentumCalculator fRangeFitter;  //!< Range momentum fitter
- 
 };
 
 }  // namespace core
