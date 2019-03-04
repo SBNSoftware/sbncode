@@ -19,6 +19,7 @@ class TBranch;
 class TFile;
 class TTree;
 class Event;
+class SubRun;
 
 namespace fhicl {
   class ParameterSet;
@@ -124,12 +125,24 @@ protected:
   */
   void BuildEventTree(gallery::Event& ev);
 
+  /**
+   * Update subrun list to include subruns for this event's file.
+   *
+   * \param ev The current gallery event
+   */
+  void UpdateSubRuns(gallery::Event& ev);
+
   unsigned long fEventIndex;  //!< An incrementing index
+  Experiment fExperimentID;  //!< Experiment identifier
   std::string fOutputFilename;  //!< The output filename
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
   Event* fEvent;  //!< The standard output event data structure
+  TTree* fSubRunTree;  //!< Subrun output tree
+  SubRun* fSubRun;  //!< Standard output subrun structure
+  std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
+  art::InputTag fFluxTag;  //!< art tag for MCFlux information
   std::vector<art::InputTag> fWeightTags;  //!< art tag(s) for MCEventWeight information
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower

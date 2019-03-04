@@ -9,8 +9,9 @@
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
-#include "core/ServiceManager.hh"
+#include "core/ProviderManager.hh"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "util/Interaction.hh"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -87,6 +88,13 @@ bool ExampleSelection::ProcessEvent(
       fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(),
                             mctruth.GetNeutrino().Nu().Vz());
     }
+    // Add in the "reconstructed" interaction
+    //
+    // Contruct truth information from the provided vector
+    Event::RecoInteraction interaction(truth[i], i);
+    // get "reconstructed" energy
+    interaction.reco_energy = util::ECCQE(mctruth.GetNeutrino().Nu().Momentum().Vect(), mctruth.GetNeutrino().Lepton().E());
+    reco.push_back(interaction);
   }
 
   return true;

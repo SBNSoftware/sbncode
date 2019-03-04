@@ -43,9 +43,9 @@ link_directories(
   $ENV{ICARUSCODE_LIB}
 )
 
-ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh LINKDEF linkdef.h)
+ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
 
-add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx Event.cxx)
+add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx)
 target_link_libraries(
   sbnanalysis_Event
   larsim_EventWeight_Base

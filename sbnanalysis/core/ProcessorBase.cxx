@@ -1,16 +1,20 @@
 #include <algorithm>
 #include <TBranch.h>
 #include <TFile.h>
+#include <TLeaf.h>
 #include <TTree.h>
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
+#include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "Event.hh"
+#include "SubRun.hh"
 #include "Loader.hh"
 #include "util/Interaction.hh"
 #include "ProcessorBase.hh"
@@ -53,7 +57,10 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 
   // With configuration file provided
   if (config) {
+    fExperimentID = \
+      static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
     fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
+    fFluxTag = { config->get<std::string>("MCFluxTag", "generator") };
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
@@ -77,7 +84,9 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   }
   // Default -- no config file provided
   else {
+    fExperimentID = kExpOther;
     fTruthTag = { "generator" };
+    fFluxTag = { "generator" };
     fWeightTags = {};
     fMCTrackTag = {"mcreco"};
     fMCShowerTag = {"mcreco"};
@@ -87,11 +96,57 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 
   // Open the output file and create the standard event tree
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
+
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fTree->AutoSave("overwrite");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
+
+  // Create the output subrun tree
+  fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
+  fSubRunTree->AutoSave("overwrite");
+  fSubRun = new SubRun();
+  fSubRunTree->Branch("subruns", &fSubRun);
+}
+
+
+void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
+  // FIXME: This should use official gallery subrun access once available.
+  // N.B. Implementation is fragile and depends on the naming of the subrun
+  // producer (generator__GenieGen), can be made a fcl parameter.
+  TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
+
+  art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
+  srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
+
+  for (long i=0; i<srtree->GetEntries(); i++) {
+    srtree->GetEntry(i);
+    int runid = sraux->run();
+    int subrunid = sraux->subRun();
+    std::pair<int, int> id = { runid, subrunid };
+
+    // Add subrun if not in cache
+    if (fSubRunCache.find(id) == fSubRunCache.end()) {
+      TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
+      double pot = potLeaf ? potLeaf->GetValue() : -1;
+      TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
+      double goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
+      TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
+      int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
+      TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
+      int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
+
+      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
+      fSubRunTree->Fill();
+
+      fSubRunCache.insert(id);
+
+      std::cout << "Subrun " << runid << "/" << subrunid << " added "
+                << "(good POT = " << goodpot << ")"
+                << std::endl;
+    }
+  }
 }
 
 
@@ -99,17 +154,21 @@ void ProcessorBase::Teardown() {
   // Write the standard tree and close the output file
   fOutputFile->cd();
   fTree->Write("sbnana", TObject::kOverwrite);
+  fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
   fOutputFile->Close();
 }
 
 
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
+  // Add any new subruns to the subrun tree
+  UpdateSubRuns(ev);
+
   // Get MCTruth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
-  ev.getByLabel(fTruthTag,gtruths_handle);
+  ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
   // Get MCEventWeight information
@@ -128,9 +187,15 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     }
   }
 
+  // Get MCFlux information
+  gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
+  ev.getByLabel(fFluxTag, mcflux_handle);
+
   fTree->GetEntry(fEventIndex);
 
   // Populate event tree
+  fEvent->experiment = fExperimentID;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     Event::Interaction interaction;
 
@@ -147,6 +212,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
         // Event class "master" weight list
         interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
       }
+    }
+
+    if (mcflux_handle.isValid()) {
+      const simb::MCFlux& flux = mcflux_handle->at(i);
+      interaction.neutrino.parentPDG = flux.fptype;
+      interaction.neutrino.parentDecayMode = flux.fndecay;
+      interaction.neutrino.parentDecayVtx = \
+        TVector3(flux.fvx, flux.fvy, flux.fvz);
     }
 
     TLorentzVector q_labframe;
@@ -183,7 +256,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
-    for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {
+    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
       Event::FinalStateParticle fsp;
       const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
 
