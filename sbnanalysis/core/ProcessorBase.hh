@@ -28,6 +28,8 @@ namespace fhicl {
 /** Core framework functionality. */
 namespace core {
 
+class ProviderManager;
+
 /**
  * \class core::ProcessorBase
  * \brief A generic tree-writing event-by-event processor.
@@ -134,7 +136,9 @@ protected:
 
   unsigned long fEventIndex;  //!< An incrementing index
   Experiment fExperimentID;  //!< Experiment identifier
+  ProviderManager* fProviderManager;  //!< Interface for provider access
   std::string fOutputFilename;  //!< The output filename
+  std::string fProviderConfig;  //!< A custom provider config fcl file
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
   Event* fEvent;  //!< The standard output event data structure

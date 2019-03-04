@@ -22,10 +22,6 @@
 // Forward declarations
 class TH2D;
 
-namespace core {
-  class ServiceManager;
-}
-
 /** All analysis code is defined in namespace "ana" */
 namespace ana {
 
@@ -70,7 +66,6 @@ public:
 
 protected:
   unsigned fEventCounter;  //!< Count processed events
-  core::ServiceManager* fServiceManager;
 
   /** Configuration parameters */
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
