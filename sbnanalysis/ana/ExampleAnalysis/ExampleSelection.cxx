@@ -6,12 +6,15 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
 #include "core/ServiceManager.hh"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "core/ProviderManager.hh"
+>>>>>>> ServiceManager -> ProviderManager, add BackTracker, ParticleInventory
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -43,11 +46,12 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
 
-  // Get access to services (use kSBND, kUBOONE, or kICARUS)
-  fServiceManager = new core::ServiceManager(core::kICARUS);
-  std::cout << "Detector: "
-            << fServiceManager->GetGeometryService()->DetectorName()
-            << std::endl;
+  // Use LArSoft service functions via the ProviderManager
+  if (fProviderManager) {
+    std::cout << "Detector: "
+              << fProviderManager->GetGeometryProvider()->DetectorName()
+              << std::endl;
+  }
 
   // Use some library code
   hello();

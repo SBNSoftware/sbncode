@@ -14,14 +14,17 @@
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 #include "lardataalg/DetectorInfo/LArPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/LArPropertiesStandard.h"
+#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/ParticleInventory.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib/filepath_maker.h"
 #include "fhiclcpp/make_ParameterSet.h"
-#include "core/ServiceManager.hh"
+#include "core/ProviderManager.hh"
+#include "core/Experiment.hh"
 
 namespace core {
 
-ServiceManager::ServiceManager(Detector det, std::string fcl) {
+ProviderManager::ProviderManager(Experiment det, std::string fcl) {
   // Configuration look up policy: allow absolute paths, and search in the
   // $FHICL_FILE_PATH for non-absolute paths.
   const char* fhicl_file_path = getenv("FHICL_FILE_PATH");
@@ -31,18 +34,16 @@ ServiceManager::ServiceManager(Detector det, std::string fcl) {
   fhicl::ParameterSet cfg;
 
   // Geometry: Load the correct geo::GeometryCore subclass for each detector
-  std::unique_ptr<geo::GeometryCore> pgeom = NULL;
-
   switch (det) {
-    case kSBND: {
+    case kExpSBND: {
       fcl = (fcl == "" ? "gallery_services_sbnd.fcl" : fcl);
       cfg = lar::standalone::ParseConfiguration(fcl, policy);
-      pgeom = \
+      fGeometryProvider = \
         lar::standalone::SetupGeometry<geo::ChannelMapSBNDAlg>(
           cfg.get<fhicl::ParameterSet>("services.Geometry"));
       }
       break;
-    case kUBOONE: {
+    case kExpMicroBooNE: {
       fcl = (fcl == "" ? "gallery_services_uboone.fcl" : fcl);
       cfg = lar::standalone::ParseConfiguration(fcl, policy);
       fhicl::ParameterSet pset = \
@@ -52,53 +53,68 @@ ServiceManager::ServiceManager(Detector det, std::string fcl) {
       std::shared_ptr<geo::ChannelMapUBooNEAlg> channelMap = \
         std::make_shared<geo::ChannelMapUBooNEAlg>(
           cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
-      pgeom = \
+      fGeometryProvider = \
         lar::standalone::SetupGeometryWithChannelMapping(pset, channelMap);
       }
       break;
-    case kICARUS: {
+    case kExpICARUS: {
       fcl = (fcl == "" ? "gallery_services_icarus.fcl" : fcl);
       cfg = lar::standalone::ParseConfiguration(fcl, policy);
-      pgeom = \
+      fGeometryProvider = \
         lar::standalone::SetupGeometry<geo::ChannelMapIcarusAlg>(
           cfg.get<fhicl::ParameterSet>("services.Geometry"));
       }
       break;
     default:
-      std::cerr << "ServiceManager: Unknown detector ID" << std::endl;
+      std::cerr << "ProviderManager: Unknown detector ID" << std::endl;
       assert(false);
       break;
   }
 
-  fGeometryService = pgeom.get();
-
   // LArProperties
-  auto larp = \
+ fLArPropertiesProvider = \
     testing::setupProvider<detinfo::LArPropertiesStandard>(
       cfg.get<fhicl::ParameterSet>("services.LArPropertiesService"));
-  fLArPropertiesService = larp.get();
 
   // DetectorClocks
-  auto clks = \
+  fDetectorClocksProvider = \
     testing::setupProvider<detinfo::DetectorClocksStandard>(
       cfg.get<fhicl::ParameterSet>("services.DetectorClocksService"));
-  fDetectorClocksService = clks.get();
 
   // DetectorProperties
-  auto prop = \
+  fDetectorPropertiesProvider = \
     testing::setupProvider<detinfo::DetectorPropertiesStandard>(
       cfg.get<fhicl::ParameterSet>("services.DetectorPropertiesService"),
       detinfo::DetectorPropertiesStandard::providers_type {
-        fGeometryService,
-        static_cast<detinfo::LArProperties const*>(fLArPropertiesService),
-        static_cast<detinfo::DetectorClocks const*>(fDetectorClocksService)
+        fGeometryProvider.get(),
+        static_cast<const detinfo::LArProperties*>(fLArPropertiesProvider.get()),
+        static_cast<const detinfo::DetectorClocks*>(fDetectorClocksProvider.get())
       });
-  fDetectorPropertiesService = prop.get();
+
+  // ParticleInventory
+  fParticleInventoryProvider = \
+    testing::setupProvider<cheat::ParticleInventory>(
+      cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
+
+  // BackTracker
+  fBackTrackerProvider = \
+    testing::setupProvider<cheat::BackTracker>(
+      cfg.get<fhicl::ParameterSet>("services.BackTrackerService"),
+      fParticleInventoryProvider.get(), fGeometryProvider.get(),
+      fDetectorClocksProvider.get());
 
   config = new fhicl::ParameterSet(cfg);
 
-  std::cout << "ServiceManager: Loaded configuration for: "
-            << fGeometryService->DetectorName() << std::endl;
+  std::cout << "ProviderManager: Loaded configuration for: "
+            << fGeometryProvider.get()->DetectorName() << std::endl;
+}
+
+
+std::vector<Experiment> ProviderManager::GetValidExperiments() {
+  static std::vector<Experiment> ex = {
+    kExpSBND, kExpMicroBooNE, kExpICARUS
+  };
+  return ex;
 }
 
 }  // namespace core

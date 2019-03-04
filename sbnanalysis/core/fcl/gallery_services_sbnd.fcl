@@ -1,6 +1,8 @@
 #include "services_sbnd.fcl"
 #include "geometry_sbnd.fcl"
 #include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 #include "detectorproperties_sbnd.fcl"
 
 services: {
@@ -9,5 +11,7 @@ services: {
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::sbnd_services.DetectorClocksService
   DetectorPropertiesService: @local::sbnd_detproperties
+  BackTrackerService:        @local::standard_backtrackerservice
+  ParticleInventoryService:  @local::standard_particleinventoryservice
 }
 

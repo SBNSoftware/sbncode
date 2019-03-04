@@ -64,14 +64,16 @@ add_library(
 )
 
 add_library(
-  sbnanalysis_ServiceManager SHARED
-  ServiceManager.cxx
+  sbnanalysis_ProviderManager SHARED
+  ProviderManager.cxx
 )
 
 target_link_libraries(
-  sbnanalysis_ServiceManager
+  sbnanalysis_ProviderManager
   larcorealg_Geometry
   lardataalg_DetectorInfo
+  larsim_MCCheater_ParticleInventory
+  larsim_MCCheater_BackTracker
   icaruscode_Geometry
   ubcore_Geometry
   sbnd_Geometry
@@ -83,7 +85,7 @@ target_link_libraries(
   sbnanalysis_Processor
   sbnanalysis_Event
   sbnanalysis_util_Interaction
-  sbnanalysis_ServiceManager
+  sbnanalysis_ProviderManager
   canvas
   cetlib
   gallery
@@ -102,7 +104,7 @@ add_custom_command(TARGET sbnanalysis_Event POST_BUILD
   libsbn_eventdict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
-add_custom_command(TARGET sbnanalysis_ServiceManager POST_BUILD
+add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
 
@@ -134,7 +136,7 @@ target_link_libraries(
 
 install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
-install(TARGETS sbnanalysis_ServiceManager DESTINATION lib)
+install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 install(TARGETS sbn-postprocess DESTINATION bin)
 

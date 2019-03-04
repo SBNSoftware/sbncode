@@ -18,11 +18,12 @@
 #include "Loader.hh"
 #include "util/Interaction.hh"
 #include "ProcessorBase.hh"
+#include "ProviderManager.hh"
 
 namespace core {
 
 ProcessorBase::ProcessorBase()
-    : fEventIndex(0), fOutputFilename("output.root") {}
+    : fEventIndex(0), fOutputFilename("output.root"), fProviderManager(NULL) {}
 
 
 ProcessorBase::~ProcessorBase() {}
@@ -65,6 +66,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
     fOutputFilename = config->get<std::string>("OutputFile", "output.root");
+    fProviderConfig = config->get<std::string>("ProviderConfigFile", "");
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -88,10 +90,21 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fTruthTag = { "generator" };
     fFluxTag = { "generator" };
     fWeightTags = {};
-    fMCTrackTag = {"mcreco"};
-    fMCShowerTag = {"mcreco"};
-    fMCParticleTag = {"largeant"};
+    fMCTrackTag = { "mcreco" };
+    fMCShowerTag = { "mcreco" };
+    fMCParticleTag = { "largeant" };
     fOutputFilename = "output.root";
+  }
+
+  // Set up the provider manager for known experiments
+  std::vector<Experiment> exps = ProviderManager::GetValidExperiments();
+  if (std::find(exps.begin(), exps.end(), fExperimentID) != exps.end()) {
+    fProviderManager = new ProviderManager(fExperimentID, fProviderConfig);
+  }
+  else {
+    std::cout << "ProcessorBase::Setup: "
+              << "Unknown experiment, no ProviderManager is available."
+              << std::endl;
   }
 
   // Open the output file and create the standard event tree
