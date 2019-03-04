@@ -7,6 +7,7 @@
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
+#include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
@@ -59,6 +60,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fExperimentID = \
       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
     fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
+    fFluxTag = { config->get<std::string>("MCFluxTag", "generator") };
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
@@ -84,6 +86,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   else {
     fExperimentID = kExpOther;
     fTruthTag = { "generator" };
+    fFluxTag = { "generator" };
     fWeightTags = {};
     fMCTrackTag = {"mcreco"};
     fMCShowerTag = {"mcreco"};
@@ -165,7 +168,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
-  ev.getByLabel(fTruthTag,gtruths_handle);
+  ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
   // Get MCEventWeight information
@@ -183,6 +186,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       wghs.push_back(this_wgh);
     }
   }
+
+  // Get MCFlux information
+  gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
+  ev.getByLabel(fFluxTag, mcflux_handle);
 
   fTree->GetEntry(fEventIndex);
 
@@ -205,6 +212,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
         // Event class "master" weight list
         interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
       }
+    }
+
+    if (mcflux_handle.isValid()) {
+      const simb::MCFlux& flux = mcflux_handle->at(i);
+      interaction.neutrino.parentPDG = flux.fptype;
+      interaction.neutrino.parentDecayMode = flux.fndecay;
+      interaction.neutrino.parentDecayVtx = \
+        TVector3(flux.fvx, flux.fvy, flux.fvz);
     }
 
     TLorentzVector q_labframe;

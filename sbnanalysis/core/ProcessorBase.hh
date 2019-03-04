@@ -142,6 +142,7 @@ protected:
   SubRun* fSubRun;  //!< Standard output subrun structure
   std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
+  art::InputTag fFluxTag;  //!< art tag for MCFlux information
   std::vector<art::InputTag> fWeightTags;  //!< art tag(s) for MCEventWeight information
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower
