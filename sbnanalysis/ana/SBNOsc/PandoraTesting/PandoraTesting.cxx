@@ -26,6 +26,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 
 #include "core/Event.hh"
+#include "core/Experiment.hh"
 #include "PandoraTesting.h"
 #include "../Utilities.h"
 
@@ -161,7 +162,7 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
   fTree->Branch("reco_particles", &_recoParticles);
 
   // setup services manager
-  _manager = new core::ServiceManager(core::Detector::kSBND);
+  _manager = new core::ProviderManager(kExpSBND);
 
   hello();
 }

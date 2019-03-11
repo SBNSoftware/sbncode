@@ -15,7 +15,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
-#include "core/ServiceManager.hh"
+#include "core/ProviderManager.hh"
 
 #include "../Utilities.h"
 
@@ -282,9 +282,9 @@ protected:
   bool isSignal(const Event::Interaction &interaction) { return interaction.neutrino.iscc; }
 
   geo::TPCID GetTPCIndex(const TVector3 &v) {
-    for (auto const &cryo: _manager->GetGeometryService()->IterateCryostats()) {
-      geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryService()->begin_TPC(cryo.ID()), 
-                                      tend = _manager->GetGeometryService()->end_TPC(cryo.ID());
+    for (auto const &cryo: _manager->GetGeometryProvider()->IterateCryostats()) {
+      geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryProvider()->begin_TPC(cryo.ID()), 
+                                      tend = _manager->GetGeometryProvider()->end_TPC(cryo.ID());
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         if (TPC.ContainsPosition(v)) return TPC.ID();
@@ -292,7 +292,7 @@ protected:
       }
     }
     return geo::TPCID(geo::CryostatID::getInvalidID(), geo::TPCID::getInvalidID());
-    // return _manager->GetGeometryService()->FindTPCAtPosition(v);
+    // return _manager->GetGeometryProvider()->FindTPCAtPosition(v);
   }
 
   unsigned _event_counter;  //!< Count processed events
@@ -312,7 +312,7 @@ protected:
   std::vector<RecoInteractionInfo> *_recoInteractionInfo;
   std::vector<RecoParticle> *_recoParticles;
   RecoEventInfo _recoEventInfo;
-  core::ServiceManager *_manager;
+  core::ProviderManager *_manager;
 
   RootHistos _root_histos[nCuts]; //!< Histos (one group per cut)
 

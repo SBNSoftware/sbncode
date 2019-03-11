@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm> 
 
 #include "TDatabasePDG.h"
 #include "TRandom.h"
@@ -310,6 +311,21 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector trkStart = track.Start().Position();
   return (trkStart - nuVtx).Mag() < distance;
+}
+
+// taken from: https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+double closestDistance(const TVector3 &line0, const TVector3 &line1, const TVector3 &p) {
+  // Return minimum distance between line segment vw and point p
+  //   const float l2 = length_squared(v, w);  // i.e. |w-v|^2 -  avoid a sqrt
+  double length2 = (line0 - line1).Mag2();
+  if (length2 == 0.0) return (line0 - p).Mag();
+  // Consider the line extending the segment, parameterized as v + t (w - v).
+  // We find projection of point p onto the line. 
+  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+  // We clamp t from [0,1] to handle points outside the segment vw.
+  double t = std::max(0., std::min(1., (p - line0).Dot(line1 - line0) / length2));
+  TVector3 projection = line0 + t * (line1 - line0);
+  return (projection - p).Mag();
 }
 
   }  // namespace SBNOsc

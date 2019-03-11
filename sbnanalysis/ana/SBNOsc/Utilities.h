@@ -186,6 +186,8 @@ double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrac
  * */
 double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
+double closestDistance(const TVector3 &line0, const TVector3 &line1, const TVector3 &p);
+
   }  // namespace SBNOsc
 }  // namespace ana
 
