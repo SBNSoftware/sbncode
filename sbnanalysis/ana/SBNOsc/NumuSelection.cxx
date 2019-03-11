@@ -524,7 +524,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     calculator.lepton_contained = false;
     calculator.lepton_contained_length = -1;
     calculator.lepton_index = -1;
-    return NumuSelection::NuMuInteraction({false, -1, -1, -1, -1, -1});
+    return NumuSelection::NuMuInteraction({false, -1, -1, -1, -1, -1, TVector3()});
   }
   // otherwise get the track info and energy info
   else {
@@ -540,7 +540,8 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
-    return NumuSelection::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy});
+    TVector3 momentum = mctrack_list[track_ind].Start().Momentum().Vect();
+    return NumuSelection::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy, momentum});
   }
 }
 

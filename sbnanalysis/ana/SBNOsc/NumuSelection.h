@@ -71,6 +71,7 @@ public:
     int t_pdgid; //!< PDGID of primary track (muon or pi+)
     double t_energy_true; //!< True energy of primary track [GeV]
     double t_energy_smeared; //!< Smeared energy of primary track [GeV]
+    TVector3 t_momentum;
 
     // default constructor -- fills with bogus info
     /*
