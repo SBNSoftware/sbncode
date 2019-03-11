@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <array>
+#include <map>
 
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
@@ -222,6 +223,8 @@ protected:
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder
 
   RootHistos _root_histos[nCuts]; //!< Histos (one group per cut)
+
+  std::map<std::string, double> _eventCategories;
 };
 
   }  // namespace SBNOsc

@@ -30,7 +30,32 @@ NumuSelection::NumuSelection() :
   SelectionBase(),
   _event_counter(0),
   _nu_count(0),
-  _interactionInfo(new std::vector<NuMuInteraction>) {}
+  _interactionInfo(new std::vector<NuMuInteraction>) {
+  // setup the event categories
+  _eventCategories["CC0pi"] = 0;
+  _eventCategories["CC1pi"] = 0;
+  _eventCategories["CC2pi"] = 0;
+  _eventCategories["CCnpi"] = 0;
+
+  _eventCategories["NC0pi"] = 0;
+  _eventCategories["NC1pi"] = 0;
+  _eventCategories["NC2pi"] = 0;
+  _eventCategories["NCnpi"] = 0;
+
+  // more
+  _eventCategories["CCnoMU"] = 0;
+  _eventCategories["NCwiMU"] = 0;
+
+  // more
+  _eventCategories["CCQE"] = 0;
+  _eventCategories["CCRES"] = 0;
+  _eventCategories["CCDIS"] = 0;
+  _eventCategories["CCCOH"] = 0;
+  _eventCategories["CCMEC"] = 0;
+   _eventCategories["CCCOHE"] = 0;
+  _eventCategories["CCother"] = 0;
+}
+
 
 double aaBoxesMin(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
   return std::min_element(boxes.begin(), boxes.end(), [dim](auto &lhs, auto &rhs) { return lhs.Min()[dim] < rhs.Min()[dim]; })->Min()[dim];
@@ -172,6 +197,13 @@ void NumuSelection::Finalize() {
     _root_histos[i].h_numu_t_is_muon_bkg->Write();
   }
   _cut_counts->Write();
+
+  // print out event stats
+  std::map<std::string, double>::iterator it = _eventCategories.begin();
+  while (it != _eventCategories.end()) {
+    std::cout << "Category: " << it->first << " " << it->second << std::endl;
+    it ++;
+  }
 }
 
 
@@ -181,7 +213,6 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
               << "(" << _nu_count << " neutrinos selected)"
               << std::endl;
   }
-
   // clean up containers
   _event_counter++;
   _interactionInfo->clear();
@@ -197,6 +228,52 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
   // update total count of interactions
   _cut_counts->SetPoint(0, 0, _cut_counts->GetY()[0] + mctruths.size());
+
+  // categorize events:
+  for (unsigned i = 0; i < mctruths.size(); i++) {
+    auto const &mctruth = mctruths[i];
+    Event::Interaction interaction = truth[i];
+    double weight = 1.;
+    // maybe cut MEC
+    bool pass_kMEC = !(_config.cutKMEC && mctruth.GetNeutrino().Mode() == simb::kMEC) && !(_config.onlyKMEC && mctruth.GetNeutrino().Mode() != simb::kMEC);
+    if (!pass_kMEC) continue;
+    for (auto const &key: _config.uniformWeights) {
+       weight *= interaction.weights.at(key)[0];
+    }
+    if (containedInAV(mctruth.GetNeutrino().Nu().Position().Vect())) {
+      bool iscc = mctruth.GetNeutrino().CCNC() == 0;
+      unsigned n_pions = 0;
+      for (auto const &mctrack: mctracks) {
+        if (isFromNuVertex(mctruth, mctrack) && abs(mctrack.PdgCode()) == 211 && mctrack.Process() == "primary") {
+          n_pions += 1;
+        }
+      // categorize on number of pions
+      }
+      if (iscc) {
+        if (n_pions == 0)  _eventCategories["CC0pi"] += weight;
+        else if (n_pions == 1) _eventCategories["CC1pi"] += weight;
+        else if (n_pions == 2)  _eventCategories["CC2pi"] += weight;
+        else _eventCategories["CCnpi"] += weight;
+      }
+      else {
+        if (n_pions == 0)  _eventCategories["NC0pi"] += weight;
+        else if (n_pions == 1) _eventCategories["NC1pi"] += weight;
+        else if (n_pions == 2)  _eventCategories["NC2pi"] += weight;
+        else _eventCategories["NCnpi"] += weight;
+      }
+      // categorize on event mode
+      if (iscc) {
+        int mode = mctruth.GetNeutrino().Mode();
+        if (mode == simb::kQE) _eventCategories["CCQE"] += weight;
+        else if (mode == simb::kCoh) _eventCategories["CCCOH"] += weight;
+        else if (mode == simb::kRes) _eventCategories["CCRES"] += weight;
+        else if (mode == simb::kMEC) _eventCategories["CCMEC"] += weight;
+        else if (mode == simb::kDIS) _eventCategories["CCDIS"] += weight;
+        else if (mode == simb::kCohElastic) _eventCategories["CCCOHE"] += weight;
+        else _eventCategories["CCother"] += weight;
+      }
+    }
+  }
 
   // Iterate through the neutrinos
   bool selected = false;
