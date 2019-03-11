@@ -84,6 +84,12 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _config.verbose = pconfig.get<bool>("verbose", false);
     _config.cutKMEC = pconfig.get<bool>("cutKMEC", false);
     _config.onlyKMEC = pconfig.get<bool>("onlyKMEC", false);
+
+    // setup weight config
+    _config.selectionEfficiency = pconfig.get<double>("selectionEfficiency", 1.0);
+    _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
+    _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
+
   }
 
   // Setup histo's for root output
@@ -192,6 +198,22 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
     Event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
+
+    // Build the weight of this event
+    double weight = 1.;
+    // whether this event is signal or background
+    bool is_signal = abs(intInfo.t_pdgid) == 13; // muon
+    // selection efficiency
+    if (is_signal) {
+      weight *= _config.selectionEfficiency;
+    }
+    // apply uniofrm weights (e.g. bnbcorrection)
+    for (auto const &key: _config.uniformWeights) {
+       weight *= interaction.weights.at(key)[0];
+    }
+    // apply constant weight
+    weight *= _config.constantWeight;
+    reco_interaction.weight = weight;
 
     // run selection
     std::array<bool, NumuSelection::nCuts> selection = Select(ev, mctruth, i, intInfo);

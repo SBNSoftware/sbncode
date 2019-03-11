@@ -1,0 +1,12 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_Modern_SBND.root"
+MCWeightTags: @local::eventweight_tags 
+
+NumuSelection: {
+  fiducial_volumes: @local::SBND_fiducial_volumes 
+  active_volumes: @local::SBND_active_volumes 
+  @table::standard_cuts
+  uniformWeights: @local::standard_uniformWeights
+}
+

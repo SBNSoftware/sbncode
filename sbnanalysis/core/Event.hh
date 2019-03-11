@@ -16,14 +16,7 @@
 #include <vector>
 #include <TTree.h>
 #include <TVector3.h>
-#include <canvas/Persistency/Common/Wrapper.h>
-
-/** art Wrapper instance to help the build. */
-extern art::Wrapper<std::vector<std::map<std::string, std::vector<double> > > > a;
-
-/** Value for uninitialized defaults. */
-extern int kUnfilled;
-
+#include "Experiment.hh"
 
 /**
  * \class Event
@@ -64,26 +57,30 @@ public:
         bjorkenX(kUnfilled), inelasticityY(kUnfilled), Q2(kUnfilled),
         q0(kUnfilled), modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
         w(kUnfilled), t(kUnfilled), energy(kUnfilled),
-        momentum(kUnfilled, kUnfilled, kUnfilled) {}
+        momentum(kUnfilled, kUnfilled, kUnfilled), parentPDG(0),
+        parentDecayMode(0), parentDecayVtx(kUnfilled, kUnfilled, kUnfilled) {}
 
-    bool isnc;             //!< same as LArSoft "ccnc" - 0=CC, 1=NC
-    bool iscc;             //!< CC (true) or NC/interference (false)
-    int pdg;               //!< PDG code of probe neutrino
-    int targetPDG;         //!< PDG code of struck target
-    int genie_intcode;     //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
-    double bjorkenX;       //!< Bjorken x
-    double inelasticityY;  //!< Inelasticity y
-    double Q2;             //!< Q squared
-    double q0;             //!< q0, struck nucleon rest frame
-    double modq;           //!< |q|, struck nucleon rest frame
-    double q0_lab;         //!< q0, lab frame
-    double modq_lab;       //!< |q|, lab frame
-    double w;              //!< Hadronic invariant mass W
-    double t;              //!< Kinematic t
-    double eccqe;          //!< CCQE energy
-    double energy;         //!< Neutrino energy (GeV)
-    TVector3 momentum;     //!< Neutrino three-momentum
-    TVector3 position;     //!< Neutrino interaction position
+    bool isnc;                //!< same as LArSoft "ccnc" - 0=CC, 1=NC
+    bool iscc;                //!< CC (true) or NC/interference (false)
+    int pdg;                  //!< PDG code of probe neutrino
+    int targetPDG;            //!< PDG code of struck target
+    int genie_intcode;        //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
+    double bjorkenX;          //!< Bjorken x
+    double inelasticityY;     //!< Inelasticity y
+    double Q2;                //!< Q squared
+    double q0;                //!< q0, struck nucleon rest frame
+    double modq;              //!< |q|, struck nucleon rest frame
+    double q0_lab;            //!< q0, lab frame
+    double modq_lab;          //!< |q|, lab frame
+    double w;                 //!< Hadronic invariant mass W
+    double t;                 //!< Kinematic t
+    double eccqe;             //!< CCQE energy
+    double energy;            //!< Neutrino energy (GeV)
+    TVector3 momentum;        //!< Neutrino three-momentum
+    TVector3 position;        //!< Neutrino interaction position
+    int parentPDG;            //!< Parent hadron/muon PDG
+    int parentDecayMode;      //!< Parent hadron/muon decay mode
+    TVector3 parentDecayVtx;  //!< Parent hadron/muon decay vertex
   };
 
   /**
@@ -126,15 +123,23 @@ public:
   /**
    * \class RecoInteraction
    * \brief Contains truth level information and additional fields for
-   * user-defined reconstruction information
+   * selection-defined reconstruction information
    */
   class RecoInteraction {
     public:
       /** Default Constructor */
-      RecoInteraction(): truth_index(-1) {}
-      /** Fill in truth information -- leaves other fields unset */
-      explicit RecoInteraction(const Interaction &t, int index)
-          : truth(t), truth_index(index)  {}
+      RecoInteraction(): 
+        truth_index(-1), 
+        reco_energy(kUnfilled),
+        weight(1.) {}
+
+      /** Fill in truth information -- other fields set as in default */
+      explicit RecoInteraction(const Interaction &t, int index): 
+        truth(t), 
+        truth_index(index),
+        reco_energy(kUnfilled),
+        weight(1.) {}
+
       Interaction truth; //!< Contains truth level information about interaction
 
       /**
@@ -145,14 +150,23 @@ public:
       int truth_index;
 
       /**
-       * User defined reconstructed energy of neutrino. Units in GeV to keep
+       * Selection defined reconstructed energy of neutrino. Units in GeV to keep
        * consistent w/ Interaction class. */
       double reco_energy;
+
+      /**
+       * Selection defined weight of reconstructed interaction to be used by downstream
+       * analyis. */
+      double weight;  
   };
 
   Metadata metadata;  //!< Event metadata
   std::vector<Interaction> truth; //!< All truth interactions
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
+
+  Experiment experiment;  //!< Experiment identifier
+
+  static const int kUnfilled = -99999;  //!< Value for unfilled variables
 };
 
 #endif  // __sbnanalysis_core_Event__

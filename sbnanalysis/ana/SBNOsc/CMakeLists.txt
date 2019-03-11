@@ -44,3 +44,6 @@ install(TARGETS sbnanalysis_SBNOsc_Covariance DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_Chi2Sensitivity DESTINATION lib)
 
 install(TARGETS sbnanalysis_SBNOsc_classes DESTINATION lib)
+
+add_subdirectory(config)
+

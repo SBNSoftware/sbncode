@@ -46,30 +46,34 @@ class Covariance: public core::PostProcessorBase {
         TMatrixDSym CovarianceMatrix();
         
         // Output
-        TH2D *cov; //!< Covariance Matrix
-        TH2D *fcov; //!< Fractional Covariance Matrix
-        TH2D *corr; //!< Correlation Matrix
-
+        std::vector<TH2D> cov; //!< Covariance Matrix per variation
+        std::vector<TH2D> fcov; //!< Fractional Covariance Matrix per variation
+        std::vector<TH2D> corr; //!< Correlation Matrix per variation
     
     private:
         class EventSample {
           public:
     
 	    /** Constructors. */
-	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses);
+	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses, unsigned nVariations);
 	    
 	    double fScaleFactor;         //!< Factor for POT (etc.) scaling
 	    std::vector <double> fBins; //!< Energy bin limits
 	    TH1D *fCentralValue; //!< central value histogram
-	    std::vector<TH1D *> fUniverses; //!< histogram per systematic universe
+	    std::vector<std::vector<TH1D *>> fUniverses; //!< List of histogram per systematic universe. 
+              // List has index per covariance matrix to be generated.
 	    std::string fName; //!< Name for the sample
         };
+        void GetCovPerVariation(unsigned variation);
 
         // config
-        std::vector<std::string> fWeightKeys;
+        std::vector<std::vector<std::string>> fWeightKeys;
         std::vector<std::string> fUniformWeights;
         int fNumAltUnis;
         std::string fEnergyType;
+
+
+        unsigned fNVariations;
         
         double fSelectionEfficiency;
         double fBackgroundRejection;
@@ -77,6 +81,8 @@ class Covariance: public core::PostProcessorBase {
 
         bool fSaveCentralValue;
         bool fSaveUniverses;
+
+        double fWeightMax;
 
         // file counter
         unsigned fSampleIndex;

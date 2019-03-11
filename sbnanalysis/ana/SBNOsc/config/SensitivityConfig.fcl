@@ -1,0 +1,39 @@
+#include "SensitivityConfigBase.fcl"
+
+EventSamples: [
+  @local::sbnd_event_sample, @local::uboone_event_sample, @local::icarus_event_sample
+]
+
+Covariance: {
+  OutputFile: "cov.root"
+
+  NumAltUnis: 100
+  UniformWeights: @local::uniform_weights
+  WeightKey: @local::intra_genie_plus_flux_weights
+  EnergyType: @local::proposal_numu_energy_type
+  SelectionEfficiency: @local::proposal_numu_selection_efficiency
+  BackgroundRejection: @local::proposal_numu_selection_rejection
+  WeightMax: @local::weight_max
+}
+
+Sensitivity: {
+  OutputFile: "chi2.root"
+
+  UniformWeights: @local::uniform_weights
+
+  EnergyType: @local::proposal_numu_energy_type
+  SelectionEfficiency: @local::proposal_numu_selection_efficiency
+  BackgroundRejection: @local::proposal_numu_selection_rejection
+
+  NumDm2: 300
+  LogDm2Lims: [ -2.0, 2.0 ]
+  NumSin: 300
+  LogSinLims: [ -3.0, 0.0 ]
+  SaveOscillations: [
+    [0.11, 0.44],
+    [0.11, 1.1],
+    [0.11, 6.],
+    [0.11, 20.]
+  ]
+}
+
