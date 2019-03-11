@@ -115,6 +115,24 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _root_histos[i].h_numu_Vyz = new TH2D(("numu_Vyz_" + cut_names[i]).c_str(), "numu_Vyz",
       20, aaBoxesMin(_config.active_volumes, 1), aaBoxesMax(_config.active_volumes, 1),
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
+
+    _root_histos[i].h_numu_Vx_sig = new TH1D(("numu_Vx_sig" + cut_names[i]).c_str(), "numu_Vx_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 0), aaBoxesMax(_config.fiducial_volumes, 0));
+    _root_histos[i].h_numu_Vy_sig = new TH1D(("numu_Vy_sig" + cut_names[i]).c_str(), "numu_Vy_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 1), aaBoxesMax(_config.fiducial_volumes, 1));
+    _root_histos[i].h_numu_Vz_sig = new TH1D(("numu_Vz_sig" + cut_names[i]).c_str(), "numu_Vz_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 2), aaBoxesMax(_config.fiducial_volumes, 2));
+
+    _root_histos[i].h_numu_Vx_bkg = new TH1D(("numu_Vx_bkg" + cut_names[i]).c_str(), "numu_Vx_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 0), aaBoxesMax(_config.fiducial_volumes, 0));
+    _root_histos[i].h_numu_Vy_bkg = new TH1D(("numu_Vy_bkg" + cut_names[i]).c_str(), "numu_Vy_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 1), aaBoxesMax(_config.fiducial_volumes, 1));
+    _root_histos[i].h_numu_Vz_bkg = new TH1D(("numu_Vz_bkg" + cut_names[i]).c_str(), "numu_Vz_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 2), aaBoxesMax(_config.fiducial_volumes, 2));
+
+    _root_histos[i].h_numu_t_is_muon_sig = new TH1D(("t_is_muon_sig_"  + cut_names[i]).c_str(), "t_is_muon_sig", 3, -1.5, 1.5);
+    _root_histos[i].h_numu_t_is_muon_bkg = new TH1D(("t_is_muon_bkg_"  + cut_names[i]).c_str(), "t_is_muon_bkg", 3, -1.5, 1.5);
+
   }
 
   // set up TGraph keeping track of cut counts
@@ -142,6 +160,16 @@ void NumuSelection::Finalize() {
     _root_histos[i].h_numu_Vxy->Write();
     _root_histos[i].h_numu_Vxz->Write();
     _root_histos[i].h_numu_Vyz->Write();
+
+    _root_histos[i].h_numu_Vx_sig->Write();
+    _root_histos[i].h_numu_Vy_sig->Write();
+    _root_histos[i].h_numu_Vz_sig->Write();
+    _root_histos[i].h_numu_Vx_bkg->Write();
+    _root_histos[i].h_numu_Vy_bkg->Write();
+    _root_histos[i].h_numu_Vz_bkg->Write();
+
+    _root_histos[i].h_numu_t_is_muon_sig->Write();
+    _root_histos[i].h_numu_t_is_muon_bkg->Write();
   }
   _cut_counts->Write();
 }
@@ -246,6 +274,21 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
         _root_histos[select_i].h_numu_Vxy->Fill(nu.Nu().Vx(), nu.Nu().Vy());
         _root_histos[select_i].h_numu_Vxz->Fill(nu.Nu().Vx(), nu.Nu().Vz());
         _root_histos[select_i].h_numu_Vyz->Fill(nu.Nu().Vy(), nu.Nu().Vz());
+
+        if (is_signal) {
+          _root_histos[select_i].h_numu_Vx_sig->Fill(nu.Nu().Vx()); 
+          _root_histos[select_i].h_numu_Vy_sig->Fill(nu.Nu().Vy()); 
+          _root_histos[select_i].h_numu_Vz_sig->Fill(nu.Nu().Vz()); 
+
+          _root_histos[select_i].h_numu_t_is_muon_sig->Fill(abs(intInfo.t_pdgid) == 13);
+        }
+        else {
+          _root_histos[select_i].h_numu_Vx_bkg->Fill(nu.Nu().Vx()); 
+          _root_histos[select_i].h_numu_Vy_bkg->Fill(nu.Nu().Vy()); 
+          _root_histos[select_i].h_numu_Vz_bkg->Fill(nu.Nu().Vz()); 
+
+          _root_histos[select_i].h_numu_t_is_muon_bkg->Fill(abs(intInfo.t_pdgid) == 13);
+        }
 
         // also update cut count
         _cut_counts->SetPoint(select_i+1, select_i+1, _cut_counts->GetY()[select_i+1] + 1);

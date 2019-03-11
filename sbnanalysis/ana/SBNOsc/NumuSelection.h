@@ -125,6 +125,14 @@ protected:
     TH2D *h_numu_Vxy; //!< 2D x-y vertex histogram [cm]
     TH2D *h_numu_Vxz; //!< 2D x-z vertex histogram [cm]
     TH2D *h_numu_Vyz; //!< 2D y-z vertex histogram [cm]
+    TH1D *h_numu_Vx_sig; 
+    TH1D *h_numu_Vy_sig; 
+    TH1D *h_numu_Vz_sig; 
+    TH1D *h_numu_Vx_bkg; 
+    TH1D *h_numu_Vy_bkg; 
+    TH1D *h_numu_Vz_bkg; 
+    TH1D *h_numu_t_is_muon_sig; //!< histogram of whether associated track is a muon
+    TH1D *h_numu_t_is_muon_bkg; //!< histogram of whether associated track is a muon
   };
 
   // helper struct holding track info -- see NumuInteraction for variable details
