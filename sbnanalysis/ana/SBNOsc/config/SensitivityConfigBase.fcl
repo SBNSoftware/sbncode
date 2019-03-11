@@ -174,6 +174,117 @@ inter_genie_plus_flux_weights: [
   "piplus_PrimaryHadronSWCentralSplineVariation"
 ]
 
+inter_genie_weights_proposal: [
+  "genie_ccresAxial_Genie",
+  "genie_ncresAxial_Genie",
+  "genie_qema_Genie",
+  "genie_NC_Genie",
+  "genie_NonResRvbarp1pi_Genie",
+  "genie_NonResRvbarp2pi_Genie",
+  "genie_NonResRvp1pi_Genie",
+  "genie_NonResRvp2pi_Genie"
+]
+
+flux_weights_proposal: [
+  "horncurrent_FluxUnisim",
+  "kplus_PrimaryHadronFeynmanScaling",
+  "kzero_PrimaryHadronSanfordWang",
+  "nucleoninexsec_FluxUnisim",
+  "nucleonqexsec_FluxUnisim",
+  "nucleontotxsec_FluxUnisim",
+  "piminus_PrimaryHadronSWCentralSplineVariation",
+  "pioninexsec_FluxUnisim",
+  "pionqexsec_FluxUnisim",
+  "piontotxsec_FluxUnisim",
+  "piplus_PrimaryHadronSWCentralSplineVariation"
+]
+
+inter_genie_plus_flux_weights_proposal: [
+  # uncertainties in axial mass
+  "genie_ccresAxial_Genie",
+  "genie_ncresAxial_Genie",
+  "genie_qema_Genie",
+  
+  # uncertainties in NC elastic axial mass / eta not considered
+  # "genie_ncelAxial_Genie",
+  # "genie_ncelEta_Genie",
+
+  # neutral current normalization
+  "genie_NC_Genie",
+  
+  # non resonant background production
+  "genie_NonResRvbarp1pi_Genie",
+  "genie_NonResRvbarp2pi_Genie",
+  "genie_NonResRvp1pi_Genie",
+  "genie_NonResRvp2pi_Genie",
+
+  # MISSING: non-resonant neutron interaction uncertainties
+  # Marco/Furmanski are unsure about this one
+
+  # MISSING: DIS nuclear modificaiton
+  # Marco/Furmanski say this one is unimportant
+  # other DIS parameters -- not counted?
+  # "genie_DISAth_Genie",
+  # "genie_DISBth_Genie",
+  # "genie_DISCv1u_Genie",
+  # "genie_DISCv2u_Genie",
+
+  # FSI reweighting -- not in proposal
+  # "genie_IntraNukeNabs_Genie",
+  # "genie_IntraNukeNcex_Genie",
+  # "genie_IntraNukeNel_Genie",
+  # "genie_IntraNukeNinel_Genie",
+  # "genie_IntraNukeNmfp_Genie",
+  # "genie_IntraNukeNpi_Genie",
+  # "genie_IntraNukePIabs_Genie",
+  # "genie_IntraNukePIcex_Genie",
+  # "genie_IntraNukePIel_Genie",
+  # "genie_IntraNukePIinel_Genie",
+  # "genie_IntraNukePImfp_Genie",
+  # "genie_IntraNukePIpi_Genie",
+
+  # Fermi-gas -- not important?
+  # not in proposal or Marco/Furmanski
+  # "genie_FermiGasModelKf_Genie",
+  # "genie_FermiGasModelSf_Genie",
+
+  # coherent axial mass and R0
+  # Furmanski/Marco unsure about it
+  # not in proposal
+  # "genie_cohMA_Genie",
+  # "genie_cohR0_Genie",
+
+  # Resonant decay branching ratios
+  # not in proposal 
+  # "genie_ResDecayEta_Genie",
+  # "genie_ResDecayGamma_Genie",
+  # "genie_ResDecayTheta_Genie",
+  
+  # Hadron formation zone
+  # not in proposal
+  # "genie_FormZone_Genie",
+
+  # vector mass for CC/NC resonant production
+  # not in proposal
+  # "genie_ccresVector_Genie",
+  # "genie_ncresVector_Genie",
+
+  # all flux weights re in proposal
+  "expskin_FluxUnisim",
+  "kminus_PrimaryHadronNormalization",
+  "horncurrent_FluxUnisim",
+  "kplus_PrimaryHadronFeynmanScaling",
+  "kzero_PrimaryHadronSanfordWang",
+  "nucleoninexsec_FluxUnisim",
+  "nucleonqexsec_FluxUnisim",
+  "nucleontotxsec_FluxUnisim",
+  "piminus_PrimaryHadronSWCentralSplineVariation",
+  "pioninexsec_FluxUnisim",
+  "pionqexsec_FluxUnisim",
+  "piontotxsec_FluxUnisim",
+  "piplus_PrimaryHadronSWCentralSplineVariation"
+]
+
 proposal_numu_selection_efficiency: 0.8
 proposal_numu_selection_rejection: 0.0
 
