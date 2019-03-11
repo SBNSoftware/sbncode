@@ -213,6 +213,13 @@ Chi2Sensitivity::EventSample::EventSample(const fhicl::ParameterSet& config) {
         fDistBins.push_back(fDistance + (i * dist_binwidth) / 100000. /* cm -> km */);
     }
 
+    // scaling in reco energy bins
+    fEnergyBinScale = config.get<std::vector<double>>("energy_bin_scale", {});
+    if (fEnergyBinScale.size() == 0) {
+      fEnergyBinScale = std::vector<double>(fBins.size() - 1, 1.0);
+    }
+    else assert(fEnergyBinScale.size() == fBins.size() - 1);
+
     // setup histograms
     fBkgCounts = new TH1D((fName + " Background").c_str(), (fName + " Background").c_str(), fBins.size() - 1, &fBins[0]);
     fSignalCounts = new TH3D((fName + " Signal").c_str(), (fName + " Signal").c_str(), 
@@ -278,13 +285,14 @@ void Chi2Sensitivity::ProcessEvent(const Event *event) {
     
         // Apply selection (or rejection) efficiencies
         int isCC = event->truth[truth_ind].neutrino.iscc;
-        double wgt = isCC*(fSelectionEfficiency) + (1-isCC)*(1 - fBackgroundRejection);
+        // double wgt = isCC*(fSelectionEfficiency) + (1-isCC)*(1 - fBackgroundRejection);
         // and scale weight
-        wgt *= fEventSamples[fSampleIndex].fScaleFactor;
+        // wgt *= fEventSamples[fSampleIndex].fScaleFactor;
         // apply uniform weights
-        for (auto const &key: fUniformWeights) {
-            wgt *= event->truth[truth_ind].weights.at(key)[0];
-        }
+        // for (auto const &key: fUniformWeights) {
+        //    wgt *= event->truth[truth_ind].weights.at(key)[0];
+        // }
+        double wgt = event->reco[n].weight;
     
         // fill in hitograms
         //
@@ -298,6 +306,30 @@ void Chi2Sensitivity::ProcessEvent(const Event *event) {
         }
     }
 }
+
+// apply reco energy bin scaling
+void Chi2Sensitivity::Scale() {
+  for (int sample = 0; sample < fEventSamples.size(); sample++) {
+    for (int i = 1; i < fEventSamples[sample].fSignalCounts->GetNbinsX()+1; i++) {
+      double scale = fEventSamples[sample].fEnergyBinScale[i-1]; 
+      for (int j = 1; j < fEventSamples[sample].fSignalCounts->GetNbinsY()+1; j++) {
+        for (int k = 1; k < fEventSamples[sample].fSignalCounts->GetNbinsZ()+1; k++) {
+          double content = fEventSamples[sample].fSignalCounts->GetBinContent(i, j, k);
+      std::cout << "pre sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
+          fEventSamples[sample].fSignalCounts->SetBinContent(i, j, k, content * scale);
+      std::cout << "post sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
+        }
+      }
+    }
+
+    for (int i = 1; i < fEventSamples[sample].fBkgCounts->GetNbinsX()+1; i++) {
+      double scale = fEventSamples[sample].fEnergyBinScale[i-1]; 
+      double content = fEventSamples[sample].fBkgCounts->GetBinContent(i);
+      fEventSamples[sample].fBkgCounts->SetBinContent(i, content * scale);
+    }
+  }
+}
+
 
 void Chi2Sensitivity::GetChi2() {
     
