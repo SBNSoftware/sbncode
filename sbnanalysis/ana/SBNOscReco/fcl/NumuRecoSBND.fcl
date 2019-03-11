@@ -1,0 +1,24 @@
+OutputFile: "output_numureco.root"
+
+NumuRecoSelection: {
+  shakyMCTracks: true
+  requireMatched: false
+  requireContained: false
+  fiducial_volumes: [
+    {
+      xmin: -190.9
+      ymin: -185
+      zmin: 15.
+      xmax: 5.6
+      ymax: 185
+      zmax: 415.
+    },
+    {
+      xmin: 10.9
+      ymin: -185
+      zmin: 15.
+      xmax: 190.9
+      ymax: 185
+      zmax: 415.
+    }]
+}
