@@ -103,6 +103,8 @@ protected:
       // (%) = -A * Log(B * L)  where L is the lepton contained length
     bool cutKMEC; //!< Whether to remove MEC events (useful for studying difference w.r.t. proposal)
     bool onlyKMEC; //!< Whether to remove all non-MEC events
+    int selectMode;
+    int selectCCNC;
     double selectionEfficiency; //!< Signal efficiency weight applied to signal (charged current) events
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
     double constantWeight; //!< constant weight to apply uniformly to each event

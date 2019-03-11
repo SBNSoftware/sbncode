@@ -70,7 +70,7 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     }
 
     _config.doFVCut = pconfig.get<bool>("doFVcut", true);
-    _config.trajPointLength = pconfig.get<bool>("trajPointLength", false);
+    _config.trajPointLength = pconfig.get<bool>("trajPointLength", true);
     _config.vertexDistanceCut = pconfig.get<double>("vertexDistance", -1);
     _config.minLengthContainedTrack = pconfig.get<double>("minLengthContainedTrack", -1);
     _config.minLengthExitingTrack = pconfig.get<double>("minLengthExitingTrack", -1);
@@ -83,6 +83,8 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _config.acceptShakyTracks = pconfig.get<bool>("acceptShakyTracks", false);
     _config.verbose = pconfig.get<bool>("verbose", false);
     _config.cutKMEC = pconfig.get<bool>("cutKMEC", false);
+    _config.selectMode = pconfig.get<int>("selectMode", -1);
+    _config.selectCCNC = pconfig.get<int>("selectCCNC", -1);
     _config.onlyKMEC = pconfig.get<bool>("onlyKMEC", false);
 
     // setup weight config
@@ -468,6 +470,11 @@ std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Even
 
   // STUDY KMEC: remove MEC events
   bool pass_kMEC = !(_config.cutKMEC && nu.Mode() == simb::kMEC) && !(_config.onlyKMEC && nu.Mode() != simb::kMEC);
+  // select another mode if necessary
+  bool pass_Mode = _config.selectMode < 0 || nu.Mode() == _config.selectMode;
+  // maybe require cc or nc
+  bool pass_CCNC = _config.selectCCNC < 0 || nu.CCNC() == _config.selectCCNC;
+  pass_kMEC = pass_kMEC && pass_Mode && pass_CCNC;
 
   // retrun list of cuts
   return {pass_kMEC, pass_AV && pass_kMEC, pass_valid_track && pass_kMEC && pass_AV, pass_valid_track && pass_kMEC && pass_FV, pass_valid_track && pass_kMEC && pass_FV && pass_min_length};
