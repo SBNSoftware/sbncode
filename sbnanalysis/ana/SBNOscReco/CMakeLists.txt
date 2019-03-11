@@ -13,6 +13,7 @@ include_directories($ENV{LARSIM_INC})
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
 add_library(sbnanalysis_SBNOscReco_NumuRecoSelection SHARED NumuRecoSelection.cxx)
+add_library(sbnanalysis_SBNOscReco_GetFV SHARED GetFV.cc)
 
 # Add in ROOT dictionary
 ROOT_GENERATE_DICTIONARY(SBNOscReco_dict NumuRecoSelection.h LINKDEF linkdef.h)
@@ -27,7 +28,14 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   ubana_BasicTool_GeoAlgo
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_GetFV
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOscReco_NumuRecoSelection DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_classes DESTINATION lib)
 
