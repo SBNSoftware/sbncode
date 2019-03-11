@@ -11,6 +11,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
+#include "core/Experiment.hh"
 
 #include "TH1D.h"
 #include "TDatabasePDG.h"
@@ -23,7 +24,7 @@
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
-#include "core/ServiceManager.hh"
+#include "core/ProviderManager.hh"
 
 namespace ana {
   namespace SBNOsc {
@@ -43,19 +44,19 @@ public:
    * \param config A configuration, as a FHiCL ParameterSet object
    */
   void Initialize(fhicl::ParameterSet* config=NULL) {
-    _managerSBND = new core::ServiceManager(core::Detector::kSBND);
-    _managerUBOONE = new core::ServiceManager(core::Detector::kUBOONE);
-    _managerICARUS = new core::ServiceManager(core::Detector::kICARUS);
+    _managerSBND = new core::ProviderManager(kExpSBND);
+    _managerUBOONE = new core::ProviderManager(kExpMicroBooNE);
+    _managerICARUS = new core::ProviderManager(kExpICARUS);
 
     {
     // print out SBND
     int cryo_i = 0;
     int tpc_i = 0;
     std::cout << std::endl << "SBND" << std::endl;
-    for (auto const &cryo: _managerSBND->GetGeometryService()->IterateCryostats()) { 
+    for (auto const &cryo: _managerSBND->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
-      geo::GeometryCore::TPC_iterator iTPC = _managerSBND->GetGeometryService()->begin_TPC(cryo.ID()),
-                                      tend = _managerSBND->GetGeometryService()->end_TPC(cryo.ID());
+      geo::GeometryCore::TPC_iterator iTPC = _managerSBND->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = _managerSBND->GetGeometryProvider()->end_TPC(cryo.ID());
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         auto this_volume = TPC.ActiveBoundingBox();
@@ -79,10 +80,10 @@ public:
     int cryo_i = 0;
     int tpc_i = 0;
     std::cout << std::endl << "uBooNE" << std::endl;
-    for (auto const &cryo: _managerUBOONE->GetGeometryService()->IterateCryostats()) { 
+    for (auto const &cryo: _managerUBOONE->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
-      geo::GeometryCore::TPC_iterator iTPC = _managerUBOONE->GetGeometryService()->begin_TPC(cryo.ID()),
-                                      tend = _managerUBOONE->GetGeometryService()->end_TPC(cryo.ID());
+      geo::GeometryCore::TPC_iterator iTPC = _managerUBOONE->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = _managerUBOONE->GetGeometryProvider()->end_TPC(cryo.ID());
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         auto this_volume = TPC.ActiveBoundingBox();
@@ -106,10 +107,10 @@ public:
     int cryo_i = 0;
     int tpc_i = 0;
     std::cout << std::endl << "ICARUS" << std::endl;
-    for (auto const &cryo: _managerICARUS->GetGeometryService()->IterateCryostats()) { 
+    for (auto const &cryo: _managerICARUS->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
-      geo::GeometryCore::TPC_iterator iTPC = _managerICARUS->GetGeometryService()->begin_TPC(cryo.ID()),
-                                      tend = _managerICARUS->GetGeometryService()->end_TPC(cryo.ID());
+      geo::GeometryCore::TPC_iterator iTPC = _managerICARUS->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = _managerICARUS->GetGeometryProvider()->end_TPC(cryo.ID());
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         auto this_volume = TPC.ActiveBoundingBox();
@@ -142,9 +143,9 @@ public:
   bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {return false; }
 
 protected:
-  core::ServiceManager *_managerICARUS;
-  core::ServiceManager *_managerSBND;
-  core::ServiceManager *_managerUBOONE;
+  core::ProviderManager *_managerICARUS;
+  core::ProviderManager *_managerSBND;
+  core::ProviderManager *_managerUBOONE;
 };
 
   }  // namespace SBNOsc

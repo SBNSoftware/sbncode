@@ -15,7 +15,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
-#include "core/ServiceManager.hh"
+#include "core/ProviderManager.hh"
 
 #include "TH1D.h"
 #include "TDatabasePDG.h"
@@ -165,7 +165,7 @@ protected:
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
 
   Config _config; //!< The config
-  core::ServiceManager *_manager;
+  core::ProviderManager *_manager;
 
   RecoEvent _recoEvent;
   std::vector<RecoVertex> *_selected;

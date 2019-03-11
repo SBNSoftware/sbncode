@@ -29,6 +29,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "core/Event.hh"
+#include "core/Experiment.hh"
 #include "NumuRecoSelection.h"
 #include "../SBNOsc/Utilities.h"
 
@@ -44,7 +45,7 @@ NumuRecoSelection::NumuRecoSelection() :
   _selected(new std::vector<NumuRecoSelection::RecoVertex>) {}
 
 void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
-  _manager = new core::ServiceManager(core::Detector::kSBND);
+  _manager = new core::ProviderManager(kExpSBND);
   if (config) {
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NumuRecoSelection");
 
@@ -61,12 +62,12 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     }
 
     // get the active and cryo volumes
-    for (auto const &cryo: _manager->GetGeometryService()->IterateCryostats()) {
+    for (auto const &cryo: _manager->GetGeometryProvider()->IterateCryostats()) {
       _config.cryostat_volumes.push_back(cryo.BoundingBox());
       std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
 
-      geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryService()->begin_TPC(cryo.ID()),
-                                      tend = _manager->GetGeometryService()->end_TPC(cryo.ID());
+      geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = _manager->GetGeometryProvider()->end_TPC(cryo.ID());
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
