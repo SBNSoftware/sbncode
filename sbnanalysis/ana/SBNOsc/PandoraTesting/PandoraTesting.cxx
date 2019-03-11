@@ -147,6 +147,8 @@ void PandoraTesting::Initialize(fhicl::ParameterSet* config) {
     _root_histos[i].h_numu_open_angle_bkg = new TH1D(("numu_open_angle_bkg_" + cut_names[i]).c_str(), "numu_open_angle_bkg", 60, 0.,2 * TMath::Pi());
     _root_histos[i].h_numu_cross_TPC_sig = new TH1D(("numu_cross_TPC_sig_" + cut_names[i]).c_str(), "numu_cross_TPC_sig", 3, -1.5, 1.5);
     _root_histos[i].h_numu_cross_TPC_bkg = new TH1D(("numu_cross_TPC_bkg_" + cut_names[i]).c_str(), "numu_cross_TPC_bkg", 3, -1.5, 1.5);
+    _root_histos[i].h_numu_reco_energy_sig = new TH1D(("numu_reco_energy_sig_" + cut_names[i]).c_str(), "numu_reco_energy", 50, 0, 5);
+    _root_histos[i].h_numu_reco_energy_bkg = new TH1D(("numu_reco_energy_bkg_" + cut_names[i]).c_str(), "numu_reco_energy", 50, 0, 5);
   }
 
   // set up TGraph keeping track of cut counts
@@ -187,6 +189,8 @@ void PandoraTesting::Finalize() {
     _root_histos[i].h_numu_open_angle_bkg->Write();
     _root_histos[i].h_numu_cross_TPC_sig->Write();
     _root_histos[i].h_numu_cross_TPC_bkg->Write();
+    _root_histos[i].h_numu_reco_energy_sig->Write();
+    _root_histos[i].h_numu_reco_energy_bkg->Write();
   }
   _cut_counts->Write();
 }
@@ -317,11 +321,13 @@ bool PandoraTesting::ProcessEvent(const gallery::Event& ev, const std::vector<Ev
           _root_histos[select_i].h_numu_contained_L_sig->Fill(intInfo.t_contained_length);
           _root_histos[select_i].h_numu_open_angle_sig->Fill(intInfo.t_open_angle);
           _root_histos[select_i].h_numu_cross_TPC_sig->Fill(intInfo.t_cross_tpc);
+          _root_histos[select_i].h_numu_reco_energy_sig->Fill(visible_energy);
         }
         else { // is bkg
           _root_histos[select_i].h_numu_contained_L_bkg->Fill(intInfo.t_contained_length);
           _root_histos[select_i].h_numu_open_angle_bkg->Fill(intInfo.t_open_angle);
           _root_histos[select_i].h_numu_cross_TPC_bkg->Fill(intInfo.t_cross_tpc);
+          _root_histos[select_i].h_numu_reco_energy_bkg->Fill(visible_energy);
         }
 
         // also update cut count

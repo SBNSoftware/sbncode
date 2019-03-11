@@ -189,6 +189,8 @@ protected:
     TH1D *h_numu_open_angle_bkg;
     TH1D *h_numu_cross_TPC_sig;
     TH1D *h_numu_cross_TPC_bkg;
+    TH1D *h_numu_reco_energy_sig;
+    TH1D *h_numu_reco_energy_bkg;
   };
 
   // helper struct holding track info -- see NumuInteraction for variable details
