@@ -40,7 +40,8 @@ namespace ana {
 NumuRecoSelection::NumuRecoSelection() :
   SelectionBase(),
   _event_counter(0),
-  _nu_count(0) {}
+  _nu_count(0),
+  _selected(new std::vector<NumuRecoSelection::RecoVertex>) {}
 
 void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
   _manager = new core::ServiceManager(core::Detector::kSBND);
@@ -84,6 +85,7 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     // setup weight config
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
     _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
+    _config.cosmicWeight = pconfig.get<double>("cosmicWeight", 1.0);
 
     // get tag names
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
@@ -97,7 +99,7 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
   unsigned histo_ind = 0;
   for (unsigned i = 0; i < NumuRecoSelection::nCuts; i++) {
     for (const auto mode: allModes) {
-      _root_histos[histo_ind].track_length = new TH1D(("track_length_" + mode2Str(mode) + "_" + cutNames[i]).c_str(), "track_length", -10, 1000, 101);
+      _root_histos[histo_ind].track_length = new TH1D(("track_length_" + mode2Str(mode) + "_" + cutNames[i]).c_str(), "track_length", 101, -10, 1000);
       histo_ind ++;
     }
   }
@@ -534,9 +536,11 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
     int truth_match = -1;
     for (auto const &vert: truth) {
       for (int truth_i = 0; truth_i < truth.size(); truth_i++) {
+        // TODO: better way to do matching
         // found a match!
         if ((truth[truth_i].position - reco_position).Mag() < 5.0) {
           truth_match = truth_i;
+           break;
         }
       }
     }
