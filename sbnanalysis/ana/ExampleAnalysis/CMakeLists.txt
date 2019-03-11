@@ -17,7 +17,7 @@ add_library(sbnanalysis_ExampleAnalysis_ExampleSelection SHARED ExampleSelection
 target_link_libraries(
   sbnanalysis_ExampleAnalysis_ExampleSelection
   sbnanalysis_ExampleAnalysis_ExampleTools
-  sbnanalysis_ServiceManager
+  sbnanalysis_ProviderManager
 )
 
 # Install all libraries to the main "lib" directory
