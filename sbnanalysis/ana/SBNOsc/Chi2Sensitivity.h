@@ -29,9 +29,10 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         void ProcessEvent(const Event* event);
         void FileCleanup(TTree* eventTree);
 
-        void Finalize() { fCovariance.Finalize(); GetChi2(); GetContours(); Write(); }
+        void Finalize() { fCovariance.Finalize(); Scale(); GetChi2(); GetContours(); Write(); }
 
         // API Functions
+        void Scale();
         void GetChi2();
         void GetContours();
         void Write();
@@ -64,6 +65,7 @@ class Chi2Sensitivity: public core::PostProcessorBase {
             std::array<double, 2> fZlim; //!< Detector size in cm
             double fScaleFactor; //!< Factor for POT (etc.) scaling   
             int fOscType; //!< Oscilaltion type: 0 == None, 1 == numu -> nue, 2 == numu -> numu
+             std::vector<double> fEnergyBinScale;
 
             // Storage
             TH1D *fBkgCounts; //!< Background count Histogram
