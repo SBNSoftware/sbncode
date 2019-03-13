@@ -1,0 +1,51 @@
+#include "services_microboone.fcl"
+#include "seedservice_microboone.fcl"
+#include "microboone_eventweight_service.fcl"
+#include "eventweight_proposal_sbn.fcl"
+
+process_name: ReEventWeight
+
+services: {
+  TimeTracker: {}
+  MemoryTracker: {}
+  RandomNumberGenerator: {}
+  FileCatalogMetadata: @local::art_file_catalog_mc
+  NuRandomService: @local::microboone_seedservice
+  UBEventWeight: @local::microboone_eventweight_service
+}
+
+source: {
+  module_type: RootInput
+  # Drop the old weights
+  inputCommands: [
+    "keep *",
+    # "drop *_fluxeventweight_*_G4",
+    # "drop *_genieeventweight_*_G4"
+  ]
+}
+
+physics: {
+  producers: {
+    refluxeventweight: @local::sbn_flux_eventweight
+    refluxeventweightMiniboone: @local::sbn_flux_eventweight_miniboone
+    regenieeventweight: @local::sbn_genie_eventweight   
+     rns: {
+       module_type: "RandomNumberSaver"
+     }
+  }
+  simulate: [rns, fluxeventweight, fluxeventweightMiniboone, genieeventweight]
+  stream1: [ out1 ]
+  trigger_paths: [ simulate ]
+  end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "out.root"
+   # fileName: "%ifb_%tc_reeventweight.root"
+   dataTier: "detector-simulated"
+   compressionLevel: 1
+ }
+}
+
