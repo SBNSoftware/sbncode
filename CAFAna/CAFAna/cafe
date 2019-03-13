@@ -1,0 +1,172 @@
+#!/bin/env python
+
+# Welcome banner
+print '** NOvA Common Analysis Format Executor **'
+
+import os, sys
+import argparse
+import tempfile
+
+
+def findPkg(pkg):
+    """Locate 'pkg' as SRT would, return a full path to it"""
+    try:
+        pub = os.environ['SRT_PUBLIC_CONTEXT']
+        priv = os.environ['SRT_PRIVATE_CONTEXT']
+    except:
+        print "Can't find $SRT_[PUBLIC|PRIVATE]_CONTEXT. Did you setupnova?"
+        sys.exit(1)
+
+    # Default to private context if available
+    if os.path.isdir(priv+'/'+pkg+'/'):
+        return priv+'/'+pkg+'/'
+
+    # Else fall back to public context
+    assert os.path.isdir(pub+'/'+pkg+'/')
+    return pub+'/'+pkg+'/'
+
+
+def makeParser():
+    parser = argparse.ArgumentParser(epilog='Alternatively you may specify a single .root file to open it in ROOT with CAF libraries loaded. Or no arguments to just start ROOT with libraries loaded.')
+
+    parser.add_argument('-b', '--batch', action = 'store_true',
+                          help = 'batch mode, no graphics output')
+    parser.add_argument('-q', '--quit', action = 'store_true',
+                          help = 'quit at end of job')
+    parser.add_argument('-bq', action = 'store_true',
+                          help = 'shorthand for -b -q')
+    parser.add_argument('-nr', '--no-recompile', action = 'store_true',
+                        help = "don't unconditionally recompile, ie .C+ not .C++")
+
+    stridegroup = parser.add_argument_group('dataset modifiers')
+    stridegroup.add_argument('-s', '--stride', metavar='N', type=int,
+                             help = 'use only every Nth file of datasets')
+    stridegroup.add_argument('-o', '--offset', metavar='M', type=int,
+                             help = 'skip first M files of dataset (for use with -s)')
+    stridegroup.add_argument('-ss', '--snapshot', action = 'store_true',
+                             help = 'use latest snapshot instead of requerying')
+
+    # Have to nest like this to be able to provide a title
+    dbggroup2 = parser.add_argument_group('debugging options')
+    dbggroup = dbggroup2.add_mutually_exclusive_group()
+    dbggroup.add_argument('--gdb', action = 'store_true',
+                          help = 'run root under gdb')
+    dbggroup.add_argument('--totalview', action = 'store_true',
+                          help = 'run root under totalview')
+    dbggroup.add_argument('--valgrind', action = 'store_true',
+                          help = 'run root under valgrind')
+    dbggroup.add_argument('--prof', action = 'store_true',
+                          help = 'run with google perftools profiler')
+
+    parser.add_argument('script.C',
+                        help = 'the root script to run')
+    parser.add_argument('args', nargs = '*',
+                        help = 'optional arguments passed to script main function')
+
+    return parser
+
+
+def libsPath():
+    return findPkg('CAFAna')+'load_libs.C'
+
+
+def escapeArg(arg):
+    try:
+        # If it's "true" or "false" or we can parse it as a number,
+        # pass it through.
+        arg == 'true' or arg == 'false' or float(arg)
+        return arg
+    except:
+        # Otherwise it must be a string, add quotes.
+        return '"'+arg+'"'
+
+
+def toFunctionParams(args):
+    """Comma seperated list of parameters"""
+    return "("+','.join([escapeArg(a) for a in args])+")"
+
+
+if __name__ == '__main__':
+    # This is a bit of a hack. If you start cafe with no script argument,
+    # this will make it think it's opening a ROOT file. The eventual effect is
+    # just to start ROOT with the right libraries loaded.
+    sys.argv += ' '
+
+    parser = makeParser()
+
+    opts = vars(parser.parse_args())
+
+    if opts['bq']:
+        opts['batch'] = True
+        opts['quit'] = True
+
+    # Suppress splash screen and default rootlogon (load_libs calls the
+    # official one)
+    exe = 'root'
+    rootargs = ['-l', '-n']
+    script = opts['script.C']
+    while script[-1] == '+': script = script[:-1] # Strip back to raw .C
+    # Drop the last argument, because it's the space hack from above
+    args = opts['args'][:-1]
+
+    if opts['batch']: rootargs.append('-b')
+    if opts['quit']: rootargs.append('-q')
+
+    if opts['gdb']:
+        exe = 'gdb'
+        rootargs = ['--args', 'root.exe'] + rootargs
+    if opts['valgrind']:
+        exe = 'valgrind'
+        rootargs = ['--leak-check=full',
+                    '--suppressions='+os.environ['ROOTSYS']+'/etc/valgrind-root.supp',
+                    'root.exe'] + rootargs
+    if opts['totalview']:
+        exe = 'totalview'
+        rootargs = ['root.exe', '-a'] + rootargs
+
+    if opts['gdb'] or opts['valgrind'] or opts['totalview']:
+        # Disable the default backtrace printouts since presumably the user
+        # intends to get their own
+        os.environ['CAFE_NO_BACKTRACE'] = '1'
+
+    if opts['prof']:
+        os.environ['CPUPROFILE'] = tempfile.mkstemp()[1] # 'perf/cprof.prof'
+
+    if opts['stride']:
+        if opts['stride'] <= 0:
+            print 'Illegal value for --stride:', opts['stride']
+            sys.exit(1)
+        os.environ['CAFANA_STRIDE'] = str(opts['stride'])
+    if opts['offset']:
+        if not opts['stride']:
+            print 'Cannot specify --offset without --stride'
+        if opts['offset'] < 0 or opts['offset'] >= opts['stride']:
+            print 'Illegal value for --offset:', opts['offset']
+            print 'With --stride', opts['stride'], 'legal values are 0 to', opts['stride']-1
+            sys.exit(1)
+        os.environ['CAFANA_OFFSET'] = str(opts['offset'])
+
+    if opts['snapshot']:
+        os.environ['CAFANA_USE_SNAPSHOTS'] = 'yes'
+
+    if (script.endswith('.C') or script.endswith('.C+')):
+        # Usually use .C++ to ensure the macro will always be recompiled, with
+        # no possibility of version skew. .C+ if the speed-freak option has
+        # been enabled.
+        suffix = '+' if opts['no_recompile'] else '++'
+
+        # root, then library loading, then script, then the function parameters
+        rootargs.append(libsPath())
+        rootargs.append(script+suffix+toFunctionParams(args))
+    else:
+        # Not a .C script. Maybe the user's trying to open a root file. In any
+        # case, just pass through all the arguments uninterpreted.
+        rootargs.append(libsPath())
+        if script != ' ': rootargs.append(script)
+        rootargs += args
+
+
+    # Show the user what we're doing in case we got it wrong
+    print exe, ' '.join(rootargs)
+    # Replace the whole process
+    os.execvp(exe, [exe]+rootargs)

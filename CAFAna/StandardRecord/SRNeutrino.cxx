@@ -1,0 +1,23 @@
+////////////////////////////////////////////////////////////////////////
+// \brief   An  SRNeutrino represents a true neutrino.
+// \author  gsdavies@iastate.edu
+// \date    February 2013
+////////////////////////////////////////////////////////////////////////
+
+
+#include "StandardRecord/SRNeutrino.h"
+
+
+namespace caf
+{
+
+  SRNeutrino::SRNeutrino():
+    iscc(false),
+    pdg(0),
+    genie_intcode(-1),
+    energy(-1),
+    inelasticityY(-1)
+    {  }
+
+} // end namespace caf
+////////////////////////////////////////////////////////////////////////

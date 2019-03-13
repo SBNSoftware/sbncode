@@ -1,0 +1,54 @@
+### Initial setup and build of novasoft subset ###
+
+wget https://cdcvs.fnal.gov/redmine/projects/novaart/repository/raw/trunk/SRT_NOVA/scripts/nova_srt_bootstrap
+
+chmod +x nova_srt_bootstrap
+
+./nova_srt_bootstrap .
+
+source srt/srt.sh
+
+wget https://cdcvs.fnal.gov/redmine/projects/novaart/repository/raw/trunk/SRT_NOVA/scripts/update-release
+
+chmod +x update-release
+
+emacs setup/packages-development # remove all packages except CAFAna, OscLib, SRT_NOVA, StandardRecord, Utilities, setup
+
+./update-release -rel development
+
+source setup/setup_nova.sh -6 $SRT_DIST # Ignore a bunch of scary errors
+
+cd releases/development/
+
+rm CAFAna/Vars/GenieWeights.h CAFAna/Vars/GenieWeights.cxx
+rm CAFAna/Systs/*.cxx CAFAna/Systs/*.h
+
+emacs CAFAna/Vars/GNUmakefile # comment out -lMCReweightFunc
+
+# Hack up CAFAna a bunch more as done in this release
+
+emacs CAFAna/load_libs.C # comment out StandardRecord_dict and MCReweightFunc and update the count to 18
+
+rm StandardRecord/classes_def.xml
+
+
+time SRT_NOVA/scripts/novasoft_build -rel development # ignore errors mentioning "art"
+
+
+### To setup novasoft in the future ###
+
+source srt/srt.sh
+source setup/setup_nova.sh -6 $SRT_DIST
+make # within any package to build it
+
+
+### Building and running the macro ###
+
+cafe test/test_dune.C # works fine so long as you didn't do any dune setup in this terminal
+
+# Fallback compilation plan
+LIBS=`ls $SRT_PUBLIC_CONTEXT/lib/$SRT_SUBDIR/ | grep .so | sed s/lib/-l/ | sed s/.so// | grep -v service | xargs echo`
+
+g++ --std=c++14 test/test_dune.C -I $SRT_PUBLIC_CONTEXT -L $SRT_PUBLIC_CONTEXT/lib/$SRT_SUBDIR/ $LIBS `root-config --cflags --libs` -lMinuit2
+
+./a.out
