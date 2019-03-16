@@ -14,6 +14,8 @@ BEGIN_PROLOG
 ##########################################################
 
 n_universes: 1000
+n_universes_slow: 50
+n_universes_maybe_slow: 50
 
 sbn_flux_eventweight_base: {
   horncurrent_base: {
@@ -118,7 +120,6 @@ sbn_flux_eventweight_base: {
     scale_factor_neg:1
     mode: multisim
     number_of_multisims: @local::n_universes        
-    use_MiniBooNE_random_numbers: false
   }
 
   bnbcorrection_base: {
@@ -210,7 +211,6 @@ sbn_flux_eventweight_base: {
     scale_factor: 1
     number_of_multisims: @local::n_universes
     PrimaryHadronGeantCode: -321 # geant code for particle production on Be
-    use_MiniBooNE_random_numbers: false
   }
 }
 
@@ -225,7 +225,7 @@ sbn_flux_eventweight_miniboone: {
   genie_module_label: generator  
 
   weight_functions_beam: [
-    # bnbcorrection, 
+    bnbcorrection, 
     # MiniBooNE config
     horncurrent, expskin,
     piplus, piminus, kplus, kplusOld,
@@ -340,7 +340,7 @@ sbn_flux_eventweight: {
   genie_module_label: generator  
  
   weight_functions_beam: [
-    # bnbcorrection, 
+    bnbcorrection, 
     # non - MiniBooNE  config
     horncurrent, expskin,
     piplus, piminus, kplus, kzero, kminus,
@@ -516,7 +516,7 @@ sbn_genie_eventweight: {
     parameter_list: ["QEVec"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_slow
   }
 
   genie_ncelAxial: {
@@ -742,7 +742,7 @@ sbn_genie_eventweight: {
     parameter_list: ["AGKYxF"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_maybe_slow
   }
 
   genie_AGKYpT: {
@@ -751,7 +751,7 @@ sbn_genie_eventweight: {
     parameter_list: ["AGKYpT"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_maybe_slow
   }
 
   genie_FormZone: {
@@ -760,7 +760,7 @@ sbn_genie_eventweight: {
     parameter_list: ["FormZone"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_maybe_slow
   }
 
   genie_FermiGasModelKf: {
@@ -769,7 +769,7 @@ sbn_genie_eventweight: {
     parameter_list: ["FermiGasModelKf"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_maybe_slow
   }
 
   genie_FermiGasModelSf: {
@@ -778,7 +778,7 @@ sbn_genie_eventweight: {
     parameter_list: ["FermiGasModelSf"]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: @local::n_universes
+    number_of_multisims: @local::n_universes_maybe_slow
   }
 
   genie_IntraNukeNmfp: {

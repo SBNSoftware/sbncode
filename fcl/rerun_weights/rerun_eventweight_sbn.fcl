@@ -19,16 +19,16 @@ source: {
   # Drop the old weights
   inputCommands: [
     "keep *",
-    # "drop *_fluxeventweight_*_G4",
-    # "drop *_genieeventweight_*_G4"
+     "drop *_fluxeventweight_*_G4",
+     "drop *_genieeventweight_*_G4"
   ]
 }
 
 physics: {
   producers: {
-    refluxeventweight: @local::sbn_flux_eventweight
-    refluxeventweightMiniboone: @local::sbn_flux_eventweight_miniboone
-    regenieeventweight: @local::sbn_genie_eventweight   
+    fluxeventweight: @local::sbn_flux_eventweight
+    fluxeventweightMiniboone: @local::sbn_flux_eventweight_miniboone
+    genieeventweight: @local::sbn_genie_eventweight   
      rns: {
        module_type: "RandomNumberSaver"
      }
@@ -42,8 +42,8 @@ physics: {
 outputs: {
  out1: {
    module_type: RootOutput
-   fileName: "out.root"
-   # fileName: "%ifb_%tc_reeventweight.root"
+   # fileName: "out.root"
+   fileName: "%ifb_%tc_reeventweight.root"
    dataTier: "detector-simulated"
    compressionLevel: 1
  }
