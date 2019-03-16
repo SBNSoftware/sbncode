@@ -428,7 +428,7 @@ sbn_flux_eventweight: {
   kminus: {
     @table::sbn_flux_eventweight_base.kminus_base
     use_MiniBooNE_random_numbers: false
-    weight_calculator: "MicroBooNE"
+    weight_calculator: "MiniBooNE"
   }
 }
 
