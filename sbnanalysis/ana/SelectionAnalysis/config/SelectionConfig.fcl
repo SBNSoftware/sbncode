@@ -1,6 +1,6 @@
 ###include "backtrackerservice.fcl"  
 ###include "particleinventoryservice.fcl" 
-###include "gallery_services_sbnd.fcl"  
+#include gallery_services_sbnd.fcl                                                                                   
 
 OutputFile: "SelectionAnalysisOutput.root" 
 ExperimentID: 0
