@@ -6,10 +6,12 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
+#include "core/ProviderManager.hh"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -40,6 +42,13 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   // Add custom branches
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
+
+  // Use LArSoft service functions via the ProviderManager
+  if (fProviderManager) {
+    std::cout << "Detector: "
+              << fProviderManager->GetGeometryProvider()->DetectorName()
+              << std::endl;
+  }
 
   // Use some library code
   hello();
