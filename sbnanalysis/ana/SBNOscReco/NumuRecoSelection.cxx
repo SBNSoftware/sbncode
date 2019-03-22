@@ -58,16 +58,15 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
       double xmax = FV.get<double>("xmax");
       double ymax = FV.get<double>("ymax");
       double zmax = FV.get<double>("zmax");
-      _config.fiducial_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
+      _config.fiducial_volumes.emplace_back(xmin, xmax, ymin, ymax, zmin, zmax);
     }
 
     // get the active and cryo volumes
     for (auto const &cryo: _manager->GetGeometryProvider()->IterateCryostats()) {
       _config.cryostat_volumes.push_back(cryo.BoundingBox());
-      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-
       geo::GeometryCore::TPC_iterator iTPC = _manager->GetGeometryProvider()->begin_TPC(cryo.ID()),
                                       tend = _manager->GetGeometryProvider()->end_TPC(cryo.ID());
+      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
       while (iTPC != tend) {
         geo::TPCGeo const& TPC = *iTPC;
         this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
@@ -75,10 +74,11 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
       }
      _config.tpc_volumes.push_back(std::move(this_tpc_volumes));
     }
-   
 
     _config.shakyMCTracks = pconfig.get<bool>("shakyMCTracks", false);
     _config.verbose = pconfig.get<bool>("verbose", false);
+
+    _config.requireTrack = pconfig.get<bool>("requireTrack", true);
 
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
@@ -88,20 +88,46 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
     _config.cosmicWeight = pconfig.get<double>("cosmicWeight", 1.0);
 
+    _config.cryostat_volume_boundary = pconfig.get<double>("cryostat_volume_boundary", 10.0);
+
     // get tag names
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
     _config.PFParticleTag = config->get<std::string>("PFParticleTag", "pandora");
+    _config.CorsikaTag = config->get<std::string>("CorsikaTag", "corsika");
+    _config.CRTTrackTag = config->get<std::string>("CRTTrackTag", "crttrack");
+
+    // make the containment volume
+    /*
+    for (auto const &volume: _config.cryostat_volumes) {
+      _config.containment_volumes.emplace_back(
+        volume.MinX() + _config.cryostat_volume_boundary,
+        volume.MaxX() - _config.cryostat_volume_boundary,  
+        volume.MinY() + _config.cryostat_volume_boundary,
+        volume.MaxY() - _config.cryostat_volume_boundary,
+        volume.MinZ() + _config.cryostat_volume_boundary,
+        volume.MaxZ() - _config.cryostat_volume_boundary
+      );
+    }*/
+    std::vector<fhicl::ParameterSet> c_FVs = \
+      pconfig.get<std::vector<fhicl::ParameterSet> >("containment_volumes");
+    for (auto const& FV : c_FVs) {
+      double xmin = FV.get<double>("xmin");
+      double ymin = FV.get<double>("ymin");
+      double zmin = FV.get<double>("zmin");
+      double xmax = FV.get<double>("xmax");
+      double ymax = FV.get<double>("ymax");
+      double zmax = FV.get<double>("zmax");
+      _config.containment_volumes.emplace_back(xmin, xmax, ymin, ymax, zmin, zmax);
+    }
   }
 
   // Setup histo's for root output
   fOutputFile->cd();
-  unsigned histo_ind = 0;
   for (unsigned i = 0; i < NumuRecoSelection::nCuts; i++) {
     for (const auto mode: allModes) {
-      _root_histos[histo_ind].track_length = new TH1D(("track_length_" + mode2Str(mode) + "_" + cutNames[i]).c_str(), "track_length", 101, -10, 1000);
-      histo_ind ++;
+      _root_histos[i][mode].track_length = new TH1D(("track_length_" + mode2Str(mode) + "_" + cutNames[i]).c_str(), "track_length", 101, -10, 1000);
     }
   }
 
@@ -116,8 +142,10 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
 void NumuRecoSelection::Finalize() {
   // write out histos
   fOutputFile->cd();
-  for (unsigned i = 0; i < NumuRecoSelection::nCuts*NumuRecoSelection::nModes; i++) {
-    _root_histos[i].track_length->Write();
+  for (unsigned i = 0; i < NumuRecoSelection::nCuts; i++) {
+    for (unsigned j = 0; j < NumuRecoSelection::nModes; j++) {
+      _root_histos[i][j].track_length->Write();
+    }
   }
 }
 
@@ -183,10 +211,8 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
     // fill histos
     for (size_t cut_i=0; cut_i < NumuRecoSelection::nRecoCuts; cut_i++) {
       if (cuts[cut_i]) {
-	unsigned mode_index = (NumuRecoSelection::nTruthCuts + cut_i)*NumuRecoSelection::nModes + NumuRecoSelection::nTruthCuts + vertex.mode;
-	unsigned mall_index = (NumuRecoSelection::nTruthCuts + cut_i)*NumuRecoSelection::nModes + NumuRecoSelection::nTruthCuts + mAll;
-	_root_histos[mode_index].track_length->Fill(vertex.track.length);
-	_root_histos[mall_index].track_length->Fill(vertex.track.length);
+	_root_histos[cut_i + NumuRecoSelection::nTruthCuts][vertex.mode].track_length->Fill(vertex.track.length);
+	_root_histos[cut_i + NumuRecoSelection::nTruthCuts][mAll].track_length->Fill(vertex.track.length);
       }
     }
   }
@@ -200,8 +226,8 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
       if (cuts[cut_i]) {
 	unsigned mode_index = cut_i*NumuRecoSelection::nModes + vertex.mode;
 	unsigned mall_index = cut_i*NumuRecoSelection::nModes + mAll;
-	_root_histos[mode_index].track_length->Fill(vertex.track.length);
-	_root_histos[mall_index].track_length->Fill(vertex.track.length);
+        _root_histos[cut_i][vertex.mode].track_length->Fill(vertex.track.length);
+        _root_histos[cut_i][mAll].track_length->Fill(vertex.track.length);
       }
     }
   }
@@ -211,10 +237,12 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
 
 std::array<bool, NumuRecoSelection::nRecoCuts> NumuRecoSelection::ProcessRecoCuts(const RecoEvent &event, unsigned reco_vertex_index) {
   bool is_reco = true;
+  bool has_primary_track = event.reco[reco_vertex_index].track.length > 0;
   bool is_matched = event.reco[reco_vertex_index].match >= 0;
-  bool is_contained = event.reco[reco_vertex_index].track.contained_in_cryo;
+  bool is_contained = event.reco[reco_vertex_index].track.is_contained;
   return {
     is_reco,
+    has_primary_track,
     is_matched,
     is_contained
   };
@@ -234,8 +262,9 @@ std::array<bool, NumuRecoSelection::nTruthCuts> NumuRecoSelection::ProcessTruthC
 bool NumuRecoSelection::SelectReco(std::array<bool, NumuRecoSelection::nRecoCuts> &cuts) {
   return 
     cuts[0] && 
-    (cuts[1] || !_config.requireMatched) &&
-    (cuts[2] || !_config.requireContained);
+    (cuts[1] || !_config.requireTrack) &&
+    (cuts[2] || !_config.requireMatched) &&
+    (cuts[3] || !_config.requireContained);
 }
 
 // get information associated with track
@@ -252,7 +281,7 @@ NumuRecoSelection::TrackInfo NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   bool contained_in_tpc = track.size() > 0;
 
   // other truth information
-  double open_angle = truth.GetNeutrino().Nu().Momentum().Vect().Angle(track.Start().Momentum().Vect());
+  double costh = track.Start().Momentum().Vect().Z() / track.Start().Momentum().Vect().Mag();
   int pdgid = track.PdgCode();
   double energy = track.Start().E();
 
@@ -353,11 +382,14 @@ NumuRecoSelection::TrackInfo NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   return {
     contained_length,
     energy,
-    open_angle,
+    costh,
     pdgid,
     contained_in_cryo,
     contained_in_tpc,
-    crosses_tpc
+    crosses_tpc,
+    contained_in_cryo,
+    track.Start().Momentum().Vect(),
+    track.End().Momentum().Vect()
   };
 }
 
@@ -469,6 +501,8 @@ std::vector<NumuRecoSelection::RecoParticle> NumuRecoSelection::RecoParticleInfo
 
     // get the PFParticle
     const recob::PFParticle& this_pfp = pfp_handle->at(i);
+    // get its daughters in the partcle "flow"
+    this_particle.daughters.assign(this_pfp.Daughters().begin(), this_pfp.Daughters().end());
     // get the metadata
     const larpandoraobj::PFParticleMetadata* this_metadata = pfp_metadatas.at(i).at(0);
     // and the properties dict
@@ -502,23 +536,210 @@ std::vector<NumuRecoSelection::RecoParticle> NumuRecoSelection::RecoParticleInfo
   return ret;
 }
 
+double RecoTrackLength(const recob::Track *track) {
+  if (track->CountValidPoints() == 0) return 0.;
+  double dist = 0.;
+  geo::Point_t first = track->Start();
+  for (size_t i = 1; i < track->CountValidPoints(); i++) {
+    geo::Point_t second = track->LocationAtPoint(i);
+    dist += sqrt((second - first).Mag2());
+    first = second;
+  }
+  return dist;
+}
+
+std::array<bool, 4> NumuRecoSelection::RecoTrackTopology(const recob::Track *track) {
+  // returned info
+  bool contained_in_cryo = true;
+  bool contained_in_tpc = true;
+  bool crosses_tpc = false; 
+
+  bool is_contained = true;
+
+  // start point
+  geo::Point_t start = track->Start();
+  // get the active volume that the start position is in
+  int cryostat_index = -1;
+  int tpc_index = -1;
+  int containment_index = -1;
+  for (int i = 0; i < _config.containment_volumes.size(); i++) {
+    if (_config.containment_volumes[i].ContainsPosition(start)) {
+      containment_index = i;
+    }
+    break;
+  }
+  for (int i = 0; i < _config.cryostat_volumes.size(); i++) {
+    if (_config.cryostat_volumes[i].ContainsPosition(start)) {
+      cryostat_index = i;
+      break;
+    }
+  }
+  if (containment_index < 0) {
+    is_contained = false;
+  }
+  std::vector<geo::BoxBoundedGeo> volumes;
+  if (cryostat_index >= 0) {
+    volumes = _config.tpc_volumes[cryostat_index];
+    for (int i = 0; i < volumes.size(); i++) {
+      if (volumes[i].ContainsPosition(start)) {
+        tpc_index = i;
+        break;
+      }
+    }
+  }
+  else {
+    contained_in_cryo = false;
+  }
+  if (tpc_index < 0) {
+    contained_in_tpc = false;
+  }
+
+  // now check for all track points
+  for (int i = 1; i < track->CountValidPoints(); i++) {
+    geo::Point_t this_point = track->LocationAtPoint(i);
+    if (is_contained) {
+      is_contained = _config.containment_volumes[containment_index].ContainsPosition(this_point);
+    }
+    if (contained_in_cryo) {
+      contained_in_cryo = _config.cryostat_volumes[cryostat_index].ContainsPosition(this_point);
+    }
+    if (contained_in_cryo && !crosses_tpc) {
+      for (int j = 0; j < volumes.size(); j++) {
+        if (volumes[j].ContainsPosition(this_point) && j != tpc_index) {
+          crosses_tpc = true;
+          break;
+        }
+      }
+    }
+    if (contained_in_tpc) {
+      contained_in_tpc = volumes[tpc_index].ContainsPosition(this_point);
+    }
+  }
+
+  return {contained_in_cryo, contained_in_tpc, crosses_tpc, is_contained};
+}
+
 
 // TODO: Implement
-NumuRecoSelection::TrackInfo NumuRecoSelection::RecoTrackInfo(const std::vector<NumuRecoSelection::RecoParticle> &reco_particles, const NumuRecoSelection::RecoParticle& vertex) {
-  return {-1, -1, -1, -1, false, false, false};
+NumuRecoSelection::TrackInfo NumuRecoSelection::RecoTrackInfo(const gallery::Event &ev, const NumuRecoSelection::RecoParticle& vertex) {
+  // get the primary track from the daughter tracks
+  auto const &pfp_handle = \
+    ev.getValidHandle<std::vector<recob::PFParticle>>("pandora");
+  art::FindMany<recob::Track> pfp_tracks(pfp_handle, ev, "pandoraTrack");
+
+  int primary_track_index = -1;
+  double primary_track_length = 0;
+
+  // try to identify the "primary" track
+  // For now -- just take the longest one
+  for (size_t i = 0; i < vertex.daughters.size(); i++) {
+    size_t daughter = vertex.daughters[i];
+    // get the track we care about
+    const std::vector<const recob::Track *> &daughter_tracks = pfp_tracks.at(daughter);
+
+    if (daughter_tracks.size() > 0) {
+      double this_length = RecoTrackLength(daughter_tracks.at(0));
+      if (this_length > 1e-4 && (primary_track_index == -1 || this_length > primary_track_length)) {
+        primary_track_index = i;
+        primary_track_length = this_length;
+      } 
+    }
+  }
+  // if we have identified a primary track, get its info
+  if (primary_track_index != -1) {
+    const recob::Track *primary_track = pfp_tracks.at(vertex.daughters[primary_track_index]).at(0);
+    double length = primary_track_length;
+    double costh = primary_track->StartDirection().Z() / sqrt( primary_track->StartDirection().Mag2() );  
+    TVector3 start(primary_track->Start().X(), primary_track->Start().Y(), primary_track->Start().Z());
+    TVector3 end(primary_track->End().X(), primary_track->End().Y(), primary_track->End().Z());
+
+    // TODO -- add these
+    double energy = -1;
+    int pdgid = -1;
+
+    // get track topology
+    std::array<bool, 4> topology = RecoTrackTopology(primary_track);
+    bool contained_in_cryo = topology[0];
+    bool contained_in_tpc = topology[1];
+    bool crosses_tpc = topology[2];
+    bool is_contained = topology[3];
+
+    // construct and return track information
+    return {
+      length,
+      energy,
+      costh,
+      pdgid,
+      contained_in_cryo,
+      contained_in_tpc,
+      crosses_tpc,
+      is_contained,
+      start,
+      end
+    };
+  }
+  // otherwise, retrun nonsense
+  else {
+    return {-1, -1, -1, -1, false, false, false};
+  }
 }
 
 std::vector<NumuRecoSelection::RecoParticle> NumuRecoSelection::SelectVertices(const std::vector<NumuRecoSelection::RecoParticle>& reco_particles) {
   std::vector<NumuRecoSelection::RecoParticle> ret;
   for (auto const &particle: reco_particles) {
-     if (particle.p_is_neutrino) {
+     if (particle.p_is_neutrino && containedInFV(particle.vertices[0]->position())) {
        ret.push_back(particle);
      }
   }
   return ret;
 }
 
+bool NumuRecoSelection::MatchVertex2Cosmic(const gallery::Event &ev, const NumuRecoSelection::RecoVertex &vertex) {
+  // Get truth
+  //auto const& mctruths = \
+  //  *ev.getValidHandle<std::vector<simb::MCTruth> >(_config.CorsikaTag);
+  auto const& mctrack_list = \
+    *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
+
+  std::cout << "New vertex\n";
+  for (int i = 0; i < mctrack_list.size(); i++) {
+    const sim::MCTrack &this_track = mctrack_list[i];
+    double closest_xyz[3];
+    if (this_track.size() == 0) continue;
+    // if (this_track.Origin() == simb::Origin_t::kCosmicRay) {
+      TVector3 last_point = this_track[0].Position().Vect();
+      for (int j = 1; j < this_track.size(); j++) {
+        TVector3 this_point = this_track[j].Position().Vect();
+        for (int k = 0; k < 3; k++) {
+          int dim_2 = (k+1) % 3;
+          if (closestDistanceDim(last_point, this_point, vertex.position, k) < 3. &&
+              closestDistanceDim(last_point, this_point, vertex.position, dim_2) < 3.) {
+            std::cout << "Found track: " << this_track.Process() << " " << this_track.Origin() << std::endl;
+            break;
+          }
+        }
+        last_point = this_point;
+      }
+  }
+
+  for (int i = 0; i < mctrack_list.size(); i++) {
+    const sim::MCTrack &this_track = mctrack_list[i];
+    // if (this_track.Origin() == simb::Origin_t::kCosmicRay) {
+    if (this_track.Origin() != simb::Origin_t::kBeamNeutrino) {
+      for (int j = 0; j < this_track.size(); j++) {
+        TVector3 this_point = this_track[j].Position().Vect();
+        if ((vertex.position - this_point).Mag() < 5) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event &ev, std::vector<NumuRecoSelection::RecoVertex> truth) {
+  std::cout << std::endl << "New Event" << std::endl;
   std::vector<NumuRecoSelection::RecoParticle> reco_particles = RecoParticleInfo(ev);
   std::vector<NumuRecoSelection::RecoParticle> selected_particles = SelectVertices(reco_particles);
  
@@ -532,6 +753,11 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
 
     NumuRecoSelection::RecoVertex this_vertex;
     this_vertex.position = reco_position;
+
+    // get the reco track info
+    this_vertex.track = RecoTrackInfo(ev, particle);
+    // TODO: get the enrgy
+    this_vertex.nu_energy = -1;
 
     // Try to match against truth events
     int truth_match = -1;
@@ -552,17 +778,20 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
 
       this_vertex.match = truth_match;
       this_vertex.mode = truth[truth_match].mode;
-      
+      std::cout << "Matched to Neutrino\n";
     }
-    else {
+    // otherwise try to identify as cosmic
+    else if (MatchVertex2Cosmic(ev, this_vertex)) {
       this_vertex.mode = mCosmic;
       this_vertex.match = -1;
+      std::cout << "Matched to cosmic\n";
     }
-
-    // get the reco track info
-    this_vertex.track = RecoTrackInfo(reco_particles, particle);
-    // TODO: get the enrgy
-    this_vertex.nu_energy = -1;
+    // unidentified
+    else {
+      this_vertex.mode = mOther;
+      this_vertex.match = -1;
+      std::cout << "Not matched\n";
+    }
   
     // store
     reco.push_back(std::move(this_vertex));
@@ -572,6 +801,13 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
   event.truth = std::move(truth);
   event.reco = std::move(reco);
   return std::move(event);
+}
+
+bool NumuRecoSelection::containedInFV(const geo::Point_t &v) {
+  for (auto const& FV: _config.fiducial_volumes) {
+    if (FV.ContainsPosition(v)) return true;
+  }
+  return false;
 }
 
 bool NumuRecoSelection::containedInFV(const TVector3 &v) {

@@ -24,6 +24,7 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
 #include "lardataobj/RecoBase/Vertex.h"
+#include "lardataobj/RecoBase/Track.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 class TH2D;
@@ -60,7 +61,11 @@ public:
   bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco);
 
   enum InteractionMode {
-    mCC, mNC, mCosmic, mAll
+    mCC = 0, 
+    mNC = 1, 
+    mCosmic = 2, 
+    mOther = 3,
+    mAll = 4
   };
 
   std::string mode2Str(const InteractionMode &mode) const {
@@ -68,18 +73,22 @@ public:
       case mCC: return "CC";
       case mNC: return "NC";
       case mCosmic: return "Cosmic";
+      case mOther: return "Other";
       case mAll: return "All";
     }
   }
 
   struct TrackInfo {
-    double length;
-    double energy;
-    double open_angle;
-    int pdgid;
-    bool contained_in_cryo;
-    bool contained_in_tpc;
-    bool crosses_tpc;
+    double length; // length of track
+    double energy; // visible energy of track
+    double costh; // cosine of angle to z axis
+    int pdgid; // particle id
+    bool contained_in_cryo; // is it contained a single cryostat?
+    bool contained_in_tpc; // is it contained in a single TPC?
+    bool crosses_tpc; // does it cross a tpc?
+    bool is_contained;
+    TVector3 start; // start position
+    TVector3 end; // end position
   };
 
   struct RecoVertex {
@@ -101,6 +110,7 @@ protected:
   struct Config {
     std::vector<geo::BoxBoundedGeo> fiducial_volumes; //!< List of FV containers -- set by "fiducial_volumes"
     std::vector<geo::BoxBoundedGeo> cryostat_volumes; //!< List of cryostat volumes -- retreived from Geometry service
+    std::vector<geo::BoxBoundedGeo> containment_volumes;
     std::vector<std::vector<geo::BoxBoundedGeo>> tpc_volumes; //!< List of active tpc volumes -- retreived from Geoemtry service
     bool verbose; //!< Whether to print out info associated w/ selection.
     bool shakyMCTracks;
@@ -109,12 +119,17 @@ protected:
     double cosmicWeight;
 
     bool requireMatched;
+    bool requireTrack;
     bool requireContained;
+
+    double cryostat_volume_boundary;
 
     std::string HitTag;
     std::string RecoTrackTag;
     std::string RecoVertexTag;
     std::string PFParticleTag;
+    std::string CorsikaTag;
+    std::string CRTTrackTag;
   };
 
   /** Histograms made for output */
@@ -128,19 +143,20 @@ protected:
     bool p_is_neutrino; 
     double p_nu_score;
     std::vector<const recob::Vertex*> vertices;
+    std::vector<size_t> daughters;
   };
 
   static const unsigned nTruthCuts = 3; //!< number of truth cuts
-  static const unsigned nRecoCuts = 3; //!< number of reco cuts
+  static const unsigned nRecoCuts = 4; //!< number of reco cuts
   static const unsigned nCuts = nTruthCuts + nRecoCuts;
-  static const unsigned nModes = 4; //!< number of interaction modes
-  static constexpr InteractionMode allModes[nModes] = {mCC, mNC, mCosmic, mAll};
-  static constexpr const char* cutNames[nCuts] = {"Truth", "T_track", "T_match", "Reco", "R_match", "R_contained"};
+  static const unsigned nModes = 5; //!< number of interaction modes
+  static constexpr InteractionMode allModes[nModes] = {mCC, mNC, mCosmic, mOther, mAll};
+  static constexpr const char* cutNames[nCuts] = {"Truth", "T_track", "T_match", "Reco", "R_track", "R_match", "R_contained"};
 
   RecoEvent Reconstruct(const gallery::Event &ev, std::vector<RecoVertex> truth);
   std::vector<RecoParticle> RecoParticleInfo(const gallery::Event &event);
   std::vector<RecoParticle> SelectVertices(const std::vector<RecoParticle>& reco_particles);
-  TrackInfo RecoTrackInfo(const std::vector<RecoParticle> &reco_particles, const RecoParticle& vertex);
+  TrackInfo RecoTrackInfo(const gallery::Event &ev, const RecoParticle& vertex);
 
   Event::RecoInteraction CoreRecoInteraction(const std::vector<Event::Interaction> &truth, const RecoVertex &vertex, double weight);
 
@@ -159,6 +175,11 @@ protected:
  * \return Whether the point is contained in the configured list of fiducial volumes.
  * */
   bool containedInFV(const TVector3 &v);
+  bool containedInFV(const geo::Point_t &v);
+
+  // more helper functions
+  std::array<bool, 4> RecoTrackTopology(const recob::Track *track);
+  bool MatchVertex2Cosmic(const gallery::Event &ev, const RecoVertex &vertex);
 
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
@@ -170,7 +191,7 @@ protected:
   RecoEvent _recoEvent;
   std::vector<RecoVertex> *_selected;
 
-  RootHistos _root_histos[nCuts * nModes]; //!< Histos (one group per cut)
+  RootHistos _root_histos[nCuts][nModes]; //!< Histos (one group per cut)
 
 };
 
