@@ -9,6 +9,7 @@
 #include <TCanvas.h>
 
 #include "gallery/ValidHandle.h"
+#include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Common/FindMany.h"
 
@@ -54,6 +55,7 @@ void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
+    _config.CRTTrackTag = config->get<std::string>("CRTTrackTag", "crttrack");
 
     // setup services manager
     // _services_manager = new art::ServicesManager(config->get<fhicl::ParameterSet>("services"), _registry);
@@ -105,6 +107,10 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
   // get the CRT hits
   gallery::ValidHandle<std::vector<sbnd::crt::CRTHit>> crt_hits = \
     ev.getValidHandle<std::vector<sbnd::crt::CRTHit>>("crthit");
+
+  // get the CRT tracks
+  gallery::Handle<std::vector<sbnd::crt::CRTTrack>> crt_tracks;
+  ev.getByLabel<std::vector<sbnd::crt::CRTTrack>>(_config.CRTTrackTag, crt_tracks);
 
   // build the CRT Tracks
   // std::vector<std::vector<sbnd::crt::CRTHit>> crt_zeros = sbnd::CRTAnaUtils::CreateCRTTzeros(*crt_hits, 0.2);
@@ -192,23 +198,28 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
   }
 
   // Iterate through the CRT Tracks
-  /*for (auto const &track: crt_tracks) {
-    std::cout << std::endl << "New track" << std::endl;
-    // make a tgraph of trajectory points for each track
-    std::cout << "x1: " << track.x1_pos<< std::endl;
-    std::cout << "y1: " << track.y1_pos<< std::endl;
-    std::cout << "z1: " << track.z1_pos<< std::endl;
-
-    std::cout << "x2: " << track.x2_pos<< std::endl;
-    std::cout << "y2: " << track.y2_pos<< std::endl;
-    std::cout << "z2: " << track.z2_pos<< std::endl;
-
-    std::cout << "length: " << track.length << std::endl;
-
-    std::cout << "time 0: " << track.ts0_s << " [s] " << track.ts0_ns << " [ns]" << std::endl;
-    std::cout << "time 1: " << track.ts0_s << " [s] " << track.ts1_ns << " [ns]" << std::endl;
-
-  }*/
+  if (crt_tracks.isValid()) {
+    for (auto const &track: *crt_tracks) {
+      // get the start and end 
+      TVector3 p1(track.x1_pos, track.y1_pos, track.z1_pos);
+      TVector3 p2(track.x2_pos, track.y2_pos, track.z2_pos);
+      
+      std::vector<TVector3> points {p2, p1};
+      
+      // get the errors
+      TVector3 e1(track.x1_err, track.y1_err, track.z1_err);
+      TVector3 e2(track.x2_err, track.y2_err, track.z2_err);
+      std::vector<TVector3> errors {e2, e1};
+      
+      std::array<TGraphErrors *, 3> graphs = plots.addTrackwErrors(points, errors);
+      for (int i = 0; i < 3; i++) {
+	graphs[i]->SetLineColor(kGray);
+	graphs[i]->SetLineWidth(2.);
+	graphs[i]->SetFillColor(kGray);
+	graphs[i]->SetFillStyle(3002);
+      }
+    }
+  }
 
   // Iterate through the truth tracks
   for (auto const &track: mctracks) {
@@ -237,6 +248,8 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
   // now do the vertices
   for (auto const &mctruth: mctruths) {
+    if (!mctruth.NeutrinoSet()) continue;
+
     TVector3 vertex = mctruth.GetNeutrino().Nu().Trajectory().Position(0).Vect();
     std::array<TGraph *, 3> graphs = plots.addVertex(vertex);
     for (int i = 0; i < 3; i++) {

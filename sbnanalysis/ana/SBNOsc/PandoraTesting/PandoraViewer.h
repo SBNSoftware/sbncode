@@ -21,10 +21,12 @@
 #include "TH1D.h"
 #include "TDatabasePDG.h"
 #include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TMultiGraph.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
+#include "sbndcode/CRT/CRTProducts/CRTTrack.hh"
 
 // take the geobox stuff from uboonecode
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
@@ -62,6 +64,7 @@ public:
     std::string HitTag;
     std::string RecoTrackTag;
     std::string RecoVertexTag;
+    std::string CRTTrackTag;
   }; 
 
   class TrackProjection {
@@ -69,6 +72,7 @@ public:
     std::vector<TGraph *> tracks; //!< TGraph of each individual graph
     std::unique_ptr<TMultiGraph> graph; //!< graph of all the tracks
     std::vector<TGraph *> vertices; //!< collection of vertices
+    std::vector<TGraphErrors *> error_tracks; //!< tracks with errors
     std::string name;
 
     TrackProjection(std::string name):
@@ -87,6 +91,10 @@ public:
       // draw all the vertex plots
       for (size_t i = 0; i < vertices.size(); i++) {
         vertices[i]->Draw("P");
+      }
+      // draw all the error graphs
+      for (size_t i = 0; i < error_tracks.size(); i++) {
+        error_tracks[i]->Draw("SAME 3");
       }
       c.Update();
       c.Write();
@@ -118,6 +126,44 @@ public:
       xz.vertices.push_back(g_xz);
       yz.vertices.push_back(g_yz);
 
+      return {g_xy, g_xz, g_yz};
+    }
+
+    std::array<TGraphErrors *, 3> addTrackwErrors(std::vector<TVector3> &points, std::vector<TVector3> &errors) {
+      // first get each position in x, y, z
+      std::vector<double> xs;
+      std::vector<double> ys;
+      std::vector<double> zs;
+
+      for (TVector3 const &point: points) {
+        xs.push_back(point.X());
+        ys.push_back(point.Y());
+        zs.push_back(point.Z());
+      }
+
+      // and the errors
+      std::vector<double> ex;
+      std::vector<double> ey;
+      std::vector<double> ez;
+
+      for (TVector3 const &err: errors) {
+        ex.push_back(err.X());
+        ey.push_back(err.Y());
+        ez.push_back(err.Z());
+      }
+
+      // set up the tgraphs
+      TGraphErrors *g_xy = new TGraphErrors(xs.size(), &xs[0], &ys[0], &ex[0], &ey[0]);
+      TGraphErrors *g_xz = new TGraphErrors(xs.size(), &xs[0], &zs[0], &ex[0], &ez[0]);
+      TGraphErrors *g_yz = new TGraphErrors(xs.size(), &ys[0], &zs[0], &ey[0], &ez[0]);
+
+      // add to the multigraph -- which now takes ownership of the TGraph
+      xy.error_tracks.push_back(g_xy);
+      xz.error_tracks.push_back(g_xz);
+      yz.error_tracks.push_back(g_yz);
+      
+
+      // save them for the user if necessary
       return {g_xy, g_xz, g_yz};
     }
 
