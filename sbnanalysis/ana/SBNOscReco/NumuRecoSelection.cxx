@@ -702,6 +702,7 @@ bool NumuRecoSelection::MatchVertex2Cosmic(const gallery::Event &ev, const NumuR
     *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
 
   std::cout << "New vertex\n";
+  std::cout << "AT: " << vertex.position.X() << " " << vertex.position.Y() << " " << vertex.position.Z() << std::endl;
   for (int i = 0; i < mctrack_list.size(); i++) {
     const sim::MCTrack &this_track = mctrack_list[i];
     double closest_xyz[3];
@@ -714,7 +715,8 @@ bool NumuRecoSelection::MatchVertex2Cosmic(const gallery::Event &ev, const NumuR
           int dim_2 = (k+1) % 3;
           if (closestDistanceDim(last_point, this_point, vertex.position, k) < 3. &&
               closestDistanceDim(last_point, this_point, vertex.position, dim_2) < 3.) {
-            std::cout << "Found track: " << this_track.Process() << " " << this_track.Origin() << std::endl;
+            std::cout << "Found track " << i << " : "  << this_track.Process() << " " << this_track.Origin() << std::endl;
+            std::cout << "At: " << this_point.X() << " " << this_point.Y() << " " << this_point.Z() << std::endl;
             break;
           }
         }
