@@ -40,6 +40,7 @@
 #include "SubRun.hh"
 #include "Loader.hh"
 #include "util/Interaction.hh"
+#include "util/RecoUtil.hh"
 #include "ProcessorBase.hh"
 #include "ProviderManager.hh"
 
@@ -463,7 +464,7 @@ namespace core {
                   //    Which particle is the biggest contributor to all the hits
                   // fsrp.mc_id_energy = RecoUtils::TrueParticleIDFromTotalTrueEnergy(hit_assn);
                   // fsrp.mc_id_charge = RecoUtils::TrueParticleIDFromTotalRecoCharge(hit_assn);
-                  // fsrp.mc_id_hits   = RecoUtils::TrueParticleIDFromTotalRecoHits(hit_assn);
+                  fsrp.mc_id_hits   = util::TrueParticleIDFromTotalRecoHits(hit_assn,fProviderManager);
 
                 } // calo
               } // PID
