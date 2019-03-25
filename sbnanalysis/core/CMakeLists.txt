@@ -94,6 +94,7 @@ target_link_libraries(
   sbnanalysis_Processor
   sbnanalysis_Event
   sbnanalysis_util_Interaction
+  sbnanalysis_util_RecoUtil
   sbnanalysis_ProviderManager
   canvas
   cetlib
