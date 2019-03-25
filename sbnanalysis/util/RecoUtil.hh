@@ -25,8 +25,8 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most to a single reco hit
    *
    * @param  hit Recob::Hit
-   * @param  provider_manager to access BackTracker functions in SBNCode
    * @param  rollup_saved_ids to prevent double-counting
+   * @param  provider_manager to access BackTracker functions in SBNCode
    *
    * @return true particle ID
    *
@@ -79,6 +79,8 @@ namespace util {
    * @return true if contained within a TPC
    */
   bool IsInsideTPC(TVector3 position, core::ProviderManager* provider_manager, double distance_buffer);
+
+  int TrueParticleIDFromTotalTrueEnergy(const std::vector< art::Ptr< recob::Hit > >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids);
 
 }  // namespace util
 

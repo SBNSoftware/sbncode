@@ -151,6 +151,5 @@ namespace util {
 
     return inside;
   } // IsInsideTPC
-
 } // namespace util
 

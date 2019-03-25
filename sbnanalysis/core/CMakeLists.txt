@@ -112,7 +112,6 @@ target_link_libraries(
   sbnanalysis_util_RecoUtil
   sbnanalysis_ProviderManager
   sbnanalysis_ServiceManager
-  sbnanalysis_ProviderManager
   canvas
   cetlib
   gallery
