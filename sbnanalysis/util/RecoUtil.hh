@@ -80,8 +80,6 @@ namespace util {
    */
   bool IsInsideTPC(TVector3 position, core::ProviderManager* provider_manager, double distance_buffer);
 
-  int TrueParticleIDFromTotalTrueEnergy(const std::vector< art::Ptr< recob::Hit > >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids);
-
 }  // namespace util
 
 #endif  // __sbnanalysis_util_RecoUtil__
