@@ -96,7 +96,7 @@ namespace core {
       fRecoTrackParticleIDTag  = { config->get<std::string>("RecoTrackParticleIDTag", "pandoraPid") };
       fOutputFilename          = config->get<std::string>("OutputFile", "output.root");
       fProviderConfig          = config->get<std::string>("ProviderConfigFile", "");
-      fMCSFitter               = new trkf::TrajectoryMCSFitter(fhicl::Table< trkf::TrajectoryMCSFitter::Config >(config->get<fhicl::ParameterSet>("fitter")));
+      fMCSFitter               = new trkf::TrajectoryMCSFitter(fhicl::Table< trkf::TrajectoryMCSFitter::Config >{fhicl::Name{"fitter"}});
 
       // Get the event weight tags (can supply multiple producers)
       fWeightTags = {};
@@ -276,13 +276,6 @@ namespace core {
     const geo::GeometryCore* geom = fProviderManager->GetGeometryProvider();
     std::cout << " ---------------------------------------------------------- " << std::endl;
     std::cout << " Detector : " << geom->DetectorName() << std::endl;
-    std::vector<double> minx, miny, minz, maxx, maxy, maxz;
-    minx.clear();
-    miny.clear();
-    minz.clear();
-    maxx.clear();
-    maxy.clear();
-    maxz.clear();
 
     geo::GeometryCore::TPC_id_iterator iTPC = geom->begin_TPC_id(),
       tend = geom->end_TPC_id();
@@ -292,9 +285,31 @@ namespace core {
       // the cryostat the TPC is in
       //geo::CryostatGeo const& Cryo = geom->Cryostat(*iTPC);
 
-      minx.push_back(tpcgeo->MinX()); maxx.push_back(tpcgeo->MaxX());
-      miny.push_back(tpcgeo->MinY()); maxy.push_back(tpcgeo->MaxY());
-      minz.push_back(tpcgeo->MinZ()); maxz.push_back(tpcgeo->MaxZ());
+      double minx = tpcgeo->MinX(); double maxx = tpcgeo->MaxX();
+      double miny = tpcgeo->MinY(); double maxy = tpcgeo->MaxY();
+      double minz = tpcgeo->MinZ(); double maxz = tpcgeo->MaxZ();
+
+      for (size_t c = 0; c < geom->Ncryostats(); c++)
+      {
+        const geo::CryostatGeo& cryostat = geom->Cryostat(c);
+        for (size_t t = 0; t < cryostat.NTPC(); t++)
+        {
+          const geo::TPCGeo& tpcg = cryostat.TPC(t);
+          if (tpcg.MinX() < minx) minx = tpcg.MinX();
+          if (tpcg.MaxX() > maxx) maxx = tpcg.MaxX();
+          if (tpcg.MinY() < miny) miny = tpcg.MinY();
+          if (tpcg.MaxY() > maxy) maxy = tpcg.MaxY();
+          if (tpcg.MinZ() < minz) minz = tpcg.MinZ();
+          if (tpcg.MaxZ() > maxz) maxz = tpcg.MaxZ();
+        } // Loop over the TPCs again
+      } // Loop over the Cryostats in each tpc
+      // Print geometry information for each TPC in the detector
+      std::cout << "   TPC : " << *iTPC << std::endl;
+      std::cout << "     Min x : " << minx << ", max x : " << maxx << std::endl;
+      std::cout << "     Min y : " << miny << ", max y : " << maxy << std::endl;
+      std::cout << "     Min z : " << minz << ", max z : " << maxz << std::endl;
+      std::cout << " ---------------------------------------------------------- " << std::endl;
+
       ++iTPC;
     } // Loop over the TPCs
 

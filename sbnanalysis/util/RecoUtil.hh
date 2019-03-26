@@ -25,8 +25,8 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most to a single reco hit
    *
    * @param  hit Recob::Hit
-   * @param  rollup_saved_ids to prevent double-counting
    * @param  provider_manager to access BackTracker functions in SBNCode
+   * @param  rollup_saved_ids to prevent double-counting
    *
    * @return true particle ID
    *
