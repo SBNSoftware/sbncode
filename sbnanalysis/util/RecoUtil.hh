@@ -25,8 +25,8 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most to a single reco hit
    *
    * @param  hit Recob::Hit
-   * @param  rollup_saved_ids to prevent double-counting
    * @param  provider_manager to access BackTracker functions in SBNCode
+   * @param  rollup_saved_ids to prevent double-counting
    *
    * @return true particle ID
    *
@@ -37,6 +37,7 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most reco hits
    *
    * @param  hits vector of Recob::Hits from the object
+   * @param  provider_manager to access BackTracker functions in SBNCode
    * @param  rollup_saved_ids to prevent double-counting
    *
    * @return true particle ID
@@ -48,8 +49,8 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most energy
    *
    * @param  hit Recob::Hits from the object 
-   * @param  rollup_saved_ids to prevent double-counting
    * @param  provider_manager to access BackTracker functions in SBNCode
+   * @param  rollup_saved_ids to prevent double-counting
    *
    * @return true particle ID
    *
@@ -60,13 +61,24 @@ namespace util {
    * @brief  Returns the G4 MCParticle ID which contributes the most reconstructed charge
    *
    * @param  hit Recob::Hits from the object 
-   * @param  rollup_saved_ids to prevent double-counting
    * @param  provider_manager to access BackTracker functions in SBNCode
+   * @param  rollup_saved_ids to prevent double-counting
    *
    * @return true particle ID
    *
    */
   int TrueParticleIDFromTotalRecoCharge(const std::vector<art::Ptr<recob::Hit> >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids = 1);
+
+  /**
+   * @brief  Checks if a position is within any of the TPCs in the geometry
+   *
+   * @param  position Position to check
+   * @param  provider_manager to access GeometryCore functions in SBNCode
+   * @param  distance_buffer User-defined distance buffer from the TPC walls
+   *
+   * @return true if contained within a TPC
+   */
+  bool IsInsideTPC(TVector3 position, core::ProviderManager* provider_manager, double distance_buffer);
 
 }  // namespace util
 
