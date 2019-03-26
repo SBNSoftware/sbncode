@@ -79,6 +79,29 @@ namespace util {
       }
     }
     return objectTrack;
-  } // TrueParticleFromTotalTrueEnergy
+  } // TrueParticleIDFromTotalTrueEnergy
+
+  int TrueParticleIDFromTotalRecoCharge(const std::vector<art::Ptr<recob::Hit> >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids) {
+    // Make a map of the tracks which are associated with this object and the charge each contributes
+    std::map<int,double> trackMap;
+    for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
+      art::Ptr<recob::Hit> hit = *hitIt;
+      int trackID = TrueParticleID(hit, provider_manager, rollup_unsaved_ids);
+      trackMap[trackID] += hit->Integral();
+    }
+
+    // Pick the track with the highest charge as the 'true track'
+    double highestCharge = 0;
+    int objectTrack = -99999;
+    for (std::map<int,double>::iterator trackIt = trackMap.begin(); trackIt != trackMap.end(); ++trackIt) {
+      if (trackIt->second > highestCharge) {
+        highestCharge = trackIt->second;
+        objectTrack  = trackIt->first;
+      }
+    }
+    return objectTrack;
+  } // TrueParticleIDFromTotalRecoCharge
+
+
 } // namespace util
 
