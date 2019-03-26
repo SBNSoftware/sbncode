@@ -111,6 +111,10 @@ target_link_libraries(
   larsim_Simulation 
   lardataobj_Simulation
   lardataalg_DetectorInfo
+  larreco_Calorimetry
+  larreco_RecoAlg
+  larreco_RecoAlg_ClusterRecoUtil
+  larreco_ClusterFinder
   sbndcode_RecoUtils
   ${CLHEP_Geometry}
   art_Persistency_Common canvas
@@ -153,6 +157,10 @@ target_link_libraries(
   larsim_Simulation 
   lardataobj_Simulation
   lardataalg_DetectorInfo
+  larreco_Calorimetry
+  larreco_RecoAlg
+  larreco_RecoAlg_ClusterRecoUtil
+  larreco_ClusterFinder
   sbndcode_RecoUtils
   art_Persistency_Common canvas
   art_Utilities canvas

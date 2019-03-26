@@ -26,6 +26,9 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/GTruth.h"
+#include "lardataobj/MCBase/MCTrack.h"
+#include "larreco/Calorimetry/CalorimetryAlg.h"
+#include "larreco/RecoAlg/PMAlg/PmaTrack3D.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -47,9 +50,11 @@
 namespace core {
 
   ProcessorBase::ProcessorBase()
-    : fEventIndex(0), fOutputFilename("output.root"), fProviderManager(NULL) {}
+    : fEventIndex(0), fOutputFilename("output.root"), fProviderManager(NULL), fMCSFitter(NULL) {}
 
-  ProcessorBase::~ProcessorBase() {}
+  ProcessorBase::~ProcessorBase() {
+    delete fMCSFitter;
+  }
 
 
   void ProcessorBase::FillTree() {
@@ -94,6 +99,8 @@ namespace core {
       fRecoTrackParticleIDTag  = { config->get<std::string>("RecoTrackParticleIDTag", "pandoraPid") };
       fOutputFilename          = config->get<std::string>("OutputFile", "output.root");
       fProviderConfig          = config->get<std::string>("ProviderConfigFile", "");
+      fMCSFitter               = new trkf::TrajectoryMCSFitter(fhicl::Table< trkf::TrajectoryMCSFitter::Config >(config->get<fhicl::ParameterSet>("fitter")));
+
       // Get the event weight tags (can supply multiple producers)
       fWeightTags = {};
       if (config->has_key("MCWeightTags")) {
@@ -432,6 +439,38 @@ namespace core {
               std::vector< art::Ptr<anab::ParticleID> >  pid_assn = fmpid.at(trk_assn[i]->ID());
               std::vector< art::Ptr<recob::Hit> >        hit_assn = fmhit.at(trk_assn[i]->ID());
 
+              /*
+              float track_vtx_x = trk_assn[i]->Vertex().at(0);
+              float track_vtx_y = trk_assn[i]->Vertex().at(1);
+              float track_vtx_z = trk_assn[i]->Vertex().at(2);
+              float track_end_x = trk_assn[i]->End().at(0);
+              float track_end_y = trk_assn[i]->End().at(1);
+              float track_end_z = trk_assn[i]->End().at(2);
+
+              // The border for contained tracks should be the edge of the active volume,
+              // since this is where we can measure energy up to
+              // Find out if one end of a track escapes (if so, MCS)
+              bool does_vtx_escape =
+                (     (track_vtx_x > (m_detectorLengthX - m_coordinateOffsetX))
+                      || (track_vtx_x < (-m_coordinateOffsetX))
+                      || (track_vtx_y > (m_detectorLengthY - m_coordinateOffsetY))
+                      || (track_vtx_y < (-m_coordinateOffsetY))
+                      || (track_vtx_z > (m_detectorLengthZ - m_coordinateOffsetZ))
+                      || (track_vtx_z < (-m_coordinateOffsetZ)));
+
+              bool does_end_escape =
+                (     (track_end_x > (m_detectorLengthX - m_coordinateOffsetX))
+                      || (track_end_x < (-m_coordinateOffsetX))
+                      || (track_end_y > (m_detectorLengthY - m_coordinateOffsetY))
+                      || (track_end_y < (-m_coordinateOffsetY))
+                      || (track_end_z > (m_detectorLengthZ - m_coordinateOffsetZ))
+                      || (track_end_z < (-m_coordinateOffsetZ)));
+
+              bool one_end_escapes = true;
+              if(does_vtx_escape && does_end_escape)   one_end_escapes = false;
+              if(!does_vtx_escape && !does_end_escape) one_end_escapes = false;
+              */
+
               // Loop over PID association
               for ( size_t j = 0; j < pid_assn.size(); ++j ){
 
@@ -462,9 +501,41 @@ namespace core {
                   //    Which particle contributes the most energy to all the hits
                   //    Which particle contributes the reco charge to all the hits
                   //    Which particle is the biggest contributor to all the hits
-                  // fsrp.mc_id_energy = RecoUtils::TrueParticleIDFromTotalTrueEnergy(hit_assn);
-                  // fsrp.mc_id_charge = RecoUtils::TrueParticleIDFromTotalRecoCharge(hit_assn);
+                  fsrp.mc_id_energy = util::TrueParticleIDFromTotalTrueEnergy(hit_assn,fProviderManager);
+                  fsrp.mc_id_charge = util::TrueParticleIDFromTotalRecoCharge(hit_assn,fProviderManager);
                   fsrp.mc_id_hits   = util::TrueParticleIDFromTotalRecoHits(hit_assn,fProviderManager);
+
+                  /*
+                  // Momentum
+                  //    Assign a momentum of 0 to every parameter and then 
+                  //    fill with the relevant value based on:
+                  //    Whether the track escapes
+                  //      - can have an MCS momentum
+                  //    If it is contained
+                  //      - proton range-based
+                  //      - muon range-based
+                  //
+                  // Further down the line, once PID has been performed properly, 
+                  // this should be strictly selected.
+                  fsrp.range_momentum_proton = 0.;
+                  fsrp.range_momentum_muon   = 0.;
+                  fsrp.mcs_momentum_muon     = 0.;
+                  double reco_momentum_muon, reco_momentum_proton;
+                  if(one_end_escapes){
+                    recob::MCSFitResult mcs_result = fMCSFitter.fitMcs(*trk_assn[i]);
+                    reco_momentum_muon = mcs_result.bestMomentum();
+                    if(reco_momentum_muon < 0) fsrp.mcs_momentum_muon = 0.;
+                    fsrp.mcs_momentum_muon = reco_momentum_muon;
+                  }
+                  else if(!does_vtx_escape && !does_end_escape){
+                    reco_momentum_muon   = fRangeFitter.GetTrackMomentum(length, 13);
+                    reco_momentum_proton = fRangeFitter.GetTrackMomentum(length, 2212);
+                    if(reco_momentum_muon   == 0) fsrp.range_momentum_muon   = 0.;
+                    if(reco_momentum_proton == 0) fsrp.range_momentum_proton = 0.;
+                    fsrp.range_momentum_muon   = reco_momentum_muon;
+                    fsrp.range_momentum_proton = reco_momentum_proton;
+                  }
+                  */
 
                 } // calo
               } // PID

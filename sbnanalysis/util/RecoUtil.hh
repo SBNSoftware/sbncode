@@ -54,7 +54,19 @@ namespace util {
    * @return true particle ID
    *
    */
-  int TrueParticleIDFromTotalTrueEnergy(const std::vector< art::Ptr< recob::Hit > >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids);
+  int TrueParticleIDFromTotalTrueEnergy(const std::vector< art::Ptr< recob::Hit > >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids = 1);
+
+  /**
+   * @brief  Returns the G4 MCParticle ID which contributes the most reconstructed charge
+   *
+   * @param  hit Recob::Hits from the object 
+   * @param  rollup_saved_ids to prevent double-counting
+   * @param  provider_manager to access BackTracker functions in SBNCode
+   *
+   * @return true particle ID
+   *
+   */
+  int TrueParticleIDFromTotalRecoCharge(const std::vector<art::Ptr<recob::Hit> >& hits, core::ProviderManager* provider_manager, bool rollup_unsaved_ids = 1);
 
 }  // namespace util
 
