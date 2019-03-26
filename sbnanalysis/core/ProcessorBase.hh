@@ -12,6 +12,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
+#include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
@@ -159,6 +162,10 @@ protected:
   art::InputTag fVertexTag;                    //!< art tag for Vertices
   art::InputTag fRecoTrackCalorimetryTag;      //!< art tag for Reconstructed track calorimetry
   art::InputTag fRecoTrackParticleIDTag;       //!< art tag for Reconstructed track pid
+  trkf::TrajectoryMCSFitter* fMCSFitter;       //!< MCS momentum fitter
+  trkf::TrackMomentumCalculator fRangeFitter;  //!< Range momentum fitter
+ 
+
 };
 
 }  // namespace core
