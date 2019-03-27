@@ -1,0 +1,35 @@
+#include "simulation_genie_icarus_simple.fcl" 
+
+process_name: GenieGen
+
+outputs.out1.fileName: "prodgenie_bnb_nu_sbn_osc_cosmic_icarus_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.TopVolume: "volWorld"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/mastbaum/flux/icarus/zarko-expires20171031/"
+physics.producers.generator.FluxFiles: [ "converted_beammc_icarus_*.root" ]
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxUpstreamZ: -18
+
+physics.producers.corsika: {
+  module_type: "CORSIKAGen"
+  ShowerInputFiles: [
+    "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/p_showers_*.db",
+    "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db",
+    "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/N_showers_*.db",
+    "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Mg_showers_*.db",
+    "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Fe_showers_*.db"
+  ]
+  SampleTime: 3.3e-3
+  TimeOffset: -1.1e-3
+  BufferBox: [ -500.0, 500.0,-300.0,300.0,-600.0,600.0 ]
+  ProjectToHeight: 1800
+  ShowerFluxConstants: [ 1.72e4, 9.2e3, 6.2e3, 9.2e3, 6.2e3]
+  ShowerAreaExtension: 1000
+  RandomXZShift: 1000
+}
+
+physics.simulate: [ @sequence::physics.simulate, corsika ]

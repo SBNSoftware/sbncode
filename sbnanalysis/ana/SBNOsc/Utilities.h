@@ -23,6 +23,8 @@
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 
+#include "TRandom3.h"
+
 namespace ana {
   namespace SBNOsc {
 
@@ -184,20 +186,28 @@ struct VisibleEnergyCalculator {
  *
  * \return Visble energy in GeV.
  * */
-double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
-    const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
+ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
+		     const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
 
 /** 
  * Get the seperate hadronic and leptonic energy from the event. The first element in the vector is the hadronic energy the second is the leptonic. 
  * */
- std::vector<double> FlavourEnergyDeposition(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+ std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, std::map<int,const simb::MCParticle*>& mcparticles, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
 /** Get the smeared energy from a lepton.
  * \param mctrack The MCTrack object corresponding to the lepton
  * \param calculator Struct containing values to be used in energy calculation
  *
  * */
-double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+ double smearLeptonEnergy(TRandom& rand,const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+
+/** Get the smeared energy from a lepton.
+ * \param lepton The MCParticle object object corresponding to the lepton
+ * \param calculator Struct containing values to be used in energy calculation
+ *
+ * */
+ double smearLeptonEnergy(TRandom& rand, const simb::MCParticle* &lepton, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+
 
   }  // namespace SBNOsc
 }  // namespace ana

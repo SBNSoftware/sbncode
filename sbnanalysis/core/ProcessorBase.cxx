@@ -104,6 +104,7 @@ void ProcessorBase::Teardown() {
 
 
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
+
   // Get MCTruth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);

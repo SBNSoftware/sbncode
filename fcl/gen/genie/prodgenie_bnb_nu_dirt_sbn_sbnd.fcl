@@ -1,0 +1,13 @@
+#include "prodgenie_nu_spill_world_gsimple-confige-v1.fcl"  
+
+process_name: GenieGen
+
+outputs.out1.fileName: "prodgenie_bnb_nu_osc_dirt_sbn_sbnd_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxType:       "simple_flux"
+

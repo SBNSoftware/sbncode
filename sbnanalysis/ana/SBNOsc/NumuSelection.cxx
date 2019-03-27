@@ -195,7 +195,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     // This also sets the lepton variables in the calculator
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
-    double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
+    double visible_energy = visibleEnergy(rand,mctruth, mctracks, mcshowers, calculator, false);
 
     Event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
@@ -208,7 +208,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     if (is_signal) {
       weight *= _config.selectionEfficiency;
     }
-    // apply uniofrm weights (e.g. bnbcorrection)
+    // apply uniform weights (e.g. bnbcorrection)
     for (auto const &key: _config.uniformWeights) {
        weight *= interaction.weights.at(key)[0];
     }
@@ -406,7 +406,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     calculator.lepton_index = track_ind;
 
     // smear the energy
-    double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
+    double smeared_energy = smearLeptonEnergy(rand, mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
     return NumuSelection::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy});

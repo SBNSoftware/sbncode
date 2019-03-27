@@ -1,5 +1,4 @@
 BEGIN_PROLOG
-
 OutputFile: "output_SBNOsc_NueSelection.root"
 
 eventweight_tags: ["genieeventweight"]
@@ -37,20 +36,20 @@ SBND_active_volumes: [
 #fiducial volume of SBND used in proposal
 SBND_Proposal_fiducial_volumes: [
      {
-      xmin: -190.9
-      ymin: -185
-      zmin: 15.
-      xmax: 5.6
-      ymax: 185
-      zmax: 290.
+      xmin: -175
+      ymin: -175
+      zmin: 30.
+      xmax: -1.5
+      ymax: 175
+      zmax: 450.
      },
      {
-      xmin: 10.9
-      ymin: -185
-      zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      zmax: 290.
+      xmin: 1.5
+      ymin: -175
+      zmin: 30.
+      xmax: 175
+      ymax: 175
+      zmax: 450.
      }
 
 ]
@@ -58,12 +57,12 @@ SBND_Proposal_fiducial_volumes: [
 #active volume of SBND used in proposal
 SBND_Proposal_active_volumes: [
      {
-      xmin: -199.15
+      xmin: -200
       ymin: -200.
       zmin: 0.0
-      xmax: 199.15
+      xmax: 200
       ymax: 200.
-      zmax: 365.0
+      zmax: 500.
      }
 ]
 
@@ -143,9 +142,36 @@ ICARUS_active_volumes: [
     }
 ]
 
+standard_selection: {
 
-standard_uniformWeights: ["bnbcorrection_FluxHist"]
+      minLengthExitingTrack:           100     
+      trackVisibleEnergyThreshold:     0.02
+      showerVisibleEnergyThreshold:    200
+      showerEnergyDistortion:          0.15            
+      trackEnergyDistortion:           0.05
+      leptonEnergyDistortionContained: 0.15
+      nueEfficency:                    0.8                 
+      vtxEnergyCut:                    50
+      photonConvLenghCut:              3
+      dEdxPhotonCut:                   0.06                 
+      GlobalWeight:                    1
+      POTWeight:                       6.6e20 
+      photonVisibleEnergyThreshold:    100
 
+      ApplyNueEfficiency:    true    
+      ApplyElectronEnergyCut:true
+      ApplyFVCut:            true 
+      ApplyAVCut:            true
+      ApplyPhotonEnergyCut:  true
+      ApplyConversionGapCut: true
+      ApplydEdxCut:          true
+      ApplyMuonLenghtCut:    true 
+      ApplyKMECCut:          false
+
+}
+
+
+standard_UniformWeights: ["bnbcorrection_FluxHist"]
 
 END_PROLOG
 

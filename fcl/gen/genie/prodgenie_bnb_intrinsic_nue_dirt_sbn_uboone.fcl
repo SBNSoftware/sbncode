@@ -1,0 +1,13 @@
+#include prodgenie_bnb_dirt_nu_uboone.fcl
+
+outputs.out1.fileName: "prodgenie_bnb_intrinsic_nue_dirt_sbn_uboone_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/uboone/bnb_gsimple_fluxes_02.05.2018_463/"
+
+physics.producers.generator.GenFlavors: [12,-12]
+

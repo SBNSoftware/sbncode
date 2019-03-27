@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
   int c;
   unsigned procindex = 0;
-  while ((c=getopt(argc, argv, "m:c:S")) != -1) {
+  while ((c=getopt(argc, argv, "m:c:")) != -1) {
     switch (c) {
       case 'm':
         processors.push_back(optarg);
@@ -33,9 +33,9 @@ int main(int argc, char* argv[]) {
           fprintf(stderr, "Unknown option `-%c'.\n", optopt);
         else
           fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
-        return 1;
+	break;
       default:
-        abort();
+	abort();
     }
   }
 

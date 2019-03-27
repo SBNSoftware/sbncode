@@ -203,7 +203,7 @@ BEGIN_PROLOG
 #     ### Uncertainties without SciBooNE Contraint
 #     #parameter_list: ["kplusOld"]
 #     #scale_factor: 2   
-w#     #ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_KPlus_withoutSciBooNE.root"
+#     #ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_KPlus_withoutSciBooNE.root"
 #     ### Uncertainties with SciBooNE Constraint
 #     parameter_list: ["kplus"]
 #     scale_factor: 1         
@@ -904,6 +904,7 @@ sbn_genie_eventweight: {
 }
 
 sbn_genie_eventweight.weight_functions: [
+  @sequence::sbn_genie_eventweight.weight_functions_beam,
   @sequence::sbn_genie_eventweight.weight_functions_genie
 ]
 

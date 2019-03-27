@@ -29,6 +29,8 @@
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
 
+#include "TRandom3.h"
+
 class TH2D;
 
 namespace ana {
@@ -208,6 +210,8 @@ protected:
   }
 
   Config _config; //!< The config
+
+  TRandom rand;
 
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder
 

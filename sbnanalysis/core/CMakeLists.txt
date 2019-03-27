@@ -77,6 +77,17 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
+add_executable(sbn-grid sbn-grid.cxx)
+target_link_libraries(
+  sbn-grid
+  sbnanalysis_Processor
+  fhiclcpp
+  larsim_EventWeight_Base
+  larsim_EventWeight_Base_dict
+  ${ROOT_LIBRARIES}
+)
+
+
 add_executable(sbn-postprocess sbn-postprocess.cxx)
 target_link_libraries(
   sbn-postprocess
@@ -91,7 +102,7 @@ install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 install(TARGETS sbn-postprocess DESTINATION bin)
-
+install(TARGETS sbn-grid DESTINATION bin)
 if (DEFINED SBNANA_COMPILED_PROCESSOR)
   set(STATICEXE SBNProcessor_${SBNANA_COMPILED_PROCESSOR})
   include_directories( ${CMAKE_INSTALL_PREFIX}/lib)
