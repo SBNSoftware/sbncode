@@ -212,10 +212,13 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH2F* ExpandedHistogram(const std::string& title,
-                          int nbinsx, double xmin, double xmax,
-                          int nbinsy, double ymin, double ymax)
+                          int nbinsx, double xmin, double xmax, bool xlog,
+                          int nbinsy, double ymin, double ymax, bool ylog)
   {
     DontAddDirectory guard;
+
+    if(xlog){xmin = log(xmin); xmax = log(xmax);}
+    if(ylog){ymin = log(ymin); ymax = log(ymax);}
 
     // How wide the bins will be once we're done
     const double xwidth = (xmax-xmin)/(nbinsx-1);
@@ -225,9 +228,21 @@ namespace ana
     xmin -= xwidth/2; ymin -= ywidth/2;
     xmax += xwidth/2; ymax += ywidth/2;
 
+    std::vector<double> xedges(nbinsx+1);
+    std::vector<double> yedges(nbinsy+1);
+
+    for(int i = 0; i <= nbinsx; ++i){
+      xedges[i] = xmin + (xmax-xmin)*i/double(nbinsx);
+      if(xlog) xedges[i] = exp(xedges[i]);
+    }
+    for(int i = 0; i <= nbinsy; ++i){
+      yedges[i] = ymin + (ymax-ymin)*i/double(nbinsy);
+      if(ylog) yedges[i] = exp(yedges[i]);
+    }
+
     return new TH2F(UniqueName().c_str(), title.c_str(),
-                    nbinsx, xmin, xmax,
-                    nbinsy, ymin, ymax);
+                    nbinsx, &xedges.front(),
+                    nbinsy, &yedges.front());
   }
 
 
