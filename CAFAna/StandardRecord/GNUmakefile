@@ -10,6 +10,8 @@ LIB_TYPE    := shared
 LIB         := lib$(PACKAGE)
 LIBCXXFILES := $(wildcard *.cxx)
 
+SUBDIRS     := Proxy
+
 LIBLINK     := -L$(SRT_PRIVATE_CONTEXT)/lib/$(SRT_SUBDIR) -L$(SRT_PUBLIC_CONTEXT)/lib/$(SRT_SUBDIR) -l$(PACKAGE)
 
 LIBLIBS     := -L$(ROOTSYS)/lib -lPhysics

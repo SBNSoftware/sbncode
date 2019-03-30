@@ -140,7 +140,7 @@ namespace ana
 
     // This is a dirty fix while we figure out a better way of including the libraries
 
-    sr.sbn.truth.neutrino.resize(1);
+    sr.truth.neutrino.resize(1);
 
     TTreeFormula form1("form1", "truth.neutrino[0].iscc", tr);
     TTreeFormula form2("form2", "truth.neutrino[0].inelasticityY", tr);
@@ -148,17 +148,17 @@ namespace ana
     TTreeFormula form4("form4", "truth.neutrino[0].pdg", tr);
     TTreeFormula form5("form5", "truth.neutrino[0].genie_intcode", tr);
 
-    int Nentries = tr->GetEntries();
+    int Nentries = 10000;//tr->GetEntries();
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
     for(int n = 0; n < Nentries; ++n){
       tr->GetEntry(n);
 
-      sr.sbn.truth.neutrino[0].iscc = form1.EvalInstance(0);
-      sr.sbn.truth.neutrino[0].inelasticityY = form2.EvalInstance(0);
-      sr.sbn.truth.neutrino[0].energy = form3.EvalInstance(0);
-      sr.sbn.truth.neutrino[0].pdg = form4.EvalInstance(0);
-      sr.sbn.truth.neutrino[0].genie_intcode = form5.EvalInstance(0);
+      sr.truth.neutrino[0].iscc = form1.EvalInstance(0);
+      sr.truth.neutrino[0].inelasticityY = form2.EvalInstance(0);
+      sr.truth.neutrino[0].energy = form3.EvalInstance(0);
+      sr.truth.neutrino[0].pdg = form4.EvalInstance(0);
+      sr.truth.neutrino[0].genie_intcode = form5.EvalInstance(0);
 
       HandleRecord(&sr);
 

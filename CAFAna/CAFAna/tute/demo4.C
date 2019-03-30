@@ -27,26 +27,25 @@ void demo4()
   // Source of events
   SpectrumLoader loaderBeam(fnameBeam);
 
-  const Var kRecoEnergy({}, // ToDo: smear with some resolution
+  const Var kRecoEnergy(// ToDo: smear with some resolution
                         [](const caf::StandardRecord* sr)
                         {
-                          double fE = sr->sbn.truth.neutrino[0].energy;
+                          double fE = sr->truth.neutrino[0].energy;
                           TRandom3 r(floor(fE*10000));
                           double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
                           return fE*smear;
                         });
 
-  const Cut kSelectionCut({},
-                       [](const caf::StandardRecord* sr)
-                       {
-                         double fE = sr->sbn.truth.neutrino[0].energy;
-                         TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->sbn.truth.neutrino[0].iscc;
-                         double p = r.Uniform();
-                         // 80% eff for CC, 10% for NC
-                         if(isCC) return p < 0.8;
-                         else return p < 0.10;
-                       });
+  const Cut kSelectionCut([](const caf::StandardRecord* sr)
+                          {
+                            double fE = sr->truth.neutrino[0].energy;
+                            TRandom3 r(floor(fE*10000));
+                            bool isCC = sr->truth.neutrino[0].iscc;
+                            double p = r.Uniform();
+                            // 80% eff for CC, 10% for NC
+                            if(isCC) return p < 0.8;
+                            else return p < 0.10;
+                          });
 
   const Binning binsEnergy = Binning::Simple(50, 0, 5);
   const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);
@@ -73,11 +72,11 @@ void demo4()
     {
       // First - register all the variables that will need to be restored to
       // return the record to nominal
-      restore.Add(sr->sbn.truth.neutrino[0].energy);
+      restore.Add(sr->truth.neutrino[0].energy);
 
       // Then edit the event record
       const double scale = 1 + .03*sigma; // 3% energy scale syst.
-      sr->sbn.truth.neutrino[0].energy *= scale;
+      sr->truth.neutrino[0].energy *= scale;
     }
   };
   const ToyEnergyScaleSyst eSyst;
@@ -98,7 +97,7 @@ void demo4()
     {
       // A systematic can also reweight events, based on whatever criteria you
       // want.
-      if(sr->sbn.truth.neutrino[0].energy > 1.5) weight *= 1+0.2*sigma;
+      if(sr->truth.neutrino[0].energy > 1.5) weight *= 1+0.2*sigma;
       else weight *= 1+0.1*sigma;
     }
   };

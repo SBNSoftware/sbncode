@@ -14,8 +14,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>::
-  GenericCut(const std::set<std::string>& /*reqs*/,
-             const std::function<CutFunc_t>& func,
+  GenericCut(const std::function<CutFunc_t>& func,
 	     const std::function<ExposureFunc_t>& liveFunc,
 	     const std::function<ExposureFunc_t>& potFunc)
     : fFunc(func), fLiveFunc(liveFunc), fPOTFunc(potFunc),
@@ -57,15 +56,13 @@ namespace ana
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericCut<T>({},
-			   [a, b](const T* sr){return a(sr) && b(sr);},
+      return GenericCut<T>([a, b](const T* sr){return a(sr) && b(sr);},
                            CombineExposures(a.fLiveFunc, b.fLiveFunc),
                            CombineExposures(a.fPOTFunc, b.fPOTFunc),
 			   ids[key]);
     }
     else{
-      const GenericCut<T> ret({},
-                              [a, b](const T* sr){return a(sr) && b(sr);},
+      const GenericCut<T> ret([a, b](const T* sr){return a(sr) && b(sr);},
                               CombineExposures(a.fLiveFunc, b.fLiveFunc),
                               CombineExposures(a.fPOTFunc, b.fPOTFunc));
       ids[key] = ret.ID();
@@ -85,15 +82,13 @@ namespace ana
     static std::map<std::pair<int, int>, int> ids;
     const std::pair<int, int> key(a.ID(), b.ID());
     if(ids.count(key)){
-      return GenericCut<T>({},
-			   [a, b](const T* sr){return a(sr) || b(sr);},
+      return GenericCut<T>([a, b](const T* sr){return a(sr) || b(sr);},
                            CombineExposures(a.fLiveFunc, b.fLiveFunc),
                            CombineExposures(a.fPOTFunc, b.fPOTFunc),
 			   ids[key]);
     }
     else{
-      const GenericCut<T> ret({},
-                              [a, b](const T* sr){return a(sr) || b(sr);},
+      const GenericCut<T> ret([a, b](const T* sr){return a(sr) || b(sr);},
                               CombineExposures(a.fLiveFunc, b.fLiveFunc),
                               CombineExposures(a.fPOTFunc, b.fPOTFunc));
       ids[key] = ret.ID();
@@ -111,13 +106,11 @@ namespace ana
   {
     static std::map<int, int> ids;
     if(ids.count(a.ID())){
-      return GenericCut<T>({},
-			   [a](const T* sr){return !a(sr);},
+      return GenericCut<T>([a](const T* sr){return !a(sr);},
 			   0, 0, ids[a.ID()]);
     }
     else{
-      const GenericCut<T> ret({},
-                              [a](const T* sr){return !a(sr);});
+      const GenericCut<T> ret([a](const T* sr){return !a(sr);});
       ids[a.ID()] = ret.ID();
       return ret;
     }
@@ -133,40 +126,35 @@ namespace ana
   template<class T> GenericCut<T>
   operator>(const GenericVar<T>& v, double c)
   {
-    return GenericCut<T>({},
-                         [v, c](const T* sr){return v(sr) > c;});
+    return GenericCut<T>([v, c](const T* sr){return v(sr) > c;});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator>=(const GenericVar<T>& v, double c)
   {
-    return GenericCut<T>({},
-                         [v, c](const T* sr){return v(sr) >= c;});
+    return GenericCut<T>([v, c](const T* sr){return v(sr) >= c;});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator<(const GenericVar<T>& v, double c)
   {
-    return GenericCut<T>({},
-                         [v, c](const T* sr){return v(sr) < c;});
+    return GenericCut<T>([v, c](const T* sr){return v(sr) < c;});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator<=(const GenericVar<T>& v, double c)
   {
-    return GenericCut<T>({},
-                         [v, c](const T* sr){return v(sr) <= c;});
+    return GenericCut<T>([v, c](const T* sr){return v(sr) <= c;});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator==(const GenericVar<T>& v, double c)
   {
-    return GenericCut<T>({},
-                         [v, c](const T* sr){return v(sr) == c;});
+    return GenericCut<T>([v, c](const T* sr){return v(sr) == c;});
   }
 
   //----------------------------------------------------------------------
@@ -180,24 +168,21 @@ namespace ana
   template<class T> GenericCut<T>
   operator>(const GenericVar<T>& a, const GenericVar<T>& b)
   {
-    return GenericCut<T>({},
-                         [a, b](const T* sr){return a(sr) > b(sr);});
+    return GenericCut<T>([a, b](const T* sr){return a(sr) > b(sr);});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator>=(const GenericVar<T>& a, const GenericVar<T>& b)
   {
-    return GenericCut<T>({},
-                         [a, b](const T* sr){return a(sr) >= b(sr);});
+    return GenericCut<T>([a, b](const T* sr){return a(sr) >= b(sr);});
   }
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>
   operator==(const GenericVar<T>& a, const GenericVar<T>& b)
   {
-    return GenericCut<T>({},
-                         [a, b](const T* sr){return a(sr) == b(sr);});
+    return GenericCut<T>([a, b](const T* sr){return a(sr) == b(sr);});
   }
 
   // Build the rest up through simple logic
