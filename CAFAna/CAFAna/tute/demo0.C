@@ -19,7 +19,9 @@ using namespace ana;
 void demo0()
 {
   // Environment variables and wildcards work. As do SAM datasets.
-  const std::string fname = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_nu_ExampleAnalysis_ExampleSelection.root";
+  //  const std::string fname = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_nu_ExampleAnalysis_ExampleSelection.root";
+
+  const std::string fname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_SBND.root";
 
   // Source of events
   SpectrumLoader loader(fname);
