@@ -1,11 +1,11 @@
 #!/bin/bash
 
-### Check there's no DUNE software causing trouble ###
+### Check there's no MRB software causing trouble ###
 
 env | grep MRB
 if [ $? == 0 ]
 then
-    echo You already have DUNE software set up? Please start again in a fresh session
+    echo You already have some MRB software set up? Please start again in a fresh session
     exit 1
 fi
 
@@ -76,5 +76,8 @@ export SRT_ARCH=Linux2.6
 
 time SRT_NOVA/scripts/novasoft_build -rel development
 
+# Put the user in the directory they probably want
+cd releases/development/CAFAna/
+
 echo
-echo 'In future, type "source setup.sh" to use this release'
+echo 'In future, type "source setup_cafana.sh" to use this release'
