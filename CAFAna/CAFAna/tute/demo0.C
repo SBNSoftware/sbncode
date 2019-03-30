@@ -31,18 +31,18 @@ void demo0()
   const Var kTruthEnergy({},
                         [](const caf::StandardRecord* sr)
                         {
-                          return sr->sbn.truth.neutrino[0].energy;
+                          return sr->truth.neutrino[0].energy;
                         });
 
   // For such a simple variable you can use a shortcut like this
-  const Var kTruthY = SIMPLEVAR(sbn.truth.neutrino[0].inelasticityY);
+  const Var kTruthY = SIMPLEVAR(truth.neutrino[0].inelasticityY);
 
   // Define a spectrum, ie a histogram with associated POT information
   const Binning binsEnergy = Binning::Simple(50, 0, 5);
   const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTruthEnergy);
   // kIsNumuCC here is a "Cut". Same as a Var but returning a boolean. In this
   // case, we're only keeping events that are truly numu CC interactions.
-  const Var kIsCC = SIMPLEVAR(sbn.truth.neutrino[0].iscc);
+  const Var kIsCC = SIMPLEVAR(truth.neutrino[0].iscc);
   Spectrum sEnergy(loader, axEnergy, kIsCC != 0);
 
   Spectrum sEnergyNC(loader, axEnergy, kIsCC == 0);

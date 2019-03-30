@@ -1,15 +1,7 @@
-////////////////////////////////////////////////////////////////////////
-// \file    StandardRecord.h
-// \brief   The StandardRecord is the primary top-level object in the 
-//          Common Analysis File trees.   
-// \version $Id: StandardRecord.h,v 1.7 2012-12-06 20:18:33 rocco Exp $
-// \author  $Author: rocco $
-// \date    $Date: 2012-12-06 20:18:33 $
-////////////////////////////////////////////////////////////////////////
 #ifndef STANDARDRECORD_H
 #define STANDARDRECORD_H
 
-#include "StandardRecord/SRSBN.h"
+#include "StandardRecord/SRTruthBranch.h"
 
 /// Common Analysis Files
 namespace caf
@@ -25,7 +17,7 @@ namespace caf
     StandardRecord();
     ~StandardRecord();
 
-    SRSBN sbn;
+    SRTruthBranch    truth;     ///< Truth branch for MC: energy, flavor, etc.
   };
   
 } // end namespace

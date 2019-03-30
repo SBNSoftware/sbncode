@@ -23,8 +23,6 @@ namespace caf
       std::vector<SRNeutrino>   neutrino;   ///< implemented as a vector to maintain mc.nu structure, i.e. not a pointer, but with 0 or 1 entries. 
       std::vector<SRParticle>     lepton;
       std::vector<SRParticle> finalstate;
-      void setDefault();
-
     };
   
 } // end namespace

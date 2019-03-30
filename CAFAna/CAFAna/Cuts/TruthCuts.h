@@ -15,7 +15,7 @@ namespace ana
   const Cut kIsNC({},
                   [](const caf::StandardRecord* sr)
                   {
-                    return !sr->sbn.truth.neutrino[0].iscc;
+                    return !sr->truth.neutrino[0].iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -29,8 +29,8 @@ namespace ana
 
     bool operator()(const caf::StandardRecord* sr) const
     {
-      return sr->sbn.truth.neutrino[0].iscc && abs(sr->sbn.truth.neutrino[0].pdg) == fPdgOrig
-             && abs(sr->sbn.truth.neutrino[0].pdg) == fPdg;
+      return sr->truth.neutrino[0].iscc && abs(sr->truth.neutrino[0].pdg) == fPdgOrig
+             && abs(sr->truth.neutrino[0].pdg) == fPdg;
     }
   protected:
     int fPdg, fPdgOrig;
@@ -57,7 +57,7 @@ namespace ana
   const Cut kIsAntiNu({},
                       [](const caf::StandardRecord* sr)
                       {
-                        return sr->sbn.truth.neutrino[0].pdg < 0;
+                        return sr->truth.neutrino[0].pdg < 0;
                       });
 
   // const Cut kIsTrueFV({},

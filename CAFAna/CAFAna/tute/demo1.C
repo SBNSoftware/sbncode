@@ -34,7 +34,7 @@ void demo1()
   const Var kRecoEnergy({}, // ToDo: smear with some resolution
                         [](const caf::StandardRecord* sr)
                         {
-                          double fE = sr->sbn.truth.neutrino[0].energy;
+                          double fE = sr->truth.neutrino[0].energy;
                           TRandom3 r(floor(fE*10000));
                           double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
                           return fE*smear;
@@ -49,9 +49,9 @@ void demo1()
   const Cut kSelectionCut({},
                        [](const caf::StandardRecord* sr)
                        {
-                         double fE = sr->sbn.truth.neutrino[0].energy;
+                         double fE = sr->truth.neutrino[0].energy;
                          TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->sbn.truth.neutrino[0].iscc;
+                         bool isCC = sr->truth.neutrino[0].iscc;
                          double p = r.Uniform();
                          // 80% eff for CC, 10% for NC
                          if(isCC) return p < 0.8;
