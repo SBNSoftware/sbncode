@@ -113,6 +113,28 @@ namespace ana
 
     fHist->SetMinimum(0);
   }
+
+  //----------------------------------------------------------------------
+  Surface::Surface(const IExperiment* expt,
+                   osc::IOscCalculatorAdjustable* calc,
+                   const FitAxis fitaxisX,
+                   const FitAxis fitaxisY,
+                   const std::vector<const IFitVar*>& profVars,
+                   const std::vector<const ISyst*>& profSysts,
+                   const std::map<const IFitVar*, std::vector<double>>& seedPts,
+                   const std::vector<SystShifts>& systSeedPts,
+                   bool parallel,
+                   Fitter::Precision prec)
+    : Surface(expt, calc,
+      fitaxisX.fVar, fitaxisX.fnbins, fitaxisX.fxmin, fitaxisX.fxmax,
+      fitaxisY.fVar, fitaxisY.fnbins, fitaxisY.fxmin, fitaxisY.fxmax,
+      profVars, profSysts, 
+      seedPts, systSeedPts,
+      parallel,
+      prec
+      ) { }
+
+
   //---------------------------------------------------------------------
   void Surface::FillSurface(const std::string& progTitle,
                             const IExperiment* expt,

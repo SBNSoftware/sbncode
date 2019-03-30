@@ -4,6 +4,7 @@
 #include "CAFAna/Core/SystShifts.h"
 
 #include "CAFAna/Analysis/Fit.h"
+#include "CAFAna/Analysis/FitAxis.h"
 
 #include "Rtypes.h"
 #include "TAttMarker.h"
@@ -48,6 +49,27 @@ namespace ana
             osc::IOscCalculatorAdjustable* calc,
             const IFitVar* xvar, int nbinsx, double xmin, double xmax,
             const IFitVar* yvar, int nbinsy, double ymin, double ymax,
+            const std::vector<const IFitVar*>& profVars = {},
+            const std::vector<const ISyst*>& profSysts = {},
+            const std::map<const IFitVar*, std::vector<double>>& seedPts = {},
+            const std::vector<SystShifts>& systSeedPts = {},
+            bool parallel = false,
+            Fitter::Precision prec = Fitter::kNormal);
+
+
+    /// \param expt The experiment object to draw \f$ \chi^2 \f$ values from
+    /// \param calc Values for oscillation parameters to be held fixed
+    /// \param fitaxisX A FitAxis for the first variable
+    /// \param fitaxisY A FitAxis for the second variable
+    /// \param profVars Oscillation parameters to profile over
+    /// \param profSysts Systematic parameters to profile over
+    /// \param seedPts Try all combinations of these params as seeds
+    /// \param systSeedPts Try all of these systematic combinations as seeds
+    /// \param parallel Use all the cores on this machine? Be careful...
+    Surface(const IExperiment* expt,
+            osc::IOscCalculatorAdjustable* calc,
+            const FitAxis fitaxisX,
+            const FitAxis fitaxisY,
             const std::vector<const IFitVar*>& profVars = {},
             const std::vector<const ISyst*>& profSysts = {},
             const std::map<const IFitVar*, std::vector<double>>& seedPts = {},
