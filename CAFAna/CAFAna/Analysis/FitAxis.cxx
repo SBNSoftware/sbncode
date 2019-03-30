@@ -1,18 +1,16 @@
 #include "CAFAna/Analysis/FitAxis.h"
 
-#include <iostream>
-
 namespace ana
 {
-  FitAxis::FitAxis(const IFitVar* var,
-          int nbins, double xmin, double xmax,
-          bool isLogScale)
-    : fVar(var),
-      fnbins(nbins),
-      fxmin(xmin),
-      fxmax(xmax),
-      fIsLogScale(isLogScale)
+  // --------------------------------------------------------------------------
+  FitAxis::FitAxis(const IFitVar* var_,
+                   int nbins_, double min_, double max_,
+                   bool islog_)
+    : var(var_),
+      nbins(nbins_),
+      min(min_),
+      max(max_),
+      islog(islog_)
   {
   }
-
 }

@@ -59,8 +59,8 @@ namespace ana
 
     /// \param expt The experiment object to draw \f$ \chi^2 \f$ values from
     /// \param calc Values for oscillation parameters to be held fixed
-    /// \param fitaxisX A FitAxis for the first variable
-    /// \param fitaxisY A FitAxis for the second variable
+    /// \param xax A FitAxis for the first variable
+    /// \param yax A FitAxis for the second variable
     /// \param profVars Oscillation parameters to profile over
     /// \param profSysts Systematic parameters to profile over
     /// \param seedPts Try all combinations of these params as seeds
@@ -68,8 +68,8 @@ namespace ana
     /// \param parallel Use all the cores on this machine? Be careful...
     Surface(const IExperiment* expt,
             osc::IOscCalculatorAdjustable* calc,
-            const FitAxis fitaxisX,
-            const FitAxis fitaxisY,
+            const FitAxis& xax,
+            const FitAxis& yax,
             const std::vector<const IFitVar*>& profVars = {},
             const std::vector<const ISyst*>& profSysts = {},
             const std::map<const IFitVar*, std::vector<double>>& seedPts = {},

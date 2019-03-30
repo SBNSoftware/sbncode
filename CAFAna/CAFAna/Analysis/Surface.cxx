@@ -32,8 +32,8 @@ namespace ana
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
                    osc::IOscCalculatorAdjustable* calc,
-                   const IFitVar* xvar, int nbinsx, double xmin, double xmax,
-                   const IFitVar* yvar, int nbinsy, double ymin, double ymax,
+                   const FitAxis& xax,
+                   const FitAxis& yax,
                    const std::vector<const IFitVar*>& profVars,
                    const std::vector<const ISyst*>& profSysts,
                    const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -42,9 +42,9 @@ namespace ana
                    Fitter::Precision prec)
     : fParallel(parallel), fPrec(prec)
   {
-    fHist = ExpandedHistogram(";"+xvar->LatexName()+";"+yvar->LatexName(),
-                              nbinsx, xmin, xmax,
-                              nbinsy, ymin, ymax);
+    fHist = ExpandedHistogram(";"+xax.var->LatexName()+";"+yax.var->LatexName(),
+                              xax.nbins, xax.min, xax.max,
+                              yax.nbins, yax.min, yax.max);
 
     for(unsigned int i = 0; i < profVars.size()+profSysts.size(); ++i){
       std::string title;
@@ -53,12 +53,12 @@ namespace ana
       else
         title = profSysts[i-profVars.size()]->LatexName();
 
-      fProfHists.push_back(ExpandedHistogram(title+";"+xvar->LatexName()+";"+yvar->LatexName(),
-                                             nbinsx, xmin, xmax,
-                                             nbinsy, ymin, ymax));
+      fProfHists.push_back(ExpandedHistogram(title+";"+xax.var->LatexName()+";"+yax.var->LatexName(),
+                                             xax.nbins, xax.min, xax.max,
+                                             yax.nbins, yax.min, yax.max));
     }
 
-    std::string progTitle = "Filling surface for "+yvar->ShortName()+" vs "+xvar->ShortName();
+    std::string progTitle = "Filling surface for "+yax.var->ShortName()+" vs "+xax.var->ShortName();
 
     if(!profVars.empty() || !profSysts.empty()){
       progTitle += " (profiling ";
@@ -75,14 +75,14 @@ namespace ana
       progTitle += ")";
     }
 
-    FillSurface(progTitle, expt, calc, xvar, yvar, profVars, profSysts, seedPts, systSeedPts);
+    FillSurface(progTitle, expt, calc, xax.var, yax.var, profVars, profSysts, seedPts, systSeedPts);
 
     // Location of the best minimum found from filled surface
     double minchi = 1e10;
-    int minx = nbinsx/2;
-    int miny = nbinsy/2;
-    for(int x = 1; x < nbinsx+1; ++x){
-      for(int y = 1; y < nbinsy+1; ++y){
+    int minx = xax.nbins/2;
+    int miny = yax.nbins/2;
+    for(int x = 1; x < xax.nbins+1; ++x){
+      for(int y = 1; y < yax.nbins+1; ++y){
         const double chi = fHist->GetBinContent(x, y);
         if(chi < minchi){
           minchi = chi;
@@ -92,21 +92,21 @@ namespace ana
       }
     }
 
-    std::vector<const IFitVar*> allVars = {xvar, yvar};
+    std::vector<const IFitVar*> allVars = {xax.var, yax.var};
     allVars.insert(allVars.end(), profVars.begin(), profVars.end());
     Fitter fit(expt, allVars, profSysts);
     fit.SetPrecision(fPrec);
     // Seed from best grid point
-    xvar->SetValue(calc, fHist->GetXaxis()->GetBinCenter(minx));
-    yvar->SetValue(calc, fHist->GetYaxis()->GetBinCenter(miny));
+    xax.var->SetValue(calc, fHist->GetXaxis()->GetBinCenter(minx));
+    yax.var->SetValue(calc, fHist->GetYaxis()->GetBinCenter(miny));
     for(int i = 0; i < (int)fSeedValues.size(); ++i) profVars[i]->SetValue( calc, fSeedValues[i] );
     SystShifts systSeed = SystShifts::Nominal();
     fMinChi = fit.Fit(calc, systSeed, seedPts);
-    fMinX = xvar->GetValue(calc);
-    fMinY = yvar->GetValue(calc);
+    fMinX = xax.var->GetValue(calc);
+    fMinY = yax.var->GetValue(calc);
 
-    for(int x = 0; x < nbinsx+2; ++x){
-      for(int y = 0; y < nbinsy+2; ++y){
+    for(int x = 0; x < xax.nbins+2; ++x){
+      for(int y = 0; y < yax.nbins+2; ++y){
         fHist->SetBinContent(x, y, fHist->GetBinContent(x, y)-fMinChi);
       }
     }
@@ -117,8 +117,8 @@ namespace ana
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
                    osc::IOscCalculatorAdjustable* calc,
-                   const FitAxis fitaxisX,
-                   const FitAxis fitaxisY,
+                   const IFitVar* xvar, int nbinsx, double xmin, double xmax,
+                   const IFitVar* yvar, int nbinsy, double ymin, double ymax,
                    const std::vector<const IFitVar*>& profVars,
                    const std::vector<const ISyst*>& profSysts,
                    const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -126,14 +126,11 @@ namespace ana
                    bool parallel,
                    Fitter::Precision prec)
     : Surface(expt, calc,
-      fitaxisX.fVar, fitaxisX.fnbins, fitaxisX.fxmin, fitaxisX.fxmax,
-      fitaxisY.fVar, fitaxisY.fnbins, fitaxisY.fxmin, fitaxisY.fxmax,
-      profVars, profSysts, 
-      seedPts, systSeedPts,
-      parallel,
-      prec
-      ) { }
-
+              FitAxis(xvar, nbinsx, xmin, xmax),
+              FitAxis(yvar, nbinsy, ymin, ymax),
+              profVars, profSysts, seedPts, systSeedPts, parallel, prec)
+  {
+  }
 
   //---------------------------------------------------------------------
   void Surface::FillSurface(const std::string& progTitle,
