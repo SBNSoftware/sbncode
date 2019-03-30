@@ -13,13 +13,13 @@ namespace ana
   double MultiExperimentSBN::ChiSq(osc::IOscCalculatorAdjustable* osc,
                                 const SystShifts& syst) const
   {
-    assert(fExpts.size() == fLs.size());
-
+    assert(fExpts.size() == fExptNames.size());
+    
     double ret = 0;
- 
+
     for(unsigned int n = 0; n < fExpts.size(); ++n){
       // Set baseline for each of the experiments
-      osc->SetL(fLs[n]);
+      osc->SetL(kBLs[fExptNames[n]]);
 
       // Don't waste time fiddling with the systematics if for sure there's
       // nothing to do.

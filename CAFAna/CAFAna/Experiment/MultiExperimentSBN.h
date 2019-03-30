@@ -2,6 +2,7 @@
 
 #include "CAFAna/Experiment/IExperiment.h"
 #include "OscLib/func/IOscCalculator.h"
+#include "CAFAna/Analysis/ExpInfo.h"
 
 #include <memory>
 #include <vector>
@@ -16,15 +17,15 @@ namespace ana
     // also, to prevent mistakes it's probably best to define
     // kSBND, kUBoone and kIcarus somewhere. But again, works for now
     MultiExperimentSBN(std::vector<const IExperiment*> expts = {},
-                       std::vector<float> baselines = {}) 
-        : fExpts(expts), fLs(baselines)
+                       std::vector<int> exptnames = {}) 
+        : fExpts(expts), fExptNames(exptnames)
     {
       fSystCorrelations.resize(expts.size());
     }
 
     void Add(const IExperiment* expt, float l){
                   fExpts.push_back(expt);
-                  fLs.push_back(l);
+                  fExptNames.push_back(l);
                   }
 
     virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
@@ -53,7 +54,7 @@ namespace ana
 
   protected:
     std::vector<const IExperiment*> fExpts;
-    std::vector<float> fLs;
+    std::vector<int> fExptNames;
     std::vector<std::vector<std::pair<const ISyst*, const ISyst*>>> fSystCorrelations;
   };
 }

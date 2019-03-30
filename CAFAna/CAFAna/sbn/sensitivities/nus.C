@@ -10,6 +10,7 @@
 #include "TCanvas.h"
 #include "TH1.h"
 #include "CAFAna/Vars/FitVarsSterile.h"
+#include "CAFAna/Analysis/FitAxis.h"
 
 // New includes
 #include "CAFAna/Analysis/Surface.h"
@@ -64,10 +65,14 @@ void nus()
 
     TFile* fOutput = new TFile("4flavour/Surfaces_nus.root","RECREATE");
 
+    //Define fit axes
+    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 100, 0.001, 1);
+    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 100, 0.001, 100);
+
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
-		 &kFitSinSq2Theta24Sterile, 100, 0.001, 1,
-		 &kFitDmSq41Sterile, 100, 0.001, 100);
+		 kAxSinSq2Theta24,
+		 kAxDmSq41);
 
     surf.SaveTo(fOutput->mkdir("surf"));
 
@@ -96,12 +101,12 @@ void nus()
     const Spectrum data2 = pred_fd_numu.Predict(calc).FakeData(icarusPOT);
     SingleSampleExperiment expt2(&pred_fd_numu, data2);
 
-    MultiExperimentSBN multiExpt({&expt, &expt2}, {0.11, 0.6});
+    MultiExperimentSBN multiExpt({&expt, &expt2}, {kSBND,kICARUS});
 
     Surface surf2(&expt2, calc,
-		  &kFitSinSq2Theta24Sterile, 100, 0.001, 1,
-		  &kFitDmSq41Sterile, 100, 0.001, 100);
-
+		 kAxSinSq2Theta24,
+		 kAxDmSq41);
+		  
     surf2.SaveTo(fOutput->mkdir("surf2"));
 
     c1->Clear(); // just in case
@@ -116,8 +121,9 @@ void nus()
     c1->SaveAs("4flavour/nus_plot2.pdf");
 
     Surface surfMulti(&multiExpt, calc,
-		      &kFitSinSq2Theta24Sterile, 100, 0.001, 1,
-		      &kFitDmSq41Sterile, 100, 0.001, 100);
+		      kAxSinSq2Theta24,
+		      kAxDmSq41);
+
 
     surfMulti.SaveTo(fOutput->mkdir("surfMulti"));
 
