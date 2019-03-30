@@ -43,8 +43,8 @@ namespace ana
     : fParallel(parallel), fPrec(prec)
   {
     fHist = ExpandedHistogram(";"+xax.var->LatexName()+";"+yax.var->LatexName(),
-                              xax.nbins, xax.min, xax.max,
-                              yax.nbins, yax.min, yax.max);
+                              xax.nbins, xax.min, xax.max, xax.islog,
+                              yax.nbins, yax.min, yax.max, yax.islog);
 
     for(unsigned int i = 0; i < profVars.size()+profSysts.size(); ++i){
       std::string title;
@@ -53,9 +53,10 @@ namespace ana
       else
         title = profSysts[i-profVars.size()]->LatexName();
 
-      fProfHists.push_back(ExpandedHistogram(title+";"+xax.var->LatexName()+";"+yax.var->LatexName(),
-                                             xax.nbins, xax.min, xax.max,
-                                             yax.nbins, yax.min, yax.max));
+      fProfHists.push_back(ExpandedHistogram
+                           (title+";"+xax.var->LatexName()+";"+yax.var->LatexName(),
+                            xax.nbins, xax.min, xax.max, xax.islog,
+                            yax.nbins, yax.min, yax.max, yax.islog));
     }
 
     std::string progTitle = "Filling surface for "+yax.var->ShortName()+" vs "+xax.var->ShortName();

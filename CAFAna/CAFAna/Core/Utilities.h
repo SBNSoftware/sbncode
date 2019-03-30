@@ -149,8 +149,8 @@ namespace ana
   /// Creates a histogram having bins \em centred at the min and max
   /// coordinates
   TH2F* ExpandedHistogram(const std::string& title,
-                          int nbinsx, double xmin, double xmax,
-                          int nbinsy, double ymin, double ymax);
+                          int nbinsx, double xmin, double xmax, bool xlog,
+                          int nbinsy, double ymin, double ymax, bool ylog);
 
   /// \brief Invert a symmetric matrix with possibly empty rows/columns.
   ///
