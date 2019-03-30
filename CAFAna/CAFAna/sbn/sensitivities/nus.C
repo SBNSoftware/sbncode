@@ -17,6 +17,7 @@
 #include "CAFAna/Experiment/MultiExperiment.h"
 #include "CAFAna/Experiment/MultiExperimentSBN.h"
 #include "CAFAna/Experiment/GaussianConstraint.h"
+#include "CAFAna/Analysis/ExpInfo.h"
 
 // Random numbers to fake an efficiency and resolution
 #include "TRandom3.h"
@@ -28,8 +29,8 @@ using namespace ana;
 // State file
 const char* stateFname = "cafe_state.root";
 
-const double sbndPOT = 6.6e20;
-const double icarusPOT = 6.6e20;
+const double sbndPOT = POTnominal;
+const double icarusPOT = POTnominal;
 
 void nus()
 {
@@ -43,13 +44,13 @@ void nus()
     std::cout << "Loading state from " << stateFname << std::endl; 
     TFile fin(stateFname);
     PredictionNoExtrap& pred_nd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
-    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
+    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_fd_numu")).release();
 
     // Calculator
     osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
     calc->SetAngle(2, 4, 0);
     calc->SetDm(4, 0); // Make these explicit
-    calc->SetL(0.11); // SBND only, temporary
+    calc->SetL(BaselineSBND); 
     calc->SetAngle(2, 3, M_PI/4);
     calc->SetDm(3, 2.45e-3); // make these explicit
 
@@ -91,7 +92,7 @@ void nus()
     c1->SaveAs("4flavour/nus_plot1.pdf");
 
     // Let's now try adding a second experiment, for instance Icarus
-    calc->SetL(0.6); // Turn of Icarus
+    calc->SetL(BaselineIcarus); // Icarus
     const Spectrum data2 = pred_fd_numu.Predict(calc).FakeData(icarusPOT);
     SingleSampleExperiment expt2(&pred_fd_numu, data2);
 
