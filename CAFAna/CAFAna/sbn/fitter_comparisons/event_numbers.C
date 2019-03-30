@@ -32,9 +32,9 @@ void Experiment(std::string expt)
   prelim->Draw();
 }
 
-void event_numbers(const std::string expt = "SBND", const double filesPOT = 47883366000000000000.0)
+void event_numbers(const std::string expt = "SBND")
 {
-  const std::string fnameBeam = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed/output_SBNOsc_NumuSelection_Modern_"
+ const std::string fnameBeam = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_"
   + expt + ".root";
   // const std::string fnameSwap = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_oscnue_ExampleAnalysis_ExampleSelection.root";
 
@@ -147,7 +147,7 @@ void event_numbers(const std::string expt = "SBND", const double filesPOT = 4788
   // loaderSwap.Go();
 
   // Fake POT: we need to sort this out in the files first
-  const double pot = 6.6e20 * 1.e20 / filesPOT;
+  const double pot = 6.6e20;
 
   std::cout << "     NuMu,  Nue,  anti-Numu,  anti-Nue,  NC" << std::endl;
 
