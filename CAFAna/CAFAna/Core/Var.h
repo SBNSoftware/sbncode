@@ -32,8 +32,7 @@ namespace ana
     typedef double (VarFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    GenericVar(const std::set<std::string>& reqs,
-               const std::function<VarFunc_t>& fun);
+    GenericVar(const std::function<VarFunc_t>& fun);
 
     /// Allows a variable to be called with double value = myVar(sr) syntax
     double operator()(const T* sr) const
@@ -52,9 +51,7 @@ namespace ana
     friend GenericVar<T> operator+<>(const GenericVar<T>& a, const GenericVar<T>& b);
     friend GenericVar<T> operator-<>(const GenericVar<T>& a, const GenericVar<T>& b);
 
-    GenericVar(const std::set<std::string>& reqs,
-               const std::function<VarFunc_t>& fun,
-	       int id)
+    GenericVar(const std::function<VarFunc_t>& fun, int id)
       : fFunc(fun), fID(id)
     {
     }
@@ -85,14 +82,14 @@ namespace ana
   ///
   /// eg Var myVar = SIMPLEVAR(my.var.str);
   /// NB lack of quotes quotes around my.var.str
-#define SIMPLEVAR(CAFNAME) Var({#CAFNAME}, [](const caf::StandardRecord* sr){return sr->CAFNAME;})
+#define SIMPLEVAR(CAFNAME) Var([](const caf::StandardRecord* sr){return sr->CAFNAME;})
 
   /// The simplest possible Var, always 1. Used as a default weight.
-  const Var kUnweighted({}, [](const caf::StandardRecord*){return 1;});
+  const Var kUnweighted([](const caf::StandardRecord*){return 1;});
 
-  const SpillVar kSpillUnweighted({}, [](const caf::SRSpill*){return 1;});
+  const SpillVar kSpillUnweighted([](const caf::SRSpill*){return 1;});
 
-  const SpillTruthVar kSpillTruthUnweighted({}, [](const caf::SRSpillTruthBranch*){return 1;});
+  const SpillTruthVar kSpillTruthUnweighted([](const caf::SRSpillTruthBranch*){return 1;});
 
   /// \brief Variable formed from two input variables
   ///

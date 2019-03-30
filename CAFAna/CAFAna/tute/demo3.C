@@ -46,7 +46,7 @@ void demo3()
   SpectrumLoader loaderBeam2(fnameBeam2);
   SpectrumLoader loaderSwap2(fnameSwap2);
 
-  const Var kRecoEnergy({}, // ToDo: smear with some resolution
+  const Var kRecoEnergy(// ToDo: smear with some resolution
                         [](const caf::StandardRecord* sr)
                         {
                           double fE = sr->truth.neutrino[0].energy;
@@ -61,17 +61,16 @@ void demo3()
   // Fake POT: we need to sort this out in the files first
   const double pot = 6.e20;
 
-  const Cut kSelectionCut({},
-                       [](const caf::StandardRecord* sr)
-                       {
-                         double fE = sr->truth.neutrino[0].energy;
-                         TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->truth.neutrino[0].iscc;
-                         double p = r.Uniform();
-                         // 80% eff for CC, 10% for NC
-                         if(isCC) return p < 0.8;
-                         else return p < 0.10;
-                       });
+  const Cut kSelectionCut([](const caf::StandardRecord* sr)
+                          {
+                            double fE = sr->truth.neutrino[0].energy;
+                            TRandom3 r(floor(fE*10000));
+                            bool isCC = sr->truth.neutrino[0].iscc;
+                            double p = r.Uniform();
+                            // 80% eff for CC, 10% for NC
+                            if(isCC) return p < 0.8;
+                            else return p < 0.10;
+                          });
 
   PredictionNoExtrap pred(loaderBeam, loaderSwap, kNullLoader,
                           axEnergy, kSelectionCut);

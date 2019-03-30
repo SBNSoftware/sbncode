@@ -31,8 +31,7 @@ namespace ana
     typedef bool (CutFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    GenericCut(const std::set<std::string>& reqs,
-               const std::function<CutFunc_t>& func,
+    GenericCut(const std::function<CutFunc_t>& func,
                const std::function<ExposureFunc_t>& liveFunc = 0,
                const std::function<ExposureFunc_t>& potFunc = 0);
 
@@ -67,8 +66,7 @@ namespace ana
     friend GenericCut<T> operator||<>(const GenericCut<T>& a,
 				      const GenericCut<T>& b);
     friend GenericCut<T> operator!<>(const GenericCut<T>& a);
-    GenericCut(const std::set<std::string>& reqs,
-               const std::function<CutFunc_t>& fun,
+    GenericCut(const std::function<CutFunc_t>& fun,
                const std::function<ExposureFunc_t>& liveFunc,
                const std::function<ExposureFunc_t>& potFunc,
                int id)
@@ -123,11 +121,11 @@ namespace ana
   template<class T> GenericCut<T> operator!=(double c, const GenericVar<T>& v);
 
   /// The simplest possible cut: pass everything, used as a default
-  const Cut kNoCut({}, [](const caf::StandardRecord*){return true;});
+  const Cut kNoCut([](const caf::StandardRecord*){return true;});
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillCut kNoSpillCut({}, [](const caf::SRSpill*){return true;});
+  const SpillCut kNoSpillCut([](const caf::SRSpill*){return true;});
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillTruthCut kNoSpillTruthCut({}, [](const caf::SRSpillTruthBranch*){return true;});
+  const SpillTruthCut kNoSpillTruthCut([](const caf::SRSpillTruthBranch*){return true;});
 } // namespace

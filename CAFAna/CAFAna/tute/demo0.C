@@ -28,11 +28,10 @@ void demo0()
 
   // A Var is a little snippet of code that takes a record representing the
   // event record and returns a single number to plot.
-  const Var kTruthEnergy({},
-                        [](const caf::StandardRecord* sr)
-                        {
-                          return sr->truth.neutrino[0].energy;
-                        });
+  const Var kTruthEnergy([](const caf::StandardRecord* sr)
+                         {
+                           return sr->truth.neutrino[0].energy;
+                         });
 
   // For such a simple variable you can use a shortcut like this
   const Var kTruthY = SIMPLEVAR(truth.neutrino[0].inelasticityY);

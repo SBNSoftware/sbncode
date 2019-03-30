@@ -12,8 +12,7 @@ namespace ana
   /// We use uniform-initializer syntax to concisely pass the list of necessary
   /// branches. In this case the selection function is simple enough that we
   /// can include it inline as a lambda function.
-  const Cut kIsNC({},
-                  [](const caf::StandardRecord* sr)
+  const Cut kIsNC([](const caf::StandardRecord* sr)
                   {
                     return !sr->truth.neutrino[0].iscc;
                   });
@@ -41,21 +40,20 @@ namespace ana
   // constants to be easily duplicated.
 
   /// Select CC \f$ \nu_\mu\to\nu_e \f$
-  const Cut kIsSig    ({}, CCFlavSel(12, 14));
+  const Cut kIsSig    (CCFlavSel(12, 14));
   /// Select CC \f$ \nu_\mu\to\nu_\mu \f$
-  const Cut kIsNumuCC ({}, CCFlavSel(14, 14));
+  const Cut kIsNumuCC (CCFlavSel(14, 14));
   /// Select CC \f$ \nu_e\to\nu_e \f$
-  const Cut kIsBeamNue({}, CCFlavSel(12, 12));
+  const Cut kIsBeamNue(CCFlavSel(12, 12));
   /// Select CC \f$ \nu_e\to\nu_\mu \f$
-  const Cut kIsNumuApp({}, CCFlavSel(14, 12));
+  const Cut kIsNumuApp(CCFlavSel(14, 12));
   /// Select CC \f$ \nu_\mu\to\nu_\tau \f$
-  const Cut kIsTauFromMu({}, CCFlavSel(16, 14));
+  const Cut kIsTauFromMu(CCFlavSel(16, 14));
   /// Select CC \f$ \nu_e\to\nu_\tau \f$
-  const Cut kIsTauFromE({}, CCFlavSel(16, 12));
+  const Cut kIsTauFromE(CCFlavSel(16, 12));
 
   /// Is this truly an antineutrino?
-  const Cut kIsAntiNu({},
-                      [](const caf::StandardRecord* sr)
+  const Cut kIsAntiNu([](const caf::StandardRecord* sr)
                       {
                         return sr->truth.neutrino[0].pdg < 0;
                       });

@@ -148,7 +148,7 @@ namespace ana
     TTreeFormula form4("form4", "truth.neutrino[0].pdg", tr);
     TTreeFormula form5("form5", "truth.neutrino[0].genie_intcode", tr);
 
-    int Nentries = tr->GetEntries();
+    int Nentries = 10000;//tr->GetEntries();
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
     for(int n = 0; n < Nentries; ++n){

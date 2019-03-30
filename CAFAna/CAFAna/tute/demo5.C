@@ -60,7 +60,7 @@ void demo5()
   SpectrumLoader loaderBeam(fnameBeam);
   SpectrumLoader loaderSwap(fnameSwap);
 
-  const Var kRecoEnergy({}, // ToDo: smear with some resolution
+  const Var kRecoEnergy(// ToDo: smear with some resolution
                         [](const caf::StandardRecord* sr)
                         {
                           double fE = sr->truth.neutrino[0].energy;
@@ -69,17 +69,16 @@ void demo5()
                           return fE*smear;
                         });
 
-  const Cut kSelectionCut({},
-                       [](const caf::StandardRecord* sr)
-                       {
-                         double fE = sr->truth.neutrino[0].energy;
-                         TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->truth.neutrino[0].iscc;
-                         double p = r.Uniform();
-                         // 80% eff for CC, 10% for NC
-                         if(isCC) return p < 0.8;
-                         else return p < 0.10;
-                       });
+  const Cut kSelectionCut([](const caf::StandardRecord* sr)
+                          {
+                            double fE = sr->truth.neutrino[0].energy;
+                            TRandom3 r(floor(fE*10000));
+                            bool isCC = sr->truth.neutrino[0].iscc;
+                            double p = r.Uniform();
+                            // 80% eff for CC, 10% for NC
+                            if(isCC) return p < 0.8;
+                            else return p < 0.10;
+                          });
 
   const Binning binsEnergy = Binning::Simple(50, 0, 5);
   const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);

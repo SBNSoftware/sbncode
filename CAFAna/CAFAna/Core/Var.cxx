@@ -16,8 +16,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   template<class T> GenericVar<T>::
-  GenericVar(const std::set<std::string>& /*reqs*/,
-             const std::function<VarFunc_t>& fun)
+  GenericVar(const std::function<VarFunc_t>& fun)
     : fFunc(fun), fID(fgNextID++)
   {
   }
@@ -111,8 +110,7 @@ namespace ana
   Var2D(const GenericVar<T>& a, const Binning& binsa,
         const GenericVar<T>& b, const Binning& binsb)
   {
-    return GenericVar<T>({},
-                         Var2DFunc<T>(a, binsa, b, binsb));
+    return GenericVar<T>(Var2DFunc<T>(a, binsa, b, binsb));
   }
 
   //----------------------------------------------------------------------
@@ -139,8 +137,7 @@ namespace ana
         const GenericVar<T>& b, const Binning& binsb,
         const GenericVar<T>& c, const Binning& binsc)
   {
-    return GenericVar<T>({},
-                         Var3DFunc<T>(a, binsa, b, binsb, c, binsc));
+    return GenericVar<T>(Var3DFunc<T>(a, binsa, b, binsb, c, binsc));
   }
 
   //----------------------------------------------------------------------
@@ -166,22 +163,20 @@ namespace ana
   //----------------------------------------------------------------------
   Var Scaled(const Var& v, double s)
   {
-    return Var({},
-               [v, s](const caf::StandardRecord* sr){return s*v(sr);});
+    return Var([v, s](const caf::StandardRecord* sr){return s*v(sr);});
   }
 
   //----------------------------------------------------------------------
   Var Constant(double c)
   {
-    return Var({}, [c](const caf::StandardRecord*){return c;});
+    return Var([c](const caf::StandardRecord*){return c;});
   }
 
   //--------------------------------------------------------------------
 
   Var Sqrt(const Var& v)
   {
-    return Var({},
-               [v](const caf::StandardRecord* sr){return sqrt(v(sr));});
+    return Var([v](const caf::StandardRecord* sr){return sqrt(v(sr));});
   }
 
   //----------------------------------------------------------------------
@@ -192,13 +187,11 @@ namespace ana
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>({},
-                           [a, b](const T* sr){return a(sr) * b(sr);},
+      return GenericVar<T>([a, b](const T* sr){return a(sr) * b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret({},
-                              [a, b](const T* sr){return a(sr) * b(sr);});
+      const GenericVar<T> ret([a, b](const T* sr){return a(sr) * b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
@@ -212,8 +205,7 @@ namespace ana
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>({},
-                           [a, b](const T* sr)
+      return GenericVar<T>([a, b](const T* sr)
                            {
                              const double denom = b(sr);
                              if(denom != 0)
@@ -224,8 +216,7 @@ namespace ana
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret({},
-                              [a, b](const T* sr)
+      const GenericVar<T> ret([a, b](const T* sr)
                               {
                                 const double denom = b(sr);
                                 if(denom != 0)
@@ -246,13 +237,11 @@ namespace ana
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>({},
-                           [a, b](const T* sr){return a(sr) + b(sr);},
+      return GenericVar<T>([a, b](const T* sr){return a(sr) + b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret({},
-                              [a, b](const T* sr){return a(sr) + b(sr);});
+      const GenericVar<T> ret([a, b](const T* sr){return a(sr) + b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
@@ -266,13 +255,11 @@ namespace ana
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>({},
-                           [a, b](const T* sr){return a(sr) - b(sr);},
+      return GenericVar<T>([a, b](const T* sr){return a(sr) - b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret({},
-                              [a, b](const T* sr){return a(sr) - b(sr);});
+      const GenericVar<T> ret([a, b](const T* sr){return a(sr) - b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
