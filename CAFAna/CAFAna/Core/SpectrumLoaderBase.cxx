@@ -15,6 +15,7 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TTree.h"
+#include "TTreeFormula.h"
 
 #include <algorithm>
 #include <cassert>
@@ -278,13 +279,12 @@ namespace ana
       trPot = (TTree*)f->Get("sbnsubrun");
     assert(trPot);
 
-    double pot;
-    trPot->SetBranchAddress("totpot", &pot); // should this be totgoodpot?
+    TTreeFormula form0("form0", "totpot", trPot);
 
     for(int n = 0; n < trPot->GetEntries(); n++){
       trPot->GetEntry(n);
 
-      fPOT += pot;
+      fPOT += form0.EvalInstance(0);
     }
 
     // This won't work for old files, where we would need to set the POT
