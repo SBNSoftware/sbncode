@@ -28,53 +28,35 @@ using namespace ana;
 void nus()
 {
   // See demo0.C for explanation of these repeated parts
-  const std::string fnameBeam = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed/output_SBNOsc_NumuSelection_Modern_SBND.root";
-  // const std::string fnameSwap = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_oscnue_ExampleAnalysis_ExampleSelection.root";
+
+  const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+
+  const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
 
   // Source of events
   SpectrumLoader loaderBeam(fnameBeam);
   // SpectrumLoader loaderSwap(fnameSwap);
 
   // And now add Icarus data
-  const std::string fnameBeam2 = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed/output_SBNOsc_NumuSelection_Modern_Icarus.root";
-  // const std::string fnameSwap2 = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_icarus_oscnue_ExampleAnalysis_ExampleSelection.root";
+  const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
 
   // Source of events
   SpectrumLoader loaderBeam2(fnameBeam2);
   // SpectrumLoader loaderSwap2(fnameSwap2);
 
-  const double sbndPOT = 6.6e20 * 1.e20 / 47883366000000000000.000000;
-  const double icarusPOT = 6.6e20 * 1.e20 / 118884300000000000000.000000;
+  const double sbndPOT = 6.6e20;
+  const double icarusPOT = 6.6e20;
 
-  const Var kRecoEnergy({}, // ToDo: smear with some resolution
-                        [](const caf::StandardRecord* sr)
-                        {
-                          double fE = sr->sbn.truth.neutrino[0].energy;
-                          TRandom3 r(floor(fE*10000));
-                          double smear = r.Gaus(1, 0.1); // Flat 10% E resolution
-                          return fE*smear;
-                        });
+  const Var kTrueE = SIMPLEVAR(sbn.truth.neutrino[0].energy);
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
-  const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);
-
-  const Cut kSelectionCut({},
-                       [](const caf::StandardRecord* sr)
-                       {
-                         double fE = sr->sbn.truth.neutrino[0].energy;
-                         TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->sbn.truth.neutrino[0].iscc;
-                         double p = r.Uniform();
-                         // 60% eff for CC, 5% for NC
-                         if(isCC) return p < 0.6;
-                         else return p < 0.05;
-                       });
+  const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTrueE);
 
   PredictionNoExtrap pred(loaderBeam, kNullLoader, kNullLoader,
-                          axEnergy, kSelectionCut);
+                          axEnergy, kIsNumuCC);
 
   PredictionNoExtrap pred2(loaderBeam2, kNullLoader, kNullLoader,
-                          axEnergy, kSelectionCut);
+                          axEnergy, kIsNumuCC);
 
   loaderBeam.Go();
   // loaderSwap.Go();
