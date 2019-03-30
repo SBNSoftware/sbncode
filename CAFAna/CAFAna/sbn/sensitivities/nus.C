@@ -7,8 +7,6 @@
 #include "CAFAna/Analysis/Calcs.h"
 #include "OscLib/func/OscCalculatorSterile.h"
 #include "StandardRecord/StandardRecord.h"
-#include "TCanvas.h"
-#include "TH1.h"
 #include "CAFAna/Vars/FitVarsSterile.h"
 #include "CAFAna/Analysis/FitAxis.h"
 
@@ -20,10 +18,10 @@
 #include "CAFAna/Experiment/GaussianConstraint.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 
-// Random numbers to fake an efficiency and resolution
-#include "TRandom3.h"
-
-#include "TMarker.h"
+#include "TCanvas.h"
+#include "TH1.h"
+#include "TH2.h"
+#include "TLegend.h"
 
 using namespace ana;
 
@@ -63,7 +61,7 @@ void nus()
     const Spectrum data = pred_nd_numu.Predict(calc).FakeData(sbndPOT);
     SingleSampleExperiment expt(&pred_nd_numu, data);
 
-    TFile* fOutput = new TFile("4flavour/Surfaces_nus.root","RECREATE");
+    TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
 
     //Define fit axes
     const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 100, 0.001, 1);
@@ -94,7 +92,7 @@ void nus()
     surf.DrawContour(crit1sig, 7, kBlue);
     surf.DrawContour(crit2sig, kSolid, kBlue);
 
-    c1->SaveAs("4flavour/nus_plot1.pdf");
+    c1->SaveAs("nus_SBND.pdf");
 
     // Let's now try adding a second experiment, for instance Icarus
     calc->SetL(BaselineIcarus); // Icarus
@@ -118,7 +116,7 @@ void nus()
     surf2.DrawContour(crit1sig2, 7, kGreen+2);
     surf2.DrawContour(crit2sig2, kSolid, kGreen+2);
 
-    c1->SaveAs("4flavour/nus_plot2.pdf");
+    c1->SaveAs("nus_ICARUS.pdf");
 
     Surface surfMulti(&multiExpt, calc,
 		      kAxSinSq2Theta24,
@@ -133,10 +131,35 @@ void nus()
     TH2* crit1sigMulti = Gaussian68Percent2D(surfMulti);
     TH2* crit2sigMulti = Gaussian2Sigma2D(surfMulti);
 
-    surfMulti.DrawContour(crit1sigMulti, 7, kBlue);
-    surfMulti.DrawContour(crit2sigMulti, kSolid, kBlue);
+    surfMulti.DrawContour(crit1sigMulti, 7, kRed);
+    surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
     
-    c1->SaveAs("4flavour/nus_plot3.pdf");
+    c1->SaveAs("nus_BOTH.pdf");
+
+    c1->Clear();
+
+    surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
+    surf.DrawContour(crit2sigMulti, kSolid, kBlue);
+    surf2.DrawContour(crit2sigMulti, kSolid, kGreen+2);
+
+    TH1F* hDummy1 = new TH1F("","",1,0,1);
+    TH1F* hDummy2 = new TH1F("","",1,0,1);
+    TH1F* hDummy3 = new TH1F("","",1,0,1);
+
+    hDummy1->SetLineColor(kRed);
+    hDummy2->SetLineColor(kBlue);
+    hDummy3->SetLineColor(kGreen+2);
+
+    TLegend* leg = new TLegend(0.6,0.6,0.84,0.84);
+    leg->AddEntry(hDummy2, "SBND only", "l");
+    leg->AddEntry(hDummy3, "Icarus only", "l");
+    leg->AddEntry(hDummy1, "Combined fit", "l");
+    leg->SetLineColor(10);
+    leg->SetFillColor(10);
+    leg->Draw();
+
+    c1->SaveAs("nus_ALL.root");
+    c1->SaveAs("nus_ALL.pdf");
 
     fOutput->Close();
   }
