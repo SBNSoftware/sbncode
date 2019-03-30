@@ -4,7 +4,7 @@
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "TFile.h"
 
 using namespace ana;
@@ -29,7 +29,12 @@ void make_state()
   const double sbndPOT = 6.6e20;
   const double icarusPOT = 6.6e20;
 
-  const Var kTrueE = SIMPLEVAR(sbn.truth.neutrino[0].energy);
+  //const Var kTrueE = SIMPLEVAR(truth.neutrino[0].energy);
+
+  const Var kTrueE([](const caf::SRProxy* sr)
+                         {
+                           return sr->truth[0].neutrino.energy;
+                         });
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
   const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTrueE);
