@@ -11,7 +11,7 @@ namespace ana
   {
   public:
     CosmicBkgScaleSyst() : ISyst("cosmicScale", "Cosmic background scale") {}
-    void Shift(double, Restorer&, caf::StandardRecord*, double&) const {}
+    void Shift(double, Restorer&, caf::SRProxy*, double&) const {}
   };
 
   extern const CosmicBkgScaleSyst kCosmicBkgScaleSyst;

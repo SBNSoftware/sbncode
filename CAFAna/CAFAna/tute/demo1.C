@@ -6,7 +6,7 @@
 #include "CAFAna/Core/Binning.h"
 #include "CAFAna/Core/Var.h"
 // #include "CAFAna/Cuts/TruthCuts.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "TCanvas.h"
 #include "TH1.h"
 
@@ -32,9 +32,9 @@ void demo1()
   SpectrumLoader loaderSwap(fnameSwap);
 
   const Var kRecoEnergy(// ToDo: smear with some resolution
-                        [](const caf::StandardRecord* sr)
+                        [](const caf::SRProxy* sr)
                         {
-                          double fE = sr->truth.neutrino[0].energy;
+                          double fE = sr->truth[0].neutrino.energy;
                           TRandom3 r(floor(fE*10000));
                           double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
                           return fE*smear;
@@ -46,11 +46,11 @@ void demo1()
   // Fake POT: we need to sort this out in the files first
   const double pot = 6.e20;
 
-  const Cut kSelectionCut([](const caf::StandardRecord* sr)
+  const Cut kSelectionCut([](const caf::SRProxy* sr)
                           {
-                            double fE = sr->truth.neutrino[0].energy;
+                            double fE = sr->truth[0].neutrino.energy;
                             TRandom3 r(floor(fE*10000));
-                            bool isCC = sr->truth.neutrino[0].iscc;
+                            bool isCC = sr->truth[0].neutrino.iscc;
                             double p = r.Uniform();
                             // 80% eff for CC, 10% for NC
                             if(isCC) return p < 0.8;

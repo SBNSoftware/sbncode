@@ -8,7 +8,7 @@
 
 #include "CAFAna/Cuts/TruthCuts.h"
 
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 
 #include "TCanvas.h"
 #include "TH1.h"
@@ -28,19 +28,19 @@ void demo4()
   SpectrumLoader loaderBeam(fnameBeam);
 
   const Var kRecoEnergy(// ToDo: smear with some resolution
-                        [](const caf::StandardRecord* sr)
+                        [](const caf::SRProxy* sr)
                         {
-                          double fE = sr->truth.neutrino[0].energy;
+                          double fE = sr->truth[0].neutrino.energy;
                           TRandom3 r(floor(fE*10000));
                           double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
                           return fE*smear;
                         });
 
-  const Cut kSelectionCut([](const caf::StandardRecord* sr)
+  const Cut kSelectionCut([](const caf::SRProxy* sr)
                           {
-                            double fE = sr->truth.neutrino[0].energy;
+                            double fE = sr->truth[0].neutrino.energy;
                             TRandom3 r(floor(fE*10000));
-                            bool isCC = sr->truth.neutrino[0].iscc;
+                            bool isCC = sr->truth[0].neutrino.iscc;
                             double p = r.Uniform();
                             // 80% eff for CC, 10% for NC
                             if(isCC) return p < 0.8;
@@ -67,16 +67,16 @@ void demo4()
     // Function that will be called to actually do the shift
     void Shift(double sigma,
                Restorer& restore,
-               caf::StandardRecord* sr,
+               caf::SRProxy* sr,
                double& weight) const override
     {
       // First - register all the variables that will need to be restored to
       // return the record to nominal
-      restore.Add(sr->truth.neutrino[0].energy);
+      restore.Add(sr->truth[0].neutrino.energy);
 
       // Then edit the event record
       const double scale = 1 + .03*sigma; // 3% energy scale syst.
-      sr->truth.neutrino[0].energy *= scale;
+      sr->truth[0].neutrino.energy *= scale;
     }
   };
   const ToyEnergyScaleSyst eSyst;
@@ -92,12 +92,12 @@ void demo4()
 
     void Shift(double sigma,
                Restorer& restore,
-               caf::StandardRecord* sr,
+               caf::SRProxy* sr,
                double& weight) const override
     {
       // A systematic can also reweight events, based on whatever criteria you
       // want.
-      if(sr->truth.neutrino[0].energy > 1.5) weight *= 1+0.2*sigma;
+      if(sr->truth[0].neutrino.energy > 1.5) weight *= 1+0.2*sigma;
       else weight *= 1+0.1*sigma;
     }
   };

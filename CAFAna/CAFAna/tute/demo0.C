@@ -8,7 +8,7 @@
 
 // #include "CAFAna/Cuts/TruthCuts.h"
 
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 
 #include "TCanvas.h"
 #include "TH1.h"
@@ -28,20 +28,20 @@ void demo0()
 
   // A Var is a little snippet of code that takes a record representing the
   // event record and returns a single number to plot.
-  const Var kTruthEnergy([](const caf::StandardRecord* sr)
+  const Var kTruthEnergy([](const caf::SRProxy* sr)
                          {
-                           return sr->truth.neutrino[0].energy;
+                           return sr->truth[0].neutrino.energy;
                          });
 
   // For such a simple variable you can use a shortcut like this
-  const Var kTruthY = SIMPLEVAR(truth.neutrino[0].inelasticityY);
+  const Var kTruthY = SIMPLEVAR(truth[0].neutrino.inelasticityY);
 
   // Define a spectrum, ie a histogram with associated POT information
   const Binning binsEnergy = Binning::Simple(50, 0, 5);
   const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTruthEnergy);
   // kIsNumuCC here is a "Cut". Same as a Var but returning a boolean. In this
   // case, we're only keeping events that are truly numu CC interactions.
-  const Var kIsCC = SIMPLEVAR(truth.neutrino[0].iscc);
+  const Var kIsCC = SIMPLEVAR(truth[0].neutrino.iscc);
   Spectrum sEnergy(loader, axEnergy, kIsCC != 0);
 
   Spectrum sEnergyNC(loader, axEnergy, kIsCC == 0);

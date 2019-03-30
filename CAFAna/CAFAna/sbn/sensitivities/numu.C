@@ -6,7 +6,7 @@
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Analysis/Calcs.h"
 #include "OscLib/func/OscCalculatorSterile.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "TCanvas.h"
 #include "TH1.h"
 #include "CAFAna/Vars/FitVarsSterile.h"
@@ -46,8 +46,8 @@ void numu()
   const double sbndPOT = 6.6e20 * 1.e20 / 47883366000000000000.000000;
   const double icarusPOT = 6.6e20 * 1.e20 / 118884300000000000000.000000;
 
-  const Var kRecoEnergy({}, // ToDo: smear with some resolution
-                        [](const caf::StandardRecord* sr)
+  const Var kRecoEnergy(// ToDo: smear with some resolution
+                        [](const caf::SRProxy* sr)
                         {
                           double fE = sr->sbn.truth.neutrino[0].energy;
                           TRandom3 r(floor(fE*10000));
@@ -58,17 +58,16 @@ void numu()
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
   const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);
 
-  const Cut kSelectionCut({},
-                       [](const caf::StandardRecord* sr)
-                       {
-                         double fE = sr->sbn.truth.neutrino[0].energy;
-                         TRandom3 r(floor(fE*10000));
-                         bool isCC = sr->sbn.truth.neutrino[0].iscc;
-                         double p = r.Uniform();
-                         // 80% eff for CC, 10% for NC
-                         if(isCC) return p < 0.8;
-                         else return p < 0.10;
-                       });
+  const Cut kSelectionCut([](const caf::SRProxy* sr)
+                          {
+                            double fE = sr->sbn.truth.neutrino[0].energy;
+                            TRandom3 r(floor(fE*10000));
+                            bool isCC = sr->sbn.truth.neutrino[0].iscc;
+                            double p = r.Uniform();
+                            // 80% eff for CC, 10% for NC
+                            if(isCC) return p < 0.8;
+                            else return p < 0.10;
+                          });
 
   PredictionNoExtrap pred(loaderBeam, kNullLoader, kNullLoader,
                           axEnergy, kSelectionCut);

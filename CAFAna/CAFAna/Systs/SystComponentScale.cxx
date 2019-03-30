@@ -17,9 +17,9 @@ namespace ana
 
   //----------------------------------------------------------------------
   void SystComponentScale::Shift(double sigma,
-                                  Restorer& /*restore*/,
-                                  caf::StandardRecord* sr,
-                                  double& weight) const
+                                 Restorer& /*restore*/,
+                                 caf::SRProxy* sr,
+                                 double& weight) const
   {
     if(!fCut(sr)) return;
 

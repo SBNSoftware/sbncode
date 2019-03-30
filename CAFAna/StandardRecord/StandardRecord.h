@@ -17,7 +17,7 @@ namespace caf
     StandardRecord();
     ~StandardRecord();
 
-    SRTruthBranch    truth;     ///< Truth branch for MC: energy, flavor, etc.
+    std::vector<SRTruthBranch> truth;     ///< Truth branch for MC: energy, flavor, etc.
   };
   
 } // end namespace

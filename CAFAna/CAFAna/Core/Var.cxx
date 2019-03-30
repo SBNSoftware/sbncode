@@ -8,7 +8,7 @@
 namespace ana
 {
   // explicitly instantiate the template for the types we know we have
-  template class GenericVar<caf::StandardRecord>;
+  template class GenericVar<caf::SRProxy>;
   template class GenericVar<caf::SRSpill>;
   template class GenericVar<caf::SRSpillTruthBranch>;
 
@@ -163,20 +163,20 @@ namespace ana
   //----------------------------------------------------------------------
   Var Scaled(const Var& v, double s)
   {
-    return Var([v, s](const caf::StandardRecord* sr){return s*v(sr);});
+    return Var([v, s](const caf::SRProxy* sr){return s*v(sr);});
   }
 
   //----------------------------------------------------------------------
   Var Constant(double c)
   {
-    return Var([c](const caf::StandardRecord*){return c;});
+    return Var([c](const caf::SRProxy*){return c;});
   }
 
   //--------------------------------------------------------------------
 
   Var Sqrt(const Var& v)
   {
-    return Var([v](const caf::StandardRecord* sr){return sqrt(v(sr));});
+    return Var([v](const caf::SRProxy* sr){return sqrt(v(sr));});
   }
 
   //----------------------------------------------------------------------

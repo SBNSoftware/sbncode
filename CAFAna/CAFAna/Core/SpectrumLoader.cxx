@@ -9,6 +9,7 @@
 #include "CAFAna/Core/GenieWeightList.h"
 
 #include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 
 #include <cassert>
 #include <iostream>
@@ -127,38 +128,16 @@ namespace ana
     tr = (TTree*)f->Get("sbnana");
     assert(tr);
 
-    // Surely no-one will generate 1000 universes?
-    std::vector<std::array<double, 1000>> genie_tmp;
-    const std::vector<std::string> genie_names = GetGenieWeightNames();
-    genie_tmp.resize(genie_names.size());
-    std::vector<int> genie_size_tmp;
-    genie_size_tmp.resize(genie_names.size());
-
     FloatingExceptionOnNaN fpnan(false);
 
-    caf::StandardRecord sr;
+    long n = 0;
+    caf::SRProxy sr(0, tr, "events", n, 0);
 
-    // This is a dirty fix while we figure out a better way of including the libraries
-
-    sr.truth.neutrino.resize(1);
-
-    TTreeFormula form1("form1", "truth.neutrino[0].iscc", tr);
-    TTreeFormula form2("form2", "truth.neutrino[0].inelasticityY", tr);
-    TTreeFormula form3("form3", "truth.neutrino[0].energy", tr);
-    TTreeFormula form4("form4", "truth.neutrino[0].pdg", tr);
-    TTreeFormula form5("form5", "truth.neutrino[0].genie_intcode", tr);
-
-    int Nentries = 10000;//tr->GetEntries();
+    int Nentries = tr->GetEntries();
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
-    for(int n = 0; n < Nentries; ++n){
-      tr->GetEntry(n);
-
-      sr.truth.neutrino[0].iscc = form1.EvalInstance(0);
-      sr.truth.neutrino[0].inelasticityY = form2.EvalInstance(0);
-      sr.truth.neutrino[0].energy = form3.EvalInstance(0);
-      sr.truth.neutrino[0].pdg = form4.EvalInstance(0);
-      sr.truth.neutrino[0].genie_intcode = form5.EvalInstance(0);
+    for(n = 0; n < Nentries; ++n){
+      tr->LoadTree(n);
 
       HandleRecord(&sr);
 
@@ -173,7 +152,7 @@ namespace ana
   public:
     CutVarCache() : fVals(U::MaxID()+1), fValsSet(U::MaxID()+1, false) {}
 
-    inline T Get(const U& var, const caf::StandardRecord* sr)
+    inline T Get(const U& var, const caf::SRProxy* sr)
     {
       const unsigned int id = var.ID();
 
@@ -195,7 +174,7 @@ namespace ana
   };
 
   //----------------------------------------------------------------------
-  void SpectrumLoader::HandleRecord(caf::StandardRecord* sr)
+  void SpectrumLoader::HandleRecord(caf::SRProxy* sr)
   {
     // Some shifts only adjust the weight, so they're effectively nominal, but
     // aren't grouped with the other nominal histograms. Keep track of the
@@ -205,33 +184,26 @@ namespace ana
     CutVarCache<double, Var> nomVarCache;
 
     for(auto& shiftdef: fHistDefs){
-      const SystShifts& shift = shiftdef.first;
+      // TODO TODO TODO
+      //      const SystShifts& shift = shiftdef.first;
 
       // Need to provide a clean slate for each new set of systematic shifts to
       // work from. Unfortunately, copying the whole StandardRecord is pretty
       // expensive. So we need to rely on this slightly dangerous "Restorer"
       // mechanism.
 
-      // Spot checks to try and make sure no-one misses adding a variable to
-      // Restorer
-      static int iterationNo = 0;
-      // Prime means we should get good coverage over all combinations
-      const int kTestIterations = 9973;
-
-      const TestVals* save = 0;
-      if(++iterationNo % kTestIterations == 0)
-        save = GetVals(sr, shiftdef.second);
-
       Restorer* restore = 0;
       double systWeight = 1;
       bool shifted = false;
       // Can special-case nominal to not pay cost of Shift() or Restorer
+      /* TODO TODO TODO
       if(!shift.IsNominal()){
         restore = new Restorer;
         shift.Shift(*restore, sr, systWeight);
         // Did the Shift actually modify the event at all?
         shifted = !restore->Empty();
       }
+      */
 
       for(auto& cutdef: shiftdef.second){
         const Cut& cut = cutdef.first;
@@ -292,12 +264,6 @@ namespace ana
       // Delete Restorer at this point and return StandardRecord to its
       // unshifted form ready for the next histogram.
       delete restore;
-
-      // Make sure the record went back the way we found it
-      if(save){
-        CheckVals(save, sr, shift.ShortName(), shiftdef.second);
-        delete save;
-      }
     } // end for shiftdef
   }
 
@@ -331,137 +297,5 @@ namespace ana
         }
       }
     }
-
-    // std::map<int, double> livetime;
-    // std::map<int, double> pot;
-
-    // for(unsigned int i = 0; i < fAllCuts.size(); ++i){
-    //   const int id = fAllCuts[i].ID();
-    //   if(fLivetimeByCut[i] < 0){
-    //     fLivetimeByCut[i] = 0;
-    //     std::cout << "WARNING: no way to compute livetime for FD data spectrum. If you want a livetime you need to be applying one of the cuts from TimingCuts.h or similar. You probably should be anyway to remove bad data near the spill ends." << std::endl;
-    //   }
-    //   livetime.emplace(id, fLivetimeByCut[i]);
-    //   pot.emplace(id, fPOTByCut[i]);
-    // }
-
-    // for(auto& shiftdef: fHistDefs){
-    //   for(auto& cutdef: shiftdef.second){
-    //     const Cut& cut = cutdef.first;
-    //     const int id = cut.ID();
-
-    //     for(auto& weidef: cutdef.second){
-    //       for(auto& vardef: weidef.second){
-    //         for(Spectrum* s: vardef.second.spects){
-    //           s->fPOT += pot[id];
-    //           s->fLivetime += livetime[id];
-    //         }
-
-    //         for(ReweightableSpectrum* rw: vardef.second.rwSpects){
-    //           rw->fPOT += pot[id];
-    //           rw->fLivetime += livetime[id];
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-  }
-
-  //----------------------------------------------------------------------
-  const SpectrumLoader::TestVals* SpectrumLoader::
-  GetVals(const caf::StandardRecord* sr,
-          IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>& hists) const
-  {
-    TestVals* ret = new TestVals;
-
-    // Store values for all Vars and Cuts of interest
-    for(auto& cutdef: hists){
-      const bool cutval = cutdef.first(sr);
-      ret->cuts.push_back(cutval);
-      // Don't evaluate Vars when the Cut fails, might not be safe
-      if(!cutval) continue;
-
-      for(auto& weidef: cutdef.second){
-        ret->weis.push_back(weidef.first(sr));
-
-        for(auto& vardef: weidef.second){
-          if(!vardef.first.IsMulti())
-            ret->vars.push_back((vardef.first.GetVar())(sr));
-        }
-      }
-    }
-
-    return ret;
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoader::ValError(const std::string& type,
-                                const std::string& shift,
-                                const std::set<std::string>& /*req*/,
-                                double orig, double now) const
-  {
-    // Try and print a comprehensive error message, I imagine this might be
-    // hard to track down.
-
-    std::cerr << std::endl;
-
-    std::cerr << "Error. Value of " << type
-              << " changed after it was shifted and then restored."
-              << std::endl;
-
-    std::cerr << "While applying shift " << shift;
-
-    std::cerr << " initially had value " << orig
-              << " now has " << now << std::endl;
-
-    std::cerr << "Please check your use of Restorer very carefully"
-              << std::endl;
-
-    abort();
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoader::CheckVals(const TestVals* v,
-                                 const caf::StandardRecord* sr,
-                                 const std::string& shiftName,
-                                 IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>& hists) const
-  {
-    unsigned int cutIdx = 0;
-    unsigned int weiIdx = 0;
-    unsigned int varIdx = 0;
-
-    // Ensure everything is as TestVals says it should be
-
-    for(auto& cutdef: hists){
-      const bool cutval = cutdef.first(sr);
-
-      if(cutval != v->cuts[cutIdx]){
-        ValError("Cut", shiftName, {},
-                 v->cuts[cutIdx], cutval);
-      }
-      ++cutIdx;
-
-      // Don't evaluate Vars when the Cut fails, might not be safe
-      if(!cutval) continue;
-
-      for(auto& weidef: cutdef.second){
-        const double weival = weidef.first(sr);
-        if(!std::isnan(weival) && weival != v->weis[weiIdx]){
-          ValError("Cut", shiftName, {},
-                   v->weis[weiIdx], weival);
-        }
-        ++weiIdx;
-
-        for(auto& vardef: weidef.second){
-          if(vardef.first.IsMulti()) continue;
-          const double varval = vardef.first.GetVar()(sr);
-          if(!std::isnan(varval) && varval != v->vars[varIdx]){
-            ValError("Var", shiftName, {},
-                     v->vars[varIdx], varval);
-          }
-          ++varIdx;
-        } // end for vardef
-      } // end for weidef
-    } // end for cutdef
   }
 } // namespace

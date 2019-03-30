@@ -31,7 +31,7 @@ namespace ana
 
     void Shift(double sigma,
                Restorer& restore,
-               caf::StandardRecord* sr,
+               caf::SRProxy* sr,
                double& weight) const override;
 
     // Some derived classes might have a back-channel allowing them to

@@ -3,7 +3,7 @@
 #include <list>
 #include <string>
 
-namespace caf{class StandardRecord;}
+namespace caf{class SRProxy;}
 
 namespace ana
 {
@@ -55,7 +55,7 @@ namespace ana
     /// \param weight  Scale this weight for reweighting systematics
     virtual void Shift(double sigma,
                        Restorer& restore,
-                       caf::StandardRecord* sr,
+                       caf::SRProxy* sr,
                        double& weight) const = 0;
 
     /// PredictionInterp normally interpolates between spectra made at

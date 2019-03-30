@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include "CAFAna/Core/Cut.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 
 namespace ana
 {
@@ -12,9 +12,9 @@ namespace ana
   /// We use uniform-initializer syntax to concisely pass the list of necessary
   /// branches. In this case the selection function is simple enough that we
   /// can include it inline as a lambda function.
-  const Cut kIsNC([](const caf::StandardRecord* sr)
+  const Cut kIsNC([](const caf::SRProxy* sr)
                   {
-                    return !sr->truth.neutrino[0].iscc;
+                    return !sr->truth[0].neutrino.iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -26,10 +26,10 @@ namespace ana
     {
     }
 
-    bool operator()(const caf::StandardRecord* sr) const
+    bool operator()(const caf::SRProxy* sr) const
     {
-      return sr->truth.neutrino[0].iscc && abs(sr->truth.neutrino[0].pdg) == fPdgOrig
-             && abs(sr->truth.neutrino[0].pdg) == fPdg;
+      return sr->truth[0].neutrino.iscc && abs(sr->truth[0].neutrino.pdg) == fPdgOrig
+             && abs(sr->truth[0].neutrino.pdg) == fPdg;
     }
   protected:
     int fPdg, fPdgOrig;
@@ -53,13 +53,13 @@ namespace ana
   const Cut kIsTauFromE(CCFlavSel(16, 12));
 
   /// Is this truly an antineutrino?
-  const Cut kIsAntiNu([](const caf::StandardRecord* sr)
+  const Cut kIsAntiNu([](const caf::SRProxy* sr)
                       {
-                        return sr->truth.neutrino[0].pdg < 0;
+                        return sr->truth[0].neutrino.pdg < 0;
                       });
 
   // const Cut kIsTrueFV({},
-  //                     [](const caf::StandardRecord* sr)
+  //                     [](const caf::SRProxy* sr)
   //                     {
 		// 	if (sr->dune.isFD){
 		// 	  return ( 
@@ -81,7 +81,7 @@ namespace ana
   //ETW 11/5/2018 Fiducial cut using MVA variable
   //Should use the previous one (kIsTrueFV) for nominal analysis
   // const Cut kPassFid_MVA({},
-		// 	[](const caf::StandardRecord* sr)
+		// 	[](const caf::SRProxy* sr)
 		// 	{
 		// 	  return ( sr->dune.mvanumu > -1 );
 		// 	});

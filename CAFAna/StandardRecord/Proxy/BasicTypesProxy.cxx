@@ -308,6 +308,11 @@ namespace caf
   // Used by nested variant
   std::string VectorProxyBase::AtSize() const
   {
+    // There are no "n" counts in sbncode files for now, so do it by brute-force
+    const int idx = fName.find_last_of('.');
+    return fName.substr(0, idx+1)+"@"+fName.substr(idx+1)+".size()";
+
+    /*
     // Counts exist, but with non-systematic names
     if(fName == "rec.me.trkkalman"  ) return "rec.me.nkalman";
     if(fName == "rec.me.trkdiscrete") return "rec.me.ndiscrete";
@@ -335,6 +340,7 @@ namespace caf
       // foo.bar.baz -> foo.bar.nbaz
       return fName.substr(0, idx)+".n"+fName.substr(idx+1);
     }
+    */
   }
 
   //----------------------------------------------------------------------
@@ -355,6 +361,9 @@ namespace caf
   //----------------------------------------------------------------------
   size_t VectorProxyBase::size() const
   {
+    // HACK HACK HACK
+    return 1;
+
     // If there's a valid systematic override value in place, give that
     if(fDir){
       // Flat
