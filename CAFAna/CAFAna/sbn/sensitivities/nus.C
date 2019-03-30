@@ -44,7 +44,7 @@ void nus()
     std::cout << "Loading state from " << stateFname << std::endl; 
     TFile fin(stateFname);
     PredictionNoExtrap& pred_nd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
-    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
+    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_fd_numu")).release();
 
     // Calculator
     osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
