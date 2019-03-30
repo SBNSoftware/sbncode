@@ -8,14 +8,13 @@
 #include "CAFAna/Core/Utilities.h"
 #include "CAFAna/Core/WildcardSource.h"
 
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/BasicTypesProxy.h"
 
 #include "ifdh.h"
 
 #include "TFile.h"
 #include "TH1.h"
 #include "TTree.h"
-#include "TTreeFormula.h"
 
 #include <algorithm>
 #include <cassert>
@@ -279,16 +278,14 @@ namespace ana
       trPot = (TTree*)f->Get("sbnsubrun");
     assert(trPot);
 
-    TTreeFormula form0("form0", "totpot", trPot);
+    long n;
+    caf::Proxy<double> pot(0, trPot, "totpot", n, 0);
 
-    for(int n = 0; n < trPot->GetEntries(); n++){
-      trPot->GetEntry(n);
+    for(n = 0; n < trPot->GetEntries(); n++){
+      trPot->LoadTree(n);
 
-      fPOT += form0.EvalInstance(0);
+      fPOT += pot;
     }
-
-    // This won't work for old files, where we would need to set the POT
-    // to an arbitrary number (e.g. fPOT = 1.e20)
 
     return f;
   }

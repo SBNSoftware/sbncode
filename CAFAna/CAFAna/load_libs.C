@@ -50,6 +50,7 @@ void load_libs()
         "Minuit2", // CAFReweight pulls in Genie which pulls in ROOT geometry
         // "Cintex",
         "StandardRecord",
+        "StandardRecordProxy",
         // "StandardRecord_dict",
         "CAFAnaCore",
         "CAFAnaVars",
