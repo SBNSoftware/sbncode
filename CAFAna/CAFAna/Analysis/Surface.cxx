@@ -29,6 +29,11 @@
 
 namespace ana
 {
+  inline double BinCenter(const TAxis* ax, int bin, bool islog)
+  {
+    return islog ? ax->GetBinCenterLog(bin) : ax->GetBinCenter(bin);
+  }
+
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
                    osc::IOscCalculatorAdjustable* calc,
@@ -40,7 +45,7 @@ namespace ana
                    const std::vector<SystShifts>& systSeedPts,
                    bool parallel,
                    Fitter::Precision prec)
-    : fParallel(parallel), fPrec(prec)
+    : fParallel(parallel), fPrec(prec), fLogX(xax.islog), fLogY(yax.islog)
   {
     fHist = ExpandedHistogram(";"+xax.var->LatexName()+";"+yax.var->LatexName(),
                               xax.nbins, xax.min, xax.max, xax.islog,
@@ -98,8 +103,8 @@ namespace ana
     Fitter fit(expt, allVars, profSysts);
     fit.SetPrecision(fPrec);
     // Seed from best grid point
-    xax.var->SetValue(calc, xax.islog? fHist->GetXaxis()->GetBinCenterLog(minx) : fHist->GetXaxis()->GetBinCenter(minx));
-    yax.var->SetValue(calc, yax.islog? fHist->GetYaxis()->GetBinCenterLog(miny) : fHist->GetYaxis()->GetBinCenter(miny));
+    xax.var->SetValue(calc, BinCenter(fHist->GetXaxis(), minx, xax.islog));
+    yax.var->SetValue(calc, BinCenter(fHist->GetYaxis(), miny, yax.islog));
     for(int i = 0; i < (int)fSeedValues.size(); ++i) profVars[i]->SetValue( calc, fSeedValues[i] );
     SystShifts systSeed = SystShifts::Nominal();
     fMinChi = fit.Fit(calc, systSeed, seedPts);
@@ -182,8 +187,8 @@ namespace ana
       const int x = bin%Nx+1;
       const int y = bin/Nx+1;
 
-      const double xv = xax.islog ? fHist->GetXaxis()->GetBinCenterLog(x) : fHist->GetXaxis()->GetBinCenter(x);
-      const double yv = yax.islog ? fHist->GetYaxis()->GetBinCenterLog(y) : fHist->GetYaxis()->GetBinCenter(y);
+      const double xv = BinCenter(fHist->GetXaxis(), x, xax.islog);
+      const double yv = BinCenter(fHist->GetYaxis(), y, yax.islog);
 
       // For parallel running need to set these at point of use otherwise we
       // race.
@@ -345,8 +350,8 @@ namespace ana
     TH2* axes = new TH2C(UniqueName().c_str(),
                          TString::Format(";%s;%s",
                                          ax->GetTitle(), ay->GetTitle()),
-                         Nx-1, ax->GetBinCenter(1), ax->GetBinCenter(Nx),
-                         Ny-1, ay->GetBinCenter(1), ay->GetBinCenter(Ny));
+                         Nx-1, BinCenter(ax, 1, fLogX), BinCenter(ax, Nx, fLogX),
+                         Ny-1, BinCenter(ay, 1, fLogY), BinCenter(ay, Ny, fLogY));
     axes->Draw();
 
     if(fHist){
