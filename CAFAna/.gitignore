@@ -13,3 +13,4 @@ update-release
 *_C.d
 *_C.so
 *.pcm
+*~
