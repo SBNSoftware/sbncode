@@ -26,12 +26,12 @@
 using namespace ana;
 
 // State file
-const char* stateFname = "cafe_state.root";
+const char* basicFname = "cafe_state.root";
 
 const double sbndPOT = POTnominal;
 const double icarusPOT = POTnominal;
 
-void nus()
+void nus(const char* stateFname = basicFname)
 {
 
   if (TFile(stateFname).IsZombie()){
