@@ -102,7 +102,7 @@ namespace ana
     /// For expert use, custom painting of contours
     std::vector<TGraph*> GetGraphs(TH2* fc, double minchi = -1);
 
-    void SaveTo(TDirectory * dir)const;
+    void SaveTo(TDirectory * dir) const;
     static std::unique_ptr< Surface > LoadFrom(TDirectory * dir);
 
   protected:

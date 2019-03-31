@@ -157,6 +157,8 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
       TH2* crit2 = Gaussian3Sigma1D1Sided(ms);
       ms.DrawEnsemble(crit2);
       ms.DrawContour(crit2, kSolid, kRed);
+
+      ms.SaveTo(fOutput->mkdir("median_surf"));
     }
 
     surfMulti.DrawContour(crit2sigMulti, nmock > 0 ? 7 : kSolid, kRed);

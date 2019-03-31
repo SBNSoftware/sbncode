@@ -1,7 +1,11 @@
 #include "CAFAna/Analysis/MedianSurface.h"
 
+#include "CAFAna/Core/LoadFromFile.h"
+
+#include "TDirectory.h"
 #include "TGraph.h"
 #include "TH2.h"
+#include "TObjString.h"
 #include "TPad.h"
 
 namespace ana
@@ -62,4 +66,38 @@ namespace ana
 
     gPad->Update();
   }
+
+  //----------------------------------------------------------------------
+  void MedianSurface::SaveTo(TDirectory* dir) const
+  {
+    TDirectory* tmp = gDirectory;
+    dir->cd();
+    TObjString("MedianSurface").Write("type");
+
+    for(unsigned int i = 0; i < fThrows.size(); ++i){
+      fThrows[i].SaveTo(dir->mkdir(TString::Format("surf%d", i)));
+    }
+
+    tmp->cd();
+  }
+
+  //----------------------------------------------------------------------
+  std::unique_ptr<MedianSurface> MedianSurface::LoadFrom(TDirectory* dir)
+  {
+    DontAddDirectory guard;
+
+    TObjString* tag = (TObjString*)dir->Get("type");
+    assert(tag);
+    assert(tag->GetString() == "MedianSurface");
+
+    std::vector<Surface> surfs;
+    for(unsigned int i = 0; ; ++i){
+      TDirectory* surfdir = dir->GetDirectory(TString::Format("surf%d", i));
+      if(!surfdir) break; // we got all of them
+      surfs.push_back(*ana::LoadFrom<Surface>(surfdir));
+    }
+
+    return std::make_unique<MedianSurface>(surfs);
+  }
+
 }
