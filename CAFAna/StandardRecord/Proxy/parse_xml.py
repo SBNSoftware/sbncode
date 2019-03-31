@@ -81,8 +81,7 @@ decls = parser.parse([context+'/StandardRecord/StandardRecord.h'],
 global_namespace = declarations.get_global_namespace(decls)
 ns = global_namespace.namespace('caf')
 
-# No enumerations to deal with for now
-# fundamental_types += [e.name for e in ns.enumerations()]
+fundamental_types += [e.name for e in ns.enumerations()]
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
@@ -116,7 +115,7 @@ print '#pragma once'
 print
 print '#include "StandardRecord/Proxy/BasicTypesProxy.h"'
 print
-#print '#include "StandardRecord/SREnums.h"'
+print '#include "StandardRecord/SREnums.h"'
 print
 print '#include "TVector3.h"'
 print
