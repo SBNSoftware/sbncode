@@ -14,7 +14,7 @@ namespace ana
     virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
     virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq32";}
-    virtual std::string LatexName() const {return "#Deltam^{2}_{32}";}
+    virtual std::string LatexName() const {return "#Deltam^{2}_{32} (eV^{2})";}
   };
 
   /// \f$ \Delta m^2_{32} \f$
@@ -29,7 +29,7 @@ namespace ana
     virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
     virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq41";}
-    virtual std::string LatexName() const {return "#Deltam^{2}_{41}";}
+    virtual std::string LatexName() const {return "#Deltam^{2}_{41} (eV^{2})";}
   };
 
   /// \f$ \Delta m^2_{41} \f$
@@ -44,7 +44,7 @@ namespace ana
     virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
     virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq43";}
-    virtual std::string LatexName() const {return "#Deltam^{2}_{43}";}
+    virtual std::string LatexName() const {return "#Deltam^{2}_{43} (eV^{2})";}
   };
   
   /// \f$ \Delta m^2_{43} \f$
