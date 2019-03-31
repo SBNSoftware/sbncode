@@ -90,6 +90,8 @@ namespace ana
 
     Progress* prog = 0;
 
+    caf::SRBranchRegistry::clear();
+
     int fileIdx = -1;
     while(TFile* f = GetNextFile()){
       ++fileIdx;
@@ -118,14 +120,7 @@ namespace ana
   void SpectrumLoader::HandleFile(TFile* f, Progress* prog)
   {
     assert(!f->IsZombie());
-    TTree* tr;
-    //    if(f->GetListOfKeys()->Contains("cafmaker")){
-    //      tr = (TTree*)f->Get("cafmaker/caf");
-    //    }
-    //    else{
-    //      tr = (TTree*)f->Get("mvaselect/MVASelection");
-    //    }
-    tr = (TTree*)f->Get("sbnana");
+    TTree* tr = (TTree*)f->Get("sbnana");
     assert(tr);
 
     FloatingExceptionOnNaN fpnan(false);
@@ -184,26 +179,22 @@ namespace ana
     CutVarCache<double, Var> nomVarCache;
 
     for(auto& shiftdef: fHistDefs){
-      // TODO TODO TODO
-      //      const SystShifts& shift = shiftdef.first;
+      const SystShifts& shift = shiftdef.first;
 
       // Need to provide a clean slate for each new set of systematic shifts to
-      // work from. Unfortunately, copying the whole StandardRecord is pretty
-      // expensive. So we need to rely on this slightly dangerous "Restorer"
-      // mechanism.
+      // work from. Copying the whole StandardRecord is pretty expensive, so
+      // modify it in place and revert it afterwards.
 
-      Restorer* restore = 0;
-      double systWeight = 1;
       bool shifted = false;
-      // Can special-case nominal to not pay cost of Shift() or Restorer
-      /* TODO TODO TODO
+
+      double systWeight = 1;
+      // Can special-case nominal to not pay cost of Shift()
       if(!shift.IsNominal()){
-        restore = new Restorer;
-        shift.Shift(*restore, sr, systWeight);
-        // Did the Shift actually modify the event at all?
-        shifted = !restore->Empty();
+        shift.Shift(sr, systWeight);
+        // If there were only weighting systs applied then the cached nominal
+        // values are still valid.
+        shifted = caf::SRProxySystController::AnyShifted();
       }
-      */
 
       for(auto& cutdef: shiftdef.second){
         const Cut& cut = cutdef.first;
@@ -261,9 +252,10 @@ namespace ana
         } // end for weidef
       } // end for cutdef
 
-      // Delete Restorer at this point and return StandardRecord to its
-      // unshifted form ready for the next histogram.
-      delete restore;
+       
+      // Return StandardRecord to its unshifted form ready for the next
+      // histogram.
+      caf::SRProxySystController::ResetSysts();
     } // end for shiftdef
   }
 

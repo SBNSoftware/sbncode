@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CAFAna/Core/ISyst.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/Utilities.h"
 
 #include "TFile.h"
@@ -18,10 +18,8 @@ namespace ana
  //  public:
  //  UncorrNDHadLinSyst() : ISyst("UncorrNDHadLinSyst", "Uncorrelated ND Linear Hadron Syst") {}
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
  //      if (!sr->dune.isFD) {
 	// const double scale = .01 * sigma;
 	// double sumE = sr->dune.eP + sr->dune.ePip + sr->dune.ePim;
@@ -39,10 +37,8 @@ namespace ana
  //  public:
  //  UncorrNDPi0LinSyst() : ISyst("UncorrNDPi0LinSyst", "Uncorrelated ND Linear Pi0 Syst") {}
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
  //      if (!sr->dune.isFD) {
 	// const double scale = .01 * sigma;
 	// double sumE = sr->dune.ePi0;
@@ -60,10 +56,8 @@ namespace ana
  //  public:
  //  UncorrNDNLinSyst() : ISyst("UncorrNDNLinSyst", "Uncorrelated ND Linear N Syst") {}
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
  //      if (!sr->dune.isFD) {
 	// const double scale = .01 * sigma;
 	// double visE = 0.25 * sr->dune.eN; // crude approximation
@@ -84,10 +78,8 @@ namespace ana
  //  eScaleMuLArSyst() : ISyst("eScaleMuLAr", "Muon Energy Scale LAr") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco,
  //                  sr->dune.Elep_reco,
  //                  sr->dune.Ev_reco_numu,
  //                  sr->dune.RecoLepEnNumu);
@@ -124,12 +116,8 @@ namespace ana
  //  EnergyScaleMuSystND() : ISyst("eScaleMuND", "Muon Energy Scale Near Detector") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco,
- //                  sr->dune.Elep_reco);
-
  //      const double scale = 1 + .01*sigma;
 
  //      // Is a numu CC and enters the tracker
@@ -150,14 +138,8 @@ namespace ana
  //  EnergyScaleESyst() : ISyst("eScaleE", "Electron Energy Scale") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco,
- //                  sr->dune.Ev_reco_nue,
- //                  sr->dune.Elep_reco,
- //                  sr->dune.RecoLepEnNue);
-
  //      const double scale = 1 + .02*sigma;
 
  //      // Checks if ND
@@ -188,15 +170,8 @@ namespace ana
  //  ChargedHadCorrSyst() : ISyst("ChargedHadCorr", "Charged Hadron Correlated Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco,
- //                  sr->dune.Ev_reco_nue,
- //                  sr->dune.Ev_reco_numu,
- //                  sr->dune.RecoHadEnNumu,
- //                  sr->dune.RecoHadEnNue);
-
  //      const double scale = 1. + 0.05*sigma;
  //      double sumE = 0.;
  //      sumE = sr->dune.eP + sr->dune.ePim + sr->dune.ePip;
@@ -229,14 +204,8 @@ namespace ana
  //  ChargedHadUncorrFDSyst() : ISyst("ChargedHadUncorrFD", "Charged Hadron Uncorrelated FD Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco_nue,
- //                  sr->dune.Ev_reco_numu,
- //                  sr->dune.RecoHadEnNumu,
- //                  sr->dune.RecoHadEnNue);
-
  //      const double scale = 1. + 0.01*sigma;
       
  //      // TEMPORARY FIX: CHANGE BACK AFTER CAFs HAVE BEEN RERUN
@@ -263,11 +232,8 @@ namespace ana
  //  ChargedHadUncorrNDSyst() : ISyst("ChargedHadUncorrND", "Charged Hadron Uncorrelated ND Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
-
  //      const double scale = 1. + 0.01*sigma;
       
  //      if(!sr->dune.isFD) { 
@@ -288,11 +254,8 @@ namespace ana
  //  NUncorrNDSyst() : ISyst("eScaleN_ND", "Neutron Energy Scale ND") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
-
  //      const double scale = .20 * sigma;
 
  //      double visE = 0.; // neutron visible energy
@@ -318,14 +281,8 @@ namespace ana
  //  NUncorrFDSyst() : ISyst("eScaleN_FD", "Neutron Energy Scale FD") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco_numu,
- //                  sr->dune.Ev_reco_nue,
- //                  sr->dune.RecoHadEnNumu,
- //                  sr->dune.RecoHadEnNue);
-
  //      const double scale = .20 * sigma;
 
  //      double visE = 0.; // neutron visible energy
@@ -363,15 +320,8 @@ namespace ana
  //  Pi0CorrSyst() : ISyst("eScalePi0Corr", "Pi0 Correlated Energy Scale") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco,
- //                  sr->dune.Ev_reco_nue,
- //                  sr->dune.Ev_reco_numu,
- //                  sr->dune.RecoHadEnNumu,
- //                  sr->dune.RecoHadEnNue);
-
  //      const double scale = 1 + .05 * sigma;
  //      double fracPi0 = 0;
  //      double fracPi0Y = 0;
@@ -396,14 +346,8 @@ namespace ana
  //  Pi0UncorrFDSyst() : ISyst("Pi0UncorrFD", "Pi0 Uncorrelated FD Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco_nue,
- //                  sr->dune.Ev_reco_numu,
- //                  sr->dune.RecoHadEnNumu,
- //                  sr->dune.RecoHadEnNue);
-
  //      const double scale = 1. + 0.02*sigma;
       
  //      if(sr->dune.isFD) { 
@@ -428,11 +372,8 @@ namespace ana
  //  Pi0UncorrNDSyst() : ISyst("Pi0UncorrND", "Pi0Uncorrelated ND Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
- //      restore.Add(sr->dune.Ev_reco);
-
  //      const double scale = 1. + 0.02*sigma;
       
  //      if(!sr->dune.isFD) { 

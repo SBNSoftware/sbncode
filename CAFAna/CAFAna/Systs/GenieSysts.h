@@ -2,7 +2,7 @@
 
 #include "CAFAna/Core/ISyst.h"
 #include "CAFAna/Core/GenieWeightList.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include <cmath>
 #include <cassert>
 
@@ -14,8 +14,7 @@ namespace ana
   //   virtual ~GenieSyst(){};
 
   //   void Shift(double sigma,
-	 //       Restorer& restore,
-	 //       caf::StandardRecord* sr,
+	 //       caf::SRProxy* sr,
 	 //       double& weight) const override{
 
   //     assert(std::abs(sigma) <= 3 && "GENIE XSECs only valid up to +/-3 sigma!");

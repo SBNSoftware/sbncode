@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CAFAna/Core/ISyst.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/Utilities.h"
 
 #include "TFile.h"
@@ -20,8 +20,7 @@ namespace ana {
  //  public:
  //  RecoNCSyst() : ISyst("RecoNCSyst", "ND Neutral Current Reconstruction Syst") {}
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
  //      // Is ND
  //      if(!sr->dune.isFD) {
@@ -44,8 +43,7 @@ namespace ana {
  //      }
           
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
  //      // Load hist if it hasn't been loaded already
  //      const double m_mu = 0.105658;
@@ -82,8 +80,7 @@ namespace ana {
  //      }
       
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr, double& weight) const override
+	//        caf::SRProxy* sr, double& weight) const override
  //    {
  //      // Load hist if it hasn't been loaded already
  //      if (!hist) {

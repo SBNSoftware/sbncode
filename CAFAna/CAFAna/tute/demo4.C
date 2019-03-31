@@ -66,15 +66,10 @@ void demo4()
 
     // Function that will be called to actually do the shift
     void Shift(double sigma,
-               Restorer& restore,
                caf::SRProxy* sr,
                double& weight) const override
     {
-      // First - register all the variables that will need to be restored to
-      // return the record to nominal
-      restore.Add(sr->truth[0].neutrino.energy);
-
-      // Then edit the event record
+      // Edit the event record
       const double scale = 1 + .03*sigma; // 3% energy scale syst.
       sr->truth[0].neutrino.energy *= scale;
     }
@@ -91,7 +86,6 @@ void demo4()
     ToyNormSyst() : ISyst("toyNorm", "Toy Norm Scale") {}
 
     void Shift(double sigma,
-               Restorer& restore,
                caf::SRProxy* sr,
                double& weight) const override
     {
