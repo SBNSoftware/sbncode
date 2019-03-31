@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CAFAna/Core/ISyst.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/Utilities.h"
 
 #include "TFile.h"
@@ -20,8 +20,7 @@ namespace ana
   //   NumuFHCSyst() : ISyst("numufhcnorm", "Numu FHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG)==14 && sr->dune.run==20000001) weight *= 1 + .05*sigma;
   //   }
@@ -36,8 +35,7 @@ namespace ana
   //   NumuRHCSyst() : ISyst("numurhcnorm", "Numu RHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG)==14 && sr->dune.run==20000004) weight *= 1 + .05*sigma;
   //   }
@@ -52,8 +50,7 @@ namespace ana
   //   NueFHCSyst() : ISyst("nuefhcnorm", "Nue FHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG)==12 && sr->dune.run==20000002) weight *= 1 + .02*sigma;
   //   }
@@ -68,8 +65,7 @@ namespace ana
   //   NueRHCSyst() : ISyst("nuerhcnorm", "Nue RHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG)==12 && sr->dune.run==20000005) weight *= 1 + .02*sigma;
   //   }
@@ -86,8 +82,7 @@ namespace ana
   //   NCDisSyst() : ISyst("NCDis", "NC Dis Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(!sr->dune.isCC && sr->dune.cvnnumu > 0.5 && sr->dune.cvnnue < 0.5) weight *= 1 + .1*sigma;
   //   }
@@ -102,8 +97,7 @@ namespace ana
   //   NCAppSyst() : ISyst("NCApp", "NC App Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if((!sr->dune.isCC && sr->dune.cvnnue > 0.5 && sr->dune.cvnnumu < 0.5) || (sr->dune.isCC && abs(sr->dune.nuPDG)==14)) weight *= 1 + .05*sigma;
   //   }
@@ -118,8 +112,7 @@ namespace ana
   //   NutauSyst() : ISyst("nutau", "nutau Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG)==16) weight *= 1 + .2*sigma;
   //   }
@@ -134,8 +127,7 @@ namespace ana
   //   NueBeamFHCSyst() : ISyst("nuebeamfhc", "Nue Beam FHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG) == 12 && abs(sr->dune.nuPDGunosc) == 12 && sr->dune.run<20000004) weight *= 1 + .05*sigma;
   //   }
@@ -150,8 +142,7 @@ namespace ana
   //   NueBeamRHCSyst() : ISyst("nuebeamrhc", "Nue Beam RHC Norm Syst") {}
 
   //   void Shift(double sigma,
-  //              Restorer& restore,
-  //              caf::StandardRecord* sr, double& weight) const override
+  //              caf::SRProxy* sr, double& weight) const override
   //   {
   //     if(sr->dune.isCC && abs(sr->dune.nuPDG) == 12 && abs(sr->dune.nuPDGunosc) == 12 && !(sr->dune.run<20000004)) weight *= 1 + .05*sigma;
   //   }

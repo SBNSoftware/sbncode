@@ -4,7 +4,7 @@
 #pragma once
 
 #include "CAFAna/Core/ISyst.h"
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/Utilities.h"
 
 #include "TFile.h"
@@ -21,8 +21,7 @@ namespace ana {
  //  FDRecoNumuSyst() : ISyst("FDRecoNumuSyst", "Far Detector Numu Reconstruction Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr,
+	//        caf::SRProxy* sr,
 	//        double& weight) const override 
  //    {
  //      // Load histograms if they have not been loaded already
@@ -55,8 +54,7 @@ namespace ana {
  //  FDRecoNueSyst() : ISyst("FDRecoNueSyst", "Far Detector Nue Reconstruction Syst") {}
 
  //    void Shift(double sigma,
-	//        Restorer& restore,
-	//        caf::StandardRecord* sr,
+	//        caf::SRProxy* sr,
 	//        double& weight) const override 
  //    {
  //      // Load histograms if they have not been loaded already

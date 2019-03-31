@@ -28,11 +28,9 @@ class ToyEnergyScaleSyst: public ISyst
   public:
     ToyEnergyScaleSyst() : ISyst("toyEScale", "Toy Energy Scale") {}
     void Shift(double sigma,
-               Restorer& restore,
                caf::SRProxy* sr,
                double& weight) const override
     {
-      restore.Add(sr->truth[0].neutrino.energy);
       const double scale = 1 + .03*sigma; // 3% E scale syst.
       sr->truth[0].neutrino.energy *= scale;
     }
@@ -44,7 +42,6 @@ class ToyNormSyst: public ISyst
   public:
     ToyNormSyst() : ISyst("toyNorm", "Toy Norm Scale") {}
     void Shift(double sigma,
-               Restorer& restore,
                caf::SRProxy* sr,
                double& weight) const override
     {

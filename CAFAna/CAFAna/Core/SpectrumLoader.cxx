@@ -187,12 +187,6 @@ namespace ana
       // TODO TODO TODO
       //      const SystShifts& shift = shiftdef.first;
 
-      // Need to provide a clean slate for each new set of systematic shifts to
-      // work from. Unfortunately, copying the whole StandardRecord is pretty
-      // expensive. So we need to rely on this slightly dangerous "Restorer"
-      // mechanism.
-
-      Restorer* restore = 0;
       double systWeight = 1;
       bool shifted = false;
       // Can special-case nominal to not pay cost of Shift() or Restorer
@@ -261,9 +255,8 @@ namespace ana
         } // end for weidef
       } // end for cutdef
 
-      // Delete Restorer at this point and return StandardRecord to its
-      // unshifted form ready for the next histogram.
-      delete restore;
+
+      // TODO TODO here?
     } // end for shiftdef
   }
 

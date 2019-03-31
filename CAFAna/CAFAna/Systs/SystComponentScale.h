@@ -30,7 +30,6 @@ namespace ana
     const Cut& GetCut() const {return fCut;}
 
     void Shift(double sigma,
-               Restorer& restore,
                caf::SRProxy* sr,
                double& weight) const override;
 
