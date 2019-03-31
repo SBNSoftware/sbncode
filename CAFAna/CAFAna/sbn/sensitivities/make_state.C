@@ -12,6 +12,7 @@ using namespace ana;
 void make_state()
 {
   const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+  const std::string fDirSwap = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
 
   const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
 
@@ -21,15 +22,12 @@ void make_state()
 
   // And now add Icarus data
   const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
+  const std::string fnameSwap2 = fDirSwap + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
+
 
   // Source of events
   SpectrumLoader loaderBeam2(fnameBeam2);
-  // SpectrumLoader loaderSwap2(fnameSwap2);
-
-  const double sbndPOT = 6.6e20;
-  const double icarusPOT = 6.6e20;
-
-  //const Var kTrueE = SIMPLEVAR(truth.neutrino[0].energy);
+  SpectrumLoader loaderSwap2(fnameSwap2);
 
   const Var kTrueE([](const caf::SRProxy* sr)
                          {
@@ -45,16 +43,20 @@ void make_state()
   PredictionNoExtrap pred_fd_numu(loaderBeam2, kNullLoader, kNullLoader,
                           axEnergy, kNoCut);
 
+  PredictionNoExtrap pred_fd_nue(loaderSwap2, kNullLoader, kNullLoader,
+                          axEnergy, kNoCut);
+
   loaderBeam.Go();
   // loaderSwap.Go();
 
   loaderBeam2.Go();
-  // loaderSwap2.Go();
+  loaderSwap2.Go();
 
   const char* stateFname = "cafe_state.root";
 
   TFile fout(stateFname, "RECREATE");
   pred_nd_numu.SaveTo(fout.mkdir("pred_nd_numu"));
   pred_fd_numu.SaveTo(fout.mkdir("pred_fd_numu"));
+  pred_fd_nue.SaveTo(fout.mkdir("pred_fd_nue"));
 
 }
