@@ -53,13 +53,10 @@ void make_state_smear()
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
   const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
 
-  // Make a vector with all (here only two) the systematics
-  std::vector<const ISyst*> allSysts;
-  allSysts.push_back(&GetESyst());
-  allSysts.push_back(&GetNSyst());
-
   // List all of the systematics we'll be using
+  std::cout << "\nIncluding the following systematics:" << std::endl;
   for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
+  std::cout << "\n" << std::endl;
 
   NoExtrapGenerator gen(axEnergy, kNoCut);
 
