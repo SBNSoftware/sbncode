@@ -76,7 +76,7 @@ namespace ana
       progTitle += ")";
     }
 
-    FillSurface(progTitle, expt, calc, xax.var, yax.var, profVars, profSysts, seedPts, systSeedPts);
+    FillSurface(progTitle, expt, calc, xax, yax, profVars, profSysts, seedPts, systSeedPts);
 
     // Location of the best minimum found from filled surface
     double minchi = 1e10;
@@ -137,7 +137,7 @@ namespace ana
   void Surface::FillSurface(const std::string& progTitle,
                             const IExperiment* expt,
                             osc::IOscCalculatorAdjustable* calc,
-                            const IFitVar* xvar, const IFitVar* yvar,
+                            const FitAxis& xax, const FitAxis& yax,
                             const std::vector<const IFitVar*>& profVars,
                             const std::vector<const ISyst*>& profSysts,
                             const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -188,19 +188,19 @@ namespace ana
       // For parallel running need to set these at point of use otherwise we
       // race.
       if(!fParallel){
-        xvar->SetValue(calc, xv);
-        yvar->SetValue(calc, yv);
+        xax.var->SetValue(calc, xv);
+        yax.var->SetValue(calc, yv);
       }
 
-      if(xvar->Penalty(xv, calc) > 1e-10){
-	std::cerr << "Warning! " << xvar->ShortName() << " = " << xv
-		  << " has penalty of " << xvar->Penalty(xv, calc)
+      if(xax.var->Penalty(xv, calc) > 1e-10){
+	std::cerr << "Warning! " << xax.var->ShortName() << " = " << xv
+		  << " has penalty of " << xax.var->Penalty(xv, calc)
 		  << " that could have been applied in surface. "
 		  << "This should never happen." << std::endl;
       }
-      if(yvar->Penalty(yv, calc) > 1e-10){
-        std::cerr << "Warning! " << yvar->ShortName() << " = " << yv
-                  << " has penalty of " << yvar->Penalty(yv, calc)
+      if(yax.var->Penalty(yv, calc) > 1e-10){
+        std::cerr << "Warning! " << yax.var->ShortName() << " = " << yv
+                  << " has penalty of " << yax.var->Penalty(yv, calc)
                   << " that could have been applied in surface. "
                   << "This should never happen." << std::endl;
       }
@@ -208,12 +208,12 @@ namespace ana
       if(fParallel){
         pool->AddMemberTask(this, &Surface::FillSurfacePoint,
                             expt, calc,
-                            xvar, xv, yvar, yv,
+                            xax, xv, yax, yv,
                             profVars, profSysts, seedPts, systSeedPts);
       }
       else{
         FillSurfacePoint(expt, calc,
-                         xvar, xv, yvar, yv,
+                         xax, xv, yax, yv,
                          profVars, profSysts, seedPts, systSeedPts);
         ++neval;
         prog->SetProgress(neval/double(Nx*Ny));
@@ -266,8 +266,8 @@ namespace ana
   //----------------------------------------------------------------------
   void Surface::FillSurfacePoint(const IExperiment* expt,
                                  osc::IOscCalculatorAdjustable* calc,
-                                 const IFitVar* xvar, double x,
-                                 const IFitVar* yvar, double y,
+                                 const FitAxis& xax, double x,
+                                 const FitAxis& yax, double y,
                                  const std::vector<const IFitVar*>& profVars,
                                  const std::vector<const ISyst*>& profSysts,
                                  const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -279,8 +279,8 @@ namespace ana
       // Need to take our own copy so that we don't get overwritten by someone
       // else's changes.
       calc = calc->Copy();
-      xvar->SetValue(calc, x);
-      yvar->SetValue(calc, y);
+      xax.var->SetValue(calc, x);
+      yax.var->SetValue(calc, y);
 
       calcNoHash = new OscCalcNoHash(calc);
     }
