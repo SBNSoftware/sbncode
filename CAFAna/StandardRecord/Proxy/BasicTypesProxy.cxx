@@ -93,6 +93,17 @@ namespace caf
     if(fDir) return GetValueFlat(); else return GetValueNested();
   }
 
+  template<class T> void GetTypedValueWrapper(TLeaf* leaf, T& x, int subidx)
+  {
+    x = leaf->GetTypedValue<T>(subidx);
+  }
+
+  void GetTypedValueWrapper(TLeaf* leaf, std::string& x, int subidx)
+  {
+    std::cout << "Reading string from flat tree unsupported" << std::endl;
+    abort();
+  }
+
   //----------------------------------------------------------------------
   template<class T> T Proxy<T>::GetValueFlat() const
   {
@@ -126,11 +137,27 @@ namespace caf
     if(fEntry == fBase+fOffset) return fVal; // cache up-to-date
 
     fLeaf->GetBranch()->GetEntry(fBase+fOffset);
-    fVal = (T)fLeaf->GetTypedValue<U>(0);
+
+    //    fVal = (T)fLeaf->GetTypedValue<U>(0);
+    U tmp;
+    GetTypedValueWrapper(fLeaf, tmp, 0);
+    fVal = (T)tmp;
+
     fEntry = fBase+fOffset;
     fSystOverrideSeqNo = -1;
 
     return fVal;
+  }
+
+  template<class T> void EvalInstanceWrapper(TTreeFormula* ttf, T& x)
+  {
+    // TODO is this the safest way to cast?
+    x = (T)ttf->EvalInstance(0);
+  }
+
+  void EvalInstanceWrapper(TTreeFormula* ttf, std::string& x)
+  {
+    x = ttf->EvalStringInstance(0);
   }
 
   //----------------------------------------------------------------------
@@ -218,7 +245,7 @@ namespace caf
       fTTF->GetNdata(); // for some reason this is necessary for fTTF to work
                         // in all cases.
 
-      fVal = (T)fTTF->EvalInstance(0); // TODO better way to cast?
+      EvalInstanceWrapper(fTTF, fVal);
     }
     else{
       // But when this is possible the hope is it might be faster
@@ -235,7 +262,10 @@ namespace caf
         abort();
       }
 
-      fVal = (T)fLeaf->GetTypedValue<U>(fSubIdx);
+      //      fVal = (T)fLeaf->GetTypedValue<U>(fSubIdx);
+      U tmp;
+      GetTypedValueWrapper(fLeaf, tmp, fSubIdx);
+      fVal = (T)tmp;
     }
 
     return fVal;
@@ -278,6 +308,13 @@ namespace caf
     fSystOverrideValue = T(GetValue() * x);
     SetShifted();
     return *this;
+  }
+
+  //----------------------------------------------------------------------
+  template<> Proxy<std::string>& Proxy<std::string>::operator*=(std::string x)
+  {
+    std::cout << "BasicTypesProxy.cxx: Multiplying strings makes no sense..." << std::endl;
+    abort();
   }
 
   //----------------------------------------------------------------------
@@ -362,7 +399,7 @@ namespace caf
   size_t VectorProxyBase::size() const
   {
     // HACK HACK HACK
-    return 1;
+    return 1234;
 
     // If there's a valid systematic override value in place, give that
     if(fDir){
@@ -427,6 +464,8 @@ namespace caf
   template class Proxy<double>;
   template class Proxy<bool>;
   template class Proxy<unsigned char>;
+
+  template class Proxy<std::string>;
 
   template class Proxy<SRExperiment>;
   //  template class Proxy<View_t>;

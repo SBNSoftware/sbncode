@@ -11,7 +11,7 @@ fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
                      'long', 'long unsigned int',
                      'long long int', 'char', 'unsigned char',
-                     'size_t', 'TVector3']
+                     'size_t', 'TVector3', 'std::string']
 
 def type_to_proxy_type(type):
     if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
@@ -315,7 +315,7 @@ template<class T> void CheckEquals(const Proxy<T>& x, const T& y)
 {
   if(!AreEqual(x.GetValue(), y)){
     std::cout << x.Name() << " differs: "
-              << x << " vs " << y << std::endl;
+              << x.GetValue() << " vs " << y << std::endl;
   }
 }
 
