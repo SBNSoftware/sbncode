@@ -167,4 +167,12 @@ namespace ana
   TH2* Gaussian99Percent1D(const Surface& s);
   /// Up-value surface for 3 sigma confidence in 2D in gaussian approximation
   TH2* Gaussian3Sigma1D   (const Surface& s);
+
+  /// Up-value surface for 90% confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian90Percent1D1Sided(const Surface& s);
+  /// Up-value surface for 3 sigma confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian3Sigma1D1Sided(const Surface& s);
+  /// Up-value surface for 5 sigma confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s);
+
 }
