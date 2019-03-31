@@ -554,6 +554,7 @@ namespace ana
       it->Write( TString::Format("hist%d", idx++));
     }
 
+    dir->cd();
     TObjString(fLogX ? "yes" : "no").Write("logx");
     TObjString(fLogY ? "yes" : "no").Write("logy");
 
