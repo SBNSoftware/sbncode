@@ -98,8 +98,8 @@ namespace ana
     Fitter fit(expt, allVars, profSysts);
     fit.SetPrecision(fPrec);
     // Seed from best grid point
-    xax.var->SetValue(calc, fHist->GetXaxis()->GetBinCenter(minx));
-    yax.var->SetValue(calc, fHist->GetYaxis()->GetBinCenter(miny));
+    xax.var->SetValue(calc, xax.islog? fHist->GetXaxis()->GetBinCenterLog(minx) : fHist->GetXaxis()->GetBinCenter(minx));
+    yax.var->SetValue(calc, yax.islog? fHist->GetYaxis()->GetBinCenterLog(miny) : fHist->GetYaxis()->GetBinCenter(miny));
     for(int i = 0; i < (int)fSeedValues.size(); ++i) profVars[i]->SetValue( calc, fSeedValues[i] );
     SystShifts systSeed = SystShifts::Nominal();
     fMinChi = fit.Fit(calc, systSeed, seedPts);
@@ -182,8 +182,8 @@ namespace ana
       const int x = bin%Nx+1;
       const int y = bin/Nx+1;
 
-      const double xv = fHist->GetXaxis()->GetBinCenter(x);
-      const double yv = fHist->GetYaxis()->GetBinCenter(y);
+      const double xv = xax.islog ? fHist->GetXaxis()->GetBinCenterLog(x) : fHist->GetXaxis()->GetBinCenter(x);
+      const double yv = yax.islog ? fHist->GetYaxis()->GetBinCenterLog(y) : fHist->GetYaxis()->GetBinCenter(y);
 
       // For parallel running need to set these at point of use otherwise we
       // race.
