@@ -12,7 +12,7 @@
 
 using namespace ana;
 
-void make_state()
+void make_state_smear()
 {
   const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
 
@@ -33,10 +33,9 @@ void make_state()
   const double icarusPOT = 6.6e20;
 
   // This is probably too simplistic. Maybe res/sqrt(E)?
-  const Var kSmearedE({},
-                        [](const caf::StandardRecord* sr)
+  const Var kSmearedE([](const caf::SRProxy* sr)
                         {
-                          double fE = sr->sbn.truth.neutrino[0].energy;
+                          double fE = sr->truth[0].neutrino.energy;
                           TRandom3 r(floor(fE*10000));
                           double smear = r.Gaus(1, 0.15); // Flat 15% E resolution 
                           return fE*smear;
