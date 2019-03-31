@@ -58,7 +58,7 @@ void nus(const char* stateFname = basicFname)
 
     //Define fit axes
     const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 50, 0.001, 1, true);
-    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 50, 0.001, 100, true);
+    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 50, 0.1, 100, true);
 
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
@@ -68,8 +68,6 @@ void nus(const char* stateFname = basicFname)
     surf.SaveTo(fOutput->mkdir("surf"));
 
     TCanvas* c1 = new TCanvas("c1");
-    c1->SetLogx();
-    c1->SetLogy();
     c1->SetLeftMargin(0.12);
     c1->SetBottomMargin(0.15);
 
