@@ -4,6 +4,7 @@
 #include "StandardRecord/SRMetadata.h"
 #include "StandardRecord/SRInteraction.h"
 #include "StandardRecord/SRRecoInteraction.h"
+#include "StandardRecord/SREnums.h"
 
 /// Common Analysis Files
 namespace caf
@@ -23,7 +24,7 @@ namespace caf
     std::vector<SRInteraction> truth; //!< All truth interactions
     std::vector<SRRecoInteraction> reco; //!< Reconstructed interactions
 
-    //    Experiment experiment;  //!< Experiment identifier
+    SRExperiment experiment;  //!< Experiment identifier
   };
   
 } // end namespace
