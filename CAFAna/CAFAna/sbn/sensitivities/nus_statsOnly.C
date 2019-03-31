@@ -4,7 +4,6 @@
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
-#include "CAFAna/Prediction/PredictionInterp.h"
 #include "CAFAna/Analysis/Calcs.h"
 #include "OscLib/func/OscCalculatorSterile.h"
 #include "StandardRecord/StandardRecord.h"
@@ -24,17 +23,15 @@
 #include "TH2.h"
 #include "TLegend.h"
 
-#include "toysysts.h"
-
 using namespace ana;
 
 // State file
-const char* basicFname = "cafe_state_smear.root";
+const char* basicFname = "cafe_state.root";
 
 const double sbndPOT = POTnominal;
 const double icarusPOT = POTnominal;
 
-void nus(const char* stateFname = basicFname)
+void nus_statsOnly(const char* stateFname = basicFname)
 {
 
   if (TFile(stateFname).IsZombie()){
@@ -45,8 +42,8 @@ void nus(const char* stateFname = basicFname)
 
     std::cout << "Loading state from " << stateFname << std::endl; 
     TFile fin(stateFname);
-    PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd_numu")).release();
-    PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd_numu")).release();
+    PredictionNoExtrap& pred_nd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
+    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_fd_numu")).release();
 
     // Calculator
     osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
@@ -57,7 +54,7 @@ void nus(const char* stateFname = basicFname)
     const Spectrum data = pred_nd_numu.Predict(calc).FakeData(sbndPOT);
     SingleSampleExperiment expt(&pred_nd_numu, data);
 
-    TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
+    TFile* fOutput = new TFile("Surfaces_nus_statsOnly.root","RECREATE");
 
     //Define fit axes
     const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 50, 0.001, 1, true);
@@ -66,9 +63,7 @@ void nus(const char* stateFname = basicFname)
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
 		 kAxSinSq2Theta24,
-		 kAxDmSq41,
-         {},
-         allSysts);
+		 kAxDmSq41);
 
     surf.SaveTo(fOutput->mkdir("surf"));
 
@@ -83,7 +78,7 @@ void nus(const char* stateFname = basicFname)
 
     surf.DrawContour(crit2sig, kSolid, kBlue);
 
-    c1->SaveAs("nus_SBND.pdf");
+    c1->SaveAs("nus_SBND_statsOnly.pdf");
 
     // Let's now try adding a second experiment, for instance Icarus
     calc->SetL(BaselineIcarus); // Icarus
@@ -94,10 +89,8 @@ void nus(const char* stateFname = basicFname)
 
     Surface surf2(&expt2, calc,
 		 kAxSinSq2Theta24,
-		 kAxDmSq41,
-         {},
-         allSysts);
-		  
+		  kAxDmSq41);
+
     surf2.SaveTo(fOutput->mkdir("surf2"));
 
     c1->Clear(); // just in case
@@ -106,14 +99,11 @@ void nus(const char* stateFname = basicFname)
 
     surf2.DrawContour(crit2sig2, kSolid, kGreen+2);
 
-    c1->SaveAs("nus_ICARUS.pdf");
+    c1->SaveAs("nus_ICARUS_statsOnly.pdf");
 
     Surface surfMulti(&multiExpt, calc,
 		      kAxSinSq2Theta24,
-		      kAxDmSq41,
-              {},
-              allSysts);
-
+		      kAxDmSq41);
 
     surfMulti.SaveTo(fOutput->mkdir("surfMulti"));
 
@@ -123,7 +113,7 @@ void nus(const char* stateFname = basicFname)
 
     surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
     
-    c1->SaveAs("nus_BOTH.pdf");
+    c1->SaveAs("nus_BOTH_statsOnly.pdf");
 
     c1->Clear();
 
@@ -148,8 +138,8 @@ void nus(const char* stateFname = basicFname)
     leg->SetFillColor(10);
     leg->Draw();
 
-    c1->SaveAs("nus_ALL.root");
-    c1->SaveAs("nus_ALL.pdf");
+    c1->SaveAs("nus_ALL_statsOnly.root");
+    c1->SaveAs("nus_ALL_statsOnly.pdf");
 
     fOutput->Close();
   }

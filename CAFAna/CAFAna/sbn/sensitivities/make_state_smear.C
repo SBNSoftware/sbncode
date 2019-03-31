@@ -3,9 +3,17 @@
 #include "CAFAna/Core/Binning.h"
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
+#include "CAFAna/Analysis/Calcs.h"
+#include "OscLib/func/OscCalculatorSterile.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "StandardRecord/Proxy/SRProxy.h"
+#include "CAFAna/Core/Loaders.h"
+#include "CAFAna/Prediction/PredictionInterp.h"
+#include "CAFAna/Prediction/PredictionGenerator.h"
 #include "TFile.h"
+#include "CAFAna/Analysis/ExpInfo.h"
+
+#include "toysysts.h"
 
 // Random numbers
 #include "TRandom3.h"
@@ -15,46 +23,48 @@ using namespace ana;
 void make_state_smear()
 {
   const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
-
+  // First SBND data
   const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
-
-  // Source of events
-  SpectrumLoader loaderBeam(fnameBeam);
-  // SpectrumLoader loaderSwap(fnameSwap);
-
   // And now add Icarus data
   const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
 
   // Source of events
-  SpectrumLoader loaderBeam2(fnameBeam2);
-  // SpectrumLoader loaderSwap2(fnameSwap2);
+  Loaders loaders;
+  loaders.SetLoaderPath( fnameBeam,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+  //loaders.SetLoaderPath( fnameSwap,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kFluxSwap);
+  Loaders loaders2;
+  loaders2.SetLoaderPath( fnameBeam2,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
 
-  const double sbndPOT = 6.6e20;
-  const double icarusPOT = 6.6e20;
+  const double sbndPOT = POTnominal;
+  const double icarusPOT = POTnominal;
+
+  // Calculator
+  osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
+  calc->SetL(BaselineSBND);
+  osc::OscCalculatorSterile* calc2 = DefaultSterileCalc(4);
+  calc2->SetL(BaselineIcarus);
 
   // This is probably too simplistic. Maybe res/sqrt(E)?
   const Var kSmearedE([](const caf::SRProxy* sr)
                         {
-                          double fE = sr->truth[0].neutrino.energy;
-                          TRandom3 r(floor(fE*10000));
-                          double smear = r.Gaus(1, 0.15); // Flat 15% E resolution 
-                          return fE*smear;
+			  return sr->reco[0].reco_energy;;
 			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
   const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
 
-  PredictionNoExtrap pred_nd_numu(loaderBeam, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+  // List all of the systematics we'll be using
+  std::cout << "\nIncluding the following systematics:" << std::endl;
+  for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
+  std::cout << "\n" << std::endl;
 
-  PredictionNoExtrap pred_fd_numu(loaderBeam2, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+  NoExtrapGenerator gen(axEnergy, kNoCut);
 
-  loaderBeam.Go();
-  // loaderSwap.Go();
+  PredictionInterp pred_nd_numu(allSysts, calc, gen, loaders);
+  PredictionInterp pred_fd_numu(allSysts, calc2, gen, loaders2);
 
-  loaderBeam2.Go();
-  // loaderSwap2.Go();
+  loaders.Go();
+  loaders2.Go();
 
   const char* stateFname = "cafe_state_smear.root";
 
