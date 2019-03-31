@@ -367,6 +367,10 @@ namespace ana
     axes->GetYaxis()->SetLabelOffset(ay->GetLabelOffset());
     axes->GetXaxis()->CenterTitle();
     axes->GetYaxis()->CenterTitle();
+
+    if(fLogX) gPad->SetLogx();
+    if(fLogY) gPad->SetLogy();
+
     gPad->Update();
   }
 
@@ -546,6 +550,9 @@ namespace ana
       it->Write( TString::Format("hist%d", idx++));
     }
 
+    TObjString(fLogX ? "yes" : "no").Write("logx");
+    TObjString(fLogY ? "yes" : "no").Write("logy");
+
     tmp->cd();
   }
 
@@ -577,6 +584,12 @@ namespace ana
       else
         surf->fProfHists.push_back((TH2*)dir->Get(TString::Format("margHists/hist%d", idx)));
     }
+
+    const TObjString* logx = (TObjString*)dir->Get("logx");
+    const TObjString* logy = (TObjString*)dir->Get("logy");
+    // Tolerate missing log tags for backwards compatibility
+    surf->fLogX = (logx && logx->GetString() == "yes");
+    surf->fLogY = (logy && logy->GetString() == "yes");
 
     return surf;
   }
