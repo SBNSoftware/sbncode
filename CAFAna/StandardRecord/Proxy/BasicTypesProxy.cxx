@@ -1,5 +1,5 @@
 #include "StandardRecord/Proxy/BasicTypesProxy.h"
-//#include "StandardRecord/SREnums.h"
+#include "StandardRecord/SREnums.h"
 
 #include "TFormLeafInfo.h"
 #include "TTreeFormula.h"
@@ -428,7 +428,7 @@ namespace caf
   template class Proxy<bool>;
   template class Proxy<unsigned char>;
 
-  //  template class Proxy<Det_t>;
+  template class Proxy<SRExperiment>;
   //  template class Proxy<View_t>;
   //  template class Proxy<generator_>;
   //  template class Proxy<mode_type_>;
