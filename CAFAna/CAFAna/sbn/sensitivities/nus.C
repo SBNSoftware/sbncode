@@ -47,15 +47,8 @@ void nus()
 
     // Calculator
     osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
-    calc->SetAngle(2, 4, 0);
-    calc->SetDm(4, 0); // Make these explicit
     calc->SetL(BaselineSBND); 
-    calc->SetAngle(2, 3, M_PI/4);
-    calc->SetDm(3, 2.45e-3); // make these explicit
 
-    // TMarker* trueValues = new TMarker(pow(TMath::Sin(2*calc->GetAngle(2,4)),2), calc->GetDm(4), kFullCircle);
-    // trueValues->SetMarkerColor(kRed);
-    
     // To make a fit we need to have a "data" spectrum to compare to our MC
     // Prediction object
     const Spectrum data = pred_nd_numu.Predict(calc).FakeData(sbndPOT);
@@ -64,8 +57,8 @@ void nus()
     TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
 
     //Define fit axes
-    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 100, 0.001, 1);
-    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 100, 0.001, 100);
+    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 100, 0.001, 1, true);
+    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 100, 0.001, 100, true);
 
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
@@ -79,9 +72,6 @@ void nus()
     c1->SetLogy();
     c1->SetLeftMargin(0.12);
     c1->SetBottomMargin(0.15);
-    //surf.Draw();
-    // surf.DrawBestFit(kBlue);
-    // trueValues->Draw();
 
     // In a full Feldman-Cousins analysis you need to provide a critical value
     // surface to be able to draw a contour. But we provide these helper
@@ -108,8 +98,7 @@ void nus()
     surf2.SaveTo(fOutput->mkdir("surf2"));
 
     c1->Clear(); // just in case
-    // surf2.DrawBestFit(kGreen+2);
-    // trueValues->Draw();
+
     TH2* crit1sig2 = Gaussian68Percent2D(surf2);
     TH2* crit2sig2 = Gaussian2Sigma2D(surf2);
 
@@ -126,8 +115,7 @@ void nus()
     surfMulti.SaveTo(fOutput->mkdir("surfMulti"));
 
     c1->Clear(); // just in case
-    // surfMulti.DrawBestFit(kBlue);
-    // trueValues->Draw();
+
     TH2* crit1sigMulti = Gaussian68Percent2D(surfMulti);
     TH2* crit2sigMulti = Gaussian2Sigma2D(surfMulti);
 
