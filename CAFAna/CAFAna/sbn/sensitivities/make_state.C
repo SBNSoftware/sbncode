@@ -40,10 +40,10 @@ void make_state()
   const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTrueE);
 
   PredictionNoExtrap pred_nd_numu(loaderBeam, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+                          axEnergy, kNoCut);
 
   PredictionNoExtrap pred_fd_numu(loaderBeam2, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+                          axEnergy, kNoCut);
 
   loaderBeam.Go();
   // loaderSwap.Go();
