@@ -45,10 +45,10 @@ void make_state_smear()
   const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
 
   PredictionNoExtrap pred_nd_numu(loaderBeam, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+                          axEnergy, kNoCut);
 
   PredictionNoExtrap pred_fd_numu(loaderBeam2, kNullLoader, kNullLoader,
-                          axEnergy, kIsNumuCC);
+                          axEnergy, kNoCut);
 
   loaderBeam.Go();
   // loaderSwap.Go();
