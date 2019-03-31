@@ -74,10 +74,8 @@ void nus(const char* stateFname = basicFname)
     // In a full Feldman-Cousins analysis you need to provide a critical value
     // surface to be able to draw a contour. But we provide these helper
     // functions to use the gaussian up-values.
-    TH2* crit1sig = Gaussian68Percent2D(surf);
-    TH2* crit2sig = Gaussian2Sigma2D(surf);
+    TH2* crit2sig = Gaussian3Sigma1D1Sided(surf);
 
-    surf.DrawContour(crit1sig, 7, kBlue);
     surf.DrawContour(crit2sig, kSolid, kBlue);
 
     c1->SaveAs("nus_SBND.pdf");
@@ -97,10 +95,8 @@ void nus(const char* stateFname = basicFname)
 
     c1->Clear(); // just in case
 
-    TH2* crit1sig2 = Gaussian68Percent2D(surf2);
-    TH2* crit2sig2 = Gaussian2Sigma2D(surf2);
+    TH2* crit2sig2 = Gaussian3Sigma1D1Sided(surf2);
 
-    surf2.DrawContour(crit1sig2, 7, kGreen+2);
     surf2.DrawContour(crit2sig2, kSolid, kGreen+2);
 
     c1->SaveAs("nus_ICARUS.pdf");
@@ -114,10 +110,8 @@ void nus(const char* stateFname = basicFname)
 
     c1->Clear(); // just in case
 
-    TH2* crit1sigMulti = Gaussian68Percent2D(surfMulti);
-    TH2* crit2sigMulti = Gaussian2Sigma2D(surfMulti);
+    TH2* crit2sigMulti = Gaussian3Sigma1D1Sided(surfMulti);
 
-    surfMulti.DrawContour(crit1sigMulti, 7, kRed);
     surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
     
     c1->SaveAs("nus_BOTH.pdf");
@@ -137,6 +131,7 @@ void nus(const char* stateFname = basicFname)
     hDummy3->SetLineColor(kGreen+2);
 
     TLegend* leg = new TLegend(0.6,0.6,0.84,0.84);
+    leg->SetHeader("3#sigma C.L.","C");
     leg->AddEntry(hDummy2, "SBND only", "l");
     leg->AddEntry(hDummy3, "Icarus only", "l");
     leg->AddEntry(hDummy1, "Combined fit", "l");
