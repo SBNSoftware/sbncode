@@ -57,8 +57,8 @@ void nus(const char* stateFname = basicFname)
     TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
 
     //Define fit axes
-    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 100, 0.001, 1, true);
-    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 100, 0.001, 100, true);
+    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 50, 0.001, 1, true);
+    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 50, 0.001, 100, true);
 
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
