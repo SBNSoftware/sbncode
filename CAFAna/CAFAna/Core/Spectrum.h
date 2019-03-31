@@ -189,7 +189,7 @@ namespace ana
     ///
     /// Use for low-budget MDCs, or just getting a sense of the expected scale
     /// of statistical variation
-    Spectrum MockData(double pot, bool makethrow=false, int seed=0) const;
+    Spectrum MockData(double pot, bool makethrow=true, int seed=0) const;
     /// \brief Fake data is a MC spectrum scaled to the POT expected in the data
     ///
     /// Use for sensitivity plots and testing fit convergence
