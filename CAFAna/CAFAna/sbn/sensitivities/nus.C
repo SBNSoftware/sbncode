@@ -43,11 +43,6 @@ void nus(const char* stateFname = basicFname)
   }
   else{
 
-    // Make a vector with all (here only two) the systematics
-    std::vector<const ISyst*> allSysts;
-    allSysts.push_back(&GetESyst());
-    allSysts.push_back(&GetNSyst());
-
     std::cout << "Loading state from " << stateFname << std::endl; 
     TFile fin(stateFname);
     PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd_numu")).release();

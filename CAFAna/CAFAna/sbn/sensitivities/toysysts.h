@@ -37,3 +37,6 @@ const ToyNormSyst& GetNSyst()
   static const ToyNormSyst nSyst;
   return nSyst;
 }
+
+// Make a vector with all (here only two) the systematics
+std::vector<const ISyst*> allSysts{&GetESyst(), &GetNSyst()};
