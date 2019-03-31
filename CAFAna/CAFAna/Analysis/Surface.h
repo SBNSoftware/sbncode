@@ -28,8 +28,7 @@ namespace ana
   class Surface
   {
   public:
-    friend class NumuSurface;
-    friend class NueSurface;
+    friend class MedianSurface;
 
     /// \param expt The experiment object to draw \f$ \chi^2 \f$ values from
     /// \param calc Values for oscillation parameters to be held fixed
@@ -92,7 +91,7 @@ namespace ana
     ///               Default: best fit from this surface.
     void DrawContour(TH2* fc, Style_t style, Color_t color,
                      double minchi = -1);
-    TH2* ToTH2(double minchi = -1) const;
+    TH2F* ToTH2(double minchi = -1) const;
     void SetTitle(const char* str);
 
     /// Maps of the values taken on by the profiled parameters

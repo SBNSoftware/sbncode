@@ -13,6 +13,7 @@
 
 // New includes
 #include "CAFAna/Analysis/Surface.h"
+#include "CAFAna/Analysis/MedianSurface.h"
 #include "CAFAna/Experiment/SingleSampleExperiment.h"
 #include "CAFAna/Experiment/MultiExperiment.h"
 #include "CAFAna/Experiment/MultiExperimentSBN.h"
@@ -34,7 +35,7 @@ const char* basicFname = "cafe_state_smear.root";
 const double sbndPOT = POTnominal;
 const double icarusPOT = POTnominal;
 
-void nus(const char* stateFname = basicFname)
+void nus(const char* stateFname = basicFname, int nmock = 0)
 {
 
   if (TFile(stateFname).IsZombie()){
@@ -60,15 +61,15 @@ void nus(const char* stateFname = basicFname)
     TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
 
     //Define fit axes
-    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 50, 0.001, 1, true);
-    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 50, 0.1, 100, true);
+    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 40, 1e-3, 1, true);
+    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 40, 0.1, 100, true);
 
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
 		 kAxSinSq2Theta24,
 		 kAxDmSq41,
-         {},
-         allSysts);
+                 {},
+                 allSysts);
 
     surf.SaveTo(fOutput->mkdir("surf"));
 
@@ -93,10 +94,10 @@ void nus(const char* stateFname = basicFname)
     MultiExperimentSBN multiExpt({&expt, &expt2}, {kSBND,kICARUS});
 
     Surface surf2(&expt2, calc,
-		 kAxSinSq2Theta24,
-		 kAxDmSq41,
-         {},
-         allSysts);
+                  kAxSinSq2Theta24,
+                  kAxDmSq41,
+                  {},
+                  allSysts);
 		  
     surf2.SaveTo(fOutput->mkdir("surf2"));
 
@@ -115,6 +116,30 @@ void nus(const char* stateFname = basicFname)
               allSysts);
 
 
+    std::vector<Surface> mockSurfs;
+    for(int i = 0; i < nmock; ++i){
+      std::cout << "Mock " << i+1 << " / " << nmock << std::endl;
+      const FitAxis kCoarseAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 20, 1e-3, 1, true);
+      const FitAxis kCoarseAxDmSq41(&kFitDmSq41Sterile, 20, 0.1, 100, true);
+
+      osc::OscCalculatorSterile* c = DefaultSterileCalc(4);
+      c->SetL(BaselineSBND); 
+      SingleSampleExperiment e1(&pred_nd_numu, pred_nd_numu.Predict(c).MockData(sbndPOT));
+
+      c->SetL(BaselineIcarus); // Icarus
+      SingleSampleExperiment e2(&pred_fd_numu, pred_fd_numu.Predict(c).MockData(icarusPOT));
+
+      MultiExperimentSBN me({&e1, &e2}, {kSBND, kICARUS});
+
+      Surface ms(&me, c,
+                 kCoarseAxSinSq2Theta24,
+                 kCoarseAxDmSq41,
+                 {},
+                 allSysts);
+
+      mockSurfs.push_back(ms);
+    }
+
     surfMulti.SaveTo(fOutput->mkdir("surfMulti"));
 
     c1->Clear(); // just in case
@@ -127,7 +152,14 @@ void nus(const char* stateFname = basicFname)
 
     c1->Clear();
 
-    surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
+    if(!mockSurfs.empty()){
+      MedianSurface ms(mockSurfs);
+      TH2* crit2 = Gaussian3Sigma1D1Sided(ms);
+      ms.DrawEnsemble(crit2);
+      ms.DrawContour(crit2, kSolid, kRed);
+    }
+
+    surfMulti.DrawContour(crit2sigMulti, nmock > 0 ? 7 : kSolid, kRed);
     surf.DrawContour(crit2sigMulti, kSolid, kBlue);
     surf2.DrawContour(crit2sigMulti, kSolid, kGreen+2);
 

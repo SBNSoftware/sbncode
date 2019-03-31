@@ -473,12 +473,12 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  TH2* Surface::ToTH2(double minchi) const
+  TH2F* Surface::ToTH2(double minchi) const
   {
     // Could have a file temporarily open
     DontAddDirectory guard;
 
-    TH2* ret = new TH2F(*fHist);
+    TH2F* ret = new TH2F(*fHist);
 
     if(minchi >= 0){
       for(int x = 0; x < ret->GetNbinsX()+2; ++x){
