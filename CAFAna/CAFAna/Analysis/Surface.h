@@ -135,6 +135,7 @@ namespace ana
     double fMinChi;
     double fMinX, fMinY; // Best fit point
     TH2F* fHist;
+    bool fLogX, fLogY;
     std::vector<TH2*> fProfHists;
     std::vector<double> fSeedValues;
   };
