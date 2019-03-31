@@ -114,7 +114,7 @@ namespace ana
     void FillSurface(const std::string& progTitle,
                      const IExperiment* expt,
                      osc::IOscCalculatorAdjustable* calc,
-                     const IFitVar* xvar, const IFitVar* yvar,
+                     const FitAxis& xax, const FitAxis& yax,
                      const std::vector<const IFitVar*>& profVars,
                      const std::vector<const ISyst*>& profSysts,
                      const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -122,8 +122,8 @@ namespace ana
 
     void FillSurfacePoint(const IExperiment* expt,
                           osc::IOscCalculatorAdjustable* calc,
-                          const IFitVar* xvar, double x,
-                          const IFitVar* yvar, double y,
+                          const FitAxis& xax, double x,
+                          const FitAxis& yax, double y,
                           const std::vector<const IFitVar*>& profVars,
                           const std::vector<const ISyst*>& profSysts,
                           const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -135,6 +135,7 @@ namespace ana
     double fMinChi;
     double fMinX, fMinY; // Best fit point
     TH2F* fHist;
+    bool fLogX, fLogY;
     std::vector<TH2*> fProfHists;
     std::vector<double> fSeedValues;
   };
@@ -166,4 +167,12 @@ namespace ana
   TH2* Gaussian99Percent1D(const Surface& s);
   /// Up-value surface for 3 sigma confidence in 2D in gaussian approximation
   TH2* Gaussian3Sigma1D   (const Surface& s);
+
+  /// Up-value surface for 90% confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian90Percent1D1Sided(const Surface& s);
+  /// Up-value surface for 3 sigma confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian3Sigma1D1Sided(const Surface& s);
+  /// Up-value surface for 5 sigma confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s);
+
 }

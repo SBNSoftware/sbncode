@@ -29,6 +29,11 @@
 
 namespace ana
 {
+  inline double BinCenter(const TAxis* ax, int bin, bool islog)
+  {
+    return islog ? ax->GetBinCenterLog(bin) : ax->GetBinCenter(bin);
+  }
+
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
                    osc::IOscCalculatorAdjustable* calc,
@@ -40,7 +45,7 @@ namespace ana
                    const std::vector<SystShifts>& systSeedPts,
                    bool parallel,
                    Fitter::Precision prec)
-    : fParallel(parallel), fPrec(prec)
+    : fParallel(parallel), fPrec(prec), fLogX(xax.islog), fLogY(yax.islog)
   {
     fHist = ExpandedHistogram(";"+xax.var->LatexName()+";"+yax.var->LatexName(),
                               xax.nbins, xax.min, xax.max, xax.islog,
@@ -76,7 +81,7 @@ namespace ana
       progTitle += ")";
     }
 
-    FillSurface(progTitle, expt, calc, xax.var, yax.var, profVars, profSysts, seedPts, systSeedPts);
+    FillSurface(progTitle, expt, calc, xax, yax, profVars, profSysts, seedPts, systSeedPts);
 
     // Location of the best minimum found from filled surface
     double minchi = 1e10;
@@ -98,8 +103,8 @@ namespace ana
     Fitter fit(expt, allVars, profSysts);
     fit.SetPrecision(fPrec);
     // Seed from best grid point
-    xax.var->SetValue(calc, fHist->GetXaxis()->GetBinCenter(minx));
-    yax.var->SetValue(calc, fHist->GetYaxis()->GetBinCenter(miny));
+    xax.var->SetValue(calc, BinCenter(fHist->GetXaxis(), minx, xax.islog));
+    yax.var->SetValue(calc, BinCenter(fHist->GetYaxis(), miny, yax.islog));
     for(int i = 0; i < (int)fSeedValues.size(); ++i) profVars[i]->SetValue( calc, fSeedValues[i] );
     SystShifts systSeed = SystShifts::Nominal();
     fMinChi = fit.Fit(calc, systSeed, seedPts);
@@ -137,7 +142,7 @@ namespace ana
   void Surface::FillSurface(const std::string& progTitle,
                             const IExperiment* expt,
                             osc::IOscCalculatorAdjustable* calc,
-                            const IFitVar* xvar, const IFitVar* yvar,
+                            const FitAxis& xax, const FitAxis& yax,
                             const std::vector<const IFitVar*>& profVars,
                             const std::vector<const ISyst*>& profSysts,
                             const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -182,25 +187,25 @@ namespace ana
       const int x = bin%Nx+1;
       const int y = bin/Nx+1;
 
-      const double xv = fHist->GetXaxis()->GetBinCenter(x);
-      const double yv = fHist->GetYaxis()->GetBinCenter(y);
+      const double xv = BinCenter(fHist->GetXaxis(), x, xax.islog);
+      const double yv = BinCenter(fHist->GetYaxis(), y, yax.islog);
 
       // For parallel running need to set these at point of use otherwise we
       // race.
       if(!fParallel){
-        xvar->SetValue(calc, xv);
-        yvar->SetValue(calc, yv);
+        xax.var->SetValue(calc, xv);
+        yax.var->SetValue(calc, yv);
       }
 
-      if(xvar->Penalty(xv, calc) > 1e-10){
-	std::cerr << "Warning! " << xvar->ShortName() << " = " << xv
-		  << " has penalty of " << xvar->Penalty(xv, calc)
+      if(xax.var->Penalty(xv, calc) > 1e-10){
+	std::cerr << "Warning! " << xax.var->ShortName() << " = " << xv
+		  << " has penalty of " << xax.var->Penalty(xv, calc)
 		  << " that could have been applied in surface. "
 		  << "This should never happen." << std::endl;
       }
-      if(yvar->Penalty(yv, calc) > 1e-10){
-        std::cerr << "Warning! " << yvar->ShortName() << " = " << yv
-                  << " has penalty of " << yvar->Penalty(yv, calc)
+      if(yax.var->Penalty(yv, calc) > 1e-10){
+        std::cerr << "Warning! " << yax.var->ShortName() << " = " << yv
+                  << " has penalty of " << yax.var->Penalty(yv, calc)
                   << " that could have been applied in surface. "
                   << "This should never happen." << std::endl;
       }
@@ -208,12 +213,12 @@ namespace ana
       if(fParallel){
         pool->AddMemberTask(this, &Surface::FillSurfacePoint,
                             expt, calc,
-                            xvar, xv, yvar, yv,
+                            xax, xv, yax, yv,
                             profVars, profSysts, seedPts, systSeedPts);
       }
       else{
         FillSurfacePoint(expt, calc,
-                         xvar, xv, yvar, yv,
+                         xax, xv, yax, yv,
                          profVars, profSysts, seedPts, systSeedPts);
         ++neval;
         prog->SetProgress(neval/double(Nx*Ny));
@@ -266,8 +271,8 @@ namespace ana
   //----------------------------------------------------------------------
   void Surface::FillSurfacePoint(const IExperiment* expt,
                                  osc::IOscCalculatorAdjustable* calc,
-                                 const IFitVar* xvar, double x,
-                                 const IFitVar* yvar, double y,
+                                 const FitAxis& xax, double x,
+                                 const FitAxis& yax, double y,
                                  const std::vector<const IFitVar*>& profVars,
                                  const std::vector<const ISyst*>& profSysts,
                                  const std::map<const IFitVar*, std::vector<double>>& seedPts,
@@ -279,8 +284,8 @@ namespace ana
       // Need to take our own copy so that we don't get overwritten by someone
       // else's changes.
       calc = calc->Copy();
-      xvar->SetValue(calc, x);
-      yvar->SetValue(calc, y);
+      xax.var->SetValue(calc, x);
+      yax.var->SetValue(calc, y);
 
       calcNoHash = new OscCalcNoHash(calc);
     }
@@ -345,8 +350,8 @@ namespace ana
     TH2* axes = new TH2C(UniqueName().c_str(),
                          TString::Format(";%s;%s",
                                          ax->GetTitle(), ay->GetTitle()),
-                         Nx-1, ax->GetBinCenter(1), ax->GetBinCenter(Nx),
-                         Ny-1, ay->GetBinCenter(1), ay->GetBinCenter(Ny));
+                         Nx-1, BinCenter(ax, 1, fLogX), BinCenter(ax, Nx, fLogX),
+                         Ny-1, BinCenter(ay, 1, fLogY), BinCenter(ay, Ny, fLogY));
     axes->Draw();
 
     if(fHist){
@@ -362,6 +367,10 @@ namespace ana
     axes->GetYaxis()->SetLabelOffset(ay->GetLabelOffset());
     axes->GetXaxis()->CenterTitle();
     axes->GetYaxis()->CenterTitle();
+
+    if(fLogX) gPad->SetLogx();
+    if(fLogY) gPad->SetLogy();
+
     gPad->Update();
   }
 
@@ -516,6 +525,10 @@ namespace ana
   TH2* Gaussian99Percent1D(const Surface& s){return Flat(6.63, s);}
   TH2* Gaussian3Sigma1D   (const Surface& s){return Flat(9.00, s);}
 
+  TH2* Gaussian90Percent1D1Sided(const Surface& s){return Flat(1.64, s);}
+  TH2* Gaussian3Sigma1D1Sided(const Surface& s){return Flat(7.74, s);}
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.40, s);}
+
   //----------------------------------------------------------------------
   void Surface::SaveTo(TDirectory* dir) const
   {
@@ -540,6 +553,9 @@ namespace ana
       profDir->cd();
       it->Write( TString::Format("hist%d", idx++));
     }
+
+    TObjString(fLogX ? "yes" : "no").Write("logx");
+    TObjString(fLogY ? "yes" : "no").Write("logy");
 
     tmp->cd();
   }
@@ -572,6 +588,12 @@ namespace ana
       else
         surf->fProfHists.push_back((TH2*)dir->Get(TString::Format("margHists/hist%d", idx)));
     }
+
+    const TObjString* logx = (TObjString*)dir->Get("logx");
+    const TObjString* logy = (TObjString*)dir->Get("logy");
+    // Tolerate missing log tags for backwards compatibility
+    surf->fLogX = (logx && logx->GetString() == "yes");
+    surf->fLogY = (logy && logy->GetString() == "yes");
 
     return surf;
   }
