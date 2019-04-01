@@ -14,7 +14,11 @@ add_library(sbnanalysis_ExampleAnalysis_ExampleTools SHARED ExampleTools.cxx)
 add_library(sbnanalysis_ExampleAnalysis_ExampleSelection SHARED ExampleSelection.cxx)
 
 # Define library linking
-target_link_libraries(sbnanalysis_ExampleAnalysis_ExampleSelection sbnanalysis_ExampleAnalysis_ExampleTools)
+target_link_libraries(
+  sbnanalysis_ExampleAnalysis_ExampleSelection
+  sbnanalysis_ExampleAnalysis_ExampleTools
+  sbnanalysis_ProviderManager
+)
 
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_ExampleAnalysis_ExampleTools DESTINATION lib)
