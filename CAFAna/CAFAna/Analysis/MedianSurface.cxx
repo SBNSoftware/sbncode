@@ -7,6 +7,7 @@
 #include "TH2.h"
 #include "TObjString.h"
 #include "TPad.h"
+#include "TStyle.h"
 
 namespace ana
 {
@@ -19,7 +20,7 @@ namespace ana
     for(const Surface& s: throws){
       assert(s.fHist->GetNbinsX() == throws[0].fHist->GetNbinsX());
       assert(s.fHist->GetNbinsY() == throws[0].fHist->GetNbinsY());
-      // TODO check min and max at least
+      // TODO check min and max match at least
     }
 
     fLogX = throws[0].fLogX;
@@ -33,6 +34,10 @@ namespace ana
 
     fHist = new TH2F(*throws[0].fHist);
     fHist->Reset();
+    fHistUp1 = new TH2F(*fHist);
+    fHistDn1 = new TH2F(*fHist);
+    fHistUp2 = new TH2F(*fHist);
+    fHistDn2 = new TH2F(*fHist);
 
     for(int ix = 0; ix < fHist->GetNbinsX()+2; ++ix){
       for(int iy = 0; iy < fHist->GetNbinsY()+2; ++iy){
@@ -43,8 +48,18 @@ namespace ana
         }
         std::sort(chis.begin(), chis.end());
 
+        // TODO think about off-by-one errors and interpolation here
         // Median
         fHist->SetBinContent(ix, iy, chis[throws.size()/2]);
+        // One sigma bounds
+        const double tail1 = (1-0.6827)/2;
+        fHistUp1->SetBinContent(ix, iy, chis[throws.size()*tail1]);
+        fHistDn1->SetBinContent(ix, iy, chis[throws.size()*(1-tail1)]);
+
+        // Two sigma bounds
+        const double tail2 = (1-0.9545)/2;
+        fHistUp2->SetBinContent(ix, iy, chis[throws.size()*tail2]);
+        fHistDn2->SetBinContent(ix, iy, chis[(throws.size()-1)*(1-tail2)]);
       } // end for iy
     } // end for ix
   }
@@ -63,6 +78,43 @@ namespace ana
         g->Draw("l");
       }
     }
+
+    gPad->Update();
+  }
+
+  // --------------------------------------------------------------------------
+  void MedianSurface::DrawBand(TH2* fc)
+  {
+    EnsureAxes();
+
+    TH2F surf1(*fHist);
+    TH2F surf2(*fHist);
+
+    for(int ix = 0; ix < fHist->GetNbinsX()+2; ++ix){
+      for(int iy = 0; iy < fHist->GetNbinsY()+2; ++iy){
+        const double c = fc->GetBinContent(ix, iy);
+
+        const double u1 = fHistUp1->GetBinContent(ix, iy);
+        const double d1 = fHistDn1->GetBinContent(ix, iy);
+        surf1.SetBinContent(ix, iy, std::max(u1-c, c-d1));
+
+        const double u2 = fHistUp2->GetBinContent(ix, iy);
+        const double d2 = fHistDn2->GetBinContent(ix, iy);
+        surf2.SetBinContent(ix, iy, std::max(u2-c, c-d2));
+      }
+    }
+
+    const double level = 0;
+
+    // I haven't been able to figure out how to draw these filled properly. cont0 does it, but can't handle countours that reach the edge of the space
+    surf2.SetContour(1, &level);
+    surf2.SetLineColor(kYellow);
+    surf2.DrawCopy("cont3 same");
+
+    surf1.SetContour(1, &level);
+    surf1.SetLineColor(kGreen);
+    surf1.SetFillColor(kGreen+2);
+    surf1.DrawCopy("cont3 same");
 
     gPad->Update();
   }
