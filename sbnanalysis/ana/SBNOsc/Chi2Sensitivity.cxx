@@ -154,11 +154,6 @@ void Chi2Sensitivity::Initialize(fhicl::ParameterSet* config) {
       }
     }
 
-    // Uniformly applied weights
-    if (pconfig.is_key_to_sequence("UniformWeights")) {
-      fUniformWeights = pconfig.get<std::vector<std::string> >("UniformWeights");
-    }
-
     // start at 0th event sample
     fSampleIndex = 0;
 }
@@ -166,7 +161,8 @@ void Chi2Sensitivity::Initialize(fhicl::ParameterSet* config) {
 Chi2Sensitivity::EventSample::EventSample(const fhicl::ParameterSet& config) {
     // scaling stuff
     fName = config.get<std::string>("name", "");
-    fScaleFactor = config.get<double>("scalefactor", 0.);
+    fScalePOT = config.get<double>("ScalePOT", 0.);
+    fPOT = 0.;
 
     // setup detector stuff
     fDistance = config.get<double>("Distance", 0);
@@ -234,6 +230,10 @@ void Chi2Sensitivity::FileCleanup(TTree *eventTree) {
     // onto the next sample
     fSampleIndex ++;
 }
+
+void Chi2Sensitivity::ProcessSubRun(const SubRun *subrun) {
+  fEventSamples[fSampleIndex].fPOT += subrun->totgoodpot;
+}
             
 void Chi2Sensitivity::ProcessEvent(const Event *event) {
     // have the covariance process the event
@@ -293,6 +293,9 @@ void Chi2Sensitivity::ProcessEvent(const Event *event) {
         //    wgt *= event->truth[truth_ind].weights.at(key)[0];
         // }
         double wgt = event->reco[n].weight;
+        if (fEventSamples[fSampleIndex].fScalePOT > 0) {
+          wgt *= fEventSamples[fSampleIndex].fScalePOT / fEventSamples[fSampleIndex].fPOT;
+        }
     
         // fill in hitograms
         //

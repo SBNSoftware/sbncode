@@ -36,6 +36,7 @@ class Covariance: public core::PostProcessorBase {
         void FileCleanup(TTree *eventTree);
         void Initialize(fhicl::ParameterSet *config);
         void ProcessEvent(const Event *event);
+        void ProcessSubRun(const SubRun *subrun);
         void Finalize() { Scale(); GetCovs(); Write(); }
 
         // API Functions
@@ -58,7 +59,8 @@ class Covariance: public core::PostProcessorBase {
 	    /** Constructors. */
 	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses, unsigned nVariations);
 	    
-	    double fScaleFactor;         //!< Factor for POT (etc.) scaling
+            double fPOT;
+	    double fScalePOT;         //!< Factor for POT (etc.) scaling
 	    std::vector <double> fBins; //!< Energy bin limits
 	    TH1D *fCentralValue; //!< central value histogram
 	    std::vector<std::vector<TH1D *>> fUniverses; //!< List of histogram per systematic universe. 
@@ -70,7 +72,6 @@ class Covariance: public core::PostProcessorBase {
 
         // config
         std::vector<std::vector<std::string>> fWeightKeys;
-        std::vector<std::string> fUniformWeights;
         int fNumAltUnis;
         int fAltUniOffset;
         std::string fEnergyType;
