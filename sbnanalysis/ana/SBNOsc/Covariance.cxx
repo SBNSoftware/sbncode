@@ -29,7 +29,13 @@ Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned
     // get configuration stuff
     fBins = config.get<std::vector<double> >("binlims");
     fName = config.get<std::string>("name", "");
-    fScaleFactor = config.get<double>("scalefactor", 1.0);
+    fScalePOT = config.get<double>("ScalePOT", -1);
+    fPOT = 0.;
+    fEnergyBinScale = config.get<std::vector<double>>("energy_bin_scale", {});
+    if (fEnergyBinScale.size() == 0) {
+      fEnergyBinScale = std::vector<double>(fBins.size() - 1, 1.0);
+    }
+    else assert(fEnergyBinScale.size() == fBins.size() - 1);
 
     // setup histograms
     std::string cv_title = fName + " Central Value";
@@ -49,18 +55,14 @@ Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned
 
 
 // Gets scale factors (weights) for different universes
-std::vector <double> GetUniWeights(const std::map <std::string, std::vector <double> > &weights, const std::vector<std::string> &keys, int n_unis) {
-    
-    // Tentative format: universe u scale factor is the product of the u-th entries on each vector 
-    // inside the map. For vectors with less than u entries, use the (u - vec_size)-th entry
-    
+std::vector <double> GetUniWeights(const std::map <std::string, std::vector <double> > &weights, const std::vector<std::string> &keys, int n_unis, int uni_offset) {
     std::vector <double> uweights;
     
     for (int u = 0; u < n_unis; u++) {
         double weight = 1.;
         for (auto const &key: keys) {
             const std::vector<double>& this_weights = weights.at(key);
-            int wind = u % this_weights.size();
+            int wind = u + uni_offset;
             weight *= this_weights.at(wind);
         }
         uweights.push_back(weight);
@@ -81,13 +83,10 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     fWeightKeys = pconfig.get<std::vector<std::vector<std::string>>>("WeightKey");
     fNVariations = fWeightKeys.size();
 
-    // uniformly applied weights
-    if (pconfig.is_key_to_sequence("UniformWeights")) {
-      fUniformWeights = pconfig.get<std::vector<std::string> >("UniformWeights");
-    }
-
     // number of universes to be used
     fNumAltUnis = pconfig.get<int>("NumAltUnis", 0);
+    // and offset into the eventweight vector
+    fAltUniOffset = pconfig.get<int>("AltUniOffset", 0);
     
     // Type of energy
     fEnergyType = pconfig.get<std::string>("EnergyType", "Reco");
@@ -100,7 +99,7 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     // If an event has any weight larger than this value, it will be 
     // thrown away for the purposes of covariance construction
     fWeightMax = pconfig.get<double>("WeightMax", -1.);
-    
+     
     // get event samples
     std::vector<fhicl::ParameterSet> configEventSamples = \
       config->get<std::vector<fhicl::ParameterSet> >("EventSamples");
@@ -117,6 +116,10 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
 
     // start out at the zeroth sample
     fSampleIndex = 0;
+}
+
+void Covariance::ProcessSubRun(const SubRun *subrun) {
+  fEventSamples[fSampleIndex].fPOT += subrun->totgoodpot;
 }
 
 void Covariance::ProcessEvent(const Event *event) {
@@ -137,19 +140,24 @@ void Covariance::ProcessEvent(const Event *event) {
     
         // Apply selection (or rejection) efficiencies
         int isCC = event->truth[truth_ind].neutrino.iscc;
-        double wgt = isCC*(fSelectionEfficiency) + (1-isCC)*(1 - fBackgroundRejection);
+        // double wgt = isCC*(fSelectionEfficiency) + (1-isCC)*(1 - fBackgroundRejection);
         // apply scaling from fScaleFactor
-        wgt *= fEventSamples[fSampleIndex].fScaleFactor;
+        // wgt *= fEventSamples[fSampleIndex].fScaleFactor;
         // apply uniform weights
-        for (auto const &key: fUniformWeights) {
-            wgt *= event->truth[truth_ind].weights.at(key)[0];
+        // for (auto const &key: fUniformWeights) {
+        //     wgt *= event->truth[truth_ind].weights.at(key)[0];
+        // }
+        double wgt = event->reco[n].weight;
+        // apply POT scaling if configured
+        if (fEventSamples[fSampleIndex].fScalePOT > 0) {
+          wgt *= fEventSamples[fSampleIndex].fScalePOT / fEventSamples[fSampleIndex].fPOT;
         }
     
         // Get weights for each alternative universe
         std::vector<std::vector <double>> uweights; 
         for (std::vector<std::string> &weight_keys: fWeightKeys) {
           uweights.push_back(
-            GetUniWeights(event->truth[truth_ind].weights, weight_keys, fNumAltUnis)
+            GetUniWeights(event->truth[truth_ind].weights, weight_keys, fNumAltUnis, fAltUniOffset)
           );
         }
 
@@ -177,6 +185,25 @@ void Covariance::ProcessEvent(const Event *event) {
           }
         }
     }
+}
+
+void Covariance::Scale() {
+  for (int sample_i = 0; sample_i < fEventSamples.size(); sample_i++) {
+    for (int i = 1; i < fEventSamples[sample_i].fCentralValue->GetNbinsX()+1; i++) {
+      std::cout << "pre sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
+      fEventSamples[sample_i].fCentralValue->SetBinContent(i,
+        fEventSamples[sample_i].fEnergyBinScale[i-1] *  fEventSamples[sample_i].fCentralValue->GetBinContent(i));
+      std::cout << "post sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
+    }
+    for (int variation = 0; variation < fWeightKeys.size(); variation++) {
+      for (int uni = 0; uni < fNumAltUnis; uni++) {
+        for (int i = 1; i < fEventSamples[sample_i].fUniverses[variation][uni]->GetNbinsX(); i++) {
+          double content = fEventSamples[sample_i].fUniverses[variation][uni]->GetBinContent(i);
+          fEventSamples[sample_i].fUniverses[variation][uni]->SetBinContent(i, content * fEventSamples[sample_i].fEnergyBinScale[i-1]);
+        }
+      }
+    }
+  }
 }
 
 

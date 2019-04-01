@@ -30,7 +30,33 @@ NumuSelection::NumuSelection() :
   SelectionBase(),
   _event_counter(0),
   _nu_count(0),
-  _interactionInfo(new std::vector<NuMuInteraction>) {}
+  _rand(57 /* seed */),
+  _interactionInfo(new std::vector<NuMuInteraction>) {
+  // setup the event categories
+  _eventCategories["CC0pi"] = 0;
+  _eventCategories["CC1pi"] = 0;
+  _eventCategories["CC2pi"] = 0;
+  _eventCategories["CCnpi"] = 0;
+
+  _eventCategories["NC0pi"] = 0;
+  _eventCategories["NC1pi"] = 0;
+  _eventCategories["NC2pi"] = 0;
+  _eventCategories["NCnpi"] = 0;
+
+  // more
+  _eventCategories["CCnoMU"] = 0;
+  _eventCategories["NCwiMU"] = 0;
+
+  // more
+  _eventCategories["CCQE"] = 0;
+  _eventCategories["CCRES"] = 0;
+  _eventCategories["CCDIS"] = 0;
+  _eventCategories["CCCOH"] = 0;
+  _eventCategories["CCMEC"] = 0;
+   _eventCategories["CCCOHE"] = 0;
+  _eventCategories["CCother"] = 0;
+}
+
 
 double aaBoxesMin(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
   return std::min_element(boxes.begin(), boxes.end(), [dim](auto &lhs, auto &rhs) { return lhs.Min()[dim] < rhs.Min()[dim]; })->Min()[dim];
@@ -70,7 +96,7 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     }
 
     _config.doFVCut = pconfig.get<bool>("doFVcut", true);
-    _config.trajPointLength = pconfig.get<bool>("trajPointLength", false);
+    _config.trajPointLength = pconfig.get<bool>("trajPointLength", true);
     _config.vertexDistanceCut = pconfig.get<double>("vertexDistance", -1);
     _config.minLengthContainedTrack = pconfig.get<double>("minLengthContainedTrack", -1);
     _config.minLengthExitingTrack = pconfig.get<double>("minLengthExitingTrack", -1);
@@ -83,6 +109,8 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _config.acceptShakyTracks = pconfig.get<bool>("acceptShakyTracks", false);
     _config.verbose = pconfig.get<bool>("verbose", false);
     _config.cutKMEC = pconfig.get<bool>("cutKMEC", false);
+    _config.selectMode = pconfig.get<int>("selectMode", -1);
+    _config.selectCCNC = pconfig.get<int>("selectCCNC", -1);
     _config.onlyKMEC = pconfig.get<bool>("onlyKMEC", false);
 
     // setup weight config
@@ -113,6 +141,24 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _root_histos[i].h_numu_Vyz = new TH2D(("numu_Vyz_" + cut_names[i]).c_str(), "numu_Vyz",
       20, aaBoxesMin(_config.active_volumes, 1), aaBoxesMax(_config.active_volumes, 1),
       20, aaBoxesMin(_config.active_volumes, 2), aaBoxesMax(_config.active_volumes, 2));
+
+    _root_histos[i].h_numu_Vx_sig = new TH1D(("numu_Vx_sig" + cut_names[i]).c_str(), "numu_Vx_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 0), aaBoxesMax(_config.fiducial_volumes, 0));
+    _root_histos[i].h_numu_Vy_sig = new TH1D(("numu_Vy_sig" + cut_names[i]).c_str(), "numu_Vy_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 1), aaBoxesMax(_config.fiducial_volumes, 1));
+    _root_histos[i].h_numu_Vz_sig = new TH1D(("numu_Vz_sig" + cut_names[i]).c_str(), "numu_Vz_sig", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 2), aaBoxesMax(_config.fiducial_volumes, 2));
+
+    _root_histos[i].h_numu_Vx_bkg = new TH1D(("numu_Vx_bkg" + cut_names[i]).c_str(), "numu_Vx_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 0), aaBoxesMax(_config.fiducial_volumes, 0));
+    _root_histos[i].h_numu_Vy_bkg = new TH1D(("numu_Vy_bkg" + cut_names[i]).c_str(), "numu_Vy_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 1), aaBoxesMax(_config.fiducial_volumes, 1));
+    _root_histos[i].h_numu_Vz_bkg = new TH1D(("numu_Vz_bkg" + cut_names[i]).c_str(), "numu_Vz_bkg", 20, 
+      aaBoxesMin(_config.fiducial_volumes, 2), aaBoxesMax(_config.fiducial_volumes, 2));
+
+    _root_histos[i].h_numu_t_is_muon_sig = new TH1D(("t_is_muon_sig_"  + cut_names[i]).c_str(), "t_is_muon_sig", 3, -1.5, 1.5);
+    _root_histos[i].h_numu_t_is_muon_bkg = new TH1D(("t_is_muon_bkg_"  + cut_names[i]).c_str(), "t_is_muon_bkg", 3, -1.5, 1.5);
+
   }
 
   // set up TGraph keeping track of cut counts
@@ -140,8 +186,25 @@ void NumuSelection::Finalize() {
     _root_histos[i].h_numu_Vxy->Write();
     _root_histos[i].h_numu_Vxz->Write();
     _root_histos[i].h_numu_Vyz->Write();
+
+    _root_histos[i].h_numu_Vx_sig->Write();
+    _root_histos[i].h_numu_Vy_sig->Write();
+    _root_histos[i].h_numu_Vz_sig->Write();
+    _root_histos[i].h_numu_Vx_bkg->Write();
+    _root_histos[i].h_numu_Vy_bkg->Write();
+    _root_histos[i].h_numu_Vz_bkg->Write();
+
+    _root_histos[i].h_numu_t_is_muon_sig->Write();
+    _root_histos[i].h_numu_t_is_muon_bkg->Write();
   }
   _cut_counts->Write();
+
+  // print out event stats
+  std::map<std::string, double>::iterator it = _eventCategories.begin();
+  while (it != _eventCategories.end()) {
+    std::cout << "Category: " << it->first << " " << it->second << std::endl;
+    it ++;
+  }
 }
 
 
@@ -151,7 +214,6 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
               << "(" << _nu_count << " neutrinos selected)"
               << std::endl;
   }
-
   // clean up containers
   _event_counter++;
   _interactionInfo->clear();
@@ -167,6 +229,52 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
   // update total count of interactions
   _cut_counts->SetPoint(0, 0, _cut_counts->GetY()[0] + mctruths.size());
+
+  // categorize events:
+  for (unsigned i = 0; i < mctruths.size(); i++) {
+    auto const &mctruth = mctruths[i];
+    Event::Interaction interaction = truth[i];
+    double weight = 1.;
+    // maybe cut MEC
+    bool pass_kMEC = !(_config.cutKMEC && mctruth.GetNeutrino().Mode() == simb::kMEC) && !(_config.onlyKMEC && mctruth.GetNeutrino().Mode() != simb::kMEC);
+    if (!pass_kMEC) continue;
+    for (auto const &key: _config.uniformWeights) {
+       weight *= interaction.weights.at(key)[0];
+    }
+    if (containedInAV(mctruth.GetNeutrino().Nu().Position().Vect())) {
+      bool iscc = mctruth.GetNeutrino().CCNC() == 0;
+      unsigned n_pions = 0;
+      for (auto const &mctrack: mctracks) {
+        if (isFromNuVertex(mctruth, mctrack) && abs(mctrack.PdgCode()) == 211 && mctrack.Process() == "primary") {
+          n_pions += 1;
+        }
+      // categorize on number of pions
+      }
+      if (iscc) {
+        if (n_pions == 0)  _eventCategories["CC0pi"] += weight;
+        else if (n_pions == 1) _eventCategories["CC1pi"] += weight;
+        else if (n_pions == 2)  _eventCategories["CC2pi"] += weight;
+        else _eventCategories["CCnpi"] += weight;
+      }
+      else {
+        if (n_pions == 0)  _eventCategories["NC0pi"] += weight;
+        else if (n_pions == 1) _eventCategories["NC1pi"] += weight;
+        else if (n_pions == 2)  _eventCategories["NC2pi"] += weight;
+        else _eventCategories["NCnpi"] += weight;
+      }
+      // categorize on event mode
+      if (iscc) {
+        int mode = mctruth.GetNeutrino().Mode();
+        if (mode == simb::kQE) _eventCategories["CCQE"] += weight;
+        else if (mode == simb::kCoh) _eventCategories["CCCOH"] += weight;
+        else if (mode == simb::kRes) _eventCategories["CCRES"] += weight;
+        else if (mode == simb::kMEC) _eventCategories["CCMEC"] += weight;
+        else if (mode == simb::kDIS) _eventCategories["CCDIS"] += weight;
+        else if (mode == simb::kCohElastic) _eventCategories["CCCOHE"] += weight;
+        else _eventCategories["CCother"] += weight;
+      }
+    }
+  }
 
   // Iterate through the neutrinos
   bool selected = false;
@@ -194,22 +302,32 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     // This also sets the lepton variables in the calculator
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
-    double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
+    double visible_energy = visibleEnergy(_rand, mctruth, mctracks, mcshowers, calculator, false);
 
     Event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
 
     // Build the weight of this event
     double weight = 1.;
-    // whether this event is signal or background
-    bool is_signal = abs(intInfo.t_pdgid) == 13; // muon
-    // selection efficiency
-    if (is_signal) {
-      weight *= _config.selectionEfficiency;
-    }
     // apply uniofrm weights (e.g. bnbcorrection)
     for (auto const &key: _config.uniformWeights) {
        weight *= interaction.weights.at(key)[0];
+    }
+    // whether this event is signal or background
+    // bool is_signal = abs(intInfo.t_pdgid) == 13; // muon
+    bool is_signal = interaction.neutrino.iscc;
+    // selection efficiency
+    if (is_signal) {
+      if (abs(intInfo.t_pdgid) != 13) {
+        _eventCategories["CCnoMU"] += weight;
+      }
+      weight *= _config.selectionEfficiency;
+    }
+    else {
+      if (abs(intInfo.t_pdgid) == 13) {
+        _eventCategories["NCwiMU"] += weight;
+      }
+
     }
     // apply constant weight
     weight *= _config.constantWeight;
@@ -244,6 +362,21 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
         _root_histos[select_i].h_numu_Vxy->Fill(nu.Nu().Vx(), nu.Nu().Vy());
         _root_histos[select_i].h_numu_Vxz->Fill(nu.Nu().Vx(), nu.Nu().Vz());
         _root_histos[select_i].h_numu_Vyz->Fill(nu.Nu().Vy(), nu.Nu().Vz());
+
+        if (is_signal) {
+          _root_histos[select_i].h_numu_Vx_sig->Fill(nu.Nu().Vx()); 
+          _root_histos[select_i].h_numu_Vy_sig->Fill(nu.Nu().Vy()); 
+          _root_histos[select_i].h_numu_Vz_sig->Fill(nu.Nu().Vz()); 
+
+          _root_histos[select_i].h_numu_t_is_muon_sig->Fill(abs(intInfo.t_pdgid) == 13);
+        }
+        else {
+          _root_histos[select_i].h_numu_Vx_bkg->Fill(nu.Nu().Vx()); 
+          _root_histos[select_i].h_numu_Vy_bkg->Fill(nu.Nu().Vy()); 
+          _root_histos[select_i].h_numu_Vz_bkg->Fill(nu.Nu().Vz()); 
+
+          _root_histos[select_i].h_numu_t_is_muon_bkg->Fill(abs(intInfo.t_pdgid) == 13);
+        }
 
         // also update cut count
         _cut_counts->SetPoint(select_i+1, select_i+1, _cut_counts->GetY()[select_i+1] + 1);
@@ -392,7 +525,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     calculator.lepton_contained = false;
     calculator.lepton_contained_length = -1;
     calculator.lepton_index = -1;
-    return NumuSelection::NuMuInteraction({false, -1, -1, -1, -1, -1});
+    return NumuSelection::NuMuInteraction({false, -1, -1, -1, -1, -1, TVector3()});
   }
   // otherwise get the track info and energy info
   else {
@@ -408,7 +541,8 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
-    return NumuSelection::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy});
+    TVector3 momentum = mctrack_list[track_ind].Start().Momentum().Vect();
+    return NumuSelection::NuMuInteraction({t_info.t_is_contained, t_info.t_contained_length, t_info.t_length, mctrack_list[track_ind].PdgCode(), truth_energy, smeared_energy, momentum});
   }
 }
 
@@ -468,6 +602,11 @@ std::array<bool, NumuSelection::nCuts> NumuSelection::Select(const gallery::Even
 
   // STUDY KMEC: remove MEC events
   bool pass_kMEC = !(_config.cutKMEC && nu.Mode() == simb::kMEC) && !(_config.onlyKMEC && nu.Mode() != simb::kMEC);
+  // select another mode if necessary
+  bool pass_Mode = _config.selectMode < 0 || nu.Mode() == _config.selectMode;
+  // maybe require cc or nc
+  bool pass_CCNC = _config.selectCCNC < 0 || nu.CCNC() == _config.selectCCNC;
+  pass_kMEC = pass_kMEC && pass_Mode && pass_CCNC;
 
   // retrun list of cuts
   return {pass_kMEC, pass_AV && pass_kMEC, pass_valid_track && pass_kMEC && pass_AV, pass_valid_track && pass_kMEC && pass_FV, pass_valid_track && pass_kMEC && pass_FV && pass_min_length};
