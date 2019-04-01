@@ -53,15 +53,17 @@ public:
   public:
     /** Constructor. */
     Neutrino()
-      : isnc(false), iscc(false), pdg(0), targetPDG(0), genie_intcode(0),
-        bjorkenX(kUnfilled), inelasticityY(kUnfilled), Q2(kUnfilled),
-        q0(kUnfilled), modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
+      : isnc(false), iscc(false), pdg(0), initpdg(0), targetPDG(0),
+        genie_intcode(0), bjorkenX(kUnfilled), inelasticityY(kUnfilled),
+        Q2(kUnfilled), q0(kUnfilled),
+        modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
         w(kUnfilled), t(kUnfilled), energy(kUnfilled),
         momentum(kUnfilled, kUnfilled, kUnfilled), parentPDG(0),
         parentDecayMode(0), parentDecayVtx(kUnfilled, kUnfilled, kUnfilled) {}
 
     bool isnc;                //!< same as LArSoft "ccnc" - 0=CC, 1=NC
     bool iscc;                //!< CC (true) or NC/interference (false)
+    int initpdg;              //!< Initial PDG code of probe neutrino
     int pdg;                  //!< PDG code of probe neutrino
     int targetPDG;            //!< PDG code of struck target
     int genie_intcode;        //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
