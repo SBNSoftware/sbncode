@@ -1,3 +1,4 @@
+#include "microboone_eventweight_service.fcl"
 #include "services_microboone.fcl"
 #include "seedservice_microboone.fcl"
 #include "eventweight_sbn.fcl"
@@ -12,6 +13,7 @@ services: {
   RandomNumberGenerator: {}
   FileCatalogMetadata: @local::art_file_catalog_mc
   NuRandomService: @local::microboone_seedservice
+  UBEventWeight: @local::microboone_eventweight_service
 }
 
 source: {

@@ -12,7 +12,7 @@
 ##########################################################
 
 sbn_flux_eventweight: {
-  module_type: "UBEventWeight"
+  module_type: EventWeight
  
   # Throw exception if weight outside limits
   min_weight: 0
@@ -21,7 +21,7 @@ sbn_flux_eventweight: {
   genie_module_label: generator  
  
   weight_functions_beam: [
-    bnbcorrection, horncurrent, expskin,
+    horncurrent, expskin,
     piplus, piminus, kplus, kzero, kminus,
     pioninexsec, pionqexsec, piontotxsec,
     nucleontotxsec, nucleonqexsec, nucleoninexsec
@@ -675,6 +675,8 @@ sbn_genie_eventweight: {
 }
 
 sbn_genie_eventweight.weight_functions: [
-  @sequence::sbn_genie_eventweight.weight_functions_genie
+  genie_qema
+  #@sequence::sbn_flux_eventweight.weight_functions_beam
+  #@sequence::sbn_genie_eventweight.weight_functions_genie
 ]
 

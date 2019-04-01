@@ -6,7 +6,7 @@ outputs.out1.fileName: "prodgenie_bnb_nu_sbn_icarus_%tc_gen.root"
 
 services.IFDH: {}
 physics.producers.generator.FluxCopyMethod: "IFDH"
-physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.EventsPerSpill: 1
 physics.producers.generator.TopVolume: "volDetEnclosure"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/mastbaum/flux/icarus/zarko-expires20171031/"
