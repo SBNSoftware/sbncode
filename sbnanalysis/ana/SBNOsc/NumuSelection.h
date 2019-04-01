@@ -29,6 +29,8 @@
 // take the geobox stuff from uboonecode
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
+#include "TRandom.h"
+#include "TRandomGen.h"
 
 class TH2D;
 
@@ -219,6 +221,7 @@ protected:
     return {"MEC", "AV", "Track", "FV", "min_L"};
   }
 
+  TRandomMT64 _rand; //!< random number generation
   Config _config; //!< The config
 
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder

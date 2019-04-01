@@ -22,6 +22,7 @@
 #include "core/Event.hh"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
+#include "TRandom.h"
 
 namespace ana {
   namespace SBNOsc {
@@ -175,7 +176,7 @@ struct VisibleEnergyCalculator {
  *
  * \return Visble energy in GeV.
  * */
-double visibleEnergy(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
+double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
     const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
 
 

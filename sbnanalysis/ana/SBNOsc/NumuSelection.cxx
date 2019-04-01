@@ -30,6 +30,7 @@ NumuSelection::NumuSelection() :
   SelectionBase(),
   _event_counter(0),
   _nu_count(0),
+  _rand(57 /* seed */),
   _interactionInfo(new std::vector<NuMuInteraction>) {
   // setup the event categories
   _eventCategories["CC0pi"] = 0;
@@ -301,7 +302,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     // This also sets the lepton variables in the calculator
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
-    double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
+    double visible_energy = visibleEnergy(_rand, mctruth, mctracks, mcshowers, calculator, false);
 
     Event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
