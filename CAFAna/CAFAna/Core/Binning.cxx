@@ -156,12 +156,14 @@ namespace ana
     // bounded between -1 and +1. So bins should have width ~1/E^2. E_i~1/i
     // achieves that.
 
-    const int kNumTrueEnergyBins = 100;
+    // Binning roughly re-optimized for SBN sterile analyses
+
+    const int kNumTrueEnergyBins = 80;
 
     // N+1 bin low edges
     std::vector<double> edges(kNumTrueEnergyBins+1);
 
-    const double Emin = .5; // 500 MeV: there's really no events below there
+    const double Emin = .2; // 200 MeV
 
     // How many edges to generate. Allow room for 0-Emin bin
     const double N = kNumTrueEnergyBins-1;
@@ -173,7 +175,7 @@ namespace ana
       edges[kNumTrueEnergyBins-i] = A/i;
     }
 
-    edges[kNumTrueEnergyBins] = 120; // Replace the infinity that would be here
+    edges[kNumTrueEnergyBins] = 20; // Replace the infinity that would be here
 
     return Binning::Custom(edges);
   }
