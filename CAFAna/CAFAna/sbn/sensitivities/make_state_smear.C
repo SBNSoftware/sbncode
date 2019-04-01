@@ -62,20 +62,26 @@ void make_state_smear(const std::string anatype = numuStr)
 			  return sr->reco[0].reco_energy;
 			});
 
+  const Var kTrueE([](const caf::SRProxy* sr)
+                        {
+			  return sr->truth[0].neutrino.energy;
+			});
+
   const Var kWeight([](const caf::SRProxy* sr)
                         {
 			  return sr->reco[0].weight;
 			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
-  const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
+  const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kSmearedE);
+  const HistAxis axTrueEnergy("True energy (GeV)", binsEnergy, kTrueE);
 
   // List all of the systematics we'll be using
   std::cout << "\nIncluding the following systematics:" << std::endl;
   for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
   std::cout << "\n" << std::endl;
 
-  NoExtrapGenerator gen(axEnergy, kNoCut, kUnweighted);
+  NoExtrapGenerator gen(axTrueEnergy, kNoCut, kUnweighted);
   if (anatype == numuStr) {
     NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
   }
