@@ -11,7 +11,9 @@
 #pragma link C++ class Event::Interaction+;
 #pragma link C++ class Event::Neutrino+;
 #pragma link C++ class Event::FinalStateParticle+;
+#pragma link C++ class Event::Weight_t+;
 #pragma link C++ class std::map<std::string, std::vector<double> >+;
+#pragma link C++ class std::map<std::string, size_t>+;
 
 #pragma link C++ class std::vector<TVector3>+;
 

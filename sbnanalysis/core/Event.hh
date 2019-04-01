@@ -99,6 +99,23 @@ public:
     TVector3 momentum;  //!< Three-momentum
   };
 
+
+  /**
+   * \struct Weight_t;
+   * \brief Container for an event weight;
+   */
+  class Weight_t {
+  public:
+    Weight_t() : param_idx(kUnfilled), value(kUnfilled), weight(kUnfilled), universe(kUnfilled) {}
+    Weight_t(size_t _param_idx, size_t _universe, float _value, float _weight)
+        : param_idx(_param_idx), universe(_universe), value(_value), weight(_weight) {}
+    size_t param_idx;  //!< Parameter name
+    size_t universe;  //!< Universe index
+    float value;  //!< Parameter value
+    float weight;  //!< Weight
+  };
+
+
   /**
    * \class Event::Interaction
    * \brief All truth information associated with one neutrino interaction
@@ -109,15 +126,27 @@ public:
     FinalStateParticle lepton;  //!< The primary final state lepton
 
     /** The other final state particles. */
+    size_t nfinalstate;  //!< Size of finalstate
     std::vector<FinalStateParticle> finalstate; //!< Final state particles
 
     /**
      * Event weights.
      *
-     * This is a map from the weight calculator name to the list of weights
-     * for all the sampled universes.
+     * As a map of parameter names to vectors of weights, as in LArSoft.
      */
-    std::map<std::string, std::vector<double> > weights;
+    std::map<std::string, std::vector<double> > weightmap;
+
+    /**
+     * Event weights.
+     *
+     * To reduce the depth of the event structure, this is a flattened list
+     * of weight objects that have the weight, the parameter, and the index
+     * of the universe.
+     */
+    std::vector<Weight_t> weights;
+    size_t nweights;  //!< Number of weights
+
+    std::map<std::string, size_t> weight_indices;  //!< IDs for parameter names
   };
 
   /**
@@ -161,7 +190,9 @@ public:
   };
 
   Metadata metadata;  //!< Event metadata
+  size_t ntruth;  //!< Size of truth
   std::vector<Interaction> truth; //!< All truth interactions
+  size_t nreco;  //!< Size of reco
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 
   Experiment experiment;  //!< Experiment identifier
