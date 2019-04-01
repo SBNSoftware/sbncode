@@ -14,15 +14,19 @@
 #include "CAFAna/Core/MultiVar.h"
 #include "OscLib/func/OscCalculatorSterile.h"
 #include "CAFAna/Analysis/ExpInfo.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/LoadFromFile.h"
+#include "CAFAna/Prediction/PredictionInterp.h"
 #include "TCanvas.h"
 #include "TH1.h"
 #include "TFile.h"
 #include "TLatex.h"
 
+#include "toysysts.h"
+
 using namespace ana;
 
-const char* basicFname = "cafe_state.root";
+const char* basicFname = "cafe_state_smear_numu.root";
 
 void spec(const char* stateFname = basicFname)
 {
@@ -34,10 +38,13 @@ void spec(const char* stateFname = basicFname)
 
     std::cout << "Loading state from " << stateFname << std::endl; 
     TFile fin(stateFname);
-    PredictionNoExtrap& pred_nd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_nd_numu")).release();
-    PredictionNoExtrap& pred_fd_numu = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("pred_fd_numu")).release();
+    PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd_numu")).release();
+    PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd_numu")).release();
+    //PredictionInterp& pred_fd_nue = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd_nue")).release();
 
-    // Fake POT: we need to sort this out in the files first
+    std::cout << "read in done" << std::endl;
+
+
     const double pot = POTnominal;
 
     osc::NoOscillations* osc_none = new osc::NoOscillations;
@@ -53,13 +60,14 @@ void spec(const char* stateFname = basicFname)
     osc_nd_opt2->SetAngle(2, 4, 0.1);
     osc_nd_opt2->SetDm(4, 1.1);
 
+    //Numu
     TH1* hnumu_nd_signal_unosc = pred_nd_numu.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
     TH1* hnumu_nd_signal_osc1 = pred_nd_numu.PredictComponent(osc_nd_opt1, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
     TH1* hnumu_nd_signal_osc2 = pred_nd_numu.PredictComponent(osc_nd_opt2, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
-    // For truth analysis it's meaningless to have a background so this is a placeholder
     TH1* hnumu_nd_ncbg_unosc = pred_nd_numu.PredictComponent(osc_none, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
     //TH1* hnumu_nd_ncbg_osc1 = pred_nd_numu.PredictComponent(osc_nd_opt1, Flavors::kAllNuMu, Current::kNC, Sign::kBoth).ToTH1(pot);
     //TH1* hnumu_nd_ncbg_osc2 = pred_nd_numu.PredictComponent(osc_nd_opt2, Flavors::kAllNuMu, Current::kNC, Sign::kBoth).ToTH1(pot);
+
 
     //ICARUS
 
@@ -73,12 +81,23 @@ void spec(const char* stateFname = basicFname)
     osc_fd_opt2->SetAngle(2, 4, 0.1);
     osc_fd_opt2->SetDm(4, 1.1);
 
+    //osc::OscCalculatorSterile* osc_fd_nue = DefaultSterileCalc(4);
+    //osc_fd_nue->SetL(BaselineIcarus);
+    //osc_fd_nue->SetDm(4, 0.43);
+    //uhoh - make new calculator?
+    //osc_fd_nue->SetAngle 
+
+    //Numu
     TH1* hnumu_fd_signal_unosc = pred_fd_numu.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
     TH1* hnumu_fd_signal_osc1 = pred_fd_numu.PredictComponent(osc_fd_opt1, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
     TH1* hnumu_fd_signal_osc2 = pred_fd_numu.PredictComponent(osc_fd_opt2, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
-    TH1* hnumu_fd_ncbg_unosc = pred_fd_numu.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
+    TH1* hnumu_fd_ncbg_unosc = pred_fd_numu.PredictComponent(osc_none, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
     //TH1* hnumu_fd_ncbg_osc1 = pred_fd_numu.PredictComponent(osc_fd_opt1, Flavors::kAllNuMu, Current::kNC, Sign::kBoth).ToTH1(pot);
     //TH1* hnumu_fd_ncbg_osc2 = pred_fd_numu.PredictComponent(osc_fd_opt2, Flavors::kAllNuMu, Current::kNC, Sign::kBoth).ToTH1(pot);
+
+    //Nue
+    //TH1* hnue_fd_signal_unosc = pred_fd_nue.PredictComponent(osc_fd_nue, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+    //TH1* hnue_fd_signal_osc = pred_fd_nue.PredictComponent(osc_fd_nue, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
 
     TFile* fOutput = new TFile("output_spec.root","RECREATE");
 
