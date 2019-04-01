@@ -30,10 +30,10 @@
 using namespace ana;
 
 // State file
-const char* basicFname = "cafe_state_smear.root";
+const char* basicFname = "cafe_state_smear_numu.root";
 
-const double sbndPOT = POTnominal;
-const double icarusPOT = POTnominal;
+const double sbndPOT = kPOTnominal;
+const double icarusPOT = kPOTnominal;
 
 void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = true)
 {
@@ -51,7 +51,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
 
     // Calculator
     osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
-    calc->SetL(BaselineSBND); 
+    calc->SetL(kBaselineSBND); 
 
     // To make a fit we need to have a "data" spectrum to compare to our MC
     // Prediction object
@@ -89,7 +89,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     c1->SaveAs(useSysts ? "nus_SBND.pdf" : "nus_SBND_statsOnly.pdf");
 
     // Let's now try adding a second experiment, for instance Icarus
-    calc->SetL(BaselineIcarus); // Icarus
+    calc->SetL(kBaselineIcarus); // Icarus
     const Spectrum data2 = pred_fd_numu.Predict(calc).FakeData(icarusPOT);
     SingleSampleExperiment expt2(&pred_fd_numu, data2);
 
@@ -124,10 +124,10 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
       const FitAxis kCoarseAxDmSq41(&kFitDmSq41Sterile, 20, 0.1, 100, true);
 
       osc::OscCalculatorSterile* c = DefaultSterileCalc(4);
-      c->SetL(BaselineSBND); 
+      c->SetL(kBaselineSBND); 
       SingleSampleExperiment e1(&pred_nd_numu, pred_nd_numu.Predict(c).MockData(sbndPOT));
 
-      c->SetL(BaselineIcarus); // Icarus
+      c->SetL(kBaselineIcarus); // Icarus
       SingleSampleExperiment e2(&pred_fd_numu, pred_fd_numu.Predict(c).MockData(icarusPOT));
 
       MultiExperimentSBN me({&e1, &e2}, {kSBND, kICARUS});
