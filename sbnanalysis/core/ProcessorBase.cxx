@@ -184,6 +184,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
+  // Get MCFlux information
+  auto const& mcfluxes = \
+    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
+  assert(mctruths.size() == mcfluxes.size());
+
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
@@ -213,6 +218,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     Event::Interaction interaction;
 
     auto const& mctruth = mctruths.at(i);
+    auto const& mcflux = mcfluxes.at(i);
 
     // TODO: What to do with cosmic MC?
     // For now, ignore them
@@ -259,6 +265,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.pdg = nu.Nu().PdgCode();
+      interaction.neutrino.initpdg = mcflux.fntype;
       interaction.neutrino.targetPDG = nu.Target();
       interaction.neutrino.genie_intcode = nu.Mode();
       interaction.neutrino.bjorkenX = nu.X();
