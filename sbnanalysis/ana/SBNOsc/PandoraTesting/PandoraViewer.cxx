@@ -35,6 +35,12 @@
 namespace ana {
   namespace SBNOsc {
 
+bool PandoraViewer::containedInAV(TVector3& point) {
+  for (auto const &av: _config.active_volumes) {
+    if (av.Contain(point)) return true;
+  }
+  return false;
+}
 
 void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
   if (config) {
@@ -57,8 +63,6 @@ void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
     _config.CRTTrackTag = config->get<std::string>("CRTTrackTag", "crttrack");
 
-    // setup services manager
-    // _services_manager = new art::ServicesManager(config->get<fhicl::ParameterSet>("services"), _registry);
   }
 
   _event_index = 0;
@@ -67,8 +71,6 @@ void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
 void PandoraViewer::Finalize() {
   fOutputFile->cd();
 
-  std::cout << "x: " << aaBoxesMin(_config.active_volumes, 0) << " " << aaBoxesMax(_config.active_volumes, 0) << std::endl;
-
   // save the multigraphs
   // save everything as a canvas
   // alost now set the range
@@ -76,6 +78,9 @@ void PandoraViewer::Finalize() {
     plots.xy.Draw(_config, 0, 1);
     plots.xz.Draw(_config, 0, 2);
     plots.yz.Draw(_config, 1, 2);
+    for (auto const &graph: plots.tpc_planes) {
+      graph.DrawNoLimit(_config);
+    }
   }
 
 }
@@ -91,7 +96,7 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
 
   // make the plots
-  TrackPlot plots(_event_index);
+  TrackPlot plots(_event_index, fProviderManager);
 
   // get the PFParticles
   auto const &pfp_handle = \
@@ -155,24 +160,36 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
         TVector3 vect(pos.X(), pos.Y(), pos.Z());
         points.push_back(vect);
       }
+      if (points.size() == 0) continue;
+
       std::array<TGraph *, 3> graphs = plots.addTrack(points);
+      std::vector<TGraph *> tpc_graphs = plots.addTrackTPC(points);
+      std::vector<TGraph *> all_graphs(std::begin(graphs), std::end(graphs)); 
+      all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
+
+      // save points
+      std::array<TText *, 3> text = plots.addTrackText(points, track->ID());
+      for (int i = 0; i < 3; i++) {
+        // text[i]->SetTextSize(1);
+        text[i]->SetTextColor(kRed);
+      }
 
       // format the graphs
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < all_graphs.size(); i++) {
         if (is_neutrino) {
-          graphs[i]->SetLineColor(kGreen);
-          graphs[i]->SetLineWidth(4.);
+          all_graphs[i]->SetLineColor(kGreen);
+          all_graphs[i]->SetLineWidth(4.);
         }
         else if (is_cosmic) {
-          graphs[i]->SetLineColor(kBlue);
-          graphs[i]->SetLineWidth(2.);
+          all_graphs[i]->SetLineColor(kBlue);
+          all_graphs[i]->SetLineWidth(2.);
         }
         else {
-          graphs[i]->SetLineColor(kRed);
-          graphs[i]->SetLineWidth(2.);
+          all_graphs[i]->SetLineColor(kRed);
+          all_graphs[i]->SetLineWidth(2.);
         }
 
-        graphs[i]->SetLineStyle(2);
+        all_graphs[i]->SetLineStyle(2);
       }
     }
 
@@ -181,19 +198,25 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
       auto pos = vertex->position();
       TVector3 rv(pos.X(), pos.Y(), pos.Z());
       std::array<TGraph *, 3> graphs = plots.addVertex(rv);
-      for (int i = 0; i < 3; i++) {
+      std::vector<TGraph *> tpc_graphs = plots.addVertexTPC(rv);
+
+      std::vector<TGraph *> all_graphs(std::begin(graphs), std::end(graphs)); 
+      all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
+      for (int i = 0; i < all_graphs.size(); i++) {
         if (is_neutrino) {
-          graphs[i]->SetMarkerColor(kGreen);
+          all_graphs[i]->SetMarkerColor(kGreen);
         }
         else if (is_cosmic) {
-          graphs[i]->SetMarkerColor(kBlue);
+          all_graphs[i]->SetMarkerColor(kBlue);
         }
         else {
-          graphs[i]->SetMarkerColor(kRed);
+          all_graphs[i]->SetMarkerColor(kRed);
         }
-        graphs[i]->SetMarkerSize(3.);
-        graphs[i]->SetMarkerStyle(5);
+        all_graphs[i]->SetMarkerSize(3.);
+        all_graphs[i]->SetMarkerStyle(5);
       }
+
+
     }
   }
 
@@ -234,15 +257,30 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     std::vector<TVector3> points;
     for (auto const &trajPoint: track) {
       TVector3 vect = trajPoint.Position().Vect();
-      points.push_back(vect);
+      if (containedInAV(vect)) {
+        points.push_back(vect);
+      }
     }
+    if (points.size() == 0) continue;
+
     // save them in the multigraph
     std::array<TGraph *, 3> graphs = plots.addTrack(points);
+    std::vector<TGraph *> tpc_graphs = plots.addTrackTPC(points);
+    std::vector<TGraph *> all_graphs(std::begin(graphs), std::end(graphs)); 
+    all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
 
+    // save text for the truth tracks
+    std::array<TText *, 3> text = plots.addTrackText(points, track.TrackID());
     for (int i = 0; i < 3; i++) {
-      graphs[i]->SetLineColor(kBlack);
-      graphs[i]->SetLineWidth(2.);
-      graphs[i]->SetLineStyle(3);
+      // text[i]->SetTextSize(1);
+    }
+
+
+    // format the graphs
+    for (int i = 0; i < all_graphs.size(); i++) {
+      all_graphs[i]->SetLineColor(kBlack);
+      all_graphs[i]->SetLineWidth(2.);
+      all_graphs[i]->SetLineStyle(1);
     }
   }
 
@@ -252,10 +290,14 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
     TVector3 vertex = mctruth.GetNeutrino().Nu().Trajectory().Position(0).Vect();
     std::array<TGraph *, 3> graphs = plots.addVertex(vertex);
-    for (int i = 0; i < 3; i++) {
-      graphs[i]->SetMarkerColor(kBlack);
-      graphs[i]->SetMarkerSize(3.);
-      graphs[i]->SetMarkerStyle(4);
+    std::vector<TGraph *> tpc_graphs = plots.addVertexTPC(vertex);
+
+    std::vector<TGraph *> all_graphs(std::begin(graphs), std::end(graphs)); 
+    all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
+    for (int i = 0; i < all_graphs.size(); i++) {
+      all_graphs[i]->SetMarkerColor(kBlack);
+      all_graphs[i]->SetMarkerSize(3.);
+      all_graphs[i]->SetMarkerStyle(4);
     }
   }
 
