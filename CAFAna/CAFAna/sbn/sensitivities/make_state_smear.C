@@ -39,8 +39,8 @@ void make_state_smear(const std::string anatype = numuStr)
     const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
     const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
     const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
-    loaders.SetLoaderPath( fnameSwap,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
-    loaders2.SetLoaderPath( fnameSwap2,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
+    loaders.SetLoaderPath( fnameSwap,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameSwap2,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
   }
   else {
     std::cout << "Unrecognized analysis - use numu or nue" << std::endl;
@@ -81,6 +81,7 @@ void make_state_smear(const std::string anatype = numuStr)
   for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
   std::cout << "\n" << std::endl;
 
+  //Use true energy, no weights until we get new nue files
   NoExtrapGenerator gen(axTrueEnergy, kNoCut, kUnweighted);
   if (anatype == numuStr) {
     NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
