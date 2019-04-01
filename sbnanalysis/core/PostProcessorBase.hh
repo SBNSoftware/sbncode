@@ -14,6 +14,7 @@
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
+#include "SubRun.hh"
 
 class TBranch;
 class TFile;
@@ -61,6 +62,8 @@ protected:
    */
   virtual void ProcessEvent(const Event *event) = 0;
 
+  virtual void ProcessSubRun(const SubRun *subrun) {}
+
   /**
    * Setup anything needed per file
    *
@@ -92,6 +95,9 @@ protected:
 
   Event* fEvent;
   TTree* fEventTree;
+
+  SubRun* fSubRun;
+  TTree* fSubRunTree;
 };
 
 }  // namespace core
