@@ -31,10 +31,19 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       break;
     }
 
+    FileSetup(fEventTree);
+
+    // process all subruns
+    fSubRunTree = (TTree *) f.Get("sbnsubrun");
+    fSubRunTree->SetBranchAddress("subruns", &fSubRun);
+    for (int subrun_ind = 0; subrun_ind < fSubRunTree->GetEntries(); subrun_ind++) {
+      fSubRunTree->GetEntry(subrun_ind);
+      ProcessSubRun(fSubRun);
+    }
+
     // set Event
     fEventTree = (TTree *) f.Get("sbnana");
     fEventTree->SetBranchAddress("events", &fEvent);
-    FileSetup(fEventTree);
 
     // process all events
     for (int event_ind = 0; event_ind < fEventTree->GetEntries(); event_ind++) {
