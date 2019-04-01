@@ -7,7 +7,7 @@ NumuRecoSelection: {
   requireMatched: false
   requireContained: false
 
-  cryostat_volume_boundary: 25.
+  trackMatchContainmentCut: 0.5
 
   containment_volumes: [
     {

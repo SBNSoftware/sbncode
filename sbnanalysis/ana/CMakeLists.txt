@@ -22,6 +22,7 @@ include_directories( $ENV{LARDATA_INC} )
 include_directories( $ENV{ART_INC} )
 include_directories( $ENV{MESSAGEFACILITY_INC} )
 include_directories( $ENV{BOOST_INC} ) 
+include_directories( $ENV{LARSIM_INC} )
 
 link_directories(
   $ENV{MESSAGEFACILITY_LIB}

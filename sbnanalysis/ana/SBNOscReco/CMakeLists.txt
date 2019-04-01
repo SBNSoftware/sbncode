@@ -1,5 +1,9 @@
 # Define the subproject name
-project(SBNOsc)
+project(SBNOscReco)
+
+
+# build sub-dirs
+add_subdirectory(RecoUtils)
 
 # Directories where includes are found (in addition to those defined in the
 # parent CMakeLists.txt, one directory up).
@@ -25,6 +29,7 @@ add_custom_command(TARGET sbnanalysis_SBNOscReco_classes POST_BUILD
 target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOscReco_classes
+  sbnanalysis_SBNOscReco_RecoUtils
   ubana_BasicTool_GeoAlgo
 )
 
