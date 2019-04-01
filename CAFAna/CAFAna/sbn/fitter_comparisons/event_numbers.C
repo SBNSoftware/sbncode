@@ -14,6 +14,8 @@
 #include "CAFAna/Core/MultiVar.h"
 #include "OscLib/func/OscCalculatorSterile.h"
 
+#include "StandardRecord/Proxy/SRProxy.h"
+
 #include "TCanvas.h"
 #include "TH1.h"
 #include "TFile.h"
@@ -34,9 +36,8 @@ void Experiment(std::string expt)
 
 void event_numbers(const std::string expt = "SBND")
 {
- const std::string fnameBeam = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_"
-  + expt + ".root";
-  // const std::string fnameSwap = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_oscnue_ExampleAnalysis_ExampleSelection.root";
+  const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+  const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_" + expt + ".root";
 
   // Source of events
   SpectrumLoader loaderBeam(fnameBeam);
@@ -77,36 +78,24 @@ void event_numbers(const std::string expt = "SBND")
     {ana::Current::kNC, "NC"}
   };
 
-  const Var kTruthEnergy = SIMPLEVAR(sbn.truth.neutrino[0].energy);
+    const Var kSmearedE([](const caf::SRProxy* sr)
+                          {
+          return sr->reco[0].reco_energy;
+        });
 
-  // const MultiVar kNumPiZeros(
-  //          [](const caf::SRProxy *sr)
-  //          {
-  //           unsigned int nPis = 0;
-  //           for(unsigned int part_idx = 0; part_idx < sr->sbn.truth.neutrino[0].finalstate.size(); part_idx++){
-  //             if(sr->sbn.truth.neutrino[0].finalstate[part_idx].pdg == 111) nPis++;
-  //            }
-  //           return nPis;
-  //           }
+    const Var kWeight([](const caf::SRProxy* sr)
+                          {
+          return sr->reco[0].weight;
+        });
 
-  // const MultiVar kNumPiCharged(
-  //          [](const caf::SRProxy *sr)
-  //          {
-  //           unsigned int nPis = 0;
-  //           for(unsigned int part_idx = 0; part_idx < sr->sbn.truth.neutrino[0].finalstate.size(); part_idx++){
-  //             if( abs(sr->sbn.truth.neutrino[0].finalstate[part_idx].pdg) == 211) nPis++;
-  //            }
-  //           return nPis;
-  //           }
+  const Binning binsEnergy = Binning::Simple(30, 0, 3);
+  const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
 
-  const Binning binsEnergy = Binning::Simple(50, 0, 5);
-  const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTruthEnergy);
-
-  const Var kCC = SIMPLEVAR(sbn.truth.neutrino[0].iscc);
+  const Var kCC = SIMPLEVAR(truth[0].neutrino.iscc);
   const Cut kIsCC = kCC > 0;
 
   // Temporary while we don't have the final states
-  const Var kMode = SIMPLEVAR(sbn.truth.neutrino[0].genie_intcode);
+  const Var kMode = SIMPLEVAR(truth[0].neutrino.genie_intcode);
 
   const Cut kIsQE  = (kMode == 0);
   const Cut kIsRes = (kMode == 1);
@@ -139,7 +128,7 @@ void event_numbers(const std::string expt = "SBND")
   for(unsigned int m = 0; m < kNumModes; m++){
     //pred[m] = new PredictionNoExtrap(loaderBeam, loaderSwap, kNullLoader,
     pred[m] = new PredictionNoExtrap(loaderBeam, kNullLoader, kNullLoader,
-      axEnergy, cuts[m].cut);
+      axEnergy, cuts[m].cut, kNoShift, kWeight);
   }
 
   // GO!
