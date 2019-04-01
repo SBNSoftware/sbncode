@@ -35,7 +35,7 @@ const char* basicFname = "cafe_state_smear.root";
 const double sbndPOT = POTnominal;
 const double icarusPOT = POTnominal;
 
-void nus(const char* stateFname = basicFname, int nmock = 0)
+void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = true)
 {
 
   if (TFile(stateFname).IsZombie()){
@@ -64,12 +64,14 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
     const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 40, 1e-3, 1, true);
     const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 40, 0.1, 100, true);
 
+    if(!useSysts) allSysts.clear();
+
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
 		 kAxSinSq2Theta24,
 		 kAxDmSq41,
                  {},
-                 allSysts);
+		 allSysts);
 
     surf.SaveTo(fOutput->mkdir("surf"));
 
@@ -84,7 +86,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
 
     surf.DrawContour(crit2sig, kSolid, kBlue);
 
-    c1->SaveAs("nus_SBND.pdf");
+    c1->SaveAs(useSysts ? "nus_SBND.pdf" : "nus_SBND_statsOnly.pdf");
 
     // Let's now try adding a second experiment, for instance Icarus
     calc->SetL(BaselineIcarus); // Icarus
@@ -97,7 +99,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
                   kAxSinSq2Theta24,
                   kAxDmSq41,
                   {},
-                  allSysts);
+		  allSysts);
 		  
     surf2.SaveTo(fOutput->mkdir("surf2"));
 
@@ -107,14 +109,13 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
 
     surf2.DrawContour(crit2sig2, kSolid, kGreen+2);
 
-    c1->SaveAs("nus_ICARUS.pdf");
+    c1->SaveAs(useSysts ? "nus_ICARUS.pdf" : "nus_ICARUS_statsOnly.pdf");
 
     Surface surfMulti(&multiExpt, calc,
 		      kAxSinSq2Theta24,
 		      kAxDmSq41,
-              {},
-              allSysts);
-
+		      {},
+		      allSysts);
 
     std::vector<Surface> mockSurfs;
     for(int i = 0; i < nmock; ++i){
@@ -135,7 +136,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
                  kCoarseAxSinSq2Theta24,
                  kCoarseAxDmSq41,
                  {},
-                 allSysts);
+		 allSysts);
 
       mockSurfs.push_back(ms);
     }
@@ -148,7 +149,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
 
     surfMulti.DrawContour(crit2sigMulti, kSolid, kRed);
     
-    c1->SaveAs("nus_BOTH.pdf");
+    c1->SaveAs(useSysts ? "nus_BOTH.pdf" : "nus_BOTH_statsOnly.pdf");
 
     c1->Clear();
 
@@ -182,8 +183,8 @@ void nus(const char* stateFname = basicFname, int nmock = 0)
     leg->SetFillColor(10);
     leg->Draw();
 
-    c1->SaveAs("nus_ALL.root");
-    c1->SaveAs("nus_ALL.pdf");
+    c1->SaveAs(useSysts ? "nus_ALL.root" : "nus_ALL_statsOnly.root");
+    c1->SaveAs(useSysts ? "nus_ALL.pdf" : "nus_ALL_statsOnly.pdf");
 
     fOutput->Close();
   }
