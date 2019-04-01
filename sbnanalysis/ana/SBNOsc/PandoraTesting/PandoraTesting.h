@@ -22,6 +22,8 @@
 #include "TH1D.h"
 #include "TDatabasePDG.h"
 #include "TGraph.h"
+#include "TRandom.h"
+#include "TRandomGen.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
@@ -305,6 +307,8 @@ protected:
   static const std::array<std::string, nCuts> cutNames() {
     return {"MEC", "AV", "Track", "FV", "min_L", "Reco"};
   }
+
+  TRandomMT64 _rand; //!< random number generation
 
   Config _config; //!< The config
 
