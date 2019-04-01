@@ -47,7 +47,12 @@ void make_state_smear()
   // This is probably too simplistic. Maybe res/sqrt(E)?
   const Var kSmearedE([](const caf::SRProxy* sr)
                         {
-			  return sr->reco[0].reco_energy;;
+			  return sr->reco[0].reco_energy;
+			});
+
+  const Var kWeight([](const caf::SRProxy* sr)
+                        {
+			  return sr->reco[0].weight;
 			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
@@ -58,7 +63,7 @@ void make_state_smear()
   for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
   std::cout << "\n" << std::endl;
 
-  NoExtrapGenerator gen(axEnergy, kNoCut);
+  NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
 
   PredictionInterp pred_nd_numu(allSysts, calc, gen, loaders);
   PredictionInterp pred_fd_numu(allSysts, calc2, gen, loaders2);
