@@ -46,7 +46,7 @@ void event_numbers(const std::string expt = "SBND")
   // Vars and cuts
 
   // a struct to hold the different flavours and signs
-  const unsigned int kNumFlavours = 2;
+  const unsigned int kNumFlavours = 3;
   const unsigned int kNumSigns    = 2;
   const unsigned int kNumCurrents = 2;
 
@@ -57,7 +57,8 @@ void event_numbers(const std::string expt = "SBND")
   };
   Flavour flav[kNumFlavours] = {
     {ana::Flavors::kAllNuMu, "numu"},
-    {ana::Flavors::kAllNuE,  "nue"}
+    {ana::Flavors::kAllNuE,  "nue"},
+    {ana::Flavors::kAll,  "all"}
   };
   struct Signtype
   {
@@ -148,9 +149,9 @@ void event_numbers(const std::string expt = "SBND")
 
     for(unsigned int k = 0; k < kNumCurrents; k++){
       for(unsigned int j = k; j < kNumSigns; j++){ // loop over signs only for CC
-        for(unsigned int i = k; i < kNumFlavours; i++){ // loop over flavours only for CC
+        for(unsigned int i = k; i < kNumFlavours-k; i++){ // loop over flavours only for CC
           h[m][k][j][i] = pred[m]->PredictComponent(noosc, k == 0 ? flav[i].flav : Flavors::kAll, 
-                                    curr[k].curr, k == 0 ? sign[j].sign : Sign::kBoth).ToTH1(pot);
+                                    curr[k].curr, (k == 0) ? sign[j].sign : Sign::kBoth).ToTH1(pot);
           float nEvts = h[m][k][j][i]->Integral();
           std::cout << ", " << nEvts ;
         } // end loop over flavours
@@ -166,11 +167,11 @@ void event_numbers(const std::string expt = "SBND")
   for(unsigned int m = 0; m < kNumModes; m++){
     for(unsigned int k = 0; k < kNumCurrents; k++){ 
       for(unsigned int j = k; j < kNumSigns; j++){ // loop over signs only for CC
-        for(unsigned int i = k; i < kNumFlavours; i++){ // loop over flavours only for CC
+        for(unsigned int i = k; i < kNumFlavours-k; i++){ // loop over flavours only for CC
 
           string currLabel = curr[k].label;
-          string flavLabel = (k == 0 ? flav[i].label : "all");
-          string signLabel = (k == 0 ? sign[j].label : "");
+          string flavLabel = ( (k == 0 && i != 2) ? flav[i].label : "all");
+          string signLabel = ( (k == 0) ? sign[j].label : "");
 
           h[m][k][j][i]->SetLineColor(cuts[m].colour);
           h[m][k][j][i]->SetMarkerColor(cuts[m].colour);
