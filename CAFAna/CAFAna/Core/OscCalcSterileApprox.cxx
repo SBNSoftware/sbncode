@@ -109,7 +109,7 @@ namespace ana
       return 1-fSinSq2ThetaMuMu*Delta+fSinSq2ThetaMuE*Delta;
     }
     else if (abs(from) == 12 && to == 0) {
-      return 1-sinsq2thetaee*Delta+fSinSq2ThetaMuE*Delta;
+      return 1-GetSinSq2ThetaEE()*Delta+fSinSq2ThetaMuE*Delta;
     }
 
     std::cout << "OscCalculatorSterileApprox: P(" << from << ", " << to << ") not implemented" << std::endl;
