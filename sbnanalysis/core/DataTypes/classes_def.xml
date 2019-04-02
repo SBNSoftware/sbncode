@@ -1,4 +1,10 @@
 <lcgdict>
+ <class name="sbnanalysis::Event"/>
+ <class name="sbnanalysis::SubRun"/>
+ <class name="sbnanalysis::Event::Metadata"/>
+ <class name="sbnanalysis::Event::Interaction"/>
+ <class name="sbnanalysis::Event::Neutrino"/>
+ <class name="sbnanalysis::Event::FinalStateParticle"/>
  <class name="std::vector<sbnanalysis::Event>"/>
  <class name="std::vector<sbnanalysis::SubRun>"/>
  <class name="std::vector<sbnanalysis::Event::Metadata>"/>

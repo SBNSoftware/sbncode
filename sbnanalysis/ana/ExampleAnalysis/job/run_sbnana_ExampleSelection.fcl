@@ -1,0 +1,28 @@
+process_name: ExampleSelection
+
+services: {
+  TFileService: {
+    fileName: "sbnanalysis_ExampleSelection.root"
+  }
+}
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+  analyzers: {
+    exampleselection: {
+      module_type: SBNAnalysis
+      processors: [ example ]
+      example: {
+        type: ExampleSelection
+        parameter: 42
+      }
+    }
+  }
+
+  ana: [ exampleselection ]
+  end_paths: [ ana ]
+}
+

@@ -3,6 +3,8 @@
 #include <TFile.h>
 #include <TLeaf.h>
 #include <TTree.h>
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Principal/Handle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
@@ -47,7 +49,6 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
-    //fOutputFilename = config->get<std::string>("OutputFile", "output.root");
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -74,21 +75,18 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCTrackTag = { "mcreco" };
     fMCShowerTag = { "mcreco" };
     fMCParticleTag = { "largeant" };
-    //fOutputFilename = "output.root";
   }
 
   // Open the output file and create the standard event tree
-  fOutputFile = TFile::Open("aaa.root", "recreate");
+  art::ServiceHandle<art::TFileService> tfs;
 
-  fTree = new TTree("sbnana", "SBN Analysis Tree");
-  fTree->AutoSave("overwrite");
+  fTree = tfs->make<TTree>("sbnana", "SBN Analysis Tree");
   fEvent = new Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
 
   // Create the output subrun tree
-  fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
-  fSubRunTree->AutoSave("overwrite");
+  fSubRunTree = tfs->make<TTree>("sbnsubrun", "SBN Analysis Subrun Tree");
   fSubRun = new SubRun();
   fSubRunTree->Branch("subruns", &fSubRun);
 }
@@ -127,13 +125,7 @@ void ProcessorBase::UpdateSubRuns(const art::Event& ev) {
 }
 
 
-void ProcessorBase::Teardown() {
-  // Write the standard tree and close the output file
-  fOutputFile->cd();
-  fTree->Write("sbnana", TObject::kOverwrite);
-  fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
-  fOutputFile->Close();
-}
+void ProcessorBase::Teardown() {}
 
 
 void ProcessorBase::BuildEventTree(const art::Event& ev) {
@@ -168,7 +160,7 @@ void ProcessorBase::BuildEventTree(const art::Event& ev) {
   art::Handle<std::vector<simb::MCFlux> > mcflux_handle;
   ev.getByLabel(fFluxTag, mcflux_handle);
 
-  fTree->GetEntry(fEventIndex);
+  //fTree->GetEntry(fEventIndex);
 
   // Populate event tree
   fEvent->experiment = fExperimentID;

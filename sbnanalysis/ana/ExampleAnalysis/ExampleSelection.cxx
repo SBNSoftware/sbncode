@@ -3,6 +3,8 @@
 #include <TFile.h>
 #include <TH2D.h>
 #include "fhiclcpp/ParameterSet.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "canvas/Utilities/InputTag.h"
@@ -27,21 +29,19 @@ ExampleSelection::ExampleSelection()
 
 void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   // Make a histogram
-  fNuVertexXZHist = new TH2D("nu_vtx_XZ", "",
-                             100, -1000, 1000, 100, -1000, 1000);
+  art::ServiceHandle<art::TFileService> tfs;
+  fNuVertexXZHist = tfs->make<TH2D>("nu_vtx_XZ", "",
+                                    100, -1000, 1000, 100, -1000, 1000);
 
   // Load configuration parameters
   fMyParam = 0;
   fTruthTag = { "generator" };
 
   if (config) {
-    fhicl::ParameterSet pconfig = \
-      config->get<fhicl::ParameterSet>("ExampleAnalysis");
-
-    fMyParam = pconfig.get<int>("parameter", 0);
+    fMyParam = config->get<int>("parameter", 0);
 
     fTruthTag = \
-      { pconfig.get<std::string>("MCTruthTag", "generator") };
+      { config->get<std::string>("MCTruthTag", "generator") };
   }
 
   // Add custom branches
@@ -55,7 +55,7 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
 
 void ExampleSelection::Finalize() {
   // Output our histograms to the ROOT file
-  fOutputFile->cd();
+  //fOutputFile->cd();
   fNuVertexXZHist->Write();
 }
 

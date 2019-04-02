@@ -49,10 +49,10 @@ SBNAnalysis::SBNAnalysis(fhicl::ParameterSet const& p) : EDAnalyzer{p} {
   for (auto const& procname : procnames) {
     fhicl::ParameterSet pset = p.get<fhicl::ParameterSet>(procname);
     std::string type = pset.get<std::string>("type");
-    sbnanalysis::ProcessorBase* proc = sbnanalysis::ProcessorFactory::Create(procname);
+    sbnanalysis::ProcessorBase* proc = sbnanalysis::ProcessorFactory::Create(type);
     if (!proc) {
       throw cet::exception(__FUNCTION__)
-        << "Unknown processor " << procname << std::endl;
+        << "Unknown processor type " << type << std::endl;
     }
 
     fProcessors.push_back({ proc, pset });
