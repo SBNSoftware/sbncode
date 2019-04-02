@@ -10,5 +10,9 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
   Detector: "Uboone"
+
+  IncludeCosmics:        true 
+  IncludeDirt:           true
+
 }
 

@@ -29,9 +29,8 @@ namespace ana {
     void NueSelection::Initialize(fhicl::ParameterSet* config) {
 
       hello();
-
       fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NueSelection");
-      
+
       // setup active volume bounding boxes
       std::vector<fhicl::ParameterSet> AVs =				\
         pconfig.get<std::vector<fhicl::ParameterSet> >("active_volumes");
@@ -44,7 +43,7 @@ namespace ana {
         double zmax = AV.get<double>("zmax");
         fConfig.active_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
       }
-      
+
       std::vector<fhicl::ParameterSet> FVs =				\
         pconfig.get<std::vector<fhicl::ParameterSet> >("fiducial_volumes");
       for (auto const& FV : FVs) {
@@ -424,7 +423,7 @@ namespace ana {
 	else{return false;}
       }
       else{
-	FillHistograms(fRootHists.VisibleEnergy_AVCut_Hist,nu,intInfo,dirtevent); 
+	FillHistograms(fRootHists.VisibleEnergy_AVCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent); 
 	if(fConfig.DirtOnly){return false;}
       }
       if(fConfig.Verbose){std::cout << "Passed the AV Cut" << std::endl;}
@@ -473,7 +472,7 @@ namespace ana {
 
 	//Unfortunatly we must remove CC events where a photon exists (at this stage one photon exists)
 	if(intInfo.leptontrackID > 0 && photon_trackID !=-99999 && intInfo.leptonic_energy*1000 < fConfig.showerVisibleEnergyThreshold){
-	  FillHistograms(fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist,nu,intInfo,dirtevent);
+	  FillHistograms(fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
 	  if(fConfig.Verbose){std::cout << "Failed becuase lepton + shower exists. Event Not Selected" << std::endl;}
 	  return false;
 	}
@@ -498,7 +497,7 @@ namespace ana {
 	  intInfo.leptonic_energy = smearLeptonEnergy(rand,mcparticles[photon_trackID],calculator);
 	  intInfo.leptonpdgID = 22; 
 
-	  FillHistograms(fRootHists.VisibleEnergy_PhotonEnergyCut_Hist,nu,intInfo,dirtevent);
+	  FillHistograms(fRootHists.VisibleEnergy_PhotonEnergyCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
 
 	  if(!dirtevent){
 
@@ -510,7 +509,7 @@ namespace ana {
 	    }
 	    if(fConfig.Verbose){std::cout << "Passed the Photon Conversion gap Cut" << std::endl;}
 	    
-	    FillHistograms(fRootHists.VisibleEnergy_ConversionGapCut_Hist,nu,intInfo,dirtevent);
+	    FillHistograms(fRootHists.VisibleEnergy_ConversionGapCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
 	    
 	    //Check if it is a numu CC where the muon is less than 1m
 	    bool pass_muLenghtCut = passMuLengthCut(mctracks, mctruth);
@@ -519,14 +518,14 @@ namespace ana {
 	      return false;
 	    }
 	    if(fConfig.Verbose){std::cout << "Passed the muon min length Cut" << std::endl;}
-	    FillHistograms(fRootHists.VisibleEnergy_MuLenghtCut_Hist,nu,intInfo,dirtevent); 
+	    FillHistograms(fRootHists.VisibleEnergy_MuLenghtCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent); 
 	  }
 	
 	
 	  //Remove 94% on a dEdx cut                                       
 	  bool pass_dEdxCut = passdEdxCut(22);
 	  if(!pass_dEdxCut){intInfo.weight *= fConfig.dEdxPhotonCut;}
-	  FillHistograms(fRootHists.VisibleEnergy_NCCut_Hist,nu,intInfo,dirtevent);
+	  FillHistograms(fRootHists.VisibleEnergy_NCCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
 	}
 
 
@@ -536,20 +535,6 @@ namespace ana {
 	  return false;
 	}
       }
-
-      //##################
-      //### Energy Cut ###
-      //##################
-
-      //Check the electron is not removed due to the 200 MeV cut. Just check we havn't matched 
-      bool pass_eEnergyCut = passeEnergyCut(intInfo.leptonic_energy);
-      if(!pass_eEnergyCut){
-	if(fConfig.Verbose){std::cout << "Shower was too low in energy. Event not Selected" << std::endl;}
-	return false;
-      }
-      FillHistograms(fRootHists.VisibleEnergy_EnergyCut_Hist,nu,intInfo,dirtevent);
-      if(fConfig.Verbose){std::cout << "Passed the Energy Cut." << std::endl;}
- 
 
       //##########################
       //### Fiducal Volume cut ###
@@ -564,9 +549,23 @@ namespace ana {
 	}
 	if(fConfig.Verbose){std::cout << "Passed the FV Cut" << std::endl;}
 	//Should have no dirts here.
-	FillHistograms(fRootHists.VisibleEnergy_FVCut_Hist,nu,intInfo,dirtevent);  
+	FillHistograms(fRootHists.VisibleEnergy_FVCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);  
       }
 
+
+      //##################
+      //### Energy Cut ###
+      //##################
+
+      //Check the electron is not removed due to the 200 MeV cut. Just check we havn't matched 
+      bool pass_eEnergyCut = passeEnergyCut(intInfo.leptonic_energy);
+      if(!pass_eEnergyCut){
+	if(fConfig.Verbose){std::cout << "Shower was too low in energy. Event not Selected" << std::endl;}
+	return false;
+      }
+      FillHistograms(fRootHists.VisibleEnergy_EnergyCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
+      if(fConfig.Verbose){std::cout << "Passed the Energy Cut." << std::endl;}
+ 
       return true;
     }
    
