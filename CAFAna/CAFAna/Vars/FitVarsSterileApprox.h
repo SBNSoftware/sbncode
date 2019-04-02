@@ -7,13 +7,16 @@
 namespace ana
 {
   /// \f$ \Delta m^2 \f$
-  class FitDmSqSterile: public IFitVar
+  class FitDmSqSterile: public IConstrainedFitVar
   {
   public:
     virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
     virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq";}
     virtual std::string LatexName() const {return "#Deltam^{2} (eV^{2})";}
+
+    virtual double LowLimit() const {return 0;}
+    virtual double HighLimit() const {return 1e6;}
   };
 
   /// \Delta m^2 \f$

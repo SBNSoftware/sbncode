@@ -21,6 +21,8 @@ namespace ana
     void SetSinSq2ThetaMuE(double t) {fSinSq2ThetaMuE = t;}
     double GetSinSq2ThetaMuE() const {return fSinSq2ThetaMuE;}
 
+    double GetSinSq2ThetaEE() const; ///< calculated from the others
+
     void SetL(double L) {fL = L;}
     double GetL() const {return fL;}
   protected:

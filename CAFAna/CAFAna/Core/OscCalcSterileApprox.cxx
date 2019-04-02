@@ -12,6 +12,38 @@
 namespace ana
 {
   // --------------------------------------------------------------------------
+  double OscCalcSterileApprox::GetSinSq2ThetaEE() const
+  {
+    // The three angles are coupled via
+    //
+    // ss2thmm = 4*Um4^2*(1-Um4^2)
+    // ss2thee = 4*Ue4^2*(1-Ue4^2)
+    // ss2thme = 4*Um4^2*Ue4^2
+    //
+    // Solve for the final (nue survival angle). Emperically, choosing the
+    // negative sign in the expression works well.
+
+    // A couple of limits
+    if(fSinSq2ThetaMuMu <= 0) return fSinSq2ThetaMuE / 4;
+    if(fSinSq2ThetaMuMu >= 1) return fSinSq2ThetaMuE / 2;
+
+    // General case
+    const double Ue4sq = fSinSq2ThetaMuE/(2*fSinSq2ThetaMuMu)*(1-sqrt(1-fSinSq2ThetaMuMu));
+    assert(!isinf(Ue4sq) && !isnan(Ue4sq));
+    const double sinsq2thetaee = Ue4sq*(1-Ue4sq);
+
+    assert(sinsq2thetaee >= 0 && sinsq2thetaee <= 1);
+
+    // Cross-check that we actually solved the equations correctly
+    if(Ue4sq > 0){
+      const double Umu4sq = fSinSq2ThetaMuE/(4*Ue4sq);
+      assert(fabs(4*Umu4sq*(1-Umu4sq) - fSinSq2ThetaMuMu) < 1e-6);
+    }
+
+    return sinsq2thetaee;
+  }
+
+  // --------------------------------------------------------------------------
   double Si(double x)
   {
     if(isinf(x)) return TMath::Pi()/2;
@@ -55,22 +87,11 @@ namespace ana
     const double Delta = AvgSinSq(1.267*fDmsq*fL, Elo, Ehi);
     assert(!isnan(Delta));
 
-    // The three angles are coupled via
-    //
-    // ss2thmm = 4*Um4^2*(1-Um4^2)
-    // ss2thee = 4*Ue4^2*(1-Ue4^2)
-    // ss2thme = 4*Um4^2*Ue4^2
-    //
-    // Solve for the final (nue survival angle), and take the smaller angle
-    // solution
-    // TODO TODO TODO
-    const double sinsq2thetaee = 0/*fSinSq2ThetaMuMu > 0 ? fSinSq2ThetaMuE * (1 - sqrt(1-4*fSinSq2ThetaMuMu))/(2*fSinSq2ThetaMuMu) : 0*/;
-
     if(abs(from) == 14 && abs(to) == 14){
       return 1-fSinSq2ThetaMuMu*Delta;
     }
     else if(abs(from) == 12 && abs(to) == 12){
-      return 1-sinsq2thetaee*Delta;
+      return 1-GetSinSq2ThetaEE()*Delta;
     }
     else if(abs(from) == 14 && abs(to) == 12){
       return fSinSq2ThetaMuE*Delta;
