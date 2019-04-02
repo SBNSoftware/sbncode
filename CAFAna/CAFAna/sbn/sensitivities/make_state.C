@@ -70,11 +70,8 @@ void make_state(const std::string anatype = numuStr)
   const double sbndPOT = kPOTnominal;
   const double icarusPOT = kPOTnominal;
 
-  // Calculator
-  OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
-  calc->SetL(kBaselineSBND);
-  OscCalcSterileApproxAdjustable* calc2 = DefaultSterileApproxCalc();
-  calc2->SetL(kBaselineIcarus);
+  // Calculator (just use no oscillations)
+  osc::NoOscillations* calc = new osc::NoOscillations;
 
   const Var kRecoE([](const caf::SRProxy* sr)
                         {
@@ -107,7 +104,7 @@ void make_state(const std::string anatype = numuStr)
   }
 
   PredictionInterp pred_nd(allSysts, calc, gen, loaders);
-  PredictionInterp pred_fd(allSysts, calc2, gen, loaders2);
+  PredictionInterp pred_fd(allSysts, calc, gen, loaders2);
 
   loaders.Go();
   loaders2.Go();

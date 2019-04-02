@@ -58,33 +58,4 @@ namespace ana
                       {
                         return sr->truth[0].neutrino.pdg < 0;
                       });
-
-  // const Cut kIsTrueFV({},
-  //                     [](const caf::SRProxy* sr)
-  //                     {
-		// 	if (sr->dune.isFD){
-		// 	  return ( 
-		// 		  abs(sr->dune.vtx_x) < 310 &&
-		// 		  abs(sr->dune.vtx_y) < 550 &&
-  // 				  sr->dune.vtx_z >  50      &&
-  // 				  sr->dune.vtx_z < 1244 );
-		// 	}
-		// 	else{
-		// 	  return (
-		// 		  abs(sr->dune.vtx_x) < 300 &&
-		// 		  abs(sr->dune.vtx_y) < 100 &&
-		// 		  sr->dune.vtx_z > 50 &&
-		// 		  sr->dune.vtx_z < 350
-		// 		  );
-		// 	}
-		//       });
-
-  //ETW 11/5/2018 Fiducial cut using MVA variable
-  //Should use the previous one (kIsTrueFV) for nominal analysis
-  // const Cut kPassFid_MVA({},
-		// 	[](const caf::SRProxy* sr)
-		// 	{
-		// 	  return ( sr->dune.mvanumu > -1 );
-		// 	});
-
 }
