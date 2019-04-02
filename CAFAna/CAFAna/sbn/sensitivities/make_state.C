@@ -74,9 +74,9 @@ void make_state(const std::string anatype = numuStr)
   osc::NoOscillations* calc = new osc::NoOscillations;
 
   const Var kRecoE([](const caf::SRProxy* sr)
-                        {
-			  return sr->reco[0].reco_energy;
-			});
+                   {
+                     return sr->reco[0].reco_energy;
+                   });
 
   const Var kTrueE([](const caf::SRProxy* sr)
                         {
@@ -98,10 +98,10 @@ void make_state(const std::string anatype = numuStr)
   std::cout << "\n" << std::endl;
 
   //Use true energy, no weights until we get new nue files
-  NoExtrapGenerator gen(axTrueEnergy, kNoCut, kUnweighted);
+  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy, kNoCut, kUnweighted);
   if (anatype == numuStr) {
     std::cout << "Using smeared energy" << std::endl;
-    NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
+    //    gen = NoExtrapGenerator(axEnergy, kNoCut, kWeight);
   }
   else {
     std::cout << "Using true energy" << std::endl;

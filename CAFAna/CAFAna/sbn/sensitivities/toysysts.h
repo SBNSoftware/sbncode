@@ -10,8 +10,9 @@ class ToyEnergyScaleSyst: public ISyst
              caf::SRProxy* sr,
              double& weight) const override
   {
-    const double scale = 1 + .10*sigma; // 10% E scale syst.                                       
-    sr->truth[0].neutrino.energy *= scale;
+    const double scale = 1 + .05*sigma; // 5% E scale syst.                    
+
+    sr->reco[0].reco_energy *= scale;
   }
 };
 const ToyEnergyScaleSyst& GetESyst()
@@ -28,8 +29,7 @@ class ToyNormSyst: public ISyst
              caf::SRProxy* sr,
              double& weight) const override
   {
-    if(sr->truth[0].neutrino.energy > 2) weight *= TMath::Max(0., 1+0.2*sigma);
-    else weight *= TMath::Max(0., 1+0.1*sigma);
+    weight *= TMath::Max(0., 1+0.1*sigma);
   }
 };
 const ToyNormSyst& GetNSyst()
