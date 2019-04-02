@@ -64,7 +64,8 @@ namespace ana
       assert(flav == Flavors::kAll); // Don't know how to calculate anything else
       assert(sign == Sign::kBoth);   // Why would you want to split NCs out by sign?
 
-      ret += fExtrap->NCComponent();
+      ret += fExtrap->NCComponentFromNumu().Oscillated(calc, 14, 0);
+      ret += fExtrap->NCComponentFromNue().Oscillated(calc, 12, 0);
     }
 
     return ret;

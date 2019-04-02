@@ -79,7 +79,7 @@ namespace ana
   {
     if(Ehi <= 0) return 0;
 
-    if(fDmsq == 0) return (from == to) ? 1 : 0;
+    if(fDmsq == 0) return (from == to || to == 0) ? 1 : 0;
 
     Elo = std::max(0., Elo);
 
@@ -102,6 +102,14 @@ namespace ana
     }
     else if(abs(to) == 16){ // no tau appearance
       return 0;
+    }
+
+    //Option to return the active fraction
+    else if (abs(from) == 14 && to == 0) {
+      return 1-fSinSq2ThetaMuMu*Delta+fSinSq2ThetaMuE*Delta;
+    }
+    else if (abs(from) == 12 && to == 0) {
+      return 1-sinsq2thetaee*Delta+fSinSq2ThetaMuE*Delta;
     }
 
     std::cout << "OscCalculatorSterileApprox: P(" << from << ", " << to << ") not implemented" << std::endl;
