@@ -68,12 +68,12 @@ SBND_Proposal_active_volumes: [
 
 MicroBooNE_fiducial_volumes: [
     {
-      xmin: 13.45
-      ymin: -100.53
-      zmin: 15.1
-      xmax: 239.8
-      ymax: 102.47
-      zmax: 956.9
+      xmin: 23.45
+      ymin: -90.53
+      zmin: 30.1
+      xmax: 229.8
+      ymax: 92.47
+      zmax: 986.9
     }
 ]
 
@@ -90,36 +90,36 @@ MicroBooNE_active_volumes: [
 
 ICARUS_fiducial_volumes: [
      {
-       xmin: -356.24
-       ymin: -158.41
-       zmin: -894.950652
+       xmin: -339.49
+       ymin: -148.41
+       zmin: -859.950652
        xmax: -224.54
-       ymax: 128.41
-       zmax: 799.950652
+       ymax: 118.41
+       zmax: 829.950652
      },
      {
        xmin: -207.89
-       ymin: -158.41
-       zmin: -894.950652
-       xmax: -76.19
-       ymax: 128.41
-       zmax: 799.950652
+       ymin: -148.41
+       zmin: -859.950652
+       xmax: -92.94
+       ymax: 118.41
+       zmax: 829.950652
      },
      {
-       xmin: 76.19
-       ymin: -158.41
-       zmin: -894.950652
+       xmin: 92.94
+       ymin: -148.41
+       zmin: -859.950652
        xmax: 207.89
-       ymax: 128.41
-       zmax: 799.950652
+       ymax: 118.41
+       zmax: 829.950652
      },
      {
-       xmin: 224.54
-       ymin: -158.41
-       zmin: -894.950652
+       xmin: 339.49
+       ymin: -148.41
+       zmin: -859.950652
        xmax: 356.24
-       ymax: 128.41
-       zmax: 799.950652
+       ymax: 118.41
+       zmax: 829.950652
      }
 ]
 
@@ -155,8 +155,10 @@ standard_selection: {
       photonConvLenghCut:              3
       dEdxPhotonCut:                   0.06                 
       GlobalWeight:                    1
-      POTWeight:                       6.6e20 
+      POTWeight:                       1 #weighting done outside. 
       photonVisibleEnergyThreshold:    100
+      CosmicWeight:                    0.05
+      CosmicVolumeRadius:              15 #cm
 
       ApplyNueEfficiency:    true    
       ApplyElectronEnergyCut:true
@@ -167,6 +169,13 @@ standard_selection: {
       ApplydEdxCut:          true
       ApplyMuonLenghtCut:    true 
       ApplyKMECCut:          false
+
+      IncludeCosmics:        true 
+      IncludeDirt:           true
+      CosmicsOnly:           false
+      DirtOnly:              false
+
+      Verbose:               false 
 
 }
 

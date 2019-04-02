@@ -11,5 +11,8 @@ NueSelection: {
   GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
   ApplyKMECCut: true  
   Verbose: false
+  Detector: "SBND"
+  IncludeCosmics: false
+  IncludeDirt: false 
 }
 

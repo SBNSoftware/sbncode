@@ -12,5 +12,6 @@ NueSelection: {
   ApplyKMECCut: true  
   Verbose: false
   POTWeight: 1
+  Detector: "SBND"
 }
 

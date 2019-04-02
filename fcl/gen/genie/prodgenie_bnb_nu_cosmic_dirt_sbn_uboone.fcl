@@ -1,13 +1,18 @@
-#include prodgenie_bnb_dirt_nu_cosmic_uboone.fcl 
+#include "prodgenie_common_cosmic_uboone.fcl" 
 
 process_name: GenieGen
 
 outputs.out1.fileName: "prodgenie_bnb_nu_cosmic_dirt_sbn_osc_uboone_%tc_gen.root"
 
 services.IFDH: {}
+physics.producers.generator: @local::microboone_genie_simple
 physics.producers.generator.FluxCopyMethod: "IFDH"
 physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.GlobalTimeOffset: 3125.
+physics.producers.generator.RandomTimeOffset: 1600.
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.TopVolume: "volWorld"
+physics.producers.generator.FluxUpstreamZ: -18
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/uboone/bnb_gsimple_fluxes_02.05.2018_463/"
 

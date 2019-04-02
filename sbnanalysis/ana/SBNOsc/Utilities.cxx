@@ -238,42 +238,48 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
 }
 
 //Function returns the Hadronic visibleEnergy[0], shower visibleEnergy[1] and the neutrino lepton energy visibleEnerg[2]  energy at the vertex 
-    std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, std::map<int,const simb::MCParticle*>& mcparticles,  const VisibleEnergyCalculator &calculator){
+    std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, std::map<int,const simb::MCParticle*>& mcparticles,  const VisibleEnergyCalculator &calculator){
 
   std::vector<double>  visibleEnergy;
   double visible_E = 0;
 
   // total up visible energy from tracks...
-  for (auto const &mct: mctrack_list) {
+  for(auto const &mct: mcparticles){
+    
+    unsigned ind = mct.first;
 
-    unsigned ind = mct.TrackID();
+    const simb::MCParticle*  mcparticle = mct.second;
+
 
     // ignore particles not from nu vertex, non primary particles, and uncharged particles
 
-    std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode()  << " process: " << mct.Process()   << " charge: " << abs(PDGCharge(mct.PdgCode())) << std::endl;
+    //    std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode()  << " process: " << mct.Process()   << " charge: " << abs(PDGCharge(mct.PdgCode())) << std::endl;
 
-    if (!isFromNuVertex(mctruth, mct) || abs(PDGCharge(mct.PdgCode())) < 1e-4 ){
+    if (!isFromNuVertex(mctruth, mcparticle) || abs(PDGCharge(mcparticle->PdgCode())) < 1e-4 ){
       continue;
     }
     // account for primary lepton later
-    if ((abs(mct.PdgCode()) == 13 || abs(mct.PdgCode()) == 11)) {
+    if ((abs(mcparticle->PdgCode()) == 13 || abs(mcparticle->PdgCode()) == 11)) {
       continue;
     }
+
+    //    std::cout << "Track with id: " << mcparticle->TrackId() << " has pdgcode: " << mcparticle->PdgCode() <<  " charge: " << abs(PDGCharge(mcparticle->PdgCode())) << std::endl;
     
     float track_threshold = calculator.track_threshold;
     //proposal also seams to put zero threshold on not proptons.
-    if(abs(mct.PdgCode()) == 211 || abs(mct.PdgCode()) == 321){track_threshold=0;}
+    if(abs(mcparticle->PdgCode()) == 211 || abs(mcparticle->PdgCode()) == 321){track_threshold=0;}
 
-    double mass = PDGMass(mct.PdgCode());
-    double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
+    double mass = PDGMass((mct.second)->PdgCode());
+    double this_visible_energy = (mcparticle->E()*1000. - mass) / 1000. /* MeV to GeV */;
+    //   std::cout << "first this_visible_energy: " << this_visible_energy << " mass: " << mass << " (mct.second).Start().E(): " << mcparticle->E() << " threshold: " << track_threshold  << std::endl;
     if (this_visible_energy > track_threshold) { //Move to before the distorton ala proposal
       if (calculator.track_energy_distortion > 1e-4) {
 	this_visible_energy = rand.Gaus(this_visible_energy, calculator.track_energy_distortion*this_visible_energy);
 	// clamp to 0
 	this_visible_energy = std::max(this_visible_energy, 0.);
-	std::cout << "this_visible_energy: " << this_visible_energy << " mass: " << mass << " mct.Start().E(): " << mct.Start().E() << std::endl;
+	//	std::cout << "this_visible_energy: " << this_visible_energy << " mass: " << mass << " (mct.second).Start().E(): " << mcparticle->E() << std::endl;
       }
-      std::cout << "used" << std::endl;
+      //      std::cout << "used" << std::endl;
       visible_E += this_visible_energy;
     }
   }
@@ -283,19 +289,21 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
   visible_E = 0;
 
   //  ...and showers. This doesn't really matter if there is another shower the event will be cut. 
-  for (auto const &mcs: mcshower_list) {
+  for(auto const &mcs: mcparticles){
 
-    unsigned ind = mcs.TrackID();
-    
+    unsigned ind = mcs.first;
+
+    const simb::MCParticle*  mcparticle = mcs.second;
+
     // ignore particles not from nu vertex, non primary particles, and uncharged particles.
-    if (!isFromNuVertex(mctruth, mcs) || abs(PDGCharge(mcs.PdgCode())) < 1e-4)
+    if (!isFromNuVertex(mctruth,  mcparticle) || abs(mcparticle->PdgCode()) != 11 || abs(mcparticle->PdgCode()) != 22)
       continue; 
     // account for primary lepton later
-    if ((abs(mcs.PdgCode()) == 13 || abs(mcs.PdgCode()) == 11) && isFromNuVertex(mctruth, mcs)  && calculator.lepton_index == ind)
+    if ((abs(mcparticle->PdgCode()) == 13 || abs(mcparticle->PdgCode()) == 11) && isFromNuVertex(mctruth,  mcparticle)  && calculator.lepton_index == ind)
       continue; 
     
-    double mass = PDGMass(mcs.PdgCode());
-    double this_visible_energy = (mcs.Start().E() - mass) / 1000.  /* MeV to GeV */;
+  double mass = PDGMass(mcparticle->PdgCode());
+    double this_visible_energy = (mcparticle->E()*1000. - mass) / 1000.  /* MeV to GeV */;
     if (calculator.shower_energy_distortion > 1e-4) {
       this_visible_energy = rand.Gaus(this_visible_energy, calculator.shower_energy_distortion*this_visible_energy);
       // clamp to 0
@@ -424,7 +432,7 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
                     float distance) {
   TLorentzVector nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0);
   TLorentzVector trkStart = track.Start().Position();
-  std::cout << "TMath::Abs((trkStart - nuVtx).Mag()): " << TMath::Abs((trkStart - nuVtx).Mag()) << " distance: " << distance << std::endl;
+  //  std::cout << "TMath::Abs((trkStart - nuVtx).Mag()): " << TMath::Abs((trkStart - nuVtx).Mag()) << " distance: " << distance << std::endl;
   return TMath::Abs((trkStart - nuVtx).Mag()) < distance;
 }
 

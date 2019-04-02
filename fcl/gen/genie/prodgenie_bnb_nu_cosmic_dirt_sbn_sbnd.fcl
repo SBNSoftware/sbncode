@@ -3,7 +3,6 @@
 process_name: GenieGen
 
 outputs.out1.fileName: "prodgenie_bnb_nu_osc_cosmic_dirt_sbn_sbnd_%tc_gen.root"
-
 physics.producers.generator: { 
      @table::physics.producers.generator
      @table::sbnd_flux_bnb_nu_Ev1
