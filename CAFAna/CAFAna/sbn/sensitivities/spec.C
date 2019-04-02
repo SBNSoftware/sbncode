@@ -13,6 +13,7 @@
 #include "CAFAna/Analysis/Calcs.h"
 #include "CAFAna/Core/MultiVar.h"
 #include "OscLib/func/OscCalculatorSterile.h"
+#include "CAFAna/Core/OscCalcSterileApprox.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/LoadFromFile.h"
@@ -60,23 +61,20 @@ void spec()
   osc::NoOscillations* osc_none = new osc::NoOscillations;
 
   //SBND
-  osc::OscCalculatorSterile* osc_nd_opt1 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* osc_nd_opt1 = DefaultSterileApproxCalc();
   osc_nd_opt1->SetL(kBaselineSBND);
-  osc_nd_opt1->SetAngle(2, 4, 0.1);
-  osc_nd_opt1->SetDm(4, 0.44);
+  osc_nd_opt1->calc.SetSinSq2ThetaMuMu(0.1);
+  osc_nd_opt1->calc.SetDmsq(0.44);
 
-  osc::OscCalculatorSterile* osc_nd_opt2 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* osc_nd_opt2 = DefaultSterileApproxCalc();
   osc_nd_opt2->SetL(kBaselineSBND);
-  osc_nd_opt2->SetAngle(2, 4, 0.1);
-  osc_nd_opt2->SetDm(4, 1.1);
+  osc_nd_opt2->calc.SetSinSq2ThetaMuMu(0.1);
+  osc_nd_opt2->calc.SetDmsq(1.1);
 
-  osc::OscCalculatorSterile* osc_nd_nue1 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* osc_nd_nue1 = DefaultSterileApproxCalc();
   osc_nd_nue1->SetL(kBaselineSBND);
-  osc_nd_nue1->SetDm(4, 0.43);
-  //Made up some numbers
-  osc_nd_nue1->SetAngle (1, 4, 0.11);
-  osc_nd_nue1->SetAngle (2, 4, 0.036);
-
+  osc_nd_nue1->calc.SetSinSq2ThetaMuE(0.013);
+  osc_nd_nue1->calc.SetDmsq(0.43);
 
   //Numu
   TH1* hnumu_nd_signal_unosc = pred_nd_numu.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
@@ -95,23 +93,21 @@ void spec()
 
 
   //ICARUS
-  
-  osc::OscCalculatorSterile* osc_fd_opt1 = DefaultSterileCalc(4);
+
+  OscCalcSterileApproxAdjustable* osc_fd_opt1 = DefaultSterileApproxCalc();
   osc_fd_opt1->SetL(kBaselineIcarus);
-  osc_fd_opt1->SetAngle(2, 4, 0.1);
-  osc_fd_opt1->SetDm(4, 0.44);
+  osc_fd_opt1->calc.SetSinSq2ThetaMuMu(0.1);
+  osc_fd_opt1->calc.SetDmsq(0.44);
 
-  osc::OscCalculatorSterile* osc_fd_opt2 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* osc_fd_opt2 = DefaultSterileApproxCalc();
   osc_fd_opt2->SetL(kBaselineIcarus);
-  osc_fd_opt2->SetAngle(2, 4, 0.1);
-  osc_fd_opt2->SetDm(4, 1.1);
+  osc_fd_opt2->calc.SetSinSq2ThetaMuMu(0.1);
+  osc_fd_opt2->calc.SetDmsq(1.1);
 
-  osc::OscCalculatorSterile* osc_fd_nue1 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* osc_fd_nue1 = DefaultSterileApproxCalc();
   osc_fd_nue1->SetL(kBaselineIcarus);
-  osc_fd_nue1->SetDm(4, 0.43);
-  //Made up some numbers
-  osc_fd_nue1->SetAngle (1, 4, 0.11);
-  osc_fd_nue1->SetAngle (2, 4, 0.036);
+  osc_fd_nue1->calc.SetSinSq2ThetaMuE(0.013);
+  osc_fd_nue1->calc.SetDmsq(0.43);
   
   //Numu
   TH1* hnumu_fd_signal_unosc = pred_fd_numu.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
