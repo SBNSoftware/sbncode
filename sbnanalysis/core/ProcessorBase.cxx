@@ -483,37 +483,35 @@ namespace core {
               std::vector< art::Ptr<anab::ParticleID> >  pid_assn = fmpid.at(trk_assn[i]->ID());
               std::vector< art::Ptr<recob::Hit> >        hit_assn = fmhit.at(trk_assn[i]->ID());
 
-              /*
-                 float track_vtx_x = trk_assn[i]->Vertex().at(0);
-                 float track_vtx_y = trk_assn[i]->Vertex().at(1);
-                 float track_vtx_z = trk_assn[i]->Vertex().at(2);
-                 float track_end_x = trk_assn[i]->End().at(0);
-                 float track_end_y = trk_assn[i]->End().at(1);
-                 float track_end_z = trk_assn[i]->End().at(2);
-
+              float track_vtx_x = trk_assn[i]->Vertex().at(0);
+              float track_vtx_y = trk_assn[i]->Vertex().at(1);
+              float track_vtx_z = trk_assn[i]->Vertex().at(2);
+              float track_end_x = trk_assn[i]->End().at(0);
+              float track_end_y = trk_assn[i]->End().at(1);
+              float track_end_z = trk_assn[i]->End().at(2);
+              
               // The border for contained tracks should be the edge of the active volume,
               // since this is where we can measure energy up to
               // Find out if one end of a track escapes (if so, MCS)
               bool does_vtx_escape =
-              (     (track_vtx_x > (m_detectorLengthX - m_coordinateOffsetX))
-              || (track_vtx_x < (-m_coordinateOffsetX))
-              || (track_vtx_y > (m_detectorLengthY - m_coordinateOffsetY))
-              || (track_vtx_y < (-m_coordinateOffsetY))
-              || (track_vtx_z > (m_detectorLengthZ - m_coordinateOffsetZ))
-              || (track_vtx_z < (-m_coordinateOffsetZ)));
+                (     (track_vtx_x > (m_detectorLengthX - m_coordinateOffsetX))
+                      || (track_vtx_x < (-m_coordinateOffsetX))
+                      || (track_vtx_y > (m_detectorLengthY - m_coordinateOffsetY))
+                      || (track_vtx_y < (-m_coordinateOffsetY))
+                      || (track_vtx_z > (m_detectorLengthZ - m_coordinateOffsetZ))
+                      || (track_vtx_z < (-m_coordinateOffsetZ)));
 
               bool does_end_escape =
-              (     (track_end_x > (m_detectorLengthX - m_coordinateOffsetX))
-              || (track_end_x < (-m_coordinateOffsetX))
-              || (track_end_y > (m_detectorLengthY - m_coordinateOffsetY))
-              || (track_end_y < (-m_coordinateOffsetY))
-              || (track_end_z > (m_detectorLengthZ - m_coordinateOffsetZ))
-              || (track_end_z < (-m_coordinateOffsetZ)));
+                (     (track_end_x > (m_detectorLengthX - m_coordinateOffsetX))
+                      || (track_end_x < (-m_coordinateOffsetX))
+                      || (track_end_y > (m_detectorLengthY - m_coordinateOffsetY))
+                      || (track_end_y < (-m_coordinateOffsetY))
+                      || (track_end_z > (m_detectorLengthZ - m_coordinateOffsetZ))
+                      || (track_end_z < (-m_coordinateOffsetZ)));
 
               bool one_end_escapes = true;
               if(does_vtx_escape && does_end_escape)   one_end_escapes = false;
               if(!does_vtx_escape && !does_end_escape) one_end_escapes = false;
-              */
 
               // Loop over PID association
               for ( size_t j = 0; j < pid_assn.size(); ++j ){
