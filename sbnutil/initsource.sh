@@ -1,5 +1,5 @@
 unsetup ifdhc
-setup ifdhc              v2_3_9           -q e17:p2714b:prof
+setup ifdhc              v2_4_1           -q e17:p2714b:prof
 
 echo "Setting up SBNanalysis" 
 export SBN_ANALYSIS_DIR=$MRB_INSTALL/sbncode/sbnanalysis/build
