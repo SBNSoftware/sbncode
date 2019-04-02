@@ -1,5 +1,7 @@
 #include "CAFAna/Core/LoadFromFile.h"
 
+#include "CAFAna/Core/OscCalcSterileApprox.h"
+
 #include "OscLib/func/OscCalculator.h"
 #include "OscLib/func/OscCalculatorDumb.h"
 #include "OscLib/func/OscCalculatorGeneral.h"
@@ -26,6 +28,9 @@ namespace ana
     if(tag == "NoOscillations") return std::unique_ptr<osc::IOscCalculator>(new osc::NoOscillations);
     if(tag == "OscCalculatorDumb") return std::unique_ptr<osc::IOscCalculator>(new osc::OscCalculatorDumb);
 
+    TVectorD* params = (TVectorD*)dir->Get("params");
+    assert(params);
+
     osc::IOscCalculatorAdjustable* ret = 0;
 
     if(tag == "OscCalculator") ret = new osc::OscCalculator;
@@ -34,14 +39,21 @@ namespace ana
     if(tag == "OscCalculatorPMNSOpt") ret = new osc::OscCalculatorPMNSOpt;
     if(tag == "OscCalculatorSterile") ret = new osc::OscCalculatorSterile;
     if(tag == "OscCalculatorPMNS_NSI") ret = new osc::OscCalculatorPMNS_NSI;
+    if(tag == "OscCalcSterileApprox"){
+      assert(params->GetNrows() == 4);
+      auto ret = new OscCalcSterileApproxAdjustable;
+      ret->calc.SetDmsq((*params)[0]);
+      ret->calc.SetSinSq2ThetaMuMu((*params)[1]);
+      ret->calc.SetSinSq2ThetaMuE((*params)[2]);
+      ret->calc.SetL((*params)[3]);
+      return std::unique_ptr<osc::IOscCalculatorAdjustable>(ret);
+    }
 
     if(!ret){
       std::cout << "LoadFrom not implemented for " << tag << std::endl;
       abort();
     }
 
-    TVectorD* params = (TVectorD*)dir->Get("params");
-    assert(params);
     //special case how OscCalculatorSterile is initialized
     if(tag == "OscCalculatorSterile") {
       std::vector<double> state;
@@ -90,6 +102,19 @@ namespace ana
 
     if(dynamic_cast<const osc::OscCalculatorDumb*>(&x)){
       TObjString("OscCalculatorDumb").Write("type");
+      tmp->cd();
+      return;
+    }
+
+    const OscCalcSterileApproxAdjustable* approx = dynamic_cast<const OscCalcSterileApproxAdjustable*>(&x);
+    if(approx){
+      TObjString("OscCalcSterileApprox").Write("type");
+      TVectorD params(4);
+      params[0] = approx->calc.GetDmsq();
+      params[1] = approx->calc.GetSinSq2ThetaMuMu();
+      params[2] = approx->calc.GetSinSq2ThetaMuE();
+      params[3] = approx->calc.GetL();
+      params.Write("params");
       tmp->cd();
       return;
     }

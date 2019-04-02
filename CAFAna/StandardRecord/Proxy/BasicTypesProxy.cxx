@@ -345,26 +345,9 @@ namespace caf
   // Used by nested variant
   std::string VectorProxyBase::AtSize() const
   {
-    // There are no "n" counts in sbncode files for now, so do it by brute-force
-    const int idx = fName.find_last_of('.');
-    return fName.substr(0, idx+1)+"@"+fName.substr(idx+1)+".size()";
-
-    /*
-    // Counts exist, but with non-systematic names
-    if(fName == "rec.me.trkkalman"  ) return "rec.me.nkalman";
-    if(fName == "rec.me.trkdiscrete") return "rec.me.ndiscrete";
-    if(fName == "rec.me.trkcosmic"  ) return "rec.me.ncosmic";
-    if(fName == "rec.me.trkbpf"     ) return "rec.me.nbpf";
-
     // These fields don't have a corresponding "n" so we have no choice
     static const std::unordered_set<std::string> missing = {
-      "intx", "inty", "bposx", "bposy",       // SRSpill.h
-      "cvnmaps", "slicemaps", "trainingdata", // SRTrainingBranch.h
-      "prongtrainingdata", "bpf",             // SRFuzzyKProng.h (also cvnmaps)
-      "motherlist", "daughterlist",           // SRParticleTruth.h
-      "me", "mrdif", "mrbrem",                // SRTrack.h
-      "genVersion", "prim", "michel",         // SRNeutrino.h
-      "genie",                                // SRMCReweight.h
+      // None for SBN for now!
     };
 
     const int idx = fName.find_last_of('.');
@@ -377,7 +360,6 @@ namespace caf
       // foo.bar.baz -> foo.bar.nbaz
       return fName.substr(0, idx)+".n"+fName.substr(idx+1);
     }
-    */
   }
 
   //----------------------------------------------------------------------
@@ -398,9 +380,6 @@ namespace caf
   //----------------------------------------------------------------------
   size_t VectorProxyBase::size() const
   {
-    // HACK HACK HACK
-    return 1234;
-
     // If there's a valid systematic override value in place, give that
     if(fDir){
       // Flat
