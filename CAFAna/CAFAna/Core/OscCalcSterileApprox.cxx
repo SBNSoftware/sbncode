@@ -77,7 +77,7 @@ namespace ana
     }
     else if(abs(from) == 12 && abs(to) == 14){
       // TODO - this seems reasonable, is it right?
-      //      return fSinSq2ThetaMuE*Delta;
+      return fSinSq2ThetaMuE*Delta;
     }
     else if(abs(to) == 16){ // no tau appearance
       return 0;
