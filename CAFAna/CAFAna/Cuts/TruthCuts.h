@@ -28,7 +28,8 @@ namespace ana
 
     bool operator()(const caf::SRProxy* sr) const
     {
-      return sr->truth[0].neutrino.iscc && abs(sr->truth[0].neutrino.pdg) == fPdgOrig
+
+      return sr->truth[0].neutrino.iscc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig
              && abs(sr->truth[0].neutrino.pdg) == fPdg;
     }
   protected:

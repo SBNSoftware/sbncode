@@ -50,8 +50,8 @@ namespace ana
                          const SystShifts& shiftMC,
                          const SystShifts& shiftData,
                          const Var& wei)
-    : NumuDecomp(loaders.GetLoader(caf::kNEARDET, Loaders::kMC),
-                 loaders.GetLoader(caf::kNEARDET, Loaders::kData),
+    : NumuDecomp(loaders.GetLoader(Loaders::kMC),
+                 loaders.GetLoader(Loaders::kData),
                  axis, cut, shiftMC, shiftData, wei)
   {
   }

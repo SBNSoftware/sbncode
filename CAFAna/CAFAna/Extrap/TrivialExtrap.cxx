@@ -81,9 +81,9 @@ namespace ana
                                const Cut& cut,
                                const SystShifts& shift,
                                const Var& wei)
-    : TrivialExtrap(loaders.GetLoader(caf::kFARDET, Loaders::kMC, ana::kBeam, Loaders::kNonSwap),
-                    loaders.GetLoader(caf::kFARDET, Loaders::kMC, ana::kBeam, Loaders::kNueSwap),
-                    loaders.GetLoader(caf::kFARDET, Loaders::kMC, ana::kBeam, Loaders::kNuTauSwap),
+    : TrivialExtrap(loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNonSwap),
+                    loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNueSwap),
+                    loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNuTauSwap),
                     axis, cut, shift, wei)
   {
   }

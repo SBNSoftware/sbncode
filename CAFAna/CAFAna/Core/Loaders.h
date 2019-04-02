@@ -2,13 +2,6 @@
 
 #include "CAFAna/Core/SpectrumLoaderBase.h"
 
-namespace caf{
-  typedef int Det_t;
-  const int kNEARDET = 1;
-  const int kFARDET = 2;
-}
-//#include "StandardRecord/SRHeader.h" // For Det_t
-
 #include <map>
 
 namespace ana
@@ -21,7 +14,6 @@ namespace ana
   public:
     enum DataMC{kData, kMC};
     enum SwappingConfig{kNonSwap, kNueSwap, kNuTauSwap};
-    enum FluxType{kFHC, kRHC};
 
     /// No loaders initialized. Use \ref SetLoaderPath to configure
     Loaders();
@@ -29,32 +21,27 @@ namespace ana
 
     /// Configure loader via wildcard \a path
     void SetLoaderPath(const std::string& path,
-                       caf::Det_t det,
                        DataMC datamc,
                        DataSource src = kBeam,
                        SwappingConfig swap = kNonSwap);
 
     /// Configure loader via explicit file list
     void SetLoaderFiles(const std::vector<std::string>& files,
-                        caf::Det_t det,
                         DataMC datamc,
                         DataSource src = kBeam,
                         SwappingConfig swap = kNonSwap);
 
     void AddLoader(SpectrumLoaderBase*,
-                        caf::Det_t det,
                         DataMC datamc,
                         DataSource src = kBeam,
                         SwappingConfig swap = kNonSwap);
 
-    void DisableLoader(caf::Det_t det,
-                       DataMC datamc,
+    void DisableLoader(DataMC datamc,
                        DataSource src = kBeam,
                        SwappingConfig swap = kNonSwap);
 
     /// Retrieve a specific loader
-    SpectrumLoaderBase& GetLoader(caf::Det_t det,
-                                  DataMC datamc,
+    SpectrumLoaderBase& GetLoader(DataMC datamc,
                                   DataSource src = kBeam,
                                   SwappingConfig swap = kNonSwap);
 
@@ -62,7 +49,7 @@ namespace ana
     void Go();
 
   protected:
-    typedef std::tuple<caf::Det_t, DataMC, DataSource, SwappingConfig> Key_t;
+    typedef std::tuple<DataMC, DataSource, SwappingConfig> Key_t;
 
     // Hold a list of paths that have been set
     std::map<Key_t, std::string> fLoaderPaths;
