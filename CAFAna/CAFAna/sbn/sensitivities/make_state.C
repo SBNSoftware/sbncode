@@ -4,6 +4,7 @@
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Analysis/Calcs.h"
+#include "CAFAna/Core/OscCalcSterileApprox.h"
 #include "OscLib/func/OscCalculatorSterile.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "StandardRecord/Proxy/SRProxy.h"
@@ -37,11 +38,29 @@ void make_state(const std::string anatype = numuStr)
     loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
   }
   else if (anatype == nueStr) {
+    std::cout << "Nue files not working right now!" << std::endl;
+    return;
     const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
-    const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
-    const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
-    loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    loaders2.SetLoaderPath( fnameSwap2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+
+    //BNB files contain nominal non-swap beam (so numubg, nuebg, NC)
+    const std::string fnameBNB = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
+    const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
+
+    //Non-swap files with nue instrinsic only
+    //const std::string fnameIntrinsic = fDir + "?";
+    //const std::string fnameIntrinsic = fDir + "?";
+
+    //Swap files are for signal
+    //const std::string fnameSwap = fDir + "?";
+    //const std::string fnameSwap2 = fDir + "?";
+
+    loaders.SetLoaderPath( fnameBNB,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    //loaders.SetLoaderPath( fnameIntrinsic,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    //loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
+    loaders2.SetLoaderPath( fnameBNB2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    //loaders2.SetLoaderPath( fnameIntrinsic2,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    //loaders2.SetLoaderPath( fnameSwap2,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
+
   }
   else {
     std::cout << "Unrecognized analysis - use numu or nue" << std::endl;
@@ -52,13 +71,12 @@ void make_state(const std::string anatype = numuStr)
   const double icarusPOT = kPOTnominal;
 
   // Calculator
-  osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
   calc->SetL(kBaselineSBND);
-  osc::OscCalculatorSterile* calc2 = DefaultSterileCalc(4);
+  OscCalcSterileApproxAdjustable* calc2 = DefaultSterileApproxCalc();
   calc2->SetL(kBaselineIcarus);
 
-  // This is probably too simplistic. Maybe res/sqrt(E)?
-  const Var kSmearedE([](const caf::SRProxy* sr)
+  const Var kRecoE([](const caf::SRProxy* sr)
                         {
 			  return sr->reco[0].reco_energy;
 			});
@@ -74,7 +92,7 @@ void make_state(const std::string anatype = numuStr)
 			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
-  const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kSmearedE);
+  const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kRecoE);
   const HistAxis axTrueEnergy("True energy (GeV)", binsEnergy, kTrueE);
 
   // List all of the systematics we'll be using
