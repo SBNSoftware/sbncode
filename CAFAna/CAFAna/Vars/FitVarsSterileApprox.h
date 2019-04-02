@@ -6,17 +6,17 @@
 
 namespace ana
 {
-  /// \f$ |\Delta m^2| \f$
+  /// \f$ \Delta m^2 \f$
   class FitDmSqSterile: public IFitVar
   {
   public:
     virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
     virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq";}
-    virtual std::string LatexName() const {return "|#Deltam^{2}| (eV^{2})";}
+    virtual std::string LatexName() const {return "#Deltam^{2} (eV^{2})";}
   };
 
-  /// |\Delta m^2| \f$
+  /// \Delta m^2 \f$
   const FitDmSqSterile kFitDmSqSterile = FitDmSqSterile();
 
   //----------------------------------------------------------------------
