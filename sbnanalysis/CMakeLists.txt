@@ -1,32 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
-project(sbnanalysis)
-
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-  set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE PATH "default install path" FORCE )
-endif()
-
-set(BUILD_SHARED_LIBS ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
-find_package(ROOT REQUIRED COMPONENTS RIO Net)
-include(${ROOT_USE_FILE})
-
-include_directories(${PROJECT_SOURCE_DIR})
-include_directories($ENV{HEP_CONCURRENCY_INC})
-
-file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
-
-ADD_SUBDIRECTORY(ana)
-ADD_SUBDIRECTORY(core)
-ADD_SUBDIRECTORY(util)
-
-file(WRITE ${CMAKE_INSTALL_PREFIX}/bin/setup_sbnanalysis.sh
-"export SBN_ANALYSIS_DIR=${CMAKE_INSTALL_PREFIX}
-export SBN_LIB_DIR=$SBN_ANALYSIS_DIR/lib
-export FHICL_FILE_PATH=.:$SBN_ANALYSIS_DIR/fcl:$FHICL_FILE_PATH
-export LD_LIBRARY_PATH=$SBN_LIB_DIR:$LD_LIBRARY_PATH
-export PATH=$SBN_ANALYSIS_DIR/bin:$PATH
-export FHICL_FILE_PATH=.:${CMAKE_INSTALL_PREFIX}/fcl:$FHICL_FILE_PATH
-")
+add_subdirectory(ana)
+add_subdirectory(core)
+add_subdirectory(util)
 

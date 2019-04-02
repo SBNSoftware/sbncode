@@ -3,8 +3,7 @@
 #include <TFile.h>
 #include <TLeaf.h>
 #include <TTree.h>
-#include "gallery/ValidHandle.h"
-#include "gallery/Handle.h"
+#include "art/Framework/Principal/Handle.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -13,17 +12,14 @@
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "Event.hh"
-#include "SubRun.hh"
-#include "Loader.hh"
-#include "util/Interaction.hh"
+#include "sbncode/sbnanalysis/core/DataTypes/Event.hh"
+#include "sbncode/sbnanalysis/core/DataTypes/SubRun.hh"
+#include "sbncode/sbnanalysis/util/Interaction.hh"
 #include "ProcessorBase.hh"
-#include "ProviderManager.hh"
 
-namespace core {
+namespace sbnanalysis {
 
-ProcessorBase::ProcessorBase()
-    : fEventIndex(0), fOutputFilename("output.root"), fProviderManager(NULL) {}
+ProcessorBase::ProcessorBase() : fEventIndex(0) {}
 
 
 ProcessorBase::~ProcessorBase() {}
@@ -41,21 +37,7 @@ void ProcessorBase::EventCleanup() {
 }
 
 
-void ProcessorBase::Initialize(char* config) {
-  fhicl::ParameterSet* cfg = LoadConfig(config);
-  Initialize(cfg);
-}
-
-
-void ProcessorBase::Setup(char* config) {
-  fhicl::ParameterSet* cfg = LoadConfig(config);
-  Setup(cfg);
-}
-
-
 void ProcessorBase::Setup(fhicl::ParameterSet* config) {
-  // Load configuration parameters
-
   // With configuration file provided
   if (config) {
     fExperimentID = \
@@ -65,8 +47,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
-    fOutputFilename = config->get<std::string>("OutputFile", "output.root");
-    fProviderConfig = config->get<std::string>("ProviderConfigFile", "");
+    //fOutputFilename = config->get<std::string>("OutputFile", "output.root");
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -93,22 +74,11 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCTrackTag = { "mcreco" };
     fMCShowerTag = { "mcreco" };
     fMCParticleTag = { "largeant" };
-    fOutputFilename = "output.root";
-  }
-
-  // Set up the provider manager for known experiments
-  std::vector<Experiment> exps = ProviderManager::GetValidExperiments();
-  if (std::find(exps.begin(), exps.end(), fExperimentID) != exps.end()) {
-    fProviderManager = new ProviderManager(fExperimentID, fProviderConfig);
-  }
-  else {
-    std::cout << "ProcessorBase::Setup: "
-              << "Unknown experiment, no ProviderManager is available."
-              << std::endl;
+    //fOutputFilename = "output.root";
   }
 
   // Open the output file and create the standard event tree
-  fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
+  fOutputFile = TFile::Open("aaa.root", "recreate");
 
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fTree->AutoSave("overwrite");
@@ -124,14 +94,8 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 }
 
 
-void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
-  // FIXME: This should use official gallery subrun access once available.
-  // N.B. Implementation is fragile and depends on the naming of the subrun
-  // producer (generator__GenieGen), can be made a fcl parameter.
-  TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
-
-  art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
-  srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
+void ProcessorBase::UpdateSubRuns(const art::Event& ev) {
+  /* To do: Implement for LArSoft
 
   for (long i=0; i<srtree->GetEntries(); i++) {
     srtree->GetEntry(i);
@@ -159,7 +123,7 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
     }
-  }
+ */
 }
 
 
@@ -172,7 +136,7 @@ void ProcessorBase::Teardown() {
 }
 
 
-void ProcessorBase::BuildEventTree(gallery::Event& ev) {
+void ProcessorBase::BuildEventTree(const art::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
 
@@ -180,16 +144,16 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
-  gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
+  art::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
   // Get MCEventWeight information
-  std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
+  std::vector<art::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
   if (!fWeightTags.empty()) {
     for (auto const &weightTag: fWeightTags) {
-      gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
+      art::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
       bool hasWeights = ev.getByLabel(weightTag, this_wgh);
       // coherence check
       if (hasWeights) {
@@ -201,7 +165,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   }
 
   // Get MCFlux information
-  gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
+  art::Handle<std::vector<simb::MCFlux> > mcflux_handle;
   ev.getByLabel(fFluxTag, mcflux_handle);
 
   fTree->GetEntry(fEventIndex);
@@ -301,5 +265,5 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   }
 }
 
-}  // namespace core
+}  // namespace sbnanalysis
 

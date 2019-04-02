@@ -6,7 +6,7 @@
  *
  * An example event selection processor.
  *
- * This is an implementation of the core::SelectionBase class. We define
+ * This is an implementation of the core::ProcessorBase class. We define
  * the methods called for initialization, finalization, and event-by-event
  * processing.
  *
@@ -16,11 +16,14 @@
 // Includes
 #include <iostream>
 #include "canvas/Utilities/InputTag.h"
-#include "core/SelectionBase.hh"
-#include "core/Event.hh"
+#include "sbncode/sbnanalysis/core/Processor/ProcessorBase.hh"
+#include "sbncode/sbnanalysis/core/Processor/ProcessorCreator.hh"
+#include "sbncode/sbnanalysis/core/DataTypes/Event.hh"
 
 // Forward declarations
 class TH2D;
+
+namespace sbnanalysis {
 
 /** All analysis code is defined in namespace "ana" */
 namespace ana {
@@ -35,7 +38,7 @@ namespace ana {
  * This selection analysis doesn't actually select events, it just
  * demonstrates the framework!
  */
-class ExampleSelection : public core::SelectionBase {
+class ExampleSelection : public sbnanalysis::ProcessorBase {
 public:
   /** Constructor. */
   ExampleSelection();
@@ -56,11 +59,11 @@ public:
   /**
    * Process one event.
    *
-   * \param ev A single event, as a gallery::Event
+   * \param ev A single event, as a art::Event
    * \param reco Reconstructed interactions
    * \return True to keep event
    */
-  bool ProcessEvent(const gallery::Event& ev,
+  bool ProcessEvent(const art::Event& ev,
                     const std::vector<Event::Interaction>& truth,
                     std::vector<Event::RecoInteraction>& reco);
 
@@ -77,10 +80,14 @@ protected:
 
   /** Histograms */
   TH2D* fNuVertexXZHist;  //!< Neutrino vertex XZ projection
+
+  DECLARE_PROCESSOR(ExampleSelection)
 };
 
   }  // namespace ExampleAnalysis
 }  // namespace ana
+
+}
 
 #endif  // __sbnanalysis_ana_ExampleAnalysis_ExampleSelection__
 

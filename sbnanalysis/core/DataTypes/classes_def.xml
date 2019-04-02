@@ -1,0 +1,11 @@
+<lcgdict>
+ <class name="std::vector<sbnanalysis::Event>"/>
+ <class name="std::vector<sbnanalysis::SubRun>"/>
+ <class name="std::vector<sbnanalysis::Event::Metadata>"/>
+ <class name="std::vector<sbnanalysis::Event::Interaction>"/>
+ <class name="std::vector<sbnanalysis::Event::Neutrino>"/>
+ <class name="std::vector<sbnanalysis::Event::FinalStateParticle>"/>
+ <class name="std::map<std::string, std::vector<double> >"/>
+ <class name="std::vector<std::map<std::string,std::vector<double> > >"/>
+</lcgdict>
+

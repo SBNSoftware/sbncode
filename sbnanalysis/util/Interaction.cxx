@@ -2,7 +2,8 @@
 #include <TVector3.h>
 #include "Interaction.hh"
 
-namespace util {
+namespace sbnanalysis {
+  namespace util {
 
 double ECCQE(const TVector3& l_momentum, double l_energy) {
   // Based on D. Kaleko, LowEnergyExcess LArLite module ECCQECalculator
@@ -25,5 +26,6 @@ double ECCQE(const TVector3& l_momentum, double l_energy) {
   return enu_top / enu_bot;
 }
 
-}  // namespace util
+  }  // namespace util
+}  // namespace sbnanalysis
 

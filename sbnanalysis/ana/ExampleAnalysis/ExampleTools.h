@@ -13,14 +13,16 @@
  * Author: A. Mastbaum <mastbaum@uchicago.edu>
  */
 
-namespace ana {
-  namespace ExampleAnalysis {
+namespace sbnanalysis {
+  namespace ana {
+    namespace ExampleAnalysis {
 
 /** A function that says hello. */
 void hello();
 
-  }  // namespace ExampleAnalysis
-}  // namespace ana
+    }  // namespace ExampleAnalysis
+  }  // namespace ana
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_ana_ExampleAnalysis_ExampleTools__
 

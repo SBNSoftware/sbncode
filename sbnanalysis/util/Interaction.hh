@@ -3,7 +3,8 @@
 
 #include <TVector3.h>
 
-namespace util {
+namespace sbnanalysis {
+  namespace util {
 
 /**
  * Calculate CCQE energy from associated lepton information.
@@ -14,7 +15,8 @@ namespace util {
  */
 double ECCQE(const TVector3& l_momentum, double l_energy);
 
-}  // namespace util
+  }  // namespace util
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_util_Interaction__
 

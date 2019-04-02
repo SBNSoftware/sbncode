@@ -14,7 +14,9 @@
 #include <vector>
 #include <TTree.h>
 #include <TVector3.h>
-#include <Experiment.hh>
+#include <sbncode/sbnanalysis/core/DataTypes/Experiment.hh>
+
+namespace sbnanalysis {
 
 /**
  * \class SubRun
@@ -41,6 +43,8 @@ public:
   int totspills;
   int goodspills;
 };
+
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_core_SubRun__
 

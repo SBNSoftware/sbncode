@@ -18,6 +18,8 @@
 #include <TVector3.h>
 #include "Experiment.hh"
 
+namespace sbnanalysis {
+
 /**
  * \class Event
  * \brief The standard event data definition.
@@ -168,6 +170,8 @@ public:
 
   static const int kUnfilled = -99999;  //!< Value for unfilled variables
 };
+
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_core_Event__
 

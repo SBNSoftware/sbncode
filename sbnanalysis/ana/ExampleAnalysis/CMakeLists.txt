@@ -1,26 +1,32 @@
-# Define the subproject name
-project(ExampleAnalysis)
-
-# Directories where includes are found (in addition to those defined in the
-# parent CMakeLists.txt, one directory up).
-include_directories(${CMAKE_SOURCE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-# Declare libraries to build
-# Note that the library names (the first argument) should follow the convention
-# "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
-# source files.
-add_library(sbnanalysis_ExampleAnalysis_ExampleTools SHARED ExampleTools.cxx)
-add_library(sbnanalysis_ExampleAnalysis_ExampleSelection SHARED ExampleSelection.cxx)
-
-# Define library linking
-target_link_libraries(
-  sbnanalysis_ExampleAnalysis_ExampleSelection
-  sbnanalysis_ExampleAnalysis_ExampleTools
-  sbnanalysis_ProviderManager
+art_make(
+  LIBRARY_NAME sbncode_sbnanalysis_ana_ExampleAnalysis
+  LIB_LIBRARIES
+    sbnanalysis_core_DataTypes_dict
+    sbncode_sbnanalysis_core_Base_Processor
+    sbncode_sbnanalysis_Util
+    larsim_EventWeight_Base
+    lardata_Utilities
+    nutools_NuReweight_art
+    nutools_NuReweight
+    larsim_Simulation
+    nutools_RandomUtils_NuRandomService_service
+    nusimdata_SimulationBase
+    ${ART_FRAMEWORK_CORE}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+    canvas
+    art_Persistency_Common
+    art_Persistency_Provenance
+    art_Utilities
+    cetlib cetlib_except
+    ${FHICLCPP}
+    ${CLHEP}
+    ${ROOT_BASIC_LIB_LIST}
+    ${Boost_SYSTEM_LIBRARY}
 )
 
-# Install all libraries to the main "lib" directory
-install(TARGETS sbnanalysis_ExampleAnalysis_ExampleTools DESTINATION lib)
-install(TARGETS sbnanalysis_ExampleAnalysis_ExampleSelection DESTINATION lib)
+install_headers()
+install_fhicl()
+install_source()
 

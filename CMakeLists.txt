@@ -60,10 +60,10 @@ include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
 
+add_subdirectory(fcl)
+add_subdirectory(sbnanalysis)
 add_subdirectory(sbncode)
 add_subdirectory(ups)
-add_subdirectory(fcl)
-#add_subdirectory(bin)
 
 # packaging utility
 include(UseCPack)

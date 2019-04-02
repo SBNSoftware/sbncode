@@ -11,9 +11,8 @@
 
 #include <string>
 #include <vector>
-#include "gallery/Event.h"
-#include "Loader.hh"
-#include "Event.hh"
+#include "art/Framework/Principal/Event.h"
+#include "sbncode/sbnanalysis/core/DataTypes/Event.hh"
 
 class TBranch;
 class TFile;
@@ -26,16 +25,13 @@ namespace fhicl {
 }
 
 /** Core framework functionality. */
-namespace core {
-
-class ProviderManager;
+namespace sbnanalysis {
 
 /**
  * \class core::ProcessorBase
  * \brief A generic tree-writing event-by-event processor.
  */
 class ProcessorBase {
-friend class ProcessorBlock;
 public:
   /** Constructor */
   ProcessorBase();
@@ -74,24 +70,16 @@ public:
    * This also serves as a filter: if the function results false, it acts as a
    * filter and the event is not written out.
    *
-   * \param ev The event, as a gallery::Event
+   * \param ev The event, as a art::Event
    * \param reco Reco interactions, to be populated by the user
    * \returns True if event passes filter
    */
-  virtual bool ProcessEvent(const gallery::Event& ev,
+  virtual bool ProcessEvent(const art::Event& ev,
                             const std::vector<Event::Interaction> &truth,
                             std::vector<Event::RecoInteraction>& reco) = 0;
 
   /** Pointer to reco event information */
   std::vector<Event::RecoInteraction>* fReco;  //!< Reco interaction list
-
-protected:
-  /**
-   * Perform user-level initialization.
-   *
-   * \param config A configuration, as a JSON filename.
-   */
-  virtual void Initialize(char* config=NULL);
 
   /**
    * Perform user-level initialization.
@@ -106,13 +94,6 @@ protected:
   /**
    * Perform framework-level initialization.
    *
-   * \param config A configuration as a JSON filename.
-   */
-  virtual void Setup(char* config=NULL);
-
-  /**
-   * Perform framework-level initialization.
-   *
    * \param config A configuration as a JSON object
    */
   virtual void Setup(fhicl::ParameterSet* config=NULL);
@@ -123,22 +104,23 @@ protected:
   /**
    * Populate the default event tree variables.
    *
-   * \param ev The current gallery event
+   * \param ev The current art event
   */
-  void BuildEventTree(gallery::Event& ev);
+  void BuildEventTree(const art::Event& ev);
 
   /**
    * Update subrun list to include subruns for this event's file.
    *
-   * \param ev The current gallery event
+   * \param ev The current art event
    */
-  void UpdateSubRuns(gallery::Event& ev);
+  void UpdateSubRuns(const art::Event& ev);
 
+  /** Get the event pointer. */
+  Event* GetEvent() { return fEvent; }
+
+protected:
   unsigned long fEventIndex;  //!< An incrementing index
   Experiment fExperimentID;  //!< Experiment identifier
-  ProviderManager* fProviderManager;  //!< Interface for provider access
-  std::string fOutputFilename;  //!< The output filename
-  std::string fProviderConfig;  //!< A custom provider config fcl file
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
   Event* fEvent;  //!< The standard output event data structure
@@ -147,20 +129,13 @@ protected:
   std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
   art::InputTag fFluxTag;  //!< art tag for MCFlux information
-  std::vector<art::InputTag> fWeightTags;  //!< art tag(s) for MCEventWeight information
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower
   art::InputTag fMCParticleTag; //!< art tag for MCParticle
+  std::vector<art::InputTag> fWeightTags;  //!< art tag(s) for MCEventWeight information
 };
 
-}  // namespace core
-
-
-/** Macro to create plugin library for user-defined Processors. */
-#define DECLARE_SBN_PROCESSOR(classname) extern "C" { \
-core::ProcessorBase* CreateProcessorObject() { return new classname; } \
-void DestroyProcessorObject(core::ProcessorBase* o) { delete o; } \
-struct core::export_table exports = { CreateProcessorObject, DestroyProcessorObject };}
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_core_ProcessorBase__
 

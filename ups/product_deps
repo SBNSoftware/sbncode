@@ -42,7 +42,7 @@ ubcore           v08_12_00
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-only_for_build  cetbuildtools   v7_04_00
+cetbuildtools v7_04_00 - only_for_build
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 

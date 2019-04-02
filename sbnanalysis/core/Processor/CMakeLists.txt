@@ -1,9 +1,11 @@
 art_make(
-  LIBRARY_NAME sbncode_sbnanalysis_Util
+  LIBRARY_NAME sbncode_sbnanalysis_core_Base_Processor
   LIB_LIBRARIES
+    sbncode_sbnanalysis_Util
     ${ART_FRAMEWORK_CORE}
     ${ART_FRAMEWORK_PRINCIPAL}
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    nusimdata_SimulationBase
     art_Persistency_Common
     art_Persistency_Provenance
     art_Utilities

@@ -9,6 +9,8 @@
  * Author: A. Mastbaum <mastbaum@uchicago.edu>, 2019/03/01
  */
 
+namespace sbnanalysis {
+
 /** Identifier for known experiments. */
 typedef enum {
   kExpSBND,
@@ -19,6 +21,8 @@ typedef enum {
   kExpLArIAT,
   kExpOther = 1000
 } Experiment;
+
+}  // namespace sbnanalysis
 
 #endif  // __sbnanalysis_core_Experiment__
 
