@@ -3,60 +3,100 @@
 #include "CAFAna/Core/Binning.h"
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
+#include "CAFAna/Analysis/Calcs.h"
+#include "OscLib/func/OscCalculatorSterile.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "StandardRecord/Proxy/SRProxy.h"
+#include "CAFAna/Core/Loaders.h"
+#include "CAFAna/Prediction/PredictionInterp.h"
+#include "CAFAna/Prediction/PredictionGenerator.h"
 #include "TFile.h"
+#include "CAFAna/Analysis/ExpInfo.h"
+
+#include "toysysts.h"
+
+// Random numbers
+#include "TRandom3.h"
 
 using namespace ana;
 
-void make_state()
+const std::string numuStr = "numu";
+const std::string nueStr = "nue";
+
+void make_state_smear(const std::string anatype = numuStr)
 {
-  const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
-  const std::string fDirSwap = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
 
-  const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
+  Loaders loaders, loaders2;
+  if (anatype == numuStr) {
+    const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+    const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
+    const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
+    //kFARDET is NOvA residual
+    loaders.SetLoaderPath( fnameBeam, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+  }
+  else if (anatype == nueStr) {
+    const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
+    const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
+    const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
+    loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameSwap2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+  }
+  else {
+    std::cout << "Unrecognized analysis - use numu or nue" << std::endl;
+    return;
+  }
 
-  // Source of events
-  SpectrumLoader loaderBeam(fnameBeam);
-  // SpectrumLoader loaderSwap(fnameSwap);
+  const double sbndPOT = kPOTnominal;
+  const double icarusPOT = kPOTnominal;
 
-  // And now add Icarus data
-  const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
-  const std::string fnameSwap2 = fDirSwap + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
+  // Calculator
+  osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
+  calc->SetL(kBaselineSBND);
+  osc::OscCalculatorSterile* calc2 = DefaultSterileCalc(4);
+  calc2->SetL(kBaselineIcarus);
 
-
-  // Source of events
-  SpectrumLoader loaderBeam2(fnameBeam2);
-  SpectrumLoader loaderSwap2(fnameSwap2);
+  // This is probably too simplistic. Maybe res/sqrt(E)?
+  const Var kSmearedE([](const caf::SRProxy* sr)
+                        {
+			  return sr->reco[0].reco_energy;
+			});
 
   const Var kTrueE([](const caf::SRProxy* sr)
-                         {
-                           return sr->truth[0].neutrino.energy;
-                         });
+                        {
+			  return sr->truth[0].neutrino.energy;
+			});
+
+  const Var kWeight([](const caf::SRProxy* sr)
+                        {
+			  return sr->reco[0].weight;
+			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
-  const HistAxis axEnergy("True energy (GeV)", binsEnergy, kTrueE);
+  const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kSmearedE);
+  const HistAxis axTrueEnergy("True energy (GeV)", binsEnergy, kTrueE);
 
-  PredictionNoExtrap pred_nd_numu(loaderBeam, kNullLoader, kNullLoader,
-                          axEnergy, kNoCut);
+  // List all of the systematics we'll be using
+  std::cout << "\nIncluding the following systematics:" << std::endl;
+  for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
+  std::cout << "\n" << std::endl;
 
-  PredictionNoExtrap pred_fd_numu(loaderBeam2, kNullLoader, kNullLoader,
-                          axEnergy, kNoCut);
+  //Use true energy, no weights until we get new nue files
+  NoExtrapGenerator gen(axTrueEnergy, kNoCut, kUnweighted);
+  if (anatype == numuStr) {
+    NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
+  }
 
-  PredictionNoExtrap pred_fd_nue(loaderSwap2, kNullLoader, kNullLoader,
-                          axEnergy, kNoCut);
+  PredictionInterp pred_nd(allSysts, calc, gen, loaders);
+  PredictionInterp pred_fd(allSysts, calc2, gen, loaders2);
 
-  loaderBeam.Go();
-  // loaderSwap.Go();
+  loaders.Go();
+  loaders2.Go();
 
-  loaderBeam2.Go();
-  loaderSwap2.Go();
+  std::cout << "Creating file " << ("cafe_state_smear_"+anatype+".root").c_str() << std::endl;
 
-  const char* stateFname = "cafe_state.root";
-
-  TFile fout(stateFname, "RECREATE");
-  pred_nd_numu.SaveTo(fout.mkdir("pred_nd_numu"));
-  pred_fd_numu.SaveTo(fout.mkdir("pred_fd_numu"));
-  pred_fd_nue.SaveTo(fout.mkdir("pred_fd_nue"));
+  TFile fout(("cafe_state_smear_"+anatype+".root").c_str(), "RECREATE");
+  pred_nd.SaveTo(fout.mkdir(("pred_nd_"+anatype).c_str()));
+  pred_fd.SaveTo(fout.mkdir(("pred_fd_"+anatype).c_str()));
 
 }
