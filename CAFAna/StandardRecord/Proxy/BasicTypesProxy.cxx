@@ -380,6 +380,8 @@ namespace caf
   //----------------------------------------------------------------------
   size_t VectorProxyBase::size() const
   {
+    return 1234; // HACK HACK HACK
+
     // If there's a valid systematic override value in place, give that
     if(fDir){
       // Flat
