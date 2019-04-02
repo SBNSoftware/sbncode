@@ -23,12 +23,13 @@ using namespace ana;
 const std::string numuStr = "numu";
 const std::string nueStr = "nue";
 
-void make_state_smear(const std::string anatype = numuStr)
+void make_state(const std::string anatype = numuStr)
 {
 
   Loaders loaders, loaders2;
   if (anatype == numuStr) {
-    const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+    //const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
+    const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed_1.temp_wgh";
     const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
     const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
     //kFARDET is NOvA residual
