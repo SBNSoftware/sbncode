@@ -115,15 +115,6 @@ void event_numbers_finalstate(const std::string expt = "SBND")
   const Var kCC = SIMPLEVAR(truth[0].neutrino.iscc);
   const Cut kIsCC = kCC > 0;
 
-  // // Temporary while we don't have the final states
-  // const Var kMode = SIMPLEVAR(truth[0].neutrino.genie_intcode);
-
-  // const Cut kIsQE  = (kMode == 0);
-  // const Cut kIsRes = (kMode == 1);
-  // const Cut kIsDIS = (kMode == 2);
-  // const Cut kIsCoh = (kMode == 3);
-  // const Cut kIsMEC = (kMode == 10);
-
   const Cut kZeroPi  = ((kNumPiZeros + kNumPiCharged) == 0);
   const Cut kOnePiCh = (kNumPiZeros == 0 && kNumPiCharged == 1);
   const Cut kOnePi0  = (kNumPiZeros == 1 && kNumPiCharged == 0);
@@ -142,8 +133,8 @@ void event_numbers_finalstate(const std::string expt = "SBND")
   };
   Selection cuts[kNumModes] = {
     {kZeroPi,  "0pi",   kRed},
-    {kOnePiCh, "1piCh", kBlue},
-    {kOnePi0,  "1pi0",  kGreen+2},
+    {kOnePiCh, "1piCh", kGreen+2},
+    {kOnePi0,  "1pi0",  kBlue},
     {kTwoPiCh, "2piCh", kViolet},
     {kOneEach, "1each", kGray+2},
     {kTwoPi0,  "2pi0",  kCyan+2},
