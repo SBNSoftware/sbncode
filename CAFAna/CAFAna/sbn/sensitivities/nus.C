@@ -11,6 +11,12 @@
 #include "CAFAna/Vars/FitVarsSterile.h"
 #include "CAFAna/Analysis/FitAxis.h"
 
+#include "CAFAna/Core/OscCalcSterileApprox.h"
+#include "CAFAna/Core/OscCurve.h"
+
+#include "CAFAna/Core/OscCalcSterileApprox.h"
+#include "CAFAna/Vars/FitVarsSterileApprox.h"
+
 // New includes
 #include "CAFAna/Analysis/Surface.h"
 #include "CAFAna/Analysis/MedianSurface.h"
@@ -19,6 +25,8 @@
 #include "CAFAna/Experiment/MultiExperimentSBN.h"
 #include "CAFAna/Experiment/GaussianConstraint.h"
 #include "CAFAna/Analysis/ExpInfo.h"
+
+#include "CAFAna/Extrap/IExtrap.h"
 
 #include "TCanvas.h"
 #include "TH1.h"
@@ -37,11 +45,10 @@ const double icarusPOT = kPOTnominal;
 
 void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = true)
 {
-
   if (TFile(stateFname).IsZombie()){
     std:: cout << "Run make_state.C first!" << std::endl;
     return;
-  }
+
   else{
 
     std::cout << "Loading state from " << stateFname << std::endl; 
@@ -50,8 +57,8 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd_numu")).release();
 
     // Calculator
-    osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
-    calc->SetL(kBaselineSBND); 
+    OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
+    calc->SetL(kBaselineSBND);
 
     // To make a fit we need to have a "data" spectrum to compare to our MC
     // Prediction object
@@ -61,15 +68,15 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
 
     //Define fit axes
-    const FitAxis kAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 40, 1e-3, 1, true);
-    const FitAxis kAxDmSq41(&kFitDmSq41Sterile, 40, 0.1, 100, true);
+    const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
+    const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 0.1, 1e3, true);
 
     if(!useSysts) allSysts.clear();
 
     // A Surface evaluates the experiment's chisq across a grid
     Surface surf(&expt, calc,
-		 kAxSinSq2Theta24,
-		 kAxDmSq41,
+		 kAxSinSq2ThetaMuMu,
+		 kAxDmSq,
                  {},
 		 allSysts);
 
@@ -96,8 +103,8 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     MultiExperimentSBN multiExpt({&expt, &expt2}, {kSBND,kICARUS});
 
     Surface surf2(&expt2, calc,
-                  kAxSinSq2Theta24,
-                  kAxDmSq41,
+                  kAxSinSq2ThetaMuMu,
+                  kAxDmSq,
                   {},
 		  allSysts);
 		  
@@ -112,18 +119,19 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     c1->SaveAs(useSysts ? "nus_ICARUS.pdf" : "nus_ICARUS_statsOnly.pdf");
 
     Surface surfMulti(&multiExpt, calc,
-		      kAxSinSq2Theta24,
-		      kAxDmSq41,
+		      kAxSinSq2ThetaMuMu,
+		      kAxDmSq,
 		      {},
 		      allSysts);
 
     std::vector<Surface> mockSurfs;
     for(int i = 0; i < nmock; ++i){
       std::cout << "Mock " << i+1 << " / " << nmock << std::endl;
-      const FitAxis kCoarseAxSinSq2Theta24(&kFitSinSq2Theta24Sterile, 20, 1e-3, 1, true);
-      const FitAxis kCoarseAxDmSq41(&kFitDmSq41Sterile, 20, 0.1, 100, true);
+      // TODO - SterileApprox-ify this part
+      const FitAxis kCoarseAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 20, 1e-3, 1, true);
+      const FitAxis kCoarseAxDmSq(&kFitDmSqSterile, 20, 0.1, 100, true);
 
-      osc::OscCalculatorSterile* c = DefaultSterileCalc(4);
+      osc::IOscCalculatorAdjustable* c = DefaultSterileApproxCalc();
       c->SetL(kBaselineSBND); 
       SingleSampleExperiment e1(&pred_nd_numu, pred_nd_numu.Predict(c).MockData(sbndPOT));
 
@@ -133,8 +141,8 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
       MultiExperimentSBN me({&e1, &e2}, {kSBND, kICARUS});
 
       Surface ms(&me, c,
-                 kCoarseAxSinSq2Theta24,
-                 kCoarseAxDmSq41,
+                 kCoarseAxSinSq2ThetaMuMu,
+                 kCoarseAxDmSq,
                  {},
 		 allSysts);
 
