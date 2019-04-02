@@ -276,6 +276,13 @@ namespace core {
     const geo::GeometryCore* geom = fProviderManager->GetGeometryProvider();
     std::cout << " ---------------------------------------------------------- " << std::endl;
     std::cout << " Detector : " << geom->DetectorName() << std::endl;
+    std::vector<double> minx, miny, minz, maxx, maxy, maxz;
+    minx.clear();
+    miny.clear();
+    minz.clear();
+    maxx.clear();
+    maxy.clear();
+    maxz.clear();
    
     geo::GeometryCore::TPC_id_iterator iTPC = geom->begin_TPC_id(),
       tend = geom->end_TPC_id();
@@ -285,34 +292,12 @@ namespace core {
       // the cryostat the TPC is in
       //geo::CryostatGeo const& Cryo = geom->Cryostat(*iTPC);
 
-      double minx = tpcgeo->MinX(); double maxx = tpcgeo->MaxX();
-      double miny = tpcgeo->MinY(); double maxy = tpcgeo->MaxY();
-      double minz = tpcgeo->MinZ(); double maxz = tpcgeo->MaxZ();
-
-      for (size_t c = 0; c < geom->Ncryostats(); c++)
-      {
-        const geo::CryostatGeo& cryostat = geom->Cryostat(c);
-        for (size_t t = 0; t < cryostat.NTPC(); t++)
-        {
-          const geo::TPCGeo& tpcg = cryostat.TPC(t);
-          if (tpcg.MinX() < minx) minx = tpcg.MinX();
-          if (tpcg.MaxX() > maxx) maxx = tpcg.MaxX();
-          if (tpcg.MinY() < miny) miny = tpcg.MinY();
-          if (tpcg.MaxY() > maxy) maxy = tpcg.MaxY();
-          if (tpcg.MinZ() < minz) minz = tpcg.MinZ();
-          if (tpcg.MaxZ() > maxz) maxz = tpcg.MaxZ();
-        } // Loop over the TPCs again
-      } // Loop over the Cryostats in each tpc
-      // Print geometry information for each TPC in the detector
-      std::cout << "   TPC : " << *iTPC << std::endl;
-      std::cout << "     Min x : " << minx << ", max x : " << maxx << std::endl;
-      std::cout << "     Min y : " << miny << ", max y : " << maxy << std::endl;
-      std::cout << "     Min z : " << minz << ", max z : " << maxz << std::endl;
-      std::cout << " ---------------------------------------------------------- " << std::endl;
-      
+      minx.push_back(tpcgeo->MinX()); maxx.push_back(tpcgeo->MaxX());
+      miny.push_back(tpcgeo->MinY()); maxy.push_back(tpcgeo->MaxY());
+      minz.push_back(tpcgeo->MinZ()); maxz.push_back(tpcgeo->MaxZ());
     ++iTPC;
     } // Loop over the TPCs
-
+    
     // Populate event tree
     for (size_t i=0; i<mctruthssize; i++) {
       Event::Interaction interaction;
@@ -484,37 +469,39 @@ namespace core {
               std::vector< art::Ptr<anab::ParticleID> >  pid_assn = fmpid.at(trk_assn[i]->ID());
               std::vector< art::Ptr<recob::Hit> >        hit_assn = fmhit.at(trk_assn[i]->ID());
 
-              /*
-              float track_vtx_x = trk_assn[i]->Vertex().at(0);
-              float track_vtx_y = trk_assn[i]->Vertex().at(1);
-              float track_vtx_z = trk_assn[i]->Vertex().at(2);
-              float track_end_x = trk_assn[i]->End().at(0);
-              float track_end_y = trk_assn[i]->End().at(1);
-              float track_end_z = trk_assn[i]->End().at(2);
+              float track_vtx_x = trk_assn[i]->Vertex().X();
+              float track_vtx_y = trk_assn[i]->Vertex().Y();
+              float track_vtx_z = trk_assn[i]->Vertex().Z();
+              float track_end_x = trk_assn[i]->End().X();
+              float track_end_y = trk_assn[i]->End().Y();
+              float track_end_z = trk_assn[i]->End().Z();
 
               // The border for contained tracks should be the edge of the active volume,
               // since this is where we can measure energy up to
               // Find out if one end of a track escapes (if so, MCS)
-              bool does_vtx_escape =
-                (     (track_vtx_x > (m_detectorLengthX - m_coordinateOffsetX))
-                      || (track_vtx_x < (-m_coordinateOffsetX))
-                      || (track_vtx_y > (m_detectorLengthY - m_coordinateOffsetY))
-                      || (track_vtx_y < (-m_coordinateOffsetY))
-                      || (track_vtx_z > (m_detectorLengthZ - m_coordinateOffsetZ))
-                      || (track_vtx_z < (-m_coordinateOffsetZ)));
+              bool does_vtx_escape(false);
+              for(unsigned int b = 0; b < minx.size(); ++b){
+                if(  (track_vtx_x > minx[b])
+                  || (track_vtx_x < minx[b])
+                  || (track_vtx_y > miny[b])
+                  || (track_vtx_y < miny[b])
+                  || (track_vtx_z > minz[b])
+                  || (track_vtx_z < minz[b])) does_vtx_escape = true;
+              }
 
-              bool does_end_escape =
-                (     (track_end_x > (m_detectorLengthX - m_coordinateOffsetX))
-                      || (track_end_x < (-m_coordinateOffsetX))
-                      || (track_end_y > (m_detectorLengthY - m_coordinateOffsetY))
-                      || (track_end_y < (-m_coordinateOffsetY))
-                      || (track_end_z > (m_detectorLengthZ - m_coordinateOffsetZ))
-                      || (track_end_z < (-m_coordinateOffsetZ)));
-
+              bool does_end_escape(false);
+              for(unsigned int b = 0; b < minx.size(); ++b){
+                if(  (track_end_x > minx[b])
+                  || (track_end_x < minx[b])
+                  || (track_end_y > miny[b])
+                  || (track_end_y < miny[b])
+                  || (track_end_z > minz[b])
+                  || (track_end_z < minz[b])) does_end_escape = true;
+              }
+              
               bool one_end_escapes = true;
               if(does_vtx_escape && does_end_escape)   one_end_escapes = false;
               if(!does_vtx_escape && !does_end_escape) one_end_escapes = false;
-              */
 
               // Loop over PID association
               for ( size_t j = 0; j < pid_assn.size(); ++j ){
