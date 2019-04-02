@@ -100,7 +100,11 @@ void make_state(const std::string anatype = numuStr)
   //Use true energy, no weights until we get new nue files
   NoExtrapGenerator gen(axTrueEnergy, kNoCut, kUnweighted);
   if (anatype == numuStr) {
+    std::cout << "Using smeared energy" << std::endl;
     NoExtrapGenerator gen(axEnergy, kNoCut, kWeight);
+  }
+  else {
+    std::cout << "Using true energy" << std::endl;
   }
 
   PredictionInterp pred_nd(allSysts, calc, gen, loaders);

@@ -7,6 +7,7 @@ namespace ana
   class OscCalcSterileApprox: public osc::IOscCalculator
   {
   public:
+    // if flavAfter == 0, give the active fraction
     virtual double P(int from, int to, double E) override;
     double P(int from, int to, double Elo, double Ehi);
 

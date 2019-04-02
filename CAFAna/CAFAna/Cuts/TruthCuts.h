@@ -36,6 +36,22 @@ namespace ana
     int fPdg, fPdgOrig;
   };
 
+  /// Helper for defining true CC event cuts
+  class NCFlavOrig
+  {
+  public:
+    NCFlavOrig(int pdgorig) : fPdgOrig(pdgorig)
+    {
+    }
+
+    bool operator()(const caf::SRProxy* sr) const
+    {
+      return sr->truth[0].neutrino.isnc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig;
+    }
+  protected:
+    int fPdgOrig;
+  };
+
   // Finally, the function argument to the Cut constructor can be a "functor"
   // object (one with operator()). This allows similar logic but with different
   // constants to be easily duplicated.
@@ -52,6 +68,12 @@ namespace ana
   const Cut kIsTauFromMu(CCFlavSel(16, 14));
   /// Select CC \f$ \nu_e\to\nu_\tau \f$
   const Cut kIsTauFromE(CCFlavSel(16, 12));
+
+
+  // NC from Numu
+  const Cut kIsNCFromNumu(NCFlavOrig(14));
+  // NC from Nue
+  const Cut kIsNCFromNue(NCFlavOrig(12));
 
   /// Is this truly an antineutrino?
   const Cut kIsAntiNu([](const caf::SRProxy* sr)
