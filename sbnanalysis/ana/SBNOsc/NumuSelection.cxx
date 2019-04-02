@@ -210,7 +210,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     }
     // apply uniform weights (e.g. bnbcorrection)
     for (auto const &key: _config.uniformWeights) {
-       weight *= interaction.weights.at(key)[0];
+       weight *= interaction.weightmap.at(key)[0];
     }
     // apply constant weight
     weight *= _config.constantWeight;
