@@ -12,6 +12,8 @@
 
 #include "TH1.h"
 
+#include "CAFAna/Core/OscCalcSterileApprox.h"
+
 namespace ana
 {
   //----------------------------------------------------------------------
@@ -22,15 +24,29 @@ namespace ana
 
     fHist = HistCache::New(";True Energy (GeV);Probability", kTrueEnergyBins);
 
-    for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
-      const double E = fHist->GetBinCenter(i);
-      if(E > 0){
-        fHist->SetBinContent(i, calc->P(from, to, E));
+    // We have extra knowledge that calculators of this type have a special
+    // mode allowing an intrinsic energy smearing.
+    OscCalcSterileApprox* approx = DowncastToSterileApprox(calc, true);
+
+    if(approx){
+      for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
+        const double E = fHist->GetBinCenter(i);
+        const double Elo = fHist->GetXaxis()->GetBinLowEdge(i);
+        const double Ehi = fHist->GetXaxis()->GetBinUpEdge(i);
+        // Use 2% resolution (intended to be << the resolution of any actual
+        // event) or the bin width, whichever is larger
+        fHist->SetBinContent(i, approx->P(from, to,
+                                          std::min(Elo, 0.98*E),
+                                          std::max(Ehi, 1.02*E)));
+        fHist->SetBinError(i, 0);
       }
-      else{
-        fHist->SetBinContent(i, 0);
+    }
+    else{
+      for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
+        const double E = fHist->GetBinCenter(i);
+        fHist->SetBinContent(i, E > 0 ? calc->P(from, to, E) : 0);
+        fHist->SetBinError(i, 0);
       }
-      fHist->SetBinError(i, 0);
     }
   }
 

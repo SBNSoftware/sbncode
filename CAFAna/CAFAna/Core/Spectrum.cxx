@@ -667,13 +667,13 @@ namespace ana
   {
     // In this case it would be OK to have no POT/livetime
     if(rhs.fHist && rhs.fHist->Integral(0, -1) == 0) return *this;
-
+    
 
     if((!fPOT && !fLivetime) || (!rhs.fPOT && !rhs.fLivetime)){
-      std::cout << "Error: can't sum Spectrum with no POT or livetime."
+      std::cout << "Error: can't sum Spectrum with no POT or livetime. "
                 << fPOT << " " << rhs.fPOT
                 << std::endl;
-      //      abort();
+      abort();
       return *this;
     }
 

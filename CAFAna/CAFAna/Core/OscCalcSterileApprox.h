@@ -1,3 +1,5 @@
+#pragma once
+
 #include "OscLib/func/IOscCalculator.h"
 
 namespace ana
@@ -28,9 +30,37 @@ namespace ana
     double fL;
   };
 
-  class OscCalcSterileApproxAdjustable: osc::IOscCalculatorAdjustable
+  class OscCalcSterileApproxAdjustable: public osc::IOscCalculatorAdjustable
   {
   public:
     OscCalcSterileApprox calc;
+
+    virtual double P(int from, int to, double E) override
+    {
+      return calc.P(from, to, E);
+    }
+
+    virtual OscCalcSterileApproxAdjustable* Copy() const override
+    {
+      auto ret = new OscCalcSterileApproxAdjustable;
+      auto c = calc.Copy();
+      ret->calc = *c;
+      delete c;
+      return ret;
+    }
+
+    virtual void SetL     (double L     ) override {calc.SetL(L);}
+    virtual void SetRho   (double rho   ) override {}
+    virtual void SetDmsq21(double dmsq21) override {}
+    virtual void SetDmsq32(double dmsq32) override {}
+    virtual void SetTh12  (double th12  ) override {}
+    virtual void SetTh13  (double th13  ) override {}
+    virtual void SetTh23  (double th23  ) override {}
+    virtual void SetdCP   (double dCP   ) override {}
   };
+
+  OscCalcSterileApproxAdjustable* DefaultSterileApproxCalc();
+
+  const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalculator* calc, bool allowFail = false);
+  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalculator* calc, bool allowFail = false);
 }
