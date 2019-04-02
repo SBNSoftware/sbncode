@@ -32,15 +32,15 @@ void make_state_smear(const std::string anatype = numuStr)
     const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
     const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
     //kFARDET is NOvA residual
-    loaders.SetLoaderPath( fnameBeam,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    loaders2.SetLoaderPath( fnameBeam2,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders.SetLoaderPath( fnameBeam, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
   }
   else if (anatype == nueStr) {
     const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
     const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
     const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
-    loaders.SetLoaderPath( fnameSwap,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    loaders2.SetLoaderPath( fnameSwap2,  caf::kFARDET,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameSwap2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
   }
   else {
     std::cout << "Unrecognized analysis - use numu or nue" << std::endl;
