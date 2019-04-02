@@ -18,6 +18,7 @@ namespace caf
 
     bool isnc;                //!< same as LArSoft "ccnc" - 0=CC, 1=NC
     bool iscc;                //!< CC (true) or NC/interference (false)
+    int initpdg;              //!< Initial PDG code of probe neutrino
     int pdg;                  //!< PDG code of probe neutrino
     int targetPDG;            //!< PDG code of struck target
     int genie_intcode;        //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
