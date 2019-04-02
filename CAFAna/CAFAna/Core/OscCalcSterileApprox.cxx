@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <map>
 
 namespace ana
 {
@@ -53,18 +54,33 @@ namespace ana
   // --------------------------------------------------------------------------
   double AvgSinSq(double k, double a, double b)
   {
-    if(a == b) return util::sqr(sin(k));
+    // This function shows up high in profiles, and is often called with the same masses/baselines/energies
+    static std::map<std::tuple<double, double, double>, double> cache;
+    const std::tuple<double, double, double> key = {k, a, b};
 
-    // https://www.wolframalpha.com/input/?i=integral+sin%5E2(k%2Fx)+from+a+to+b
-    double ret = k*(Si(2*k/a)-Si(2*k/b));
-    assert(!isnan(ret));
-    if(a) ret -= a * util::sqr(sin(k/a));
-    assert(!isnan(ret));
-    if(b) ret += b * util::sqr(sin(k/b));
-    assert(!isnan(ret));
+    // energies times masses times baselines plus some slack
+    if(cache.size() > 100*100*10) cache.clear();
 
-    ret /= (b-a);
+    auto it = cache.find(key);
+    if(it != cache.end()) return it->second;
 
+    double ret = 0;
+    if(a == b){
+      ret = util::sqr(sin(k/a));
+    }
+    else{
+      // https://www.wolframalpha.com/input/?i=integral+sin%5E2(k%2Fx)+from+a+to+b
+      ret = k*(Si(2*k/a)-Si(2*k/b));
+      assert(!isnan(ret));
+      if(a) ret -= a * util::sqr(sin(k/a));
+      assert(!isnan(ret));
+      if(b) ret += b * util::sqr(sin(k/b));
+      assert(!isnan(ret));
+
+      ret /= (b-a);
+    }
+
+    cache[key] = ret;
     return ret;
   }
 
