@@ -122,10 +122,10 @@ namespace ana
 
     //Option to return the active fraction
     else if (abs(from) == 14 && to == 0) {
-      return 1-fSinSq2ThetaMuMu*Delta+fSinSq2ThetaMuE*Delta;
+      return (1-fSinSq2ThetaMuMu*Delta) + (fSinSq2ThetaMuE*Delta);
     }
     else if (abs(from) == 12 && to == 0) {
-      return 1-GetSinSq2ThetaEE()*Delta+fSinSq2ThetaMuE*Delta;
+      return (1-GetSinSq2ThetaEE()*Delta) + (fSinSq2ThetaMuE*Delta);
     }
 
     std::cout << "OscCalculatorSterileApprox: P(" << from << ", " << to << ") not implemented" << std::endl;
