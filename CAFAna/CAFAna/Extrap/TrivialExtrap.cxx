@@ -36,16 +36,12 @@ namespace ana
     fTauFromMu    (loaderNuTau,   axis, cut && kIsTauFromMu && !kIsAntiNu, shift, wei),
     fTauFromMuAnti(loaderNuTau,   axis, cut && kIsTauFromMu &&  kIsAntiNu, shift, wei),
 
-    fNC           (loaderNonswap, axis, cut && kIsNC,                      shift, wei),
     fNCFromNumu   (loaderNonswap, axis, cut && kIsNC && kIsNCFromNumu,     shift, wei),
     fNCFromNue    (loaderNonswap, axis, cut && kIsNC && kIsNCFromNue,      shift, wei)
   {
     // All swapped files are equally valid as a source of NCs. This
     // approximately doubles/triples our statistics. SpectrumLoader just adds
     // events and POT for both cases, which is the right thing to do.
-
-    loaderNue  .AddSpectrum(fNC, axis.GetMultiDVar(), cut && kIsNC, shift, wei);
-    loaderNuTau.AddSpectrum(fNC, axis.GetMultiDVar(), cut && kIsNC, shift, wei);
 
     loaderNue  .AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNumu, shift, wei);
     loaderNuTau.AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNumu, shift, wei);
@@ -109,7 +105,6 @@ namespace ana
 
     fNueApp.SaveTo(dir->mkdir("nue_app"));
     fNueAppAnti.SaveTo(dir->mkdir("nue_app_anti"));
-    fNC.SaveTo(dir->mkdir("nc"));
     fNCFromNumu.SaveTo(dir->mkdir("nc_from_numu"));
     fNCFromNue.SaveTo(dir->mkdir("nc_from_nue"));
     fNumuSurv.SaveTo(dir->mkdir("numu_surv"));
@@ -149,7 +144,6 @@ namespace ana
     LOAD_OSC(fTauFromMuAnti, "nutau_from_numu_anti");
     LOAD_OSC(fNCFromNumu, "nc_from_numu");
     LOAD_OSC(fNCFromNue, "nc_from_nue");
-    LOAD_SPECT(fNC, "nc");
 
     return ret;
   }

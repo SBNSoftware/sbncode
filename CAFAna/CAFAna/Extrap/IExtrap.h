@@ -43,7 +43,6 @@ namespace ana
     /// Neutral currents
     virtual OscillatableSpectrum NCComponentFromNumu() = 0;
     virtual OscillatableSpectrum NCComponentFromNue() = 0;
-    virtual Spectrum NCComponent() = 0;
 
     virtual void SaveTo(TDirectory* dir) const;
   };

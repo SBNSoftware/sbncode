@@ -36,7 +36,8 @@ namespace ana
                                               Current::Current_t curr,
                                               Sign::Sign_t sign) const
   {
-    Spectrum ret = fExtrap->NCComponent(); // Get binning
+    // Get binning
+    Spectrum ret = fExtrap->NCComponentFromNumu().Oscillated(calc, 14, 0);
     ret.Clear();
 
     if(curr & Current::kCC){
@@ -96,10 +97,10 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionExtrap::ComponentNC() const
-  {
-    return fExtrap->NCComponent();
-  }
+  // Spectrum PredictionExtrap::ComponentNC() const
+  // {
+  //   return fExtrap->NCComponent();
+  // }
 
   //----------------------------------------------------------------------
   void PredictionExtrap::SaveTo(TDirectory* dir) const
