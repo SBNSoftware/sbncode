@@ -36,18 +36,18 @@ namespace ana
     fTauFromMu    (loaderNuTau,   axis, cut && kIsTauFromMu && !kIsAntiNu, shift, wei),
     fTauFromMuAnti(loaderNuTau,   axis, cut && kIsTauFromMu &&  kIsAntiNu, shift, wei),
 
-    fNCFromNumu   (loaderNonswap, axis, cut && kIsNC && kIsNCFromNumu,     shift, wei),
-    fNCFromNue    (loaderNonswap, axis, cut && kIsNC && kIsNCFromNue,      shift, wei)
+    fNCFromNumu   (loaderNonswap, axis, cut && kIsNCFromNumu,     shift, wei),
+    fNCFromNue    (loaderNonswap, axis, cut && kIsNCFromNue,      shift, wei)
   {
     // All swapped files are equally valid as a source of NCs. This
     // approximately doubles/triples our statistics. SpectrumLoader just adds
     // events and POT for both cases, which is the right thing to do.
 
-    loaderNue  .AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNumu, shift, wei);
-    loaderNuTau.AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNumu, shift, wei);
+    loaderNue  .AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNCFromNumu, shift, wei);
+    loaderNuTau.AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNCFromNumu, shift, wei);
 
-    loaderNue  .AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNue, shift, wei);
-    loaderNuTau.AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNC && kIsNCFromNue, shift, wei);
+    loaderNue  .AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
+    loaderNuTau.AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
 
   }
 
