@@ -6,6 +6,15 @@
 
 namespace caf
 {
+  class SRWeight_t
+  {
+  public:
+    size_t param_idx;  //!< Parameter name
+    size_t universe;  //!< Universe index
+    float value;  //!< Parameter value
+    float weight;  //!< Weight
+  };
+
   class SRInteraction
   {
   public:
@@ -13,7 +22,7 @@ namespace caf
     SRFinalStateParticle lepton;  //!< The primary final state lepton
     std::vector<SRFinalStateParticle> finalstate; //!< Final state particles
 
-    // std::map<std::string, std::vector<double> > weights; // TODO TODO TODO
+    std::vector<SRWeight_t> weights;
   };
 }
 
