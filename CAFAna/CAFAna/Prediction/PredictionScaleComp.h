@@ -38,6 +38,7 @@ namespace ana
     PredictionScaleComp(SpectrumLoaderBase& loaderNonswap,
                         SpectrumLoaderBase& loaderNue,
                         SpectrumLoaderBase& loaderNuTau,
+                        SpectrumLoaderBase& loaderIntrinsic,
                         const HistAxis&     axis,
                         Cut                 cut,
                         const std::vector<const SystComponentScale*>& systs,

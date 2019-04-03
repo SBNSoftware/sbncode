@@ -16,13 +16,14 @@ namespace ana
   PredictionNoExtrap::PredictionNoExtrap(SpectrumLoaderBase& loaderNonswap,
                                          SpectrumLoaderBase& loaderNue,
                                          SpectrumLoaderBase& loaderNuTau,
+					 SpectrumLoaderBase& loaderIntrinsic,
                                          const std::string& label,
                                          const Binning& bins,
                                          const Var& var,
                                          const Cut& cut,
                                          const SystShifts& shift,
                                          const Var& wei)
-    : PredictionExtrap(new TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau,
+    : PredictionExtrap(new TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau, loaderIntrinsic,
                                          label, bins, var, cut, shift, wei))
   {
   }
@@ -31,11 +32,12 @@ namespace ana
   PredictionNoExtrap::PredictionNoExtrap(SpectrumLoaderBase& loaderNonswap,
                                          SpectrumLoaderBase& loaderNue,
                                          SpectrumLoaderBase& loaderNuTau,
+					 SpectrumLoaderBase& loaderIntrinsic,
 					 const HistAxis& axis,
                                          const Cut& cut,
                                          const SystShifts& shift,
                                          const Var& wei)
-    : PredictionExtrap(new TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau,
+    : PredictionExtrap(new TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau, loaderIntrinsic,
                                          axis, cut, shift, wei))
   {
   }

@@ -124,7 +124,7 @@ void spec()
   //Nue
   TH1* hnue_fd_signal_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
   TH1* hnue_fd_signal_osc1 = pred_fd_nue.PredictComponent(osc_fd_nue1, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
-  TH1* hnue_fd_ncbg_unosc = pred_fd_nue.PredictComponent(osc_fd_nue1, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_ncbg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
   TH1* hnue_fd_numubg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
   TH1* hnue_fd_nuebg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuEToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
 

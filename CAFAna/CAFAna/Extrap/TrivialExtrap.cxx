@@ -13,6 +13,7 @@ namespace ana
   TrivialExtrap::TrivialExtrap(SpectrumLoaderBase& loaderNonswap,
                                SpectrumLoaderBase& loaderNue,
                                SpectrumLoaderBase& loaderNuTau,
+                               SpectrumLoaderBase& loaderIntrinsic,
                                const HistAxis& axis,
                                const Cut& cut,
                                const SystShifts& shift,
@@ -27,8 +28,8 @@ namespace ana
     fNumuApp      (loaderNuTau,   axis, cut && kIsNumuApp   && !kIsAntiNu, shift, wei),
     fNumuAppAnti  (loaderNuTau,   axis, cut && kIsNumuApp   &&  kIsAntiNu, shift, wei),
 
-    fNueSurv      (loaderNonswap, axis, cut && kIsBeamNue   && !kIsAntiNu, shift, wei),
-    fNueSurvAnti  (loaderNonswap, axis, cut && kIsBeamNue   &&  kIsAntiNu, shift, wei),
+    fNueSurv      (loaderIntrinsic, axis, cut && kIsBeamNue   && !kIsAntiNu, shift, wei),
+    fNueSurvAnti  (loaderIntrinsic, axis, cut && kIsBeamNue   &&  kIsAntiNu, shift, wei),
 
     fTauFromE     (loaderNue,     axis, cut && kIsTauFromE  && !kIsAntiNu, shift, wei),
     fTauFromEAnti (loaderNue,     axis, cut && kIsTauFromE  &&  kIsAntiNu, shift, wei),
@@ -49,6 +50,10 @@ namespace ana
     loaderNue  .AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
     loaderNuTau.AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
 
+    //Also load in intrinsic nues from nonswap file
+    loaderNonswap.AddReweightableSpectrum(fNueSurv, axis.GetMultiDVar(), cut && kIsBeamNue && !kIsAntiNu, shift, wei);
+    loaderNonswap.AddReweightableSpectrum(fNueSurvAnti, axis.GetMultiDVar(), cut && kIsBeamNue && kIsAntiNu, shift, wei);
+
   }
 
 
@@ -56,6 +61,7 @@ namespace ana
   TrivialExtrap::TrivialExtrap(SpectrumLoaderBase& loaderNonswap,
                                SpectrumLoaderBase& loaderNue,
                                SpectrumLoaderBase& loaderNuTau,
+                               SpectrumLoaderBase& loaderIntrinsic,
                                std::string label,
                                const Binning& bins,
                                const Var& var,
@@ -63,7 +69,7 @@ namespace ana
                                const SystShifts& shift,
                                const Var& wei)
     :
-    TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau,
+    TrivialExtrap(loaderNonswap, loaderNue, loaderNuTau, loaderIntrinsic,
                   HistAxis(label, bins, var),
                   cut, shift, wei)
   {
@@ -90,6 +96,7 @@ namespace ana
     : TrivialExtrap(loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNonSwap),
                     loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNueSwap),
                     loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kNuTauSwap),
+		    loaders.GetLoader(Loaders::kMC, ana::kBeam, Loaders::kIntrinsic),
                     axis, cut, shift, wei)
   {
   }

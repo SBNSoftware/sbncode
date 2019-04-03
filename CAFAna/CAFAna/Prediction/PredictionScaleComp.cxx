@@ -41,6 +41,7 @@ namespace ana
   PredictionScaleComp(SpectrumLoaderBase& loaderNonswap,
                       SpectrumLoaderBase& loaderNue,
                       SpectrumLoaderBase& loaderNuTau,
+                      SpectrumLoaderBase& loaderIntrinsic,
                       const HistAxis&     axis,
                       Cut                 cut,
                       const std::vector<const SystComponentScale*>& systs,
@@ -50,11 +51,11 @@ namespace ana
   {
     assert(!systs.empty() && "Please give at least one systematic.");
     for(const SystComponentScale* syst: systs){
-      fPreds.push_back(new PredictionNoExtrap(loaderNonswap, loaderNue, loaderNuTau,
+      fPreds.push_back(new PredictionNoExtrap(loaderNonswap, loaderNue, loaderNuTau, loaderIntrinsic,
                                               axis, cut && syst->GetCut(), shift, wei));
     }
 
-    fTotal = new PredictionNoExtrap(loaderNonswap, loaderNue, loaderNuTau,
+    fTotal = new PredictionNoExtrap(loaderNonswap, loaderNue, loaderNuTau, loaderIntrinsic,
                                     axis, cut, shift, wei);
   }
 

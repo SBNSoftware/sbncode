@@ -46,19 +46,19 @@ void make_state(const std::string anatype = numuStr)
     const std::string fnameBNB = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Numu.root";
     const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_NuMu.root";
 
-    //Non-swap files with nue instrinsic only
-    const std::string fnameIntrinsic = fDir + "nue_intrinsic/sbnd/17816840_0/output_SBNOsc_NueSelection_Proposal_SBND.root";
-    const std::string fnameIntrinsic2 = fDir + "nue_intrinsic/icarus/17817017_0/output_SBNOsc_NueSelection_Proposal_Icarus.root";
+    //Nue instrinsic only (to increase stats)
+    const std::string fnameIntrinsic = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Int.root";
+    const std::string fnameIntrinsic2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_Int.root";
 
     //Swap files are for signal
     const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Osc.root";
     const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_Osc.root";
 
-    //loaders.SetLoaderPath( fnameBNB,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    //loaders.SetLoaderPath( fnameIntrinsic,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders.SetLoaderPath( fnameBNB,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders.SetLoaderPath( fnameIntrinsic,  Loaders::kMC,   ana::kBeam, Loaders::kIntrinsic);
     loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
-    //loaders2.SetLoaderPath( fnameBNB2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    //loaders2.SetLoaderPath( fnameIntrinsic2,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameBNB2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders2.SetLoaderPath( fnameIntrinsic2,  Loaders::kMC,   ana::kBeam, Loaders::kIntrinsic);
     loaders2.SetLoaderPath( fnameSwap2,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
 
   }
@@ -83,9 +83,18 @@ void make_state(const std::string anatype = numuStr)
 			  return sr->truth[0].neutrino.energy;
 			});
 
+  // hack
+  //const Var kWeight([](const caf::SRProxy* sr)
+  //                    {
+  //			  return sr->reco[0].weight;
+  //			});
+
   const Var kWeight([](const caf::SRProxy* sr)
                         {
-			  return sr->reco[0].weight;
+			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 12) return 0.8;
+			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 14) return 0.005;
+			  if (sr->truth[0].neutrino.isnc) return 0.02;
+			  return 1.0;
 			});
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
@@ -101,7 +110,8 @@ void make_state(const std::string anatype = numuStr)
   //Use true energy, no weights until we get new nue files
   NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy,
                         kNoCut,
-                        anatype == numuStr ? kWeight : kUnweighted);
+			//                        anatype == numuStr ? kWeight : kUnweighted);
+			kWeight);
   if (anatype == numuStr) {
     std::cout << "Using reco energy" << std::endl;
   }
