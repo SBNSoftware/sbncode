@@ -36,13 +36,13 @@ void spec()
   const char* stateFname = "cafe_state_smear_numu.root";
   const char* stateFname2 = "cafe_state_smear_nue.root";
   if (TFile(stateFname).IsZombie()){
-    std:: cout << "Run make_state_smear.C first!" << std::endl;
+    std:: cout << "Run make_state.C first!" << std::endl;
     return;
   }
-  //if (TFile(stateFname2).IsZombie()){
-  //std:: cout << "Run make_state_smear.C(nue) first!" << std::endl;
-  //return;
-  //}
+  if (TFile(stateFname2).IsZombie()){
+    std:: cout << "Run make_state.C(nue) first!" << std::endl;
+    return;
+  }
 
   std::cout << "Loading state from " << stateFname << std::endl; 
   std::cout << "Loading state from " << stateFname2 << std::endl; 
@@ -50,8 +50,8 @@ void spec()
   TFile fin2(stateFname2);
   PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd_numu")).release();
   PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd_numu")).release();
-  //PredictionInterp& pred_nd_nue = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_nd_nue")).release();
-  //PredictionInterp& pred_fd_nue = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_fd_nue")).release();
+  PredictionInterp& pred_nd_nue = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_nd_nue")).release();
+  PredictionInterp& pred_fd_nue = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_fd_nue")).release();
   
   std::cout << "read in done" << std::endl;
 
@@ -86,11 +86,11 @@ void spec()
   TH1* hnumu_nd_ncbg_osc2 = pred_nd_numu.PredictComponent(osc_nd_opt2, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
 
   //Nue
-  //TH1* hnue_nd_signal_unosc = pred_nd_nue.PredictComponent(noosc_nd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_nd_signal_osc1 = pred_nd_nue.PredictComponent(osc_nd_nue1, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_nd_ncbg_unosc = pred_nd_nue.PredictComponent(nosc_nd, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_nd_numubg_unosc = pred_nd_nue.PredictComponent(osc_none, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_nd_nuebg_unosc = pred_nd_nue.PredictComponent(osc_none, Flavors::kNuEToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_nd_signal_unosc = pred_nd_nue.PredictComponent(noosc_nd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_nd_signal_osc1 = pred_nd_nue.PredictComponent(osc_nd_nue1, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_nd_ncbg_unosc = pred_nd_nue.PredictComponent(noosc_nd, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_nd_numubg_unosc = pred_nd_nue.PredictComponent(noosc_nd, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_nd_nuebg_unosc = pred_nd_nue.PredictComponent(noosc_nd, Flavors::kNuEToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
 
 
   //ICARUS
@@ -122,11 +122,11 @@ void spec()
   TH1* hnumu_fd_ncbg_osc2 = pred_fd_numu.PredictComponent(osc_fd_opt2, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
 
   //Nue
-  //TH1* hnue_fd_signal_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_fd_signal_osc1 = pred_fd_nue.PredictComponent(osc_fd_nue1, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_fd_ncbg_unosc = pred_fd_nue.PredictComponent(osc_none, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_fd_numubg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
-  //TH1* hnue_fd_nuebg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuEToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_signal_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_signal_osc1 = pred_fd_nue.PredictComponent(osc_fd_nue1, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_ncbg_unosc = pred_fd_nue.PredictComponent(osc_fd_nue1, Flavors::kAll, Current::kNC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_numubg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kAllNuMu, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* hnue_fd_nuebg_unosc = pred_fd_nue.PredictComponent(noosc_fd, Flavors::kNuEToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
 
   TFile* fOutput = new TFile("output_spec.root","RECREATE");
 
@@ -144,17 +144,17 @@ void spec()
   hnumu_fd_ncbg_osc1->Write("hnumu_fd_ncbg_osc1");
   hnumu_fd_ncbg_osc2->Write("hnumu_fd_ncbg_osc2");
 
-  //hnue_nd_signal_unosc->Write("hnue_nd_signal_unosc");
-  //hnue_nd_signal_osc1->Write("hnue_nd_signal_osc1");
-  //hnue_nd_ncbg_unosc->Write("hnue_nd_ncbg_unosc");
-  //hnue_nd_numubg_unosc->Write("hnue_nd_numubg_unosc");
-  //hnue_nd_nuebg_unosc->Write("hnue_nd_nuebg_unosc");
+  hnue_nd_signal_unosc->Write("hnue_nd_signal_unosc");
+  hnue_nd_signal_osc1->Write("hnue_nd_signal_osc1");
+  hnue_nd_ncbg_unosc->Write("hnue_nd_ncbg_unosc");
+  hnue_nd_numubg_unosc->Write("hnue_nd_numubg_unosc");
+  hnue_nd_nuebg_unosc->Write("hnue_nd_nuebg_unosc");
 
-  //hnue_fd_signal_unosc->Write("hnue_fd_signal_unosc");
-  //hnue_fd_signal_osc1->Write("hnue_fd_signal_osc1");
-  //hnue_fd_ncbg_unosc->Write("hnue_fd_ncbg_unosc");
-  //hnue_fd_numubg_unosc->Write("hnue_fd_numubg_unosc");
-  //hnue_fd_nuebg_unosc->Write("hnue_fd_nuebg_unosc");
+  hnue_fd_signal_unosc->Write("hnue_fd_signal_unosc");
+  hnue_fd_signal_osc1->Write("hnue_fd_signal_osc1");
+  hnue_fd_ncbg_unosc->Write("hnue_fd_ncbg_unosc");
+  hnue_fd_numubg_unosc->Write("hnue_fd_numubg_unosc");
+  hnue_fd_nuebg_unosc->Write("hnue_fd_nuebg_unosc");
 
   fOutput->Close();
 

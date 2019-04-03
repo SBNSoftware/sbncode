@@ -33,33 +33,33 @@ void make_state(const std::string anatype = numuStr)
     const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed_1.tempwgh/";
     const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
     const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
-    //kFARDET is NOvA residual
+
     loaders.SetLoaderPath( fnameBeam, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
   }
   else if (anatype == nueStr) {
-    std::cout << "Nue files not working right now!" << std::endl;
-    return;
+    //std::cout << "Nue files not working right now!" << std::endl;
+    //return;
     const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
 
     //BNB files contain nominal non-swap beam (so numubg, nuebg, NC)
-    const std::string fnameBNB = fDir + "output_SBNOsc_NueSelection_Proposal_SBND.root";
-    const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus.root";
+    const std::string fnameBNB = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Numu.root";
+    const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_NuMu.root";
 
     //Non-swap files with nue instrinsic only
-    //const std::string fnameIntrinsic = fDir + "?";
-    //const std::string fnameIntrinsic = fDir + "?";
+    const std::string fnameIntrinsic = fDir + "nue_intrinsic/sbnd/17816840_0/output_SBNOsc_NueSelection_Proposal_SBND.root";
+    const std::string fnameIntrinsic2 = fDir + "nue_intrinsic/icarus/17817017_0/output_SBNOsc_NueSelection_Proposal_Icarus.root";
 
     //Swap files are for signal
-    //const std::string fnameSwap = fDir + "?";
-    //const std::string fnameSwap2 = fDir + "?";
+    const std::string fnameSwap = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Osc.root";
+    const std::string fnameSwap2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_Osc.root";
 
-    loaders.SetLoaderPath( fnameBNB,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    //loaders.SetLoaderPath( fnameBNB,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     //loaders.SetLoaderPath( fnameIntrinsic,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    //loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
-    loaders2.SetLoaderPath( fnameBNB2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
+    loaders.SetLoaderPath( fnameSwap,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
+    //loaders2.SetLoaderPath( fnameBNB2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     //loaders2.SetLoaderPath( fnameIntrinsic2,  Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
-    //loaders2.SetLoaderPath( fnameSwap2,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
+    loaders2.SetLoaderPath( fnameSwap2,  Loaders::kMC,   ana::kBeam, Loaders::kNueSwap);
 
   }
   else {
@@ -96,6 +96,7 @@ void make_state(const std::string anatype = numuStr)
   std::cout << "\nIncluding the following systematics:" << std::endl;
   for(const ISyst* s: allSysts) std::cout << s->ShortName() << "\t\t" << s->LatexName() << std::endl;
   std::cout << "\n" << std::endl;
+  std::vector<const ISyst*> noSysts{};
 
   //Use true energy, no weights until we get new nue files
   NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy,
@@ -108,8 +109,8 @@ void make_state(const std::string anatype = numuStr)
     std::cout << "Using true energy" << std::endl;
   }
 
-  PredictionInterp pred_nd(allSysts, calc, gen, loaders);
-  PredictionInterp pred_fd(allSysts, calc, gen, loaders2);
+  PredictionInterp pred_nd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders);
+  PredictionInterp pred_fd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders2);
 
   loaders.Go();
   loaders2.Go();
