@@ -279,6 +279,7 @@ namespace ana
     assert(trPot);
 
     long n;
+    // TODO should be totgoodpot?
     caf::Proxy<double> pot(0, trPot, "totpot", n, 0);
 
     for(n = 0; n < trPot->GetEntries(); n++){
