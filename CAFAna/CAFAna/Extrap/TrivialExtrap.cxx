@@ -142,8 +142,8 @@ namespace ana
     LOAD_OSC(fTauFromEAnti,  "nutau_from_nue_anti");
     LOAD_OSC(fTauFromMu,     "nutau_from_numu");
     LOAD_OSC(fTauFromMuAnti, "nutau_from_numu_anti");
-    LOAD_OSC(fNCFromNumu, "nc_from_numu");
-    LOAD_OSC(fNCFromNue, "nc_from_nue");
+    LOAD_OSC(fNCFromNumu,    "nc_from_numu");
+    LOAD_OSC(fNCFromNue,     "nc_from_nue");
 
     return ret;
   }
