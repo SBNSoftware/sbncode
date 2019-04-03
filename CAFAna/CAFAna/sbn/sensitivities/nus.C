@@ -68,7 +68,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
 
   //Define fit axes
   const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
-  const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 0.1, 1e3, true);
+  const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 2e-2, 1e2, true);
 
   if(!useSysts) allSysts.clear();
 
@@ -127,7 +127,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
   for(int i = 0; i < nmock; ++i){
     std::cout << "Mock " << i+1 << " / " << nmock << std::endl;
     const FitAxis kCoarseAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 20, 1e-3, 1, true);
-    const FitAxis kCoarseAxDmSq(&kFitDmSqSterile, 20, 0.1, 100, true);
+    const FitAxis kCoarseAxDmSq(&kFitDmSqSterile, 20, 2e-2, 100, true);
 
     osc::IOscCalculatorAdjustable* c = DefaultSterileApproxCalc();
     c->SetL(kBaselineSBND); 
@@ -180,13 +180,14 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
   hDummy2->SetLineColor(kBlue);
   hDummy3->SetLineColor(kGreen+2);
 
-  TLegend* leg = new TLegend(0.6,0.6,0.84,0.84);
+  TLegend* leg = new TLegend(0.16, 0.16, 0.4, .4);
+  leg->SetFillStyle(0);
   leg->SetHeader("3#sigma C.L.","C");
   leg->AddEntry(hDummy2, "SBND only", "l");
   leg->AddEntry(hDummy3, "Icarus only", "l");
   leg->AddEntry(hDummy1, "Combined fit", "l");
-  leg->SetLineColor(10);
-  leg->SetFillColor(10);
+  //  leg->SetLineColor(10);
+  //  leg->SetFillColor(10);
   leg->Draw();
 
   c1->SaveAs(useSysts ? "nus_ALL.root" : "nus_ALL_statsOnly.root");
