@@ -98,10 +98,11 @@ void make_state(const std::string anatype = numuStr)
   std::cout << "\n" << std::endl;
 
   //Use true energy, no weights until we get new nue files
-  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy, kNoCut, kUnweighted);
+  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy,
+                        kNoCut,
+                        anatype == numuStr ? kWeight : kUnweighted);
   if (anatype == numuStr) {
-    std::cout << "Using smeared energy" << std::endl;
-    //    gen = NoExtrapGenerator(axEnergy, kNoCut, kWeight);
+    std::cout << "Using reco energy" << std::endl;
   }
   else {
     std::cout << "Using true energy" << std::endl;
