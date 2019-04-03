@@ -83,17 +83,16 @@ void make_state(const std::string anatype = numuStr)
 			  return sr->truth[0].neutrino.energy;
 			});
 
-  // hack
-  //const Var kWeight([](const caf::SRProxy* sr)
-  //                    {
-  //			  return sr->reco[0].weight;
-  //			});
-
   const Var kWeight([](const caf::SRProxy* sr)
+		    {
+		      return sr->reco[0].weight;
+		    });
+
+  const Var kWeighthack([](const caf::SRProxy* sr)
                         {
 			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 12) return 0.8;
 			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 14) return 0.005;
-			  if (sr->truth[0].neutrino.isnc) return 0.02;
+			  if (sr->truth[0].neutrino.isnc) return 0.05;
 			  return 1.0;
 			});
 
@@ -110,8 +109,7 @@ void make_state(const std::string anatype = numuStr)
   //Use true energy, no weights until we get new nue files
   NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy,
                         kNoCut,
-			//                        anatype == numuStr ? kWeight : kUnweighted);
-			kWeight);
+			anatype == numuStr ? kWeight : kWeighthack);
   if (anatype == numuStr) {
     std::cout << "Using reco energy" << std::endl;
   }
