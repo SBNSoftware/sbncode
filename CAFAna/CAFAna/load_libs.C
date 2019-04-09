@@ -29,10 +29,10 @@ void load_libs()
 
   // This magic incantation prevents ROOT doing slow cleanup work in
   // TList::RecursiveRemove() under ~TH1(). It also tends to lead to shutdown
-  // crashes. HistCache now avoids almost all of that histogram destruction, so
-  // now we can leave this at the default setting and get both speed and
-  // stability.
-  gROOT->SetMustClean(false);
+  // crashes. This seems like a good compromise: go fast in batch mode
+  // (probably fitting) and slow but not crashy in interactive move (probably
+  // want to see the plots).
+  if(gROOT->IsBatch()) gROOT->SetMustClean(false);
 
   // Colorize error messages. Would be better if we could just pick up the
   // flags novasoft uses, but they don't seem to be in any env var.
