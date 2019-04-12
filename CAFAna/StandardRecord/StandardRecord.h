@@ -23,6 +23,7 @@ namespace caf
     SRMetadata metadata;  //!< Event metadata
     std::vector<SRInteraction> truth; //!< All truth interactions
     std::vector<SRRecoInteraction> reco; //!< Reconstructed interactions
+    int ntruth; //Number of entries in true event
 
     SRExperiment experiment;  //!< Experiment identifier
   };
