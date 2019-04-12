@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CAFAna/Prediction/PredictionExtrap.h"
 
 #include "CAFAna/Prediction/PredictionGenerator.h"
