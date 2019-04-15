@@ -77,7 +77,7 @@ export SRT_ARCH=Linux2.6
 time SRT_NOVA/scripts/novasoft_build -rel development
 
 # Put the user in the directory they probably want
-cd releases/development/CAFAna/
+cd CAFAna/
 
 echo
 echo 'In future, type "source setup_cafana.sh" to use this release'
