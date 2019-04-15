@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [ "$0" != "$BASH_SOURCE" ]
+then
+    echo "Please don't source this script, just run it"
+    return
+fi
+
 ### Check there's no MRB software causing trouble ###
 
 env | grep MRB
