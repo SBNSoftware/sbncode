@@ -27,6 +27,9 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
+#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
+#include "larreco/RecoAlg/TrackMomentumCalculator.h"
+
 class TH2D;
 class TH1D;
 
@@ -140,8 +143,30 @@ public:
 
   struct RecoTrack {
     // track specific info
-    double kinetic_energy;
+    double deposited_energy;
+    double range_momentum;
+    double range_momentum_muon;
+
+    double fwd_mcs_momentum;
+    double fwd_mcs_momentum_muon;
+    double fwd_mcs_momentum_err;
+    double fwd_mcs_momentum_muon_err;
+    double bwd_mcs_momentum;
+    double bwd_mcs_momentum_muon;
+    double bwd_mcs_momentum_err;
+    double bwd_mcs_momentum_muon_err;
+    bool mcs_is_backward;
+
+    // buest guess at momentum 
+    double momentum;
+
+    double chi2_proton;
+    double chi2_kaon;
+    double chi2_pion;
+    double chi2_muon;
+    int baller_pdgid;
     int pdgid; //!< particle id
+
     bool is_muon;
     double length;
     double costh; //!< cosine of angle to z axis
@@ -151,7 +176,6 @@ public:
     bool is_contained; //!< is it contained in the "containment volume"?
     TVector3 start; //!< start position of track
     TVector3 end; //!< end position of track
-    TVector3 momentum; //!< momentum of the track
     double dist_to_vertex;
     TrackTruthMatch match;
 
@@ -237,12 +261,15 @@ protected:
   };
 
 
-  static const unsigned nCuts = 6; //!< total number of cuts
-  static const unsigned nHistos = nCuts + 1;
+  static const unsigned nCuts = 5; //!< total number of cuts
+  static const unsigned recoCutOffset = 2;
+  static const unsigned nHistos = nCuts + recoCutOffset;
   static const unsigned nModes = 5; //!< number of interaction modes
   static constexpr InteractionMode allModes[nModes] = {mCC, mNC, mCosmic, mOther, mAll}; //!< List of all interaction modes
-  static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-
+  // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
+  static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_track", "R_vqual", "R_tqual", "R_contained"};
+ 
+   
   // Internal functions
 
   /**
@@ -362,6 +389,11 @@ protected:
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
 
   Config _config; //!< The config
+
+  // calculators for Reco things
+  trkf::TrackMomentumCalculator *_track_momentum_calculator;
+  trkf::TrajectoryMCSFitter *_mcs_fitter;
+  
 
   RecoEvent _recoEvent; //!< Branch container for the RecoEvent
   std::vector<RecoInteraction> *_selected; //!< Branch container for the list of selected reco vertices

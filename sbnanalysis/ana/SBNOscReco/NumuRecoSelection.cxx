@@ -124,6 +124,11 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
       double zmax = FV.get<double>("zmax");
       _config.containment_volumes.emplace_back(xmin, xmax, ymin, ymax, zmin, zmax);
     }
+
+    // initialize things to do with reconstruction
+    double min_track_length = pconfig.get<double>("MinTrackLength", 10.);
+    _track_momentum_calculator = new trkf::TrackMomentumCalculator(min_track_length);
+    _mcs_fitter = new trkf::TrajectoryMCSFitter(pconfig.get<fhicl::ParameterSet>("MCSFitter", {}));
   }
 
   // Setup histo's for root output
@@ -264,11 +269,11 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
     double weight = 1.;
     weight *= _config.constantWeight;
     // TODO: what about cosmics?
-    if (vertex.match.mctruth_vertex_id >= 0) {
-      for (auto const &key: _config.uniformWeights) {
-         weight *= core_truth[vertex.match.mctruth_vertex_id].weightmap.at(key)[0];
-      }
-    }
+    // if (vertex.match.mctruth_vertex_id >= 0) {
+    //   for (auto const &key: _config.uniformWeights) {
+    //     weight *= core_truth[vertex.match.mctruth_vertex_id].weightmap.at(key)[0];
+    //  }
+    // }
     if (vertex.match.mode == mCosmic) {
       weight *= _config.cosmicWeight;
     }
@@ -286,8 +291,8 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
     for (size_t cut_i=0; cut_i < NumuRecoSelection::nCuts; cut_i++) {
       if (cuts[cut_i]) {
         double track_length = vertex.primary_track_index >= 0 ? vertex.slice.tracks.at(vertex.primary_track_index).length: -1;
-	_root_histos[1+cut_i][vertex.match.mode].track_length->Fill(track_length);
-	_root_histos[1+cut_i][mAll].track_length->Fill(track_length);
+	_root_histos[recoCutOffset+cut_i][vertex.match.mode].track_length->Fill(track_length);
+	_root_histos[recoCutOffset+cut_i][mAll].track_length->Fill(track_length);
         if (vertex.match.event_vertex_id >= 0 || vertex.match.event_track_id >= 0) {
           int event_id;
           int mctruth_id;
@@ -301,21 +306,21 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
             mctruth_id = vertex.match.mctruth_vertex_id;
           }
 
-          _root_histos[1+cut_i][vertex.match.mode].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
-          _root_histos[1+cut_i][mAll].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
+          _root_histos[recoCutOffset+cut_i][mAll].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
 
-          double true_track_momentum = truth[event_id].primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].primary_track_index).momentum.Mag() : -1;
+          double true_track_momentum = truth[event_id].primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].primary_track_index).momentum : -1;
 
-          _root_histos[1+cut_i][vertex.match.mode].track_p->Fill(true_track_momentum);
-          _root_histos[1+cut_i][mAll].track_p->Fill(true_track_momentum);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].track_p->Fill(true_track_momentum);
+          _root_histos[recoCutOffset+cut_i][mAll].track_p->Fill(true_track_momentum);
 
-          _root_histos[1+cut_i][vertex.match.mode].Q2->Fill(core_truth[mctruth_id].neutrino.Q2);
-          _root_histos[1+cut_i][mAll].Q2->Fill(core_truth[mctruth_id].neutrino.Q2);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].Q2->Fill(core_truth[mctruth_id].neutrino.Q2);
+          _root_histos[recoCutOffset+cut_i][mAll].Q2->Fill(core_truth[mctruth_id].neutrino.Q2);
 
           int crosses_tpc = truth[event_id].primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].primary_track_index).crosses_tpc: -1;
 
-          _root_histos[1+cut_i][vertex.match.mode].crosses_tpc->Fill(crosses_tpc);
-          _root_histos[1+cut_i][mAll].crosses_tpc->Fill(crosses_tpc);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].crosses_tpc->Fill(crosses_tpc);
+          _root_histos[recoCutOffset+cut_i][mAll].crosses_tpc->Fill(crosses_tpc);
 
           // get the distance from the beam center
           float beam_center_distance = sqrt( (core_truth[mctruth_id].neutrino.position.X() - _config.beamCenterX) * 
@@ -323,53 +328,61 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
                                              (core_truth[mctruth_id].neutrino.position.Y() - _config.beamCenterY) *
                                              (core_truth[mctruth_id].neutrino.position.Y() - _config.beamCenterY));
 
-          _root_histos[1+cut_i][vertex.match.mode].beam_center_distance->Fill(beam_center_distance);
-          _root_histos[1+cut_i][mAll].beam_center_distance->Fill(beam_center_distance);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].beam_center_distance->Fill(beam_center_distance);
+          _root_histos[recoCutOffset+cut_i][mAll].beam_center_distance->Fill(beam_center_distance);
 
           double length = truth[event_id].primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].primary_track_index).length: -1;
 
-          _root_histos[1+cut_i][vertex.match.mode].true_contained_length->Fill(length);
-          _root_histos[1+cut_i][mAll].true_contained_length->Fill(length);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].true_contained_length->Fill(length);
+          _root_histos[recoCutOffset+cut_i][mAll].true_contained_length->Fill(length);
 
-          _root_histos[1+cut_i][vertex.match.mode].true_track_multiplicity->Fill(truth[event_id].multiplicity);
-          _root_histos[1+cut_i][mAll].true_contained_length->Fill(truth[event_id].multiplicity);
+          _root_histos[recoCutOffset+cut_i][vertex.match.mode].true_track_multiplicity->Fill(truth[event_id].multiplicity);
+          _root_histos[recoCutOffset+cut_i][mAll].true_contained_length->Fill(truth[event_id].multiplicity);
 
         }
       }
     }
   }
   for (int truth_i = 0; truth_i < truth.size(); truth_i++) {
-    // fill in truth histos
-    double track_length = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).length: -1;
-    _root_histos[0][truth[truth_i].match.mode].track_length->Fill(track_length);
-    _root_histos[0][mAll].track_length->Fill(track_length);
+    // fill all truth events and truth events with a reconstructed vertex
+    std::array<bool, 2> fill_truth = {true, _recoEvent.reco.size() >= 1};
 
-    _root_histos[0][truth[truth_i].match.mode].Q2->Fill(core_truth[truth_i].neutrino.Q2);
-    _root_histos[0][mAll].Q2->Fill(core_truth[truth_i].neutrino.Q2);
+    for (int cut_i = 0; cut_i<2; cut_i++) {
 
-    int crosses_tpc = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).crosses_tpc: -1;
-    _root_histos[0][truth[truth_i].match.mode].crosses_tpc->Fill(crosses_tpc);
-     _root_histos[0][mAll].crosses_tpc->Fill(crosses_tpc);
-
-    _root_histos[0][truth[truth_i].match.mode].nuE->Fill(core_truth[truth_i].neutrino.energy);
-    _root_histos[0][mAll].nuE->Fill(core_truth[truth_i].neutrino.energy);
-
-    double momentum = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).momentum.Mag() : -1; 
-    _root_histos[0][truth[truth_i].match.mode].track_p->Fill(momentum);
-    _root_histos[0][truth[truth_i].match.mode].track_p->Fill(momentum);
-    // get the distance from the beam center
-    float beam_center_distance = sqrt( (core_truth[truth_i].neutrino.position.X() - _config.beamCenterX) * 
+      if (fill_truth[cut_i]) {
+	// fill in truth histos
+	double track_length = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).length: -1;
+	_root_histos[cut_i][truth[truth_i].match.mode].track_length->Fill(track_length);
+	_root_histos[cut_i][mAll].track_length->Fill(track_length);
+	
+	_root_histos[cut_i][truth[truth_i].match.mode].Q2->Fill(core_truth[truth_i].neutrino.Q2);
+	_root_histos[cut_i][mAll].Q2->Fill(core_truth[truth_i].neutrino.Q2);
+	
+	int crosses_tpc = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).crosses_tpc: -1;
+	_root_histos[cut_i][truth[truth_i].match.mode].crosses_tpc->Fill(crosses_tpc);
+	_root_histos[cut_i][mAll].crosses_tpc->Fill(crosses_tpc);
+	
+	_root_histos[cut_i][truth[truth_i].match.mode].nuE->Fill(core_truth[truth_i].neutrino.energy);
+	_root_histos[cut_i][mAll].nuE->Fill(core_truth[truth_i].neutrino.energy);
+	
+	double momentum = truth[truth_i].primary_track_index >= 0 ? truth[truth_i].slice.tracks.at(truth[truth_i].primary_track_index).momentum : -1; 
+	_root_histos[cut_i][truth[truth_i].match.mode].track_p->Fill(momentum);
+	_root_histos[cut_i][truth[truth_i].match.mode].track_p->Fill(momentum);
+	// get the distance from the beam center
+	float beam_center_distance = sqrt( (core_truth[truth_i].neutrino.position.X() - _config.beamCenterX) * 
                                        (core_truth[truth_i].neutrino.position.X() - _config.beamCenterX) +
                                        (core_truth[truth_i].neutrino.position.Y() - _config.beamCenterY) *
                                        (core_truth[truth_i].neutrino.position.Y() - _config.beamCenterY));
-    _root_histos[0][truth[truth_i].match.mode].beam_center_distance->Fill(beam_center_distance);
-    _root_histos[0][mAll].beam_center_distance->Fill(beam_center_distance);
-
-    _root_histos[0][truth[truth_i].match.mode].true_contained_length->Fill(track_length);
-    _root_histos[0][mAll].true_contained_length->Fill(track_length);
-
-    _root_histos[0][truth[truth_i].match.mode].true_track_multiplicity->Fill(truth[truth_i].multiplicity);
-    _root_histos[0][mAll].true_track_multiplicity->Fill(truth[truth_i].multiplicity);
+	_root_histos[cut_i][truth[truth_i].match.mode].beam_center_distance->Fill(beam_center_distance);
+	_root_histos[cut_i][mAll].beam_center_distance->Fill(beam_center_distance);
+	
+	_root_histos[cut_i][truth[truth_i].match.mode].true_contained_length->Fill(track_length);
+	_root_histos[cut_i][mAll].true_contained_length->Fill(track_length);
+	
+	_root_histos[cut_i][truth[truth_i].match.mode].true_track_multiplicity->Fill(truth[truth_i].multiplicity);
+	_root_histos[cut_i][mAll].true_track_multiplicity->Fill(truth[truth_i].multiplicity);
+      }
+    }
   }
 
   return selected;
@@ -378,29 +391,32 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
 std::array<bool, NumuRecoSelection::nCuts> NumuRecoSelection::ProcessRecoCuts(const RecoEvent &event, unsigned reco_vertex_index) {
   bool is_reco = true;
   bool has_primary_track = event.reco[reco_vertex_index].primary_track_index >= 0;
-  bool v_matched = event.reco[reco_vertex_index].match.event_vertex_id >= 0;
+  // bool v_matched = event.reco[reco_vertex_index].match.event_vertex_id >= 0;
 
-  bool t_matched = false;
+  // require close to truth
+  bool v_quality = event.reco[reco_vertex_index].match.event_vertex_id >= 0 && event.reco[reco_vertex_index].match.truth_vertex_distance < 10.;
+
+  bool t_quality = false;
   if (has_primary_track) {
     int t_mcparticle_id = event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].primary_track_index).match.mcparticle_id;
     for (const RecoInteraction &truth: event.truth) {
       if (truth.primary_track_index >= 0 && 
         truth.slice.tracks.at(truth.primary_track_index).match.mcparticle_id == t_mcparticle_id) {
-        t_matched = true;
+        t_quality = true;
         break;
       } 
     }
   }
   // require completion
-  t_matched = t_matched && (_config.trackMatchContainmentCut < 0 || 
+  t_quality = t_quality && (_config.trackMatchContainmentCut < 0 ||
     event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].primary_track_index).match.completion > _config.trackMatchContainmentCut);
+
   bool is_contained = has_primary_track && event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].primary_track_index).is_contained;
   return {
     is_reco,
     has_primary_track,
-    v_matched,
-    t_matched,
-    v_matched && t_matched,
+    v_quality,
+    t_quality && v_quality,
     is_contained
   };
 }
@@ -409,8 +425,8 @@ bool NumuRecoSelection::SelectReco(std::array<bool, NumuRecoSelection::nCuts> &c
   return 
     cuts[0] && 
     (cuts[1] || !_config.requireTrack) &&
-    (cuts[4] || !_config.requireMatched) &&
-    (cuts[5] || !_config.requireContained);
+    (cuts[3] || !_config.requireMatched) &&
+    (cuts[4] || !_config.requireContained);
 }
 
 // get information associated with track
@@ -429,7 +445,7 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   // other truth information
   double costh = track.Pz() / track.Momentum().Vect().Mag();
   int pdgid = track.PdgCode();
-  double kinetic_energy = track.E()  - PDGMass(pdgid) / 1000.;
+  // double kinetic_energy = track.E()  - PDGMass(pdgid) / 1000.;
 
   // setup intial track locations
   TLorentzVector pos = track.Position();
@@ -545,7 +561,7 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   // ret info
   RecoTrack ret;
 
-  ret.kinetic_energy = kinetic_energy;
+  // ret.kinetic_energy = kinetic_energy;
   ret.pdgid = pdgid;
   ret.is_muon = abs(pdgid) == 13;
   ret.length = contained_length;
@@ -557,7 +573,7 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   // ret.is_contained = is_contained;
   ret.start = track.Position().Vect();
   ret.end = track.EndPosition().Vect();
-  ret.momentum = track.Momentum().Vect();
+  ret.momentum = track.Momentum().Vect().Mag();
   ret.dist_to_vertex = dist_to_vertex;
   ret.match = track_match;
 
@@ -575,14 +591,13 @@ int NumuRecoSelection::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const s
     if (isFromNuVertex(mctruth, mcparticle_list[i]) && abs(mcparticle_list[i].PdgCode()) == 13 && mcparticle_list[i].Process() == "primary") {
       if (track_ind == -1 || mcparticle_list[track_ind].E() < mcparticle_list[i].E()) {
         track_ind = mcparticle_list[i].TrackId();
-        track_ind = i;
       }
     }
   } 
   // if there's no lepton, look for a pi+ that can "fake" a muon
   // if there's multiple, get the one with the highest energy
-  if (track_ind == -1) {
-    assert(mctruth.GetNeutrino().CCNC() == 1);
+  if (track_ind == -1 && mctruth.GetNeutrino().CCNC() == 1) {
+    // assert(mctruth.GetNeutrino().CCNC() == 1);
     double track_contained_length = -1;
     for (int i = 0; i < mcparticle_list.size(); i++) {
       if (isFromNuVertex(mctruth, mcparticle_list[i]) && abs(mcparticle_list[i].PdgCode()) == 211 && mcparticle_list[i].Process() == "primary") {
@@ -747,15 +762,21 @@ std::array<bool, 4> NumuRecoSelection::RecoTrackTopology(const art::Ptr<recob::T
 }
 
 std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTracks(const gallery::Event &event, const std::map<size_t, NumuRecoSelection::RecoParticle> &particles, int primary_index) {
+
+  // get all the particles
   auto const &pfp_handle = \
     event.getValidHandle<std::vector<recob::PFParticle>>("pandora");
+
+  // get all the tracks
+  auto const &pfp_track_list = \
+    event.getValidHandle<std::vector<recob::Track>>("pandoraTrack");
 
   // matches from pfparticles to tracks
   art::FindManyP<recob::Track> pfp_tracks(pfp_handle, event, "pandoraTrack"); 
 
   // matches from tracks to particle ID and calo
-  // art::FindManyP<anab::Calorimetry> pfp_calo(pfp_tracks, event, "pandoraCalo");
-  // art::FindManyP<anab::ParticleID> pfp_pid(pfp_tracks, event, "pandoraPID");
+  art::FindManyP<anab::Calorimetry> pfp_calo(pfp_track_list, event, "pandoraCalo");
+  art::FindManyP<anab::ParticleID> pfp_pid(pfp_track_list, event, "pandoraPID");
 
   std::map<size_t, NumuRecoSelection::RecoTrack> ret;
 
@@ -769,17 +790,52 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
     // get this track
     const art::Ptr<recob::Track> &track = pfp_tracks.at(pfp_id).at(0);
 
+    // find the index in the track list that corrresponds to the pfparticle track
+    int pfp_track_index = -1;
+    for (int j = 0; j < pfp_track_list->size(); j++) {
+      if (pfp_track_list->at(j).ID() == track->ID()) {
+        pfp_track_index = j;
+      } 
+    }
+    assert(pfp_track_index != -1);
+
     // information to be saved
     RecoTrack this_track;
 
-    // get the associated PID and Calo
-    /*
-    assert(pfp_calo.at(pfp_id).size() == 1);
-    assert(pfp_pid.at(pfp_id).size() == 1);
-    this_track.kinetic_energy = pfp_calo.at(pfp_id).at(0)->KineticEnergy();
-    this_track.pdgid = pfp_pid.at(pfp_id).at(0)->Pdg();
-    */
+    // track length
     this_track.length = RecoTrackLength(track);
+
+    // get the associated PID and Calo
+    assert(pfp_pid.at(pfp_track_index).size() == 1);
+    const art::Ptr<anab::ParticleID> &particle_id = pfp_pid.at(pfp_track_index).at(0);
+    this_track.pdgid = particle_id->Pdg();
+    this_track.chi2_proton = particle_id->Chi2Proton();
+    this_track.chi2_kaon = particle_id->Chi2Kaon();
+    this_track.chi2_pion = particle_id->Chi2Pion();
+    this_track.chi2_muon = particle_id->Chi2Muon();
+    this_track.baller_pdgid = particle_id->PIDA();
+
+    assert(pfp_calo.at(pfp_track_index).size() == 1);
+    const art::Ptr<anab::Calorimetry> &calo = pfp_calo.at(pfp_track_index).at(0);
+    this_track.deposited_energy = calo->KineticEnergy();
+    this_track.range_momentum = _track_momentum_calculator->GetTrackMomentum(this_track.length, this_track.pdgid);
+    this_track.range_momentum_muon = _track_momentum_calculator->GetTrackMomentum(this_track.length, 13);
+
+    recob::MCSFitResult mcs_fit = _mcs_fitter->fitMcs(*track, this_track.pdgid);
+    this_track.fwd_mcs_momentum = mcs_fit.fwdMomentum();
+    this_track.fwd_mcs_momentum_err = mcs_fit.fwdMomUncertainty();
+    this_track.bwd_mcs_momentum = mcs_fit.bwdMomentum();
+    this_track.bwd_mcs_momentum_err = mcs_fit.bwdMomUncertainty();
+
+    recob::MCSFitResult mcs_fit_muon = _mcs_fitter->fitMcs(*track, 13);
+    this_track.fwd_mcs_momentum_muon = mcs_fit_muon.fwdMomentum();
+    this_track.fwd_mcs_momentum_muon_err = mcs_fit_muon.fwdMomUncertainty();
+    this_track.bwd_mcs_momentum_muon = mcs_fit_muon.bwdMomentum();
+    this_track.bwd_mcs_momentum_muon_err = mcs_fit_muon.bwdMomUncertainty();
+
+    // TODO: fill this
+    this_track.momentum = -1;
+
     this_track.costh = track->StartDirection().Z() / sqrt( track->StartDirection().Mag2() );  
 
     // get track topology
@@ -791,8 +847,6 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
 
     this_track.start = TVector3(track->Start().X(), track->Start().Y(), track->Start().Z());
     this_track.end = TVector3(track->End().X(), track->End().Y(), track->End().Z());
-    // TODO -- add these
-    this_track.momentum = TVector3(-1, -1, -1);
 
     // get the origin of the slice
     if (primary_index >= 0) {
@@ -903,14 +957,16 @@ int NumuRecoSelection::SelectPrimaryTrack(const NumuRecoSelection::RecoSlice &sl
     double max_completion = 0.;
     if (truth_ind >= 0) {
       int match_mcparticle_id = truth[truth_ind].primary_track_index;
-      assert(match_mcparticle_id >= 0);
-      for (auto const &pair: slice.tracks) {
-        size_t this_pfp_index = pair.first;
-        const NumuRecoSelection::RecoTrack &this_track = pair.second;
-        if (this_track.match.mcparticle_id == match_mcparticle_id) {
-          if (this_track.match.completion > max_completion) primary_track_index = this_pfp_index;
-        }
-      } 
+      // assert(match_mcparticle_id >= 0);
+      if (match_mcparticle_id >= 0) {
+        for (auto const &pair: slice.tracks) {
+          size_t this_pfp_index = pair.first;
+          const NumuRecoSelection::RecoTrack &this_track = pair.second;
+          if (this_track.match.mcparticle_id == match_mcparticle_id) {
+            if (this_track.match.completion > max_completion) primary_track_index = this_pfp_index;
+          }
+        } 
+      }
     }
   }
 
@@ -1096,8 +1152,8 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
       // TODO: better way to do matching
       // only keep match if distance is less than 5cm
       if (this_interaction.match.truth_vertex_distance > 5.) {
-        this_interaction.match.event_vertex_id = -1;
-        std::cout << "Vertex not matched.\n";
+        // this_interaction.match.event_vertex_id = -1;
+        std::cout << "Vertex not matched well.\n";
       }
       else 
           std::cout << "Vertex matched to neutrino.\n";
@@ -1149,7 +1205,7 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
       this_interaction.match.mode = truth[this_interaction.match.event_vertex_id].match.mode;
     }
     // next -- try the track
-    else if (this_interaction.primary_track_index && 
+    else if (this_interaction.primary_track_index >= 0 && 
       this_interaction.slice.tracks.at(this_interaction.primary_track_index).match.has_match) {
       const NumuRecoSelection::TrackTruthMatch &ptrack_match = this_interaction.slice.tracks.at(this_interaction.primary_track_index).match;
       if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kCC) {
