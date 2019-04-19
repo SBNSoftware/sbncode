@@ -5,43 +5,46 @@ proposal_binlims: [ 0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0
 sbnd_event_sample: {
   name: "SBND #nu_{#mu}"
   binlims: @local::proposal_binlims
-  Distance: 0.1
-  DetX: [ -190.9, 190.9 ]
-  DetY: [ -185., 185. ]
-  DetZ: [ 15., 415. ]
+  Baseline: 10000.
+  BeamCenterX: 130.
+  DetX: [ -200., 200. ]
+  DetY: [ -200., 200. ]
+  DetZ: [ 0., 500. ]
   OscType: 2
   TrueELims: [ 0.1, 7.1 ]
   NumTrueEBins: 25
   NumDistanceBinsPerMeter: 10
-  scalefactor: 16.67802551725374  // must be updated per input file
+  ScalePOT: 6.6e20
 }
 
 uboone_event_sample: {
   name: "MicroBooNE #nu_{#mu}"
   binlims: @local::proposal_binlims
-  Distance: 0.47
-  DetX: [ 13.45, 239.8 ]
-  DetY: [ -100.53, 102.47 ]
-  DetZ: [ 15.1, 956.9 ]
+  Baseline: 47000.
+  BeamCenterX: 130.
+  DetX: [ -5., 260. ]
+  DetY: [ -120., 120. ]
+  DetZ: [ 0., 1050. ]
   OscType: 2
   TrueELims: [ 0.1, 7.1 ]
   NumTrueEBins: 25
   NumDistanceBinsPerMeter: 10
-  scalefactor: 1.3426232009357677 
+  ScalePOT: 1.32e21
 }
 
 icarus_event_sample: {
   name: "ICARUS #nu_{#mu}"
   binlims: @local::proposal_binlims
-  Distance: 0.6
-  DetX: [ -356.24, 356.24 ]
-  DetY: [ -158.41, 128.41 ]
-  DetZ: [ -894.950652, 799.950652]
+  Baseline: 60000.
+  BeamFrontZ: -909.951
+  DetX: [ -365., 365. ]
+  DetY: [ -175., 150. ]
+  DetZ: [ -910., 900.]
   OscType: 2
   TrueELims: [ 0.1, 7.1 ]
   NumTrueEBins: 25
   NumDistanceBinsPerMeter: 10
-  scalefactor: 5.5516161511654607 
+  ScalePOT: 6.6e20
 }
 
 uniform_weights: ["bnbcorrection_FluxHist"]

@@ -190,10 +190,10 @@ void Covariance::ProcessEvent(const Event *event) {
 void Covariance::Scale() {
   for (int sample_i = 0; sample_i < fEventSamples.size(); sample_i++) {
     for (int i = 1; i < fEventSamples[sample_i].fCentralValue->GetNbinsX()+1; i++) {
-      std::cout << "pre sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
+      //std::cout << "pre sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
       fEventSamples[sample_i].fCentralValue->SetBinContent(i,
         fEventSamples[sample_i].fEnergyBinScale[i-1] *  fEventSamples[sample_i].fCentralValue->GetBinContent(i));
-      std::cout << "post sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
+      //std::cout << "post sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
     }
     for (int variation = 0; variation < fWeightKeys.size(); variation++) {
       for (int uni = 0; uni < fNumAltUnis; uni++) {

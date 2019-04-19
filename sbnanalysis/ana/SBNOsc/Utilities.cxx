@@ -14,6 +14,7 @@
 #include "ubcore/LLBasicTool/GeoAlgo/GeoLineSegment.h"
 
 #include <TMath.h>
+#include <TRandom3.h>
 
 namespace ana {
   namespace SBNOsc {
@@ -160,8 +161,28 @@ double containedLength(const TVector3 &v0, const TVector3 &v1,
     // none contained -- either must have zero or two intersections
     if (n_contained == 0) {
       auto intersections = algo.Intersection(line, box);
-      assert(intersections.size() == 0 || intersections.size() == 2);
-      if (intersections.size() == 2) {
+      if (!(intersections.size() == 0 || intersections.size() == 2)) {
+        // more floating point error fixes...
+        //
+        // figure out which points are near the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        // and which points are near the intersection
+        TVector3 vint = intersections.at(0).ToTLorentzVector().Vect();
+        bool p0_int = (v0 - vint).Mag() < tol;
+        bool p1_int = (v1 - vint).Mag() < tol;
+        // exactly one of them should produce the intersection
+        assert((p0_int && p0_edge) != (p1_int && p1_edge));
+        // both close to edge -- full length is contained
+        if (p0_edge && p1_edge) {
+          length += (v0 - v1).Mag();
+        }
+        // otherwise -- one of them is not on an edge, no length is contained
+        else {}
+      }
+      // assert(intersections.size() == 0 || intersections.size() == 2);
+      else if (intersections.size() == 2) {
         TVector3 start(intersections.at(0).ToTLorentzVector().Vect());
         TVector3 end(intersections.at(1).ToTLorentzVector().Vect());
         length += (start - end).Mag();
@@ -170,6 +191,56 @@ double containedLength(const TVector3 &v0, const TVector3 &v1,
   }
 
   return length;
+}
+
+// copies the exact energy smearing used in the proposal
+double visibleEnergyProposal(const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,
+    const VisibleEnergyCalculator &calculator, bool include_showers) {
+  double total = 0.;
+
+  double M_p = .938272;
+  TRandom3 rand(0);
+  unsigned ind = 0;
+  for (unsigned ind = 0; ind < mctrack_list.size(); ind++) {
+    auto const &mct = mctrack_list[ind];
+    // Ignore particles not from nu vertex
+    if (!isFromNuVertex(mctruth, mct) || mct.Process() != "primary") {
+      continue;
+    }
+    int pdg = mct.PdgCode();
+    double track_energy = mct.Start().E() / 1000. /* MeV -> GeV */;
+    // ignore the following PDG codes
+    if (pdg == 2212 /* proton */ || pdg == 2112 /* neutron */ || pdg == 111 /* pi0 */ || pdg > 5000 /* crap */) {
+      continue;
+    }
+    // account for primary track later
+    if ((abs(mct.PdgCode()) == 13 || abs(mct.PdgCode()) == 11) && calculator.lepton_index == ind) {
+      continue;
+    }
+    // threshold
+    if (pdg == 2212 && track_energy - M_p < calculator.track_threshold) {
+      continue;
+    } 
+
+    // add in smeared energy
+    double this_smeared_energy = rand.Gaus(track_energy, track_energy * calculator.track_energy_distortion);
+    // subtract mass __only__ for proton
+    if (pdg == 2212) {
+      this_smeared_energy -= M_p;
+    }
+    total += this_smeared_energy;
+    ind += 1;
+  }
+
+  // smear the primary track energy
+
+
+  if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 13 || abs(mctrack_list[calculator.lepton_index].PdgCode()) == 11)) {
+    // new TRandom for the muon
+    TRandom3 rand2(0);
+    total += smearLeptonEnergy(rand2, mctrack_list[calculator.lepton_index], calculator);
+  }
+  return total;
 }
 
 
@@ -182,9 +253,9 @@ double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vec
   bool lepton_track_exists = false;
 
   // total up visible energy from tracks...
-  unsigned ind = 0;
   double track_visible_energy = 0.;
-  for (auto const &mct: mctrack_list) {
+  for (unsigned ind = 0; ind < mctrack_list.size(); ind++) {
+    auto const &mct = mctrack_list[ind];
     // ignore particles not from nu vertex, non primary particles, and uncharged particles
     if (!isFromNuVertex(mctruth, mct) || abs(PDGCharge(mct.PdgCode())) < 1e-4 || mct.Process() != "primary")
        continue;
@@ -192,13 +263,16 @@ double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vec
     if ((abs(mct.PdgCode()) == 13 || abs(mct.PdgCode()) == 11) && calculator.lepton_index == ind) {
       continue;
     }
+    // ignore non-primary pion??
+    //if ((abs(mct.PdgCode()) == 211) && calculator.lepton_index != ind) {
+    //  continue;
+    //}
 
     double mass = PDGMass(mct.PdgCode());
     double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
     if (this_visible_energy > calculator.track_threshold) {
       track_visible_energy += this_visible_energy;
     }
-    ind ++;
   }
 
   // do energy smearing
@@ -240,17 +314,14 @@ double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vec
   // ...and primary lepton energy (for CC events)
   // only add in extra here if identified "lepton" is actually a lepton
   if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 13 || abs(mctrack_list[calculator.lepton_index].PdgCode()) == 11)) {
-    visible_E += smearLeptonEnergy(mctrack_list[calculator.lepton_index], calculator);
+    visible_E += smearLeptonEnergy(rand, mctrack_list[calculator.lepton_index], calculator);
   }
 
   return visible_E;
 }
 
 
-double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
-  // setup distortion
-  TRandom rand;
-
+double smearLeptonEnergy(TRandom &rand, const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
   double smearing_percentage;
   if (calculator.lepton_contained) {
     smearing_percentage = calculator.lepton_energy_distortion_contained;
@@ -302,6 +373,11 @@ double PDGCharge(int pdg) {
   }
 }
 
+bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle& mcp, float distance) {
+  TVector3 nuVtx = mc.GetNeutrino().Nu().Position().Vect();
+  TVector3 partStart = mcp.Position().Vect();
+  return (partStart - nuVtx).Mag() < distance;
+}
 
 bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
                     float distance)  {
