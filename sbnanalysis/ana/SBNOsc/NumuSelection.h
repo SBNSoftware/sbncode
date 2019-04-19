@@ -110,6 +110,7 @@ protected:
     int selectMode;
     int selectCCNC;
     double selectionEfficiency; //!< Signal efficiency weight applied to signal (charged current) events
+    double backgroundRejection; //!< Rejection applied to background (NC) events
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
     double constantWeight; //!< constant weight to apply uniformly to each event
   };

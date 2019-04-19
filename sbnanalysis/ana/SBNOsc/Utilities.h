@@ -108,6 +108,8 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
 bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
                             float distance=5.0);
 
+bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle& mcp, float distance=5.0);
+
 
 /**
  * Calculate CCQE energy from associated lepton information (and optional
@@ -185,7 +187,7 @@ double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vec
  * \param calculator Struct containing values to be used in energy calculation
  *
  * */
-double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+double smearLeptonEnergy(TRandom &rand, const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
   }  // namespace SBNOsc
 }  // namespace ana
