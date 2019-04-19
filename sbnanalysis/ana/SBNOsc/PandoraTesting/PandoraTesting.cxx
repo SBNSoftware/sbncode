@@ -482,7 +482,7 @@ PandoraTesting::NuMuInteraction PandoraTesting::interactionInfo(const gallery::E
     calculator.lepton_index = track_ind;
 
     // smear the energy
-    double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
+    double smeared_energy = smearLeptonEnergy(_rand, mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
     // opening angle

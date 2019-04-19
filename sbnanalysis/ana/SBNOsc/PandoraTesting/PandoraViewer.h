@@ -66,6 +66,7 @@ public:
   class Config {
   public:
     std::vector<geoalgo::AABox> active_volumes;
+    bool drawText;
     std::string draw_str;
     std::string HitTag;
     std::string RecoTrackTag;

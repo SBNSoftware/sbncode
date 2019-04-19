@@ -57,6 +57,9 @@ void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
       _config.active_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
     }
 
+    // config for what is drawn
+    _config.drawText = config->get<bool>("drawText", true);
+
     // get tag names
     _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
@@ -168,10 +171,12 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
       all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
 
       // save points
-      std::array<TText *, 3> text = plots.addTrackText(points, track->ID());
-      for (int i = 0; i < 3; i++) {
-        // text[i]->SetTextSize(1);
-        text[i]->SetTextColor(kRed);
+      if (_config.drawText) {
+        std::array<TText *, 3> text = plots.addTrackText(points, track->ID());
+        for (int i = 0; i < 3; i++) {
+          // text[i]->SetTextSize(1);
+          text[i]->SetTextColor(kRed);
+        }
       }
 
       // format the graphs
@@ -195,6 +200,7 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
     // draw the reco vertices
     for (auto const &vertex: this_vertices) {
+      if (!is_neutrino) continue;
       auto pos = vertex->position();
       TVector3 rv(pos.X(), pos.Y(), pos.Z());
       std::array<TGraph *, 3> graphs = plots.addVertex(rv);
@@ -270,9 +276,11 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     all_graphs.insert(all_graphs.end(), tpc_graphs.begin(), tpc_graphs.end());
 
     // save text for the truth tracks
-    std::array<TText *, 3> text = plots.addTrackText(points, track.TrackID());
-    for (int i = 0; i < 3; i++) {
-      // text[i]->SetTextSize(1);
+    if (_config.drawText) {
+      std::array<TText *, 3> text = plots.addTrackText(points, track.TrackID());
+      for (int i = 0; i < 3; i++) {
+        // text[i]->SetTextSize(1);
+      }
     }
 
 
