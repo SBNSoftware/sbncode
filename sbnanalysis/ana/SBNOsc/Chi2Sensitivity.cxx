@@ -165,7 +165,6 @@ Chi2Sensitivity::EventSample::EventSample(const fhicl::ParameterSet& config) {
     fPOT = 0.;
 
     // setup detector stuff
-    fDistance = config.get<double>("Distance", 0);
     std::vector<double> xlim = config.get<std::vector<double> >("DetX");
     std::vector<double> ylim = config.get<std::vector<double> >("DetY");
     std::vector<double> zlim = config.get<std::vector<double> >("DetZ");
@@ -202,11 +201,30 @@ Chi2Sensitivity::EventSample::EventSample(const fhicl::ParameterSet& config) {
     // Take distance along z-axis as limits
     int numBinsPerMeter = config.get<int>("NumDistanceBinsPerMeter", 1);
     double numBinsPerCM = numBinsPerMeter * 0.01; // unit conversion
-    unsigned n_bins = (unsigned) ((fZlim[1] - fZlim[0]) * numBinsPerCM) + 1; /* round up to be on the safe side */ 
+
+    // get beam center and baseline in cm
+    fBaseline = config.get<double>("Baseline"); 
+    fBeamCenterX = config.get<double>("BeamCenterX", 0.);
+    fBeamCenterY = config.get<double>("BeamCenterY", 0.);
+    fBeamFrontZ = config.get<double>("BeamFrontZ", 0.);
+
+    // get full range of distances across detector
+    double detector_distance = sqrt((fZlim[1] - fZlim[0]) * (fZlim[1] - fZlim[0]) \
+        + (fXlim[1] - fXlim[0]) * (fXlim[1] - fXlim[0]) \
+        + (fYlim[1] - fYlim[0]) * (fYlim[1] - fYlim[0]));
+    // get full range of beam
+    // taken approximately from eyeballing MCFlux information
+    double beam_width = sqrt( 125. * 125. /* x */ + 125. * 125. /* y */ + 5500. * 5500. /* z */);
+    unsigned n_bins = (unsigned) ((detector_distance + beam_width) * numBinsPerCM) + 1;
     unsigned n_limits = n_bins + 1;
     double dist_binwidth = 1./numBinsPerCM;
+
+    // minimum distance from decayed vertex to detector
+    // taken approximately from MCFlux info
+    double min_baseline = fBaseline - 5500.; 
+ 
     for (unsigned i = 0; i < n_limits; i++) {
-        fDistBins.push_back(fDistance + (i * dist_binwidth) / 100000. /* cm -> km */);
+        fDistBins.push_back((min_baseline + (i * dist_binwidth)) / 100000. /* cm -> km */);
     }
 
     // scaling in reco energy bins
@@ -232,6 +250,7 @@ void Chi2Sensitivity::FileCleanup(TTree *eventTree) {
 }
 
 void Chi2Sensitivity::ProcessSubRun(const SubRun *subrun) {
+  fCovariance.ProcessSubRun(subrun);
   fEventSamples[fSampleIndex].fPOT += subrun->totgoodpot;
 }
             
@@ -254,17 +273,15 @@ void Chi2Sensitivity::ProcessEvent(const Event *event) {
             nuE = event->reco[n].reco_energy;
         }
 
-        // Get distance travelled along z in km
-        // (To reproduce proposal)
-        double dist = fEventSamples[fSampleIndex].fDistance + 
-            (event->truth[truth_ind].neutrino.position.Z() - fEventSamples[fSampleIndex].fZlim[0])/100000. /* cm -> km */;
-        
-        // Get distance travelled (assuming nu started at (x, y, z) = (0, 0, min_det_zdim - det_dist))
-        //double dx = (event->truth[truth_ind].neutrino.position.X() - (fDetDims[sample.fDet][0][1] + fDetDims[sample.fDet][0][0])/2) / 100000 /* cm -> km */,
-        //dy = (event->truth[truth_ind].neutrino.position.Y() - (fDetDims[sample.fDet][1][1] + fDetDims[sample.fDet][1][0])/2) / 100000 /* cm -> km */,
-        //dz = (event->truth[truth_ind].neutrino.position.Z() - fDetDims[sample.fDet][2][0]) / 100000 /* cm -> km */;
-        //double dist = TMath::Sqrt( dx*dx + dy*dy + (fDetDists[sample.fDet] + dz)*(fDetDists[sample.fDet] + dz) );
+        // get distance travelled from decay vertex
+        // parent decay vertex
+        TVector3 p_decay_vtx = event->reco[n].truth.neutrino.parentDecayVtx;
+        TVector3 neutrino_vtx = event->reco[n].truth.neutrino.position;
 
+        double dz = fEventSamples[fSampleIndex].fBaseline - p_decay_vtx.Z() + neutrino_vtx.Z() - fEventSamples[fSampleIndex].fBeamFrontZ;
+        double dy = p_decay_vtx.Y() - neutrino_vtx.Y() + fEventSamples[fSampleIndex].fBeamCenterY;
+        double dx = p_decay_vtx.X() - neutrino_vtx.X() + fEventSamples[fSampleIndex].fBeamCenterX;
+        double dist = sqrt(dx*dx + dy*dy + dz*dz) / 100000. /* cm -> km */;
     
         // check if energy is within bounds
         if (nuE < fEventSamples[fSampleIndex].fBins[0] || nuE > fEventSamples[fSampleIndex].fBins[fEventSamples[fSampleIndex].fBins.size()-1]) {
@@ -318,9 +335,9 @@ void Chi2Sensitivity::Scale() {
       for (int j = 1; j < fEventSamples[sample].fSignalCounts->GetNbinsY()+1; j++) {
         for (int k = 1; k < fEventSamples[sample].fSignalCounts->GetNbinsZ()+1; k++) {
           double content = fEventSamples[sample].fSignalCounts->GetBinContent(i, j, k);
-      std::cout << "pre sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
+      //std::cout << "pre sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
           fEventSamples[sample].fSignalCounts->SetBinContent(i, j, k, content * scale);
-      std::cout << "post sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
+      //std::cout << "post sample: " << sample << " bin content: " << fEventSamples[sample].fSignalCounts->GetBinContent(i);
         }
       }
     }
