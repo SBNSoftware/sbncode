@@ -9,12 +9,8 @@ Covariance: {
 
   NumAltUnis: 100
   UniformWeights: @local::uniform_weights
-  # WeightKey: [@local::inter_genie_plus_flux_weights_proposal, @local::inter_genie_weights_proposal, @local::flux_weights_proposal]
-  # WeightKey: [@local::inter_genie_weights, @local::flux_weights]
-  WeightKey: [@local::inter_genie_plus_flux_weights]
+  WeightKey: [@local::inter_genie_plus_flux_weights_proposal, @local::inter_genie_weights_proposal, @local::flux_weights_proposal]
   EnergyType: @local::proposal_numu_energy_type
-  SelectionEfficiency: @local::proposal_numu_selection_efficiency
-  BackgroundRejection: @local::proposal_numu_selection_rejection
   WeightMax: @local::weight_max
 }
 
@@ -24,8 +20,6 @@ Sensitivity: {
   UniformWeights: @local::uniform_weights
 
   EnergyType: @local::proposal_numu_energy_type
-  SelectionEfficiency: @local::proposal_numu_selection_efficiency
-  BackgroundRejection: @local::proposal_numu_selection_rejection
 
   NumDm2: 300
   LogDm2Lims: [ -2.0, 2.0 ]
