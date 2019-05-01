@@ -1,9 +1,10 @@
 #include "services_microboone.fcl"
 #include "seedservice_microboone.fcl"
 #include "microboone_eventweight_service.fcl"
-#include "eventweight_proposal_sbn.fcl"
+#include "eventweight_proposal_sbn_A.fcl"
+#include "eventweight_proposal_sbn_B.fcl"
 
-process_name: ReEventWeight
+process_name: ReEventWeightA
 
 services: {
   TimeTracker: {}
@@ -19,21 +20,26 @@ source: {
   # Drop the old weights
   inputCommands: [
     "keep *",
-     "drop *_fluxeventweight_*_G4",
-     "drop *_genieeventweight_*_G4"
+    "drop *_fluxeventweight_*_G4",
+    "drop *_genieeventweight_*_G4"
   ]
 }
 
 physics: {
   producers: {
-    fluxeventweight: @local::sbn_flux_eventweight
-    fluxeventweightMiniboone: @local::sbn_flux_eventweight_miniboone
-    genieeventweight: @local::sbn_genie_eventweight   
+    fluxeventweightA: @local::sbn_flux_eventweight_A
+    fluxeventweightMinibooneA: @local::sbn_flux_eventweight_miniboone_A
+    genieeventweightA: @local::sbn_genie_eventweight_A
+
+    fluxeventweightB: @local::sbn_flux_eventweight_B
+    fluxeventweightMinibooneB: @local::sbn_flux_eventweight_miniboone_B
+    genieeventweightB: @local::sbn_genie_eventweight_B
+
      rns: {
        module_type: "RandomNumberSaver"
      }
   }
-  simulate: [rns, fluxeventweight, fluxeventweightMiniboone, genieeventweight]
+  simulate: [rns, fluxeventweightA, fluxeventweightMinibooneA, genieeventweightA]
   stream1: [ out1 ]
   trigger_paths: [ simulate ]
   end_paths: [ stream1 ]
@@ -43,7 +49,7 @@ outputs: {
  out1: {
    module_type: RootOutput
    # fileName: "out.root"
-   fileName: "%ifb_%tc_reeventweight.root"
+   fileName: "%ifb_%tc_reeventweightA.root"
    dataTier: "detector-simulated"
    compressionLevel: 1
  }
