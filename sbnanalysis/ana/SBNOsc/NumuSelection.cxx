@@ -159,7 +159,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
   // Get truth
   auto const& mctruths = \
-    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTags[0]);
   // get tracks and showers
   auto const& mctracks = \
     *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);

@@ -252,26 +252,31 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
 
 
     // ignore particles not from nu vertex, non primary particles, and uncharged particles
-
-    //    std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode()  << " process: " << mct.Process()   << " charge: " << abs(PDGCharge(mct.PdgCode())) << std::endl;
-
-    if (!isFromNuVertex(mctruth, mcparticle) || abs(PDGCharge(mcparticle->PdgCode())) < 1e-4 ){
+    if(abs(PDGCharge(mcparticle->PdgCode())) < 1e-4){
       continue;
     }
-    // account for primary lepton later
+
+    //Ignore nuclear fragments
+    if(abs(mcparticle->PdgCode()) > 5000){
+      continue;
+    }
+
+    // account for primary lepton later                                               
     if ((abs(mcparticle->PdgCode()) == 13 || abs(mcparticle->PdgCode()) == 11)) {
       continue;
     }
 
-    //    std::cout << "Track with id: " << mcparticle->TrackId() << " has pdgcode: " << mcparticle->PdgCode() <<  " charge: " << abs(PDGCharge(mcparticle->PdgCode())) << std::endl;
+    //Check particle comes from the vertex and is the first charge particle.
+    if (!isChargedPrimary(mctruth, mcparticles, (int) mcparticle->TrackId())){
+      continue;
+    }
+
+    //    std::cout << "Track passed charge + position  with id: " << mcparticle->TrackId() << " has pdgcode: " << mcparticle->PdgCode() <<  " charge: " << abs(PDGCharge(mcparticle->PdgCode())) << std::endl;
     
     float track_threshold = calculator.track_threshold;
-    //proposal also seams to put zero threshold on not proptons.
-    if(abs(mcparticle->PdgCode()) == 211 || abs(mcparticle->PdgCode()) == 321){track_threshold=0;}
-
     double mass = PDGMass((mct.second)->PdgCode());
     double this_visible_energy = (mcparticle->E()*1000. - mass) / 1000. /* MeV to GeV */;
-    //   std::cout << "first this_visible_energy: " << this_visible_energy << " mass: " << mass << " (mct.second).Start().E(): " << mcparticle->E() << " threshold: " << track_threshold  << std::endl;
+    std::cout << "first this_visible_energy: " << this_visible_energy << " mass: " << mass << " (mct.second).Start().E(): " << mcparticle->E() << " threshold: " << track_threshold  << std::endl;
     if (this_visible_energy > track_threshold) { //Move to before the distorton ala proposal
       if (calculator.track_energy_distortion > 1e-4) {
 	this_visible_energy = rand.Gaus(this_visible_energy, calculator.track_energy_distortion*this_visible_energy);
@@ -283,7 +288,6 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
       visible_E += this_visible_energy;
     }
   }
-    
 
   visibleEnergy.push_back(visible_E);
   visible_E = 0;
@@ -295,13 +299,14 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
 
     const simb::MCParticle*  mcparticle = mcs.second;
 
-    // ignore particles not from nu vertex, non primary particles, and uncharged particles.
-    if (!isFromNuVertex(mctruth,  mcparticle) || abs(mcparticle->PdgCode()) != 11 || abs(mcparticle->PdgCode()) != 22)
-      continue; 
+    // ignore non shower particles and daughter showers.
+    if(abs(mcparticle->PdgCode()) != 11 || abs(mcparticle->PdgCode()) != 22 || !isFromNuVertex(mctruth,  mcparticle))
+      continue;
+
     // account for primary lepton later
     if ((abs(mcparticle->PdgCode()) == 13 || abs(mcparticle->PdgCode()) == 11) && isFromNuVertex(mctruth,  mcparticle)  && calculator.lepton_index == ind)
       continue; 
-    
+
   double mass = PDGMass(mcparticle->PdgCode());
     double this_visible_energy = (mcparticle->E()*1000. - mass) / 1000.  /* MeV to GeV */;
     if (calculator.shower_energy_distortion > 1e-4) {
@@ -324,6 +329,7 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
          visible_E += smearLeptonEnergy(rand,mcparticles[calculator.lepton_index], calculator);
      }
    }
+
 
   visibleEnergy.push_back(visible_E);
   
@@ -372,14 +378,14 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
   return smeared_lepton_visible_energy;
   }
 
-  if(lepton->PdgCode() == 11 || lepton->PdgCode() == 22){
+  if(TMath::Abs(lepton->PdgCode()) == 11 || lepton->PdgCode() == 22){
 
     //Smear the electron energy 
     double smearing_percentage = calculator.lepton_energy_distortion_contained;
     double lepton_visible_energy = (lepton->E());
     smearing_percentage /= TMath::Sqrt(lepton_visible_energy);
     double smeared_lepton_visible_energy = rand.Gaus(lepton_visible_energy, smearing_percentage * lepton_visible_energy);
-    //    std::cout << "smeared_lepton_visible_energy: " << smeared_lepton_visible_energy <<  "lepton_visible_energy: " << lepton_visible_energy    << " smearing_percentage: " << smearing_percentage << std::endl; 
+    //    std::cout << "smeared_lepton_visible_energy new: " << smeared_lepton_visible_energy <<  "lepton_visible_energy: " << lepton_visible_energy    << " smearing_percentage: " << smearing_percentage*lepton_visible_energy  << "sigma: " << (smeared_lepton_visible_energy-lepton_visible_energy)/(smearing_percentage * lepton_visible_energy)<< std::endl; 
     smeared_lepton_visible_energy = std::max(smeared_lepton_visible_energy, 0.);
     return smeared_lepton_visible_energy;
   }
@@ -442,6 +448,35 @@ bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle* &particle, 
   TLorentzVector partstart = particle->Position();
   return TMath::Abs((partstart - nuVtx).Mag()) < distance;
 }
+
+bool isChargedPrimary(const simb::MCTruth& mc, std::map<int, const simb::MCParticle*>& mcparticles, int particle_id){
+
+  int track_id =  particle_id;
+  if(mcparticles.find(track_id) == mcparticles.end()){ return false;}
+  //Find the initial  mother 
+  int mother_id = track_id;
+  while(mother_id != 0){
+    if(mcparticles.find(mother_id) != mcparticles.end()){
+      //If the mother is charge the energy is accounted for.
+      if(abs(PDGCharge(mcparticles[mother_id]->PdgCode())) > 1e-4 && track_id != mother_id){return false;}
+      track_id = mother_id;
+      mother_id = mcparticles[mother_id]->Mother();
+    }
+    else{
+      return false;
+    }
+  }
+ 
+  //Check it is the same origin 
+  if(mother_id == 0){
+    bool isNuVertex = isFromNuVertex(mc,mcparticles[track_id]); 
+    return isNuVertex;
+  }
+  
+
+  return false;
+}
+
 
   }  // namespace SBNOsc
 }  // namespace ana

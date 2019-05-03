@@ -60,13 +60,32 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   if (config) {
     fExperimentID = \
       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
-    fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
     fFluxTag = { config->get<std::string>("MCFluxTag", "generator") };
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
     fOutputFilename = config->get<std::string>("OutputFile", "output.root");
     fProviderConfig = config->get<std::string>("ProviderConfigFile", "");
+
+    //Get the truth tags 
+    fTruthTags = {};
+    if (config->has_key("MCTruthTags")) {
+      if (config->is_key_to_atom("MCTruthTags")) {
+        std::string truth_tag = config->get<std::string>("MCTruthTags");
+        fTruthTags = { { truth_tag } };
+      }
+      else if (config->is_key_to_sequence("MCTruthTags")) {
+        std::vector<std::string> truth_tags = \
+          config->get<std::vector<std::string> >("MCTruthTags");
+        for (size_t i=0; i<truth_tags.size(); i++) {
+          fTruthTags.emplace_back(truth_tags[i]);
+        }
+      }
+    }
+    else {
+      fTruthTags = {"generator"};
+    }
+
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -87,7 +106,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   // Default -- no config file provided
   else {
     fExperimentID = kExpOther;
-    fTruthTag = { "generator" };
+    fTruthTags = { "generator", "corskia" };
     fFluxTag = { "generator" };
     fWeightTags = {};
     fMCTrackTag = { "mcreco" };
@@ -177,155 +196,163 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
 
-  // Get MCTruth information
-  auto const& mctruths = \
-    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  for(int fTruthTag=0; fTruthTag<fTruthTags.size(); ++fTruthTag){
 
-  gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
-  ev.getByLabel(fTruthTag, gtruths_handle);
-  bool genie_truth_is_valid = gtruths_handle.isValid();
+    // Get MCTruth information
+    auto const& mctruths =					\
+      *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTags[fTruthTag]);
+    
+    gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
+    ev.getByLabel(fTruthTags[fTruthTag], gtruths_handle);
+    bool genie_truth_is_valid = gtruths_handle.isValid();
+    
+    std::cout << "On truth label: " << fTruthTags[fTruthTag] << std::endl;
 
-  // Get MCFlux information
-  auto const& mcfluxes = \
-    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
-  assert(mctruths.size() == mcfluxes.size());
+    // Get MCFlux information
+    //    auto const& mcfluxes =					\
+    //  *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTags[fTruthTag]);
+    // assert(mctruths.size() == mcfluxes.size());
 
-  // Get MCEventWeight information
-  std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
-  if (!fWeightTags.empty()) {
-    for (auto const &weightTag: fWeightTags) {
-      gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
-      bool hasWeights = ev.getByLabel(weightTag, this_wgh);
-      // coherence check
-      if (hasWeights) {
-        assert(this_wgh->size() == mctruths.size());
-      }
-      // store the weights
-      wghs.push_back(this_wgh);
-    }
-  }
 
-  // Get MCFlux information
-  gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
-  ev.getByLabel(fFluxTag, mcflux_handle);
-
-  fTree->GetEntry(fEventIndex);
-
-  // Populate event tree
-  fEvent->experiment = fExperimentID;
-
-  for (size_t i=0; i<mctruths.size(); i++) {
-    Event::Interaction interaction;
-
-    auto const& mctruth = mctruths.at(i);
-    auto const& mcflux = mcfluxes.at(i);
-
-    // TODO: What to do with cosmic MC?
-    // For now, ignore them
-    if (!mctruth.NeutrinoSet()) continue;
-
-    // Combine Weights
-    if (!wghs.empty()) {
-      size_t wgh_idx = 0;
-      // Loop through weight generators, which have a list of weights per truth
-      for (auto const& wgh : wghs) {
-        interaction.weightmap.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
-
-        // Iterate though the weight parameters for this generator, for the
-        // current MCTruth interaction
-        for (auto const& it : wgh->at(i).fWeight) {
-          // Loop through the weights for this parameter, to build the list
-          for (size_t j=0; j<it.second.size(); j++) {
-            if (interaction.weight_indices.find(it.first) == interaction.weight_indices.end()) {
-              interaction.weight_indices[it.first] = wgh_idx;
-              wgh_idx++;
-            }
-            Event::Weight_t w(interaction.weight_indices[it.first], j, Event::kUnfilled, it.second[j]);
-            interaction.weights.push_back(w);
-          }
-        }
+    // Get MCEventWeight information
+    std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
+    
+    if (!fWeightTags.empty()) {
+      for (auto const &weightTag: fWeightTags) {
+	gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
+	bool hasWeights = ev.getByLabel(weightTag, this_wgh);
+	// coherence check
+	if (hasWeights) {
+	  // store the weights 
+	  if(this_wgh->size() == mctruths.size()){wghs.push_back(this_wgh);}
+	}
       }
     }
+    
+    // Get MCFlux information
+    gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
+    ev.getByLabel(fFluxTag, mcflux_handle);
+    
+    fTree->GetEntry(fEventIndex);
+    
+    // Populate event tree
+    fEvent->experiment = fExperimentID;
+    
+    for (size_t i=0; i<mctruths.size(); i++) {
+      Event::Interaction interaction;
+      
+      auto const& mctruth = mctruths.at(i);
+      std::cout << mctruth << std::endl;
 
-    interaction.nweights = interaction.weights.size();
+      // TODO: What to do with cosmic MC?
+      // For now, ignore them
+      
+      if (mctruth.NeutrinoSet()){
+      
+	auto const& mcflux = mcflux_handle->at(i);
+	
+	// Combine Weights
+	if (!wghs.empty()) {
+	  size_t wgh_idx = 0;
+	  // Loop through weight generators, which have a list of weights per truth
+	  for (auto const& wgh : wghs) {
+	    interaction.weightmap.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+	    
+	    // Iterate though the weight parameters for this generator, for the
+	    // current MCTruth interaction
+	    for (auto const& it : wgh->at(i).fWeight) {
+	      // Loop through the weights for this parameter, to build the list
+	      for (size_t j=0; j<it.second.size(); j++) {
+		if (interaction.weight_indices.find(it.first) == interaction.weight_indices.end()) {
+		  interaction.weight_indices[it.first] = wgh_idx;
+		  wgh_idx++;
+		}
+		Event::Weight_t w(interaction.weight_indices[it.first], j, Event::kUnfilled, it.second[j]);
+		interaction.weights.push_back(w);
+	      }
+	    }
+	  }
+	}
+	
+	interaction.nweights = interaction.weights.size();
+      
+	if (mcflux_handle.isValid()) {
+	  const simb::MCFlux& flux = mcflux_handle->at(i);
+	  interaction.neutrino.parentPDG = flux.fptype;
+	  interaction.neutrino.parentDecayMode = flux.fndecay;
+	  interaction.neutrino.parentDecayVtx =		\
+	    TVector3(flux.fvx, flux.fvy, flux.fvz);
+	}
+	
+	TLorentzVector q_labframe;
+	
+	if (mctruth.NeutrinoSet()) {
+	  // Neutrino
+	  const simb::MCNeutrino& nu = mctruth.GetNeutrino();
+	  interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
+	  interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
+	  interaction.neutrino.pdg = nu.Nu().PdgCode();
+	  interaction.neutrino.initpdg = mcflux.fntype;
+	  interaction.neutrino.targetPDG = nu.Target();
+	  interaction.neutrino.genie_intcode = nu.Mode();
+	  interaction.neutrino.bjorkenX = nu.X();
+	  interaction.neutrino.inelasticityY = nu.Y();
+	  interaction.neutrino.Q2 = nu.QSqr();
+	  interaction.neutrino.w = nu.W();
+	  interaction.neutrino.energy = nu.Nu().EndMomentum().Energy();
+	  interaction.neutrino.momentum = nu.Nu().EndMomentum().Vect();
+	  interaction.neutrino.position = nu.Nu().Position().Vect();
+	  
+	  // Primary lepton
+	  const simb::MCParticle& lepton = nu.Lepton();
+	  interaction.lepton.pdg = lepton.PdgCode();
+	  interaction.lepton.energy = lepton.Momentum(0).Energy();
+	  interaction.lepton.momentum = lepton.Momentum(0).Vect();
+	  
+	  q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
+	  interaction.neutrino.q0_lab = q_labframe.E();
+	  interaction.neutrino.modq_lab = q_labframe.P();
+	}
+	
+	// Get CCQE energy from lepton info
+	interaction.neutrino.eccqe =					\
+	  util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
-    if (mcflux_handle.isValid()) {
-      const simb::MCFlux& flux = mcflux_handle->at(i);
-      interaction.neutrino.parentPDG = flux.fptype;
-      interaction.neutrino.parentDecayMode = flux.fndecay;
-      interaction.neutrino.parentDecayVtx = \
-        TVector3(flux.fvx, flux.fvy, flux.fvz);
-    }
-
-    TLorentzVector q_labframe;
-
-    if (mctruth.NeutrinoSet()) {
-      // Neutrino
-      const simb::MCNeutrino& nu = mctruth.GetNeutrino();
-      interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
-      interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
-      interaction.neutrino.pdg = nu.Nu().PdgCode();
-      interaction.neutrino.initpdg = mcflux.fntype;
-      interaction.neutrino.targetPDG = nu.Target();
-      interaction.neutrino.genie_intcode = nu.Mode();
-      interaction.neutrino.bjorkenX = nu.X();
-      interaction.neutrino.inelasticityY = nu.Y();
-      interaction.neutrino.Q2 = nu.QSqr();
-      interaction.neutrino.w = nu.W();
-      interaction.neutrino.energy = nu.Nu().EndMomentum().Energy();
-      interaction.neutrino.momentum = nu.Nu().EndMomentum().Vect();
-      interaction.neutrino.position = nu.Nu().Position().Vect();
-
-      // Primary lepton
-      const simb::MCParticle& lepton = nu.Lepton();
-      interaction.lepton.pdg = lepton.PdgCode();
-      interaction.lepton.energy = lepton.Momentum(0).Energy();
-      interaction.lepton.momentum = lepton.Momentum(0).Vect();
-
-      q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
-      interaction.neutrino.q0_lab = q_labframe.E();
-      interaction.neutrino.modq_lab = q_labframe.P();
-    }
-
-    // Get CCQE energy from lepton info
-    interaction.neutrino.eccqe = \
-      util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
-
-    // Hadronic system
-    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
-      Event::FinalStateParticle fsp;
-      const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
-
-      if (particle.Process() != "primary") {
-        continue;
+	// GENIE specific
+	if (genie_truth_is_valid) {
+	  auto const& gtruth = gtruths_handle->at(i);
+	  TLorentzVector q_nucframe(q_labframe);
+	  // This nucleon momentum should be added to MCNeutrino so we don't
+	  // have to rely on GTruth
+	  const TLorentzVector& nucP4 = gtruth.fHitNucP4;
+	  TVector3 nuc_boost(nucP4.BoostVector());
+	  q_nucframe.Boost(nuc_boost);
+	  interaction.neutrino.modq = q_nucframe.P();
+	  interaction.neutrino.q0 = q_nucframe.E();
+	}
       }
 
-      fsp.pdg = particle.PdgCode();
-      fsp.energy = particle.Momentum(0).Energy();
-      fsp.momentum = particle.Momentum(0).Vect();
-
-      interaction.finalstate.push_back(fsp);
+      // Hadronic system
+      for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
+	Event::FinalStateParticle fsp;
+	const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
+	
+	if (particle.Process() != "primary") {
+	  continue;
+	}
+	
+	fsp.pdg = particle.PdgCode();
+	fsp.energy = particle.Momentum(0).Energy();
+	fsp.momentum = particle.Momentum(0).Vect();
+	
+	interaction.finalstate.push_back(fsp);
+      }
+      
+      interaction.nfinalstate = interaction.finalstate.size();
+      fEvent->truth.push_back(interaction);
     }
-
-    interaction.nfinalstate = interaction.finalstate.size();
-
-    // GENIE specific
-    if (genie_truth_is_valid) {
-      auto const& gtruth = gtruths_handle->at(i);
-      TLorentzVector q_nucframe(q_labframe);
-      // This nucleon momentum should be added to MCNeutrino so we don't
-      // have to rely on GTruth
-      const TLorentzVector& nucP4 = gtruth.fHitNucP4;
-      TVector3 nuc_boost(nucP4.BoostVector());
-      q_nucframe.Boost(nuc_boost);
-      interaction.neutrino.modq = q_nucframe.P();
-      interaction.neutrino.q0 = q_nucframe.E();
-    }
-
-    fEvent->truth.push_back(interaction);
-  }
-
+  } 
   fEvent->ntruth = fEvent->truth.size();
 }
 

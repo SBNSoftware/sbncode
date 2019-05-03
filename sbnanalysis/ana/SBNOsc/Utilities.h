@@ -119,6 +119,8 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   
 bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle* &particle, float distance=5.0);
 
+bool isChargedPrimary(const simb::MCTruth& mc, std::map<int, const simb::MCParticle*>& mcparticles, int particle_id);
+
 /**
  * Calculate CCQE energy from associated lepton information (and optional
  * distortion). Energy in GeV.

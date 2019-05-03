@@ -9,6 +9,7 @@
 #pragma link C++ class SubRun+;
 #pragma link C++ class Event::Metadata+;
 #pragma link C++ class Event::Interaction+;
+#pragma link C++ class Event::RecoInteraction+;
 #pragma link C++ class Event::Neutrino+;
 #pragma link C++ class Event::FinalStateParticle+;
 #pragma link C++ class Event::Weight_t+;

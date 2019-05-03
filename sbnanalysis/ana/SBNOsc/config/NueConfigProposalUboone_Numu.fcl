@@ -10,6 +10,8 @@ NueSelection: {
   UniformWeights: ["bnbcorrection_FluxHist"]  
   ApplyKMECCut: true 
   Verbose: false
-  Detector: "Uboone"
+  Detector: "SBND"
+  IncludeCosmics: false
+  IncludeDirt: false
 }
 

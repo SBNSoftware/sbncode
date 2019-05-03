@@ -13,5 +13,7 @@ NueSelection: {
   Verbose: false
   POTWeight: 1
   Detector: "SBND"
+  IncludeCosmics: false
+  IncludeDirt: false
 }
 

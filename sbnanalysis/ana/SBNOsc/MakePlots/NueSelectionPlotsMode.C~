@@ -15,24 +15,10 @@
 #include "/sbnd/app/users/gputnam/SBNCode/dev/srcs/sbncode/sbnanalysis/core/Event.hh"
 #include "/sbnd/app/users/gputnam/SBNCode/dev/srcs/sbncode/sbnanalysis/core/SubRun.hh"
 
-void NueSelectionPlots(){
+void NueSelectionPlotsMode(){
 
   //Stack to go in
   Double_t nue_bins[12] = {0.200,0.350,0.500,0.650,0.800,0.950,1.100,1.300,1.500,1.750,2.000,3.000};
-
-  // nue_bins.push_back(0.100);
-  // nue_bins.push_back(0.200);
-  // nue_bins.push_back(0.350);
-  // nue_bins.push_back(0.500);
-  // nue_bins.push_back(0.650);
-  // nue_bins.push_back(0.800);
-  // nue_bins.push_back(0.950);
-  // nue_bins.push_back(1.100);
-  // nue_bins.push_back(1.300);
-  // nue_bins.push_back(1.500);
-  // nue_bins.push_back(1.750);
-  // nue_bins.push_back(2.000);
-  // nue_bins.push_back(3.000);
 
   TH1D* hbin =  new TH1D("hbin", "hbin", 11,nue_bins);
   THStack*  VisibleEnergy_Selection_Stack = new THStack("VisibleEnergy_Selection_Stack","VisibleEnergy_Selection_Stack");
@@ -62,16 +48,22 @@ void NueSelectionPlots(){
   Colours["Cosmic F"] = 2;
 
   //Histrograms for the prdocutions
-  std::map<std::string,TH1D*> VisibleEnergyHist;
+  std::map<std::string,std::map<int,TH1D*> > VisibleEnergyHist;
   for(int i=0; i<HistTypes.size(); ++i){
-    const char* hist_name = HistTypes[i].c_str();
-    VisibleEnergyHist[HistTypes[i]] = new TH1D(hist_name, hist_name, 11,nue_bins);
+    for(int mode=-1; mode<6; ++mode){
+      std::string hist_string = HistTypes[i] + " " + std::to_string(mode);
+      const char* hist_name = hist_string.c_str();
+      VisibleEnergyHist[HistTypes[i]][mode] = new TH1D(hist_name, hist_name, 11,nue_bins);
+    }
   }
 
-  std::map<std::string,TH1D*> VisibleEnergyHistFinal;
+  std::map<std::string,std::map<int,TH1D*> > VisibleEnergyHistFinal;
   for(int i=0; i<HistTypesFinal.size(); ++i){
-    const char* hist_name = HistTypesFinal[i].c_str();
-    VisibleEnergyHistFinal[HistTypesFinal[i]] = new TH1D(hist_name, hist_name, 11,nue_bins);
+    for(int mode=-1; mode<6; ++mode){
+      std::string hist_string = HistTypesFinal[i] + " " + std::to_string(mode);
+      const char* hist_name = hist_string.c_str();
+      VisibleEnergyHistFinal[HistTypesFinal[i]][mode]  = new TH1D(hist_name, hist_name, 11,nue_bins);
+    }
   }
 
   float ProposalPOT = 6.6e20;
@@ -108,23 +100,12 @@ void NueSelectionPlots(){
       if(isuboone !=std::string::npos){
 	ProposalPOT = 1.32e21;
       }
-      isuboone = line.find("Uboone");
-      if(isuboone !=std::string::npos){
-        ProposalPOT = 1.32e21;
-      }
-
-
 
       //Find which sample it came from. we did a dedicated intrinsic, osc and muon run. 
       std::size_t found_intrinsic = line.find("nue_intrinsic/");
       if(found_intrinsic!=std::string::npos){
     	HistType = "InNuE";
       }
-      found_intrinsic = line.find("Int");
-      if(found_intrinsic!=std::string::npos){
-        HistType = "InNuE";
-      }
-
 
       //idiot 
       std::size_t found_osc = line.find("nue_osc/");
@@ -136,10 +117,6 @@ void NueSelectionPlots(){
       if(found_numu!=std::string::npos){
         HistType = "NuMu";
       }
-      found_numu = line.find("Numu");
-      if(found_numu!=std::string::npos){
-        HistType = "NuMu";
-      }
 
       std::size_t found_cosdirt = line.find("nu_cosmic_dirt/");
       if(found_cosdirt!=std::string::npos){
@@ -148,7 +125,6 @@ void NueSelectionPlots(){
 	  
       
       if(HistType == " "){
-	HistType = "NuMu";
 	std::cout << "It went wrong" << std::endl;
       }
 
@@ -294,75 +270,40 @@ void NueSelectionPlots(){
       const char* InputFileName = inputfile.c_str();
       TFile *InputFile = TFile::Open(InputFileName);
 
-      // //Get the POT
-      // TTree *subruntree = (TTree*)InputFile->Get("sbnsubrun");
-
-      // double totgoodpot;
-      // float totalpot = 0;
-
-      // SubRun *subruns = new SubRun;
-
-      // subruntree->SetBranchAddress("subruns",&subruns);
-
-      // Long64_t nentries = subruntree->GetEntries();
-      // for (Long64_t i=0;i<nentries;i++) {
-      // 	subruntree->GetEntry(i);
-      // 	std::cout << "totgoodpot: " << subruns->totgoodpot << " i: " << i  << std::endl;
-      // 	totalpot += subruns->totgoodpot;
-      // }
-
-      // std::cout << "totalpot: " << totalpot << std::endl;
-      
       //move to the Hist folder
-      InputFile->cd("Histograms");
+      InputFile->cd("ModeHistograms");
  
       for(int i=0; i<HistTypes.size(); ++i){
 	
-	//	std::cout << "New hist type" << std::endl;
-		
-	//float POTWeight = (6.6e20)/POTFlavourMap[HistTypes[i]];
-	//std::cout << "POTWeight: " << POTWeight <<std::endl;
+	for(int mode=-1;mode<6; ++mode){
 
-	std::string  VisibleEnergy_Selection_String  = HistTypes[i] + " VisibleEnergy_Selection";
-	const char*  VisibleEnergy_Selection_Name    = VisibleEnergy_Selection_String.c_str();
-	
-	//Get the histogram
-	if(gDirectory->Get(VisibleEnergy_Selection_Name) == NULL){continue;}
-	TH1D* VisibleEnergyHist1 = (TH1D*)(gDirectory->Get(VisibleEnergy_Selection_Name))->Clone();
-	TH1D* VisibleEnergyHist2 = (TH1D*)VisibleEnergyHist1->Rebin(11,VisibleEnergy_Selection_Name,nue_bins);
-
-	//Account for /Gev
-	// for(int bin=0; bin< VisibleEnergyHist2->GetNbinsX(); ++bin){
-	//   //	  std::cout << "VisibleEnergyHist2->GetBinWidth(1+bin): " << VisibleEnergyHist2->GetBinWidth(1+bin) << std::endl;
-	//   VisibleEnergyHist2->SetBinContent(1+bin, POTWeight*VisibleEnergyHist2->GetBinContent(1+bin) / VisibleEnergyHist2->GetBinWidth(1+bin));
-	// }
-
-	if(VisibleEnergyHist2 == NULL){
-	  std::cerr << "Invalid Histogram initalisation" << std::endl;
-	  return;
+	  std::string  VisibleEnergy_Selection_String  = HistTypes[i] + " VisibleEnergy_Selection " +  std::to_string(mode);
+	  const char*  VisibleEnergy_Selection_Name    = VisibleEnergy_Selection_String.c_str();
+	  
+	  //Get the histogram
+	  if(gDirectory->Get(VisibleEnergy_Selection_Name) == NULL){continue;}
+	  TH1D* VisibleEnergyHist1 = (TH1D*)(gDirectory->Get(VisibleEnergy_Selection_Name))->Clone();
+	  TH1D* VisibleEnergyHist2 = (TH1D*)VisibleEnergyHist1->Rebin(11,VisibleEnergy_Selection_Name,nue_bins);
+	  
+	 	  
+	  if(VisibleEnergyHist2 == NULL){
+	    std::cerr << "Invalid Histogram initalisation" << std::endl;
+	    return;
+	  }
+	  
+	  VisibleEnergyHist[HistTypes[i]][mode]->Add(VisibleEnergyHist2);
 	}
-
-	// VisibleEnergyHist2->SetFillColor(Colours[HistTypes[i]]);
-	// VisibleEnergyHist2->SetMarkerStyle(21);
-	// VisibleEnergyHist2->SetMarkerColor(Colours[HistTypes[i]]);
-	// VisibleEnergyHist2->SetLineColor(Colours[HistTypes[i]]);
-
-	VisibleEnergyHist[HistTypes[i]]->Add(VisibleEnergyHist2);
       }
       InputFile->Close();
     }
-    
     std::cout << "total POT Wieght: " << POTTotal << std::endl;
-
   }
+
+
   else{
     std::cerr << "Could not open the input text file" << std::endl;
     return;
   }
-
-  //TFile to hold the  selection plots.
-  TFile *Figures = new TFile("Figures.root","RECREATE");
-
 
   for(int i=0; i<HistTypes.size(); ++i){
 
@@ -372,65 +313,59 @@ void NueSelectionPlots(){
     }
 
     std::cout << "POTWeight: " << POTWeight << " for sample:" << HistTypes[i]  << " proposal POT: " << ProposalPOT<<  std::endl;
-
-    VisibleEnergyHist[HistTypes[i]]->Write();
-
+    
     float Totalint = 0;
-    for(int bin=0; bin< VisibleEnergyHist[HistTypes[i]]->GetNbinsX(); ++bin){                                    
-      Totalint += VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin);
-      VisibleEnergyHist[HistTypes[i]]->SetBinContent(1+bin, POTWeight*VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) / VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin));
-      VisibleEnergyHist[HistTypes[i]]->SetBinError(1+bin,POTWeight*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin) / VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin));
-    }
+    for(int mode=-1; mode<6; ++mode){
 
+      float Totalval = 0;
+      for(int bin=0; bin< VisibleEnergyHist[HistTypes[i]][mode]->GetNbinsX(); ++bin){
+	Totalval += VisibleEnergyHist[HistTypes[i]][mode]->GetBinContent(1+bin);
+	Totalint +=  Totalval;
+	VisibleEnergyHist[HistTypes[i]][mode]->SetBinContent(1+bin, POTWeight*VisibleEnergyHist[HistTypes[i]][mode]->GetBinContent(1+bin) / VisibleEnergyHist[HistTypes[i]][mode]->GetBinWidth(1+bin));
+      }
+
+      std::cout << "weight enteries for mode: " << mode << " is: " << Totalval << std::endl;
+
+      if(HistTypes[i] == "NuMu"){
+	VisibleEnergyHistFinal["NuMu F"][mode]->Add(VisibleEnergyHist[HistTypes[i]][mode]);
+      }
+      
+      if(HistTypes[i] == "InNuE"){
+	VisibleEnergyHistFinal["InNuE F"][mode]->Add(VisibleEnergyHist[HistTypes[i]][mode]);
+      }
+      
+      if(HistTypes[i] == "NCInNuE" || HistTypes[i] == "NCNuMu"){
+	VisibleEnergyHistFinal["NC F"][mode]->Add(VisibleEnergyHist[HistTypes[i]][mode]);
+      }
+      
+      if(HistTypes[i] == "DirtInNuE" || HistTypes[i] == "DirtNuMu" || HistTypes[i] == "DirtNCInNuE" || HistTypes[i] == "DirtNCNuMu"){
+	//      VisibleEnergyHistFinal["Dirt F"][mode]->Add(VisibleEnergyHist[HistTypes[i]][mode]);
+      }
+      
+      if(HistTypes[i] == "Cosmic"){
+	//      VisibleEnergyHistFinal["Cosmic F"][mode]->Add(VisibleEnergyHist[HistTypes[i]][mode]);
+      }
+    }
     std::cout << "total flavour enteries is: " <<  Totalint << std::endl;
-
-    // VisibleEnergyHist[HistTypes[i]]->SetFillColor(Colours[HistTypes[i]]);
-    // VisibleEnergyHist[HistTypes[i]]->SetMarkerStyle(21);
-    // VisibleEnergyHist[HistTypes[i]]->SetMarkerColor(colours[HistTypes[i]]);
-    // VisibleEnergyHist[HistTypes[i]]->SetLineColor(Colours[HistTypes[i]]);
-
-    //Merge NC and Dirt Events.                                                                                                                                                     
-    //Add to the final historams
-    //    if(HistTypes[i] == "OscNuE"){
-    //  VisibleEnergyHistFinal["OscNuE"]->Add(VisibleEnergyHist[HistTypes[i]]); 
-    // }
-
-    if(HistTypes[i] == "NuMu"){
-      VisibleEnergyHistFinal["NuMu F"]->Add(VisibleEnergyHist[HistTypes[i]]);
-    }
-
-    if(HistTypes[i] == "InNuE"){
-      VisibleEnergyHistFinal["InNuE F"]->Add(VisibleEnergyHist[HistTypes[i]]);
-    }
-
-    if(HistTypes[i] == "NCInNuE" || HistTypes[i] == "NCNuMu"){
-      VisibleEnergyHistFinal["NC F"]->Add(VisibleEnergyHist[HistTypes[i]]);
-    }
-
-    if(HistTypes[i] == "DirtInNuE" || HistTypes[i] == "DirtNuMu" || HistTypes[i] == "DirtNCInNuE" || HistTypes[i] == "DirtNCNuMu"){
-      //      VisibleEnergyHistFinal["Dirt F"]->Add(VisibleEnergyHist[HistTypes[i]]);
-    }
-
-    if(HistTypes[i] == "Cosmic"){
-      //      VisibleEnergyHistFinal["Cosmic F"]->Add(VisibleEnergyHist[HistTypes[i]]);
-    }
-
-  //    VisibleEnergy_Selection_Stack->Add(VisibleEnergyHist[HistTypes[i]]);
   }
-
+  
   //Add to the stack 
   for(int i=0;i< HistTypesFinal.size(); ++i){
-    VisibleEnergyHistFinal[HistTypesFinal[i]]->SetFillColor(Colours[HistTypesFinal[i]]);
-    VisibleEnergyHistFinal[HistTypesFinal[i]]->SetMarkerStyle(21);
-    VisibleEnergyHistFinal[HistTypesFinal[i]]->SetMarkerColor(kBlue);
-    VisibleEnergyHistFinal[HistTypesFinal[i]]->SetLineColor(Colours[HistTypesFinal[i]]);
-    VisibleEnergy_Selection_Stack->Add(VisibleEnergyHistFinal[HistTypesFinal[i]]);
+    for(int mode=-1; mode<6; ++mode){
+      VisibleEnergyHistFinal[HistTypesFinal[i]][mode]->SetFillColor(Colours[HistTypesFinal[i]]+mode);
+      VisibleEnergyHistFinal[HistTypesFinal[i]][mode]->SetMarkerStyle(21);
+      VisibleEnergyHistFinal[HistTypesFinal[i]][mode]->SetMarkerColor(Colours[HistTypesFinal[i]]+mode);
+      VisibleEnergyHistFinal[HistTypesFinal[i]][mode]->SetLineColor(Colours[HistTypesFinal[i]]+mode);
+      VisibleEnergy_Selection_Stack->Add(VisibleEnergyHistFinal[HistTypesFinal[i]][mode]);
+    }
   }
-
+  
+  //TFile to hold the  selection plots. 
+  TFile *Figures = new TFile("Figures.root","RECREATE");
   VisibleEnergy_Selection_Stack->Write();
 
   TCanvas *StackCanvas = new TCanvas("StackCanvas","StackCanvas",10,10,700,900);
-  VisibleEnergy_Selection_Stack->Draw("eHIST");
+  VisibleEnergy_Selection_Stack->Draw("HIST");
   gPad->BuildLegend(0.75,0.75,0.95,0.95,"");
   StackCanvas->Write();
 

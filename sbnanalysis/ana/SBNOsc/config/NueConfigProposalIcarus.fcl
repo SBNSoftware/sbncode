@@ -9,6 +9,9 @@ NueSelection: {
   @table::standard_selection
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
-  Detector: "Icarus" 
+  Detector: "SBND" 
+  Verbose: false
+  IncludeCosmics: false
+  IncludeDirt: false
 }
 

@@ -14,5 +14,6 @@ NueSelection: {
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt: false 
+  MCTruths: [ "generator" ]
 }
 

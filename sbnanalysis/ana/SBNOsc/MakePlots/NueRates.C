@@ -108,12 +108,13 @@ void NueRates(){
 	  
       
       if(HistType == " "){
+	HistType = "NuMu";
 	std::cout << "It went wrong" << std::endl;
       }
 
       //Get the inputfile                                                                                       
       const char* InputFileName = inputfile.c_str();
-      TFile *InputFile = new TFile(InputFileName);
+      TFile *InputFile = TFile::Open(InputFileName);
 
       //Get the POT                                                                                                         
       TTree *subruntree = (TTree*)InputFile->Get("sbnsubrun");
@@ -151,27 +152,27 @@ void NueRates(){
     
     if(HistTypes[i] == "InNuE"){
       //Comes from the intrinsic sample and numu sample.
-      //POTFlavourMap["InNuE"] += POTMap["InNuE"];
-      //POTFlavourMap["InNuE"] += POTMap["NuMu"];
+      POTFlavourMap["InNuE"] += POTMap["InNuE"];
+      POTFlavourMap["InNuE"] += POTMap["NuMu"];
       //      POTFlavourMap["InNuE"] = 4.788e+19 + 5.12255e+21;
       //      POTFlavourMap["InNuE"]  = 983150000000000065536.000000 + 1.23124e+23;
-      POTFlavourMap["InNuE"] = 118884300000000000000.000000 + 6.48597e+21;
+      //POTFlavourMap["InNuE"] = 118884300000000000000.000000 + 6.48597e+21;
     }
     
     if(HistTypes[i] == "NuMu"){
       //Comes intrinic
-      //POTFlavourMap["NuMu"] += POTMap["NuMu"];
+      POTFlavourMap["NuMu"] += POTMap["NuMu"];
       //      POTFlavourMap["NuMu"] += 4.788e+19;
       //      POTFlavourMap["NuMu"] += 983150000000000065536.000000;
-      POTFlavourMap["NuMu"] = 118884300000000000000.000000;
+      //POTFlavourMap["NuMu"] = 118884300000000000000.000000;
     }
     
     if(HistTypes[i] == "NCInNuE"){
-      //POTFlavourMap["NCInNuE"] += POTMap["InNuE"];
+      POTFlavourMap["NCInNuE"] += POTMap["InNuE"];
       //POTFlavourMap["NCInNuE"] += POTMap["NuMu"];
       //POTFlavourMap["NCInNuE"] = 4.788e+19 + 5.12255e+21;
       //      POTFlavourMap["NCInNuE"] = 983150000000000065536.000000 + 1.23124e+23;
-      POTFlavourMap["NCInNuE"] =  118884300000000000000.000000 + 6.48597e+21;
+      //POTFlavourMap["NCInNuE"] =  118884300000000000000.000000 + 6.48597e+21;
     }
     
     if(HistTypes[i] == "NCOscNuE"){
@@ -179,10 +180,10 @@ void NueRates(){
     }
     
     if(HistTypes[i] == "NCNuMu"){
-      //      POTFlavourMap["NCNuMu"] += POTMap["NuMu"];
+            POTFlavourMap["NCNuMu"] += POTMap["NuMu"];
       // POTFlavourMap["NCNuMu"] += 4.788e+19;
       //      POTFlavourMap["NuMu"] +=983150000000000065536.000000;
-      POTFlavourMap["NuMu"] = 118884300000000000000.000000;
+      //POTFlavourMap["NuMu"] = 118884300000000000000.000000;
     }
 
     if(HistTypes[i] =="DirtNuMu"){
@@ -247,7 +248,7 @@ void NueRates(){
             
       //Get the inputfile
       const char* InputFileName = inputfile.c_str();
-      TFile *InputFile = new TFile(InputFileName);
+      TFile *InputFile = TFile::Open(InputFileName);
 
       // //Get the POT
       // TTree *subruntree = (TTree*)InputFile->Get("sbnsubrun");
@@ -282,7 +283,9 @@ void NueRates(){
 	const char*  VisibleEnergy_AVCut_Name    = VisibleEnergy_AVCut_String.c_str();
 	
 	//Get the histogram
-	if(gDirectory->Get(VisibleEnergy_AVCut_Name) == NULL){continue;}
+	if(gDirectory->Get(VisibleEnergy_AVCut_Name) == NULL){
+	  std::cout << "is null with name: " << VisibleEnergy_AVCut_Name << std::endl; continue;
+	}
 	TH1D* VisibleEnergyHist1 = (TH1D*)(gDirectory->Get(VisibleEnergy_AVCut_Name))->Clone();
 
         EventNum[HistTypes[i]] += VisibleEnergyHist1->Integral();
@@ -306,11 +309,16 @@ void NueRates(){
 
     std::cout << "POTWeight: " << POTWeight << " for sample:" << HistTypes[i]  << " proposal POT: " << ProposalPOT<<  std::endl;
     
-    EventNum[HistTypes[i]] *= POTWeight;
+    EventNum[HistTypes[i]] *= 1/0.8; 
+    //    EventNum[HistTypes[i]] *= POTWeight/0.8;
   }
-  
+
+  double scale = ((double)(6.6e20)/((double)1.32e21))*((double)1/89.);
+  std::cout << "scale: " << scale << std::endl;
+
   for(std::map<std::string,int>::iterator type=EventNum.begin(); type!=EventNum.end(); ++type){
     std::cout << "Scaled Event number in the AV is: " << type->second << " for type: " << type->first << std::endl;
+    //    std::cout << "per tonne for 6.6e20: " << (double)type->second*scale << " for type: " << type->first << std::endl; 
   }      
 
 }

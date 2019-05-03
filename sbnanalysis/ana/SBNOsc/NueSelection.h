@@ -139,10 +139,10 @@ protected:
     double emin = 0.0, emax = 3.0;
     int ebins = 120;
 
+    std::map<std::string,TH1D*> TrueNumber_Hist;
     std::map<std::string,TH1D*> TrueEnergyAll_Hist;
     std::map<std::string,TH1D*> TrueEnergy_Hist;
     std::map<std::string,TH1D*> CCQEEnergy_Hist;
-
     std::map<std::string,TH1D*> VisibleEnergy_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_AVCut_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_FVCut_Hist;
@@ -151,8 +151,23 @@ protected:
     std::map<std::string,TH1D*> VisibleEnergy_ConversionGapCut_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_MuLenghtCut_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_NCCut_Hist;
-   
+    std::map<std::string,TH1D*> Weights_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_LeptonPlusPhotonCut_Hist;
+
+    std::map<std::string,std::map<int,TH1D*> > TrueNumber_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > TrueEnergyAll_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > TrueEnergy_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > CCQEEnergy_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_AVCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_FVCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_EnergyCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_PhotonEnergyCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_ConversionGapCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_MuLenghtCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_NCCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_LeptonPlusPhotonCut_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > Weights_HistMode;
 
     TH1D* VisibleEnergy_CosmicFVCut_Hist;
     TH1D* VisibleEnergy_CosmicClyinderCut_Hist;
@@ -167,6 +182,7 @@ protected:
     //Final selection histograms
     TH1D* VisibleEnergy_CosmicSelection_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_Selection_Hist;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_Selection_HistMode;
     std::vector<std::string> HistTypes = {"NuMu","InNuE","OscNuE","NCInNuE","NCOscNuE","NCNuMu","DirtNuMu","DirtInNuE","DirtOscNuE","DirtNCInNuE","DirtNCOscNuE","DirtNCNuMu"};
 
   };
@@ -208,8 +224,8 @@ protected:
   std::vector<int> findPhotons(std::vector<int>& pi_zeros,std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth);
 
   void InitialiseHistograms();
-  void FillHistograms(std::map<std::string,TH1D*>& HistMap, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent);
-  void FillHistograms(std::map<std::string,TH1D*>& HistMap, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool &booldirtevent);
+  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent);
+  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool &booldirtevent);
 
   void PrintInformation(const simb::MCTruth& mctruth, NueSelection::NueInteraction& intInfo);
 

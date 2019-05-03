@@ -121,6 +121,7 @@ namespace ana {
       //Set up the selection histograms                                                  
       fOutputFile->cd();    
       gDirectory->mkdir("Histograms");
+      gDirectory->mkdir("ModeHistograms");
       fOutputFile->cd("Histograms");
 
       fEventHist->Write();
@@ -130,6 +131,8 @@ namespace ana {
       fRootHists.VisibleEnergy_MuDecays_Hist->Write();
 
       for(int i=0; i<fRootHists.HistTypes.size(); ++i){
+	fOutputFile->cd("Histograms");
+	fRootHists.TrueNumber_Hist[fRootHists.HistTypes[i]]->Write();
 	fRootHists.TrueEnergy_Hist[fRootHists.HistTypes[i]]->Write();
 	fRootHists.TrueEnergyAll_Hist[fRootHists.HistTypes[i]]->Write();
 	fRootHists.CCQEEnergy_Hist[fRootHists.HistTypes[i]]->Write();
@@ -143,8 +146,29 @@ namespace ana {
 	fRootHists.VisibleEnergy_NCCut_Hist[fRootHists.HistTypes[i]]->Write();
 	fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist[fRootHists.HistTypes[i]]->Write();
 	fRootHists.VisibleEnergy_Selection_Hist[fRootHists.HistTypes[i]]->Write();
-      }
+	fRootHists.Weights_Hist[fRootHists.HistTypes[i]]->Write();
 
+	for(int mode=-1; mode<6; ++mode){
+	  fOutputFile->cd("ModeHistograms");
+	  fRootHists.TrueNumber_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.TrueEnergy_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.TrueEnergyAll_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.CCQEEnergy_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_AVCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_FVCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_EnergyCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_PhotonEnergyCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_ConversionGapCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_MuLenghtCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_NCCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.VisibleEnergy_Selection_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	  fRootHists.Weights_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	}
+
+      }
+      fOutputFile->cd("Histograms");
       fRootHists.VisibleEnergy_CosmicFVCut_Hist->Write();
       fRootHists.VisibleEnergy_CosmicClyinderCut_Hist->Write();
       fRootHists.VisibleEnergy_CosmicdEdxCut_Hist->Write();
@@ -169,15 +193,13 @@ namespace ana {
       //Lets keep track 
       fEventHist->Fill(1);
 
-      //Grab a neutrino datat product from the event
-      auto const& mctruths =  *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
       
       //Get tracks and showers 
       auto const& mctracks  = *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
       auto const& mcshowers = *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
 
       //Get the flux info 
-      auto const& mcflux = ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
+      auto const& mcflux = ev.getValidHandle<std::vector<simb::MCFlux> >(fFluxTag);
       
       //Get a map of the all the particles (not just the final state ones).
       std::map<int,const simb::MCParticle*> mcparticles;
@@ -187,211 +209,252 @@ namespace ana {
 	mcparticles[mcparticle.TrackId()] = &mcparticle;
 
 		if(fConfig.Verbose){
-		  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << std::endl;
+		  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << " and mother: " << mcparticle.Mother() << " start position: " <<  mcparticle.Vx() << ", " <<  mcparticle.Vy() << ", " <<  mcparticle.Vz() << std::endl;
 		}
       }
       
       float totalbnbweight = 1;
+      
+      //Grab a neutrino datat product from the event
+      for(int fTruthTag=0; fTruthTag<fTruthTags.size(); ++fTruthTag){
+	
+	auto const& mctruths =  *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTags[fTruthTag]);
+	
+	//Iterate through the neutrinos
+	for (size_t i=0; i<mctruths.size(); i++) {
 
-      //Remove for debugging perposes
-      //      for (auto const &mct: mctracks) {
-      // 	double mass = PDGMass(mct.PdgCode());
-      // 	std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000 << std::endl;
-      // }
-      // for (auto const &mcs: mcshowers) {
-      // 	double mass = PDGMass(mcs.PdgCode());
-      // 	std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 << std::endl;
-      // }
+	  //lazy pea ranch
+	  if(fConfig.CosmicsOnly){continue;}  
+	  
+	  ++MCTruthCounter;
 
-    
-      //Iterate through the neutrinos
-      for (size_t i=0; i<mctruths.size(); i++) {
+	  auto const& mctruth = mctruths.at(i);
 
-	//lazy pea ranch
-	if(fConfig.CosmicsOnly){continue;}  
+	  //This part is for neutrinos only.
+	  if (!mctruth.NeutrinoSet()) continue; 
+	  
+	  if(fConfig.Verbose){
+	    //Remove for debugging perposes
+	    for (auto const &mct: mctracks) {
+	      double mass = PDGMass(mct.PdgCode());
+	      TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	      TLorentzVector partstart = mct.Start().Position();
+	      std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000  << " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
+	    }
+	    for (auto const &mcs: mcshowers) {
+	      TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	      TLorentzVector partstart = mcs.Start().Position();
+	      double mass = PDGMass(mcs.PdgCode());
+	      std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 <<  " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
+	    }
+	  }
+	  
+	  
+	  if(fConfig.Verbose){
+	    std::cout << "##########################################################################################################" << std::endl;
+	    std::cout << mctruth << std::endl;
+	  }
+	
+	  
+	  const simb::MCNeutrino& nu = mctruth.GetNeutrino();
+	
+	  //KMec didn't exist in the past might not be correct but remove for proposal
+	  bool pass_kMEC = !(fConfig.ApplyKMECCut && nu.Mode() == simb::kMEC); 
+	  if(!pass_kMEC){
+	    if(fConfig.Verbose){std::cout << "Event Was kMEC. Event was not selected" << std::endl;}
+	    return false;
+	  }
+	  
+	  //holder for the electron track ID
+	  int leptontrackID = -1;
+	  float lepton_energy = -99999;
+	  
+	  //Calculate the lepton track ID
+	  for(auto const &mcparticle_data: mcparticles){
+	    const simb::MCParticle*  mcparticle = mcparticle_data.second;
+	    if(TMath::Abs(mcparticle->PdgCode()) == 11 && mcparticle->Process() == "primary"){
+	      //Check to see if its from the vertex.
+	      if(isFromNuVertex(mctruth,mcparticle)){
+		//Say the lepton is the one with the highest energy.
+		if(mcparticle->E() > lepton_energy){
+		  lepton_energy = mcparticle->E();
+		  leptontrackID = mcparticle->TrackId();
+		}
+	      }
+	    }
+	  }
+	  
+	  if(fConfig.Verbose){
+	    std::cout << "leptontrackID: " << leptontrackID << " lepton_energy: " << lepton_energy << std::endl;
+	  }
+	  
+	  //Check if the neutrino is contained.
+	  bool containedinfv = containedInFV(nu.Nu().Position().Vect());
+	  
+	  //Set the values required to calculate the track and shower energys + distortion 
+	  VisibleEnergyCalculator calculator;
+	  calculator.lepton_pdgid = 11;
+	  calculator.track_threshold =  fConfig.trackVisibleEnergyThreshold;
+	  calculator.shower_energy_distortion = fConfig.showerEnergyDistortion;
+	  calculator.track_energy_distortion = fConfig.trackEnergyDistortion;
+	  calculator.lepton_energy_distortion_contained = fConfig.leptonEnergyDistortionContained;
+	  calculator.lepton_energy_distortion_leaving_A = 1; //Not required here.
+	  calculator.lepton_energy_distortion_leaving_B = 1; //Not required here. 
+	  calculator.lepton_contained = containedinfv; // We don't worrry at the moment if the electron is contained at this moment.
+	  calculator.lepton_index = leptontrackID;
+	  
+	  if(fConfig.Verbose){
+	    if(mctruth.GetNeutrino().CCNC() == simb::kCC){
+	      std::cout << "is charged current" << std::endl;
+	    }
+	    else if(mctruth.GetNeutrino().CCNC() == simb::kNC) {
+	      std::cout << "is neutral current" << std::endl; 
+	    }
+	    else{
+	      std::cout << "Somehow other. Maybe cosmic if you have some cosmics" << std::endl;
+	    }
+	  }
+	  
 
-	auto const& mctruth = mctruths.at(i);  
+	  // build the interaction
+	  Event::Interaction interaction = truth[i];
+	  
+	  //Calculate the Energy 
+	  const std::vector<double> visible_energy = FlavourEnergyDeposition(rand, mctruth, mcparticles,calculator);
+	  double Hadronic_energy = visible_energy[0];
+	  double Shower_energy   = visible_energy[1];
+	  double Leptonic_energy = visible_energy[2];
+	  //	double Nue_energy = Hadronic_energy + Shower_energy + Leptonic_energy;
 
-	++MCTruthCounter;
+	  //Weighting for efficiency of selection.
+	  double weight = 1;
+	  
+	  //Print out the decay type. Find enums here: http://www.hep.utexas.edu/~zarko/wwwgnumi/v19/
+	  int initnu =  mcflux->at(i).fntype;
+	  int fnd = mcflux->at(i).fndecay;
+	  
+	  //Make a nue interaction 
+	  NueSelection::NueInteraction intInfo({Hadronic_energy, Shower_energy, Leptonic_energy, weight,initnu,leptontrackID,11,fnd}); 
 
-	if(fConfig.Verbose){
-	  std::cout << "##########################################################################################################" << std::endl;
-	  std::cout << mctruth << std::endl;
+	  //Fill the number graphs
+	  FillHistograms(fRootHists.TrueNumber_Hist,fRootHists.TrueNumber_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
+
+	  ///Weight with the POT
+	  intInfo.weight *= fConfig.POTWeight;
+	  
+	  //Add the Global weightings if any.
+	  intInfo.weight *= fConfig.GlobalWeight;
+
+	  //Apply Uniform weight for bnb correction 
+	  if(fConfig.Detector != "SBND"){
+	    for (auto const &key: fConfig.UniformWeights) {
+	      std::cout << "key: " << key << std::endl;
+	      intInfo.weight *= interaction.weightmap.at(key)[0];
+	      totalbnbweight *=  interaction.weightmap.at(key)[0];     
+	    }
+	  }
+	  FillHistograms(fRootHists.Weights_Hist,fRootHists.Weights_HistMode,nu,intInfo,intInfo.weight,dirtevent);  
+	  std::cout << "test" << std::endl;
+	  //Selection Criteria 
+	  //Check for Tracks - Remove any track that come from the neutrino if 1m 
+	  //Find electron vertex candiates - Remove 80% due to fake dEdx cut 
+	  //If pi0 is made 2 photons come out as candiates in both are above 100 MeV remove.
+	  //If hadrons produce have more than 50 MeV this is visible if all photons pair produce more than 3cm away from the vertex remove.
+	  //Remove 94% pion of events as dEdx cut
+	  //Event could be CC0Pi Muons Interaction with photon background which mimics the CC1Pi Electron interatactions. these need to go throught the cuts above as well.  
+	  //Run the Selection
+	  
+	  //Selection. 
+	  bool selection = Select(ev, mctruth, mctracks, i, mcparticles, intInfo);
+	  
+	  if(selection){
+	    
+	    //Make the reco interaction event. 
+	    Event::RecoInteraction reco_interaction(interaction, i);
+	    reco_interaction.reco_energy = intInfo.GetNueEnergy();
+	    reco_interaction.weight = intInfo.weight; 
+	    reco.push_back(reco_interaction);
+	    selected =  selection;
+	    
+	    //Fill the histograms
+	    FillHistograms(fRootHists.VisibleEnergy_Selection_Hist,fRootHists.VisibleEnergy_Selection_HistMode,nu,intInfo,dirtevent);
+	    FillHistograms(fRootHists.TrueEnergy_Hist,fRootHists.TrueEnergy_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
+	    //FillHistograms(fRootHists.Weights_Hist,nu,intInfo,intInfo.weight,dirtevent);
+	    
+	    NuCount++;
+	    
+	    if(nu.Nu().PdgCode() == intInfo.initnu){
+	      if(intInfo.fnd == 5 || intInfo.fnd == 6 || intInfo.fnd == 7){fRootHists.VisibleEnergy_FNKPDecay_Hist->Fill(intInfo.GetNueEnergy());}
+	      if(intInfo.fnd == 8 || intInfo.fnd == 9 || intInfo.fnd == 10){fRootHists.VisibleEnergy_FNKMDecay_Hist->Fill(intInfo.GetNueEnergy());}  
+	      if(intInfo.fnd == 11 || intInfo.fnd == 12){fRootHists.VisibleEnergy_MuDecays_Hist->Fill(intInfo.GetNueEnergy());} 
+	    }
+	  }
+	  else{
+	    Event::RecoInteraction reco_interaction(interaction, i);
+	    reco_interaction.reco_energy = -9999;
+	    reco_interaction.weight = -9999;
+	    reco.push_back(reco_interaction);
+	  }
+	  
+	  if(fConfig.Verbose){
+	    
+	    if(selection){
+	      std::cout << "Event Was Selected with energy: " << intInfo.GetNueEnergy()<< "and weight" << intInfo.weight << std::endl;
+	      if(mctruth.GetNeutrino().CCNC() == simb::kNC){std::cout << "Event was NC" << std::endl;}
+	    }
+	    
+	    PrintInformation(mctruth, intInfo);
+	  }
+	  FillHistograms(fRootHists.TrueEnergyAll_Hist,fRootHists.TrueEnergyAll_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 	}
 	
+	//########################
+	//### Cosmic Selection ###
+	//########################
 
-        const simb::MCNeutrino& nu = mctruth.GetNeutrino();
-      
-	//KMec didn't exist in the past might not be correct but remove for proposal
-	bool pass_kMEC = !(fConfig.ApplyKMECCut && nu.Mode() == simb::kMEC); 
-	if(!pass_kMEC){
-	  if(fConfig.Verbose){std::cout << "Event Was kMEC. Event was not selected" << std::endl;}
-	  return false;
-	}
-      
-	//holder for the electron track ID
-	int leptontrackID = -1;
-	float lepton_energy = -99999;
+	//I really don't want to split but lets split  
+	if(fConfig.IncludeCosmics || !fConfig.DirtOnly){
+
+	  //Iterate through the neutrinos
+	  for (size_t i=0; i<mctruths.size(); i++) {
+
+	    //This is for cosmics only 
+	    auto const& mctruth = mctruths.at(i);
+	    if (mctruth.NeutrinoSet()) continue; 
+	    
+	    // build the interaction
+	    Event::Interaction interaction = truth[i];
 	
-	//Calculate the lepton track ID
-	for(auto const &mcparticle_data: mcparticles){
-	  const simb::MCParticle*  mcparticle = mcparticle_data.second;
-	  if(TMath::Abs(mcparticle->PdgCode()) == 11){
-	    //Check to see if its from the vertex.
-	    if(isFromNuVertex(mctruth,mcparticle)){
-	      //Say the lepton is the one with the highest energy.
-	      if(mcparticle->E() > lepton_energy){
-		lepton_energy = mcparticle->E();
-		leptontrackID = mcparticle->TrackId();
+	    for(auto const &mcs: mcshowers){ 
+	      
+	      //Weighting for efficiency of selection.
+	      double weightcos = 1;
+	      
+	      ///Weight with the POT
+	      weightcos *= fConfig.POTWeight;
+	      
+	      //Add the Global weightings if any.
+	      weightcos *= fConfig.GlobalWeight;
+	      
+	      //Account for bnb weights?
+	      weightcos *= totalbnbweight;
+	      
+	      //Make a nue interaction 
+	      NueSelection::NueInteraction intInfo({0, 0, 0, weightcos,-9999,-9999,-9999}); 
+	      bool selection = SelectCosmic(mcs, mcparticles, intInfo);
+	      
+	      if(selection){
+		//Make the reco interaction event. 
+		Event::RecoInteraction reco_interaction(interaction, i);
+		reco_interaction.reco_energy = intInfo.GetNueEnergy();
+		reco_interaction.weight = intInfo.weight; 
+		reco.push_back(reco_interaction);
+		selected =  selection;
 	      }
 	    }
 	  }
 	}
-
-	if(fConfig.Verbose){
-	  std::cout << "leptontrackID: " << leptontrackID << " lepton_energy: " << lepton_energy << std::endl;
-	}
-	    
-	//Check if the neutrino is contained.
-	bool containedinfv = containedInFV(nu.Nu().Position().Vect());
-
-	//Set the values required to calculate the track and shower energys + distortion 
-	VisibleEnergyCalculator calculator;
-	calculator.lepton_pdgid = 11;
-	calculator.track_threshold =  fConfig.trackVisibleEnergyThreshold;
-	calculator.shower_energy_distortion = fConfig.showerEnergyDistortion;
-	calculator.track_energy_distortion = fConfig.trackEnergyDistortion;
-	calculator.lepton_energy_distortion_contained = fConfig.leptonEnergyDistortionContained;
-	calculator.lepton_energy_distortion_leaving_A = 1; //Not required here.
-	calculator.lepton_energy_distortion_leaving_B = 1; //Not required here. 
-	calculator.lepton_contained = containedinfv; // We don't worrry at the moment if the electron is contained at this moment.
-	calculator.lepton_index = leptontrackID;
-
-	if(fConfig.Verbose){
-	  if(mctruth.GetNeutrino().CCNC() == simb::kCC){
-	    std::cout << "is charged current" << std::endl;
-	  }
-	  else if(mctruth.GetNeutrino().CCNC() == simb::kNC) {
-	    std::cout << "is neutral current" << std::endl; 
-	  }
-	  else{
-	    std::cout << "Somehow other. Maybe cosmic if you have some cosmics" << std::endl;
-	  }
-	}
-	    
-
-	// build the interaction
-        Event::Interaction interaction = truth[i];
-
-	//Calculate the Energy 
-	const std::vector<double> visible_energy = FlavourEnergyDeposition(rand, mctruth, mcparticles,calculator);
-	double Hadronic_energy = visible_energy[0];
-	double Shower_energy   = visible_energy[1];
-	double Leptonic_energy = visible_energy[2];
-	//	double Nue_energy = Hadronic_energy + Shower_energy + Leptonic_energy;
-
-	//Weighting for efficiency of selection.
-	double weight = 1;
-
-	///Weight with the POT
-	weight *= fConfig.POTWeight;
-
-	//Add the Global weightings if any.
-	weight *= fConfig.GlobalWeight;
-
-	//Apply Uniform weight for bnb correction 
-	if(fConfig.Detector != "SBND"){
-	  for (auto const &key: fConfig.UniformWeights) {
-	    weight *= interaction.weights.at(key)[0];
-	    std::cout << "weight: " << weight << std::endl;
-	    totalbnbweight *=  interaction.weights.at(key)[0];     
-	  }
-	}
-	
-	//Print out the decay type. Find enums here: http://www.hep.utexas.edu/~zarko/wwwgnumi/v19/
-	int initnu =  mcflux->at(i).fntype;
-	int fnd = mcflux->at(i).fndecay;
-
- 	//Make a nue interaction 
-	  NueSelection::NueInteraction intInfo({Hadronic_energy, Shower_energy, Leptonic_energy, weight,initnu,leptontrackID,11,fnd}); 
-
-	//Selection Criteria 
-	//Check for Tracks - Remove any track that come from the neutrino if 1m 
-        //Find electron vertex candiates - Remove 80% due to fake dEdx cut 
-        //If pi0 is made 2 photons come out as candiates in both are above 100 MeV remove.
-        //If hadrons produce have more than 50 MeV this is visible if all photons pair produce more than 3cm away from the vertex remove.
-        //Remove 94% pion of events as dEdx cut
-        //Event could be CC0Pi Muons Interaction with photon background which mimics the CC1Pi Electron interatactions. these need to go throught the cuts above as well.  
-        //Run the Selection
-
-	//Selection. 
-	bool selection = Select(ev, mctruth, mctracks, i, mcparticles, intInfo);
-
-	//Make the reco interaction event. 
-	Event::RecoInteraction reco_interaction(interaction, i);
-        reco_interaction.reco_energy = intInfo.GetNueEnergy();
-	reco_interaction.weight = intInfo.weight; 
-	
-	if(selection){
-
-	  //Make the reco interaction event. 
-	  Event::RecoInteraction reco_interaction(interaction, i);
-	  reco_interaction.reco_energy = intInfo.GetNueEnergy();
-	  reco_interaction.weight = intInfo.weight; 
-          reco.push_back(reco_interaction);
-	  selected =  selection;
-	  
-	  //Fill the histograms
-	  FillHistograms(fRootHists.VisibleEnergy_Selection_Hist,nu,intInfo,dirtevent);
-	  FillHistograms(fRootHists.TrueEnergy_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
-	  NuCount++;
-
-	  if(nu.Nu().PdgCode() == intInfo.initnu){
-	    if(intInfo.fnd == 5 || intInfo.fnd == 6 || intInfo.fnd == 7){fRootHists.VisibleEnergy_FNKPDecay_Hist->Fill(intInfo.GetNueEnergy());}
-	    if(intInfo.fnd == 8 || intInfo.fnd == 9 || intInfo.fnd == 10){fRootHists.VisibleEnergy_FNKMDecay_Hist->Fill(intInfo.GetNueEnergy());}  
-	    if(intInfo.fnd == 11 || intInfo.fnd == 12){fRootHists.VisibleEnergy_MuDecays_Hist->Fill(intInfo.GetNueEnergy());} 
-	  }
-        }
-	
-	if(fConfig.Verbose){
-	  
-	  if(selection){
-	    std::cout << "Event Was Selected with energy:" << intInfo.GetNueEnergy()<<"done" << std::endl;
-	    if(mctruth.GetNeutrino().CCNC() == simb::kNC){std::cout << "Was NC event: " << nu.Nu().PdgCode() << std::endl;}
-	  }
-
-	  PrintInformation(mctruth, intInfo);
-	}
-	FillHistograms(fRootHists.TrueEnergyAll_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
       }
-
-      //########################
-      //### Cosmic Selection ###
-      //########################
-
-      //I really don't want to split but lets split  
-      if(fConfig.IncludeCosmics || !fConfig.DirtOnly){
-
-	for(auto const &mcs: mcshowers){ 
-	  
-	  //Weighting for efficiency of selection.
-	  double weightcos = 1;
-	  
-	  ///Weight with the POT
-	  weightcos *= fConfig.POTWeight;
-	  
-	  //Add the Global weightings if any.
-	  weightcos *= fConfig.GlobalWeight;
-	  
-	  //Account for bnb weights?
-	  weightcos *= totalbnbweight;
-
-	  //Make a nue interaction 
-	  NueSelection::NueInteraction intInfo({0, 0, 0, weightcos,-9999,-9999,-9999}); 
-	  SelectCosmic(mcs, mcparticles, intInfo);
-	}
-      }
-
       return selected;
     }
     
@@ -407,6 +470,16 @@ namespace ana {
       // else{
       // 	isCC = false;
       // }
+      
+      //######################
+      //### Reco Efficency ###
+      //######################
+
+      //if(isCC){
+      //Check to see if the event passes the 80% ID efficiency cut from the proposal
+      //bool pass_NueIDEfficiencyCut = NueIDEfficiencyCut(nu);
+      // if(!pass_NueIDEfficiencyCut){
+      intInfo.weight *= fConfig.nueEfficency;
 
       //#########################
       //### Active Volume Cut ###
@@ -423,22 +496,12 @@ namespace ana {
 	else{return false;}
       }
       else{
-	FillHistograms(fRootHists.VisibleEnergy_AVCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent); 
+	FillHistograms(fRootHists.VisibleEnergy_AVCut_Hist,fRootHists.VisibleEnergy_AVCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent); 
 	if(fConfig.DirtOnly){return false;}
       }
       if(fConfig.Verbose){std::cout << "Passed the AV Cut" << std::endl;}
 
-      //######################
-      //### Reco Efficency ###
-      //######################
-
-      //if(isCC){
-      //Check to see if the event passes the 80% ID efficiency cut from the proposal
-      //bool pass_NueIDEfficiencyCut = NueIDEfficiencyCut(nu);
-      // if(!pass_NueIDEfficiencyCut){
-      intInfo.weight *= fConfig.nueEfficency;
       
-
       //#######################
       //### Beam Backgrounds ##
       //#######################
@@ -471,13 +534,20 @@ namespace ana {
       	if(fConfig.Verbose){std::cout << "Passed the Photon Energy Cut" << std::endl;}
 
 	//Unfortunatly we must remove CC events where a photon exists (at this stage one photon exists)
-	if(intInfo.leptontrackID > 0 && photon_trackID !=-99999 && intInfo.leptonic_energy*1000 < fConfig.showerVisibleEnergyThreshold){
-	  FillHistograms(fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
+	if(intInfo.leptontrackID > 0 && intInfo.leptonic_energy*1000 > fConfig.showerVisibleEnergyThreshold){
+	  FillHistograms(fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist,fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 	  if(fConfig.Verbose){std::cout << "Failed becuase lepton + shower exists. Event Not Selected" << std::endl;}
 	  return false;
 	}
 	if(fConfig.Verbose){std::cout << "Passed the lepton + photon cut" << std::endl;}
 
+	//No photon was matched in the FV the track id is not set remove event.
+	if(photon_trackID < 0 && intInfo.leptontrackID < 0){
+	  if(fConfig.Verbose){std::cout << "No Photon in FV. Event not selected" << std::endl;}
+	  return false;
+	}
+	std::cout << "photon_trackID: " << photon_trackID << " intInfo.leptontrackID: " << intInfo.leptontrackID << std::endl;
+   
 	//Continue if one photon has been matched if we havn't matched then we are a CC event with no visible photons in the FV.
 	if(photon_trackID !=-99999){
 
@@ -497,7 +567,7 @@ namespace ana {
 	  intInfo.leptonic_energy = smearLeptonEnergy(rand,mcparticles[photon_trackID],calculator);
 	  intInfo.leptonpdgID = 22; 
 
-	  FillHistograms(fRootHists.VisibleEnergy_PhotonEnergyCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
+	  FillHistograms(fRootHists.VisibleEnergy_PhotonEnergyCut_Hist,fRootHists.VisibleEnergy_PhotonEnergyCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 
 	  if(!dirtevent){
 
@@ -509,7 +579,7 @@ namespace ana {
 	    }
 	    if(fConfig.Verbose){std::cout << "Passed the Photon Conversion gap Cut" << std::endl;}
 	    
-	    FillHistograms(fRootHists.VisibleEnergy_ConversionGapCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
+	    FillHistograms(fRootHists.VisibleEnergy_ConversionGapCut_Hist,fRootHists.VisibleEnergy_ConversionGapCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 	    
 	    //Check if it is a numu CC where the muon is less than 1m
 	    bool pass_muLenghtCut = passMuLengthCut(mctracks, mctruth);
@@ -518,21 +588,14 @@ namespace ana {
 	      return false;
 	    }
 	    if(fConfig.Verbose){std::cout << "Passed the muon min length Cut" << std::endl;}
-	    FillHistograms(fRootHists.VisibleEnergy_MuLenghtCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent); 
+	    FillHistograms(fRootHists.VisibleEnergy_MuLenghtCut_Hist,fRootHists.VisibleEnergy_MuLenghtCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent); 
 	  }
 	
 	
 	  //Remove 94% on a dEdx cut                                       
 	  bool pass_dEdxCut = passdEdxCut(22);
 	  if(!pass_dEdxCut){intInfo.weight *= fConfig.dEdxPhotonCut;}
-	  FillHistograms(fRootHists.VisibleEnergy_NCCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
-	}
-
-
-	//No photon was matched in the FV the track id is not set remove event.
-	if(photon_trackID ==-99999){
-	  if(fConfig.Verbose){std::cout << "No Photon in FV. Event not selected" << std::endl;}
-	  return false;
+	  FillHistograms(fRootHists.VisibleEnergy_NCCut_Hist,fRootHists.VisibleEnergy_NCCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 	}
       }
 
@@ -544,14 +607,14 @@ namespace ana {
       if(intInfo.leptonpdgID == 11){
 	bool pass_FV = passFV(nu.Nu().Position().Vect());
 	if(!pass_FV){
-	  if(fConfig.Verbose){std::cout << "Failed the FV cut. Event not selected" << std::endl;}
+	  if(fConfig.Verbose){std::cout << "Failed the FV cut. Event not selected wit position X:" << nu.Nu().Position().Vect().X() << " Y: " << nu.Nu().Position().Vect().Y() << " Z: " << nu.Nu().Position().Vect().Z() << std::endl;}
 	  return false;
 	}
 	if(fConfig.Verbose){std::cout << "Passed the FV Cut" << std::endl;}
 	//Should have no dirts here.
-	FillHistograms(fRootHists.VisibleEnergy_FVCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);  
-      }
 
+      }
+      FillHistograms(fRootHists.VisibleEnergy_FVCut_Hist,fRootHists.VisibleEnergy_FVCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
 
       //##################
       //### Energy Cut ###
@@ -563,7 +626,7 @@ namespace ana {
 	if(fConfig.Verbose){std::cout << "Shower was too low in energy. Event not Selected" << std::endl;}
 	return false;
       }
-      FillHistograms(fRootHists.VisibleEnergy_EnergyCut_Hist,nu,intInfo,nu.Nu().E(),dirtevent);
+      FillHistograms(fRootHists.VisibleEnergy_EnergyCut_Hist,fRootHists.VisibleEnergy_EnergyCut_HistMode,nu,intInfo,nu.Nu().E(),dirtevent);
       if(fConfig.Verbose){std::cout << "Passed the Energy Cut." << std::endl;}
  
       return true;
@@ -623,7 +686,7 @@ namespace ana {
       
       //Pions
       std::vector<int> pions;
-
+      
       //Loop over the map and identify the pions associated to the vertex. 
       for(std::map<int, const simb::MCParticle*>::iterator mcparticle=mcparticles.begin(); mcparticle!=mcparticles.end(); ++mcparticle){
 
@@ -675,32 +738,13 @@ namespace ana {
 	//Check the particle is a photons and is above threshold.  
 	if(mcparticle_data->PdgCode() != 22 ||  mcparticle_data->E()*1000 < fConfig.photonVisibleEnergyThreshold){continue;}
 
+	//Check we are not a daughter product of a shower.
+	if(mcparticles.find(mcparticle_data->Mother()) != mcparticles.end()){
+	  if(mcparticles[mcparticle_data->Mother()]->PdgCode() == 22 || TMath::Abs(mcparticles[mcparticle_data->Mother()]->PdgCode()) == 11){continue;}
+	}
 
 	//Check we have not added the photon already.
 	if(std::find(photons.begin(),photons.end(),mcparticle_data->TrackId()) != photons.end()){continue;}
-
-	//Might be needed.  
-	// //Best check that we do not come from another photon.
-	// bool motherused = false;
-	// int motherID = mcparticle_data->Mother();
-	// const simb::MCParticle* mcparticle_mother = mcparticle_data;
-
-	// while(motherID != 0){
-
-	//   //The mother might not be in the list so stop
-	//   if(mcparticles.find(motherID) != mcparticles.end()){break;}
-
-	//   mcparticle_mother = mcparticles[motherID];
-	//   motherID = mcparticle_mother->Mother();
-	  
-	//   if(std::find(photons.begin(),photons.end(),mcparticle_data->TrackId()) != photons.end()){motherused = true; break;}
-	// }
-	// if(motherused){continue;} 
-
-	//Add the photon.
-	//	if(isFromNuVertex(mctruth,mcparticle_mother)){
-	//  photons.push_back(mcparticle_data->TrackId());
-	//}
 
 	//Add the photon 
 	if(isFromNuVertex(mctruth,mcparticle_data)){   
@@ -720,6 +764,9 @@ namespace ana {
 
       for(int p=0; p<photons.size(); ++p){
 	const simb::MCParticle* photon = mcparticles[photons[p]];
+
+	if(photon->E()*1000 < fConfig.photonVisibleEnergyThreshold){continue;}
+
 
 	//Check the photons in the active volume/
 	if(containedInAV(photon->EndPosition().Vect())){
@@ -817,23 +864,24 @@ namespace ana {
 
   
     //Fill the histograms.... can't think of a better comment.
-    void NueSelection::FillHistograms(std::map<std::string,TH1D*>& HistMap, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent){
+    void NueSelection::FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent){
       
       double Energy = intInfo.GetNueEnergy();
       
-      FillHistograms(HistMap,nu,intInfo,Energy,booldirtevent);
+      FillHistograms(HistMap,HistMapMode,nu,intInfo,Energy,booldirtevent);
 
     }
 
-    void NueSelection::FillHistograms(std::map<std::string,TH1D*>& HistMap, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool& booldirtevent){
+    void NueSelection::FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool& booldirtevent){
       
       if(dirtevent){
 	if(nu.CCNC() == simb::kCC){
 	  
 	  //Check to see if we are Numu background
 	  if(nu.Nu().PdgCode() == 14){
-	    std::cout << "filling dirt" << std::endl;
 	    HistMap["DirtNuMu"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtNuMu"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["DirtNuMu"][-1]->Fill(Energy,intInfo.weight);}
 	    return;
 	  }
 	  
@@ -841,11 +889,17 @@ namespace ana {
 	  if(nu.Nu().PdgCode() == intInfo.initnu){
 	    //Then we are intrinsic electrons nus 
 	    HistMap["DirtInNuE"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtInNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["DirtInNuE"][-1]->Fill(Energy,intInfo.weight);}
+
 	  }
 	  else{
 	    if(nu.Nu().PdgCode() != intInfo.initnu){
 	      //Then we are oscilallated electrons
 	      HistMap["DirtOscNuE"]->Fill(Energy,intInfo.weight);
+	      if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtOscNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	      else{HistMapMode["DirtOscNuE"][-1]->Fill(Energy,intInfo.weight);}
+
 	    }
 	  }
 	}
@@ -853,6 +907,8 @@ namespace ana {
 	  //Neutral current histogtam fill
 	  if(nu.Nu().PdgCode() == 14){
 	    HistMap["DirtNCNuMu"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtNCNuMu"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["DirtNCNuMu"][-1]->Fill(Energy,intInfo.weight);}
 	    return;
 	  }
 	  
@@ -860,11 +916,15 @@ namespace ana {
 	  if(nu.Nu().PdgCode() == intInfo.initnu){
 	    //Then we are intrinsic electrons nus 
 	    HistMap["DirtNCInNuE"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtNCInNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["DirtNCInNuE"][-1]->Fill(Energy,intInfo.weight);}
 	  }
 	  else{
 	    if(nu.Nu().PdgCode() != intInfo.initnu){
 	      //Then we are oscilallated electrons
 	      HistMap["DirtNCOscNuE"]->Fill(Energy,intInfo.weight);
+	      if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["DirtNCOscNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	      else{HistMapMode["DirtNCOscNuE"][-1]->Fill(Energy,intInfo.weight);}
 	    }
 	  }
 	}
@@ -875,8 +935,9 @@ namespace ana {
 	  
 	  //Check to see if we are Numu background
 	  if(nu.Nu().PdgCode() == 14){
-	    std::cout << "filling" << std::endl;
 	    HistMap["NuMu"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["NuMu"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["NuMu"][-1]->Fill(Energy,intInfo.weight);}
 	    return;
 	  }
 	  
@@ -884,11 +945,15 @@ namespace ana {
 	  if(nu.Nu().PdgCode() == intInfo.initnu){
 	    //Then we are intrinsic electrons nus 
 	    HistMap["InNuE"]->Fill(Energy,intInfo.weight);
+	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["InNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["InNuE"][-1]->Fill(Energy,intInfo.weight);}
 	  }
 	  else{
 	    if(nu.Nu().PdgCode() != intInfo.initnu){
 	      //Then we are oscilallated electrons
 	      HistMap["OscNuE"]->Fill(Energy,intInfo.weight);
+	      if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["OscNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	      else{HistMapMode["OscNuE"][-1]->Fill(Energy,intInfo.weight);}
 	    }
 	  }
 	}
@@ -896,6 +961,8 @@ namespace ana {
 	  //Neutral current histogtam fill
 	  if(nu.Nu().PdgCode() == 14){
 	    HistMap["NCNuMu"]->Fill(Energy,intInfo.weight);
+ 	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["NCNuMu"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["NCNuMu"][-1]->Fill(Energy,intInfo.weight);}
 	    return;
 	  }
 	  
@@ -903,11 +970,15 @@ namespace ana {
 	  if(nu.Nu().PdgCode() == intInfo.initnu){
 	    //Then we are intrinsic electrons nus 
 	    HistMap["NCInNuE"]->Fill(Energy,intInfo.weight);
+ 	    if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["NCInNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	    else{HistMapMode["NCInNuE"][-1]->Fill(Energy,intInfo.weight);}
 	  }
 	  else{
 	    if(nu.Nu().PdgCode() != intInfo.initnu){
 	      //Then we are oscilallated electrons
 	      HistMap["NCOscNuE"]->Fill(Energy,intInfo.weight);
+	      if(nu.Mode() > -1 && nu.Mode() < 6){HistMapMode["NCOscNuE"][nu.Mode()]->Fill(Energy,intInfo.weight);}
+	      else{HistMapMode["NCOscNuE"][-1]->Fill(Energy,intInfo.weight);}
 	    }
 	  }
 	}
@@ -938,14 +1009,15 @@ namespace ana {
       fEventHist = new TH1I("EventHist", "EventHist",2,0,1);
       fRootHists.VisibleEnergy_FNKPDecay_Hist = new TH1D("VisibleEnergy_FNKPDecay_Hist","VisibleEnergy_FNKPDecay_Hist",fRootHists.ebins,fRootHists.emin,fRootHists.emax); 
       fRootHists.VisibleEnergy_FNKMDecay_Hist = new TH1D("VisibleEnergy_FNKMDecay_Hist","VisibleEnergy_FNKMDecay_Hist",fRootHists.ebins,fRootHists.emin,fRootHists.emax); 
-      fRootHists.VisibleEnergy_MuDecays_Hist = new TH1D(".VisibleEnergy_MuDecays_Hist",".VisibleEnergy_MuDecays_Hist",fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+      fRootHists.VisibleEnergy_MuDecays_Hist = new TH1D("VisibleEnergy_MuDecays_Hist","VisibleEnergy_MuDecays_Hist",fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 
 
       //Loop over the types of interactions and set the bins
       for(auto& Type: fRootHists.HistTypes){
 
+	std::string  TrueNumber_String                     = Type + " TrueNumber";
 	std::string  TrueEnergy_String                     = Type + " TrueEnergy";
-	std::string  TrueEnergyAll_String                     = Type + " TrueEnergyAll";
+	std::string  TrueEnergyAll_String                  = Type + " TrueEnergyAll";
 	std::string  CCQEEnergy_String                     = Type + " CCQEEnergy";
 	std::string  VisibleEnergy_String                  = Type + " VisibleEnergy";
 	std::string  VisibleEnergy_AVCut_String            = Type + " VisibleEnergy_AVCut";
@@ -956,10 +1028,11 @@ namespace ana {
 	std::string  VisibleEnergy_MuLenghtCut_String      = Type + " VisibleEnergy_MuLenghtCut";
 	std::string  VisibleEnergy_NCCut_String            = Type + " VisibleEnergy_NCCut";
 	std::string  VisibleEnergy_Selection_String        = Type + " VisibleEnergy_Selection";
+	std::string  Weights_String                        = Type + " Weights";
 
 	std::string  VisibleEnergy_LeptonPlusPhotonCut_String        = Type + " VisibleEnergy_LeptonPlusPhotonCut";
 
-	
+	const char* TrueNumber_Name                     = TrueNumber_String.c_str();
 	const char* TrueEnergy_Name                     = TrueEnergy_String.c_str();
 	const char* TrueEnergyAll_Name                  = TrueEnergyAll_String.c_str();
 	const char* CCQEEnergy_Name                     = CCQEEnergy_String.c_str();
@@ -972,10 +1045,11 @@ namespace ana {
 	const char* VisibleEnergy_MuLenghtCut_Name      = VisibleEnergy_MuLenghtCut_String.c_str();
 	const char* VisibleEnergy_NCCut_Name            = VisibleEnergy_NCCut_String.c_str();
 	const char* VisibleEnergy_Selection_Name        = VisibleEnergy_Selection_String.c_str();
+	const char* Weights_Name        = Weights_String.c_str();
 
 	const char* VisibleEnergy_LeptonPlusPhotonCut_Name        = VisibleEnergy_LeptonPlusPhotonCut_String.c_str();
 
-	
+	fRootHists.TrueNumber_Hist[Type] = new TH1D(TrueNumber_Name,TrueNumber_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	fRootHists.TrueEnergy_Hist[Type] = new TH1D(TrueEnergy_Name,TrueEnergy_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	fRootHists.TrueEnergyAll_Hist[Type] = new TH1D(TrueEnergyAll_Name,TrueEnergyAll_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	fRootHists.CCQEEnergy_Hist[Type] = new TH1D(CCQEEnergy_Name,CCQEEnergy_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
@@ -991,6 +1065,65 @@ namespace ana {
 
 
 	fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist[Type] = new TH1D(VisibleEnergy_LeptonPlusPhotonCut_Name,VisibleEnergy_LeptonPlusPhotonCut_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	fRootHists.Weights_Hist[Type] = new TH1D(Weights_Name,Weights_Name,100,0,2);
+
+	for(int mode=-1; mode<6; ++mode){
+
+	  std::string  TrueNumber_StringMode                     = TrueNumber_String + " " +  std::to_string(mode);
+	  std::string  TrueEnergy_StringMode                     = TrueEnergy_String + " " +  std::to_string(mode);
+	  std::string  TrueEnergyAll_StringMode                  = TrueEnergyAll_String + " " +  std::to_string(mode);  
+	  std::string  CCQEEnergy_StringMode                     = CCQEEnergy_String + " " +  std::to_string(mode);                    
+	  std::string  VisibleEnergy_StringMode                  = VisibleEnergy_String + " " +  std::to_string(mode);                  
+	  std::string  VisibleEnergy_AVCut_StringMode            = VisibleEnergy_AVCut_String + " " +  std::to_string(mode);           
+	  std::string  VisibleEnergy_FVCut_StringMode            = VisibleEnergy_FVCut_String + " " +  std::to_string(mode);            
+	  std::string  VisibleEnergy_EnergyCut_StringMode        = VisibleEnergy_EnergyCut_String + " " +  std::to_string(mode);        
+	  std::string  VisibleEnergy_PhotonEnergyCut_StringMode  = VisibleEnergy_PhotonEnergyCut_String + " " +  std::to_string(mode);
+	  std::string  VisibleEnergy_ConversionGapCut_StringMode = VisibleEnergy_ConversionGapCut_String + " " +  std::to_string(mode);
+	  std::string  VisibleEnergy_MuLenghtCut_StringMode      = VisibleEnergy_MuLenghtCut_String + " " +  std::to_string(mode);      
+	  std::string  VisibleEnergy_NCCut_StringMode            = VisibleEnergy_NCCut_String + " " +  std::to_string(mode);            
+	  std::string  VisibleEnergy_Selection_StringMode        = VisibleEnergy_Selection_String + " " +  std::to_string(mode);
+	  
+	  std::string  VisibleEnergy_LeptonPlusPhotonCut_StringMode = VisibleEnergy_LeptonPlusPhotonCut_String + " " +  std::to_string(mode);
+	  std::string  Weights_StringMode                           = Weights_String  + " " +  std::to_string(mode);
+
+	  const char* TrueNumber_NameMode                     = TrueNumber_StringMode.c_str();
+	  const char* TrueEnergy_NameMode                     = TrueEnergy_StringMode.c_str();
+	  const char* TrueEnergyAll_NameMode                  = TrueEnergyAll_StringMode.c_str();
+	  const char* CCQEEnergy_NameMode                     = CCQEEnergy_StringMode.c_str();
+	  const char* VisibleEnergy_NameMode                  = VisibleEnergy_StringMode.c_str();
+	  const char* VisibleEnergy_AVCut_NameMode            = VisibleEnergy_AVCut_StringMode.c_str();
+	  const char* VisibleEnergy_FVCut_NameMode            = VisibleEnergy_FVCut_StringMode.c_str();
+	  const char* VisibleEnergy_EnergyCut_NameMode        = VisibleEnergy_EnergyCut_StringMode.c_str();
+	  const char* VisibleEnergy_PhotonEnergyCut_NameMode  = VisibleEnergy_PhotonEnergyCut_StringMode.c_str();
+	  const char* VisibleEnergy_ConversionGapCut_NameMode = VisibleEnergy_ConversionGapCut_StringMode.c_str();
+	  const char* VisibleEnergy_MuLenghtCut_NameMode      = VisibleEnergy_MuLenghtCut_StringMode.c_str();
+	  const char* VisibleEnergy_NCCut_NameMode            = VisibleEnergy_NCCut_StringMode.c_str();
+	  const char* VisibleEnergy_Selection_NameMode        = VisibleEnergy_Selection_StringMode.c_str();
+
+	  const char* VisibleEnergy_LeptonPlusPhotonCut_NameMode = VisibleEnergy_LeptonPlusPhotonCut_StringMode.c_str();
+	  const char* Weights_NameMode                           = Weights_StringMode.c_str();
+
+	  fRootHists.TrueNumber_HistMode[Type][mode] = new TH1D(TrueNumber_NameMode,TrueNumber_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.TrueEnergy_HistMode[Type][mode] = new TH1D(TrueEnergy_NameMode,TrueEnergy_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.TrueEnergyAll_HistMode[Type][mode] = new TH1D(TrueEnergyAll_NameMode,TrueEnergyAll_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.CCQEEnergy_HistMode[Type][mode] = new TH1D(CCQEEnergy_NameMode,CCQEEnergy_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_HistMode[Type][mode] = new TH1D(VisibleEnergy_NameMode,VisibleEnergy_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_AVCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_AVCut_NameMode,VisibleEnergy_AVCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_FVCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_FVCut_NameMode,VisibleEnergy_FVCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_EnergyCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_EnergyCut_NameMode,VisibleEnergy_EnergyCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_PhotonEnergyCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_PhotonEnergyCut_NameMode,VisibleEnergy_PhotonEnergyCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_ConversionGapCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_ConversionGapCut_NameMode,VisibleEnergy_ConversionGapCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_MuLenghtCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_MuLenghtCut_NameMode,VisibleEnergy_MuLenghtCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_NCCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_NCCut_NameMode,VisibleEnergy_NCCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_Selection_HistMode[Type][mode] = new TH1D(VisibleEnergy_Selection_NameMode,VisibleEnergy_Selection_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.Weights_HistMode[Type][mode]  = new TH1D(Weights_NameMode,Weights_NameMode,100,0,2); 
+	  
+	  
+	  fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_LeptonPlusPhotonCut_NameMode,VisibleEnergy_LeptonPlusPhotonCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+
+
+
+	}
 
       }
 
@@ -1030,11 +1163,11 @@ namespace ana {
       intInfo.leptonic_energy = smearLeptonEnergy(rand,mcparticles[mcs.TrackID()],calculator);
       intInfo.leptonpdgID = mcs.PdgCode(); 
       
-      // bool pass_eEnergyCut = passeEnergyCut(intInfo.leptonic_energy);
-      // if(!pass_eEnergyCut){
-      // 	if(fConfig.Verbose){std::cout << "Shower was too low in energy. Event not Selected" << std::endl;}
-      // 	return false;
-      // }
+      bool pass_eEnergyCut = passeEnergyCut(intInfo.leptonic_energy);
+      if(!pass_eEnergyCut){
+       	if(fConfig.Verbose){std::cout << "Cosmic Shower was too low in energy. Event not Selected" << std::endl;}
+       	return false;
+      }
       
       fRootHists.VisibleEnergy_CosmicEnergyCut_Hist->Fill(intInfo.leptonic_energy);
       if(fConfig.Verbose){std::cout << "Passed the Cosmic Energy Cut." << std::endl;}
@@ -1089,7 +1222,12 @@ namespace ana {
       
       //Get the mother track. If it doesn't have a mother we cannot do this. 
       if(mcs.MotherTrackID() == -1){return true;}
-      
+
+      if(mcparticles.find(mcs.MotherTrackID()) == mcparticles.end()){
+	if(fConfig.Verbose){std::cout << "Warning! Shower is not associated to mother we cannot track this" << std::endl;}
+	return true;
+      }
+
       const simb::MCParticle* mother = mcparticles[mcs.MotherTrackID()];
       if(fConfig.Verbose){std::cout << "cosmic mother is pdgcode: " << mother->PdgCode() << " track id: " << mother->TrackId() << " and energy: " << mother->E() << std::endl;} 
       

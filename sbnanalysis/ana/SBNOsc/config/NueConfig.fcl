@@ -92,15 +92,15 @@ ICARUS_fiducial_volumes: [
      {
        xmin: -339.49
        ymin: -148.41
-       zmin: -859.950652
-       xmax: -224.54
+       zmin: -879.950652
+       xmax: -221.04
        ymax: 118.41
        zmax: 829.950652
      },
      {
-       xmin: -207.89
+       xmin: -218.89
        ymin: -148.41
-       zmin: -859.950652
+       zmin: -879.950652
        xmax: -92.94
        ymax: 118.41
        zmax: 829.950652
@@ -108,16 +108,16 @@ ICARUS_fiducial_volumes: [
      {
        xmin: 92.94
        ymin: -148.41
-       zmin: -859.950652
-       xmax: 207.89
+       zmin: -879.950652
+       xmax: 211.39
        ymax: 118.41
        zmax: 829.950652
      },
      {
-       xmin: 339.49
+       xmin: 214.39
        ymin: -148.41
-       zmin: -859.950652
-       xmax: 356.24
+       zmin: -879.950652
+       xmax: 339.49
        ymax: 118.41
        zmax: 829.950652
      }
@@ -145,7 +145,7 @@ ICARUS_active_volumes: [
 standard_selection: {
 
       minLengthExitingTrack:           100     
-      trackVisibleEnergyThreshold:     0.02
+      trackVisibleEnergyThreshold:     0.021
       showerVisibleEnergyThreshold:    200
       showerEnergyDistortion:          0.15            
       trackEnergyDistortion:           0.05

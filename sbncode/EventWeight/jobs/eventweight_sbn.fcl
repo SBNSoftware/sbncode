@@ -507,26 +507,35 @@ sbn_genie_eventweight: {
  
   genie_module_label: generator  
  
-  weight_functions_genie: [
-    genie_qema, genie_qevec,
-    genie_ncelAxial, genie_ncelEta,
-    genie_ccresAxial, genie_ccresVector,
-    genie_ncresAxial, genie_ncresVector,
-    genie_cohMA, genie_cohR0,
-    genie_NonResRvp1pi, genie_NonResRvbarp1pi,
-    genie_NonResRvp2pi, genie_NonResRvbarp2pi,
-    genie_ResDecayGamma, genie_ResDecayEta, genie_ResDecayTheta,
-    genie_NC,
-    genie_DISAth, genie_DISBth, genie_DISCv1u, genie_DISCv2u,
-    genie_AGKYxF, genie_AGKYpT,
-    genie_FormZone,
-    genie_FermiGasModelKf, genie_FermiGasModelSf,
-    genie_IntraNukeNmfp, genie_IntraNukeNcex, genie_IntraNukeNel,
-    genie_IntraNukeNinel, genie_IntraNukeNabs, genie_IntraNukeNpi,
-    genie_IntraNukePImfp, genie_IntraNukePIcex, genie_IntraNukePIel,
-    genie_IntraNukePIinel, genie_IntraNukePIabs, genie_IntraNukePIpi
-  ]
- 
+  # weight_functions_genie: [
+  #   genie_qema, genie_qevec,
+  #   genie_ncelAxial, genie_ncelEta,
+  #   genie_ccresAxial, genie_ccresVector,
+  #   genie_ncresAxial, genie_ncresVector,
+  #   genie_cohMA, genie_cohR0,
+  #   genie_NonResRvp1pi, genie_NonResRvbarp1pi,
+  #   genie_NonResRvp2pi, genie_NonResRvbarp2pi,
+  #   genie_ResDecayGamma, genie_ResDecayEta, genie_ResDecayTheta,
+  #   genie_NC,
+  #   genie_DISAth, genie_DISBth, genie_DISCv1u, genie_DISCv2u,
+  #   genie_AGKYxF, genie_AGKYpT,
+  #   genie_FormZone,
+  #   genie_FermiGasModelKf, genie_FermiGasModelSf,
+  #   genie_IntraNukeNmfp, genie_IntraNukeNcex, genie_IntraNukeNel,
+  #   genie_IntraNukeNinel, genie_IntraNukeNabs, genie_IntraNukeNpi,
+  #   genie_IntraNukePImfp, genie_IntraNukePIcex, genie_IntraNukePIel,
+  #   genie_IntraNukePIinel, genie_IntraNukePIabs, genie_IntraNukePIpi
+  # ]
+  weight_functions_genie: [  
+        genie_qema, 
+        genie_ncresAxial, genie_ccresAxial,
+        genie_NC, 
+        genie_NonResRvp1pi, genie_NonResRvbarp1pi,
+        genie_NonResRvp2pi, genie_NonResRvbarp2pi,
+        genie_NonResRvp1piAlt, genie_NonResRvbarp1piAlt,
+        genie_NonResRvp2piAlt, genie_NonResRvbarp2piAlt
+ ]
+
   genie_qema: {
     type: Genie
     random_seed: 15
