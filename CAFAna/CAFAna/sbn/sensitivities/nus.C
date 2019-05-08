@@ -64,11 +64,11 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
   const Spectrum data = pred_nd_numu.Predict(calc).FakeData(sbndPOT);
   SingleSampleExperiment expt(&pred_nd_numu, data);
 
-  TFile* fOutput = new TFile("Surfaces_nus.root","RECREATE");
+  TFile* fOutput = new TFile(useSysts ? "Surfaces_nus.root" : "Surfaces_nus_statsOnly.root","RECREATE");
 
   //Define fit axes
-  const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
-  const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 2e-2, 1e2, true);
+  const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 60, 1e-3, 1, true);
+  const FitAxis kAxDmSq(&kFitDmSqSterile, 60, 2e-2, 1e2, true);
 
   if(!useSysts) allSysts.clear();
 
