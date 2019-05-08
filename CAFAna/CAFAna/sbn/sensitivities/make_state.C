@@ -40,11 +40,12 @@ void make_state(const std::string anatype = numuStr)
   else if (anatype == nueStr) {
     //std::cout << "Nue files not working right now!" << std::endl;
     //return;
-    const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
+    //const std::string fDir = "/pnfs/sbn/persistent/users/dbarker/sbnoutput/";
+    const std::string fDir = "/sbnd/data/users/dbarker/sbn/selection/";
 
     //BNB files contain nominal non-swap beam (so numubg, nuebg, NC)
     const std::string fnameBNB = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Numu.root";
-    const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_NuMu.root";
+    const std::string fnameBNB2 = fDir + "output_SBNOsc_NueSelection_Proposal_Icarus_Numu.root";
 
     //Nue instrinsic only (to increase stats)
     const std::string fnameIntrinsic = fDir + "output_SBNOsc_NueSelection_Proposal_SBND_Int.root";
@@ -90,11 +91,18 @@ void make_state(const std::string anatype = numuStr)
 
   const Var kWeighthack([](const caf::SRProxy* sr)
                         {
+			  std::cout << sr->truth[0].neutrino.iscc << " " << sr->truth[0].neutrino.pdg << " " << sr->reco[0].weight << std::endl; 
 			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 12) return 0.8;
-			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 14) return 0.005;
-			  if (sr->truth[0].neutrino.isnc) return 0.05;
+			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 14) return 0.0058;
+			  if (sr->truth[0].neutrino.isnc) return 0.058;
 			  return 1.0;
 			});
+
+  const Cut kOneTrue([](const caf::SRProxy* sr)
+		     {
+		       return (sr->ntruth == 1);
+		     });
+
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
   const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kRecoE);
@@ -107,15 +115,9 @@ void make_state(const std::string anatype = numuStr)
   std::vector<const ISyst*> noSysts{};
 
   //Use true energy, no weights until we get new nue files
-  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axTrueEnergy,
-                        kNoCut,
-			anatype == numuStr ? kWeight : kWeighthack);
-  if (anatype == numuStr) {
-    std::cout << "Using reco energy" << std::endl;
-  }
-  else {
-    std::cout << "Using true energy" << std::endl;
-  }
+  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axEnergy,
+                        kOneTrue,
+			anatype == numuStr ? kWeight : kWeight);
 
   PredictionInterp pred_nd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders);
   PredictionInterp pred_fd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders2);
