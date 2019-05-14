@@ -120,19 +120,22 @@ namespace ana
   void SpectrumLoader::HandleFile(TFile* f, Progress* prog)
   {
     assert(!f->IsZombie());
-    TTree* tr = (TTree*)f->Get("sbnana");
+
+    // Test for flat (has extra trees) or nested cases.
+    TDirectory* dir = f->Get("sbnana.reco") ? : f : 0;
+    TTree* tr = f->GetObject("sbnana", tr);
     assert(tr);
 
-    FloatingExceptionOnNaN fpnan(false);
+    long n;
+    caf::SRProxy sr(dir, tr, "rec", n, 0);
 
-    long n = 0;
-    caf::SRProxy sr(0, tr, "events", n, 0);
+    //    FloatingExceptionOnNaN fpnan;
 
-    int Nentries = tr->GetEntries();
+    const long Nentries = tr->GetEntries();
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
     for(n = 0; n < Nentries; ++n){
-      tr->LoadTree(n);
+      if(!dir) tr->LoadTree(n); // nested mode
 
       HandleRecord(&sr);
 
