@@ -175,7 +175,6 @@ for klass in ns.classes():
         type = str(v.decl_type)
 
         if v.name == 'weights': continue # HACK: can't deal with the map for now
-        if type == 'TVector3': continue # even bigger HACK
 
         if is_fundamental(type):
             basic_mems += [TypeName(translate_type(type), v.name)]
@@ -303,6 +302,13 @@ for klass in ns.classes():
 
     print 'void flat::'+pt+'::Fill(const '+fq_type(klass)+'& sr)'
     print '{'
+    if klass.name == 'TVector3':
+        print '  x = sr.X();'
+        print '  y = sr.Y();'
+        print '  z = sr.Z();'
+        print '}'
+        continue
+
     for tn in basic_mems:
         print '  '+tn.name+' = sr.'+tn.name+';'
 

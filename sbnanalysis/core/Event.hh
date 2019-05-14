@@ -26,6 +26,7 @@ extern int kUnfilled;
 
 #ifdef EVT_NAMESPACE
 namespace evt{
+  struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
 #endif
 
 /**
