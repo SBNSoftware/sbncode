@@ -122,8 +122,8 @@ namespace ana
     assert(!f->IsZombie());
 
     // Test for flat (has extra trees) or nested cases.
-    TDirectory* dir = f->Get("sbnana.reco") ? : f : 0;
-    TTree* tr = f->GetObject("sbnana", tr);
+    TDirectory* dir = f->Get("sbnana.reco") ? f : 0;
+    TTree* tr = (TTree*)f->Get("sbnana");
     assert(tr);
 
     long n;
@@ -131,7 +131,7 @@ namespace ana
 
     //    FloatingExceptionOnNaN fpnan;
 
-    const long Nentries = tr->GetEntries();
+    long Nentries = tr->GetEntries();
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
     for(n = 0; n < Nentries; ++n){
@@ -139,7 +139,7 @@ namespace ana
 
       HandleRecord(&sr);
 
-      if(prog && n%10000 == 0) prog->SetProgress(double(n)/Nentries);
+      if(prog) prog->SetProgress(double(n)/Nentries);
     } // end for n
   }
 
