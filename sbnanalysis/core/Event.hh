@@ -24,7 +24,9 @@
 /** Value for uninitialized defaults. */
 extern int kUnfilled;
 
+#ifdef EVT_NAMESPACE
 namespace evt{
+#endif
 
 /**
  * \class Event
@@ -169,7 +171,9 @@ public:
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 };
 
+#ifdef EVT_NAMESPACE
 } // namespace
+#endif
 
 #endif  // __sbnanalysis_core_Event__
 

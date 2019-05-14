@@ -118,7 +118,7 @@ config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++1z'#,
+    cflags='-std=c++1z -DEVT_NAMESPACE'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
