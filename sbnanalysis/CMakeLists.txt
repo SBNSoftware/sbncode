@@ -20,6 +20,8 @@ ADD_SUBDIRECTORY(ana)
 ADD_SUBDIRECTORY(core)
 ADD_SUBDIRECTORY(util)
 
+ADD_SUBDIRECTORY(FlatMaker) # TODO, I'm not sure where in the heirarchy this should live
+
 file(WRITE ${CMAKE_INSTALL_PREFIX}/bin/setup_sbnanalysis.sh
 "export SBN_ANALYSIS_DIR=${CMAKE_INSTALL_PREFIX}
 export SBN_LIB_DIR=$SBN_ANALYSIS_DIR/lib
