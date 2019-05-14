@@ -17,7 +17,8 @@ fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
                      'long', 'long unsigned int',
                      'long long int', 'unsigned char',
-                     'size_t']
+                     'size_t',
+                     'std::string']
 
 enums = []
 
@@ -85,7 +86,12 @@ def variables_inc_bases(klass):
     if base: vars += variables_inc_bases(base)
     return vars
 
+
 def fq_type(klass):
+    # HACK special case for the weights map
+    if str(klass.name) == 'Pair':
+        return 'std::pair<std::string, std::vector<double>>'
+
     if not klass.parent or str(klass.parent.name) == 'evt':
         return str(klass.name)
     else:
@@ -121,7 +127,7 @@ config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++1z -DEVT_NAMESPACE'#,
+    cflags='-std=c++1z -DEVT_NAMESPACE -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
@@ -173,8 +179,6 @@ for klass in ns.classes():
     vec_mems = []
     for v in variables_inc_bases(klass):
         type = str(v.decl_type)
-
-        if v.name == 'weights': continue # HACK: can't deal with the map for now
 
         if is_fundamental(type):
             basic_mems += [TypeName(translate_type(type), v.name)]

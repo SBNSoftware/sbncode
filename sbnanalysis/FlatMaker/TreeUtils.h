@@ -37,4 +37,14 @@ namespace
     if(policy && !policy->Include(name)) return;
     tr->Branch(name.c_str(), target, (name+"/"+root_code(*target)).c_str());
   }
+
+  //----------------------------------------------------------------------
+  void branch(TTree* tr, const std::string& name, std::string* target,
+              const flat::IBranchPolicy* policy)
+  {
+    if(policy && !policy->Include(name)) return;
+    // we really don't want the string to ever reallocate its storage
+    target->reserve(1024*1024);
+    tr->Branch(name.c_str(), (void*)target->c_str(), (name+"/C").c_str());
+  }
 }

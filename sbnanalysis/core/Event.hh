@@ -27,6 +27,7 @@ extern int kUnfilled;
 #ifdef EVT_NAMESPACE
 namespace evt{
   struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
+  struct Pair{std::string first; std::vector<double> second;};
 #endif
 
 /**
@@ -124,7 +125,11 @@ public:
      * This is a map from the weight calculator name to the list of weights
      * for all the sampled universes.
      */
+#ifndef EVT_NAMESPACE
     std::map<std::string, std::vector<double> > weights;
+#else
+    std::vector<Pair> weights;
+#endif
   };
 
   /**
