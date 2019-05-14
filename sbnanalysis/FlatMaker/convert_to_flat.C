@@ -1,6 +1,10 @@
 #include "sbnanalysis/core/Event.hh"
 
-#include "FlatRecord.cxx"
+#include "FlatRecord.cxx" // don't need to figure out how to build libraries yet...
+
+#include "TFile.h"
+
+#include <iostream>
 
 void convert_to_flat()
 {
