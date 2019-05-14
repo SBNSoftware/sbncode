@@ -8,7 +8,7 @@
 
 void convert_to_flat(std::string inname = "", std::string outname = "")
 {
-  if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed/output_SBNOsc_NumuSelection_Modern_SBND.root";
+  if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_SBND.root";
   if(outname.empty()) outname = "output_SBNOsc_NumuSelection_Modern_SBND.flat.root";
 
   TFile* fin = TFile::Open(inname.c_str());
@@ -19,6 +19,9 @@ void convert_to_flat(std::string inname = "", std::string outname = "")
   tr->SetBranchAddress("events", &event);
 
   TFile fout(outname.c_str(), "RECREATE");
+
+  // First, copy the POT information over
+  ((TTree*)fin->Get("sbnsubrun"))->CloneTree()->Write("sbnsubrun");
 
   TTree* trout = new TTree("sbnana", "sbnana");
   // Have trouble with memory usage (because several trees are open at
