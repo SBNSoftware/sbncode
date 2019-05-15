@@ -11,12 +11,18 @@ fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
                      'long', 'long unsigned int',
                      'long long int', 'char', 'unsigned char',
-                     'size_t', 'TVector3', 'std::string']
+                     'size_t', # 'TVector3',
+                     'std::string']
 
 def type_to_proxy_type(type):
-    if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
+    if ':' in type and type[:5] != 'std::':
+        type = type[type.rfind(':')+1:] # strip off namespaces
 
-    if type == 'StandardRecord': return 'SRProxy'
+#    if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
+
+#    if type == 'StandardRecord': return 'SRProxy'
+    if type == 'Event': return 'SRProxy' # compatibility with existing CAFAna code
+
     if type == 'TVector3': return 'TVector3Proxy'
     if type in fundamental_types:
         if type == 'size_t': return 'Proxy<ULong64_t>'
@@ -54,34 +60,26 @@ if len(sys.argv) >= 3: cxxDir = sys.argv[2]
 generator_path, generator_name = utils.find_xml_generator()
 
 # Figure out where our source files are
-priv = os.environ['SRT_PRIVATE_CONTEXT'] if 'SRT_PRIVATE_CONTEXT' in os.environ else None
-pub = os.environ['SRT_PUBLIC_CONTEXT'] if 'SRT_PUBLIC_CONTEXT' in os.environ else None
+context = os.environ['SBNCODE_DIR']
 
-# For cmake build
-if not pub: pub = os.environ['NOVASOFT_DIR']
-
-context = priv if priv else pub
-
-path = []
-if priv: path += [priv]
-path += [pub]
-path += [os.environ['ROOT_INC']]
+path = [context, os.environ['ROOT_INC']]
 
 config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++14'#,
+    cflags='-std=c++14 -DEVT_NAMESPACE -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
-decls = parser.parse([context+'/StandardRecord/StandardRecord.h'],
+print 'Reading from', context+'/sbnanalysis/core/Event.hh'
+decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
-ns = global_namespace.namespace('caf')
+ns = global_namespace.namespace('evt')
 
-fundamental_types += [e.name for e in ns.enumerations()]
+# fundamental_types += [e.name for e in ns.enumerations()]
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
@@ -134,7 +132,8 @@ def deps_emitted(klass):
         if debug: sys.stderr.write('Skipping '+pt+' because of '+base+'\n')
         return False
 
-    for v in klass.variables():
+    # Only accept direct members
+    for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
         type = type_to_proxy_type(str(v.decl_type))
         if 'ArrayProxy' in type: continue # only support arrays of fundamental type for now
         if type not in emitted:
@@ -161,7 +160,8 @@ def write_srproxy_h(klass):
     print '  '+pt+'(const '+pt+'&&) = delete;'
 
     print
-    for v in klass.variables():
+    # Only accept direct members
+    for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
         print '  '+type_to_proxy_type(str(v.decl_type)), v.name+';'
 
     print '};';
@@ -188,7 +188,7 @@ while True:
         anyWritten = True
         emitted += [pt]
         emitted += ['VectorProxy<'+pt+'>']
-        
+
     if not anySkipped: break # We're done
     if anyWritten: continue # Try for some more
 
@@ -222,7 +222,8 @@ for klass in ns.classes():
     # Initializer list
     inits = []
     if base_class(klass): inits += [type_to_proxy_type(base_class(klass).name)+'(d, tr, name, base, offset)']
-    for v in klass.variables():
+    # Only accept direct members
+    for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
         inits += [v.name + '(d, tr, Join(name, "'+v.name+'"), base, offset)']
 
     if len(inits) > 0:
@@ -245,7 +246,7 @@ print
 print 'class TVector3;'
 print
 print 'namespace caf{'
-for klass in ns.classes():
+for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
     print 'class '+klass.name+';'
     print 'class '+pt+';'
@@ -264,8 +265,8 @@ template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
                                                    const T* y);
 
-class TVector3Proxy;
-void CheckEquals(const TVector3Proxy& x, const TVector3& y);
+// class TVector3Proxy;
+// void CheckEquals(const TVector3Proxy& x, const TVector3& y);
 '''
 print '} // namespace'
 
@@ -284,12 +285,13 @@ print 'namespace caf{'
 
 # Pull this out as a function since we want to recurse into base classes
 def check_equals_body(klass):
-    for v in klass.variables():
+    # Only accept direct members
+    for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
         print '  CheckEquals(srProxy.'+v.name+', sr.'+v.name+');'
     if base_class(klass):
         check_equals_body(base_class(klass))
 
-for klass in ns.classes():
+for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
     print 'void CheckEquals(const '+pt+'& srProxy, const '+klass.name+'& sr)'
     print '{'
@@ -342,12 +344,12 @@ template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
   for(unsigned int i = 0; i < N; ++i) CheckEquals(x[i], y[i]);
 }
 
-void CheckEquals(const TVector3Proxy& x, const TVector3& y)
-{
-  CheckEquals(x.x, y.X());
-  CheckEquals(x.y, y.Y());
-  CheckEquals(x.z, y.Z());
-}
+// void CheckEquals(const TVector3Proxy& x, const TVector3& y)
+// {
+//   CheckEquals(x.x, y.X());
+//   CheckEquals(x.y, y.Y());
+//   CheckEquals(x.z, y.Z());
+// }
 '''
 print
 print '} // namespace'
@@ -365,7 +367,7 @@ print
 print 'class TVector3;'
 print
 print 'namespace caf{'
-for klass in ns.classes():
+for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
     print 'class '+klass.name+';'
     print 'class '+pt+';'
@@ -384,8 +386,8 @@ template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CopyRecord(const T* from,
                                                   ArrayProxy<T, N>& to);
 
-class TVector3Proxy;
-void CopyRecord(const TVector3& from, TVector3Proxy& to);
+// class TVector3Proxy;
+// void CopyRecord(const TVector3& from, TVector3Proxy& to);
 '''
 print '} // namespace'
 
@@ -400,12 +402,13 @@ print 'namespace caf{'
 
 # Pull this out as a function since we want to recurse into base classes
 def copy_body(klass):
-    for v in klass.variables():
+    # Only accept direct members
+    for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
         print '  CopyRecord(from.'+v.name+', to.'+v.name+');'
     if base_class(klass):
         copy_body(base_class(klass))
 
-for klass in ns.classes():
+for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
     print 'void CopyRecord(const '+klass.name+"& from, "+pt+'& to)'
     print '{'
@@ -436,12 +439,12 @@ template<class T, unsigned int N> void CopyRecord(const T* from,
   for(unsigned int i = 0; i < N; ++i) CopyRecord(from[i], to[i]);
 }
 
-void CopyRecord(const TVector3& from, TVector3Proxy& to)
-{
-  to.x = from.X();
-  to.y = from.Y();
-  to.z = from.Z();
-}
+// void CopyRecord(const TVector3& from, TVector3Proxy& to)
+// {
+//   to.x = from.X();
+//   to.y = from.Y();
+//   to.z = from.Z();
+// }
 '''
 
 

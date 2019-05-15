@@ -52,8 +52,8 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy<T>& p)
-    : fName("copy of "+p.fName), fLeaf(0), fTree(p.fTree),
-      fDir(0), fBase(p.fBase), fOffset(p.fOffset),
+    : fName("copy of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+      fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
       fSystOverrideEntry(p.fSystOverrideEntry),
@@ -67,8 +67,8 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy&& p)
-    : fName("move of "+p.fName), fLeaf(0), fTree(p.fTree),
-      fDir(0), fBase(p.fBase), fOffset(p.fOffset),
+    : fName("move of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+      fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
       fSystOverrideEntry(p.fSystOverrideEntry),
@@ -380,8 +380,6 @@ namespace caf
   //----------------------------------------------------------------------
   size_t VectorProxyBase::size() const
   {
-    return 1234; // HACK HACK HACK
-
     // If there's a valid systematic override value in place, give that
     if(fDir){
       // Flat
@@ -424,12 +422,12 @@ namespace caf
   }
 
   //----------------------------------------------------------------------
-  TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
-    : x(d, tr, name+".fX", base, offset),
-      y(d, tr, name+".fY", base, offset),
-      z(d, tr, name+".fZ", base, offset)
-  {
-  }
+  // TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
+  //   : x(d, tr, name+".fX", base, offset),
+  //     y(d, tr, name+".fY", base, offset),
+  //     z(d, tr, name+".fZ", base, offset)
+  // {
+  // }
 
 
   // Enumerate all the variants we expect

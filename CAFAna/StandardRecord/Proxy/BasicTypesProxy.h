@@ -213,29 +213,29 @@ namespace caf
     mutable std::vector<T*> fElems;
   };
 
-  class TVector3Proxy
-  {
-  public:
-    TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset);
+  // class TVector3Proxy
+  // {
+  // public:
+  //   TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset);
 
-    float X() const {return x;}
-    float Y() const {return y;}
-    float Z() const {return z;}
+  //   float X() const {return x;}
+  //   float Y() const {return y;}
+  //   float Z() const {return z;}
 
-    operator TVector3() const {return TVector3(x, y, z);}
+  //   operator TVector3() const {return TVector3(x, y, z);}
 
-    float Mag2() const {return x*x+y*y+z*z;}
-    float Mag() const {return sqrt(Mag2());}
-    float Dot(const TVector3Proxy& v) const {return x*v.x + y*v.y + z*v.z;}
-    float Dot(const TVector3& v) const {return x*v.X() + y*v.Y() + z*v.Z();}
-    TVector3 Unit() const
-    {
-      const float m = Mag();
-      return TVector3(x/m, y/m, z/m);
-    }
+  //   float Mag2() const {return x*x+y*y+z*z;}
+  //   float Mag() const {return sqrt(Mag2());}
+  //   float Dot(const TVector3Proxy& v) const {return x*v.x + y*v.y + z*v.z;}
+  //   float Dot(const TVector3& v) const {return x*v.X() + y*v.Y() + z*v.Z();}
+  //   TVector3 Unit() const
+  //   {
+  //     const float m = Mag();
+  //     return TVector3(x/m, y/m, z/m);
+  //   }
 
-    Proxy<double> x, y, z;
-  };
+  //   Proxy<double> x, y, z;
+  // };
 
   /// Used in comparison of GENIE version numbers
   template<class T> bool operator<(const VectorProxy<Proxy<T>>& a,
