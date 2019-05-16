@@ -11,11 +11,6 @@
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
-#include "core/ServiceManager.hh"
-#include "larcorealg/Geometry/GeometryCore.h"
-#include "core/ProviderManager.hh"
-#include "core/ProviderManager.hh"
-#include "core/ServiceManager.hh"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "core/ProviderManager.hh"
 
@@ -55,13 +50,7 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
               << fProviderManager->GetGeometryProvider()->DetectorName()
               << std::endl;
   }
-  // Get access to services
-  // Get access to services (use kSBND, kUBOONE, or kICARUS)
-  fServiceManager = new core::ServiceManager(core::kICARUS);
-  std::cout << "Detector: "
-            << fServiceManager->GetGeometryService()->DetectorName()
-            << std::endl;
-
+  
   // Use some library code
   hello();
 }

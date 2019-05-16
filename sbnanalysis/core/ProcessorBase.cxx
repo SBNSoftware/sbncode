@@ -51,7 +51,6 @@ namespace core {
 
   ProcessorBase::ProcessorBase()
     : fEventIndex(0), fOutputFilename("output.root"), fProviderManager(NULL), fMCSFitter(NULL) {}
-  <<<<<<< HEAD
 
     ProcessorBase::~ProcessorBase() {
       delete fMCSFitter;

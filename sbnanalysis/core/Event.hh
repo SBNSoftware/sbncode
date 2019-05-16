@@ -19,17 +19,6 @@
 #include "Experiment.hh"
 #include <canvas/Persistency/Common/Wrapper.h>
 
-/** Identifier for known experiments. */
-typedef enum {
-  kExpSBND,
-  kExpMicroBooNE,
-  kExpICARUS,
-  kExpDUNEND,
-  kExpDUNEFD,
-  kExpLArIAT,
-  kExpOther = 1000
-} Experiment;
-
 /**
  * \class Event
  * \brief The standard event data definition.

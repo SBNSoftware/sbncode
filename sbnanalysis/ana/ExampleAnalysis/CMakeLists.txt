@@ -22,7 +22,6 @@ target_link_libraries(
   larcorealg_Geometry
   lardataalg_DetectorInfo
   icaruscode_Geometry
-  sbnanalysis_ServiceManager
 )
 
 # Install all libraries to the main "lib" directory

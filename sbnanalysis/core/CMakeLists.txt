@@ -50,7 +50,7 @@ link_directories(
   $ENV{UBCORE_LIB}
   $ENV{ICARUSCODE_LIB}
   $ENV{NUTOOLS_LIB}
-)
+  )
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
 
@@ -62,7 +62,7 @@ target_link_libraries(
   larsim_Simulation 
   lardataobj_Simulation
   ${ROOT_LIBRARIES}
-)
+  )
 
 add_library(
   sbnanalysis_Processor SHARED
@@ -71,12 +71,12 @@ add_library(
   ProcessorBlock.cxx
   Loader.cxx
   PostProcessorBase.cxx
-)
+  )
 
 add_library(
   sbnanalysis_ProviderManager SHARED
   ProviderManager.cxx
-)
+  )
 
 target_link_libraries(
   sbnanalysis_ProviderManager
@@ -84,11 +84,7 @@ target_link_libraries(
   lardataalg_DetectorInfo
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
-  sbnanalysis_ServiceManager SHARED
-  ServiceManager.cxx
-  sbnanalysis_ProviderManager SHARED
-  ProviderManager.cxx
-)
+  )
 
 target_link_libraries(
   sbnanalysis_ProviderManager
@@ -101,7 +97,7 @@ target_link_libraries(
   sbnd_Geometry
   boost_system
   boost_filesystem
-)
+  )
 
 target_link_libraries(
   sbnanalysis_Processor
@@ -109,7 +105,6 @@ target_link_libraries(
   sbnanalysis_util_Interaction
   sbnanalysis_util_RecoUtil
   sbnanalysis_ProviderManager
-  sbnanalysis_ServiceManager
   canvas
   cetlib
   gallery
@@ -141,7 +136,7 @@ target_link_libraries(
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
   ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
-)
+  )
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
 add_custom_command(TARGET sbnanalysis_Event POST_BUILD
@@ -150,9 +145,8 @@ add_custom_command(TARGET sbnanalysis_Event POST_BUILD
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
 add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
-add_custom_command(TARGET sbnanalysis_ServiceManager POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-  ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
 
 add_executable(sbn sbn.cxx)
 target_link_libraries(
@@ -188,7 +182,7 @@ target_link_libraries(
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
   ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
-)
+  )
 
 add_executable(sbn-postprocess sbn-postprocess.cxx)
 target_link_libraries(
@@ -204,12 +198,11 @@ target_link_libraries(
   ${LARSIM_BASE_DICT}
   larsim_Simulation 
   ${ROOT_LIBRARIES}
-)
+  )
 
 install(TARGETS sbnanalysis_Event DESTINATION lib)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
-install(TARGETS sbnanalysis_ServiceManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
 install(TARGETS sbn-postprocess DESTINATION bin)
 
@@ -218,7 +211,7 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
   include_directories( ${CMAKE_INSTALL_PREFIX}/lib)
   link_directories(
     ${CMAKE_INSTALL_PREFIX}/lib
-  )
+    )
   add_executable(${STATICEXE} sbn_static.cxx)
   target_link_libraries(${STATICEXE} sbnanalysis_Processor fhiclcpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
   install(TARGETS ${STATICEXE} DESTINATION bin)
