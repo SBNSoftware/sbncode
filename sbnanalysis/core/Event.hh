@@ -217,9 +217,6 @@ public:
 
   Experiment experiment;  //!< Experiment identifier
   static const int kUnfilled = -99999; //!< Value for undefined defaults
-
-
->>>>>>> Adding in functionality from sbndcode/SlimAnalysisTree to core/ProcessorBase, got to the point where I need BackTrackerServices and ParticleInventoryServices to work here
 };
 
 #endif  // __sbnanalysis_core_Event__

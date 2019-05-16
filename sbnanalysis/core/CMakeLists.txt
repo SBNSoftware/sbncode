@@ -44,9 +44,7 @@ link_directories(
   $ENV{LARDATAALG_LIB}
   $ENV{FHICLCPP_LIB}
   $ENV{MESSAGEFACILITY_LIB}
-  $ENV{LARDATAALG_LIB}
   $ENV{JSONCPP_LIB}
-  $ENV{MESSAGEFACILITY_LIB}
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
@@ -189,27 +187,6 @@ target_link_libraries(
   ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
   ${MF_MESSAGELOGGER}
-  jsoncpp
-  ${LARSIM_BASE_LIBRARY}
-  ${LARSIM_BASE_DICT}
-  larsim_Simulation 
-  lardataobj_Simulation
-  lardataalg_DetectorInfo
-  larreco_Calorimetry
-  larreco_RecoAlg
-  larreco_RecoAlg_ClusterRecoUtil
-  larreco_ClusterFinder
-  sbndcode_RecoUtils
-  art_Persistency_Common canvas
-  art_Utilities canvas
-  ${CLHEP_Geometry}
-  ${ART_FRAMEWORK_CORE}                                  
-  ${ART_FRAMEWORK_PRINCIPAL}                             
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}                     
-  ${ART_FRAMEWORK_SERVICES_BASIC}                        
-  ${ART_FRAMEWORK_SERVICES_OPTIONAL}                     
-  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-  ${MF_MESSAGELOGGER}
   ${ROOT_LIBRARIES}
 )
 
@@ -222,7 +199,6 @@ target_link_libraries(
   fhiclcpp
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
-  larsim_Simulation 
   jsoncpp
   ${LARSIM_BASE_LIBRARY}
   ${LARSIM_BASE_DICT}
