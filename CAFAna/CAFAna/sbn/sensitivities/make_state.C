@@ -19,20 +19,96 @@
 // Random numbers
 #include "TRandom3.h"
 
+#include <set>
+
 using namespace ana;
 
 const std::string numuStr = "numu";
 const std::string nueStr = "nue";
 
+class SystWeighter
+{
+public:
+  SystWeighter(const std::set<int>& p, unsigned int u)
+    : fParams(p), fUniverse(u)
+  {
+  }
+
+  double operator()(const caf::SRProxy* sr)
+  {
+    static std::vector<double> ws;
+
+    if(fUniverse == 0){ // dangerous!
+    //    double ret = 1;
+      ws = std::vector<double>(1000, 1);
+      for(auto& it: sr->truth[0].weights){
+        //      if(it.second.size() >= 100) ret *= it.second[fUniverse%it.second.size()];
+        //        if(it.second.size() > 50){ // what are the small ones?
+        for(int i = 0; i < 1000; ++i) ws[i] *= it.second[i%it.second.size()];
+
+      }
+    }
+
+    return ws[fUniverse];
+
+    //    std::cout << fUniverse << " " << ret << std::endl;
+    //    std::cout << ret << std::endl;
+    //    return ret;
+    /*
+    const auto& ws = sr->truth[0].weights;
+
+    // Learn the layout from the first record. We're assuming it's the same in
+    // all files ever...
+    if(fgIdxs.empty()){
+      std::cout << "Searching for weight indices " << this << std::endl;
+      for(unsigned int i = 0; i < ws.size(); ++i){
+        const caf::SRWeight_tProxy& w = ws[i];
+        if(fParams.count(w.param_idx) > 0 && w.universe == fUniverse){
+          fgIdxs.push_back(i);
+        }
+      }
+      if(fgIdxs.empty()){
+        std::cout << "No matching syst entries found" << std::endl;
+        abort();
+      }
+      std::cout << "Found " << fgIdxs.size() << " indices" << std::endl;
+    }
+
+    double weight = 1;
+    for(unsigned int idx: fgIdxs) weight *= ws[idx].weight;
+    return weight;
+    */
+  }
+protected:
+  std::set<int> fParams;
+  unsigned int fUniverse;
+  std::vector<unsigned int> fgIdxs;
+};
+//std::vector<unsigned int> SystWeighter::fgIdxs;
+
+const Var kSystWeight(SystWeighter({1}, 0));
+
 void make_state(const std::string anatype = numuStr)
 {
+  // use all systs
+  std::set<int> systs;
+  for(int i = 0; i < 1000; ++i) systs.insert(i);
+
+  std::vector<Var*> systWs(1000);
+  for(unsigned int i = 0; i < systWs.size(); ++i) systWs[i] = new Var(SystWeighter(systs/*{1}*/, i));
 
   Loaders loaders, loaders2;
   if (anatype == numuStr) {
     //const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
-    const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed_1.tempwgh/";
-    const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
-    const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
+    //    const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_12_05_2018/processed_1.tempwgh/";
+
+    // const std::string fDir = "/sbnd/data/users/bckhouse/processed_1.tempwgh/";
+    // const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
+    // const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
+
+    const std::string fDir = "/sbnd/app/users/bckhouse/sbncode-v08_03_00/srcs/sbncode/sbnanalysis/FlatMaker/";
+    const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.flat.BAK.root";
+    const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.flat.BAK.root";
 
     loaders.SetLoaderPath( fnameBeam, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
@@ -76,6 +152,7 @@ void make_state(const std::string anatype = numuStr)
 
   const Var kRecoE([](const caf::SRProxy* sr)
                    {
+                     // std::cout << "ENERGY" << std::endl;
                      return sr->reco[0].reco_energy;
                    });
 
@@ -100,7 +177,7 @@ void make_state(const std::string anatype = numuStr)
 
   const Cut kOneTrue([](const caf::SRProxy* sr)
 		     {
-		       return (sr->ntruth == 1);
+		       return (sr->truth.size() == 1);
 		     });
 
 
@@ -114,13 +191,33 @@ void make_state(const std::string anatype = numuStr)
   std::cout << "\n" << std::endl;
   std::vector<const ISyst*> noSysts{};
 
-  //Use true energy, no weights until we get new nue files
-  NoExtrapGenerator gen(anatype == numuStr ? axEnergy : axEnergy,
-                        kOneTrue,
-			anatype == numuStr ? kWeight : kWeight);
+  std::vector<NoExtrapGenerator*> gens(systWs.size());
 
-  PredictionInterp pred_nd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders);
-  PredictionInterp pred_fd(anatype == numuStr ? allSysts : noSysts, calc, gen, loaders2);
+  for(unsigned int i = 0; i < systWs.size(); ++i){
+    //Use true energy, no weights until we get new nue files
+    gens[i] = new NoExtrapGenerator(anatype == numuStr ? axEnergy : axEnergy,
+                                    kOneTrue,
+                                    *systWs[i]*kWeight);
+  }
+
+  NoExtrapGenerator nom_gen(axEnergy, kOneTrue, kWeight);
+
+  if (anatype == numuStr) {
+    std::cout << "Using reco energy" << std::endl;
+  }
+  else {
+    std::cout << "Using true energy" << std::endl;
+  }
+
+  std::vector<PredictionInterp*> preds_nd(systWs.size()), preds_fd(systWs.size());
+
+  PredictionInterp pred_nom_nd(noSysts, calc, nom_gen, loaders);
+  PredictionInterp pred_nom_fd(noSysts, calc, nom_gen, loaders2);
+
+  for(unsigned int i = 0; i < systWs.size(); ++i){
+    preds_nd[i] = new PredictionInterp(/*anatype == numuStr ? allSysts :*/ noSysts, calc, *gens[i], loaders);
+    preds_fd[i] = new PredictionInterp(/*anatype == numuStr ? allSysts :*/ noSysts, calc, *gens[i], loaders2);
+  }
 
   loaders.Go();
   loaders2.Go();
@@ -128,7 +225,12 @@ void make_state(const std::string anatype = numuStr)
   std::cout << "Creating file " << ("cafe_state_smear_"+anatype+".root").c_str() << std::endl;
 
   TFile fout(("cafe_state_smear_"+anatype+".root").c_str(), "RECREATE");
-  pred_nd.SaveTo(fout.mkdir(("pred_nd_"+anatype).c_str()));
-  pred_fd.SaveTo(fout.mkdir(("pred_fd_"+anatype).c_str()));
+  for(unsigned int i = 0; i < systWs.size(); ++i){
+    preds_nd[i]->SaveTo(fout.mkdir(TString::Format("pred_nd_%s_%d", anatype.c_str(), i).Data()));
+    preds_fd[i]->SaveTo(fout.mkdir(TString::Format("pred_fd_%s_%d", anatype.c_str(), i).Data()));
+  }
+
+  pred_nom_nd.SaveTo(fout.mkdir(TString::Format("pred_nd_%s_nom", anatype.c_str()).Data()));
+  pred_nom_fd.SaveTo(fout.mkdir(TString::Format("pred_fd_%s_nom", anatype.c_str()).Data()));
 
 }
