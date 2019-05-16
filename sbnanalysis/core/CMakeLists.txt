@@ -41,6 +41,7 @@ link_directories(
   $ENV{LARRECO_LIB}
   $ENV{LARDATA_LIB}
   $ENV{LARDATAOBJ_LIB}
+  $ENV{LARDATAALG_LIB}
   $ENV{FHICLCPP_LIB}
   $ENV{LARDATAALG_LIB}
   $ENV{JSONCPP_LIB}
@@ -144,6 +145,8 @@ add_executable(sbn sbn.cxx)
 target_link_libraries(
   sbn
   sbnanalysis_Processor
+  ${LARSIM_BASE_LIBRARY}
+  ${LARSIM_BASE_DICT}
   fhiclcpp
   nusimdata_SimulationBase
   larcoreobj_SummaryData
@@ -181,6 +184,8 @@ add_executable(sbn-postprocess sbn-postprocess.cxx)
 target_link_libraries(
   sbn-postprocess
   sbnanalysis_Processor
+  ${LARSIM_BASE_LIBRARY}
+  ${LARSIM_BASE_DICT}
   fhiclcpp
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
@@ -207,4 +212,3 @@ if (DEFINED SBNANA_COMPILED_PROCESSOR)
   target_link_libraries(${STATICEXE} sbnanalysis_Processor fhiclcpp sbnanalysis_${SBNANA_COMPILED_PROCESSOR})
   install(TARGETS ${STATICEXE} DESTINATION bin)
 endif()
-

@@ -14,7 +14,7 @@
 #include "core/ServiceManager.hh"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "core/ProviderManager.hh"
->>>>>>> ServiceManager -> ProviderManager, add BackTracker, ParticleInventory
+#include "core/ProviderManager.hh"
 
 namespace ana {
   namespace ExampleAnalysis {
