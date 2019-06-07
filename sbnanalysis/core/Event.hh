@@ -96,9 +96,35 @@ public:
       : pdg(kUnfilled), energy(kUnfilled),
         momentum(kUnfilled, kUnfilled, kUnfilled) {}
 
+    // Define an enum to hold the Genie status code
+    // enum copied from: https://github.com/GENIE-MC/Generator/blob/46af6d765858eff60a8a011b5e5d31ef6520267b/src/Framework/GHEP/GHepStatus.h
+    // From the github history, this enum has not had any changes in the last few years, so it should hopefully be pretty stable.
+    enum GenieStatus {
+      kIStUndefined                  = -1, 
+      kIStInitialState               =  0,   /* generator-level initial state */
+      kIStStableFinalState           =  1,   /* generator-level final state: particles to be tracked by detector-level MC */
+      kIStIntermediateState          =  2,
+      kIStDecayedState               =  3,
+      kIStCorrelatedNucleon          = 10,
+      kIStNucleonTarget              = 11,
+      kIStDISPreFragmHadronicState   = 12,
+      kIStPreDecayResonantState      = 13,
+      kIStHadronInTheNucleus         = 14,   /* hadrons inside the nucleus: marked for hadron transport modules to act on */
+      kIStFinalStateNuclearRemnant   = 15,   /* low energy nuclear fragments entering the record collectively as a 'hadronic blob' pseudo-particle */
+      kIStNucleonClusterTarget       = 16    // for composite nucleons before phase space decay
+    };
+
     int pdg;  //!< PDG Code
     double energy;  //!< Energy
     TVector3 momentum;  //!< Three-momentum
+    TVector3 start; //!< Start position in detector cooridnates [cm]
+    TVector3 end; //!< End position in detector coordinates (may be outside of active volume) [cm]
+    double contained_length; //!< Length of particle contained in the detector active volume. 
+                             // Set to -1 if no Detector is defined through the ProviderManager. 
+                             // Set to 0 for a particle that originates outside the detector active volume. [cm]
+    double length; //!< Total length of the particle [cm]
+    bool is_primary; //!< Whether the process producing the particle was "primary"
+    int status_code; //!< Status code returnted by Genie. Values are defined as in the GenieStatus enum.
   };
 
   /**

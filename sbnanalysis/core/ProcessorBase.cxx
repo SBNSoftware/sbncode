@@ -13,6 +13,10 @@
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/TPCGeo.h"
+#include "larcorealg/Geometry/CryostatGeo.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "Event.hh"
 #include "SubRun.hh"
 #include "Loader.hh"
@@ -100,6 +104,24 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   std::vector<Experiment> exps = ProviderManager::GetValidExperiments();
   if (std::find(exps.begin(), exps.end(), fExperimentID) != exps.end()) {
     fProviderManager = new ProviderManager(fExperimentID, fProviderConfig);
+
+    // setup the volumes for keeping track of length
+    for (auto const &cryo: fProviderManager->GetGeometryProvider()->IterateCryostats()) {
+      geo::GeometryCore::TPC_iterator iTPC = fProviderManager->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = fProviderManager->GetGeometryProvider()->end_TPC(cryo.ID());
+      
+      // make each cryostat volume a box enclosing all tpc volumes
+      double XMin = std::min_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+      double YMin = std::min_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+      double ZMin = std::min_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+      double XMax = std::max_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+      double YMax = std::max_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+      double ZMax = std::max_element(iTPC, tend, [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+
+      fActiveVolumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
+    }
+
   }
   else {
     std::cout << "ProcessorBase::Setup: "
@@ -180,6 +202,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
+  // Get list of MCParticles
+  auto const& mcparticle_list = \
+    *ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
+
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
@@ -226,10 +252,29 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     // Combine Weights
     if (!wghs.empty()) {
-      for (auto const &wgh: wghs) {
-        // Insert the weights for each individual EventWeight object into the 
-        // Event class "master" weight list
-        interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+      size_t wgh_idx = 0;
+      // Loop through weight generators, which have a list of weights per truth
+      //
+      // NOTE: The code allows for multiple different weight generators to produce weights with the same name.
+      //       What will happen is that the same-named weights from differetn producers will be placed in the same
+      //       vector in the "weights" map below. The order in which weights from different producers are combined
+      //       should be consistent from event to event so that correlations are preserved between events. This 
+      //       is ensured in the current implementation by making sure that the different weight tags in "wghs"
+      //       are always ordered in the same way.
+      for (auto const& wgh : wghs) {
+        for (const std::pair<std::string, std::vector<double>> &this_wgh: wgh->at(i).fWeight) {
+          // If we haven't seen this name before, make a new vector with the name
+          if (interaction.weights.count(this_wgh.first) == 0) {
+            interaction.weights.insert(this_wgh);
+          }
+          // If we have seen the name before, append this instance to the last one
+          else {
+            interaction.weights.at(this_wgh.first).insert(
+              interaction.weights.at(this_wgh.first).end(),
+              this_wgh.second.begin(),
+              this_wgh.second.end());
+          }
+        }
       }
     }
 
@@ -265,6 +310,27 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.pdg = lepton.PdgCode();
       interaction.lepton.energy = lepton.Momentum(0).Energy();
       interaction.lepton.momentum = lepton.Momentum(0).Vect();
+      interaction.lepton.start = lepton.Position(0).Vect();
+      interaction.lepton.end = lepton.EndPosition().Vect();
+      interaction.lepton.status_code = lepton.StatusCode();
+      interaction.lepton.is_primary = (lepton.Process() == "primary");
+      // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
+      const simb::MCParticle *lepton_traj = util::MatchMCParticleID(lepton.TrackId(), mcparticle_list);
+      // only set length if we get a match
+      // TODO: why aren't there matches sometimes?
+      if (lepton_traj != NULL) {
+        interaction.lepton.length = util::MCParticleLength(*lepton_traj);
+        if (fProviderManager != NULL) {
+          interaction.lepton.contained_length = util::MCParticleContainedLength(*lepton_traj, fActiveVolumes);
+        }
+        else {
+          interaction.lepton.contained_length = -1; 
+        }
+      }
+      else {
+        interaction.lepton.contained_length = 0;
+        interaction.lepton.length = 0;
+      }
 
       q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
       interaction.neutrino.q0_lab = q_labframe.E();
@@ -287,6 +353,27 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.pdg = particle.PdgCode();
       fsp.energy = particle.Momentum(0).Energy();
       fsp.momentum = particle.Momentum(0).Vect();
+      fsp.start = particle.Position(0).Vect();
+      fsp.end = particle.EndPosition().Vect();
+      fsp.status_code = particle.StatusCode();
+      fsp.is_primary = (particle.Process() == "primary");
+      // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
+      const simb::MCParticle *particle_traj = util::MatchMCParticleID(particle.TrackId(), mcparticle_list);
+      // set length if we have a match
+      // TODO: why do some particles not get a match?
+      if (particle_traj != NULL) {
+        fsp.length = util::MCParticleLength(*particle_traj);
+        if (fProviderManager != NULL) {
+          fsp.contained_length = util::MCParticleContainedLength(*particle_traj, fActiveVolumes);
+        }
+        else {
+          fsp.contained_length = -1;
+        }
+      }
+      else {
+        fsp.contained_length = 0;
+        fsp.length = 0;
+      }
 
       interaction.finalstate.push_back(fsp);
     }
