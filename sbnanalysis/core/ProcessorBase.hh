@@ -25,6 +25,10 @@ namespace fhicl {
   class ParameterSet;
 }
 
+namespace geo {
+  class BoxBoundedGeo;
+}
+
 /** Core framework functionality. */
 namespace core {
 
@@ -139,6 +143,7 @@ protected:
   ProviderManager* fProviderManager;  //!< Interface for provider access
   std::string fOutputFilename;  //!< The output filename
   std::string fProviderConfig;  //!< A custom provider config fcl file
+  std::vector<geo::BoxBoundedGeo> fActiveVolumes; //!< List of active volumes in configured detector
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
   Event* fEvent;  //!< The standard output event data structure
