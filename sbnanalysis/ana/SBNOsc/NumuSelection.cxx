@@ -317,7 +317,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     // This also sets the lepton variables in the calculator
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
-    double visible_energy = visibleEnergy(_rand, mctruth, mctracks, mcshowers, calculator, false);
+    double visible_energy = visibleEnergyProposalMCParticles(_rand, mctruth, mctracks, calculator);
 
     Event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
