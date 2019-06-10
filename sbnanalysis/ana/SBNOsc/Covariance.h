@@ -72,6 +72,8 @@ class Covariance: public core::PostProcessorBase {
 
         // config
         std::vector<std::vector<std::string>> fWeightKeys;
+        std::vector<std::vector<std::string>> fWeightKeysCC;
+        std::vector<std::vector<std::string>> fWeightKeysNC;
         int fNumAltUnis;
         int fAltUniOffset;
         std::string fEnergyType;

@@ -81,7 +81,31 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("Covariance");
 
     fWeightKeys = pconfig.get<std::vector<std::vector<std::string>>>("WeightKey");
+    fWeightKeysCC = pconfig.get<std::vector<std::vector<std::string>>>("WeightKeyCC", {});
+    fWeightKeysNC = pconfig.get<std::vector<std::vector<std::string>>>("WeightKeyNC", {});
     fNVariations = fWeightKeys.size();
+
+    // all should have the same size
+    assert(fWeightKeysCC.size() == 0 || fWeightKeysCC.size() == fWeightKeys.size());
+    assert(fWeightKeysNC.size() == 0 || fWeightKeysNC.size() == fWeightKeys.size());
+
+    // merge weight keys into CC/NC keys
+    if (fWeightKeysCC.size() == 0) {
+      fWeightKeysCC = fWeightKeys;
+    }
+    else {
+      for (unsigned i = 0; i < fNVariations; i++) {
+        fWeightKeysCC[i].insert(fWeightKeysCC[i].end(), fWeightKeys[i].begin(), fWeightKeys[i].end());
+      }
+    }
+    if (fWeightKeysNC.size() == 0) {
+      fWeightKeysNC = fWeightKeys;
+    }
+    else {
+      for (unsigned i = 0; i < fNVariations; i++) {
+        fWeightKeysNC[i].insert(fWeightKeysNC[i].end(), fWeightKeys[i].begin(), fWeightKeys[i].end());
+      }
+    }
 
     // number of universes to be used
     fNumAltUnis = pconfig.get<int>("NumAltUnis", 0);
@@ -153,12 +177,22 @@ void Covariance::ProcessEvent(const Event *event) {
           wgt *= fEventSamples[fSampleIndex].fScalePOT / fEventSamples[fSampleIndex].fPOT;
         }
     
-        // Get weights for each alternative universe
         std::vector<std::vector <double>> uweights; 
-        for (std::vector<std::string> &weight_keys: fWeightKeys) {
-          uweights.push_back(
-            GetUniWeights(event->truth[truth_ind].weightmap, weight_keys, fNumAltUnis, fAltUniOffset)
-          );
+        // Get weights for each alternative universe
+        if (isCC) {
+          for (std::vector<std::string> &weight_keys: fWeightKeysCC) {
+            uweights.push_back(
+              GetUniWeights(event->truth[truth_ind].weightmap, weight_keys, fNumAltUnis, fAltUniOffset)
+            );
+          }
+        }
+        else {
+          for (std::vector<std::string> &weight_keys: fWeightKeysNC) {
+            uweights.push_back(
+              GetUniWeights(event->truth[truth_ind].weightmap, weight_keys, fNumAltUnis, fAltUniOffset)
+            );
+          }
+
         }
 
         // see if weight is too big
@@ -195,7 +229,7 @@ void Covariance::Scale() {
         fEventSamples[sample_i].fEnergyBinScale[i-1] *  fEventSamples[sample_i].fCentralValue->GetBinContent(i));
       //std::cout << "post sample: " << sample_i << " bin content: " << fEventSamples[sample_i].fCentralValue->GetBinContent(i);
     }
-    for (int variation = 0; variation < fWeightKeys.size(); variation++) {
+    for (int variation = 0; variation < fNVariations; variation++) {
       for (int uni = 0; uni < fNumAltUnis; uni++) {
         for (int i = 1; i < fEventSamples[sample_i].fUniverses[variation][uni]->GetNbinsX(); i++) {
           double content = fEventSamples[sample_i].fUniverses[variation][uni]->GetBinContent(i);
