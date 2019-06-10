@@ -14,5 +14,5 @@
 #pragma link C++ class std::vector<ana::SBNOsc::NumuRecoSelection::RecoInteraction>+;
 #pragma link C++ class std::map<size_t, ana::SBNOsc::NumuRecoSelection::RecoParticle>+;
 #pragma link C++ class std::map<size_t, ana::SBNOsc::NumuRecoSelection::RecoTrack>+;
-
+#pragma link C++ class ana::SBNOsc::NumuRecoSelection::RecoSlice+;
 #endif
