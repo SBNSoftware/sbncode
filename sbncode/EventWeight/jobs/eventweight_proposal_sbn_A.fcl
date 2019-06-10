@@ -14,8 +14,8 @@ BEGIN_PROLOG
 ##########################################################
 
 n_universes_A: 500
-n_universes_A_slow: 50
-n_universes_A_maybe_slow: 50
+n_universes_A_slow: 25
+n_universes_A_maybe_slow: 25
 
 sbn_flux_eventweight_base_A: {
   horncurrent_base: {

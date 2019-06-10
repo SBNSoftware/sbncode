@@ -14,8 +14,8 @@ BEGIN_PROLOG
 ##########################################################
 
 n_universes_B: 500
-n_universes_B_slow: 0
-n_universes_B_maybe_slow: 0
+n_universes_B_slow: 25
+n_universes_B_maybe_slow: 25
 
 sbn_flux_eventweight_base_B: {
   horncurrent_base: {
@@ -238,90 +238,90 @@ sbn_flux_eventweight_miniboone_B: {
   ]
 
   horncurrent: {
-    @table::sbn_flux_eventweight_base.horncurrent_base
+    @table::sbn_flux_eventweight_base_B.horncurrent_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   pioninexsec: {
-    @table::sbn_flux_eventweight_base.pioninexsec_base
+    @table::sbn_flux_eventweight_base_B.pioninexsec_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   nucleontotxsec: {
-    @table::sbn_flux_eventweight_base.nucleontotxsec_base
+    @table::sbn_flux_eventweight_base_B.nucleontotxsec_base
     use_MiniBooNE_random_numbers: true 
     weight_calculator: "MiniBooNE"
   }
 
   nucleonqexsec: {
-    @table::sbn_flux_eventweight_base.nucleontotxsec_base
+    @table::sbn_flux_eventweight_base_B.nucleontotxsec_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   nucleoninexsec: {
-    @table::sbn_flux_eventweight_base.nucleoninexsec_base
+    @table::sbn_flux_eventweight_base_B.nucleoninexsec_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   pionqexsec: {
-    @table::sbn_flux_eventweight_base.pionqexsec_base
+    @table::sbn_flux_eventweight_base_B.pionqexsec_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   piontotxsec: {
-    @table::sbn_flux_eventweight_base.piontotxsec_base
+    @table::sbn_flux_eventweight_base_B.piontotxsec_base
    use_MiniBooNE_random_numbers: true
    weight_calculator: "MiniBooNE"
   }
 
   expskin: {
-    @table::sbn_flux_eventweight_base.expskin_base
+    @table::sbn_flux_eventweight_base_B.expskin_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   bnbcorrection: {
-    @table::sbn_flux_eventweight_base.bnbcorrection_base
+    @table::sbn_flux_eventweight_base_B.bnbcorrection_base
   }
 
   piplus: {
-    @table::sbn_flux_eventweight_base.piplus_base
+    @table::sbn_flux_eventweight_base_B.piplus_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
  
   piminus: {
-    @table::sbn_flux_eventweight_base.piminus_base
+    @table::sbn_flux_eventweight_base_B.piminus_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE" 
   }
 
   kplus: {
-    @table::sbn_flux_eventweight_base.kplus_base
+    @table::sbn_flux_eventweight_base_B.kplus_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   kplusOld: {
-    @table::sbn_flux_eventweight_base.kplusOld_base
+    @table::sbn_flux_eventweight_base_B.kplusOld_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
   }
 
   kzero: {
-    @table::sbn_flux_eventweight_base.kzero_base
+    @table::sbn_flux_eventweight_base_B.kzero_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE"
     PrimaryHadronGeantCode: [130] # MiniBooNE only reweighted GEANT CODE = 10
   }
 
   kminus: {
-    @table::sbn_flux_eventweight_base.kminus_base
+    @table::sbn_flux_eventweight_base_B.kminus_base
     use_MiniBooNE_random_numbers: true
     weight_calculator: "MiniBooNE" 
   }
@@ -351,84 +351,84 @@ sbn_flux_eventweight_B: {
   ]
 
   horncurrent: {
-    @table::sbn_flux_eventweight_base.horncurrent_base
+    @table::sbn_flux_eventweight_base_B.horncurrent_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   pioninexsec: {
-    @table::sbn_flux_eventweight_base.pioninexsec_base
+    @table::sbn_flux_eventweight_base_B.pioninexsec_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
   
   nucleontotxsec: {
-    @table::sbn_flux_eventweight_base.nucleontotxsec_base
+    @table::sbn_flux_eventweight_base_B.nucleontotxsec_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   nucleonqexsec: {
-    @table::sbn_flux_eventweight_base.nucleonqexsec_base
+    @table::sbn_flux_eventweight_base_B.nucleonqexsec_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   nucleoninexsec: {
-    @table::sbn_flux_eventweight_base.nucleoninexsec_base
+    @table::sbn_flux_eventweight_base_B.nucleoninexsec_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   pionqexsec: {
-    @table::sbn_flux_eventweight_base.pionqexsec_base
+    @table::sbn_flux_eventweight_base_B.pionqexsec_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   piontotxsec: {
-    @table::sbn_flux_eventweight_base.piontotxsec_base
+    @table::sbn_flux_eventweight_base_B.piontotxsec_base
    use_MiniBooNE_random_numbers: false
    weight_calculator: "MicroBooNE"
   }
   
   expskin: {
-    @table::sbn_flux_eventweight_base.expskin_base
+    @table::sbn_flux_eventweight_base_B.expskin_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   bnbcorrection: {
-    @table::sbn_flux_eventweight_base.bnbcorrection_base
+    @table::sbn_flux_eventweight_base_B.bnbcorrection_base
   }
 
   piplus: {
-    @table::sbn_flux_eventweight_base.piplus_base
+    @table::sbn_flux_eventweight_base_B.piplus_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   piminus: {
-    @table::sbn_flux_eventweight_base.piminus_base
+    @table::sbn_flux_eventweight_base_B.piminus_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   kplus: {
-    @table::sbn_flux_eventweight_base.kplus_base
+    @table::sbn_flux_eventweight_base_B.kplus_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
   }
 
   kzero: {
-    @table::sbn_flux_eventweight_base.kzero_base
+    @table::sbn_flux_eventweight_base_B.kzero_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MicroBooNE"
     PrimaryHadronGeantCode: [130, 310, 311] # MiniBooNE only reweighted GEANT CODE = 10
   }
 
   kminus: {
-    @table::sbn_flux_eventweight_base.kminus_base
+    @table::sbn_flux_eventweight_base_B.kminus_base
     use_MiniBooNE_random_numbers: false
     weight_calculator: "MiniBooNE"
   }

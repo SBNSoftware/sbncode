@@ -120,7 +120,6 @@ sbn_flux_eventweight_base: {
     scale_factor_neg:1
     mode: multisim
     number_of_multisims: @local::n_universes        
-    use_MiniBooNE_random_numbers: false
   }
 
   bnbcorrection_base: {
@@ -212,7 +211,6 @@ sbn_flux_eventweight_base: {
     scale_factor: 1
     number_of_multisims: @local::n_universes
     PrimaryHadronGeantCode: -321 # geant code for particle production on Be
-    use_MiniBooNE_random_numbers: false
   }
 }
 

@@ -4,7 +4,7 @@
 #include "eventweight_proposal_sbn_A.fcl"
 #include "eventweight_proposal_sbn_B.fcl"
 
-process_name: ReEventWeight
+process_name: ReEventWeightA
 
 services: {
   TimeTracker: {}
@@ -39,7 +39,7 @@ physics: {
        module_type: "RandomNumberSaver"
      }
   }
-  simulate: [rns, fluxeventweight, fluxeventweightMiniboone, genieeventweight]
+  simulate: [rns, fluxeventweightA, fluxeventweightMinibooneA, genieeventweightA]
   stream1: [ out1 ]
   trigger_paths: [ simulate ]
   end_paths: [ stream1 ]
@@ -49,7 +49,7 @@ outputs: {
  out1: {
    module_type: RootOutput
    # fileName: "out.root"
-   fileName: "%ifb_%tc_reeventweight.root"
+   fileName: "%ifb_%tc_reeventweightA.root"
    dataTier: "detector-simulated"
    compressionLevel: 1
  }
