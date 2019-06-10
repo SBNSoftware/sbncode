@@ -1,0 +1,15 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "SBND_numu_all.root"
+MCWeightTags: []
+ExperimentID: 0
+
+NumuSelection: {
+  fiducial_volumes: @local::SBND_Modern_active_volumes 
+  active_volumes: @local::SBND_Modern_active_volumes 
+  @table::standard_cuts_noCuts
+  # uniformWeights: @local::standard_uniformWeights
+  uniformWeights: []
+  # verbose: true
+}
+
