@@ -200,6 +200,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
+  // Get MCFlux information
+  auto const& mcfluxes = \
+    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
+  assert(mctruths.size() == mcfluxes.size());
+
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
@@ -229,6 +234,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     Event::Interaction interaction;
 
     auto const& mctruth = mctruths.at(i);
+    auto const& mcflux = mcfluxes.at(i);
 
     // TODO: What to do with cosmic MC?
     // For now, ignore them
@@ -236,12 +242,28 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     // Combine Weights
     if (!wghs.empty()) {
-      for (auto const &wgh: wghs) {
-        // Insert the weights for each individual EventWeight object into the 
-        // Event class "master" weight list
-        interaction.weights.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+      size_t wgh_idx = 0;
+      // Loop through weight generators, which have a list of weights per truth
+      for (auto const& wgh : wghs) {
+        interaction.weightmap.insert(wgh->at(i).fWeight.begin(), wgh->at(i).fWeight.end());
+
+        // Iterate though the weight parameters for this generator, for the
+        // current MCTruth interaction
+        for (auto const& it : wgh->at(i).fWeight) {
+          // Loop through the weights for this parameter, to build the list
+          for (size_t j=0; j<it.second.size(); j++) {
+            if (interaction.weight_indices.find(it.first) == interaction.weight_indices.end()) {
+              interaction.weight_indices[it.first] = wgh_idx;
+              wgh_idx++;
+            }
+            Event::Weight_t w(interaction.weight_indices[it.first], j, Event::kUnfilled, it.second[j]);
+            interaction.weights.push_back(w);
+          }
+        }
       }
     }
+
+    interaction.nweights = interaction.weights.size();
 
     if (mcflux_handle.isValid()) {
       const simb::MCFlux& flux = mcflux_handle->at(i);
@@ -259,6 +281,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.pdg = nu.Nu().PdgCode();
+      interaction.neutrino.initpdg = mcflux.fntype;
       interaction.neutrino.targetPDG = nu.Target();
       interaction.neutrino.genie_intcode = nu.Mode();
       interaction.neutrino.bjorkenX = nu.X();
@@ -300,6 +323,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.finalstate.push_back(fsp);
     }
 
+    interaction.nfinalstate = interaction.finalstate.size();
+
     // GENIE specific
     if (genie_truth_is_valid) {
       auto const& gtruth = gtruths_handle->at(i);
@@ -315,6 +340,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     fEvent->truth.push_back(interaction);
   }
+
+  fEvent->ntruth = fEvent->truth.size();
 }
 
 }  // namespace core

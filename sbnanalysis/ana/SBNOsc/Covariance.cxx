@@ -145,7 +145,7 @@ void Covariance::ProcessEvent(const Event *event) {
         // wgt *= fEventSamples[fSampleIndex].fScaleFactor;
         // apply uniform weights
         // for (auto const &key: fUniformWeights) {
-        //     wgt *= event->truth[truth_ind].weights.at(key)[0];
+        //     wgt *= event->truth[truth_ind].weightmap.at(key)[0];
         // }
         double wgt = event->reco[n].weight;
         // apply POT scaling if configured
@@ -157,7 +157,7 @@ void Covariance::ProcessEvent(const Event *event) {
         std::vector<std::vector <double>> uweights; 
         for (std::vector<std::string> &weight_keys: fWeightKeys) {
           uweights.push_back(
-            GetUniWeights(event->truth[truth_ind].weights, weight_keys, fNumAltUnis, fAltUniOffset)
+            GetUniWeights(event->truth[truth_ind].weightmap, weight_keys, fNumAltUnis, fAltUniOffset)
           );
         }
 

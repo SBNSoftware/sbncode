@@ -326,7 +326,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     double weight = 1.;
     // apply uniofrm weights (e.g. bnbcorrection)
     for (auto const &key: _config.uniformWeights) {
-       weight *= interaction.weights.at(key)[0];
+       weight *= interaction.weightmap.at(key)[0];
     }
     // whether this event is signal or background
     // bool is_signal = abs(intInfo.t_pdgid) == 13; // muon
