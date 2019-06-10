@@ -1,7 +1,9 @@
 BEGIN_PROLOG
 // standard configurations to be used in proposal sensitivity
 
-eventweight_tags: ["fluxeventweight", "genieeventweight"]
+# eventweight_tags: ["fluxeventweight", "genieeventweight"]
+# eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
+eventweight_tags: []
 
 SBND_fiducial_volumes: [
     {
@@ -22,6 +24,17 @@ SBND_active_volumes: [
       xmax: 199.15
       ymax: 200.
       zmax: 365.
+    }
+]
+
+SBND_Modern_active_volumes: [
+    {
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 500.
     }
 ]
 

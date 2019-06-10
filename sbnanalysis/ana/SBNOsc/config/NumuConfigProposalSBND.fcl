@@ -7,9 +7,7 @@ NumuSelection: {
   fiducial_volumes: @local::SBND_fiducial_volumes
   active_volumes: @local::SBND_active_volumes 
   @table::standard_cuts_noMEC
-  # uniformWeights: @local::standard_uniformWeights
   uniformWeights: []
   constantWeight: 1.21 // Scale up all event to account for r=110m (now) -> 100m (then) 
-  # verbose: true
 }
 
