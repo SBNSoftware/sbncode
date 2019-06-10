@@ -70,7 +70,6 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
 
     // get the active and cryo volumes
     for (auto const &cryo: fProviderManager->GetGeometryProvider()->IterateCryostats()) {
-      _config.cryostat_volumes.push_back(cryo.BoundingBox());
       geo::GeometryCore::TPC_iterator iTPC = fProviderManager->GetGeometryProvider()->begin_TPC(cryo.ID()),
                                       tend = fProviderManager->GetGeometryProvider()->end_TPC(cryo.ID());
       std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
@@ -81,6 +80,18 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
       }
      _config.tpc_volumes.push_back(std::move(this_tpc_volumes));
     }
+    // make each cryostat volume a box enclosing all tpc volumes
+    for (const std::vector<geo::BoxBoundedGeo> &tpcs: _config.tpc_volumes) {
+      double XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+      double YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+      double ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+      double XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+      double YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+      double ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+
+      _config.cryostat_volumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
+   } 
 
     // get the beam center
     _config.beamCenterX = pconfig.get<float>("beamCenterX", 130.);
@@ -146,6 +157,45 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     }
   }
 
+  for (unsigned i = 0; i <  NumuRecoSelection::nTrackHistos; i++) {
+    _track_histos[i].chi2_muon_diff = new TH1D((std::string("chi2_muon_diff_") + trackHistoNames[i]).c_str(), "chi2_muon_diff", 100, 0., 100.);
+
+    _track_histos[i].chi2_proton_diff = new TH1D((std::string("chi2_proton_diff_") + trackHistoNames[i]).c_str(), "chi2_proton_diff", 101, -0.1, 10);
+    _track_histos[i].chi2_kaon_diff = new TH1D((std::string("chi2_kaon_diff_") + trackHistoNames[i]).c_str(), "chi2_kaon_diff", 101, -0.1, 10);
+    _track_histos[i].chi2_pion_diff = new TH1D((std::string("chi2_pion_diff_") + trackHistoNames[i]).c_str(), "chi2_pion_diff", 101, -0.1, 10);
+
+    _track_histos[i].range_p = new TH1D((std::string("range_p_") + trackHistoNames[i]).c_str(), "range_p", 100, 0., 2.);
+    _track_histos[i].mcs_p = new TH1D((std::string("mcs_p_") + trackHistoNames[i]).c_str(), "mcs_p", 100, 0., 2.);
+    _track_histos[i].deposited_e_max = new TH1D((std::string("deposited_e_max_") + trackHistoNames[i]).c_str(), "deposited_e_max", 100, 0., 2.);
+    _track_histos[i].deposited_e_avg = new TH1D((std::string("deposited_e_avg_") + trackHistoNames[i]).c_str(), "deposited_e_avg", 100, 0., 2.);
+
+    _track_histos[i].range_p_minus_truth = new TH1D((std::string("range_p_minus_truth_") + trackHistoNames[i]).c_str(), "range_p_minus_truth", 100, -2., 2.);
+    _track_histos[i].mcs_p_minus_truth = new TH1D((std::string("mcs_p_minus_truth_") + trackHistoNames[i]).c_str(), "mcs_p_minus_truth", 100, -2., 2.);
+    _track_histos[i].deposited_e_max_minus_truth = new TH1D((std::string("deposited_e_max_minus_truth_") + trackHistoNames[i]).c_str(), "deposited_e_max_minus_truth", 100, -2., 2.);
+    _track_histos[i].deposited_e_avg_minus_truth = new TH1D((std::string("deposited_e_avg_minus_truth_") + trackHistoNames[i]).c_str(), "deposited_e_avg_minus_truth", 100, -2., 2.);
+    _track_histos[i].deposited_e_med_minus_truth = new TH1D((std::string("deposited_e_med_minus_truth_") + trackHistoNames[i]).c_str(), "deposited_e_med_minus_truth", 100, -2., 2.);
+
+    _track_histos[i].length = new TH1D((std::string("length_") + trackHistoNames[i]).c_str(), "length", 100, 0., 500.);
+    _track_histos[i].is_contained = new TH1D((std::string("is_contained_") + trackHistoNames[i]).c_str(), "is_contained", 2, -0.5, 1.5);
+
+
+    _track_histos[i].range_p_diff = new TH2D((std::string("range_p_diff_") + trackHistoNames[i]).c_str(), "range_p_diff", 25, 0, 2.5, 40, -2., 2.);
+    _track_histos[i].mcs_p_diff = new TH2D((std::string("mcs_p_diff_") + trackHistoNames[i]).c_str(), "mcs_p_diff", 25, 0., 2.5, 40, -2., 2.);
+    _track_histos[i].deposited_e_max_diff = new TH2D((std::string("deposited_e_max_diff_") + trackHistoNames[i]).c_str(), "deposited_e_max_diff", 25, 0., 2.5, 40, -2., 2.);
+
+
+    _track_histos[i].range_p_comp = new TH2D((std::string("range_p_comp_") + trackHistoNames[i]).c_str(), "range_p_comp", 25, 0, 2.5, 25, 0., 2.5);
+    _track_histos[i].mcs_p_comp = new TH2D((std::string("mcs_p_comp_") + trackHistoNames[i]).c_str(), "mcs_p_comp", 25, 0., 2.5, 25, 0., 2.5);
+    _track_histos[i].deposited_e_max_comp = new TH2D((std::string("deposited_e_max_comp_") + trackHistoNames[i]).c_str(), "deposited_e_max_comp", 25, 0., 2.5, 25, 0., 2.5);
+
+    // NOTE: assumes only one active volume
+    _track_histos[i].end_x = new TH1D((std::string("end_x_") + trackHistoNames[i]).c_str(), "end_x", 1000, _config.containment_volumes[0].MinX() -15., _config.containment_volumes[0].MaxX()+15.);
+    _track_histos[i].end_y = new TH1D((std::string("end_y_") + trackHistoNames[i]).c_str(), "end_y", 1000, _config.containment_volumes[0].MinY() -15., _config.containment_volumes[0].MaxY()+15.);
+    _track_histos[i].end_z = new TH1D((std::string("end_z_") + trackHistoNames[i]).c_str(), "end_z", 1000, _config.containment_volumes[0].MinZ() -15., _config.containment_volumes[0].MaxZ()+15.);
+
+
+  } 
+
   // add branches
   fTree->Branch("reco_event", &_recoEvent);
   fTree->Branch("reco_vertices", &_selected);
@@ -168,6 +218,38 @@ void NumuRecoSelection::Finalize() {
       _root_histos[i][j].true_track_multiplicity->Write();
       _root_histos[i][j].crosses_tpc->Write();
     }
+  }
+  for (unsigned i = 0; i < NumuRecoSelection::nTrackHistos; i++) {
+    _track_histos[i].chi2_proton_diff->Write();
+    _track_histos[i].chi2_muon_diff->Write();
+    _track_histos[i].chi2_pion_diff->Write();
+    _track_histos[i].chi2_kaon_diff->Write();
+
+    _track_histos[i].range_p->Write();
+    _track_histos[i].mcs_p->Write();
+    _track_histos[i].deposited_e_max->Write();
+    _track_histos[i].deposited_e_avg->Write();
+
+    _track_histos[i].range_p_minus_truth->Write();
+    _track_histos[i].mcs_p_minus_truth->Write();
+    _track_histos[i].deposited_e_max_minus_truth->Write();
+    _track_histos[i].deposited_e_avg_minus_truth->Write();
+    _track_histos[i].deposited_e_med_minus_truth->Write();
+
+    _track_histos[i].length->Write();
+    _track_histos[i].is_contained->Write();
+
+    _track_histos[i].range_p_diff->Write();
+    _track_histos[i].mcs_p_diff->Write();
+    _track_histos[i].deposited_e_max_diff->Write();
+    
+    _track_histos[i].range_p_comp->Write();
+    _track_histos[i].mcs_p_comp->Write();
+    _track_histos[i].deposited_e_max_comp->Write();
+
+    _track_histos[i].end_x->Write();
+    _track_histos[i].end_y->Write();
+    _track_histos[i].end_z->Write();
   }
 }
 
@@ -285,6 +367,65 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
       reco.push_back(CoreRecoInteraction(core_truth, vertex, weight));
       selected = true;
       _nu_count++;
+    }
+
+    // fill track histos
+    if (vertex.primary_track_index >= 0) {
+      // Get the primary tack
+      const NumuRecoSelection::RecoTrack &track = vertex.slice.tracks.at(vertex.primary_track_index);
+      // conditions on filling each histogram
+      std::vector<bool> do_fill {true, false, false};
+
+     if (vertex.match.event_vertex_id >= 0 && track.match.has_match) {
+       const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_vertex_id].slice.tracks.at(track.match.mcparticle_id);
+       do_fill[1] = true_track.contained_in_cryo;
+       do_fill[2] = !true_track.contained_in_cryo;
+     }
+
+      for (int i = 0; i < do_fill.size(); i++) {
+        if (do_fill[i]) {
+	  // Primary track histos
+	  if (track.min_chi2 > 0) {
+	    _track_histos[i].chi2_proton_diff->Fill(track.chi2_proton - track.min_chi2);
+	    _track_histos[i].chi2_muon_diff->Fill(track.chi2_muon - track.min_chi2);
+	    _track_histos[i].chi2_pion_diff->Fill(track.chi2_pion - track.min_chi2);
+	    _track_histos[i].chi2_kaon_diff->Fill(track.chi2_kaon - track.min_chi2);
+          }
+	  
+	  _track_histos[i].range_p->Fill(track.range_momentum_muon); 
+	  double mcs_p = track.mcs_is_backward ? track.bwd_mcs_momentum_muon : track.fwd_mcs_momentum_muon;
+	  _track_histos[i].mcs_p->Fill(mcs_p);
+	  _track_histos[i].deposited_e_max->Fill(track.deposited_energy_max);
+	  
+	  _track_histos[i].length->Fill(track.length);
+	  _track_histos[i].is_contained->Fill(track.is_contained);
+	  
+	  // check if truth match
+	  if (vertex.match.event_vertex_id >= 0 && track.match.has_match) {
+	    const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_vertex_id].slice.tracks.at(track.match.mcparticle_id);
+	    _track_histos[i].range_p_minus_truth->Fill(track.range_momentum_muon - true_track.momentum);
+	    _track_histos[i].mcs_p_minus_truth->Fill(mcs_p - true_track.momentum); 
+	    _track_histos[i].deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
+	    _track_histos[i].deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
+	    _track_histos[i].deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
+
+            //std::cout << "AT FILL -- is contained: " << true_track.is_contained << std::endl;      
+
+            _track_histos[i].range_p_diff->Fill(true_track.momentum, track.range_momentum_muon - true_track.momentum);
+            _track_histos[i].mcs_p_diff->Fill(true_track.momentum, mcs_p - true_track.momentum);
+            _track_histos[i].deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
+
+            _track_histos[i].range_p_comp->Fill(true_track.momentum, track.range_momentum_muon);
+            _track_histos[i].mcs_p_comp->Fill(true_track.momentum, mcs_p);
+            _track_histos[i].deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
+
+            _track_histos[i].end_x->Fill(track.end.X());
+            _track_histos[i].end_y->Fill(track.end.Y());
+            _track_histos[i].end_z->Fill(track.end.Z());
+
+          }
+        }
+      }
     }
 
     // fill histos
@@ -442,16 +583,26 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   bool contained_in_cryo = track.NumberTrajectoryPoints() > 0;
   bool contained_in_tpc = track.NumberTrajectoryPoints() > 0;
 
+
+  bool is_contained = true;
+
   // other truth information
   double costh = track.Pz() / track.Momentum().Vect().Mag();
   int pdgid = track.PdgCode();
-  // double kinetic_energy = track.E()  - PDGMass(pdgid) / 1000.;
+  double kinetic_energy = track.E() /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */;
 
   // setup intial track locations
   TLorentzVector pos = track.Position();
   // get the active volume that the start position is in
   int cryostat_index = -1;
   int tpc_index = -1;
+  int containment_index = -1;
+  for (int i = 0; i < _config.containment_volumes.size(); i++) {
+    if (_config.containment_volumes[i].ContainsPosition(pos.Vect())) {
+      containment_index = i;
+      break;
+    }
+  }
   // contruct pos Point
   for (int i = 0; i < _config.cryostat_volumes.size(); i++) {
     if (_config.cryostat_volumes[i].ContainsPosition(pos.Vect())) {
@@ -481,6 +632,11 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
     contained_in_tpc = false;
   }
 
+
+  if (containment_index < 0) {
+    is_contained = false;
+  }
+
   // setup aa volumes too for length calc
   std::vector<geoalgo::AABox> aa_volumes;
   for (auto const &v: volumes) {
@@ -498,7 +654,7 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
       TVector3 this_point = trajectory.Position(i).Vect();
       // update if track is contained
       if (contained_in_cryo) {
-        contained_in_cryo = _config.cryostat_volumes[i].ContainsPosition(this_point);
+        contained_in_cryo = _config.cryostat_volumes[cryostat_index].ContainsPosition(this_point);
       }
       // check if track has crossed TPC
       if (contained_in_cryo && !crosses_tpc) {
@@ -512,6 +668,10 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
       // check if track has left tpc
       if (contained_in_tpc) {
         contained_in_tpc = volumes[tpc_index].ContainsPosition(this_point);
+      }
+
+      if (is_contained) {
+        is_contained = _config.containment_volumes[containment_index].ContainsPosition(this_point);
       }
       
       // update length
@@ -569,11 +729,11 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   ret.contained_in_cryo = contained_in_cryo;
   ret.contained_in_tpc = contained_in_tpc;
   ret.crosses_tpc = crosses_tpc;
-  //TODO: fix
-  // ret.is_contained = is_contained;
+  ret.is_contained = is_contained;
   ret.start = track.Position().Vect();
   ret.end = track.EndPosition().Vect();
   ret.momentum = track.Momentum().Vect().Mag();
+  ret.energy = kinetic_energy;
   ret.dist_to_vertex = dist_to_vertex;
   ret.match = track_match;
 
@@ -776,7 +936,7 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
 
   // matches from tracks to particle ID and calo
   art::FindManyP<anab::Calorimetry> pfp_calo(pfp_track_list, event, "pandoraCalo");
-  art::FindManyP<anab::ParticleID> pfp_pid(pfp_track_list, event, "pandoraPID");
+  art::FindManyP<anab::ParticleID> pfp_pid(pfp_track_list, event, "pandoraPid");
 
   std::map<size_t, NumuRecoSelection::RecoTrack> ret;
 
@@ -806,19 +966,117 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
     this_track.length = RecoTrackLength(track);
 
     // get the associated PID and Calo
-    assert(pfp_pid.at(pfp_track_index).size() == 1);
-    const art::Ptr<anab::ParticleID> &particle_id = pfp_pid.at(pfp_track_index).at(0);
-    this_track.pdgid = particle_id->Pdg();
-    this_track.chi2_proton = particle_id->Chi2Proton();
-    this_track.chi2_kaon = particle_id->Chi2Kaon();
-    this_track.chi2_pion = particle_id->Chi2Pion();
-    this_track.chi2_muon = particle_id->Chi2Muon();
-    this_track.baller_pdgid = particle_id->PIDA();
+    assert(pfp_pid.at(pfp_track_index).size() == 3); // one per plane
+    
+    // sum up all the pid scores weighted by n dof
+    double chi2_proton = 0.;
+    double chi2_kaon = 0.;
+    double chi2_muon = 0.;
+    double chi2_pion = 0.;
+    int n_dof = 0;
+    int particle_pdg = 0;
+    double min_chi2 = 0.;
+    for (int i =0; i < 3; i++) {
+      // invalid plane means invalid calorimetry
+      if (!pfp_pid.at(pfp_track_index).at(i)->PlaneID()) continue;
+      const art::Ptr<anab::ParticleID> &particle_id = pfp_pid.at(pfp_track_index).at(i);
 
-    assert(pfp_calo.at(pfp_track_index).size() == 1);
-    const art::Ptr<anab::Calorimetry> &calo = pfp_calo.at(pfp_track_index).at(0);
-    this_track.deposited_energy = calo->KineticEnergy();
-    this_track.range_momentum = _track_momentum_calculator->GetTrackMomentum(this_track.length, this_track.pdgid);
+      n_dof += particle_id->Ndf();
+      chi2_proton += particle_id->Chi2Proton() * particle_id->Ndf();
+      chi2_kaon += particle_id->Chi2Kaon() * particle_id->Ndf();
+      chi2_pion += particle_id->Chi2Pion() * particle_id->Ndf();
+      chi2_muon += particle_id->Chi2Muon() * particle_id->Ndf();
+    }
+    if (n_dof > 0) {
+      /*
+      chi2_proton /= n_dof;
+      chi2_kaon /= n_dof;
+      chi2_pion /= n_dof;
+      chi2_muon /= n_dof;*/
+      // min chi2 is PID
+      std::vector<double> chi2s {chi2_proton, chi2_muon, chi2_kaon, chi2_pion};
+      int min_ind = std::distance(chi2s.begin(), std::min_element(chi2s.begin(), chi2s.end()));
+      min_chi2 = *std::min_element(chi2s.begin(), chi2s.end());
+      if (min_ind == 0) {
+        particle_pdg = 2212;
+      }
+      else if (min_ind == 1) {
+        particle_pdg = 13;
+      }
+      else if (min_ind == 2) {
+        particle_pdg = 312;
+      }
+      else if (min_ind == 3) {
+        particle_pdg = 211;
+      }
+      else {
+        assert(false);
+      }
+    }
+    else {
+      // No particle ID was provided -- set things to nonsense
+      chi2_proton = -1;
+      chi2_kaon = -1;
+      chi2_muon = -1;
+      chi2_pion = -1;
+      min_chi2 = -1.5;
+    }
+    this_track.pdgid = particle_pdg;
+    this_track.chi2_proton = chi2_proton;
+    this_track.chi2_kaon = chi2_kaon;
+    this_track.chi2_pion = chi2_pion;
+    this_track.chi2_muon = chi2_muon;
+    this_track.min_chi2 = min_chi2;
+    this_track.pid_n_dof = n_dof;
+
+    assert(pfp_calo.at(pfp_track_index).size() == 3);
+    // average and sum the deposited energies
+    int n_calo = 0;
+    std::vector<double> deposited_energies;
+    double deposited_energy_avg = 0.;
+    double deposited_energy_max = 0.;
+    double deposited_energy_med = 0.;
+    for (int i =0; i < 3; i++) {
+      if (!pfp_calo.at(pfp_track_index).at(i)->PlaneID()) continue;
+      const art::Ptr<anab::Calorimetry> &calo = pfp_calo.at(pfp_track_index).at(i);
+      if (calo->KineticEnergy() > 1000000) {
+        std::cout << "Baaaaadddd energy: " << calo->KineticEnergy() << std::endl;
+        continue;
+      }
+      n_calo ++;
+      deposited_energies.push_back(calo->KineticEnergy() / 1000.); /* MeV -> GeV */
+    }
+    if (n_calo > 0) {
+      deposited_energy_avg = std::accumulate(deposited_energies.begin(), deposited_energies.end(), 0.) / n_calo;
+      deposited_energy_max = *std::max_element(deposited_energies.begin(), deposited_energies.end());
+
+      // 1 or 3 values -- take the middle
+      if (n_calo != 2) {
+        // compute the median
+        std::sort(deposited_energies.begin(), deposited_energies.end());
+        deposited_energy_med = deposited_energies[deposited_energies.size() / 2];
+      }
+      // otherwise take the average
+      else if (n_calo == 2) {
+        deposited_energy_med = deposited_energy_avg;
+      }
+      // bad
+      else assert(false);
+      
+    }
+    else {
+      deposited_energy_max = -1;
+      deposited_energy_avg = -1;
+      deposited_energy_med = -1;
+    }
+
+    this_track.deposited_energy_max = deposited_energy_max;
+    this_track.deposited_energy_avg = deposited_energy_avg;
+    this_track.deposited_energy_med = deposited_energy_med;
+    // calculator only has inputs for protons and muons
+    int track_mom_pdg = (this_track.pdgid == 13 || this_track.pdgid == 211) ? 13 : 2212;
+    this_track.range_momentum = _track_momentum_calculator->GetTrackMomentum(this_track.length, track_mom_pdg);
+
     this_track.range_momentum_muon = _track_momentum_calculator->GetTrackMomentum(this_track.length, 13);
 
     recob::MCSFitResult mcs_fit = _mcs_fitter->fitMcs(*track, this_track.pdgid);
@@ -826,6 +1084,7 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
     this_track.fwd_mcs_momentum_err = mcs_fit.fwdMomUncertainty();
     this_track.bwd_mcs_momentum = mcs_fit.bwdMomentum();
     this_track.bwd_mcs_momentum_err = mcs_fit.bwdMomUncertainty();
+    this_track.mcs_is_backward = !mcs_fit.isBestFwd();
 
     recob::MCSFitResult mcs_fit_muon = _mcs_fitter->fitMcs(*track, 13);
     this_track.fwd_mcs_momentum_muon = mcs_fit_muon.fwdMomentum();
@@ -835,6 +1094,7 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
 
     // TODO: fill this
     this_track.momentum = -1;
+    this_track.energy = -1;
 
     this_track.costh = track->StartDirection().Z() / sqrt( track->StartDirection().Mag2() );  
 
@@ -1161,6 +1421,30 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
 
     // select the primary track
     this_interaction.primary_track_index = SelectPrimaryTrack(this_interaction.slice, truth, this_interaction.match.event_vertex_id);
+    if (this_interaction.primary_track_index >= 0) {
+      this_interaction.primary_track = this_interaction.slice.tracks.at(this_interaction.primary_track_index);
+    }
+  
+    // print out information on the primary track
+    /*
+    if (this_interaction.primary_track_index >= 0) {
+      const NumuRecoSelection::RecoTrack &track = this_interaction.slice.tracks.at(this_interaction.primary_track_index);
+      std::cout << "Identified primary track!\n";
+      std::cout << "At: " << track.start.X() << " " << track.start.Y() << " " << track.start.Z() << std::endl;
+      std::cout << "Length: " << track.length <<std::endl;
+      std::cout << "Deposited energy: " << track.deposited_energy << std::endl;
+      std::cout << "Is backward: " << (track.mcs_is_backward == true) << std::endl;
+      std::cout << "FWD MCS momentum: " << track.fwd_mcs_momentum_muon << " +/- " << track.fwd_mcs_momentum_muon_err << std::endl;
+      std::cout << "BWD MCS momentum: " << track.bwd_mcs_momentum_muon << " +/- " << track.bwd_mcs_momentum_muon_err << std::endl;
+      std::cout << "Range momentum: " << track.range_momentum_muon << std::endl;
+      std::cout << "Proton score: " << track.chi2_proton << std::endl;
+      std::cout << "Kaon score: " << track.chi2_kaon << std::endl;
+      std::cout << "Pion score: " << track.chi2_pion << std::endl;
+      std::cout << "Muon score: " << track.chi2_muon <<std::endl;
+      std::cout << "PID: " << track.pdgid << std::endl;
+      std::cout << "True P: " << truth[0].slice.tracks.at(track.match.mcparticle_id).momentum << std::endl;
+    }*/
+ 
     // TODO: get the enrgy
     this_interaction.nu_energy = -1;
 

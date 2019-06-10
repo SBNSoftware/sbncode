@@ -107,6 +107,7 @@ public:
     int cryo_i = 0;
     int tpc_i = 0;
     std::cout << std::endl << "ICARUS" << std::endl;
+    std::cout << "NCHANNELS: " << _managerICARUS->GetGeometryProvider()->Nchannels() << std::endl;
     for (auto const &cryo: _managerICARUS->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
       geo::GeometryCore::TPC_iterator iTPC = _managerICARUS->GetGeometryProvider()->begin_TPC(cryo.ID()),

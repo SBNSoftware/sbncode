@@ -27,8 +27,8 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
-#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
-#include "larreco/RecoAlg/TrackMomentumCalculator.h"
+#include "LArReco/TrajectoryMCSFitter.h"
+#include "LArReco/TrackMomentumCalculator.h"
 
 class TH2D;
 class TH1D;
@@ -143,7 +143,9 @@ public:
 
   struct RecoTrack {
     // track specific info
-    double deposited_energy;
+    double deposited_energy_max;
+    double deposited_energy_avg;
+    double deposited_energy_med;
     double range_momentum;
     double range_momentum_muon;
 
@@ -159,12 +161,14 @@ public:
 
     // buest guess at momentum 
     double momentum;
+    double energy;
 
     double chi2_proton;
     double chi2_kaon;
     double chi2_pion;
     double chi2_muon;
-    int baller_pdgid;
+    double min_chi2;
+    int pid_n_dof;
     int pdgid; //!< particle id
 
     bool is_muon;
@@ -178,6 +182,43 @@ public:
     TVector3 end; //!< end position of track
     double dist_to_vertex;
     TrackTruthMatch match;
+
+    RecoTrack():
+      deposited_energy_max(-1),
+      deposited_energy_avg(-1),
+      deposited_energy_med(-1),
+      range_momentum(-1),
+      range_momentum_muon(-1),
+      fwd_mcs_momentum(-1),
+      fwd_mcs_momentum_muon(-1),
+      fwd_mcs_momentum_err(-1),
+      fwd_mcs_momentum_muon_err(-1),
+      bwd_mcs_momentum(-1),
+      bwd_mcs_momentum_muon(-1),
+      bwd_mcs_momentum_err(-1),
+      bwd_mcs_momentum_muon_err(-1),
+      mcs_is_backward(false),
+      momentum(-1),
+      energy(-1),
+      chi2_proton(-1),
+      chi2_kaon(-1),
+      chi2_pion(-1),
+      chi2_muon(-1),
+      min_chi2(-1.5),
+      pid_n_dof(-1),
+      pdgid(-1),
+      is_muon(-1),
+      length(-1),
+      costh(-999),
+      contained_in_cryo(false),
+      contained_in_tpc(false),
+      crosses_tpc(false),
+      is_contained(false),
+      start(-999, -999, -999),
+      end(-999, -999, -999),
+      dist_to_vertex(-1)
+      {}
+
 
     // More involved info -- need this later???
     // std::vector<TLorentzVector> trajectory;
@@ -203,6 +244,7 @@ public:
     int primary_track_index;
     TruthMatch match; //!< Info for mathing to truth
     int multiplicity;
+    RecoTrack primary_track;
   };
 
   /** Reconstruction Information about Event */
@@ -260,6 +302,39 @@ protected:
     TH1D *crosses_tpc;
   };
 
+  struct TrackHistos {
+    TH1D *chi2_proton_diff;
+    TH1D *chi2_muon_diff;
+    TH1D *chi2_pion_diff;
+    TH1D *chi2_kaon_diff;
+
+    TH1D *range_p;
+    TH1D *mcs_p;
+    TH1D *deposited_e_max;
+    TH1D *deposited_e_avg;
+
+    TH1D *range_p_minus_truth;
+    TH1D *mcs_p_minus_truth;
+    TH1D *deposited_e_max_minus_truth;
+    TH1D *deposited_e_avg_minus_truth;
+    TH1D *deposited_e_med_minus_truth;
+
+    TH1D *length;
+    TH1D *is_contained;
+
+
+    TH2D *range_p_diff;
+    TH2D *mcs_p_diff;
+    TH2D *deposited_e_max_diff;
+
+    TH2D *range_p_comp;
+    TH2D *mcs_p_comp;
+    TH2D *deposited_e_max_comp;
+
+    TH1D *end_x;
+    TH1D *end_y;
+    TH1D *end_z;
+  };
 
   static const unsigned nCuts = 5; //!< total number of cuts
   static const unsigned recoCutOffset = 2;
@@ -269,6 +344,8 @@ protected:
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_track", "R_vqual", "R_tqual", "R_contained"};
  
+  static const unsigned nTrackHistos = 3;
+  static constexpr const char* trackHistoNames[nTrackHistos] = {"Primary", "Contained", "Exiting"};
    
   // Internal functions
 
@@ -399,6 +476,7 @@ protected:
   std::vector<RecoInteraction> *_selected; //!< Branch container for the list of selected reco vertices
 
   RootHistos _root_histos[nHistos][nModes]; //!< Histos (one group per cut)
+  TrackHistos _track_histos[nTrackHistos];
 
 };
 
