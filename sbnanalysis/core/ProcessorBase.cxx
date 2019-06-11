@@ -12,33 +12,37 @@
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "gallery/FindMaker.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Persistency/Provenance/SubRunAuxiliary.h"
-#include "nusimdata/SimulationBase/MCFlux.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/PtrVector.h" 
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "messagefacility/MessageLogger/MessageLogger.h" 
+
 #include "larsim/MCCheater/ParticleInventoryService.h" 
 #include "larsim/MCCheater/BackTrackerService.h" 
-#include "sbndcode/RecoUtils/RecoUtils.h"
+#include "larsim/EventWeight/Base/MCEventWeight.h"
+#include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/GTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
-#include "larreco/Calorimetry/CalorimetryAlg.h"
-#include "larreco/RecoAlg/PMAlg/PmaTrack3D.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/TrackingTypes.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
-#include "larsim/EventWeight/Base/MCEventWeight.h"
+#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
+#include "larreco/RecoAlg/TrackMomentumCalculator.h"
+#include "larreco/RecoAlg/PMAlg/PmaTrack3D.h"
+#include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larcore/Geometry/Geometry.h"
-#include "fhiclcpp/ParameterSet.h"
+
 #include "Event.hh"
 #include "SubRun.hh"
 #include "Loader.hh"
@@ -226,18 +230,20 @@ namespace core {
     // Get the hit handle
     auto const hits         = ev.getValidHandle<std::vector<recob::Hit> >(fHitTag);
     int hitssize            = hits->size();
+    std::vector< art::Ptr< recob::Hit > > hit_vector;
+    art::fill_ptr_vector(hit_vector, hits);
 
     // Get the PFParticle handle
     auto const pfparticles  = ev.getValidHandle<std::vector<recob::PFParticle>>(fPFParticleTag);
     int pfparticlessize     = pfparticles->size();
 
     // Get the Track handle
-    auto const recotracks  = ev.getValidHandle<std::vector<recob::Track>>(fRecoTrackTag);
-    int recotrackssize     = recotracks->size();
+    auto const recotracks   = ev.getValidHandle<std::vector<recob::Track>>(fRecoTrackTag);
+    int recotrackssize      = recotracks->size();
 
     // Get vector of Shower information
-    auto const &recoshowers = *ev.getValidHandle<std::vector<recob::Shower> >(fRecoShowerTag);
-    int showersize          = recoshowers.size();
+    auto const recoshowers  = ev.getValidHandle<std::vector<recob::Shower> >(fRecoShowerTag);
+    int showersize          = recoshowers->size();
 
     gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
     ev.getByLabel(fTruthTag, gtruths_handle);
@@ -373,6 +379,8 @@ namespace core {
         Event::FinalStateParticle fsp;
         if (particle.Process() != "primary" || particle.PdgCode() >= 1000018039) continue;
 
+        std::vector< art::Ptr< recob::Hit > > trk_hits = fProviderManager->GetBackTrackerProvider()->TrackIdToHits_Ps(particle.TrackId(), hit_vector);
+
         fsp.mc_id     = particle.TrackId();
         fsp.pdg       = particle.PdgCode();
         fsp.energy    = particle.Momentum(0).Energy();
@@ -380,6 +388,7 @@ namespace core {
         fsp.vertex    = particle.Position().Vect();
         fsp.end       = particle.EndPosition().Vect();
         fsp.trans_mom = particle.Pt();
+        fsp.hits      = trk_hits.size(); 
 
         interaction.finalstate.push_back(fsp);
       } // mcparticles
@@ -393,8 +402,10 @@ namespace core {
         const TLorentzVector& nucP4 = gtruth.fHitNucP4;
         TVector3 nuc_boost(nucP4.BoostVector());
         q_nucframe.Boost(nuc_boost);
-        interaction.neutrino.modq = q_nucframe.P();
-        interaction.neutrino.q0 = q_nucframe.E();
+        interaction.neutrino.modq     = q_nucframe.P();
+        interaction.neutrino.q0       = q_nucframe.E();
+        interaction.neutrino.gscatter = gtruth.fGscatter;
+        interaction.neutrino.gint     = gtruth.fGint;
       } // GENIE
 
       mcinteraction_map.insert(std::pair<int, Event::Interaction>(i, interaction));
@@ -428,14 +439,24 @@ namespace core {
     // of neutrinos, quit. This will get messy as the reconstruction has failed
     if(neutrinos.size() != mctruthssize) return;
 
-    // Get the track associations to the PFParticles
-    art::FindManyP< recob::Track > fmtrk( pfparticles, ev, fRecoTrackTag );
+    // Get the track and vertex associations to the PFParticles
+    art::FindManyP< recob::Track > fmtrk(pfparticles, ev, fRecoTrackTag);
+    art::FindManyP< recob::Vertex  > fvtx( pfp_handle, e, m_pandora_label );
 
     // Now loop over the neutrino IDs and the pfparticles 
     // Make a new RecoInteraction for each NeutrinoID 
     // fill the finalstatereconstructedparticles for each of its daughters
+
     for(int i = 0; i < neutrinos.size(); ++i){
+
       Event::RecoInteraction reconstructed_interaction;
+      std::vector< art::Ptr<recob::Vertex> > vtx_assn = fvtx.at(neutrinos[i]);
+      if(vtx_assn.size()  > 1 || vtx_assn.size() == 0) return;
+
+      // Set array to be current vertex position
+      Point_t vtx = vtx_assn[0]->position();
+      TVector3 vertex(vtx.X(), vtx.Y(), vtx.Z());
+      reconstructed_interaction.reco_vertex(vertex);
 
       // Loop over PFParticles, find neutrinos and add their IDs to the list above
       // if they are not already listed
@@ -535,8 +556,36 @@ namespace core {
                   fsrp.mc_id_energy = util::TrueParticleIDFromTotalTrueEnergy(hit_assn,fProviderManager);
                   fsrp.mc_id_charge = util::TrueParticleIDFromTotalRecoCharge(hit_assn,fProviderManager);
                   fsrp.mc_id_hits   = util::TrueParticleIDFromTotalRecoHits(hit_assn,fProviderManager);
+                  fsrp.hits         = hit_assn.size();
+                  fsrp.istrack      = true;
+                  fsrp.isshower     = false;
 
                   /*
+                   *      VARIABLES TO FILL
+                   *
+                  fsrp.chi2_proton         = pid_assn[j]->Chi2Proton();
+                  fsrp.chi2_muon           = pid_assn[j]->Chi2Muon();
+                  fsrp.chi2_pi             = pid_assn[j]->Chi2Pion();
+                  fsrp.chi2_ka             = pid_assn[j]->Chi2Kaon();
+                  fsrp.pida                = pid_assn[j]->PIDA();
+                  fsrp.missing_energy      = pid_assn[j]->MissingE();
+                  fsrp.kinetic_energy      = cal_assn[k]->KineticEnergy();
+                  fsrp.range               = cal_assn[k]->Range();
+                  fsrp.length              = trk_assn[i]->Length();
+                  fsrp.vertex[0]           = track_vtx_x;
+                  fsrp.vertex[1]           = track_vtx_y;
+                  fsrp.vertex[2]           = track_vtx_z;
+                  fsrp.end[0]              = track_end_x;
+                  fsrp.end[1]              = track_end_y;
+                  fsrp.end[2]              = track_end_z;
+
+                  unsigned int dedx_size      = cal_assn[k]->dEdx().size();
+                  unsigned int res_range_size = cal_assn[k]->ResidualRange().size();
+                  unsigned int pitch_size     = cal_assn[k]->TrkPitch().size();
+                  for(unsigned int l = 0; l < dedx_size; ++l)      fsrp.dedx.push_back(cal_assn[k]->dEdx()[l]);
+                  for(unsigned int l = 0; l < res_range_size; ++l) fsrp.res_range.push_back(cal_assn[k]->ResidualRange()[l]);
+                  for(unsigned int l = 0; l < pitch_size; ++l)     fsrp.pitch.push_back(cal_assn[k]->TrkPitch()[l]);
+
                   // Momentum
                   //    Assign a momentum of 0 to every parameter and then 
                   //    fill with the relevant value based on:
@@ -572,6 +621,56 @@ namespace core {
               } // PID
             } // tracks
           } // track check
+
+          // Get the shower associations
+          std::vector< art::Ptr<recob::Shower> > shw_assn = fmshw.at(pfparticle.Self());
+
+          // If the showers exist get the information associated with them
+          if(shw_assn.size()) {
+            art::FindManyP< recob::Hit > fmhit(recoshowers, ev, fRecoShowerTag);
+
+            // Loop over showers associated with primary PFParticles
+            for(size_t i = 0; i < shw_assn.size(); ++i) {
+
+              // Distance s of the shower start from the reconstructed 
+              // neutrino vertex
+              double s_vtx = sqrt(pow(shw_assn[i]->ShowerStart()[0] - vertex[0],2) + pow(shw_assn[i]->ShowerStart()[1] - vertex[1],2) + pow(shw_assn[i]->ShowerStart()[2] - vertex[2],2));
+              int bp = shw_assn[i]->best_plane();
+
+              // Cut of 40 cm for showers to accommodate photon conversion after
+              // neutral pion decay
+              if(s_vtx < 40) {
+                std::vector< art::Ptr<recob::Hit> > hit_assn = fmhit.at(shw_assn[i]->ID());
+                // Add one to the counter for the event tree
+                n_primary_showers++;
+
+                // Get associated MCParticle ID using 3 different methods:
+                //    Which particle contributes the most energy to all the hits
+                //    Which particle contributes the reco charge to all the hits
+                //    Which particle is the biggest contributor to all the hits
+                sh_id_energy    = RecoUtils::TrueParticleIDFromTotalTrueEnergy(hit_assn);
+                sh_id_charge    = RecoUtils::TrueParticleIDFromTotalRecoCharge(hit_assn);
+                sh_id_hits      = RecoUtils::TrueParticleIDFromTotalRecoHits(hit_assn);
+
+                sh_n_hits       = hit_assn.size();
+                sh_dedx_size    = shw_assn[i]->dEdx().size();
+                sh_start[0]     = shw_assn[i]->ShowerStart()[0];
+                sh_start[1]     = shw_assn[i]->ShowerStart()[1];
+                sh_start[2]     = shw_assn[i]->ShowerStart()[2];
+                sh_direction[0] = shw_assn[i]->Direction()[0];
+                sh_direction[1] = shw_assn[i]->Direction()[1];
+                sh_direction[2] = shw_assn[i]->Direction()[2];
+                sh_length       = shw_assn[i]->Length();
+                sh_open_angle   = shw_assn[i]->OpenAngle();
+                sh_energy       = shw_assn[i]->Energy()[bp];
+                sh_dedx         = shw_assn[i]->dEdx()[bp];  
+
+                recoshower_tree->Fill();
+              }
+            }
+          }
+            } // showers
+          } // shower check
           reconstructed_interaction.recofinalstate.push_back(fsrp);
         } // daughters of the neutrino
       } // pfparticles

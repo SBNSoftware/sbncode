@@ -57,6 +57,7 @@ public:
       : isnc(false), iscc(false), pdg(0), initpdg(0), targetPDG(0), genie_intcode(0),
         bjorkenX(kUnfilled), inelasticityY(kUnfilled), Q2(kUnfilled),
         q0(kUnfilled), modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
+        gscatter(kUnfilled), gint(kUnfilled),
         w(kUnfilled), t(kUnfilled), energy(kUnfilled),
         momentum(kUnfilled, kUnfilled, kUnfilled), parentPDG(0),
         parentDecayMode(0), parentDecayVtx(kUnfilled, kUnfilled, kUnfilled) {}
@@ -67,6 +68,8 @@ public:
     int initpdg;              //!< Initial PDG code of probe neutrino
     int targetPDG;            //!< PDG code of struck target
     int genie_intcode;        //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
+    int gscatter;             //!< Scattering code of the event as given by fGscatter (GTruth)
+    int gint;                 //!< Interaction type of the event as given by fGint (GTruth)
     double bjorkenX;          //!< Bjorken x
     double inelasticityY;     //!< Inelasticity y
     double Q2;                //!< Q squared
@@ -93,13 +96,15 @@ public:
     public:
       /** Default Constructor. */
       FinalStateParticle()
-        : mc_id(kUnfilled), pdg(kUnfilled), energy(kUnfilled), trans_mom(kUnfilled),
+        : mc_id(kUnfilled), pdg(kUnfilled), hits(kUnfilled), 
+        energy(kUnfilled), trans_mom(kUnfilled), 
         momentum(kUnfilled, kUnfilled, kUnfilled),
         vertex(kUnfilled, kUnfilled, kUnfilled),
         end(kUnfilled, kUnfilled, kUnfilled){}
 
       int mc_id;         //|< MC ID, for MC particles it corresponds to itself, for reco particles it corresponds to the truth-matched MC particle 
       int pdg;           //!< PDG Code
+      int hits;          //!< Number of hits associated to the particle
       double energy;     //!< Energy
       double trans_mom;  //!< Transverse momentum
       TVector3 momentum; //!< Three-momentum
@@ -116,25 +121,37 @@ public:
     public:
       /** Default Constructor **/
       FinalStateReconstructedParticle()
-        : hits(kUnfilled), mc_id_hits(kUnfilled), mc_id_energy(kUnfilled), mc_id_charge(kUnfilled), 
-        mcs_momentum_muon(kUnfilled), 
-        range_momentum_muon(kUnfilled), range_momentum_proton(kUnfilled),
-        range_momentum_pion(kUnfilled),
+        : mc_id_hits(kUnfilled), mc_id_energy(kUnfilled), mc_id_charge(kUnfilled), 
+        istrack(kUnfilled), isshower(kUnfilled),
+        mcs_momentum_muon(kUnfilled), range_momentum_muon(kUnfilled),
+        range_momentum_proton(kUnfilled), range_momentum_pion(kUnfilled),
+        calorimetry_momentum(kUnfilled), 
         chi2_muon(kUnfilled), chi2_proton(kUnfilled), chi2_pion(kUnfilled),
-        pida(kUnfilled) {}
+        pida(kUnfilled), kinetic_energy(kUnfilled), missing_energy(kUnfilled),
+        length(kUnfilled), range(kUnfilled), 
+        dedx({kUnfilled}), res_range({kUnfilled}), pitch({kUnfilled}){}
 
-      int hits;                     //!< Number of hits associated with the particle 
-      int mc_id_hits;               //!< Associated MCParticle ID from hits
-      int mc_id_energy;             //!< Associated MCParticle ID from energy
-      int mc_id_charge;             //!< Associated MCParticle ID from charge
-      double mcs_momentum_muon;     //!< multiple coulomb scattering momentum is the particle  is an escaping muon
-      double range_momentum_muon;   //!< range momentum if the particle is a contained muon 
-      double range_momentum_proton; //!< range momentum if the particle is a contained proton
-      double range_momentum_pion;   //!< range momentum if the particle is a contained pion
-      double chi2_proton;           //!< chi2 under the proton hypothesis          
-      double chi2_muon;             //!< chi2 under the muon hypothesis            
-      double chi2_pion;             //!< chi2 under the pion hypothesis            
-      double pida;                  //!< PIDA value of the particle
+      int mc_id_hits;                //!< Associated MCParticle ID from hits
+      int mc_id_energy;              //!< Associated MCParticle ID from energy
+      int mc_id_charge;              //!< Associated MCParticle ID from charge
+      bool istrack;                  //!< Is the reconstructed particle a track
+      bool isshower;                 //!< Is the reconstructed particle a shower
+      double mcs_momentum_muon;      //!< multiple coulomb scattering momentum is the particle  is an escaping muon
+      double range_momentum_muon;    //!< range momentum if the particle is a contained muon 
+      double range_momentum_proton;  //!< range momentum if the particle is a contained proton
+      double range_momentum_pion;    //!< range momentum if the particle is a contained pion
+      double calorimetry_momentum;   //!< momentum calculated using calorimetry
+      double chi2_proton;            //!< chi2 under the proton hypothesis          
+      double chi2_muon;              //!< chi2 under the muon hypothesis            
+      double chi2_pion;              //!< chi2 under the pion hypothesis            
+      double pida;                   //!< PIDA value of the particle
+      double kinetic_energy;         //!< kinetic energy
+      double missing_energy;         //!< missing energy
+      double length;                 //!< length
+      double range;                  //!< range
+      std::vector<double> pitch;     //!< pitch of the track 
+      std::vector<double> dedx;      //!< dedx distribution
+      std::vector<double> res_range; //!< residual range distribution
   };
 
   /**
@@ -169,14 +186,16 @@ public:
       RecoInteraction(): 
         truth_index(-1), 
         reco_energy(kUnfilled),
-        weight(1.) {}
+        weight(1.),
+        reco_vertex(kUnfilled, kUnfilled, kUnfilled) {}
 
       /** Fill in truth information -- other fields set as in default */
       explicit RecoInteraction(const Interaction &t, int index): 
         truth(t), 
         truth_index(index),
         reco_energy(kUnfilled),
-        weight(1.) {}
+        weight(1.),
+        reco_vertex(kUnfilled, kUnfilled, kUnfilled) {}
 
       Interaction truth; //!< Contains truth level information about interaction
 
@@ -199,6 +218,11 @@ public:
        * Selection defined weight of reconstructed interaction to be used by downstream
        * analyis. */
       double weight;  
+
+      /**
+       * Reconstructed interaction vertex of the event
+       */
+      TVector3 reco_vertex;
   };
 
   Metadata metadata;  //!< Event metadata
