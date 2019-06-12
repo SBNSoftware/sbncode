@@ -131,6 +131,14 @@ protected:
   */
   void BuildEventTree(gallery::Event& ev);
 
+
+  /**
+   * Setup LArSoft services
+   *
+   * \param ev The current gallery event
+  */
+  void SetupServices(gallery::Event& ev);
+
   /**
    * Update subrun list to include subruns for this event's file.
    *

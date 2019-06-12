@@ -37,6 +37,7 @@
 #include "lardataobj/RecoBase/TrackingTypes.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "larreco/RecoAlg/TrajectoryMCSFitter.h"
 #include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "larreco/RecoAlg/PMAlg/PmaTrack3D.h"
@@ -200,22 +201,7 @@ namespace core {
           << "(good POT = " << goodpot << ")"
           << std::endl;
       }
-
-      // Open the output file and create the standard event tree
-      fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
-
-      fTree = new TTree("sbnana", "SBN Analysis Tree");
-      fTree->AutoSave("overwrite");
-      fEvent = new Event();
-      fTree->Branch("events", &fEvent);
-      fReco = &fEvent->reco;
-
-      // Create the output subrun tree
-      fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
-      fSubRunTree->AutoSave("overwrite");
-      fSubRun = new SubRun();
-      fSubRunTree->Branch("subruns", &fSubRun);
-    }  
+    }
   } // UpdateSubRuns
 
   void ProcessorBase::Teardown() {
@@ -225,6 +211,20 @@ namespace core {
     fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
     fOutputFile->Close();
   }// Teardown
+  
+  void ProcessorBase::SetupServices(gallery::Event& ev) {
+    if (fProviderManager != NULL) {
+      // reset the channels of the back tracker
+      //fProviderManager->GetBackTrackerProvider()->ClearEvent();
+      //fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+
+      // reset information in particle inventory
+      //fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+      //fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+      //fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+      //fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    }
+  } // SetupServices
 
   void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     // Add any new subruns to the subrun tree
@@ -295,7 +295,6 @@ namespace core {
       exit(1);
     }
     const geo::GeometryCore* geom = fProviderManager->GetGeometryProvider();
-    std::cout << " Detector : " << geom->DetectorName() << std::endl;
 
     std::vector<double> minx, miny, minz, maxx, maxy, maxz;
     minx.clear();
@@ -587,7 +586,7 @@ namespace core {
                   fsrp.hits         = hit_assn.size();
                   fsrp.istrack      = true;
                   fsrp.isshower     = false;
-
+                  
                   /*
                    *      VARIABLES TO FILL
                    */

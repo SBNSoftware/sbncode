@@ -59,7 +59,7 @@ namespace ana {
          */
         bool ProcessEvent(const gallery::Event& ev,
                           const std::vector<Event::Interaction>& truth,
-                          const std::vector<Event::RecoInteraction>& reco);
+                          std::vector<Event::RecoInteraction>& reco);
 
       protected:
         unsigned fEventCounter;      //!< Count processed events

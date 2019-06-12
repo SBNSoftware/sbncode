@@ -22,6 +22,9 @@ namespace ana {
 
     void AnalysisMain::Initialize(fhicl::ParameterSet* config) {
       std::cout << " Initialising " << std::endl;
+      if (config)
+        fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("SelectionAnalysis");
+
     }
 
     void AnalysisMain::Finalize() {
@@ -35,7 +38,7 @@ namespace ana {
     bool AnalysisMain::ProcessEvent(
       const gallery::Event& ev,
       const std::vector<Event::Interaction>& truth,
-      const std::vector<Event::RecoInteraction>& reco) {
+      std::vector<Event::RecoInteraction>& reco) {
 
       int start = static_cast<int>(time(NULL));
 
@@ -43,7 +46,23 @@ namespace ana {
         std::cout << "AnalysisMain: Processing event " << fEventCounter << std::endl;
 
       fEventCounter++;
-/*
+      for(unsigned int i = 0; i < reco.size(); ++i)
+        fRecoEntryCounter++;
+
+      for(unsigned int i = 0; i < truth.size(); ++i){
+        fTruthEntryCounter++;
+      }
+
+      if(truth.size() >= 1 && reco.size() >= 1){
+        for(unsigned int i = 0; i< truth.size(); ++i){
+          Event::Interaction t = truth[i];
+          Event::RecoInteraction r = reco[i];
+        }
+      }
+
+      return true;
+
+      /*
       std::cout << " Number of truth objects : " << truth.size() << std::endl;
       std::cout << " Number of reco objects  : " << reco.size() << std::endl;
       if(truth.size() >= 1){
@@ -54,13 +73,6 @@ namespace ana {
         }
       }
 */
-      for(unsigned int i = 0; i < reco.size(); ++i)
-        fRecoEntryCounter++;
-
-      for(unsigned int i = 0; i < truth.size(); ++i){
-        fTruthEntryCounter++;
-        return true;
-      }
     }
   }  // namespace SelectionAnalysis
 }  // namespace ana
