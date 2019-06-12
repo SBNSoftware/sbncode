@@ -59,21 +59,12 @@ namespace ana {
          */
         bool ProcessEvent(const gallery::Event& ev,
                           const std::vector<Event::Interaction>& truth,
-                          std::vector<Event::RecoInteraction>& reco);
+                          const std::vector<Event::RecoInteraction>& reco);
 
       protected:
-        unsigned fEventCounter;  //!< Count processed events
-
-        /** Configuration parameters */
-        /** Handle labels **/                           
-        std::string fGeneratorLabel;             ///< Generator label
-        std::string fGeantLabel;                 ///< Geant label   
-//        std::string fPandoraLabel;               ///< Pandora label                           
-//        std::string fRecoTrackLabel;             ///< Reconstructed track object label                  
-//        std::string fRecoShowerLabel;            ///< Reconstructed shower object label
-//        std::string fRecoTrackCalorimetryLabel;  ///< Calorimetry label for reconstructed track object associations
-//        std::string fRecoTrackParticleidLabel;   ///< Particle ID label for reconstructed track object associations
-//        std::string fHitLabel;                   ///< Hit label
+        unsigned fEventCounter;      //!< Count processed events
+        unsigned fTruthEntryCounter; //!< Count processed truth interactions
+        unsigned fRecoEntryCounter;  //!< Count processed reco interactions
 
     }; // AnalysisMain class
   }  // namespace SelectionAnalysis

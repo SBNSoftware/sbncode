@@ -1,3 +1,20 @@
+/**
+ *
+ * Make this a PostProcessorBase 
+ *
+ * This will take SBNCode processed events as input
+ *
+ * Can define ProcessEvent using just the SBNCode Event definition
+ *
+ * ---------------------------------------------------------------------------------------------
+ *
+ *  Author: R. Jones
+ *  Email : <rsjones@fnal.gov>
+ *  Date  : June 2019 
+ *
+ * ---------------------------------------------------------------------------------------------
+ */
+
 #include "EventSelectionHelper.hh"
 #include "LoadEvents.hh"
 #include <iostream>

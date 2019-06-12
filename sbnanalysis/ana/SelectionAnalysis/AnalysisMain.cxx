@@ -17,34 +17,25 @@ namespace ana {
 
     AnalysisMain::AnalysisMain() : 
       fEventCounter(0),
-      fGeneratorLabel(""),
-      fGeantLabel(""){}
+      fTruthEntryCounter(0),
+      fRecoEntryCounter(0){}
 
     void AnalysisMain::Initialize(fhicl::ParameterSet* config) {
       std::cout << " Initialising " << std::endl;
-      if (config) {
-        fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("SelectionAnalysis");
-
-        fGeneratorLabel = pconfig.get<std::string>("GeneratorLabel", "");
-        fGeantLabel     = pconfig.get<std::string>("GeantLabel", "");
-
-      }
-      if (fProviderManager) {
-        std::cout << "Detector: "
-          << fProviderManager->GetGeometryProvider()->DetectorName()
-          << std::endl;
-      }
     }
 
     void AnalysisMain::Finalize() {
       std::cout << "------------------------------------" << std::endl;
-      std::cout << " Number of events: " << fEventCounter << std::endl;
+      std::cout << " Number of events       : " << fEventCounter      << std::endl;
+      std::cout << " Number of truth entries: " << fTruthEntryCounter << std::endl;
+      std::cout << " Number of reco entries : " << fRecoEntryCounter  << std::endl;
+      fOutputFile->cd();
     }
 
     bool AnalysisMain::ProcessEvent(
       const gallery::Event& ev,
       const std::vector<Event::Interaction>& truth,
-      std::vector<Event::RecoInteraction>& reco) {
+      const std::vector<Event::RecoInteraction>& reco) {
 
       int start = static_cast<int>(time(NULL));
 
@@ -52,21 +43,24 @@ namespace ana {
         std::cout << "AnalysisMain: Processing event " << fEventCounter << std::endl;
 
       fEventCounter++;
-
-      /*
-      // Grab a data product from the event
-      auto const& mctruths = *ev.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorLabel);
-
-      // Iterate through the neutrinos
-      for (size_t i=0; i<mctruths.size(); i++) {
-        auto const& mctruth = mctruths.at(i);
-
-        // Fill neutrino vertex position histogram
-        if (mctruth.NeutrinoSet()) 
-          fNuVertexXZHist->Fill(mctruth.GetNeutrino().Nu().Vx(), mctruth.GetNeutrino().Nu().Vz());
+/*
+      std::cout << " Number of truth objects : " << truth.size() << std::endl;
+      std::cout << " Number of reco objects  : " << reco.size() << std::endl;
+      if(truth.size() >= 1){
+        for(unsigned int i = 0; i< truth.size(); ++i){
+          std::cout << " Neutrino PDG                      : " << truth[i].neutrino.pdg << std::endl;
+          std::cout << " Number of true particles          : " << truth[i].finalstate.size() << std::endl;
+          std::cout << " Number of reconstructed particles : " << reco[i].recofinalstate.size() << std::endl;
+        }
       }
-      */
-      return true;
+*/
+      for(unsigned int i = 0; i < reco.size(); ++i)
+        fRecoEntryCounter++;
+
+      for(unsigned int i = 0; i < truth.size(); ++i){
+        fTruthEntryCounter++;
+        return true;
+      }
     }
   }  // namespace SelectionAnalysis
 }  // namespace ana

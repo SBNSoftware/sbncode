@@ -100,16 +100,18 @@ public:
         energy(kUnfilled), trans_mom(kUnfilled), 
         momentum(kUnfilled, kUnfilled, kUnfilled),
         vertex(kUnfilled, kUnfilled, kUnfilled),
-        end(kUnfilled, kUnfilled, kUnfilled){}
+        end(kUnfilled, kUnfilled, kUnfilled),
+        direction(kUnfilled, kUnfilled, kUnfilled){}
 
-      int mc_id;         //|< MC ID, for MC particles it corresponds to itself, for reco particles it corresponds to the truth-matched MC particle 
-      int pdg;           //!< PDG Code
-      int hits;          //!< Number of hits associated to the particle
-      double energy;     //!< Energy
-      double trans_mom;  //!< Transverse momentum
-      TVector3 momentum; //!< Three-momentum
-      TVector3 vertex;   //!< Vertex position of the particle
-      TVector3 end;      //!< End position of the particle
+      int mc_id;          //|< MC ID, for MC particles it corresponds to itself, for reco particles it corresponds to the truth-matched MC particle 
+      int pdg;            //!< PDG Code
+      int hits;           //!< Number of hits associated to the particle
+      double energy;      //!< Energy
+      double trans_mom;   //!< Transverse momentum
+      TVector3 momentum;  //!< Three-momentum
+      TVector3 vertex;    //!< Vertex position of the particle
+      TVector3 end;       //!< End position of the particle
+      TVector3 direction; //!< Direction of the particle
 
   };
 
@@ -128,7 +130,7 @@ public:
         calorimetry_momentum(kUnfilled), 
         chi2_muon(kUnfilled), chi2_proton(kUnfilled), chi2_pion(kUnfilled),
         pida(kUnfilled), kinetic_energy(kUnfilled), missing_energy(kUnfilled),
-        length(kUnfilled), range(kUnfilled), 
+        length(kUnfilled), range(kUnfilled), opening_angle(kUnfilled), 
         dedx({kUnfilled}), res_range({kUnfilled}), pitch({kUnfilled}){}
 
       int mc_id_hits;                //!< Associated MCParticle ID from hits
@@ -149,6 +151,7 @@ public:
       double missing_energy;         //!< missing energy
       double length;                 //!< length
       double range;                  //!< range
+      double opening_angle;          //!< opening angle of a shower's cone
       std::vector<double> pitch;     //!< pitch of the track 
       std::vector<double> dedx;      //!< dedx distribution
       std::vector<double> res_range; //!< residual range distribution
