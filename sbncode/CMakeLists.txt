@@ -7,4 +7,5 @@ add_subdirectory(EventWeight)
 
 #add_subdirectory(NuMuSelection)
 
+add_subdirectory(OscLib)
 add_subdirectory(CAFAna)
