@@ -127,7 +127,7 @@ namespace ana
     assert(tr);
 
     long n;
-    caf::SRProxy sr(dir, tr, dir ? "sbnana" : "rec", n, 0);
+    caf::SRProxy sr(dir, tr, dir ? "sbnana" : "events", n, 0);
 
     //    FloatingExceptionOnNaN fpnan;
 
