@@ -7,3 +7,4 @@ add_subdirectory(EventWeight)
 
 #add_subdirectory(NuMuSelection)
 
+ADD_SUBDIRECTORY(FlatMaker) # TODO, I'm not sure where in the heirarchy this should live

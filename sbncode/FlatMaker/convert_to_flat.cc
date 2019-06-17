@@ -1,15 +1,31 @@
 #include "sbnanalysis/core/Event.hh"
 
-#include "FlatRecord.cxx" // don't need to figure out how to build libraries yet...
+#include "sbncode/FlatMaker/FlatEvent.h"
 
 #include "TFile.h"
+#include "TSystem.h"
+#include "TTree.h"
 
 #include <iostream>
 
-void convert_to_flat(std::string inname = "", std::string outname = "")
+int main(int argc, char** argv)
 {
-  if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_SBND.root";
-  if(outname.empty()) outname = "output_SBNOsc_NumuSelection_Modern_SBND.flat.root";
+  // Have to do it here since we didn't figure out how to statically link it
+  // yet
+  gSystem->Load("libsbnanalysis_Event.so");
+
+  if(argc != 3){
+    std::cout << "Usage: convert_to_flat input.events.root output.flat.root"
+              << std::endl;
+    return 1;
+  }
+
+  std::string inname = argv[1];
+  std::string  outname = argv[2];
+
+  // Can manage by passing '' ''
+  if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_Uboone.root";
+  if(outname.empty()) outname = "output_SBNOsc_NumuSelection_Modern_Uboone.flat.root";
 
   TFile* fin = TFile::Open(inname.c_str());
 
@@ -33,7 +49,7 @@ void convert_to_flat(std::string inname = "", std::string outname = "")
 
   for(int i = 0; i < tr->GetEntries(); ++i){
     // TODO use CAFAna progress bar
-    if(i%1000 == 0) std::cout << i/1000 << " / " << tr->GetEntries()/1000 << std::endl;
+    if(i%100 == 0) std::cout << i/100 << " / " << tr->GetEntries()/100 << std::endl;
 
     tr->GetEntry(i);
 
@@ -43,4 +59,6 @@ void convert_to_flat(std::string inname = "", std::string outname = "")
 
   trout->Write();
   delete rec;
+
+  return 0;
 }

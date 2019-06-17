@@ -157,7 +157,7 @@ print disclaimer
 print
 print '#include "sbnanalysis/core/Event.hh"'
 print
-print '#include "FlatMaker/TreeUtils.h"'
+print '#include "sbncode/FlatMaker/TreeUtils.h"'
 print
 print '#include "TTree.h"'
 
@@ -209,7 +209,7 @@ for klass in ns.classes():
     for tn in vec_mems:
         if not is_fundamental(tn.type):
             incs.add(tn.type)
-    for i in incs: print '#include "FlatMaker/'+i+'.h"'
+    for i in incs: print '#include "sbncode/FlatMaker/'+i+'.h"'
     print
     print '#include <string>'
     print
@@ -254,7 +254,7 @@ for klass in ns.classes():
     sys.stdout = file(cxxDir+'/FlatRecord.cxx', 'a')
 
     print
-    print '#include "FlatMaker/'+pt+'.h"'
+    print '#include "sbncode/FlatMaker/'+pt+'.h"'
     print
     print 'flat::'+pt+'::'+pt+'(const std::string& prefix, TTree* tr, const IBranchPolicy* policy)'
 
