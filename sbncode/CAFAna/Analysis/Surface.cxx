@@ -8,7 +8,7 @@
 #include "CAFAna/Core/ThreadPool.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "TCanvas.h"
 #include "TGraph.h"

@@ -6,7 +6,7 @@
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Prediction/PredictionInterp.h"
 #include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorSterile.h"
 #include "StandardRecord/StandardRecord.h"
 #include "CAFAna/Vars/FitVarsSterile.h"
 #include "CAFAna/Analysis/FitAxis.h"

@@ -15,8 +15,8 @@
 #include "TGraph.h"
 #include "TCanvas.h"
 
-#include "OscLib/func/IOscCalculator.h"
-#include "Utilities/func/MathUtil.h"
+#include "OscLib/IOscCalculator.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include "CAFAna/Core/Loaders.h"
 

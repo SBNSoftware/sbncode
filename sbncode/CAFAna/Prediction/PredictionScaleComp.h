@@ -7,7 +7,7 @@
 
 #include "StandardRecord/StandardRecord.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 namespace ana
 {

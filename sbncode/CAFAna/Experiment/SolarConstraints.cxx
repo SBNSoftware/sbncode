@@ -1,7 +1,7 @@
 #include "CAFAna/Experiment/SolarConstraints.h"
 
-#include "OscLib/func/IOscCalculator.h"
-#include "Utilities/func/MathUtil.h"
+#include "OscLib/IOscCalculator.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include "TDirectory.h"
 #include "TH1.h"

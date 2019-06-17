@@ -1,8 +1,8 @@
 #include "CAFAna/Analysis/CalcsNuFit_cdr.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
-#include "OscLib/func/OscCalculatorPMNSOpt.h"
+#include "OscLib/OscCalculatorPMNSOpt.h"
 
 namespace ana
 {

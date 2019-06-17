@@ -4,7 +4,7 @@
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "TDirectory.h"
 #include "TObjString.h"

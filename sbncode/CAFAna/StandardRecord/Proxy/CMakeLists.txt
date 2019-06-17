@@ -5,8 +5,8 @@ add_custom_command(# Rebuild if Event.hh or the script itself change
                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/parse_xml.py
                    # Couldn't figure out how to make install() install the
                    # headers so do it directly here
-                   COMMAND mkdir -p $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/StandardRecord/Proxy/
-                   COMMAND cp SRProxy.h $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/StandardRecord/Proxy/
+                   COMMAND mkdir -p $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/CAFAna/StandardRecord/Proxy/
+                   COMMAND cp SRProxy.h $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/CAFAna/StandardRecord/Proxy/
   )
 
 # Allow unqualified StandardRecord/ to find the right headers

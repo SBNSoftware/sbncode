@@ -2,7 +2,7 @@
 
 #include "CAFAna/Vars/FitVars.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
 namespace ana
 {

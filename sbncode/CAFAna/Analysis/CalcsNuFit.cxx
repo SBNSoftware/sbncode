@@ -1,8 +1,8 @@
 #include "CAFAna/Analysis/CalcsNuFit.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
-#include "OscLib/func/OscCalculatorPMNSOpt.h"
+#include "OscLib/OscCalculatorPMNSOpt.h"
 
 #include "CAFAna/Vars/FitVars.h"
 

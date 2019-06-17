@@ -6,8 +6,8 @@
 #include "CAFAna/Experiment/IExperiment.h"
 #include "CAFAna/Analysis/GradientDescent.h"
 
-#include "OscLib/func/IOscCalculator.h"
-#include "Utilities/func/MathUtil.h"
+#include "OscLib/IOscCalculator.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include "TError.h"
 #include "TGraph.h"

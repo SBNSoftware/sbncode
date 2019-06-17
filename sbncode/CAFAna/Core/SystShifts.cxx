@@ -1,6 +1,6 @@
 #include "CAFAna/Core/SystShifts.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include <cassert>
 

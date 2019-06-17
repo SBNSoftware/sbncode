@@ -1,8 +1,8 @@
 #include "CAFAna/Vars/FitVarsSterile.h"
 
-#include "OscLib/func/IOscCalculator.h"
-#include "OscLib/func/OscCalculatorSterile.h"
-#include "Utilities/func/MathUtil.h"
+#include "OscLib/IOscCalculator.h"
+#include "OscLib/OscCalculatorSterile.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include <cassert>
 #include <cmath>

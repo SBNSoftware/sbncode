@@ -2,7 +2,7 @@
 
 #include "CAFAna/Vars/FitVars.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include "TDirectory.h"
 #include "TH1.h"

@@ -12,7 +12,7 @@
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Analysis/Calcs.h"
 #include "CAFAna/Core/MultiVar.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorSterile.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 

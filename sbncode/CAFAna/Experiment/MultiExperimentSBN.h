@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CAFAna/Experiment/IExperiment.h"
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 
 #include <memory>

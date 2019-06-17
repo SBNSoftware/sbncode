@@ -4,7 +4,7 @@
 #include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include <cassert>
 #include <iostream>

@@ -1,6 +1,6 @@
 #include "CAFAna/Core/IFitVar.h"
 
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include <cmath>
 

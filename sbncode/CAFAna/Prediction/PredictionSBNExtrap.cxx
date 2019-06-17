@@ -5,7 +5,7 @@
 
 #include "CAFAna/Analysis/ExpInfo.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "TDirectory.h"
 #include "TObjString.h"

@@ -1,7 +1,7 @@
 #include "CAFAna/Analysis/Calcs.h"
 
-#include "OscLib/func/OscCalculatorPMNSOpt.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorPMNSOpt.h"
+#include "OscLib/OscCalculatorSterile.h"
 
 #include <cmath>
 #include <iostream>

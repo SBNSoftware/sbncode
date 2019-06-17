@@ -2,8 +2,7 @@
 
 #include "CAFAna/Core/Spectrum.h"
 #include "CAFAna/Core/Ratio.h"
-
-#include "Utilities/func/MathUtil.h"
+#include "CAFAna/Core/MathUtil.h"
 
 #include "TArrayD.h"
 #include "TClass.h"

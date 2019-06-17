@@ -2,13 +2,13 @@
 
 #include "CAFAna/Core/OscCalcSterileApprox.h"
 
-#include "OscLib/func/OscCalculator.h"
-#include "OscLib/func/OscCalculatorDumb.h"
-#include "OscLib/func/OscCalculatorGeneral.h"
-#include "OscLib/func/OscCalculatorPMNS.h"
-#include "OscLib/func/OscCalculatorPMNSOpt.h"
-#include "OscLib/func/OscCalculatorSterile.h"
-#include "OscLib/func/OscCalculatorPMNS_NSI.h"
+#include "OscLib/OscCalculator.h"
+#include "OscLib/OscCalculatorDumb.h"
+#include "OscLib/OscCalculatorGeneral.h"
+#include "OscLib/OscCalculatorPMNS.h"
+#include "OscLib/OscCalculatorPMNSOpt.h"
+#include "OscLib/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorPMNS_NSI.h"
 
 #include "TObjString.h"
 #include "TH1.h"
