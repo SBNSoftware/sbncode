@@ -23,6 +23,9 @@ add_subdirectory(Analysis)
 add_subdirectory(Systs)
 
 cet_script(cafe)
+# same place as cafe script so we can find it
+cet_script(load_cafana_libs.C)
+cet_script(rootlogon.C)
 
 install_headers()
 install_source()

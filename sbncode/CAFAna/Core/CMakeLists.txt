@@ -10,3 +10,6 @@ art_make(LIBRARY_NAME CAFAnaCore
                        ${ROOT_BASIC_LIB_LIST}
                        ${IFDH}
         )
+
+install_headers()
+install_source()

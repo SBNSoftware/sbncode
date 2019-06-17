@@ -1,29 +1,11 @@
 #!/bin/env python
 
 # Welcome banner
-print '** NOvA Common Analysis Format Executor **'
+print '** Common Analysis Format Executor -- SBN edition **'
 
 import os, sys
 import argparse
 import tempfile
-
-
-def findPkg(pkg):
-    """Locate 'pkg' as SRT would, return a full path to it"""
-    try:
-        pub = os.environ['SRT_PUBLIC_CONTEXT']
-        priv = os.environ['SRT_PRIVATE_CONTEXT']
-    except:
-        print "Can't find $SRT_[PUBLIC|PRIVATE]_CONTEXT. Did you setupnova?"
-        sys.exit(1)
-
-    # Default to private context if available
-    if os.path.isdir(priv+'/'+pkg+'/'):
-        return priv+'/'+pkg+'/'
-
-    # Else fall back to public context
-    assert os.path.isdir(pub+'/'+pkg+'/')
-    return pub+'/'+pkg+'/'
 
 
 def makeParser():
@@ -69,7 +51,7 @@ def makeParser():
 
 
 def libsPath():
-    return findPkg('CAFAna')+'load_libs.C'
+    return os.environ['MRB_BUILDDIR']+'/sbncode/bin/load_cafana_libs.C'
 
 
 def escapeArg(arg):

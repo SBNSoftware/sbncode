@@ -6,3 +6,6 @@ art_make(LIBRARY_NAME CAFAnaVars
                        StandardRecordProxy
                        OscLib
         )
+
+install_headers()
+install_source()

@@ -11,16 +11,15 @@ void load(std::string lib)
   }
 }
 
-void load_libs()
+void load_cafana_libs()
 {
   // All the CINT exception handler does is obfuscate the stack. With this,
   // uncaught exceptions immediately show a useful backtrace under gdb.
   //  G__SetCatchException(0);
 
-  TString qsrt = gSystem->Getenv("SRT_QUAL");
   TString qmrb = gSystem->Getenv("MRB_QUALS");
   // Mirror the optimization settings in use elsewhere
-  if( qsrt.Contains("debug") || qmrb.Contains("debug") ) {
+  if(qmrb.Contains("debug")) {
     gSystem->SetAclicMode(TSystem::kDebug);
   }
   else{
@@ -40,66 +39,43 @@ void load_libs()
   gSystem->SetFlagsOpt(TString(gSystem->GetFlagsOpt())+" -fdiagnostics-color=auto -UNDEBUG"); // match gcc's maxopt behaviour of retaining assert()
 
 
-  // Include path
-  TString includes = "-I$SRT_PRIVATE_CONTEXT/include/ -I$SRT_PUBLIC_CONTEXT/include/ -I$ROOTSYS/include -I$NUTOOLS_INC -I$GENIE_INC/GENIE/";
-
-  if (qmrb == "") {    // This is the SRT build
-    // List of libraries to load. Dependency order.
-    const std::vector<std::string> libs =
-      {
-        "Minuit2", // CAFReweight pulls in Genie which pulls in ROOT geometry
-        // "Cintex",
-        "StandardRecord",
-        "StandardRecordProxy",
-        // "StandardRecord_dict",
-        "CAFAnaCore",
-        "CAFAnaVars",
-        "CAFAnaCuts",
-        "CAFAnaSysts",
-        // "CAFAnaUnfold",
-        "CAFAnaDecomp",
-        "CAFAnaExtrap",
-        "CAFAnaPrediction",
-        //        "CAFAnaExperiment",
-        // "CAFAnaFC",
-        "CAFAnaAnalysis",
-        // "CAFAnaXSec",
-        // "CAFAna",
-        //        "OscLibFunc",
-        // "MCReweightFunc",
-        //        "ifdh"
-      };
-
-    // Actually load the libraries
-    std::cout << "Loading libraries";
-    for(const std::string& lib: libs) load(lib);
-    std::cout << std::endl;
+  char* mrbi = getenv("MRB_INSTALL");
+  if(!mrbi){
+    std::cout << "$MRB_INSTALL is not set" << std::endl;
+    exit(1);
   }
-  else {   // This is the MRB build
-    // List of libraries to load. Dependency order.
-    const std::vector<std::string> libs =
-      {
-        "Geom", "Tree", "Minuit2", // CAFReweight pulls in Genie which pulls in ROOT geometry
-        "Cintex",
-        "StandardRecord", "StandardRecord_dict",
-        "CAFAna",
-        "OscLibFunc",
-	"MCReweightFunc",
-        "ifdh"
-      };
-
-    // Actually load the libraries
-    std::cout << "Loading libraries (mrb)";
-    for(const std::string& lib: libs) load(lib);
-    std::cout << std::endl;
-
-    // MRB requires an extra include path
-    includes += " -I$NOVASOFT_INC";
+  char* sbnv = getenv("SBNCODE_VERSION");
+  if(!sbnv){
+    std::cout << "$SBNCODE_VERSION is not set" << std::endl;
+    exit(1);
   }
 
-  // Magic incantation to get Reflex-based dictionaries converted into the
-  // CINT-based information that ROOT needs
-  //  Cintex::Enable();
+  const std::string incdir = std::string(mrbi)+"/sbncode/"+std::string(sbnv)+"/include/sbncode/";
+
+  // Include path - have to include CAFAna/ to allow looking up StandardRecord directly
+  TString includes = "-I"+incdir+" -I"+incdir+"/CAFAna/ -I$ROOTSYS/include -I$NUTOOLS_INC -I$GENIE_INC/GENIE/";
+
+  // List of libraries to load. Dependency order.
+  const std::vector<std::string> libs =
+    {
+      "Minuit2", // CAFReweight pulls in Genie which pulls in ROOT geometry
+      //      "StandardRecord",
+      "StandardRecordProxy",
+      // "StandardRecord_dict",
+      "CAFAnaCore",
+      "CAFAnaVars",
+      "CAFAnaCuts",
+      "CAFAnaSysts",
+      "CAFAnaExtrap",
+      "CAFAnaPrediction",
+      "CAFAnaExperiment",
+      "CAFAnaAnalysis",
+    };
+
+  // Actually load the libraries
+  std::cout << "Loading libraries";
+  for(const std::string& lib: libs) load(lib);
+  std::cout << std::endl;
 
 
   gSystem->SetIncludePath(includes);
@@ -107,8 +83,8 @@ void load_libs()
   // Doesn't seem to work
   //  gSystem->Setenv("IFDH_DEBUG", "0"); // shut ifdh up
 
-  // Pick up standard NOvA style
-  gROOT->Macro("$SRT_PUBLIC_CONTEXT/Utilities/rootlogon.C");
+  // Pick up standard style
+  gROOT->Macro("${MRB_BUILDDIR}/sbncode/bin/rootlogon.C");
   gROOT->ForceStyle();
 
   TRint* rint = dynamic_cast<TRint*>(gApplication);
@@ -126,7 +102,7 @@ void load_libs()
 
     std::cout << "Profiling enabled." << std::endl;
 
-    if(!qsrt.Contains("debug") && !qmrb.Contains("debug")){
+    if(!qmrb.Contains("debug")){
       std::cout << "Note: profiling works much better in debug mode." << std::endl;
     }
 
