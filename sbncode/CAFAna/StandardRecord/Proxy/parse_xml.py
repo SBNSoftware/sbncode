@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 
-from pygccxml import *
+try:
+    from pygccxml import *
+except Exception as e:
+    print e
+    print
+    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
+    print "and 'setup castxml v0_00_00_f20180122 -f Linux64bit+2.6-2.12 -z /cvmfs/nova.opensciencegrid.org/externals'"
+    sys.exit(1)
 
 import os
 import sys
@@ -54,28 +61,18 @@ if len(sys.argv) >= 3: cxxDir = sys.argv[2]
 generator_path, generator_name = utils.find_xml_generator()
 
 # Figure out where our source files are
-priv = os.environ['SRT_PRIVATE_CONTEXT'] if 'SRT_PRIVATE_CONTEXT' in os.environ else None
-pub = os.environ['SRT_PUBLIC_CONTEXT'] if 'SRT_PUBLIC_CONTEXT' in os.environ else None
-
-# For cmake build
-if not pub: pub = os.environ['NOVASOFT_DIR']
-
-context = priv if priv else pub
-
-path = []
-if priv: path += [priv]
-path += [pub]
-path += [os.environ['ROOT_INC']]
+context = os.environ['SBNCODE_DIR']+'/sbncode/CAFAna/'
+path = [context, os.environ['ROOT_INC']]
 
 config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++14'#,
+    cflags='-std=c++1z -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
-decls = parser.parse([context+'/StandardRecord/StandardRecord.h'],
+decls = parser.parse([context+'StandardRecord/StandardRecord.h'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
@@ -113,9 +110,9 @@ print disclaimer
 print
 print '#pragma once'
 print
-print '#include "StandardRecord/Proxy/BasicTypesProxy.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/BasicTypesProxy.h"'
 print
-print '#include "StandardRecord/SREnums.h"'
+print '#include "sbncode/CAFAna/StandardRecord/SREnums.h"'
 print
 print '#include "TVector3.h"'
 print
@@ -207,9 +204,9 @@ print '} // end namespace'
 sys.stdout = file(cxxDir+'/SRProxy.cxx', 'w')
 print disclaimer
 print
-print '#include "StandardRecord/Proxy/SRProxy.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
 print
-print '#include "StandardRecord/StandardRecord.h" // for CheckAgainst'
+print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
 print
 print 'namespace caf{'
 print joinFunc
@@ -273,10 +270,10 @@ print '} // namespace'
 sys.stdout = file(cxxDir+'/CheckEquals.cxx', 'w')
 print disclaimer
 print
-print '#include "StandardRecord/Proxy/CheckEquals.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/CheckEquals.h"'
 print
-print '#include "StandardRecord/Proxy/SRProxy.h"'
-print '#include "StandardRecord/StandardRecord.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
+print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print
 print '#include <type_traits>'
 print
@@ -391,10 +388,10 @@ print '} // namespace'
 
 
 sys.stdout = file(cxxDir+'/CopyRecord.cxx', 'w')
-print '#include "StandardRecord/Proxy/CopyRecord.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/CopyRecord.h"'
 print
-print '#include "StandardRecord/Proxy/SRProxy.h"'
-print '#include "StandardRecord/StandardRecord.h"'
+print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
+print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print disclaimer
 print 'namespace caf{'
 
