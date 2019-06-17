@@ -7,3 +7,4 @@ add_subdirectory(EventWeight)
 
 #add_subdirectory(NuMuSelection)
 
+add_subdirectory(CAFAna)
