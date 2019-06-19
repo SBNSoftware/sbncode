@@ -33,7 +33,12 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
       bool accept = it.first->ProcessEvent(ev, it.first->fEvent->truth, *it.first->fReco);
 
       if (accept) {
-        it.first->FillTree();
+        // Create a duplicate Event entry for each RecoInteraction
+        std::vector<Event::RecoInteraction> recos = *it.first->fReco;
+        for (auto const& reco : recos) {
+          *it.first->fReco = { reco };
+          it.first->FillTree();
+        }
       }
 
       it.first->EventCleanup();

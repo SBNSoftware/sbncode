@@ -59,7 +59,8 @@ public:
         modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
         w(kUnfilled), t(kUnfilled), energy(kUnfilled),
         momentum(kUnfilled, kUnfilled, kUnfilled), parentPDG(0),
-        parentDecayMode(0), parentDecayVtx(kUnfilled, kUnfilled, kUnfilled) {}
+        parentDecayMode(0), parentDecayVtx(kUnfilled, kUnfilled, kUnfilled),
+        baseline(kUnfilled) {}
 
     bool isnc;                //!< same as LArSoft "ccnc" - 0=CC, 1=NC
     bool iscc;                //!< CC (true) or NC/interference (false)
@@ -83,6 +84,7 @@ public:
     int parentPDG;            //!< Parent hadron/muon PDG
     int parentDecayMode;      //!< Parent hadron/muon decay mode
     TVector3 parentDecayVtx;  //!< Parent hadron/muon decay vertex
+    double baseline;          //!< Distance from decay to interaction
   };
 
   /**
@@ -139,6 +141,8 @@ public:
     /** The other final state particles. */
     std::vector<FinalStateParticle> finalstate; //!< Final state particles
 
+    size_t nfinalstate;  //!< Size of finalstate
+
     /**
      * Event weights.
      *
@@ -189,7 +193,9 @@ public:
   };
 
   Metadata metadata;  //!< Event metadata
+  size_t ntruth;  //!< Size of truth
   std::vector<Interaction> truth; //!< All truth interactions
+  size_t nreco;  //!< Size of reco
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
 
   Experiment experiment;  //!< Experiment identifier

@@ -34,6 +34,7 @@ ProcessorBase::~ProcessorBase() {}
 
 
 void ProcessorBase::FillTree() {
+  fEvent->nreco = fReco->size();
   fTree->Fill();
   fEventIndex++;
 }
@@ -203,8 +204,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
   // Get list of MCParticles
-  auto const& mcparticle_list = \
-    *ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
+  //auto const& mcparticle_list = \
+  //  *ev.getValidHandle<std::vector<simb::MCParticle> >(fMCParticleTag);
+  gallery::Handle<std::vector<simb::MCParticle> > mcparticle_list;
+  ev.getByLabel(fTruthTag, mcparticle_list);
+  bool mcparticles_is_valid = mcparticle_list.isValid();
 
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
@@ -284,6 +288,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.parentDecayMode = flux.fndecay;
       interaction.neutrino.parentDecayVtx = \
         TVector3(flux.fvx, flux.fvy, flux.fvz);
+      interaction.neutrino.baseline = flux.fdk2gen + flux.fgen2vtx;
     }
 
     TLorentzVector q_labframe;
@@ -314,8 +319,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.end = lepton.EndPosition().Vect();
       interaction.lepton.status_code = lepton.StatusCode();
       interaction.lepton.is_primary = (lepton.Process() == "primary");
+
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *lepton_traj = util::MatchMCParticleID(lepton.TrackId(), mcparticle_list);
+      const simb::MCParticle *lepton_traj = \
+        mcparticles_is_valid ? util::MatchMCParticleID(lepton.TrackId(), *mcparticle_list) : NULL;
       // only set length if we get a match
       // TODO: why aren't there matches sometimes?
       if (lepton_traj != NULL) {
@@ -358,7 +365,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.status_code = particle.StatusCode();
       fsp.is_primary = (particle.Process() == "primary");
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *particle_traj = util::MatchMCParticleID(particle.TrackId(), mcparticle_list);
+      const simb::MCParticle *particle_traj = \
+        mcparticles_is_valid ? util::MatchMCParticleID(particle.TrackId(), *mcparticle_list) : NULL;
       // set length if we have a match
       // TODO: why do some particles not get a match?
       if (particle_traj != NULL) {
@@ -378,6 +386,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.finalstate.push_back(fsp);
     }
 
+    interaction.nfinalstate = interaction.finalstate.size();
+
     // GENIE specific
     if (genie_truth_is_valid) {
       auto const& gtruth = gtruths_handle->at(i);
@@ -393,6 +403,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     fEvent->truth.push_back(interaction);
   }
+
+  fEvent->ntruth = fEvent->truth.size();
 }
 
 }  // namespace core
