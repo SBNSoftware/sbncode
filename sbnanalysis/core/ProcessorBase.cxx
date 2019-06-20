@@ -35,7 +35,6 @@ ProcessorBase::~ProcessorBase() {}
 
 void ProcessorBase::FillTree() {
   fEvent->nreco = fReco->size();
-std::cout << fEvent->truth[0].weights.size() << std::endl;
   fTree->Fill();
   fEventIndex++;
 }
@@ -252,6 +251,12 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Populate event tree
   fEvent->experiment = fExperimentID;
 
+  auto const& evaux = ev.eventAuxiliary();
+  fEvent->metadata.run = evaux.run();
+  fEvent->metadata.subrun = evaux.subRun();
+  fEvent->metadata.eventID = evaux.event();
+  fEvent->metadata.mcIndex = fEventIndex;
+
   for (size_t i=0; i<mctruths.size(); i++) {
     event::Interaction interaction;
 
@@ -281,8 +286,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
               this_wgh.first,
               std::vector<float>(this_wgh.second.begin(), this_wgh.second.end())
             });
-            std::cout << "Read " << this_wgh.second.size() << " weights for " << this_wgh.first << " " << this_wgh.second[0] << std::endl;
-            std::cout << interaction.weights.at(this_wgh.first).size() << std::endl;
           }
           // If we have seen the name before, append this instance to the last one
           else {
