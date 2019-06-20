@@ -17,6 +17,7 @@ add_library(sbnanalysis_SBNOsc_NueSelection SHARED NueSelection.cxx)
 add_library(sbnanalysis_SBNOsc_NumuSelection SHARED NumuSelection.cxx)
 add_library(sbnanalysis_SBNOsc_Covariance SHARED Covariance.cxx)
 add_library(sbnanalysis_SBNOsc_Chi2Sensitivity SHARED Chi2Sensitivity.cxx)
+add_library(sbnanalysis_SBNOsc_CrossSections SHARED CrossSections.cxx)
 
 # Add in ROOT dictionary
 ROOT_GENERATE_DICTIONARY(SBNOsc_dict NumuSelection.h LINKDEF linkdef.h)
@@ -32,7 +33,9 @@ target_link_libraries(sbnanalysis_SBNOsc_NumuSelection
   sbnanalysis_SBNOsc_classes
   ubana_BasicTool_GeoAlgo
 )
-target_link_libraries(sbnanalysis_SBNOsc_Chi2Sensitivity sbnanalysis_SBNOsc_Covariance)
+target_link_libraries(sbnanalysis_SBNOsc_Chi2Sensitivity 
+                      sbnanalysis_SBNOsc_Covariance 
+                      sbnanalysis_SBNOsc_CrossSections)
 
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOsc_Utilities DESTINATION lib)
@@ -40,6 +43,7 @@ install(TARGETS sbnanalysis_SBNOsc_NueSelection DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_NumuSelection DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_Covariance DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOsc_Chi2Sensitivity DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOsc_CrossSections DESTINATION lib)
 
 install(TARGETS sbnanalysis_SBNOsc_classes DESTINATION lib)
 

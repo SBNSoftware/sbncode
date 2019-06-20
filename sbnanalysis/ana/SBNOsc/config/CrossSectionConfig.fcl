@@ -1,0 +1,24 @@
+CrossSections: {
+  OutputFile: "xsec.root"
+
+  MinX: -185 # [cm]
+  MaxX: 185
+  MinY: -185
+  MaxY: 185
+  MinZ: 15
+  MaxZ: 420
+
+  MinContainedLength: 50 # [cm]
+  MinExitingLength: 100
+  
+  ProtonThreshold: 0.2 # [GeV]
+  PionThreshold: 0.05
+  MuonThreshold: 0.05
+  Pi0Threshold: 0.08
+
+  ProtonPidEff: 0.85 # [percentage]
+  PionPidEff: 0.99
+
+}
+
+
