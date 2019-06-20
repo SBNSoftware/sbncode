@@ -119,7 +119,7 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     fSampleIndex = 0;
 }
 
-void Covariance::ProcessEvent(const Event *event) {
+void Covariance::ProcessEvent(const event::Event *event) {
     // iterate over each interaction in the event
     for (int n = 0; n < event->reco.size(); n++) {
         unsigned truth_ind = event->reco[n].truth_index;

@@ -228,7 +228,7 @@ void Chi2Sensitivity::FileCleanup(TTree *eventTree) {
     fSampleIndex ++;
 }
             
-void Chi2Sensitivity::ProcessEvent(const Event *event) {
+void Chi2Sensitivity::ProcessEvent(const event::Event *event) {
     // have the covariance process the event
     fCovariance.ProcessEvent(event);
 

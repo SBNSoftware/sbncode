@@ -39,7 +39,14 @@ void ProcessorBase::FillTree() {
   fEventIndex++;
 }
 
+
+void ProcessorBase::FillRecoTree() {
+  fRecoTree->Fill();
+}
+
+
 void ProcessorBase::EventCleanup() {
+  fRecoEvent->metadata.Init();
   fEvent->metadata.Init();
   fEvent->truth.clear();
   fEvent->reco.clear();
@@ -59,9 +66,7 @@ void ProcessorBase::Setup(char* config) {
 
 
 void ProcessorBase::Setup(fhicl::ParameterSet* config) {
-  // Load configuration parameters
-
-  // With configuration file provided
+  // Load configuration file
   if (config) {
     fExperimentID = \
       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
@@ -130,14 +135,19 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
               << std::endl;
   }
 
-  // Open the output file and create the standard event tree
+  // Open the output file and create the standard event trees
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
 
   fTree = new TTree("sbnana", "SBN Analysis Tree");
   fTree->AutoSave("overwrite");
-  fEvent = new Event();
+  fEvent = new event::Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
+
+  fRecoTree = new TTree("sbnreco", "SBN Reco Event Tree");
+  fRecoTree->AutoSave("overwrite");
+  fRecoEvent = new event::RecoEvent();
+  fRecoTree->Branch("reco_events", &fRecoEvent);
 
   // Create the output subrun tree
   fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
@@ -190,6 +200,7 @@ void ProcessorBase::Teardown() {
   // Write the standard tree and close the output file
   fOutputFile->cd();
   fTree->Write("sbnana", TObject::kOverwrite);
+  fRecoTree->Write("sbnreco", TObject::kOverwrite);
   fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
   fOutputFile->Close();
 }
@@ -199,13 +210,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
 
-  // Get MCTruth information
+  // Get MC truth information
   auto const& mctruths = \
     *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
 
-  // Get list of MCParticles
-  //auto const& mcparticle_list = \
-  //  *ev.getValidHandle<std::vector<simb::MCParticle> >(fMCParticleTag);
   gallery::Handle<std::vector<simb::MCParticle> > mcparticle_list;
   ev.getByLabel(fTruthTag, mcparticle_list);
   bool mcparticles_is_valid = mcparticle_list.isValid();
@@ -214,7 +222,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
-  // Get MCFlux information
   auto const& mcfluxes = \
     *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
   assert(mctruths.size() == mcfluxes.size());
@@ -245,7 +252,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   fEvent->experiment = fExperimentID;
 
   for (size_t i=0; i<mctruths.size(); i++) {
-    Event::Interaction interaction;
+    event::Interaction interaction;
 
     auto const& mctruth = mctruths.at(i);
     auto const& mcflux = mcfluxes.at(i);
@@ -350,7 +357,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     // Hadronic system
     for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
-      Event::FinalStateParticle fsp;
+      event::FinalStateParticle fsp;
       const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
 
       if (particle.Process() != "primary") {

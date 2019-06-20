@@ -145,7 +145,7 @@ void NumuSelection::Finalize() {
 }
 
 
-bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {
+bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
   if (_event_counter % 10 == 0) {
     std::cout << "NumuSelection: Processing event " << _event_counter << " "
               << "(" << _nu_count << " neutrinos selected)"
@@ -186,7 +186,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     calculator.lepton_energy_distortion_leaving_B = _config.leptonEnergyDistortionLeavingB;
 
     // build the interaction
-    Event::Interaction interaction = truth[i];
+    event::Interaction interaction = truth[i];
 
     // Get selection-specific info
     //
@@ -196,7 +196,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
     double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
 
-    Event::RecoInteraction reco_interaction(interaction, i);
+    event::RecoInteraction reco_interaction(interaction, i);
     reco_interaction.reco_energy = visible_energy;
 
     // Build the weight of this event

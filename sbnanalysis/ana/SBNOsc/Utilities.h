@@ -31,7 +31,7 @@ void hello();
 
 
 /** Extract truth information to approximate reconstruction. */
-Event::Interaction TruthReco(const simb::MCTruth& mctruth);
+event::Interaction TruthReco(const simb::MCTruth& mctruth);
 
 
 /**
