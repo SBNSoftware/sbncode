@@ -125,7 +125,11 @@ void Covariance::ProcessEvent(const event::Event *event) {
         unsigned truth_ind = event->reco[n].truth_index;
 
         // Get energy
-        double true_nuE = event->reco[n].truth.neutrino.energy;
+        int idx = event->reco[n].truth_index;
+        if (idx < 0 || idx > event->truth.size()) {
+          continue;
+        }
+        double true_nuE = event->truth[idx].neutrino.energy;
         double nuE; 
         if (fEnergyType == "CCQE") {
             nuE = event->truth[truth_ind].neutrino.eccqe;

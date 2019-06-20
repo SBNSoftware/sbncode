@@ -51,7 +51,7 @@ bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<even
     const simb::MCNeutrino& nu = mctruth.GetNeutrino();
 
     if (nu.CCNC() == simb::kCC && nu.Mode() == 0 && nu.Nu().PdgCode() == 12) {
-      event::RecoInteraction interaction(truth[i], i);
+      event::RecoInteraction interaction(i);
       reco.push_back(interaction);
     }
   }

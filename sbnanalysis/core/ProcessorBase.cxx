@@ -34,7 +34,6 @@ ProcessorBase::~ProcessorBase() {}
 
 
 void ProcessorBase::FillTree() {
-  fEvent->nreco = fReco->size();
   fTree->Fill();
   fEventIndex++;
 }
@@ -77,6 +76,9 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
     fOutputFilename = config->get<std::string>("OutputFile", "output.root");
     fProviderConfig = config->get<std::string>("ProviderConfigFile", "");
+
+    fWriteTree = config->get<bool>("WriteTree", true);
+    fWriteRecoTree = config->get<bool>("WriteRecoTree", true);
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -139,13 +141,11 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
 
   fTree = new TTree("sbnana", "SBN Analysis Tree");
-  fTree->AutoSave("overwrite");
   fEvent = new event::Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
 
   fRecoTree = new TTree("sbnreco", "SBN Reco Event Tree");
-  fRecoTree->AutoSave("overwrite");
   fRecoEvent = new event::RecoEvent();
   fRecoTree->Branch("reco_events", &fRecoEvent);
 
@@ -199,9 +199,14 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
 void ProcessorBase::Teardown() {
   // Write the standard tree and close the output file
   fOutputFile->cd();
-  fTree->Write("sbnana", TObject::kOverwrite);
-  fRecoTree->Write("sbnreco", TObject::kOverwrite);
+  if (fWriteTree) {
+    fTree->Write("sbnana", TObject::kOverwrite);
+  }
+  if (fWriteRecoTree) {
+    fRecoTree->Write("sbnreco", TObject::kOverwrite);
+  }
   fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
+  fOutputFile->Purge();
   fOutputFile->Close();
 }
 
@@ -255,10 +260,10 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   fEvent->metadata.run = evaux.run();
   fEvent->metadata.subrun = evaux.subRun();
   fEvent->metadata.eventID = evaux.event();
-  fEvent->metadata.mcIndex = fEventIndex;
 
   for (size_t i=0; i<mctruths.size(); i++) {
     event::Interaction interaction;
+    interaction.index = i;
 
     auto const& mctruth = mctruths.at(i);
     auto const& mcflux = mcfluxes.at(i);
@@ -347,7 +352,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
           interaction.lepton.contained_length = util::MCParticleContainedLength(*lepton_traj, fActiveVolumes);
         }
         else {
-          interaction.lepton.contained_length = -1; 
+          interaction.lepton.contained_length = event::kUnfilled;
         }
       }
       else {
@@ -391,7 +396,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
           fsp.contained_length = util::MCParticleContainedLength(*particle_traj, fActiveVolumes);
         }
         else {
-          fsp.contained_length = -1;
+          fsp.contained_length = event::kUnfilled;
         }
       }
       else {

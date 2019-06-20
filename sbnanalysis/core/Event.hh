@@ -30,21 +30,18 @@ static const int kUnfilled = -99999;  //!< Value for unfilled variables
 class Metadata {
 public:
   /** Constructor. */
-  Metadata() : run(kUnfilled), subrun(kUnfilled), eventID(kUnfilled),
-               mcIndex(kUnfilled) {}
+  Metadata() : run(kUnfilled), subrun(kUnfilled), eventID(kUnfilled) {}
 
   /** Reset members to defaults. */
   void Init() {
     run = kUnfilled;
     subrun = kUnfilled;
     eventID = kUnfilled;
-    mcIndex = kUnfilled;
   }
 
   int run;      //!< Run ID
   int subrun;   //!< Subrun ID
   int eventID;  //!< Event ID
-  int mcIndex;  //!< MC event index
 };
 
 
@@ -155,6 +152,8 @@ public:
    * for all the sampled universes.
    */
   std::map<std::string, std::vector<float> > weights;
+
+  size_t index;  //!< Index in the MCTruth
 };
 
 
@@ -164,26 +163,25 @@ public:
  * selection-defined reconstruction information
  */
 class RecoInteraction {
-  public:
-    /** Default Constructor */
-    RecoInteraction()
-        : truth_index(-1), reco_energy(kUnfilled), weight(1) {}
+public:
+  /** Default Constructor */
+  RecoInteraction()
+      : truth_index(-1), reco_energy(kUnfilled), weight(1) {}
 
-    /** Fill in truth information -- other fields set as in default */
-    explicit RecoInteraction(const Interaction &t, int index)
-        : truth(t), truth_index(index), reco_energy(kUnfilled), weight(1) {}
+  /** Fill in truth information -- other fields set as in default */
+  explicit RecoInteraction(int index)
+      : truth_index(index), reco_energy(kUnfilled), weight(1) {}
 
-    Interaction truth;  //!< Truth level information about interaction
+  /**
+   * Index into the vector of truth interaction objects in the Event
+   * (same as the index into MCTruth objects). Equal to -1 if there is
+   * no corresponding truth interaction.
+   */
+  int truth_index;
 
-    /**
-     * Index into the vector of truth interaction objects in the Event
-     * (same as the index into MCTruth objects). Equal to -1 if there is
-     * no corresponding truth interaction.
-     */
-    int truth_index;
-
-    float reco_energy;  //!< Reconstructed neutrino energy [GeV]
-    float weight;  //!< Selection-defined event weight
+  float reco_energy;  //!< Reconstructed neutrino energy [GeV]
+  float weight;  //!< Selection-defined event weight
+  size_t index;  //!< Index in the reco vector
 };
 
 
@@ -196,8 +194,13 @@ class RecoInteraction {
  */
 class RecoEvent {
 public:
+  Interaction* GetTruth() {
+    return truth.empty() ? NULL : &truth.at(0);
+  }
+
   Metadata metadata;  //!< Event metadata
-  RecoInteraction reco; //!< Reconstructed interactions
+  RecoInteraction reco; //!< Reconstructed interaction
+  std::vector<Interaction> truth; //!< Associated truth interaction
   Experiment experiment;  //!< Experiment identifier
 };
 

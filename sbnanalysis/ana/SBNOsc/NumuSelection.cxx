@@ -196,7 +196,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
 
     double visible_energy = visibleEnergy(mctruth, mctracks, mcshowers, calculator, false);
 
-    event::RecoInteraction reco_interaction(interaction, i);
+    event::RecoInteraction reco_interaction(i);
     reco_interaction.reco_energy = visible_energy;
 
     // Build the weight of this event

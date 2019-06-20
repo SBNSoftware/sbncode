@@ -28,23 +28,39 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
   // Event loop
   for (gallery::Event ev(filenames); !ev.atEnd(); ev.next()) {
     for (auto it : fProcessors) {
-      it.first->BuildEventTree(ev);
+      ProcessorBase* p = it.first;
+      p->BuildEventTree(ev);
 
-      bool accept = it.first->ProcessEvent(ev, it.first->fEvent->truth, *it.first->fReco);
+      bool accept = p->ProcessEvent(ev, p->fEvent->truth, *p->fReco);
+
+      // Set reco index
+      for (size_t i=0; i<p->fReco->size(); i++) {
+        p->fReco->at(i).index = i;
+      }
+      p->fEvent->nreco = p->fReco->size();
 
       if (accept) {
-        it.first->FillTree();
+        p->FillTree();
 
         // For each reco event, fill the reco output tree
-        it.first->fRecoEvent->experiment = it.first->fEvent->experiment;
-        it.first->fRecoEvent->metadata = it.first->fEvent->metadata;
-        for (auto const& reco : *it.first->fReco) {
-          it.first->fRecoEvent->reco = reco;
-          it.first->FillRecoTree();
+        p->fRecoEvent->experiment = p->fEvent->experiment;
+        p->fRecoEvent->metadata = p->fEvent->metadata;
+
+        for (auto const& reco : *p->fReco) {
+          p->fRecoEvent->reco = reco;
+
+          // Copy the associated truth interaction, if any
+          p->fRecoEvent->truth.resize(0);
+          int truthidx = p->fRecoEvent->reco.truth_index;
+          if (truthidx >= 0 && truthidx < p->fEvent->truth.size()) {
+            p->fRecoEvent->truth.push_back(p->fEvent->truth.at(truthidx));
+          }
+
+          p->FillRecoTree();
         }
       }
 
-      it.first->EventCleanup();
+      p->EventCleanup();
     }
   }
 

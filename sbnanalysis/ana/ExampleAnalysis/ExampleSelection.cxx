@@ -92,7 +92,7 @@ bool ExampleSelection::ProcessEvent(
     // Add in the "reconstructed" interaction
     //
     // Contruct truth information from the provided vector
-    event::RecoInteraction interaction(truth[i], i);
+    event::RecoInteraction interaction(i);
     // get "reconstructed" energy
     interaction.reco_energy = util::ECCQE(mctruth.GetNeutrino().Nu().Momentum().Vect(), mctruth.GetNeutrino().Lepton().E());
     reco.push_back(interaction);

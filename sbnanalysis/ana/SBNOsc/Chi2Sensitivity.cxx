@@ -237,8 +237,12 @@ void Chi2Sensitivity::ProcessEvent(const event::Event *event) {
         unsigned truth_ind = event->reco[n].truth_index;
     
         // Get energy
+        int idx = event->reco[n].truth_index;
+        if (idx < 0 || idx > event->truth.size()) {
+          continue;
+        }
+        double true_nuE = event->truth[idx].neutrino.energy;
         double nuE = 0;
-        double true_nuE = event->reco[n].truth.neutrino.energy;
         if (fEnergyType == "CCQE") {
             nuE = event->truth[truth_ind].neutrino.eccqe;
         } else if (fEnergyType == "True") {

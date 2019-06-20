@@ -167,9 +167,11 @@ protected:
   std::string fOutputFilename;  //!< The output filename
   std::string fProviderConfig;  //!< A custom provider config fcl file
   std::vector<geo::BoxBoundedGeo> fActiveVolumes; //!< List of active volumes in configured detector
+  bool fWriteTree;  //!< Enable writing of the main tree
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
   event::Event* fEvent;  //!< The standard output event data structure
+  bool fWriteRecoTree;  //!< Enable writing of the reco tree
   TTree* fRecoTree;  //!< The output reco ROOT tree
   event::RecoEvent* fRecoEvent;  //!< The standard output reco event data structure
   TTree* fSubRunTree;  //!< Subrun output tree
