@@ -28,7 +28,7 @@ public:
         totspills(0), goodspills(0) {}
 
   SubRun(int _runID, int _subrunID,
-         double _totpot, double _totgoodpot,
+         float _totpot, float _totgoodpot,
          int _totspills, int _goodspills)
       : runID(_runID), subrunID(_subrunID),
         totpot(_totpot), totgoodpot(_totgoodpot),
@@ -36,8 +36,8 @@ public:
 
   int runID;
   int subrunID;
-  double totpot;
-  double totgoodpot;
+  float totpot;
+  float totgoodpot;
   int totspills;
   int goodspills;
 };

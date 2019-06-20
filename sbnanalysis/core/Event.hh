@@ -71,23 +71,23 @@ public:
   int pdg;                  //!< PDG code of probe neutrino
   int targetPDG;            //!< PDG code of struck target
   int genie_intcode;        //!< Interaction mode (as for LArSoft MCNeutrino::Mode() )
-  double bjorkenX;          //!< Bjorken x
-  double inelasticityY;     //!< Inelasticity y
-  double Q2;                //!< Q squared
-  double q0;                //!< q0, struck nucleon rest frame
-  double modq;              //!< |q|, struck nucleon rest frame
-  double q0_lab;            //!< q0, lab frame
-  double modq_lab;          //!< |q|, lab frame
-  double w;                 //!< Hadronic invariant mass W
-  double t;                 //!< Kinematic t
-  double eccqe;             //!< CCQE energy
-  double energy;            //!< Neutrino energy (GeV)
+  float bjorkenX;          //!< Bjorken x
+  float inelasticityY;     //!< Inelasticity y
+  float Q2;                //!< Q squared
+  float q0;                //!< q0, struck nucleon rest frame
+  float modq;              //!< |q|, struck nucleon rest frame
+  float q0_lab;            //!< q0, lab frame
+  float modq_lab;          //!< |q|, lab frame
+  float w;                 //!< Hadronic invariant mass W
+  float t;                 //!< Kinematic t
+  float eccqe;             //!< CCQE energy
+  float energy;            //!< Neutrino energy (GeV)
   TVector3 momentum;        //!< Neutrino three-momentum
   TVector3 position;        //!< Neutrino interaction position
   int parentPDG;            //!< Parent hadron/muon PDG
   int parentDecayMode;      //!< Parent hadron/muon decay mode
   TVector3 parentDecayVtx;  //!< Parent hadron/muon decay vertex
-  double baseline;          //!< Distance from decay to interaction
+  float baseline;          //!< Distance from decay to interaction
 };
 
 
@@ -119,7 +119,7 @@ public:
   };
 
   int pdg;  //!< PDG Code
-  double energy;  //!< Energy
+  float energy;  //!< Energy
   TVector3 momentum;  //!< Three-momentum
   TVector3 start;  //!< Start position in detector coords [cm]
   TVector3 end;  //!< End position in detector coords (may be outside of AV) [cm]
@@ -129,9 +129,9 @@ public:
    * Set to -1 if no Detector is defined through the ProviderManager
    * Set to 0 for a particle that originates outside the detector active volume
    */
-  double contained_length;
+  float contained_length;
 
-  double length; //!< Total length of the energy depositions [cm]
+  float length; //!< Total length of the energy depositions [cm]
   bool is_primary; //!< Whether the process producing the particle was "primary"
   int status_code; //!< Status code returned by GENIE (see GenieStatus enum)
 };
@@ -154,7 +154,7 @@ public:
    * This is a map from the weight calculator name to the list of weights
    * for all the sampled universes.
    */
-  std::map<std::string, std::vector<double> > weights;
+  std::map<std::string, std::vector<float> > weights;
 };
 
 
@@ -182,8 +182,8 @@ class RecoInteraction {
      */
     int truth_index;
 
-    double reco_energy;  //!< Reconstructed neutrino energy [GeV]
-    double weight;  //!< Selection-defined event weight
+    float reco_energy;  //!< Reconstructed neutrino energy [GeV]
+    float weight;  //!< Selection-defined event weight
 };
 
 

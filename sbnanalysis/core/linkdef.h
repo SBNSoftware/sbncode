@@ -13,14 +13,15 @@
 #pragma link C++ class event::RecoInteraction+;
 #pragma link C++ class event::Neutrino+;
 #pragma link C++ class event::FinalStateParticle+;
-#pragma link C++ class std::map<std::string, std::vector<double> >+;
+#pragma link C++ class std::map<std::string, std::vector<float> >+;
 #pragma link C++ class std::vector<event::Interaction>+;
 #pragma link C++ class std::vector<event::RecoInteraction>+;
 #pragma link C++ class std::vector<event::FinalStateParticle>+;
 
 #pragma link C++ class std::vector<TVector3>+;
 
-#pragma link C++ class vector<map<string,vector<double> > >+;
+#pragma link C++ class map<string,vector<float> >+;
+#pragma link C++ class vector<map<string,vector<float> > >+;
 
 #endif
 

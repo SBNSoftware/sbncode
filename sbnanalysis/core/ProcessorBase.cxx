@@ -35,6 +35,7 @@ ProcessorBase::~ProcessorBase() {}
 
 void ProcessorBase::FillTree() {
   fEvent->nreco = fReco->size();
+std::cout << fEvent->truth[0].weights.size() << std::endl;
   fTree->Fill();
   fEventIndex++;
 }
@@ -175,9 +176,9 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     // Add subrun if not in cache
     if (fSubRunCache.find(id) == fSubRunCache.end()) {
       TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
-      double pot = potLeaf ? potLeaf->GetValue() : -1;
+      float pot = potLeaf ? potLeaf->GetValue() : -1;
       TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
-      double goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
+      float goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
       TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
       int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
       TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
@@ -273,10 +274,15 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       //       is ensured in the current implementation by making sure that the different weight tags in "wghs"
       //       are always ordered in the same way.
       for (auto const& wgh : wghs) {
-        for (const std::pair<std::string, std::vector<double>> &this_wgh: wgh->at(i).fWeight) {
+        for (const std::pair<std::string, std::vector<double> >& this_wgh : wgh->at(i).fWeight) {
           // If we haven't seen this name before, make a new vector with the name
           if (interaction.weights.count(this_wgh.first) == 0) {
-            interaction.weights.insert(this_wgh);
+            interaction.weights.insert({
+              this_wgh.first,
+              std::vector<float>(this_wgh.second.begin(), this_wgh.second.end())
+            });
+            std::cout << "Read " << this_wgh.second.size() << " weights for " << this_wgh.first << " " << this_wgh.second[0] << std::endl;
+            std::cout << interaction.weights.at(this_wgh.first).size() << std::endl;
           }
           // If we have seen the name before, append this instance to the last one
           else {
