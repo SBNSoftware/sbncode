@@ -337,7 +337,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.energy = lepton.Momentum(0).Energy();
       interaction.lepton.momentum = lepton.Momentum(0).Vect();
       interaction.lepton.start = lepton.Position(0).Vect();
-      interaction.lepton.end = lepton.EndPosition().Vect();
       interaction.lepton.status_code = lepton.StatusCode();
       interaction.lepton.is_primary = (lepton.Process() == "primary");
 
@@ -354,10 +353,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
         else {
           interaction.lepton.contained_length = event::kUnfilled;
         }
+        // also get the end point from the trajectory
+        interaction.lepton.end = lepton_traj->EndPosition().Vect();
       }
       else {
         interaction.lepton.contained_length = 0;
         interaction.lepton.length = 0;
+        // if we couldn't find a trajectory, set end to start
+        interaction.lepton.end = interaction.lepton.start;
       }
 
       q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
@@ -382,7 +385,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.energy = particle.Momentum(0).Energy();
       fsp.momentum = particle.Momentum(0).Vect();
       fsp.start = particle.Position(0).Vect();
-      fsp.end = particle.EndPosition().Vect();
       fsp.status_code = particle.StatusCode();
       fsp.is_primary = (particle.Process() == "primary");
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
@@ -398,10 +400,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
         else {
           fsp.contained_length = event::kUnfilled;
         }
+        // also get the end point from the trajectory
+        fsp.end = particle_traj->EndPosition().Vect();
       }
       else {
         fsp.contained_length = 0;
         fsp.length = 0;
+        // if we couldn't find a trajectory, set end to start
+        fsp.end = fsp.start;
       }
 
       interaction.finalstate.push_back(fsp);
