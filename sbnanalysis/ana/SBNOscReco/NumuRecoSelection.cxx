@@ -309,18 +309,17 @@ double NumuRecoSelection::TrackCompletion(int mcparticle_id, const std::vector<a
   return matched_reco_energy / mcparticle_energy;
 }
 
-Event::RecoInteraction NumuRecoSelection::CoreRecoInteraction(const std::vector<Event::Interaction> &truth, const NumuRecoSelection::RecoInteraction &vertex, double weight) {
-  Event::RecoInteraction ret;
+event::RecoInteraction NumuRecoSelection::CoreRecoInteraction(const std::vector<event::Interaction> &truth, const NumuRecoSelection::RecoInteraction &vertex, double weight) {
+  event::RecoInteraction ret;
   if (vertex.match.mctruth_vertex_id >= 0) {
     ret.truth_index = vertex.match.mctruth_vertex_id;
-    ret.truth = truth[vertex.match.mctruth_vertex_id];
   }
   ret.reco_energy = vertex.nu_energy;
   ret.weight = weight;
   return ret;
 }
 
-bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &core_truth, std::vector<Event::RecoInteraction>& reco) {
+bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &core_truth, std::vector<event::RecoInteraction>& reco) {
   if (_event_counter % 10 == 0) {
     std::cout << "NumuRecoSelection: Processing event " << _event_counter << " "
               << "(" << _nu_count << " neutrinos selected)"

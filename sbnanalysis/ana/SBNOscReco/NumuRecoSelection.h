@@ -62,7 +62,7 @@ public:
    * \param Reconstructed interactions
    * \return True to keep event
    */
-  bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco);
+  bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco);
 
   /**
  * Enum to hold each different typoe of reconstructed event
@@ -386,7 +386,7 @@ protected:
  *
  *  \return Reconstruction information as needed by the sbncode core class
  */
-  Event::RecoInteraction CoreRecoInteraction(const std::vector<Event::Interaction> &truth, const RecoInteraction &vertex, double weight);
+  event::RecoInteraction CoreRecoInteraction(const std::vector<event::Interaction> &truth, const RecoInteraction &vertex, double weight);
 
   /**
  * Produced vertex information from truth information
