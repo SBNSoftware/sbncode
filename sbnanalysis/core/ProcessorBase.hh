@@ -156,6 +156,8 @@ protected:
   */
   void BuildEventTree(gallery::Event& ev);
 
+  void SetupServices(gallery::Event& ev);
+
   /**
    * Update subrun list to include subruns for this event's file.
    *

@@ -25,6 +25,9 @@
 #include "ProcessorBase.hh"
 #include "ProviderManager.hh"
 
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
+
 namespace core {
 
 ProcessorBase::ProcessorBase()
@@ -215,6 +218,19 @@ void ProcessorBase::Teardown() {
   fOutputFile->Close();
 }
 
+void ProcessorBase::SetupServices(gallery::Event& ev) {
+  if (fProviderManager != NULL) {
+    // reset the channels of the back tracker
+    fProviderManager->GetBackTrackerProvider()->ClearEvent();
+    fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+
+    // reset information in particle inventory
+    fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+    fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+    fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+    fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+  }
+}
 
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
@@ -232,6 +248,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
+  // Get MCFlux information
   auto const& mcfluxes = \
     *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
   assert(mctruths.size() == mcfluxes.size());

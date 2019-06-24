@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <array>
+#include <map>
 
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
@@ -28,6 +29,8 @@
 // take the geobox stuff from uboonecode
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAlgo.h"
+#include "TRandom.h"
+#include "TRandomGen.h"
 
 class TH2D;
 
@@ -70,6 +73,7 @@ public:
     int t_pdgid; //!< PDGID of primary track (muon or pi+)
     double t_energy_true; //!< True energy of primary track [GeV]
     double t_energy_smeared; //!< Smeared energy of primary track [GeV]
+    TVector3 t_momentum;
 
     // default constructor -- fills with bogus info
     /*
@@ -103,7 +107,10 @@ protected:
       // (%) = -A * Log(B * L)  where L is the lepton contained length
     bool cutKMEC; //!< Whether to remove MEC events (useful for studying difference w.r.t. proposal)
     bool onlyKMEC; //!< Whether to remove all non-MEC events
+    int selectMode;
+    int selectCCNC;
     double selectionEfficiency; //!< Signal efficiency weight applied to signal (charged current) events
+    double backgroundRejection; //!< Rejection applied to background (NC) events
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
     double constantWeight; //!< constant weight to apply uniformly to each event
   };
@@ -123,6 +130,14 @@ protected:
     TH2D *h_numu_Vxy; //!< 2D x-y vertex histogram [cm]
     TH2D *h_numu_Vxz; //!< 2D x-z vertex histogram [cm]
     TH2D *h_numu_Vyz; //!< 2D y-z vertex histogram [cm]
+    TH1D *h_numu_Vx_sig; 
+    TH1D *h_numu_Vy_sig; 
+    TH1D *h_numu_Vz_sig; 
+    TH1D *h_numu_Vx_bkg; 
+    TH1D *h_numu_Vy_bkg; 
+    TH1D *h_numu_Vz_bkg; 
+    TH1D *h_numu_t_is_muon_sig; //!< histogram of whether associated track is a muon
+    TH1D *h_numu_t_is_muon_bkg; //!< histogram of whether associated track is a muon
   };
 
   // helper struct holding track info -- see NumuInteraction for variable details
@@ -207,11 +222,14 @@ protected:
     return {"MEC", "AV", "Track", "FV", "min_L"};
   }
 
+  TRandomMT64 _rand; //!< random number generation
   Config _config; //!< The config
 
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder
 
   RootHistos _root_histos[nCuts]; //!< Histos (one group per cut)
+
+  std::map<std::string, double> _eventCategories;
 };
 
   }  // namespace SBNOsc

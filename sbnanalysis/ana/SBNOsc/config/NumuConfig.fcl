@@ -1,24 +1,30 @@
 BEGIN_PROLOG
 // standard configurations to be used in proposal sensitivity
 
-eventweight_tags: ["fluxeventweight", "genieeventweight"]
+# eventweight_tags: ["fluxeventweight", "genieeventweight"]
+# eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
+# eventweight_tags: ["fluxeventweightA"]
+eventweight_tags: []
 
 SBND_fiducial_volumes: [
     {
-      xmin: -190.9
+      xmin: -184.15
       ymin: -185
       zmin: 15.
-      xmax: 5.6
+      xmax: 184.15
       ymax: 185
-      zmax: 415.
-    },
+      zmax: 285.
+    }
+]
+
+SBND_Proposal_active_volumes: [
     {
-      xmin: 10.9
-      ymin: -185
-      zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      zmax: 415.
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 365.
     }
 ]
 
@@ -34,35 +40,42 @@ SBND_active_volumes: [
 ]
 
 // fiducial volume of SBND used in proposal
-SBND_Proposal_fiducial_volumes: [
+SBND_Proposal_fiducial_volumes_no_cathode: [
      {
-      xmin: -190.9
-      ymin: -185
+      xmin: -184.15
+      xmax: -1.5
+      ymin: -185.
       zmin: 15.
-      xmax: 5.6
-      ymax: 185
-      zmax: 290.
+      ymax: 185.
+      zmax: 285.
      },
      {
-      xmin: 10.9
-      ymin: -185
+      xmin: 1.5
+      xmax: 184.15
+      ymin: -185.
       zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      zmax: 290.
+      ymax: 185.
+      zmax: 285.
      }
-
 ]
 
-// active volume of SBND used in proposal
-SBND_Proposal_active_volumes: [
+// fiducial volume of SBND used in proposal
+SBND_fiducial_volumes_no_cathode: [
      {
-      xmin: -199.15
-      ymin: -200.
-      zmin: 0.0
-      xmax: 199.15
-      ymax: 200.
-      zmax: 365.0
+      xmin: -184.15
+      xmax: -1.5
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
+     },
+     {
+      xmin: 1.5
+      xmax: 184.15
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
      }
 ]
 
@@ -90,60 +103,81 @@ MicroBooNE_active_volumes: [
 
 ICARUS_fiducial_volumes: [
      {
-       xmin: -356.24
+       xmin: -349.49
        ymin: -158.41
-       zmin: -894.950652
-       xmax: -224.54
+       zmin: -894.951
+       xmax: -82.94
        ymax: 128.41
-       zmax: 799.950652
+       zmax: 799.951
      },
      {
-       xmin: -207.89
+       xmin: 82.94
        ymin: -158.41
-       zmin: -894.950652
-       xmax: -76.19
+       zmin: -894.951
+       xmax: 349.49
        ymax: 128.41
-       zmax: 799.950652
+       zmax: 799.951
+     }
+]
+
+ICARUS_fiducial_volumes_no_cathode: [
+      // cathode at: +/- 216.215
+      {
+       xmin: -349.49
+       xmax: -217.715
+       ymin: -158.41
+       zmin: -894.951
+       ymax: 128.41
+       zmax: 799.951
      },
      {
-       xmin: 76.19
+       xmin: -217.715
+       xmax: -82.94
        ymin: -158.41
-       zmin: -894.950652
-       xmax: 207.89
+       zmin: -894.951
        ymax: 128.41
-       zmax: 799.950652
+       zmax: 799.951
      },
      {
-       xmin: 224.54
+       xmax: 217.715
+       xmin: 82.94
        ymin: -158.41
-       zmin: -894.950652
-       xmax: 356.24
+       zmin: -894.951
        ymax: 128.41
-       zmax: 799.950652
+       zmax: 799.951
+      },
+     {
+       xmax: 349.49
+       xmin: 217.715
+       ymin: -158.41
+       zmin: -894.951
+       ymax: 128.41
+       zmax: 799.951
      }
 ]
 
 ICARUS_active_volumes: [
     {
       xmin: -364.49
-      ymin: -173.41
-      zmin: -909.950652
       xmax: -67.94
+      ymin: -173.41
+      zmin: -909.951
       ymax: 143.41
-      zmax: 879.950652
+      zmax: 879.951
     },
     {
       xmin: 67.94
       ymin: -173.41
-      zmin: -909.950652
+      zmin: -909.951
       xmax: 364.49
       ymax: 143.41
-      zmax: 879.950652
+      zmax: 879.951
     }
 ]
 
 standard_cuts: {
   acceptShakyTracks: false
+  trajPointLength: false
   doFVCut: true
   minLengthContainedTrack: 50 // value taken from proposal
   minLengthExitingTrack: 100 // value taken from proposal
@@ -159,6 +193,7 @@ standard_cuts: {
 standard_cuts_noMEC: {
   cutKMEC: true
   acceptShakyTracks: false
+  trajPointLength: false
   doFVCut: true
   minLengthContainedTrack: 50 // value taken from proposal
   minLengthExitingTrack: 100 // value taken from proposal
@@ -169,6 +204,103 @@ standard_cuts_noMEC: {
   leptonEnergyDistortionLeavingA: 0.102 // from joseph email
   leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
   selectionEfficiency: 0.8 // from proposal
+}
+
+standard_cuts_noBKG_noMEC: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: true
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+  backgroundRejection: 1.0
+}
+
+standard_cuts_noCuts: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: false
+  minLengthContainedTrack: -1
+  minLengthExitingTrack: -1
+  trackVisibleEnergyThreshold: 0.021
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 1.0
+}
+
+get_eff_cuts: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: true
+  minLengthContainedTrack: -1 // value taken from proposal
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+}
+
+standard_cuts_QE: {
+  # -1: Don't select mode
+  # 0: QE
+  # 1: Res
+  # 2: DIS
+  # 3: Coh
+  # 10: MEC
+  selectMode: 0 
+  selectCCNC: 0
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: true
+  minLengthContainedTrack: -1 // value taken from proposal
+  minLengthExitingTrack: -1 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+}
+
+standard_cuts_RES: {
+  # -1: Don't select mode
+  # 0: QE
+  # 1: Res
+  # 2: DIS
+  # 3: Coh
+  # 10: MEC
+  selectMode: 1
+  selectCCNC: 0
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: true
+  minLengthContainedTrack: 50 // value taken from proposal
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+
 }
 
 standard_uniformWeights: ["bnbcorrection_FluxHist"]
