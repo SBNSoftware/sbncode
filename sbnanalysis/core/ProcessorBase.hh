@@ -19,6 +19,8 @@ class TBranch;
 class TFile;
 class TTree;
 class SubRun;
+template<class AParamType>
+class TParameter;
 
 namespace event {
   class Event;
@@ -176,6 +178,7 @@ protected:
   event::RecoEvent* fRecoEvent;  //!< The standard output reco event data structure
   TTree* fSubRunTree;  //!< Subrun output tree
   SubRun* fSubRun;  //!< Standard output subrun structure
+  TParameter<int>* fExperimentParameter; //!< Saves value of experiment enum
   std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
   art::InputTag fFluxTag;  //!< art tag for MCFlux information

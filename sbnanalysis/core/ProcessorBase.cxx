@@ -3,6 +3,7 @@
 #include <TFile.h>
 #include <TLeaf.h>
 #include <TTree.h>
+#include <TParameter.h>
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
@@ -154,6 +155,10 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   fSubRunTree->AutoSave("overwrite");
   fSubRun = new SubRun();
   fSubRunTree->Branch("subruns", &fSubRun);
+
+  // save the experiment ID
+  fExperimentParameter = new TParameter<int>("experiment", fExperimentID);
+  fExperimentParameter->Write();
 }
 
 
