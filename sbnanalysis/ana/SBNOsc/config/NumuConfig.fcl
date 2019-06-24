@@ -3,6 +3,7 @@ BEGIN_PROLOG
 
 # eventweight_tags: ["fluxeventweight", "genieeventweight"]
 # eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
+# eventweight_tags: ["fluxeventweightA"]
 eventweight_tags: []
 
 SBND_fiducial_volumes: [
@@ -16,7 +17,7 @@ SBND_fiducial_volumes: [
     }
 ]
 
-SBND_active_volumes: [
+SBND_Proposal_active_volumes: [
     {
       xmin: -199.15
       ymin: -200.
@@ -27,7 +28,7 @@ SBND_active_volumes: [
     }
 ]
 
-SBND_Modern_active_volumes: [
+SBND_active_volumes: [
     {
       xmin: -199.15
       ymin: -200.
@@ -39,7 +40,7 @@ SBND_Modern_active_volumes: [
 ]
 
 // fiducial volume of SBND used in proposal
-SBND_fiducial_volumes_no_cathode: [
+SBND_Proposal_fiducial_volumes_no_cathode: [
      {
       xmin: -184.15
       xmax: -1.5
@@ -55,6 +56,26 @@ SBND_fiducial_volumes_no_cathode: [
       zmin: 15.
       ymax: 185.
       zmax: 285.
+     }
+]
+
+// fiducial volume of SBND used in proposal
+SBND_fiducial_volumes_no_cathode: [
+     {
+      xmin: -184.15
+      xmax: -1.5
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
+     },
+     {
+      xmin: 1.5
+      xmax: 184.15
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
      }
 ]
 

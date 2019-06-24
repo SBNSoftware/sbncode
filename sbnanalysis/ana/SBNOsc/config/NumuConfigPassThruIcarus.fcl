@@ -5,7 +5,7 @@ OutputFile: "output_SBNOsc_NumuSelection_PassThru_Icarus.root"
 MCWeightTags: @local::eventweight_tags
 
 NumuSelection: {
-  fiducial_volumes: @local::ICARUS_fiducial_volumes 
+  fiducial_volumes: @local::ICARUS_fiducial_volumes_no_cathode
   active_volumes: @local::ICARUS_active_volumes 
   @table::standard_cuts_noCuts
   uniformWeights: @local::standard_uniformWeights
