@@ -62,6 +62,11 @@ class CrossSections: public core::PostProcessorBase {
         double fProtonPidEff;
         double fPionPidEff;
 
+        double fProtonRecoEff;
+        double fMuonRecoEff;
+        double fPionRecoEff;
+        double fPi0RecoEff;
+
         TRandom2* fRandom;
 
         // Hists

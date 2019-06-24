@@ -49,8 +49,11 @@ void CrossSections::Initialize(fhicl::ParameterSet* config) {
     fMuonThreshold   = pconfig.get<double>("MuonThreshold");
     fPi0Threshold    = pconfig.get<double>("Pi0Threshold");
     
-    fProtonPidEff = pconfig.get<double>("ProtonPidEff");
-    fPionPidEff   = pconfig.get<double>("PionPidEff");
+    fProtonPidEff  = pconfig.get<double>("ProtonPidEff");
+    fPionPidEff    = pconfig.get<double>("PionPidEff");
+    fProtonRecoEff = pconfig.get<double>("ProtonRecoEff");
+    fPionRecoEff   = pconfig.get<double>("PionRecoEff");
+    fPi0RecoEff    = pconfig.get<double>("Pi0RecoEff");
 
     // Declare histograms
     std::vector<std::string> recoChannels {"Inc", "0pi", "1pi", "geq2pi", "pi0", "Oth"};
@@ -67,12 +70,12 @@ void CrossSections::Initialize(fhicl::ParameterSet* config) {
       }
     }
     for(auto const& key : keys){
-      hRecoNuE[key]     = new TH1D(Form("hRecoNuE%s", key.c_str()),     "", 20, 0,    3);
-      hRecoMuP[key]     = new TH1D(Form("hRecoMuP%s", key.c_str()),     "", 20, 0,    3);
-      hRecoMuTheta[key] = new TH1D(Form("hRecoMuTheta%s", key.c_str()), "", 20, -3.2, 3.2);
-      hTrueNuE[key]     = new TH1D(Form("hTrueNuE%s", key.c_str()),     "", 20, 0,    3);
-      hTrueMuP[key]     = new TH1D(Form("hTrueMuP%s", key.c_str()),     "", 20, 0,    3);
-      hTrueMuTheta[key] = new TH1D(Form("hTrueMuTheta%s", key.c_str()), "", 20, -3.2, 3.2);
+      hRecoNuE[key]     = new TH1D(Form("hRecoNuE%s", key.c_str()),     "", 100, 0,    3);
+      hRecoMuP[key]     = new TH1D(Form("hRecoMuP%s", key.c_str()),     "", 100, 0,    3);
+      hRecoMuTheta[key] = new TH1D(Form("hRecoMuTheta%s", key.c_str()), "", 100, -3.2, 3.2);
+      hTrueNuE[key]     = new TH1D(Form("hTrueNuE%s", key.c_str()),     "", 100, 0,    3);
+      hTrueMuP[key]     = new TH1D(Form("hTrueMuP%s", key.c_str()),     "", 100, 0,    3);
+      hTrueMuTheta[key] = new TH1D(Form("hTrueMuTheta%s", key.c_str()), "", 100, -3.2, 3.2);
     }
     
     hNuETrue   = new TH1D("hNuETrue", "", 100, 0, 5);
@@ -205,26 +208,45 @@ void CrossSections::ProcessEvent(const Event *event) {
           if(fs_pdg == 111 && fs_momentum < fPi0Threshold) continue;
           else if(fs_pdg == 111){
             // TODO Apply flat efficiency after
-            if(contained) reco_nPi0++;
+            if(contained) {
+              // Generate random number
+              double rand = fRandom->Rndm();
+              // Apply PID efficiency of 65% for pi0
+              // Based on an estimation of reconstructing 2 photons
+              if(rand < fPi0RecoEff) reco_nPi0++;
+            }
           }
 
           // For tracks apply PID estimation
           if(fs_pdg == 2212){
             if(!contained) tracks_contained = false;
             // Generate random number
-            double rand = fRandom->Rndm();
+            double rand_pur_pr = fRandom->Rndm();
+            double rand_eff    = fRandom->Rndm();
             // Apply PID effiecieny of 85% for protons
-            if(rand < fProtonPidEff) reco_nP++;
-            else reco_nPi++;
+            if(rand_eff < fProtonRecoEff) {
+              // This would be reconstructed correctly 
+              // Now apply the efficiency to see if it gets reconstructed at all
+              if(rand_pur_pr < fProtonPidEff)
+                reco_nP++;
+              else
+                reco_nPi++;
+            }
+
           }
 
-          if(std::abs(fs_pdg) == 211 || std::abs(fs_pdg) ==13){
+          if(std::abs(fs_pdg) == 211 || std::abs(fs_pdg) == 13){
             if(!contained) tracks_contained = false;
             // Generate random number
-            double rand = fRandom->Rndm();
+            double rand_pur_pi = fRandom->Rndm();
+            double rand_eff    = fRandom->Rndm();
             // Apply PID efficiency of 99% for mu/pi
-            if(rand < fPionPidEff) reco_nPi++;
-            else reco_nP++;
+            if(rand_eff < fPionRecoEff) {
+              if(rand_pur_pi < fPionPidEff)
+                reco_nPi++;
+              else
+                reco_nP++;
+            }
           }
         }
 
@@ -263,7 +285,6 @@ void CrossSections::ProcessEvent(const Event *event) {
           hRecoMuP[key]->Fill(reco_lepP);
           hRecoMuTheta[key]->Fill(reco_lepTheta);
         }
-
     }
 }
 

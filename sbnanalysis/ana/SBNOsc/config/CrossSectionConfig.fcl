@@ -16,8 +16,13 @@ CrossSections: {
   MuonThreshold: 0.05
   Pi0Threshold: 0.08
 
-  ProtonPidEff: 0.85 # [percentage]
-  PionPidEff: 0.99
+  ProtonPidEff:  0.85 # [percentage]
+  PionPidEff:    0.99
+  
+  ProtonRecoEff: 0.90
+  PionRecoEff:   0.95
+  Pi0RecoEff:    0.70
+  MuonRecoEff:   0.99
 
 }
 
