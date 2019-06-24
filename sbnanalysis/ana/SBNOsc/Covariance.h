@@ -59,6 +59,9 @@ class Covariance: public core::PostProcessorBase {
 	    /** Constructors. */
 	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses, unsigned nVariations);
 	    
+	    double fScaleCC;
+	    double fScaleNC;
+	    double fScaleEnergy;
             double fPOT;
 	    double fScalePOT;         //!< Factor for POT (etc.) scaling
 	    std::vector <double> fBins; //!< Energy bin limits
@@ -87,6 +90,7 @@ class Covariance: public core::PostProcessorBase {
 
         bool fSaveCentralValue;
         bool fSaveUniverses;
+
 
         double fWeightMax;
 

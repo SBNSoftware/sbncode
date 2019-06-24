@@ -30,6 +30,9 @@ Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned
     fBins = config.get<std::vector<double> >("binlims");
     fName = config.get<std::string>("name", "");
     fScalePOT = config.get<double>("ScalePOT", -1);
+    fScaleCC = config.get<double>("ScaleCC", 1);
+    fScaleNC = config.get<double>("ScaleNC", 1);
+    fScaleEnergy = config.get<double>("ScaleEnergy", 1);
     fPOT = 0.;
     fEnergyBinScale = config.get<std::vector<double>>("energy_bin_scale", {});
     if (fEnergyBinScale.size() == 0) {
@@ -161,6 +164,7 @@ void Covariance::ProcessEvent(const Event *event) {
         } else if (fEnergyType == "Reco") {
             nuE = event->reco[n].reco_energy;
         }
+        nuE *= fEventSamples[fSampleIndex].fScaleEnergy;
     
         // Apply selection (or rejection) efficiencies
         int isCC = event->truth[truth_ind].neutrino.iscc;
@@ -175,6 +179,13 @@ void Covariance::ProcessEvent(const Event *event) {
         // apply POT scaling if configured
         if (fEventSamples[fSampleIndex].fScalePOT > 0) {
           wgt *= fEventSamples[fSampleIndex].fScalePOT / fEventSamples[fSampleIndex].fPOT;
+        }
+
+        if (event->reco[n].truth.neutrino.iscc) {
+          wgt *= fEventSamples[fSampleIndex].fScaleCC;
+        }
+        else {
+          wgt *= fEventSamples[fSampleIndex].fScaleNC;
         }
     
         std::vector<std::vector <double>> uweights; 
