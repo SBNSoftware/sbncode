@@ -66,6 +66,20 @@ double aaBoxesMax(const std::vector<geoalgo::AABox> &boxes, unsigned dim) {
   return std::max_element(boxes.begin(), boxes.end(), [dim](auto &lhs, auto &rhs) { return lhs.Max()[dim] < rhs.Max()[dim]; })->Max()[dim];
 }
 
+geoalgo::AABox shaveVolume(const geoalgo::AABox &select_volume, double delta) {
+
+  double xmin = select_volume.Min()[0] + 5.;
+  double ymin = select_volume.Min()[1] + 5.;
+  double zmin = select_volume.Min()[2] + 5.;
+
+  double xmax = select_volume.Max()[0] - 5.;
+  double ymax = select_volume.Max()[1] - 5.;
+  double zmax = select_volume.Max()[2] - 5.;
+
+  return geoalgo::AABox(xmin, ymin, zmin, xmax, ymax, zmax);
+}
+
+
 void NumuSelection::Initialize(fhicl::ParameterSet* config) {
   if (config) {
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NumuSelection");
@@ -115,6 +129,7 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
 
     // setup weight config
     _config.selectionEfficiency = pconfig.get<double>("selectionEfficiency", 1.0);
+    _config.backgroundRejection = pconfig.get<double>("backgroundRejection", 0.0);
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
     _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
 
@@ -208,7 +223,7 @@ void NumuSelection::Finalize() {
 }
 
 
-bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {
+bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
   if (_event_counter % 10 == 0) {
     std::cout << "NumuSelection: Processing event " << _event_counter << " "
               << "(" << _nu_count << " neutrinos selected)"
@@ -233,7 +248,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
   // categorize events:
   for (unsigned i = 0; i < mctruths.size(); i++) {
     auto const &mctruth = mctruths[i];
-    Event::Interaction interaction = truth[i];
+    event::Interaction interaction = truth[i];
     double weight = 1.;
     // maybe cut MEC
     bool pass_kMEC = !(_config.cutKMEC && mctruth.GetNeutrino().Mode() == simb::kMEC) && !(_config.onlyKMEC && mctruth.GetNeutrino().Mode() != simb::kMEC);
@@ -294,7 +309,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     calculator.lepton_energy_distortion_leaving_B = _config.leptonEnergyDistortionLeavingB;
 
     // build the interaction
-    Event::Interaction interaction = truth[i];
+    event::Interaction interaction = truth[i];
 
     // Get selection-specific info
     //
@@ -302,9 +317,10 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     // This also sets the lepton variables in the calculator
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
-    double visible_energy = visibleEnergy(_rand, mctruth, mctracks, mcshowers, calculator, false);
+    // double visible_energy = visibleEnergyProposalMCParticles(_rand, mctruth, mctracks, calculator);
+    double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
 
-    Event::RecoInteraction reco_interaction(interaction, i);
+    event::RecoInteraction reco_interaction(i);
     reco_interaction.reco_energy = visible_energy;
 
     // Build the weight of this event
@@ -327,7 +343,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
       if (abs(intInfo.t_pdgid) == 13) {
         _eventCategories["NCwiMU"] += weight;
       }
-
+      weight *= 1 - _config.backgroundRejection;
     }
     // apply constant weight
     weight *= _config.constantWeight;
@@ -429,11 +445,47 @@ NumuSelection::TrackInfo NumuSelection::trackInfo(const sim::MCTrack &track) {
       pos = track[i].Position();
     }
   }
+  // length calculation method used in proposal
+  else if (track.size() != 0 && !_config.trajPointLength) {
+    TLorentzVector pos = track.Start().Position();
+    // get the active volume that the start position is in
+    int active_volume_index = -1;
+    // contruct pos Point
+    geoalgo::Point_t pos_point(pos);
+    for (int i = 0; i < _config.active_volumes.size(); i++) {
+      if (_config.active_volumes[i].Contain(pos_point)) {
+        active_volume_index = i;
+      }
+    }
+    if (active_volume_index >= 0) {
+      // setup the "shaved" volume used in the proposal
+      geoalgo::AABox volume = shaveVolume(_config.active_volumes[active_volume_index], 5.);
+      if (volume.Contain(pos_point)) {
+        int i = 1;
+        TLorentzVector this_pos = pos;
+        for (; i < track.size(); i++) {
+          this_pos = track[i].Position();
+          geoalgo::Point_t p(this_pos.Vect()); 
+          if (!volume.Contain(p)) {
+            contained_in_AV = false;
+            break;
+          }
+        }
+        // Length of track is distance from start to last contained position
+        length = (pos.Vect() - this_pos.Vect()).Mag();
+        std::vector<geoalgo::AABox> volumes {volume};
+        contained_length = containedLength(pos.Vect(), this_pos.Vect(), volumes);
+      }
+      else contained_in_AV = false;
+    }
+    else contained_in_AV = false;
+
+  }
   // If active volume is misconfigured, then tracks may be generated w/out points.
   // Optionally, we can accept them.
   //
   // Also, use this method if configured
-  else if (_config.acceptShakyTracks || !_config.trajPointLength) {
+  else if (_config.acceptShakyTracks) {
     contained_length = containedLength(track.Start().Position().Vect(), track.End().Position().Vect(), _config.active_volumes);
     length = (track.Start().Position().Vect() - track.End().Position().Vect()).Mag();
     contained_in_AV = containedInAV(track.Start().Position().Vect()) && containedInAV(track.End().Position().Vect());
@@ -448,6 +500,9 @@ NumuSelection::TrackInfo NumuSelection::trackInfo(const sim::MCTrack &track) {
     //std::cout << "START: " << start.X() << " " << start.Y() << " " << start.Z() << std::endl;
     //std::cout << "END: " << end.X() << " " << end.Y() << " " << end.Z() << std::endl;
   }
+  // else {
+  //   assert(false); //bad
+  // }
   return NumuSelection::TrackInfo({contained_in_AV, contained_length, length});
 }
 
@@ -538,7 +593,7 @@ NumuSelection::NuMuInteraction NumuSelection::interactionInfo(const gallery::Eve
     calculator.lepton_index = track_ind;
 
     // smear the energy
-    double smeared_energy = smearLeptonEnergy(mctrack_list[track_ind], calculator);
+    double smeared_energy = smearLeptonEnergy(_rand, mctrack_list[track_ind], calculator);
     // truth kinetic energy
     double truth_energy = (mctrack_list[track_ind].Start().E()) / 1000.; /* MeV -> GeV */
     TVector3 momentum = mctrack_list[track_ind].Start().Momentum().Vect();
@@ -635,10 +690,12 @@ bool NumuSelection::passRecoVertex(const TVector3 &truth_v, const TVector3 &reco
 }
 
 bool NumuSelection::passMinLength(double length, bool stop_in_tpc) {
+  bool pass_stopped = _config.minLengthContainedTrack < 0 || length > _config.minLengthContainedTrack;
+  bool pass_exiting = _config.minLengthExitingTrack < 0 || length > _config.minLengthExitingTrack;
   if (!stop_in_tpc)
-    return _config.minLengthExitingTrack < 0 || length > _config.minLengthExitingTrack;
+    return pass_stopped && pass_exiting;
   else
-    return _config.minLengthContainedTrack < 0 || length > _config.minLengthContainedTrack;
+    return pass_stopped;
 }
 
   }  // namespace SBNOsc

@@ -32,7 +32,7 @@ void hello();
 
 
 /** Extract truth information to approximate reconstruction. */
-Event::Interaction TruthReco(const simb::MCTruth& mctruth);
+event::Interaction TruthReco(const simb::MCTruth& mctruth);
 
 
 /**
@@ -108,6 +108,8 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCShower& show,
 bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
                             float distance=5.0);
 
+bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle& mcp, float distance=5.0);
+
 
 /**
  * Calculate CCQE energy from associated lepton information (and optional
@@ -179,13 +181,15 @@ struct VisibleEnergyCalculator {
 double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
     const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
 
+double visibleEnergyProposal(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const VisibleEnergyCalculator &calculator);
+double visibleEnergyProposalMCParticles(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> mctrack_list, const VisibleEnergyCalculator &calculator);
 
 /** Get the smeared energy from a lepton.
  * \param mctrack The MCTrack object corresponding to the lepton
  * \param calculator Struct containing values to be used in energy calculation
  *
  * */
-double smearLeptonEnergy(const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+double smearLeptonEnergy(TRandom &rand, const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
 double closestDistance(const TVector3 &line0, const TVector3 &line1, const TVector3 &p);
 double closestDistanceDim(const TVector3 &line0, const TVector3 &line1, const TVector3 &p, int dim);

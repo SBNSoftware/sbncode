@@ -26,11 +26,16 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         Chi2Sensitivity() {}
         // Implement post-processor
         void Initialize(fhicl::ParameterSet* config);
-        void ProcessEvent(const Event* event);
+        void ProcessEvent(const event::Event* event);
         void ProcessSubRun(const SubRun *subrun);
         void FileCleanup(TTree* eventTree);
 
-        void Finalize() { fCovariance.Finalize(); Scale(); GetChi2(); GetContours(); Write(); }
+        void Finalize() { 
+          for (int i = 0; i < fEventSamples.size(); i++) {
+            std::cout << "POT: " << fEventSamples[i].fPOT << " to: " << fEventSamples[i].fScalePOT << " factor: " << fEventSamples[i].fScalePOT / fEventSamples[i].fPOT << std::endl;
+          }
+
+        fCovariance.Finalize(); Scale(); GetChi2(); GetContours(); Write(); }
 
         // API Functions
         void Scale();
@@ -60,7 +65,10 @@ class Chi2Sensitivity: public core::PostProcessorBase {
  
             // Config
             std::string fName;
-            double fDistance; //!< Distance in km
+            double fBaseline; //!< baseline (along z) in cm
+            double fBeamCenterX; //!< Center of beam in detector coordinates in x-dir in cm
+            double fBeamCenterY; //!< Center of beam in detector coordinates in y-dir in cm
+            double fBeamFrontZ; //!< Front face of detector along z-dir in cm
             std::array<double, 2> fXlim; //!< Detector size in cm
             std::array<double, 2> fYlim; //!< Detector size in cm
             std::array<double, 2> fZlim; //!< Detector size in cm

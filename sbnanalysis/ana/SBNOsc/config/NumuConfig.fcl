@@ -1,26 +1,10 @@
 BEGIN_PROLOG
 // standard configurations to be used in proposal sensitivity
 
-eventweight_tags: ["fluxeventweight", "genieeventweight"]
-
-SBND_fiducial_volumes_no_cathode: [
-    {
-      xmin: -190.9
-      ymin: -185
-      zmin: 15.
-      xmax: -10.9
-      ymax: 185
-      zmax: 420.
-    },
-    {
-      xmin: 10.9
-      ymin: -185
-      zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      zmax: 420.
-    }
-]
+# eventweight_tags: ["fluxeventweight", "genieeventweight"]
+# eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
+# eventweight_tags: ["fluxeventweightA"]
+eventweight_tags: []
 
 SBND_fiducial_volumes: [
     {
@@ -29,7 +13,18 @@ SBND_fiducial_volumes: [
       zmin: 15.
       xmax: 184.15
       ymax: 185
-      zmax: 420.
+      zmax: 285.
+    }
+]
+
+SBND_Proposal_active_volumes: [
+    {
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 365.
     }
 ]
 
@@ -45,38 +40,42 @@ SBND_active_volumes: [
 ]
 
 // fiducial volume of SBND used in proposal
-SBND_Proposal_fiducial_volumes: [
+SBND_Proposal_fiducial_volumes_no_cathode: [
      {
       xmin: -184.15
-      ymin: -185
+      xmax: -1.5
+      ymin: -185.
       zmin: 15.
+      ymax: 185.
+      zmax: 285.
+     },
+     {
+      xmin: 1.5
       xmax: 184.15
+      ymin: -185.
+      zmin: 15.
       ymax: 185.
       zmax: 285.
      }
 ]
 
-SBND_Proposal_active_volumes_beam_centered: [
-  {
-    # xmin: -69.15  
-    xmin: -89.065
-    xmax: 130.
-    ymin: -200.
-    ymax: 200.
-    zmin: 0.0
-    zmax: 365.
-  }
-]
-
-// active volume of SBND used in proposal
-SBND_Proposal_active_volumes: [
+// fiducial volume of SBND used in proposal
+SBND_fiducial_volumes_no_cathode: [
      {
-      xmin: -199.15
-      ymin: -200.
-      zmin: 0.0
-      xmax: 199.15
-      ymax: 200.
-      zmax: 365.0
+      xmin: -184.15
+      xmax: -1.5
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
+     },
+     {
+      xmin: 1.5
+      xmax: 184.15
+      ymin: -185.
+      zmin: 15.
+      ymax: 185.
+      zmax: 420.
      }
 ]
 
@@ -122,35 +121,36 @@ ICARUS_fiducial_volumes: [
 ]
 
 ICARUS_fiducial_volumes_no_cathode: [
+      // cathode at: +/- 216.215
       {
-       xmin: -356.24
+       xmin: -349.49
+       xmax: -217.715
        ymin: -158.41
        zmin: -894.951
-       xmax: -224.54
        ymax: 128.41
        zmax: 799.951
      },
      {
-       xmin: -207.89
+       xmin: -217.715
+       xmax: -82.94
        ymin: -158.41
        zmin: -894.951
-       xmax: -76.19
        ymax: 128.41
        zmax: 799.951
      },
      {
-       xmin: 76.19
+       xmax: 217.715
+       xmin: 82.94
        ymin: -158.41
        zmin: -894.951
-       xmax: 207.89
        ymax: 128.41
        zmax: 799.951
       },
      {
-       xmin: 224.54
+       xmax: 349.49
+       xmin: 217.715
        ymin: -158.41
        zmin: -894.951
-       xmax: 356.24
        ymax: 128.41
        zmax: 799.951
      }
@@ -159,9 +159,9 @@ ICARUS_fiducial_volumes_no_cathode: [
 ICARUS_active_volumes: [
     {
       xmin: -364.49
+      xmax: -67.94
       ymin: -173.41
       zmin: -909.951
-      xmax: -67.94
       ymax: 143.41
       zmax: 879.951
     },
@@ -204,6 +204,22 @@ standard_cuts_noMEC: {
   leptonEnergyDistortionLeavingA: 0.102 // from joseph email
   leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
   selectionEfficiency: 0.8 // from proposal
+}
+
+standard_cuts_noBKG_noMEC: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: false
+  doFVCut: true
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.021 // [GeV] taken from pospoal
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+  backgroundRejection: 1.0
 }
 
 standard_cuts_noCuts: {

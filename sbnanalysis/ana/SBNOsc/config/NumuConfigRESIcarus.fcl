@@ -1,13 +1,13 @@
 #include "NumuConfig.fcl"
 
-OutputFile: "output_SBNOsc_NumuSelection_Modern_Icarus.root"
+OutputFile: "output_SBNOsc_NumuSelection_RES_Icarus.root"
 
 MCWeightTags: @local::eventweight_tags
 
 NumuSelection: {
-  fiducial_volumes: @local::ICARUS_fiducial_volumes_no_cathode
+  fiducial_volumes: @local::ICARUS_fiducial_volumes 
   active_volumes: @local::ICARUS_active_volumes 
-  @table::standard_cuts
+  @table::standard_cuts_RES
   uniformWeights: @local::standard_uniformWeights
 }
 
