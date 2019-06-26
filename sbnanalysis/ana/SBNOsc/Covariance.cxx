@@ -49,17 +49,17 @@ Covariance::EventSample::EventSample(const fhicl::ParameterSet &config, unsigned
 
 
 // Gets scale factors (weights) for different universes
-std::vector <double> GetUniWeights(const std::map <std::string, std::vector <double> > &weights, const std::vector<std::string> &keys, int n_unis) {
+std::vector <float> GetUniWeights(const std::map <std::string, std::vector <float> > &weights, const std::vector<std::string> &keys, int n_unis) {
     
     // Tentative format: universe u scale factor is the product of the u-th entries on each vector 
     // inside the map. For vectors with less than u entries, use the (u - vec_size)-th entry
     
-    std::vector <double> uweights;
+    std::vector <float> uweights;
     
     for (int u = 0; u < n_unis; u++) {
-        double weight = 1.;
+        float weight = 1.;
         for (auto const &key: keys) {
-            const std::vector<double>& this_weights = weights.at(key);
+            const std::vector<float>& this_weights = weights.at(key);
             int wind = u % this_weights.size();
             weight *= this_weights.at(wind);
         }
@@ -119,13 +119,17 @@ void Covariance::Initialize(fhicl::ParameterSet* config) {
     fSampleIndex = 0;
 }
 
-void Covariance::ProcessEvent(const Event *event) {
+void Covariance::ProcessEvent(const event::Event *event) {
     // iterate over each interaction in the event
     for (int n = 0; n < event->reco.size(); n++) {
         unsigned truth_ind = event->reco[n].truth_index;
 
         // Get energy
-        double true_nuE = event->reco[n].truth.neutrino.energy;
+        int idx = event->reco[n].truth_index;
+        if (idx < 0 || idx > event->truth.size()) {
+          continue;
+        }
+        double true_nuE = event->truth[idx].neutrino.energy;
         double nuE; 
         if (fEnergyType == "CCQE") {
             nuE = event->truth[truth_ind].neutrino.eccqe;
@@ -146,7 +150,7 @@ void Covariance::ProcessEvent(const Event *event) {
         }
     
         // Get weights for each alternative universe
-        std::vector<std::vector <double>> uweights; 
+        std::vector<std::vector <float>> uweights; 
         for (std::vector<std::string> &weight_keys: fWeightKeys) {
           uweights.push_back(
             GetUniWeights(event->truth[truth_ind].weights, weight_keys, fNumAltUnis)
@@ -156,8 +160,8 @@ void Covariance::ProcessEvent(const Event *event) {
         // see if weight is too big
         if (fWeightMax > 0) {
           double max_weight = 0;
-          for (std::vector<double> &weights: uweights) {
-            double this_max_weight = *std::max_element(weights.begin(), weights.end());
+          for (std::vector<float> &weights: uweights) {
+            float this_max_weight = *std::max_element(weights.begin(), weights.end());
             if (this_max_weight > max_weight) max_weight = this_max_weight;
           }
           if (max_weight > fWeightMax) {
@@ -216,24 +220,24 @@ void Covariance::GetCovPerVariation(unsigned variation) {
     for (auto const &sample_i: fEventSamples) {
         for (unsigned sample_i_bin_index = 0; sample_i_bin_index < sample_i.fCentralValue->GetNbinsX(); sample_i_bin_index++) {
             // Get Central Value
-            double i_central = sample_i.fCentralValue->GetBinContent(sample_i_bin_index+1);
+            float i_central = sample_i.fCentralValue->GetBinContent(sample_i_bin_index+1);
             for (auto const &sample_j: fEventSamples) {
                 for (unsigned sample_j_bin_index = 0; sample_j_bin_index < sample_j.fCentralValue->GetNbinsX(); sample_j_bin_index++) {
                     // Get Central Value
-                    double j_central = sample_j.fCentralValue->GetBinContent(sample_j_bin_index+1);
+                    float j_central = sample_j.fCentralValue->GetBinContent(sample_j_bin_index+1);
                     // calculate covariance
-                    double cov_value = 0.; 
+                    float cov_value = 0.; 
                     for (int u = 0; u < fNumAltUnis; u++) {
                         // get variations
-                        double i_variation = sample_i.fUniverses[variation][u]->GetBinContent(sample_i_bin_index+1);
-                        double j_variation = sample_j.fUniverses[variation][u]->GetBinContent(sample_j_bin_index+1);
+                        float i_variation = sample_i.fUniverses[variation][u]->GetBinContent(sample_i_bin_index+1);
+                        float j_variation = sample_j.fUniverses[variation][u]->GetBinContent(sample_j_bin_index+1);
                         cov_value += (i_central - i_variation) * (j_central - j_variation);
                     }
                     // average
                     if (fNumAltUnis != 0) cov_value /= fNumAltUnis;
 
                     // calculate fractional covariance
-                    double fcov_value;
+                    float fcov_value;
                     if (i_central * j_central < 1e-6) {
                         fcov_value = 0.;
                     }
@@ -261,12 +265,12 @@ void Covariance::GetCovPerVariation(unsigned variation) {
     corr.emplace_back(correlation_name.c_str(), correlation_name.c_str(), num_bins, 0, num_bins, num_bins, 0, num_bins);
     
     for (int i = 0; i < num_bins; i++) {
-        double covii = cov[variation].GetBinContent(i+1, i+1);
+        float covii = cov[variation].GetBinContent(i+1, i+1);
         for (int j = 0; j < num_bins; j++) {
-            double covjj = cov[variation].GetBinContent(j+1, j+1);
-            double covij = cov[variation].GetBinContent(i+1, j+1);
+            float covjj = cov[variation].GetBinContent(j+1, j+1);
+            float covij = cov[variation].GetBinContent(i+1, j+1);
 
-            double corrij;
+            float corrij;
             // handle case where covariance is 0
             if (covii*covjj < 1e-6) {
                 corrij = 0.;
@@ -339,7 +343,7 @@ TMatrixDSym Covariance::CovarianceMatrix() {
             // add statistical uncertainty
             if (i == j) {
                 unsigned stat_ind = i;
-                double stat_uncertainty;
+                float stat_uncertainty;
                 // get index into CV bin to get stat uncertainty
                 for (auto const &sample: fEventSamples) {
                     if (stat_ind < sample.fCentralValue->GetNbinsX()) {
