@@ -122,7 +122,7 @@ namespace ana
     assert(!f->IsZombie());
 
     // Test for flat (has extra trees) or nested cases.
-    TDirectory* dir = f->Get("sbnana.reco") ? f : 0;
+    TDirectory* dir = f->Get("sbnana.truth") ? f : 0;
     TTree* tr = (TTree*)f->Get("sbnana");
     assert(tr);
 

@@ -12,7 +12,7 @@ class ToyEnergyScaleSyst: public ISyst
   {
     const double scale = 1 + .05*sigma; // 5% E scale syst.                    
 
-    sr->reco[0].reco_energy *= scale;
+    sr->reco.reco_energy *= scale;
   }
 };
 const ToyEnergyScaleSyst& GetESyst()

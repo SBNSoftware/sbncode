@@ -106,9 +106,9 @@ void make_state(const std::string anatype = numuStr)
     // const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.root";
     // const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.root";
 
-    const std::string fDir = "/sbnd/app/users/bckhouse/sbncode-v08_03_00/srcs/sbncode/sbnanalysis/FlatMaker/";
-    const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_SBND.flat.BAK.root";
-    const std::string fnameBeam2 = fDir + "output_SBNOsc_NumuSelection_Modern_Icarus.flat.BAK.root";
+    const std::string dir = "/sbnd/data/users/bckhouse/sample_2.1_fitters/";
+    const std::string fnameBeam = dir + "output_SBNOsc_NumuSelection_Proposal_SBND.flat.root";
+    const std::string fnameBeam2 = dir + "output_SBNOsc_NumuSelection_Proposal_Icarus.flat.root";
 
     loaders.SetLoaderPath( fnameBeam, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     loaders2.SetLoaderPath( fnameBeam2, Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
@@ -153,7 +153,7 @@ void make_state(const std::string anatype = numuStr)
   const Var kRecoE([](const caf::SRProxy* sr)
                    {
                      // std::cout << "ENERGY" << std::endl;
-                     return sr->reco[0].reco_energy;
+                     return sr->reco.reco_energy;
                    });
 
   const Var kTrueE([](const caf::SRProxy* sr)
@@ -163,12 +163,12 @@ void make_state(const std::string anatype = numuStr)
 
   const Var kWeight([](const caf::SRProxy* sr)
 		    {
-		      return sr->reco[0].weight;
+		      return sr->reco.weight;
 		    });
 
   const Var kWeighthack([](const caf::SRProxy* sr)
                         {
-			  std::cout << sr->truth[0].neutrino.iscc << " " << sr->truth[0].neutrino.pdg << " " << sr->reco[0].weight << std::endl; 
+			  std::cout << sr->truth[0].neutrino.iscc << " " << sr->truth[0].neutrino.pdg << " " << sr->reco.weight << std::endl; 
 			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 12) return 0.8;
 			  if (sr->truth[0].neutrino.iscc && sr->truth[0].neutrino.pdg == 14) return 0.0058;
 			  if (sr->truth[0].neutrino.isnc) return 0.058;

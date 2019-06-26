@@ -21,7 +21,7 @@ def type_to_proxy_type(type):
 #    if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
 
 #    if type == 'StandardRecord': return 'SRProxy'
-    if type == 'Event': return 'SRProxy' # compatibility with existing CAFAna code
+    if type == 'RecoEvent': return 'SRProxy' # compatibility with existing CAFAna code
 
     if type == 'TVector3': return 'TVector3Proxy'
     if type in fundamental_types:
