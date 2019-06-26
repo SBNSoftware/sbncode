@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+import os
+import sys
+
 try:
     from pygccxml import *
 except Exception as e:
@@ -7,10 +10,8 @@ except Exception as e:
     print
     print "Try 'setup pygccxml v1_9_1 -q p2714b'"
     print "and 'setup castxml v0_00_00_f20180122 -f Linux64bit+2.6-2.12 -z /cvmfs/nova.opensciencegrid.org/externals'"
+    print
     sys.exit(1)
-
-import os
-import sys
 
 # Types that we can assume are already defined, so don't form part of our
 # dependency tree.
