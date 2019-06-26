@@ -1,6 +1,6 @@
 #include "sbnanalysis/core/Event.hh"
 
-#include "sbncode/FlatMaker/FlatEvent.h"
+#include "sbncode/FlatMaker/FlatRecoEvent.h"
 
 #include "TFile.h"
 #include "TSystem.h"
@@ -29,10 +29,14 @@ int main(int argc, char** argv)
 
   TFile* fin = TFile::Open(inname.c_str());
 
-  TTree* tr = (TTree*)fin->Get("sbnana");
+  TTree* tr = (TTree*)fin->Get("sbnreco");
+  if(!tr){
+    std::cout << "Couldn't find tree 'sbnreco' in " << inname << std::endl;
+    return 1;
+  }
 
-  event::Event* event = 0;
-  tr->SetBranchAddress("events", &event);
+  event::RecoEvent* event = 0;
+  tr->SetBranchAddress("reco_events", &event);
 
   TFile fout(outname.c_str(), "RECREATE");
 
@@ -45,7 +49,7 @@ int main(int argc, char** argv)
   // default)
   trout->SetAutoFlush(-3*1000*1000);
 
-  flat::FlatEvent* rec = new flat::FlatEvent("sbnana.", trout, 0);//policy);
+  flat::FlatRecoEvent* rec = new flat::FlatRecoEvent("sbnana.", trout, 0);//policy);
 
   for(int i = 0; i < tr->GetEntries(); ++i){
     // TODO use CAFAna progress bar
