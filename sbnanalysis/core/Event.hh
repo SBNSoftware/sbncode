@@ -181,8 +181,8 @@ public:
       : truth_index(-1), reco_energy(kUnfilled), weight(1) {}
 
   /** Fill in truth information -- other fields set as in default */
-  explicit RecoInteraction(int index)
-      : truth_index(index), reco_energy(kUnfilled), weight(1) {}
+  explicit RecoInteraction(int tindex)
+      : truth_index(tindex), reco_energy(kUnfilled), weight(1) {}
 
   /**
    * Index into the vector of truth interaction objects in the Event
