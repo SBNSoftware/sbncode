@@ -53,7 +53,7 @@ class Neutrino {
 public:
   /** Constructor. */
   Neutrino()
-    : isnc(false), iscc(false), pdg(0), initpdg(0), targetPDG(0),
+    : isnc(false), iscc(false), initpdg(0), pdg(0), targetPDG(0),
       genie_intcode(0), bjorkenX(kUnfilled), inelasticityY(kUnfilled),
       Q2(kUnfilled), q0(kUnfilled),
       modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
