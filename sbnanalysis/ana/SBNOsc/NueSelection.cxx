@@ -33,7 +33,7 @@ void NueSelection::Initialize(fhicl::ParameterSet* config) {
 void NueSelection::Finalize() {}
 
 
-bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {
+bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "NueSelection: Processing event " << fEventCounter << " "
               << "(" << fNuCount << " neutrinos selected)"
@@ -51,7 +51,7 @@ bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Even
     const simb::MCNeutrino& nu = mctruth.GetNeutrino();
 
     if (nu.CCNC() == simb::kCC && nu.Mode() == 0 && nu.Nu().PdgCode() == 12) {
-      Event::RecoInteraction interaction(truth[i], i);
+      event::RecoInteraction interaction(i);
       reco.push_back(interaction);
     }
   }
