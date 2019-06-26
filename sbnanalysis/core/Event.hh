@@ -130,9 +130,13 @@ public:
         calorimetry_momentum(kUnfilled), 
         chi2_muon(kUnfilled), chi2_proton(kUnfilled), chi2_pion(kUnfilled),
         pida(kUnfilled), kinetic_energy(kUnfilled), missing_energy(kUnfilled),
-        length(kUnfilled), range(kUnfilled), opening_angle(kUnfilled), 
-        dedx({kUnfilled}), res_range({kUnfilled}), pitch({kUnfilled}){}
+        length(kUnfilled), range(kUnfilled), opening_angle(kUnfilled),
+        dedx_size(kUnfilled), res_range_size(kUnfilled), pitch_size(kUnfilled),
+        dedx{kUnfilled}, res_range{kUnfilled}, pitch{kUnfilled}{}
 
+      int dedx_size;                 //!< Size of the dEdx distribution
+      int res_range_size;            //!< Size of the Residual Range distribution
+      int pitch_size;                //!< Size of the Pitch distribution
       int mc_id_hits;                //!< Associated MCParticle ID from hits
       int mc_id_energy;              //!< Associated MCParticle ID from energy
       int mc_id_charge;              //!< Associated MCParticle ID from charge
@@ -152,9 +156,9 @@ public:
       double length;                 //!< length
       double range;                  //!< range
       double opening_angle;          //!< opening angle of a shower's cone
-      std::vector<double> pitch;     //!< pitch of the track 
-      std::vector<double> dedx;      //!< dedx distribution
-      std::vector<double> res_range; //!< residual range distribution
+      double pitch[10000];           //!< pitch of the track 
+      double dedx[10000];            //!< dedx distribution
+      double res_range[10000];       //!< residual range distribution
   };
 
   /**

@@ -81,27 +81,47 @@ namespace core {
     fhicl::ParameterSet* cfg = LoadConfig(config);
     Setup(cfg);
   }
-
+  
   void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     // With configuration file provided
     if (config) {
       fExperimentID = \
                       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
-      fTruthTag                = { config->get<std::string>("MCTruthTag", "generator") };
-      fFluxTag                 = { config->get<std::string>("MCFluxTag", "generator") };
-      fMCTrackTag              = { config->get<std::string>("MCTrackTag", "mcreco") };
-      fMCShowerTag             = { config->get<std::string>("MCShowerTag", "mcreco") };
-      fMCParticleTag           = { config->get<std::string>("MCParticleTag", "largeant") };
-      fHitTag                  = { config->get<std::string>("HitTag", "gaushit") };
-      fPFParticleTag           = { config->get<std::string>("PFParticleTag", "pandora") };
-      fRecoTrackTag            = { config->get<std::string>("RecoTrackTag", "pandoraTrack") };
-      fRecoShowerTag           = { config->get<std::string>("RecoShowerTag", "emshower") };
-      fVertexTag               = { config->get<std::string>("VertexTag", "pandora") };
-      fRecoTrackCalorimetryTag = { config->get<std::string>("RecoTrackCalorimetryTag", "pandoraCalo") };
-      fRecoTrackParticleIDTag  = { config->get<std::string>("RecoTrackParticleIDTag", "pandoraPid") };
+      fTruthTag                = config->get<std::string>("MCTruthTag", "generator");
+      fFluxTag                 = config->get<std::string>("MCFluxTag", "generator");
+      fMCTrackTag              = config->get<std::string>("MCTrackTag", "mcreco");
+      fMCShowerTag             = config->get<std::string>("MCShowerTag", "mcreco");
+      fMCParticleTag           = config->get<std::string>("MCParticleTag", "largeant");
+      fHitTag                  = config->get<std::string>("HitTag", "gaushit");
+      fPFParticleTag           = config->get<std::string>("PFParticleTag", "pandora");
+      fRecoTrackTag            = config->get<std::string>("RecoTrackTag", "pandoraTrack");
+      fRecoShowerTag           = config->get<std::string>("RecoShowerTag", "emshower");
+      fVertexTag               = config->get<std::string>("VertexTag", "pandora");
+      fRecoTrackCalorimetryTag = config->get<std::string>("RecoTrackCalorimetryTag", "pandoraCalo");
+      fRecoTrackParticleIDTag  = config->get<std::string>("RecoTrackParticleIDTag", "pandoraPid");
       fOutputFilename          = config->get<std::string>("OutputFile", "output.root");
       fProviderConfig          = config->get<std::string>("ProviderConfigFile", "");
-      fMCSFitter               = new trkf::TrajectoryMCSFitter(fhicl::Table< trkf::TrajectoryMCSFitter::Config >{fhicl::Name{"fitter"}});
+      fMCSFitterPID            = config->get<int>("pIdHypothesis");
+      fMCSFitterNumSegments    = config->get<int>("minNumSegments");
+      fMCSFitterHitsSegment    = config->get<int>("minHitsPerSegment");
+      fMCSFitterElossSteps     = config->get<int>("nElossSteps");
+      fMCSFitterElossMode      = config->get<int>("eLossMode");
+      fMCSFitterLengthSegment  = config->get<double>("segmentLength");
+      fMCSFitterPMin           = config->get<double>("pMin");
+      fMCSFitterPMax           = config->get<double>("pMax");
+      fMCSFitterPStep          = config->get<double>("pStep");
+      fMCSFitterAngResol       = config->get<double>("angResol");
+      fMCSFitter = new trkf::TrajectoryMCSFitter(fMCSFitterPID, 
+                                                 fMCSFitterNumSegments,
+                                                 fMCSFitterLengthSegment,
+                                                 fMCSFitterHitsSegment,
+                                                 fMCSFitterElossSteps, 
+                                                 fMCSFitterElossMode,  
+                                                 fMCSFitterPMin,   
+                                                 fMCSFitterPMax,        
+                                                 fMCSFitterPStep,       
+                                                 fMCSFitterAngResol);
+
 
       // Get the event weight tags (can supply multiple producers)
       fWeightTags = {};
@@ -214,15 +234,17 @@ namespace core {
   
   void ProcessorBase::SetupServices(gallery::Event& ev) {
     if (fProviderManager != NULL) {
+      /*
       // reset the channels of the back tracker
-      //fProviderManager->GetBackTrackerProvider()->ClearEvent();
-      //fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+      fProviderManager->GetBackTrackerProvider()->ClearEvent();
+      fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
 
       // reset information in particle inventory
-      //fProviderManager->GetParticleInventoryProvider()->ClearEvent();
-      //fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
-      //fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
-      //fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+      fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+      fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+      */
     }
   } // SetupServices
 
@@ -239,10 +261,10 @@ namespace core {
     int mcparticlessize     = mcparticles.size();
 
     // Get the hit handle
-    auto const hits         = ev.getValidHandle<std::vector<recob::Hit> >(fHitTag);
-    int hitssize            = hits->size();
+    gallery::Handle< std::vector< recob::Hit > > hits;
     std::vector< art::Ptr< recob::Hit > > hit_vector;
-    art::fill_ptr_vector(hit_vector, hits);
+    if(ev.getByLabel(fHitTag, hits)) art::fill_ptr_vector(hit_vector, hits);
+    int hitssize            = hits->size();
 
     // Get the PFParticle handle
     auto const pfparticles  = ev.getValidHandle<std::vector<recob::PFParticle>>(fPFParticleTag);
@@ -602,12 +624,15 @@ namespace core {
                   fsrp.end                 = end;
                   fsrp.direction           = direction; 
 
-                  unsigned int dedx_size      = cal_assn[k]->dEdx().size();
-                  unsigned int res_range_size = cal_assn[k]->ResidualRange().size();
-                  unsigned int pitch_size     = cal_assn[k]->TrkPitchVec().size();
-                  for(unsigned int l = 0; l < dedx_size; ++l)      fsrp.dedx.push_back(cal_assn[k]->dEdx()[l]);
-                  for(unsigned int l = 0; l < res_range_size; ++l) fsrp.res_range.push_back(cal_assn[k]->ResidualRange()[l]);
-                  for(unsigned int l = 0; l < pitch_size; ++l)     fsrp.pitch.push_back(cal_assn[k]->TrkPitchVec()[l]);
+                  fsrp.dedx_size      = cal_assn[k]->dEdx().size();
+                  fsrp.res_range_size = cal_assn[k]->ResidualRange().size();
+                  fsrp.pitch_size     = cal_assn[k]->TrkPitchVec().size();
+                  for(int l = 0; l < fsrp.dedx_size; ++l)      fsrp.dedx[l]           = cal_assn[k]->dEdx()[l];
+                  for(int l = 0; l < fsrp.res_range_size; ++l) fsrp.res_range[l]      = cal_assn[k]->ResidualRange()[l];
+                  for(int l = 0; l < fsrp.pitch_size; ++l)     fsrp.pitch[l]          = cal_assn[k]->TrkPitchVec()[l];
+                  for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l]           = Event::kUnfilled;
+                  for(int l = fsrp.res_range_size; l < 100000; ++l) fsrp.res_range[l] = Event::kUnfilled;
+                  for(int l = fsrp.pitch_size; l < 100000; ++l)     fsrp.pitch[l]     = Event::kUnfilled;
 
                   // Momentum
                   //    Assign a momentum of 0 to every parameter and then 
@@ -678,8 +703,9 @@ namespace core {
                 fsrp.istrack      = false;
                 fsrp.isshower     = true;
 
-                unsigned int dedx_size = shower.dEdx().size();
-                for(unsigned int l = 0; l < dedx_size; ++l) fsrp.dedx.push_back(shower.dEdx()[l]);
+                fsrp.dedx_size = shower.dEdx().size();
+                for(int l = 0; l < fsrp.dedx_size; ++l) fsrp.dedx[l]      = shower.dEdx()[l];
+                for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l] = Event::kUnfilled;
                 fsrp.energy        = shower.Energy()[bp];
                 fsrp.vertex[0]     = shower.ShowerStart()[0];
                 fsrp.vertex[1]     = shower.ShowerStart()[1];

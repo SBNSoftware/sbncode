@@ -4,33 +4,26 @@
 
 OutputFile: "SelectionAnalysisOutput.root" 
 ExperimentID: 0
+MCTruthTag:                "generator"
+MCParticleTag:             "largeant"
+HitTag:                    "gaushit"
+PFParticleTag:             "pandora"
+RecoTrackTag:              "pandoraTrack"
+RecoShowerTag:             "emshower"
+VertexTag:                 "pandora"
+RecoTrackCalorimetryTag:   "pandoraCalo"
+RecoTrackParticleIDTag:    "pandoraPid"
+#  fitter: {                                                                   
+pIdHypothesis: 13                                                         
+minNumSegments: 3                                                         
+segmentLength: 14.0                                                       
+minHitsPerSegment: 2                                                      
+nElossSteps: 10                                                           
+eLossMode: 0                                                              
+pMin: 0.01                                                                
+pMax: 7.50                                                                
+pStep: 0.01                                                               
+angResol: 3.0                                                             
+#  }    
 
-###services: {                                                                       
-### BackTrackerService:  @local::standard_backtrackerservice                        
-### ParticleInventoryService: @local::standard_particleinventoryservice             
-###} 
-
-SelectionAnalysis:
-{
-  MCTruthTag:                "generator"
-  MCParticleTag:             "largeant"
-  HitTag:                    "gaushit"
-  PFParticleTag:             "pandora"
-  RecoTrackTag:              "pandoraTrack"
-  RecoShowerTag:             "emshower"
-  VertexTag:                 "pandora"
-  RecoTrackCalorimetryTag:   "pandoraCalo"
-  RecoTrackParticleIDTag:    "pandoraPid"
-  fitter: {                                                                   
-    pIdHypothesis: 13                                                         
-    minNumSegments: 3                                                         
-    segmentLength: 14.0                                                       
-    minHitsPerSegment: 2                                                      
-    nElossSteps: 10                                                           
-    eLossMode: 0                                                              
-    pMin: 0.01                                                                
-    pMax: 7.50                                                                
-    pStep: 0.01                                                               
-    angResol: 3.0                                                             
-  }    
-}
+SelectionAnalysis:{}
