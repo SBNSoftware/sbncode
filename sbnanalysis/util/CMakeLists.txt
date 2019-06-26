@@ -11,6 +11,8 @@ include_directories( $ENV{LARDATAOBJ_INC} )
 include_directories( $ENV{NUSIMDATA_INC} )
 include_directories( $ENV{JSONCPP_INC} )
 include_directories( $ENV{UBOONECODE_INC} )
+include_directories($ENV{LARCOREALG_INC})
+include_directories($ENV{CLHEP_INC})
 
 link_directories(
   $ENV{CANVAS_LIB}
@@ -18,6 +20,8 @@ link_directories(
   $ENV{GALLERY_LIB}
   $ENV{NUSIMDATA_LIB}
   $ENV{LARCOREOBJ_LIB}
+  $ENV{CLHEP_LIB}
+  $ENV{LARCOREALG_LIB}
   $ENV{LARDATAOBJ_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )

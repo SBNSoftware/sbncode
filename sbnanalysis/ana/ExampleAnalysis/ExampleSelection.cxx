@@ -6,10 +6,12 @@
 #include "canvas/Utilities/InputTag.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "ExampleSelection.h"
 #include "ExampleTools.h"
 #include "core/Event.hh"
 #include "util/Interaction.hh"
+#include "core/ProviderManager.hh"
 
 namespace ana {
   namespace ExampleAnalysis {
@@ -41,6 +43,13 @@ void ExampleSelection::Initialize(fhicl::ParameterSet* config) {
   AddBranch("nucount", &fNuCount);
   AddBranch("myvar", &fMyVar);
 
+  // Use LArSoft service functions via the ProviderManager
+  if (fProviderManager) {
+    std::cout << "Detector: "
+              << fProviderManager->GetGeometryProvider()->DetectorName()
+              << std::endl;
+  }
+
   // Use some library code
   hello();
 }
@@ -55,8 +64,8 @@ void ExampleSelection::Finalize() {
 
 bool ExampleSelection::ProcessEvent(
     const gallery::Event& ev,
-    const std::vector<Event::Interaction>& truth,
-    std::vector<Event::RecoInteraction>& reco) {
+    const std::vector<event::Interaction>& truth,
+    std::vector<event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "ExampleSelection: Processing event "
               << fEventCounter << std::endl;
@@ -83,7 +92,7 @@ bool ExampleSelection::ProcessEvent(
     // Add in the "reconstructed" interaction
     //
     // Contruct truth information from the provided vector
-    Event::RecoInteraction interaction(truth[i], i);
+    event::RecoInteraction interaction(i);
     // get "reconstructed" energy
     interaction.reco_energy = util::ECCQE(mctruth.GetNeutrino().Nu().Momentum().Vect(), mctruth.GetNeutrino().Lepton().E());
     reco.push_back(interaction);

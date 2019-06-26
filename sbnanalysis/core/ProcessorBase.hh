@@ -18,14 +18,26 @@
 class TBranch;
 class TFile;
 class TTree;
-class Event;
+class SubRun;
+template<class AParamType>
+class TParameter;
+
+namespace event {
+  class Event;
+}
 
 namespace fhicl {
   class ParameterSet;
 }
 
+namespace geo {
+  class BoxBoundedGeo;
+}
+
 /** Core framework functionality. */
 namespace core {
+
+class ProviderManager;
 
 /**
  * \class core::ProcessorBase
@@ -44,6 +56,11 @@ public:
    * Fill the tree and increment the event index.
    */
   virtual void FillTree();
+
+  /**
+   * Fill the reco tree.
+   */
+  virtual void FillRecoTree();
 
   /**
    * Cleanup any objects that were filled per event
@@ -66,6 +83,21 @@ public:
   }
 
   /**
+   * Add a branch to the output reco tree.
+   *
+   * Called in user subclasses to augment the default event tree.
+   * This mirrors the TTree::Branch API.
+   *
+   * \param name The branch name
+   * \param obj A pointer to the object
+   * \returns A pointer to the created TBranch (we retain ownership)
+   */
+  template<class T>
+  TBranch* AddRecoBranch(std::string name, T* obj) {
+    return fRecoTree->Branch(name.c_str(), obj);
+  }
+
+  /**
    * Process one event.
    *
    * This also serves as a filter: if the function results false, it acts as a
@@ -76,11 +108,11 @@ public:
    * \returns True if event passes filter
    */
   virtual bool ProcessEvent(const gallery::Event& ev,
-                            const std::vector<Event::Interaction> &truth,
-                            std::vector<Event::RecoInteraction>& reco) = 0;
+                            const std::vector<event::Interaction> &truth,
+                            std::vector<event::RecoInteraction>& reco) = 0;
 
   /** Pointer to reco event information */
-  std::vector<Event::RecoInteraction>* fReco;  //!< Reco interaction list
+  std::vector<event::RecoInteraction>* fReco;  //!< Reco interaction list
 
 protected:
   /**
@@ -124,12 +156,32 @@ protected:
   */
   void BuildEventTree(gallery::Event& ev);
 
+  /**
+   * Update subrun list to include subruns for this event's file.
+   *
+   * \param ev The current gallery event
+   */
+  void UpdateSubRuns(gallery::Event& ev);
+
   unsigned long fEventIndex;  //!< An incrementing index
+  Experiment fExperimentID;  //!< Experiment identifier
+  ProviderManager* fProviderManager;  //!< Interface for provider access
   std::string fOutputFilename;  //!< The output filename
+  std::string fProviderConfig;  //!< A custom provider config fcl file
+  std::vector<geo::BoxBoundedGeo> fActiveVolumes; //!< List of active volumes in configured detector
+  bool fWriteTree;  //!< Enable writing of the main tree
   TFile* fOutputFile;  //!< The output ROOT file
   TTree* fTree;  //!< The output ROOT tree
-  Event* fEvent;  //!< The standard output event data structure
+  event::Event* fEvent;  //!< The standard output event data structure
+  bool fWriteRecoTree;  //!< Enable writing of the reco tree
+  TTree* fRecoTree;  //!< The output reco ROOT tree
+  event::RecoEvent* fRecoEvent;  //!< The standard output reco event data structure
+  TTree* fSubRunTree;  //!< Subrun output tree
+  SubRun* fSubRun;  //!< Standard output subrun structure
+  TParameter<int>* fExperimentParameter; //!< Saves value of experiment enum
+  std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
+  art::InputTag fFluxTag;  //!< art tag for MCFlux information
   std::vector<art::InputTag> fWeightTags;  //!< art tag(s) for MCEventWeight information
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower

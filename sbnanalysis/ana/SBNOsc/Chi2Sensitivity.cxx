@@ -130,7 +130,7 @@ void Chi2Sensitivity::Initialize(fhicl::ParameterSet* config) {
 
     // Event Samples
     std::vector<fhicl::ParameterSet> samples = \
-      pconfig.get<std::vector<fhicl::ParameterSet> >("EventSamples");
+      config->get<std::vector<fhicl::ParameterSet> >("EventSamples");
     for (const fhicl::ParameterSet& sample: samples) {
       fEventSamples.emplace_back(sample);
     }
@@ -228,7 +228,7 @@ void Chi2Sensitivity::FileCleanup(TTree *eventTree) {
     fSampleIndex ++;
 }
             
-void Chi2Sensitivity::ProcessEvent(const Event *event) {
+void Chi2Sensitivity::ProcessEvent(const event::Event *event) {
     // have the covariance process the event
     fCovariance.ProcessEvent(event);
 
@@ -237,8 +237,12 @@ void Chi2Sensitivity::ProcessEvent(const Event *event) {
         unsigned truth_ind = event->reco[n].truth_index;
     
         // Get energy
+        int idx = event->reco[n].truth_index;
+        if (idx < 0 || idx > event->truth.size()) {
+          continue;
+        }
+        double true_nuE = event->truth[idx].neutrino.energy;
         double nuE = 0;
-        double true_nuE = event->reco[n].truth.neutrino.energy;
         if (fEnergyType == "CCQE") {
             nuE = event->truth[truth_ind].neutrino.eccqe;
         } else if (fEnergyType == "True") {

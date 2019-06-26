@@ -1,0 +1,184 @@
+BEGIN_PROLOG
+
+proposal_binlims: [ 0.2, 0.3, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0 ]
+
+sbnd_event_sample: {
+  name: "SBND #nu_{#mu}"
+  binlims: @local::proposal_binlims
+  Distance: 0.1
+  DetX: [ -190.9, 190.9 ]
+  DetY: [ -185., 185. ]
+  DetZ: [ 15., 415. ]
+  OscType: 2
+  TrueELims: [ 0.1, 7.1 ]
+  NumTrueEBins: 25
+  NumDistanceBinsPerMeter: 10
+  scalefactor: 16.67802551725374  // must be updated per input file
+}
+
+uboone_event_sample: {
+  name: "MicroBooNE #nu_{#mu}"
+  binlims: @local::proposal_binlims
+  Distance: 0.47
+  DetX: [ 13.45, 239.8 ]
+  DetY: [ -100.53, 102.47 ]
+  DetZ: [ 15.1, 956.9 ]
+  OscType: 2
+  TrueELims: [ 0.1, 7.1 ]
+  NumTrueEBins: 25
+  NumDistanceBinsPerMeter: 10
+  scalefactor: 1.3426232009357677 
+}
+
+icarus_event_sample: {
+  name: "ICARUS #nu_{#mu}"
+  binlims: @local::proposal_binlims
+  Distance: 0.6
+  DetX: [ -356.24, 356.24 ]
+  DetY: [ -158.41, 128.41 ]
+  DetZ: [ -894.950652, 799.950652]
+  OscType: 2
+  TrueELims: [ 0.1, 7.1 ]
+  NumTrueEBins: 25
+  NumDistanceBinsPerMeter: 10
+  scalefactor: 5.5516161511654607 
+}
+
+uniform_weights: ["bnbcorrection_FluxHist"]
+
+flux_weights: [
+  "expskin_FluxUnisim",
+  "horncurrent_FluxUnisim",
+  "kminus_PrimaryHadronNormalization",
+  "kplus_PrimaryHadronFeynmanScaling",
+  "kzero_PrimaryHadronSanfordWang",
+  "nucleoninexsec_FluxUnisim",
+  "nucleonqexsec_FluxUnisim",
+  "nucleontotxsec_FluxUnisim",
+  "piminus_PrimaryHadronSWCentralSplineVariation",
+  "pioninexsec_FluxUnisim",
+  "pionqexsec_FluxUnisim",
+  "piontotxsec_FluxUnisim",
+  "piplus_PrimaryHadronSWCentralSplineVariation"
+]
+
+intra_genie_plus_flux_weights: [
+  "genie_all_Genie",
+  "expskin_FluxUnisim",
+  "horncurrent_FluxUnisim",
+  "kminus_PrimaryHadronNormalization",
+  "kplus_PrimaryHadronFeynmanScaling",
+  "kzero_PrimaryHadronSanfordWang",
+  "nucleoninexsec_FluxUnisim",
+  "nucleonqexsec_FluxUnisim",
+  "nucleontotxsec_FluxUnisim",
+  "piminus_PrimaryHadronSWCentralSplineVariation",
+  "pioninexsec_FluxUnisim",
+  "pionqexsec_FluxUnisim",
+  "piontotxsec_FluxUnisim",
+  "piplus_PrimaryHadronSWCentralSplineVariation"
+]
+
+intra_genie_weights: [
+  "genie_all_Genie"
+]
+
+inter_genie_weights: [
+  "genie_DISAth_Genie",
+  "genie_DISBth_Genie",
+  "genie_DISCv1u_Genie",
+  "genie_DISCv2u_Genie",
+  "genie_FermiGasModelKf_Genie",
+  "genie_FermiGasModelSf_Genie",
+  "genie_FormZone_Genie",
+  "genie_IntraNukeNabs_Genie",
+  "genie_IntraNukeNcex_Genie",
+  "genie_IntraNukeNel_Genie",
+  "genie_IntraNukeNinel_Genie",
+  "genie_IntraNukeNmfp_Genie",
+  "genie_IntraNukeNpi_Genie",
+  "genie_IntraNukePIabs_Genie",
+  "genie_IntraNukePIcex_Genie",
+  "genie_IntraNukePIel_Genie",
+  "genie_IntraNukePIinel_Genie",
+  "genie_IntraNukePImfp_Genie",
+  "genie_IntraNukePIpi_Genie",
+  "genie_NC_Genie",
+  "genie_NonResRvbarp1pi_Genie",
+  "genie_NonResRvbarp2pi_Genie",
+  "genie_NonResRvp1pi_Genie",
+  "genie_NonResRvp2pi_Genie",
+  "genie_ResDecayEta_Genie",
+  "genie_ResDecayGamma_Genie",
+  "genie_ResDecayTheta_Genie",
+  "genie_ccresAxial_Genie",
+  "genie_ccresVector_Genie",
+  "genie_cohMA_Genie",
+  "genie_cohR0_Genie",
+  "genie_ncelAxial_Genie",
+  "genie_ncelEta_Genie",
+  "genie_ncresAxial_Genie",
+  "genie_ncresVector_Genie",
+  "genie_qema_Genie"
+]
+
+inter_genie_plus_flux_weights: [
+  "expskin_FluxUnisim",
+  "genie_DISAth_Genie",
+  "genie_DISBth_Genie",
+  "genie_DISCv1u_Genie",
+  "genie_DISCv2u_Genie",
+  "genie_FermiGasModelKf_Genie",
+  "genie_FermiGasModelSf_Genie",
+  "genie_FormZone_Genie",
+  "genie_IntraNukeNabs_Genie",
+  "genie_IntraNukeNcex_Genie",
+  "genie_IntraNukeNel_Genie",
+  "genie_IntraNukeNinel_Genie",
+  "genie_IntraNukeNmfp_Genie",
+  "genie_IntraNukeNpi_Genie",
+  "genie_IntraNukePIabs_Genie",
+  "genie_IntraNukePIcex_Genie",
+  "genie_IntraNukePIel_Genie",
+  "genie_IntraNukePIinel_Genie",
+  "genie_IntraNukePImfp_Genie",
+  "genie_IntraNukePIpi_Genie",
+  "genie_NC_Genie",
+  "genie_NonResRvbarp1pi_Genie",
+  "genie_NonResRvbarp2pi_Genie",
+  "genie_NonResRvp1pi_Genie",
+  "genie_NonResRvp2pi_Genie",
+  "genie_ResDecayEta_Genie",
+  "genie_ResDecayGamma_Genie",
+  "genie_ResDecayTheta_Genie",
+  "genie_ccresAxial_Genie",
+  "genie_ccresVector_Genie",
+  "genie_cohMA_Genie",
+  "genie_cohR0_Genie",
+  "genie_ncelAxial_Genie",
+  "genie_ncelEta_Genie",
+  "genie_ncresAxial_Genie",
+  "genie_ncresVector_Genie",
+  "genie_qema_Genie",
+  "horncurrent_FluxUnisim",
+  "kminus_PrimaryHadronNormalization",
+  "kplus_PrimaryHadronFeynmanScaling",
+  "kzero_PrimaryHadronSanfordWang",
+  "nucleoninexsec_FluxUnisim",
+  "nucleonqexsec_FluxUnisim",
+  "nucleontotxsec_FluxUnisim",
+  "piminus_PrimaryHadronSWCentralSplineVariation",
+  "pioninexsec_FluxUnisim",
+  "pionqexsec_FluxUnisim",
+  "piontotxsec_FluxUnisim",
+  "piplus_PrimaryHadronSWCentralSplineVariation"
+]
+
+proposal_numu_selection_efficiency: 0.8
+proposal_numu_selection_rejection: 0.0
+
+proposal_numu_energy_type: "Reco"
+
+weight_max: 10000.
+
+END_PROLOG
