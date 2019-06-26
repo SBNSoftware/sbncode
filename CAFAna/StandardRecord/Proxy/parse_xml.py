@@ -68,7 +68,7 @@ config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++14 -DEVT_NAMESPACE -Wno-unknown-warning-option'#,
+    cflags='-std=c++1z -DGEN_FLATRECORD_CONTEXT -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
@@ -77,9 +77,10 @@ decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
-ns = global_namespace.namespace('evt')
+ns = global_namespace.namespace('event')
 
-# fundamental_types += [e.name for e in ns.enumerations()]
+fundamental_types += [e.name for e in ns.enumerations()]
+fundamental_types += ['Experiment'] # isn't currently within the event:: namespace
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
@@ -119,6 +120,7 @@ print '#include "TVector3.h"'
 print
 print 'namespace caf'
 print '{'
+print 'typedef short unsigned int Experiment; // special case enum'
 print
 
 debug = False
