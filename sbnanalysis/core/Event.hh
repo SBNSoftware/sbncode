@@ -25,7 +25,6 @@ static const int kUnfilled = -99999;  //!< Value for unfilled variables
 
 // TODO this variable is now pretty misnamed
 #ifdef EVT_NAMESPACE
-namespace evt{
   struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
   struct Pair{std::string first; std::vector<float> second;};
 #endif
