@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   }
 
   std::string inname = argv[1];
-  std::string  outname = argv[2];
+  std::string outname = argv[2];
 
   // Can manage by passing '' ''
   if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_Uboone.root";
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 
   TTree* tr = (TTree*)fin->Get("sbnana");
 
-  Event* event = 0;
+  event::Event* event = 0;
   tr->SetBranchAddress("events", &event);
 
   TFile fout(outname.c_str(), "RECREATE");

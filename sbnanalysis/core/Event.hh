@@ -15,19 +15,21 @@
 #include <string>
 #include <vector>
 //#include <TTree.h>
+
+#ifdef GEN_FLATRECORD_CONTEXT
+namespace event{
+  struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
+  struct Pair{std::string first; std::vector<float> second;};
+}
+#else
 #include <TVector3.h>
+#endif
 
 #include "Experiment.hh"
 
 namespace event {
 
 static const int kUnfilled = -99999;  //!< Value for unfilled variables
-
-// TODO this variable is now pretty misnamed
-#ifdef EVT_NAMESPACE
-  struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
-  struct Pair{std::string first; std::vector<float> second;};
-#endif
 
 /**
  * \class Metadata
@@ -157,7 +159,7 @@ public:
    * This is a map from the weight calculator name to the list of weights
    * for all the sampled universes.
    */
-#ifndef EVT_NAMESPACE
+#ifndef GEN_FLATRECORD_CONTEXT
     std::map<std::string, std::vector<float> > weights;
 #else
     std::vector<Pair> weights;

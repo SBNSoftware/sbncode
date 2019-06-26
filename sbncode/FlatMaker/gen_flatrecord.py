@@ -10,6 +10,7 @@ except Exception as e:
     print
     print "Try 'setup pygccxml v1_9_1 -q p2714b'"
     print "and 'setup castxml v0_00_00_f20180122 -f Linux64bit+2.6-2.12 -z /cvmfs/nova.opensciencegrid.org/externals'"
+    print
     sys.exit(1)
 
 # Types that ROOT will understand (with a little nudging in some cases)
@@ -22,8 +23,12 @@ fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
 
 enums = []
 
+def no_namespace(type):
+    return type[type.rfind(':')+1:]
+
+
 def is_fundamental(type):
-    return type in fundamental_types or type in enums
+    return type in fundamental_types or no_namespace(type) in enums
 
 
 def translate_type(type):
@@ -60,14 +65,12 @@ def array_size(type):
 
 
 def type_to_flat_type(type):
-    if ':' in type: type = type[type.rfind(':')+1:] # strip off namespaces
-
-    assert not is_fundamental(type)
+    assert not is_fundamental(no_namespace(type))
     assert not is_vector(type)
 
 #    if type == 'StandardRecord': return 'FlatRecord'
 
-    return 'Flat'+type#[2:]
+    return 'Flat'+no_namespace(type)
 
 
 def base_class(klass):
@@ -90,9 +93,13 @@ def variables_inc_bases(klass):
 def fq_type(klass):
     # HACK special case for the weights map
     if str(klass.name) == 'Pair':
-        return 'std::pair<std::string, std::vector<double>>'
+        return 'std::pair<std::string, std::vector<float>>'
 
-    if not klass.parent or str(klass.parent.name) == 'evt':
+    # HACK we had this within event:: so we could find it, but in this context
+    # it's the original ROOT one we want.
+    if str(klass.name) == 'TVector3': return 'TVector3'
+
+    if not klass.parent or str(klass.parent.name) == '::':
         return str(klass.name)
     else:
         return fq_type(klass.parent)+'::'+str(klass.name)
@@ -127,7 +134,7 @@ config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++1z -DEVT_NAMESPACE -Wno-unknown-warning-option'#,
+    cflags='-std=c++1z -DGEN_FLATRECORD_CONTEXT -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 
@@ -136,9 +143,10 @@ decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
-ns = global_namespace.namespace('evt')
+ns = global_namespace.namespace('event')
 
-#enums += [e.name for e in ns.enumerations()]
+enums += [e.name for e in ns.enumerations()]
+enums += ['Experiment'] # isn't currently within the event:: namespace
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
