@@ -23,10 +23,6 @@ int main(int argc, char** argv)
   std::string inname = argv[1];
   std::string outname = argv[2];
 
-  // Can manage by passing '' ''
-  if(inname.empty()) inname = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/output_SBNOsc_NumuSelection_Modern_Uboone.root";
-  if(outname.empty()) outname = "output_SBNOsc_NumuSelection_Modern_Uboone.flat.root";
-
   TFile* fin = TFile::Open(inname.c_str());
 
   TTree* tr = (TTree*)fin->Get("sbnreco");
