@@ -72,6 +72,8 @@ namespace caf
 
     operator T() const {return GetValue();}
 
+    bool operator==(const T& x) const {return T(*this) == x;}
+
     T GetValue() const;
 
     // In practice these are the only operations that systematic shifts use
