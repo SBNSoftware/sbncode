@@ -1,4 +1,4 @@
-#include "CAFAna/Core/UniverseOracle.h"
+#include "CAFAna/Systs/UniverseOracle.h"
 
 #include <cassert>
 #include <cmath>
@@ -27,6 +27,11 @@ namespace ana
           std::string name;
           ifin >> name;
           if(!ifin.good()) break; // probably EOF
+          if(prefix == "genie"){
+            std::string junk;
+            ifin >> junk; // second version of the name...
+            assert(ifin.good());
+          }
 
           while(true){
             double shift;
@@ -44,9 +49,6 @@ namespace ana
       const unsigned int N = it.second.size();
       if(N != 1000 && N != 50){
         std::cout << "UniverseOracle: Unexpected number of shifts (" << N << ") for '" << it.first << "'" << std::endl;
-       
-        // Known bug(?) in the current files. Note it and move on
-        if(N != 2000) abort();
       }
     }
   }
