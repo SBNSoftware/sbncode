@@ -8,6 +8,13 @@
 namespace ana
 {
   // --------------------------------------------------------------------------
+  UniverseOracle& UniverseOracle::Instance()
+  {
+    static UniverseOracle uo;
+    return uo;
+  }
+
+  // --------------------------------------------------------------------------
   UniverseOracle::UniverseOracle()
   {
     const std::string dir = "/sbnd/data/users/bckhouse/sample_2.1_fitters/";

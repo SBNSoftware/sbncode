@@ -9,7 +9,7 @@ namespace ana
   class UniverseOracle
   {
   public:
-    UniverseOracle();
+    static UniverseOracle& Instance();
 
     bool SystExists(const std::string& name) const;
     std::vector<std::string> Systs() const;
@@ -19,6 +19,8 @@ namespace ana
                               double shift,
                               double* trueShift = 0) const;
   protected:
+    UniverseOracle();
+
     std::map<std::string, std::vector<double>> fData;
   };
 }
