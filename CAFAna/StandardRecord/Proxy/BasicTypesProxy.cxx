@@ -100,8 +100,8 @@ namespace caf
 
   void GetTypedValueWrapper(TLeaf* leaf, std::string& x, int subidx)
   {
-    std::cout << "Reading string from flat tree unsupported" << std::endl;
-    abort();
+    assert(subidx == 0); // Unused for flat trees at least
+    x = (char*)leaf->GetValuePointer();
   }
 
   //----------------------------------------------------------------------
