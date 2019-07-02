@@ -12,6 +12,7 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -426,8 +427,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.finalstate.push_back(fsp);
     }
 
-    // set nfinalstate to -1 if MCParticles were misconfigured
-    interaction.nfinalstate = mcparticles_is_valid ? interaction.finalstate.size() : -1;
+    interaction.nfinalstate = interaction.finalstate.size();
 
     // GENIE specific
     if (genie_truth_is_valid) {

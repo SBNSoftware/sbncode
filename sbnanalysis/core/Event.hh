@@ -143,7 +143,7 @@ public:
   Neutrino neutrino;  //!< The neutrino
   FinalStateParticle lepton;  //!< The primary final state lepton
   std::vector<FinalStateParticle> finalstate; //!< Other final state particles
-  int nfinalstate;  //!< Size of finalstate
+  size_t nfinalstate;  //!< Size of finalstate
 
   /**
    * Event weights.
