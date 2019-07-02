@@ -6,6 +6,10 @@
 
 namespace ana
 {
+  enum class ESide{
+    kAbove, kBelow, kEither
+  };
+
   class UniverseOracle
   {
   public:
@@ -17,6 +21,7 @@ namespace ana
     const std::vector<double>& ShiftsForSyst(const std::string& name) const;
     unsigned int ClosestIndex(const std::string& name,
                               double shift,
+                              ESide side = ESide::kEither,
                               double* trueShift = 0) const;
   protected:
     UniverseOracle();

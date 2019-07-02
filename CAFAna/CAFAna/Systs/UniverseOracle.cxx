@@ -85,12 +85,15 @@ namespace ana
   // --------------------------------------------------------------------------
   unsigned int UniverseOracle::ClosestIndex(const std::string& name,
                                             double shift,
+                                            ESide side,
                                             double* trueShift) const
   {
     const std::vector<double>& v = ShiftsForSyst(name);
     int bestIdx = -1;
     double bestDist;
     for(unsigned int i = 0; i < v.size(); ++i){
+      if(side == ESide::kBelow && v[i] > shift) continue;
+      if(side == ESide::kAbove && v[i] < shift) continue;
       const double dv = fabs(v[i]-shift);
       if(bestIdx == -1 || dv < bestDist){
         bestIdx = i;
