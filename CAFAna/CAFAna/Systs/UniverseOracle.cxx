@@ -39,6 +39,17 @@ namespace ana
             ifin >> junk; // second version of the name...
             assert(ifin.good());
           }
+          else{
+            // Fix up the flux names
+            if(name == "expskin" ||
+               name == "horncurrent" ||
+               name == "nucleoninexsec" ||
+               name == "nucleonqexsec" ||
+               name == "nucleontotxsec" ||
+               name == "pioninexsec" ||
+               name == "pionqexsec" ||
+               name == "piontotxsec") name += "_FluxUnisim";
+          }
 
           while(true){
             double shift;
