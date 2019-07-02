@@ -41,7 +41,10 @@ namespace ana
       }
 
       if(fIdx == -1){
-        std::cout << "Syst '" << ShortName() << "' not found in record" << std::endl;
+        std::cout << "SBNWeightSyst: '" << ShortName() << "' not found in record" << std::endl;
+        std::cout << "Available:";
+        for(auto& it: ws) std::cout << " " << std::string(it.first);
+        std::cout << std::endl;
         abort();
       }
     }
@@ -78,16 +81,46 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  const std::vector<const ISyst*>& GetSBNWeightSysts()
+  const std::vector<const ISyst*>& GetSBNGenieWeightSysts()
   {
     static std::vector<const ISyst*> ret;
     if(ret.empty()){
       const UniverseOracle& uo = UniverseOracle::Instance();
       ret.reserve(uo.Systs().size());
       for(const std::string& name: uo.Systs()){
-        if(name[0] != 'g') continue; // only genie systs for now
+        if(name.find("Alt") != std::string::npos) continue; // these seem to be duplicates
+        if(name.find("genie") == std::string::npos) continue;
         ret.push_back(new SBNWeightSyst(name));
       }
+    }
+    return ret;
+  }
+
+  // --------------------------------------------------------------------------
+  const std::vector<const ISyst*>& GetSBNFluxWeightSysts()
+  {
+    static std::vector<const ISyst*> ret;
+    if(ret.empty()){
+      const UniverseOracle& uo = UniverseOracle::Instance();
+      ret.reserve(uo.Systs().size());
+      for(const std::string& name: uo.Systs()){
+        if(name.find("genie") != std::string::npos) continue;
+        ret.push_back(new SBNWeightSyst(name));
+      }
+    }
+    return ret;
+  }
+
+  // --------------------------------------------------------------------------
+  const std::vector<const ISyst*>& GetSBNWeightSysts()
+  {
+    static std::vector<const ISyst*> ret;
+    if(ret.empty()){
+      const std::vector<const ISyst*>& g = GetSBNGenieWeightSysts();
+      const std::vector<const ISyst*>& f = GetSBNFluxWeightSysts();
+      ret.reserve(g.size()+f.size());
+      ret.insert(ret.end(), g.begin(), g.end());
+      ret.insert(ret.end(), f.begin(), f.end());
     }
     return ret;
   }
