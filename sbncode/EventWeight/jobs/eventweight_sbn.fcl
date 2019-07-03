@@ -913,8 +913,8 @@ sbn_genie_eventweight: {
 }
 
 sbn_genie_eventweight.weight_functions: [
-  @sequence::sbn_genie_eventweight.weight_functions_beam,
-  @sequence::sbn_genie_eventweight.weight_functions_genie
+  @sequence::sbn_genie_eventweight.weight_functions_beam
+#  ,@sequence::sbn_genie_eventweight.weight_functions_genie
 ]
 
 END_PROLOG

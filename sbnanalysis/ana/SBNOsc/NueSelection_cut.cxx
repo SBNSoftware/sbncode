@@ -89,9 +89,7 @@ namespace ana {
       fConfig.ApplyKMECCut                = pconfig.get<bool>("ApplyKMECCut",false);
       fConfig.ApplyCosmicCylinderCut      = pconfig.get<bool>("ApplyCosmicCylinderCut",false);
       fConfig.ApplyCosmicFVCut            = pconfig.get<bool>("ApplyCosmicFVCut",false);
-      fConfig.ApplyCosmicInSpillWindowCut = pconfig.get<bool>("ApplyCosmicInSpillWindowCut",false);
-
-      fConfig.ApplyGENIEVersionWeight     = pconfig.get<bool>("ApplyGENIEVersionWeight",false);
+      fConfig.ApplyCosmicInSpillWindowCut = pconfig.get<bool>(" ApplyCosmicInSpillWindowCut",false);
 
       fConfig.IncludeCosmics         = pconfig.get<bool>("IncludeCosmics",true);
       fConfig.IncludeDirt            = pconfig.get<bool>("IncludeDirt",true);  
@@ -123,22 +121,6 @@ namespace ana {
       //c_start = std::clock();
 
       MCTruthCounter =0;
-
-      //Initialise The Genie Map
-      GENIEWeight_map[1002] = {0.98189,-0.0976284};
-      GENIEWeight_map[1006] = {1.04623,-0.0493547};
-      GENIEWeight_map[1007] = {1.10988,-0.117149};
-      GENIEWeight_map[1008] = {1.12512,-0.101928};
-      GENIEWeight_map[1009] = {1.16656,-0.181743};
-      GENIEWeight_map[1092] = {0.784997,0.0384627};
-      GENIEWeight_map[1096] = {0.385349,0.144463};
-      GENIEWeight_map[1001] = {0.981065,0.0144529};
-      GENIEWeight_map[1003] = {1.01331,0.02358};
-      GENIEWeight_map[1004] = {1.19543,-0.126985};
-      GENIEWeight_map[1005] = {1.00385,-0.0108244};
-      GENIEWeight_map[1091] = {0.683837,0.131936};
-      GENIEWeight_map[1097] = {0.979471,-0.251321};
-
 
       //Initialising the MEC Weight map.
       // MECWeight_map["ICARUS"]["InNuE"][1001] = {1.00754,1.18254,3.51601};
@@ -423,103 +405,103 @@ namespace ana {
       int truth_cosint = 0;
 
       // //Get tracks and showers 
-      auto const& mctracks  = *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
-      auto const& mcshowers = *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
+      // auto const& mctracks  = *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
+      // auto const& mcshowers = *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
 
-      //Get the flux info 
+      // //Get the flux info 
       auto const& mcflux = ev.getValidHandle<std::vector<simb::MCFlux> >(fFluxTag);
 
-      //Get this list of track ides that actually deposited energy.
+      // //Get this list of track ides that actually deposited energy.
       std::map<int,double> visible_mcparticles;
       
-      if(!fConfig.DontUseSimChannels){
+      // if(!fConfig.DontUseSimChannels){
 
-      	auto const& mcsimchannels =  *ev.getValidHandle<std::vector<sim::SimChannel> >(fMCParticleTag);
-      	for(auto const& mcsimchannel: mcsimchannels){
+      // 	auto const& mcsimchannels =  *ev.getValidHandle<std::vector<sim::SimChannel> >(fMCParticleTag);
+      // 	for(auto const& mcsimchannel: mcsimchannels){
 	  
-      	  //Get the TDCIDEMap (Charge vs Time)
-      	  auto tdc_ide_map = mcsimchannel.TDCIDEMap();
+      // 	  //Get the TDCIDEMap (Charge vs Time)
+      // 	  auto tdc_ide_map = mcsimchannel.TDCIDEMap();
 	  
-      	  //Loop through the map     
-      	  for(auto const& tdc_ide_pair : tdc_ide_map){ 
+      // 	  //Loop through the map     
+      // 	  for(auto const& tdc_ide_pair : tdc_ide_map){ 
 	    
-      	    //Get the IDEs associated to the TDC? 
-      	    auto const& ide_v = tdc_ide_pair.second;
+      // 	    //Get the IDEs associated to the TDC? 
+      // 	    auto const& ide_v = tdc_ide_pair.second;
 
-      	    //Loop over the IDEs and add the energy. Only count from the collection plane. 
-      	    for(auto const& ide : ide_v) {
-      	      //account for three planes.
-      	      visible_mcparticles[TMath::Abs(ide.trackID)] += ide.energy/(3*1000);
-      	    }
-      	  }
-      	}
-      }
+      // 	    //Loop over the IDEs and add the energy. Only count from the collection plane. 
+      // 	    for(auto const& ide : ide_v) {
+      // 	      //account for three planes.
+      // 	      visible_mcparticles[TMath::Abs(ide.trackID)] += ide.energy/(3*1000);
+      // 	    }
+      // 	  }
+      // 	}
+      // }
 
-      // //Get a map of the all the particles (not just the final state ones).
+      // // //Get a map of the all the particles (not just the final state ones).
       std::map<int,const simb::MCParticle*> mcparticles;
       auto const& mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
       for(auto const &mcparticle:  mcparticle_list){
 	
       	mcparticles[mcparticle.TrackId()] = &mcparticle;
 
-      	if(fConfig.Verbose){
-      	  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << " and mother: " << mcparticle.Mother() << " start position: " <<  mcparticle.Vx() << ", " <<  mcparticle.Vy() << ", " <<  mcparticle.Vz() << std::endl;
-      	}
+	//      	if(fConfig.Verbose){
+      	//  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << " and mother: " << mcparticle.Mother() << " start position: " <<  mcparticle.Vx() << ", " <<  mcparticle.Vy() << ", " <<  mcparticle.Vz() << std::endl;
+      	//}
       }
 
-      if(fConfig.DontUseSimChannels){
-      	for(auto const &mcparticle:  mcparticle_list){
-      	  //int numtrajpoints = mcparticle.NumberTrajectoryPoints() - 2;
-      	  //if(numtrajpoints<0){numtrajpoints = 0;}
-      	  visible_mcparticles[mcparticle.TrackId()] = mcparticle.E();
-      	}
-      }
+      // if(fConfig.DontUseSimChannels){
+      // 	for(auto const &mcparticle:  mcparticle_list){
+      // 	  //int numtrajpoints = mcparticle.NumberTrajectoryPoints() - 2;
+      // 	  //if(numtrajpoints<0){numtrajpoints = 0;}
+      // 	  visible_mcparticles[mcparticle.TrackId()] = mcparticle.E();
+      // 	}
+      // }
 
-      if(!fConfig.DontUseSimChannels){
+      // if(!fConfig.DontUseSimChannels){
 	  
-      	//      Roll up the visible energy for shower like particles.
-      	std::vector<int> rm_particles;
-      	for(auto const& visible_mcparticle: visible_mcparticles){
+      // 	//      Roll up the visible energy for shower like particles.
+      // 	std::vector<int> rm_particles;
+      // 	for(auto const& visible_mcparticle: visible_mcparticles){
 
-      	  if(mcparticles.find(visible_mcparticle.first) == mcparticles.end()){
-      	    rm_particles.push_back(visible_mcparticle.first);
-      	    continue;
-      	  }
+      // 	  if(mcparticles.find(visible_mcparticle.first) == mcparticles.end()){
+      // 	    rm_particles.push_back(visible_mcparticle.first);
+      // 	    continue;
+      // 	  }
 
-      	  const simb::MCParticle*  mcparticle =  mcparticles[visible_mcparticle.first];
+      // 	  const simb::MCParticle*  mcparticle =  mcparticles[visible_mcparticle.first];
 
-      	  if(TMath::Abs(mcparticle->PdgCode()) != 11 && TMath::Abs(mcparticle->PdgCode()) != 22){continue;}
+      // 	  if(TMath::Abs(mcparticle->PdgCode()) != 11 && TMath::Abs(mcparticle->PdgCode()) != 22){continue;}
 	  
-      	  //Find the mother
-      	  int track_id =  mcparticle->TrackId();
+      // 	  //Find the mother
+      // 	  int track_id =  mcparticle->TrackId();
 
-      	  //Find the initial  mother
-      	  int mother_id = track_id;
-      	  while(mother_id != 0){
-      	    if(mcparticles.find(mother_id) != mcparticles.end()){
-      	      if(TMath::Abs(mcparticles[mother_id]->PdgCode()) != 11 && TMath::Abs(mcparticles[mother_id]->PdgCode()) != 22){break;}
-      	      track_id = mother_id;
-      	      mother_id = mcparticles[mother_id]->Mother();
-      	    }
-      	    else{
-      	      break;
-      	    }
-      	  }
-      	  if(track_id != mcparticle->TrackId()){
-      	    visible_mcparticles[track_id] += visible_mcparticle.second;
-      	    rm_particles.push_back(visible_mcparticle.first);
-      	  }
-      	}
-      	for(auto const& rm_particle: rm_particles)
-      	  visible_mcparticles.erase(rm_particle);
-      }
+      // 	  //Find the initial  mother
+      // 	  int mother_id = track_id;
+      // 	  while(mother_id != 0){
+      // 	    if(mcparticles.find(mother_id) != mcparticles.end()){
+      // 	      if(TMath::Abs(mcparticles[mother_id]->PdgCode()) != 11 && TMath::Abs(mcparticles[mother_id]->PdgCode()) != 22){break;}
+      // 	      track_id = mother_id;
+      // 	      mother_id = mcparticles[mother_id]->Mother();
+      // 	    }
+      // 	    else{
+      // 	      break;
+      // 	    }
+      // 	  }
+      // 	  if(track_id != mcparticle->TrackId()){
+      // 	    visible_mcparticles[track_id] += visible_mcparticle.second;
+      // 	    rm_particles.push_back(visible_mcparticle.first);
+      // 	  }
+      // 	}
+      // 	for(auto const& rm_particle: rm_particles)
+      // 	  visible_mcparticles.erase(rm_particle);
+      // }
       
-      if(fConfig.Verbose){
-      	for(auto const& visible_mcparticle: visible_mcparticles)
-      	  std::cout << "visible track id: " << visible_mcparticle.first << " Energy: " << visible_mcparticle.second  << std::endl;
-      }
+      // if(fConfig.Verbose){
+      // 	for(auto const& visible_mcparticle: visible_mcparticles)
+      // 	  std::cout << "visible track id: " << visible_mcparticle.first << " Energy: " << visible_mcparticle.second  << std::endl;
+      // }
 
-      float totalbnbweight = 1;
+      // float totalbnbweight = 1;
       
       //Grab a neutrino datat product from the event
       for(int fTruthTag=0; fTruthTag<fTruthTags.size(); ++fTruthTag){
@@ -541,24 +523,24 @@ namespace ana {
 		  
 	  int showers=0;
 
-	  if(fConfig.Verbose){
-	    //Remove for debugging perposes
-	    for (auto const &mct: mctracks) {
-	      double mass = PDGMass(mct.PdgCode());
-	      TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
-	      TLorentzVector partstart = mct.Start().Position();
-	      std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000  << " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
-	    }
-	    for (auto const &mcs: mcshowers) {
-	      TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
-	      TLorentzVector partstart = mcs.Start().Position();
-	      double mass = PDGMass(mcs.PdgCode());
+	  // if(fConfig.Verbose){
+	  //   //Remove for debugging perposes
+	  //   for (auto const &mct: mctracks) {
+	  //     double mass = PDGMass(mct.PdgCode());
+	  //     TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	  //     TLorentzVector partstart = mct.Start().Position();
+	  //     std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000  << " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
+	  //   }
+	  //   for (auto const &mcs: mcshowers) {
+	  //     TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	  //     TLorentzVector partstart = mcs.Start().Position();
+	  //     double mass = PDGMass(mcs.PdgCode());
 
-	      if(mcs.PdgCode() == 22 && mcs.Start().E() > 100){++showers;}
+	  //     if(mcs.PdgCode() == 22 && mcs.Start().E() > 100){++showers;}
 
-	      std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 <<  " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << " and time: " << mcparticles[mcs.TrackID()]->T() << std::endl;
-	    }
-	  }
+	  //     std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 <<  " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << " and time: " << mcparticles[mcs.TrackID()]->T() << std::endl;
+	  //   }
+	  // }
 	  
 	  
 	  if(fConfig.Verbose){
@@ -634,8 +616,8 @@ namespace ana {
 	  for(auto const &mcparticle_data: visible_mcparticles){
 	    const simb::MCParticle*  mcparticle = mcparticles[mcparticle_data.first];
 	    float Energy = mcparticle_data.second;
-	    if(TMath::Abs(mcparticle->PdgCode()) == 11 && Energy*1000 > fConfig.photonVisibleEnergyThreshold){
-
+	    if(TMath::Abs(mcparticle->PdgCode()) == 11 && Energy > fConfig.photonVisibleEnergyThreshold){
+	    
 	      //Don't consider daughters of showering particles
 	      if(mcparticles.find(mcparticle->Mother()) != mcparticles.end()){
 		if(TMath::Abs(mcparticle->Mother()) == 11 || TMath::Abs(mcparticle->Mother()) == 22){continue;}
@@ -643,7 +625,6 @@ namespace ana {
 	      
 	      //Check to see if its from the vertex.
 	      if(isFromNuVertex(mctruth,mcparticle)){
-		
 		//Say the lepton is the one with the highest energy.
 		if(Energy > lepton_energy){
 		  lepton_energy = Energy;
@@ -731,11 +712,6 @@ namespace ana {
 	    //intInfo.weight *= MECWeight(nu,fConfig.Detector,intInfo);
 	  }
 
-	  //Add the weight to get back to genie v02_08
-	  if(fConfig.ApplyGENIEVersionWeight){
-	    intInfo.weight *= GENIEWeight(nu);
-	  }
-
 	  dirtevent = false;
 
 	  //Fill the number graphs
@@ -815,38 +791,38 @@ namespace ana {
 	    // build the interaction
 	    Event::Interaction interaction = truth[truth_cosint];
 	
-	    for(auto const &mcs: mcshowers){ 
+	    // for(auto const &mcs: mcshowers){ 
 
-	      //Weighting for efficiency of selection.
-	      double weightcos = 1;
+	    //   //Weighting for efficiency of selection.
+	    //   double weightcos = 1;
 	      
-	      ///Weight with the POT
-	      weightcos *= fConfig.POTWeight;
+	    //   ///Weight with the POT
+	    //   weightcos *= fConfig.POTWeight;
 	      
-	      //Add the Global weightings if any.
-	      weightcos *= fConfig.CosmicGlobalWeight;
+	    //   //Add the Global weightings if any.
+	    //   weightcos *= fConfig.CosmicGlobalWeight;
 	      
-	      //Account for bnb weights?
-	      //	      weightcos *= totalbnbweight;
+	    //   //Account for bnb weights?
+	    //   //	      weightcos *= totalbnbweight;
 	      
-	      fRootHists.CosmicShowerT0->Fill(mcparticles[mcs.TrackID()]->T());
+	    //   fRootHists.CosmicShowerT0->Fill(mcparticles[mcs.TrackID()]->T());
 
-	      //Make a nue interaction 
-	      NueSelection::NueInteraction intInfo({0, 0, 0, 0, weightcos,-9999,-9999,-9999,-9999}); 
-	      bool selection = SelectCosmic(mcs, mcparticles, intInfo);
+	    //   //Make a nue interaction 
+	    //   NueSelection::NueInteraction intInfo({0, 0, 0, 0, weightcos,-9999,-9999,-9999,-9999}); 
+	    //   bool selection = SelectCosmic(mcs, mcparticles, intInfo);
 	      
-	      if(selection){
-	    	//Make the reco interaction event. 
-	    	Event::RecoInteraction reco_interaction(interaction,truth_cosint);
-	    	reco_interaction.reco_energy = intInfo.GetNueEnergy();
-	    	reco_interaction.weight = intInfo.weight; 
-	    	std::cout << " Cosmic Selected with track id: " << mcs.TrackID() << " energy: " << reco_interaction.reco_energy << " weight: " << reco_interaction.weight  << std::endl;
+	    //   if(selection){
+	    // 	//Make the reco interaction event. 
+	    // 	Event::RecoInteraction reco_interaction(interaction,truth_cosint);
+	    // 	reco_interaction.reco_energy = intInfo.GetNueEnergy();
+	    // 	reco_interaction.weight = intInfo.weight; 
+	    // 	std::cout << " Cosmic Selected with track id: " << mcs.TrackID() << " energy: " << reco_interaction.reco_energy << " weight: " << reco_interaction.weight  << std::endl;
 		
-	    	reco.push_back(reco_interaction);
-	    	selected =  selection;
-	    	NuCount++;
-	      }
-	    }
+	    // 	reco.push_back(reco_interaction);
+	    // 	selected =  selection;
+	    // 	NuCount++;
+	    //   }
+	    // }
 	    ++truth_cosint;
 	  }
 	}
@@ -1224,6 +1200,7 @@ namespace ana {
 	//if(numtrajpoints<0){numtrajpoints = 0;}
 	if(visible_mcparticles[photon->TrackId()]*1000 < fConfig.photonVisibleEnergyThreshold){continue;}
 
+
 	//Check the photons in the active volume/
 	if(containedInAV(photon->EndPosition().Vect())){
 	  ++photons_inAV;
@@ -1474,24 +1451,6 @@ namespace ana {
       }
       return;
     }
-
-    //Returns the scale factor to get back to v2_08.
-    double NueSelection::GENIEWeight(const simb::MCNeutrino& nu){
-      
-      double mode = nu.InteractionType();
-      
-      if(GENIEWeight_map.find(mode) == GENIEWeight_map.end()){return 1;}
-
-      double weight = GENIEWeight_map[mode].at(0) + nu.Nu().E()*GENIEWeight_map[mode].at(1);
-
-      if(fConfig.Verbose){
-	std::cout << "GENIE Weight is: " << weight << std::endl;
-      }
-      
-      return weight;
-
-    }
-
 
     double NueSelection::MECWeight(const simb::MCNeutrino& nu,std::string& Detector, NueSelection::NueInteraction& intInfo){
       

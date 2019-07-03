@@ -194,7 +194,7 @@ struct VisibleEnergyCalculator {
 /** 
  * Get the seperate hadronic and leptonic energy from the event. The first element in the vector is the hadronic energy the second is the leptonic. 
  * */
- std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, std::map<int,const simb::MCParticle*>& mcparticles, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
+ std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, std::map<int,const simb::MCParticle*>& mcparticles,std::map<int,double>& mcvisibleparticles, std::vector<geoalgo::AABox>& Volumes, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
 /** Get the smeared energy from a lepton.
  * \param mctrack The MCTrack object corresponding to the lepton
@@ -210,6 +210,7 @@ struct VisibleEnergyCalculator {
  * */
  double smearLeptonEnergy(TRandom& rand, const simb::MCParticle* &lepton, const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
+ double smearLeptonEnergy(TRandom& rand, double& LeptonE, int& PdgCode,  const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator());
 
   }  // namespace SBNOsc
 }  // namespace ana

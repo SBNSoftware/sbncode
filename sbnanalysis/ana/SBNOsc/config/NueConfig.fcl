@@ -158,24 +158,39 @@ standard_selection: {
       POTWeight:                       1 #weighting done outside. 
       photonVisibleEnergyThreshold:    100
       CosmicWeight:                    0.05
+      CosmicGlobalWeight:              1
       CosmicVolumeRadius:              15 #cm
 
-      ApplyNueEfficiency:    true    
-      ApplyElectronEnergyCut:true
-      ApplyFVCut:            true 
-      ApplyAVCut:            true
-      ApplyPhotonEnergyCut:  true
-      ApplyConversionGapCut: true
-      ApplydEdxCut:          true
-      ApplyMuonLenghtCut:    true 
-      ApplyKMECCut:          false
+      GlobalTimeOffset:  0    #Offset In the spill time in the simulation (in ns) 
+      SpillTime:         1600 #Time a spill last for in ns.
+      ReadOutWindowSize: 1 
+ 
+      ApplyNueEfficiency:          true    
+      ApplyElectronEnergyCut:      true
+      ApplyFVCut:                  true 
+      ApplyAVCut:                  true
+      ApplyPhotonEnergyCut:        true
+      ApplyConversionGapCut:       true
+      ApplydEdxCut:                true
+      ApplyMuonLenghtCut:          true 
+      ApplyCosmicInSpillWindowCut: true
+      ApplyKMECCut:                false
+      ApplyGENIEVersionWeight:     false
 
       IncludeCosmics:        true 
       IncludeDirt:           true
       CosmicsOnly:           false
       DirtOnly:              false
 
+      IntrinsicOnly: false
+      NuMuOnly:      false 
+      OscOnly:       false   
+
       Verbose:               false 
+
+      FillHistograms: false
+      FillModeHistograms: false
+      FillIntTypeHistograms: false
 
 }
 

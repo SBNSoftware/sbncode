@@ -206,13 +206,11 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     ev.getByLabel(fTruthTags[fTruthTag], gtruths_handle);
     bool genie_truth_is_valid = gtruths_handle.isValid();
     
-    std::cout << "On truth label: " << fTruthTags[fTruthTag] << std::endl;
 
     // Get MCFlux information
     //    auto const& mcfluxes =					\
     //  *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTags[fTruthTag]);
     // assert(mctruths.size() == mcfluxes.size());
-
 
 
     // Get MCEventWeight information
@@ -241,9 +239,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     
     for (size_t i=0; i<mctruths.size(); i++) {
       Event::Interaction interaction;
-      
+
       auto const& mctruth = mctruths.at(i);
-      std::cout << mctruth << std::endl;
 
       // TODO: What to do with cosmic MC?
       // For now, ignore them
@@ -351,8 +348,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       
       interaction.nfinalstate = interaction.finalstate.size();
       fEvent->truth.push_back(interaction);
-    }
-  } 
+     }
+  }
   fEvent->ntruth = fEvent->truth.size();
 }
 

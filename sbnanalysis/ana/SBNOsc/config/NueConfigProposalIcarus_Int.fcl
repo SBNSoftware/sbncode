@@ -13,5 +13,6 @@ NueSelection: {
   Verbose: false
   IncludeCosmics: false
   IncludeDirt: false
+  IntrinsicOnly: true
 }
 

@@ -3,15 +3,15 @@
 OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
 #MCWeightTags: ["fluxeventweight", "genieeventweight"]
 #MCWeightTags: ["genieeventweight" ]
-MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+#MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
   fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
   active_volumes: @local::SBND_Proposal_active_volumes 
   @table::standard_selection
-  UniformWeights: ["bnbcorrection_FluxHist"]
-  GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
-  ApplyKMECCut: true  
+  #UniformWeights: ["bnbcorrection_FluxHist"]
+  #GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
+  #ApplyKMECCut: true  
   Verbose: true
   POTWeight: 1
   Detector: "SBND"
@@ -19,6 +19,8 @@ NueSelection: {
   IncludeDirt: false
   NuMuOnly:    true
   FillHistograms: true
+  FillModeHistograms: true
+  FillIntTypeHistograms: true
 
 }
 

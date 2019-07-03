@@ -2,7 +2,6 @@
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
 MCWeightTags: @local::eventweight_tags
-MCTruthTags: ["generator","corsika"]
 
 NueSelection: {
   fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
@@ -11,13 +10,9 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
   Detector: "SBND"
-  Verbose: false
-  IncludeCosmics:        true 
-  IncludeDirt:           true
-  GlobalTimeOffset: 3125
-  ReadoutWindowSize: 9600
-  UseAllCosmics: true
-  DontUseSimChannels: true
-  DirtOnly: true
+  Verbose: true
+  IncludeCosmics: false
+  IncludeDirt: false
+  IntrinsicOnly: true
+#  FillHistograms: true
 }
-

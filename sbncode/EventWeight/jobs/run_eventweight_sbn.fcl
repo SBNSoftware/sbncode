@@ -20,14 +20,14 @@ source: {
 
 physics: {
  producers: {
-   fluxweight: @local::sbn_flux_eventweight
+#   fluxweight: @local::sbn_flux_eventweight
    genieweight: @local::sbn_genie_eventweight
    rns: {
      module_type: "RandomNumberSaver"
    }
  }
  
- simulate: [ rns, fluxweight, genieweight ]
+ simulate: [ rns, genieweight ]
  stream1: [ out1 ]
  trigger_paths: [ simulate ]
  end_paths: [ stream1 ]

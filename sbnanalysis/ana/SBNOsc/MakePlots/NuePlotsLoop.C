@@ -11,11 +11,22 @@
 #include "TH1.h"
 #include "THStack.h"
 #include "TFile.h"
+#include "TCanvas.h" 
+#include "TPad.h"
+#include "TTree.h"
+#include "TSystem.h"
+#include "TROOT.h"
+#include "TChain.h"
+#include "TFileCollection.h"
 
-#include "/sbnd/app/users/gputnam/SBNCode/dev/srcs/sbncode/sbnanalysis/core/Event.hh"
-#include "/sbnd/app/users/gputnam/SBNCode/dev/srcs/sbncode/sbnanalysis/core/SubRun.hh"
+#include "/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis/core/Event.hh"
+#include "/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis/core/SubRun.hh"
 
-void NueSelectionPlots(){
+void NuePlotsLoop(){
+
+  gInterpreter->GenerateDictionary("SubRun","/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis//core/SubRun.hh");
+  gInterpreter->GenerateDictionary("Event","/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis//core/Event.hh");
+  
 
   //Stack to go in
   Double_t nue_bins[12] = {0.200,0.350,0.500,0.650,0.800,0.950,1.100,1.300,1.500,1.750,2.000,3.000};
@@ -41,8 +52,8 @@ void NueSelectionPlots(){
 
   //get the text file with the sbn files in 
   std::string inputfile_name;
-  cout << "Please enter the name of the list of the input files: ";
-  cin >> inputfile_name;
+  std::cout << "Please enter the name of the list of the input files: ";
+  std::cin >> inputfile_name;
   const char* inputfilelist = inputfile_name.c_str();
   
   //Flavours of events 
@@ -82,7 +93,8 @@ void NueSelectionPlots(){
   std::string inputfile;
   std::string line;
 
-  //Loop over the text files and make a root file.                                                          
+
+  //Loop over the text files and make a root file.              
   std::ifstream txtfile_stream;
   txtfile_stream.open(inputfilelist);
   if (txtfile_stream.is_open()){
@@ -120,7 +132,7 @@ void NueSelectionPlots(){
       if(found_intrinsic!=std::string::npos){
     	HistType = "InNuE";
       }
-      found_intrinsic = line.find("Int.");
+      found_intrinsic = line.find("Int");
       if(found_intrinsic!=std::string::npos){
         HistType = "InNuE";
       }
@@ -131,16 +143,12 @@ void NueSelectionPlots(){
       if(found_osc!=std::string::npos){
         HistType = "OscNuE";
       } 
-      found_osc = line.find("Osc.");
-      if(found_osc!=std::string::npos){
-        HistType = "OscNuE";
-      } 
 
       std::size_t found_numu = line.find("nu/");
       if(found_numu!=std::string::npos){
         HistType = "NuMu";
       }
-      found_numu = line.find("Numu.");
+      found_numu = line.find("Numu");
       if(found_numu!=std::string::npos){
         HistType = "NuMu";
       }
@@ -156,34 +164,40 @@ void NueSelectionPlots(){
 	std::cout << "It went wrong" << std::endl;
       }
 
+      
+
       //Get the inputfile                                                                                       
       const char* InputFileName = inputfile.c_str();
       TFile *InputFile = TFile::Open(InputFileName);
 
-      //Get the POT                                                                                                         
-      TTree *subruntree = (TTree*)InputFile->Get("sbnsubrun");
+      if(!InputFile->IsOpen()){ std::cout << "File: " << InputFileName << " failed to open. exiting" << std::endl;return;}
+
+      //Get the POT                        
+
+      TTree *subruntree; 
+      gDirectory->GetObject("sbnsubrun",subruntree);
 
       double totgoodpot;
       float totalpot = 0;
 
-      SubRun *subruns = new SubRun;
-
+      SubRun *subruns = 0;
       subruntree->SetBranchAddress("subruns",&subruns);
-
-
 
       Long64_t nentries = subruntree->GetEntries();
       for (Long64_t i=0;i<nentries;i++) {
+
+	subruntree->LoadTree(i);
         subruntree->GetEntry(i);
 	//	HistType = "OscNuE";
-	//	std::cout << "totgoodpot: " << subruns->totgoodpot << " i: " << i  << std::endl;
+	//	        std::cout << "totgoodpot: " << subruns->totgoodpot << " i: " << i  << std::endl;
 	//	std::cout << "HistType: " << HistType << std::endl;
         POTMap[HistType] += subruns->totgoodpot;
+	std::cout << "POTMap[HistType]: " << POTMap[HistType] << std::endl;
       }
       InputFile->Close();
     }
   }
-   
+
   std::map<std::string,float> POTFlavourMap; 
   //Now we need to add up the POT for each flavour
   for(int i=0; i<HistTypes.size(); ++i){
@@ -203,7 +217,7 @@ void NueSelectionPlots(){
       //      POTFlavourMap["InNuE"]  = 983150000000000065536.000000 + 1.23124e+23;
       //      POTFlavourMap["InNuE"] = 118884300000000000000.000000 + 6.48597e+21;
     }
-
+    
     if(HistTypes[i] == "NuMu"){
       //Comes intrinic
       POTFlavourMap["NuMu"] += POTMap["NuMu"];
@@ -291,74 +305,135 @@ void NueSelectionPlots(){
       std::size_t pos = line.find(" ");    
       
       inputfile = line.substr(0,pos);
-      //      POTWeight = stof(line.substr(pos));
-      //std::cout << "POTWeight: " << POTWeight <<std::endl;
-            
+
       //Get the inputfile
       const char* InputFileName = inputfile.c_str();
       TFile *InputFile = TFile::Open(InputFileName);
 
-      // //Get the POT
-      // TTree *subruntree = (TTree*)InputFile->Get("sbnsubrun");
+      TTree *sbnana = (TTree*)InputFile->Get("sbnana");
+      Event *events = new Event;
+      sbnana->SetBranchAddress("events",&events);
 
-      // double totgoodpot;
-      // float totalpot = 0;
+      double L = 0;
+      std::size_t isuboone = line.find("uboone");
+      if(isuboone!=std::string::npos){
+	L = 470 *   8.065544005e5;
+      }
 
-      // SubRun *subruns = new SubRun;
-
-      // subruntree->SetBranchAddress("subruns",&subruns);
-
-      // Long64_t nentries = subruntree->GetEntries();
-      // for (Long64_t i=0;i<nentries;i++) {
-      // 	subruntree->GetEntry(i);
-      // 	std::cout << "totgoodpot: " << subruns->totgoodpot << " i: " << i  << std::endl;
-      // 	totalpot += subruns->totgoodpot;
-      // }
-
-      // std::cout << "totalpot: " << totalpot << std::endl;
+      std::size_t isicarus = line.find("icarus");
+      if(isicarus!=std::string::npos){
+	L = 600 *  8.065544005e5;
+      }
       
-      //move to the Hist folder
-      InputFile->cd("Histograms");
- 
-      for(int i=0; i<HistTypes.size(); ++i){
-	
-	//	std::cout << "New hist type" << std::endl;
-		
-	//float POTWeight = (6.6e20)/POTFlavourMap[HistTypes[i]];
-	//std::cout << "POTWeight: " << POTWeight <<std::endl;
-	std::string  VisibleEnergy_Selection_String  = HistTypes[i] + " VisibleEnergy_Selection";
-	const char*  VisibleEnergy_Selection_Name    = VisibleEnergy_Selection_String.c_str();
+      std::size_t issbnd = line.find("sbnd");
+      if(issbnd!=std::string::npos){
+	L = 100 * 8.065544005e5;
+      }
 
+      
+      Long64_t nentries = sbnana->GetEntries();
+      std::cout << "nenteries: " << nentries << std::endl;
+      for (Long64_t i=0;i<nentries;i++) {
+        sbnana->GetEntry(i);
+	std::vector<Event::RecoInteraction> * reco = &events->reco;
+      	std::vector<Event::Interaction> * truth = &events->truth;
+	for(int event=0; event<(*reco).size(); ++event){
 
-	if(HistTypes[i] == "Cosmic"){
-	  TH1D* VisibleEnergyCosmic = (TH1D*)(gDirectory->Get("VisibleEnergy_CosmicWeightCut"))->Clone();
-	  TH1D* VisibleEnergyCosmic1 = (TH1D*)VisibleEnergyCosmic->Rebin(11,VisibleEnergy_Selection_Name,nue_bins);
-	  VisibleEnergyHist[HistTypes[i]]->Add(VisibleEnergyCosmic1);
-	}	
+	  //Osc Weight 
+	  double Theta = 0.013; 
+	  double dm    = 0.43; 
+	  double osc_w = Theta*TMath::Sin(dm*L/(4*(*truth)[(*reco)[event].truth_index].neutrino.energy))*TMath::Sin(dm*L/(4*(*truth)[(*reco)[event].truth_index].neutrino.energy)); 
 
-	
-	//Get the histogram
-	if(gDirectory->Get(VisibleEnergy_Selection_Name) == NULL){continue;}
-	TH1D* VisibleEnergyHist1 = (TH1D*)(gDirectory->Get(VisibleEnergy_Selection_Name))->Clone();
-	TH1D* VisibleEnergyHist2 = (TH1D*)VisibleEnergyHist1->Rebin(11,VisibleEnergy_Selection_Name,nue_bins);
+	  //Are we cosmic
+	  if((*truth)[(*reco)[event].truth_index].neutrino.iscc == false && (*truth)[(*reco)[event].truth_index].neutrino.isnc == false){
+	    VisibleEnergyHist["Cosmic"]->Fill((*reco)[event].reco_energy, (*reco)[event].weight);
+	    continue;
+	  }
 
-	//Account for /Gev
-	// for(int bin=0; bin< VisibleEnergyHist2->GetNbinsX(); ++bin){
-	//   //	  std::cout << "VisibleEnergyHist2->GetBinWidth(1+bin): " << VisibleEnergyHist2->GetBinWidth(1+bin) << std::endl;
-	//   VisibleEnergyHist2->SetBinContent(1+bin, POTWeight*VisibleEnergyHist2->GetBinContent(1+bin) / VisibleEnergyHist2->GetBinWidth(1+bin));
-	// }
+	  //Are we dirt backround
+	  std::size_t found_cosdirt = line.find("nu_cosdirt/");
+	  if(found_cosdirt!=std::string::npos){
+	    
+	    //Are we oscillated 
+	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	      VisibleEnergyHist["DirtOscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w);
+	      continue; 
+	    }
+	    
+	    //Are we intrinsic?
+	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	      VisibleEnergyHist["DirtInNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	      continue;
+	    }
+	   
+	    //Are we charged current background 
+	    if((*truth)[(*reco)[event].truth_index].neutrino.pdg == 14 && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
+	      VisibleEnergyHist["DirtNCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	      continue;
+	    }
+	  
+	    //Are we NC background 
+	    if((*truth)[(*reco)[event].truth_index].neutrino.isnc == true){
+	      
+	      //Are we oscillated 
+	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+		VisibleEnergyHist["DirtNCOscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w);
+		continue; 
+	    }
+	      //Are we intrinsic?
+	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+		VisibleEnergyHist["DirtNCInNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+		continue;
+	      }
+	      //Are we charged current background 
+	      if((*truth)[(*reco)[event].truth_index].neutrino.pdg == 14){
+		VisibleEnergyHist["DirtNCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+		continue;
+	      }
+	    }
+	  }
+														   
+	  //Are we oscillated?
+	  if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	    VisibleEnergyHist["OscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w);
+	    continue;
+	  } 
 
-	if(VisibleEnergyHist2 == NULL){
-	  std::cerr << "Invalid Histogram initalisation" << std::endl;
-	  return;
+	  //Are we intrinsic?
+	  if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	    VisibleEnergyHist["Int"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	    continue;
+	  }
+
+	  //Are we charged current background 
+	  if((*truth)[(*reco)[event].truth_index].neutrino.pdg == 14 && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
+	    VisibleEnergyHist["NuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	    continue;
+	  }
+														   
+	  //Are we NC background 
+	  if((*truth)[(*reco)[event].truth_index].neutrino.isnc == true){
+	    
+	    //Are we oscillated?
+	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	      VisibleEnergyHist["NCOsc"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w);
+	      continue;
+	    } 
+	    
+	    //Are we intrinsic?
+	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && (*truth)[(*reco)[event].truth_index].neutrino.pdg == 12){
+	      VisibleEnergyHist["NCInt"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	      continue;
+	    }
+	    
+	    //Are we charged current background 
+	    if((*truth)[(*reco)[event].truth_index].neutrino.pdg == 14 && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
+	      std::cout << "test" << std::endl;
+	      VisibleEnergyHist["NCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight);
+	      continue;
+	    }
+	  }
 	}
-
-	// VisibleEnergyHist2->SetFillColor(Colours[HistTypes[i]]);
-	// VisibleEnergyHist2->SetMarkerStyle(21);
-	// VisibleEnergyHist2->SetMarkerColor(Colours[HistTypes[i]]);
-	// VisibleEnergyHist2->SetLineColor(Colours[HistTypes[i]]);
-
-	VisibleEnergyHist[HistTypes[i]]->Add(VisibleEnergyHist2);
       }
       InputFile->Close();
     }
@@ -374,7 +449,7 @@ void NueSelectionPlots(){
   //TFile to hold the  selection plots.
   TFile *Figures = new TFile("Figures.root","RECREATE");
 
-  std::map<std::string,std::map<int,float> > ErrorMap;
+
   for(int i=0; i<HistTypes.size(); ++i){
 
     float POTWeight = 1; 
@@ -388,30 +463,16 @@ void NueSelectionPlots(){
 
     float Totalint = 0;
     for(int bin=0; bin< VisibleEnergyHist[HistTypes[i]]->GetNbinsX(); ++bin){                                    
+      std::cout << " 1Bin Entry is: " << VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) << " +- " << VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin) << std::endl;
       Totalint += VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin);
       VisibleEnergyHist[HistTypes[i]]->SetBinContent(1+bin, POTWeight*VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) / VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin));
       VisibleEnergyHist[HistTypes[i]]->SetBinError(1+bin,POTWeight*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin) / VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin));
       std::cout << " Bin Entry is: " << VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) << " +- " << VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin) << std::endl;
-
-      if(HistTypes[i] == "NuMu"){
-	ErrorMap["NuMu F"][bin] += VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin);
-      }
-      if(HistTypes[i] == "InNuE"){
-	ErrorMap["InNuE F"][bin] += VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin);
-      }
-      if(HistTypes[i] == "NCInNuE" || HistTypes[i] == "NCNuMu"){
-	ErrorMap["NC F"][bin] += VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin);
-      }
-      if(HistTypes[i] == "DirtInNuE" || HistTypes[i] == "DirtNuMu" || HistTypes[i] == "DirtNCInNuE" || HistTypes[i] == "DirtNCNuMu"){
-	ErrorMap["Dirt F"][bin] += VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin);
-      }
-      if(HistTypes[i] == "Cosmic"){
-	ErrorMap["Cosmic F"][bin] += VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin);
-      }
+      
     }
 
     std::cout << "total flavour enteries is: " <<  Totalint << std::endl;
-  }
+
     // VisibleEnergyHist[HistTypes[i]]->SetFillColor(Colours[HistTypes[i]]);
     // VisibleEnergyHist[HistTypes[i]]->SetMarkerStyle(21);
     // VisibleEnergyHist[HistTypes[i]]->SetMarkerColor(colours[HistTypes[i]]);
@@ -423,52 +484,31 @@ void NueSelectionPlots(){
     //  VisibleEnergyHistFinal["OscNuE"]->Add(VisibleEnergyHist[HistTypes[i]]); 
     // }
 
-  for(int i=0; i<HistTypes.size(); ++i){
-
-    for(int bin=0; bin< VisibleEnergyHist[HistTypes[i]]->GetNbinsX(); ++bin){
-
-      if(HistTypes[i] == "NuMu"){
-	double Error = TMath::Sqrt(ErrorMap["NuMu F"][bin]);
-	VisibleEnergyHistFinal["NuMu F"]->SetBinContent(1+bin,VisibleEnergyHistFinal["NuMu F"]->GetBinContent(1+bin) + VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin));
-	VisibleEnergyHistFinal["NuMu F"]->SetBinError(1+bin,Error);
-      }
-      
-      if(HistTypes[i] == "InNuE"){
-	double Error = TMath::Sqrt(ErrorMap["InNuE F"][bin]);
-	VisibleEnergyHistFinal["InNuE F"]->SetBinContent(1+bin,VisibleEnergyHistFinal["InNuE F"]->GetBinContent(1+bin) + VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin));
-	VisibleEnergyHistFinal["InNuE F"]->SetBinError(1+bin,Error);
-      }
-      
-      if(HistTypes[i] == "NCInNuE" || HistTypes[i] == "NCNuMu"){
-	double Error = TMath::Sqrt(ErrorMap["NC F"][bin]);
-	VisibleEnergyHistFinal["NC F"]->SetBinContent(1+bin,VisibleEnergyHistFinal["NC F"]->GetBinContent(1+bin) + VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin));
-	VisibleEnergyHistFinal["NC F"]->SetBinError(1+bin,Error);
-      }
-      
-      if(HistTypes[i] == "DirtInNuE" || HistTypes[i] == "DirtNuMu" || HistTypes[i] == "DirtNCInNuE" || HistTypes[i] == "DirtNCNuMu"){
-      	double Error = TMath::Sqrt(ErrorMap["Dirt F"][bin]);
-      	VisibleEnergyHistFinal["Dirt F"]->SetBinContent(1+bin,VisibleEnergyHistFinal["Dirt F"]->GetBinContent(1+bin) + VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin));
-      	VisibleEnergyHistFinal["Dirt F"]->SetBinError(1+bin,Error);
-      }
-      
-      if(HistTypes[i] == "Cosmic"){
-      	double Error = TMath::Sqrt(ErrorMap["Cosmic F"][bin]);
-      	VisibleEnergyHistFinal["Cosmic F"]->SetBinContent(1+bin,VisibleEnergyHistFinal["Cosmic F"]->GetBinContent(1+bin) + VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin));
-      	VisibleEnergyHistFinal["Cosmic F"]->SetBinError(1+bin,Error);
-      }
+    if(HistTypes[i] == "NuMu"){
+      VisibleEnergyHistFinal["NuMu F"]->Add(VisibleEnergyHist[HistTypes[i]]);
     }
-      
+
+    if(HistTypes[i] == "InNuE"){
+      VisibleEnergyHistFinal["InNuE F"]->Add(VisibleEnergyHist[HistTypes[i]]);
+    }
+
+    if(HistTypes[i] == "NCInNuE" || HistTypes[i] == "NCNuMu"){
+      VisibleEnergyHistFinal["NC F"]->Add(VisibleEnergyHist[HistTypes[i]]);
+    }
+
+    if(HistTypes[i] == "DirtInNuE" || HistTypes[i] == "DirtNuMu" || HistTypes[i] == "DirtNCInNuE" || HistTypes[i] == "DirtNCNuMu"){
+      VisibleEnergyHistFinal["Dirt F"]->Add(VisibleEnergyHist[HistTypes[i]]);
+    }
+
+    if(HistTypes[i] == "Cosmic"){
+      VisibleEnergyHistFinal["Cosmic F"]->Add(VisibleEnergyHist[HistTypes[i]]);
+    }
+
   //    VisibleEnergy_Selection_Stack->Add(VisibleEnergyHist[HistTypes[i]]);
   }
 
   //Add to the stack 
   for(int i=0;i< HistTypesFinal.size(); ++i){
-    std::cout << HistTypesFinal[i] << std::endl;
-    for(int bin=0; bin< VisibleEnergyHistFinal[HistTypesFinal[i]]->GetNbinsX(); ++bin){
-      std::cout << " Bin Entry is: " << VisibleEnergyHistFinal[HistTypesFinal[i]]->GetBinContent(1+bin) << " +- " << VisibleEnergyHistFinal[HistTypesFinal[i]]->GetBinError(1+bin) << std::endl;
-    }
-
-
     VisibleEnergyHistFinal[HistTypesFinal[i]]->SetFillColor(Colours[HistTypesFinal[i]]);
     VisibleEnergyHistFinal[HistTypesFinal[i]]->SetMarkerStyle(21);
     VisibleEnergyHistFinal[HistTypesFinal[i]]->SetMarkerColor(kBlue);
@@ -484,3 +524,10 @@ void NueSelectionPlots(){
   StackCanvas->Write();
 
 }
+
+# ifndef __CINT__
+int main() {
+  NuePlotsLoop();
+  return 0;
+}
+# endif

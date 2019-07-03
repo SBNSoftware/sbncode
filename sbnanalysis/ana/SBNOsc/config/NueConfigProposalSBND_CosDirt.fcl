@@ -1,9 +1,8 @@
 #include "NueConfig.fcl"    
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
-#MCWeightTags: ["genieeventweight" ] 
-MCWeightTags: @local::eventweight_tags
-MCTruthTags: ["generator"]
+MCWeightTags: ["genieeventweight" ] 
+MCTruthTags: ["generator","corsika"]
 
 NueSelection: {
   fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
@@ -14,11 +13,13 @@ NueSelection: {
   ApplyKMECCut: true  
   Verbose: false
   Detector: "SBND"
-  IncludeCosmics: false
-  IncludeDirt:    false 
-  OscOnly:       true   
-  FillHistograms: true
+  IncludeCosmics:        true 
+  IncludeDirt:           true
+  ReadoutWindowSize: 3000
+  UseAllCosmics: true
+  DontUseSimChannels: true
+  DirtOnly: true
 
-  #MCTruths: [ "generator" ]
+  FillHistograms: true
 }
 

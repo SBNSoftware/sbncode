@@ -1,0 +1,16 @@
+#include "prodgenie_bnb_nu_sbn_sbnd.fcl"
+
+outputs.out1.fileName: "prodgenie_bnb_intrinsic_nue_sbn_sbnd_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.TopVolume: "volCryostat"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbnd/persistent/fluxFiles/bnb/BooNEtoGSimple/configD-v1/april07/neutrinoMode"
+physics.producers.generator.FluxFiles:[ "converted_beammc_sbnd*.root" ]
+physics.producers.generator.EventGeneratorList: "Default"
+physics.producers.generator.FluxType:       "simple_flux"
+
+physics.producers.generator.GenFlavors: [12,-12]
+

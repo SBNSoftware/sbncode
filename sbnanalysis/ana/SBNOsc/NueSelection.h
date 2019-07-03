@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector> 
 #include <ctime> 
+#include <map>
 
 //Framework Includes 
 #include "canvas/Utilities/InputTag.h"
@@ -92,6 +93,7 @@ protected:
     double POTWeight; 
     double photonVisibleEnergyThreshold; //Secondary photons can be seen at 100 MeV
     double CosmicWeight;
+    double CosmicGlobalWeight;
     double CosmicVolumeRadius;
 
     std::string Detector;  
@@ -109,28 +111,41 @@ protected:
     bool ApplyMuonLenghtCut;
     bool ApplyCosmicCylinderCut;
     bool ApplyCosmicFVCut;
+    bool ApplyCosmicInSpillWindowCut;
+    bool ApplyGENIEVersionWeight;
 
     bool IncludeCosmics;
     bool IncludeDirt;
     bool CosmicsOnly;
     bool DirtOnly;
-    bool Verbose; 
+    bool Verbose;
+    bool IntrinsicOnly;
+    bool NuMuOnly;
+    bool OscOnly;  
+    bool FillHistograms;
+    bool FillModeHistograms;
+    bool FillIntTypeHistograms;
+    bool UseAllCosmics;
+    bool DontUseSimChannels;
 
-
+    float GlobalTimeOffset;
+    float SpillTime;
+    float ReadoutWindowSize;
   };
 
   //Additional information used by the selection per neutrino interaction/ 
   //C++ is smart and doesn't need the constructor.
   struct NueInteraction {
-    double hadronic_energy;
-    double shower_energy;
-    double leptonic_energy;
+    double hadronic_energy = 0;
+    double shower_energy   = 0;
+    double leptonic_energy = 0;
+    double other_energy    = 0; 
     double weight;
     int initnu;
     int leptontrackID;
     int leptonpdgID;
     int fnd;
-    double GetNueEnergy(){return hadronic_energy + shower_energy + leptonic_energy;}
+    double GetNueEnergy(){return hadronic_energy + shower_energy + leptonic_energy + other_energy;}
   };
   
   //Output Root Histogram map for background selections
@@ -153,6 +168,7 @@ protected:
     std::map<std::string,TH1D*> VisibleEnergy_NCCut_Hist;
     std::map<std::string,TH1D*> Weights_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_LeptonPlusPhotonCut_Hist;
+    std::map<std::string,TH1D*> VisibleEnergy_PiZero_Hist;
 
     std::map<std::string,std::map<int,TH1D*> > TrueNumber_HistMode;
     std::map<std::string,std::map<int,TH1D*> > TrueEnergyAll_HistMode;
@@ -168,6 +184,23 @@ protected:
     std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_NCCut_HistMode;
     std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_LeptonPlusPhotonCut_HistMode;
     std::map<std::string,std::map<int,TH1D*> > Weights_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_PiZero_HistMode;
+
+    std::map<std::string,std::map<int,TH1D*> > TrueNumber_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > TrueEnergyAll_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > TrueEnergy_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > CCQEEnergy_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_AVCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_FVCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_EnergyCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_PhotonEnergyCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_ConversionGapCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_MuLenghtCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_NCCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_LeptonPlusPhotonCut_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > Weights_HistIntType;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_PiZero_HistIntType;
 
     TH1D* VisibleEnergy_CosmicFVCut_Hist;
     TH1D* VisibleEnergy_CosmicClyinderCut_Hist;
@@ -179,12 +212,15 @@ protected:
     TH1D* VisibleEnergy_FNKMDecay_Hist;
     TH1D* VisibleEnergy_MuDecays_Hist;
 
+    TH1D* NeutrinoT0;
+    TH1D* CosmicShowerT0;
+
     //Final selection histograms
     TH1D* VisibleEnergy_CosmicSelection_Hist;
     std::map<std::string,TH1D*> VisibleEnergy_Selection_Hist;
     std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_Selection_HistMode;
+    std::map<std::string,std::map<int,TH1D*> > VisibleEnergy_Selection_HistIntType;
     std::vector<std::string> HistTypes = {"NuMu","InNuE","OscNuE","NCInNuE","NCOscNuE","NCNuMu","DirtNuMu","DirtInNuE","DirtOscNuE","DirtNCInNuE","DirtNCOscNuE","DirtNCNuMu"};
-
   };
 
   Config fConfig; //!< The config
@@ -192,7 +228,7 @@ protected:
 
   TRandom *randomnum_gen = new TRandom3();
 
-  bool Select(const gallery::Event& ev, const simb::MCTruth& mctruth, const std::vector<sim::MCTrack>& mctracks, unsigned truth_ind, std::map<int, const simb::MCParticle*>& mcparticles, NueInteraction& intInfo);
+  bool Select(const gallery::Event& ev, const simb::MCTruth& mctruth, unsigned truth_ind, std::map<int, const simb::MCParticle*>& mcparticles, std::map<int,double>& visible_mcparticles, NueInteraction& intInfo, std::vector<int>& leptontrackIDs);
   bool SelectCosmic(const sim::MCShower& mcs, std::map<int, const simb::MCParticle*>& mcparticles, NueSelection::NueInteraction& intInfo);
 
   //Selection Functions 
@@ -200,32 +236,36 @@ protected:
   bool passAV(const TVector3 &v) {return fConfig.ApplyAVCut && containedInAV(v);}
   bool passNueIDEfficiencyCut(const simb::MCNeutrino& nu){return fConfig.ApplyNueEfficiency && NueIDEfficiencyCut(nu);}
   bool passeEnergyCut(double& lepton_energy){return fConfig.ApplyElectronEnergyCut && eEnergyCut(lepton_energy);}
-  bool passPhotonEnergyCut(std::vector<int>& photons, std::map<int, const simb::MCParticle*>& mcparticles, int& photonTrackID){return fConfig.ApplyPhotonEnergyCut && PhotonEnergyCut(photons,mcparticles,photonTrackID);}
-  bool passMuLengthCut(const std::vector<sim::MCTrack>& mctrack_list, const simb::MCTruth& mctruth){return fConfig.ApplyMuonLenghtCut && MuLengthCut(mctrack_list, mctruth);}
+  bool passPhotonEnergyCut(std::vector<int>& photons, std::map<int, const simb::MCParticle*>& mcparticles, int& photonTrackID,std::map<int,double>& visible_mcparticles){return fConfig.ApplyPhotonEnergyCut && PhotonEnergyCut(photons,mcparticles,photonTrackID, visible_mcparticles);}
+  bool passMuLengthCut(std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth){return fConfig.ApplyMuonLenghtCut && MuLengthCut(mcparticles, mctruth);}
   bool passdEdxCut(int pdgcode){return fConfig.ApplydEdxCut && dEdxCut(pdgcode);}
   bool passConversionGapCut(std::map<int, const simb::MCParticle*>& mcparticles, int photonTrackID, const float& hadronic_energy, const simb::MCNeutrino& nu){return fConfig.ApplyConversionGapCut && ConversionGapCut(mcparticles,photonTrackID,hadronic_energy,nu);}
   bool PassCosmicInFV(const sim::MCShower& mcs, TVector3& vertex){return fConfig.ApplyCosmicFVCut || CosmicInFV(mcs, vertex);}
   bool PassCosmicCylinderCut(const sim::MCShower& mcs, TVector3& vertex, std::map<int, const simb::MCParticle*>& mcparticles){return fConfig.ApplyCosmicCylinderCut || CosmicCylinderCut(mcs, vertex, mcparticles);}
-
+  bool PassCosmicInSpillWindow(const sim::MCShower& mcs, std::map<int, const simb::MCParticle*>& mcparticles, NueSelection::NueInteraction& intInfo){return fConfig.ApplyCosmicInSpillWindowCut || CosmicInSpillWindow(mcs,mcparticles,intInfo);}
 
   //Cut Functions
   bool containedInFV(const TVector3 &v);
   bool containedInAV(const TVector3 &v);
   bool NueIDEfficiencyCut(const simb::MCNeutrino& nu);
   bool eEnergyCut(double leptonenergy);
-  bool PhotonEnergyCut(std::vector<int>& photons, std::map<int, const simb::MCParticle*>& mcparticles, int &photonTrackID);
+  bool PhotonEnergyCut(std::vector<int>& photons, std::map<int, const simb::MCParticle*>& mcparticles, int &photonTrackID, std::map<int,double>& visible_mcparticles);
   bool ConversionGapCut(std::map<int, const simb::MCParticle*>& mcparticles, int photonTrackID, const float& hadronicE, const simb::MCNeutrino& nu);
   bool dEdxCut(int pdgcode);
-  bool MuLengthCut(const std::vector<sim::MCTrack>& mctrack_list, const simb::MCTruth& mctruth);
+  bool MuLengthCut(std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth);
   bool CosmicInFV(const sim::MCShower& mcs, TVector3& vertex);
   bool CosmicCylinderCut(const sim::MCShower& mcs, TVector3& vertex, std::map<int, const simb::MCParticle*>& mcparticles);
+  bool CosmicInSpillWindow(const sim::MCShower& mcs, std::map<int, const simb::MCParticle*>& mcparticles, NueSelection::NueInteraction& intInfo);
 
   std::vector<int> findNeutralPions(std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth);
-  std::vector<int> findPhotons(std::vector<int>& pi_zeros,std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth);
+  std::vector<int> findPhotons(std::vector<int>& pi_zeros,std::map<int, const simb::MCParticle*>& mcparticles, const simb::MCTruth& mctruth, std::map<int,double>& visible_mcparticles);
+  double PhotonVisibleEnergy(std::map<int, const simb::MCParticle*>& mcparticles, std::vector<int>& photons);
+  double MECWeight(const simb::MCNeutrino& nu,std::string& Detector, NueSelection::NueInteraction& intInfo);
+  double GENIEWeight(const simb::MCNeutrino& nu);
 
   void InitialiseHistograms();
-  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent);
-  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool &booldirtevent);
+  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, std::map<std::string,std::map<int,TH1D*> >& HistMapIntType, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo, bool& booldirtevent);
+  void FillHistograms(std::map<std::string,TH1D*>& HistMap, std::map<std::string,std::map<int,TH1D*> >& HistMapMode, std::map<std::string,std::map<int,TH1D*> >& HistMapIntType, const simb::MCNeutrino& nu, NueSelection::NueInteraction& intInfo,double Energy, bool &booldirtevent);
 
   void PrintInformation(const simb::MCTruth& mctruth, NueSelection::NueInteraction& intInfo);
 
@@ -241,7 +281,9 @@ protected:
   TH1I*  fEventHist;
   bool dirtevent;
   int MCTruthCounter; 
-  
+
+  std::map<std::string,std::map<std::string,std::map<int, std::vector<double> > > > MECWeight_map;
+  std::map<int,std::vector<double> > GENIEWeight_map;
 };
 
   }  // namespace SBNOsc
