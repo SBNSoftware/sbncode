@@ -85,7 +85,6 @@ void syst_contour()
 
   TLegend* leg = new TLegend(.15, .15, .45, .4);
   leg->SetFillStyle(0);
-  //  TH1* dummy = new TH1F("", "", 1, 0, 1);
   dummy->SetLineColor(kRed);
   leg->AddEntry(dummy->Clone(), "SBND only", "l");
   dummy->SetLineColor(kGreen+2);
@@ -130,7 +129,7 @@ void syst_contour()
     
 
   std::vector<std::vector<const ISyst*>> slists;
-  //  slists.push_back(bigsysts);
+  slists.push_back(bigsysts);
   for(const ISyst* s: systs) slists.emplace_back(1, s); // and then each
 
   for(const std::vector<const ISyst*> slist: slists){
