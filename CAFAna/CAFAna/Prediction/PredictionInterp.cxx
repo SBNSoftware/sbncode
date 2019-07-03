@@ -673,6 +673,8 @@ namespace ana
                                    Current::Current_t curr,
                                    Sign::Sign_t sign) const
   {
+    DontAddDirectory guard;
+
     InitFits();
 
     auto it = fPreds.find(syst);
@@ -738,7 +740,7 @@ namespace ana
 
     for(int bin = 0; bin < nbins; ++bin){
       c->cd(bin+1);
-      (new TH2F("",
+      (new TH2F(UniqueName().c_str(),
                 TString::Format("%s %g < %s < %g;Shift;Ratio",
                                 it->second.systName.c_str(),
                                 nom->GetXaxis()->GetBinLowEdge(bin+1),
