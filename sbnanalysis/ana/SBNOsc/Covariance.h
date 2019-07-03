@@ -35,7 +35,7 @@ class Covariance: public core::PostProcessorBase {
         // implementing PostProcessor
         void FileCleanup(TTree *eventTree);
         void Initialize(fhicl::ParameterSet *config);
-        void ProcessEvent(const Event *event);
+        void ProcessEvent(const event::Event *event);
         void Finalize() { GetCovs(); Write(); }
 
         // API Functions

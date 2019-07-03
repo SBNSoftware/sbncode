@@ -400,7 +400,7 @@ namespace ana {
       }
     }
 
-    bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco){
+    bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco){
      
       if(fConfig.Verbose){
 	if (EventCounter % 10 == 0) {
@@ -718,7 +718,6 @@ namespace ana {
 	    // for (auto const &key: fConfig.UniformWeights) {
 	    //   //	      intInfo.weight *= interaction.weightmap.at(key)[0];
 	    //   totalbnbweight *=  interaction.weightmap.at(key)[0];     
-
 	    //   if(fConfig.Verbose){
 	    // 	std::cout << "Flux correction is: " <<  interaction.weightmap.at(key)[0] << std::endl;
 	    //   }

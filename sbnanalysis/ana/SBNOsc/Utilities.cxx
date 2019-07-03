@@ -23,8 +23,8 @@ void hello() {
 }
 
 
-Event::Interaction TruthReco(const simb::MCTruth& mctruth) {
-  Event::Interaction interaction;
+event::Interaction TruthReco(const simb::MCTruth& mctruth) {
+  event::Interaction interaction;
 
   // Neutrino
   const simb::MCNeutrino& nu = mctruth.GetNeutrino();
@@ -38,7 +38,7 @@ Event::Interaction TruthReco(const simb::MCTruth& mctruth) {
 
   // Hadronic system
   for (int iparticle=0; iparticle<interaction.finalstate.size(); iparticle++) {
-    Event::FinalStateParticle fsp;
+    event::FinalStateParticle fsp;
     const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
 
     if (particle.Process() != "primary") {
