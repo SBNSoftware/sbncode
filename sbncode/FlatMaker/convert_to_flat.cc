@@ -2,6 +2,8 @@
 
 #include "sbncode/FlatMaker/FlatRecoEvent.h"
 
+#include "sbncode/CAFAna/Core/Progress.h"
+
 #include "TFile.h"
 #include "TSystem.h"
 #include "TTree.h"
@@ -20,8 +22,8 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  std::string inname = argv[1];
-  std::string outname = argv[2];
+  const std::string inname = argv[1];
+  const std::string outname = argv[2];
 
   TFile* fin = TFile::Open(inname.c_str());
 
@@ -47,15 +49,16 @@ int main(int argc, char** argv)
 
   flat::FlatRecoEvent* rec = new flat::FlatRecoEvent("sbnana.", trout, 0);//policy);
 
+  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
   for(int i = 0; i < tr->GetEntries(); ++i){
-    // TODO use CAFAna progress bar
-    if(i%100 == 0) std::cout << i/100 << " / " << tr->GetEntries()/100 << std::endl;
+    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
 
     rec->Fill(*event);
     trout->Fill();
   }
+  prog.Done();
 
   trout->Write();
   delete rec;

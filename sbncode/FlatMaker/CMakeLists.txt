@@ -11,7 +11,7 @@ add_custom_command(# Rebuild if Event.hh or the script itself change
 
 art_make_library(LIBRARY_NAME FlatMaker
                  SOURCE       FlatRecord.cxx
-                 LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER})
+                 LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER} CAFAnaCore)
 
 art_make_exec(NAME convert_to_flat
               SOURCE convert_to_flat.cc
