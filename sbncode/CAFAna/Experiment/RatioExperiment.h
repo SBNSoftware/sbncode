@@ -3,8 +3,9 @@
 #include "CAFAna/Core/Spectrum.h"
 
 #include "CAFAna/Experiment/IExperiment.h"
-#include "OscLib/func/IOscCalculator.h"
 #include "CAFAna/Analysis/ExpInfo.h"
+
+#include "OscLib/IOscCalculator.h"
 
 #include <memory>
 #include <vector>
