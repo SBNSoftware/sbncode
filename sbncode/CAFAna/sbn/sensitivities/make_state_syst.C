@@ -12,7 +12,7 @@
 
 #include "CAFAna/Systs/SBNWeightSysts.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "TFile.h"
 

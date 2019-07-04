@@ -14,7 +14,7 @@
 #include "CAFAna/Systs/DUNEFluxSysts.h"
 #include "CAFAna/Systs/EnergySysts.h"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 using namespace ana;
 

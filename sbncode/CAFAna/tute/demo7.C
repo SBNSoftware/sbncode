@@ -12,7 +12,7 @@
 #include "CAFAna/Analysis/Calcs.h"
 #include "CAFAna/Analysis/Surface.h"
 #include "StandardRecord/Proxy/SRProxy.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorSterile.h"
 #include "TCanvas.h"
 #include "TH1.h"
 

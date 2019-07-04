@@ -15,7 +15,7 @@ using namespace ana;
 
 #include "Utilities/rootlogon.C"
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "StandardRecord/StandardRecord.h"
 

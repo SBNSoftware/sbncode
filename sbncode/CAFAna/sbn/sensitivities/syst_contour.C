@@ -10,7 +10,7 @@
 #include "CAFAna/Systs/SBNWeightSysts.h"
 using namespace ana;
 
-#include "OscLib/func/IOscCalculator.h"
+#include "OscLib/IOscCalculator.h"
 
 #include "TCanvas.h"
 #include "TFile.h"

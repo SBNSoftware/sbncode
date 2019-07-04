@@ -13,7 +13,7 @@
 // New includes for this macro
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorSterile.h"
 
 // Random numbers to fake an efficiency and resolution
 #include "TRandom3.h"

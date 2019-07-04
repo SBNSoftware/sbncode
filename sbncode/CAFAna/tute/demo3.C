@@ -8,7 +8,7 @@
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/func/OscCalculatorSterile.h"
+#include "OscLib/OscCalculatorSterile.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 #include "TCanvas.h"
 #include "TH1.h"
