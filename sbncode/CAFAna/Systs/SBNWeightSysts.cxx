@@ -10,6 +10,32 @@
 namespace ana
 {
   // --------------------------------------------------------------------------
+  UniverseWeight::UniverseWeight(const std::string& syst, int univIdx)
+    : fName(syst), fUnivIdx(univIdx), fSystIdx(-1)
+  {
+  }
+
+  // --------------------------------------------------------------------------
+  double UniverseWeight::operator()(const caf::SRProxy* sr) const
+  {
+    if(sr->truth.empty()) return 1;
+    const auto& ws = sr->truth[0].weights;
+    return ws[GetIdx(ws)].second[fUnivIdx];
+  }
+
+  // --------------------------------------------------------------------------
+  int UniverseWeight::GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const
+  {
+    if(fSystIdx == -1){
+      for(unsigned int i = 0; i < ws.size(); ++i){
+        if(ws[i].first == fName) fSystIdx = i;
+      }
+    }
+    return fSystIdx;
+  }
+
+
+  // --------------------------------------------------------------------------
   SBNWeightSyst::SBNWeightSyst(const std::string& name)
     : ISyst(name, name), fIdx(-1)
   {

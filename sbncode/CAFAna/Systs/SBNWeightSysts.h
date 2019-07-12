@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CAFAna/Core/ISyst.h"
+#include "CAFAna/Core/Var.h"
 
 #include <vector>
 #include <unordered_map>
@@ -13,6 +14,25 @@ namespace caf
 
 namespace ana
 {
+  class UniverseWeight
+  {
+  public:
+    UniverseWeight(const std::string& syst, int univIdx);
+    double operator()(const caf::SRProxy* sr) const;
+  protected:
+    int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const;
+
+    std::string fName;
+    int fUnivIdx;
+    mutable int fSystIdx;
+  };
+
+  Var GetUniverseWeight(const std::string& syst, int univIdx)
+  {
+    return Var(UniverseWeight(syst, univIdx));
+  }
+
+
   class SBNWeightSyst: public ISyst
   {
   public:
