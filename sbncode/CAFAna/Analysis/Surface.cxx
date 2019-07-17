@@ -511,12 +511,13 @@ namespace ana
   }
 
   // See eg the statistics section of the PDG
-  TH2* Gaussian68Percent2D(const Surface& s){return Flat(2.30, s);}
-  TH2* Gaussian90Percent2D(const Surface& s){return Flat(4.61, s);}
-  TH2* Gaussian95Percent2D(const Surface& s){return Flat(5.99, s);}
-  TH2* Gaussian2Sigma2D   (const Surface& s){return Flat(6.18, s);}
-  TH2* Gaussian99Percent2D(const Surface& s){return Flat(9.21, s);}
+  TH2* Gaussian68Percent2D(const Surface& s){return Flat(2.30,  s);}
+  TH2* Gaussian90Percent2D(const Surface& s){return Flat(4.61,  s);}
+  TH2* Gaussian95Percent2D(const Surface& s){return Flat(5.99,  s);}
+  TH2* Gaussian2Sigma2D   (const Surface& s){return Flat(6.18,  s);}
+  TH2* Gaussian99Percent2D(const Surface& s){return Flat(9.21,  s);}
   TH2* Gaussian3Sigma2D   (const Surface& s){return Flat(11.83, s);}
+  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.23, s);}
 
   TH2* Gaussian68Percent1D(const Surface& s){return Flat(1.00, s);}
   TH2* Gaussian90Percent1D(const Surface& s){return Flat(2.71, s);}
@@ -526,6 +527,8 @@ namespace ana
   TH2* Gaussian3Sigma1D   (const Surface& s){return Flat(9.00, s);}
 
   TH2* Gaussian90Percent1D1Sided(const Surface& s){return Flat(1.64, s);}
+  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(1.96, s);}
+  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(2.58, s);}
   TH2* Gaussian3Sigma1D1Sided(const Surface& s){return Flat(7.74, s);}
   TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.40, s);}
 

@@ -151,24 +151,31 @@ namespace ana
   TH2* Gaussian99Percent2D(const Surface& s);
   /// Up-value surface for 3 sigma confidence in 2D in gaussian approximation
   TH2* Gaussian3Sigma2D   (const Surface& s);
+  /// Up-value surface for 5 sigma confidence in 2D in gaussian approximation
+  TH2* Gaussian5Sigma2D   (const Surface& s);
+
 
   // First approximation of the correct up-values to use for ss2th13 vs delta
 
-  /// Up-value surface for 68% confidence in 2D in gaussian approximation
+  /// Up-value surface for 68% confidence in 1D in gaussian approximation
   TH2* Gaussian68Percent1D(const Surface& s);
-  /// Up-value surface for 90% confidence in 2D in gaussian approximation
+  /// Up-value surface for 90% confidence in 1D in gaussian approximation
   TH2* Gaussian90Percent1D(const Surface& s);
-  /// Up-value surface for 95% confidence in 2D in gaussian approximation
+  /// Up-value surface for 95% confidence in 1D in gaussian approximation
   TH2* Gaussian95Percent1D(const Surface& s);
-  /// Up-value surface for 2 sigma confidence in 2D in gaussian approximation
+  /// Up-value surface for 2 sigma confidence in 1D in gaussian approximation
   TH2* Gaussian2Sigma1D   (const Surface& s);
-  /// Up-value surface for 99% confidence in 2D in gaussian approximation
+  /// Up-value surface for 99% confidence in 1D in gaussian approximation
   TH2* Gaussian99Percent1D(const Surface& s);
-  /// Up-value surface for 3 sigma confidence in 2D in gaussian approximation
+  /// Up-value surface for 3 sigma confidence in 1D in gaussian approximation
   TH2* Gaussian3Sigma1D   (const Surface& s);
 
   /// Up-value surface for 90% confidence in 1D in 1-sided gaussian approximation
   TH2* Gaussian90Percent1D1Sided(const Surface& s);
+  /// Up-value surface for 95% confidence in 1D in 1-sided gaussian approximation
+  TH2* Gaussian95Percent1D1Sided(const Surface& s);
+  /// Up-value surface for 99% confidence in 1D in 1-sided gaussian approxiamtion
+  TH2* Gaussian99Percent1D1Sided(const Surface& s);
   /// Up-value surface for 3 sigma confidence in 1D in 1-sided gaussian approximation
   TH2* Gaussian3Sigma1D1Sided(const Surface& s);
   /// Up-value surface for 5 sigma confidence in 1D in 1-sided gaussian approximation
