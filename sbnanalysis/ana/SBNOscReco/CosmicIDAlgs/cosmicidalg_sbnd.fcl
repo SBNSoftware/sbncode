@@ -1,0 +1,38 @@
+#include "cosmicidmodules_sbnd.fcl"
+
+BEGIN_PROLOG
+
+standard_cosmicidalg:
+{
+    TpcTrackModuleLabel: "pandoraTrack"
+    PandoraLabel:        "pandora"
+    CrtHitModuleLabel:   "crthit"
+    CrtTrackModuleLabel: "crttrack"
+    CaloModuleLabel:     "pandoraCalo"
+
+    ApplyFiducialCut:  true
+    ApplyStoppingCut:  true
+    ApplyGeometryCut:  true
+    ApplyCpaCrossCut:  false
+    ApplyApaCrossCut:  true
+    ApplyCrtTrackCut:  true
+    ApplyCrtHitCut:    true
+    ApplyPandoraT0Cut: false
+
+    UseTrackAngleVeto:    true
+    MinSecondTrackLength: 5.
+    MinVertexDistance:    5.
+    MinMergeAngle:        2.6
+
+    FVTagAlg: @local::sbnd_fiducialvolumecosmicidalg
+    SPTagAlg: @local::sbnd_stoppingparticlecosmicidalg
+    CCTagAlg: @local::sbnd_cpacrosscosmicidalg
+    ACTagAlg: @local::sbnd_apacrosscosmicidalg
+    CHTagAlg: @local::sbnd_crthitcosmicidalg
+    CTTagAlg: @local::sbnd_crttrackcosmicidalg
+    PTTagAlg: @local::sbnd_pandorat0cosmicidalg
+
+    BeamTimeLimits: @local::sbnd_beamtime
+}
+
+END_PROLOG

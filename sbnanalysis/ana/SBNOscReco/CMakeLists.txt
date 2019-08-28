@@ -4,6 +4,7 @@ project(SBNOscReco)
 
 # build sub-dirs
 add_subdirectory(RecoUtils)
+add_subdirectory(CosmicIDAlgs)
 add_subdirectory(LArReco)
 
 # Directories where includes are found (in addition to those defined in the
@@ -34,6 +35,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   sbnanalysis_SBNOscReco_RecoUtils
   sbnanalysis_SBNOscReco_LArReco
   ubana_BasicTool_GeoAlgo
+  sbndcode_CosmicIdAlgs
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV
