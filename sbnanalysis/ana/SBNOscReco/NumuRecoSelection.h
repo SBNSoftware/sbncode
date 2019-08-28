@@ -20,6 +20,8 @@
 #include "TDatabasePDG.h"
 #include "TGraph.h"
 
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
 #include "lardataobj/RecoBase/Vertex.h"
@@ -272,8 +274,6 @@ protected:
     bool requireContained; //!< Apply cut that requires each primary track to be contained inside the containment volume
     double trackMatchContainmentCut;
 
-    int primaryTrackMethod; //!< Method to select the primary track in reconstruction
-
     double beamCenterX;
     double beamCenterY;
 
@@ -374,7 +374,7 @@ protected:
   std::vector<RecoSlice> SelectSlices(const std::vector<RecoSlice> &reco_slices);
 
   std::vector<RecoSlice> RecoSliceInfo(const gallery::Event &event, const std::vector<RecoParticle>& reco_particles);
-  int SelectPrimaryTrack(const RecoSlice &slice, std::vector<RecoInteraction> &truth, int truth_ind);
+  int SelectPrimaryTrack(const RecoSlice &slice);
 
   std::map<size_t, RecoTrack> RecoSliceTracks(const gallery::Event &event, const std::map<size_t, RecoParticle> &particles, int primary_index);
 
@@ -412,7 +412,9 @@ protected:
  *
  * \return information associated with the primary track. Set to nonsense if no such track exists.
  */
-  std::pair<std::map<size_t, RecoTrack>, int> MCTruthTracks(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
+  std::map<size_t, RecoTrack> MCTruthTracks(const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, const simb::MCTruth &mc_truth, int mc_truth_index);
+
+  int TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
 
   /**
  * Get the TrackInfo information associated with an MCTrack

@@ -46,6 +46,8 @@
 namespace ana {
   namespace SBNOsc {
 
+const static TVector3 InvalidTVector3 = TVector3(-999, -999, -999);
+
 NumuRecoSelection::NumuRecoSelection() :
   SelectionBase(),
   _event_counter(0),
@@ -103,8 +105,6 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     _config.requireTrack = pconfig.get<bool>("requireTrack", false);
 
     _config.trackMatchContainmentCut = pconfig.get<double>("trackMatchContainmentCut", -1);
-
-    _config.primaryTrackMethod = pconfig.get<int>("primaryTrackMethod", 0);
 
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
@@ -375,8 +375,8 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
       // conditions on filling each histogram
       std::vector<bool> do_fill {true, false, false};
 
-     if (vertex.match.event_vertex_id >= 0 && track.match.has_match) {
-       const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_vertex_id].slice.tracks.at(track.match.mcparticle_id);
+     if (vertex.match.event_track_id >= 0 && track.match.has_match) {
+       const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_track_id].slice.tracks.at(track.match.mcparticle_id);
        do_fill[1] = true_track.contained_in_cryo;
        do_fill[2] = !true_track.contained_in_cryo;
      }
@@ -400,8 +400,8 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
 	  _track_histos[i].is_contained->Fill(track.is_contained);
 	  
 	  // check if truth match
-	  if (vertex.match.event_vertex_id >= 0 && track.match.has_match) {
-	    const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_vertex_id].slice.tracks.at(track.match.mcparticle_id);
+	  if (vertex.match.event_track_id >= 0 && track.match.has_match) {
+	    const NumuRecoSelection::RecoTrack &true_track = truth[vertex.match.event_track_id].slice.tracks.at(track.match.mcparticle_id);
 	    _track_histos[i].range_p_minus_truth->Fill(track.range_momentum_muon - true_track.momentum);
 	    _track_histos[i].mcs_p_minus_truth->Fill(mcs_p - true_track.momentum); 
 	    _track_histos[i].deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
@@ -433,18 +433,9 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
         double track_length = vertex.primary_track_index >= 0 ? vertex.slice.tracks.at(vertex.primary_track_index).length: -1;
 	_root_histos[recoCutOffset+cut_i][vertex.match.mode].track_length->Fill(track_length);
 	_root_histos[recoCutOffset+cut_i][mAll].track_length->Fill(track_length);
-        if (vertex.match.event_vertex_id >= 0 || vertex.match.event_track_id >= 0) {
-          int event_id;
-          int mctruth_id;
-          if (vertex.match.event_vertex_id >= 0 && vertex.match.event_track_id >= 0) assert(vertex.match.event_vertex_id == vertex.match.event_track_id);
-          if (vertex.match.event_vertex_id == -1)  {
-            event_id = vertex.match.event_track_id;
-            mctruth_id = vertex.match.mctruth_track_id;
-          }
-          else {
-            event_id = vertex.match.event_vertex_id;
-            mctruth_id = vertex.match.mctruth_vertex_id;
-          }
+        if (vertex.match.event_track_id >= 0) {
+          int event_id = vertex.match.event_track_id;
+          int mctruth_id = vertex.match.mctruth_track_id;
 
           _root_histos[recoCutOffset+cut_i][vertex.match.mode].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
           _root_histos[recoCutOffset+cut_i][mAll].nuE->Fill(core_truth[mctruth_id].neutrino.energy);
@@ -704,13 +695,13 @@ NumuRecoSelection::RecoTrack NumuRecoSelection::MCTrackInfo(const simb::MCTruth 
   }
 
   // get the distance to the truth vertex
-  double dist_to_vertex = (track.Position().Vect() - truth.GetNeutrino().Nu().Position(0).Vect()).Mag();
+  double dist_to_vertex = truth.NeutrinoSet() ? (track.Position().Vect() - truth.GetNeutrino().Nu().Position(0).Vect()).Mag(): -1;
 
   // get the match info
   TrackTruthMatch track_match;
   track_match.has_match = true;
   track_match.mctruth_has_neutrino = truth.NeutrinoSet();
-  track_match.mctruth_vertex = truth.NeutrinoSet() ? truth.GetNeutrino().Nu().Position().Vect() : TVector3(-999, -999, -999);
+  track_match.mctruth_vertex = truth.NeutrinoSet() ? truth.GetNeutrino().Nu().Position().Vect() : InvalidTVector3;
   track_match.mctruth_origin = truth.Origin();
   track_match.mctruth_ccnc = truth.NeutrinoSet() ? truth.GetNeutrino().CCNC() : -1;
   track_match.mcparticle_id = track.TrackId();
@@ -770,37 +761,53 @@ int NumuRecoSelection::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const s
   return track_ind;
 }
 
-std::pair<std::map<size_t, NumuRecoSelection::RecoTrack>, int> NumuRecoSelection::MCTruthTracks(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
-
+int NumuRecoSelection::TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
   int multiplicity = 0;
-  std::map<size_t, NumuRecoSelection::RecoTrack> ret;
   for (int i = 0; i < mcparticle_list.size(); i++) {
-    // TODO: better way to match MCParticles to MCNeutrino interaction???
     if (isFromNuVertex(mc_truth, mcparticle_list[i]) &&  mcparticle_list[i].Process() == "primary") {
       if (PDGCharge(mcparticle_list[i].PdgCode()) > 1e-4 && mcparticle_list[i].E() - PDGMass(mcparticle_list[i].PdgCode()) > 21) {
         multiplicity ++;
       }
-
-      ret[mcparticle_list[i].TrackId()] = std::move(MCTrackInfo(mc_truth, mcparticle_list[i]));
     }
   }
+  return multiplicity;
+}
 
-  return {ret, multiplicity};
+std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::MCTruthTracks(
+    const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
+    const simb::MCTruth &mc_truth, 
+    int mc_truth_index) 
+{
+
+  std::map<size_t, NumuRecoSelection::RecoTrack> ret;
+  std::vector<art::Ptr<simb::MCParticle>> mcparticle_list = truth_to_particles.at(mc_truth_index);
+  for (unsigned i = 0; i < mcparticle_list.size(); i++) {
+    ret[mcparticle_list[i]->TrackId()] = std::move(MCTrackInfo(mc_truth, *mcparticle_list[i]));
+  }
+  return ret;
 }
 
 std::vector<NumuRecoSelection::RecoInteraction> NumuRecoSelection::MCTruthInteractions(const gallery::Event &event) {
   // Get truth
-  auto const& mctruths = \
-    *event.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  const gallery::ValidHandle<std::vector<simb::MCTruth>> mctruth_handle = \
+    event.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  const std::vector<simb::MCTruth> mctruths = *mctruth_handle;
+  // match Genie to G4
+  art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> truth_to_particles(mctruth_handle, event, fMCParticleTag);
+
+  // also cosmics
+  gallery::Handle<std::vector<simb::MCTruth>> cosmics;
+  bool has_cosmics = event.getByLabel(_config.CorsikaTag, cosmics);
+
   auto const& mcparticle_list = \
     *event.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
 
   std::vector<NumuRecoSelection::RecoInteraction> ret;
 
   // iterate over truth interactions
+  unsigned n_truth = mctruths.size();
   for (unsigned i = 0; i < mctruths.size(); i++) {
     auto const &truth = mctruths[i];
-    if (!truth.NeutrinoSet()) continue;
     auto neutrino = truth.GetNeutrino();
     TVector3 position = neutrino.Nu().Position().Vect();
 
@@ -809,9 +816,8 @@ std::vector<NumuRecoSelection::RecoInteraction> NumuRecoSelection::MCTruthIntera
     RecoInteraction this_interaction;
     this_interaction.position = position;
     this_interaction.nu_energy = neutrino.Nu().E();
-    auto pair = MCTruthTracks(truth, mcparticle_list);
-    this_interaction.slice.tracks = std::move(pair.first);
-    this_interaction.multiplicity = pair.second;
+    this_interaction.slice.tracks = std::move(MCTruthTracks(truth_to_particles, truth, i));
+    this_interaction.multiplicity = TrueTrackMultiplicity(truth, mcparticle_list);
     // get the primary track
     this_interaction.primary_track_index = MCTruthPrimaryTrack(truth, mcparticle_list);
 
@@ -832,6 +838,30 @@ std::vector<NumuRecoSelection::RecoInteraction> NumuRecoSelection::MCTruthIntera
     this_interaction.match.is_misreconstructed = false;
 
     ret.push_back(std::move(this_interaction)); 
+  }
+  // iterate over cosmics
+  if (has_cosmics) {
+    // match corsika to G4
+    art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> cosmic_to_particles(cosmics, event, fMCParticleTag);
+    for (unsigned i = 0; i < cosmics->size(); i++) {
+      auto const &cosmic = (*cosmics)[i];
+      RecoInteraction this_interaction;
+      this_interaction.position = InvalidTVector3;
+      this_interaction.nu_energy = -1; 
+      this_interaction.slice.tracks = std::move(MCTruthTracks(cosmic_to_particles, cosmic, i));
+      this_interaction.multiplicity = -1;
+      this_interaction.primary_track_index = -1;
+      this_interaction.match.has_match = true;
+      this_interaction.match.mode = mCosmic; 
+      this_interaction.match.tmode = tmCosmic;
+      this_interaction.match.mctruth_vertex_id = n_truth + i;
+      this_interaction.match.event_vertex_id = ret.size();
+      this_interaction.match.mctruth_track_id = n_truth + i;
+      this_interaction.match.event_track_id = ret.size();
+      this_interaction.match.truth_vertex_distance = -1;
+      this_interaction.match.is_misreconstructed = false;
+      ret.push_back(std::move(this_interaction));
+    }
   }
 
   return ret;
@@ -936,6 +966,8 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
   // matches from tracks to particle ID and calo
   art::FindManyP<anab::Calorimetry> pfp_calo(pfp_track_list, event, "pandoraCalo");
   art::FindManyP<anab::ParticleID> pfp_pid(pfp_track_list, event, "pandoraPid");
+
+  // CRT information:
 
   std::map<size_t, NumuRecoSelection::RecoTrack> ret;
 
@@ -1190,41 +1222,25 @@ std::vector<NumuRecoSelection::RecoParticle> NumuRecoSelection::RecoParticleInfo
 }
 
 
-int NumuRecoSelection::SelectPrimaryTrack(const NumuRecoSelection::RecoSlice &slice, std::vector<RecoInteraction> &truth, int truth_ind) {
+int NumuRecoSelection::SelectPrimaryTrack(const NumuRecoSelection::RecoSlice &slice) {
   int primary_track_index = -1;
 
   // try to identify the "primary" track
   // Method 0 -- "reconstruct": take the longest one with PID == 13
-  if (_config.primaryTrackMethod == 0) {
-    // TODO: should the primary track be a daughter of the Vertex?
-    // For now -- yes
-    const NumuRecoSelection::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
-    double max_len = -1.;
-    for (size_t pfp_index: neutrino.daughters) {
-      // is the daughter a track?
-      if (slice.tracks.find(pfp_index) != slice.tracks.end()) {  
-        // get it
-        const NumuRecoSelection::RecoTrack &track = slice.tracks.at(pfp_index);
-        if (track.is_muon) {
-          if (track.length > max_len) primary_track_index = pfp_index;
+  // TODO: should the primary track be a daughter of the Vertex?
+  // For now -- yes
+  const NumuRecoSelection::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
+  double max_len = -1.;
+  for (size_t pfp_index: neutrino.daughters) {
+    // is the daughter a track?
+    if (slice.tracks.find(pfp_index) != slice.tracks.end()) {  
+      // get it
+      const NumuRecoSelection::RecoTrack &track = slice.tracks.at(pfp_index);
+      if (track.is_muon) {
+        if (track.length > max_len) {
+          primary_track_index = pfp_index;
+          max_len = track.length;
         }
-      }
-    }
-  }
-  // Method 1 -- try to get from truth primary track info
-  else if (_config.primaryTrackMethod == 1) {
-    double max_completion = 0.;
-    if (truth_ind >= 0) {
-      int match_mcparticle_id = truth[truth_ind].primary_track_index;
-      // assert(match_mcparticle_id >= 0);
-      if (match_mcparticle_id >= 0) {
-        for (auto const &pair: slice.tracks) {
-          size_t this_pfp_index = pair.first;
-          const NumuRecoSelection::RecoTrack &this_track = pair.second;
-          if (this_track.match.mcparticle_id == match_mcparticle_id) {
-            if (this_track.match.completion > max_completion) primary_track_index = this_pfp_index;
-          }
-        } 
       }
     }
   }
@@ -1273,7 +1289,7 @@ NumuRecoSelection::TrackTruthMatch NumuRecoSelection::MatchTrack2Truth(const gal
   std::vector<art::Ptr<recob::Hit>> hits = tracks_to_hits.at(primary_track->ID());
   // this id is the same as the mcparticle ID as long as we got it from geant4
   // int id = SBNRecoUtils::TrueParticleIDFromTotalRecoHits(*fProviderManager, hits, false);
-  int mcp_track_id = SBNRecoUtils::TrueParticleIDFromTotalTrueEnergy(*fProviderManager, hits, false);
+  int mcp_track_id = SBNRecoUtils::TrueParticleIDFromTotalTrueEnergy(*fProviderManager, hits, true);
 
   int mcparticle_index = -1;
   for (int i = 0; i < mcparticle_list.size(); i++) {
@@ -1298,7 +1314,7 @@ NumuRecoSelection::TrackTruthMatch NumuRecoSelection::MatchTrack2Truth(const gal
   ret.mctruth_has_neutrino = truth->NeutrinoSet();
   ret.mctruth_vertex = ret.mctruth_has_neutrino ? truth->GetNeutrino().Nu().Position().Vect() : TVector3(-999, -999, -999);
   ret.mctruth_origin = truth->Origin();
-  ret.mctruth_ccnc = truth->GetNeutrino().CCNC();
+  ret.mctruth_ccnc = ret.mctruth_has_neutrino ? truth->GetNeutrino().CCNC() : -1;
   ret.mcparticle_id = mcp_track_id;
   ret.completion = completion;
   ret.match_pdg = mcparticle_list[mcparticle_index].PdgCode();
@@ -1379,7 +1395,6 @@ std::vector<NumuRecoSelection::RecoSlice> NumuRecoSelection::RecoSliceInfo(const
 
 
 NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event &ev, std::vector<NumuRecoSelection::RecoInteraction> truth) {
-  std::cout << std::endl << "New Event: " << _event_counter << std::endl;
   std::vector<NumuRecoSelection::RecoParticle> reco_particles = RecoParticleInfo(ev);
 
   std::vector<NumuRecoSelection::RecoSlice> reco_slices = RecoSliceInfo(ev, reco_particles);
@@ -1398,6 +1413,19 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
     this_interaction.slice = selected_slices[reco_i];
     this_interaction.position = reco_position;
 
+    // select the primary track
+    this_interaction.primary_track_index = SelectPrimaryTrack(this_interaction.slice);
+    // require primary track for event identification
+    if (this_interaction.primary_track_index < 0) continue;
+
+    this_interaction.primary_track = this_interaction.slice.tracks.at(this_interaction.primary_track_index);
+  
+    // TODO: get the enrgy
+    this_interaction.nu_energy = -1;
+
+    // Track multiplicity
+    this_interaction.multiplicity = this_interaction.slice.particles.at(this_interaction.slice.primary_index).daughters.size();
+
     // Try to match against truth events
     // Vertices
     this_interaction.match.event_vertex_id = -1;
@@ -1408,49 +1436,19 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
         this_interaction.match.truth_vertex_distance = (truth[truth_i].position - reco_position).Mag();
         this_interaction.match.event_vertex_id = truth_i;
       }
-      // TODO: better way to do matching
-      // only keep match if distance is less than 5cm
-      if (this_interaction.match.truth_vertex_distance > 5.) {
-        // this_interaction.match.event_vertex_id = -1;
-        std::cout << "Vertex not matched well.\n";
-      }
-      else 
-          std::cout << "Vertex matched to neutrino.\n";
     }
 
-    // select the primary track
-    this_interaction.primary_track_index = SelectPrimaryTrack(this_interaction.slice, truth, this_interaction.match.event_vertex_id);
-    if (this_interaction.primary_track_index >= 0) {
-      this_interaction.primary_track = this_interaction.slice.tracks.at(this_interaction.primary_track_index);
+    // TODO: better way to do matching
+    // only keep match if distance is less than 5cm
+    if (this_interaction.match.truth_vertex_distance > 5.) {
+      this_interaction.match.event_vertex_id = -1;
+      std::cout << "Vertex not matched well.\n";
     }
-  
-    // print out information on the primary track
-    /*
-    if (this_interaction.primary_track_index >= 0) {
-      const NumuRecoSelection::RecoTrack &track = this_interaction.slice.tracks.at(this_interaction.primary_track_index);
-      std::cout << "Identified primary track!\n";
-      std::cout << "At: " << track.start.X() << " " << track.start.Y() << " " << track.start.Z() << std::endl;
-      std::cout << "Length: " << track.length <<std::endl;
-      std::cout << "Deposited energy: " << track.deposited_energy << std::endl;
-      std::cout << "Is backward: " << (track.mcs_is_backward == true) << std::endl;
-      std::cout << "FWD MCS momentum: " << track.fwd_mcs_momentum_muon << " +/- " << track.fwd_mcs_momentum_muon_err << std::endl;
-      std::cout << "BWD MCS momentum: " << track.bwd_mcs_momentum_muon << " +/- " << track.bwd_mcs_momentum_muon_err << std::endl;
-      std::cout << "Range momentum: " << track.range_momentum_muon << std::endl;
-      std::cout << "Proton score: " << track.chi2_proton << std::endl;
-      std::cout << "Kaon score: " << track.chi2_kaon << std::endl;
-      std::cout << "Pion score: " << track.chi2_pion << std::endl;
-      std::cout << "Muon score: " << track.chi2_muon <<std::endl;
-      std::cout << "PID: " << track.pdgid << std::endl;
-      std::cout << "True P: " << truth[0].slice.tracks.at(track.match.mcparticle_id).momentum << std::endl;
-    }*/
- 
-    // TODO: get the enrgy
-    this_interaction.nu_energy = -1;
+    else {
+        std::cout << "Vertex matched to neutrino.\n";
+    }
 
-    // Track multiplicity
-    this_interaction.multiplicity = this_interaction.slice.particles.at(this_interaction.slice.primary_index).daughters.size();
-
-    // determine the index and the mode
+    // Match to the primary track of the event
     this_interaction.match.event_track_id = -1;
     if (this_interaction.primary_track_index >= 0) {
       const NumuRecoSelection::TrackTruthMatch &ptrack_match = this_interaction.slice.tracks.at(this_interaction.primary_track_index).match;
@@ -1461,6 +1459,7 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
           }
         }
       }
+      std::cout << "Primary track index: " << this_interaction.primary_track_index << std::endl;
 
       // return the interaction mode
       if (ptrack_match.has_match && ptrack_match.mctruth_origin == simb::Origin_t::kCosmicRay) {
@@ -1470,6 +1469,10 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
       else if (ptrack_match.has_match && ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino) {
         this_interaction.match.tmode = tmNeutrino;
         std::cout << "Track matched to neutrino.\n";
+      }
+      else if (ptrack_match.has_match) {
+        this_interaction.match.tmode = tmOther;
+        std::cout << "Track matched to other.\n";
       }
       else {
         this_interaction.match.tmode = tmOther;
@@ -1481,14 +1484,8 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
       std::cout << "No track to match.\n";
     }
 
-    // determine the mode of this interaction
-    //
-    // Best option: compare the vertex
-    if (this_interaction.match.event_vertex_id != -1) {
-      this_interaction.match.mode = truth[this_interaction.match.event_vertex_id].match.mode;
-    }
-    // next -- try the track
-    else if (this_interaction.primary_track_index >= 0 && 
+    // Use the track to match the mode of the interaction
+    if (this_interaction.primary_track_index >= 0 && 
       this_interaction.slice.tracks.at(this_interaction.primary_track_index).match.has_match) {
       const NumuRecoSelection::TrackTruthMatch &ptrack_match = this_interaction.slice.tracks.at(this_interaction.primary_track_index).match;
       if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kCC) {
@@ -1512,7 +1509,7 @@ NumuRecoSelection::RecoEvent NumuRecoSelection::Reconstruct(const gallery::Event
     // bad vertex
     this_interaction.match.is_misreconstructed = this_interaction.match.tmode == tmNeutrino && !this_interaction.match.has_match;
 
-    // get the mcturth indexes from the event indexes
+    // get the mctruth indexes from the event indexes
     if (this_interaction.match.event_vertex_id != -1) this_interaction.match.mctruth_vertex_id = truth[this_interaction.match.event_vertex_id].match.mctruth_vertex_id;
     else this_interaction.match.mctruth_vertex_id = -1;
     if (this_interaction.match.event_track_id != -1) this_interaction.match.mctruth_track_id = truth[this_interaction.match.event_track_id].match.mctruth_track_id;
