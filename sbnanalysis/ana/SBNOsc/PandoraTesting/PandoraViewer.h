@@ -16,6 +16,7 @@
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
 #include "core/ProviderManager.hh"
@@ -66,7 +67,7 @@ public:
   // framework functions
   void Initialize(fhicl::ParameterSet* config);
   void Finalize();
-  bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco);
+  bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco);
 
   class Config {
   public:
@@ -405,7 +406,7 @@ public:
         double time = (start_time + end_time) / 2.;
 
         // make sure range is ok
-        assert(time > 0 && time < 2000.);
+        // assert(time > 0 && time < 2000.);
         assert(wire_no >= 0 && wire_no < manager->GetGeometryProvider()->Nwires(this_plane_id));
 
         plane_graph_points[index][0].push_back(wire_no);

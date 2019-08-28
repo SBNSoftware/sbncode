@@ -69,7 +69,7 @@ public:
    * \param Reconstructed interactions
    * \return True to keep event
    */
-  bool ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco);
+  bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco);
 
   /** Additional information used by the selection per neutrino interaction */
   struct NuMuInteraction {
@@ -281,7 +281,7 @@ protected:
  * */
   bool containedInAV(const TVector3 &v);
 
-  bool isSignal(const Event::Interaction &interaction) { return interaction.neutrino.iscc; }
+  bool isSignal(const event::Interaction &interaction) { return interaction.neutrino.iscc; }
 
   geo::TPCID GetTPCIndex(const TVector3 &v) {
     for (auto const &cryo: _manager->GetGeometryProvider()->IterateCryostats()) {

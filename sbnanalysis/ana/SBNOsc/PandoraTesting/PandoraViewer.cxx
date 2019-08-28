@@ -23,13 +23,14 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
 #include "core/Event.hh"
 #include "PandoraViewer.h"
 
 #include "../Utilities.h"
 
-#include "sbndcode/CRT/CRTUtils/CRTAnaUtils.h"
+// #include "sbndcode/CRT/CRTUtils/CRTAnaUtils.h"
 #include "sbndcode/CRT/CRTProducts/CRTHit.hh"
 
 namespace ana {
@@ -90,15 +91,20 @@ void PandoraViewer::Finalize() {
 
 }
 
-bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco) {
+bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
   // Get truth
-  auto const& mctruths = \
-    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
-  // get tracks and showers
-  auto const& mctracks = \
-    *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
-  auto const& mcshowers = \
-    *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
+  auto const& mctruth_handle = \
+    ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  const std::vector<simb::MCTruth> &mctruths = *mctruth_handle;
+  
+  auto const& mcparticle_handle = \
+    ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
+  const std::vector<simb::MCParticle> &mcparticles = *mcparticle_handle;
+
+  // gallery::Handle<std::vector<simb::MCTruth>> cosmic_handle;
+  // bool has_cosmics = event.getByLabel(_config.CorsikaTag, cosmics);
+
+  art::FindManyP<simb::MCTruth, sim::GeneratedParticleInfo> particles_to_truth(mcparticle_handle, ev, fMCParticleTag);
 
   // make the plots
   TrackPlot plots(_event_index, fProviderManager);
@@ -148,7 +154,7 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
   std::vector<TGraph *> all_hits_graphs = plots.addTrackHits(all_hits, fProviderManager);
 
   // and the space points
-  std::array<TGraph *, 3> space_points_graphs = plots.addSpacePoints(all_space_points);
+  // std::array<TGraph *, 3> space_points_graphs = plots.addSpacePoints(all_space_points);
 
   // iterate over all of the pfparticles
   for (size_t i = 0; i < pfp_handle->size(); i++) {
@@ -269,7 +275,7 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
   }
 
   // Iterate through the CRT Tracks
-  if (crt_tracks.isValid()) {
+  if (crt_tracks.isValid() && false) {
     for (auto const &track: *crt_tracks) {
       // get the start and end 
       TVector3 p1(track.x1_pos, track.y1_pos, track.z1_pos);
@@ -292,19 +298,28 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
     }
   }
 
+  std::cout << "New Event!\n";
   // Iterate through the truth tracks
-  for (auto const &track: mctracks) {
+  for (unsigned i_part = 0; i_part < mcparticles.size(); i_part++) {
+    const simb::MCParticle &part = mcparticles[i_part];
     // make a tgraph of trajectory points for each track
 
+    // get whether the particle is a cosmic
+    const art::Ptr<simb::MCTruth> this_truth = particles_to_truth.at(i_part).at(0);
+    bool is_cosmic = this_truth->Origin() != simb::Origin_t::kBeamNeutrino;
+
+    // if (is_cosmic) continue;
     // ignore zero-sized tracks
-    if (track.size() == 0) continue;
-    // ignore neutral tracks
-    if (PDGCharge(track.PdgCode()) < 1e-4) continue;
+    if (part.NumberTrajectoryPoints() == 0) continue;
+    // ignore neutral particles
+    if (abs(PDGCharge(part.PdgCode())) < 1e-4) continue;
+    // ignore non-primary particles
+    if (part.Process() != "primary") continue;
 
     // get points
     std::vector<TVector3> points;
-    for (auto const &trajPoint: track) {
-      TVector3 vect = trajPoint.Position().Vect();
+    for (unsigned i = 0; i < part.NumberTrajectoryPoints(); i++) {
+      TVector3 vect = part.Position(i).Vect();
       if (containedInAV(vect)) {
         points.push_back(vect);
       }
@@ -319,7 +334,7 @@ bool PandoraViewer::ProcessEvent(const gallery::Event& ev, const std::vector<Eve
 
     // save text for the truth tracks
     if (_config.drawText) {
-      std::array<TText *, 3> text = plots.addTrackText(points, track.TrackID());
+      std::array<TText *, 3> text = plots.addTrackText(points, part.TrackId());
       for (int i = 0; i < 3; i++) {
         // text[i]->SetTextSize(1);
       }
