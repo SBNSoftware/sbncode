@@ -25,6 +25,7 @@ include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
 include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
+include_directories($ENV{NUG4_INC})
 
 link_directories(
   $ENV{BOOST_LIB}
