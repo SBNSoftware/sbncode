@@ -2,6 +2,8 @@
 #define __sbnanalysis_core_ProviderManager__
 
 #include <string>
+#include <memory>
+#include <vector>
 #include "core/Experiment.hh"
 
 namespace geo {
