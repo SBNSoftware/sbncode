@@ -148,7 +148,6 @@ namespace util {
           (dista > distance_buffer) && (distb > distance_buffer)) inside = true;
       else inside = false;
     }
-
     return inside;
   } // IsInsideTPC
 } // namespace util

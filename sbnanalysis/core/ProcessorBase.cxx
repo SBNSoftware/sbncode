@@ -370,7 +370,7 @@ namespace core {
     // If the number of reconstructed neutrinos does not match the true number
     // of neutrinos, quit. This will get messy as the reconstruction has failed
     if(neutrinos.size() != mctruthssize) {
-      std::cerr << " Number of truth objects doesn't match the number of reconstructed neutrino objects, skipping " << std::endl;
+      std::cerr << " Number of truth objects, " << mctruthssize << " doesn't match the number of reconstructed neutrino objects, " << neutrinos.size() << ": Skipping " << std::endl;
       return;
     }
 
@@ -601,7 +601,7 @@ namespace core {
                   // Get associated MCParticle ID using 3 different methods:
                   //    Which particle contributes the most energy to all the hits
                   //    Which particle contributes the reco charge to all the hits
-                  //    Which particle is the biggest contributor to all the hits
+                  //    Which particle is the biggest contributor to all the hitsi
                   fsrp.mc_id_energy = util::TrueParticleIDFromTotalTrueEnergy(hit_assn,fProviderManager);
                   fsrp.mc_id_charge = util::TrueParticleIDFromTotalRecoCharge(hit_assn,fProviderManager);
                   fsrp.mc_id_hits   = util::TrueParticleIDFromTotalRecoHits(hit_assn,fProviderManager);
@@ -630,9 +630,9 @@ namespace core {
                   for(int l = 0; l < fsrp.dedx_size; ++l)      fsrp.dedx[l]           = cal_assn[k]->dEdx()[l];
                   for(int l = 0; l < fsrp.res_range_size; ++l) fsrp.res_range[l]      = cal_assn[k]->ResidualRange()[l];
                   for(int l = 0; l < fsrp.pitch_size; ++l)     fsrp.pitch[l]          = cal_assn[k]->TrkPitchVec()[l];
-                  for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l]           = Event::kUnfilled;
+/*                  for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l]           = Event::kUnfilled;
                   for(int l = fsrp.res_range_size; l < 100000; ++l) fsrp.res_range[l] = Event::kUnfilled;
-                  for(int l = fsrp.pitch_size; l < 100000; ++l)     fsrp.pitch[l]     = Event::kUnfilled;
+                  for(int l = fsrp.pitch_size; l < 100000; ++l)     fsrp.pitch[l]     = Event::kUnfilled;*/
 
                   // Momentum
                   //    Assign a momentum of 0 to every parameter and then 
@@ -705,7 +705,7 @@ namespace core {
 
                 fsrp.dedx_size = shower.dEdx().size();
                 for(int l = 0; l < fsrp.dedx_size; ++l) fsrp.dedx[l]      = shower.dEdx()[l];
-                for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l] = Event::kUnfilled;
+                //for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l] = Event::kUnfilled;
                 fsrp.energy        = shower.Energy()[bp];
                 fsrp.vertex[0]     = shower.ShowerStart()[0];
                 fsrp.vertex[1]     = shower.ShowerStart()[1];

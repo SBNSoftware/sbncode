@@ -21,7 +21,7 @@ namespace ana {
       fRecoEntryCounter(0){}
 
     void AnalysisMain::Initialize(fhicl::ParameterSet* config) {
-      std::cout << " Initialising " << std::endl;
+      std::cout << " AnalysisMain::Initialize " << std::endl;
       if (config)
         fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("SelectionAnalysis");
 
