@@ -112,6 +112,8 @@ target_link_libraries(
   larcoreobj_SummaryData
   larcorealg_Geometry
   larcore_Geometry_Geometry_service
+  larsim_MCCheater_ParticleInventoryService_service
+  larsim_MCCheater_BackTrackerService_service
   lardataobj_RecoBase
   lardataobj_AnalysisBase
   lardataobj_MCBase

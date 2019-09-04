@@ -13,6 +13,7 @@ RecoShowerTag:             "emshower"
 VertexTag:                 "pandora"
 RecoTrackCalorimetryTag:   "pandoraCalo"
 RecoTrackParticleIDTag:    "pandoraPid"
+ProviderConfigFile:        ""
 #  fitter: {                                                                   
 pIdHypothesis: 13                                                         
 minNumSegments: 3                                                         

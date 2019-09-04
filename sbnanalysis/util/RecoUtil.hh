@@ -3,7 +3,6 @@
 
 // Frameworks
 #include "canvas/Persistency/Common/Ptr.h" 
-#include "larcore/Geometry/Geometry.h"
 #include "core/ProviderManager.hh"
 
 // LArSoft
@@ -13,6 +12,8 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+#include "larcore/Geometry/Geometry.h"
 
 // C++
 #include <vector>

@@ -1,4 +1,4 @@
-# Selection Functionality
+# Some details of the selection merge
 
 ## core
 
@@ -14,9 +14,13 @@ Objects will be built to hold all interaction information given by LArSoft for t
 ## util
 
 Helper classes to hold
-- PID functionality
-- General analysis helper functions
-- Other useful functionality for high-level analyses
+- RecoUtils from LArSoft
+- Analysis-based functions
+
+## selection
+
+This holds the bulk of the code for the topological selection as it exists currently (Sept. 2019)
+- See selection/README.md for details
 
 ## ana/SelectionAnalysis
 

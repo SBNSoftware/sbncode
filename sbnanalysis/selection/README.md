@@ -1,17 +1,33 @@
-# SBND Selection Tool
-Takes in trees containing information about reconstructed and true SBND events, generated in LArSoft and written to a single root file. Performs PID and identifies true and reconstructed topologies and true interactions
+# Contents of this directory
 
-This file will act as documentation for the repository
+Some of these may get moved around the sbnanalysis directory when I have finished, if somewhere else seems more appropriate (mostly separating out utilities from core selection features)
 
-# How to run
-Fill `run_<name>.C` with the source-code and main file paths in order to compile them in the correct order (based on dependencies) and run the main (put it at the end of the list)
+## Event
 
-Once this has compiled and you are within ROOT, type the name of the main function to run
+- Contains all objects associated with an 'Event' under the selection tool definition
 
-# Notes
-Everything must be contained within a namespace in order to link correctly
+## EventSelectionHelper
 
-# Documentation
-Documentation is located at
+- Functions which contribute to the selection itself
+- Includes PID for tracks & (basic, temporary procedure) for showers
 
-<http://hep.ph.liv.ac.uk/~rjones/selection_tool_doxygen/index.html>
+## GeneralAnalysisHelper
+
+- Functions which begin to apply the PID to analyses
+- This will probably end up moving to util
+
+## LoadEvents
+
+- This will aid the filling of Particle and Event objects for use in the analysis functions
+
+## Particle
+
+- Contains all objects associated with an 'Particle' under the selection tool definition
+
+## Plane 
+
+- Functions to help determine whether a track or vertex is contained in the TPC or fiducial volume
+
+## SelectionToolBase
+
+- This will be the core mediator between the ProcessorBase output and the selection

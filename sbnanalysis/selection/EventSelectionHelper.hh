@@ -199,40 +199,13 @@ namespace selection{
       static void GetMCParticleList(unsigned int start, TTree *mcparticle_tree, const std::pair<int, int> &unique_event, ParticleList &mcparticle_list);
 
       /**
-       * @brief  get a list of reconstructed particles from track objects, using Raquel's method in uBooNE
-       *
-       * @param  track_list list of tracks in the event
-       * @param  recoparticle_list particle list to fill
-       *
-       */
-      static void GetRecoParticleFromTrackRaquel(const TrackList &track_list, ParticleList &recoparticle_list);
-      
-      /**
-       * @brief  get a list of reconstructed particles from track objects, only tagging muons with the chi2 proton variable
-       *
-       * @param  track_list list of tracks in the event
-       * @param  recoparticle_list particle list to fill
-       *
-       */
-      static void GetRecoParticleFromTrackChi2P(const TrackList &track_list, ParticleList &recoparticle_list);
-      
-      /**
        * @brief  get a list of reconstructed particles from track objects
        *
        * @param  track_list list of tracks in the event
        * @param  recoparticle_list particle list to fill
        *
        */
-      static void GetRecoParticleFromTrack1Escaping(const TrackList &track_list, ParticleList &recoparticle_list);
- 
-      /**
-       * @brief  get a list of reconstructed particles from track objects
-       *
-       * @param  track_list list of tracks in the event
-       * @param  recoparticle_list particle list to fill
-       *
-       */
-      static void GetRecoParticleFromTrack1EscapingDistanceCut(const TrackList &track_list, ParticleList &recoparticle_list);
+      static void GetRecoParticleFromTrack(const TrackList &track_list, ParticleList &recoparticle_list);
 
       /**
        * @brief  get a list of reconstructed particles from track objects using original method

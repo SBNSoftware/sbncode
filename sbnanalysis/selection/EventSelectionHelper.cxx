@@ -137,7 +137,7 @@ namespace selection{
       EventSelectionHelper::GetShowerList(start_showers, t_shower, event_identification, showers);
       EventSelectionHelper::GetMCParticleList(start_mcparticles, t_particle, event_identification, mcparticles);
       
-      if(tracks.size() != 0) EventSelectionHelper::GetRecoParticleFromTrack1EscapingDistanceCut(tracks, recoparticles);
+      if(tracks.size() != 0) EventSelectionHelper::GetRecoParticleFromTrack(tracks, recoparticles);
       if(showers.size() != 0) EventSelectionHelper::GetRecoParticleFromShower(showers, r_vertex, recoparticles);
      
       // Check if any particles should be flipped
@@ -579,7 +579,7 @@ namespace selection{
 
   //------------------------------------------------------------------------------------------ 
   
-  void EventSelectionHelper::GetRecoParticleFromTrack1EscapingDistanceCut(const TrackList &track_list, ParticleList &recoparticle_list){
+  void EventSelectionHelper::GetRecoParticleFromTrack(const TrackList &track_list, ParticleList &recoparticle_list){
 
     // Assign ridiculously short length to initiate the longest track length
     float longest_track_length      = -std::numeric_limits<float>::max();

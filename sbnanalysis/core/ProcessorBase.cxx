@@ -35,6 +35,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackingTypes.h"
+#include "lardataobj/RecoBase/MCSFitResult.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
@@ -155,6 +156,7 @@ namespace core {
       fVertexTag     = { "pandora" };
       fRecoTrackCalorimetryTag = { "pandoraCalo" };
       fRecoTrackParticleIDTag = { "pandoraPid" };
+      fProviderConfig = { "" };
       fOutputFilename = "output.root";
     }
 
@@ -232,22 +234,6 @@ namespace core {
     fOutputFile->Close();
   }// Teardown
   
-  void ProcessorBase::SetupServices(gallery::Event& ev) {
-    if (fProviderManager != NULL) {
-      /*
-      // reset the channels of the back tracker
-      fProviderManager->GetBackTrackerProvider()->ClearEvent();
-      fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
-
-      // reset information in particle inventory
-      fProviderManager->GetParticleInventoryProvider()->ClearEvent();
-      fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
-      fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
-      fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
-      */
-    }
-  } // SetupServices
-
   void ProcessorBase::BuildEventTree(gallery::Event& ev) {
     // Add any new subruns to the subrun tree
     UpdateSubRuns(ev);
@@ -511,12 +497,6 @@ namespace core {
         // If the parent of the current particle is the neutrino
 
         if(pfparticle.Parent() == neutrinos[i]){
-          Event::FinalStateReconstructedParticle fsrp;
-
-          // Let's check if the inheritance is correct by filling a member of 
-          // FinalStateParticle
-          fsrp.pdg = pfparticle.PdgCode();
-
           // Get the track associations to get all the other associations
           std::vector< art::Ptr<recob::Track> > trk_assn = fmtrk.at(pfparticle.Self());
 
@@ -597,11 +577,18 @@ namespace core {
                   // Only look at the collection plane, since this is where the dEdx
                   // is acquired and we need this for the PIDA values
                   if (planenumcal!=2) continue;
+                  
+                  Event::FinalStateReconstructedParticle fsrp;
+
+                  // Pdg here defines the TYPE of particle
+                  fsrp.pdg = pfparticle.PdgCode();
+
 
                   // Get associated MCParticle ID using 3 different methods:
                   //    Which particle contributes the most energy to all the hits
                   //    Which particle contributes the reco charge to all the hits
-                  //    Which particle is the biggest contributor to all the hitsi
+                  //    Which particle is the biggest contributor to all the hits
+                  //    Testing back tracker directly in the processor base
                   fsrp.mc_id_energy = util::TrueParticleIDFromTotalTrueEnergy(hit_assn,fProviderManager);
                   fsrp.mc_id_charge = util::TrueParticleIDFromTotalRecoCharge(hit_assn,fProviderManager);
                   fsrp.mc_id_hits   = util::TrueParticleIDFromTotalRecoHits(hit_assn,fProviderManager);
@@ -663,17 +650,19 @@ namespace core {
                     fsrp.range_momentum_muon   = reco_momentum_muon;
                     fsrp.range_momentum_proton = reco_momentum_proton;
                   }
+                  reconstructed_interaction.recofinalstate.push_back(fsrp);
                 } // calo
               } // PID
-              reconstructed_interaction.recofinalstate.push_back(fsrp);
             } // tracks
           } // track check
 
-          // Get the shower associations
-          //std::vector< art::Ptr<recob::Shower> > shw_assn = fmshw.at(pfparticle.Self());
-
           // If the showers exist get the information associated with them
-          if(showersize) {
+          // Also make sure there are no tracks already associated to the currect PFParticle
+          // Since we are using emshower rather than pandoraShower we cannot get the associations
+          // between showers and PFParticles
+          // Instead we manually check that each shower's vertex is within a sensible 
+          // distance of the neutrino vertex we are looking at
+          if(showersize && !trk_assn.size()) {
             art::FindManyP< recob::Hit > fmhit(recoshowers, ev, fRecoShowerTag);
 
             // Loop over showers associated with primary PFParticles
@@ -691,6 +680,10 @@ namespace core {
               // neutral pion decay
               if(s_vtx < 40) {
                 std::vector< art::Ptr<recob::Hit> > hit_assn = fmhit.at(shower.ID());
+                Event::FinalStateReconstructedParticle fsrp;
+
+                // Pdg here defines the TYPE of particle
+                fsrp.pdg = pfparticle.PdgCode();
 
                 // Get associated MCParticle ID using 3 different methods:
                 //    Which particle contributes the most energy to all the hits
@@ -713,16 +706,18 @@ namespace core {
                 fsrp.direction[0]  = shower.Direction()[0];
                 fsrp.direction[1]  = shower.Direction()[1];
                 fsrp.direction[2]  = shower.Direction()[2];
-                fsrp.length        = shower.Length();
-                fsrp.opening_angle = shower.OpenAngle();
+                if(shower.has_length()) fsrp.length            = shower.Length();
+                if(shower.has_open_angle()) fsrp.opening_angle = shower.OpenAngle();
 
+                reconstructed_interaction.recofinalstate.push_back(fsrp);
               } // Vertex check
-              reconstructed_interaction.recofinalstate.push_back(fsrp);
             } // showers
           } // shower check
         } // daughters of the neutrino
       } // pfparticles
-      fEvent->reco.push_back(reconstructed_interaction);
+      // Only push back the reconstructed interaction to the event if we have at least 1 reconstructed particle
+      if(reconstructed_interaction.recofinalstate.size())
+        fEvent->reco.push_back(reconstructed_interaction);
     } // neutrinos
   } // BuildEventTree
 } // namespace core
