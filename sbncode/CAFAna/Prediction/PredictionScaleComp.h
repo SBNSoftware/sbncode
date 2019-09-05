@@ -5,8 +5,6 @@
 #include "CAFAna/Prediction/IPrediction.h"
 #include "CAFAna/Systs/SystComponentScale.h"
 
-#include "StandardRecord/StandardRecord.h"
-
 #include "OscLib/IOscCalculator.h"
 
 namespace ana

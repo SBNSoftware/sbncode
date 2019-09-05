@@ -219,7 +219,7 @@ print disclaimer
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
 print
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
 print
 print 'namespace caf{'
 print joinFunc
@@ -287,7 +287,7 @@ print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/CheckEquals.h"'
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print
 print '#include <type_traits>'
 print
@@ -406,7 +406,7 @@ sys.stdout = file(cxxDir+'/CopyRecord.cxx', 'w')
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/CopyRecord.h"'
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print disclaimer
 print 'namespace caf{'
 
