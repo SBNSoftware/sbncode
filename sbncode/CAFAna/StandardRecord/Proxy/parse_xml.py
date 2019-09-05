@@ -8,8 +8,10 @@ try:
 except Exception as e:
     print e
     print
-    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
+#    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
+    print "Try 'setup pygccxml v1_9_1a -f NULL -z /cvmfs/nova.opensciencegrid.org/externals -q p2715a'"
     print "and 'setup castxml v0_00_00_f20180122'"
+ p2715a
     print
     sys.exit(1)
 
