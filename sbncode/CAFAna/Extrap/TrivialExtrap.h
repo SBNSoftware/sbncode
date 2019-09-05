@@ -6,11 +6,10 @@ namespace ana
 {
   class Loaders;
 
-  /// "Extrapolation" that simply returns the FD MC prediction
+  /// "Extrapolation" that simply returns the MC prediction
   class TrivialExtrap: public IExtrap
   {
   public:
-    // This is the DUNE constructor
     TrivialExtrap(SpectrumLoaderBase& loaderNonswap,
                   SpectrumLoaderBase& loaderNue,
                   SpectrumLoaderBase& loaderNuTau,
