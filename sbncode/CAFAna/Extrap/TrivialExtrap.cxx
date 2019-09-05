@@ -19,8 +19,8 @@ namespace ana
                                const SystShifts& shift,
                                const Var& wei)
     :
-    fNueApp       (loaderNue,     axis, cut && kIsSig       && !kIsAntiNu, shift, wei),
-    fNueAppAnti   (loaderNue,     axis, cut && kIsSig       &&  kIsAntiNu, shift, wei),
+    fNueApp       (loaderNue,     axis, cut && kIsNueApp    && !kIsAntiNu, shift, wei),
+    fNueAppAnti   (loaderNue,     axis, cut && kIsNueApp    &&  kIsAntiNu, shift, wei),
 
     fNumuSurv     (loaderNonswap, axis, cut && kIsNumuCC    && !kIsAntiNu, shift, wei),
     fNumuSurvAnti (loaderNonswap, axis, cut && kIsNumuCC    &&  kIsAntiNu, shift, wei),
