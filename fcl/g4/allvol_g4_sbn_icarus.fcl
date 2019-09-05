@@ -1,0 +1,28 @@
+#include "mcreco.fcl"  
+#include "standard_g4_icarus.fcl"
+
+process_name: G4
+
+outputs.out1.fileName: "%ifb_%tc_g4.root"
+
+physics.producers.mcreco: @local::standard_mcreco
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+
+#services.UBEventWeight: @local::microboone_eventweight_service 
+physics.simulate: [rns, @sequence::physics.simulate, mcreco ]
+physics.producers.largeant.KeepParticlesInVolumes: [ ]
+
+physics.producers.largeant.KeepEMShowerDaughters: false
+
+
+#physics.producers.mcreco: @local::standard_mcreco
+#physics.producers.fluxeventweight: @local::sbn_flux_eventweight
+#physics.producers.genieeventweight: @local::sbn_genie_eventweight
+#services.UBEventWeight: @local::microboone_eventweight_service    
+#physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+#physics.simulate: [ @sequence::physics.simulate, mcreco ]
+#physics.producers.largeant.KeepEMShowerDaughters: false  

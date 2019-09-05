@@ -2,7 +2,8 @@
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_Icarus.root"
 MCWeightTags: @local::eventweight_tags
-MCTruthTags: ["generator","corsika"]
+#MCTruthTags: ["generator","corsika"]
+MCTruthTags: ["generator"]
 
 NueSelection: {
   fiducial_volumes: @local::ICARUS_fiducial_volumes 
@@ -11,13 +12,14 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
   Detector: "ICARUS" 
-  Verbose: false
-  IncludeCosmics: true
+  Verbose: true
+  IncludeCosmics: false
   IncludeDirt: true
   ReadoutWindowSize: 4096
   UseAllCosmics: true
   DontUseSimChannels: true
-  DirtOnly: true
-
+  DirtOnly: false
+  ApplyGENIEVersionWeight: true
+  UseGenieHists: true
 }
 

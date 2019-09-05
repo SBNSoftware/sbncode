@@ -1,0 +1,54 @@
+#include "reco_base.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+process_name: Reco 
+
+sbn_calorimetryalgmc.CalAreaConstants: [5.029e-3, 5.088e-3, 5.183e-3]
+
+physics.producers.linecluster: @local::sbn_linecluster
+
+physics.producers.pandora:           @local::sbn_basicpandora
+physics.producers.pandoraUboonetune: @local::sbn_basicpandora
+physics.producers.ConfigFile: "PandoraSettings_Master.xml"
+
+physics.producers.pandoraTrack:            @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune:  @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune.PFParticleLabel: pandoraUboonetune
+
+physics.producers.TrackCalo:           @local::sbn_calo
+physics.producers.TrackCaloUboonetune: @local::sbn_calo
+physics.producers.TrackCaloUboonetune.TrackModuleLabel:      "pandoraTrackUboonetune"
+physics.producers.TrackCaloUboonetune.SpacePointModuleLabel: "pandoraUboonetune" 
+
+physics.producers.TrackPid:           @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune: @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune.TrackModuleLabel:       "pandoraTrackUboonetune"
+physics.producers.TrackPidUboonetune.CalorimetryModuleLabel: "TrackCaloUboonetune"
+
+physics.producers.tracs:           @local::sbn_tracs_shower
+physics.producers.tracsUboonetune: @local::sbn_tracs_shower
+physics.producers.tracsUboonetune.PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[0].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[1].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[2].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[3].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[4].PFParticleModuleLabel: "pandoraUboonetune"
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+
+physics.reco: [ rns
+                ,caldata 
+                ,gaushit
+                ,linecluster
+                ,pandora, pandoraTrack
+                ,pandoraUboonetune, pandoraTrackUboonetune
+                ,TrackCalo, TrackPid
+                ,TrackCaloUboonetune, TrackPidUboonetune
+                ,tracs
+                ,tracsUboonetune
+                ]
+
+outputs.out1.fileName: "%ifb_%tc_reco.root"

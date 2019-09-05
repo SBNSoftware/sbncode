@@ -15,6 +15,9 @@ NueSelection: {
   Verbose:false
   IncludeCosmics: false
   IncludeDirt: false
-  NuMuOnly: true
+  NuMuOnly: false
+  ApplyGENIEVersionWeight: true
+  DontUseSimChannels: false
+  UseGenieHists: true
 }
 

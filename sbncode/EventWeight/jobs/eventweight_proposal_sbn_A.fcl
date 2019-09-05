@@ -488,8 +488,8 @@ sbn_genie_eventweight_A: {
     genie_NonResRvp2piAlt, genie_NonResRvbarp2piAlt,
 
     # cocktail of weights from Andy
-  #  genie_qevec, genie_ncelAxial,
-  #  genie_ncelEta, genie_ccresVector,
+    genie_qevec, genie_ncelAxial,
+    genie_ncelEta, genie_ccresVector,
     genie_ncresVector,
     genie_cohMA, genie_cohR0,
     genie_ResDecayGamma, genie_ResDecayEta, genie_ResDecayTheta,

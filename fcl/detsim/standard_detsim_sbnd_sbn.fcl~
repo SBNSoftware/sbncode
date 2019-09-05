@@ -1,0 +1,9 @@
+#include "standard_detsim_icarus.fcl"
+
+process_name: DetSim
+
+
+physics.simulate: [ rns, opdaq, daq]
+
+
+physics.producers.crtdaq.module_type: "icaruscode/CRT/CRTDetSim"

@@ -1,0 +1,4 @@
+#include "standard_detsim_sbnd.fcl"
+
+process_name: DetSim
+

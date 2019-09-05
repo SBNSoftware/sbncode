@@ -379,8 +379,8 @@ void NuePlotsLoop(){
 	//	continue;
       }
 
-      double POTWeight = ProposalPOT/POT;
-
+      //      double POTWeight = ProposalPOT/POT;
+      POTWeight = 1;
       std::size_t pos = line.find(" ");    
       
       inputfile = line.substr(0,pos);
@@ -392,16 +392,16 @@ void NuePlotsLoop(){
       
       std::cout << "file: " << inputfile << std::endl;
 
-      TTree *sbnana;
-      gDirectory->GetObject("sbnana",sbnana);
-      Event *events = 0;
-      sbnana->SetBranchAddress("events",&events);
+      TTree *sbnreco;
+      gDirectory->GetObject("sbnreco",sbnreco);
+      event::RecoEvent *reco_events = 0;
+      sbnreco->SetBranchAddress("reco_events",&reco_events);
 
       double totgoodpot;
       float totalpot = 0;
 
-      double L = 100.*5076142.;
-
+      //      double L = 100.*5076142.;
+      double L = 600.*5076142.;
       std::size_t issbnd = line.find("sbnd");
       if(issbnd!=std::string::npos){
 	L = 100.*5076142.;
@@ -418,129 +418,129 @@ void NuePlotsLoop(){
 	L = 600.*5076142.;
       }
 
-      Long64_t nentries = sbnana->GetEntries();
+      Long64_t nentries = sbnreco->GetEntries();
       for (Long64_t i=0;i<nentries;i++) {
 
-	sbnana->LoadTree(i);
-        sbnana->GetEntry(i);
+	sbnreco->LoadTree(i);
+        sbnreco->GetEntry(i);
 
-	std::vector<Event::RecoInteraction> * reco = &(events->reco);
-      	std::vector<Event::Interaction> * truth = &(events->truth);
+	event::RecoInteraction * reco = &(reco_events->reco);
+      	std::vector<event::Interaction> * truth = &(reco_events->truth);
 
-	for(int event=0; event<(*reco).size(); ++event){
-
-	  if((*reco)[event].reco_energy < 0){continue;}
-	  //	  if((*truth)[(*reco)[event].truth_index].neutrino.genie_intcode == -1 || (*truth)[(*reco)[event].truth_index].neutrino.genie_intcode == 5){continue;}
-
-	  if((*truth)[(*reco)[event].truth_index].neutrino.genie_intcode == 5){continue;}
+	if(reco->reco_energy < 0){continue;}
+	if(truth->size() != 1){VisibleEnergyHist["Cosmic"]->Fill(reco->reco_energy, reco->weight*POTWeight); std::cout << "Why is this not 1? " << reco->weight << std::endl; continue;}
+	if(truth->at(0).neutrino.genie_intcode == 5){continue;}
 					  
-	  //Osc Weight 
-	  double Theta = 0.013; 
-	  double dm    = 0.43; 
-	  double osc_w = 1;
-	  if(HistType == "OscNuE"){
-	    osc_w = Theta*TMath::Sin(dm*L/(4*(*truth)[(*reco)[event].truth_index].neutrino.energy*1e9))*TMath::Sin(dm*L/(4*(*truth)[(*reco)[event].truth_index].neutrino.energy*1e9)); 
-	  }
-
-	  std::cout << " energy: " << (*reco)[event].reco_energy << " weight: " << (*reco)[event].weight << " HistType: " << HistType  <<  " POTWeight: " << POTWeight  << " oscw: " <<  osc_w<< std::endl;
-
-	  //Are we cosmic
-	  if((*truth)[(*reco)[event].truth_index].neutrino.iscc == false && (*truth)[(*reco)[event].truth_index].neutrino.isnc == false){
-	    VisibleEnergyHist["Cosmic"]->Fill((*reco)[event].reco_energy, (*reco)[event].weight*POTWeight);
-	    continue;
-	  }
-
-	  //Are we dirt backround
-	  std::size_t found_cosdirt = line.find("nu_cosdirt/");
-	  if(found_cosdirt!=std::string::npos){
-
-
-	    if((*truth)[(*reco)[event].truth_index].neutrino.isnc == false){
+	//Osc Weight 
+	double Theta = 0.013; 
+	double dm    = 0.43; 
+	double osc_w = 1;
+	if(HistType == "OscNuE"){
+	  osc_w = Theta*TMath::Sin(dm*L/(4*truth->at(0).neutrino.energy*1e9))*TMath::Sin(dm*L/(4*truth->at(0).neutrino.energy*1e9)); 
+	}
+	
+	std::cout << " energy: " << reco->reco_energy << " weight: " << reco->weight << " HistType: " << HistType  <<  " POTWeight: " << POTWeight  << " oscw: " <<  osc_w<< std::endl;
+	
+	//Are we cosmic
+	if(truth->at(0).neutrino.iscc == false && truth->at(0).neutrino.isnc == false){
+	  VisibleEnergyHist["Cosmic"]->Fill(reco->reco_energy, reco->weight*POTWeight);
+	  continue;
+	}
+	
+	//Are we dirt backround
+	std::size_t found_cosdirt = line.find("nu_cosdirt/");
+	if(found_cosdirt!=std::string::npos){
+	  
+	  
+	  if(truth->at(0).neutrino.isnc == false){
 
 	      //Are we oscillated 
-	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtOscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w*POTWeight);
+	      if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+		VisibleEnergyHist["DirtOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
 		continue; 
 	      }
 	      
 	      //Are we intrinsic?
-	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtInNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	      if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+		VisibleEnergyHist["DirtInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 		continue;
 	      }
 	      
 	      //Are we charged current background 
-	      if(TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg == 14) && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
-		VisibleEnergyHist["DirtNCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	      if(TMath::Abs(truth->at(0).neutrino.pdg == 14) && truth->at(0).neutrino.iscc == true){
+		VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 		continue;
 	      }
 	    }
 	    
 	    //Are we NC background 
-	    if((*truth)[(*reco)[event].truth_index].neutrino.isnc == true){
+	    if(truth->at(0).neutrino.isnc == true){
 	      //Are we oscillated 
-	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtNCOscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w*POTWeight);
+	      if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+		VisibleEnergyHist["DirtNCOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
 		continue; 
 	      }
 	      //Are we intrinsic?
-	      if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtNCInNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	      if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+		VisibleEnergyHist["DirtNCInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 		continue;
 	      }
 	      //Are we charged current background 
-	      if(TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 14 && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
-		VisibleEnergyHist["DirtNCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	      if(TMath::Abs(truth->at(0).neutrino.pdg) == 14 && truth->at(0).neutrino.iscc == true){
+		VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 		continue;
 	      }
 	    }
 	  }
 	  
-	  if((*truth)[(*reco)[event].truth_index].neutrino.isnc == false){
+	  if(truth->at(0).neutrino.isnc == false){
 	    //Are we oscillated?
-	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){	    VisibleEnergyHist["OscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w*POTWeight);
+	    if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){	    VisibleEnergyHist["OscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
 	      continue;
 	    } 
 	    
 	    
 	    //Are we intrinsic?
-	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){	
-	      std::cout << "test" << std::endl;
-	      VisibleEnergyHist["InNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	    if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){	
+	      VisibleEnergyHist["InNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 	      continue;
 	    }
 	    
 	    //Are we charged current background 
-	    if(TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 14 && (*truth)[(*reco)[event].truth_index].neutrino.iscc == true){
-	      VisibleEnergyHist["NuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	    if(TMath::Abs(truth->at(0).neutrino.pdg) == 14 && truth->at(0).neutrino.iscc == true){
+	      VisibleEnergyHist["NuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 	      continue;
 	    }
 	  }
-
+      
 	  //Are we NC background 
-	  if((*truth)[(*reco)[event].truth_index].neutrino.isnc == true){
+	  if(truth->at(0).neutrino.isnc == true){
 	    
+	    std::cout << " energy: " << reco->reco_energy << " weight: " << reco->weight << " mode: " << truth->at(0).neutrino.genie_intcode<< std::endl;
+	    if(reco->weight > 0.1){std::cout << "WARNING DODGY WEIGHT" << std::endl;}
+	    if(reco->weight > 0.1){continue;}
+
 	    //Are we oscillated?
-	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg != (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-	      VisibleEnergyHist["NCOscNuE"]->Fill((*reco)[event].reco_energy,((*reco)[event].weight)*osc_w*POTWeight);
+	    if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["NCOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
 	      continue;
 	    } 
 	    
 	    //Are we intrinsic?
-	    if((*truth)[(*reco)[event].truth_index].neutrino.initpdg == (*truth)[(*reco)[event].truth_index].neutrino.pdg && TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 12){
-	      VisibleEnergyHist["NCInNuE"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	    if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["NCInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 	      continue;
 	    }
-	    
+	  
 	    //Are we charged current background 
-	    if(TMath::Abs((*truth)[(*reco)[event].truth_index].neutrino.pdg) == 14){
-	      VisibleEnergyHist["NCNuMu"]->Fill((*reco)[event].reco_energy,(*reco)[event].weight*POTWeight);
+	    if(TMath::Abs(truth->at(0).neutrino.pdg) == 14){
+	      VisibleEnergyHist["NCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
 	      continue;
 	    }
 	  }
-	  std::cout << "end" <<  (*truth)[(*reco)[event].truth_index].neutrino.pdg << " " << (*truth)[(*reco)[event].truth_index].neutrino.iscc <<  std::endl;
+	  std::cout << "end" <<  truth->at(0).neutrino.pdg << " " << truth->at(0).neutrino.iscc <<  std::endl;
 	}
-      }
+    
       InputFile->Close();
     }
     
@@ -560,7 +560,7 @@ void NuePlotsLoop(){
 
     float POTWeight = 1; 
     if(POTFlavourMap[HistTypes[i]] != 0){
-      //      POTWeight = ProposalPOT/POTFlavourMap[HistTypes[i]];
+      POTWeight = ProposalPOT/POTFlavourMap[HistTypes[i]];
     }
 
     std::cout << "POTWeight: " << POTWeight << " for sample:" << HistTypes[i]  << " proposal POT: " << ProposalPOT<<  std::endl;
@@ -586,7 +586,7 @@ void NuePlotsLoop(){
     Totalint = VisibleEnergyHist[HistTypes[i]]->IntegralAndError((int) 0,(int) VisibleEnergyHist[HistTypes[i]]->GetNbinsX(),error,"width");
 
     std::cout << "total flavour enteries is: " <<  Totalint << " +- " << error << std::endl;
-
+    std::cout << " total: " << VisibleEnergyHist[HistTypes[i]]->Integral() << std::endl;
     // VisibleEnergyHist[HistTypes[i]]->SetFillColor(Colours[HistTypes[i]]);
     // VisibleEnergyHist[HistTypes[i]]->SetMarkerStyle(21);
     // VisibleEnergyHist[HistTypes[i]]->SetMarkerColor(colours[HistTypes[i]]);

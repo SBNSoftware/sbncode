@@ -11,13 +11,15 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
   Detector: "SBND"
-  Verbose: false
-  IncludeCosmics:        true 
+  Verbose: true
+  IncludeCosmics:        true
   IncludeDirt:           true
   GlobalTimeOffset: 3125
   ReadoutWindowSize: 9600
   UseAllCosmics: true
   DontUseSimChannels: true
   DirtOnly: true
+  ApplyGENIEVersionWeight: true
+  UseGenieHists: true
 }
 

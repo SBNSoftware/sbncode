@@ -204,6 +204,10 @@ public:
   RecoInteraction reco; //!< Reconstructed interaction
   std::vector<Interaction> truth; //!< Associated truth interaction
   Experiment experiment;  //!< Experiment identifier
+  
+  bool wasCosmic;
+  bool wasDirt; 
+
 };
 
 
@@ -222,6 +226,10 @@ public:
   size_t nreco;  //!< Size of reco
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
   Experiment experiment;  //!< Experiment identifier
+
+  bool wasCosmic;
+  bool wasDirt; 
+
 };
 
 }  // namespace event

@@ -11,15 +11,15 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
   ApplyKMECCut: true  
-  Verbose: false
+  Verbose: true
   Detector: "SBND"
-  IncludeCosmics:        true 
+  IncludeCosmics:        false 
   IncludeDirt:           true
   ReadoutWindowSize: 3000
   UseAllCosmics: true
   DontUseSimChannels: true
   DirtOnly: true
-
-  FillHistograms: true
+  ApplyGENIEVersionWeight: true
+  UseGenieHists: true
 }
 

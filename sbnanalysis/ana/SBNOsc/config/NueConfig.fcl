@@ -176,6 +176,9 @@ standard_selection: {
       ApplyCosmicInSpillWindowCut: true
       ApplyKMECCut:                false
       ApplyGENIEVersionWeight:     false
+      ApplyCosmicCylinderCut:      true
+      ApplyCosmicFVCut:            true
+
 
       IncludeCosmics:        true 
       IncludeDirt:           true
@@ -185,13 +188,14 @@ standard_selection: {
       IntrinsicOnly: false
       NuMuOnly:      false 
       OscOnly:       false   
-
+      
+      DontUseSimChannels:    false
       Verbose:               false 
 
       FillHistograms: false
       FillModeHistograms: false
       FillIntTypeHistograms: false
-
+      UseGenieHists: false
 }
 
 

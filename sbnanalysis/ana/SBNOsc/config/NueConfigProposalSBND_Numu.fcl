@@ -17,8 +17,10 @@ NueSelection: {
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt: false
-  NuMuOnly:    true
+  NuMuOnly:    false
   FillHistograms: true
-
+  ApplyGENIEVersionWeight: true
+  DontUseSimChannels: false
+  UseGenieHists: true
 }
 

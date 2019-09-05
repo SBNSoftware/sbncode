@@ -10,9 +10,12 @@ NueSelection: {
   UniformWeights: @local::standard_UniformWeights
   ApplyKMECCut: true 
   Detector: "SBND"
-  Verbose: true
+  Verbose: false
   IncludeCosmics: false
   IncludeDirt: false
-  IntrinsicOnly: true
+  IntrinsicOnly: false
+  ApplyGENIEVersionWeight: true
+  DontUseSimChannels: false
+  UseGenieHists: true
 #  FillHistograms: true
 }

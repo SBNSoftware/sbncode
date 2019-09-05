@@ -287,7 +287,7 @@ void Chi2Sensitivity::ProcessEvent(const event::Event *event) {
         wgt *= fEventSamples[fSampleIndex].fScaleFactor;
         // apply uniform weights
         for (auto const &key: fUniformWeights) {
-            wgt *= event->truth[truth_ind].weightmap.at(key)[0];
+            wgt *= event->truth[truth_ind].weights.at(key)[0];
         }
     
         // fill in hitograms

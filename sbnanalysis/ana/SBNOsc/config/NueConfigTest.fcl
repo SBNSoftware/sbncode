@@ -10,9 +10,9 @@ NueSelection: {
   active_volumes: @local::SBND_Proposal_active_volumes 
   @table::standard_selection
   #UniformWeights: ["bnbcorrection_FluxHist"]
-  #GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
+  GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
   #ApplyKMECCut: true  
-  Verbose: true
+  Verbose: false
   POTWeight: 1
   Detector: "SBND"
   IncludeCosmics: false
@@ -21,6 +21,9 @@ NueSelection: {
   FillHistograms: true
   FillModeHistograms: true
   FillIntTypeHistograms: true
-
+  ApplyAVCut:  false
+  DontUseSimChannels: true
+  UseGenieHists: true  
+  ApplyGENIEVersionWeight: true
 }
 

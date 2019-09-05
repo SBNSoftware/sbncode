@@ -89,8 +89,11 @@ namespace ana {
       fConfig.ApplyKMECCut                = pconfig.get<bool>("ApplyKMECCut",false);
       fConfig.ApplyCosmicCylinderCut      = pconfig.get<bool>("ApplyCosmicCylinderCut",false);
       fConfig.ApplyCosmicFVCut            = pconfig.get<bool>("ApplyCosmicFVCut",false);
-      fConfig.ApplyCosmicInSpillWindowCut = pconfig.get<bool>(" ApplyCosmicInSpillWindowCut",false);
+      fConfig.ApplyCosmicInSpillWindowCut = pconfig.get<bool>("ApplyCosmicInSpillWindowCut",false);
 
+      fConfig.ApplyGENIEVersionWeight     = pconfig.get<bool>("ApplyGENIEVersionWeight",false);
+      fConfig.UseGenieHists               = pconfig.get<bool>("UseGenieHists",false);
+	
       fConfig.IncludeCosmics         = pconfig.get<bool>("IncludeCosmics",true);
       fConfig.IncludeDirt            = pconfig.get<bool>("IncludeDirt",true);  
       fConfig.CosmicsOnly            = pconfig.get<bool>("Cosmics Only",false);   
@@ -121,6 +124,22 @@ namespace ana {
       //c_start = std::clock();
 
       MCTruthCounter =0;
+
+      //Initialise The Genie Map
+      GENIEWeight_map[1002] = {1.03493,0.0337303};
+      GENIEWeight_map[1006] = {1.0319,-0.118565};
+      GENIEWeight_map[1007] = {1.01131,-0.0855016};
+      GENIEWeight_map[1008] = {0.964424,-0.0382905};
+      GENIEWeight_map[1009] = {1.11478,-0.181611};
+      GENIEWeight_map[1092] = {1.12048,-0.0810433};
+      GENIEWeight_map[1096] = {1.00436,-0.190635};
+      GENIEWeight_map[1098] = {-0.184961,1.37043};
+      GENIEWeight_map[1001] = {0.99774,-0.0742519};
+      GENIEWeight_map[1003] = {0.830306,0.0623186};
+      GENIEWeight_map[1004] = {0.860698,0.00769489};
+      GENIEWeight_map[1005] = {0.841456,0.0485801};
+      GENIEWeight_map[1091] = {1.17868,-0.0717679};
+      GENIEWeight_map[1097] = {0.854546,-0.0204999};
 
       //Initialising the MEC Weight map.
       // MECWeight_map["ICARUS"]["InNuE"][1001] = {1.00754,1.18254,3.51601};
@@ -272,6 +291,23 @@ namespace ana {
       // MECWeight_map["UBOONE"]["OscNuE"][1097] = {1.04903,1.05837,0.829909};
       // MECWeight_map["UBOONE"]["OscNuE"][1098] = {75.6033,-13.9954,4.93722};
 
+
+      if(fConfig.UseGenieHists){
+	std::string GenieDiffString = "root://fndca1.fnal.gov:1094//pnfs/fnal.gov/usr/sbnd/persistent/users/dbarker/sensitivity/RatioPlots.root";
+	const char* GenieDiffName = GenieDiffString.c_str();
+	GenieDiffFile = TFile::Open(GenieDiffName);
+
+	for(int int_type=1000; int_type<1101; ++int_type){
+	  std::string  Hist_String  ="genieratio_" + std::to_string(int_type);
+	  const char*  Hist_Name    = Hist_String.c_str();
+	  if(gDirectory->Get(Hist_Name) == NULL){continue;}
+	  TH1D* GenieHist = (TH1D*)(gDirectory->Get(Hist_Name))->Clone();
+	  GenieHist->SetDirectory(0);
+	  GenieHists[int_type] = GenieHist;
+	} 
+	GenieDiffFile->Close();
+	fOutputFile->cd();
+      }
     }
     
     
@@ -319,7 +355,21 @@ namespace ana {
 	  fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist[fRootHists.HistTypes[i]]->Write();
 	  fRootHists.VisibleEnergy_Selection_Hist[fRootHists.HistTypes[i]]->Write();
 	  fRootHists.VisibleEnergy_PiZero_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.VisibleEnergy_Photon_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.VisibleEnergy_PhotonSmall_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.LowNCEnergy_Hist[fRootHists.HistTypes[i]]->Write();
+
 	  fRootHists.Weights_Hist[fRootHists.HistTypes[i]]->Write();
+
+	  fRootHists.ProtonE_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.PionE_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.KaonE_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.ProtonN_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.PionN_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.KaonN_Hist[fRootHists.HistTypes[i]]->Write();
+
+	  fRootHists.HadronE_Hist[fRootHists.HistTypes[i]]->Write();
+	  fRootHists.PhotonCon_Hist[fRootHists.HistTypes[i]]->Write();
 
 	  if(fConfig.FillModeHistograms){
 	    for(int mode=-1; mode<6; ++mode){
@@ -339,6 +389,19 @@ namespace ana {
 	      fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistMode[fRootHists.HistTypes[i]][mode]->Write();
  	      fRootHists.VisibleEnergy_Selection_HistMode[fRootHists.HistTypes[i]][mode]->Write();
 	      fRootHists.VisibleEnergy_PiZero_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.VisibleEnergy_Photon_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.VisibleEnergy_PhotonSmall_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.LowNCEnergy_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	     
+	      fRootHists.ProtonE_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.PionE_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.KaonE_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.ProtonN_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.PionN_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.KaonN_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.HadronE_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+	      fRootHists.PhotonCon_HistMode[fRootHists.HistTypes[i]][mode]->Write();
+ 
 	      fRootHists.Weights_HistMode[fRootHists.HistTypes[i]][mode]->Write();
 	    }
 	  }
@@ -364,6 +427,19 @@ namespace ana {
 	      fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
 	      fRootHists.VisibleEnergy_Selection_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
 	      fRootHists.VisibleEnergy_PiZero_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.VisibleEnergy_Photon_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.VisibleEnergy_PhotonSmall_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.LowNCEnergy_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+
+	      fRootHists.ProtonE_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.PionE_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.KaonE_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.ProtonN_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.PionN_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.KaonN_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.HadronE_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+	      fRootHists.PhotonCon_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
+
 	      fRootHists.Weights_HistIntType[fRootHists.HistTypes[i]][inttype]->Write();
 	    }
 	  }
@@ -382,7 +458,7 @@ namespace ana {
       }
     }
 
-    bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<Event::Interaction> &truth, std::vector<Event::RecoInteraction>& reco){
+    bool NueSelection::ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco){
      
       if(fConfig.Verbose){
 	if (EventCounter % 10 == 0) {
@@ -404,104 +480,107 @@ namespace ana {
       int truth_int = 0; 
       int truth_cosint = 0;
 
-      // //Get tracks and showers 
-      // auto const& mctracks  = *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
-      // auto const& mcshowers = *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
+      float cosweight_tot = 0;
 
-      // //Get the flux info 
+      //Get tracks and showers 
+      //auto const& mctracks  = *ev.getValidHandle<std::vector<sim::MCTrack> >(fMCTrackTag);
+      //auto const& mcshowers = *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
+
+      //Get the flux info 
       auto const& mcflux = ev.getValidHandle<std::vector<simb::MCFlux> >(fFluxTag);
 
-      // //Get this list of track ides that actually deposited energy.
+      //Get this list of track ides that actually deposited energy.
       std::map<int,double> visible_mcparticles;
       
-      // if(!fConfig.DontUseSimChannels){
+      if(!fConfig.DontUseSimChannels){
 
-      // 	auto const& mcsimchannels =  *ev.getValidHandle<std::vector<sim::SimChannel> >(fMCParticleTag);
-      // 	for(auto const& mcsimchannel: mcsimchannels){
+      	auto const& mcsimchannels =  *ev.getValidHandle<std::vector<sim::SimChannel> >(fMCParticleTag);
+      	for(auto const& mcsimchannel: mcsimchannels){
 	  
-      // 	  //Get the TDCIDEMap (Charge vs Time)
-      // 	  auto tdc_ide_map = mcsimchannel.TDCIDEMap();
+      	  //Get the TDCIDEMap (Charge vs Time)
+      	  auto tdc_ide_map = mcsimchannel.TDCIDEMap();
 	  
-      // 	  //Loop through the map     
-      // 	  for(auto const& tdc_ide_pair : tdc_ide_map){ 
+      	  //Loop through the map     
+      	  for(auto const& tdc_ide_pair : tdc_ide_map){ 
 	    
-      // 	    //Get the IDEs associated to the TDC? 
-      // 	    auto const& ide_v = tdc_ide_pair.second;
+      	    //Get the IDEs associated to the TDC? 
+      	    auto const& ide_v = tdc_ide_pair.second;
 
-      // 	    //Loop over the IDEs and add the energy. Only count from the collection plane. 
-      // 	    for(auto const& ide : ide_v) {
-      // 	      //account for three planes.
-      // 	      visible_mcparticles[TMath::Abs(ide.trackID)] += ide.energy/(3*1000);
-      // 	    }
-      // 	  }
-      // 	}
-      // }
+      	    //Loop over the IDEs and add the energy. Only count from the collection plane. 
+      	    for(auto const& ide : ide_v) {
+      	      //account for three planes.
+      	      visible_mcparticles[TMath::Abs(ide.trackID)] += ide.energy/(3*1000);
+      	    }
+      	  }
+      	}
+      }
 
-      // // //Get a map of the all the particles (not just the final state ones).
+      // //Get a map of the all the particles (not just the final state ones).
       std::map<int,const simb::MCParticle*> mcparticles;
       auto const& mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
       for(auto const &mcparticle:  mcparticle_list){
 	
       	mcparticles[mcparticle.TrackId()] = &mcparticle;
 
-	//      	if(fConfig.Verbose){
-      	//  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << " and mother: " << mcparticle.Mother() << " start position: " <<  mcparticle.Vx() << ", " <<  mcparticle.Vy() << ", " <<  mcparticle.Vz() << std::endl;
-      	//}
+      	if(fConfig.Verbose){
+      	  std::cout << "MC Particle with track ID: " << mcparticle.TrackId() << " has pdgcode: " << mcparticle.PdgCode() << " with energy: " << mcparticle.E() << " and mother: " << mcparticle.Mother() << " start position: " <<  mcparticle.Vx() << ", " <<  mcparticle.Vy() << ", " <<  mcparticle.Vz() << std::endl;
+      	}
+
+      }
+      
+      if(fConfig.DontUseSimChannels){
+	for(auto const &mcparticle:  mcparticle_list){
+	  //int numtrajpoints = mcparticle.NumberTrajectoryPoints() - 2;
+	  //if(numtrajpoints<0){numtrajpoints = 0;}
+	  visible_mcparticles[mcparticle.TrackId()] = mcparticle.E();
+	}
+      }
+            
+      if(!fConfig.DontUseSimChannels){
+	  
+      	//      Roll up the visible energy for shower like particles.
+      	std::vector<int> rm_particles;
+      	for(auto const& visible_mcparticle: visible_mcparticles){
+
+      	  if(mcparticles.find(visible_mcparticle.first) == mcparticles.end()){
+      	    rm_particles.push_back(visible_mcparticle.first);
+      	    continue;
+      	  }
+
+      	  const simb::MCParticle*  mcparticle =  mcparticles[visible_mcparticle.first];
+
+      	  if(TMath::Abs(mcparticle->PdgCode()) != 11 && TMath::Abs(mcparticle->PdgCode()) != 22){continue;}
+	  
+      	  //Find the mother
+      	  int track_id =  mcparticle->TrackId();
+
+      	  //Find the initial  mother
+      	  int mother_id = track_id;
+      	  while(mother_id != 0){
+      	    if(mcparticles.find(mother_id) != mcparticles.end()){
+      	      if(TMath::Abs(mcparticles[mother_id]->PdgCode()) != 11 && TMath::Abs(mcparticles[mother_id]->PdgCode()) != 22){break;}
+      	      track_id = mother_id;
+      	      mother_id = mcparticles[mother_id]->Mother();
+      	    }
+      	    else{
+      	      break;
+      	    }
+      	  }
+      	  if(track_id != mcparticle->TrackId()){
+      	    visible_mcparticles[track_id] += visible_mcparticle.second;
+      	    rm_particles.push_back(visible_mcparticle.first);
+      	  }
+      	}
+      	for(auto const& rm_particle: rm_particles)
+      	  visible_mcparticles.erase(rm_particle);
+      }
+      
+      if(fConfig.Verbose){
+      	for(auto const& visible_mcparticle: visible_mcparticles)
+      	  std::cout << "visible track id: " << visible_mcparticle.first << " Energy: " << visible_mcparticle.second  << std::endl;
       }
 
-      // if(fConfig.DontUseSimChannels){
-      // 	for(auto const &mcparticle:  mcparticle_list){
-      // 	  //int numtrajpoints = mcparticle.NumberTrajectoryPoints() - 2;
-      // 	  //if(numtrajpoints<0){numtrajpoints = 0;}
-      // 	  visible_mcparticles[mcparticle.TrackId()] = mcparticle.E();
-      // 	}
-      // }
-
-      // if(!fConfig.DontUseSimChannels){
-	  
-      // 	//      Roll up the visible energy for shower like particles.
-      // 	std::vector<int> rm_particles;
-      // 	for(auto const& visible_mcparticle: visible_mcparticles){
-
-      // 	  if(mcparticles.find(visible_mcparticle.first) == mcparticles.end()){
-      // 	    rm_particles.push_back(visible_mcparticle.first);
-      // 	    continue;
-      // 	  }
-
-      // 	  const simb::MCParticle*  mcparticle =  mcparticles[visible_mcparticle.first];
-
-      // 	  if(TMath::Abs(mcparticle->PdgCode()) != 11 && TMath::Abs(mcparticle->PdgCode()) != 22){continue;}
-	  
-      // 	  //Find the mother
-      // 	  int track_id =  mcparticle->TrackId();
-
-      // 	  //Find the initial  mother
-      // 	  int mother_id = track_id;
-      // 	  while(mother_id != 0){
-      // 	    if(mcparticles.find(mother_id) != mcparticles.end()){
-      // 	      if(TMath::Abs(mcparticles[mother_id]->PdgCode()) != 11 && TMath::Abs(mcparticles[mother_id]->PdgCode()) != 22){break;}
-      // 	      track_id = mother_id;
-      // 	      mother_id = mcparticles[mother_id]->Mother();
-      // 	    }
-      // 	    else{
-      // 	      break;
-      // 	    }
-      // 	  }
-      // 	  if(track_id != mcparticle->TrackId()){
-      // 	    visible_mcparticles[track_id] += visible_mcparticle.second;
-      // 	    rm_particles.push_back(visible_mcparticle.first);
-      // 	  }
-      // 	}
-      // 	for(auto const& rm_particle: rm_particles)
-      // 	  visible_mcparticles.erase(rm_particle);
-      // }
-      
-      // if(fConfig.Verbose){
-      // 	for(auto const& visible_mcparticle: visible_mcparticles)
-      // 	  std::cout << "visible track id: " << visible_mcparticle.first << " Energy: " << visible_mcparticle.second  << std::endl;
-      // }
-
-      // float totalbnbweight = 1;
+      float totalbnbweight = 1;
       
       //Grab a neutrino datat product from the event
       for(int fTruthTag=0; fTruthTag<fTruthTags.size(); ++fTruthTag){
@@ -523,32 +602,31 @@ namespace ana {
 		  
 	  int showers=0;
 
-	  // if(fConfig.Verbose){
-	  //   //Remove for debugging perposes
-	  //   for (auto const &mct: mctracks) {
-	  //     double mass = PDGMass(mct.PdgCode());
-	  //     TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
-	  //     TLorentzVector partstart = mct.Start().Position();
-	  //     std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000  << " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
-	  //   }
-	  //   for (auto const &mcs: mcshowers) {
-	  //     TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
-	  //     TLorentzVector partstart = mcs.Start().Position();
-	  //     double mass = PDGMass(mcs.PdgCode());
+	  if(fConfig.Verbose){
+	    //Remove for debugging perposes
+	    // for (auto const &mct: mctracks) {
+	    //   double mass = PDGMass(mct.PdgCode());
+	    //   TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	    //   TLorentzVector partstart = mct.Start().Position();
+	    //   std::cout << "Track with id: " << mct.TrackID() << " has pdgcode: " << mct.PdgCode() << " and energy: " << (mct.Start().E() - mass) / 1000  << " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << std::endl;
+	    // }
+	    // for (auto const &mcs: mcshowers) {
+	    //   TLorentzVector nuVtx     = mctruths[i].GetNeutrino().Nu().Trajectory().Position(0);
+	    //   TLorentzVector partstart = mcs.Start().Position();
+	    //   double mass = PDGMass(mcs.PdgCode());
 
-	  //     if(mcs.PdgCode() == 22 && mcs.Start().E() > 100){++showers;}
+	    //   if(mcs.PdgCode() == 22 && mcs.Start().E() > 100){++showers;}
 
-	  //     std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 <<  " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << " and time: " << mcparticles[mcs.TrackID()]->T() << std::endl;
-	  //   }
-	  // }
+	    //   std::cout << "Shower with id: " << mcs.TrackID() << " has pdgcode: " << mcs.PdgCode() << " and energy: " << (mcs.Start().E() - mass) / 1000 <<  " distance from vertex: " << TMath::Abs((partstart - nuVtx).Mag()) << " and time: " << mcparticles[mcs.TrackID()]->T() << std::endl;
+	    // }
+	  }
 	  
 	  
 	  if(fConfig.Verbose){
 	    std::cout << "##########################################################################################################" << std::endl;
 	    std::cout << mctruth << std::endl;
 	  }
-	
-	  
+
 	  const simb::MCNeutrino& nu = mctruth.GetNeutrino();
 
 	  //Print out the decay type. Find enums here: http://www.hep.utexas.edu/~zarko/wwwgnumi/v19/
@@ -556,23 +634,23 @@ namespace ana {
 	  int fnd = mcflux->at(i).fndecay;
 	
 	  if(fConfig.IntrinsicOnly && (initnu != nu.Nu().PdgCode() || nu.Nu().PdgCode() != 12)){
-	    //build a temp holder so incase there is a one to one matching.
-	    Event::Interaction interaction = truth[truth_int]; 
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
-	    reco_interaction.reco_energy = -9999;
-	    reco_interaction.weight = -9999;
-	    reco.push_back(reco_interaction);
+	    // //build a temp holder so incase there is a one to one matching.
+	    // event::Interaction interaction = truth[truth_int]; 
+	    // event::RecoInteraction reco_interaction(truth_int);
+	    // reco_interaction.reco_energy = -9999;
+	    // reco_interaction.weight = -9999;
+	    // reco.push_back(reco_interaction);
 	    ++truth_int; 
 	    continue;
 	  }
 
 	  if(fConfig.NuMuOnly && (nu.Nu().PdgCode() != 14 || initnu != nu.Nu().PdgCode())){
 	    //build a temp holder so incase there is a one to one matching.
-	    Event::Interaction interaction = truth[truth_int]; 
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
-	    reco_interaction.reco_energy = -9999;
-	    reco_interaction.weight = -9999;
-	    reco.push_back(reco_interaction);
+	    // event::Interaction interaction = truth[truth_int]; 
+	    // event::RecoInteraction reco_interaction(truth_int);
+	    // reco_interaction.reco_energy = -9999;
+	    // reco_interaction.weight = -9999;
+	    // reco.push_back(reco_interaction);
 	    ++truth_int; 
 	    continue;
 	  }
@@ -580,11 +658,11 @@ namespace ana {
 	  if(fConfig.OscOnly && initnu == nu.Nu().PdgCode()){
 
 	    //build a temp holder so incase there is a one to one matching.
-	    Event::Interaction interaction = truth[truth_int]; 
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
-	    reco_interaction.reco_energy = -9999;
-	    reco_interaction.weight = -9999;
-	    reco.push_back(reco_interaction);
+	    // event::Interaction interaction = truth[truth_int]; 
+	    // event::RecoInteraction reco_interaction(truth_int);
+	    // reco_interaction.reco_energy = -9999;
+	    // reco_interaction.weight = -9999;
+	    // reco.push_back(reco_interaction);
 	    ++truth_int; 
 	    continue;
 	  }
@@ -595,11 +673,11 @@ namespace ana {
 	  if(!pass_kMEC){
 	    if(fConfig.Verbose){std::cout << "Event Was kMEC. Event was not selected" << std::endl;}
 	    //build a temp holder so incase there is a one to one matching.
-	    Event::Interaction interaction = truth[truth_int]; 
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
-	    reco_interaction.reco_energy = -9999;
-	    reco_interaction.weight = -9999;
-	    reco.push_back(reco_interaction);
+	    // event::Interaction interaction = truth[truth_int]; 
+	    // event::RecoInteraction reco_interaction(truth_int);
+	    // reco_interaction.reco_energy = -9999;
+	    // reco_interaction.weight = -9999;
+	    // reco.push_back(reco_interaction);
 	    ++truth_int; 
 	    continue; 
 	  }
@@ -616,8 +694,8 @@ namespace ana {
 	  for(auto const &mcparticle_data: visible_mcparticles){
 	    const simb::MCParticle*  mcparticle = mcparticles[mcparticle_data.first];
 	    float Energy = mcparticle_data.second;
-	    if(TMath::Abs(mcparticle->PdgCode()) == 11 && Energy > fConfig.photonVisibleEnergyThreshold){
-	    
+	    if(TMath::Abs(mcparticle->PdgCode()) == 11 && Energy*1000 > fConfig.photonVisibleEnergyThreshold){
+
 	      //Don't consider daughters of showering particles
 	      if(mcparticles.find(mcparticle->Mother()) != mcparticles.end()){
 		if(TMath::Abs(mcparticle->Mother()) == 11 || TMath::Abs(mcparticle->Mother()) == 22){continue;}
@@ -625,6 +703,7 @@ namespace ana {
 	      
 	      //Check to see if its from the vertex.
 	      if(isFromNuVertex(mctruth,mcparticle)){
+		
 		//Say the lepton is the one with the highest energy.
 		if(Energy > lepton_energy){
 		  lepton_energy = Energy;
@@ -669,10 +748,7 @@ namespace ana {
 	      std::cout << "Somehow other. Maybe cosmic if you have some cosmics" << std::endl;
 	    }
 	  }
-	  
-	
-	  // build the interaction
-	  Event::Interaction interaction = truth[truth_int];
+
 	  
 	  //Calculate the Energy 
 	  const std::vector<double> visible_energy = FlavourEnergyDeposition(rand, mctruth, mcparticles,visible_mcparticles,fConfig.active_volumes,calculator);
@@ -699,7 +775,6 @@ namespace ana {
 	    // for (auto const &key: fConfig.UniformWeights) {
 	    //   //	      intInfo.weight *= interaction.weightmap.at(key)[0];
 	    //   totalbnbweight *=  interaction.weightmap.at(key)[0];     
-
 	    //   if(fConfig.Verbose){
 	    // 	std::cout << "Flux correction is: " <<  interaction.weightmap.at(key)[0] << std::endl;
 	    //   }
@@ -712,7 +787,51 @@ namespace ana {
 	    //intInfo.weight *= MECWeight(nu,fConfig.Detector,intInfo);
 	  }
 
+	  //Add the weight to get back to genie v02_08
+	  if(fConfig.ApplyGENIEVersionWeight){
+	    //	    intInfo.weight *= GENIEWeight(nu);
+	  }
+
+	  cosweight_tot +=  intInfo.weight;
+
 	  dirtevent = false;
+
+	  int nprotons = 0;
+	  int npions   = 0; 
+	  int nkaons   = 0;
+	  // //Get a map of the all the particles (not just the final state ones).
+	  double HadronE = 0;
+	  for(auto const &mcparticleit:  mcparticles){
+	    const simb::MCParticle*  mcparticle = mcparticleit.second;
+
+	    //Count the protons kaons and pions and there energy. 
+	    if(isFromNuVertex(mctruth,mcparticle)){
+
+	      double mass = PDGMass(mcparticle->PdgCode());
+	      double KE = (mcparticle->E()*1000-mass)/1000;
+	      if(TMath::Abs(mcparticle->PdgCode()) == 2212){
+		++nprotons;
+		FillHistograms(fRootHists.ProtonE_Hist,fRootHists.ProtonE_HistMode,fRootHists.ProtonE_HistIntType,nu,intInfo,KE,dirtevent);
+		if(KE > 0.021) HadronE += KE;
+	      }
+	      else if(TMath::Abs(mcparticle->PdgCode()) == 211){
+		++npions;
+		FillHistograms(fRootHists.PionE_Hist,fRootHists.PionE_HistMode,fRootHists.PionE_HistIntType,nu,intInfo,KE,dirtevent);
+		HadronE += KE;
+	      }
+	      else if(TMath::Abs(mcparticle->PdgCode()) == 321){
+		++nkaons;
+		FillHistograms(fRootHists.KaonE_Hist,fRootHists.KaonE_HistMode,fRootHists.KaonE_HistIntType,nu,intInfo,mcparticle->E(),dirtevent);
+		HadronE += mcparticle->E();
+	      }
+	    }
+	  }
+	  FillHistograms(fRootHists.ProtonN_Hist,fRootHists.ProtonN_HistMode,fRootHists.ProtonN_HistIntType,nu,intInfo,nprotons,dirtevent);
+	  FillHistograms(fRootHists.PionN_Hist,fRootHists.PionN_HistMode,fRootHists.PionN_HistIntType,nu,intInfo,npions,dirtevent);
+	  FillHistograms(fRootHists.KaonN_Hist,fRootHists.KaonN_HistMode,fRootHists.KaonN_HistIntType,nu,intInfo,nkaons,dirtevent);
+	  FillHistograms(fRootHists.HadronE_Hist,fRootHists.HadronE_HistMode,fRootHists.HadronE_HistIntType,nu,intInfo,HadronE,dirtevent);
+	  
+
 
 	  //Fill the number graphs
 	  FillHistograms(fRootHists.TrueNumber_Hist,fRootHists.TrueNumber_HistMode,fRootHists.TrueNumber_HistIntType,nu,intInfo,nu.Nu().E(),dirtevent);
@@ -734,7 +853,7 @@ namespace ana {
 	  if(selection){
 	    
 	    //Make the reco interaction event. 
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
+	    event::RecoInteraction reco_interaction(truth_int);
 	    reco_interaction.reco_energy = intInfo.GetNueEnergy();
 	    reco_interaction.weight = intInfo.weight; 
 	    reco.push_back(reco_interaction);
@@ -754,17 +873,23 @@ namespace ana {
 	    }
 	  }
 	  else{
-	    Event::RecoInteraction reco_interaction(interaction, truth_int);
-	    reco_interaction.reco_energy = -9999;
-	    reco_interaction.weight = -9999;
-	    reco.push_back(reco_interaction);
+	    // event::RecoInteraction reco_interaction(truth_int);
+	    // reco_interaction.reco_energy = -9999;
+	    // reco_interaction.weight = -9999;
+	    // reco.push_back(reco_interaction);
 	  }
 	  
 	  if(fConfig.Verbose){
 	    
 	    if(selection){
 	      std::cout << "Event Was Selected with energy: " << intInfo.GetNueEnergy()<< "and weight" << intInfo.weight << std::endl;
-	      if(mctruth.GetNeutrino().CCNC() == simb::kNC){std::cout << "Event was NC" << std::endl;}
+	      if(mctruth.GetNeutrino().CCNC() == simb::kNC){
+		std::cout << "Event was NC" << std::endl;
+		if(intInfo.weight > 0.1){std::cout << "dodgy weight" << std::endl;}
+		if(intInfo.GetNueEnergy() < 0.35){
+		  FillHistograms(fRootHists.LowNCEnergy_Hist,fRootHists.LowNCEnergy_HistMode,fRootHists.LowNCEnergy_HistIntType,nu,intInfo,nu.Nu().E(),dirtevent);
+		}
+	      }
 	      if(mctruth.GetNeutrino().CCNC() == simb::kNC && showers>2){std::cout << "More than one shower" << std::endl;}
 	    }
 	    
@@ -781,50 +906,44 @@ namespace ana {
 	//I really don't want to split but lets split  
 	if(fConfig.IncludeCosmics){
 
-	  //Iterate through the neutrinos
-	  for (int j=0; j<mctruths.size(); ++j) {
+	  // //Iterate through the neutrinos
+	  // for (int j=0; j<mctruths.size(); ++j) {
 	    
-	    //This is for cosmics only 
-	    auto const& mctruth = mctruths.at(j);
-	    if (mctruth.NeutrinoSet()){ ++truth_cosint; continue;} 
+	  //   //This is for cosmics only 
+	  //   auto const& mctruth = mctruths.at(j);
+	  //   if (mctruth.NeutrinoSet()){ ++truth_cosint; continue;} 
 	    
-	    // build the interaction
-	    Event::Interaction interaction = truth[truth_cosint];
-	
-	    // for(auto const &mcs: mcshowers){ 
+	  //   for(auto const &mcs: mcshowers){ 
 
-	    //   //Weighting for efficiency of selection.
-	    //   double weightcos = 1;
+	  //     //Weighting for efficiency of selection. Start with weights on the neutrino as we are scaling with the POT.
+	  //     double weightcos = cosweight_tot;
 	      
-	    //   ///Weight with the POT
-	    //   weightcos *= fConfig.POTWeight;
+	  //     //Add the Global weightings if any.
+	  //     weightcos *= fConfig.CosmicGlobalWeight;
 	      
-	    //   //Add the Global weightings if any.
-	    //   weightcos *= fConfig.CosmicGlobalWeight;
+	  //     //Account for bnb weights?
+	  //     //	      weightcos *= totalbnbweight;
 	      
-	    //   //Account for bnb weights?
-	    //   //	      weightcos *= totalbnbweight;
-	      
-	    //   fRootHists.CosmicShowerT0->Fill(mcparticles[mcs.TrackID()]->T());
+	  //     fRootHists.CosmicShowerT0->Fill(mcparticles[mcs.TrackID()]->T());
 
-	    //   //Make a nue interaction 
-	    //   NueSelection::NueInteraction intInfo({0, 0, 0, 0, weightcos,-9999,-9999,-9999,-9999}); 
-	    //   bool selection = SelectCosmic(mcs, mcparticles, intInfo);
+	  //     //Make a nue interaction 
+	  //     NueSelection::NueInteraction intInfo({0, 0, 0, 0, weightcos,-9999,-9999,-9999,-9999}); 
+	  //     bool selection = SelectCosmic(mcs, mcparticles, intInfo);
 	      
-	    //   if(selection){
-	    // 	//Make the reco interaction event. 
-	    // 	Event::RecoInteraction reco_interaction(interaction,truth_cosint);
-	    // 	reco_interaction.reco_energy = intInfo.GetNueEnergy();
-	    // 	reco_interaction.weight = intInfo.weight; 
-	    // 	std::cout << " Cosmic Selected with track id: " << mcs.TrackID() << " energy: " << reco_interaction.reco_energy << " weight: " << reco_interaction.weight  << std::endl;
+	  //     if(selection){
+	  //   	//Make the reco interaction event. 
+	  //   	event::RecoInteraction reco_interaction(truth_cosint);
+	  //   	reco_interaction.reco_energy = intInfo.GetNueEnergy();
+	  //   	reco_interaction.weight = intInfo.weight; 
+	  //   	std::cout << " Cosmic Selected with track id: " << mcs.TrackID() << " energy: " << reco_interaction.reco_energy << " weight: " << reco_interaction.weight  << std::endl;
 		
-	    // 	reco.push_back(reco_interaction);
-	    // 	selected =  selection;
-	    // 	NuCount++;
-	    //   }
-	    // }
-	    ++truth_cosint;
-	  }
+	  //   	reco.push_back(reco_interaction);
+	  //   	selected =  selection;
+	  //   	NuCount++;
+	  //     }
+	  //   }
+	  //   ++truth_cosint;
+	  // }
 	}
       }
       return selected;
@@ -891,11 +1010,42 @@ namespace ana {
       std::vector<int> pi_zeros =  findNeutralPions(mcparticles, mctruth);
 
       if(pi_zeros.size() > 0){
-	FillHistograms(fRootHists.VisibleEnergy_PiZero_Hist,fRootHists.VisibleEnergy_PiZero_HistMode,fRootHists.VisibleEnergy_PiZero_HistIntType,nu,intInfo,pi_zeros.size(),dirtevent);
+	for(int pi=0; pi<pi_zeros.size(); ++pi){
+
+	  const simb::MCParticle* pizero = mcparticles[pi_zeros[pi]];
+	  FillHistograms(fRootHists.VisibleEnergy_PiZero_Hist,fRootHists.VisibleEnergy_PiZero_HistMode,fRootHists.VisibleEnergy_PiZero_HistIntType,nu,intInfo,pizero->P(pizero->NumberTrajectoryPoints() -1),dirtevent);
+	}
       }
+
 
       //Check the number of photons 
       std::vector<int> photons  =  findPhotons(pi_zeros, mcparticles, mctruth, visible_mcparticles);
+
+      float EBig   = -999;
+      float ESmall = -999;
+      float BigID = -1;
+      float convdist = -999;
+      //      float SmallID = -1;
+      for(int ph=0; ph<photons.size(); ++ph){
+	if(mcparticles[photons[ph]]->E() > EBig){
+	  EBig   = mcparticles[photons[ph]]->E(); 
+	  BigID  = mcparticles[photons[ph]]->TrackId();
+	  convdist =  (mcparticles[BigID]->EndPosition().Vect() -  nu.Nu().Trajectory().Position(0).Vect()).Mag();
+	}
+      }
+      for(int ph=0; ph<photons.size(); ++ph){
+	if(mcparticles[photons[ph]]->TrackId() == BigID){continue;}
+	if(mcparticles[photons[ph]]->E() > ESmall){
+	  ESmall   = mcparticles[photons[ph]]->E(); 
+	  //	  SmallID = mcparticles[photons[ph]]->TrackId();
+	}
+      }
+      FillHistograms(fRootHists.VisibleEnergy_Photon_Hist,fRootHists.VisibleEnergy_Photon_HistMode,fRootHists.VisibleEnergy_Photon_HistIntType,nu,intInfo,EBig,dirtevent);
+      FillHistograms(fRootHists.VisibleEnergy_PhotonSmall_Hist,fRootHists.VisibleEnergy_PhotonSmall_HistMode,fRootHists.VisibleEnergy_PhotonSmall_HistIntType,nu,intInfo,ESmall,dirtevent);
+      FillHistograms(fRootHists.PhotonCon_Hist,fRootHists.PhotonCon_HistMode,fRootHists.PhotonCon_HistIntType,nu,intInfo,convdist,dirtevent);
+      
+
+      return false;
 
       //Calculate the visible photon energy
       //intInfo.shower_energy = PhotonVisibleEnergy(mcparticles,photons); 
@@ -1005,7 +1155,7 @@ namespace ana {
       //##########################
       
       // pass fiducial volume cut (already passed on photon events. )                                             
-      if(intInfo.leptonpdgID == 11 || pi_zeros.size() > 0){
+      if(intInfo.leptonpdgID == 11){
 	bool pass_FV = passFV(nu.Nu().Position().Vect());
 	if(!pass_FV){
 	  if(fConfig.Verbose){std::cout << "Failed the FV cut. Event not selected wit position X:" << nu.Nu().Position().Vect().X() << " Y: " << nu.Nu().Position().Vect().Y() << " Z: " << nu.Nu().Position().Vect().Z() << std::endl;}
@@ -1112,39 +1262,43 @@ namespace ana {
       //Photons
       std::vector<int> photons;
 
-      //Loop over the pions and see if they have any daughters. 
-      for(int pion=0; pion<pi_zeros.size(); ++pion){
+      // //Loop over the pions and see if they have any daughters. 
+      // for(int pion=0; pion<pi_zeros.size(); ++pion){
 	
-	//Get the pion
-	const simb::MCParticle* mcparticle = mcparticles[pi_zeros.at(pion)]; 
+      // 	//Get the pion
+      // 	const simb::MCParticle* mcparticle = mcparticles[pi_zeros.at(pion)]; 
 
-	if(mcparticle->NumberDaughters() == 0){continue;}
+      // 	if(mcparticle->NumberDaughters() == 0){continue;}
 
-	//Loop of the daughters and id photons. 
-	for(int d=0; d<mcparticle->NumberDaughters(); ++d){
+      // 	//Loop of the daughters and id photons. 
+      // 	for(int d=0; d<mcparticle->NumberDaughters(); ++d){
 
-	  const simb::MCParticle* daughter = mcparticles[mcparticle->Daughter(d)];
+      // 	  const simb::MCParticle* daughter = mcparticles[mcparticle->Daughter(d)];
 
-	  //	  int numtrajpoints = daughter->NumberTrajectoryPoints() - 2;
-	  //if(numtrajpoints<0){numtrajpoints = 0;}
-	  if(visible_mcparticles.find(daughter->TrackId()) == visible_mcparticles.end()){continue;}
+      // 	  //	  int numtrajpoints = daughter->NumberTrajectoryPoints() - 2;
+      // 	  //if(numtrajpoints<0){numtrajpoints = 0;}
+      // 	  if(visible_mcparticles.find(daughter->TrackId()) == visible_mcparticles.end()){continue;}
 
-	  //Are we a photon? (very rare we are not I think) or energy has to be above threshold
-	  if(daughter->PdgCode() == 22 && visible_mcparticles[daughter->TrackId()]*1000 > fConfig.photonVisibleEnergyThreshold){
-	    photons.push_back(daughter->TrackId());
-	  }
-	}
-      }
+      // 	  //Are we a photon? (very rare we are not I think) or energy has to be above threshold
+      // 	  if(daughter->PdgCode() == 22 && visible_mcparticles[daughter->TrackId()]*1000 > fConfig.photonVisibleEnergyThreshold){
+      // 	    photons.push_back(daughter->TrackId());
+      // 	  }
+      // 	}
+      // }
 
       //Look for any misc photons.
       for(std::map<int, const simb::MCParticle*>::iterator mcparticle=mcparticles.begin(); mcparticle!=mcparticles.end(); ++mcparticle){
 
 	const simb::MCParticle* mcparticle_data = mcparticle->second;
 
+	// For Comparision Purposes
+	if(mcparticle_data->PdgCode() == 22 && isFromNuVertex(mctruth,mcparticle_data,1)){
+	 photons.push_back(mcparticle_data->TrackId());
+	}
+
 	//Check the particle is a photons and is above threshold.  
 	//	int numtrajpoints = mcparticle_data->NumberTrajectoryPoints() - 2;
 	//	if(numtrajpoints<0){numtrajpoints = 0;}
-
 
 	if(visible_mcparticles.find(mcparticle_data->TrackId()) == visible_mcparticles.end()){continue;}
 
@@ -1199,7 +1353,6 @@ namespace ana {
 	//	int numtrajpoints = photon->NumberTrajectoryPoints() - 2;
 	//if(numtrajpoints<0){numtrajpoints = 0;}
 	if(visible_mcparticles[photon->TrackId()]*1000 < fConfig.photonVisibleEnergyThreshold){continue;}
-
 
 	//Check the photons in the active volume/
 	if(containedInAV(photon->EndPosition().Vect())){
@@ -1452,6 +1605,34 @@ namespace ana {
       return;
     }
 
+    //Returns the scale factor to get back to v2_08.
+    double NueSelection::GENIEWeight(const simb::MCNeutrino& nu){
+      
+ 
+      double mode = nu.InteractionType();
+      double weight = 1;
+
+      if(fConfig.UseGenieHists){
+	if(GenieHists.find(mode) == GenieHists.end()){return 1;}
+	double E = nu.Nu().E();
+	TAxis *xaxis = GenieHists[mode]->GetXaxis();
+	Int_t binx = xaxis->FindBin(E);
+	weight = GenieHists[mode]->GetBinContent(binx);
+      }
+      else{
+	if(GENIEWeight_map.find(mode) == GENIEWeight_map.end()){return 1;}	
+	weight = GENIEWeight_map[mode].at(0) + nu.Nu().E()*GENIEWeight_map[mode].at(1);
+      }
+
+      if(fConfig.Verbose){
+	std::cout << "GENIE Weight is: " << weight << std::endl;
+      }
+      
+      return weight;
+
+    }
+
+
     double NueSelection::MECWeight(const simb::MCNeutrino& nu,std::string& Detector, NueSelection::NueInteraction& intInfo){
       
       double mode = nu.InteractionType();
@@ -1563,8 +1744,19 @@ namespace ana {
 	  std::string  VisibleEnergy_NCCut_String            = Type + " VisibleEnergy_NCCut";
 	  std::string  VisibleEnergy_Selection_String        = Type + " VisibleEnergy_Selection";
 	  std::string  VisibleEnergy_PiZero_String           = Type + " VisibleEnergy_PiZero";
-
+	  std::string  VisibleEnergy_Photon_String           = Type + " VisibleEnergy_Photon";
+	  std::string  VisibleEnergy_PhotonSmall_String           = Type + " VisibleEnergy_PhotonSmall";
+	  std::string  LowNCEnergy_String                    = Type + " LowNCEnergy";
 	  std::string  Weights_String                        = Type + " Weights";
+
+	  std::string ProtonE_String = Type + " ProtonE";
+	  std::string PionE_String = Type + " PionE";
+	  std::string KaonE_String = Type + " KaonE";
+	  std::string ProtonN_String = Type + " ProtonN";
+	  std::string PionN_String = Type + " PionN";
+	  std::string KaonN_String = Type + " KaonN";
+	  std::string HadronE_String = Type + " HadronE";
+	  std::string PhotonCon_String = Type + " PhotonCon";
 
 	  std::string  VisibleEnergy_LeptonPlusPhotonCut_String        = Type + " VisibleEnergy_LeptonPlusPhotonCut";
 
@@ -1581,10 +1773,21 @@ namespace ana {
 	  const char* VisibleEnergy_MuLenghtCut_Name      = VisibleEnergy_MuLenghtCut_String.c_str();
 	  const char* VisibleEnergy_NCCut_Name            = VisibleEnergy_NCCut_String.c_str();
 	  const char* VisibleEnergy_Selection_Name        = VisibleEnergy_Selection_String.c_str();
-	  const char* VisibleEnergy_PiZero_Name            = VisibleEnergy_PiZero_String.c_str();
-
+	  const char* VisibleEnergy_PiZero_Name           = VisibleEnergy_PiZero_String.c_str();
+	  const char* VisibleEnergy_Photon_Name           = VisibleEnergy_Photon_String.c_str();
+	  const char* VisibleEnergy_PhotonSmall_Name      = VisibleEnergy_PhotonSmall_String.c_str();
+	  const char* LowNCEnergy_Name                    = LowNCEnergy_String.c_str();
 	  const char* Weights_Name        = Weights_String.c_str();
 
+	  const char* ProtonE_Name = ProtonE_String.c_str();
+	  const char* PionE_Name = PionE_String.c_str();
+	  const char* KaonE_Name = KaonE_String.c_str();
+	  const char* ProtonN_Name = ProtonN_String.c_str();
+	  const char* PionN_Name = PionN_String.c_str();
+	  const char* KaonN_Name = KaonN_String.c_str();
+	  const char* HadronE_Name = HadronE_String.c_str();
+	  const char* PhotonCon_Name = PhotonCon_String.c_str();
+	  
 	  const char* VisibleEnergy_LeptonPlusPhotonCut_Name        = VisibleEnergy_LeptonPlusPhotonCut_String.c_str();
 
 	  fRootHists.TrueNumber_Hist[Type] = new TH1D(TrueNumber_Name,TrueNumber_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
@@ -1601,7 +1804,19 @@ namespace ana {
 	  fRootHists.VisibleEnergy_NCCut_Hist[Type] = new TH1D(VisibleEnergy_NCCut_Name,VisibleEnergy_NCCut_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	  fRootHists.VisibleEnergy_Selection_Hist[Type] = new TH1D(VisibleEnergy_Selection_Name,VisibleEnergy_Selection_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	  fRootHists.VisibleEnergy_PiZero_Hist[Type] = new TH1D(VisibleEnergy_PiZero_Name,VisibleEnergy_PiZero_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_Photon_Hist[Type] = new TH1D(VisibleEnergy_Photon_Name,VisibleEnergy_Photon_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.VisibleEnergy_PhotonSmall_Hist[Type] = new TH1D(VisibleEnergy_PhotonSmall_Name,VisibleEnergy_PhotonSmall_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.LowNCEnergy_Hist[Type] = new TH1D(LowNCEnergy_Name,LowNCEnergy_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 
+	  fRootHists.ProtonE_Hist[Type] = new TH1D(ProtonE_Name,ProtonE_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);	
+	  fRootHists.PionE_Hist[Type] = new TH1D(PionE_Name,PionE_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.KaonE_Hist[Type] = new TH1D(KaonE_Name,KaonE_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.ProtonN_Hist[Type] = new TH1D(ProtonN_Name,ProtonN_Name,20,0,20);	
+	  fRootHists.PionN_Hist[Type] = new TH1D(PionN_Name,PionN_Name,20,0,20);
+	  fRootHists.KaonN_Hist[Type] = new TH1D(KaonN_Name,KaonN_Name,20,0,20);
+	  fRootHists.HadronE_Hist[Type] = new TH1D(HadronE_Name,HadronE_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	  fRootHists.PhotonCon_Hist[Type] = new TH1D(PhotonCon_Name,PhotonCon_Name,100,0,200);
+  
 
 	  fRootHists.VisibleEnergy_LeptonPlusPhotonCut_Hist[Type] = new TH1D(VisibleEnergy_LeptonPlusPhotonCut_Name,VisibleEnergy_LeptonPlusPhotonCut_Name,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	  fRootHists.Weights_Hist[Type] = new TH1D(Weights_Name,Weights_Name,100,0,2);
@@ -1624,7 +1839,20 @@ namespace ana {
 	      std::string  VisibleEnergy_NCCut_StringMode            = VisibleEnergy_NCCut_String + " " +  std::to_string(mode);            
 	      std::string  VisibleEnergy_Selection_StringMode        = VisibleEnergy_Selection_String + " " +  std::to_string(mode);
 	      std::string  VisibleEnergy_PiZero_StringMode           = VisibleEnergy_PiZero_String + " " +  std::to_string(mode);
-	  
+	      std::string  VisibleEnergy_Photon_StringMode           = VisibleEnergy_Photon_String + " " +  std::to_string(mode);
+	      std::string  VisibleEnergy_PhotonSmall_StringMode           = VisibleEnergy_PhotonSmall_String + " " +  std::to_string(mode);
+	      std::string  LowNCEnergy_StringMode                     = LowNCEnergy_String + " " +  std::to_string(mode);
+	      
+	      std::string  ProtonE_StringMode                     = ProtonE_String + " " +  std::to_string(mode);
+	      std::string  PionE_StringMode                       = PionE_String + " " +  std::to_string(mode);
+	      std::string  KaonE_StringMode                       = KaonE_String + " " +  std::to_string(mode);
+	      std::string  ProtonN_StringMode                     = ProtonN_String + " " +  std::to_string(mode);
+	      std::string  PionN_StringMode                       = PionN_String + " " +  std::to_string(mode);
+	      std::string  KaonN_StringMode                       = KaonN_String + " " +  std::to_string(mode);
+	      std::string  HadronE_StringMode                       = HadronE_String + " " +  std::to_string(mode);
+	      std::string  PhotonCon_StringMode                       = PhotonCon_String + " " +  std::to_string(mode);
+	      
+
 	      std::string  VisibleEnergy_LeptonPlusPhotonCut_StringMode = VisibleEnergy_LeptonPlusPhotonCut_String + " " +  std::to_string(mode);
 	      std::string  Weights_StringMode                           = Weights_String  + " " +  std::to_string(mode);
 
@@ -1642,6 +1870,18 @@ namespace ana {
 	      const char* VisibleEnergy_NCCut_NameMode            = VisibleEnergy_NCCut_StringMode.c_str();
 	      const char* VisibleEnergy_Selection_NameMode        = VisibleEnergy_Selection_StringMode.c_str();
 	      const char* VisibleEnergy_PiZero_NameMode           = VisibleEnergy_PiZero_StringMode.c_str();
+	      const char* VisibleEnergy_Photon_NameMode           = VisibleEnergy_Photon_StringMode.c_str();
+	      const char* VisibleEnergy_PhotonSmall_NameMode           = VisibleEnergy_PhotonSmall_StringMode.c_str();
+	      const char* LowNCEnergy_NameMode                    = LowNCEnergy_StringMode.c_str();
+
+	      const char* ProtonE_NameMode                     = ProtonE_StringMode.c_str();
+	      const char* PionE_NameMode                       = PionE_StringMode.c_str();
+	      const char* KaonE_NameMode                       = KaonE_StringMode.c_str();
+	      const char* ProtonN_NameMode                     = ProtonN_StringMode.c_str();
+	      const char* PionN_NameMode                       = PionN_StringMode.c_str();
+	      const char* KaonN_NameMode                       = KaonN_StringMode.c_str();
+	      const char* HadronE_NameMode                       = HadronE_StringMode.c_str();
+	      const char* PhotonCon_NameMode                       = PhotonCon_StringMode.c_str();
 
 	      const char* VisibleEnergy_LeptonPlusPhotonCut_NameMode = VisibleEnergy_LeptonPlusPhotonCut_StringMode.c_str();
 	      const char* Weights_NameMode                           = Weights_StringMode.c_str();
@@ -1660,11 +1900,25 @@ namespace ana {
 	      fRootHists.VisibleEnergy_NCCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_NCCut_NameMode,VisibleEnergy_NCCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	      fRootHists.VisibleEnergy_Selection_HistMode[Type][mode] = new TH1D(VisibleEnergy_Selection_NameMode,VisibleEnergy_Selection_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	      fRootHists.VisibleEnergy_PiZero_HistMode[Type][mode] = new TH1D(VisibleEnergy_PiZero_NameMode,VisibleEnergy_PiZero_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.VisibleEnergy_Photon_HistMode[Type][mode] = new TH1D(VisibleEnergy_Photon_NameMode,VisibleEnergy_Photon_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.VisibleEnergy_PhotonSmall_HistMode[Type][mode] = new TH1D(VisibleEnergy_PhotonSmall_NameMode,VisibleEnergy_PhotonSmall_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 
 	      fRootHists.Weights_HistMode[Type][mode]  = new TH1D(Weights_NameMode,Weights_NameMode,100,0,2); 
 	  
 	  
 	      fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistMode[Type][mode] = new TH1D(VisibleEnergy_LeptonPlusPhotonCut_NameMode,VisibleEnergy_LeptonPlusPhotonCut_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.LowNCEnergy_HistMode[Type][mode] = new TH1D(LowNCEnergy_NameMode,LowNCEnergy_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+
+	      fRootHists.ProtonE_HistMode[Type][mode] = new TH1D(ProtonE_NameMode,ProtonE_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.PionE_HistMode[Type][mode] = new TH1D(PionE_NameMode,PionE_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.KaonE_HistMode[Type][mode] = new TH1D(KaonE_NameMode,KaonE_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.ProtonN_HistMode[Type][mode] = new TH1D(ProtonN_NameMode,ProtonN_NameMode,20,0,20);
+	      fRootHists.PionN_HistMode[Type][mode] = new TH1D(PionN_NameMode,PionN_NameMode,20,0,20);
+	      fRootHists.KaonN_HistMode[Type][mode] = new TH1D(KaonN_NameMode,KaonN_NameMode,20,0,20);
+	      fRootHists.HadronE_HistMode[Type][mode] = new TH1D(HadronE_NameMode,HadronE_NameMode,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.PhotonCon_HistMode[Type][mode] = new TH1D(PhotonCon_NameMode,PhotonCon_NameMode,100,0,200);
+
+
 	    }
 	  }
 
@@ -1685,7 +1939,19 @@ namespace ana {
 	      std::string  VisibleEnergy_NCCut_StringIntType            = VisibleEnergy_NCCut_String + " " +  std::to_string(inttype);            
 	      std::string  VisibleEnergy_Selection_StringIntType        = VisibleEnergy_Selection_String + " " +  std::to_string(inttype);
 	      std::string  VisibleEnergy_PiZero_StringIntType           = VisibleEnergy_PiZero_String + " " +  std::to_string(inttype);
-	  
+	      std::string  VisibleEnergy_Photon_StringIntType           = VisibleEnergy_Photon_String + " " +  std::to_string(inttype);
+	      std::string  VisibleEnergy_PhotonSmall_StringIntType           = VisibleEnergy_PhotonSmall_String + " " +  std::to_string(inttype);
+	      std::string  LowNCEnergy_StringIntType                     = LowNCEnergy_String + " " +  std::to_string(inttype);
+	      
+	      std::string  ProtonE_StringIntType                     = ProtonE_String + " " +  std::to_string(inttype);
+	      std::string  PionE_StringIntType                       = PionE_String   + " " +  std::to_string(inttype);
+	      std::string  KaonE_StringIntType                       = KaonE_String   + " " +  std::to_string(inttype);
+	      std::string  ProtonN_StringIntType                     = ProtonN_String + " " +  std::to_string(inttype);
+	      std::string  PionN_StringIntType                       = PionN_String   + " " +  std::to_string(inttype);
+	      std::string  KaonN_StringIntType                       = KaonN_String   + " " +  std::to_string(inttype);
+	      std::string  HadronE_StringIntType                       = HadronE_String   + " " +  std::to_string(inttype);
+	      std::string  PhotonCon_StringIntType                       = PhotonCon_String   + " " +  std::to_string(inttype);
+
 	      std::string  VisibleEnergy_LeptonPlusPhotonCut_StringIntType = VisibleEnergy_LeptonPlusPhotonCut_String + " " +  std::to_string(inttype);
 	      std::string  Weights_StringIntType                           = Weights_String  + " " +  std::to_string(inttype);
 
@@ -1703,7 +1969,19 @@ namespace ana {
 	      const char* VisibleEnergy_NCCut_NameIntType            = VisibleEnergy_NCCut_StringIntType.c_str();
 	      const char* VisibleEnergy_Selection_NameIntType        = VisibleEnergy_Selection_StringIntType.c_str();
 	      const char* VisibleEnergy_PiZero_NameIntType           = VisibleEnergy_PiZero_StringIntType.c_str();
+	      const char* VisibleEnergy_Photon_NameIntType           = VisibleEnergy_Photon_StringIntType.c_str();
+	      const char* VisibleEnergy_PhotonSmall_NameIntType      = VisibleEnergy_PhotonSmall_StringIntType.c_str();
+	      const char* LowNCEnergy_NameIntType                    = LowNCEnergy_StringIntType.c_str();
 
+	      const char* ProtonE_NameIntType                     = ProtonE_StringIntType.c_str();
+	      const char* PionE_NameIntType                       = PionE_StringIntType.c_str();
+	      const char* KaonE_NameIntType                       = KaonE_StringIntType.c_str();
+	      const char* ProtonN_NameIntType                     = ProtonN_StringIntType.c_str();
+	      const char* PionN_NameIntType                       = PionN_StringIntType.c_str();
+	      const char* KaonN_NameIntType                       = KaonN_StringIntType.c_str();
+	      const char* HadronE_NameIntType                       = HadronE_StringIntType.c_str();
+	      const char* PhotonCon_NameIntType                       = PhotonCon_StringIntType.c_str();
+	      
 	      const char* VisibleEnergy_LeptonPlusPhotonCut_NameIntType = VisibleEnergy_LeptonPlusPhotonCut_StringIntType.c_str();
 	      const char* Weights_NameIntType                           = Weights_StringIntType.c_str();
 
@@ -1721,11 +1999,27 @@ namespace ana {
 	      fRootHists.VisibleEnergy_NCCut_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_NCCut_NameIntType,VisibleEnergy_NCCut_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	      fRootHists.VisibleEnergy_Selection_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_Selection_NameIntType,VisibleEnergy_Selection_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
 	      fRootHists.VisibleEnergy_PiZero_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_PiZero_NameIntType,VisibleEnergy_PiZero_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.VisibleEnergy_Photon_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_Photon_NameIntType,VisibleEnergy_Photon_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.VisibleEnergy_PhotonSmall_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_PhotonSmall_NameIntType,VisibleEnergy_PhotonSmall_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	    
 	      fRootHists.Weights_HistIntType[Type][inttype]  = new TH1D(Weights_NameIntType,Weights_NameIntType,100,0,2); 
 	  
 	  
 	      fRootHists.VisibleEnergy_LeptonPlusPhotonCut_HistIntType[Type][inttype] = new TH1D(VisibleEnergy_LeptonPlusPhotonCut_NameIntType,VisibleEnergy_LeptonPlusPhotonCut_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.LowNCEnergy_HistIntType[Type][inttype] = new TH1D(LowNCEnergy_NameIntType,LowNCEnergy_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	     
+	      fRootHists.ProtonE_HistIntType[Type][inttype] = new TH1D(ProtonE_NameIntType,ProtonE_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.PionE_HistIntType[Type][inttype] = new TH1D(PionE_NameIntType,PionE_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.KaonE_HistIntType[Type][inttype] = new TH1D(KaonE_NameIntType,KaonE_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.HadronE_HistIntType[Type][inttype] = new TH1D(HadronE_NameIntType,HadronE_NameIntType,fRootHists.ebins,fRootHists.emin,fRootHists.emax);
+	      fRootHists.PhotonCon_HistIntType[Type][inttype] = new TH1D(PhotonCon_NameIntType,PhotonCon_NameIntType,100,0,200);
 
+	      fRootHists.ProtonN_HistIntType[Type][inttype] = new TH1D(ProtonN_NameIntType,ProtonN_NameIntType,20,0,20);
+	      fRootHists.PionN_HistIntType[Type][inttype] = new TH1D(PionN_NameIntType,PionN_NameIntType,20,0,20);
+	      fRootHists.KaonN_HistIntType[Type][inttype] = new TH1D(KaonN_NameIntType,KaonN_NameIntType,20,0,20);
+
+
+ 
 	    }
 	  }
 	}
