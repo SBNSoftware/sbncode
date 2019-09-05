@@ -9,7 +9,7 @@ except Exception as e:
     print e
     print
     print "Try 'setup pygccxml v1_9_1 -q p2714b'"
-    print "and 'setup castxml v0_00_00_f20180122 -f Linux64bit+2.6-2.12 -z /cvmfs/nova.opensciencegrid.org/externals'"
+    print "and 'setup castxml v0_00_00_f20180122'"
     print
     sys.exit(1)
 
