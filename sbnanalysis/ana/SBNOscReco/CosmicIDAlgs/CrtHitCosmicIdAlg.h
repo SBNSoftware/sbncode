@@ -18,6 +18,7 @@
 #include "fhiclcpp/ParameterSet.h" 
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/Atom.h"
+#include "core/ProviderManager.hh"
 
 // LArSoft
 #include "lardataobj/RecoBase/Track.h"
@@ -63,19 +64,19 @@ namespace ana{
 
     };
 
-    CrtHitCosmicIdAlg(const Config& config);
+    CrtHitCosmicIdAlg(const core::ProviderManager &manager, const Config& config);
 
-    CrtHitCosmicIdAlg(const fhicl::ParameterSet& pset) :
-      CrtHitCosmicIdAlg(fhicl::Table<Config>(pset, {})()) {}
+    CrtHitCosmicIdAlg(const core::ProviderManager &manager, const fhicl::ParameterSet& pset) :
+      CrtHitCosmicIdAlg(manager, fhicl::Table<Config>(pset, {})()) {}
 
     CrtHitCosmicIdAlg();
 
     ~CrtHitCosmicIdAlg();
 
-    void reconfigure(const Config& config);
+    void reconfigure(const core::ProviderManager &manager, const Config& config);
 
     // Returns true if matched to CRTHit outside beam time
-    bool CrtHitCosmicId(recob::Track track, std::vector<sbnd::crt::CRTHit> crtHits, const art::Event& event);
+    bool CrtHitCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTHit> crtHits); 
 
     // Getter for matching algorithm
     sbnd::CRTT0MatchAlg T0Alg() const {return t0Alg;}

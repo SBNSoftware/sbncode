@@ -3,9 +3,7 @@
 namespace ana {
 
 ApaCrossCosmicIdAlg::ApaCrossCosmicIdAlg(const core::ProviderManager &manager, const Config& config){
-  this->reconfigure(config);
-  fDetectorProperties = manager.GetDetectorPropertiesProvider();
-  fGeometry = manager.GetGeometryProvider();
+  this->reconfigure(manager, config);
 }
 
 
@@ -15,7 +13,9 @@ ApaCrossCosmicIdAlg::ApaCrossCosmicIdAlg() {
 
 ApaCrossCosmicIdAlg::~ApaCrossCosmicIdAlg(){}
 
-void ApaCrossCosmicIdAlg::reconfigure(const Config& config){
+void ApaCrossCosmicIdAlg::reconfigure(const core::ProviderManager &manager, const Config& config){
+  fDetectorProperties = manager.GetDetectorPropertiesProvider();
+  fGeometry = manager.GetGeometryProvider();
   fDistanceLimit = config.DistanceLimit(); 
   fMaxApaDistance = config.MaxApaDistance();
   fBeamTimeMin = config.BeamTimeLimits().BeamTimeMin();
@@ -26,7 +26,7 @@ void ApaCrossCosmicIdAlg::reconfigure(const Config& config){
 
 
 // Get the minimum distance from track to APA for different times
-std::pair<double, double> ApaCrossCosmicIdAlg::MinApaDistance(recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpcid){
+std::pair<double, double> ApaCrossCosmicIdAlg::MinApaDistance(const recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpcid){
   double crossTime = -99999;
 
   double minDist = 99999;
@@ -82,12 +82,16 @@ std::pair<double, double> ApaCrossCosmicIdAlg::MinApaDistance(recob::Track &trac
 
 
 // Get time by matching tracks which cross the APA
-double ApaCrossCosmicIdAlg::T0FromApaCross(recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpc) {
+double ApaCrossCosmicIdAlg::T0FromApaCross(const recob::Track &track, std::vector<art::Ptr<recob::Hit>> hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros) {
+  // Determine the TPC from hit collection
+  geo::TPCID tpc = CosmicIdUtils::DetectedInTPC(hits);
+  if (tpc) {
+    // Get the minimum distance to the APA and corresponding time
+    std::pair<double, double> min = MinApaDistance(track, t_zeros.at(tpc), tpc);
+    // Check the distance is within allowed limit
+    if(min.first < fDistanceLimit) return min.second;
+  }
 
-  // Get the minimum distance to the APA and corresponding time
-  std::pair<double, double> min = MinApaDistance(track, t0List, tpc);
-  // Check the distance is within allowed limit
-  if(min.first < fDistanceLimit) return min.second;
   return -99999;
 
 }
@@ -105,15 +109,10 @@ double ApaCrossCosmicIdAlg::ApaDistance(recob::Track track, double t0, std::vect
 }
 
 // Tag tracks with times outside the beam
-bool ApaCrossCosmicIdAlg::ApaCrossCosmicId(recob::Track &track, std::vector<art::Ptr<recob::Hit>> &hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros) {
-
-  // Determine the TPC from hit collection
-  geo::TPCID tpc = CosmicIdUtils::DetectedInTPC(hits);
-  if (tpc) {
-    double crossTimeThrough = T0FromApaCross(track, t_zeros.at(tpc.asCryostatID()), tpc);
-    // If the matched time is outside of the beam time then tag as a cosmic
-    if(crossTimeThrough != -99999 && (crossTimeThrough < fBeamTimeMin || crossTimeThrough > fBeamTimeMax)) return true;
-  }
+bool ApaCrossCosmicIdAlg::ApaCrossCosmicId(const recob::Track &track, std::vector<art::Ptr<recob::Hit>> &hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros) {
+  double crossTimeThrough = T0FromApaCross(track, hits, t_zeros);
+  // If the matched time is outside of the beam time then tag as a cosmic
+  if(crossTimeThrough != -99999 && (crossTimeThrough < fBeamTimeMin || crossTimeThrough > fBeamTimeMax)) return true;
   return false;
 }
 

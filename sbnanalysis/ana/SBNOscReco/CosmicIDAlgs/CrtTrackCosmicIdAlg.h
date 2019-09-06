@@ -14,10 +14,10 @@
 #include "sbndcode/CRT/CRTUtils/CRTTrackMatchAlg.h"
 
 // framework
-#include "art/Framework/Principal/Event.h"
 #include "fhiclcpp/ParameterSet.h" 
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/Atom.h"
+#include "core/ProviderManager.hh"
 
 // LArSoft
 #include "lardataobj/RecoBase/Track.h"
@@ -63,19 +63,19 @@ namespace ana{
 
     };
 
-    CrtTrackCosmicIdAlg(const Config& config);
+    CrtTrackCosmicIdAlg(const core::ProviderManager &manager, const Config& config);
 
-    CrtTrackCosmicIdAlg(const fhicl::ParameterSet& pset) :
-      CrtTrackCosmicIdAlg(fhicl::Table<Config>(pset, {})()) {}
+    CrtTrackCosmicIdAlg(const core::ProviderManager &manager, const fhicl::ParameterSet& pset) :
+      CrtTrackCosmicIdAlg(manager, fhicl::Table<Config>(pset, {})()) {}
 
     CrtTrackCosmicIdAlg();
 
     ~CrtTrackCosmicIdAlg();
 
-    void reconfigure(const Config& config);
+    void reconfigure(const core::ProviderManager &manager, const Config& config);
 
     // Tags track as cosmic if it matches a CRTTrack
-    bool CrtTrackCosmicId(recob::Track track, std::vector<sbnd::crt::CRTTrack> crtTracks, const art::Event& event);
+    bool CrtTrackCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTTrack> crtTracks);
 
     // Getter for matching algorithm
     sbnd::CRTTrackMatchAlg TrackAlg() const {return trackMatchAlg;}

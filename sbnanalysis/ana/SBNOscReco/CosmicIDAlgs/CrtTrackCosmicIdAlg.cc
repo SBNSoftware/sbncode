@@ -2,9 +2,9 @@
 
 namespace ana{
 
-CrtTrackCosmicIdAlg::CrtTrackCosmicIdAlg(const Config& config){
+CrtTrackCosmicIdAlg::CrtTrackCosmicIdAlg(const core::ProviderManager &manager, const Config& config){
 
-  this->reconfigure(config);
+  this->reconfigure(manager, config);
 
 }
 
@@ -19,9 +19,9 @@ CrtTrackCosmicIdAlg::~CrtTrackCosmicIdAlg(){
 }
 
 
-void CrtTrackCosmicIdAlg::reconfigure(const Config& config){
+void CrtTrackCosmicIdAlg::reconfigure(const core::ProviderManager &manager, const Config& config){
 
-  trackMatchAlg = config.TrackMatchAlg();
+  trackMatchAlg = sbnd::CRTTrackMatchAlg(config.TrackMatchAlg(), manager.GetGeometryProvider(), (const detinfo::DetectorProperties*)manager.GetDetectorPropertiesProvider());
   fBeamTimeMin = config.BeamTimeLimits().BeamTimeMin();
   fBeamTimeMax = config.BeamTimeLimits().BeamTimeMax();
 
@@ -30,10 +30,10 @@ void CrtTrackCosmicIdAlg::reconfigure(const Config& config){
 
 
 // Tags track as cosmic if it matches a CRTTrack
-bool CrtTrackCosmicIdAlg::CrtTrackCosmicId(recob::Track track, std::vector<sbnd::crt::CRTTrack> crtTracks, const art::Event& event){
+bool CrtTrackCosmicIdAlg::CrtTrackCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTTrack> crtTracks) {
 
   // Get the closest matching CRT track ID
-  int crtID = trackMatchAlg.GetMatchedCRTTrackId(track, crtTracks, event);
+  int crtID = trackMatchAlg.GetMatchedCRTTrackId(track, hits, crtTracks);
 
   // If matching failed
   if(crtID == -99999) return false;

@@ -142,7 +142,7 @@ bool CosmicIdAlg::CosmicId(recob::Track track, const art::Event& event, std::vec
 
   // Tag cosmics which match CRT tracks
   if(fApplyCrtTrackCut){
-    auto crtTrackHandle = event.getValidHandle<std::vector<crt::CRTTrack>>(fCrtTrackModuleLabel);
+    auto crtTrackHandle = event.getValidHandle<std::vector<crt::CRTTrack>>(_config.CRTTrackTag);
     std::vector<crt::CRTTrack> crtTracks = (*crtTrackHandle);
 
     if(ctTag.CrtTrackCosmicId(track, crtTracks, event)) return true;

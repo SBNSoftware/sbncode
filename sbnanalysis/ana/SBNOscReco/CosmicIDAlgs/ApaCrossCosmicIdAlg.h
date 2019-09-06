@@ -81,19 +81,19 @@ namespace ana{
 
     ~ApaCrossCosmicIdAlg();
 
-    void reconfigure(const Config& config);
+    void reconfigure(const core::ProviderManager &manager, const Config& config);
 
     // Get the minimum distance from track to APA for different times
-    std::pair<double, double> MinApaDistance(recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpcid);
+    std::pair<double, double> MinApaDistance(const recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpcid);
 
     // Get time by matching tracks which cross the APA
-    double T0FromApaCross(recob::Track &track, std::vector<double> &t0List, geo::TPCID &tpc);
+    double T0FromApaCross(const recob::Track &track, std::vector<art::Ptr<recob::Hit>> hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros);
 
     // Get the distance from track to APA at fixed time
     double ApaDistance(recob::Track track, double t0, std::vector<art::Ptr<recob::Hit>> hits);
 
     // Tag tracks with times outside the beam
-    bool ApaCrossCosmicId(recob::Track &track, std::vector<art::Ptr<recob::Hit>> &hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros);
+    bool ApaCrossCosmicId(const recob::Track &track, std::vector<art::Ptr<recob::Hit>> &hits, std::map<geo::CryostatID, std::vector<double>> &t_zeros);
 
   private:
 
