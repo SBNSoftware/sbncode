@@ -32,6 +32,14 @@
 #include "LArReco/TrajectoryMCSFitter.h"
 #include "LArReco/TrackMomentumCalculator.h"
 
+#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
+#include "sbndcode/CRT/CRTProducts/CRTTrack.hh"
+
+#include "sbndcode/CRT/CRTUtils/CRTT0MatchAlg.h"
+#include "sbndcode/CRT/CRTUtils/CRTTrackMatchAlg.h"
+
+#include "CosmicIDAlgs/ApaCrossCosmicIdAlg.h"
+
 class TH2D;
 class TH1D;
 
@@ -185,6 +193,9 @@ public:
     double dist_to_vertex;
     TrackTruthMatch match;
 
+    int crt_match; //!< Index into list of CRTMatch's in event -- -1 if no match
+    int flash_match; //!< Index into list of FlashMatch's in event -- -1 if no match
+
     RecoTrack():
       deposited_energy_max(-1),
       deposited_energy_avg(-1),
@@ -249,10 +260,25 @@ public:
     RecoTrack primary_track;
   };
 
+  struct CRTMatch {
+    sbnd::crt::CRTTrack track;
+    bool has_track_match;
+    sbnd::crt::CRTHit hit;
+    bool has_hit_match;
+    double hit_distance;
+  };
+
+  struct FlashMatch {
+    double match_time;
+    double match_time_width;
+  };
+
   /** Reconstruction Information about Event */
   struct RecoEvent {
     std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
     std::vector<RecoInteraction> truth; //!< List of truth vertices
+    std::vector<CRTMatch> crt_matches; //!< Reconstructed CRT tracks
+    std::vector<FlashMatch> flash_matches;
   };
 
 
@@ -274,6 +300,9 @@ protected:
     bool requireContained; //!< Apply cut that requires each primary track to be contained inside the containment volume
     double trackMatchContainmentCut;
 
+    int FlashMatchMethod;
+    double flashMatchTimeDifference;
+
     double beamCenterX;
     double beamCenterY;
 
@@ -281,10 +310,15 @@ protected:
     std::string RecoSliceTag;
     std::string RecoTrackTag; //!< art tag for reconstructed tracks
     std::string RecoVertexTag; //!< art tag for reconstructed vertices
+    std::string CaloTag;
+    std::string PIDTag;
     std::string PFParticleTag; //!< art tag for PFParticles
     std::string CorsikaTag; //!< art tag for corsika MCTruth
     std::string CRTTrackTag; //!< art tag for CRT tracks
+    std::string CRTHitTag;
+    std::string OpFlashTag;
     std::string MCParticleTag; //!< art tag for MCParticle 
+
   };
 
   /** Histograms made for output 
@@ -334,6 +368,15 @@ protected:
     TH1D *end_x;
     TH1D *end_y;
     TH1D *end_z;
+
+    TH1D *has_crt_track_match;
+    TH1D *has_crt_hit_match;
+    TH1D *has_flash_match;
+
+    TH1D *crt_hit_match_time;
+    TH1D *flash_match_time;
+    TH1D *crt_v_flash_match_time;
+
   };
 
   static const unsigned nCuts = 5; //!< total number of cuts
@@ -344,8 +387,8 @@ protected:
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_track", "R_vqual", "R_tqual", "R_contained"};
  
-  static const unsigned nTrackHistos = 3;
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"Primary", "Contained", "Exiting"};
+  static const unsigned nTrackHistos = 6;
+  static constexpr const char* trackHistoNames[nTrackHistos] = {"Primary", "Contained", "Exiting", "Cosmic", "Neutrino", "No-Match"};
    
   // Internal functions
 
@@ -395,6 +438,10 @@ protected:
  * \return the list of truth neutrino interactions for this event 
  */
   std::vector<RecoInteraction> MCTruthInteractions(const gallery::Event &ev);
+
+
+  std::vector<FlashMatch> FlashMatching(const gallery::Event &ev, std::vector<RecoSlice> &slices, const std::vector<CRTMatch> &crt_matches);
+  std::vector<CRTMatch> CRTMatching(const gallery::Event &ev, std::vector<RecoSlice> &slices);
 
   /**
  * Get the primary track associated with a truth neutrino interaction.
@@ -479,6 +526,10 @@ protected:
 
   RootHistos _root_histos[nHistos][nModes]; //!< Histos (one group per cut)
   TrackHistos _track_histos[nTrackHistos];
+
+  sbnd::CRTTrackMatchAlg _crt_track_matchalg; //!< Algorithm for matching reco Tracks -> CRT Tracks
+  sbnd::CRTT0MatchAlg _crt_hit_matchalg; //!< Algorithm for matching reco Tracks -> CRT hits (T0's)
+  ApaCrossCosmicIdAlg _apa_cross_flashmatchalg;
 
 };
 
