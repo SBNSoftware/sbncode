@@ -237,8 +237,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   UpdateSubRuns(ev);
 
   // Get MC truth information
-  auto const& mctruths = \
-    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  gallery::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+  bool mctruth_is_valid = ev.getByLabel(fTruthTag, mctruth_handle);
 
   gallery::Handle<std::vector<simb::MCParticle> > mcparticle_list;
   ev.getByLabel(fTruthTag, mcparticle_list);
@@ -248,11 +248,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
 
-  // Get MCFlux information
-  auto const& mcfluxes = \
-    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
-  assert(mctruths.size() == mcfluxes.size());
-
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
 
@@ -261,8 +256,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       gallery::Handle<std::vector<evwgh::MCEventWeight> > this_wgh;
       bool hasWeights = ev.getByLabel(weightTag, this_wgh);
       // coherence check
-      if (hasWeights) {
-        assert(this_wgh->size() == mctruths.size());
+      if (hasWeights && mctruth_is_valid) {
+        assert(this_wgh->size() == mctruth_handle->size());
       }
       // store the weights
       wghs.push_back(this_wgh);
@@ -271,7 +266,12 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
   // Get MCFlux information
   gallery::Handle<std::vector<simb::MCFlux> > mcflux_handle;
-  ev.getByLabel(fFluxTag, mcflux_handle);
+  bool flux_is_valid = ev.getByLabel(fFluxTag, mcflux_handle);
+  // Check MCFlux information
+  if (flux_is_valid && mctruth_is_valid) {
+    assert(mctruth_handle->size() == mcflux_handle->size());
+  }
+
 
   fTree->GetEntry(fEventIndex);
 
@@ -283,12 +283,12 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   fEvent->metadata.subrun = evaux.subRun();
   fEvent->metadata.eventID = evaux.event();
 
-  for (size_t i=0; i<mctruths.size(); i++) {
+  unsigned n_truth = mctruth_is_valid ? mctruth_handle->size() : 0;
+  for (size_t i=0; i<n_truth; i++) {
     event::Interaction interaction;
     interaction.index = i;
 
-    auto const& mctruth = mctruths.at(i);
-    auto const& mcflux = mcfluxes.at(i);
+    auto const& mctruth = mctruth_handle->at(i);
 
     // TODO: What to do with cosmic MC?
     // For now, ignore them
@@ -332,6 +332,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.parentDecayVtx = \
         TVector3(flux.fvx, flux.fvy, flux.fvz);
       interaction.neutrino.baseline = flux.fdk2gen + flux.fgen2vtx;
+      interaction.neutrino.initpdg = flux.fntype;
     }
 
     TLorentzVector q_labframe;
@@ -342,7 +343,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       interaction.neutrino.pdg = nu.Nu().PdgCode();
-      interaction.neutrino.initpdg = mcflux.fntype;
       interaction.neutrino.targetPDG = nu.Target();
       interaction.neutrino.genie_intcode = nu.Mode();
       interaction.neutrino.bjorkenX = nu.X();
