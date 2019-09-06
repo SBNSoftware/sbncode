@@ -92,16 +92,30 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
       });
 
   // ParticleInventory
-  fParticleInventoryProvider = \
-    testing::setupProvider<cheat::ParticleInventory>(
-      cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
+  fParticleInventoryProvider = NULL;
+  if (cfg.has_key("services.ParticleInventoryService")) {
+    fParticleInventoryProvider = testing::setupProvider<cheat::ParticleInventory>(
+       cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
+  }
+  else {
+    std::cerr << "Warning: Particle inventory service is missing from fhicl config (" << fcl << ")." \
+      << " Setting ParticleInventoryService to NULL" << std::endl;
+  }
 
   // BackTracker
-  fBackTrackerProvider = \
-    testing::setupProvider<cheat::BackTracker>(
-      cfg.get<fhicl::ParameterSet>("services.BackTrackerService"),
-      fParticleInventoryProvider.get(), fGeometryProvider.get(),
-      fDetectorClocksProvider.get());
+  fBackTrackerProvider = NULL;
+  if (cfg.has_key("services.BackTrackerService")) {
+    fBackTrackerProvider = \
+      testing::setupProvider<cheat::BackTracker>(
+        cfg.get<fhicl::ParameterSet>("services.BackTrackerService"),
+        fParticleInventoryProvider.get(), fGeometryProvider.get(),
+        fDetectorClocksProvider.get());
+  }
+  else {
+    std::cerr << "Warning: BackTracker service is missing from fhicl config (" << fcl << ")." \
+      << " Setting BackTrackerService to NULL" << std::endl;
+
+  }
 
   config = new fhicl::ParameterSet(cfg);
 

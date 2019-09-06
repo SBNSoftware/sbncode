@@ -3,6 +3,7 @@
 OutputFile: "output_SBNOsc_NumuSelection_Modern_Uboone.root"
 
 MCWeightTags: @local::eventweight_tags 
+ExperimentID: 1
 
 NumuSelection: {
   fiducial_volumes: @local::MicroBooNE_fiducial_volumes 

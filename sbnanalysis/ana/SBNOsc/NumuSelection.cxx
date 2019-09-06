@@ -132,6 +132,9 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _config.backgroundRejection = pconfig.get<double>("backgroundRejection", 0.0);
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
     _config.constantWeight = pconfig.get<double>("constantWeight", 1.0);
+    _config.constantCCWeight = pconfig.get<double>("constantCCWeight", 1.0);
+    _config.constantNCWeight = pconfig.get<double>("constantNCWeight", 1.0);
+    _config.constantEnergyScale = pconfig.get<double>("constantEnergyScale", 1.0);
 
   }
 
@@ -321,6 +324,8 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
     double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
 
     event::RecoInteraction reco_interaction(i);
+    // apply energy scale shift
+    visible_energy *= _config.constantEnergyScale;
     reco_interaction.reco_energy = visible_energy;
 
     // Build the weight of this event
@@ -347,6 +352,16 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
     }
     // apply constant weight
     weight *= _config.constantWeight;
+
+    // apply weight to CC events
+    // Operationally, these weights are the same as signal/bkg efficiencies, but they have 
+    // a very different semantic meaning, so we separate out the two
+    if (interaction.neutrino.iscc) {
+      weight *= _config.constantCCWeight;
+    }
+    else {
+      weight *= _config.constantNCWeight;
+    }
     reco_interaction.weight = weight;
 
     // run selection

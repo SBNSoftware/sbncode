@@ -12,6 +12,8 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -221,14 +223,18 @@ void ProcessorBase::Teardown() {
 void ProcessorBase::SetupServices(gallery::Event& ev) {
   if (fProviderManager != NULL) {
     // reset the channels of the back tracker
-    fProviderManager->GetBackTrackerProvider()->ClearEvent();
-    fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+    if (fProviderManager->GetBackTrackerProvider() != NULL) {
+      fProviderManager->GetBackTrackerProvider()->ClearEvent();
+      fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+    }
 
     // reset information in particle inventory
-    fProviderManager->GetParticleInventoryProvider()->ClearEvent();
-    fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
-    fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
-    fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    if (fProviderManager->GetParticleInventoryProvider() != NULL) {
+      fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+      fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    }
   }
 }
 
@@ -237,16 +243,24 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   UpdateSubRuns(ev);
 
   // Get MC truth information
-  gallery::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+  gallery::Handle<std::vector<simb::MCTruth>> mctruths_handle;
   bool mctruth_is_valid = ev.getByLabel(fTruthTag, mctruth_handle);
 
   gallery::Handle<std::vector<simb::MCParticle> > mcparticle_list;
-  ev.getByLabel(fTruthTag, mcparticle_list);
+  ev.getByLabel(fMCParticleTag, mcparticle_list);
   bool mcparticles_is_valid = mcparticle_list.isValid();
 
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
+
+  // get associations from MCTruth information to truth 
+  art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> truth_to_particles(mctruths_handle, ev, fMCParticleTag);
+
+  // Get MCFlux information
+  auto const& mcfluxes = \
+    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
+  assert(mctruths.size() == mcfluxes.size());
 
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;
@@ -337,6 +351,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     TLorentzVector q_labframe;
 
+    // get the list of MCParticles to be considered for this interaction
+    std::vector<art::Ptr<simb::MCParticle>> this_mcparticle_list; 
+    std::vector<const sim::GeneratedParticleInfo *> this_mcparticle_assns;
+    if (mcparticles_is_valid) {
+      this_mcparticle_list = truth_to_particles.at(i);
+      this_mcparticle_assns = truth_to_particles.data(i);
+    }
+
     if (mctruth.NeutrinoSet()) {
       // Neutrino
       const simb::MCNeutrino& nu = mctruth.GetNeutrino();
@@ -363,9 +385,26 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.is_primary = (lepton.Process() == "primary");
 
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *lepton_traj = \
-        mcparticles_is_valid ? util::MatchMCParticleID(lepton.TrackId(), *mcparticle_list) : NULL;
-      // only set length if we get a match
+      const simb::MCParticle* lepton_traj = NULL;
+      for (int iparticle = 0; iparticle < this_mcparticle_list.size(); iparticle++) {
+        if (this_mcparticle_assns[iparticle]->hasGeneratedParticleIndex() &&
+            this_mcparticle_assns[iparticle]->generatedParticleIndex() < mctruth.NParticles() && // TODO: why is this number sometimes bigger than the number of particles?
+            mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex()).TrackId() == lepton.TrackId()) {
+
+          // if a genie particle re-scatters in g4 and makes more particles, then multiple g4 particles can match to a 
+          // genie particle. Thus, we also check that the start location of the associated genie particle matches the g4
+          // and that the pdgid matches (to be on the safe side)
+          const simb::MCParticle& matched_genie_particle = mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex());
+          if ((matched_genie_particle.Position().Vect() - this_mcparticle_list[iparticle]->Position().Vect()).Mag() < 1e-4 &&
+              matched_genie_particle.PdgCode() == this_mcparticle_list[iparticle]->PdgCode()) {
+
+            lepton_traj = this_mcparticle_list[iparticle].get();
+            // this should only be true for one particle
+            assert(lepton_traj != NULL);
+          }
+        }
+      }
+
       // TODO: why aren't there matches sometimes?
       if (lepton_traj != NULL) {
         interaction.lepton.length = util::MCParticleLength(*lepton_traj);
@@ -395,9 +434,9 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
-    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
+    for (int iparticle=0; iparticle<this_mcparticle_list.size(); iparticle++) {
       event::FinalStateParticle fsp;
-      const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
+      const simb::MCParticle& particle = *this_mcparticle_list[iparticle];
 
       if (particle.Process() != "primary") {
         continue;
@@ -409,28 +448,15 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.start = particle.Position(0).Vect();
       fsp.status_code = particle.StatusCode();
       fsp.is_primary = (particle.Process() == "primary");
-      // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *particle_traj = \
-        mcparticles_is_valid ? util::MatchMCParticleID(particle.TrackId(), *mcparticle_list) : NULL;
-      // set length if we have a match
-      // TODO: why do some particles not get a match?
-      if (particle_traj != NULL) {
-        fsp.length = util::MCParticleLength(*particle_traj);
-        if (fProviderManager != NULL) {
-          fsp.contained_length = util::MCParticleContainedLength(*particle_traj, fActiveVolumes);
-        }
-        else {
-          fsp.contained_length = event::kUnfilled;
-        }
-        // also get the end point from the trajectory
-        fsp.end = particle_traj->EndPosition().Vect();
+      fsp.length = util::MCParticleLength(particle);
+      if (fProviderManager != NULL) {
+        fsp.contained_length = util::MCParticleContainedLength(particle, fActiveVolumes);
       }
       else {
-        fsp.contained_length = 0;
-        fsp.length = 0;
-        // if we couldn't find a trajectory, set end to start
-        fsp.end = fsp.start;
+        fsp.contained_length = event::kUnfilled;
       }
+      // also get the end point from the trajectory
+      fsp.end = particle.EndPosition().Vect();
 
       interaction.finalstate.push_back(fsp);
     }

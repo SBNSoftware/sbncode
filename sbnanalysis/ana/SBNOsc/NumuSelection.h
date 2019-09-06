@@ -113,6 +113,9 @@ protected:
     double backgroundRejection; //!< Rejection applied to background (NC) events
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
     double constantWeight; //!< constant weight to apply uniformly to each event
+    double constantCCWeight; //!< constant weight to apply to each CC event
+    double constantNCWeight; //!< constant weight to apply to each NC event
+    double constantEnergyScale; //!< constant scale to apply to reco_energy calculation
   };
 
   /** Histograms made for output */
