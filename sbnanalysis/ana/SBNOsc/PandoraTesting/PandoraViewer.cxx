@@ -45,18 +45,20 @@ bool PandoraViewer::containedInAV(TVector3& point) {
 
 void PandoraViewer::Initialize(fhicl::ParameterSet* config) {
   if (config) {
-    // setup active volume bounding boxes
-    std::vector<fhicl::ParameterSet> AVs = \
-      config->get<std::vector<fhicl::ParameterSet> >("active_volumes");
-    for (auto const& AV : AVs) {
-      double xmin = AV.get<double>("xmin");
-      double ymin = AV.get<double>("ymin");
-      double zmin = AV.get<double>("zmin");
-      double xmax = AV.get<double>("xmax");
-      double ymax = AV.get<double>("ymax");
-      double zmax = AV.get<double>("zmax");
-      _config.active_volumes.emplace_back(xmin, ymin, zmin, xmax, ymax, zmax);
-    }
+    // get the active and cryo volumes
+    for (auto const &cryo: fProviderManager->GetGeometryProvider()->IterateCryostats()) {
+      geo::GeometryCore::TPC_iterator tbegin = fProviderManager->GetGeometryProvider()->begin_TPC(cryo.ID()),
+                                      tend = fProviderManager->GetGeometryProvider()->end_TPC(cryo.ID());
+      double XMin = std::min_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+      double YMin = std::min_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+      double ZMin = std::min_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+      double XMax = std::max_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+      double YMax = std::max_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+      double ZMax = std::max_element(tbegin, tend, [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+
+      _config.active_volumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
+   } 
 
     // config for what is drawn
     _config.drawText = config->get<bool>("drawText", true);
