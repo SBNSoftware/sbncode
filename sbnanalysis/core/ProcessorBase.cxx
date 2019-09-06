@@ -384,10 +384,20 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       const simb::MCParticle* lepton_traj = NULL;
       for (int iparticle = 0; iparticle < this_mcparticle_list.size(); iparticle++) {
         if (this_mcparticle_assns[iparticle]->hasGeneratedParticleIndex() &&
+            this_mcparticle_assns[iparticle]->generatedParticleIndex() < mctruth.NParticles() && // TODO: why is this number sometimes bigger than the number of particles?
             mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex()).TrackId() == lepton.TrackId()) {
 
-          lepton_traj = this_mcparticle_list[iparticle].get();
-          break;
+          // if a genie particle re-scatters in g4 and makes more particles, then multiple g4 particles can match to a 
+          // genie particle. Thus, we also check that the start location of the associated genie particle matches the g4
+          // and that the pdgid matches (to be on the safe side)
+          const simb::MCParticle& matched_genie_particle = mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex());
+          if ((matched_genie_particle.Position().Vect() - this_mcparticle_list[iparticle]->Position().Vect()).Mag() < 1e-4 &&
+              matched_genie_particle.PdgCode() == this_mcparticle_list[iparticle]->PdgCode()) {
+
+            lepton_traj = this_mcparticle_list[iparticle].get();
+            // this should only be true for one particle
+            assert(lepton_traj != NULL);
+          }
         }
       }
 
