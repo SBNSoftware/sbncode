@@ -223,14 +223,18 @@ void ProcessorBase::Teardown() {
 void ProcessorBase::SetupServices(gallery::Event& ev) {
   if (fProviderManager != NULL) {
     // reset the channels of the back tracker
-    fProviderManager->GetBackTrackerProvider()->ClearEvent();
-    fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+    if (fProviderManager->GetBackTrackerProvider() != NULL) {
+      fProviderManager->GetBackTrackerProvider()->ClearEvent();
+      fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+    }
 
     // reset information in particle inventory
-    fProviderManager->GetParticleInventoryProvider()->ClearEvent();
-    fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
-    fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
-    fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    if (fProviderManager->GetParticleInventoryProvider() != NULL) {
+      fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+      fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    }
   }
 }
 
