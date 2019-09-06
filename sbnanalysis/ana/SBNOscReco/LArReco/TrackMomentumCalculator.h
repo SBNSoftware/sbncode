@@ -12,6 +12,7 @@
 #include "TGraph.h"
 #include "TGraphErrors.h"
 #include "TMath.h"
+#include "TMatrixD.h"
 #include "TMatrixDSym.h"
 #include "TMatrixDSymEigen.h"
 #include "TPolyLine3D.h"

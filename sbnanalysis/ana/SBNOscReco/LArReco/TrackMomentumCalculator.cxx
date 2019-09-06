@@ -2,8 +2,8 @@
 //
 // \author sowjanyag@phys.ksu.edu
 
+#include "TrackMomentumCalculator.h"
 #include "cetlib/pow.h"
-#include "larreco/RecoAlg/TrackMomentumCalculator.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include <array>
