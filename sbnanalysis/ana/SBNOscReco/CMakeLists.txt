@@ -6,6 +6,7 @@ project(SBNOscReco)
 add_subdirectory(RecoUtils)
 add_subdirectory(CosmicIDAlgs)
 add_subdirectory(LArReco)
+add_subdirectory(fcl)
 
 # Directories where includes are found (in addition to those defined in the
 # parent CMakeLists.txt, one directory up).
@@ -21,6 +22,8 @@ include_directories($ENV{NUG4_INC})
 # source files.
 add_library(sbnanalysis_SBNOscReco_NumuRecoSelection SHARED NumuRecoSelection.cxx)
 add_library(sbnanalysis_SBNOscReco_GetFV SHARED GetFV.cc)
+add_library(sbnanalysis_SBNOscReco_OpDetWaveformMaker SHARED OpDetWaveformMaker.cc)
+add_library(sbnanalysis_SBNOscReco_CRTSimHitViewer SHARED CRTSimHitViewer.cc)
 
 # Add in ROOT dictionary
 ROOT_GENERATE_DICTIONARY(SBNOscReco_dict NumuRecoSelection.h LINKDEF linkdef.h)
@@ -35,7 +38,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   sbnanalysis_SBNOscReco_RecoUtils
   sbnanalysis_SBNOscReco_LArReco
   ubana_BasicTool_GeoAlgo
-  sbndcode_CosmicIdAlgs
+  sbncode_CosmicIdAlgs
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV
@@ -44,8 +47,22 @@ target_link_libraries(sbnanalysis_SBNOscReco_GetFV
   ubana_BasicTool_GeoAlgo
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_OpDetWaveformMaker
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOscReco_NumuRecoSelection DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_CRTSimHitViewer DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_classes DESTINATION lib)
 
