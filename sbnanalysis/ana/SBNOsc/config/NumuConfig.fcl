@@ -2,9 +2,9 @@ BEGIN_PROLOG
 // standard configurations to be used in proposal sensitivity
 
 # eventweight_tags: ["fluxeventweight", "genieeventweight"]
-# eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
+eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB", "fluxeventweightMinibooneA", "fluxeventweightMinibooneB"]
 # eventweight_tags: ["fluxeventweightA"]
-eventweight_tags: []
+# eventweight_tags: []
 
 SBND_fiducial_volumes: [
     {
@@ -177,7 +177,7 @@ ICARUS_active_volumes: [
 
 standard_cuts: {
   acceptShakyTracks: false
-  trajPointLength: false
+  trajPointLength: true
   doFVCut: true
   minLengthContainedTrack: 50 // value taken from proposal
   minLengthExitingTrack: 100 // value taken from proposal
@@ -190,7 +190,7 @@ standard_cuts: {
   selectionEfficiency: 0.8 // from proposal
 }
 
-standard_cuts_noMEC: {
+standard_cuts_proposal: {
   cutKMEC: true
   acceptShakyTracks: false
   trajPointLength: false
@@ -204,6 +204,9 @@ standard_cuts_noMEC: {
   leptonEnergyDistortionLeavingA: 0.102 // from joseph email
   leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
   selectionEfficiency: 0.8 // from proposal
+  constantCCWeight: 0.9813 // correct for genie x-sec changes
+  constantNCWeight: 1.0515 // correct for genie x-sec changes
+  constantEnergyScale: 1.031 // hand-correct for energy scale shift
 }
 
 standard_cuts_noBKG_noMEC: {
@@ -223,9 +226,25 @@ standard_cuts_noBKG_noMEC: {
 }
 
 standard_cuts_noCuts: {
-  cutKMEC: true
+  cutKMEC: false
   acceptShakyTracks: false
   trajPointLength: false
+  doFVCut: false
+  minLengthContainedTrack: -1
+  minLengthExitingTrack: -1
+  trackVisibleEnergyThreshold: 0.021
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 1.0
+}
+
+standard_cuts_noCuts_noMEC: {
+  cutKMEC: true
+  acceptShakyTracks: false
+  trajPointLength: true
   doFVCut: false
   minLengthContainedTrack: -1
   minLengthExitingTrack: -1

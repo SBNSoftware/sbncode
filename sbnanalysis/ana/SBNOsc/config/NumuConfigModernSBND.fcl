@@ -2,6 +2,7 @@
 
 OutputFile: "output_SBNOsc_NumuSelection_Modern_SBND.root"
 MCWeightTags: @local::eventweight_tags 
+ExperimentID: 0
 
 NumuSelection: {
   fiducial_volumes: @local::SBND_fiducial_volumes_no_cathode

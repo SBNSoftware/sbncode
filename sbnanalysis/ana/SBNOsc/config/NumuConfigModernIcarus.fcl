@@ -3,6 +3,7 @@
 OutputFile: "output_SBNOsc_NumuSelection_Modern_Icarus.root"
 
 MCWeightTags: @local::eventweight_tags
+ExperimentID: 2
 
 NumuSelection: {
   fiducial_volumes: @local::ICARUS_fiducial_volumes_no_cathode
