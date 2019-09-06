@@ -18,7 +18,7 @@ using namespace ana;
 #include "TCanvas.h"
 #include "TH2.h"
 
-void demo1()
+void demo1(int step = 99)
 {
   // Repeated from previous macros
   const std::string fnameSBND = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_SBND.flat.root";
@@ -42,6 +42,8 @@ void demo1()
 
   sOscFD.ToTH2(kPOTnominal)->Draw("colz");
   gPad->SetLogy();
+
+  if(step < 2) return;
 
   // Full three/four-flavour calculators are available, but for most cases we
   // want to use this simple two-flavour model, which also takes account of

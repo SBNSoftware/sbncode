@@ -25,7 +25,7 @@ using namespace ana;
 #include "TCanvas.h"
 #include "TH1.h"
 
-void demo2()
+void demo2(int step = 99)
 {
   // Repeated from previous macros
   const std::string fnameIcarus = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_Icarus.flat.root";
@@ -72,6 +72,8 @@ void demo2()
   Fitter fit(&exptSBND, {&kFitDmSqSterile, &kFitSinSq2ThetaMuMu});
   const double best_chisq = fit.Fit(&calc);
 
+  if(step < 2) return;
+
   // 'calc' has been updated in place, so we could extract the best fit
   // oscillation parameters from it here
 
@@ -85,6 +87,7 @@ void demo2()
   // Inspect the chisq map directly
   surfSBND.Draw();
 
+  if(step < 3) return;
 
   // To draw a confidence interval we need a suitable critical value
   // surface. This generality is so that we can support Feldman-Cousins
