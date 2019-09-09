@@ -64,8 +64,8 @@ void ExampleSelection::Finalize() {
 
 bool ExampleSelection::ProcessEvent(
     const gallery::Event& ev,
-    const std::vector<Event::Interaction>& truth,
-    std::vector<Event::RecoInteraction>& reco) {
+    const std::vector<event::Interaction>& truth,
+    std::vector<event::RecoInteraction>& reco) {
   if (fEventCounter % 10 == 0) {
     std::cout << "ExampleSelection: Processing event "
               << fEventCounter << std::endl;
@@ -92,7 +92,7 @@ bool ExampleSelection::ProcessEvent(
     // Add in the "reconstructed" interaction
     //
     // Contruct truth information from the provided vector
-    Event::RecoInteraction interaction(truth[i], i);
+    event::RecoInteraction interaction(i);
     // get "reconstructed" energy
     interaction.reco_energy = util::ECCQE(mctruth.GetNeutrino().Nu().Momentum().Vect(), mctruth.GetNeutrino().Lepton().E());
     reco.push_back(interaction);

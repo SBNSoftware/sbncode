@@ -3,6 +3,7 @@
 #include <TFile.h>
 #include <TLeaf.h>
 #include <TTree.h>
+#include <TParameter.h>
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
@@ -11,6 +12,8 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -38,7 +41,14 @@ void ProcessorBase::FillTree() {
   fEventIndex++;
 }
 
+
+void ProcessorBase::FillRecoTree() {
+  fRecoTree->Fill();
+}
+
+
 void ProcessorBase::EventCleanup() {
+  fRecoEvent->metadata.Init();
   fEvent->metadata.Init();
   fEvent->truth.clear();
   fEvent->reco.clear();
@@ -58,9 +68,7 @@ void ProcessorBase::Setup(char* config) {
 
 
 void ProcessorBase::Setup(fhicl::ParameterSet* config) {
-  // Load configuration parameters
-
-  // With configuration file provided
+  // Load configuration file
   if (config) {
     fExperimentID = \
       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
@@ -71,6 +79,9 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fMCParticleTag = { config->get<std::string>("MCParticleTag", "largeant") };
     fOutputFilename = config->get<std::string>("OutputFile", "output.root");
     fProviderConfig = config->get<std::string>("ProviderConfigFile", "");
+
+    fWriteTree = config->get<bool>("WriteTree", true);
+    fWriteRecoTree = config->get<bool>("WriteRecoTree", true);
 
     // Get the event weight tags (can supply multiple producers)
     fWeightTags = {};
@@ -129,20 +140,27 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
               << std::endl;
   }
 
-  // Open the output file and create the standard event tree
+  // Open the output file and create the standard event trees
   fOutputFile = TFile::Open(fOutputFilename.c_str(), "recreate");
 
   fTree = new TTree("sbnana", "SBN Analysis Tree");
-  fTree->AutoSave("overwrite");
-  fEvent = new Event();
+  fEvent = new event::Event();
   fTree->Branch("events", &fEvent);
   fReco = &fEvent->reco;
+
+  fRecoTree = new TTree("sbnreco", "SBN Reco Event Tree");
+  fRecoEvent = new event::RecoEvent();
+  fRecoTree->Branch("reco_events", &fRecoEvent);
 
   // Create the output subrun tree
   fSubRunTree = new TTree("sbnsubrun", "SBN Analysis Subrun Tree");
   fSubRunTree->AutoSave("overwrite");
   fSubRun = new SubRun();
   fSubRunTree->Branch("subruns", &fSubRun);
+
+  // save the experiment ID
+  fExperimentParameter = new TParameter<int>("experiment", fExperimentID);
+  fExperimentParameter->Write();
 }
 
 
@@ -164,9 +182,9 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     // Add subrun if not in cache
     if (fSubRunCache.find(id) == fSubRunCache.end()) {
       TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
-      double pot = potLeaf ? potLeaf->GetValue() : -1;
+      float pot = potLeaf ? potLeaf->GetValue() : -1;
       TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
-      double goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
+      float goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
       TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
       int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
       TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
@@ -188,8 +206,14 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
 void ProcessorBase::Teardown() {
   // Write the standard tree and close the output file
   fOutputFile->cd();
-  fTree->Write("sbnana", TObject::kOverwrite);
+  if (fWriteTree) {
+    fTree->Write("sbnana", TObject::kOverwrite);
+  }
+  if (fWriteRecoTree) {
+    fRecoTree->Write("sbnreco", TObject::kOverwrite);
+  }
   fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
+  fOutputFile->Purge();
   fOutputFile->Close();
 }
 
@@ -198,17 +222,21 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
 
-  // Get MCTruth information
-  auto const& mctruths = \
-    *ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  // Get MC truth information
+  auto const& mctruths_handle = \
+    ev.getValidHandle<std::vector<simb::MCTruth> >(fTruthTag);
+  const std::vector<simb::MCTruth> &mctruths = *mctruths_handle;
 
-  // Get list of MCParticles
-  auto const& mcparticle_list = \
-    *ev.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
+  gallery::Handle<std::vector<simb::MCParticle> > mcparticle_list;
+  ev.getByLabel(fMCParticleTag, mcparticle_list);
+  bool mcparticles_is_valid = mcparticle_list.isValid();
 
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
+
+  // get associations from MCTruth information to truth 
+  art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> truth_to_particles(mctruths_handle, ev, fMCParticleTag);
 
   // Get MCFlux information
   auto const& mcfluxes = \
@@ -240,8 +268,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Populate event tree
   fEvent->experiment = fExperimentID;
 
+  auto const& evaux = ev.eventAuxiliary();
+  fEvent->metadata.run = evaux.run();
+  fEvent->metadata.subrun = evaux.subRun();
+  fEvent->metadata.eventID = evaux.event();
+
   for (size_t i=0; i<mctruths.size(); i++) {
-    Event::Interaction interaction;
+    event::Interaction interaction;
+    interaction.index = i;
 
     auto const& mctruth = mctruths.at(i);
     auto const& mcflux = mcfluxes.at(i);
@@ -262,10 +296,13 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       //       is ensured in the current implementation by making sure that the different weight tags in "wghs"
       //       are always ordered in the same way.
       for (auto const& wgh : wghs) {
-        for (const std::pair<std::string, std::vector<double>> &this_wgh: wgh->at(i).fWeight) {
+        for (const std::pair<std::string, std::vector<double> >& this_wgh : wgh->at(i).fWeight) {
           // If we haven't seen this name before, make a new vector with the name
           if (interaction.weights.count(this_wgh.first) == 0) {
-            interaction.weights.insert(this_wgh);
+            interaction.weights.insert({
+              this_wgh.first,
+              std::vector<float>(this_wgh.second.begin(), this_wgh.second.end())
+            });
           }
           // If we have seen the name before, append this instance to the last one
           else {
@@ -284,9 +321,18 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.neutrino.parentDecayMode = flux.fndecay;
       interaction.neutrino.parentDecayVtx = \
         TVector3(flux.fvx, flux.fvy, flux.fvz);
+      interaction.neutrino.baseline = flux.fdk2gen + flux.fgen2vtx;
     }
 
     TLorentzVector q_labframe;
+
+    // get the list of MCParticles to be considered for this interaction
+    std::vector<art::Ptr<simb::MCParticle>> this_mcparticle_list; 
+    std::vector<const sim::GeneratedParticleInfo *> this_mcparticle_assns;
+    if (mcparticles_is_valid) {
+      this_mcparticle_list = truth_to_particles.at(i);
+      this_mcparticle_assns = truth_to_particles.data(i);
+    }
 
     if (mctruth.NeutrinoSet()) {
       // Neutrino
@@ -311,12 +357,20 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.energy = lepton.Momentum(0).Energy();
       interaction.lepton.momentum = lepton.Momentum(0).Vect();
       interaction.lepton.start = lepton.Position(0).Vect();
-      interaction.lepton.end = lepton.EndPosition().Vect();
       interaction.lepton.status_code = lepton.StatusCode();
       interaction.lepton.is_primary = (lepton.Process() == "primary");
+
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *lepton_traj = util::MatchMCParticleID(lepton.TrackId(), mcparticle_list);
-      // only set length if we get a match
+      const simb::MCParticle* lepton_traj = NULL;
+      for (int iparticle = 0; iparticle < this_mcparticle_list.size(); iparticle++) {
+        if (this_mcparticle_assns[iparticle]->hasGeneratedParticleIndex() &&
+            mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex()).TrackId() == lepton.TrackId()) {
+
+          lepton_traj = this_mcparticle_list[iparticle].get();
+          break;
+        }
+      }
+
       // TODO: why aren't there matches sometimes?
       if (lepton_traj != NULL) {
         interaction.lepton.length = util::MCParticleLength(*lepton_traj);
@@ -324,12 +378,16 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
           interaction.lepton.contained_length = util::MCParticleContainedLength(*lepton_traj, fActiveVolumes);
         }
         else {
-          interaction.lepton.contained_length = -1; 
+          interaction.lepton.contained_length = event::kUnfilled;
         }
+        // also get the end point from the trajectory
+        interaction.lepton.end = lepton_traj->EndPosition().Vect();
       }
       else {
         interaction.lepton.contained_length = 0;
         interaction.lepton.length = 0;
+        // if we couldn't find a trajectory, set end to start
+        interaction.lepton.end = interaction.lepton.start;
       }
 
       q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
@@ -342,9 +400,9 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
-    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
-      Event::FinalStateParticle fsp;
-      const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
+    for (int iparticle=0; iparticle<this_mcparticle_list.size(); iparticle++) {
+      event::FinalStateParticle fsp;
+      const simb::MCParticle& particle = *this_mcparticle_list[iparticle];
 
       if (particle.Process() != "primary") {
         continue;
@@ -354,29 +412,22 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.energy = particle.Momentum(0).Energy();
       fsp.momentum = particle.Momentum(0).Vect();
       fsp.start = particle.Position(0).Vect();
-      fsp.end = particle.EndPosition().Vect();
       fsp.status_code = particle.StatusCode();
       fsp.is_primary = (particle.Process() == "primary");
-      // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle *particle_traj = util::MatchMCParticleID(particle.TrackId(), mcparticle_list);
-      // set length if we have a match
-      // TODO: why do some particles not get a match?
-      if (particle_traj != NULL) {
-        fsp.length = util::MCParticleLength(*particle_traj);
-        if (fProviderManager != NULL) {
-          fsp.contained_length = util::MCParticleContainedLength(*particle_traj, fActiveVolumes);
-        }
-        else {
-          fsp.contained_length = -1;
-        }
+      fsp.length = util::MCParticleLength(particle);
+      if (fProviderManager != NULL) {
+        fsp.contained_length = util::MCParticleContainedLength(particle, fActiveVolumes);
       }
       else {
-        fsp.contained_length = 0;
-        fsp.length = 0;
+        fsp.contained_length = event::kUnfilled;
       }
+      // also get the end point from the trajectory
+      fsp.end = particle.EndPosition().Vect();
 
       interaction.finalstate.push_back(fsp);
     }
+
+    interaction.nfinalstate = interaction.finalstate.size();
 
     // GENIE specific
     if (genie_truth_is_valid) {
@@ -393,6 +444,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 
     fEvent->truth.push_back(interaction);
   }
+
+  fEvent->ntruth = fEvent->truth.size();
 }
 
 }  // namespace core
