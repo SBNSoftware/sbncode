@@ -528,26 +528,21 @@ namespace core {
               // The border for contained tracks should be the edge of the active volume,
               // since this is where we can measure energy up to
               // Find out if one end of a track escapes (if so, MCS)
-              bool does_vtx_escape(false);
+              bool does_vtx_escape(true);
+              bool does_end_escape(true);
               for(unsigned int b = 0; b < minx.size(); ++b){
-                if(  (track_vtx_x > minx[b])
-                    || (track_vtx_x < minx[b])
-                    || (track_vtx_y > miny[b])
-                    || (track_vtx_y < miny[b])
-                    || (track_vtx_z > minz[b])
-                    || (track_vtx_z < minz[b])) does_vtx_escape = true;
+                if(  (track_vtx_x < maxx[b] && track_vtx_x > minx[b])
+                  && (track_vtx_y < maxy[b] && track_vtx_y > miny[b])
+                  && (track_vtx_z < maxz[b] && track_vtx_z > minz[b])
+                  ) does_vtx_escape = false;
               }
-
-              bool does_end_escape(false);
               for(unsigned int b = 0; b < minx.size(); ++b){
-                if(  (track_end_x > minx[b])
-                    || (track_end_x < minx[b])
-                    || (track_end_y > miny[b])
-                    || (track_end_y < miny[b])
-                    || (track_end_z > minz[b])
-                    || (track_end_z < minz[b])) does_end_escape = true;
+                if(  (track_end_x < maxx[b] && track_end_x > minx[b])
+                  && (track_end_y < maxy[b] && track_end_y > miny[b])
+                  && (track_end_z < maxz[b] && track_end_z > minz[b])
+                  ) does_end_escape = false;
               }
-
+              
               bool one_end_escapes = true;
               if(does_vtx_escape && does_end_escape)   one_end_escapes = false;
               if(!does_vtx_escape && !does_end_escape) one_end_escapes = false;
@@ -603,7 +598,6 @@ namespace core {
                   fsrp.chi2_muon           = pid_assn[j]->Chi2Muon();
                   fsrp.chi2_pion           = pid_assn[j]->Chi2Pion();
                   fsrp.pida                = pid_assn[j]->PIDA();
-                  fsrp.missing_energy      = pid_assn[j]->MissingE();
                   fsrp.kinetic_energy      = cal_assn[k]->KineticEnergy();
                   fsrp.range               = cal_assn[k]->Range();
                   fsrp.length              = trk_assn[i]->Length();

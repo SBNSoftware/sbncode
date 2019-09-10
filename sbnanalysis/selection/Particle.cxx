@@ -90,9 +90,6 @@ namespace selection{
       // Set member variables
       m_mass   = this->GetMassFromPdg(pdg);
       m_energy = m_mass + (kinetic_energy/1000.);
-      /*for(unsigned int i = 0; i < dedx.size(); ++i){
-        m_energy          = (m_dedx[i] * (1./residual_range[i]) /1000.);
-      }*/
       
       // Get the magnitude of the momentum
       double momentum_magnitude = sqrt(pow(m_energy,2) - pow(m_mass,2));

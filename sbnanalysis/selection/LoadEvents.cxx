@@ -17,87 +17,23 @@ namespace selection{
   double LoadEvents::GetPOT(TTree *subrun){
     // Get the pot for the individual file
     subrun->GetEntry(0);
-    TBranch *b_pot = subrun->GetBranch("subrun_pot");
-    return b_pot->GetLeaf("subrun_pot")->GetValue();
+    TBranch *b_pot = subrun->GetBranch("sbnsubrun");
+    return b_pot->GetLeaf("totgoodpot")->GetValue();
   }
 
   //------------------------------------------------------------------------------------------ 
  
-  void LoadEvents::LoadEventList(const std::string &file_name, EventList &event_list, const int &file, double &pot){
+  void LoadEvents::LoadParticleLists(const &std::vector<core::Event::RecoInteraction> reco, const &std::vector<core::Event::Interaction> &truth, ParticleList &mc_particles, ParticleList &reco_particles){
 
-    TTree *t_event    = (TTree*) f.Get("event_tree");
-    TTree *t_subrun   = (TTree*) f.Get("subrun_tree");
-    TTree *t_particle = (TTree*) f.Get("particle_tree");
-    TTree *t_track    = (TTree*) f.Get("recotrack_tree");
-    TTree *t_shower   = (TTree*) f.Get("recoshower_tree");
-
-    TBranch *b_event_id        = t_event->GetBranch("event_id");
-    TBranch *b_time_now        = t_event->GetBranch("time_now");
-    TBranch *b_r_vertex        = t_event->GetBranch("r_vertex");
-    TBranch *b_t_vertex        = t_event->GetBranch("t_vertex");
-    TBranch *b_t_interaction   = t_event->GetBranch("t_interaction");
-    TBranch *b_t_scatter       = t_event->GetBranch("t_scatter");
-    TBranch *b_t_iscc          = t_event->GetBranch("t_iscc");
-    TBranch *b_t_nu_pdgcode    = t_event->GetBranch("t_nu_pdgcode");
-    TBranch *b_t_charged_pions = t_event->GetBranch("t_charged_pions");
-    TBranch *b_t_neutral_pions = t_event->GetBranch("t_neutral_pions");
-    TBranch *b_t_vertex_energy = t_event->GetBranch("t_vertex_energy");
-    TBranch *b_t_neutrino_qsqr = t_event->GetBranch("t_qsqr");
-    
-    pot = LoadEvents::GetPOT(t_subrun);
-    
-    unsigned int n_events = t_event->GetEntries();
-
-    unsigned int start_tracks      = 0;
-    unsigned int start_showers     = 0;
-    unsigned int start_mcparticles = 0;
-
-    for(unsigned int j = 0; j < n_events; ++j){
-
-      ParticleList mcparticles;
-      ParticleList recoparticles;
-      TrackList    tracks;
-      ShowerList   showers;
-
-      TVector3 r_vertex, t_vertex;
-      unsigned int interaction, pions_ch, pions_neu, scatter;
-      int neutrino_pdg;
-      bool iscc(false);
-      float neu_energy;
-      float neu_qsqr;
-
-      t_event->GetEntry(j);
-
-      int event_id = b_event_id->GetLeaf("event_id")->GetValue();
-      int time_now = b_time_now->GetLeaf("time_now")->GetValue();
-      r_vertex[0]  = b_r_vertex->GetLeaf("r_vertex")->GetValue(0);
-      r_vertex[1]  = b_r_vertex->GetLeaf("r_vertex")->GetValue(1);
-      r_vertex[2]  = b_r_vertex->GetLeaf("r_vertex")->GetValue(2);
-      t_vertex[0]  = b_t_vertex->GetLeaf("t_vertex")->GetValue(0);
-      t_vertex[1]  = b_t_vertex->GetLeaf("t_vertex")->GetValue(1);
-      t_vertex[2]  = b_t_vertex->GetLeaf("t_vertex")->GetValue(2);
-      interaction  = b_t_interaction->GetLeaf("t_interaction")->GetValue();
-      scatter      = b_t_scatter->GetLeaf("t_scatter")->GetValue();
-      iscc         = b_t_iscc->GetLeaf("t_iscc")->GetValue();
-      neutrino_pdg = b_t_nu_pdgcode->GetLeaf("t_nu_pdgcode")->GetValue();
-      pions_ch     = b_t_charged_pions->GetLeaf("t_charged_pions")->GetValue();
-      pions_neu    = b_t_neutral_pions->GetLeaf("t_neutral_pions")->GetValue();
-      neu_energy   = b_t_vertex_energy->GetLeaf("t_vertex_energy")->GetValue();
-      neu_qsqr     = b_t_neutrino_qsqr->GetLeaf("t_qsqr")->GetValue();
-   
-      std::pair<int,int> event_identification(event_id,time_now);
-
-      LoadEvents::GetTrackList(start_tracks, t_track, event_identification, tracks);
-      LoadEvents::GetShowerList(start_showers, t_shower, event_identification, showers);
-      LoadEvents::GetMCParticleList(start_mcparticles, t_particle, event_identification, mcparticles);
+      LoadEvents::GetTrackList(start_tracks, t_track, tracks);
+      LoadEvents::GetShowerList(start_showers, t_shower, showers);
+      LoadEvents::GetMCParticleList(start_mcparticles, t_particle, mcparticles);
       
-      if(tracks.size() != 0) LoadEvents::GetRecoParticleFromTrack1EscapingDistanceCut(tracks, recoparticles);
+      if(tracks.size() != 0) LoadEvents::GetRecoParticleFromTrack(tracks, recoparticles);
       if(showers.size() != 0) LoadEvents::GetRecoParticleFromShower(showers, r_vertex, recoparticles);
      
       // Check if any particles should be flipped
       EventSelectionHelper::CheckAndFlip(r_vertex, recoparticles);
-
-      Event ev(mcparticles, recoparticles, interaction, scatter, neutrino_pdg, pions_ch, pions_neu, iscc, t_vertex, r_vertex, neu_energy, neu_qsqr);
 
       start_tracks      += tracks.size();
       start_showers     += showers.size();
@@ -107,7 +43,7 @@ namespace selection{
 
   //------------------------------------------------------------------------------------------ 
   
-  void LoadEvents::GetTrackList(unsigned int start, TTree *track_tree, const std::pair<int, int> &unique_event, TrackList &track_list){
+  void EventSelectionHelper::GetTrackList(unsigned int start, TTree *track_tree, const std::pair<int, int> &unique_event, TrackList &track_list){
    
     TBranch *b_event_id         = track_tree->GetBranch("event_id");
     TBranch *b_time_now         = track_tree->GetBranch("time_now");
@@ -238,11 +174,12 @@ namespace selection{
 
       track_list.push_back(Track(id_charge, id_energy, id_hits, n_hits, pida, chi2_mu, chi2_pi, chi2_pr, chi2_ka, length, kinetic_energy, mcs_mom_muon, range_mom_muon, range_mom_proton,vertex, end, !not_contained, one_end_escapes, dedx, residual_range));
     
-    } 
+    }
   }
+
   //------------------------------------------------------------------------------------------ 
   
-  void LoadEvents::GetShowerList(unsigned int start, TTree *shower_tree, const std::pair<int, int> &unique_event, ShowerList &shower_list){
+  void EventSelectionHelper::GetShowerList(unsigned int start, TTree *shower_tree, const std::pair<int, int> &unique_event, ShowerList &shower_list){
   
     TBranch *b_event_id   = shower_tree->GetBranch("event_id");
     TBranch *b_time_now   = shower_tree->GetBranch("time_now");
@@ -286,7 +223,7 @@ namespace selection{
   }
 
   //------------------------------------------------------------------------------------------ 
-  
+
   void LoadEvents::GetMCParticleList(unsigned int start, TTree *mcparticle_tree, const std::pair<int, int> &unique_event, ParticleList &mcparticle_list){
     
     TBranch *b_event_id = mcparticle_tree->GetBranch("event_id");

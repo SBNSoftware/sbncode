@@ -14,11 +14,18 @@
 
 namespace selection{
   
-  // Typedef for the map
+  /*
+   * @brief typedef for a topology defintion
+   */
   typedef std::map< std::vector< int >, int > TopologyMap;
+  /*
+   * @brief typedef for a list of selection::Particles
+   */
   typedef std::vector<Particle> ParticleList;
+  /*
+   * @brief typedef for a list of selection::Particles
+   */
   typedef std::vector<Plane> PlaneList;
-  typedef std::vector< vector<double> > ParticleMatrix;
 
   /**
    * @brief  Event class
@@ -154,6 +161,11 @@ namespace selection{
        * @brief  Get the neutrino pdg code in the event
        */
       int GetNeutrinoPdgCode() const;
+
+      /**
+       * @brief  Get the initial neutrino pdg code in the event to see if it oscillated
+       */
+      int GetInitialNeutrinoPdgCode() const;
 
       /**
        * @brief  Get whether the true neutrino interaction happened within the SBND fiducial 

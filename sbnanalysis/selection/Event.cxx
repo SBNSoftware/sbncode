@@ -1,7 +1,10 @@
 #include "Event.hh"
 #include "LoadEvents.hh"
 #include "EventSelectionHelper.hh"
+
 namespace selection{
+
+  //------------------------------------------------------------------------------------------ 
   
   Event::Event() : 
     m_mc_particles(m_unfilled),
@@ -67,48 +70,37 @@ namespace selection{
   //------------------------------------------------------------------------------------------ 
     
   unsigned int Event::CountMCParticlesWithPdg(const int pdg) const{
- 
     return this->CountParticlesWithPdg(pdg, m_mc_particles);
-
   }
 
   //------------------------------------------------------------------------------------------ 
 
   unsigned int Event::CountRecoParticlesWithPdg(const int pdg) const{
-    
     return this->CountParticlesWithPdg(pdg, m_reco_particles);
-
   }
 
   //------------------------------------------------------------------------------------------ 
 
   bool Event::CheckMCTopology(const TopologyMap &topology) const{
-  
     return this->CheckTopology(topology, m_mc_particles);
   }
 
   //------------------------------------------------------------------------------------------ 
 
   bool Event::CheckRecoTopology(const TopologyMap &topology) const{
-  
     return this->CheckTopology(topology, m_reco_particles);
-
   }
   
   //------------------------------------------------------------------------------------------ 
 
   Particle Event::GetMostEnergeticRecoParticle() const{
- 
     return this->GetMostEnergeticParticle(m_reco_particles);
-
   }
   
   //------------------------------------------------------------------------------------------ 
 
   Particle Event::GetMostEnergeticTrueParticle() const{
- 
     return this->GetMostEnergeticParticle(m_mc_particles);
-
   }
 
   //------------------------------------------------------------------------------------------ 
@@ -126,41 +118,37 @@ namespace selection{
   //------------------------------------------------------------------------------------------ 
 
   ParticleList Event::GetMCParticleList() const{
-  
     return m_mc_particles;
-
   }
 
   //------------------------------------------------------------------------------------------ 
 
   ParticleList Event::GetRecoParticleList() const{
-  
     return m_reco_particles;
-
   }
 
   //------------------------------------------------------------------------------------------ 
   
   int Event::GetInteractionType() const{
-  
     return m_interaction;
-  
   }
   
   //------------------------------------------------------------------------------------------ 
   
   int Event::GetPhysicalProcess() const{
-  
     return m_scatter;
-  
   }
 
   //------------------------------------------------------------------------------------------ 
   
   int Event::GetNeutrinoPdgCode() const{
-  
     return m_nu_pdg;
-
+  }
+  
+  //------------------------------------------------------------------------------------------ 
+  
+  int GetInitialNeutrinoPdgCode() const{
+    return m_init_pdg;
   }
 
   //------------------------------------------------------------------------------------------ 
@@ -239,38 +227,31 @@ namespace selection{
   //------------------------------------------------------------------------------------------ 
 
   bool Event::GetIsCC() const{
-  
     return m_is_cc;
-  
   }
 
   //------------------------------------------------------------------------------------------ 
 
   TVector3 Event::GetMCNuVertex() const{
-  
     return m_mc_vertex;
-  
   }
 
   //------------------------------------------------------------------------------------------ 
 
   TVector3 Event::GetRecoNuVertex() const{
-  
     return m_reco_vertex;
-  
   }
 
   //------------------------------------------------------------------------------------------ 
   
   float Event::GetTrueNuEnergy() const{
-  
     return m_neutrino_energy;
-
   }
-  float Event::GetTrueNuQ2() const{
   
+  //------------------------------------------------------------------------------------------ 
+  
+  float Event::GetTrueNuQ2() const{
     return m_neutrino_qsqr;
-
   }
   
   //------------------------------------------------------------------------------------------ 
@@ -313,4 +294,6 @@ namespace selection{
     return particle_list[energy_id];
   }
   
+  //------------------------------------------------------------------------------------------
+ 
 } // selection

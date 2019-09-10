@@ -20,18 +20,12 @@ namespace selection{
    */
   class EventSelectionHelper {
 
-    private : 
-      class Track;
-      class Shower;
-
     public : 
 
-      typedef std::vector<std::pair<int,int> > UniqueEventIdList;
-      typedef std::vector<Plane>               PlaneList;
-      typedef std::vector<Particle>            ParticleList;
-      typedef std::vector<Event>               EventList;
-      typedef std::vector<Track>               TrackList;
-      typedef std::vector<Shower>              ShowerList;
+      /*
+       * @brief typedef for a list of selection::Events
+       */
+      typedef std::vector<Event> EventList;
       
       /**
        * @brief get the pot corresponding to each individual file

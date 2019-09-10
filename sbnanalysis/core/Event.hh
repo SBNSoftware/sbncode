@@ -126,10 +126,9 @@ public:
         : mc_id_hits(kUnfilled), mc_id_energy(kUnfilled), mc_id_charge(kUnfilled), 
         istrack(kUnfilled), isshower(kUnfilled),
         mcs_momentum_muon(kUnfilled), range_momentum_muon(kUnfilled),
-        range_momentum_proton(kUnfilled), range_momentum_pion(kUnfilled),
-        calorimetry_momentum(kUnfilled), 
+        range_momentum_proton(kUnfilled), 
         chi2_muon(kUnfilled), chi2_proton(kUnfilled), chi2_pion(kUnfilled),
-        pida(kUnfilled), kinetic_energy(kUnfilled), missing_energy(kUnfilled),
+        pida(kUnfilled), kinetic_energy(kUnfilled),
         length(kUnfilled), range(kUnfilled), opening_angle(kUnfilled),
         dedx_size(kUnfilled), res_range_size(kUnfilled), pitch_size(kUnfilled),
         dedx{kUnfilled}, res_range{kUnfilled}, pitch{kUnfilled}{}
@@ -145,14 +144,11 @@ public:
       double mcs_momentum_muon;      //!< multiple coulomb scattering momentum is the particle  is an escaping muon
       double range_momentum_muon;    //!< range momentum if the particle is a contained muon 
       double range_momentum_proton;  //!< range momentum if the particle is a contained proton
-      double range_momentum_pion;    //!< range momentum if the particle is a contained pion
-      double calorimetry_momentum;   //!< momentum calculated using calorimetry
       double chi2_proton;            //!< chi2 under the proton hypothesis          
       double chi2_muon;              //!< chi2 under the muon hypothesis            
       double chi2_pion;              //!< chi2 under the pion hypothesis            
       double pida;                   //!< PIDA value of the particle
       double kinetic_energy;         //!< kinetic energy
-      double missing_energy;         //!< missing energy
       double length;                 //!< length
       double range;                  //!< range
       double opening_angle;          //!< opening angle of a shower's cone

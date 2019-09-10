@@ -26,6 +26,12 @@ target_link_libraries(sbnanalysis_SelectionAnalysis_AnalysisMain
   sbnanalysis_SelectionAnalysis_classes
   ubana_BasicTool_GeoAlgo  
 )
+
+file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
+add_custom_command(TARGET sbnanalysis_SelectionAnalysis_AnalysisMain POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
+
 ##add_custom_command(TARGET sbnanalysis_SelectionAnalysis_classes POST_BUILD
 ##  COMMAND ${CMAKE_COMMAND} -E copy_if_different
 ## libSelectionAnalysis_dict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)

@@ -42,15 +42,13 @@ namespace selection{
       static double GetPOT(TTree *subrun);
 
       /**
-       * @brief  load the list of events to analyse from the root file
+       * @brief  load an event from the sbn processorbase output to analyse from the root file
        *
-       * @param  file_name name of the root file to access
-       * @param  event_list vector of events to fill
-       * @param  file number of the file of the current event
-       * @param  pot from the current file
+       * @param  reco list of reconstructed quantities within the event
+       * @param  truth list of truth-level quantities within the event
        *
        */
-      static void LoadEventList(const std::string &file_name, EventList &event_list, const int &file, double &pot);
+      static void LoadEvents::LoadEvents(const &std::vector<core::Event::RecoInteraction> reco, const &std::vector<core::Event::Interaction> &truth);
 
     private :
 

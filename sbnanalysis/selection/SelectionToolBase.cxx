@@ -2,22 +2,20 @@
 
 namespace selection {
 
-  SelectionToolBase::SelectionToolBase() : core::ProcessorBase() {}
+  SelectionToolBase::SelectionToolBase() : core::PostProcessorBase() {}
 
   SelectionToolBase::~SelectionToolBase() {}
 
-  bool SelectionToolBase::ProcessEvent(const gallery::Event& ev){
+  bool SelectionToolBase::ProcessEvent(const gallery::Event &ev){
     selection::Event e = SelectionToolBase::GetSelectionToolEvent(ev);
     SelectionToolBase::ProcessEvent(e);
   } // ProcessEvent
 
-  selection::EventList SelectionToolBase::GetSelectionToolEvent(const gallery::Event &ev) {
+  selection::Event SelectionToolBase::GetSelectionToolEvent(const gallery::Event &ev) {
 
     // Define the sbncode event details and event list to output
     std::vector<core::Event::Interaction> &truth    = ev.truth;
     std::vector<core::Event::RecoInteraction> &reco = ev.reco;
-    selection::EventList ev_list; 
-    ev_list.clear();
 
     // Call functions from LoadEvents
     // This is replacing 'EventSelectionHelper::LoadEventList
@@ -53,20 +51,18 @@ namespace selection {
     reco_vertex     = reco.reco_vertex;
 
     // Now deal with the individual particles
-
     
-    ev_list.push_back(selection::Event(mc_particles,   
-                                       reco_particles, 
-                                       interaction,    
-                                       scatter,        
-                                       nu_pdg,         
-                                       init_pdg,       
-                                       is_cc,          
-                                       reco_vertex,    
-                                       mc_vertex,      
-                                       neutrino_energy,
-                                       neutrino_qsqr));
-    return ev_list;
+    return selection::Event(mc_particles,   
+                            reco_particles, 
+                            interaction,    
+                            scatter,        
+                            nu_pdg,         
+                            init_pdg,       
+                            is_cc,          
+                            reco_vertex,    
+                            mc_vertex,      
+                            neutrino_energy,
+                            neutrino_qsqr);
   
   } // GetSelectionToolEvent
 

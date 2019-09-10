@@ -46,7 +46,7 @@ public:
    *
    * \return selection::Event event format for analysis of the selection 
    */
-  selection::EventList GetSelectionToolEvent(const gallery::Event &ev);
+  selection::Event GetSelectionToolEvent(const gallery::Event &ev);
 
   /**
    * \brief  ProcessEvent virtual function to process selection::Events
