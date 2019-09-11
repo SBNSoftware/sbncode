@@ -1,6 +1,13 @@
+#include "crttrackmatchingalg_sbnd.fcl"
+#include "crtt0matchingalg_sbnd.fcl"
+
 OutputFile: "output_numureco.root"
 
 ExperimentID: 0
+ProviderConfigFile: "services_sbnd_3drift.fcl"
+
+# sbnd_beamtime: [0, 1.600] # [us]
+sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
 
 NumuRecoSelection: {
   shakyMCTracks: true
@@ -8,36 +15,33 @@ NumuRecoSelection: {
   requireContained: false
 
   trackMatchContainmentCut: 0.5
+  flashMatchTimeDifference: 1000
 
-  containment_volumes: [
-    {
-      xmin: -195.9
-      ymin: -190
-      zmin: 10.
-      xmax: 195.9
-      ymax: 190
-      zmax: 490.
-     }
-   ]
+  CRTT0MatchAlg:  @local::standard_crtt0matchingalg
+  CRTTrackMatchAlg: @local::standard_crttrackmatchingalg
 
-  fiducial_volumes: [
-    {
-      xmin: -190.9
-      ymin: -185
-      zmin: 15.
-      xmax: 190.9
-      ymax: 185
-      // zmax: 415.
-      zmax: 485.
+  ApaCrossCosmicIdAlg: {
+    DistanceLimit:  1.1 #2.# Max distance between track end and APA for successful match[cm]
+    MaxApaDistance: 5. #10. # Distance from Apa to not try to shift track [cm]
+    BeamTimeLimits: {
+      BeamTimeMin: -0.4
+      BeamTimeMax: 2.0 
     }
-    //{
-    //  xmin: 10.9
-    //  ymin: -185
-    //  zmin: 15.
-    //  xmax: 190.9
-    //  ymax: 185
-      // zmax: 415.
-    //  zmax: 485.
-    //}
-   ]
+  }
+
+  containment_volume_inset: {
+    y: 10
+    x: 10
+    zfront: 10
+    zback: 10
+  }
+
+  fiducial_volume_inset: {
+    y: 10
+    x: 10
+    zfront: 15
+    zback: 85
+  }
 }
+# NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
+
