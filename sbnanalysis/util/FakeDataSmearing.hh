@@ -15,8 +15,8 @@ typedef enum {
  */
 void ApplyFakeDataSmearing(SmearingMode mode,
                            Experiment exp,
-                           Event::Interaction* truth,
-                           Event::RecoInteraction* reco);
+                           const event::Interaction* truth,
+                           event::RecoInteraction* reco);
 
 
 }  // namespace util

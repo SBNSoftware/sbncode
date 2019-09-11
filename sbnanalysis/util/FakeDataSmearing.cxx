@@ -4,7 +4,7 @@
 
 namespace util {
 
-size_t CCNPi(Event::Interaction* truth) {
+size_t CCNPi(const event::Interaction* truth) {
   if (!truth->neutrino.iscc) {
     return false;
   }
@@ -23,8 +23,8 @@ size_t CCNPi(Event::Interaction* truth) {
 
 void ApplyFakeDataSmearing(SmearingMode mode,
                            Experiment exp,
-                           Event::Interaction* truth,
-                           Event::RecoInteraction* reco) {
+                           const event::Interaction* truth,
+                           event::RecoInteraction* reco) {
   for (int i=kMode1; i<=mode; i++) {
     // Dataset 1
     if (i == kMode1) {

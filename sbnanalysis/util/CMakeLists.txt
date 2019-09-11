@@ -31,6 +31,9 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(sbnanalysis_util_Interaction Interaction.cxx)
 target_link_libraries(sbnanalysis_util_Interaction ${ROOT_LIBRARIES})
-
 install(TARGETS sbnanalysis_util_Interaction DESTINATION lib)
+
+add_library(sbnanalysis_util_FakeDataSmearing FakeDataSmearing.cxx)
+target_link_libraries(sbnanalysis_util_FakeDataSmearing ${ROOT_LIBRARIES})
+install(TARGETS sbnanalysis_util_FakeDataSmearing DESTINATION lib)
 
