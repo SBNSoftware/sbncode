@@ -15,6 +15,7 @@
 #include "lardataalg/DetectorInfo/LArPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/LArPropertiesStandard.h"
 #include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/PhotonBackTracker.h"
 #include "larsim/MCCheater/ParticleInventory.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib/filepath_maker.h"
@@ -114,7 +115,19 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
   else {
     std::cerr << "Warning: BackTracker service is missing from fhicl config (" << fcl << ")." \
       << " Setting BackTrackerService to NULL" << std::endl;
+  }
 
+  // Photon BackTracker
+  fPhotonBackTrackerProvider = NULL;
+  if (cfg.has_key("services.PhotonBackTrackerService")) {
+    fPhotonBackTrackerProvider = \
+      testing::setupProvider<cheat::PhotonBackTracker>(
+        cfg.get<fhicl::ParameterSet>("services.PhotonBackTrackerService"),
+        fParticleInventoryProvider.get(), fGeometryProvider.get());
+  }
+  else {
+    std::cerr << "Warning: PhotonBackTracker service is missing from fhicl config (" << fcl <<")." \
+     << " Setting PhotonBackTrackerService to NULL" << std::endl;
   }
 
   config = new fhicl::ParameterSet(cfg);

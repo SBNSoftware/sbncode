@@ -73,6 +73,7 @@ target_link_libraries(
   lardataalg_DetectorInfo
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
+  larsim_MCCheater_PhotonBackTracker
   icaruscode_Geometry
   ubcore_Geometry
   sbnd_Geometry

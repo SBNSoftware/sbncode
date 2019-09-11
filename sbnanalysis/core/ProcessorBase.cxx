@@ -28,6 +28,7 @@
 #include "ProviderManager.hh"
 
 #include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/PhotonBackTracker.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
 namespace core {
@@ -234,6 +235,11 @@ void ProcessorBase::SetupServices(gallery::Event& ev) {
       fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
       fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
       fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    }
+
+    // reset information in the photon back tracker
+    if (fProviderManager->GetPhotonBackTrackerProvider() != NULL) {
+      fProviderManager->GetPhotonBackTrackerProvider()->PrepOpDetBTRs(ev);
     }
   }
 }

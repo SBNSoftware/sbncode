@@ -23,6 +23,7 @@ namespace fhicl {
 namespace cheat {
   class BackTracker;
   class ParticleInventory;
+  class PhotonBackTracker;
 }
 
 namespace core {
@@ -69,6 +70,10 @@ public:
     return fParticleInventoryProvider.get();
   }
 
+  cheat::PhotonBackTracker* GetPhotonBackTrackerProvider() const {
+    return fPhotonBackTrackerProvider.get();
+  }
+
   static std::vector<Experiment> GetValidExperiments();
 
 private:
@@ -79,6 +84,7 @@ private:
   std::unique_ptr<detinfo::DetectorPropertiesStandard> fDetectorPropertiesProvider;
   std::unique_ptr<cheat::BackTracker> fBackTrackerProvider;
   std::unique_ptr<cheat::ParticleInventory> fParticleInventoryProvider;
+  std::unique_ptr<cheat::PhotonBackTracker> fPhotonBackTrackerProvider;
 };
 
 }  // namespace core
