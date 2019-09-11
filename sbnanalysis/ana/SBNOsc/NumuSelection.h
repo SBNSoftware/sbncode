@@ -116,6 +116,7 @@ protected:
     double constantCCWeight; //!< constant weight to apply to each CC event
     double constantNCWeight; //!< constant weight to apply to each NC event
     double constantEnergyScale; //!< constant scale to apply to reco_energy calculation
+    int fakeDataMode; 
   };
 
   /** Histograms made for output */

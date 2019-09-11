@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/Vertex.h"
 
 #include "core/Event.hh"
+#include "util/FakeDataSmearing.hh"
 #include "NumuSelection.h"
 #include "Utilities.h"
 
@@ -126,6 +127,8 @@ void NumuSelection::Initialize(fhicl::ParameterSet* config) {
     _config.selectMode = pconfig.get<int>("selectMode", -1);
     _config.selectCCNC = pconfig.get<int>("selectCCNC", -1);
     _config.onlyKMEC = pconfig.get<bool>("onlyKMEC", false);
+
+    _config.fakeDataMode = pconfig.get<int>("fakeDataMode", 0);
 
     // setup weight config
     _config.selectionEfficiency = pconfig.get<double>("selectionEfficiency", 1.0);
@@ -370,6 +373,11 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
     // pass iff pass each cut
     bool pass_selection = std::find(selection.begin(), selection.end(), false) == selection.end();
     if (pass_selection) {
+      // if configured, screw with the reco interaction
+      if (_config.fakeDataMode > 0) {
+        util::ApplyFakeDataSmearing((util::SmearingMode)_config.fakeDataMode, fExperimentID, &interaction, &reco_interaction);
+      }
+
       // store interaction in reco tree
       reco.push_back(reco_interaction);
       // store local info
