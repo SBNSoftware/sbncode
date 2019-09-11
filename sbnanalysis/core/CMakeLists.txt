@@ -25,6 +25,7 @@ include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
 include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
+include_directories($ENV{NUG4_INC})
 
 link_directories(
   $ENV{BOOST_LIB}
@@ -42,6 +43,7 @@ link_directories(
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
   $ENV{ICARUSCODE_LIB}
+  $ENV{NUG4_LIB}
 )
 
 ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
