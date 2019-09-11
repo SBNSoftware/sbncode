@@ -42,6 +42,7 @@
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 
 #include "larsim/MCCheater/ParticleInventory.h"
+#include "larsim/MCCheater/PhotonBackTracker.h"
 
 // copied in RecoUtils here to not use art services
 
@@ -126,7 +127,7 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     _config.cosmicWeight = pconfig.get<double>("cosmicWeight", 1.0);
 
     // flash match method
-    _config.FlashMatchMethod = pconfig.get<int>("FlashMatchMethod", 0);
+    _config.FlashMatchMethod = pconfig.get<int>("FlashMatchMethod", 2);
     _config.flashMatchTimeDifference = pconfig.get<double>("flashMatchTimeDifference");
 
     // get tag names
@@ -1486,11 +1487,28 @@ std::vector<NumuRecoSelection::RecoSlice> NumuRecoSelection::RecoSliceInfo(
 
 std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const gallery::Event &ev, std::vector<NumuRecoSelection::RecoSlice> &slices) {
   // collect the CRT Tracks
-  gallery::Handle<std::vector<sbnd::crt::CRTTrack>> crt_tracks;
-  bool has_crt_tracks = ev.getByLabel(_config.CRTTrackTag, crt_tracks);
+  gallery::Handle<std::vector<sbnd::crt::CRTTrack>> crt_tracks_sbnd;
+  bool has_sbnd_crt_tracks = ev.getByLabel(_config.CRTTrackTag, crt_tracks_sbnd);
+  gallery::Handle<std::vector<icarus::crt::CRTTrack>> crt_tracks_icarus;
+  bool has_icarus_crt_tracks = ev.getByLabel(_config.CRTTrackTag, crt_tracks_icarus);
+  bool has_crt_tracks = has_sbnd_crt_tracks || has_icarus_crt_tracks;
+  // BAD VOODOO
+  // This is only ok because the SBND and ICARUS CRT Tracks are identical
+  const std::vector<sbnd::crt::CRTTrack> *crt_tracks = (has_crt_tracks) ?
+    ( (has_sbnd_crt_tracks) ? crt_tracks_sbnd.product() : (const std::vector<sbnd::crt::CRTTrack> *)crt_tracks_icarus.product()) :
+    NULL;
+
   // collect the CRT Hits
-  gallery::Handle<std::vector<sbnd::crt::CRTHit>> crt_hits;
-  bool has_crt_hits = ev.getByLabel(_config.CRTHitTag, crt_hits);
+  gallery::Handle<std::vector<sbnd::crt::CRTHit>> crt_hits_sbnd;
+  bool has_crt_hits_sbnd = ev.getByLabel(_config.CRTHitTag, crt_hits_sbnd);
+  gallery::Handle<std::vector<icarus::crt::CRTHit>> crt_hits_icarus;
+  bool has_crt_hits_icarus = ev.getByLabel(_config.CRTHitTag, crt_hits_icarus);
+  // BAD VOODOO
+  // This is only ok because the SBND and ICARUS CRT Hits are identical
+  bool has_crt_hits = has_sbnd_crt_hits || has_icarus_crt_hits;
+  const std::vector<sbnd::crt::CRTTrack> *crt_hits = (has_crt_hits) ?
+    ( (has_sbnd_crt_hits) ? crt_hits_sbnd.product() : (const std::vector<sbnd::crt::CRTTrack> *)crt_hits_icarus.product()) :
+    NULL;
   
   // also we need the pandora tracks here
   auto const &pfp_track_list = \
@@ -1555,6 +1573,9 @@ std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(cons
   // get the OpDetFlashes
   gallery::Handle<std::vector<recob::OpHit>> op_hits;
   bool has_op_flashes = ev.getByLabel(_config.OpFlashTag, op_hits); 
+         
+  std::vector<art::Ptr<recob::OpHit>> op_hit_ptrs;
+  art::fill_ptr_vector(op_hit_ptrs, op_hits);
   // use the OP flashes as a list of t0's for APA flash-matching
   std::map<geo::CryostatID, std::vector<double>> flash_times;
   std::vector<double> flash_times_list;
@@ -1626,6 +1647,25 @@ std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(cons
 	  NumuRecoSelection::FlashMatch match;
 	  match.match_time = flash_match_time;
 	  ret.push_back(match);
+        }
+      }
+      // truth match method
+      else if (_config.FlashMatchMethod == 2) {
+        // see if we can do the match
+        if (track.match.has_match) {
+          const std::vector<art::Ptr<recob::OpHit>> hit_matches = fProviderManager->GetPhotonBackTrackerProvider()->TrackIdToOpHits_Ps(track.match.mcparticle_id, op_hit_ptrs);
+          if (hit_matches.size() > 0) {
+            // average the times
+            double match_time = 0.;
+            for (const art::Ptr<recob::OpHit> op_hit: hit_matches) {
+              match_time += op_hit->PeakTime();
+            }
+            match_time = match_time / hit_matches.size();
+            NumuRecoSelection::FlashMatch match;
+            match.match_time = match_time;
+            track.flash_match = ret.size();
+            ret.push_back(match);
+          }
         }
       }
     }
