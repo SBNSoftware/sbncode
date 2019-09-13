@@ -80,14 +80,14 @@ void ApplyFakeDataSmearing(SmearingMode mode,
       float cc1pi_eshift = 0;
 
       if (exp == kExpSBND) {
-        float ccqe_eshift = -0.02;
-        float ccmec_eshift = -0.03;
-        float cc1pi_eshift = -0.04;
+        ccqe_eshift = -0.02;
+        ccmec_eshift = -0.03;
+        cc1pi_eshift = -0.04;
       }
       else if (exp == kExpICARUS) {
-        float ccqe_eshift = -0.01;
-        float ccmec_eshift = -0.02;
-        float cc1pi_eshift = -0.03;
+        ccqe_eshift = -0.01;
+        ccmec_eshift = -0.02;
+        cc1pi_eshift = -0.03;
       }
 
       // In the calculation of Ereco, remove x MeV from CCQE events ...
