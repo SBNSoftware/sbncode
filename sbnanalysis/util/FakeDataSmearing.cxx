@@ -12,12 +12,23 @@ size_t CCNPi(const event::Interaction* truth) {
   size_t npi = 0;
   for (size_t i=0; i<truth->finalstate.size(); i++) {
     if (truth->finalstate[i].status_code == 1 &&
-        (abs(truth->finalstate[i].pdg) == 211 || truth->finalstate[i].pdg == 11)) {
+        (abs(truth->finalstate[i].pdg) == 211 || truth->finalstate[i].pdg == 111)) {
       npi++;
     }
   }
 
   return npi;
+}
+
+
+size_t HasPiAbs(const event::Interaction* truth) {
+  for (size_t i=0; i<truth->finalstate.size(); i++) {
+    if (truth->finalstate[i].rescatter == 4) {  // kIHAFtAbs
+      return true;
+    }
+  }
+
+  return false;
 }
 
 
@@ -48,9 +59,8 @@ void ApplyFakeDataSmearing(SmearingMode mode,
         reco->weight *= 1.5;
       }
 
-      // Throw away a random 20% of CC1pi events where the pi is subsequently absorbed
-      // For now, throw away 20% of pionless true CCRes
-      if (truth->neutrino.iscc && truth->neutrino.genie_intcode == 1 && CCNPi(truth) == 0) {
+      // Throw away a random 20% of CC1pi events with pi absorption
+      if (truth->neutrino.iscc && truth->neutrino.inpi == 1 && HasPiAbs(truth)) {
         reco->weight *= 0.8;
       }
 

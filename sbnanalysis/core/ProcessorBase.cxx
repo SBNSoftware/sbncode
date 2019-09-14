@@ -443,6 +443,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       fsp.momentum = particle.Momentum(0).Vect();
       fsp.start = particle.Position(0).Vect();
       fsp.status_code = particle.StatusCode();
+      fsp.rescatter = particle.Rescatter();
       fsp.is_primary = (particle.Process() == "primary");
       fsp.length = util::MCParticleLength(particle);
       if (fProviderManager != NULL) {
@@ -470,6 +471,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       q_nucframe.Boost(nuc_boost);
       interaction.neutrino.modq = q_nucframe.P();
       interaction.neutrino.q0 = q_nucframe.E();
+      interaction.neutrino.inpi = gtruth.fNumPi0 + gtruth.fNumPiPlus + gtruth.fNumPiMinus;
     }
 
     fEvent->truth.push_back(interaction);
