@@ -91,10 +91,19 @@ bool ExampleSelection::ProcessEvent(
     }
     // Add in the "reconstructed" interaction
     //
-    // Contruct truth information from the provided vector
+    // Construct truth information from the provided vector
     event::RecoInteraction interaction(i);
+
+    // Get truth information from the event
+    TVector3 lepton_momentum = mctruth.GetNeutrino().Lepton().Momentum().Vect();
+
+    // The "truth" vector also collects truth information for use
+    // The i-th truth Interaction is the same as the i-th entry in the mctruths vector
+    double lepton_energy = truth[i].lepton.energy;
+
     // get "reconstructed" energy
-    interaction.reco_energy = util::ECCQE(mctruth.GetNeutrino().Nu().Momentum().Vect(), mctruth.GetNeutrino().Lepton().E());
+    interaction.reco_energy = util::ECCQE(lepton_momentum, lepton_energy);
+    // Save the reconstructed interaction
     reco.push_back(interaction);
   }
 
