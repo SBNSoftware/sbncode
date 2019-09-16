@@ -2,6 +2,8 @@
 #define __sbnanalysis_core_ProviderManager__
 
 #include <string>
+#include <memory>
+#include <vector>
 #include "core/Experiment.hh"
 
 namespace geo {
@@ -43,27 +45,27 @@ class ProviderManager {
 public:
   ProviderManager(Experiment det, std::string fcl="");
 
-  const geo::GeometryCore* GetGeometryProvider() {
+  const geo::GeometryCore* GetGeometryProvider() const {
     return fGeometryProvider.get();
   }
 
-  const detinfo::LArPropertiesStandard* GetLArPropertiesProvider() {
+  const detinfo::LArPropertiesStandard* GetLArPropertiesProvider() const {
     return fLArPropertiesProvider.get();
   }
 
-  const detinfo::DetectorClocksStandard* GetDetectorClocksProvider() {
+  const detinfo::DetectorClocksStandard* GetDetectorClocksProvider() const {
     return fDetectorClocksProvider.get();
   }
 
-  const detinfo::DetectorPropertiesStandard* GetDetectorPropertiesProvider() {
+  const detinfo::DetectorPropertiesStandard* GetDetectorPropertiesProvider() const {
     return fDetectorPropertiesProvider.get();
   }
 
-  const cheat::BackTracker* GetBackTrackerProvider() {
+  cheat::BackTracker* GetBackTrackerProvider() const {
     return fBackTrackerProvider.get();
   }
 
-  const cheat::ParticleInventory* GetParticleInventoryProvider() {
+  cheat::ParticleInventory* GetParticleInventoryProvider() const {
     return fParticleInventoryProvider.get();
   }
 

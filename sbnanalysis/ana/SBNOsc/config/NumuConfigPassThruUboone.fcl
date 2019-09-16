@@ -1,0 +1,13 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_PassThru_Uboone.root"
+
+MCWeightTags: @local::eventweight_tags 
+
+NumuSelection: {
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
+  active_volumes: @local::MicroBooNE_active_volumes
+  @table::standard_cuts_noCuts
+  uniformWeights: @local::standard_uniformWeights
+}
+

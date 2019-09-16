@@ -35,12 +35,14 @@ class Covariance: public core::PostProcessorBase {
         // implementing PostProcessor
         void FileCleanup(TTree *eventTree);
         void Initialize(fhicl::ParameterSet *config);
-        void ProcessEvent(const Event *event);
-        void Finalize() { GetCovs(); Write(); }
+        void ProcessEvent(const event::Event *event);
+        void ProcessSubRun(const SubRun *subrun);
+        void Finalize() { Scale(); GetCovs(); Write(); }
 
         // API Functions
         void GetCovs();
         void Write();
+        void Scale();
 
         // build the covariance matrix
         TMatrixDSym CovarianceMatrix();
@@ -57,19 +59,26 @@ class Covariance: public core::PostProcessorBase {
 	    /** Constructors. */
 	    EventSample(const fhicl::ParameterSet &config, unsigned nUniverses, unsigned nVariations);
 	    
-	    double fScaleFactor;         //!< Factor for POT (etc.) scaling
+	    double fScaleCC;
+	    double fScaleNC;
+	    double fScaleEnergy;
+            double fPOT;
+	    double fScalePOT;         //!< Factor for POT (etc.) scaling
 	    std::vector <double> fBins; //!< Energy bin limits
 	    TH1D *fCentralValue; //!< central value histogram
 	    std::vector<std::vector<TH1D *>> fUniverses; //!< List of histogram per systematic universe. 
               // List has index per covariance matrix to be generated.
 	    std::string fName; //!< Name for the sample
+             std::vector<double> fEnergyBinScale;
         };
         void GetCovPerVariation(unsigned variation);
 
         // config
         std::vector<std::vector<std::string>> fWeightKeys;
-        std::vector<std::string> fUniformWeights;
+        std::vector<std::vector<std::string>> fWeightKeysCC;
+        std::vector<std::vector<std::string>> fWeightKeysNC;
         int fNumAltUnis;
+        int fAltUniOffset;
         std::string fEnergyType;
 
 
@@ -82,6 +91,7 @@ class Covariance: public core::PostProcessorBase {
         bool fSaveCentralValue;
         bool fSaveUniverses;
 
+
         double fWeightMax;
 
         // file counter
@@ -89,7 +99,6 @@ class Covariance: public core::PostProcessorBase {
 
         // Stored Event Samples
         std::vector<EventSample> fEventSamples;
-        
 };
 
 }   // namespace SBNOsc

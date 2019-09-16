@@ -14,11 +14,15 @@
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
+#include "SubRun.hh"
 
 class TBranch;
 class TFile;
 class TTree;
-class Event;
+
+namespace event {
+  class Event;
+}
 
 namespace fhicl {
   class ParameterSet;
@@ -59,7 +63,9 @@ protected:
    *
    * \param event The sbncode event for the current event
    */
-  virtual void ProcessEvent(const Event *event) = 0;
+  virtual void ProcessEvent(const event::Event *event) = 0;
+
+  virtual void ProcessSubRun(const SubRun *subrun) {}
 
   /**
    * Setup anything needed per file
@@ -90,8 +96,11 @@ protected:
   /** Perform user-level finalization. Called after all events have been processed. */
   virtual void Finalize() {}
 
-  Event* fEvent;
+  event::Event* fEvent;
   TTree* fEventTree;
+
+  SubRun* fSubRun;
+  TTree* fSubRunTree;
 };
 
 }  // namespace core
