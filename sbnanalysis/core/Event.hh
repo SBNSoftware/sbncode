@@ -79,6 +79,7 @@ public:
   float t;                 //!< Kinematic t
   float eccqe;             //!< CCQE energy
   float energy;            //!< Neutrino energy (GeV)
+  int inpi;                //!< Number of intermediate state pions
   TVector3 momentum;        //!< Neutrino three-momentum
   TVector3 position;        //!< Neutrino interaction position
   int parentPDG;            //!< Parent hadron/muon PDG
@@ -131,6 +132,7 @@ public:
   float length; //!< Total length of the energy depositions [cm]
   bool is_primary; //!< Whether the process producing the particle was "primary"
   int status_code; //!< Status code returned by GENIE (see GenieStatus enum)
+  int rescatter; //!< GENIE FSI rescattering type
 };
 
 
