@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v08_30_00
+parent sbncode v08_31_00
 defaultqual e17
 
 # These optional lines define the installed directories where headers,
@@ -35,10 +35,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-sbndcode         v08_30_00
-uboonecode       v08_30_00
-icaruscode       v08_30_00
-ubcore           v08_30_00
+sbndcode         v08_31_00
+uboonecode       v08_31_00
+icaruscode       v08_31_00
+ubcore           v08_31_00
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
