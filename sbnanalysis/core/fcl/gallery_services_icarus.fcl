@@ -4,6 +4,7 @@
 #include "detectorproperties_icarus.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
+#include "photonbacktrackerservice.fcl"
 
 services: {
   message:                   @local::icarus_message_services_interactive
@@ -13,5 +14,6 @@ services: {
   DetectorPropertiesService: @local::icarus_detproperties
   BackTrackerService:        @local::standard_backtrackerservice
   ParticleInventoryService:  @local::standard_particleinventoryservice
+  PhotonBackTrackerService: @local::providerPBKConf
 }
 

@@ -4,6 +4,7 @@
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
 #include "detectorproperties_sbnd.fcl"
+#include "photonbacktrackerservice.fcl"
 
 services: {
   message:                   @local::sbnd_message_services_interactive
@@ -13,5 +14,6 @@ services: {
   DetectorPropertiesService: @local::sbnd_detproperties
   BackTrackerService:        @local::standard_backtrackerservice
   ParticleInventoryService:  @local::standard_particleinventoryservice
+  PhotonBackTrackerService: @local::providerPBKConf
 }
 
