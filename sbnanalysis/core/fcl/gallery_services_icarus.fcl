@@ -1,6 +1,8 @@
 #include "services_icarus.fcl"
 #include "geometry_icarus.fcl"
 #include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 #include "detectorproperties_icarus.fcl"
 
 services: {
@@ -9,5 +11,7 @@ services: {
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
   DetectorPropertiesService: @local::icarus_detproperties
+  BackTrackerService:        @local::standard_backtrackerservice
+  ParticleInventoryService:  @local::standard_particleinventoryservice
 }
 

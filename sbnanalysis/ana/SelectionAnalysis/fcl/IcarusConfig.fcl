@@ -1,0 +1,30 @@
+###include "backtrackerservice.fcl"  
+###include "particleinventoryservice.fcl" 
+###include "gallery_services_icarus.fcl"  
+
+OutputFile: "IcarusSelectionOutput.root" 
+ExperimentID: 2
+MCTruthTag:                "generator"
+MCParticleTag:             "largeant"
+HitTag:                    "gaushitTPC0"
+PFParticleTag:             "pandoraGausCryo0"
+RecoTrackTag:              "pandoraTrackGausCryo0"
+RecoShowerTag:             "SBNShowerGausCryo0"
+VertexTag:                 "pandoraGausCryo0"
+RecoTrackCalorimetryTag:   "calorimetry"
+RecoTrackParticleIDTag:    "icapidchi"
+ProviderConfigFile:        ""
+#  fitter: {                                                                   
+pIdHypothesis: 13                                                         
+minNumSegments: 3                                                         
+segmentLength: 14.0                                                       
+minHitsPerSegment: 2                                                      
+nElossSteps: 10                                                           
+eLossMode: 0                                                              
+pMin: 0.01                                                                
+pMax: 7.50                                                                
+pStep: 0.01                                                               
+angResol: 3.0                                                             
+#  }    
+
+SelectionAnalysis:{}

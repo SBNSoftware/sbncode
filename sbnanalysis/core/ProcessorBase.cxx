@@ -478,6 +478,7 @@ namespace core {
     // Now loop over the neutrino IDs and the pfparticles 
     // Make a new RecoInteraction for each NeutrinoID 
     // fill the finalstatereconstructedparticles for each of its daughters
+    
     for(int i = 0; i < neutrinos.size(); ++i){
 
       Event::RecoInteraction reconstructed_interaction;
@@ -578,7 +579,6 @@ namespace core {
                   // Pdg here defines the TYPE of particle
                   fsrp.pdg = pfparticle.PdgCode();
 
-
                   // Get associated MCParticle ID using 3 different methods:
                   //    Which particle contributes the most energy to all the hits
                   //    Which particle contributes the reco charge to all the hits
@@ -611,9 +611,6 @@ namespace core {
                   for(int l = 0; l < fsrp.dedx_size; ++l)      fsrp.dedx[l]           = cal_assn[k]->dEdx()[l];
                   for(int l = 0; l < fsrp.res_range_size; ++l) fsrp.res_range[l]      = cal_assn[k]->ResidualRange()[l];
                   for(int l = 0; l < fsrp.pitch_size; ++l)     fsrp.pitch[l]          = cal_assn[k]->TrkPitchVec()[l];
-/*                  for(int l = fsrp.dedx_size; l < 100000; ++l) fsrp.dedx[l]           = Event::kUnfilled;
-                  for(int l = fsrp.res_range_size; l < 100000; ++l) fsrp.res_range[l] = Event::kUnfilled;
-                  for(int l = fsrp.pitch_size; l < 100000; ++l)     fsrp.pitch[l]     = Event::kUnfilled;*/
 
                   // Momentum
                   //    Assign a momentum of 0 to every parameter and then 
