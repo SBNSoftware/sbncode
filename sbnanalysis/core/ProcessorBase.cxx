@@ -239,7 +239,9 @@ void ProcessorBase::SetupServices(gallery::Event& ev) {
 
     // reset information in the photon back tracker
     if (fProviderManager->GetPhotonBackTrackerProvider() != NULL) {
+      fProviderManager->GetPhotonBackTrackerProvider()->ClearEvent();
       fProviderManager->GetPhotonBackTrackerProvider()->PrepOpDetBTRs(ev);
+      // fProviderManager->GetPhotonBackTrackerProvider()->PrepOpFlashToOpHits(ev);
     }
   }
 }
@@ -259,10 +261,6 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   gallery::Handle<std::vector<simb::GTruth> > gtruths_handle;
   ev.getByLabel(fTruthTag, gtruths_handle);
   bool genie_truth_is_valid = gtruths_handle.isValid();
-
-  // Get MCFlux information
-  auto const& mcfluxes = \
-    *ev.getValidHandle<std::vector<simb::MCFlux> >(fTruthTag);
 
   // Get MCEventWeight information
   std::vector<gallery::Handle<std::vector<evwgh::MCEventWeight> > > wghs;

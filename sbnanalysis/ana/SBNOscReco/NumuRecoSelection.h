@@ -39,6 +39,7 @@
 #include "sbndcode/CRT/CRTUtils/CRTTrackMatchAlg.h"
 
 #include "CosmicIDAlgs/ApaCrossCosmicIdAlg.h"
+#include "OpHitFinder/opHitFinderSBND.hh"
 
 class TH2D;
 class TH1D;
@@ -195,6 +196,7 @@ public:
 
     int crt_match; //!< Index into list of CRTMatch's in event -- -1 if no match
     int flash_match; //!< Index into list of FlashMatch's in event -- -1 if no match
+    int pandora_track_id;
 
     RecoTrack():
       deposited_energy_max(-1),
@@ -229,7 +231,10 @@ public:
       is_contained(false),
       start(-999, -999, -999),
       end(-999, -999, -999),
-      dist_to_vertex(-1)
+      dist_to_vertex(-1),
+      crt_match(-1),
+      flash_match(-1),
+      pandora_track_id(-1)
       {}
 
 
@@ -266,6 +271,7 @@ public:
     sbnd::crt::CRTHit hit;
     bool has_hit_match;
     double hit_distance;
+    double match_time;
   };
 
   struct FlashMatch {
@@ -300,7 +306,10 @@ protected:
     bool requireContained; //!< Apply cut that requires each primary track to be contained inside the containment volume
     double trackMatchContainmentCut;
 
+    bool MakeOpHits;
+
     int FlashMatchMethod;
+    int TSMode;
     double flashMatchTimeDifference;
 
     double beamCenterX;
@@ -527,8 +536,9 @@ protected:
   RootHistos _root_histos[nHistos][nModes]; //!< Histos (one group per cut)
   TrackHistos _track_histos[nTrackHistos];
 
-  sbnd::CRTTrackMatchAlg _crt_track_matchalg; //!< Algorithm for matching reco Tracks -> CRT Tracks
-  sbnd::CRTT0MatchAlg _crt_hit_matchalg; //!< Algorithm for matching reco Tracks -> CRT hits (T0's)
+  sbnd::CRTTrackMatchAlg *_crt_track_matchalg; //!< Algorithm for matching reco Tracks -> CRT Tracks
+  sbnd::CRTT0MatchAlg *_crt_hit_matchalg; //!< Algorithm for matching reco Tracks -> CRT hits (T0's)
+  opdet::opHitFinderSBND *_op_hit_maker;
   ApaCrossCosmicIdAlg _apa_cross_flashmatchalg;
 
 };

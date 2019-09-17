@@ -6,6 +6,7 @@ project(SBNOscReco)
 add_subdirectory(RecoUtils)
 add_subdirectory(CosmicIDAlgs)
 add_subdirectory(LArReco)
+add_subdirectory(OpHitFinder)
 add_subdirectory(fcl)
 
 # Directories where includes are found (in addition to those defined in the
@@ -39,6 +40,12 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   sbnanalysis_SBNOscReco_LArReco
   ubana_BasicTool_GeoAlgo
   sbncode_CosmicIdAlgs
+  sbnanalysis_SBNOscReco_opHitFinderSBND
+  icaruscode_CRT	
+  icaruscode_CRTUtils
+  icaruscode_CRTData
+  icaruscode_CRTProducts
+  icaruscode_CRT_CRTProducts_dict
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV

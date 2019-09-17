@@ -40,9 +40,12 @@
 #include "RecoUtils/RecoUtils.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
+#include "canvas/Persistency/Provenance/ProductID.h"
 
 #include "larsim/MCCheater/ParticleInventory.h"
 #include "larsim/MCCheater/PhotonBackTracker.h"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 
 // copied in RecoUtils here to not use art services
 
@@ -50,6 +53,60 @@ namespace ana {
   namespace SBNOsc {
 
 const static TVector3 InvalidTVector3 = TVector3(-999, -999, -999);
+
+void DumpTrueStart(const gallery::Event &ev, int mcparticle_id) {
+  // track.match.mcparticle_id);
+  const std::vector<simb::MCParticle> &mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
+      std::cout << "Track: " << mcparticle_id;
+  for (const simb::MCParticle &part: mcparticle_list) {
+    if (mcparticle_id == part.TrackId()) {
+      std::cout << " start T: " << part.Position().T() << " to: " << part.EndPosition().T() << std::endl;
+    }
+  }
+  return;
+}
+
+int GetPhotonMotherID(const gallery::Event &ev, int mcparticle_id) {
+  auto const &mcparticle_handle = ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
+  art::FindManyP<simb::MCTruth, sim::GeneratedParticleInfo> particles_to_truth(mcparticle_handle, ev, "largeant");
+  int index = -1;
+  for (unsigned i = 0; i < mcparticle_handle->size(); i++) {
+    if (mcparticle_handle->at(i).TrackId() == mcparticle_id) {
+      index = (int)i;
+      break;
+    }
+  }
+  assert(index >= 0);
+  bool is_cosmic = particles_to_truth.at(index).at(0)->Origin() != simb::Origin_t::kBeamNeutrino;
+  if (is_cosmic) {
+    unsigned truth_index = particles_to_truth.data(index).at(0)->generatedParticleIndex();
+    return (int) truth_index +1;
+  }
+  else {
+    return mcparticle_id;
+  }
+}
+
+sbnd::crt::CRTHit ICARUS2SBNDCrtHit(const icarus::crt::CRTHit& inp) {
+  sbnd::crt::CRTHit ret;
+  ret.feb_id = inp.feb_id;
+  ret.pesmap = inp.pesmap;
+  ret.peshit = inp.peshit;
+  ret.ts0_s = inp.ts0_s;
+  ret.ts0_s_corr = inp.ts0_s_corr;
+  ret.ts0_ns = inp.ts0_ns;
+  ret.ts0_ns_corr = inp.ts0_ns_corr;
+  ret.ts1_ns = inp.ts1_ns;
+  ret.plane = inp.plane;
+  ret.x_pos = inp.x_pos;
+  ret.x_err = inp.x_err;
+  ret.y_pos = inp.y_pos;
+  ret.y_err = inp.y_err;
+  ret.z_pos = inp.z_pos;
+  ret.z_err = inp.z_err;
+  ret.tagger = inp.tagger;
+  return ret;
+}
 
 NumuRecoSelection::NumuRecoSelection() :
   SelectionBase(),
@@ -62,10 +119,10 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     fhicl::ParameterSet pconfig = config->get<fhicl::ParameterSet>("NumuRecoSelection");
 
     // configure the Cosmic ID algorithms
-    _crt_track_matchalg = sbnd::CRTTrackMatchAlg(fhicl::Table<sbnd::CRTTrackMatchAlg::Config>(pconfig.get<fhicl::ParameterSet>("CRTTrackMatchAlg"))(), 
+    _crt_track_matchalg = new sbnd::CRTTrackMatchAlg(fhicl::Table<sbnd::CRTTrackMatchAlg::Config>(pconfig.get<fhicl::ParameterSet>("CRTTrackMatchAlg"))(), 
       fProviderManager->GetGeometryProvider(), fProviderManager->GetDetectorPropertiesProvider());
 
-    _crt_hit_matchalg = sbnd::CRTT0MatchAlg(fhicl::Table<sbnd::CRTT0MatchAlg::Config>(pconfig.get<fhicl::ParameterSet>("CRTT0MatchAlg"))(),
+    _crt_hit_matchalg = new sbnd::CRTT0MatchAlg(fhicl::Table<sbnd::CRTT0MatchAlg::Config>(pconfig.get<fhicl::ParameterSet>("CRTT0MatchAlg"))(),
       fProviderManager->GetGeometryProvider(), fProviderManager->GetDetectorPropertiesProvider());
 
     _apa_cross_flashmatchalg.reconfigure(*fProviderManager, fhicl::Table<ApaCrossCosmicIdAlg::Config>(pconfig.get<fhicl::ParameterSet>("ApaCrossCosmicIdAlg"))());
@@ -105,7 +162,11 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
      for (const geo::BoxBoundedGeo &geo: _config.cryostat_volumes) {
        _config.fiducial_volumes.emplace_back(geo.MinX() + dx, geo.MaxX() - dx, geo.MinY() + dy, geo.MaxY() - dy, geo.MinZ() + zfront, geo.MaxZ() - zback);
      }
+     for (unsigned i = 0; i < _config.fiducial_volumes.size(); i++) {
+       std::cout << "x: " << _config.fiducial_volumes[i].MinX() << " " << _config.fiducial_volumes[i].MaxX() << " y: " << _config.fiducial_volumes[i].MinY() << " " << _config.fiducial_volumes[i].MaxY() << " z: " << _config.fiducial_volumes[i].MinZ() << " " << _config.fiducial_volumes[i].MaxZ() << std::endl;
+     }
    }
+   
 
     // get the beam center
     _config.beamCenterX = pconfig.get<float>("beamCenterX", 130.);
@@ -118,6 +179,9 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
 
     _config.trackMatchContainmentCut = pconfig.get<double>("trackMatchContainmentCut", -1);
 
+    _config.TSMode = pconfig.get<int>("TSMode", 1);
+    _config.MakeOpHits = pconfig.get<bool>("MakeOpHits", false);
+    
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
 
@@ -160,6 +224,9 @@ void NumuRecoSelection::Initialize(fhicl::ParameterSet* config) {
     double min_track_length = pconfig.get<double>("MinTrackLength", 10.);
     _track_momentum_calculator = new trkf::TrackMomentumCalculator(min_track_length);
     _mcs_fitter = new trkf::TrajectoryMCSFitter(pconfig.get<fhicl::ParameterSet>("MCSFitter", {}));
+
+    _op_hit_maker = (_config.MakeOpHits) ? new opdet::opHitFinderSBND(pconfig.get<fhicl::ParameterSet>("OpHitMaker"), fProviderManager->GetDetectorClocksProvider()) :
+        NULL;
   }
 
   // Setup histo's for root output
@@ -365,6 +432,7 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
               << "(" << _nu_count << " neutrinos selected)"
               << std::endl;
   }
+  std::cout << "New Event! " << _event_counter << std::endl;
   // clear out old containers
   _selected->clear();
 
@@ -452,13 +520,13 @@ bool NumuRecoSelection::ProcessEvent(const gallery::Event& ev, const std::vector
             if (crt_match.has_track_match) {
               _track_histos[i].has_crt_track_match->Fill(1.);
               _track_histos[i].has_crt_hit_match->Fill(1.);
-              crt_match_time = crt_match.track.ts1_ns;
+              crt_match_time = crt_match.match_time;
               has_crt_match_time = true;
             }
             else if (crt_match.has_hit_match) {
               _track_histos[i].has_crt_track_match->Fill(0.);
               _track_histos[i].has_crt_hit_match->Fill(1.);
-              crt_match_time = crt_match.hit.ts1_ns;
+              crt_match_time = crt_match.match_time;
               has_crt_match_time = true;
               _track_histos[i].crt_hit_match_time->Fill(crt_match_time);
             }
@@ -1083,6 +1151,8 @@ std::map<size_t, NumuRecoSelection::RecoTrack> NumuRecoSelection::RecoSliceTrack
     // information to be saved
     RecoTrack this_track;
 
+    this_track.pandora_track_id = track->ID();
+
     // track length
     this_track.length = RecoTrackLength(track);
 
@@ -1362,10 +1432,10 @@ NumuRecoSelection::TrackTruthMatch NumuRecoSelection::MatchTrack2Truth(const gal
 
   // get list of tracks
   auto const& recob_track_list = \
-   ev.getValidHandle<std::vector<recob::Track>>(_config.RecoVertexTag);
+   ev.getValidHandle<std::vector<recob::Track>>(_config.RecoTrackTag);
 
   // get the mapping of tracks to Hits
-  art::FindManyP<recob::Hit> tracks_to_hits(recob_track_list, ev, _config.RecoVertexTag);
+  art::FindManyP<recob::Hit> tracks_to_hits(recob_track_list, ev, _config.RecoTrackTag);
 
   // get the primary track from the daughter tracks
   auto const &pfp_handle = \
@@ -1488,14 +1558,21 @@ std::vector<NumuRecoSelection::RecoSlice> NumuRecoSelection::RecoSliceInfo(
 std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const gallery::Event &ev, std::vector<NumuRecoSelection::RecoSlice> &slices) {
   // collect the CRT Tracks
   gallery::Handle<std::vector<sbnd::crt::CRTTrack>> crt_tracks_sbnd;
-  bool has_sbnd_crt_tracks = ev.getByLabel(_config.CRTTrackTag, crt_tracks_sbnd);
+  bool has_crt_tracks_sbnd = ev.getByLabel(_config.CRTTrackTag, crt_tracks_sbnd);
   gallery::Handle<std::vector<icarus::crt::CRTTrack>> crt_tracks_icarus;
-  bool has_icarus_crt_tracks = ev.getByLabel(_config.CRTTrackTag, crt_tracks_icarus);
-  bool has_crt_tracks = has_sbnd_crt_tracks || has_icarus_crt_tracks;
-  // BAD VOODOO
-  // This is only ok because the SBND and ICARUS CRT Tracks are identical
+  // bool has_crt_tracks_icarus = ev.getByLabel(_config.CRTTrackTag, crt_tracks_icarus);
+  bool has_crt_tracks_icarus = false;
+  bool has_crt_tracks = has_crt_tracks_sbnd || has_crt_tracks_icarus;
+
+  std::vector<sbnd::crt::CRTTrack> crt_tracks_conv;
+  if (has_crt_tracks_icarus) {
+    for (unsigned i = 0; i < crt_tracks_icarus->size(); i++) {
+      crt_tracks_conv.emplace_back();
+      memcpy(&crt_tracks_conv[i], &crt_tracks_icarus->at(i), sizeof(sbnd::crt::CRTTrack));
+    }  
+  }
   const std::vector<sbnd::crt::CRTTrack> *crt_tracks = (has_crt_tracks) ?
-    ( (has_sbnd_crt_tracks) ? crt_tracks_sbnd.product() : (const std::vector<sbnd::crt::CRTTrack> *)crt_tracks_icarus.product()) :
+    ( (has_crt_tracks_sbnd) ? crt_tracks_sbnd.product() : &crt_tracks_conv) : 
     NULL;
 
   // collect the CRT Hits
@@ -1503,11 +1580,18 @@ std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const ga
   bool has_crt_hits_sbnd = ev.getByLabel(_config.CRTHitTag, crt_hits_sbnd);
   gallery::Handle<std::vector<icarus::crt::CRTHit>> crt_hits_icarus;
   bool has_crt_hits_icarus = ev.getByLabel(_config.CRTHitTag, crt_hits_icarus);
-  // BAD VOODOO
-  // This is only ok because the SBND and ICARUS CRT Hits are identical
-  bool has_crt_hits = has_sbnd_crt_hits || has_icarus_crt_hits;
-  const std::vector<sbnd::crt::CRTTrack> *crt_hits = (has_crt_hits) ?
-    ( (has_sbnd_crt_hits) ? crt_hits_sbnd.product() : (const std::vector<sbnd::crt::CRTTrack> *)crt_hits_icarus.product()) :
+  bool has_crt_hits = has_crt_hits_sbnd || has_crt_hits_icarus;
+
+  // Convert ICARUS Hits to SBND Hits
+  std::vector<sbnd::crt::CRTHit> crt_hits_conv;
+  if (has_crt_hits_icarus) {
+    for (unsigned i = 0; i < crt_hits_icarus->size(); i++) {
+      crt_hits_conv.push_back(ICARUS2SBNDCrtHit(crt_hits_icarus->at(i)));
+    }  
+  }
+
+  const std::vector<sbnd::crt::CRTHit> *crt_hits = (has_crt_hits) ?
+    ( (has_crt_hits_sbnd) ? crt_hits_sbnd.product() : &crt_hits_conv) :
     NULL;
   
   // also we need the pandora tracks here
@@ -1525,8 +1609,8 @@ std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const ga
     for (auto &track_pair: slice.tracks) {
       NumuRecoSelection::CRTMatch match;
 
-      size_t track_id = track_pair.first;
       NumuRecoSelection::RecoTrack &track = track_pair.second;
+      int track_id = track.pandora_track_id;
       const recob::Track &pandora_track = pfp_track_list->at(track_id);
 
       // no match by default
@@ -1535,14 +1619,17 @@ std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const ga
       // hits associated with this track
       const std::vector<art::Ptr<recob::Hit>> &hits = tracks_to_hits.at(pandora_track.ID());
       // try to find a match to CRT Track -- if we have one
-      int crt_id = has_crt_tracks ? _crt_track_matchalg.GetMatchedCRTTrackId(pandora_track, hits, *crt_tracks) : -1;
+      int crt_id = has_crt_tracks ? _crt_track_matchalg->GetMatchedCRTTrackId(pandora_track, hits, *crt_tracks) : -1;
 
       // if this failed, see if we can get a match to a hit
       if (crt_id < 0) {
         match.has_track_match = false;
         std::pair<sbnd::crt::CRTHit, double> hit_pair = has_crt_hits ? 
-		_crt_hit_matchalg.ClosestCRTHit(pandora_track, hits, *crt_hits) : 
+		_crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *crt_hits) : 
 		std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
+        std::cout << "CRT Hit Distance match: " << hit_pair.second << std::endl;
+        std::cout << "CRT Hit time: " << hit_pair.first.ts1_ns << std::endl;
+        std::cout << "CRT Loc: " << hit_pair.first.x_pos << " " << hit_pair.first.y_pos << " " << hit_pair.first.z_pos << std::endl;
 
         double distance = hit_pair.second;
         // matching failed
@@ -1552,13 +1639,16 @@ std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const ga
         match.has_hit_match = true;
         match.hit_distance = distance;
         match.hit = hit_pair.first;
+        match.match_time = ((_config.TSMode == 0) ? match.hit.ts0_ns : match.hit.ts1_ns) / 1000.;
       }
       // Track matching worked!
       else {
         match.has_track_match = true;
         match.has_hit_match = false;
         match.track = crt_tracks->at(crt_id);
+        match.match_time = match.track.ts1_ns / 1000.;
       }
+      std::cout << "Match time: " << match.match_time << std::endl;
 
       // if we got some kind of match, save it
       track.crt_match = ret.size(); 
@@ -1571,25 +1661,38 @@ std::vector<NumuRecoSelection::CRTMatch> NumuRecoSelection::CRTMatching(const ga
 
 std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(const gallery::Event &ev, std::vector<NumuRecoSelection::RecoSlice> &slices, const std::vector<NumuRecoSelection::CRTMatch> &crt_matches) {
   // get the OpDetFlashes
-  gallery::Handle<std::vector<recob::OpHit>> op_hits;
-  bool has_op_flashes = ev.getByLabel(_config.OpFlashTag, op_hits); 
-         
   std::vector<art::Ptr<recob::OpHit>> op_hit_ptrs;
-  art::fill_ptr_vector(op_hit_ptrs, op_hits);
+  std::vector<recob::OpHit> op_hits;
+  art::ProductID local_opdets("local_opdets");
+  bool has_op_flashes = false;
+  if (_config.MakeOpHits) {
+    const std::vector<raw::OpDetWaveform> &op_waveforms = *ev.getValidHandle<std::vector<raw::OpDetWaveform>>("opdaq");
+    op_hits = _op_hit_maker->MakeHits(op_waveforms);
+    for (unsigned i = 0; i < op_hits.size(); i++) {
+      op_hit_ptrs.emplace_back(local_opdets, &op_hits[i], i);
+    }
+    has_op_flashes = true;
+  }
+  else {
+    gallery::Handle<std::vector<recob::OpHit>> op_hits;
+    has_op_flashes = ev.getByLabel(_config.OpFlashTag, op_hits); 
+         
+    art::fill_ptr_vector(op_hit_ptrs, op_hits);
+  }
   // use the OP flashes as a list of t0's for APA flash-matching
   std::map<geo::CryostatID, std::vector<double>> flash_times;
   std::vector<double> flash_times_list;
   if (has_op_flashes) {
-    for (const recob::OpHit &flash: *op_hits) {
-      if (flash.OpChannel() >= fProviderManager->GetGeometryProvider()->NOpChannels()) {
-        std::cerr << "Bad OP Channel: " << flash.OpChannel() << std::endl;
+    for (const art::Ptr<recob::OpHit> &flash: op_hit_ptrs) {
+      if (flash->OpChannel() >= fProviderManager->GetGeometryProvider()->NOpChannels()) {
+        std::cerr << "Bad OP Channel: " << flash->OpChannel() << std::endl;
         continue;
       }
-      const geo::OpDetGeo &op_geo = fProviderManager->GetGeometryProvider()->OpDetGeoFromOpChannel(flash.OpChannel());
+      const geo::OpDetGeo &op_geo = fProviderManager->GetGeometryProvider()->OpDetGeoFromOpChannel(flash->OpChannel());
       if (!op_geo.ID()) continue;
       geo::CryostatID id = op_geo.ID().asCryostatID();
-      flash_times[id].push_back(flash.PeakTime());
-      flash_times_list.push_back(flash.PeakTime());
+      flash_times[id].push_back(flash->PeakTime());
+      flash_times_list.push_back(flash->PeakTime());
     }
   }
 
@@ -1606,8 +1709,8 @@ std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(cons
   // iterate for all tracks for all flashes
   for (NumuRecoSelection::RecoSlice &slice: slices) {
     for (auto &track_pair: slice.tracks) {
-      size_t track_id = track_pair.first;
       NumuRecoSelection::RecoTrack &track = track_pair.second;
+      int track_id = track_pair.second.pandora_track_id;
       const recob::Track &pandora_track = pfp_track_list->at(track_id);
       // hits associated with this track
       const std::vector<art::Ptr<recob::Hit>> &hits = tracks_to_hits.at(pandora_track.ID());
@@ -1619,14 +1722,8 @@ std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(cons
       if (_config.FlashMatchMethod == 0) {
         if (track.crt_match < 0) continue;
         const NumuRecoSelection::CRTMatch &crt_match = crt_matches.at(track.crt_match);
-        double crt_match_time;
-        if (crt_match.has_track_match) {
-          crt_match_time = crt_match.track.ts1_ns;
-        }
-        else if (crt_match.has_hit_match) {
-          crt_match_time = crt_match.hit.ts1_ns;
-        }
-        else continue;
+        if (!(crt_match.has_track_match  || crt_match.has_hit_match)) continue;
+        double crt_match_time = crt_match.match_time;
         if (flash_times_list.size() == 0) continue;
         double closest_time = *std::min_element(flash_times_list.begin(), flash_times_list.end(),
            [crt_match_time](double &lhs, double &rhs) { return std::abs(lhs - crt_match_time) < std::abs(rhs - crt_match_time);}); 
@@ -1651,9 +1748,19 @@ std::vector<NumuRecoSelection::FlashMatch> NumuRecoSelection::FlashMatching(cons
       }
       // truth match method
       else if (_config.FlashMatchMethod == 2) {
+        std::cout << "New Track! " <<  pandora_track.ID() << " "  << track.match.mcparticle_id << std::endl;
         // see if we can do the match
         if (track.match.has_match) {
-          const std::vector<art::Ptr<recob::OpHit>> hit_matches = fProviderManager->GetPhotonBackTrackerProvider()->TrackIdToOpHits_Ps(track.match.mcparticle_id, op_hit_ptrs);
+          DumpTrueStart(ev, track.match.mcparticle_id);
+          // get the correct index
+          int photon_mother_id = GetPhotonMotherID(ev, track.match.mcparticle_id);
+          std::cout << "Has truth match.\n";
+          const std::vector<art::Ptr<recob::OpHit>> hit_matches = fProviderManager->GetPhotonBackTrackerProvider()->TrackIdToOpHits_Ps(photon_mother_id, op_hit_ptrs);
+          std::cout << "Op Hit matches: ";
+          for (const art::Ptr<recob::OpHit> &hit: hit_matches) {
+            std::cout << hit->PeakTime() << " ";
+          }
+          std::cout << std::endl;
           if (hit_matches.size() > 0) {
             // average the times
             double match_time = 0.;
