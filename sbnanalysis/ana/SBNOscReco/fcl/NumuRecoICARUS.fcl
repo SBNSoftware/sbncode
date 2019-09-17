@@ -3,8 +3,16 @@
 
 OutputFile: "output_numureco.root"
 
-ExperimentID: 0
-ProviderConfigFile: "services_sbnd_3drift.fcl"
+ExperimentID: 2
+ProviderConfigFile: "services_icarus_3drift.fcl"
+
+PFParticleTag: "pandoraGausCryo0"
+RecoSliceTag: "pandoraGausCryo0"
+RecoVertexTag: "pandoraGausCryo0"
+RecoTrackTag: "pandoraTrackGausCryo0"
+CaloTag: "pandoraGausCaloCryo0"
+PIDTag: "pandoraGausPidCryo0"
+CRTHitTag: "crtsimhit"
 
 # sbnd_beamtime: [0, 1.600] # [us]
 sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
@@ -14,8 +22,8 @@ NumuRecoSelection: {
   requireMatched: false
   requireContained: false
 
-  trackMatchContainmentCut: 0.5
   flashMatchTimeDifference: 1000
+  TSMode: 0
 
   CRTT0MatchAlg:  @local::standard_crtt0matchingalg
   CRTTrackMatchAlg: @local::standard_crttrackmatchingalg
@@ -27,21 +35,6 @@ NumuRecoSelection: {
       BeamTimeMin: -0.4
       BeamTimeMax: 2.0 
     }
-  }
-  MakeOpHits: true
-
-  OpHitMaker: {
-    InputModule:        "opdaq"
-    BaselineSample:     95        #ticks (make it slightly smaller than the pre-trigger)
-    ThresholdPMT:       8         #in ADC
-    ThresholdArapuca:   20        #in ADC
-    Area1pePMT:         132.66    #in ADC*ns
-    Area1peSiPM:        8541.     #in ADC*ns
-    Saturation:         300       #in number of p.e. to see saturation effects in the signal
-    # Sampling:           0.5      #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency
-    PulsePolarityPMT:   -1        #use -1 for inverse polarity
-    PulsePolarityArapuca: 1       #use -1 for inverse polarity
-    UseDenoising:        1        #if you want a denoising algorithm to use with arapucas choose 1
   }
 
   containment_volume_inset: {
@@ -58,5 +51,6 @@ NumuRecoSelection: {
     zback: 85
   }
 }
+NumuRecoSelection.CRTT0MatchAlg.TSMode: 0
 # NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
 
