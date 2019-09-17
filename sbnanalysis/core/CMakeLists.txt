@@ -107,6 +107,10 @@ file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
 add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
+INSTALL(FILES fcl/gallery_services_icarus.fcl  fcl/gallery_services_sbnd.fcl  fcl/gallery_services_uboone.fcl  fcl/services_icarus_3drift.fcl  fcl/services_sbnd_3drift.fcl
+  DESTINATION
+  ${CMAKE_INSTALL_PREFIX}/fcl
+)
 
 add_executable(sbn sbn.cxx)
 target_link_libraries(
