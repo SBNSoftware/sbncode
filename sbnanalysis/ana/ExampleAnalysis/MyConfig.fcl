@@ -1,0 +1,6 @@
+OutputFile: "output_ExampleAnalysis_MySelection.root"
+
+ExampleAnalysis: {
+}
+
+ExperimentID: 0

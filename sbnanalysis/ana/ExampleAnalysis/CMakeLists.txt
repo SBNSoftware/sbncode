@@ -12,10 +12,13 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # source files.
 add_library(sbnanalysis_ExampleAnalysis_ExampleTools SHARED ExampleTools.cxx)
 add_library(sbnanalysis_ExampleAnalysis_ExampleSelection SHARED ExampleSelection.cxx)
+add_library(sbnanalysis_ExampleAnalysis_MySelection SHARED      MySelection.cxx)
+
 
 # Define library linking
 target_link_libraries(
   sbnanalysis_ExampleAnalysis_ExampleSelection
+  sbnanalysis_ExampleAnalysis_MySelection
   sbnanalysis_ExampleAnalysis_ExampleTools
   sbnanalysis_ProviderManager
 )
@@ -23,4 +26,5 @@ target_link_libraries(
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_ExampleAnalysis_ExampleTools DESTINATION lib)
 install(TARGETS sbnanalysis_ExampleAnalysis_ExampleSelection DESTINATION lib)
+install(TARGETS sbnanalysis_ExampleAnalysis_MySelection DESTINATION lib)
 
