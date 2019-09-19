@@ -26,7 +26,7 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         Chi2Sensitivity() {}
         // Implement post-processor
         void Initialize(fhicl::ParameterSet* config);
-        void ProcessEvent(const Event* event);
+        void ProcessEvent(const event::Event* event);
         void FileCleanup(TTree* eventTree);
 
         void Finalize() { fCovariance.Finalize(); GetChi2(); GetContours(); Write(); }
