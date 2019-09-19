@@ -1,0 +1,18 @@
+OutputFile: "output_AutoVeto_AutoVetoSelection.root"
+
+AutoVetoAnalysis: {
+
+    MCTruthTag:          "generator"
+    DetSimTag:           "crtdaq"
+
+    FiducialXOuter:      25.0 #distance between active and fiducial volume boundaries in drift direction [cm]
+    FiducialXInner:      0.0  #distance between cathode and fiducial volume boundaries in drift direction [cm]
+    FiducialYTop:        25.0 #vertical distance between top active and fiducial volume boundaries [cm]
+    FiducialYBottom:     25.0 #vertical distance between bottom active and fiducial volume boundaries [cm]
+    FiducialZUpstream:   30.0 #upstream z distance between active and fiducial volume boundaries [cm]
+    FiducialZDownstream: 50.0 #downstream z distance between active and fiducial volume boundaries [cm]
+
+
+}
+
+ExperimentID: 2
