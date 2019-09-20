@@ -24,6 +24,7 @@ NumuRecoSelection: {
 
   flashMatchTimeDifference: 1000
   TSMode: 0
+  CRTHitDist: 35
 
   CRTT0MatchAlg:  @local::standard_crtt0matchingalg
   CRTTrackMatchAlg: @local::standard_crttrackmatchingalg

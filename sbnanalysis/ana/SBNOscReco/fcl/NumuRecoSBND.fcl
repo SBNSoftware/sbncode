@@ -14,6 +14,8 @@ NumuRecoSelection: {
   requireMatched: false
   requireContained: false
 
+  # CRTHitDist: 35
+
   trackMatchContainmentCut: 0.5
   flashMatchTimeDifference: 1000
 
