@@ -22,6 +22,7 @@ include_directories($ENV{NUG4_INC})
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
 add_library(sbnanalysis_SBNOscReco_NumuRecoSelection SHARED NumuRecoSelection.cxx)
+add_library(sbnanalysis_SBNOscReco_PostSelection SHARED PostSelection.cc Cuts.cc Histograms.cc)
 add_library(sbnanalysis_SBNOscReco_GetFV SHARED GetFV.cc)
 add_library(sbnanalysis_SBNOscReco_OpDetWaveformMaker SHARED OpDetWaveformMaker.cc)
 add_library(sbnanalysis_SBNOscReco_OpSimHitPrinter SHARED OpSimHitPrinter.cc)
@@ -51,6 +52,12 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuRecoSelection
   icaruscode_CRTData
   icaruscode_CRTProducts
   icaruscode_CRT_CRTProducts_dict
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_PostSelection
+  sbnanalysis_SBNOsc_Utilities
+  ubana_BasicTool_GeoAlgo
+  sbnanalysis_SBNOscReco_classes
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV
@@ -105,6 +112,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
 
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOscReco_NumuRecoSelection DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_PostSelection DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpSimHitPrinter DESTINATION lib)

@@ -11,6 +11,7 @@
 
 #include <iostream>
 #include <array>
+#include <vector>
 
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
@@ -39,6 +40,7 @@
 #include "sbndcode/CRT/CRTUtils/CRTTrackMatchAlg.h"
 
 #include "CosmicIDAlgs/ApaCrossCosmicIdAlg.h"
+#include "CosmicIDAlgs/StoppingParticleCosmicIdAlg.h"
 #include "OpHitFinder/opHitFinderSBND.hh"
 
 class TH2D;
@@ -78,7 +80,7 @@ public:
   /**
  * Enum to hold each different typoe of reconstructed event
  */
-  enum InteractionMode {
+   enum InteractionMode {
     mCC = 0, 
     mNC = 1, 
     mCosmic = 2, 
@@ -92,21 +94,21 @@ public:
     tmNeutrino = 2
   };
 
-  /**
- *  Turn the InteractionMode enum into a string for (e.g.) histogram names.
- *
- *  \param mode The interaction mode to be converted
- *  \return String representaiton of that mode
- */
-  std::string mode2Str(const InteractionMode &mode) const {
-    switch (mode) {
-      case mCC: return "CC";
-      case mNC: return "NC";
-      case mCosmic: return "Cosmic";
-      case mOther: return "Other";
-      case mAll: return "All";
-    }
-  }
+
+  struct CRTMatch {
+    sbnd::crt::CRTTrack track;
+    bool has_track_match;
+    sbnd::crt::CRTHit hit;
+    bool has_hit_match;
+    double hit_distance;
+    double match_time;
+  };
+
+  struct FlashMatch {
+    double match_time;
+    double match_time_first;
+    double match_time_width;
+  };
 
   struct TrackTruthMatch {
     bool has_match;
@@ -194,9 +196,13 @@ public:
     double dist_to_vertex;
     TrackTruthMatch match;
 
-    int crt_match; //!< Index into list of CRTMatch's in event -- -1 if no match
-    int flash_match; //!< Index into list of FlashMatch's in event -- -1 if no match
+    std::vector<CRTMatch> crt_match; 
+    std::vector<FlashMatch> flash_match;
     int pandora_track_id;
+
+    double stopping_chisq_start;
+    double stopping_chisq_finish;
+    std::vector<double> tpc_t0s;
 
     RecoTrack():
       deposited_energy_max(-1),
@@ -232,11 +238,13 @@ public:
       start(-999, -999, -999),
       end(-999, -999, -999),
       dist_to_vertex(-1),
-      crt_match(-1),
-      flash_match(-1),
-      pandora_track_id(-1)
+      crt_match({}),
+      flash_match({}),
+      pandora_track_id(-1),
+      stopping_chisq_start(-1),
+      stopping_chisq_finish(-1),
+      tpc_t0s()
       {}
-
 
     // More involved info -- need this later???
     // std::vector<TLorentzVector> trajectory;
@@ -246,6 +254,7 @@ public:
 
   struct RecoSlice {
     int primary_index;
+    int primary_track_index;
     std::map<size_t, RecoParticle> particles;
     std::map<size_t, RecoTrack> tracks;
   };
@@ -259,32 +268,18 @@ public:
     RecoSlice slice; //!< Particle content of the interaction
     TVector3 position; //!< location of the vertex
     double nu_energy; //!< true/reconstructed neutrino energy
-    int primary_track_index;
     TruthMatch match; //!< Info for mathing to truth
     int multiplicity;
     RecoTrack primary_track;
   };
 
-  struct CRTMatch {
-    sbnd::crt::CRTTrack track;
-    bool has_track_match;
-    sbnd::crt::CRTHit hit;
-    bool has_hit_match;
-    double hit_distance;
-    double match_time;
-  };
-
-  struct FlashMatch {
-    double match_time;
-    double match_time_width;
-  };
 
   /** Reconstruction Information about Event */
   struct RecoEvent {
+    std::vector<RecoTrack> tracks;
+    std::map<size_t, RecoTrack> true_tracks;
     std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
     std::vector<RecoInteraction> truth; //!< List of truth vertices
-    std::vector<CRTMatch> crt_matches; //!< Reconstructed CRT tracks
-    std::vector<FlashMatch> flash_matches;
   };
 
 
@@ -306,7 +301,11 @@ protected:
     bool requireContained; //!< Apply cut that requires each primary track to be contained inside the containment volume
     double trackMatchContainmentCut;
 
+    bool CRTHitinOpHitRange;
+    double CRT2OPTimeWidth;
+
     bool MakeOpHits;
+    double CRTHitDist;
 
     int FlashMatchMethod;
     int TSMode;
@@ -330,75 +329,7 @@ protected:
 
   };
 
-  /** Histograms made for output 
- * Each histogram is made for each cut for each interaction mode
- *
- * */
-  struct RootHistos {
-    TH1D *track_length; //!< Length of the reconstructed primary track
-    TH1D *nuE;
-    TH1D *track_p;
-    TH1D *beam_center_distance;
-    TH1D *Q2;
-    TH1D *true_contained_length;
-    TH1D *true_track_multiplicity;
-    TH1D *crosses_tpc;
-  };
 
-  struct TrackHistos {
-    TH1D *chi2_proton_diff;
-    TH1D *chi2_muon_diff;
-    TH1D *chi2_pion_diff;
-    TH1D *chi2_kaon_diff;
-
-    TH1D *range_p;
-    TH1D *mcs_p;
-    TH1D *deposited_e_max;
-    TH1D *deposited_e_avg;
-
-    TH1D *range_p_minus_truth;
-    TH1D *mcs_p_minus_truth;
-    TH1D *deposited_e_max_minus_truth;
-    TH1D *deposited_e_avg_minus_truth;
-    TH1D *deposited_e_med_minus_truth;
-
-    TH1D *length;
-    TH1D *is_contained;
-
-
-    TH2D *range_p_diff;
-    TH2D *mcs_p_diff;
-    TH2D *deposited_e_max_diff;
-
-    TH2D *range_p_comp;
-    TH2D *mcs_p_comp;
-    TH2D *deposited_e_max_comp;
-
-    TH1D *end_x;
-    TH1D *end_y;
-    TH1D *end_z;
-
-    TH1D *has_crt_track_match;
-    TH1D *has_crt_hit_match;
-    TH1D *has_flash_match;
-
-    TH1D *crt_hit_match_time;
-    TH1D *flash_match_time;
-    TH1D *crt_v_flash_match_time;
-
-  };
-
-  static const unsigned nCuts = 5; //!< total number of cuts
-  static const unsigned recoCutOffset = 2;
-  static const unsigned nHistos = nCuts + recoCutOffset;
-  static const unsigned nModes = 5; //!< number of interaction modes
-  static constexpr InteractionMode allModes[nModes] = {mCC, mNC, mCosmic, mOther, mAll}; //!< List of all interaction modes
-  // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_track", "R_vqual", "R_tqual", "R_contained"};
- 
-  static const unsigned nTrackHistos = 6;
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"Primary", "Contained", "Exiting", "Cosmic", "Neutrino", "No-Match"};
-   
   // Internal functions
 
   /**
@@ -424,11 +355,20 @@ protected:
  * \return the list of reconstructed particles which might be neutrinos
  */
   std::vector<RecoSlice> SelectSlices(const std::vector<RecoSlice> &reco_slices);
+  std::vector<RecoTrack> RecoTrackInfo(const gallery::Event &event);
 
-  std::vector<RecoSlice> RecoSliceInfo(const gallery::Event &event, const std::vector<RecoParticle>& reco_particles);
+  std::vector<RecoSlice> RecoSliceInfo(
+    const gallery::Event &event,
+    const std::vector<RecoTrack> &reco_tracks,
+    const std::vector<RecoParticle> &particles);
+
   int SelectPrimaryTrack(const RecoSlice &slice);
 
-  std::map<size_t, RecoTrack> RecoSliceTracks(const gallery::Event &event, const std::map<size_t, RecoParticle> &particles, int primary_index);
+  std::map<size_t, RecoTrack> RecoSliceTracks(
+    const gallery::Event &event, 
+    const std::vector<RecoTrack> &reco_tracks, 
+    const std::map<size_t, RecoParticle> &particles, 
+    int primary_index);
 
   /**
  *  Converts the NumuRecoSelection::RecoInteraction information into reco information used by sbncode core
@@ -446,11 +386,13 @@ protected:
  *
  * \return the list of truth neutrino interactions for this event 
  */
-  std::vector<RecoInteraction> MCTruthInteractions(const gallery::Event &ev);
+  std::vector<RecoInteraction> MCTruthInteractions(const gallery::Event &ev, std::map<size_t, RecoTrack> &true_tracks);
+
+  std::map<size_t, RecoTrack> MCParticleTracks(const gallery::Event &event);
 
 
-  std::vector<FlashMatch> FlashMatching(const gallery::Event &ev, std::vector<RecoSlice> &slices, const std::vector<CRTMatch> &crt_matches);
-  std::vector<CRTMatch> CRTMatching(const gallery::Event &ev, std::vector<RecoSlice> &slices);
+  std::vector<FlashMatch> FlashMatching(const gallery::Event &ev, const recob::Track &pandora_track, const RecoTrack &track); 
+  std::vector<CRTMatch> CRTMatching(const NumuRecoSelection::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
 
   /**
  * Get the primary track associated with a truth neutrino interaction.
@@ -468,7 +410,11 @@ protected:
  *
  * \return information associated with the primary track. Set to nonsense if no such track exists.
  */
-  std::map<size_t, RecoTrack> MCTruthTracks(const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, const simb::MCTruth &mc_truth, int mc_truth_index);
+  std::map<size_t, RecoTrack> MCTruthTracks(
+    std::map<size_t, RecoTrack> &true_tracks, 
+    const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
+    const simb::MCTruth &mc_truth, 
+    int mc_truth_index);
 
   int TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
 
@@ -479,24 +425,7 @@ protected:
  *
  * \return reconstruction information associated with the truth track
  */
-  RecoTrack MCTrackInfo(const simb::MCTruth &truth, const simb::MCParticle &track);
-
-  /** 
- * Process each cut associated with reconstructed events
- * \param event The reconstructed event information
- * \param reco_vertex_index The index of the candidate reconstructed neutrino vertex into the list of such vertices in the RecoEvent
- *
- * \return A list of bool's of whether the reco event passes each cut
- */
-  std::array<bool, nCuts> ProcessRecoCuts(const RecoEvent &event, unsigned reco_vertex_index);
-
-  /**
- * Select a reco event based on the cut values provided by ProcessRecoCuts
- * \param cuts the list of cuts returned by ProcessRecoCuts
- *
- * \return whether to select this reconstructed neutrino vertex candidate
- */
-  bool SelectReco(std::array<bool, nCuts> &cuts);
+  RecoTrack MCTrackInfo(const simb::MCParticle &track);
 
   /** Helper function -- whether point is contained in fiducial volume list
  * \param v The point vector.
@@ -515,9 +444,11 @@ protected:
  */
   std::array<bool, 4> RecoTrackTopology(const art::Ptr<recob::Track> &track);
 
-  TrackTruthMatch MatchTrack2Truth(const gallery::Event &ev, size_t pfp_index);
-  std::vector<std::pair<size_t, TrackTruthMatch>> Truth2RecoTracks(const gallery::Event &ev, int mcparticle_id, const std::vector<size_t> &pfp_indices);
+  TrackTruthMatch MatchTrack2Truth(const gallery::Event &ev, size_t pfp_track_id);
   double TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
+
+  void CollectPMTInformation(const gallery::Event &ev);
+  void CollectCRTInformation(const gallery::Event &ev);
 
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
@@ -533,14 +464,23 @@ protected:
   RecoEvent _recoEvent; //!< Branch container for the RecoEvent
   std::vector<RecoInteraction> *_selected; //!< Branch container for the list of selected reco vertices
 
-  RootHistos _root_histos[nHistos][nModes]; //!< Histos (one group per cut)
-  TrackHistos _track_histos[nTrackHistos];
-
   sbnd::CRTTrackMatchAlg *_crt_track_matchalg; //!< Algorithm for matching reco Tracks -> CRT Tracks
   sbnd::CRTT0MatchAlg *_crt_hit_matchalg; //!< Algorithm for matching reco Tracks -> CRT hits (T0's)
+  ApaCrossCosmicIdAlg _apa_cross_cosmic_alg;
+  StoppingParticleCosmicIdAlg _stopping_cosmic_alg;
   opdet::opHitFinderSBND *_op_hit_maker;
-  ApaCrossCosmicIdAlg _apa_cross_flashmatchalg;
 
+  // holders for CRT information
+  const std::vector<sbnd::crt::CRTTrack> *_crt_tracks;
+  std::vector<sbnd::crt::CRTTrack> _crt_tracks_local;
+  std::vector<sbnd::crt::CRTHit> _crt_hits_local; 
+  const std::vector<sbnd::crt::CRTHit> *_crt_hits; 
+  bool _has_crt_hits;
+  bool _has_crt_tracks;
+
+  // holders for PMT information
+  std::vector<art::Ptr<recob::OpHit>> _op_hit_ptrs;
+  std::vector<recob::OpHit> _op_hits_local;
 };
 
   }  // namespace SBNOsc

@@ -15,4 +15,8 @@
 #pragma link C++ class std::map<size_t, ana::SBNOsc::NumuRecoSelection::RecoParticle>+;
 #pragma link C++ class std::map<size_t, ana::SBNOsc::NumuRecoSelection::RecoTrack>+;
 #pragma link C++ class ana::SBNOsc::NumuRecoSelection::RecoSlice+;
+#pragma link C++ class ana::SBNOsc::NumuRecoSelection::CRTMatch+;
+#pragma link C++ class ana::SBNOsc::NumuRecoSelection::FlashMatch+;
+#pragma link C++ class std::optional<ana::SBNOsc::NumuRecoSelection::CRTMatch>+;
+#pragma link C++ class std::optional<ana::SBNOsc::NumuRecoSelection::FlashMatch>+;
 #endif
