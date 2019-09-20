@@ -1,0 +1,74 @@
+# Declare libraries to build
+# Note that the library names (the first argument) should follow the convention
+# "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
+# source files.
+add_library(sbnanalysis_SBNOscReco_GetFV SHARED GetFV.cc)
+add_library(sbnanalysis_SBNOscReco_OpDetWaveformMaker SHARED OpDetWaveformMaker.cc)
+add_library(sbnanalysis_SBNOscReco_OpSimHitPrinter SHARED OpSimHitPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_SimPhotonPrinter SHARED SimPhotonPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter SHARED OpDetBacktrackerPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_MCParticleTreePrinter SHARED MCParticleTreePrinter.cc)
+add_library(sbnanalysis_SBNOscReco_PandoraIDPrinter SHARED PandoraIDPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_CRTSimHitViewer SHARED CRTSimHitViewer.cc)
+
+# Add in ROOT dictionary
+target_link_libraries(sbnanalysis_SBNOscReco_GetFV
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_OpDetWaveformMaker
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_OpSimHitPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+  sbnanalysis_SBNOscReco_opHitFinderSBND
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_SimPhotonPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_MCParticleTreePrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_PandoraIDPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+  icaruscode_CRTProducts
+)
+
+# Install all libraries to the main "lib" directory
+install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_OpSimHitPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_SimPhotonPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_MCParticleTreePrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_PandoraIDPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_CRTSimHitViewer DESTINATION lib)
+

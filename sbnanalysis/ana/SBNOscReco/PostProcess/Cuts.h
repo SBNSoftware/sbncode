@@ -2,7 +2,7 @@
 #define __sbnanalysis_CURS_HH
 
 #include <array>
-#include "NumuRecoSelection.h"
+#include "../Data/RecoEvent.h"
 
 namespace ana {
  namespace SBNOsc {
@@ -19,7 +19,7 @@ public:
  *
  * \return A list of bool's of whether the reco event passes each cut
  */
-  std::array<bool, nCuts> ProcessRecoCuts(const NumuRecoSelection::RecoEvent &event, unsigned reco_vertex_index);
+  std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index);
 
   /**
  * Select a reco event based on the cut values provided by ProcessRecoCuts

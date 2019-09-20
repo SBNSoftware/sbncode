@@ -1,5 +1,4 @@
 #include "Cuts.h"
-#include "NumuRecoSelection.h"
 
 namespace ana {
  namespace SBNOsc {
@@ -8,7 +7,7 @@ void Cuts::Initialize(double trackMatchCompletionCut) {
   fConfig.trackMatchCompletionCut = trackMatchCompletionCut;
 }
 
-std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const NumuRecoSelection::RecoEvent &event, unsigned reco_vertex_index) {
+std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) {
   bool is_reco = true;
 
   // require close to truth
@@ -16,7 +15,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const NumuRecoSelection::Rec
 
   bool t_quality = false;
   int t_mcparticle_id = event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.mcparticle_id;
-  for (const NumuRecoSelection::RecoInteraction &truth: event.truth) {
+  for (const numu::RecoInteraction &truth: event.truth) {
     if (truth.slice.primary_track_index >= 0 && 
       truth.slice.tracks.at(truth.slice.primary_track_index).match.mcparticle_id == t_mcparticle_id) {
       t_quality = true;

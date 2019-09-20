@@ -18,7 +18,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 #include "fhiclcpp/ParameterSet.h"
-#include "OpHitFinder/opHitFinderSBND.hh"
+#include "../OpHitFinder/opHitFinderSBND.hh"
 
 #include "TH1D.h"
 #include "TGraph.h"

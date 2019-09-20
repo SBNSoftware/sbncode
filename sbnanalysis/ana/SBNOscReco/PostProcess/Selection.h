@@ -1,8 +1,8 @@
-#ifndef __sbnanalysis_ana_SBNOsc_PostSelection__
-#define __sbnanalysis_ana_SBNOsc_PostSelection__
+#ifndef __sbnanalysis_ana_SBNOsc_Selection__
+#define __sbnanalysis_ana_SBNOsc_Selection__
 
 /**
- * \file PostSelection.h
+ * \file Selection.h
  */
 
 #include "fhiclcpp/ParameterSet.h"
@@ -24,17 +24,17 @@
 
 #include "Histograms.h"
 #include "Cuts.h"
-#include "NumuRecoSelection.h"
+#include "../Data/RecoEvent.h"
 
 class TTree;
 
 namespace ana {
   namespace SBNOsc {
 
-class PostSelection: public core::PostProcessorBase {
+class Selection: public core::PostProcessorBase {
 public:
   // Constructor
-  PostSelection() {}
+  Selection() {}
   
   // implementing PostProcessor
   void FileCleanup(TTree *eventTree) {}
@@ -47,7 +47,7 @@ private:
   Cuts fCuts;
   Histograms fHistograms;
   double fCRTHitDistance;
-  NumuRecoSelection::RecoEvent *fRecoEvent;
+  numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
 
 };
@@ -55,4 +55,4 @@ private:
   }   // namespace SBNOsc
 }   // namespace ana
 
-#endif// __sbnanalysis_ana_SBNOsc_PostSelection__
+#endif// __sbnanalysis_ana_SBNOsc_Selection__

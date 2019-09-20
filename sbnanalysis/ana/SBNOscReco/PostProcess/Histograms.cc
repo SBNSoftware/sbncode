@@ -1,14 +1,16 @@
 #include <TH1D.h>
 #include <TH2D.h>
 
+#include "nusimdata/SimulationBase/MCTruth.h"
+
 #include "Histograms.h"
 
 namespace ana {
   namespace SBNOsc {
 
 void FillTrack(
-  const NumuRecoSelection::RecoTrack &track, 
-  const std::map<size_t, NumuRecoSelection::RecoTrack> &true_tracks, 
+  const numu::RecoTrack &track, 
+  const std::map<size_t, numu::RecoTrack> &true_tracks, 
   TrackHistos* track_histos) {
 
   std::vector<bool> do_fill {true, false, false, false};
@@ -24,12 +26,12 @@ void FillTrack(
   }
 }
 
-void Histograms::Fill(const NumuRecoSelection::RecoEvent &event, const event::Event &core, const std::array<bool, Cuts::nCuts> &cuts) {
-  for (const NumuRecoSelection::RecoTrack &track: event.tracks) {
+void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, const std::array<bool, Cuts::nCuts> &cuts) {
+  for (const numu::RecoTrack &track: event.tracks) {
     FillTrack(track, event.true_tracks, fAllTracks);
   }
 
-  for (const NumuRecoSelection::RecoInteraction &interaction: event.reco) {
+  for (const numu::RecoInteraction &interaction: event.reco) {
     // if (event.tracks.count(interaction.slice.primary_track_index)) {
     //if (interaction.slice.primary_track_index >= event.tracks.size()) {
       FillTrack(event.tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks);
@@ -39,18 +41,18 @@ void Histograms::Fill(const NumuRecoSelection::RecoEvent &event, const event::Ev
       int mode = interaction.match.mode; 
       if (cuts[cut_i]) {
         // fInteraction[cut_i+InteractionHistos::recoCutOffset][mode].Fill(interaction, event.truth, core.truth);
-        // fInteraction[cut_i+InteractionHistos::recoCutOffset][NumuRecoSelection::mAll].Fill(interaction, event.truth, core.truth);
+        // fInteraction[cut_i+InteractionHistos::recoCutOffset][mAll].Fill(interaction, event.truth, core.truth);
       }
     }
   }
 
-  for (const NumuRecoSelection::RecoInteraction &truth: event.truth) {
+  for (const numu::RecoInteraction &truth: event.truth) {
     // TODO: fix
     std::array<bool, 2> fill_truth = {true, event.reco.size() >= 1};
     for (int cut_i = 0; cut_i < 2; cut_i++) {
       int mode = truth.match.mode;
       // fInteraction[cut_i][mode].Fill(truth, event.truth, core.truth);
-      // fInteraction[cut_i][NumuRecoSelection::mAll].Fill(truth, event.truth, core.truth);
+      // fInteraction[cut_i][mAll].Fill(truth, event.truth, core.truth);
     }
   }
 }
@@ -128,7 +130,7 @@ void Histograms::Write() {
   } 
 }
 
-void InteractionHistos::Initialize(const std::string &prefix, NumuRecoSelection::InteractionMode mode, unsigned i) {
+void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned i) {
   track_length = new TH1D(("track_length_" + mode2Str(mode) + "_" + prefix + histoNames[i]).c_str(), "track_length", 101, -10, 1000);
   track_p = new TH1D(("track_p_" + mode2Str(mode) + "_" + prefix + histoNames[i]).c_str(), "track_p", 50, 0., 5.);
   nuE = new TH1D(("nuE_" + mode2Str(mode) +"_" + prefix + histoNames[i]).c_str(), "nuE", 50, 0., 5.);
@@ -189,8 +191,8 @@ void TrackHistos::Initialize(const std::string &prefix, unsigned i) {
 }
 
 void TrackHistos::Fill(
-    const NumuRecoSelection::RecoTrack &track, 
-    const std::map<size_t, NumuRecoSelection::RecoTrack> &true_tracks) {
+    const numu::RecoTrack &track, 
+    const std::map<size_t, numu::RecoTrack> &true_tracks) {
 
   // Primary track histos
   if (track.min_chi2 > 0) {
@@ -214,7 +216,7 @@ void TrackHistos::Fill(
   double crt_match_time;
   bool has_crt_match_time = false;
   if (has_crt_match) {
-    const NumuRecoSelection::CRTMatch &crt_match = track.crt_match.at(0);
+    const numu::CRTMatch &crt_match = track.crt_match.at(0);
     if (crt_match.has_track_match) {
       has_crt_track_match->Fill(1.);
       has_crt_hit_match->Fill(1.);
@@ -238,7 +240,7 @@ void TrackHistos::Fill(
     has_crt_hit_match->Fill(0.);
   }
   if (has_flash_match_val) {
-    const NumuRecoSelection::FlashMatch &flash_match = track.flash_match.at(0);
+    const numu::FlashMatch &flash_match = track.flash_match.at(0);
     double flash_time = flash_match.match_time_first;
     std::cout << "FLASH match time: " << flash_time << std::endl;
     flash_match_time->Fill(flash_time);
@@ -250,7 +252,7 @@ void TrackHistos::Fill(
   
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {
-    const NumuRecoSelection::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
+    const numu::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
     range_p_minus_truth->Fill(track.range_momentum_muon - true_track.momentum);
     mcs_p_minus_truth->Fill(mcs_p_val - true_track.momentum); 
     deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
@@ -270,8 +272,8 @@ void TrackHistos::Fill(
 }
 
 void InteractionHistos::Fill(
-  const NumuRecoSelection::RecoInteraction &vertex, 
-  const std::vector<NumuRecoSelection::RecoInteraction> &truth, 
+  const numu::RecoInteraction &vertex, 
+  const std::vector<numu::RecoInteraction> &truth, 
   const std::vector<event::Interaction> &core_truth) {
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex.slice.tracks.at(vertex.slice.primary_track_index).length: -1;

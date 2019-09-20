@@ -5,8 +5,11 @@
 #include <vector>
 
 #include <core/Event.hh>
-#include "NumuRecoSelection.h"
 #include "Cuts.h"
+
+#include "../Data/RecoEvent.h"
+#include "../Data/RecoTrack.h"
+#include "../Data/Mode.h"
 
 class TH1D;
 class TH2D;
@@ -24,10 +27,10 @@ struct InteractionHistos {
   TH1D *crosses_tpc;
 
 
-  void Initialize(const std::string &prefix, NumuRecoSelection::InteractionMode mode, unsigned index);
+  void Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned index);
   void Fill(
-    const NumuRecoSelection::RecoInteraction &vertex, 
-    const std::vector<NumuRecoSelection::RecoInteraction> &truth, 
+    const numu::RecoInteraction &vertex, 
+    const std::vector<numu::RecoInteraction> &truth, 
     const std::vector<event::Interaction> &core_truth);
   void Write();
   
@@ -37,20 +40,20 @@ struct InteractionHistos {
  *  \param mode The interaction mode to be converted
  *  \return String representaiton of that mode
  */
-  std::string mode2Str(const NumuRecoSelection::InteractionMode &mode) const {
+  std::string mode2Str(const numu::InteractionMode &mode) const {
     switch (mode) {
-      case NumuRecoSelection::mCC: return "CC";
-      case NumuRecoSelection::mNC: return "NC";
-      case NumuRecoSelection::mCosmic: return "Cosmic";
-      case NumuRecoSelection::mOther: return "Other";
-      case NumuRecoSelection::mAll: return "All";
+      case numu::mCC: return "CC";
+      case numu::mNC: return "NC";
+      case numu::mCosmic: return "Cosmic";
+      case numu::mOther: return "Other";
+      case numu::mAll: return "All";
     }
   }
   static const unsigned recoCutOffset = 2;
   static const unsigned nHistos = Cuts::nCuts + recoCutOffset;
   static const unsigned nModes = 5; //!< number of interaction modes
-  static constexpr NumuRecoSelection::InteractionMode allModes[nModes] = 
-    {NumuRecoSelection::mCC, NumuRecoSelection::mNC, NumuRecoSelection::mCosmic, NumuRecoSelection::mOther, NumuRecoSelection::mAll}; //!< List of all interaction modes
+  static constexpr numu::InteractionMode allModes[nModes] = 
+    {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_vqual", "R_tqual", "R_contained"};
 };
@@ -98,8 +101,8 @@ struct TrackHistos {
 
   void Initialize(const std::string &prefix, unsigned index);
   void Fill(
-    const NumuRecoSelection::RecoTrack &track,
-    const std::map<size_t, NumuRecoSelection::RecoTrack> &true_tracks);
+    const numu::RecoTrack &track,
+    const std::map<size_t, numu::RecoTrack> &true_tracks);
   void Write();
 };
 
@@ -112,7 +115,7 @@ struct Histograms {
 
   Histograms();
 
-  void Fill(const NumuRecoSelection::RecoEvent &event, const event::Event &core, const std::array<bool, Cuts::nCuts> &selection);
+  void Fill(const numu::RecoEvent &event, const event::Event &core, const std::array<bool, Cuts::nCuts> &selection);
 
   void Write();
 };

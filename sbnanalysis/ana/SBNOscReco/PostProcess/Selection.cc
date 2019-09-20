@@ -21,11 +21,11 @@
 #include <TCanvas.h>
 #include <core/Event.hh>
 
-#include "PostSelection.h"
+#include "Selection.h"
 
 namespace ana {
 namespace SBNOsc {
-  void PostSelection::Initialize(fhicl::ParameterSet *config) {
+  void Selection::Initialize(fhicl::ParameterSet *config) {
     fOutputFile = new TFile("output.root", "CREATE");
     fOutputFile->cd();
     fCuts.Initialize(config->get<double>("trackMatchCompletionCut", -1));
@@ -33,11 +33,11 @@ namespace SBNOsc {
     fRecoEvent = NULL;
   }
 
-  void PostSelection::FileSetup(TTree *eventTree) {
+  void Selection::FileSetup(TTree *eventTree) {
     eventTree->SetBranchAddress("reco_event", &fRecoEvent);
   }
 
-  void PostSelection::ProcessEvent(const event::Event *core_event) {
+  void Selection::ProcessEvent(const event::Event *core_event) {
     for (unsigned i = 0; i < fRecoEvent->reco.size(); i++) {
       // std::array<bool, Cuts::nCuts> cuts = fCuts.ProcessRecoCuts(*fRecoEvent, i);
        std::array<bool, Cuts::nCuts> cuts {false};
@@ -45,12 +45,12 @@ namespace SBNOsc {
     }
   }
 
-  void PostSelection::Finalize() {
+  void Selection::Finalize() {
     fOutputFile->cd();
     fHistograms.Write();
   }
   }   // namespace SBNOsc
 }   // namespace ana
 
-DECLARE_SBN_POSTPROCESSOR(ana::SBNOsc::PostSelection);
+DECLARE_SBN_POSTPROCESSOR(ana::SBNOsc::Selection);
 
