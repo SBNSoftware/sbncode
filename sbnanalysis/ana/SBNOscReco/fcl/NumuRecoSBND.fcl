@@ -1,5 +1,6 @@
 #include "crttrackmatchingalg_sbnd.fcl"
 #include "crtt0matchingalg_sbnd.fcl"
+#include "cosmicidmodules_sbnd.fcl"
 
 OutputFile: "output_numureco.root"
 
@@ -9,7 +10,7 @@ ProviderConfigFile: "services_sbnd_3drift.fcl"
 # sbnd_beamtime: [0, 1.600] # [us]
 sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
 
-NumuRecoSelection: {
+NumuReco: {
   shakyMCTracks: true
   requireMatched: false
   requireContained: false
@@ -59,6 +60,7 @@ NumuRecoSelection: {
     zfront: 15
     zback: 85
   }
+  StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
 }
 # NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
 
