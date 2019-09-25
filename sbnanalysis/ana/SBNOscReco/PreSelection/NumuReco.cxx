@@ -201,7 +201,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.CRTHitinOpHitRange = pconfig.get<bool>("CRTHitinOpHitRange", false);
 
     // get tag names
-    _config.HitTag = config->get<std::string>("HitTag", "gaushit");
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
     _config.RecoSliceTag = config->get<std::string>("RecoSliceTag", "pandora");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");

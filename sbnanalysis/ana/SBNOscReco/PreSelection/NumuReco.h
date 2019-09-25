@@ -121,7 +121,6 @@ protected:
     double beamCenterX;
     double beamCenterY;
 
-    std::string HitTag; //!< art tag for hits
     std::string RecoSliceTag;
     std::string RecoTrackTag; //!< art tag for reconstructed tracks
     std::string RecoVertexTag; //!< art tag for reconstructed vertices
