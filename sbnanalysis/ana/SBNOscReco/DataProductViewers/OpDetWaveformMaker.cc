@@ -40,7 +40,7 @@ public:
    */
   void Initialize(fhicl::ParameterSet* config=NULL) {
     fOpDetWaveformTag = config ? config->get<std::string>("OpDetWaveformTag", "opdaq") : "opdaq";
-    clock_freq = fProviderManager->GetDetectorClocksProvider()->OpticalClock().Frequency() * (500. / 64 /* bug fix???*/); // / 1000. /* convert to GHz */;
+    clock_freq = fProviderManager->GetDetectorClocksProvider()->OpticalClock().Frequency();
     std::cout << "CLOCK FREQ: " << clock_freq << std::endl;
     event_ind = 0;
   }
