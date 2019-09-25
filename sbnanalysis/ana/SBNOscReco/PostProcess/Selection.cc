@@ -39,8 +39,7 @@ namespace SBNOsc {
 
   void Selection::ProcessEvent(const event::Event *core_event) {
     for (unsigned i = 0; i < fRecoEvent->reco.size(); i++) {
-      // std::array<bool, Cuts::nCuts> cuts = fCuts.ProcessRecoCuts(*fRecoEvent, i);
-       std::array<bool, Cuts::nCuts> cuts {false};
+      std::array<bool, Cuts::nCuts> cuts = fCuts.ProcessRecoCuts(*fRecoEvent, i);
       fHistograms.Fill(*fRecoEvent, *core_event, cuts);
     }
   }

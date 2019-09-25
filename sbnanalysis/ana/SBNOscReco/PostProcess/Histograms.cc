@@ -32,16 +32,15 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
   }
 
   for (const numu::RecoInteraction &interaction: event.reco) {
-    // if (event.tracks.count(interaction.slice.primary_track_index)) {
-    //if (interaction.slice.primary_track_index >= event.tracks.size()) {
+    if (event.tracks.size() < (unsigned)interaction.slice.primary_track_index) {
       FillTrack(event.tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks);
-    //}
+    }
     // fill histos
     for (size_t cut_i=0; cut_i < Cuts::nCuts; cut_i++) {
       int mode = interaction.match.mode; 
       if (cuts[cut_i]) {
-        // fInteraction[cut_i+InteractionHistos::recoCutOffset][mode].Fill(interaction, event.truth, core.truth);
-        // fInteraction[cut_i+InteractionHistos::recoCutOffset][mAll].Fill(interaction, event.truth, core.truth);
+        fInteraction[cut_i+InteractionHistos::recoCutOffset][mode].Fill(interaction, event.truth, core.truth);
+        fInteraction[cut_i+InteractionHistos::recoCutOffset][numu::mAll].Fill(interaction, event.truth, core.truth);
       }
     }
   }
@@ -51,8 +50,8 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
     std::array<bool, 2> fill_truth = {true, event.reco.size() >= 1};
     for (int cut_i = 0; cut_i < 2; cut_i++) {
       int mode = truth.match.mode;
-      // fInteraction[cut_i][mode].Fill(truth, event.truth, core.truth);
-      // fInteraction[cut_i][mAll].Fill(truth, event.truth, core.truth);
+      fInteraction[cut_i][mode].Fill(truth, event.truth, core.truth);
+      fInteraction[cut_i][numu::mAll].Fill(truth, event.truth, core.truth);
     }
   }
 }
