@@ -55,7 +55,7 @@ struct RecoTrack {
   
   std::vector<CRTMatch> crt_match; 
   std::vector<FlashMatch> flash_match;
-  int pandora_track_id;
+  int ID;
   
   double stopping_chisq_start;
   double stopping_chisq_finish;
@@ -97,7 +97,7 @@ struct RecoTrack {
     dist_to_vertex(-1),
     crt_match({}),
     flash_match({}),
-    pandora_track_id(-1),
+    ID(-1),
     stopping_chisq_start(-1),
     stopping_chisq_finish(-1),
     tpc_t0s()

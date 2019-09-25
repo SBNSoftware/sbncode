@@ -16,7 +16,7 @@ struct RecoParticle {
   double p_nu_score; //!< Take from Pandora metadata "nu_score"
   std::vector<geo::Point_t> vertices; //!< List of vertices associated with the particle
   std::vector<size_t> daughters; //!< Daughters of the particle in the "particle flow". Value represents index into pandora information.
-  size_t self; //!< Index into pandora information of this particle
+  size_t ID; //!< ID of particle
 };
 }
 #endif

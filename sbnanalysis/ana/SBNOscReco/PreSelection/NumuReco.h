@@ -28,6 +28,8 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
+
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 #include "LArReco/TrajectoryMCSFitter.h"
@@ -123,6 +125,7 @@ protected:
     std::string RecoSliceTag;
     std::string RecoTrackTag; //!< art tag for reconstructed tracks
     std::string RecoVertexTag; //!< art tag for reconstructed vertices
+    std::vector<std::string> TPCRecoTagSuffixes;
     std::string CaloTag;
     std::string PIDTag;
     std::string PFParticleTag; //!< art tag for PFParticles
@@ -147,11 +150,10 @@ protected:
 
   /**
  * Gathers together reconstruction information on each individual particle.
- * \param ev the gallery Event
  *
  * \return the list of RecoParticle objects for every reconstructed particle in the event
  */
-  std::vector<numu::RecoParticle> RecoParticleInfo(const gallery::Event &event);
+  std::vector<numu::RecoParticle> RecoParticleInfo();
 
   /**
  * Selects which RecoParticles are neutrino interaction candidates
@@ -160,20 +162,17 @@ protected:
  * \return the list of reconstructed particles which might be neutrinos
  */
   std::vector<numu::RecoSlice> SelectSlices(const std::vector<numu::RecoSlice> &reco_slices);
-  std::vector<numu::RecoTrack> RecoTrackInfo(const gallery::Event &event);
+  std::vector<numu::RecoTrack> RecoTrackInfo();
 
   std::vector<numu::RecoSlice> RecoSliceInfo(
-    const gallery::Event &event,
     const std::vector<numu::RecoTrack> &reco_tracks,
     const std::vector<numu::RecoParticle> &particles);
 
   int SelectPrimaryTrack(const numu::RecoSlice &slice);
 
   std::map<size_t, numu::RecoTrack> RecoSliceTracks(
-    const gallery::Event &event, 
     const std::vector<numu::RecoTrack> &reco_tracks, 
-    const std::map<size_t, numu::RecoParticle> &particles, 
-    int primary_index);
+    const std::map<size_t, numu::RecoParticle> &particles);
 
   /**
  *  Converts the NumuReco::RecoInteraction information into reco information used by sbncode core
@@ -196,7 +195,8 @@ protected:
   std::map<size_t, numu::RecoTrack> MCParticleTracks(const gallery::Event &event);
 
 
-  std::vector<numu::FlashMatch> FlashMatching(const gallery::Event &ev, const recob::Track &pandora_track, const numu::RecoTrack &track); 
+  int GetPhotonMotherID(int mcparticle_id);
+  std::vector<numu::FlashMatch> FlashMatching(const recob::Track &pandora_track, const numu::RecoTrack &track); 
   std::vector<numu::CRTMatch> CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
 
   /**
@@ -249,11 +249,13 @@ protected:
  */
   std::array<bool, 4> RecoTrackTopology(const art::Ptr<recob::Track> &track);
 
-  numu::TrackTruthMatch MatchTrack2Truth(const gallery::Event &ev, size_t pfp_track_id);
+  numu::TrackTruthMatch MatchTrack2Truth(size_t pfp_track_id);
   double TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
 
   void CollectPMTInformation(const gallery::Event &ev);
   void CollectCRTInformation(const gallery::Event &ev);
+  void CollectTPCInformation(const gallery::Event &ev);
+  void CollectTruthInformation(const gallery::Event &ev);
 
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
@@ -286,6 +288,28 @@ protected:
   // holders for PMT information
   std::vector<art::Ptr<recob::OpHit>> _op_hit_ptrs;
   std::vector<recob::OpHit> _op_hits_local;
+
+  // holders for TPC information
+  std::vector<art::Ptr<recob::Slice>> _tpc_slices;
+  std::vector<art::Ptr<recob::Track>> _tpc_tracks;
+  std::vector<art::Ptr<recob::PFParticle>> _tpc_particles;
+  std::vector<std::vector<art::Ptr<recob::PFParticle>>> _tpc_slices_to_particles;
+  std::vector<std::vector<unsigned>> _tpc_slices_to_particle_index;
+  std::vector<art::Ptr<recob::PFParticle>> _tpc_tracks_to_particles;
+  std::vector<unsigned> _tpc_tracks_to_particle_index;
+  std::vector<std::vector<art::Ptr<anab::Calorimetry>>> _tpc_tracks_to_calo;
+  std::vector<std::vector<art::Ptr<anab::ParticleID>>> _tpc_tracks_to_pid;
+  std::vector<std::vector<art::Ptr<recob::Hit>>> _tpc_tracks_to_hits;
+  std::vector<std::vector<art::Ptr<anab::T0>>> _tpc_particles_to_T0;
+  std::vector<std::vector<art::Ptr<recob::Vertex>>> _tpc_particles_to_vertex;
+  std::vector<std::vector<unsigned>> _tpc_particles_to_daughters;
+  std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> _tpc_particles_to_metadata;
+
+  // holders for truth information
+  std::vector<art::Ptr<simb::MCParticle>> _true_particles;
+  std::vector<art::Ptr<simb::MCTruth>> _true_particles_to_truth;
+  std::vector<const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;
+
 };
 
   }  // namespace SBNOsc
