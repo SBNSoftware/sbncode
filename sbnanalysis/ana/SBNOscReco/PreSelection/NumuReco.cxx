@@ -1375,6 +1375,12 @@ void NumuReco::CollectPMTInformation(const gallery::Event &ev) {
 std::vector<numu::FlashMatch> NumuReco::FlashMatching(
   const recob::Track &pandora_track,
   const numu::RecoTrack &track) {
+
+  // don't run if back tracker is not setup
+  if (fProviderManager->GetPhotonBackTrackerProvider() == NULL) {
+    return {};
+  }
+
   // see if we can do the match
   if (track.match.has_match) {
     // DumpTrueStart(ev, track.match.mcparticle_id);
