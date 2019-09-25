@@ -516,7 +516,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
 
 
 
-int MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vector<simb::MCParticle> &mcparticle_list) {
+int NumuReco::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vector<simb::MCParticle> &mcparticle_list) {
   // Get the length and determine if any point leaves the active volume
   //
   // get lepton track
@@ -546,7 +546,7 @@ int MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vector<simb::MC
   return track_ind;
 }
 
-int TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
+int NumuReco::TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
   int multiplicity = 0;
   for (int i = 0; i < mcparticle_list.size(); i++) {
     if (isFromNuVertex(mc_truth, mcparticle_list[i]) &&  mcparticle_list[i].Process() == "primary") {
