@@ -62,17 +62,17 @@ public:
    */
   bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
     const std::vector<raw::OpDetWaveform> &waveforms = *ev.getValidHandle<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
-    //std::map<raw::Channel_t, std::pair<std::vector<double>, std::vector<double>>> waveform_plots;
-    std::map<raw::Channel_t, std::vector<std::pair<double, double>>> waveform_data;
-    std::map<raw::Channel_t, std::vector<double>> wf_start_times;
-    std::map<raw::Channel_t, std::vector<double>> wf_periods;
+    //std::map<raw::Channel_t, std::pair<std::vector<float>, std::vector<float>>> waveform_plots;
+    std::map<raw::Channel_t, std::vector<std::pair<float, float>>> waveform_data;
+    std::map<raw::Channel_t, std::vector<float>> wf_start_times;
+    std::map<raw::Channel_t, std::vector<float>> wf_periods;
     for (const raw::OpDetWaveform &wfconst: waveforms) {
       raw::OpDetWaveform wf = wfconst;
       //if (waveform_plots.count(wf.ChannelNumber()) > 0) {
       //  std::cout << "Multi-waveform output! Channel: " << wf.ChannelNumber() << " Event: " << event_ind << std::endl;
       //}
       for (unsigned i = 0; i < wf.Waveform().size(); i++) {
-        waveform_data[wf.ChannelNumber()].push_back({i / clock_freq + wf.TimeStamp(), (double)wf.Waveform()[i]});
+        waveform_data[wf.ChannelNumber()].push_back({i / clock_freq + wf.TimeStamp(), (float)wf.Waveform()[i]});
       }
       wf_start_times[wf.ChannelNumber()].push_back(wf.TimeStamp());
       wf_periods[wf.ChannelNumber()].push_back( wf.Waveform().size() / clock_freq);
@@ -82,7 +82,7 @@ public:
     //for (auto &wf_data_pair: waveform_data) {
     //  std::sort(wf_data_pair.second.begin(), wf_data_pair.second.end(), [](auto lhs, auto rhs) {return lhs.first < rhs.first;});
     //}
-    std::map<raw::Channel_t, std::pair<std::vector<double>, std::vector<double>>> waveform_plots;
+    std::map<raw::Channel_t, std::pair<std::vector<float>, std::vector<float>>> waveform_plots;
     for (auto &wf_data_pair: waveform_data) {
       for (auto data_pair: wf_data_pair.second) {
         waveform_plots[wf_data_pair.first].first.push_back(data_pair.first);
@@ -92,7 +92,7 @@ public:
 
     for (auto &start_time_pair: wf_start_times) {
       std::cout << "Event: " << event_ind << " Channel: " << start_time_pair.first << std::endl;
-      const std::vector<double> &wf_period = wf_periods.at(start_time_pair.first); 
+      const std::vector<float> &wf_period = wf_periods.at(start_time_pair.first); 
       for (unsigned i = 0; i < start_time_pair.second.size(); i++) {
         std::cout << start_time_pair.second[i] << " (" << wf_period[i] <<") "; 
 
@@ -113,7 +113,7 @@ public:
 
 protected:
   std::string fOpDetWaveformTag;
-  double clock_freq;
+  float clock_freq;
   unsigned event_ind;
   std::vector<TGraph *> plots;
 };
