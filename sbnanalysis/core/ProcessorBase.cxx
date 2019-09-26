@@ -238,6 +238,37 @@ void ProcessorBase::SetupServices(gallery::Event& ev) {
   }
 }
 
+const simb::MCParticle *Genie2G4MCParticle(
+  const simb::MCParticle &genie_part, 
+  const simb::MCTruth &mctruth,
+  const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
+  const std::vector<const sim::GeneratedParticleInfo *> infos) {
+
+  const simb::MCParticle *ret = NULL;
+  for (int iparticle = 0; iparticle < g4_mcparticles.size(); iparticle++) {
+    if (infos[iparticle]->hasGeneratedParticleIndex() &&
+        infos[iparticle]->generatedParticleIndex() < mctruth.NParticles() && // TODO: why is this number sometimes bigger than the number of particles?
+        mctruth.GetParticle(infos[iparticle]->generatedParticleIndex()).TrackId() == genie_part.TrackId() &&
+        g4_mcparticles[iparticle]->Process() == "primary" /* TODO: will have to remove this restriction to include secondary particles*/) {
+
+      // if a genie particle re-scatters in g4 and makes more particles, then multiple g4 particles can match to a 
+      // genie particle. Thus, we also check that the start location of the associated genie particle matches the g4
+      // and that the pdgid matches (to be on the safe side)
+      //
+      // Note that this should be accounted for by requiring the process to be primary. This is a bit of redundancy.
+      const simb::MCParticle& matched_genie_particle = mctruth.GetParticle(infos[iparticle]->generatedParticleIndex());
+      if ((matched_genie_particle.Position().Vect() - g4_mcparticles[iparticle]->Position().Vect()).Mag() < 1e-4 &&
+        matched_genie_particle.PdgCode() == g4_mcparticles[iparticle]->PdgCode()) {
+
+        // this should only be true for one particle
+        assert(ret == NULL);
+        ret = g4_mcparticles[iparticle].get();
+      }
+    }
+  }
+  return ret;
+}
+
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
@@ -381,25 +412,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       interaction.lepton.is_primary = (lepton.Process() == "primary");
 
       // match the MCTruth particle to the MCParticle list -- only the list has trajectory information
-      const simb::MCParticle* lepton_traj = NULL;
-      for (int iparticle = 0; iparticle < this_mcparticle_list.size(); iparticle++) {
-        if (this_mcparticle_assns[iparticle]->hasGeneratedParticleIndex() &&
-            this_mcparticle_assns[iparticle]->generatedParticleIndex() < mctruth.NParticles() && // TODO: why is this number sometimes bigger than the number of particles?
-            mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex()).TrackId() == lepton.TrackId()) {
-
-          // if a genie particle re-scatters in g4 and makes more particles, then multiple g4 particles can match to a 
-          // genie particle. Thus, we also check that the start location of the associated genie particle matches the g4
-          // and that the pdgid matches (to be on the safe side)
-          const simb::MCParticle& matched_genie_particle = mctruth.GetParticle(this_mcparticle_assns[iparticle]->generatedParticleIndex());
-          if ((matched_genie_particle.Position().Vect() - this_mcparticle_list[iparticle]->Position().Vect()).Mag() < 1e-4 &&
-              matched_genie_particle.PdgCode() == this_mcparticle_list[iparticle]->PdgCode()) {
-
-            lepton_traj = this_mcparticle_list[iparticle].get();
-            // this should only be true for one particle
-            assert(lepton_traj != NULL);
-          }
-        }
-      }
+      const simb::MCParticle* lepton_traj = Genie2G4MCParticle(lepton, mctruth, this_mcparticle_list, this_mcparticle_assns);
 
       // TODO: why aren't there matches sometimes?
       if (lepton_traj != NULL) {
@@ -430,30 +443,39 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
       util::ECCQE(interaction.lepton.momentum, interaction.lepton.energy);
 
     // Hadronic system
-    for (int iparticle=0; iparticle<this_mcparticle_list.size(); iparticle++) {
+    //
+    // We need to look at the Genie MCParticles because we may want
+    // to look at truth information like (e.g.) intermeidate-state pions
+    // which are re-absorbed in the nucleus. 
+    //
+    // Whenever we can though, try to match the true "gen" information to g4
+    // information
+    for (int iparticle=0; iparticle<mctruth.NParticles(); iparticle++) {
+      const simb::MCParticle& particle = mctruth.GetParticle(iparticle);
       event::FinalStateParticle fsp;
-      const simb::MCParticle& particle = *this_mcparticle_list[iparticle];
-
       if (particle.Process() != "primary") {
         continue;
       }
-
       fsp.pdg = particle.PdgCode();
       fsp.energy = particle.Momentum(0).Energy();
       fsp.momentum = particle.Momentum(0).Vect();
       fsp.start = particle.Position(0).Vect();
       fsp.status_code = particle.StatusCode();
       fsp.is_primary = (particle.Process() == "primary");
-      fsp.length = util::MCParticleLength(particle);
-      if (fProviderManager != NULL) {
-        fsp.contained_length = util::MCParticleContainedLength(particle, fActiveVolumes);
-      }
-      else {
-        fsp.contained_length = event::kUnfilled;
-      }
-      // also get the end point from the trajectory
-      fsp.end = particle.EndPosition().Vect();
 
+      fsp.length = 0;
+      fsp.contained_length = 0;
+      // length information needs G4
+      const simb::MCParticle *traj = Genie2G4MCParticle(particle, mctruth, this_mcparticle_list, this_mcparticle_assns);
+      if (traj != NULL) {
+        fsp.length = util::MCParticleLength(*traj);
+        if (fProviderManager != NULL) {
+          fsp.contained_length = util::MCParticleContainedLength(*traj, fActiveVolumes);
+        }
+        else {
+          fsp.contained_length = event::kUnfilled;
+        }
+      }
       interaction.finalstate.push_back(fsp);
     }
 
