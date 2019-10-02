@@ -93,9 +93,8 @@ public:
 protected:
   /** Configuration parameters */
   struct Config {
-    std::vector<geo::BoxBoundedGeo> fiducial_volumes; //!< List of FV containers -- set by "fiducial_volumes"
     std::vector<geo::BoxBoundedGeo> containment_volumes; //!< List of volumes for containment cuts -- set by "containment_volumes"
-    std::vector<geo::BoxBoundedGeo> cryostat_volumes; //!< List of cryostat volumes -- retreived from Geometry service
+    std::vector<geo::BoxBoundedGeo> active_volumes; //!< List of active volumes per cryostat
     std::vector<std::vector<geo::BoxBoundedGeo>> tpc_volumes; //!< List of active tpc volumes -- retreived from Geoemtry service
     bool verbose; //!< Whether to print out info associated w/ selection.
     bool shakyMCTracks; //!< How to handle MC tracks with some missing truth information
@@ -230,14 +229,6 @@ protected:
  * \return reconstruction information associated with the truth track
  */
   numu::RecoTrack MCTrackInfo(const simb::MCParticle &track);
-
-  /** Helper function -- whether point is contained in fiducial volume list
- * \param v The point vector.
- *
- * \return Whether the point is contained in the configured list of fiducial volumes.
- * */
-  bool containedInFV(const TVector3 &v);
-  bool containedInFV(const geo::Point_t &v);
 
   /**
  * Calculate the associated topology of each primary track (i.e. whether the track is contained in things)

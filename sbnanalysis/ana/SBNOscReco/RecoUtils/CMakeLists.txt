@@ -1,4 +1,4 @@
-add_library(sbnanalysis_SBNOscReco_RecoUtils SHARED RecoUtils.cc)
+add_library(sbnanalysis_SBNOscReco_RecoUtils SHARED RecoUtils.cc GeoUtil.cc)
 include_directories($ENV{NUG4_INC})
 
 target_link_libraries(sbnanalysis_SBNOscReco_RecoUtils

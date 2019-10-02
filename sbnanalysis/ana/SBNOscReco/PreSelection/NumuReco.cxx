@@ -37,7 +37,8 @@
 #include "core/Experiment.hh"
 #include "NumuReco.h"
 #include "../SBNOsc/Utilities.h"
-#include "RecoUtils/RecoUtils.h"
+#include "../RecoUtils/RecoUtils.h"
+#include "../RecoUtils/GeoUtil.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -129,44 +130,8 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _stopping_cosmic_alg.reconfigure(*fProviderManager, fhicl::Table<StoppingParticleCosmicIdAlg::Config>(pconfig.get<fhicl::ParameterSet>("StoppingParticleCosmicIdAlg"))());
 
 
-    // get the active and cryo volumes
-    for (auto const &cryo: fProviderManager->GetGeometryProvider()->IterateCryostats()) {
-      geo::GeometryCore::TPC_iterator iTPC = fProviderManager->GetGeometryProvider()->begin_TPC(cryo.ID()),
-                                      tend = fProviderManager->GetGeometryProvider()->end_TPC(cryo.ID());
-      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-      while (iTPC != tend) {
-        geo::TPCGeo const& TPC = *iTPC;
-        this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
-        iTPC++;
-      }
-     _config.tpc_volumes.push_back(std::move(this_tpc_volumes));
-    }
-    // make each cryostat volume a box enclosing all tpc volumes
-    for (const std::vector<geo::BoxBoundedGeo> &tpcs: _config.tpc_volumes) {
-      double XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
-      double YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
-      double ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
-
-      double XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
-      double YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
-      double ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
-
-      _config.cryostat_volumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
-   } 
-   {
-     fhicl::ParameterSet dFV = \
-      pconfig.get<fhicl::ParameterSet>("fiducial_volume_inset");
-     double dx = dFV.get<double>("x");
-     double dy = dFV.get<double>("y");
-     double zfront = dFV.get<double>("zfront");
-     double zback = dFV.get<double>("zback");
-     for (const geo::BoxBoundedGeo &geo: _config.cryostat_volumes) {
-       _config.fiducial_volumes.emplace_back(geo.MinX() + dx, geo.MaxX() - dx, geo.MinY() + dy, geo.MaxY() - dy, geo.MinZ() + zfront, geo.MaxZ() - zback);
-     }
-     for (unsigned i = 0; i < _config.fiducial_volumes.size(); i++) {
-       std::cout << "x: " << _config.fiducial_volumes[i].MinX() << " " << _config.fiducial_volumes[i].MaxX() << " y: " << _config.fiducial_volumes[i].MinY() << " " << _config.fiducial_volumes[i].MaxY() << " z: " << _config.fiducial_volumes[i].MinZ() << " " << _config.fiducial_volumes[i].MaxZ() << std::endl;
-     }
-   }
+    _config.tpc_volumes = SBNRecoUtils::TPCVolumes(fProviderManager->GetGeometryProvider());
+    _config.active_volumes = SBNRecoUtils::ActiveVolumes(fProviderManager->GetGeometryProvider());
 
     // get the beam center
     _config.beamCenterX = pconfig.get<float>("beamCenterX", 130.);
@@ -221,7 +186,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
       double dy = dCV.get<double>("y");
       double zfront = dCV.get<double>("zfront");
       double zback = dCV.get<double>("zback");
-      for (const geo::BoxBoundedGeo &geo: _config.cryostat_volumes) {
+      for (const geo::BoxBoundedGeo &geo: _config.active_volumes) {
         _config.containment_volumes.emplace_back(geo.MinX() + dx, geo.MaxX() - dx, geo.MinY() + dy, geo.MaxY() - dy, geo.MinZ() + zfront, geo.MaxZ() - zback);
       }
     }
@@ -388,8 +353,8 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
     }
   }
   // contruct pos Point
-  for (int i = 0; i < _config.cryostat_volumes.size(); i++) {
-    if (_config.cryostat_volumes[i].ContainsPosition(pos.Vect())) {
+  for (int i = 0; i < _config.active_volumes.size(); i++) {
+    if (_config.active_volumes[i].ContainsPosition(pos.Vect())) {
       cryostat_index = i;
       break;
     }
@@ -438,7 +403,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
       TVector3 this_point = trajectory.Position(i).Vect();
       // update if track is contained
       if (contained_in_cryo) {
-        contained_in_cryo = _config.cryostat_volumes[cryostat_index].ContainsPosition(this_point);
+        contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(this_point);
       }
       // check if track has crossed TPC
       if (contained_in_cryo && !crosses_tpc) {
@@ -479,7 +444,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
     }
 
     // update containment with end points
-    if (contained_in_cryo) contained_in_cryo = _config.cryostat_volumes[cryostat_index].ContainsPosition(end_point);
+    if (contained_in_cryo) contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(end_point);
     if (contained_in_tpc)  contained_in_tpc = volumes[tpc_index].ContainsPosition(end_point);
 
   }
@@ -608,8 +573,6 @@ std::vector<numu::RecoInteraction> NumuReco::MCTruthInteractions(const gallery::
     auto neutrino = truth.GetNeutrino();
     TVector3 position = neutrino.Nu().Position().Vect();
 
-    if (!containedInFV(position)) continue;
-
     numu::RecoInteraction this_interaction;
     this_interaction.position = position;
     this_interaction.nu_energy = neutrino.Nu().E();
@@ -696,8 +659,8 @@ std::array<bool, 4> NumuReco::RecoTrackTopology(const art::Ptr<recob::Track> &tr
     }
     break;
   }
-  for (int i = 0; i < _config.cryostat_volumes.size(); i++) {
-    if (_config.cryostat_volumes[i].ContainsPosition(start)) {
+  for (int i = 0; i < _config.active_volumes.size(); i++) {
+    if (_config.active_volumes[i].ContainsPosition(start)) {
       cryostat_index = i;
       break;
     }
@@ -729,7 +692,7 @@ std::array<bool, 4> NumuReco::RecoTrackTopology(const art::Ptr<recob::Track> &tr
       is_contained = _config.containment_volumes[containment_index].ContainsPosition(this_point);
     }
     if (contained_in_cryo) {
-      contained_in_cryo = _config.cryostat_volumes[cryostat_index].ContainsPosition(this_point);
+      contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(this_point);
     }
     if (contained_in_cryo && !crosses_tpc) {
       for (int j = 0; j < volumes.size(); j++) {
@@ -1032,7 +995,7 @@ std::vector<numu::RecoSlice> NumuReco::SelectSlices(const std::vector<numu::Reco
 
   for (auto const &slice: reco_slices) {
     if (slice.primary_index >= 0) {
-      if (slice.particles.at(slice.primary_index).p_is_neutrino && containedInFV(slice.particles.at(slice.primary_index).vertices.at(0))) {
+      if (slice.particles.at(slice.primary_index).p_is_neutrino) {
         if (slice.primary_track_index >= 0) {
           ret.push_back(slice);
         }
@@ -1545,20 +1508,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   return std::move(event);
 }
 
-
-bool NumuReco::containedInFV(const geo::Point_t &v) {
-  for (auto const& FV: _config.fiducial_volumes) {
-    if (FV.ContainsPosition(v)) return true;
-  }
-  return false;
-}
-
-bool NumuReco::containedInFV(const TVector3 &v) {
-  for (auto const& FV: _config.fiducial_volumes) {
-    if (FV.ContainsPosition(v)) return true;
-  }
-  return false;
-}
 
   }  // namespace SBNOsc
 }  // namespace ana
