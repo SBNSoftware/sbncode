@@ -32,7 +32,7 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
   }
 
   for (const numu::RecoInteraction &interaction: event.reco) {
-    if (event.tracks.size() < (unsigned)interaction.slice.primary_track_index) {
+    if (event.tracks.size() > (unsigned)interaction.slice.primary_track_index) {
       FillTrack(event.tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks);
     }
     // fill histos

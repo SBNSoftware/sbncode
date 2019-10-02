@@ -55,7 +55,7 @@ struct InteractionHistos {
   static constexpr numu::InteractionMode allModes[nModes] = 
     {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_vqual", "R_tqual", "R_contained"};
+  static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_fid", "R_vqual", "R_tqual", "R_contained"};
 };
 
 struct TrackHistos {

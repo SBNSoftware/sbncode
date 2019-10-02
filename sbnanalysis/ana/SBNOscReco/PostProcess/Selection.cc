@@ -28,13 +28,14 @@ namespace SBNOsc {
   void Selection::Initialize(fhicl::ParameterSet *config) {
     fOutputFile = new TFile("output.root", "CREATE");
     fOutputFile->cd();
-    fCuts.Initialize(config->get<double>("trackMatchCompletionCut", -1));
     fCRTHitDistance = config->get<double>("CRTHitDistance", -1);
+    fCutConfig = config->get<fhicl::ParameterSet>("Cuts");
     fRecoEvent = NULL;
   }
 
   void Selection::FileSetup(TTree *eventTree) {
     eventTree->SetBranchAddress("reco_event", &fRecoEvent);
+    fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
   }
 
   void Selection::ProcessEvent(const event::Event *core_event) {

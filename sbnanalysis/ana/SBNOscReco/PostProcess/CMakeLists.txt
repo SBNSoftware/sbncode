@@ -8,6 +8,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_Selection
   sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo
   sbnanalysis_SBNOscReco_classes
+  sbnanalysis_SBNOscReco_RecoUtils
 )
 
 # Install all libraries to the main "lib" directory

@@ -2,6 +2,12 @@
 #define __sbnanalysis_CURS_HH
 
 #include <array>
+
+#include "TVector3.h"
+
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+
 #include "../Data/RecoEvent.h"
 
 namespace ana {
@@ -10,8 +16,8 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 4; //!< total number of cuts
-  void Initialize(double trackMatchCompletionCut);
+  static const unsigned nCuts = 5; //!< total number of cuts
+  void Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *geometry);
   /** 
  * Process each cut associated with reconstructed events
  * \param event The reconstructed event information
@@ -30,9 +36,14 @@ public:
   bool SelectReco(std::array<bool, nCuts> &cuts);
 
 private:
+  bool containedInFV(const TVector3 &v);
+  bool containedInFV(const geo::Point_t &v);
+
 
   struct Config {
     double trackMatchCompletionCut;
+    std::vector<geo::BoxBoundedGeo> fiducial_volumes;
+    std::vector<geo::BoxBoundedGeo> active_volumes;
   };
 
   Config fConfig;

@@ -49,6 +49,7 @@ private:
   double fCRTHitDistance;
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
+  fhicl::ParameterSet fCutConfig;
 
 };
 
