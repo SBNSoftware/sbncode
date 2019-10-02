@@ -525,10 +525,11 @@ int NumuReco::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vecto
   for (int i = 0; i < mcparticle_list.size(); i++) {
     if (isFromNuVertex(mctruth, mcparticle_list[i]) && abs(mcparticle_list[i].PdgCode()) == 13 && mcparticle_list[i].Process() == "primary") {
       if (track_ind == -1 || mcparticle_list[track_ind].E() < mcparticle_list[i].E()) {
-        track_ind = mcparticle_list[i].TrackId();
+        track_ind = i;
       }
     }
-  } 
+  }
+  /*
   // if there's no lepton, look for a pi+ that can "fake" a muon
   // if there's multiple, get the one with the highest energy
   if (track_ind == -1 && mctruth.GetNeutrino().CCNC() == 1) {
@@ -541,9 +542,8 @@ int NumuReco::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vecto
         }
       }
     }
-  }
-
-  return track_ind;
+  }*/
+  return (track_ind == -1) ? track_ind : mcparticle_list[track_ind].TrackId();
 }
 
 int NumuReco::TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
@@ -1317,10 +1317,6 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
       }
     }
 
-    std::cout << "CRT Hit Distance match: " << hit_pair.second << std::endl;
-    std::cout << "CRT Hit time: " << hit_pair.first.ts1_ns << std::endl;
-    std::cout << "CRT Loc: " << hit_pair.first.x_pos << " " << hit_pair.first.y_pos << " " << hit_pair.first.z_pos << std::endl;
-
     double distance = hit_pair.second;
     // matching failed
     if (distance < 0) {
@@ -1342,7 +1338,6 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
     match.track = _crt_tracks->at(crt_id);
     match.match_time = match.track.ts1_ns / 1000.;
   }
-  std::cout << "Match time: " << match.match_time << std::endl;
 
   return {match};
 }
@@ -1463,7 +1458,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
 
     // TODO: better way to do matching
     // only keep match if distance is less than 5cm
-    if (this_interaction.match.truth_vertex_distance > 5.) {
+    if (this_interaction.match.truth_vertex_distance < 0. || this_interaction.match.truth_vertex_distance > 5.) {
       this_interaction.match.event_vertex_id = -1;
       std::cout << "Vertex not matched well.\n";
     }
