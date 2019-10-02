@@ -15,10 +15,13 @@
 #include "Loader.hh"
 #include "Event.hh"
 #include "SubRun.hh"
+#include "ProviderManager.hh"
 
 class TBranch;
 class TFile;
 class TTree;
+template<typename Param>
+class TParameter;
 
 namespace event {
   class Event;
@@ -101,6 +104,8 @@ protected:
 
   SubRun* fSubRun;
   TTree* fSubRunTree;
+  ProviderManager* fProviderManager;  //!< Interface for provider access
+  TParameter<int>* fExperimentID;
 };
 
 }  // namespace core

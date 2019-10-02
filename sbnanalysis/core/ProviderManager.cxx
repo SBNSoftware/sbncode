@@ -25,7 +25,7 @@
 
 namespace core {
 
-ProviderManager::ProviderManager(Experiment det, std::string fcl) {
+ProviderManager::ProviderManager(Experiment det, std::string fcl, bool setup_event_services) {
   // Configuration look up policy: allow absolute paths, and search in the
   // $FHICL_FILE_PATH for non-absolute paths.
   const char* fhicl_file_path = getenv("FHICL_FILE_PATH");
@@ -71,9 +71,11 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
       assert(false);
       break;
   }
+  config = new fhicl::ParameterSet(cfg);
+
 
   // LArProperties
- fLArPropertiesProvider = \
+  fLArPropertiesProvider = \
     testing::setupProvider<detinfo::LArPropertiesStandard>(
       cfg.get<fhicl::ParameterSet>("services.LArPropertiesService"));
 
@@ -92,8 +94,14 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
         static_cast<const detinfo::DetectorClocks*>(fDetectorClocksProvider.get())
       });
 
-  // ParticleInventory
   fParticleInventoryProvider = NULL;
+  fBackTrackerProvider = NULL;
+  fPhotonBackTrackerProvider = NULL;
+  if (!setup_event_services) {
+    return;
+  }
+
+  // ParticleInventory
   if (cfg.has_key("services.ParticleInventoryService")) {
     fParticleInventoryProvider = testing::setupProvider<cheat::ParticleInventory>(
        cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
@@ -104,7 +112,6 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
   }
 
   // BackTracker
-  fBackTrackerProvider = NULL;
   if (cfg.has_key("services.BackTrackerService")) {
     fBackTrackerProvider = \
       testing::setupProvider<cheat::BackTracker>(
@@ -118,7 +125,6 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
   }
 
   // Photon BackTracker
-  fPhotonBackTrackerProvider = NULL;
   if (cfg.has_key("services.PhotonBackTrackerService")) {
     fPhotonBackTrackerProvider = \
       testing::setupProvider<cheat::PhotonBackTracker>(
@@ -130,10 +136,31 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
      << " Setting PhotonBackTrackerService to NULL" << std::endl;
   }
 
-  config = new fhicl::ParameterSet(cfg);
-
   std::cout << "ProviderManager: Loaded configuration for: "
             << fGeometryProvider.get()->DetectorName() << std::endl;
+}
+
+void ProviderManager::SetupServices(gallery::Event &ev) {
+  // reset the channels of the back tracker
+  if (GetBackTrackerProvider() != NULL) {
+    GetBackTrackerProvider()->ClearEvent();
+    GetBackTrackerProvider()->PrepSimChannels(ev);
+  }
+
+  // reset information in particle inventory
+  if (GetParticleInventoryProvider() != NULL) {
+    GetParticleInventoryProvider()->ClearEvent();
+    GetParticleInventoryProvider()->PrepParticleList(ev);
+    GetParticleInventoryProvider()->PrepMCTruthList(ev);
+    GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+  }
+
+  // reset information in the photon back tracker
+  if (GetPhotonBackTrackerProvider() != NULL) {
+    GetPhotonBackTrackerProvider()->ClearEvent();
+    GetPhotonBackTrackerProvider()->PrepOpDetBTRs(ev);
+    // GetPhotonBackTrackerProvider()->PrepOpFlashToOpHits(ev);
+  }
 }
 
 

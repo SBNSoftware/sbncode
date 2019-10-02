@@ -6,6 +6,8 @@
 #include <vector>
 #include "core/Experiment.hh"
 
+#include "gallery/Event.h"
+
 namespace geo {
   class GeometryCore;
 }
@@ -44,7 +46,9 @@ namespace core {
  */
 class ProviderManager {
 public:
-  ProviderManager(Experiment det, std::string fcl="");
+  ProviderManager(Experiment det, std::string fcl="", bool setup_event_services=true);
+
+  void SetupServices(gallery::Event &ev);
 
   const geo::GeometryCore* GetGeometryProvider() const {
     return fGeometryProvider.get();
