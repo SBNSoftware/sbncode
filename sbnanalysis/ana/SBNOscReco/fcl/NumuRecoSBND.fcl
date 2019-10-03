@@ -54,12 +54,6 @@ NumuReco: {
     zback: 10
   }
 
-  fiducial_volume_inset: {
-    y: 10
-    x: 10
-    zfront: 15
-    zback: 85
-  }
   StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
 }
 # NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
