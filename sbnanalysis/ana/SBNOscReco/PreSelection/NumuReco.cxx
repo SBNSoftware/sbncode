@@ -172,7 +172,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.PFParticleTag = config->get<std::string>("PFParticleTag", "pandora");
     _config.CaloTag = config->get<std::string>("CaloTag", "pandoraCalo");
     _config.PIDTag = config->get<std::string>("PIDTag", "pandoraPid");
-    _config.CorsikaTag = config->get<std::string>("CorsikaTag", "corsika");
+    _config.CorsikaTag = config->get<std::string>("CorsikaTag", "cosmgen");
     _config.CRTTrackTag = config->get<std::string>("CRTTrackTag", "crttrack");
     _config.CRTHitTag = config->get<std::string>("CRTHitTag", "crthit");
     _config.OpFlashTag = config->get<std::string>("OpFlashTag", "ophit");
@@ -1312,6 +1312,8 @@ void NumuReco::CollectPMTInformation(const gallery::Event &ev) {
   _op_hit_ptrs.clear();
   _op_hits_local.clear();
 
+  return;
+
    // get the OpDet hits
   art::ProductID local_opdets("local_opdets");
   if (_config.MakeOpHits) {
@@ -1422,7 +1424,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     // TODO: better way to do matching
     // only keep match if distance is less than 5cm
     if (this_interaction.match.truth_vertex_distance < 0. || this_interaction.match.truth_vertex_distance > 5.) {
-      this_interaction.match.event_vertex_id = -1;
       std::cout << "Vertex not matched well.\n";
     }
     else {
