@@ -1,0 +1,18 @@
+selection_fiducial_volume_inset: {
+  y: 10
+  x: 10
+  zfront: 15
+  zback: 85
+}
+
+fiducial_volume_inset: {
+  y: 5
+  x: 5
+  zfront: 5
+  zback: 5
+}
+
+CRTHitDistance: 35
+Cuts: {
+   fiducial_volume_inset: @local::fiducial_volume_inset
+}
