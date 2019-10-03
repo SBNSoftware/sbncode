@@ -25,7 +25,11 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 
 }
 
-std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) {
+std::array<bool, 2> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
+  return {true, containedInFV(event.truth[truth_vertex_index].position)};
+}
+
+std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
   bool is_reco = true;
 
   // require fiducial
@@ -58,14 +62,14 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   };
 }
 
-bool Cuts::containedInFV(const geo::Point_t &v) {
+bool Cuts::containedInFV(const geo::Point_t &v) const {
   for (auto const& FV: fConfig.fiducial_volumes) {
     if (FV.ContainsPosition(v)) return true;
   }
   return false;
 }
 
-bool Cuts::containedInFV(const TVector3 &v) {
+bool Cuts::containedInFV(const TVector3 &v) const {
   for (auto const& FV: fConfig.fiducial_volumes) {
     if (FV.ContainsPosition(v)) return true;
   }

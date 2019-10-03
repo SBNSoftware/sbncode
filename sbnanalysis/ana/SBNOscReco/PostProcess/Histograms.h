@@ -25,13 +25,15 @@ struct InteractionHistos {
   TH1D *true_contained_length;
   TH1D *true_track_multiplicity;
   TH1D *crosses_tpc;
+  TH1D *dist_to_match;
 
 
   void Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned index);
   void Fill(
     const numu::RecoInteraction &vertex, 
-    const std::vector<numu::RecoInteraction> &truth, 
-    const std::vector<event::Interaction> &core_truth);
+    const numu::RecoEvent &event,
+    const std::vector<event::Interaction> &core_truth,
+    bool is_truth);
   void Write();
   
   /**
@@ -55,7 +57,7 @@ struct InteractionHistos {
   static constexpr numu::InteractionMode allModes[nModes] = 
     {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_wReco", "Reco", "R_fid", "R_vqual", "R_tqual", "R_contained"};
+  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "Reco", "R_fid", "R_vqual", "R_tqual", "R_contained"};
 };
 
 struct TrackHistos {
@@ -77,7 +79,8 @@ struct TrackHistos {
 
   TH1D *length;
   TH1D *is_contained;
- 
+
+  TH1D *completion; 
  
   TH2D *range_p_diff;
   TH2D *mcs_p_diff;
@@ -115,7 +118,7 @@ struct Histograms {
 
   Histograms();
 
-  void Fill(const numu::RecoEvent &event, const event::Event &core, const std::array<bool, Cuts::nCuts> &selection);
+  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts);
 
   void Write();
 };

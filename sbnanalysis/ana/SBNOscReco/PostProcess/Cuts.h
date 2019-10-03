@@ -25,7 +25,9 @@ public:
  *
  * \return A list of bool's of whether the reco event passes each cut
  */
-  std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index);
+  std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const;
+
+  std::array<bool, 2> ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const;
 
   /**
  * Select a reco event based on the cut values provided by ProcessRecoCuts
@@ -34,12 +36,10 @@ public:
  * \return whether to select this reconstructed neutrino vertex candidate
  */
   bool SelectReco(std::array<bool, nCuts> &cuts);
+  bool containedInFV(const TVector3 &v) const;
+  bool containedInFV(const geo::Point_t &v) const;
 
 private:
-  bool containedInFV(const TVector3 &v);
-  bool containedInFV(const geo::Point_t &v);
-
-
   struct Config {
     double trackMatchCompletionCut;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
