@@ -13,7 +13,7 @@ namespace numu {
 struct RecoParticle {
   bool p_is_clear_cosmic; //!< Taken from Pandora metadata "is_clear_cosmic"
   bool p_is_neutrino; //!< Taken from Pandora metadata "is_neutrino"
-  double p_nu_score; //!< Take from Pandora metadata "nu_score"
+  float p_nu_score; //!< Take from Pandora metadata "nu_score"
   std::vector<geo::Point_t> vertices; //!< List of vertices associated with the particle
   std::vector<size_t> daughters; //!< Daughters of the particle in the "particle flow". Value represents index into pandora information.
   size_t ID; //!< ID of particle

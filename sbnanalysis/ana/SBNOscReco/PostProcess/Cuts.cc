@@ -26,7 +26,8 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 }
 
 std::array<bool, 2> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
-  return {true, containedInFV(event.truth[truth_vertex_index].position)};
+  bool is_neutrino = event.truth[truth_vertex_index].match.mode == numu::mCC || event.truth[truth_vertex_index].match.mode == numu::mNC;
+  return {is_neutrino, is_neutrino &&  containedInFV(event.truth[truth_vertex_index].position)};
 }
 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
@@ -39,19 +40,19 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool v_quality = event.reco[reco_vertex_index].match.event_vertex_id >= 0 && event.reco[reco_vertex_index].match.truth_vertex_distance < 10.;
 
   bool t_quality = false;
-  int t_mcparticle_id = event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.mcparticle_id;
+  int t_mcparticle_id = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.mcparticle_id;
   for (const numu::RecoInteraction &truth: event.truth) {
     if (truth.slice.primary_track_index >= 0 && 
-      truth.slice.tracks.at(truth.slice.primary_track_index).match.mcparticle_id == t_mcparticle_id) {
+      event.reco_tracks.at(truth.slice.primary_track_index).match.mcparticle_id == t_mcparticle_id) {
       t_quality = true;
       break;
     } 
   }
   // require completion
   t_quality = t_quality && (fConfig.trackMatchCompletionCut < 0 ||
-    event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.completion > fConfig.trackMatchCompletionCut);
+    event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.completion > fConfig.trackMatchCompletionCut);
 
-  bool is_contained = event.reco[reco_vertex_index].slice.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).is_contained;
+  bool is_contained = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).is_contained;
 
   return {
     is_reco,

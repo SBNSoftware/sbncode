@@ -13,53 +13,53 @@ namespace numu {
 
 struct RecoTrack {
   // track specific info
-  double deposited_energy_max;
-  double deposited_energy_avg;
-  double deposited_energy_med;
-  double range_momentum;
-  double range_momentum_muon;
+  float deposited_energy_max;
+  float deposited_energy_avg;
+  float deposited_energy_med;
+  float range_momentum;
+  float range_momentum_muon;
   
-  double fwd_mcs_momentum;
-  double fwd_mcs_momentum_muon;
-  double fwd_mcs_momentum_err;
-  double fwd_mcs_momentum_muon_err;
-  double bwd_mcs_momentum;
-  double bwd_mcs_momentum_muon;
-  double bwd_mcs_momentum_err;
-  double bwd_mcs_momentum_muon_err;
+  float fwd_mcs_momentum;
+  float fwd_mcs_momentum_muon;
+  float fwd_mcs_momentum_err;
+  float fwd_mcs_momentum_muon_err;
+  float bwd_mcs_momentum;
+  float bwd_mcs_momentum_muon;
+  float bwd_mcs_momentum_err;
+  float bwd_mcs_momentum_muon_err;
   bool mcs_is_backward;
   
   // buest guess at momentum 
-  double momentum;
-  double energy;
+  float momentum;
+  float energy;
   
-  double chi2_proton;
-  double chi2_kaon;
-  double chi2_pion;
-  double chi2_muon;
-  double min_chi2;
+  float chi2_proton;
+  float chi2_kaon;
+  float chi2_pion;
+  float chi2_muon;
+  float min_chi2;
   int pid_n_dof;
   int pdgid; //!< particle id
   
   bool is_muon;
-  double length;
-  double costh; //!< cosine of angle to z axis
+  float length;
+  float costh; //!< cosine of angle to z axis
   bool contained_in_cryo; //!< is it contained a single cryostat?
   bool contained_in_tpc; //!< is it contained in a single TPC?
   bool crosses_tpc; //!< does it cross a tpc?
   bool is_contained; //!< is it contained in the "containment volume"?
   TVector3 start; //!< start position of track
   TVector3 end; //!< end position of track
-  double dist_to_vertex;
+  float dist_to_vertex;
   TrackTruthMatch match;
   
   std::vector<CRTMatch> crt_match; 
   std::vector<FlashMatch> flash_match;
   int ID;
   
-  double stopping_chisq_start;
-  double stopping_chisq_finish;
-  std::vector<double> tpc_t0s;
+  float stopping_chisq_start;
+  float stopping_chisq_finish;
+  std::vector<float> tpc_t0s;
   
   RecoTrack():
     deposited_energy_max(-1),
@@ -105,8 +105,8 @@ struct RecoTrack {
     
     // More involved info -- need this later???
     // std::vector<TLorentzVector> trajectory;
-    // std::vector<double> calo_dEdx;
-    // std::vector<double> calo_extent;
+    // std::vector<float> calo_dEdx;
+    // std::vector<float> calo_extent;
 };
 } // namespace numu
 #endif

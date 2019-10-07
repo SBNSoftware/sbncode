@@ -161,6 +161,8 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.flashMatchTimeDifference = pconfig.get<double>("flashMatchTimeDifference");
 
 
+    _config.CosmicIDAllTracks = pconfig.get<bool>("CosmicIDAllTracks", false);
+
     // whether to use flash matching in makin CRT decision
     _config.CRT2OPTimeWidth = pconfig.get<double>("CRT2OPTimeWidth", 0.);
     _config.CRTHitinOpHitRange = pconfig.get<bool>("CRTHitinOpHitRange", false);
@@ -212,7 +214,14 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
 }
 
 
-void NumuReco::Finalize() {}
+void NumuReco::Finalize() {
+ // cleanup pointers to algorithms
+ if (_crt_track_matchalg != NULL) delete _crt_track_matchalg;
+ if (_crt_hit_matchalg != NULL) delete _crt_hit_matchalg;
+ if (_op_hit_maker != NULL) delete _op_hit_maker;
+ if (_track_momentum_calculator != NULL) delete _track_momentum_calculator;
+ if (_mcs_fitter != NULL) delete _mcs_fitter;
+}
 
 double NumuReco::TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
   // get handle to back tracker
@@ -302,7 +311,7 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
     _nu_count++;
   }
 
-  return selected;
+  return true;
 }
 
 numu::TrackTruthMatch MCTrackMatch(const simb::MCTruth &truth, const simb::MCParticle &track) {
@@ -532,18 +541,18 @@ std::map<size_t, numu::RecoTrack> NumuReco::MCParticleTracks(const gallery::Even
   return ret;
 }
 
-std::map<size_t, numu::RecoTrack> NumuReco::MCTruthTracks(
+std::vector<size_t> NumuReco::MCTruthTracks(
     std::map<size_t,  numu::RecoTrack> &true_tracks,
     const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
     const simb::MCTruth &mc_truth, 
     int mc_truth_index) 
 {
 
-  std::map<size_t, numu::RecoTrack> ret;
+  std::vector<size_t> ret;
   std::vector<art::Ptr<simb::MCParticle>> mcparticle_list = truth_to_particles.at(mc_truth_index);
   for (unsigned i = 0; i < mcparticle_list.size(); i++) {
     true_tracks.at(mcparticle_list[i]->TrackId()).match = MCTrackMatch(mc_truth, *mcparticle_list[i]);
-    ret[mcparticle_list[i]->TrackId()] = true_tracks.at(mcparticle_list[i]->TrackId());
+    ret.push_back(mcparticle_list[i]->TrackId());
   }
   return ret;
 }
@@ -711,8 +720,8 @@ std::array<bool, 4> NumuReco::RecoTrackTopology(const art::Ptr<recob::Track> &tr
 }
 
 
-std::vector<numu::RecoTrack> NumuReco::RecoTrackInfo() {
-  std::vector<numu::RecoTrack> ret;
+std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
+  std::map<size_t, numu::RecoTrack> ret;
   for (unsigned pfp_track_index = 0; pfp_track_index < _tpc_tracks.size(); pfp_track_index++) {
     const art::Ptr<recob::Track> &track = _tpc_tracks[pfp_track_index];
 
@@ -871,40 +880,51 @@ std::vector<numu::RecoTrack> NumuReco::RecoTrackInfo() {
     // do truth matching
     this_track.match = MatchTrack2Truth(pfp_track_index);
 
-    // do Flash Matching
-    this_track.flash_match = FlashMatching(*track, this_track);
-
-    // do CRT matching
-    this_track.crt_match = CRTMatching(this_track, *track, _tpc_tracks_to_hits.at(pfp_track_index));
-
-    // Cosmic ID: 
-    //
-    // See if start or end looks like stopping
-    this_track.stopping_chisq_start = _stopping_cosmic_alg.StoppingChiSq(track->Vertex(), _tpc_tracks_to_calo.at(pfp_track_index));
-    this_track.stopping_chisq_finish = _stopping_cosmic_alg.StoppingChiSq(track->End(), _tpc_tracks_to_calo.at(pfp_track_index));
-
-    // gather the pandora T0's
-    // first get the particle
-    unsigned particle_index = _tpc_tracks_to_particle_index.at(pfp_track_index);
-    const std::vector<art::Ptr<anab::T0>> &pandora_T0s = _tpc_particles_to_T0.at(particle_index);
-    for (const art::Ptr<anab::T0> &t0: pandora_T0s) {
-      this_track.tpc_t0s.push_back(t0->Time() * 1e-3); // convert ns -> us
+    // if configured, apply Cosmic ID to all tracks
+    if (_config.CosmicIDAllTracks) {
+      ApplyCosmicID(this_track);
     }
 
-    ret.push_back(std::move(this_track));
+    ret[this_track.ID] = this_track;
   }
   return ret;
 }
 
-std::map<size_t, numu::RecoTrack> NumuReco::RecoSliceTracks(
-    const std::vector<numu::RecoTrack> &tracks, 
+void NumuReco::ApplyCosmicID(numu::RecoTrack &track) {
+  const art::Ptr<recob::Track> &pfp_track = _tpc_tracks[track.ID];
+
+  // do Flash Matching
+  track.flash_match = FlashMatching(*pfp_track, track);
+  
+  // do CRT matching
+  track.crt_match = CRTMatching(track, *pfp_track, _tpc_tracks_to_hits.at(track.ID));
+  
+  // Cosmic ID: 
+  //
+  // See if start or end looks like stopping
+  track.stopping_chisq_start = _stopping_cosmic_alg.StoppingChiSq(pfp_track->Vertex(), _tpc_tracks_to_calo.at(track.ID));
+  track.stopping_chisq_finish = _stopping_cosmic_alg.StoppingChiSq(pfp_track->End(), _tpc_tracks_to_calo.at(track.ID));
+  
+  // gather the pandora T0's
+  // first get the particle
+  unsigned particle_index = _tpc_tracks_to_particle_index.at(track.ID);
+  const std::vector<art::Ptr<anab::T0>> &pandora_T0s = _tpc_particles_to_T0.at(particle_index);
+  for (const art::Ptr<anab::T0> &t0: pandora_T0s) {
+    track.tpc_t0s.push_back(t0->Time() * 1e-3); // convert ns -> us
+  }
+}
+
+
+std::vector<size_t> NumuReco::RecoSliceTracks(
+    const std::map<size_t, numu::RecoTrack> &tracks,
     const std::map<size_t, numu::RecoParticle> &particles) { 
 
-  std::map<size_t, numu::RecoTrack> ret;
+  std::vector<size_t> ret;
 
-  for (const numu::RecoTrack &track: tracks) {
+  for (const auto &track_pair: tracks) {
+    const numu::RecoTrack &track = track_pair.second;
     if (particles.count(_tpc_tracks_to_particle_index[track.ID])) {
-      ret[_tpc_tracks_to_particle_index[track.ID]] = track;
+      ret.push_back(_tpc_tracks_to_particle_index[track.ID]);
     }
   }
 
@@ -961,7 +981,7 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 }
 
 
-int NumuReco::SelectPrimaryTrack(const numu::RecoSlice &slice) {
+int NumuReco::SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
   // if no primary particle, then no primary track
   if (slice.primary_index < 0) return -1;
 
@@ -975,12 +995,13 @@ int NumuReco::SelectPrimaryTrack(const numu::RecoSlice &slice) {
   double max_len = -1.;
   for (size_t pfp_index: neutrino.daughters) {
     // is the daughter a track?
-    if (slice.tracks.find(pfp_index) != slice.tracks.end()) {  
+    if (_tpc_particles_to_track_index.count(pfp_index)) {
+      unsigned track_index = _tpc_particles_to_track_index[pfp_index];
       // get it
-      const numu::RecoTrack &track = slice.tracks.at(pfp_index);
+      const numu::RecoTrack &track = tracks.at(track_index);
       if (track.is_muon) {
         if (track.length > max_len) {
-          primary_track_index = pfp_index;
+          primary_track_index = track.ID;
           max_len = track.length;
         }
       }
@@ -1047,7 +1068,7 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
 }
 
 std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
-    const std::vector<numu::RecoTrack> &reco_tracks,
+    std::map<size_t, numu::RecoTrack> &reco_tracks,
     const std::vector<numu::RecoParticle> &particles) {
 
   std::vector<numu::RecoSlice> ret;
@@ -1079,7 +1100,11 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
     // now get information from particles which are tracks
     slice_ret.tracks = RecoSliceTracks(reco_tracks, slice_ret.particles);
     // select the primary track
-    slice_ret.primary_track_index = SelectPrimaryTrack(slice_ret);
+    slice_ret.primary_track_index = SelectPrimaryTrack(reco_tracks, slice_ret);
+    // if we didn't do the cosmic ID for all tracks, do it for the primary
+    if (slice_ret.primary_track_index >= 0 && !_config.CosmicIDAllTracks) {
+      ApplyCosmicID(reco_tracks.at(slice_ret.primary_track_index));
+    }
 
     ret.push_back(std::move(slice_ret));
   }
@@ -1113,6 +1138,7 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
   _tpc_slices_to_particle_index.clear();
   _tpc_tracks_to_particles.clear();
   _tpc_tracks_to_particle_index.clear();
+  _tpc_particles_to_track_index.clear();
   _tpc_tracks_to_calo.clear();
   _tpc_tracks_to_pid.clear();
   _tpc_tracks_to_hits.clear();
@@ -1151,11 +1177,12 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
       } 
     }
   
-    // track to particle
+    // track to particle and particle to track
     art::FindManyP<recob::PFParticle> track_to_particle(track_handle, ev, _config.RecoTrackTag + suffix);
     for (unsigned i = 0; i < track_handle->size(); i++) {
       _tpc_tracks_to_particles.push_back(track_to_particle.at(i).at(0));
       _tpc_tracks_to_particle_index.push_back(particle_id_offset + _tpc_tracks_to_particles[i]->Self());
+      _tpc_particles_to_track_index[particle_id_offset + _tpc_tracks_to_particles[i]->Self()] = i;
       // if this isn't true something went wrong
       assert(_tpc_particles[_tpc_tracks_to_particle_index[i]] == _tpc_tracks_to_particles[i]);
     }
@@ -1382,7 +1409,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   std::vector<numu::RecoParticle> reco_particles = RecoParticleInfo();
 
   // collect track information
-  std::vector<numu::RecoTrack> reco_tracks = RecoTrackInfo();
+  std::map<size_t, numu::RecoTrack> reco_tracks = RecoTrackInfo();
 
   // collect Pandora slice information
   std::vector<numu::RecoSlice> reco_slices = RecoSliceInfo(reco_tracks, reco_particles);
@@ -1401,7 +1428,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     this_interaction.slice = selected_slices[reco_i];
     this_interaction.position = reco_position;
 
-    this_interaction.primary_track = this_interaction.slice.tracks.at(this_interaction.slice.primary_track_index);
+    this_interaction.primary_track = reco_tracks.at(this_interaction.slice.primary_track_index);
   
     // TODO: get the enrgy
     this_interaction.nu_energy = -1;
@@ -1433,7 +1460,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     // Match to the primary track of the event
     this_interaction.match.event_track_id = -1;
     if (this_interaction.slice.primary_track_index >= 0) {
-      const numu::TrackTruthMatch &ptrack_match = this_interaction.slice.tracks.at(this_interaction.slice.primary_track_index).match;
+      const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(this_interaction.slice.primary_track_index).match;
       if (ptrack_match.has_match && ptrack_match.mctruth_has_neutrino) {
         for (int truth_i = 0; truth_i < truth.size(); truth_i++) {
           if ((truth[truth_i].position - ptrack_match.mctruth_vertex).Mag() < 1.) {
@@ -1468,8 +1495,8 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
 
     // Use the track to match the mode of the interaction
     if (this_interaction.slice.primary_track_index >= 0 && 
-      this_interaction.slice.tracks.at(this_interaction.slice.primary_track_index).match.has_match) {
-      const numu::TrackTruthMatch &ptrack_match = this_interaction.slice.tracks.at(this_interaction.slice.primary_track_index).match;
+      reco_tracks.at(this_interaction.slice.primary_track_index).match.has_match) {
+      const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(this_interaction.slice.primary_track_index).match;
       if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kCC) {
         this_interaction.match.mode = numu::mCC;
       }
@@ -1504,7 +1531,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   numu::RecoEvent event;
   event.truth = std::move(truth);
   event.reco = std::move(reco);
-  event.tracks = std::move(reco_tracks);
+  event.reco_tracks = std::move(reco_tracks);
  
   return std::move(event);
 }

@@ -28,15 +28,16 @@ void FillTrack(
 
 void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cutmaker) { 
 
-  for (const numu::RecoTrack &track: event.tracks) {
+  for (const auto &track_pair: event.reco_tracks) {
+    const numu::RecoTrack &track = track_pair.second;
     FillTrack(track, event.true_tracks, fAllTracks);
   }
 
   for (unsigned i = 0; i < event.reco.size(); i++) {
     const numu::RecoInteraction &interaction = event.reco[i];
 
-    if (event.tracks.size() > (unsigned)interaction.slice.primary_track_index) {
-      FillTrack(event.tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks);
+    if (event.reco_tracks.size() > (unsigned)interaction.slice.primary_track_index) {
+      FillTrack(event.reco_tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks);
     }
 
     std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, i);
@@ -64,65 +65,52 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
 }
 
 void InteractionHistos::Write() {
-  track_length->Write();
-  track_p->Write();
-  nuE->Write();
-  beam_center_distance->Write();
-  Q2->Write();
-  true_contained_length->Write();
-  true_track_multiplicity->Write();
-  crosses_tpc->Write();
-  dist_to_match->Write();
+  for (TH1 *hist: all_histos) hist->Write();
+}
+
+void InteractionHistos::Scale(double scale) {
+  for (TH1 *hist: all_histos) hist->Scale(scale);
+}
+
+void InteractionHistos::Add(const InteractionHistos &other) {
+  for (unsigned i = 0; i < all_histos.size(); i++) {
+    all_histos[i]->Add(other.all_histos[i]);
+  }
+}
+
+InteractionHistos::~InteractionHistos() {
+  for (TH1 *hist: all_histos) delete hist;
+}
+
+void TrackHistos::Scale(double scale) {
+  for (TH1 *hist: all_histos) hist->Scale(scale);
 }
 
 void TrackHistos::Write() {
-  chi2_proton_diff->Write();
-  chi2_muon_diff->Write();
-  chi2_pion_diff->Write();
-  chi2_kaon_diff->Write();
-  
-  range_p->Write();
-  mcs_p->Write();
-  deposited_e_max->Write();
-  deposited_e_avg->Write();
-  
-  range_p_minus_truth->Write();
-  mcs_p_minus_truth->Write();
-  deposited_e_max_minus_truth->Write();
-  deposited_e_avg_minus_truth->Write();
-  deposited_e_med_minus_truth->Write();
-  
-  length->Write();
-  is_contained->Write();
-  
-  range_p_diff->Write();
-  mcs_p_diff->Write();
-  deposited_e_max_diff->Write();
-  
-  range_p_comp->Write();
-  mcs_p_comp->Write();
-  deposited_e_max_comp->Write();
-  
-  has_crt_track_match->Write();
-  has_crt_hit_match->Write();
-  has_flash_match->Write();
-  crt_hit_match_time->Write();
-  flash_match_time->Write();
-  crt_v_flash_match_time->Write();
-
-  completion->Write();
+  for (TH1 *hist: all_histos) hist->Write();
 }
 
-Histograms::Histograms() {
+void TrackHistos::Add(const TrackHistos &other) {
+  for (unsigned i = 0; i < all_histos.size(); i++) {
+    all_histos[i]->Add(other.all_histos[i]);
+  }
+}
+
+TrackHistos::~TrackHistos() {
+  for (TH1 *hist: all_histos) delete hist;
+}
+
+
+Histograms::Histograms(const std::string &prefix) {
   for (unsigned i = 0; i < InteractionHistos::nHistos; i++) {
     for (const auto mode: InteractionHistos::allModes) {
-      fInteraction[i][mode].Initialize("", mode, i); 
+      fInteraction[i][mode].Initialize(prefix, mode, i); 
     }
   }
 
   for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    fAllTracks[i].Initialize("All", i);
-    fPrimaryTracks[i].Initialize("Primary", i);
+    fAllTracks[i].Initialize(prefix + "All", i);
+    fPrimaryTracks[i].Initialize(prefix + "Primary", i);
   } 
 }
 
@@ -139,58 +127,86 @@ void Histograms::Write() {
   } 
 }
 
-void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned i) {
-#define INT_HISTO(name, n_bins, lo, hi)    new TH1D((name"_" + mode2Str(mode) + prefix + histoNames[i]).c_str(), name, n_bins, lo, hi)
+void Histograms::Scale(double scale) {
+  for (unsigned i = 0; i < InteractionHistos::nHistos; i++) {
+    for (const auto mode: InteractionHistos::allModes) {
+      fInteraction[i][mode].Scale(scale);
+    }
+  }
 
-  track_length = INT_HISTO("track_length", 101, -10, 1000);
-  track_p = INT_HISTO("track_p", 50, 0., 5.);
-  nuE = INT_HISTO("nuE", 50, 0., 5.);
-  beam_center_distance = INT_HISTO("beam_dist", 60, 0., 300.);
-  Q2 = INT_HISTO("Q2", 50, 0., 10.);
-  true_contained_length = INT_HISTO("tt_contained_length", 101, -10., 1000.);
-  true_track_multiplicity = INT_HISTO("true_track_multiplicity", 10, 0., 10);
-  crosses_tpc = INT_HISTO("crosses_tpc", 2, -0.5, 1.5);
-  dist_to_match = INT_HISTO("dist_to_match", 101, -1., 100.);
+  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
+    fAllTracks[i].Scale(scale);
+    fPrimaryTracks[i].Scale(scale);
+  } 
+}
+
+void Histograms::Add(const Histograms &other) {
+  for (unsigned i = 0; i < InteractionHistos::nHistos; i++) {
+    for (const auto mode: InteractionHistos::allModes) {
+      fInteraction[i][mode].Add(other.fInteraction[i][mode]);
+    }
+  }
+
+  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
+    fAllTracks[i].Add(other.fAllTracks[i]);
+    fPrimaryTracks[i].Add(other.fPrimaryTracks[i]);
+  } 
+
+}
+
+
+void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned i) {
+#define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + mode2Str(mode) + prefix + histoNames[i]).c_str(), #name, n_bins, lo, hi); all_histos.push_back(name)
+
+  INT_HISTO(track_length, 101, -10, 1000);
+  INT_HISTO(track_p, 50, 0., 5.);
+  INT_HISTO(nuE, 50, 0., 5.);
+  INT_HISTO(beam_center_distance, 60, 0., 300.);
+  INT_HISTO(Q2, 50, 0., 10.);
+  INT_HISTO(true_contained_length, 101, -10., 1000.);
+  INT_HISTO(true_track_multiplicity, 10, 0., 10);
+  INT_HISTO(crosses_tpc, 2, -0.5, 1.5);
+  INT_HISTO(dist_to_match, 101, -1., 100.);
 
 #undef INT_HISTO
 }
 
 void TrackHistos::Initialize(const std::string &prefix, unsigned i) {
-#define TRACK_HISTO(name, n_bins, lo, hi)    new TH1D((name"_" + prefix + trackHistoNames[i]).c_str(), name, n_bins, lo, hi) 
-#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)   new TH2D((name"_" + prefix + trackHistoNames[i]).c_str(), name, binx, lo_x, hi_x, biny, lo_y, hi_y)
-  chi2_muon_diff = TRACK_HISTO("chi2_muon_diff", 100, 0., 100.);
-  
-  chi2_proton_diff = TRACK_HISTO("chi2_proton_diff", 101, -0.1, 10);
-  chi2_kaon_diff = TRACK_HISTO("chi2_kaon_diff", 101, -0.1, 10);
-  chi2_pion_diff = TRACK_HISTO("chi2_pion_diff", 101, -0.1, 10);
-  
-  range_p = TRACK_HISTO("range_p", 100, 0., 2.);
-  mcs_p = TRACK_HISTO("mcs_p", 100, 0., 2.);
-  deposited_e_max = TRACK_HISTO("deposited_e_max", 100, 0., 2.);
-  deposited_e_avg = TRACK_HISTO("deposited_e_avg", 100, 0., 2.);
-  
-  range_p_minus_truth = TRACK_HISTO("range_p_minus_truth", 100, -2., 2);
-  mcs_p_minus_truth = TRACK_HISTO("mcs_p_minus_truth", 100, -2., 2.);
-  deposited_e_max_minus_truth = TRACK_HISTO("deposited_e_max_minus_truth", 100, -2., 2.);
-  deposited_e_avg_minus_truth = TRACK_HISTO("deposited_e_avg_minus_truth", 100, -2., 2.);
-  deposited_e_med_minus_truth = TRACK_HISTO("deposited_e_med_minus_truth", 100, -2., 2.); 
+#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + prefix + trackHistoNames[i]).c_str(), #name, n_bins, lo, hi); all_histos.push_back(name)
+#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + prefix + trackHistoNames[i]).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); all_histos.push_back(name)
 
-  length = TRACK_HISTO("length", 100, 0., 500.);
-  is_contained = TRACK_HISTO("is_contained", 2, -0.5, 1.5);
+  TRACK_HISTO(chi2_muon_diff, 100, 0., 100.);
   
+  TRACK_HISTO(chi2_proton_diff, 101, -0.1, 10);
+  TRACK_HISTO(chi2_kaon_diff, 101, -0.1, 10);
+  TRACK_HISTO(chi2_pion_diff, 101, -0.1, 10);
   
-  range_p_diff = TRACK_2DHISTO("range_p_diff", 25, 0, 2.5, 40, -2., 2.); 
-  mcs_p_diff = TRACK_2DHISTO("mcs_p_diff", 25, 0., 2.5, 40, -2., 2.);
-  deposited_e_max_diff = TRACK_2DHISTO("deposited_e_max_diff", 25, 0., 2.5, 40, -2., 2.);
+  TRACK_HISTO(range_p, 100, 0., 2.);
+  TRACK_HISTO(mcs_p, 100, 0., 2.);
+  TRACK_HISTO(deposited_e_max, 100, 0., 2.);
+  TRACK_HISTO(deposited_e_avg, 100, 0., 2.);
+  
+  TRACK_HISTO(range_p_minus_truth, 100, -2., 2);
+  TRACK_HISTO(mcs_p_minus_truth, 100, -2., 2.);
+  TRACK_HISTO(deposited_e_max_minus_truth, 100, -2., 2.);
+  TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
+  TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
-  range_p_comp = TRACK_2DHISTO("range_p_comp", 25, 0, 2.5, 25, 0., 2.5);
-  mcs_p_comp = TRACK_2DHISTO("mcs_p_comp", 25, 0., 2.5, 25, 0., 2.5);
-  deposited_e_max_comp = TRACK_2DHISTO("deposited_e_max_comp",  25, 0., 2.5, 25, 0., 2.5);
+  TRACK_HISTO(length, 100, 0., 500.);
+  TRACK_HISTO(is_contained, 2, -0.5, 1.5);
+  
+  TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
+  TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
+  TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
+
+  TRACK_2DHISTO(range_p_comp, 25, 0, 2.5, 25, 0., 2.5);
+  TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
+  TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
   
   // timing histos
-  has_crt_track_match = TRACK_HISTO("has_crt_track_match", 3, -0.5, 1.5);
-  has_crt_hit_match = TRACK_HISTO("has_crt_hit_match", 3, -0.5, 1.5); 
-  has_flash_match = TRACK_HISTO("has_flash_match", 3, -0.5, 1.5);
+  TRACK_HISTO(has_crt_track_match, 3, -0.5, 1.5);
+  TRACK_HISTO(has_crt_hit_match, 3, -0.5, 1.5); 
+  TRACK_HISTO(has_flash_match, 3, -0.5, 1.5);
   
   double min_matchtime_t = -1640;
   double max_matchtime_t =  3280;
@@ -200,11 +216,15 @@ void TrackHistos::Initialize(const std::string &prefix, unsigned i) {
   double max_comptime = 0.5;
   int n_comptime_bins = 1000;
   
-  crt_hit_match_time = TRACK_HISTO("crt_hit_match_time", n_matchtime_bins, min_matchtime_t, max_matchtime_t);
-  flash_match_time = TRACK_HISTO("flash_match_time", n_matchtime_bins, min_matchtime_t, max_matchtime_t);
-  crt_v_flash_match_time = TRACK_HISTO("crt_v_flash_match_time", n_comptime_bins, min_comptime, max_comptime);
+  TRACK_HISTO(crt_hit_match_time, n_matchtime_bins, min_matchtime_t, max_matchtime_t);
+  TRACK_HISTO(flash_match_time, n_matchtime_bins, min_matchtime_t, max_matchtime_t);
+  TRACK_HISTO(crt_v_flash_match_time, n_comptime_bins, min_comptime, max_comptime);
 
-  completion = TRACK_HISTO("completion", 200, -1, 1);
+  TRACK_HISTO(completion, 200, -1, 1);
+
+  TRACK_HISTO(stopping_chisq_start, 100, 0., 10.);
+  TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
+
 #undef TRACK_HISTO
 #undef TRACK_2DHISTO
 }
@@ -293,6 +313,10 @@ void TrackHistos::Fill(
   else {
     completion->Fill(-0.5);
   }
+
+  stopping_chisq_start->Fill(track.stopping_chisq_start);
+  stopping_chisq_finish->Fill(track.stopping_chisq_finish);
+
 }
 
 void InteractionHistos::Fill(
@@ -303,6 +327,7 @@ void InteractionHistos::Fill(
 
   const std::vector<numu::RecoInteraction> &truth = event.truth;
 
+  const std::map<size_t, numu::RecoTrack> *vertex_tracks;
   if (is_truth) {
     // find the closest reconstructed vertex to this one
     double dist = -1;
@@ -312,25 +337,27 @@ void InteractionHistos::Fill(
     }
     std::cout << "Truth dist to match: " << dist << " mode: " << vertex.match.mode << std::endl;
     dist_to_match->Fill(dist);
+    vertex_tracks = &event.true_tracks;
   }
   // closest reconstructed vertex to this one (already contained in object)
   else {
     dist_to_match->Fill(vertex.match.truth_vertex_distance);
+    vertex_tracks = &event.reco_tracks;
   }
 
-  double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex.slice.tracks.at(vertex.slice.primary_track_index).length: -1;
+  double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;
   track_length->Fill(track_length_val);
   if (vertex.match.event_track_id >= 0) {
     int event_id = vertex.match.event_track_id;
     int mctruth_id = vertex.match.mctruth_track_id;
     
-    double true_track_momentum = truth[event_id].slice.primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].slice.primary_track_index).momentum : -1;
+    double true_track_momentum = truth[event_id].slice.primary_track_index >= 0 ? event.true_tracks.at(truth[event_id].slice.primary_track_index).momentum : -1;
     track_p->Fill(true_track_momentum);
 
-    int crosses_tpc_val = truth[event_id].slice.primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].slice.primary_track_index).crosses_tpc: -1;
+    int crosses_tpc_val = truth[event_id].slice.primary_track_index >= 0 ? event.true_tracks.at(truth[event_id].slice.primary_track_index).crosses_tpc: -1;
     crosses_tpc->Fill(crosses_tpc_val);
 
-    double length = truth[event_id].slice.primary_track_index >= 0 ? truth[event_id].slice.tracks.at(truth[event_id].slice.primary_track_index).length: -1;
+    double length = truth[event_id].slice.primary_track_index >= 0 ? event.true_tracks.at(truth[event_id].slice.primary_track_index).length: -1;
     true_contained_length->Fill(length);
     
     true_track_multiplicity->Fill(truth[event_id].multiplicity);

@@ -11,8 +11,8 @@ struct CRTMatch {
   bool has_track_match;
   sbnd::crt::CRTHit hit;
   bool has_hit_match;
-  double hit_distance;
-  double match_time;
+  float hit_distance;
+  float match_time;
 };
 }
 

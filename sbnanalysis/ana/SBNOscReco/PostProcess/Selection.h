@@ -23,6 +23,7 @@
 #include <TMatrixDSym.h>
 
 #include "Histograms.h"
+#include "Normalize.h"
 #include "Cuts.h"
 #include "../Data/RecoEvent.h"
 
@@ -34,7 +35,10 @@ namespace ana {
 class Selection: public core::PostProcessorBase {
 public:
   // Constructor
-  Selection() {}
+  Selection():
+    fHistograms(),
+    fNeutrinoHistograms("Neutrino"),
+    fCosmicHistograms("Cosmic") {}
   
   // implementing PostProcessor
   void FileCleanup(TTree *eventTree) {}
@@ -46,10 +50,21 @@ public:
 private:
   Cuts fCuts;
   Histograms fHistograms;
+  Histograms fNeutrinoHistograms;
+  Histograms fCosmicHistograms;
+  Histograms *fHistsToFill;
+  Normalize fNormalize;
+  fhicl::ParameterSet fCutConfig;
   double fCRTHitDistance;
+  bool fDoNormalize;
+  double fGoalPOT;
+
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
-  fhicl::ParameterSet fCutConfig;
+
+  std::vector<std::string> fFileTypes;
+  int fFileIndex;
+  std::string fFileType;
 
 };
 

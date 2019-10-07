@@ -26,15 +26,19 @@ struct InteractionHistos {
   TH1D *true_track_multiplicity;
   TH1D *crosses_tpc;
   TH1D *dist_to_match;
+  std::vector<TH1 *> all_histos;
 
 
   void Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned index);
+  void Scale(double scale);
   void Fill(
     const numu::RecoInteraction &vertex, 
     const numu::RecoEvent &event,
     const std::vector<event::Interaction> &core_truth,
     bool is_truth);
   void Write();
+  void Add(const InteractionHistos &other);
+  ~InteractionHistos();
   
   /**
  *  Turn the InteractionMode enum into a string for (e.g.) histogram names.
@@ -98,15 +102,22 @@ struct TrackHistos {
   TH1D *flash_match_time;
   TH1D *crt_v_flash_match_time;
 
+  TH1D *stopping_chisq_start;
+  TH1D *stopping_chisq_finish;
+  std::vector<TH1 *> all_histos;
+
   static const unsigned nTrackHistos = 4;
   // static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Primary", "Contained", "Exiting", "Cosmic", "Neutrino", "No-Match"};
   static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "Neutrino", "No-Match"};
 
   void Initialize(const std::string &prefix, unsigned index);
+  void Scale(double scale);
   void Fill(
     const numu::RecoTrack &track,
     const std::map<size_t, numu::RecoTrack> &true_tracks);
   void Write();
+  void Add(const TrackHistos &other);
+  ~TrackHistos();
 };
 
 struct Histograms {
@@ -116,11 +127,13 @@ struct Histograms {
   TrackHistos fAllTracks[TrackHistos::nTrackHistos];
   TrackHistos fPrimaryTracks[TrackHistos::nTrackHistos];
 
-  Histograms();
+  Histograms(const std::string &prefix="");
 
   void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts);
+  void Scale(double scale);
 
   void Write();
+  void Add(const Histograms &other);
 };
  
 

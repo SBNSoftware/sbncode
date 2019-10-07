@@ -3,9 +3,9 @@
 namespace numu {
 
 struct FlashMatch {
-  double match_time;
-  double match_time_first;
-  double match_time_width;
+  float match_time;
+  float match_time_first;
+  float match_time_width;
 };
 }
 #endif

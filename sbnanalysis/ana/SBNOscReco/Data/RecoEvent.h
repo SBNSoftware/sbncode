@@ -16,7 +16,7 @@ struct RecoSlice {
   int primary_index;
   int primary_track_index;
   std::map<size_t, RecoParticle> particles;
-  std::map<size_t, RecoTrack> tracks;
+  std::vector<size_t> tracks;
 };
 
 
@@ -27,7 +27,7 @@ struct RecoSlice {
 struct RecoInteraction {
   RecoSlice slice; //!< Particle content of the interaction
   TVector3 position; //!< location of the vertex
-  double nu_energy; //!< true/reconstructed neutrino energy
+  float nu_energy; //!< true/reconstructed neutrino energy
   TruthMatch match; //!< Info for mathing to truth
   int multiplicity;
   RecoTrack primary_track;
@@ -36,7 +36,7 @@ struct RecoInteraction {
 
 /** Reconstruction Information about Event */
 struct RecoEvent {
-  std::vector<RecoTrack> tracks;
+  std::map<size_t, RecoTrack> reco_tracks;
   std::map<size_t, RecoTrack> true_tracks;
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
   std::vector<RecoInteraction> truth; //!< List of truth vertices

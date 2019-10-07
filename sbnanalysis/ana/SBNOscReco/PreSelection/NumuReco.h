@@ -110,6 +110,8 @@ protected:
     bool CRTHitinOpHitRange;
     double CRT2OPTimeWidth;
 
+    bool CosmicIDAllTracks;
+
     bool MakeOpHits;
     double CRTHitDist;
 
@@ -160,16 +162,17 @@ protected:
  * \return the list of reconstructed particles which might be neutrinos
  */
   std::vector<numu::RecoSlice> SelectSlices(const std::vector<numu::RecoSlice> &reco_slices);
-  std::vector<numu::RecoTrack> RecoTrackInfo();
+  std::map<size_t, numu::RecoTrack> RecoTrackInfo();
 
   std::vector<numu::RecoSlice> RecoSliceInfo(
-    const std::vector<numu::RecoTrack> &reco_tracks,
+    std::map<size_t, numu::RecoTrack> &reco_tracks,
     const std::vector<numu::RecoParticle> &particles);
 
-  int SelectPrimaryTrack(const numu::RecoSlice &slice);
+  int SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice);
 
-  std::map<size_t, numu::RecoTrack> RecoSliceTracks(
-    const std::vector<numu::RecoTrack> &reco_tracks, 
+
+  std::vector<size_t> RecoSliceTracks(
+    const std::map<size_t, numu::RecoTrack> &tracks,
     const std::map<size_t, numu::RecoParticle> &particles);
 
   /**
@@ -192,10 +195,11 @@ protected:
 
   std::map<size_t, numu::RecoTrack> MCParticleTracks(const gallery::Event &event);
 
-
   int GetPhotonMotherID(int mcparticle_id);
   std::vector<numu::FlashMatch> FlashMatching(const recob::Track &pandora_track, const numu::RecoTrack &track); 
   std::vector<numu::CRTMatch> CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
+
+  void ApplyCosmicID(numu::RecoTrack &track);
 
   /**
  * Get the primary track associated with a truth neutrino interaction.
@@ -213,7 +217,7 @@ protected:
  *
  * \return information associated with the primary track. Set to nonsense if no such track exists.
  */
-  std::map<size_t, numu::RecoTrack> MCTruthTracks(
+  std::vector<size_t> MCTruthTracks(
     std::map<size_t, numu::RecoTrack> &true_tracks, 
     const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
     const simb::MCTruth &mc_truth, 
@@ -287,6 +291,7 @@ protected:
   std::vector<std::vector<unsigned>> _tpc_slices_to_particle_index;
   std::vector<art::Ptr<recob::PFParticle>> _tpc_tracks_to_particles;
   std::vector<unsigned> _tpc_tracks_to_particle_index;
+  std::map<unsigned, unsigned> _tpc_particles_to_track_index;
   std::vector<std::vector<art::Ptr<anab::Calorimetry>>> _tpc_tracks_to_calo;
   std::vector<std::vector<art::Ptr<anab::ParticleID>>> _tpc_tracks_to_pid;
   std::vector<std::vector<art::Ptr<recob::Hit>>> _tpc_tracks_to_hits;
