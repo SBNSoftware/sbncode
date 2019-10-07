@@ -5,9 +5,9 @@
 
 #include "TVector3.h"
 
-#include "CRTMatch.h"
-#include "FlashMatch.h"
-#include "TruthMatch.h"
+#include "ana/SBNOscReco/Data/CRTMatch.h"
+#include "ana/SBNOscReco/Data/FlashMatch.h"
+#include "ana/SBNOscReco/Data/TruthMatch.h"
 
 namespace numu {
 

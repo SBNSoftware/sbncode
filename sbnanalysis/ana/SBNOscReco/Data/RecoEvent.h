@@ -6,9 +6,9 @@
 
 #include "TVector3.h"
 
-#include "RecoParticle.h"
-#include "RecoTrack.h"
-#include "Match.h"
+#include "ana/SBNOscReco/Data/RecoParticle.h"
+#include "ana/SBNOscReco/Data/RecoTrack.h"
+#include "ana/SBNOscReco/Data/TruthMatch.h"
 
 namespace numu {
 

@@ -3,7 +3,7 @@
 
 #include "TVector3.h"
 
-#include "Mode.h"
+#include "ana/SBNOscReco/Data/Mode.h"
 
 namespace numu {
 struct TrackTruthMatch {

@@ -45,9 +45,15 @@ link_directories(
   $ENV{ICARUSCODE_LIB}
 )
 
-ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
+file(RELATIVE_PATH RELATIVE_CURRENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+FUTURE_ROOT_GENERATE_DICTIONARY(sbn_eventdict 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/Event.hh 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/SubRun.hh 
+  LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx)
+set_target_properties(sbnanalysis_Event PROPERTIES PUBLIC_HEADER "Event.hh;SubRun.hh")
 target_link_libraries(
   sbnanalysis_Event
   ${ROOT_LIBRARIES}
@@ -136,7 +142,7 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
-install(TARGETS sbnanalysis_Event DESTINATION lib)
+install(TARGETS sbnanalysis_Event DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR})
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)
