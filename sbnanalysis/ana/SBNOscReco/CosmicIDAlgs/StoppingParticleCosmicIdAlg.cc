@@ -118,14 +118,16 @@ double StoppingParticleCosmicIdAlg::StoppingChiSq(geo::Point_t end, std::vector<
 
   // Try to do a pol0 fit
   TGraph *gdedx = new TGraph(v_dedx.size(), &v_resrg[0], &v_dedx[0]);
-  try{ gdedx->Fit("pol0", "Q"); } catch(...){ return -99999; }
+  try{ gdedx->Fit("pol0", "Q"); } catch(...){ delete gdedx; return -99999; }
   TF1* polfit = gdedx->GetFunction("pol0");
   double polchi2 = polfit->GetChisquare();
 
   // Try to do and exp fit
-  try{ gdedx->Fit("expo", "Q"); } catch(...){ return -99999; }
+  try{ gdedx->Fit("expo", "Q"); } catch(...){ delete gdedx; return -99999; }
   TF1* expfit = gdedx->GetFunction("expo");
   double expchi2 = expfit->GetChisquare();
+
+  delete gdedx;
 
   // Return the chi2 ratio
   return polchi2/expchi2;
