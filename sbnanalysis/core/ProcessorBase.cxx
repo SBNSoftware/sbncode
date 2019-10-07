@@ -308,6 +308,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   fEvent->metadata.run = evaux.run();
   fEvent->metadata.subrun = evaux.subRun();
   fEvent->metadata.eventID = evaux.event();
+  fEvent->metadata.fileEntry = ev.fileEntry();
 
   if (mctruth_is_valid) {
     // get associations from MCTruth information to truth 

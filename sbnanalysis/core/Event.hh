@@ -42,6 +42,7 @@ public:
   int run;      //!< Run ID
   int subrun;   //!< Subrun ID
   int eventID;  //!< Event ID
+  int fileEntry; //!< Index of of file
 };
 
 
