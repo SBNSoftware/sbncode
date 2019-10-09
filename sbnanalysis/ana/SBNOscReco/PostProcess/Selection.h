@@ -25,6 +25,7 @@
 #include "Histograms.h"
 #include "Normalize.h"
 #include "Cuts.h"
+#include "ROC.h"
 #include "../Data/RecoEvent.h"
 
 class TTree;
@@ -49,6 +50,7 @@ public:
 
 private:
   Cuts fCuts;
+  ROC fROC;
   Histograms fHistograms;
   Histograms fNeutrinoHistograms;
   Histograms fCosmicHistograms;
@@ -59,6 +61,7 @@ private:
   bool fDoNormalize;
   bool fFillAllTracks;
   double fGoalPOT;
+  double fNCosmicData;
 
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;

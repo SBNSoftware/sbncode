@@ -2,7 +2,7 @@
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
-add_library(sbnanalysis_SBNOscReco_Selection SHARED Selection.cc Cuts.cc Histograms.cc Normalize.cc Derived.cc)
+add_library(sbnanalysis_SBNOscReco_Selection SHARED Selection.cc Cuts.cc Histograms.cc Normalize.cc Derived.cc ROC.cc)
 
 target_link_libraries(sbnanalysis_SBNOscReco_Selection
   sbnanalysis_SBNOsc_Utilities

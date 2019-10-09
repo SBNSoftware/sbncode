@@ -40,7 +40,9 @@ namespace SBNOsc {
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
+      fNCosmicData = config->get<double>("NCosmicData", 1.);
     }
+    fROC.Initialize();
     fRecoEvent = NULL;
   }
 
@@ -71,6 +73,7 @@ namespace SBNOsc {
       if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);
     }
+    fROC.Fill(*fRecoEvent);
   }
 
   void Selection::Finalize() {
@@ -80,7 +83,10 @@ namespace SBNOsc {
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));
       fHistograms.Add(fNeutrinoHistograms);
       fHistograms.Add(fCosmicHistograms);
+      
+      fROC.BestCuts(fNormalize.ScaleNeutrino(fGoalPOT), fNormalize.ScaleCosmic(fGoalPOT), fNCosmicData);
     }
+    fROC.Write();
     fHistograms.Write();
   }
   }   // namespace SBNOsc
