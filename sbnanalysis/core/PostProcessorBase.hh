@@ -58,7 +58,7 @@ public:
    *
    * \param config A configuration, as a JSON filename.
    */
-  void Initialize(char* config=NULL);
+  void Initialize(char* config=NULL, const std::string &output_fname="");
 
 protected:
   /**

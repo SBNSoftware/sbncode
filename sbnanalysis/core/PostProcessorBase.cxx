@@ -25,8 +25,9 @@ PostProcessorBase::PostProcessorBase(): fEvent(NULL), fProviderManager(NULL) {}
 PostProcessorBase::~PostProcessorBase() {}
 
 
-void PostProcessorBase::Initialize(char* config) {
+void PostProcessorBase::Initialize(char* config, const std::string &output_fname) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
+  if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
   Initialize(cfg);
 }
 
