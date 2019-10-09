@@ -146,7 +146,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
 
     _config.TSMode = pconfig.get<int>("TSMode", 1);
     _config.MakeOpHits = pconfig.get<bool>("MakeOpHits", false);
-    _config.CRTHitDist = pconfig.get<double>("CRTHitDist", -1);
     
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
@@ -589,6 +588,9 @@ std::vector<numu::RecoInteraction> NumuReco::MCTruthInteractions(const gallery::
     this_interaction.multiplicity = TrueTrackMultiplicity(truth, mcparticle_list);
     // get the primary track
     this_interaction.slice.primary_track_index = MCTruthPrimaryTrack(truth, mcparticle_list);
+    if (this_interaction.slice.primary_track_index >= 0) {
+      this_interaction.primary_track = true_tracks.at(this_interaction.slice.primary_track_index); 
+    }
 
     this_interaction.match.has_match = true;
     // get the matching info (to itself)
@@ -1011,20 +1013,8 @@ int NumuReco::SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks
   return primary_track_index;
 }
 
-std::vector<numu::RecoSlice> NumuReco::SelectSlices(const std::vector<numu::RecoSlice>& reco_slices) {
-  std::vector<numu::RecoSlice> ret;
-
-  for (auto const &slice: reco_slices) {
-    if (slice.primary_index >= 0) {
-      if (slice.particles.at(slice.primary_index).p_is_neutrino) {
-        if (slice.primary_track_index >= 0) {
-          ret.push_back(slice);
-        }
-      }
-    }
-  }
-
-  return ret;
+bool NumuReco::SelectSlice(const numu::RecoSlice &slice) {
+  return slice.primary_index >= 0 && slice.particles.at(slice.primary_index).p_is_neutrino;
 }
 
 numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
@@ -1096,13 +1086,21 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
         slice_ret.particles[part.ID] = part;
       }
     } 
+    // throw away bad slices
+    if (!SelectSlice(slice_ret)) continue;
     
     // now get information from particles which are tracks
     slice_ret.tracks = RecoSliceTracks(reco_tracks, slice_ret.particles);
     // select the primary track
     slice_ret.primary_track_index = SelectPrimaryTrack(reco_tracks, slice_ret);
+
+    // throw away slice with no priamry track
+    if (slice_ret.primary_track_index < 0) continue;
+
     // if we didn't do the cosmic ID for all tracks, do it for the primary
-    if (slice_ret.primary_track_index >= 0 && !_config.CosmicIDAllTracks) {
+    if (!_config.CosmicIDAllTracks) {
+      std::cout << "Primary track index: " << slice_ret.primary_track_index << std::endl;
+      std::cout << "Primart track index2: " << reco_tracks.at(slice_ret.primary_track_index).ID << std::endl;
       ApplyCosmicID(reco_tracks.at(slice_ret.primary_track_index));
     }
 
@@ -1281,54 +1279,52 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
    const numu::RecoTrack &track,
    const recob::Track &pandora_track, 
    const std::vector<art::Ptr<recob::Hit>> &hits) {
-//RecoTrack &track) {
   
   numu::CRTMatch match;
 
+  std::pair<sbnd::crt::CRTTrack, double> closest_crt_track = { {}, -99999 };
   // try to find a match to CRT Track -- if we have one
-  int crt_id = _has_crt_tracks ? _crt_track_matchalg->GetMatchedCRTTrackId(pandora_track, hits, *_crt_tracks) : -1;
-
-  // if this failed, see if we can get a match to a hit
-  if (crt_id < 0) {
-    match.has_track_match = false;
-    std::pair<sbnd::crt::CRTHit, double> hit_pair = std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
-    if (_has_crt_hits) {
-      if (_config.CRTHitinOpHitRange && track.flash_match.size()) {
-        const numu::FlashMatch &match = track.flash_match[0];
-        double time_width = (match.match_time_width + _config.CRT2OPTimeWidth) / 2;
-        std::pair<double, double> time_range; 
-        time_range.first = match.match_time_first - time_width;
-        time_range.second = match.match_time_first + time_width;
-        int drift_dir = sbnd::TPCGeoUtil::DriftDirectionFromHits(fProviderManager->GetGeometryProvider(), hits);
-        hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
-      }
-      else {
-        hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
-      }
-    }
-
-    double distance = hit_pair.second;
-    // matching failed
-    if (distance < 0) {
-      return {};
-    }
-    // distance is too far
-    if (_config.CRTHitDist > 0 && distance > _config.CRTHitDist) {
-      return {};
-    }
-    match.has_hit_match = true;
-    match.hit_distance = distance;
-    match.hit = hit_pair.first;
-    match.match_time = ((_config.TSMode == 0) ? match.hit.ts0_ns : match.hit.ts1_ns) / 1000.;
+  if (_has_crt_tracks) {
+    closest_crt_track = _crt_track_matchalg->ClosestCRTTrackByAngle(pandora_track, hits, *_crt_tracks);
   }
-  // Track matching worked!
+
+  // if there is a track match, fill out the info
+  if (closest_crt_track.second > -1000 /* Null value */) {
+    match.track.present = true;
+    match.track.time = ((_config.TSMode == 0) ? closest_crt_track.first.ts0_ns : closest_crt_track.first.ts1_ns) / 1000. /* ns -> us */; 
+    match.track.angle = closest_crt_track.second;
+  }
   else {
-    match.has_track_match = true;
-    match.has_hit_match = false;
-    match.track = _crt_tracks->at(crt_id);
-    match.match_time = match.track.ts1_ns / 1000.;
+    match.track.present = false;
   }
 
+  // try to match a hit
+  std::pair<sbnd::crt::CRTHit, double> hit_pair = std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
+  if (_has_crt_hits) {
+    if (_config.CRTHitinOpHitRange && track.flash_match.size()) {
+      const numu::FlashMatch &match = track.flash_match[0];
+      double time_width = (match.match_time_width + _config.CRT2OPTimeWidth) / 2;
+      std::pair<double, double> time_range; 
+      time_range.first = match.match_time_first - time_width;
+      time_range.second = match.match_time_first + time_width;
+      int drift_dir = sbnd::TPCGeoUtil::DriftDirectionFromHits(fProviderManager->GetGeometryProvider(), hits);
+      hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
+    }
+    else {
+    hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
+    }
+  }
+
+  double distance = hit_pair.second;
+  if (distance >= 0 /* matching succeeded*/) {
+    match.hit.present = true;
+    match.hit.time = ((_config.TSMode == 0) ? hit_pair.first.ts0_ns : hit_pair.first.ts1_ns) / 1000.;
+    match.hit.distance = distance;
+  }
+  else {
+    match.hit.present = false;
+  }
+ 
   return {match};
 }
 
@@ -1414,18 +1410,16 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   // collect Pandora slice information
   std::vector<numu::RecoSlice> reco_slices = RecoSliceInfo(reco_tracks, reco_particles);
 
-  std::vector<numu::RecoSlice> selected_slices = SelectSlices(reco_slices);
-
   std::vector<numu::RecoInteraction> reco;
-  for (unsigned reco_i = 0; reco_i < selected_slices.size(); reco_i++) {
-    const numu::RecoParticle &neutrino = selected_slices[reco_i].particles.at(selected_slices[reco_i].primary_index);
+  for (unsigned reco_i = 0; reco_i < reco_slices.size(); reco_i++) {
+    const numu::RecoParticle &neutrino = reco_slices[reco_i].particles.at(reco_slices[reco_i].primary_index);
 
     geo::Point_t g_pos = neutrino.vertices[0];
     TVector3 reco_position(g_pos.X(), g_pos.Y(), g_pos.Z());
 
     numu::RecoInteraction this_interaction;
 
-    this_interaction.slice = selected_slices[reco_i];
+    this_interaction.slice = reco_slices[reco_i];
     this_interaction.position = reco_position;
 
     this_interaction.primary_track = reco_tracks.at(this_interaction.slice.primary_track_index);
@@ -1461,7 +1455,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     this_interaction.match.event_track_id = -1;
     if (this_interaction.slice.primary_track_index >= 0) {
       const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(this_interaction.slice.primary_track_index).match;
-      if (ptrack_match.has_match && ptrack_match.mctruth_has_neutrino) {
+      if (ptrack_match.has_match) {
         for (int truth_i = 0; truth_i < truth.size(); truth_i++) {
           if ((truth[truth_i].position - ptrack_match.mctruth_vertex).Mag() < 1.) {
             this_interaction.match.event_track_id = truth_i;

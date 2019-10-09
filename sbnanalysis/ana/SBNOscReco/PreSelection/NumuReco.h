@@ -113,7 +113,6 @@ protected:
     bool CosmicIDAllTracks;
 
     bool MakeOpHits;
-    double CRTHitDist;
 
     int FlashMatchMethod;
     int TSMode;
@@ -155,13 +154,8 @@ protected:
  */
   std::vector<numu::RecoParticle> RecoParticleInfo();
 
-  /**
- * Selects which RecoParticles are neutrino interaction candidates
- * \param reco_particles the list of all reconstructed particles to be considered
- *
- * \return the list of reconstructed particles which might be neutrinos
- */
-  std::vector<numu::RecoSlice> SelectSlices(const std::vector<numu::RecoSlice> &reco_slices);
+  bool SelectSlice(const numu::RecoSlice &slice);
+
   std::map<size_t, numu::RecoTrack> RecoTrackInfo();
 
   std::vector<numu::RecoSlice> RecoSliceInfo(

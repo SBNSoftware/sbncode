@@ -57,6 +57,7 @@ private:
   fhicl::ParameterSet fCutConfig;
   double fCRTHitDistance;
   bool fDoNormalize;
+  bool fFillAllTracks;
   double fGoalPOT;
 
   numu::RecoEvent *fRecoEvent;

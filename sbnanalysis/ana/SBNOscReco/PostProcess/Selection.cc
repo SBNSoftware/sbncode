@@ -26,7 +26,7 @@
 namespace ana {
 namespace SBNOsc {
   void Selection::Initialize(fhicl::ParameterSet *config) {
-    fOutputFile = new TFile("output.root", "CREATE");
+    fOutputFile = new TFile(config->get<std::string>("OutputFile", "output.root").c_str(), "CREATE");
     fOutputFile->cd();
     fCRTHitDistance = config->get<double>("CRTHitDistance", -1);
 
@@ -36,6 +36,7 @@ namespace SBNOsc {
 
     fDoNormalize = config->get<bool>("DoNormalize", false);
     fGoalPOT = config->get<double>("GoalPOT", 0.);
+    fFillAllTracks = config->get<bool>("FillAllTracks", true);
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
@@ -65,7 +66,7 @@ namespace SBNOsc {
 
   void Selection::ProcessEvent(const event::Event *core_event) {
     std::cout << "Event: " << core_event->metadata.eventID << std::endl;
-    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts);
+    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fFillAllTracks);
     if (fDoNormalize) {
       if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);

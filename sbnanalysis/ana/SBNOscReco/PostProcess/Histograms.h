@@ -26,16 +26,17 @@ struct InteractionHistos {
   TH1D *true_track_multiplicity;
   TH1D *crosses_tpc;
   TH1D *dist_to_match;
+  TH1D *primary_track_completion;
   std::vector<TH1 *> all_histos;
 
 
   void Initialize(const std::string &prefix, numu::InteractionMode mode, unsigned index);
   void Scale(double scale);
   void Fill(
-    const numu::RecoInteraction &vertex, 
+    unsigned vertex_index,
+    bool is_truth,
     const numu::RecoEvent &event,
-    const std::vector<event::Interaction> &core_truth,
-    bool is_truth);
+    const std::vector<event::Interaction> &core_truth);
   void Write();
   void Add(const InteractionHistos &other);
   ~InteractionHistos();
@@ -55,13 +56,12 @@ struct InteractionHistos {
       case numu::mAll: return "All";
     }
   }
-  static const unsigned recoCutOffset = 2;
-  static const unsigned nHistos = Cuts::nCuts + recoCutOffset;
+  static const unsigned nHistos = Cuts::nCuts + Cuts::nTruthCuts;
   static const unsigned nModes = 5; //!< number of interaction modes
   static constexpr numu::InteractionMode allModes[nModes] = 
     {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "Reco", "R_fid", "R_vqual", "R_tqual", "R_contained"};
+  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "T_vqual", "T_tqual", "Reco", "R_fid", "R_passcrt", "R_contained"};
 };
 
 struct TrackHistos {
@@ -98,7 +98,7 @@ struct TrackHistos {
   TH1D *has_crt_hit_match;
   TH1D *has_flash_match;
 
-  TH1D *crt_hit_match_time;
+  TH1D *crt_match_time;
   TH1D *flash_match_time;
   TH1D *crt_v_flash_match_time;
 
@@ -114,7 +114,8 @@ struct TrackHistos {
   void Scale(double scale);
   void Fill(
     const numu::RecoTrack &track,
-    const std::map<size_t, numu::RecoTrack> &true_tracks);
+    const std::map<size_t, numu::RecoTrack> &true_tracks,
+    const Cuts &cuts);
   void Write();
   void Add(const TrackHistos &other);
   ~TrackHistos();
@@ -122,14 +123,13 @@ struct TrackHistos {
 
 struct Histograms {
 
-
   InteractionHistos fInteraction[InteractionHistos::nHistos][InteractionHistos::nModes];
   TrackHistos fAllTracks[TrackHistos::nTrackHistos];
   TrackHistos fPrimaryTracks[TrackHistos::nTrackHistos];
 
   Histograms(const std::string &prefix="");
 
-  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts);
+  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts, bool fill_all_tracks=true);
   void Scale(double scale);
 
   void Write();
@@ -138,8 +138,7 @@ struct Histograms {
  
 
 
-  }
-
-}
+  } // namespace SBNOSc
+} // namespace ana
 
 #endif

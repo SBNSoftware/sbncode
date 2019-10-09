@@ -1,4 +1,5 @@
 #include "Cuts.h"
+#include "Derived.h"
 #include "../RecoUtils/GeoUtil.h"
 
 namespace ana {
@@ -10,6 +11,12 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 
   fConfig.trackMatchCompletionCut = cfg.get<double>("trackMatchCompletionCut", -1);
   fConfig.active_volumes = SBNRecoUtils::ActiveVolumes(geometry); 
+  fConfig.TruthCompletion = cfg.get<float>("TruthCompletion", 0.5);
+  fConfig.TruthMatchDist = cfg.get<float>("TruthMatchDist", 5.);
+
+  fConfig.CRTHitDist = cfg.get<float>("CRTHitDist", 35.);
+  fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.4, 2.0});
+  fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
 
   {
     fhicl::ParameterSet dFV = \
@@ -25,9 +32,14 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 
 }
 
-std::array<bool, 2> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
+std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
   bool is_neutrino = event.truth[truth_vertex_index].match.mode == numu::mCC || event.truth[truth_vertex_index].match.mode == numu::mNC;
-  return {is_neutrino, is_neutrino &&  containedInFV(event.truth[truth_vertex_index].position)};
+  bool is_fiducial = containedInFV(event.truth[truth_vertex_index].position) && is_neutrino;
+  bool is_matched = (fConfig.TruthMatchDist < 0. || dist2Match(event.truth[truth_vertex_index], event.reco) < fConfig.TruthMatchDist) 
+                    && is_fiducial;
+  bool is_completed = (fConfig.TruthCompletion < 0. || trackMatchCompletion(truth_vertex_index, event) > fConfig.TruthCompletion)
+                      && is_matched;
+  return {is_neutrino, is_fiducial, is_matched, is_completed};
 }
 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
@@ -36,31 +48,36 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   // require fiducial
   bool fiducial = containedInFV(event.reco[reco_vertex_index].position);
 
-  // require close to truth
-  bool v_quality = event.reco[reco_vertex_index].match.event_vertex_id >= 0 && event.reco[reco_vertex_index].match.truth_vertex_distance < 10.;
+  const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
+  
+  bool pass_crt = !HasCRTTrackMatch(primary_track) &&
+    (!HasCRTHitMatch(primary_track) || (CRTMatchTime(primary_track) > fConfig.CRTHitTimeRange[0] && CRTMatchTime(primary_track) < fConfig.CRTHitTimeRange[1]))
+    && fiducial; 
 
-  bool t_quality = false;
-  int t_mcparticle_id = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.mcparticle_id;
-  for (const numu::RecoInteraction &truth: event.truth) {
-    if (truth.slice.primary_track_index >= 0 && 
-      event.reco_tracks.at(truth.slice.primary_track_index).match.mcparticle_id == t_mcparticle_id) {
-      t_quality = true;
-      break;
-    } 
-  }
-  // require completion
-  t_quality = t_quality && (fConfig.trackMatchCompletionCut < 0 ||
-    event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).match.completion > fConfig.trackMatchCompletionCut);
-
-  bool is_contained = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index).is_contained;
+  bool is_contained = primary_track.is_contained && fiducial && pass_crt;
 
   return {
     is_reco,
     fiducial,
-    v_quality,
-    t_quality && v_quality,
+    pass_crt,
     is_contained
   };
+}
+
+bool Cuts::HasCRTTrackMatch(const numu::RecoTrack &track) const {
+  if (track.crt_match.size() == 0) return false;
+  return track.crt_match[0].track.present && (fConfig.CRTTrackAngle < 0. || track.crt_match[0].track.angle < fConfig.CRTTrackAngle);
+}
+
+bool Cuts::HasCRTHitMatch(const numu::RecoTrack &track) const {
+  if (track.crt_match.size() == 0) return false;
+  return track.crt_match[0].hit.present && (fConfig.CRTHitDist < 0. || track.crt_match[0].hit.distance < fConfig.CRTHitDist);
+}
+
+float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
+  if (HasCRTTrackMatch(track)) return track.crt_match[0].track.time;
+  if (HasCRTHitMatch(track)) return track.crt_match[0].hit.time;
+  return -99999;
 }
 
 bool Cuts::containedInFV(const geo::Point_t &v) const {

@@ -16,7 +16,8 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 5; //!< total number of cuts
+  static const unsigned nCuts = 4; //!< total number of cuts
+  static const unsigned nTruthCuts = 4; //!< Total number of truth cuts
   void Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *geometry);
   /** 
  * Process each cut associated with reconstructed events
@@ -27,7 +28,7 @@ public:
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const;
 
-  std::array<bool, 2> ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const;
+  std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const;
 
   /**
  * Select a reco event based on the cut values provided by ProcessRecoCuts
@@ -39,9 +40,19 @@ public:
   bool containedInFV(const TVector3 &v) const;
   bool containedInFV(const geo::Point_t &v) const;
 
+  float CRTMatchTime(const numu::RecoTrack &track) const;
+  bool HasCRTHitMatch(const numu::RecoTrack &track) const;
+  bool HasCRTTrackMatch(const numu::RecoTrack &track) const;
+  
+
 private:
   struct Config {
     double trackMatchCompletionCut;
+    float TruthCompletion;
+    float TruthMatchDist;
+    float CRTHitDist;
+    std::array<float, 2> CRTHitTimeRange;
+    float CRTTrackAngle;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
   };

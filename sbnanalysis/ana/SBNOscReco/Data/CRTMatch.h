@@ -7,12 +7,16 @@
 namespace numu {
 
 struct CRTMatch {
-  sbnd::crt::CRTTrack track;
-  bool has_track_match;
-  sbnd::crt::CRTHit hit;
-  bool has_hit_match;
-  float hit_distance;
-  float match_time;
+  struct {
+    bool present; //!< Whether this CRTMatch has a matching track
+    float time; //!< Matching time [us] of track. T==0 is set to beam spill start time.
+    float angle; //!< Angle between TPC track and CRT track
+  } track;
+  struct {
+    bool present; //!< Whether this CRTMatch has a matching hit
+    float time; //!< Matching time [us] of hit. T==0 is set to beam spill start time.
+    float distance; //!< //!< Distance from projected track to CRT Hit. Nonsense if present is false.
+  } hit;
 };
 }
 
