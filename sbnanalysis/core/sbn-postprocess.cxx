@@ -12,10 +12,11 @@ int main(int argc, char* argv[]) {
   // Parse command line arguments
   char *post_processor = NULL;
   char *config_name = NULL; // optional
+  std::string output_fname = "";
 
   int c;
   unsigned procindex = 0;
-  while ((c=getopt(argc, argv, "m:c:")) != -1) {
+  while ((c=getopt(argc, argv, "m:c:o:")) != -1) {
     switch (c) {
       case 'm':
         if (post_processor != NULL) {
@@ -31,8 +32,11 @@ int main(int argc, char* argv[]) {
         }
         config_name = optarg;
         break;
+      case 'o':
+        output_fname = optarg; 
+        break;
       case '?':
-        if (optopt == 'c' || optopt == 'm')
+        if (optopt == 'c' || optopt == 'm' || optopt == 'o')
           fprintf(stderr, "Option -%c requires an argument.\n", optopt);
         else if (isprint(optopt))
           fprintf(stderr, "Unknown option `-%c'.\n", optopt);
@@ -77,7 +81,7 @@ int main(int argc, char* argv[]) {
   std::cout << "Configuring... " << std::endl;
   core::export_table_postprocess *exp = core::LoadPostProcessor(post_processor);
   core::PostProcessorBase *proc = exp->create();
-  proc->Initialize(config_name);
+  proc->Initialize(config_name, output_fname);
 
   // Run
   std::cout << "Running... " << std::endl;
