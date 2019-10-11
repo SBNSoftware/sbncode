@@ -58,6 +58,7 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       ProcessEvent(fEvent);
     }
 
+    /*
     // process all subruns
     fSubRunTree = (TTree *) f.Get("sbnsubrun");
     fSubRunTree->SetBranchAddress("subruns", &fSubRun);
@@ -65,7 +66,7 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
     for (int subrun_ind = 0; subrun_ind < fSubRunTree->GetEntries(); subrun_ind++) {
       fSubRunTree->GetEntry(subrun_ind);
       ProcessSubRun(fSubRun);
-    }
+    }*/
 
     FileCleanup(fEventTree);
 
