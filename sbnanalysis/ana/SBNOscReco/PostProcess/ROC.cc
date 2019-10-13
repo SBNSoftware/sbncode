@@ -62,6 +62,7 @@ void ana::SBNOsc::ROC::Primitive::Fill(bool is_signal, float value) {
   unsigned bin = 1;
   while (bin <= hist->GetNbinsX() && value < hist->GetXaxis()->GetBinCenter(bin)) {
     hist->Fill(hist->GetXaxis()->GetBinCenter(bin));
+    bin += 1;
   }
   n_signal += is_signal;
   n_background += !is_signal;
