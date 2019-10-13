@@ -19,6 +19,8 @@
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
+#include "sbndcode/CRT/CRTProducts/CRTData.hh"
 #include "fhiclcpp/ParameterSet.h"
 
 #include "TH1D.h"
@@ -43,6 +45,7 @@ public:
    */
   void Initialize(fhicl::ParameterSet* config=NULL) {
     fCRTHitTag = config ? config->get<std::string>("CRTHitTag", "crtsimhit") : "crtsimhit";
+    fIsICARUS = config ? config->get<bool>("IsICARUS", true) : true;
     event_ind = 0;
   }
 
@@ -58,6 +61,7 @@ public:
    * \return True to keep event
    */
   bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
+    if (fIsICARUS) {
     auto const &crt_hits_handle = ev.getValidHandle<std::vector<icarus::crt::CRTHit>>(fCRTHitTag);;
     const std::vector<icarus::crt::CRTHit> &crt_hits = *crt_hits_handle;
     const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
@@ -95,6 +99,35 @@ public:
       }
       std::cout << std::endl;
     }
+    }
+    else {
+    auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTHit>>(fCRTHitTag);;
+    const std::vector<sbnd::crt::CRTHit> &crt_hits = *crt_hits_handle;
+    const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
+    std::cout << "Event: " << event_ind << std::endl;
+
+    for (const sim::AuxDetSimChannel &sim_channel: crt_sim_channels) {
+      int channel = sim_channel.AuxDetID();
+      std::cout << "Channel: " << channel << std::endl;
+      for (const sim::AuxDetIDE &ide: sim_channel.AuxDetIDEs()) {
+        std::cout << "IDE\n";
+        std::cout << "entry T: " << ide.entryT << " exit T: " << ide.exitT << std::endl; 
+        std::cout << "entry X: " << ide.entryX << " entry Y: " << ide.entryY << " entry Z: " << ide.entryZ << std::endl;
+        std::cout << "exit X: " << ide.exitX << " exit Y: " << ide.exitY << " exit Z: " << ide.exitZ << std::endl;
+      }
+    }
+
+    for (unsigned i = 0; i < crt_hits.size(); i++) {
+      const sbnd::crt::CRTHit &crt_hit = crt_hits[i];
+      std::cout << "Hit index: " << i << std::endl;
+      std::cout << "TS0 NS: " << crt_hit.ts0_ns << std::endl;
+      std::cout << "TS1 NS: " << crt_hit.ts1_ns << std::endl;
+      std::cout << "X: " << crt_hit.x_pos << " Y: " << crt_hit.y_pos << " Z: " << crt_hit.z_pos << std::endl;
+      std::cout << "Xerr: " << crt_hit.x_err << " Yerr: " << crt_hit.y_err << " Z: " << crt_hit.z_err << std::endl;
+      std::cout << "Plane: " << crt_hit.plane << std::endl;
+    }
+
+    }
     event_ind += 1;
 
     return false; 
@@ -102,6 +135,7 @@ public:
 
 protected:
   std::string fCRTHitTag;
+  bool fIsICARUS;
   unsigned event_ind;
 };
 
