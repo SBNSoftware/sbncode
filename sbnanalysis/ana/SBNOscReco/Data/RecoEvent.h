@@ -12,11 +12,17 @@
 
 namespace numu {
 
+/**
+ *  Slice of TPC charge containing a list of "particles" (Reco objects)
+ *  and TPC tracks (showers to be added). Also contains the primary 
+ *  track of the slice
+ */
 struct RecoSlice {
-  int primary_index;
-  int primary_track_index;
-  std::map<size_t, RecoParticle> particles;
-  std::vector<size_t> tracks;
+  int primary_index; //!< Index of the primary particle of this slice. 
+                     // If this slice is a neutrino slice, then the priamry particle is the neutrino
+  int primary_track_index; //!< Index of the primary track
+  std::map<size_t, RecoParticle> particles; //!< Map of particle index to particle information
+  std::vector<size_t> tracks; //!< List of track indices contained in this slice
 };
 
 
@@ -29,15 +35,15 @@ struct RecoInteraction {
   TVector3 position; //!< location of the vertex
   float nu_energy; //!< true/reconstructed neutrino energy
   TruthMatch match; //!< Info for mathing to truth
-  int multiplicity;
-  RecoTrack primary_track;
+  int multiplicity; //!< Number of tracks in this interaction
+  RecoTrack primary_track; //!< Stores the primary track in the slice
 };
 
 
 /** Reconstruction Information about Event */
 struct RecoEvent {
-  std::map<size_t, RecoTrack> reco_tracks;
-  std::map<size_t, RecoTrack> true_tracks;
+  std::map<size_t, RecoTrack> reco_tracks; //!< Map of track indices to Track information.
+  std::map<size_t, RecoTrack> true_tracks; //!< Map of indices to Track information for true particles (taken from MCParticle).
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
   std::vector<RecoInteraction> truth; //!< List of truth vertices
 };

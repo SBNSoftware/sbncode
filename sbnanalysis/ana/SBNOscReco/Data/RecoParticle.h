@@ -9,7 +9,7 @@
 namespace numu {
 /** Reconstructed information about each particle. Internal struct used
 * to combine information on each reconstructed particle. 
-* */
+**/
 struct RecoParticle {
   bool p_is_clear_cosmic; //!< Taken from Pandora metadata "is_clear_cosmic"
   bool p_is_neutrino; //!< Taken from Pandora metadata "is_neutrino"
