@@ -30,11 +30,23 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
     }
   }
 
+  {
+    fhicl::ParameterSet dFV = \
+     cfg.get<fhicl::ParameterSet>("containment_volume_inset");
+    double dx = dFV.get<double>("x");
+    double dy = dFV.get<double>("y");
+    double zfront = dFV.get<double>("zfront");
+    double zback = dFV.get<double>("zback");
+    for (const geo::BoxBoundedGeo &geo: fConfig.active_volumes) {
+      fConfig.containment_volumes.emplace_back(geo.MinX() + dx, geo.MaxX() - dx, geo.MinY() + dy, geo.MaxY() - dy, geo.MinZ() + zfront, geo.MaxZ() - zback);
+    }
+  }
+
 }
 
 std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
   bool is_neutrino = event.truth[truth_vertex_index].match.mode == numu::mCC || event.truth[truth_vertex_index].match.mode == numu::mNC;
-  bool is_fiducial = containedInFV(event.truth[truth_vertex_index].position) && is_neutrino;
+  bool is_fiducial = InFV(event.truth[truth_vertex_index].position) && is_neutrino;
   bool is_matched = (fConfig.TruthMatchDist < 0. || dist2Match(event.truth[truth_vertex_index], event.reco) < fConfig.TruthMatchDist) 
                     && is_fiducial;
   bool is_completed = (fConfig.TruthCompletion < 0. || trackMatchCompletion(truth_vertex_index, event) > fConfig.TruthCompletion)
@@ -46,7 +58,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool is_reco = true;
 
   // require fiducial
-  bool fiducial = containedInFV(event.reco[reco_vertex_index].position);
+  bool fiducial = InFV(event.reco[reco_vertex_index].position);
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
   
@@ -80,18 +92,27 @@ float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
   return -99999;
 }
 
-bool Cuts::containedInFV(const geo::Point_t &v) const {
+bool Cuts::InFV(const geo::Point_t &v) const {
   for (auto const& FV: fConfig.fiducial_volumes) {
     if (FV.ContainsPosition(v)) return true;
   }
   return false;
 }
 
-bool Cuts::containedInFV(const TVector3 &v) const {
+bool Cuts::InFV(const TVector3 &v) const {
   for (auto const& FV: fConfig.fiducial_volumes) {
     if (FV.ContainsPosition(v)) return true;
   }
   return false;
+}
+
+bool Cuts::InContainment(const TVector3 &v) const {
+  for (auto const& FV: fConfig.containment_volumes) {
+    if (FV.ContainsPosition(v)) return true;
+  }
+  return false;
+
+
 }
 
 

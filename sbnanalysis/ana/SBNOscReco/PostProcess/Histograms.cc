@@ -229,6 +229,7 @@ void TrackHistos::Initialize(const std::string &prefix, unsigned i) {
 
   TRACK_HISTO(stopping_chisq_start, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
+  TRACK_HISTO(stopping_chisq, 100., 0., 10.);
 
 #undef TRACK_HISTO
 #undef TRACK_2DHISTO
@@ -300,6 +301,13 @@ void TrackHistos::Fill(
 
   stopping_chisq_start->Fill(track.stopping_chisq_start);
   stopping_chisq_finish->Fill(track.stopping_chisq_finish);
+
+  if (!cuts.InContainment(track.end) && track.end.Y() > track.start.Y()) {
+    stopping_chisq->Fill(track.stopping_chisq_start);
+  }
+  else if (!cuts.InContainment(track.start) && track.start.Y() > track.end.Y()) {
+    stopping_chisq->Fill(track.stopping_chisq_finish);
+  }
 
 }
 

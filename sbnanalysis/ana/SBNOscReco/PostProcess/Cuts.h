@@ -37,8 +37,9 @@ public:
  * \return whether to select this reconstructed neutrino vertex candidate
  */
   bool SelectReco(std::array<bool, nCuts> &cuts);
-  bool containedInFV(const TVector3 &v) const;
-  bool containedInFV(const geo::Point_t &v) const;
+  bool InFV(const TVector3 &v) const;
+  bool InFV(const geo::Point_t &v) const;
+  bool InContainment(const TVector3 &v) const;
 
   float CRTMatchTime(const numu::RecoTrack &track) const;
   bool HasCRTHitMatch(const numu::RecoTrack &track) const;
@@ -54,6 +55,7 @@ private:
     std::array<float, 2> CRTHitTimeRange;
     float CRTTrackAngle;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
+    std::vector<geo::BoxBoundedGeo> containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
   };
 

@@ -104,6 +104,7 @@ struct TrackHistos {
 
   TH1D *stopping_chisq_start;
   TH1D *stopping_chisq_finish;
+  TH1D *stopping_chisq;
   std::vector<TH1 *> all_histos;
 
   static const unsigned nTrackHistos = 4;
