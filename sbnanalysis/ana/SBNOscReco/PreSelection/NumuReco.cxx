@@ -1099,8 +1099,6 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
 
     // if we didn't do the cosmic ID for all tracks, do it for the primary
     if (!_config.CosmicIDAllTracks) {
-      std::cout << "Primary track index: " << slice_ret.primary_track_index << std::endl;
-      std::cout << "Primart track index2: " << reco_tracks.at(slice_ret.primary_track_index).ID << std::endl;
       ApplyCosmicID(reco_tracks.at(slice_ret.primary_track_index));
     }
 
@@ -1289,13 +1287,16 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
   }
 
   // if there is a track match, fill out the info
-  if (closest_crt_track.second > -1000 /* Null value */) {
+  if (closest_crt_track.second > -10000 /* Null value */) {
     match.track.present = true;
-    match.track.time = ((_config.TSMode == 0) ? closest_crt_track.first.ts0_ns : closest_crt_track.first.ts1_ns) / 1000. /* ns -> us */; 
+    if (_config.TSMode == 0) match.track.time = closest_crt_track.first.ts0_ns / 1000. /* ns -> us */;
+    else match.track.time = closest_crt_track.first.ts1_ns / 1000. /* ns -> us */;
     match.track.angle = closest_crt_track.second;
   }
   else {
     match.track.present = false;
+    match.track.time = -99999.;
+    match.track.angle = -99999.;
   }
 
   // try to match a hit
@@ -1311,18 +1312,21 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
     }
     else {
-    hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
+      hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
     }
   }
 
   double distance = hit_pair.second;
   if (distance >= 0 /* matching succeeded*/) {
     match.hit.present = true;
-    match.hit.time = ((_config.TSMode == 0) ? hit_pair.first.ts0_ns : hit_pair.first.ts1_ns) / 1000.;
+    if (_config.TSMode == 0) match.hit.time = hit_pair.first.ts0_ns / 1000. /* ns -> us */;
+    else match.hit.time = hit_pair.first.ts1_ns/ 1000. /* ns -> us */;
     match.hit.distance = distance;
   }
   else {
     match.hit.present = false;
+    match.hit.time = -99999.;
+    match.hit.distance = -99999.;
   }
  
   return {match};
