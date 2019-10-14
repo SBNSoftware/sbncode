@@ -22,7 +22,8 @@ CosmicIDAlgs: Algorithms for identification of cosmic muons. Originally
               sbncode.
 
 Data: Contains all the data produced by the PreSelection module. The
-      entrypoint is the RecoEvent class.
+      entrypoint is the RecoEvent class. All units of the data are
+      GeV/cm/us. Any deviation from this is a bug.
 
 DataProductViewers: Small modules for printing information associated
                     with LArSoft data products. Each is run as an
