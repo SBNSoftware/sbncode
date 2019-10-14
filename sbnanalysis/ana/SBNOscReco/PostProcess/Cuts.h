@@ -18,6 +18,11 @@ class Cuts {
 public:
   static const unsigned nCuts = 4; //!< total number of cuts
   static const unsigned nTruthCuts = 4; //!< Total number of truth cuts
+  /**
+ * Initialize this class.
+ * \param cfg fhicl configuration for the class
+ * \geometry A pointer to the geoemtry of the detector to configure
+ */
   void Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *geometry);
   /** 
  * Process each cut associated with reconstructed events
@@ -28,6 +33,13 @@ public:
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const;
 
+  /**
+ * Process each cut associated with true events
+ * \param event Event information
+ * \param truth_vertex_index The index of the true neutrino vertex into the lsit of true interactions in the RecoEvent
+ * 
+ * \return A list of bool's of whether the true event passes each cut
+ */
   std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const;
 
   /**
@@ -37,12 +49,48 @@ public:
  * \return whether to select this reconstructed neutrino vertex candidate
  */
   bool SelectReco(std::array<bool, nCuts> &cuts);
+  /**
+ * Test whether a point is in the configured fiducial volume
+ * \param v The point to test
+ *
+ * \return Whether the point is in the configured fiducial volume
+ */
   bool InFV(const TVector3 &v) const;
+  /**
+ * Test whether a point is in the configured fiducial volume
+ * \param v The point to test
+ *
+ * \return Whether the point is in the configured fiducial volume
+ */
   bool InFV(const geo::Point_t &v) const;
+  /**
+ * Test whether a point is in the configured track containment volume
+ * \param v The point to test
+ *
+ * \return Whether the point is in the configured track containment volume
+ */
   bool InContainment(const TVector3 &v) const;
 
+  /**
+ * Gets the time of the CRT match to a track.
+ * \param track The track object
+ *
+ * \return The time [us] of the CRT match. Returns nonsense if no such match exists.
+ */
   float CRTMatchTime(const numu::RecoTrack &track) const;
+
+  /**
+ * Whether a TPC track has a CRT hit match
+ * \param track the TPC track
+ * \return Whether a TPC track has a CRT hit match
+ */
   bool HasCRTHitMatch(const numu::RecoTrack &track) const;
+
+  /**
+ * Whether a TPC track has a CRT track match
+ * \param track the TPC track
+ * \return Whether a TPC track has a CRT track match
+ */
   bool HasCRTTrackMatch(const numu::RecoTrack &track) const;
   
 

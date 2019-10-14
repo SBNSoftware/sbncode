@@ -142,7 +142,7 @@ protected:
   /**
  * Produce all reconstruction information from the gallery event
  * \param ev the gallery Event
- * \param truth the list of truth vertices for this event
+ * \param truth the list of truth interactions for this event
  * \return the RecoEvent object for this event
  */
   numu::RecoEvent Reconstruct(const gallery::Event &ev, std::vector<numu::RecoInteraction> truth);
@@ -154,17 +154,52 @@ protected:
  */
   std::vector<numu::RecoParticle> RecoParticleInfo();
 
+  /**
+ *
+ *  Returns whether this slice is designated as a neutrino interaction by Pandora
+ *
+ * \param slice The neutrino slice gathered from pandora information
+ * \return Boolean which is true if the slice is a neutrino interaction
+ */
   bool SelectSlice(const numu::RecoSlice &slice);
 
+  /**
+ * Gathers a map of track ID's to RecoTrack objects. This ID may not be the same as
+ * the pandora ID.
+ *
+ * \return Map of track ID's to track objects
+ */
   std::map<size_t, numu::RecoTrack> RecoTrackInfo();
 
+  /**
+ * Gathers the list of reconstructed candidate neutrino interactions as a list of
+ * TPC slices.
+ *
+ * \param reco_tracks The list of reconstructed tracks in the event
+ * \param particles The list of reconstructed PFParticles in the event
+ */
   std::vector<numu::RecoSlice> RecoSliceInfo(
     std::map<size_t, numu::RecoTrack> &reco_tracks,
     const std::vector<numu::RecoParticle> &particles);
 
+  /**
+ * Select the primary track (candidate muon) for a neutrino interaction candidate.
+ * 
+ * \param tracks The list of reconstructed tracks in the event
+ * \param slice The candidate neutrino interaction
+ * \return The ID of the primary track. -1 if there is no such track.
+ */
   int SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice);
 
 
+  /**
+ * Return the list of tracks associated with a neutrino interaction candidate.
+ * \param tracks The list of all reconstructed tracks in the event
+ * \param particles The list of reconstructed particles associated with this
+ *                  neutrino interaction canidate 
+ *
+ * \return The list of track IDs associated with this slice
+ */
   std::vector<size_t> RecoSliceTracks(
     const std::map<size_t, numu::RecoTrack> &tracks,
     const std::map<size_t, numu::RecoParticle> &particles);
@@ -180,17 +215,48 @@ protected:
   event::RecoInteraction CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight);
 
   /**
- * Produced vertex information from truth information
- * \param ev the gallery Event
+ * Produce vertex information from truth information
+ * \param ev The gallery Event
+ * \param true_tracks The list of true particles as RecoTrack objects
  *
- * \return the list of truth neutrino interactions for this event 
+ * \return The list of truth objects converted into interactions. One for each true
+ *         neutrino interaction, plus one for cosmics.
  */
   std::vector<numu::RecoInteraction> MCTruthInteractions(const gallery::Event &ev, std::map<size_t, numu::RecoTrack> &true_tracks);
 
+  /**
+ *  Gets the list of true MCParticles as RecoTrack objects
+ *  \param event The gallery event
+ *
+ *  \return The list of true particles as RecoTrack objects
+ */
   std::map<size_t, numu::RecoTrack> MCParticleTracks(const gallery::Event &event);
 
+  /**
+ *  Gets the ID of a true particle is stored by MC photon information
+ *  \param mcparticle_id The MCParticleID of the true particle as returned by G4
+ *
+ *  \return The ID of the particle as in the photon objects
+ */
   int GetPhotonMotherID(int mcparticle_id);
+  /**
+ *  Returns whether a TPC track has a match to Optical information
+ *  \param pandora_track The LArSoft track object
+ *  \param track The track infromation from this module
+ *
+ *  \return A vector of FlashMatch object. The vector is empty is no match, and has
+ *          one entry if there is a match.
+ */
   std::vector<numu::FlashMatch> FlashMatching(const recob::Track &pandora_track, const numu::RecoTrack &track); 
+  /**
+ *  Returns whether a TPC track has a match to CRT information
+ *  \param track The track information from this module
+ *  \param pandora_track The LArSoft track object
+ *  \param track_hits The list of hits associated with this track
+ *
+ *  \return A vector of CRTMatch objects. The vector is empty is no match, and has
+ *          one entry if there is a match.
+ */
   std::vector<numu::CRTMatch> CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
 
   void ApplyCosmicID(numu::RecoTrack &track);
@@ -205,11 +271,13 @@ protected:
   int MCTruthPrimaryTrack(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
 
   /**
- * Get the primary track information associated with an mctruth object
- * \param ev the gallery Event
- * \param mc_truth the MCTruth object for the considered truth neutrino interaction
- *
- * \return information associated with the primary track. Set to nonsense if no such track exists.
+ * Get the list of true particles associated with a true interaction
+ * \param true_tracks The list of all true particles as RecoTrack objects
+ * \param truth_to_particles The association of MCParticle to MCTruth objects
+ * \param mc_truth The MCTruth object for the considered true interaction
+ * \param mc_truth_index The index of the MCTruth objects for the considered true
+ *                       interaction
+ * \return The list of MCParticle ids associated with this interaction
  */
   std::vector<size_t> MCTruthTracks(
     std::map<size_t, numu::RecoTrack> &true_tracks, 
@@ -217,32 +285,61 @@ protected:
     const simb::MCTruth &mc_truth, 
     int mc_truth_index);
 
+  /**
+ * The number of true particles from an interaction above a certain energy threshold
+ *
+ * \param mc_truth The truth object associated with this interaction
+ * \param mcparticle_list The list of all MCParticles from G4
+ *
+ * \return The number of particles coming from the interaction vertex
+ */
   int TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
 
   /**
- * Get the TrackInfo information associated with an MCTrack
- * \param truth The neutrino interaction which produced this track
- * \param track The MCTrack information for this track
+ * Get the TrackInfo information associated with a true particle
+ * \param track The MCParticle information for this true particle
  *
- * \return reconstruction information associated with the truth track
+ * \return RecoTrack information on the true particle
  */
   numu::RecoTrack MCTrackInfo(const simb::MCParticle &track);
 
   /**
- * Calculate the associated topology of each primary track (i.e. whether the track is contained in things)
+ * Calculate some topology factoids about a reconstructed track
  * 
- * \param The reconstructed track information
+ * \param track The pointer to LArSoft track information
  *
  * \return A list of bools associated with track topology. See the code for what is what.
  */
   std::array<bool, 4> RecoTrackTopology(const art::Ptr<recob::Track> &track);
 
-  numu::TrackTruthMatch MatchTrack2Truth(size_t pfp_track_id);
+  /**
+ * Get matching information from a reconstructed track to truth information
+ * \param track_id the "ID" of the reconstructed track. __NOT__ the pandora ID.
+ *
+ * \return The matchinf information of this track to truth information
+ */
+  numu::TrackTruthMatch MatchTrack2Truth(size_t track_id);
   double TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
 
+  /**
+ * Fill up the Optical information containers from the gallery Event
+ * \param ev The gallery Event
+ */
   void CollectPMTInformation(const gallery::Event &ev);
+  /**
+ * Fill up the CRT information containers from the gallery Event
+ * \param ev The gallery Event
+ */
   void CollectCRTInformation(const gallery::Event &ev);
+  /**
+ * Fill up the TPC information containers from the gallery Event
+ * \param ev The gallery Event
+ */
   void CollectTPCInformation(const gallery::Event &ev);
+  /**
+ * Fill up truth information containers from the gallery Event
+ * \param ev The gallery Event
+ */
   void CollectTruthInformation(const gallery::Event &ev);
 
   unsigned _event_counter;  //!< Count processed events
@@ -252,8 +349,8 @@ protected:
   Config _config; //!< The config
 
   // calculators for Reco things
-  trkf::TrackMomentumCalculator *_track_momentum_calculator;
-  trkf::TrajectoryMCSFitter *_mcs_fitter;
+  trkf::TrackMomentumCalculator *_track_momentum_calculator; //!< Calculator for range-based track momentum
+  trkf::TrajectoryMCSFitter *_mcs_fitter; //!< Calculator for MCS based momentum
   
 
   numu::RecoEvent _recoEvent; //!< Branch container for the RecoEvent
@@ -261,9 +358,9 @@ protected:
 
   sbnd::CRTTrackMatchAlg *_crt_track_matchalg; //!< Algorithm for matching reco Tracks -> CRT Tracks
   sbnd::CRTT0MatchAlg *_crt_hit_matchalg; //!< Algorithm for matching reco Tracks -> CRT hits (T0's)
-  ApaCrossCosmicIdAlg _apa_cross_cosmic_alg;
-  StoppingParticleCosmicIdAlg _stopping_cosmic_alg;
-  opdet::opHitFinderSBND *_op_hit_maker;
+  ApaCrossCosmicIdAlg _apa_cross_cosmic_alg; //!< Algorithm for doing cosmic ID by looking for tracks crossing APA
+  StoppingParticleCosmicIdAlg _stopping_cosmic_alg; //!< Algorithm for doing cosmic ID using a fit to the energy deposits
+  opdet::opHitFinderSBND *_op_hit_maker; //!< Optical hit maker
 
   // holders for CRT information
   const std::vector<sbnd::crt::CRTTrack> *_crt_tracks;
