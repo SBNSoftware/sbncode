@@ -29,6 +29,8 @@ void PostProcessorBase::Initialize(char* config, const std::string &output_fname
   fhicl::ParameterSet* cfg = LoadConfig(config);
   if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
   Initialize(cfg);
+  fSubRun = 0;
+  fEvent = 0;
 }
 
 
@@ -42,13 +44,13 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       break;
     }
     // get the Experiment ID
-    fExperimentID = (TParameter<int> *) f.Get("experiment");
+    f.GetObject("experiment", fExperimentID);
     if ((Experiment)fExperimentID->GetVal() != kExpOther) {
       fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false); 
     }
 
     // set Event
-    fEventTree = (TTree *) f.Get("sbnana");
+    f.GetObject("sbnana", fEventTree);
     fEventTree->SetBranchAddress("events", &fEvent);
 
     FileSetup(fEventTree);
@@ -58,15 +60,17 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       ProcessEvent(fEvent);
     }
 
-    /*
     // process all subruns
-    fSubRunTree = (TTree *) f.Get("sbnsubrun");
+    f.GetObject("sbnsubrun", fSubRunTree);
+    if (fSubRunTree == NULL) {
+      std::cerr << "Error: NULL subrun tree" << std::endl;
+    }
     fSubRunTree->SetBranchAddress("subruns", &fSubRun);
 
     for (int subrun_ind = 0; subrun_ind < fSubRunTree->GetEntries(); subrun_ind++) {
       fSubRunTree->GetEntry(subrun_ind);
       ProcessSubRun(fSubRun);
-    }*/
+    }
 
     FileCleanup(fEventTree);
 
