@@ -16,7 +16,7 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 4; //!< total number of cuts
+  static const unsigned nCuts = 5; //!< total number of cuts
   static const unsigned nTruthCuts = 4; //!< Total number of truth cuts
   /**
  * Initialize this class.
@@ -85,6 +85,13 @@ public:
  * \return Whether a TPC track has a CRT hit match
  */
   bool HasCRTHitMatch(const numu::RecoTrack &track) const;
+
+  /**
+ * Returns whether a time value is within the configured beam spill window
+ * \param time The time to test
+ * \return True when the time is in the beam spill window.
+ */
+  bool TimeInSpill(float time) const;
 
   /**
  * Whether a TPC track has a CRT track match

@@ -62,16 +62,17 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
   
-  bool pass_crt = !HasCRTTrackMatch(primary_track) &&
-    (!HasCRTHitMatch(primary_track) || (CRTMatchTime(primary_track) > fConfig.CRTHitTimeRange[0] && CRTMatchTime(primary_track) < fConfig.CRTHitTimeRange[1]))
-    && fiducial; 
+  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && fiducial;
+  bool pass_crt_hit = (!HasCRTHitMatch(primary_track) || TimeInSpill(CRTMatchTime(primary_track)))
+    && fiducial && pass_crt_track;
 
-  bool is_contained = primary_track.is_contained && fiducial && pass_crt;
+  bool is_contained = primary_track.is_contained && fiducial && pass_crt_track && pass_crt_hit;
 
   return {
     is_reco,
     fiducial,
-    pass_crt,
+    pass_crt_track,
+    pass_crt_hit,
     is_contained
   };
 }
@@ -90,6 +91,10 @@ float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
   if (HasCRTTrackMatch(track)) return track.crt_match[0].track.time;
   if (HasCRTHitMatch(track)) return track.crt_match[0].hit.time;
   return -99999;
+}
+
+bool Cuts::TimeInSpill(float time) const {
+  return time > fConfig.CRTHitTimeRange[0] && time < fConfig.CRTHitTimeRange[1]; 
 }
 
 bool Cuts::InFV(const geo::Point_t &v) const {
