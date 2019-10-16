@@ -31,6 +31,7 @@ void PostProcessorBase::Initialize(char* config, const std::string &output_fname
   Initialize(cfg);
   fSubRun = 0;
   fEvent = 0;
+  fExperimentID = 0;
 }
 
 
@@ -43,10 +44,33 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
                 << "Cleaning up and exiting." << std::endl;
       break;
     }
-    // get the Experiment ID
-    f.GetObject("experiment", fExperimentID);
-    if ((Experiment)fExperimentID->GetVal() != kExpOther) {
-      fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false); 
+
+    // first file -- setup the provider manager
+    if (fExperimentID == NULL) {
+      // get the Experiment ID
+      f.GetObject("experiment", fExperimentID);
+      if ((Experiment)fExperimentID->GetVal() != kExpOther) {
+        fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false); 
+      }
+    }
+    // otherwise -- check if we can re-use
+    else {
+      Experiment last_experiment_id = (Experiment)fExperimentID->GetVal();
+      // get the Experiment ID
+      f.GetObject("experiment", fExperimentID);
+      if ((Experiment)fExperimentID->GetVal() != kExpOther) {
+        if ((Experiment)fExperimentID->GetVal() == last_experiment_id) {} // reuse provider manager 
+        else {
+          delete fProviderManager;
+          fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false);
+        }
+      }
+      else {
+        if (fProviderManager != NULL) {
+          delete fProviderManager;
+          fProviderManager = NULL;
+        }
+      }
     }
 
     // set Event
@@ -73,13 +97,12 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
     }
 
     FileCleanup(fEventTree);
-
-    if (fProviderManager != NULL) {
-      delete fProviderManager;
-      fProviderManager = NULL;
-    }
-
   } 
+
+  if (fProviderManager != NULL) {
+    delete fProviderManager;
+    fProviderManager = NULL;
+  }
 
   // teardown
   Finalize();
