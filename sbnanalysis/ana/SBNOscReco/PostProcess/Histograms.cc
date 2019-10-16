@@ -266,11 +266,9 @@ void TrackHistos::Fill(
   if (has_flash_match_val) {
     const numu::FlashMatch &flash_match = track.flash_match.at(0);
     double flash_time = flash_match.match_time_first;
-    std::cout << "FLASH match time: " << flash_time << std::endl;
     flash_match_time->Fill(flash_time);
     if (cuts.HasCRTTrackMatch(track) || cuts.HasCRTHitMatch(track)) {
       crt_v_flash_match_time->Fill(cuts.CRTMatchTime(track) - flash_time);  
-      std::cout << "CRT match time: " << crt_match_time << std::endl;
     }
   }
   
@@ -282,8 +280,6 @@ void TrackHistos::Fill(
     deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
     deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
     deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
-    
-    //std::cout << "AT FILL -- is contained: " << true_track.is_contained << std::endl;      
     
     range_p_diff->Fill(true_track.momentum, track.range_momentum_muon - true_track.momentum);
     mcs_p_diff->Fill(true_track.momentum, mcs_p_val - true_track.momentum);
@@ -325,7 +321,6 @@ void InteractionHistos::Fill(
   if (is_truth) {
     // find the closest reconstructed vertex to this one
     double dist = numu::dist2Match(vertex, event.reco);
-    std::cout << "Truth dist to match: " << dist << " mode: " << vertex.match.mode << std::endl;
     dist_to_match->Fill(dist);
     primary_track_completion->Fill(numu::trackMatchCompletion(vertex_index, event));
     vertex_tracks = &event.true_tracks;
