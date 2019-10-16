@@ -108,6 +108,14 @@ public:
     int tpc_i = 0;
     std::cout << std::endl << "ICARUS" << std::endl;
     std::cout << "NCHANNELS: " << _managerICARUS->GetGeometryProvider()->Nchannels() << std::endl;
+    for (auto const &planeID: _managerICARUS->GetGeometryProvider()->IteratePlaneIDs()) {
+      std::cout << "Plane ID: " << planeID.deepestIndex() << " type: " << _managerICARUS->GetGeometryProvider()->SignalType(planeID) << std::endl;
+      for (auto const &wireID: _managerICARUS->GetGeometryProvider()->IterateWireIDs(planeID)) {
+        std::cout << _managerICARUS->GetGeometryProvider()->PlaneWireToChannel(wireID) << " ";
+      }
+      std::cout << std::endl;
+    }
+
     for (auto const &cryo: _managerICARUS->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
       geo::GeometryCore::TPC_iterator iTPC = _managerICARUS->GetGeometryProvider()->begin_TPC(cryo.ID()),
