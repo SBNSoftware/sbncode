@@ -15,4 +15,8 @@ fiducial_volume_inset: {
 CRTHitDistance: 35
 Cuts: {
    fiducial_volume_inset: @local::fiducial_volume_inset
+   containment_volume_inset: @local::fiducial_volume_inset
 }
+
+FillAllTracks: false
+
