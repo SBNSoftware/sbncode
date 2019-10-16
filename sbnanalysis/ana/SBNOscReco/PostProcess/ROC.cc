@@ -10,44 +10,56 @@ void ana::SBNOsc::ROC::Initialize() {
 }
 
 void ana::SBNOsc::ROC::Write() const {
-  for (const Primitive *prim: fAllPrimitives) {
+  for (const NormalizedPrimitive *prim: fAllPrimitives) {
     prim->Write();
   }
 }
 
-void ana::SBNOsc::ROC::BestCuts(float scale_signal, float scale_background, float n_background_data) const {
-  for (const Primitive *prim: fAllPrimitives) {
-    std::cout << "Cut (" << prim->name << ") value: " << prim->BestCut(scale_signal, scale_background, n_background_data);
+void ana::SBNOsc::ROC::Normalize(float neutrino_scale, float cosmic_scale) {
+  for (NormalizedPrimitive *prim: fAllPrimitives) {
+    prim->Normalize(neutrino_scale, cosmic_scale);
   }
 }
 
-void ana::SBNOsc::ROC::Fill(const numu::RecoEvent &event) {
+void ana::SBNOsc::ROC::BestCuts() const {
+  for (const NormalizedPrimitive *prim: fAllPrimitives) {
+    std::cout << "Cut (" << prim->name << ") value: " << prim->BestCut() << std::endl;
+  }
+}
+
+void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts cuts, const numu::RecoEvent &event) {
   for (const numu::RecoInteraction &reco: event.reco) {
-    bool is_signal = reco.match.has_match && (reco.match.mode == numu::mCC || reco.match.mode == numu::mNC);
+    // bool is_signal = reco.match.has_match && (reco.match.mode == numu::mCC || reco.match.mode == numu::mNC);
+    bool is_signal = (reco.match.mode == numu::mCC || reco.match.mode == numu::mNC);
     const numu::RecoTrack &track = event.reco_tracks.at(reco.slice.primary_track_index);
     
     // CRT stuff
     if (track.crt_match.size() > 0) {
       if (track.crt_match[0].track.present) {
-        crt_track_angle.Fill(is_signal, track.crt_match[0].track.angle);
+        crt_track_angle.FillNeutrino(is_signal, track.crt_match[0].track.angle);
+        crt_hit_distance.FillAlwaysNeutrino(is_signal);
+      }
+      else if (track.crt_match[0].hit.present && !cuts.TimeInSpill(track.crt_match[0].hit.time)) {
+        crt_track_angle.FillNeverNeutrino(is_signal);
+        crt_hit_distance.FillNeutrino(is_signal, track.crt_match[0].hit.distance);
       }
       else {
-        crt_track_angle.FillNever(is_signal);
-      }
-      if (track.crt_match[0].hit.present) {
-        crt_hit_distance.Fill(is_signal, track.crt_match[0].hit.distance);
-      }
-      else {
-        crt_hit_distance.FillNever(is_signal);
+        crt_track_angle.FillNeverNeutrino(is_signal);
+        crt_hit_distance.FillNeverNeutrino(is_signal);
       }
     }
     else {
-      crt_track_angle.FillNever(is_signal);
-      crt_hit_distance.FillNever(is_signal);
+      crt_track_angle.FillNeverNeutrino(is_signal);
+      crt_hit_distance.FillNeverNeutrino(is_signal);
     }
   }
 }
 
+void ana::SBNOsc::ROC::NormalizedPrimitive::Initialize(const std::string &this_name, float cut_low, float cut_high, unsigned n_bin) {
+  fNeutrino.Initialize(this_name + "neutrino_", cut_low, cut_high, n_bin);
+  fCosmic.Initialize(this_name + "cosmic_", cut_low, cut_high, n_bin);
+  name = this_name;
+}
 
 void ana::SBNOsc::ROC::Primitive::Initialize(const std::string &this_name, float cut_low, float cut_high, unsigned n_bin) {
   signal = new TH1D((this_name + "signal").c_str(), this_name.c_str(), n_bin, cut_low, cut_high);
@@ -60,7 +72,7 @@ void ana::SBNOsc::ROC::Primitive::Initialize(const std::string &this_name, float
 void ana::SBNOsc::ROC::Primitive::Fill(bool is_signal, float value) {
   TH1D *hist = is_signal ? signal : background;
   unsigned bin = 1;
-  while (bin <= hist->GetNbinsX() && value < hist->GetXaxis()->GetBinCenter(bin)) {
+  while (bin <= hist->GetNbinsX() && value > hist->GetXaxis()->GetBinCenter(bin)) {
     hist->Fill(hist->GetXaxis()->GetBinCenter(bin));
     bin += 1;
   }
@@ -78,33 +90,77 @@ void ana::SBNOsc::ROC::Primitive::FillNever(bool is_signal) {
   n_background += !is_signal;
 }
 
+void ana::SBNOsc::ROC::Primitive::FillAlways(bool is_signal) {
+  n_signal += is_signal;
+  n_background += !is_signal;
+}
 
-float ana::SBNOsc::ROC::Primitive::BestCut(float scale_signal, float scale_background, float n_background_data) const {
+void ana::SBNOsc::ROC::Primitive::Scale(float scale) {
+  signal->Scale(scale);
+  background->Scale(scale);
+  n_signal *= scale;
+  n_background *= scale;
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::Normalize(float scale_neutrino, float scale_cosmic) {
+  fNeutrino.Scale(scale_neutrino);
+  fCosmic.Scale(scale_cosmic);
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::Signal(unsigned bin) const {
+  return fNeutrino.signal->GetBinContent(bin) + fCosmic.signal->GetBinContent(bin);
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::Background(unsigned bin) const {
+  return fNeutrino.background->GetBinContent(bin) + fCosmic.background->GetBinContent(bin);
+}
+
+unsigned ana::SBNOsc::ROC::NormalizedPrimitive::NCutVals() const {
+  return fNeutrino.signal->GetNbinsX();
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::GetCutVal(unsigned bin) const {
+  return fNeutrino.signal->GetBinCenter(bin);
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::NSignal() const {
+  return fNeutrino.n_signal + fCosmic.n_signal;
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::NBackground() const {
+  return fNeutrino.n_background + fCosmic.n_background;
+}
+
+float ana::SBNOsc::ROC::NormalizedPrimitive::BestCut() const {
   float max_significance = 0.;
   float best_cut = 0.;
-  for (unsigned bin = 1; bin <= signal->GetNbinsX(); bin++) {
-    float sig = signal->GetBinContent(bin) * scale_signal;
-    float bkg = background->GetBinContent(bin) * (scale_background * n_background / n_background_data);
-    float this_significance = sig / sqrt(sig + bkg);
+  for (unsigned bin = 1; bin <= NCutVals(); bin++) {
+    float sig = Signal(bin);
+    float bkg = Background(bin);
+    float this_significance = 0.;
+    if (sig + bkg > 1.e-4) {
+      this_significance = sig / sqrt(sig + bkg);
+    }
     if (this_significance > max_significance) {
       max_significance = this_significance;
-      best_cut = signal->GetBinCenter(bin); 
+      best_cut = GetCutVal(bin);
     }
   } 
   return best_cut;
 }
 
-void ana::SBNOsc::ROC::Primitive::Write() const {
+void ana::SBNOsc::ROC::NormalizedPrimitive::Write() const {
   std::vector<float> eff;
-  std::vector<float> purity;
-  for (unsigned bin = 1; bin <= signal->GetNbinsX(); bin++) {
-    float this_eff = signal->GetBinContent(bin) / n_signal;
-    float this_purity = signal->GetBinContent(bin) / (background->GetBinContent(bin) + signal->GetBinContent(bin));
+  std::vector<float> rejection;
+  for (unsigned bin = 1; bin <= NCutVals(); bin++) {
+    float this_eff = Signal(bin) / NSignal();
+    float this_rej = 1 - Background(bin) / NBackground();
     eff.push_back(this_eff);
-    purity.push_back(this_purity);
+    rejection.push_back(this_rej);
   }
-  TGraph *ROC = new TGraph(signal->GetNbinsX(), &purity[0], &eff[0]);
+  TGraph *ROC = new TGraph(NCutVals(), &eff[0], &rejection[0]);
   ROC->SetTitle(name.c_str());
+  ROC->SetName(name.c_str());
   ROC->Write();
 
   delete ROC;
