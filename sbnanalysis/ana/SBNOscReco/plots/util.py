@@ -36,11 +36,24 @@ def with_io_args(parser):
     parser = with_display_args(parser)
     return parser
 
-def with_histosize_args(parser):
+def with_graphsize_args(parser):
+    parser.add_argument("-ym", "--y_min", type=float, default=None)
+    parser.add_argument("-yh", "--y_max", type=float, default=None)
     parser.add_argument("-rl", "--range_lo", type=float, default=None)
     parser.add_argument("-rh", "--range_hi", type=float, default=None)
-    parser.add_argument("-r", "--rebin", type=int, default=1)
     return parser
+
+def with_histosize_args(parser):
+    parser.add_argument("-r", "--rebin", type=int, default=1)
+    return with_graphsize_args(parser)
+
+def resize_graph(args, hist):
+    if args.range_lo is not None and args.range_hi is not None: 
+        print "Hi!"
+        print args.range_lo, args.range_hi
+        hist.GetXaxis().SetLimits(args.range_lo, args.range_hi)
+    if args.y_min is not None and args.y_max is not None: 
+        hist.GetYaxis().SetRangeUser(args.y_min, args.y_max)
 
 def resize_histo(args, hist):
     if args.range_lo is not None and args.range_hi is not None: 
@@ -62,7 +75,8 @@ def resize_histo(args, hist):
             new_hist.SetBinContent(i - range_lo_ind, hist.GetBinContent(i))
         hist = new_hist
 
-    hist.Rebin(args.rebin) 
+    if args.rebin != 1:
+        hist.Rebin(args.rebin) 
     return hist
 
 def with_histostyle_args(parser):
