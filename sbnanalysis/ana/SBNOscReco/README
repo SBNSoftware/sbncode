@@ -50,8 +50,16 @@ PreSelection:
 
 	sbn -m SBNOscReco_NumuReco -c fcl/NumuRecoSBND.fcl <input files>
 
+Where <input files> are a set of art ROOT files that have been run
+through the full SBND/ICARUS reconstruction chain. It is possible to
+specify the <input files> as a filelist using some file the ends in
+".list".
+
 Post Process:
 	sbn-postprocess -m SBNOscReco_Selection -c fcl/SBNDSelection.fcl <input files>
+
+Where <input files> are a set of normal ROOT files that have been
+produced by the SBNOscReco_NumuReco pre-selection moudle.
 
 On the grid:
 
