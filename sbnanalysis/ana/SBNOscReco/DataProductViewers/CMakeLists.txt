@@ -5,6 +5,7 @@
 add_library(sbnanalysis_SBNOscReco_GetFV SHARED GetFV.cc)
 add_library(sbnanalysis_SBNOscReco_OpDetWaveformMaker SHARED OpDetWaveformMaker.cc)
 add_library(sbnanalysis_SBNOscReco_OpSimHitPrinter SHARED OpSimHitPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_AuxDetSimChannelPrinter SHARED AuxDetSimChannelPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_SimPhotonPrinter SHARED SimPhotonPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter SHARED OpDetBacktrackerPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_MCParticleTreePrinter SHARED MCParticleTreePrinter.cc)
@@ -29,6 +30,12 @@ target_link_libraries(sbnanalysis_SBNOscReco_OpSimHitPrinter
   sbnanalysis_SBNOscReco_classes
   ubana_BasicTool_GeoAlgo
   sbnanalysis_SBNOscReco_opHitFinderSBND
+)
+
+target_link_libraries(sbnanalysis_SBNOscReco_AuxDetSimChannelPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_SimPhotonPrinter
@@ -66,6 +73,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
 install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpSimHitPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_AuxDetSimChannelPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_SimPhotonPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_MCParticleTreePrinter DESTINATION lib)
