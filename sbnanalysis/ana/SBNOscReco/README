@@ -17,6 +17,9 @@ PostProcess: Runs selections and produces histograms/plots for the
              normal ROOT files (coming from the PreSelection) and
              produces a normal ROOT file with plots (no TTree).
 
+Histograms: Classes encapsulating ROOT histograms generated in both the
+            pre-selectionstage and in the post-processing stage.
+
 CosmicIDAlgs: Algorithms for identification of cosmic muons. Originally
               implemented by Tom Brooks for SBND. Ported by me into
               sbncode.

@@ -5,6 +5,7 @@
 add_library(sbnanalysis_SBNOscReco_NumuReco SHARED NumuReco.cxx)
 
 target_link_libraries(sbnanalysis_SBNOscReco_NumuReco
+  sbnanalysis_SBNOscReco_Histograms
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOscReco_classes
   sbnanalysis_SBNOscReco_RecoUtils

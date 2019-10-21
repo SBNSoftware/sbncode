@@ -7,7 +7,7 @@
 
 #include "../Data/RecoEvent.h"
 
-#include "Cuts.h"
+#include "../Histograms/Cuts.h"
 
 namespace ana {
   namespace SBNOsc {

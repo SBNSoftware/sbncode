@@ -14,6 +14,8 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.TruthCompletion = cfg.get<float>("TruthCompletion", 0.5);
   fConfig.TruthMatchDist = cfg.get<float>("TruthMatchDist", 5.);
 
+  fConfig.TrackLength = cfg.get<float>("TrackLength", 50.);
+
   fConfig.CRTHitDist = cfg.get<float>("CRTHitDist", 35.);
   fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.4, 2.0});
   fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
@@ -51,7 +53,16 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
                     && is_fiducial;
   bool is_completed = (fConfig.TruthCompletion < 0. || trackMatchCompletion(truth_vertex_index, event) > fConfig.TruthCompletion)
                       && is_matched;
-  return {is_neutrino, is_fiducial, is_matched, is_completed};
+
+  bool has_reco = false; 
+  for (unsigned i = 0; i < event.reco.size(); i++) {
+    if (event.reco[i].match.has_match && event.reco[i].match.event_vertex_id == truth_vertex_index) {
+      has_reco = true;
+      break;
+    }
+  }
+
+  return {is_neutrino, is_fiducial, is_matched, is_completed, has_reco};
 }
 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
@@ -66,13 +77,17 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool pass_crt_hit = (!HasCRTHitMatch(primary_track) || TimeInSpill(CRTMatchTime(primary_track)))
     && fiducial && pass_crt_track;
 
-  bool is_contained = primary_track.is_contained && fiducial && pass_crt_track && pass_crt_hit;
+  bool pass_length = fConfig.TrackLength < 0. || primary_track.length > fConfig.TrackLength
+    && pass_crt_hit;
+
+  bool is_contained = primary_track.is_contained && fiducial && pass_crt_track && pass_crt_hit && pass_length;
 
   return {
     is_reco,
     fiducial,
     pass_crt_track,
     pass_crt_hit,
+    pass_length,
     is_contained
   };
 }

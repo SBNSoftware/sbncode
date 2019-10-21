@@ -204,10 +204,12 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
   // Setup histo's for root output
   fOutputFile->cd();
 
+  // initialize histograms
+  _histograms.Initialize();
+
   // add branches
   fTree->Branch("reco_event", &_recoEvent);
   fTree->Branch("reco_vertices", &_selected);
-
 
   hello();
 }
@@ -220,6 +222,9 @@ void NumuReco::Finalize() {
  if (_op_hit_maker != NULL) delete _op_hit_maker;
  if (_track_momentum_calculator != NULL) delete _track_momentum_calculator;
  if (_mcs_fitter != NULL) delete _mcs_fitter;
+ fOutputFile->cd();
+ // finish histograms
+ _histograms.Write();
 }
 
 double NumuReco::TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
@@ -332,6 +337,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   // default values
   double contained_length = 0;
   bool crosses_tpc = false;
+  float deposited_energy = 0;
 
   // If the interaction is outside the active volume, then g4 won't generate positions for the track.
   // So size == 0 => outside FV
@@ -434,6 +440,10 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
       // update length
       contained_length += containedLength(this_point, pos.Vect(), aa_volumes);
       pos = trajectory.Position(i);
+      // update energy
+      if (InTPC(this_point) && InTPC(trajectory.Position(i-1).Vect())) {
+        deposited_energy += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
+      }
     }
   }
   else if (_config.shakyMCTracks) {
@@ -473,6 +483,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   ret.pdgid = pdgid;
   ret.is_muon = abs(pdgid) == 13;
   ret.length = contained_length;
+  ret.deposited_energy = deposited_energy;
   ret.costh = costh;
   ret.contained_in_cryo = contained_in_cryo;
   ret.contained_in_tpc = contained_in_tpc;
@@ -483,6 +494,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   ret.momentum = track.Momentum().Vect().Mag();
   ret.energy = kinetic_energy;
   ret.dist_to_vertex = dist_to_vertex;
+  ret.ID = track.TrackId();
 
   return ret;
 }
@@ -750,12 +762,14 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
       // invalid plane means invalid calorimetry
       if (!_tpc_tracks_to_pid.at(pfp_track_index).at(i)->PlaneID()) continue;
       const art::Ptr<anab::ParticleID> &particle_id = _tpc_tracks_to_pid.at(pfp_track_index).at(i);
-
-      n_dof += particle_id->Ndf();
-      chi2_proton += particle_id->Chi2Proton() * particle_id->Ndf();
-      chi2_kaon += particle_id->Chi2Kaon() * particle_id->Ndf();
-      chi2_pion += particle_id->Chi2Pion() * particle_id->Ndf();
-      chi2_muon += particle_id->Chi2Muon() * particle_id->Ndf();
+      // only use particle ID on collection plane
+      if (fProviderManager->GetGeometryProvider()->SignalType(particle_id->PlaneID()) == geo::kCollection) {
+        n_dof += particle_id->Ndf();
+        chi2_proton += particle_id->Chi2Proton() * particle_id->Ndf();
+        chi2_kaon += particle_id->Chi2Kaon() * particle_id->Ndf();
+        chi2_pion += particle_id->Chi2Pion() * particle_id->Ndf();
+        chi2_muon += particle_id->Chi2Muon() * particle_id->Ndf();
+      }
     }
     if (n_dof > 0) {
       /*
@@ -806,6 +820,7 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     double deposited_energy_avg = 0.;
     double deposited_energy_max = 0.;
     double deposited_energy_med = 0.;
+    const anab::Calorimetry *collection_calo = NULL;
     for (int i =0; i < 3; i++) {
       if (!_tpc_tracks_to_calo.at(pfp_track_index).at(i)->PlaneID()) continue;
       const art::Ptr<anab::Calorimetry> &calo = _tpc_tracks_to_calo.at(pfp_track_index).at(i);
@@ -815,6 +830,9 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
       }
       n_calo ++;
       deposited_energies.push_back(calo->KineticEnergy() / 1000.); /* MeV -> GeV */
+      if (fProviderManager->GetGeometryProvider()->SignalType(_tpc_tracks_to_calo.at(pfp_track_index).at(i)->PlaneID()) == geo::kCollection) {
+        collection_calo = _tpc_tracks_to_calo.at(pfp_track_index).at(i).get();
+      }
     }
     if (n_calo > 0) {
       deposited_energy_avg = std::accumulate(deposited_energies.begin(), deposited_energies.end(), 0.) / n_calo;
@@ -843,6 +861,9 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.deposited_energy_max = deposited_energy_max;
     this_track.deposited_energy_avg = deposited_energy_avg;
     this_track.deposited_energy_med = deposited_energy_med;
+
+    this_track.deposited_energy = -1; // TODO: decide best deposited energy
+
     // calculator only has inputs for protons and muons
     int track_mom_pdg = (this_track.pdgid == 13 || this_track.pdgid == 211) ? 13 : 2212;
     this_track.range_momentum = _track_momentum_calculator->GetTrackMomentum(this_track.length, track_mom_pdg);
@@ -888,6 +909,11 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     }
 
     ret[this_track.ID] = this_track;
+
+    // fill the histograms
+    if (collection_calo != NULL) {
+      _histograms.Fill(this_track, *collection_calo);
+    }
   }
   return ret;
 }
@@ -911,9 +937,6 @@ void NumuReco::ApplyCosmicID(numu::RecoTrack &track) {
   // first get the particle
   unsigned particle_index = _tpc_tracks_to_particle_index.at(track.ID);
   const std::vector<art::Ptr<anab::T0>> &pandora_T0s = _tpc_particles_to_T0.at(particle_index);
-  for (const art::Ptr<anab::T0> &t0: pandora_T0s) {
-    track.tpc_t0s.push_back(t0->Time() * 1e-3); // convert ns -> us
-  }
 }
 
 
@@ -1001,12 +1024,12 @@ int NumuReco::SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks
       unsigned track_index = _tpc_particles_to_track_index[pfp_index];
       // get it
       const numu::RecoTrack &track = tracks.at(track_index);
-      if (track.is_muon) {
+      //if (track.is_muon) {
         if (track.length > max_len) {
           primary_track_index = track.ID;
           max_len = track.length;
         }
-      }
+      //}
     }
   }
 
@@ -1532,6 +1555,15 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   event.reco_tracks = std::move(reco_tracks);
  
   return std::move(event);
+}
+
+bool NumuReco::InTPC(const TVector3 &v) const {
+  for (auto const& cryo: _config.tpc_volumes) {
+    for (auto const& tpc: cryo) {
+      if (tpc.ContainsPosition(v)) return true;
+    }
+  }
+  return false;
 }
 
 

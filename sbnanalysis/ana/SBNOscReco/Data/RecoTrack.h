@@ -15,6 +15,7 @@ namespace numu {
 * Information of TPC track objects
 */
 struct RecoTrack {
+  float deposited_energy; //!< Energy deposited in the TPC
   float deposited_energy_max; //!< Maximum of deposited energy across the 3 planes
   float deposited_energy_avg; //!< Average of deposited energy across the 3 planes
   float deposited_energy_med; //!< Median of deposited energy across the 3 planes
@@ -63,6 +64,7 @@ struct RecoTrack {
   std::vector<float> tpc_t0s; //!< List of T0 values assigned to track by pandora [us].
   
   RecoTrack():
+    deposited_energy(-1),
     deposited_energy_max(-1),
     deposited_energy_avg(-1),
     deposited_energy_med(-1),
@@ -86,7 +88,7 @@ struct RecoTrack {
     min_chi2(-1.5),
     pid_n_dof(-1),
     pdgid(-1),
-    is_muon(-1),
+    is_muon(false),
     length(-1),
     costh(-999),
     contained_in_cryo(false),

@@ -73,6 +73,7 @@ protected:
   /**
    * Setup anything needed per file
    *
+   * \param f the TFile being opened
    * \param eventTree the TTree associated with the sbncode event.
    * Use this TTree to set branch addresses for everything other than
    * the sbncode event.
@@ -80,7 +81,7 @@ protected:
    * Files are guaranteed to be processed in the order they are specified on
    * the command line for sbn-postprocess
    */
-  virtual void FileSetup(TTree *eventTree) {}
+  virtual void FileSetup(TFile *f, TTree *eventTree) {}
 
   /**
    * Any cleanup needed per file

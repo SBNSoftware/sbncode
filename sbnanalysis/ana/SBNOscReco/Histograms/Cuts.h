@@ -16,8 +16,8 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 5; //!< total number of cuts
-  static const unsigned nTruthCuts = 4; //!< Total number of truth cuts
+  static const unsigned nCuts = 6; //!< total number of cuts
+  static const unsigned nTruthCuts = 5; //!< Total number of truth cuts
   /**
  * Initialize this class.
  * \param cfg fhicl configuration for the class
@@ -109,6 +109,7 @@ private:
     float CRTHitDist;
     std::array<float, 2> CRTHitTimeRange;
     float CRTTrackAngle;
+    float TrackLength;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
     std::vector<geo::BoxBoundedGeo> containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;

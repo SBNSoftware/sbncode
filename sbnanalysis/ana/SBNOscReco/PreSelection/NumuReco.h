@@ -54,6 +54,8 @@
 #include "../Data/RecoTrack.h"
 #include "../Data/TruthMatch.h"
 
+#include "../Histograms/TrajHistograms.h"
+
 class TH2D;
 class TH1D;
 
@@ -342,6 +344,14 @@ protected:
  */
   void CollectTruthInformation(const gallery::Event &ev);
 
+  /**
+ * Test whether a point is in the configured fiducial volume
+ * \param v The point to test
+ *
+ * \return Whether the point is in the configured fiducial volume
+ */
+  bool InTPC(const TVector3 &v) const;
+
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
   TGraph *_cut_counts; //!< Keep track of neutrinos per cut
@@ -395,6 +405,9 @@ protected:
   std::vector<art::Ptr<simb::MCParticle>> _true_particles;
   std::vector<art::Ptr<simb::MCTruth>> _true_particles_to_truth;
   std::vector<const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;
+
+  // trajectory-based histograms
+  TrajHistograms _histograms;
 
 };
 

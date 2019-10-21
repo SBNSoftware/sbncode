@@ -9,22 +9,32 @@
 namespace ana {
   namespace SBNOsc {
 
-void FillTrack(
-  const numu::RecoTrack &track, 
-  const std::map<size_t, numu::RecoTrack> &true_tracks, 
-  TrackHistos* track_histos,
-  const Cuts &cuts) {
+unsigned TrackHistos::PDGIndex(const numu::RecoTrack &track) {
+  if (!track.match.has_match) return 5; // "none"
 
-  std::vector<bool> do_fill {true, false, false, false};
-  if (track.match.has_match) {
-    do_fill[1] = track.match.mctruth_origin == simb::Origin_t::kCosmicRay;
-    do_fill[2] = track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino;
+  switch (abs(track.match.match_pdg)) {
+    case 11: return 0; // "e"
+    case 13: return 1; // "mu"
+    case 211: return 2; // "pi"
+    case 321: return 3; // "k"
+    case 2212: return 4; // "p"
+    default:
+      std::cerr << "Error: bad pdgcode: " << track.match.match_pdg  << std::endl; 
+      break;
   }
-  if (!do_fill[1] && !do_fill[2]) do_fill[3] = true;
-  for (int i = 0; i < do_fill.size(); i++) {
-    if (do_fill[i]) {
-      track_histos[i].Fill(track, true_tracks, cuts);
-    }
+
+  return 5; // "none"
+}
+
+bool TrackHistos::IsMode(const std::map<size_t, numu::RecoTrack> &true_tracks, const numu::RecoTrack &track, unsigned mode_index) {
+  switch (mode_index) {
+    case 0: return true;
+    case 1: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kCosmicRay;
+    case 2: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino;
+    case 3: return !track.match.has_match;
+    case 4: return track.match.has_match && true_tracks.at(track.match.mcparticle_id).is_contained; 
+    case 5: return track.match.has_match && !true_tracks.at(track.match.mcparticle_id).is_contained; 
+    default: return false;
   }
 }
 
@@ -33,18 +43,31 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
   if (fill_all_tracks) {
     for (const auto &track_pair: event.reco_tracks) {
       const numu::RecoTrack &track = track_pair.second;
-      FillTrack(track, event.true_tracks, fAllTracks, cutmaker);
+      unsigned pdg_index = TrackHistos::PDGIndex(track);
+      for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
+        if (TrackHistos::IsMode(event.true_tracks, track, i)) {
+          fAllTracks[i][pdg_index].Fill(track, event.true_tracks, cutmaker);
+        }
+      }
     }
   }
 
   for (unsigned i = 0; i < event.reco.size(); i++) {
+    std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, i);
     const numu::RecoInteraction &interaction = event.reco[i];
 
     if (event.reco_tracks.size() > (unsigned)interaction.slice.primary_track_index) {
-      FillTrack(event.reco_tracks.at(interaction.slice.primary_track_index), event.true_tracks, fPrimaryTracks, cutmaker);
+      const numu::RecoTrack &track = event.reco_tracks.at(interaction.slice.primary_track_index);
+      unsigned pdg_index = TrackHistos::PDGIndex(track);
+      for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
+        for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
+          if (TrackHistos::IsMode(event.true_tracks, track, i) && cuts[cut_i]) {
+            fPrimaryTracks[i][cut_i][pdg_index].Fill(track, event.true_tracks, cutmaker);
+          }
+        }
+      }
     }
 
-    std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, i);
     // fill histos
     for (size_t cut_i=0; cut_i < Cuts::nCuts; cut_i++) {
       int mode = interaction.match.mode; 
@@ -113,8 +136,17 @@ Histograms::Histograms(const std::string &prefix) {
   }
 
   for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    fAllTracks[i].Initialize(prefix + "All", i);
-    fPrimaryTracks[i].Initialize(prefix + "Primary", i);
+    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
+      std::string postfix = prefix + "_All_" + std::string(TrackHistos::trackHistoNames[i]) + "_" + std::string(TrackHistos::trackHistoPDGs[j]);
+      fAllTracks[i][j].Initialize(postfix);
+      for (unsigned k = 0; k < Cuts::nCuts; k++) {
+        std::string postfix = prefix + "_Primary_" + 
+          std::string(TrackHistos::trackHistoNames[i]) + "_" + 
+          std::string(TrackHistos::trackHistoPDGs[j]) + "_" + 
+          std::string(InteractionHistos::histoNames[Cuts::nTruthCuts+k]);
+        fPrimaryTracks[i][k][j].Initialize(postfix);
+      }
+    }
   } 
 }
 
@@ -126,8 +158,12 @@ void Histograms::Write() {
   }
 
   for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    fAllTracks[i].Write();
-    fPrimaryTracks[i].Write();
+    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
+      fAllTracks[i][j].Write();
+      for (unsigned k = 0; k < Cuts::nCuts; k++) {
+        fPrimaryTracks[i][k][j].Write();
+      }
+    }
   } 
 }
 
@@ -139,8 +175,12 @@ void Histograms::Scale(double scale) {
   }
 
   for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    fAllTracks[i].Scale(scale);
-    fPrimaryTracks[i].Scale(scale);
+    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
+      fAllTracks[i][j].Scale(scale);
+      for (unsigned k = 0; k < Cuts::nCuts; k++) {
+        fPrimaryTracks[i][k][j].Scale(scale);
+      }
+    }
   } 
 }
 
@@ -152,8 +192,12 @@ void Histograms::Add(const Histograms &other) {
   }
 
   for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    fAllTracks[i].Add(other.fAllTracks[i]);
-    fPrimaryTracks[i].Add(other.fPrimaryTracks[i]);
+    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
+      fAllTracks[i][j].Add(other.fAllTracks[i][j]);
+      for (unsigned k = 0; k < Cuts::nCuts; k++) {
+        fPrimaryTracks[i][k][j].Add(other.fPrimaryTracks[i][k][j]);
+      }
+    }
   } 
 
 }
@@ -164,6 +208,7 @@ void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionM
 
   INT_HISTO(track_length, 101, -10, 1000);
   INT_HISTO(track_p, 50, 0., 5.);
+  INT_HISTO(true_deposited_energy, 50., 0., 5.);
   INT_HISTO(nuE, 50, 0., 5.);
   INT_HISTO(beam_center_distance, 60, 0., 300.);
   INT_HISTO(Q2, 50, 0., 10.);
@@ -176,9 +221,9 @@ void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionM
 #undef INT_HISTO
 }
 
-void TrackHistos::Initialize(const std::string &prefix, unsigned i) {
-#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + prefix + trackHistoNames[i]).c_str(), #name, n_bins, lo, hi); all_histos.push_back(name)
-#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + prefix + trackHistoNames[i]).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); all_histos.push_back(name)
+void TrackHistos::Initialize(const std::string &postfix) {
+#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); all_histos.push_back(name)
+#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); all_histos.push_back(name)
 
   TRACK_HISTO(chi2_muon_diff, 100, 0., 100.);
   
@@ -339,6 +384,7 @@ void InteractionHistos::Fill(
   
     double true_track_momentum = event.true_tracks.at(mcparticle_id).momentum; 
     track_p->Fill(true_track_momentum);
+    true_deposited_energy->Fill(event.true_tracks.at(mcparticle_id).deposited_energy);
 
     int crosses_tpc_val = event.true_tracks.at(mcparticle_id).crosses_tpc;
     crosses_tpc->Fill(crosses_tpc_val);

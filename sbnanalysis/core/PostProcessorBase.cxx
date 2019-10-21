@@ -77,7 +77,7 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
     f.GetObject("sbnana", fEventTree);
     fEventTree->SetBranchAddress("events", &fEvent);
 
-    FileSetup(fEventTree);
+    FileSetup(&f, fEventTree);
     // process all events
     for (int event_ind = 0; event_ind < fEventTree->GetEntries(); event_ind++) {
       fEventTree->GetEntry(event_ind);

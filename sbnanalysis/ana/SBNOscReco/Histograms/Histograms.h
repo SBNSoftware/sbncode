@@ -25,6 +25,7 @@ struct InteractionHistos {
   TH1D *track_length; //!< Length of the reconstructed primary track
   TH1D *nuE; //!< Neutrino energy
   TH1D *track_p; //!< Primary track momentum
+  TH1D *true_deposited_energy; //!< Deposited energy of true track
   TH1D *beam_center_distance; //!< Distance of the neutrino interaction to the beam center
   TH1D *Q2; //!< Q2 of the interaction
   TH1D *true_contained_length; //!< True contained length of primary track
@@ -91,7 +92,7 @@ struct InteractionHistos {
   static constexpr numu::InteractionMode allModes[nModes] = 
     {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "T_vqual", "T_tqual", "Reco", "R_fid", "R_crttrack", "R_crthit", "R_contained"}; //!< Names of histograms
+  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", "Reco", "R_fid", "R_crttrack", "R_crthit", "R_length", "R_contained"}; //!< Names of histograms
 };
 
 /**
@@ -140,16 +141,16 @@ struct TrackHistos {
   TH1D *stopping_chisq;
   std::vector<TH1 *> all_histos;
 
-  static const unsigned nTrackHistos = 4;
-  // static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Primary", "Contained", "Exiting", "Cosmic", "Neutrino", "No-Match"};
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "Neutrino", "No-Match"};
+  static const unsigned nTrackHistos = 6;
+  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "Neutrino", "No-Match", "Contained", "Exiting"};
+  static const unsigned nPDGs = 6;
+  static constexpr const char* trackHistoPDGs[nPDGs] = {"e", "mu", "pi", "k", "p", "none"};
 
   /**
  * Initialize this set of histograms
- * \param prefix The prefix to add to all histogram names
- * \param index The index of this TrackHisto instance into the list of all track histogram names
+ * \param postfix The postfix to add to all histogram names
  */
-  void Initialize(const std::string &prefix, unsigned index);
+  void Initialize(const std::string &postfix);
   /**
  * Scale all of the histograms in this class by a value
  * \param scale The scaling amount
@@ -175,6 +176,22 @@ struct TrackHistos {
  */
   void Add(const TrackHistos &other);
   ~TrackHistos();
+
+  /**
+ * Check if a track is a certain mode for histograms
+ * \param true_tracks Map of mcparticle-id's to true-track objects
+ * \param track The reconstructed track to fill histograms with
+ * \param mode_index The index of the mode in the range [0, nTrackHistos)
+ * \return Whether the track in question is of the mode in question.
+ */
+  static bool IsMode(const std::map<size_t, numu::RecoTrack> &true_tracks, const numu::RecoTrack &track, unsigned mode_index);
+
+  /**
+ * Return the index of the track PDG into the list of PDG modes above
+ * \param track The reconstructed track in question
+ * \return The index in question 
+ */
+  static unsigned PDGIndex(const numu::RecoTrack &track);
 };
 
 /**
@@ -184,8 +201,8 @@ struct TrackHistos {
 struct Histograms {
 
   InteractionHistos fInteraction[InteractionHistos::nHistos][InteractionHistos::nModes]; //!< all the interaction histograms
-  TrackHistos fAllTracks[TrackHistos::nTrackHistos]; //!< Track histograms for all tracks
-  TrackHistos fPrimaryTracks[TrackHistos::nTrackHistos]; //!< Track histograms for priamry tracks in a candidate neutrino interaction
+  TrackHistos fAllTracks[TrackHistos::nTrackHistos][TrackHistos::nPDGs]; //!< Track histograms for all tracks
+  TrackHistos fPrimaryTracks[TrackHistos::nTrackHistos][Cuts::nCuts][TrackHistos::nPDGs]; //!< Track histograms for priamry tracks in a candidate neutrino interaction
 
   /**
  * Constructor

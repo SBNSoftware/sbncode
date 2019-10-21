@@ -22,9 +22,10 @@
 #include <TH3D.h>
 #include <TMatrixDSym.h>
 
-#include "Histograms.h"
+#include "../Histograms/Histograms.h"
+#include "../Histograms/TrajHistograms.h"
+#include "../Histograms/Cuts.h"
 #include "Normalize.h"
-#include "Cuts.h"
 #include "ROC.h"
 #include "../Data/RecoEvent.h"
 
@@ -43,7 +44,7 @@ public:
   
   // implementing PostProcessor
   void FileCleanup(TTree *eventTree) {}
-  void FileSetup(TTree *eventTree);
+  void FileSetup(TFile *f, TTree *eventTree);
   void Initialize(fhicl::ParameterSet *config);
   void ProcessEvent(const event::Event *event);
   void Finalize();
@@ -55,6 +56,7 @@ private:
   Histograms fNeutrinoHistograms;
   Histograms fCosmicHistograms;
   Histograms *fHistsToFill;
+  TrajHistograms fTrajHistograms;
   Normalize fNormalize;
   fhicl::ParameterSet fCutConfig;
   double fCRTHitDistance;

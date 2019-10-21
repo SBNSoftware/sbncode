@@ -42,11 +42,12 @@ namespace SBNOsc {
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
       fNCosmicData = config->get<double>("NCosmicData", 0.);
     }
+    fTrajHistograms.Initialize();
     fROC.Initialize();
     fRecoEvent = NULL;
   }
 
-  void Selection::FileSetup(TTree *eventTree) {
+  void Selection::FileSetup(TFile *f, TTree *eventTree) {
     eventTree->SetBranchAddress("reco_event", &fRecoEvent);
     fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
     if (fDoNormalize) {
@@ -63,7 +64,10 @@ namespace SBNOsc {
       fHistsToFill = &fHistograms;
     }
     fFileIndex += 1;
-
+    
+    TrajHistograms from_file;
+    from_file.Get(*f);
+    fTrajHistograms.Add(from_file);
   }
 
   void Selection::ProcessEvent(const event::Event *core_event) {
@@ -88,6 +92,7 @@ namespace SBNOsc {
     fROC.BestCuts();
     fROC.Write();
     fHistograms.Write();
+    fTrajHistograms.Write();
   }
   }   // namespace SBNOsc
 }   // namespace ana
