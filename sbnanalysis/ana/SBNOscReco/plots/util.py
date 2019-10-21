@@ -102,7 +102,7 @@ def colors(index):
     return colors[index]
 
 def fillcolors(index):
-    colors = [20, 30, 40, 46]
+    colors = [ROOT.kGreen + 1, ROOT.kCyan -9 , ROOT.kBlue+1,  ROOT.kViolet, ROOT.kRed +2, ROOT.kYellow+3]
     return colors[index]
 
 def comma_separated(inp):
