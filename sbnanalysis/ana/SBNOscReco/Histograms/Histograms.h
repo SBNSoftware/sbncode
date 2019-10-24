@@ -81,18 +81,22 @@ struct InteractionHistos {
   std::string mode2Str(const numu::InteractionMode &mode) const {
     switch (mode) {
       case numu::mCC: return "CC";
+      case numu::mCCNonPrimary: return "CC-Other";
       case numu::mNC: return "NC";
+      case numu::mNCNonPrimary: return "NC-Other";
       case numu::mCosmic: return "Cosmic";
       case numu::mOther: return "Other";
       case numu::mAll: return "All";
     }
   }
   static const unsigned nHistos = Cuts::nCuts + Cuts::nTruthCuts;
-  static const unsigned nModes = 5; //!< number of interaction modes
+  static const unsigned nModes = 7; //!< number of interaction modes
   static constexpr numu::InteractionMode allModes[nModes] = 
-    {numu::mCC, numu::mNC, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
+    {numu::mCC, numu::mCCNonPrimary, numu::mNC, numu::mNCNonPrimary, numu::mCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
-  static constexpr const char* histoNames[nHistos] = {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", "Reco", "R_fid", "R_crttrack", "R_crthit", "R_length", "R_contained"}; //!< Names of histograms
+  static constexpr const char* histoNames[nHistos] = 
+  {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
+   "Reco", "R_fid", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_single"}; //!< Names of histograms
 };
 
 /**
@@ -141,10 +145,10 @@ struct TrackHistos {
   TH1D *stopping_chisq;
   std::vector<TH1 *> all_histos;
 
-  static const unsigned nTrackHistos = 6;
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "Neutrino", "No-Match", "Contained", "Exiting"};
-  static const unsigned nPDGs = 6;
-  static constexpr const char* trackHistoPDGs[nPDGs] = {"e", "mu", "pi", "k", "p", "none"};
+  static const unsigned nTrackHistos = 9;
+  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match", "Contained", "Exiting"};
+  static const unsigned nPDGs = 8;
+  static constexpr const char* trackHistoPDGs[nPDGs] = {"all", "e", "mu", "pi", "k", "p", "nucl", "none"};
 
   /**
  * Initialize this set of histograms

@@ -12,7 +12,7 @@ float numu::dist2Match(const numu::RecoInteraction &vertex, const std::vector<nu
 
 float numu::trackMatchCompletion(unsigned truth_index, const numu::RecoEvent &event) {
   for (const numu::RecoInteraction &reco: event.reco) {
-    if (reco.match.event_track_id == truth_index) {
+    if (reco.match.event_track_id == truth_index && reco.primary_track.match.is_primary) {
       return reco.primary_track.match.completion; 
     }
   }

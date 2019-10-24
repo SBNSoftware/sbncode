@@ -56,7 +56,7 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
 
   bool has_reco = false; 
   for (unsigned i = 0; i < event.reco.size(); i++) {
-    if (event.reco[i].match.has_match && event.reco[i].match.event_vertex_id == truth_vertex_index) {
+    if (event.reco[i].match.has_match && event.reco[i].match.event_track_id == truth_vertex_index && event.reco[i].primary_track.match.is_primary) {
       has_reco = true;
       break;
     }
@@ -81,6 +81,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     && pass_crt_hit;
 
   bool is_contained = primary_track.is_contained && fiducial && pass_crt_track && pass_crt_hit && pass_length;
+  bool single_interaction = event.reco.size() == 1 && pass_length;
 
   return {
     is_reco,
@@ -88,7 +89,8 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     pass_crt_track,
     pass_crt_hit,
     pass_length,
-    is_contained
+    is_contained,
+    single_interaction
   };
 }
 

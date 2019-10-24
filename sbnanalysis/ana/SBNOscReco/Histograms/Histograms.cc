@@ -10,30 +10,42 @@ namespace ana {
   namespace SBNOsc {
 
 unsigned TrackHistos::PDGIndex(const numu::RecoTrack &track) {
-  if (!track.match.has_match) return 5; // "none"
+  if (!track.match.has_match) return 7; // "none"
 
   switch (abs(track.match.match_pdg)) {
-    case 11: return 0; // "e"
-    case 13: return 1; // "mu"
-    case 211: return 2; // "pi"
-    case 321: return 3; // "k"
-    case 2212: return 4; // "p"
+    case 11: return 1; // "e"
+    case 13: return 2; // "mu"
+    case 211: return 3; // "pi"
+    case 321: return 4; // "k"
+    case 2212: return 5; // "p"
     default:
+      if (abs(track.match.match_pdg) > 1000000000 
+      ||  abs(track.match.match_pdg) == 2224 // Delta++
+      ||  abs(track.match.match_pdg) == 2214 // Delta+
+      ||  abs(track.match.match_pdg) == 1114 // Delta-
+      ||  abs(track.match.match_pdg) == 3222 // Sigma+
+      ||  abs(track.match.match_pdg) == 3112 // Sigma-
+      ) {
+        return 6; // nuclear fragment or other baryon-- "nucl"
+      }
       std::cerr << "Error: bad pdgcode: " << track.match.match_pdg  << std::endl; 
-      break;
+      assert(false);
   }
 
-  return 5; // "none"
+  return 7; // "none"
 }
 
 bool TrackHistos::IsMode(const std::map<size_t, numu::RecoTrack> &true_tracks, const numu::RecoTrack &track, unsigned mode_index) {
   switch (mode_index) {
     case 0: return true;
     case 1: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kCosmicRay;
-    case 2: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino;
-    case 3: return !track.match.has_match;
-    case 4: return track.match.has_match && true_tracks.at(track.match.mcparticle_id).is_contained; 
-    case 5: return track.match.has_match && !true_tracks.at(track.match.mcparticle_id).is_contained; 
+    case 2: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino && !track.match.mctruth_ccnc && track.match.is_primary;
+    case 3: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino && !track.match.mctruth_ccnc && !track.match.is_primary;
+    case 4: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino && track.match.mctruth_ccnc  && track.match.is_primary;
+    case 5: return track.match.has_match && track.match.mctruth_origin == simb::Origin_t::kBeamNeutrino && track.match.mctruth_ccnc  && !track.match.is_primary;
+    case 6: return !track.match.has_match;
+    case 7: return track.match.has_match && true_tracks.at(track.match.mcparticle_id).is_contained; 
+    case 8: return track.match.has_match && !true_tracks.at(track.match.mcparticle_id).is_contained; 
     default: return false;
   }
 }
@@ -46,6 +58,7 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
       unsigned pdg_index = TrackHistos::PDGIndex(track);
       for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
         if (TrackHistos::IsMode(event.true_tracks, track, i)) {
+          fAllTracks[i][0].Fill(track, event.true_tracks, cutmaker);
           fAllTracks[i][pdg_index].Fill(track, event.true_tracks, cutmaker);
         }
       }
@@ -62,6 +75,7 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
       for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
         for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
           if (TrackHistos::IsMode(event.true_tracks, track, i) && cuts[cut_i]) {
+            fPrimaryTracks[i][cut_i][0].Fill(track, event.true_tracks, cutmaker);
             fPrimaryTracks[i][cut_i][pdg_index].Fill(track, event.true_tracks, cutmaker);
           }
         }
@@ -393,7 +407,7 @@ void InteractionHistos::Fill(
     true_contained_length->Fill(length);
   }
    
-  if (vertex.match.has_match) {
+  if (vertex.match.event_track_id > 0 && vertex.primary_track.match.is_primary) {
     int event_id = vertex.match.event_track_id;
     int mctruth_id = vertex.match.mctruth_track_id;
 
