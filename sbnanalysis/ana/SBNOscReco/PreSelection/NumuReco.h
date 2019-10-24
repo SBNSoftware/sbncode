@@ -185,13 +185,14 @@ protected:
     const std::vector<numu::RecoParticle> &particles);
 
   /**
- * Select the primary track (candidate muon) for a neutrino interaction candidate.
+ * Returns whether a primary track (candidate muon) candidate exists for a 
+ * neutrino interaction candidate
  * 
  * \param tracks The list of reconstructed tracks in the event
  * \param slice The candidate neutrino interaction
- * \return The ID of the primary track. -1 if there is no such track.
+ * \return Whether a primary track candidate exists
  */
-  int SelectPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice);
+  bool HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice);
 
 
   /**

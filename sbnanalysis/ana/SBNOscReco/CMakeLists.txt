@@ -11,6 +11,7 @@ include_directories($ENV{NUG4_INC})
 
 # build sub-dirs
 add_subdirectory(Data)
+add_subdirectory(NumuReco)
 add_subdirectory(PreSelection)
 add_subdirectory(PostProcess)
 add_subdirectory(RecoUtils)

@@ -11,6 +11,16 @@
 
 namespace numu {
 
+enum Wall {
+  wNone,
+  wTop,
+  wBottom,
+  wLeft,
+  wRight,
+  wFront,
+  wBack
+};
+
 /**
 * Information of TPC track objects
 */
@@ -43,6 +53,8 @@ struct RecoTrack {
   int pid_n_dof; //!< Number of d.o.f. in chi2 fit
   int pdgid; //!< Particle ID that minimizes chi2 
   
+  Wall wall_enter; //!< the face of the TPC that the track crosses on enter
+  Wall wall_exit; //!< the face of the TPC that the track crosses on exit
   bool is_muon; //!< Whether the particle ID is a muon
   float length; //!< Length og track
   float costh; //!< cosine of angle to z axis
@@ -88,6 +100,8 @@ struct RecoTrack {
     min_chi2(-1.5),
     pid_n_dof(-1),
     pdgid(-1),
+    wall_enter(numu::wNone),
+    wall_exit(numu::wNone),
     is_muon(false),
     length(-1),
     costh(-999),
