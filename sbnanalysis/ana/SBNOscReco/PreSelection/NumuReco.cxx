@@ -279,6 +279,7 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
   bool selected = false;
 
   _event_counter++;
+  CollectTruthInformation(ev);
 
   std::map<size_t, numu::RecoTrack> true_tracks = MCParticleTracks(ev);
 
@@ -329,6 +330,7 @@ numu::TrackTruthMatch MCTrackMatch(const simb::MCTruth &truth, const simb::MCPar
   track_match.mcparticle_id = track.TrackId();
   track_match.completion = 1.;
   track_match.match_pdg = track.PdgCode();
+  track_match.is_primary = true;
   return track_match;
 }
 
@@ -345,59 +347,46 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   // If size != 0, then we have to check volumes
   bool contained_in_cryo = track.NumberTrajectoryPoints() > 0;
   bool contained_in_tpc = track.NumberTrajectoryPoints() > 0;
+  bool is_contained = track.NumberTrajectoryPoints() > 0;
 
+  // get the point at which the Trajectory enters the cryostat (which may be non-zero for cosmics)
+  int entry_point = -1;
 
-  bool is_contained = true;
-
-  // other truth information
-  double costh = track.Pz() / track.Momentum().Vect().Mag();
-  int pdgid = track.PdgCode();
-  double kinetic_energy = track.E() /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */;
-
-  // setup intial track locations
-  TLorentzVector pos = track.Position();
-  // get the active volume that the start position is in
   int cryostat_index = -1;
   int tpc_index = -1;
-  int containment_index = -1;
-  for (int i = 0; i < _config.containment_volumes.size(); i++) {
-    if (_config.containment_volumes[i].ContainsPosition(pos.Vect())) {
-      containment_index = i;
-      break;
-    }
-  }
-  // contruct pos Point
-  for (int i = 0; i < _config.active_volumes.size(); i++) {
-    if (_config.active_volumes[i].ContainsPosition(pos.Vect())) {
-      cryostat_index = i;
-      break;
-    }
-  }
 
-  // only consider contained length in the cryostat volume containing the interaction
-  // setup TPC index
-  std::vector<geo::BoxBoundedGeo> volumes;
-  if (cryostat_index >= 0) {
-    volumes = _config.tpc_volumes[cryostat_index];
-    // setup the initial TPC index
-    for (int i = 0; i < volumes.size(); i++) {
-      if (volumes[i].ContainsPosition(pos.Vect())) {
-        tpc_index = i;
+  for (unsigned j = 0; j < track.NumberTrajectoryPoints(); j++) {
+    for (unsigned i = 0;  i < _config.active_volumes.size(); i++) {
+      if (_config.active_volumes[i].ContainsPosition(track.Position(j).Vect())) {
+        entry_point = j;
+        cryostat_index = i;
         break;
       }
     }
+    if (entry_point != -1) break;
+  }
+
+  std::vector<geo::BoxBoundedGeo> volumes;
+  if (entry_point >= 0) {
+    volumes = _config.tpc_volumes[cryostat_index];
+    // setup the initial TPC index
+    for (int i = 0; i < volumes.size(); i++) {
+      if (volumes[i].ContainsPosition(track.Position(entry_point).Vect())) {
+        tpc_index = i;
+        contained_in_tpc = entry_point == 0;
+        break;
+      }
+    }
+    is_contained = entry_point == 0;
+    contained_in_cryo = entry_point == 0;
   }
   // if we couldn't find a volume for the intial point, set not contained
   else {
     contained_in_cryo = false;
+    is_contained = false;
   }
   if (tpc_index < 0) {
     contained_in_tpc = false;
-  }
-
-
-  if (containment_index < 0) {
-    is_contained = false;
   }
 
   // setup aa volumes too for length calc
@@ -406,21 +395,24 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
     aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
   } 
 
+  int exit_point = -1;
+
   // Get the length and determine if any point leaves the active volume
   //
   // Use every trajectory point if possible
-  if (track.NumberTrajectoryPoints() != 0) {
+  if (entry_point >= 0) {
     // particle trajectory
     const simb::MCTrajectory &trajectory = track.Trajectory();
-
-    for (int i = 1; i < track.NumberTrajectoryPoints(); i++) {
+    TVector3 pos = trajectory.Position(entry_point).Vect();
+    for (int i = entry_point+1; i < track.NumberTrajectoryPoints(); i++) {
       TVector3 this_point = trajectory.Position(i).Vect();
+      // get the exit point
       // update if track is contained
       if (contained_in_cryo) {
         contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(this_point);
       }
       // check if track has crossed TPC
-      if (contained_in_cryo && !crosses_tpc) {
+      if (!crosses_tpc) {
         for (int j = 0; j < volumes.size(); j++) {
           if (volumes[j].ContainsPosition(this_point) && j != tpc_index) {
             crosses_tpc = true;
@@ -434,42 +426,33 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
       }
 
       if (is_contained) {
-        is_contained = _config.containment_volumes[containment_index].ContainsPosition(this_point);
+        is_contained = _config.containment_volumes[cryostat_index].ContainsPosition(this_point);
       }
       
       // update length
-      contained_length += containedLength(this_point, pos.Vect(), aa_volumes);
-      pos = trajectory.Position(i);
+      contained_length += containedLength(this_point, pos, aa_volumes);
+
+      if (!_config.active_volumes[cryostat_index].ContainsPosition(this_point) && _config.active_volumes[cryostat_index].ContainsPosition(pos)) {
+        exit_point = i;
+      }
+
       // update energy
-      if (InTPC(this_point) && InTPC(trajectory.Position(i-1).Vect())) {
+      if (InActive(this_point) && InActive(pos)) {
         deposited_energy += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
       }
+      pos = trajectory.Position(i).Vect();
     }
   }
-  else if (_config.shakyMCTracks) {
-    TVector3 end_point = track.EndPosition().Vect();
-
-    contained_length = containedLength(track.Position().Vect(), end_point, aa_volumes);
-
-    // track can cross TPC if start point was in TPC and Cryo
-    if (contained_in_cryo && contained_in_tpc) {
-      for (int i = 0; i < volumes.size(); i++) {
-        if (volumes[i].ContainsPosition(end_point) && i != tpc_index) {
-          crosses_tpc = true;
-          break;
-        }
-      }
-    }
-
-    // update containment with end points
-    if (contained_in_cryo) contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(end_point);
-    if (contained_in_tpc)  contained_in_tpc = volumes[tpc_index].ContainsPosition(end_point);
-
+  if (exit_point < 0 && entry_point >= 0) {
+    exit_point = track.NumberTrajectoryPoints() - 1; 
   }
-  else {
-    std::cerr << "ERROR: unexpected bad track" << std::endl;
-    assert(false);
-  }
+
+  // other truth information
+  int pdgid = track.PdgCode();
+
+  double costh = (entry_point >= 0 && track.Momentum(entry_point).Vect().Mag() > 1e-4) ? track.Pz(entry_point) / track.Momentum(entry_point).Vect().Mag(): -999.;
+  double kinetic_energy =  (entry_point >= 0) ? track.E(entry_point) /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */: -999.;
+
 
   // get the distance to the truth vertex
   // double dist_to_vertex = truth.NeutrinoSet() ? (track.Position().Vect() - truth.GetNeutrino().Nu().Position(0).Vect()).Mag(): -1;
@@ -489,9 +472,9 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   ret.contained_in_tpc = contained_in_tpc;
   ret.crosses_tpc = crosses_tpc;
   ret.is_contained = is_contained;
-  ret.start = track.Position().Vect();
-  ret.end = track.EndPosition().Vect();
-  ret.momentum = track.Momentum().Vect().Mag();
+  ret.start = (entry_point >= 0) ? track.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.end = (exit_point >= 0) ? track.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.momentum = (entry_point >= 0) ? track.Momentum(entry_point).Vect().Mag() : -9999.;
   ret.energy = kinetic_energy;
   ret.dist_to_vertex = dist_to_vertex;
   ret.ID = track.TrackId();
@@ -1077,6 +1060,7 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
   ret.mcparticle_id = mcp_track_id;
   ret.completion = completion;
   ret.match_pdg = _true_particles[mcparticle_index]->PdgCode(); 
+  ret.is_primary = _true_particles[mcparticle_index]->Process() == "primary"; 
   return ret;
 }
 
@@ -1426,7 +1410,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   CollectCRTInformation(ev);
   CollectPMTInformation(ev);
   CollectTPCInformation(ev);
-  CollectTruthInformation(ev);
 
   // colect PFParticle information
   std::vector<numu::RecoParticle> reco_particles = RecoParticleInfo();
@@ -1519,10 +1502,20 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
       reco_tracks.at(this_interaction.slice.primary_track_index).match.has_match) {
       const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(this_interaction.slice.primary_track_index).match;
       if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kCC) {
-        this_interaction.match.mode = numu::mCC;
+        if (ptrack_match.is_primary) {
+          this_interaction.match.mode = numu::mCC;
+        }
+        else {
+          this_interaction.match.mode = numu::mCCNonPrimary;
+        }
       }
       else if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kNC) {
-        this_interaction.match.mode = numu::mNC;
+        if (ptrack_match.is_primary) {
+          this_interaction.match.mode = numu::mNC;
+        }
+        else {
+          this_interaction.match.mode = numu::mNCNonPrimary;
+        }
       }
       else if (ptrack_match.mctruth_origin == simb::Origin_t::kCosmicRay) {
         this_interaction.match.mode = numu::mCosmic;
@@ -1535,6 +1528,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     else {
       this_interaction.match.mode = numu::mOther;
     }
+    this_interaction.match.has_match = true;
 
     // bad vertex
     this_interaction.match.is_misreconstructed = this_interaction.match.tmode == numu::tmNeutrino && !this_interaction.match.has_match;
@@ -1557,11 +1551,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   return std::move(event);
 }
 
-bool NumuReco::InTPC(const TVector3 &v) const {
-  for (auto const& cryo: _config.tpc_volumes) {
-    for (auto const& tpc: cryo) {
-      if (tpc.ContainsPosition(v)) return true;
-    }
+bool NumuReco::InActive(const TVector3 &v) const {
+  for (auto const& active: _config.active_volumes) {
+    if (active.ContainsPosition(v)) return true;
   }
   return false;
 }

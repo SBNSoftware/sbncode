@@ -350,7 +350,7 @@ protected:
  *
  * \return Whether the point is in the configured fiducial volume
  */
-  bool InTPC(const TVector3 &v) const;
+  bool InActive(const TVector3 &v) const;
 
   unsigned _event_counter;  //!< Count processed events
   unsigned _nu_count;  //!< Count selected events
