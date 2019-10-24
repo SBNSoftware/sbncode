@@ -18,6 +18,7 @@ unsigned TrackHistos::PDGIndex(const numu::RecoTrack &track) {
     case 211: return 3; // "pi"
     case 321: return 4; // "k"
     case 2212: return 5; // "p"
+    case 22: return 7; // map photons to "none" -- they hardly ever get reconstructed as tracks anyway
     default:
       if (abs(track.match.match_pdg) > 1000000000 
       ||  abs(track.match.match_pdg) == 2224 // Delta++
