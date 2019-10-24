@@ -10,6 +10,7 @@ add_library(sbnanalysis_SBNOscReco_SimPhotonPrinter SHARED SimPhotonPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter SHARED OpDetBacktrackerPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_MCParticleTreePrinter SHARED MCParticleTreePrinter.cc)
 add_library(sbnanalysis_SBNOscReco_PandoraIDPrinter SHARED PandoraIDPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_CaloPrinter SHARED CaloPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_CRTSimHitViewer SHARED CRTSimHitViewer.cc)
 
 # Add in ROOT dictionary
@@ -62,6 +63,12 @@ target_link_libraries(sbnanalysis_SBNOscReco_PandoraIDPrinter
   ubana_BasicTool_GeoAlgo
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_CaloPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
 target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOscReco_classes
@@ -78,5 +85,6 @@ install(TARGETS sbnanalysis_SBNOscReco_SimPhotonPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_MCParticleTreePrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_PandoraIDPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_CaloPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CRTSimHitViewer DESTINATION lib)
 
