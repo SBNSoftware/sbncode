@@ -9,13 +9,12 @@ def main(args):
     if args.range_hi is not None and args.range_lo is not None: 
         lo_bin = hist.GetXaxis().FindBin(args.range_lo)
         hi_bin = hist.GetXaxis().FindBin(args.range_hi)
-        print lo_bin, hi_bin
         integral = hist.Integral(lo_bin, hi_bin)
     else:
         integral = hist.Integral()
     if args.ratio:
         integral = integral / hist.Integral()
-    print "Integral: ", integral
+    print integral
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

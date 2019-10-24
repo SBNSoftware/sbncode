@@ -49,8 +49,6 @@ def with_histosize_args(parser):
 
 def resize_graph(args, hist):
     if args.range_lo is not None and args.range_hi is not None: 
-        print "Hi!"
-        print args.range_lo, args.range_hi
         hist.GetXaxis().SetLimits(args.range_lo, args.range_hi)
     if args.y_min is not None and args.y_max is not None: 
         hist.GetYaxis().SetRangeUser(args.y_min, args.y_max)
@@ -107,4 +105,45 @@ def fillcolors(index):
 
 def comma_separated(inp):
     return inp.split(",")
+
+def legend_position(inp):
+    if inp == "ur":
+        return [0.75,0.75,0.95,0.95]
+    elif inp == "ul":
+        return [0.25,0.75,0.05,0.95]
+    else:
+        return [float(x) for x in inp.split(",")][:4]
+
+def histo_list(inp):
+    inp = inp.split(",")
+    in_parens = False
+    out = []
+    for name in inp:
+        if name.startswith("("):
+            assert(not in_parens)
+            in_parens = True
+            name = name.lstrip("(")
+            out.append([name])
+        elif name.endswith(")"):
+            assert(in_parens)
+            in_parens = False
+            name = name.rstrip(")")
+            out[-1].append(name)
+        elif in_parens:
+            out[-1].append(name)
+        else:
+            out.append([name])
+    return out
+
+def validate_hists(names, hists):
+    for nn,hh in zip(names, hists):
+        if isinstance(hh, list):
+            for n,h in zip(nn,hh):
+                if not h:
+                     raise Exception("Error: invalid histogram with name (%s)" % n)
+                    # raise Exception("Error: invalid histogram (%s) with name (%s)" % (h, n))
+        else:
+            if not h:
+                raise Exception("Error: invalid histogram (%s) with name (%s)" % (hh, nn))
+
 
