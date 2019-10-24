@@ -7,10 +7,12 @@ namespace numu {
 */
 enum InteractionMode {
   mCC = 0,  
-  mNC = 1, 
-  mCosmic = 2, 
-  mOther = 3,
-  mAll = 4
+  mCCNonPrimary = 1,
+  mNC = 2, 
+  mNCNonPrimary = 3,
+  mCosmic = 4, 
+  mOther = 5,
+  mAll = 6
 };
 
 /**

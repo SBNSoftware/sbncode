@@ -18,6 +18,7 @@ struct TrackTruthMatch {
   int mcparticle_id; //!< MCParticle ID of the particle this track matches to (same as the ID of the RecoTrack of that particle.)
   float completion; //!< Fraction of energy deposits by true particle matched by this track
   int match_pdg; //!< PDG of the MCParticle this track matches to
+  bool is_primary; //!< Whether this track was produced as the "primary" process
   TrackTruthMatch():
     has_match(false),
     mctruth_has_neutrino(false),
@@ -26,7 +27,8 @@ struct TrackTruthMatch {
     mctruth_ccnc(-1),
     mcparticle_id(-1),
     completion(-1),
-    match_pdg(-1) {}
+    match_pdg(-1),
+    is_primary(false) {}
 };
 
 /**
