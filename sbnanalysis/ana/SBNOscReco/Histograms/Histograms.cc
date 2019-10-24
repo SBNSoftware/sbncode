@@ -231,6 +231,7 @@ void InteractionHistos::Initialize(const std::string &prefix, numu::InteractionM
   INT_HISTO(crosses_tpc, 2, -0.5, 1.5);
   INT_HISTO(dist_to_match, 101, -1., 100.);
   INT_HISTO(primary_track_completion, 100, 0., 1.);
+  INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
 
 #undef INT_HISTO
 }
@@ -239,12 +240,18 @@ void TrackHistos::Initialize(const std::string &postfix) {
 #define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); all_histos.push_back(name)
 #define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); all_histos.push_back(name)
 
-  TRACK_HISTO(chi2_muon_diff, 100, 0., 100.);
-  
-  TRACK_HISTO(chi2_proton_diff, 101, -0.1, 10);
-  TRACK_HISTO(chi2_kaon_diff, 101, -0.1, 10);
-  TRACK_HISTO(chi2_pion_diff, 101, -0.1, 10);
-  
+  TRACK_HISTO(chi2_muon_diff, 100, 0., 1000.);
+  TRACK_HISTO(chi2_proton_diff, 100, 0, 1000);
+  TRACK_HISTO(chi2_kaon_diff, 100, 0, 1000);
+  TRACK_HISTO(chi2_pion_diff, 100, 0, 1000);
+
+  TRACK_HISTO(chi2_muon, 100, 0, 1000);
+  TRACK_HISTO(chi2_pion, 100, 0, 1000);
+  TRACK_HISTO(chi2_kaon, 100, 0, 1000);
+  TRACK_HISTO(chi2_proton, 100, 0, 1000);
+
+  TRACK_HISTO(chi2_proton_m_muon, 200, -1000, 1000);
+
   TRACK_HISTO(range_p, 100, 0., 2.);
   TRACK_HISTO(mcs_p, 100, 0., 2.);
   TRACK_HISTO(deposited_e_max, 100, 0., 2.);
@@ -305,6 +312,14 @@ void TrackHistos::Fill(
     chi2_muon_diff->Fill(track.chi2_muon - track.min_chi2);
     chi2_pion_diff->Fill(track.chi2_pion - track.min_chi2);
     chi2_kaon_diff->Fill(track.chi2_kaon - track.min_chi2);
+
+    chi2_muon->Fill(track.chi2_muon);
+    chi2_kaon->Fill(track.chi2_kaon);
+    chi2_pion->Fill(track.chi2_pion);
+    chi2_proton->Fill(track.chi2_proton);
+
+    chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
+
   }
 	  
   range_p->Fill(track.range_momentum_muon); 
@@ -390,6 +405,8 @@ void InteractionHistos::Fill(
     primary_track_completion->Fill(vertex.primary_track.match.completion);
     vertex_tracks = &event.reco_tracks;
   }
+
+  n_reco_vertices->Fill(event.reco.size());
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;
   track_length->Fill(track_length_val);

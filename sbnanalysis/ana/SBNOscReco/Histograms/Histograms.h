@@ -33,6 +33,7 @@ struct InteractionHistos {
   TH1D *crosses_tpc; //!< Whether the primary track crosses a TPC boundary
   TH1D *dist_to_match; //!< Distance from this vertex to the closest matching vertex reco->truth and truth->reco
   TH1D *primary_track_completion; //!< Completion of the primary track
+  TH1D *n_reco_vertices; //!< Number of reconstructed vertices in the event with this vertex
   std::vector<TH1 *> all_histos;
 
   /**
@@ -107,6 +108,13 @@ struct TrackHistos {
   TH1D *chi2_muon_diff;
   TH1D *chi2_pion_diff;
   TH1D *chi2_kaon_diff;
+
+  TH1D *chi2_proton;
+  TH1D *chi2_muon;
+  TH1D *chi2_pion;
+  TH1D *chi2_kaon;
+
+  TH1D *chi2_proton_m_muon;
 
   TH1D *range_p;
   TH1D *mcs_p;
