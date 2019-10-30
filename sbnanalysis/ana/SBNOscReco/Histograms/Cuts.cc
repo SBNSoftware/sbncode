@@ -35,12 +35,14 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   {
     fhicl::ParameterSet dFV = \
      cfg.get<fhicl::ParameterSet>("containment_volume_inset");
-    double dx = dFV.get<double>("x");
     double dy = dFV.get<double>("y");
     double zfront = dFV.get<double>("zfront");
     double zback = dFV.get<double>("zback");
     for (const geo::BoxBoundedGeo &geo: fConfig.active_volumes) {
-      fConfig.containment_volumes.emplace_back(geo.MinX() + dx, geo.MaxX() - dx, geo.MinY() + dy, geo.MaxY() - dy, geo.MinZ() + zfront, geo.MaxZ() - zback);
+      VolYZ contain;
+      contain.Y = {geo.MinY() + dy, geo.MaxY() - dy};
+      contain.Z = {geo.MinZ() + zfront, geo.MaxZ() - zback};
+      fConfig.containment_volumes.emplace_back(contain);
     }
   }
 
@@ -129,12 +131,15 @@ bool Cuts::InFV(const TVector3 &v) const {
 }
 
 bool Cuts::InContainment(const TVector3 &v) const {
-  for (auto const& FV: fConfig.containment_volumes) {
-    if (FV.ContainsPosition(v)) return true;
+  for (auto const& CV: fConfig.containment_volumes) {
+    if (CV.Z[0] < v.Z() 
+     && CV.Z[1] > v.Z() 
+     && CV.Y[0] < v.Y()
+     && CV.Y[1] > v.Y()) {
+      return true;
+    }
   }
   return false;
-
-
 }
 
 

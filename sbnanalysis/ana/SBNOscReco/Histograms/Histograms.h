@@ -11,6 +11,8 @@
 #include "../Data/RecoTrack.h"
 #include "../Data/Mode.h"
 
+#include "DynamicSelector.h"
+
 class TH1D;
 class TH2D;
 namespace ana {
@@ -140,6 +142,14 @@ struct TrackHistos {
   TH2D *mcs_p_comp;
   TH2D *deposited_e_max_comp;
 
+  TH2D *dQdx_length;
+  TH1D *border_y;
+  TH1D *border_z;
+  TH1D *true_start_time;
+
+  TH1D *wall_enter;
+  TH1D *wall_exit;
+
   TH1D *has_crt_track_match;
   TH1D *has_crt_hit_match;
   TH1D *has_flash_match;
@@ -153,8 +163,8 @@ struct TrackHistos {
   TH1D *stopping_chisq;
   std::vector<TH1 *> all_histos;
 
-  static const unsigned nTrackHistos = 9;
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match", "Contained", "Exiting"};
+  static const unsigned nTrackHistos = 7;
+  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"};
   static const unsigned nPDGs = 8;
   static constexpr const char* trackHistoPDGs[nPDGs] = {"all", "e", "mu", "pi", "k", "p", "nucl", "none"};
 
@@ -213,14 +223,10 @@ struct TrackHistos {
 struct Histograms {
 
   InteractionHistos fInteraction[InteractionHistos::nHistos][InteractionHistos::nModes]; //!< all the interaction histograms
-  TrackHistos fAllTracks[TrackHistos::nTrackHistos][TrackHistos::nPDGs]; //!< Track histograms for all tracks
-  TrackHistos fPrimaryTracks[TrackHistos::nTrackHistos][Cuts::nCuts][TrackHistos::nPDGs]; //!< Track histograms for priamry tracks in a candidate neutrino interaction
+  std::vector<std::array<std::array<TrackHistos, TrackHistos::nPDGs>, TrackHistos::nTrackHistos>> fAllTracks; //!< Track histograms for all tracks
+  std::vector<std::array<std::array<std::array<TrackHistos, TrackHistos::nPDGs>, Cuts::nCuts>, TrackHistos::nTrackHistos>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
 
-  /**
- * Constructor
- * \param prefix Global prefix for all histogram classes
- */
-  explicit Histograms(const std::string &prefix=""); 
+  void Initialize(const std::string &prefix="", std::vector<std::string> track_histo_types={});
 
   /**
  * Fill all of the histograms with an event
@@ -229,7 +235,7 @@ struct Histograms {
  * \param cuts The configured Cuts classes
  * \param fill_all_tracks Whether to fill all track histograms or just the primary track histograms
  */
-  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts, bool fill_all_tracks=true);
+  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts, const std::vector<numu::TrackSelector> &selectors, bool fill_all_tracks=true);
   /**
  * Scale all histograms by a set value
  * \param scale The scaing value

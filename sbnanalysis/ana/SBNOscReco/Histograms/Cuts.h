@@ -102,6 +102,11 @@ public:
   
 
 private:
+  struct VolYZ {
+    std::array<double, 2> Y;
+    std::array<double, 2> Z;
+  };
+
   struct Config {
     double trackMatchCompletionCut;
     float TruthCompletion;
@@ -111,7 +116,7 @@ private:
     float CRTTrackAngle;
     float TrackLength;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
-    std::vector<geo::BoxBoundedGeo> containment_volumes;
+    std::vector<VolYZ> containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
   };
 

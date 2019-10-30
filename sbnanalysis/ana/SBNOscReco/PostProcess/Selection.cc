@@ -22,6 +22,7 @@
 #include <core/Event.hh>
 
 #include "Selection.h"
+#include "../Histograms/DynamicSelector.h"
 
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
@@ -40,6 +41,14 @@ namespace SBNOsc {
     fDoNormalize = config->get<bool>("DoNormalize", false);
     fGoalPOT = config->get<double>("GoalPOT", 0.);
     fFillAllTracks = config->get<bool>("FillAllTracks", true);
+
+    std::vector<std::string> track_selectors = config->get<std::vector<std::string>>("TrackSelectors", { "" });
+    fTrackSelectorNames = config->get<std::vector<std::string>>("TrackSelectorNames", { "" });
+    for (const std::string &str: track_selectors) {
+      fTrackSelectors.push_back(numu::Compile(str));
+    }
+    assert(fTrackSelectorNames.size() == fTrackSelectors.size());
+
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
@@ -48,6 +57,11 @@ namespace SBNOsc {
     fTrajHistograms.Initialize();
     fROC.Initialize();
     fRecoEvent = NULL;
+
+    fHistograms.Initialize("",  fTrackSelectorNames); 
+    fNeutrinoHistograms.Initialize("Neutrino", fTrackSelectorNames);
+    fCosmicHistograms.Initialize("Cosmic", fTrackSelectorNames);
+
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
@@ -98,7 +112,7 @@ namespace SBNOsc {
     // make sure no two vertices match to the same true neutrino interaction
     numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
 
-    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fFillAllTracks);
+    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fFillAllTracks);
     if (fDoNormalize) {
       if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);

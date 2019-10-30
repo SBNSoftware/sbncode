@@ -9,6 +9,7 @@
 #include "ana/SBNOscReco/Data/RecoParticle.h"
 #include "ana/SBNOscReco/Data/RecoTrack.h"
 #include "ana/SBNOscReco/Data/TruthMatch.h"
+#include "ana/SBNOscReco/Data/DetInfo.h"
 
 namespace numu {
 
@@ -46,6 +47,7 @@ struct RecoEvent {
   std::map<size_t, RecoTrack> true_tracks; //!< Map of indices to Track information for true particles (taken from MCParticle).
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
   std::vector<RecoInteraction> truth; //!< List of truth vertices
+  std::vector<CRTHit> in_time_crt_hits; //!< List of crt hits in time with the beam spill
 };
 }
 #endif

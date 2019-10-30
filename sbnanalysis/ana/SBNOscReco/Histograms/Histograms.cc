@@ -19,6 +19,7 @@ unsigned TrackHistos::PDGIndex(const numu::RecoTrack &track) {
     case 321: return 4; // "k"
     case 2212: return 5; // "p"
     case 22: return 7; // map photons to "none" -- they hardly ever get reconstructed as tracks anyway
+    case 2112: return 7; // do the same thing with neutrons
     default:
       if (abs(track.match.match_pdg) > 1000000000 
       ||  abs(track.match.match_pdg) == 2224 // Delta++
@@ -51,16 +52,21 @@ bool TrackHistos::IsMode(const std::map<size_t, numu::RecoTrack> &true_tracks, c
   }
 }
 
-void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cutmaker, bool fill_all_tracks) { 
+void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cutmaker, const std::vector<numu::TrackSelector> &selectors, bool fill_all_tracks) { 
 
   if (fill_all_tracks) {
     for (const auto &track_pair: event.reco_tracks) {
       const numu::RecoTrack &track = track_pair.second;
       unsigned pdg_index = TrackHistos::PDGIndex(track);
-      for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-        if (TrackHistos::IsMode(event.true_tracks, track, i)) {
-          fAllTracks[i][0].Fill(track, event.true_tracks, cutmaker);
-          fAllTracks[i][pdg_index].Fill(track, event.true_tracks, cutmaker);
+      for (unsigned i = 0; i < fAllTracks.size(); i++) {
+        bool select = selectors[i](track, event);
+        if (select) {
+          for (unsigned j = 0; j < TrackHistos::nTrackHistos; j++) {
+            if (TrackHistos::IsMode(event.true_tracks, track, j)) {
+              fAllTracks[i][j][0].Fill(track, event.true_tracks, cutmaker);
+              fAllTracks[i][j][pdg_index].Fill(track, event.true_tracks, cutmaker);
+            }
+          }
         }
       }
     }
@@ -73,11 +79,16 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
     if (event.reco_tracks.size() > (unsigned)interaction.slice.primary_track_index) {
       const numu::RecoTrack &track = event.reco_tracks.at(interaction.slice.primary_track_index);
       unsigned pdg_index = TrackHistos::PDGIndex(track);
-      for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-        for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
-          if (TrackHistos::IsMode(event.true_tracks, track, i) && cuts[cut_i]) {
-            fPrimaryTracks[i][cut_i][0].Fill(track, event.true_tracks, cutmaker);
-            fPrimaryTracks[i][cut_i][pdg_index].Fill(track, event.true_tracks, cutmaker);
+      for (unsigned j = 0; j < fPrimaryTracks.size(); j++) { 
+        bool select = selectors[j](track, event);
+        if (select) {
+          for (unsigned k = 0; k < TrackHistos::nTrackHistos; k++) {
+            for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
+              if (TrackHistos::IsMode(event.true_tracks, track, i) && cuts[cut_i]) {
+                fPrimaryTracks[j][k][cut_i][0].Fill(track, event.true_tracks, cutmaker);
+                fPrimaryTracks[j][k][cut_i][pdg_index].Fill(track, event.true_tracks, cutmaker);
+              }
+            }
           }
         }
       }
@@ -143,26 +154,34 @@ TrackHistos::~TrackHistos() {
 }
 
 
-Histograms::Histograms(const std::string &prefix) {
+void Histograms::Initialize(const std::string &prefix, std::vector<std::string> track_histo_types) {
+  if (track_histo_types.size() == 0) track_histo_types = { "" };
   for (unsigned i = 0; i < InteractionHistos::nHistos; i++) {
     for (const auto mode: InteractionHistos::allModes) {
       fInteraction[i][mode].Initialize(prefix, mode, i); 
     }
   }
+  fAllTracks.reserve(track_histo_types.size());
+  fPrimaryTracks.reserve(track_histo_types.size());
 
-  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
-      std::string postfix = prefix + "_All_" + std::string(TrackHistos::trackHistoNames[i]) + "_" + std::string(TrackHistos::trackHistoPDGs[j]);
-      fAllTracks[i][j].Initialize(postfix);
-      for (unsigned k = 0; k < Cuts::nCuts; k++) {
-        std::string postfix = prefix + "_Primary_" + 
-          std::string(TrackHistos::trackHistoNames[i]) + "_" + 
-          std::string(TrackHistos::trackHistoPDGs[j]) + "_" + 
-          std::string(InteractionHistos::histoNames[Cuts::nTruthCuts+k]);
-        fPrimaryTracks[i][k][j].Initialize(postfix);
+  for (unsigned i = 0; i < track_histo_types.size(); i++) {
+    fAllTracks.emplace_back();
+    fPrimaryTracks.emplace_back();
+    for (unsigned j = 0; j < TrackHistos::nTrackHistos; j++) {
+      for (unsigned k = 0; k < TrackHistos::nPDGs; k++) {
+        std::string postfix = prefix + "All_" + track_histo_types[i] + "_" + std::string(TrackHistos::trackHistoNames[j]) + "_" + std::string(TrackHistos::trackHistoPDGs[k]);
+        fAllTracks[i][j][k].Initialize(postfix);
+        for (unsigned m = 0; m < Cuts::nCuts; m++) {
+          std::string postfix = prefix + "Primary_" + 
+            track_histo_types[i] + "_" +
+            std::string(TrackHistos::trackHistoNames[j]) + "_" + 
+            std::string(TrackHistos::trackHistoPDGs[k]) + "_" + 
+            std::string(InteractionHistos::histoNames[Cuts::nTruthCuts+m]);
+          fPrimaryTracks[i][j][m][k].Initialize(postfix);
+        }
       }
-    }
-  } 
+    } 
+  }
 }
 
 void Histograms::Write() {
@@ -172,14 +191,16 @@ void Histograms::Write() {
     }
   }
 
-  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
-      fAllTracks[i][j].Write();
-      for (unsigned k = 0; k < Cuts::nCuts; k++) {
-        fPrimaryTracks[i][k][j].Write();
+  for (unsigned i = 0; i < fAllTracks.size(); i++) {
+    for (unsigned j = 0; j < TrackHistos::nTrackHistos; j++) {
+      for (unsigned k = 0; k < TrackHistos::nPDGs; k++) {
+        fAllTracks[i][j][k].Write();
+        for (unsigned m = 0; m < Cuts::nCuts; m++) {
+          fPrimaryTracks[i][j][m][k].Write();
+        }
       }
-    }
-  } 
+    } 
+  }
 }
 
 void Histograms::Scale(double scale) {
@@ -189,14 +210,16 @@ void Histograms::Scale(double scale) {
     }
   }
 
-  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
-      fAllTracks[i][j].Scale(scale);
-      for (unsigned k = 0; k < Cuts::nCuts; k++) {
-        fPrimaryTracks[i][k][j].Scale(scale);
+  for (unsigned i = 0; i < fAllTracks.size(); i++) {
+    for (unsigned j = 0; j < TrackHistos::nTrackHistos; j++) {
+      for (unsigned k = 0; k < TrackHistos::nPDGs; k++) {
+        fAllTracks[i][j][k].Scale(scale);
+        for (unsigned m = 0; m < Cuts::nCuts; m++) {
+          fPrimaryTracks[i][j][m][k].Scale(scale);
+        }
       }
-    }
-  } 
+    } 
+  }
 }
 
 void Histograms::Add(const Histograms &other) {
@@ -206,15 +229,16 @@ void Histograms::Add(const Histograms &other) {
     }
   }
 
-  for (unsigned i = 0; i < TrackHistos::nTrackHistos; i++) {
-    for (unsigned j = 0; j < TrackHistos::nPDGs; j++) {
-      fAllTracks[i][j].Add(other.fAllTracks[i][j]);
-      for (unsigned k = 0; k < Cuts::nCuts; k++) {
-        fPrimaryTracks[i][k][j].Add(other.fPrimaryTracks[i][k][j]);
+  for (unsigned i = 0; i < fAllTracks.size(); i++) {
+    for (unsigned j = 0; j < TrackHistos::nTrackHistos; j++) {
+      for (unsigned k = 0; k < TrackHistos::nPDGs; k++) {
+        fAllTracks[i][j][k].Add(other.fAllTracks[i][j][k]);
+        for (unsigned m = 0; m < Cuts::nCuts; m++) {
+          fPrimaryTracks[i][j][m][k].Add(other.fPrimaryTracks[i][m][k][j]);
+        }
       }
-    }
-  } 
-
+    } 
+  }
 }
 
 
@@ -274,6 +298,15 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_2DHISTO(range_p_comp, 25, 0, 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
+
+  TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., 600.);
+
+  TRACK_HISTO(border_y, 200, -200., 200.);
+  TRACK_HISTO(border_z, 100, 0., 500.); 
+  TRACK_HISTO(true_start_time, 100, -4000., 3000.);
+
+  TRACK_HISTO(wall_enter, 7, -0.5, 6.5);
+  TRACK_HISTO(wall_exit, 7, -0.5, 6.5);
   
   // timing histos
   TRACK_HISTO(has_crt_track_match, 3, -0.5, 1.5);
@@ -330,7 +363,29 @@ void TrackHistos::Fill(
   
   length->Fill(track.length);
   is_contained->Fill(track.is_contained);
-  
+
+  dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
+
+  if (std::min(abs(track.start.Y() - border_y->GetBinLowEdge(1)), 
+               abs(track.start.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))
+   <  std::min(abs(track.end.Y() - border_y->GetBinLowEdge(1)), 
+               abs(track.end.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))) {
+    border_y->Fill(track.start.Y());
+  }
+  else {
+    border_y->Fill(track.end.Y());
+  }
+
+  if (std::min(abs(track.start.Z() - border_z->GetBinLowEdge(1)), 
+               abs(track.start.Z() - (border_z->GetBinLowEdge(border_z->GetNbinsX()) + border_z->GetBinWidth(border_z->GetNbinsX()))))
+   <  std::min(abs(track.end.Z() - border_z->GetBinLowEdge(1)), 
+               abs(track.end.Z() - (border_z->GetBinLowEdge(border_z->GetNbinsX()) + border_z->GetBinWidth(border_z->GetNbinsX()))))) {
+    border_z->Fill(track.start.Z());
+  }
+  else {
+    border_z->Fill(track.end.Z());
+  }
+
   has_crt_hit_match->Fill(cuts.HasCRTHitMatch(track));
   has_crt_track_match->Fill(cuts.HasCRTTrackMatch(track));
   if (cuts.HasCRTTrackMatch(track) || cuts.HasCRTHitMatch(track)) {
@@ -365,6 +420,10 @@ void TrackHistos::Fill(
     deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
 
     completion->Fill(track.match.completion);
+
+    wall_enter->Fill(true_track.wall_enter);
+    wall_exit->Fill(true_track.wall_exit);
+  
   }
   else {
     completion->Fill(-0.5);

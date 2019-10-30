@@ -12,13 +12,13 @@
 namespace numu {
 
 enum Wall {
-  wNone,
-  wTop,
-  wBottom,
-  wLeft,
-  wRight,
-  wFront,
-  wBack
+  wNone=0,
+  wTop=1,
+  wBottom=2,
+  wLeft=3,
+  wRight=4,
+  wFront=5,
+  wBack=6
 };
 
 /**
@@ -41,6 +41,8 @@ struct RecoTrack {
   float bwd_mcs_momentum_err; //!< MCS momentum calculation fit error under hypothesis track is backward using PID hypothsesis [GeV].
   float bwd_mcs_momentum_muon_err; //!< MCS momentum calculation fit error under hypotheis track is backward assuming track is muon [GeV].
   bool mcs_is_backward; //!< Whether the MCS fit calculation believes the track is backwards
+
+  float mean_trucated_dQdx; //!< Mean of dQdx values inside the standard deviation
   
   float momentum; //!< Best guess at momentum [GeV]. Currently unfilled
   float energy; //!< Best guess at energy [GeV]. Currently unfilled
@@ -63,6 +65,8 @@ struct RecoTrack {
   bool crosses_tpc; //!< does it cross a tpc?
   bool is_contained; //!< is it contained in the "containment volume"?
   TVector3 start; //!< start position of track
+  float start_time; //!< start time of track
+  float end_time; //!< end time of track 
   TVector3 end; //!< end position of track
   float dist_to_vertex; //!< Distance of track start point to interaction vertex (if it exists) [cm]
   TrackTruthMatch match; //!< Truth matching information
@@ -91,6 +95,7 @@ struct RecoTrack {
     bwd_mcs_momentum_err(-1),
     bwd_mcs_momentum_muon_err(-1),
     mcs_is_backward(false),
+    mean_trucated_dQdx(-9999.),
     momentum(-1),
     energy(-1),
     chi2_proton(-1),

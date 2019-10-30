@@ -2,9 +2,10 @@
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
-add_library(sbnanalysis_SBNOscReco_Histograms SHARED Cuts.cc Derived.cc Histograms.cc TrajHistograms.cc)
+add_library(sbnanalysis_SBNOscReco_Histograms SHARED Cuts.cc Derived.cc Histograms.cc TrajHistograms.cc DynamicSelector.cc)
 
 target_link_libraries(sbnanalysis_SBNOscReco_Histograms
+  sbnanalysis_SBNOscReco_Reco
   sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo
   sbnanalysis_SBNOscReco_classes

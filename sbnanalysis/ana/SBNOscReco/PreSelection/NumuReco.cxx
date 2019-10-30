@@ -41,6 +41,7 @@
 #include "../RecoUtils/GeoUtil.h"
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
+#include "../NumuReco/TrackAlgo.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -180,6 +181,8 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
+
+    _config.BeamSpillWindow = pconfig.get<std::array<float, 2>>("BeamSpillWindow", {-0.2, 1.8}); // default -- give 0.2us buffer on each side
 
     // setup weight config
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
@@ -515,7 +518,10 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   ret.crosses_tpc = crosses_tpc;
   ret.is_contained = is_contained;
   ret.start = (entry_point >= 0) ? track.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.start_time = (entry_point >= 0) ? track.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
   ret.end = (exit_point >= 0) ? track.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.end_time = (exit_point >= 0) ? track.Position(exit_point).T() / 1000. /* ns -> us */ : -9999;
+  
   ret.momentum = (entry_point >= 0) ? track.Momentum(entry_point).Vect().Mag() : -9999.;
   ret.energy = kinetic_energy;
   ret.wall_enter = enter;
@@ -935,12 +941,13 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
       ApplyCosmicID(this_track);
     }
 
-    ret[this_track.ID] = this_track;
-
-    // fill the histograms
+    // calculate stuff with calo information from the collection plane
     if (collection_calo != NULL) {
+      this_track.mean_trucated_dQdx = numu::MeanTruncateddQdx(*collection_calo); 
       _histograms.Fill(this_track, *collection_calo);
     }
+
+    ret[this_track.ID] = this_track;
   }
   return ret;
 }
@@ -1450,6 +1457,27 @@ std::vector<numu::FlashMatch> NumuReco::FlashMatching(
   return {};
 }
 
+bool NumuReco::InBeamSpill(float time) {
+  return time > _config.BeamSpillWindow[0] && time < _config.BeamSpillWindow[1];
+}
+
+std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
+  std::vector<numu::CRTHit> ret;
+
+  for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
+    float time;
+    if (_config.TSMode == 0) time = hit.ts0_ns / 1000. /* ns -> us */;
+    else time = hit.ts1_ns / 1000. /* ns -> us */;
+    if (InBeamSpill(time)) {
+      numu::CRTHit this_hit;
+      this_hit.time = time;
+      ret.push_back(this_hit);
+    } 
+  }
+
+  return std::move(ret);
+}
+
 numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu::RecoInteraction> truth) {
   // setup products
   CollectCRTInformation(ev);
@@ -1496,6 +1524,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   event.truth = std::move(truth);
   event.reco = std::move(reco);
   event.reco_tracks = std::move(reco_tracks);
+
+  // collect spare detector information
+  event.in_time_crt_hits = InTimeCRTHits();
  
   return std::move(event);
 }

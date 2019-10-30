@@ -25,6 +25,7 @@
 #include "../Histograms/Histograms.h"
 #include "../Histograms/TrajHistograms.h"
 #include "../Histograms/Cuts.h"
+#include "../Histograms/DynamicSelector.h"
 #include "Normalize.h"
 #include "ROC.h"
 #include "../Data/RecoEvent.h"
@@ -36,12 +37,6 @@ namespace ana {
 
 class Selection: public core::PostProcessorBase {
 public:
-  // Constructor
-  Selection():
-    fHistograms(),
-    fNeutrinoHistograms("Neutrino"),
-    fCosmicHistograms("Cosmic") {}
-  
   // implementing PostProcessor
   void FileCleanup(TTree *eventTree) {}
   void FileSetup(TFile *f, TTree *eventTree);
@@ -64,6 +59,9 @@ private:
   bool fFillAllTracks;
   double fGoalPOT;
   double fNCosmicData;
+
+  std::vector<numu::TrackSelector> fTrackSelectors;
+  std::vector<std::string> fTrackSelectorNames;
 
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;

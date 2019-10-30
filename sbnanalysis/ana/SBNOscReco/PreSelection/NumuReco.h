@@ -120,6 +120,7 @@ protected:
     int TSMode;
     double flashMatchTimeDifference;
 
+    std::array<float, 2> BeamSpillWindow;
     double beamCenterX;
     double beamCenterY;
 
@@ -148,6 +149,20 @@ protected:
  * \return the RecoEvent object for this event
  */
   numu::RecoEvent Reconstruct(const gallery::Event &ev, std::vector<numu::RecoInteraction> truth);
+
+
+  /**
+ * Return the list of intime CRTHits in the reconstructed event.
+ * \return In time CRT Hits in the numu reco format
+ */
+  std::vector<numu::CRTHit> InTimeCRTHits();
+
+  /**
+ * Returns whether the povided time is inside the configured beam spill.
+ * \param time Input time in us.
+ * \return Whether the provided time is inside the configured beam spill.
+ */
+  bool InBeamSpill(float time);
 
   /**
  * Gathers together reconstruction information on each individual particle.
