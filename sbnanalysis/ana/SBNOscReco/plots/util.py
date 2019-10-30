@@ -87,11 +87,14 @@ def style(args, hist):
     hist.GetYaxis().SetTitleFont(43)
     hist.GetYaxis().SetLabelFont(43)
     hist.GetYaxis().SetLabelSize(20)
+    hist.GetYaxis().CenterTitle()
 
     hist.GetXaxis().SetTitleSize(20)
     hist.GetXaxis().SetTitleFont(43)
     hist.GetXaxis().SetLabelFont(43)
     hist.GetXaxis().SetLabelSize(20)
+    hist.GetXaxis().CenterTitle()
+
     if args.xlabel: hist.GetXaxis().SetTitle(args.xlabel)
     if args.ylabel: hist.GetYaxis().SetTitle(args.ylabel)
 
