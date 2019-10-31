@@ -21,4 +21,6 @@
 #pragma link C++ class numu::FlashMatch+;
 #pragma link C++ class std::optional<numu::CRTMatch>+;
 #pragma link C++ class std::optional<numu::FlashMatch>+;
+#pragma link C++ class numu::CRTHit;
+#pragma link C++ class srd::vector<numu::CRTHit>;
 #endif
