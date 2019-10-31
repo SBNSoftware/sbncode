@@ -42,19 +42,24 @@ namespace SBNOsc {
     fGoalPOT = config->get<double>("GoalPOT", 0.);
     fFillAllTracks = config->get<bool>("FillAllTracks", true);
 
-    std::vector<std::string> track_selectors = config->get<std::vector<std::string>>("TrackSelectors", { "" });
-    fTrackSelectorNames = config->get<std::vector<std::string>>("TrackSelectorNames", { "" });
-    for (const std::string &str: track_selectors) {
-      fTrackSelectors.push_back(numu::Compile(str));
-    }
+    std::vector<std::vector<std::string>> track_selector_strings = config->get<std::vector<std::vector<std::string>>>("TrackSelectors", {{""}});
+    std::vector<std::vector<std::string>> track_selector_names = config->get<std::vector<std::vector<std::string>>>("TrackSelectorNames", {{""}});
+
+    assert(track_selector_strings.size() == track_selector_names.size());
+
+    fTrackSelectorNames = numu::MultiplyNames(track_selector_names);
+    fTrackSelectors = numu::MultiplySelectors(track_selector_strings);
+
     assert(fTrackSelectorNames.size() == fTrackSelectors.size());
+
+    fTrajHistoNames = numu::MultiplyNames(config->get<std::vector<std::vector<std::string>>>("TrajHistoNames", {{""}}));
 
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
       fNCosmicData = config->get<double>("NCosmicData", 0.);
     }
-    fTrajHistograms.Initialize();
+    fTrajHistograms.Initialize(fTrajHistoNames);
     fROC.Initialize();
     fRecoEvent = NULL;
 
@@ -83,7 +88,7 @@ namespace SBNOsc {
     fFileIndex += 1;
     
     TrajHistograms from_file;
-    from_file.Get(*f);
+    from_file.Get(*f, fTrajHistoNames);
     fTrajHistograms.Add(from_file);
   }
 

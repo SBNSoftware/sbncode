@@ -163,11 +163,6 @@ struct TrackHistos {
   TH1D *stopping_chisq;
   std::vector<TH1 *> all_histos;
 
-  static const unsigned nTrackHistos = 7;
-  static constexpr const char* trackHistoNames[nTrackHistos] = {"All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"};
-  static const unsigned nPDGs = 8;
-  static constexpr const char* trackHistoPDGs[nPDGs] = {"all", "e", "mu", "pi", "k", "p", "nucl", "none"};
-
   /**
  * Initialize this set of histograms
  * \param postfix The postfix to add to all histogram names
@@ -223,8 +218,8 @@ struct TrackHistos {
 struct Histograms {
 
   InteractionHistos fInteraction[InteractionHistos::nHistos][InteractionHistos::nModes]; //!< all the interaction histograms
-  std::vector<std::array<std::array<TrackHistos, TrackHistos::nPDGs>, TrackHistos::nTrackHistos>> fAllTracks; //!< Track histograms for all tracks
-  std::vector<std::array<std::array<std::array<TrackHistos, TrackHistos::nPDGs>, Cuts::nCuts>, TrackHistos::nTrackHistos>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
+  std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
+  std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
 
   void Initialize(const std::string &prefix="", std::vector<std::string> track_histo_types={});
 

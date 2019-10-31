@@ -62,6 +62,7 @@ private:
 
   std::vector<numu::TrackSelector> fTrackSelectors;
   std::vector<std::string> fTrackSelectorNames;
+  std::vector<std::string> fTrajHistoNames;
 
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;

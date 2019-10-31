@@ -10,6 +10,10 @@ namespace numu {
   void PrintClasses();
   typedef std::function<bool (const numu::RecoTrack &, const numu::RecoEvent &)> TrackSelector;
   TrackSelector Compile(const std::string &cutstr);
+
+  std::vector<std::string> MultiplyNames(const std::vector<std::vector<std::string>> &strings);
+  std::vector<numu::TrackSelector> MultiplySelectors(const std::vector<std::vector<std::string>> &track_selector_strings);
+
 }
 
 

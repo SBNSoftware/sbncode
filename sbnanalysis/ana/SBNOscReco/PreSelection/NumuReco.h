@@ -55,6 +55,7 @@
 #include "../Data/TruthMatch.h"
 
 #include "../Histograms/TrajHistograms.h"
+#include "../Histograms/DynamicSelector.h"
 
 class TH2D;
 class TH1D;
@@ -98,6 +99,10 @@ protected:
     std::vector<geo::BoxBoundedGeo> containment_volumes; //!< List of volumes for containment cuts -- set by "containment_volumes"
     std::vector<geo::BoxBoundedGeo> active_volumes; //!< List of active volumes per cryostat
     std::vector<std::vector<geo::BoxBoundedGeo>> tpc_volumes; //!< List of active tpc volumes -- retreived from Geoemtry service
+
+    std::vector<numu::TrackSelector> TrackSelectors;
+    std::vector<std::string> TrackSelectorNames;
+
     bool verbose; //!< Whether to print out info associated w/ selection.
     bool shakyMCTracks; //!< How to handle MC tracks with some missing truth information
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event

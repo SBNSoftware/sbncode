@@ -18,5 +18,57 @@ Cuts: {
    containment_volume_inset: @local::fiducial_volume_inset
 }
 
+pdg_selectors: ["",
+   "track.match.has_match==1&&(track.match.match_pdg==11||track.match.match_pdg==-11)",
+   "track.match.has_match==1&&(track.match.match_pdg==13||track.match.match_pdg==-13)",
+   "track.match.has_match==1&&(track.match.match_pdg==211||track.match.match_pdg==-211)",
+   "track.match.has_match==1&&(track.match.match_pdg==321||track.match.match_pdg==-321)",
+   "track.match.has_match==1&&(track.match.match_pdg==2212||track.match.match_pdg==-2212)",
+   "track.match.has_match==1&&(track.match.match_pdg==2224||track.match.match_pdg==-2224||track.match.match_pdg==2214||track.match.match_pdg==-2214||track.match.match_pdg==1114||track.match.match_pdg==-1114||track.match.match_pdg==3222||track.match.match_pdg==-3222||track.match.match_pdg==3112||track.match.match_pdg==3112||track.match.match_pdg>1000000000)",
+   "track.match.has_match==0||track.match.match_pdg==22||track.match.match_pdg==2112||track.match.match_pdg==-2112"
+  ]
+pdgs: ["all", "e", "mu", "pi", "k", "p", "nucl", "none"]
+
+interaction_selectors: ["",
+   "track.match.has_match==1&&track.match.mctruth_origin==2", // kCosmicRay
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==0",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==0",
+   "track.match.has_match==0"
+  ] 
+interactions: ["All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"]
+
+wall_selectors: ["",
+  "true_track.wall_enter==0",
+  "true_track.wall_enter==1",
+  "true_track.wall_enter==2",
+  "true_track.wall_enter==3",
+  "true_track.wall_enter==4",
+  "true_track.wall_enter==5",
+  "true_track.wall_enter==6"
+]
+walls: ["all", "no-wall", "top", "bottom", "left", "right", "front", "back"]
+
+TrackSelectors: [
+  @local::interaction_selectors,
+  @local::wall_selectors
+]
+
+TrackSelectorNames: [
+  @local::interactions,
+  @local::walls
+]
+
+#TrackSelectors: ["(1==1&&(0==1||0==0||0==2)||(1==2))", "(((0==1||1==1)&&(1==1)||(1==1||0==1))&&(1==1&&0==1))",  "(((1==1||1==0)||1==1)||(1==1)||(1==1||0==1))&&(1==1&&0==1)"]
+#TrackSelectorNames: ["one", "two", "three"]
+
+#TrackSelectors: ["true_track.is_contained==1", "true_track.is_contained==0", "", "1==5678"]
+
+#TrackSelectorNames: ["Contained", "Exiting", "true", "false"]
+
+#TrackSelectors: ["track.length<50.", "true_track.is_contained==1", "true_track.wall_enter==0"]
+#TrackSelectorNames: ["short", "contained", "contained2"]
+
 FillAllTracks: false
 

@@ -193,7 +193,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.FlashMatchMethod = pconfig.get<int>("FlashMatchMethod", 2);
     _config.flashMatchTimeDifference = pconfig.get<double>("flashMatchTimeDifference");
 
-
     _config.CosmicIDAllTracks = pconfig.get<bool>("CosmicIDAllTracks", false);
 
     // whether to use flash matching in makin CRT decision
@@ -213,6 +212,16 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.OpFlashTag = config->get<std::string>("OpFlashTag", "ophit");
     _config.MCParticleTag = config->get<std::string>("MCParticleTag", "largeant");
     _config.TPCRecoTagSuffixes = config->get<std::vector<std::string>>("TPCRecoTagSuffixes", { "" });
+
+    std::vector<std::vector<std::string>> track_selector_strings = config->get<std::vector<std::vector<std::string>>>("TrackSelectors", {{""}});
+    std::vector<std::vector<std::string>> track_selector_names = config->get<std::vector<std::vector<std::string>>>("TrackSelectorNames", {{""}});
+
+    assert(track_selector_strings.size() == track_selector_names.size());
+
+    _config.TrackSelectorNames = numu::MultiplyNames(track_selector_names);
+    _config.TrackSelectors = numu::MultiplySelectors(track_selector_strings);
+
+    assert(_config.TrackSelectorNames.size() == _config.TrackSelectors.size());
 
     {
       fhicl::ParameterSet dCV = \
@@ -239,7 +248,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
   fOutputFile->cd();
 
   // initialize histograms
-  _histograms.Initialize();
+  _histograms.Initialize(_config.TrackSelectorNames);
 
   // add branches
   fTree->Branch("reco_event", &_recoEvent);
@@ -944,7 +953,9 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     // calculate stuff with calo information from the collection plane
     if (collection_calo != NULL) {
       this_track.mean_trucated_dQdx = numu::MeanTruncateddQdx(*collection_calo); 
-      _histograms.Fill(this_track, *collection_calo);
+      // TODO: fix -- garbage event for histograms
+      numu::RecoEvent event;
+      _histograms.Fill(this_track, *collection_calo, event, _config.TrackSelectors);
     }
 
     ret[this_track.ID] = this_track;

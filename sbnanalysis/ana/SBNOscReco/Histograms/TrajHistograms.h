@@ -8,10 +8,11 @@
 
 #include "../Data/RecoTrack.h"
 
-#include "Histograms.h"
+#include "DynamicSelector.h"
 
 class TH1D;
 class TH2D;
+class TFile;
 namespace ana {
  namespace SBNOsc {
 
@@ -19,12 +20,12 @@ namespace ana {
  * Histograms that require filling over the full trajectory of a reco track
  */
 struct TrajHistograms {
-  TH1D *dEdx[TrackHistos::nPDGs];
+  std::vector<TH1D *> dEdx;
 
-  void Initialize();
-  void Fill(const numu::RecoTrack &track, const anab::Calorimetry &collection_calo);
+  void Initialize(const std::vector<std::string> &names);
+  void Fill(const numu::RecoTrack &track, const anab::Calorimetry &collection_calo, const numu::RecoEvent &event, const std::vector<numu::TrackSelector> &selectors);
   void Write();
-  void Get(TFile &f);
+  void Get(TFile &f, const std::vector<std::string> &names);
   void Add(const ana::SBNOsc::TrajHistograms &other);
   ~TrajHistograms();
 };

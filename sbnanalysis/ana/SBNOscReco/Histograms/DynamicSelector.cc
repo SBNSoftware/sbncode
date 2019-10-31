@@ -33,11 +33,16 @@ void numu::PrintClasses() {
   offset = reco_track_class->GetDataMemberOffset("start");
   std::cout << "data off: " << offset << std::endl;
 
+  TDataMember *reco_track_match = reco_track_class->GetDataMember("match");
+  std::cout << "data mem: " << reco_track_match << std::endl;
+  std::cout << "data type name: " << reco_track_match->GetTypeName() << std::endl;
+  std::cout << "data is basic: " << reco_track_match->IsBasic() << std::endl;
+  std::cout << "data is enum: " << reco_track_match->IsEnum() << std::endl;
+  std::cout << "data off: " << reco_track_class->GetDataMemberOffset("match");
+  std::cout << "data size: " << reco_track_match->GetUnitSize() << std::endl; 
+
   TDataMember *reco_track_start_fx = reco_track_class->GetDataMember("start.fX");
   std::cout << "data mem: " << reco_track_start_fx << std::endl;
-  std::cout << "data type name: " << reco_track_start_fx->GetTypeName() << std::endl; 
-  std::cout << "data is basic: " << reco_track_start_fx->IsBasic() << std::endl;
-  std::cout << "data is enum: " << reco_track_start_fx->IsEnum() << std::endl;
   offset = reco_track_class->GetDataMemberOffset("start.fX");
   std::cout << "data off: " << offset << std::endl;
 
@@ -48,6 +53,7 @@ void numu::PrintClasses() {
   std::cout << "data is enum: " << reco_track_wenter->IsEnum() << std::endl;
   offset = reco_track_class->GetDataMemberOffset("wall_enter");
   std::cout << "data off: " << offset << std::endl;
+  std::cout << "data size: " << reco_track_wenter->GetUnitSize() << std::endl; 
 
   TDataMember *reco_track_garbo = reco_track_class->GetDataMember("garbo");
   std::cout << "data mem: " << reco_track_garbo << std::endl;
@@ -107,6 +113,15 @@ struct Expression {
   Token comp;
   Token rhs;
   Token boolop;
+  int start_depth;
+  int end_depth;
+};
+
+struct CompiledExpression {
+  numu::TrackSelector closure;
+  BoolOp boolop;
+  int start_depth;
+  int end_depth;
 };
 
 enum TokenizerState {
@@ -181,45 +196,85 @@ int ConsumeBoolOp(const std::string &str, unsigned index, Token &token) {
   return -1;
 }
 
+bool IsOpenParenthesis(char c) {
+  return c == '(';
+}
+
+bool IsCloseParenthesis(char c) {
+  return c == ')';
+}
+
+int ConsumeParenthesis(const std::string &str, unsigned index, int *depth) {
+  int delta = 0;
+  int ret = 0;
+  if (str[index] == ')') {
+    delta = 1;
+    ret = 1;
+  }
+  else if (str[index] == '(') {
+    delta = -1;
+    ret = 1;
+  }
+  if (depth != NULL) *depth += delta;
+  return ret;
+}
+
 std::vector<Expression> Tokenize(const std::string &cutstr) {
   unsigned len = cutstr.size();
   TokenizerState state = StartExpression;
 
   std::vector<Expression> ret;
+
+  // zero-sized string -- empty expression list
+  if (len == 0) return ret;
+
   unsigned expression_index = 0;
 
   unsigned i = 0;
+  int depth = 0;
   while (i < len) {
     char c = cutstr[i];
     int delta;
     switch (state) {
       case StartExpression: 
-        // make a new expression
-        ret.emplace_back();
-        expression_index = ret.size() - 1;
-
         if (StartsLiteral(c)) {
+          // make a new expression
+          ret.emplace_back();
+          expression_index = ret.size() - 1;
           i += ConsumeLiteral(cutstr, i, ret[expression_index].lhs);
+          state = GetComparison;
+          ret[expression_index].start_depth = depth;
         }
         else if (StartsVar(c)) {
+          // make a new expression
+          ret.emplace_back();
+          expression_index = ret.size() - 1;
           i += ConsumeVar(cutstr, i, ret[expression_index].lhs);
+          state = GetComparison;
+          ret[expression_index].start_depth = depth;
+        }
+        else if (IsOpenParenthesis(c)) {
+          i += ConsumeParenthesis(cutstr, i, &depth);
+          if (depth > 0) return FailTokenize(cutstr, i-1);
         }
         else {
           return FailTokenize(cutstr, i);
         }
-        state = GetComparison;
         break;
-      case EndExpression: // expression -- must be literal is var
+      case EndExpression: // expression -- must be literal or var
         if (StartsLiteral(c)) {
           i += ConsumeLiteral(cutstr, i, ret[expression_index].rhs);
+          ret[expression_index].end_depth = depth;
+          state = NextExpression;
         }
         else if (StartsVar(c)) {
           i += ConsumeVar(cutstr, i, ret[expression_index].rhs);
+          ret[expression_index].end_depth = depth;
+          state = NextExpression;
         }
         else {
           return FailTokenize(cutstr, i);
         }
-        state = NextExpression;
         break;
       case GetComparison: // get the comparison operation
         delta = ConsumeComparison(cutstr, i, ret[expression_index].comp);
@@ -228,12 +283,24 @@ std::vector<Expression> Tokenize(const std::string &cutstr) {
         state = EndExpression; 
         break;
       case NextExpression: // get the boolean operation
-        delta = ConsumeBoolOp(cutstr, i, ret[expression_index].boolop);
-        if (delta < 0) return FailTokenize(cutstr, i);
-        i += delta;
-        state = StartExpression; 
+        // parenthesis closing the previous expression
+        if (IsCloseParenthesis(c)) {
+          i += ConsumeParenthesis(cutstr, i, &depth);
+          if (depth > 0) return FailTokenize(cutstr, i-1);
+          ret[expression_index].end_depth = depth; // update its end-depth
+        }
+        else {
+          delta = ConsumeBoolOp(cutstr, i, ret[expression_index].boolop);
+          if (delta < 0) return FailTokenize(cutstr, i);
+          i += delta;
+          state = StartExpression; 
+        }
         break;
     }
+  }
+
+  if (depth != 0) {
+    return FailTokenize(cutstr, i);
   }
 
   if (state != NextExpression) {
@@ -334,24 +401,47 @@ Value Token2Val(const Token &token) {
   else {
     ret.is_literal = false;
     TDataMember *data = NULL;
-    if (strncmp(token.str.c_str(), "track.", 6) == 0) {
+    TClass *reco_class = NULL;
+    std::vector<std::string> split_string {""};
+    for (char s: token.str) {
+      if (s == '.') {
+        split_string.push_back("");
+      }
+      else {
+        split_string[split_string.size()-1] += s;
+      }
+    } 
+    if (split_string[0] == "track") {
       ret.root.base_class = RVTrack; 
-      TClass *reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
-      data = reco_class->GetDataMember(token.str.substr(6).c_str());
+      reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
     }
-    else if (strncmp(token.str.c_str(), "event.", 6) == 0) {
+    else if (split_string[0] == "event") {
       ret.root.base_class = RVEvent;
-      TClass *reco_class = gClassTable->GetDict("numu::RecoEvent")(); 
-      data = reco_class->GetDataMember(token.str.substr(6).c_str());
+      reco_class = gClassTable->GetDict("numu::RecoEvent")(); 
     }
-    else if (strncmp(token.str.c_str(), "true_track.", 11) == 0) {
+    else if (split_string[0] == "true_track") {
       ret.root.base_class = RVTrueTrack;
-      TClass *reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
-      data = reco_class->GetDataMember(token.str.substr(11).c_str());
+      reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
     }
     else assert(false);
 
-    ret.root.offset = data->GetOffset();
+    unsigned offset = 0;
+    for (unsigned i = 1; i < split_string.size(); i++) {
+      data = reco_class->GetDataMember(split_string[i].c_str());
+      // end of loop, should be in basic type
+      if (i+1 == split_string.size()) assert(data->IsBasic() || data->IsEnum());
+      // otherwise, should not be in basic type
+      else assert(!(data->IsBasic() || data->IsEnum()));
+
+      // update the offset
+      offset += data->GetOffset();
+      // not end of loop, get the next class to recurse to
+      if (i+1 !=  split_string.size()) {
+        reco_class = gClassTable->GetDict(data->GetTypeName())();
+      }
+    }
+
+    ret.root.offset = offset;
     ret.root.size = data->GetUnitSize();
 
     std::string type = data->GetTypeName();
@@ -402,19 +492,23 @@ std::function<bool (const numu::RecoTrack &, const numu::RecoEvent &)> numu::Com
   }
 
   std::vector<std::function<bool (const numu::RecoTrack &, const numu::RecoEvent &)>> closures;
-  std::vector<BoolOp> boolops;
-
   std::vector<Expression> expressions = Tokenize(cutstr);
   if (!expressions.size()) return FailCompile();
 
-  // turn each expression into its own closure
+  std::vector<CompiledExpression> cexpressions;
+
+  // Compile each expression and build AST 
   for (unsigned i = 0; i < expressions.size(); i++) {
+    cexpressions.emplace_back();
     const Expression &exp = expressions[i];
     Value lhs = Token2Val(exp.lhs);
     Value rhs = Token2Val(exp.rhs);
     Comp comp = Token2Comp(exp.comp);
 
-    closures.push_back([lhs, rhs, comp](const numu::RecoTrack &track, const numu::RecoEvent &event) {
+    cexpressions[i].start_depth = exp.start_depth;
+    cexpressions[i].end_depth = exp.end_depth;
+
+    cexpressions[i].closure = [lhs, rhs, comp](const numu::RecoTrack &track, const numu::RecoEvent &event) {
       LiteralValue lit_lhs = MakeLiteral(lhs, track, event); 
       LiteralValue lit_rhs = MakeLiteral(rhs, track, event); 
       if (!lit_lhs.is_valid || !lit_rhs.is_valid) return false; 
@@ -424,22 +518,96 @@ std::function<bool (const numu::RecoTrack &, const numu::RecoEvent &)> numu::Com
       }
       assert(!lit_rhs.is_float);
       return DoComp(comp, lit_lhs.data_int, lit_rhs.data_int);
-    });
+    };
  
     if (i+1 < expressions.size()) { 
-      BoolOp op = Token2BoolOp(exp.boolop);
-      boolops.push_back(op);
+      cexpressions[i].boolop = Token2BoolOp(exp.boolop);
     }
   }
-  return [closures, boolops](const numu::RecoTrack &track, const numu::RecoEvent &event) {
-    for (unsigned i = 0; i < closures.size(); i++) {
-      bool this_ret = closures[i](track, event);
-      if (i == boolops.size()) return this_ret;
-      if (this_ret && boolops[i] == BOor) return true;
-      if (!this_ret && boolops[i] == BOand) return false;
+
+  // combine into a single closure
+  return [cexpressions](const numu::RecoTrack &track, const numu::RecoEvent &event) {
+    // empty expression -- always true 
+    if (cexpressions.size() == 0) return true;
+
+    unsigned i = 0;
+    bool ret = cexpressions[i].closure(track, event);
+    while (i+1 < cexpressions.size()) {
+      // try to short circuit
+      if ((ret && cexpressions[i].boolop == BOor) || (!ret && cexpressions[i].boolop == BOand)) {
+        int check_depth = cexpressions[i].end_depth;  
+        do {
+          i += 1;
+        } while (i < cexpressions.size() && check_depth >= cexpressions[i].end_depth);
+      }
+      // otherwise, evaluate the next expression
+      else {
+        i += 1;
+        ret = cexpressions[i].closure(track, event);
+      }
     }
+    // return the last value after short-circuiting
+    return ret;
   };
 }
 
+template <typename T>
+void Increment(std::vector<unsigned> &indices, const std::vector<std::vector<T>> &lists) {
+  for (unsigned i = 0; i < indices.size(); i++) {
+    indices[i] += 1;
+    if (indices[i] == lists[i].size()) {
+      indices[i] = 0;
+    }
+    else {
+      break;
+    }
+  }
+}
 
+bool NotZero(const std::vector<unsigned> &indices) {
+  for (unsigned i = 0; i < indices.size(); i++) {
+    if (indices[i] != 0) return true;
+  }
+  return false;
+}
 
+std::vector<std::string> numu::MultiplyNames(const std::vector<std::vector<std::string>> &strings) {
+  std::vector<std::string> ret;
+  std::vector<unsigned> indices (strings.size(), 0);
+  do {
+    std::string this_str;
+    for (unsigned i = 0; i < indices.size(); i++) {
+      this_str += strings[i][indices[i]] + "_";
+    }
+    ret.push_back(this_str);
+    Increment(indices, strings);
+  } while (NotZero(indices));
+  return ret;
+}
+
+std::vector<numu::TrackSelector> numu::MultiplySelectors(const std::vector<std::vector<std::string>> &track_selector_strings) {
+  std::vector<numu::TrackSelector> ret;
+  std::vector<std::vector<numu::TrackSelector>> track_selectors;
+  for (unsigned i = 0; i < track_selector_strings.size(); i++) {
+    track_selectors.emplace_back();
+    for (unsigned j = 0; j < track_selector_strings[i].size(); j++) {
+      track_selectors[i].push_back(numu::Compile(track_selector_strings[i][j]));
+    }
+  }
+  std::vector<unsigned> indices (track_selectors.size(), 0);
+  do {
+    std::vector<numu::TrackSelector> selectors;
+    for (unsigned i = 0; i < indices.size(); i++) {
+      selectors.push_back(track_selectors[i][indices[i]]);
+    }
+    ret.push_back(
+      [selectors](const numu::RecoTrack &track, const numu::RecoEvent &event) {
+        for (const numu::TrackSelector &selector: selectors) {
+          if (!selector(track, event)) return false;
+        }
+        return true;
+      });
+    Increment(indices, track_selectors);
+  } while (NotZero(indices));
+  return ret;
+}
