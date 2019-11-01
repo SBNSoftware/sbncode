@@ -342,7 +342,6 @@ protected:
  * \return The matchinf information of this track to truth information
  */
   numu::TrackTruthMatch MatchTrack2Truth(size_t track_id);
-  double TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
 
   /**
  * Fill up the Optical information containers from the gallery Event

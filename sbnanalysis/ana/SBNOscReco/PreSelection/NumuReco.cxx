@@ -76,26 +76,38 @@ numu::Wall GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, con
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
   assert(intersections.size() == 2);
+
+  // get the intersection point closer to p0
+  int intersection_i = ((intersections[0] - p0).Mag() < (intersections[1] - p0).Mag()) ? 0 : 1;
+  
+
   double eps = 1e-3;
-  if (abs(intersections[0].X() - volume.MinX()) < eps) {
+  if (abs(intersections[intersection_i].X() - volume.MinX()) < eps) {
+    //std::cout << "Left\n";
     return numu::wLeft;
   }
-  else if (abs(intersections[0].X() - volume.MaxX()) < eps) {
+  else if (abs(intersections[intersection_i].X() - volume.MaxX()) < eps) {
+    //std::cout << "Right\n";
     return numu::wRight;
   }
-  else if (abs(intersections[0].Y() - volume.MinY()) < eps) {
+  else if (abs(intersections[intersection_i].Y() - volume.MinY()) < eps) {
+    //std::cout << "Bottom\n";
     return numu::wBottom;
   }
-  else if (abs(intersections[0].Y() - volume.MaxY()) < eps) {
+  else if (abs(intersections[intersection_i].Y() - volume.MaxY()) < eps) {
+    //std::cout << "Top\n";
     return numu::wTop;
   }
-  else if (abs(intersections[0].Z() - volume.MinZ()) < eps) {
+  else if (abs(intersections[intersection_i].Z() - volume.MinZ()) < eps) {
+    //std::cout << "Front\n";
     return numu::wFront;
   }
-  else if (abs(intersections[0].Z() - volume.MaxZ()) < eps) {
+  else if (abs(intersections[intersection_i].Z() - volume.MaxZ()) < eps) {
+    //std::cout << "Back\n";
     return numu::wBack;
   }
   else assert(false);
+  //std::cout << "None\n";  
 
   return numu::wNone;
 }
@@ -268,35 +280,6 @@ void NumuReco::Finalize() {
  fOutputFile->cd();
  // finish histograms
  _histograms.Write();
-}
-
-double NumuReco::TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
-  // get handle to back tracker
-  cheat::BackTracker *bt = fProviderManager->GetBackTrackerProvider();
-
-  // get all the IDE's of the truth track
-  const std::vector<const sim::IDE*> mcparticle_ides = bt->TrackIdToSimIDEs_Ps(mcparticle_id);
-  // sum it up
-  double mcparticle_energy = 0.;
-  for (auto const &ide: mcparticle_ides) {
-    mcparticle_energy += ide->energy;
-  }
-
-  // get all the hits of the reco track that match the truth track
-  const std::vector<art::Ptr<recob::Hit>> matched_reco_track_hits = bt->TrackIdToHits_Ps(mcparticle_id, reco_track_hits);
-
-  // for each of the hits get the energy coming from the track
-  double matched_reco_energy = 0.;
-  for (auto const &matched_reco_track_hit: matched_reco_track_hits) {
-    std::vector<sim::IDE> this_hit_IDEs = bt->HitToAvgSimIDEs(*matched_reco_track_hit);
-    for (auto const &ide: this_hit_IDEs) {
-      if (ide.trackID == mcparticle_id) {
-        matched_reco_energy += ide.energy;
-      }
-    }
-  }
-
-  return matched_reco_energy / mcparticle_energy;
 }
 
 event::RecoInteraction NumuReco::CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight) {
@@ -1103,7 +1086,7 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
   // We got a match! Try to identify it to an origin
   art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(mcp_track_id);
   // and calculate the completion
-  double completion = TrackCompletion(mcp_track_id, hits);
+  double completion = SBNRecoUtils::TrackCompletion(*fProviderManager, mcp_track_id, hits);
 
   numu::TrackTruthMatch ret;
   // ret.mctruth = truth.get();

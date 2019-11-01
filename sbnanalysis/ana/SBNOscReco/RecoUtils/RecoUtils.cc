@@ -181,5 +181,32 @@ double SBNRecoUtils::CalculateTrackLength(const core::ProviderManager &manager, 
   return length;
 }
 
+double SBNRecoUtils::TrackCompletion(const core::ProviderManager &manager, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
+  // get handle to back tracker
+  cheat::BackTracker *bt = manager.GetBackTrackerProvider();
 
+  // get all the IDE's of the truth track
+  const std::vector<const sim::IDE*> mcparticle_ides = bt->TrackIdToSimIDEs_Ps(mcparticle_id);
+  // sum it up
+  double mcparticle_energy = 0.;
+  for (auto const &ide: mcparticle_ides) {
+    mcparticle_energy += ide->energy;
+  }
+
+  // get all the hits of the reco track that match the truth track
+  const std::vector<art::Ptr<recob::Hit>> matched_reco_track_hits = bt->TrackIdToHits_Ps(mcparticle_id, reco_track_hits);
+
+  // for each of the hits get the energy coming from the track
+  double matched_reco_energy = 0.;
+  for (auto const &matched_reco_track_hit: matched_reco_track_hits) {
+    std::vector<sim::IDE> this_hit_IDEs = bt->HitToAvgSimIDEs(*matched_reco_track_hit);
+    for (auto const &ide: this_hit_IDEs) {
+      if (ide.trackID == mcparticle_id) {
+        matched_reco_energy += ide.energy;
+      }
+    }
+  }
+
+  return matched_reco_energy / mcparticle_energy;
+}
 
