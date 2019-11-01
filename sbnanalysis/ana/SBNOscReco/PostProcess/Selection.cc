@@ -98,7 +98,8 @@ namespace SBNOsc {
     // update each reco Interaction to a smarter primary track selector
     unsigned i = 0;
     while (i < fRecoEvent->reco.size()) {
-      int primary_track = numu::SelectLongestIDdMuon(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+      // int primary_track = numu::SelectLongestIDdMuon(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+      int primary_track = numu::SelectLongestTrack(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
 
       // remove vertices without a good primary track
       if (primary_track < 0) {
