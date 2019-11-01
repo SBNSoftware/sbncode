@@ -3,9 +3,11 @@
 
 #include <vector>
 #include <string>
+#include <tuple>
 
 #include "../Histograms/HistoList.h"
 #include "../Histograms/TrackHisto.h"
+#include "../Histograms/Profile.h"
 #include "../Histograms/InteractionHisto.h"
 #include "../Histograms/DynamicSelector.h"
 
@@ -19,7 +21,11 @@ namespace ana {
  */
 struct Histograms : public HistoList {
 
-  void Initialize(const std::string &prefix="", std::vector<std::string> track_histo_types={});
+  void Initialize(
+  const std::string &prefix, 
+  const std::vector<std::string> &track_histo_types, 
+  const std::vector<std::string> &track_profile_types,
+  const std::vector<std::tuple<unsigned, float, float>> &track_profile_xranges);
 
   /**
  * Fill all of the histograms with an event
@@ -28,7 +34,13 @@ struct Histograms : public HistoList {
  * \param cuts The configured Cuts classes
  * \param fill_all_tracks Whether to fill all track histograms or just the primary track histograms
  */
-  void Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cuts, const std::vector<numu::TrackSelector> &selectors, bool fill_all_tracks=true);
+  void Fill(
+  const numu::RecoEvent &event, 
+  const event::Event &core, 
+  const Cuts &cutmaker, 
+  const std::vector<numu::TrackSelector> &selectors, 
+  const std::vector<numu::ROOTValue> &xvalues, 
+  bool fill_all_tracks=true);
 
   /**
  *  Turn the InteractionMode enum into a string for (e.g.) histogram names.
@@ -59,7 +71,7 @@ struct Histograms : public HistoList {
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
-
+  std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
 
 };
 

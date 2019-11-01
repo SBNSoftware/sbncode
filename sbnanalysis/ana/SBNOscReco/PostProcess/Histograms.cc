@@ -9,7 +9,13 @@
 namespace ana {
   namespace SBNOsc {
 
-void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, const Cuts &cutmaker, const std::vector<numu::TrackSelector> &selectors, bool fill_all_tracks) { 
+void Histograms::Fill(
+  const numu::RecoEvent &event, 
+  const event::Event &core, 
+  const Cuts &cutmaker, 
+  const std::vector<numu::TrackSelector> &selectors, 
+  const std::vector<numu::ROOTValue> &xvalues, 
+  bool fill_all_tracks) { 
 
   if (fill_all_tracks) {
     for (const auto &track_pair: event.reco_tracks) {
@@ -35,6 +41,9 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
             if (cuts[cut_i]) {
               fPrimaryTracks[j][cut_i].Fill(track, event.true_tracks);
+              for (unsigned k = 0; k < xvalues.size(); k++) {
+                fPrimaryTrackProfiles[j][k][cut_i].Fill(xvalues[k], track, event);
+              }
             }
           }
         }
@@ -64,9 +73,12 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
   }
 }
 
-void Histograms::Initialize(const std::string &prefix, std::vector<std::string> track_histo_types) {
+void Histograms::Initialize(
+  const std::string &prefix, 
+  const std::vector<std::string> &track_histo_types, 
+  const std::vector<std::string> &track_profile_types,
+  const std::vector<std::tuple<unsigned, float, float>> &track_profile_xranges) {
 
-  if (track_histo_types.size() == 0) track_histo_types = { "" };
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       std::string postfix = mode2Str(mode) + prefix + histoNames[i];
@@ -82,6 +94,16 @@ void Histograms::Initialize(const std::string &prefix, std::vector<std::string> 
     fAllTracks[i].Initialize(prefix + "All_" + track_histo_types[i]);
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
       fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + track_histo_types[i] + "_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+j]));
+
+      for (unsigned k = 0; k < track_profile_types.size(); k++) {
+        unsigned n_bin;
+        float xlo, xhi;
+        std::tie(n_bin, xlo, xhi) = track_profile_xranges[k];
+        fPrimaryTrackProfiles[i][k][j].Initialize(
+          prefix + "Primary_" + track_histo_types[i] + "_" + track_profile_types[k] + "_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+j]),
+          n_bin, xlo, xhi);
+      } 
+
     }
   }
 

@@ -65,6 +65,8 @@ private:
   std::vector<std::string> fTrackSelectorNames;
   std::vector<std::string> fTrajHistoNames;
 
+  std::vector<numu::ROOTValue> fTrackProfileValues;
+
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
 

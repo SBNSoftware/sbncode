@@ -54,6 +54,17 @@ namespace SBNOsc {
 
     fTrajHistoNames = numu::MultiplyNames(config->get<std::vector<std::vector<std::string>>>("TrajHistoNames", {{""}}));
 
+    std::vector<std::string> track_profile_values = config->get<std::vector<std::string>>("TrackProfileValues", {});
+    for (const std::string &name: track_profile_values) {
+      fTrackProfileValues.push_back(numu::MakeROOTValue(name));
+    }
+
+    std::vector<std::string> track_profile_value_names = config->get<std::vector<std::string>>("TrackProfileValueNames", {});
+    std::vector<std::tuple<unsigned, float, float>> track_profile_xranges =  config->get<std::vector<std::tuple<unsigned, float, float>>>("TrackProfileXRanges", {});
+
+    assert(track_profile_value_names.size() == track_profile_xranges.size());
+    assert(fTrackProfileValues.size() == track_profile_xranges.size());
+
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
       fFileTypes = config->get<std::vector<std::string>>("FileTypes");
@@ -63,9 +74,9 @@ namespace SBNOsc {
     fROC.Initialize();
     fRecoEvent = NULL;
 
-    fHistograms.Initialize("",  fTrackSelectorNames); 
-    fNeutrinoHistograms.Initialize("Neutrino", fTrackSelectorNames);
-    fCosmicHistograms.Initialize("Cosmic", fTrackSelectorNames);
+    fHistograms.Initialize("",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
+    fNeutrinoHistograms.Initialize("Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    fCosmicHistograms.Initialize("Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
 
   }
 
@@ -126,10 +137,30 @@ namespace SBNOsc {
       i += 1;
     }
 
+    for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
+      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==2/*kCosmicRay*/) {
+        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 1 /*wTop*/) {
+          if (abs(reco.primary_track.start.Y()) < 50. && abs(reco.primary_track.end.Y()) < 50.) {
+            std::cout << "Weird Cosmic track\n"; 
+            std::cout << "vertex: " << reco.position.X() << " " << reco.position.Y() << " " << reco.position.Z() << std::endl;
+            std::cout << "start: " << reco.primary_track.start.X() << " " << reco.primary_track.start.Y() << " " << reco.primary_track.start.Z() << std::endl;
+            std::cout << "end: " << reco.primary_track.end.X() << " " << reco.primary_track.end.Y() << " " << reco.primary_track.end.Z() << std::endl;
+            std::cout << "length: " << reco.primary_track.length << std::endl;
+            std::cout << "True PDG: " << reco.primary_track.match.match_pdg << std::endl;
+            std::cout << "True Completion: " << reco.primary_track.match.completion << std::endl; 
+            const numu::RecoTrack &true_track = fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id);
+            std::cout << "True start: " << true_track.start.X() << " " << true_track.start.Y() << " " << true_track.start.Z() << std::endl;
+            std::cout << "True end: " << true_track.end.X() << " " << true_track.end.Y() << " " << true_track.end.Z() << std::endl;
+            std::cout << "True length: " << true_track.length << std::endl;
+          }
+        }
+      }
+    }
+
     // make sure no two vertices match to the same true neutrino interaction
     numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
 
-    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fFillAllTracks);
+    fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
     if (fDoNormalize) {
       if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);

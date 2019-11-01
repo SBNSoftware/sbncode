@@ -5,6 +5,11 @@
 #include "HistoList.h"
 #include "../Data/RecoEvent.h"
 
+class TH2D;
+
+namespace ana {
+ namespace SBNOsc {
+
 struct TrackProfiles : public HistoList {
   TH2D *range_bias;
   TH2D *range_var;
@@ -16,4 +21,7 @@ struct TrackProfiles : public HistoList {
   void Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi);
   void Fill(const numu::ROOTValue &val, const numu::RecoTrack &track, const numu::RecoEvent &event);
 };
+  }
+}
+
 #endif
