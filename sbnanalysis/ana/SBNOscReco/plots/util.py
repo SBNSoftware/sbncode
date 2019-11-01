@@ -103,7 +103,7 @@ def colors(index):
     return colors[index]
 
 def fillcolors(index):
-    colors = [ROOT.kGreen + 1, ROOT.kCyan -9 , ROOT.kBlue+1,  ROOT.kViolet, ROOT.kRed +2, ROOT.kYellow+3]
+    colors = [ROOT.kGreen + 1, ROOT.kCyan -9 , ROOT.kBlue+1,  ROOT.kViolet, ROOT.kRed +2, ROOT.kYellow+3, ROOT.kBlack]
     return colors[index]
 
 def comma_separated(inp):
@@ -113,7 +113,9 @@ def legend_position(inp):
     if inp == "ur":
         return [0.75,0.75,0.95,0.95]
     elif inp == "ul":
-        return [0.25,0.75,0.05,0.95]
+        return [0.35,0.75,0.15,0.95]
+    elif inp == "um":
+        return [0.4, 0.75, 0.6, 0.95]
     else:
         return [float(x) for x in inp.split(",")][:4]
 
