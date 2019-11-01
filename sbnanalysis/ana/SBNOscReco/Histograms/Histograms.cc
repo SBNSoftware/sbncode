@@ -33,7 +33,9 @@ void Histograms::Fill(const numu::RecoEvent &event, const event::Event &core, co
         bool select = selectors[j](track, event);
         if (select) {
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
-            fPrimaryTracks[j][cut_i].Fill(track, event.true_tracks, cutmaker);
+            if (cuts[cut_i]) {
+              fPrimaryTracks[j][cut_i].Fill(track, event.true_tracks, cutmaker);
+            }
           }
         }
       }
@@ -224,8 +226,8 @@ void TrackHistos::Initialize(const std::string &postfix) {
 
   TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., 600.);
 
-  TRACK_HISTO(border_y, 200, -200., 200.);
-  TRACK_HISTO(border_z, 100, 0., 500.); 
+  TRACK_HISTO(border_y, 400, -200., 200.);
+  TRACK_HISTO(border_z, 500, 0., 500.); 
   TRACK_HISTO(true_start_time, 100, -4000., 3000.);
 
   TRACK_HISTO(wall_enter, 7, -0.5, 6.5);
@@ -346,7 +348,7 @@ void TrackHistos::Fill(
 
     wall_enter->Fill(true_track.wall_enter);
     wall_exit->Fill(true_track.wall_exit);
-  
+    true_start_time->Fill(true_track.start_time);
   }
   else {
     completion->Fill(-0.5);

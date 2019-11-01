@@ -35,12 +35,13 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   {
     fhicl::ParameterSet dFV = \
      cfg.get<fhicl::ParameterSet>("containment_volume_inset");
-    double dy = dFV.get<double>("y");
+    double ytop = dFV.get<double>("ytop");
+    double ybottom = dFV.get<double>("ybottom");
     double zfront = dFV.get<double>("zfront");
     double zback = dFV.get<double>("zback");
     for (const geo::BoxBoundedGeo &geo: fConfig.active_volumes) {
       VolYZ contain;
-      contain.Y = {geo.MinY() + dy, geo.MaxY() - dy};
+      contain.Y = {geo.MinY() + ybottom, geo.MaxY() - ytop};
       contain.Z = {geo.MinZ() + zfront, geo.MaxZ() - zback};
       fConfig.containment_volumes.emplace_back(contain);
     }
@@ -82,8 +83,16 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool pass_length = fConfig.TrackLength < 0. || primary_track.length > fConfig.TrackLength
     && pass_crt_hit;
 
-  bool is_contained = primary_track.is_contained && fiducial && pass_crt_track && pass_crt_hit && pass_length;
+  bool is_contained = InContainment(primary_track.start) && InContainment(primary_track.end) && fiducial && pass_crt_track && pass_crt_hit && pass_length;
   bool single_interaction = event.reco.size() == 1 && pass_length;
+
+  bool crt_activity = is_contained;
+  for (const numu::CRTHit &crt_hit: event.in_time_crt_hits) {
+     if (TimeInSpill(crt_hit.time)) {
+       crt_activity = false;
+     }
+     if (!crt_activity) break;
+  }
 
   return {
     is_reco,
@@ -92,7 +101,8 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     pass_crt_hit,
     pass_length,
     is_contained,
-    single_interaction
+    single_interaction,
+    crt_activity
   };
 }
 

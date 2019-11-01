@@ -99,7 +99,7 @@ struct InteractionHistos {
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = 
   {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-   "Reco", "R_fid", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_single"}; //!< Names of histograms
+   "Reco", "R_fid", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_single", "R_crtactive"}; //!< Names of histograms
 };
 
 /**

@@ -16,7 +16,7 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 7; //!< total number of cuts
+  static const unsigned nCuts = 8; //!< total number of cuts
   static const unsigned nTruthCuts = 5; //!< Total number of truth cuts
   /**
  * Initialize this class.
