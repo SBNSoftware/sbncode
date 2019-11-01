@@ -22,12 +22,13 @@
 #include <TH3D.h>
 #include <TMatrixDSym.h>
 
-#include "../Histograms/Histograms.h"
-#include "../Histograms/TrajHistograms.h"
-#include "../Histograms/Cuts.h"
-#include "../Histograms/DynamicSelector.h"
+#include "Histograms.h"
+#include "Cuts.h"
 #include "Normalize.h"
 #include "ROC.h"
+
+#include "../Histograms/TrajHistograms.h"
+#include "../Histograms/DynamicSelector.h"
 #include "../Data/RecoEvent.h"
 
 class TTree;

@@ -267,20 +267,19 @@ protected:
  *  \param pandora_track The LArSoft track object
  *  \param track The track infromation from this module
  *
- *  \return A vector of FlashMatch object. The vector is empty is no match, and has
- *          one entry if there is a match.
+ *  \return Flash Match object
  */
-  std::vector<numu::FlashMatch> FlashMatching(const recob::Track &pandora_track, const numu::RecoTrack &track); 
+  numu::FlashMatch FlashMatching(const recob::Track &pandora_track, const numu::RecoTrack &track); 
+
   /**
  *  Returns whether a TPC track has a match to CRT information
  *  \param track The track information from this module
  *  \param pandora_track The LArSoft track object
  *  \param track_hits The list of hits associated with this track
  *
- *  \return A vector of CRTMatch objects. The vector is empty is no match, and has
- *          one entry if there is a match.
+ *  \return CRTMatch object
  */
-  std::vector<numu::CRTMatch> CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
+  numu::CRTMatch CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
 
   void ApplyCosmicID(numu::RecoTrack &track);
 

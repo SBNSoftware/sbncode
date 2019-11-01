@@ -34,19 +34,13 @@ void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts cuts, const numu::RecoEvent 
     const numu::RecoTrack &track = event.reco_tracks.at(reco.slice.primary_track_index);
     
     // CRT stuff
-    if (track.crt_match.size() > 0) {
-      if (track.crt_match[0].track.present) {
-        crt_track_angle.FillNeutrino(is_signal, track.crt_match[0].track.angle);
-        crt_hit_distance.FillAlwaysNeutrino(is_signal);
-      }
-      else if (track.crt_match[0].hit.present && !cuts.TimeInSpill(track.crt_match[0].hit.time)) {
-        crt_track_angle.FillNeverNeutrino(is_signal);
-        crt_hit_distance.FillNeutrino(is_signal, track.crt_match[0].hit.distance);
-      }
-      else {
-        crt_track_angle.FillNeverNeutrino(is_signal);
-        crt_hit_distance.FillNeverNeutrino(is_signal);
-      }
+    if (track.crt_match.track.present) {
+      crt_track_angle.FillNeutrino(is_signal, track.crt_match.track.angle);
+      crt_hit_distance.FillAlwaysNeutrino(is_signal);
+    }
+    else if (track.crt_match.hit.present && !cuts.TimeInSpill(track.crt_match.hit.time)) {
+      crt_track_angle.FillNeverNeutrino(is_signal);
+      crt_hit_distance.FillNeutrino(is_signal, track.crt_match.hit.distance);
     }
     else {
       crt_track_angle.FillNeverNeutrino(is_signal);

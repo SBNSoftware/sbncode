@@ -71,8 +71,8 @@ struct RecoTrack {
   float dist_to_vertex; //!< Distance of track start point to interaction vertex (if it exists) [cm]
   TrackTruthMatch match; //!< Truth matching information
   
-  std::vector<CRTMatch> crt_match; //!< Optional CRTMatch -- vector has 1 or 0 entries
-  std::vector<FlashMatch> flash_match; //!< Optional FlashMatch -- vector has 1 or 0 entries
+  CRTMatch crt_match; //!< CRTMatch
+  FlashMatch flash_match; //!< Flash matching info
   int ID; //!< ID/index of this track. Does not necessarily correspond to the Pandora index
   
   float stopping_chisq_start; //!< Chi2 fraction of stopping vs. not-stopping hypothesis to track start points

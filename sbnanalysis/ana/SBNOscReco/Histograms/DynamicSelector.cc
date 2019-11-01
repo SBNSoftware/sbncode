@@ -59,32 +59,10 @@ void numu::PrintClasses() {
   std::cout << "data mem: " << reco_track_garbo << std::endl;
 }
 
-struct LiteralValue {
-  bool is_float;
-  bool is_valid;
-  int data_int;
-  float data_num;
-};
-
-enum ROOTValueClass {
-  RVTrack, RVTrueTrack, RVEvent
-};
-
-enum ROOTValueType {
-  RVBool, RVFloat, RVInteger, RVUnsigned,
-};
-
-struct ROOTValue {
-  ROOTValueClass base_class;
-  int offset;
-  int size;
-  ROOTValueType type;
-};
-
 struct Value {
   bool is_literal;
-  LiteralValue literal;
-  ROOTValue root;
+  numu::LiteralValue literal;
+  numu::ROOTValue root;
 };
 
 enum BoolOp {
@@ -327,53 +305,123 @@ Comp Token2Comp(const Token &token) {
   assert(false);
 }
 
-LiteralValue MakeLiteral(const Value &value, const numu::RecoTrack &track, const numu::RecoEvent &event) { 
-  LiteralValue ret;
+numu::LiteralValue numu::MakeROOTLiteral(const numu::ROOTValue &value, const numu::RecoTrack &track, const numu::RecoEvent &event) {
+  numu::LiteralValue ret;
+  ret.is_valid = true;
+  const uint8_t *dataptr = NULL;
+  switch (value.base_class) {
+    case RVTrack:
+      dataptr = ((const uint8_t *)&track) + value.offset;
+      break;
+    case RVTrueTrack:
+      if (track.match.has_match) {
+        dataptr = ((const uint8_t *)&event.true_tracks.at(track.match.mcparticle_id)) + value.offset;
+      }
+      break;
+    case RVEvent:
+      dataptr = ((const uint8_t *)&event) + value.offset;
+      break;
+  }
+
+  if (dataptr == NULL) {
+    ret.is_valid = false;
+    return ret;
+  }
+
+  switch (value.type) {
+    case RVBool:
+      ret.is_float = false;
+      ret.data_int = *dataptr & 1;
+      break;
+    case RVFloat:
+      ret.is_float = true;
+      ret.data_num = *(const float *)dataptr;
+      break;
+    case RVInteger:
+      ret.is_float = false;
+      ret.data_int = *(const int *)dataptr;
+      break;
+    case RVUnsigned: 
+      assert(value.size == 4);
+      ret.is_float = false; 
+      ret.data_int = *(const unsigned *)dataptr;
+      break;
+  }
+  return ret;
+}
+
+numu::LiteralValue MakeLiteral(const Value &value, const numu::RecoTrack &track, const numu::RecoEvent &event) { 
   if (value.is_literal) {
-    ret = value.literal;
+    return value.literal;
   }
   else {
-    ret.is_valid = true;
-    const uint8_t *dataptr = NULL;
-    switch (value.root.base_class) {
-      case RVTrack:
-        dataptr = ((const uint8_t *)&track) + value.root.offset;
-        break;
-      case RVTrueTrack:
-        if (track.match.has_match) {
-          dataptr = ((const uint8_t *)&event.true_tracks.at(track.match.mcparticle_id)) + value.root.offset;
-        }
-        break;
-      case RVEvent:
-        dataptr = ((const uint8_t *)&event) + value.root.offset;
-        break;
-    }
+    return MakeROOTLiteral(value.root, track, event);
+  }
+}
 
-    if (dataptr == NULL) {
-      ret.is_valid = false;
-      return ret;
-    }
+numu::ROOTValue numu::MakeROOTValue(const std::string &name) {
+  numu::ROOTValue ret;
 
-    switch (value.root.type) {
-      case RVBool:
-        ret.is_float = false;
-        ret.data_int = *dataptr & 1;
-        break;
-      case RVFloat:
-        ret.is_float = true;
-        ret.data_num = *(const float *)dataptr;
-        break;
-      case RVInteger:
-        ret.is_float = false;
-        ret.data_int = *(const int *)dataptr;
-        break;
-      case RVUnsigned: 
-        assert(value.root.size == 4);
-        ret.is_float = false; 
-        ret.data_int = *(const unsigned *)dataptr;
-        break;
+  TDataMember *data = NULL;
+  TClass *reco_class = NULL;
+  std::vector<std::string> split_string {""};
+  for (char s: name) {
+    if (s == '.') {
+      split_string.push_back("");
+    }
+    else {
+      split_string[split_string.size()-1] += s;
+    }
+  } 
+  if (split_string[0] == "track") {
+    ret.base_class = RVTrack; 
+    reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
+  }
+  else if (split_string[0] == "event") {
+    ret.base_class = RVEvent;
+    reco_class = gClassTable->GetDict("numu::RecoEvent")(); 
+  }
+  else if (split_string[0] == "true_track") {
+    ret.base_class = RVTrueTrack;
+    reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
+  }
+  else assert(false);
+
+  unsigned offset = 0;
+  for (unsigned i = 1; i < split_string.size(); i++) {
+    data = reco_class->GetDataMember(split_string[i].c_str());
+    // end of loop, should be in basic type
+    if (i+1 == split_string.size()) assert(data->IsBasic() || data->IsEnum());
+    // otherwise, should not be in basic type
+    else assert(!(data->IsBasic() || data->IsEnum()));
+
+    // update the offset
+    offset += data->GetOffset();
+    // not end of loop, get the next class to recurse to
+    if (i+1 !=  split_string.size()) {
+      reco_class = gClassTable->GetDict(data->GetTypeName())();
     }
   }
+
+  ret.offset = offset;
+  ret.size = data->GetUnitSize();
+
+  std::string type = data->GetTypeName();
+  bool is_enum = data->IsEnum();
+  if (type == "float") {
+    ret.type = RVFloat;
+  }
+  else if (type == "unsigned" || is_enum) {
+    ret.type = RVUnsigned;
+  }
+  else if (type == "int") {
+    ret.type = RVInteger;
+  }
+  else if (type == "bool") {
+    ret.type = RVBool;
+  }
+  else assert(false);
+
   return ret;
 }
 
@@ -401,65 +449,7 @@ Value Token2Val(const Token &token) {
   // Compile a ROOT object
   else {
     ret.is_literal = false;
-    TDataMember *data = NULL;
-    TClass *reco_class = NULL;
-    std::vector<std::string> split_string {""};
-    for (char s: token.str) {
-      if (s == '.') {
-        split_string.push_back("");
-      }
-      else {
-        split_string[split_string.size()-1] += s;
-      }
-    } 
-    if (split_string[0] == "track") {
-      ret.root.base_class = RVTrack; 
-      reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
-    }
-    else if (split_string[0] == "event") {
-      ret.root.base_class = RVEvent;
-      reco_class = gClassTable->GetDict("numu::RecoEvent")(); 
-    }
-    else if (split_string[0] == "true_track") {
-      ret.root.base_class = RVTrueTrack;
-      reco_class = gClassTable->GetDict("numu::RecoTrack")(); 
-    }
-    else assert(false);
-
-    unsigned offset = 0;
-    for (unsigned i = 1; i < split_string.size(); i++) {
-      data = reco_class->GetDataMember(split_string[i].c_str());
-      // end of loop, should be in basic type
-      if (i+1 == split_string.size()) assert(data->IsBasic() || data->IsEnum());
-      // otherwise, should not be in basic type
-      else assert(!(data->IsBasic() || data->IsEnum()));
-
-      // update the offset
-      offset += data->GetOffset();
-      // not end of loop, get the next class to recurse to
-      if (i+1 !=  split_string.size()) {
-        reco_class = gClassTable->GetDict(data->GetTypeName())();
-      }
-    }
-
-    ret.root.offset = offset;
-    ret.root.size = data->GetUnitSize();
-
-    std::string type = data->GetTypeName();
-    bool is_enum = data->IsEnum();
-    if (type == "float") {
-      ret.root.type = RVFloat;
-    }
-    else if (type == "unsigned" || is_enum) {
-      ret.root.type = RVUnsigned;
-    }
-    else if (type == "int") {
-      ret.root.type = RVInteger;
-    }
-    else if (type == "bool") {
-      ret.root.type = RVBool;
-    }
-    else assert(false);
+    ret.root = numu::MakeROOTValue(token.str);
   }
 
   return ret;
@@ -512,8 +502,8 @@ std::function<bool (const numu::RecoTrack &, const numu::RecoEvent &)> numu::Com
     cexpressions[i].end_depth = exp.end_depth;
 
     cexpressions[i].closure = [lhs, rhs, comp](const numu::RecoTrack &track, const numu::RecoEvent &event) {
-      LiteralValue lit_lhs = MakeLiteral(lhs, track, event); 
-      LiteralValue lit_rhs = MakeLiteral(rhs, track, event); 
+      numu::LiteralValue lit_lhs = MakeLiteral(lhs, track, event); 
+      numu::LiteralValue lit_rhs = MakeLiteral(rhs, track, event); 
       if (!lit_lhs.is_valid || !lit_rhs.is_valid) return false; 
       if (lit_lhs.is_float) {
         assert(lit_rhs.is_float);

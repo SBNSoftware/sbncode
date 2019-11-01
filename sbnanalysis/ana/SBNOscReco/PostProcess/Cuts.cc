@@ -1,5 +1,5 @@
 #include "Cuts.h"
-#include "Derived.h"
+#include "../Histograms/Derived.h"
 #include "../RecoUtils/GeoUtil.h"
 
 namespace ana {
@@ -107,18 +107,16 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 }
 
 bool Cuts::HasCRTTrackMatch(const numu::RecoTrack &track) const {
-  if (track.crt_match.size() == 0) return false;
-  return track.crt_match[0].track.present && (fConfig.CRTTrackAngle < 0. || track.crt_match[0].track.angle < fConfig.CRTTrackAngle);
+  return track.crt_match.track.present && (fConfig.CRTTrackAngle < 0. || track.crt_match.track.angle < fConfig.CRTTrackAngle);
 }
 
 bool Cuts::HasCRTHitMatch(const numu::RecoTrack &track) const {
-  if (track.crt_match.size() == 0) return false;
-  return track.crt_match[0].hit.present && (fConfig.CRTHitDist < 0. || track.crt_match[0].hit.distance < fConfig.CRTHitDist);
+  return track.crt_match.hit.present && (fConfig.CRTHitDist < 0. || track.crt_match.hit.distance < fConfig.CRTHitDist);
 }
 
 float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
-  if (HasCRTTrackMatch(track)) return track.crt_match[0].track.time;
-  if (HasCRTHitMatch(track)) return track.crt_match[0].hit.time;
+  if (HasCRTTrackMatch(track)) return track.crt_match.track.time;
+  if (HasCRTHitMatch(track)) return track.crt_match.hit.time;
   return -99999;
 }
 

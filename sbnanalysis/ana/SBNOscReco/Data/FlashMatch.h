@@ -6,6 +6,7 @@ namespace numu {
  * Object for flash match to TPC track
  */
 struct FlashMatch {
+  bool present;
   float match_time; //!< [us] PE weighted average of all matching hit times.
   float match_time_first; //!< [us] First matching hit time.
   float match_time_width; //!< [us] Width of hit match. Currently not set.

@@ -1326,7 +1326,7 @@ void NumuReco::CollectCRTInformation(const gallery::Event &ev) {
     NULL;
 }
 
-std::vector<numu::CRTMatch> NumuReco::CRTMatching(
+numu::CRTMatch NumuReco::CRTMatching(
    const numu::RecoTrack &track,
    const recob::Track &pandora_track, 
    const std::vector<art::Ptr<recob::Hit>> &hits) {
@@ -1355,8 +1355,8 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
   // try to match a hit
   std::pair<sbnd::crt::CRTHit, double> hit_pair = std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
   if (_has_crt_hits) {
-    if (_config.CRTHitinOpHitRange && track.flash_match.size()) {
-      const numu::FlashMatch &match = track.flash_match[0];
+    if (_config.CRTHitinOpHitRange && track.flash_match.present) {
+      const numu::FlashMatch &match = track.flash_match;
       double time_width = (match.match_time_width + _config.CRT2OPTimeWidth) / 2;
       std::pair<double, double> time_range; 
       time_range.first = match.match_time_first - time_width;
@@ -1382,7 +1382,7 @@ std::vector<numu::CRTMatch> NumuReco::CRTMatching(
     match.hit.distance = -99999.;
   }
  
-  return {match};
+  return match;
 }
 
 void NumuReco::CollectPMTInformation(const gallery::Event &ev) {
@@ -1412,13 +1412,16 @@ void NumuReco::CollectPMTInformation(const gallery::Event &ev) {
 }
 
 
-std::vector<numu::FlashMatch> NumuReco::FlashMatching(
+numu::FlashMatch NumuReco::FlashMatching(
   const recob::Track &pandora_track,
   const numu::RecoTrack &track) {
 
+  numu::FlashMatch ret;
+  ret.present = false;
+
   // don't run if back tracker is not setup
   if (fProviderManager->GetPhotonBackTrackerProvider() == NULL) {
-    return {};
+    return ret;
   }
 
   // see if we can do the match
@@ -1444,11 +1447,11 @@ std::vector<numu::FlashMatch> NumuReco::FlashMatching(
         numu::FlashMatch match;
         match.match_time = match_time;
         match.match_time_first = min_time;
-        return {match};
+        return match;
       }
     }
   }
-  return {};
+  return ret;
 }
 
 bool NumuReco::InBeamSpill(float time) {

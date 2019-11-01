@@ -112,6 +112,17 @@ namespace SBNOsc {
       // re-do truth matching
       fRecoEvent->reco[i].match = numu::InteractionTruthMatch(fRecoEvent->truth, fRecoEvent->reco_tracks, fRecoEvent->reco[i]);
 
+      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(primary_track); 
+      // refine CRT information on primary track
+      if (!fCuts.HasCRTHitMatch(track)) {
+        track.crt_match.hit.present = false;
+      }
+      if (!fCuts.HasCRTTrackMatch(track)) {
+        track.crt_match.track.present = false;
+      }
+
+   
+      fRecoEvent->reco[i].primary_track = fRecoEvent->reco_tracks.at(primary_track);
       i += 1;
     }
 
