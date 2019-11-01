@@ -1,9 +1,3 @@
 #include "gallery_services_sbnd.fcl"
 
-services.DetectorPropertiesService.NumberTimeSamples:  7500 #microseconds
-services.DetectorPropertiesService.ReadOutWindowSize: 7500
-
-services.DetectorClocksService.G4RefTime: -2.75e3
-services.DetectorClocksService.TriggerOffsetTPC:  -1.25e3
-services.DetectorClocksService.DefaultTrigTime:   2750.
-services.DetectorClocksService.DefaultBeamTime:   2750.
+#include "3drift_services_sbnd.fcl"

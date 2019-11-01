@@ -12,10 +12,18 @@ fiducial_volume_inset: {
   zback: 5
 }
 
+containment_volume_inset: {
+  ytop: 2
+  ybottom: 0
+  y: 5
+  zfront: 0
+  zback: 5
+}
+
 CRTHitDistance: 35
 Cuts: {
    fiducial_volume_inset: @local::fiducial_volume_inset
-   containment_volume_inset: @local::fiducial_volume_inset
+   containment_volume_inset: @local::containment_volume_inset
 }
 
 pdg_selectors: ["",
@@ -59,16 +67,6 @@ TrackSelectorNames: [
   @local::interactions,
   @local::walls
 ]
-
-#TrackSelectors: ["(1==1&&(0==1||0==0||0==2)||(1==2))", "(((0==1||1==1)&&(1==1)||(1==1||0==1))&&(1==1&&0==1))",  "(((1==1||1==0)||1==1)||(1==1)||(1==1||0==1))&&(1==1&&0==1)"]
-#TrackSelectorNames: ["one", "two", "three"]
-
-#TrackSelectors: ["true_track.is_contained==1", "true_track.is_contained==0", "", "1==5678"]
-
-#TrackSelectorNames: ["Contained", "Exiting", "true", "false"]
-
-#TrackSelectors: ["track.length<50.", "true_track.is_contained==1", "true_track.wall_enter==0"]
-#TrackSelectorNames: ["short", "contained", "contained2"]
 
 FillAllTracks: false
 
