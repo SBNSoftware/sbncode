@@ -92,7 +92,7 @@ enum BoolOp {
 };
 
 enum Comp {
-  Ceq, Cleq, Cgeq, Clt, Cgt
+  Ceq, Cneq, Cleq, Cgeq, Clt, Cgt
 };
 
 
@@ -173,7 +173,7 @@ int ConsumeComparison(const std::string &str, unsigned index, Token &token) {
   std::string one = str.substr(index, 1);
   std::string two = index+1 < str.size() ? str.substr(index, 2) : std::string();
 
-  if (two == "==" || two == "<=" || two == ">=") {
+  if (two == "==" || two == "<=" || two == ">=" || two == "!=") {
     token.str = two;
     token.type = TComp;
     return 2;
@@ -319,6 +319,7 @@ BoolOp Token2BoolOp(const Token &token) {
 
 Comp Token2Comp(const Token &token) {
   if (token.str == "==") return Ceq;
+  else if (token.str == "!=") return Cneq;
   else if (token.str == "<=") return Cleq;
   else if (token.str == ">=") return Cgeq;
   else if (token.str == "<") return Clt;
@@ -469,6 +470,8 @@ bool DoComp(Comp comp, const T &lhs, const T &rhs) {
   switch (comp) {
     case Ceq:   
       return lhs == rhs;
+    case Cneq:
+      return lhs != rhs;
     case Cleq:
       return lhs <= rhs;
     case Cgeq:
