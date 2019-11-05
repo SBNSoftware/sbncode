@@ -5,11 +5,12 @@ import argparse
 
 def main(args):
     f = ROOT.TFile(args.input)
-    hists = [[util.resize_histo(args, f.Get(h)) for h in hlist] for hlist in args.hstack]
+    hists = [[h for h in hlist] for hlist in args.hstack]
+    util.validate_hists(args.hstack, hists)
+    hists = [[util.resize_histo(args, f.Get(h)) for h in hlist] for hlist in hists]
+
     canvas = ROOT.TCanvas("canvas", "Canvas", 250,100,700,500)
     hstack = ROOT.THStack()
-
-    util.validate_hists(args.hstack, hists)
 
     for i, hlist in enumerate(hists):
         h = hlist[0]
