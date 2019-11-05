@@ -12,18 +12,33 @@ fiducial_volume_inset: {
   zback: 5
 }
 
-containment_volume_inset: {
+cosmic_containment_volume_inset: {
+  #ytop: 50
   ytop: 2
-  ybottom: 0
+  ybottom: 2
+  zfront: 2
+  zback: 2
+}
+
+calorimetric_containment_volume_inset: {
+  ytop: 5
+  ybottom: 5
   y: 5
-  zfront: 0
+
+  zfront: 5
   zback: 5
+
+  xleft: 5
+  xright: 5
+  x: 5 
+
 }
 
 CRTHitDistance: 35
 Cuts: {
    fiducial_volume_inset: @local::fiducial_volume_inset
-   containment_volume_inset: @local::containment_volume_inset
+   cosmic_containment_volume_inset: @local::cosmic_containment_volume_inset
+   calorimetric_containment_volume_inset: @local::calorimetric_containment_volume_inset
 }
 
 pdg_selectors: ["",
@@ -37,6 +52,14 @@ pdg_selectors: ["",
   ]
 pdgs: ["all", "e", "mu", "pi", "k", "p", "nucl", "none"]
 
+primary_pdg_selectors: ["",
+   "track.match.has_match==1&&(track.match.match_pdg==13||track.match.match_pdg==-13)",
+   "track.match.has_match==1&&(track.match.match_pdg==211||track.match.match_pdg==-211)",
+   "track.match.has_match==1&&(track.match.match_pdg==2212||track.match.match_pdg==-2212)"
+]
+primary_pdgs: ["all", "mu", "pi", "p"]
+
+
 interaction_selectors: ["",
    "track.match.has_match==1&&track.match.mctruth_origin==2", // kCosmicRay
    "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
@@ -47,7 +70,13 @@ interaction_selectors: ["",
   ] 
 interactions: ["All", "Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"]
 
-wall_selectors: ["",
+neutrino_selectors: ["",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1"
+]
+neutrinos: ["All", "CC", "NC"]
+
+wall_selectors_enter: ["",
   "true_track.wall_enter==0",
   "true_track.wall_enter==1",
   "true_track.wall_enter==2",
@@ -56,17 +85,49 @@ wall_selectors: ["",
   "true_track.wall_enter==5",
   "true_track.wall_enter==6"
 ]
+wall_selectors_exit: ["",
+  "true_track.wall_exit==0",
+  "true_track.wall_exit==1",
+  "true_track.wall_exit==2",
+  "true_track.wall_exit==3",
+  "true_track.wall_exit==4",
+  "true_track.wall_exit==5",
+  "true_track.wall_exit==6"
+]
+wall_selectors_either: ["",
+  "true_track.wall_exit==0&&true_track.wall_enter==0",
+  "true_track.wall_exit==1||true_track.wall_enter==1",
+  "true_track.wall_exit==2||true_track.wall_enter==2",
+  "true_track.wall_exit==3||true_track.wall_enter==3",
+  "true_track.wall_exit==4||true_track.wall_enter==4",
+  "true_track.wall_exit==5||true_track.wall_enter==5",
+  "true_track.wall_exit==6||true_track.wall_enter==6"
+]
 walls: ["all", "no-wall", "top", "bottom", "left", "right", "front", "back"]
 
+true_contained_selectors: ["",
+  "true_track.is_contained==0",
+  "true_track.is_contained==1"
+]
+
+contained: ["all", "exiting", "contained"]
+
 TrackSelectors: [
-  @local::interaction_selectors,
-  @local::wall_selectors
+  @local::neutrino_selectors,
+  @local::true_contained_selectors,
+  @local::primary_pdg_selectors
 ]
 
 TrackSelectorNames: [
-  @local::interactions,
-  @local::walls
+  @local::neutrinos,
+  @local::contained,
+  @local::primary_pdgs
 ]
+
+TrackProfileValues: ["track.length"]
+TrackProfileValueNames: ["length"]
+
+TrackProfileXRanges: [ [50, 0., 500.]]
 
 FillAllTracks: false
 
