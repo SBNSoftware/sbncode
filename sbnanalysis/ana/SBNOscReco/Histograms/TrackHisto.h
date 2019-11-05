@@ -40,6 +40,7 @@ struct TrackHistos : public HistoList {
   TH1D *deposited_e_med_minus_truth;
 
   TH1D *length;
+  TH1D *reco_momentum;
   TH1D *is_contained;
 
   TH1D *completion; 
@@ -55,6 +56,7 @@ struct TrackHistos : public HistoList {
   TH2D *dQdx_length;
   TH1D *border_y;
   TH1D *border_z;
+  TH1D *border_x;
   TH1D *true_start_time;
 
   TH1D *wall_enter;
@@ -86,7 +88,6 @@ struct TrackHistos : public HistoList {
   void Fill(
     const numu::RecoTrack &track,
     const std::map<size_t, numu::RecoTrack> &true_tracks);
-  ~TrackHistos();
 
 };
   } // namespace SBNOSc

@@ -34,6 +34,7 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
   TRACK_HISTO(length, 100, 0., 500.);
+  TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
   
   TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
@@ -47,6 +48,7 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., 600.);
 
   TRACK_HISTO(border_y, 400, -200., 200.);
+  TRACK_HISTO(border_x, 400, -200., 200.);
   TRACK_HISTO(border_z, 500, 0., 500.); 
   TRACK_HISTO(true_start_time, 100, -4000., 3000.);
 
@@ -100,12 +102,12 @@ void TrackHistos::Fill(
 
   }
 	  
-  range_p->Fill(track.range_momentum_muon); 
-  double mcs_p_val = track.mcs_is_backward ? track.bwd_mcs_momentum_muon : track.fwd_mcs_momentum_muon;
-  mcs_p->Fill(mcs_p_val);
+  range_p->Fill(track.range_momentum); 
+  mcs_p->Fill(track.mcs_momentum);
   deposited_e_max->Fill(track.deposited_energy_max);
   
   length->Fill(track.length);
+  reco_momentum->Fill(track.momentum);
   is_contained->Fill(track.is_contained);
 
   dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
@@ -118,6 +120,16 @@ void TrackHistos::Fill(
   }
   else {
     border_y->Fill(track.end.Y());
+  }
+
+  if (std::min(abs(track.start.X() - border_x->GetBinLowEdge(1)), 
+               abs(track.start.X() - (border_x->GetBinLowEdge(border_x->GetNbinsX()) + border_x->GetBinWidth(border_x->GetNbinsX()))))
+   <  std::min(abs(track.end.X() - border_x->GetBinLowEdge(1)), 
+               abs(track.end.X() - (border_x->GetBinLowEdge(border_x->GetNbinsX()) + border_x->GetBinWidth(border_x->GetNbinsX()))))) {
+    border_x->Fill(track.start.X());
+  }
+  else {
+    border_x->Fill(track.end.X());
   }
 
   if (std::min(abs(track.start.Z() - border_z->GetBinLowEdge(1)), 
@@ -154,18 +166,18 @@ void TrackHistos::Fill(
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {
     const numu::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
-    range_p_minus_truth->Fill(track.range_momentum_muon - true_track.momentum);
-    mcs_p_minus_truth->Fill(mcs_p_val - true_track.momentum); 
+    range_p_minus_truth->Fill(track.range_momentum - true_track.momentum);
+    mcs_p_minus_truth->Fill(track.mcs_momentum - true_track.momentum); 
     deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
     deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
     deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
     
-    range_p_diff->Fill(true_track.momentum, track.range_momentum_muon - true_track.momentum);
-    mcs_p_diff->Fill(true_track.momentum, mcs_p_val - true_track.momentum);
+    range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
+    mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
     deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
     
-    range_p_comp->Fill(true_track.momentum, track.range_momentum_muon);
-    mcs_p_comp->Fill(true_track.momentum, mcs_p_val);
+    range_p_comp->Fill(true_track.momentum, track.range_momentum);
+    mcs_p_comp->Fill(true_track.momentum, track.mcs_momentum);
     deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
 
     completion->Fill(track.match.completion);

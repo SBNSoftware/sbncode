@@ -890,27 +890,38 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.deposited_energy = -1; // TODO: decide best deposited energy
 
     // calculator only has inputs for protons and muons
-    int track_mom_pdg = (this_track.pdgid == 13 || this_track.pdgid == 211) ? 13 : 2212;
-    this_track.range_momentum = _track_momentum_calculator->GetTrackMomentum(this_track.length, track_mom_pdg);
-
+    this_track.range_momentum_proton = _track_momentum_calculator->GetTrackMomentum(this_track.length, 2212);
     this_track.range_momentum_muon = _track_momentum_calculator->GetTrackMomentum(this_track.length, 13);
 
-    recob::MCSFitResult mcs_fit = _mcs_fitter->fitMcs(*track, this_track.pdgid);
-    this_track.fwd_mcs_momentum = mcs_fit.fwdMomentum();
-    this_track.fwd_mcs_momentum_err = mcs_fit.fwdMomUncertainty();
-    this_track.bwd_mcs_momentum = mcs_fit.bwdMomentum();
-    this_track.bwd_mcs_momentum_err = mcs_fit.bwdMomUncertainty();
-    this_track.mcs_is_backward = !mcs_fit.isBestFwd();
-
     recob::MCSFitResult mcs_fit_muon = _mcs_fitter->fitMcs(*track, 13);
-    this_track.fwd_mcs_momentum_muon = mcs_fit_muon.fwdMomentum();
-    this_track.fwd_mcs_momentum_muon_err = mcs_fit_muon.fwdMomUncertainty();
-    this_track.bwd_mcs_momentum_muon = mcs_fit_muon.bwdMomentum();
-    this_track.bwd_mcs_momentum_muon_err = mcs_fit_muon.bwdMomUncertainty();
+    this_track.mcs_muon.fwd_mcs_momentum = mcs_fit_muon.fwdMomentum();
+    this_track.mcs_muon.fwd_mcs_momentum_err = mcs_fit_muon.fwdMomUncertainty();
+    this_track.mcs_muon.bwd_mcs_momentum = mcs_fit_muon.bwdMomentum();
+    this_track.mcs_muon.bwd_mcs_momentum_err = mcs_fit_muon.bwdMomUncertainty();
 
-    // TODO: fill this
+    recob::MCSFitResult mcs_fit_pion = _mcs_fitter->fitMcs(*track, 211);
+    this_track.mcs_pion.fwd_mcs_momentum = mcs_fit_pion.fwdMomentum();
+    this_track.mcs_pion.fwd_mcs_momentum_err = mcs_fit_pion.fwdMomUncertainty();
+    this_track.mcs_pion.bwd_mcs_momentum = mcs_fit_pion.bwdMomentum();
+    this_track.mcs_pion.bwd_mcs_momentum_err = mcs_fit_pion.bwdMomUncertainty();
+
+    recob::MCSFitResult mcs_fit_proton = _mcs_fitter->fitMcs(*track, 2212);
+    this_track.mcs_proton.fwd_mcs_momentum = mcs_fit_proton.fwdMomentum();
+    this_track.mcs_proton.fwd_mcs_momentum_err = mcs_fit_proton.fwdMomUncertainty();
+    this_track.mcs_proton.bwd_mcs_momentum = mcs_fit_proton.bwdMomentum();
+    this_track.mcs_proton.bwd_mcs_momentum_err = mcs_fit_proton.bwdMomUncertainty();
+
+    recob::MCSFitResult mcs_fit_kaon = _mcs_fitter->fitMcs(*track, 321);
+    this_track.mcs_kaon.fwd_mcs_momentum = mcs_fit_kaon.fwdMomentum();
+    this_track.mcs_kaon.fwd_mcs_momentum_err = mcs_fit_kaon.fwdMomUncertainty();
+    this_track.mcs_kaon.bwd_mcs_momentum = mcs_fit_kaon.bwdMomentum();
+    this_track.mcs_kaon.bwd_mcs_momentum_err = mcs_fit_kaon.bwdMomUncertainty();
+
+    // Filled downstream
     this_track.momentum = -1;
     this_track.energy = -1;
+
+    // TODO: fill this
     this_track.dist_to_vertex = -1;
 
     this_track.costh = track->StartDirection().Z() / sqrt( track->StartDirection().Mag2() );  

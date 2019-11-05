@@ -21,6 +21,22 @@ enum Wall {
   wBack=6
 };
 
+struct MCSFitResult {
+  float fwd_mcs_momentum; //!< MCS momentum calculation under hypothesis track is forward
+  float fwd_mcs_momentum_err; //!< MCS momentum calculation fit error under hypothesis track is forward
+  float bwd_mcs_momentum; //!< MCS momentum calculation under hypothesis track is backward
+  float bwd_mcs_momentum_err; //!< MCS momentum calculation fit error under hypothesis track is backward
+  bool mcs_is_backward; //!< Whether the MCS fit calculation believes the track is backwards 
+
+  MCSFitResult():
+    fwd_mcs_momentum(-1),
+    fwd_mcs_momentum_err(-1),
+    bwd_mcs_momentum(-1),
+    bwd_mcs_momentum_err(-1),
+    mcs_is_backward(false)
+  {}
+};
+
 /**
 * Information of TPC track objects
 */
@@ -29,23 +45,19 @@ struct RecoTrack {
   float deposited_energy_max; //!< Maximum of deposited energy across the 3 planes
   float deposited_energy_avg; //!< Average of deposited energy across the 3 planes
   float deposited_energy_med; //!< Median of deposited energy across the 3 planes
-  float range_momentum; //!< Momentum calculation of track using range using the PID hypothesis for this track (muon/proton) [GeV].
-  float range_momentum_muon; //!< Momentum calculation of the track using range under the assumption it is a muon [GeV].
+  float range_momentum_muon; //!< Range momentum calculation of the track using range under the assumption it is a muon [GeV].
+  float range_momentum_proton; //!< Range momentum calculation of track using range using the assumption it is a proton [GeV].
+  MCSFitResult mcs_muon; //!< MCS calculation result for Muon PID hypothesis
+  MCSFitResult mcs_pion; //!< MCS calculation result for Pion PID hypothesis
+  MCSFitResult mcs_proton; //!< MCS calculation result for Proton PID hypothesis
+  MCSFitResult mcs_kaon; //!< MCS calculation result for Kaon PID hypothesis
   
-  float fwd_mcs_momentum; //!< MCS momentum calculation under hypothesis track is forward using PID hypotheis for this track [GeV].
-  float fwd_mcs_momentum_muon; //!< MCS momentum calculation under hypotheis is forward assuming track is muon [GeV].
-  float fwd_mcs_momentum_err; //!< MCS momentum calculation fit error under hypothesis track is forward using PID hypothsesis [GeV].
-  float fwd_mcs_momentum_muon_err; //!< MCS momentum calculation fit error under hypotheis track is forward assuming track is muon [GeV].
-  float bwd_mcs_momentum; //!< MCS momentum calculation under hypothesis track is backward using PID hypotheis for this track [GeV].
-  float bwd_mcs_momentum_muon; //!< MCS momentum calculation under hypotheis is backward assuming track is muon [GeV].
-  float bwd_mcs_momentum_err; //!< MCS momentum calculation fit error under hypothesis track is backward using PID hypothsesis [GeV].
-  float bwd_mcs_momentum_muon_err; //!< MCS momentum calculation fit error under hypotheis track is backward assuming track is muon [GeV].
-  bool mcs_is_backward; //!< Whether the MCS fit calculation believes the track is backwards
-
   float mean_trucated_dQdx; //!< Mean of dQdx values inside the standard deviation
   
-  float momentum; //!< Best guess at momentum [GeV]. Currently unfilled
-  float energy; //!< Best guess at energy [GeV]. Currently unfilled
+  float momentum; //!< Best guess at momentum [GeV]. 
+  float range_momentum; //!< momentum calculated from range method
+  float mcs_momentum; //!< momentum calculated from mcs method
+  float energy; //!< Best guess at energy [GeV]. 
   
   float chi2_proton; //!< Chi2 of dE/dx to proton hypothesis. Combined against all planes.
   float chi2_kaon; //!< Chi2 of dE/dx to kaon hypotheis. Combined against all planes.
@@ -84,19 +96,12 @@ struct RecoTrack {
     deposited_energy_max(-1),
     deposited_energy_avg(-1),
     deposited_energy_med(-1),
-    range_momentum(-1),
     range_momentum_muon(-1),
-    fwd_mcs_momentum(-1),
-    fwd_mcs_momentum_muon(-1),
-    fwd_mcs_momentum_err(-1),
-    fwd_mcs_momentum_muon_err(-1),
-    bwd_mcs_momentum(-1),
-    bwd_mcs_momentum_muon(-1),
-    bwd_mcs_momentum_err(-1),
-    bwd_mcs_momentum_muon_err(-1),
-    mcs_is_backward(false),
+    range_momentum_proton(-1),
     mean_trucated_dQdx(-9999.),
     momentum(-1),
+    range_momentum(-1),
+    mcs_momentum(-1),
     energy(-1),
     chi2_proton(-1),
     chi2_kaon(-1),

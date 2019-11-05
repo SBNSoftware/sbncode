@@ -91,11 +91,13 @@ void Histograms::Initialize(
   for (unsigned i = 0; i < track_histo_types.size(); i++) {
     fAllTracks.emplace_back();
     fPrimaryTracks.emplace_back();
+    fPrimaryTrackProfiles.emplace_back();
     fAllTracks[i].Initialize(prefix + "All_" + track_histo_types[i]);
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
       fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + track_histo_types[i] + "_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+j]));
 
       for (unsigned k = 0; k < track_profile_types.size(); k++) {
+        if (j == 0) fPrimaryTrackProfiles[i].emplace_back();
         unsigned n_bin;
         float xlo, xhi;
         std::tie(n_bin, xlo, xhi) = track_profile_xranges[k];
@@ -117,6 +119,9 @@ void Histograms::Initialize(
     fAllHistos.insert(fAllHistos.end(), fAllTracks[i].fAllHistos.begin(), fAllTracks[i].fAllHistos.end());
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
       fAllHistos.insert(fAllHistos.end(), fPrimaryTracks[i][j].fAllHistos.begin(), fPrimaryTracks[i][j].fAllHistos.end());
+      for (unsigned k = 0; k < track_profile_types.size(); k++) {
+        fAllHistos.insert(fAllHistos.end(), fPrimaryTrackProfiles[i][k][j].fAllHistos.begin(), fPrimaryTrackProfiles[i][k][j].fAllHistos.end());
+      } 
     } 
   }
 

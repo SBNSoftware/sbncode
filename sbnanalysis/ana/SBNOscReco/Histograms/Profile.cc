@@ -1,15 +1,19 @@
 #include "Profile.h"
 #include "TH2D.h"
+#include "TH3D.h"
 
 namespace ana {
  namespace SBNOsc {
 
 void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi) {
-#define TRACK_PROFILE(name, nbinsy, ylo, yhi) name = new TH2D((#name "_" + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi); all_histos.push_back(name)
-  TRACK_PROFILE(range_bias, 50, -1., 1.);
-  TRACK_PROFILE(range_var, 50., 0., 1.);
-  TRACK_PROFILE(mcs_bias, 50, -1., 1.);
-  TRACK_PROFILE(mcs_var, 50., 0., 1.);
+#define TRACK_PROFILE(name, nbinsy, ylo, yhi) name = new TH2D((#name "_" + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi); fAllHistos.push_back(name);
+#define TRACK_PROFILE3D(name, nbinsy, ylo, yhi, nbinsz, zlo, zhi) name = new TH3D((#name "_" + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi, nbinsz, zlo, zhi); fAllHistos.push_back(name)
+  TRACK_PROFILE3D(range_v_true_mom, 50, 0., 2.5, 50, 0., 2.5);
+  TRACK_PROFILE3D(mcs_v_true_mom, 50, 0., 2.5, 50, 0., 2.5);
+
+  TRACK_PROFILE3D(range_minus_true, 50, 0., 2.5, 50, -1., 1.); 
+  TRACK_PROFILE3D(mcs_minus_true, 50, 0., 2.5, 50, -1., 1.); 
+#undef TRACK_PROFILE3D
 #undef TRACK_PROFILE
 }
 
@@ -23,11 +27,11 @@ void TrackProfiles::Fill(const numu::ROOTValue &rootval, const numu::RecoTrack &
   if (track.match.has_match) {
     const numu::RecoTrack &true_track = event.true_tracks.at(track.match.mcparticle_id);
 
-    range_bias->Fill(val, (track.range_momentum - true_track.momentum) / true_track.momentum);
-    range_var->Fill(val, (track.range_momentum - true_track.momentum) * (track.range_momentum - true_track.momentum) / (true_track.momentum * true_track.momentum));
+    range_v_true_mom->Fill(val, true_track.momentum, track.range_momentum);
+    mcs_v_true_mom->Fill(val, true_track.momentum, track.mcs_momentum);
 
-    mcs_bias->Fill(val, (track.fwd_mcs_momentum - true_track.momentum) / true_track.momentum);
-    mcs_var->Fill(val, (track.fwd_mcs_momentum - true_track.momentum) * (track.fwd_mcs_momentum - true_track.momentum) / (true_track.momentum * true_track.momentum));
+    range_minus_true->Fill(val, true_track.momentum, (track.range_momentum - true_track.momentum) / true_track.momentum);
+    mcs_minus_true->Fill(val, true_track.momentum, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
   }
 }
 

@@ -69,7 +69,15 @@ public:
  *
  * \return Whether the point is in the configured track containment volume
  */
-  bool InContainment(const TVector3 &v) const;
+  bool InCosmicContainment(const TVector3 &v) const;
+
+  /**
+ * Test whether a point is in the configured track containment volume
+ * \param v The point to test
+ *
+ * \return Whether the point is in the configured track containment volume
+ */
+  bool InCalorimetricContainment(const TVector3 &v) const;
 
   /**
  * Gets the time of the CRT match to a track.
@@ -116,8 +124,9 @@ private:
     float CRTTrackAngle;
     float TrackLength;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
-    std::vector<VolYZ> containment_volumes;
+    std::vector<VolYZ> cosmic_containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
+    std::vector<geo::BoxBoundedGeo> calorimetric_containment_volumes;
   };
 
   Config fConfig;

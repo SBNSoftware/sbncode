@@ -1,6 +1,10 @@
 #ifndef _sbncode_histolisto_hh_
 #define _sbncode_histolisto_hh_
+
+#include <vector>
+
 class TH1;
+
 namespace ana {
  namespace SBNOsc {
 

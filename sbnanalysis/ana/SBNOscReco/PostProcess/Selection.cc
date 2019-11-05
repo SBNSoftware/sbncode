@@ -118,28 +118,45 @@ namespace SBNOsc {
         continue;
       }
 
+      // Set final momentum values
+      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(primary_track);
+      // TODO: apply calorimetry, set for non-primary tracks
+      track.range_momentum = track.range_momentum_muon;
+      // TODO: use forward/backward?
+      track.mcs_momentum = track.mcs_muon.fwd_mcs_momentum;
+      if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
+        track.momentum = track.range_momentum;
+      }
+      else {
+        track.momentum = track.mcs_momentum;
+      }
+
       fRecoEvent->reco[i].slice.primary_track_index = primary_track;
       fRecoEvent->reco[i].primary_track = fRecoEvent->reco_tracks.at(primary_track);
       // re-do truth matching
       fRecoEvent->reco[i].match = numu::InteractionTruthMatch(fRecoEvent->truth, fRecoEvent->reco_tracks, fRecoEvent->reco[i]);
 
-      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(primary_track); 
-      // refine CRT information on primary track
-      if (!fCuts.HasCRTHitMatch(track)) {
-        track.crt_match.hit.present = false;
-      }
-      if (!fCuts.HasCRTTrackMatch(track)) {
-        track.crt_match.track.present = false;
-      }
-
-   
-      fRecoEvent->reco[i].primary_track = fRecoEvent->reco_tracks.at(primary_track);
       i += 1;
     }
 
+    fROC.Fill(fCuts, *fRecoEvent);
+
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
-      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==2/*kCosmicRay*/) {
-        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 1 /*wTop*/) {
+      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==1) { // kBeamNeutrino
+        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 0 &&
+            fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_exit == 0) { // wNone
+          if (abs(reco.primary_track.end.Y() - 200.) < 2. || abs(reco.primary_track.start.Y() - 200.) < 2.) {
+            std::cout << "Weird CC Track\n";
+            std::cout << "start: " << reco.primary_track.start.X() << " " << reco.primary_track.start.Y() << " " << reco.primary_track.start.Z() << std::endl;
+            std::cout << "end: " << reco.primary_track.end.X() << " " << reco.primary_track.end.Y() << " " << reco.primary_track.end.Z() << std::endl;
+            std::cout << "true start: " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.X() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.Y() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.Z() << std::endl;
+            std::cout << "true end: " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.X() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.Y() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.Z() << std::endl;
+          }
+        }
+      }
+      /*
+      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==2) { // kComsicRay
+        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 1) { // wTop
           if (abs(reco.primary_track.start.Y()) < 50. && abs(reco.primary_track.end.Y()) < 50.) {
             std::cout << "Weird Cosmic track\n"; 
             std::cout << "vertex: " << reco.position.X() << " " << reco.position.Y() << " " << reco.position.Z() << std::endl;
@@ -154,7 +171,21 @@ namespace SBNOsc {
             std::cout << "True length: " << true_track.length << std::endl;
           }
         }
+      }*/
+    }
+
+    // further refine reco stuff
+    for (numu::RecoInteraction &reco: fRecoEvent->reco) {
+      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(reco.slice.primary_track_index); 
+      // refine CRT information on primary track
+      if (!fCuts.HasCRTHitMatch(track)) {
+        track.crt_match.hit.present = false;
       }
+      if (!fCuts.HasCRTTrackMatch(track)) {
+        track.crt_match.track.present = false;
+      }
+
+      reco.primary_track = track;
     }
 
     // make sure no two vertices match to the same true neutrino interaction
@@ -165,7 +196,7 @@ namespace SBNOsc {
       if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);
     }
-    fROC.Fill(fCuts, *fRecoEvent);
+
   }
 
   void Selection::Finalize() {

@@ -6,17 +6,16 @@
 #include "../Data/RecoEvent.h"
 
 class TH2D;
+class TH3D;
 
 namespace ana {
  namespace SBNOsc {
 
 struct TrackProfiles : public HistoList {
-  TH2D *range_bias;
-  TH2D *range_var;
-  TH2D *mcs_bias;
-  TH2D *mcs_var;
-
-  std::vector<TH1 *> all_histos;
+  TH3D *range_minus_true;
+  TH3D *range_v_true_mom;
+  TH3D *mcs_minus_true;
+  TH3D *mcs_v_true_mom;
 
   void Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi);
   void Fill(const numu::ROOTValue &val, const numu::RecoTrack &track, const numu::RecoEvent &event);

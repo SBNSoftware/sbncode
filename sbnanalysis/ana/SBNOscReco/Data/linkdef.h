@@ -9,6 +9,7 @@
 #pragma link C++ class numu::RecoInteraction+;
 #pragma link C++ class numu::RecoParticle+;
 #pragma link C++ class numu::RecoTrack+;
+#pragma link C++ class numu::MCSFitResult+;
 #pragma link C++ class numu::TruthMatch+;
 #pragma link C++ class numu::TrackTruthMatch+;
 #pragma link C++ class std::vector<numu::RecoInteraction>+;

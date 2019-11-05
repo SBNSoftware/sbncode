@@ -56,7 +56,6 @@ struct InteractionHistos : public HistoList {
     bool is_truth,
     const numu::RecoEvent &event,
     const std::vector<event::Interaction> &core_truth);
-  ~InteractionHistos();
 };
   
   } // namespace SBNOSc
