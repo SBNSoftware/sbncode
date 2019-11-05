@@ -1,7 +1,5 @@
 #include "CAFAna/Systs/SystComponentScale.h"
 
-// #include "CAFAna/Systs/DUNEXSecSysts.h"
-
 #include "TObjString.h"
 #include "TDirectory.h"
 
@@ -38,8 +36,6 @@ namespace ana
     assert(ptag);
 
     const TString tag = ptag->GetString();
-
-    // if(tag == "DUNEXSecSyst") return DUNEXSecSyst::LoadFrom(dir);
 
     std::cerr << "Unknown SystComponentScale type '" << tag << "'" << std::endl;
     abort();

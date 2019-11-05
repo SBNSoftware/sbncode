@@ -1,107 +1,79 @@
-// Make oscillated predictions
+// Oscillations
 // cafe demo1.C
 
 #include "CAFAna/Core/SpectrumLoader.h"
 #include "CAFAna/Core/Spectrum.h"
 #include "CAFAna/Core/Binning.h"
-#include "CAFAna/Core/Var.h"
-// #include "CAFAna/Cuts/TruthCuts.h"
-#include "StandardRecord/Proxy/SRProxy.h"
-#include "TCanvas.h"
-#include "TH1.h"
+#include "CAFAna/Cuts/TruthCuts.h"
+#include "CAFAna/Analysis/ExpInfo.h"
 
 // New includes for this macro
-#include "CAFAna/Prediction/PredictionNoExtrap.h"
-#include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/OscCalculatorSterile.h"
-
-// Random numbers to fake an efficiency and resolution
-#include "TRandom3.h"
+#include "CAFAna/Core/OscillatableSpectrum.h"
+#include "CAFAna/Core/OscCalcSterileApprox.h"
 
 using namespace ana;
 
-void demo1()
+#include "StandardRecord/Proxy/SRProxy.h"
+
+#include "TCanvas.h"
+#include "TH2.h"
+
+void demo1(int step = 99)
 {
-  // See demo0.C for explanation of these repeated parts
+  // Repeated from previous macros
+  const std::string fnameSBND = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_SBND.flat.root";
+  const std::string fnameIcarus = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_Icarus.flat.root";
+  SpectrumLoader loaderSBND(fnameSBND);
+  SpectrumLoader loaderIcarus(fnameIcarus);
 
-  const std::string fnameBeam = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_nu_ExampleAnalysis_ExampleSelection.root";
-  const std::string fnameSwap = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_oscnue_ExampleAnalysis_ExampleSelection.root";
+  // Mocked up reconstruction
+  const Var kRecoE = SIMPLEVAR(reco.reco_energy);
+  // Mock selection efficiencies etc
+  const Var kWeight = SIMPLEVAR(reco.weight);
 
-  // Source of events
-  SpectrumLoader loaderBeam(fnameBeam);
-  SpectrumLoader loaderSwap(fnameSwap);
+  const HistAxis axEnergy("Reconstructed energy (GeV)", Binning::Simple(50, 0, 5), kRecoE);
 
-  const Var kRecoEnergy(// ToDo: smear with some resolution
-                        [](const caf::SRProxy* sr)
-                        {
-                          double fE = sr->truth[0].neutrino.energy;
-                          TRandom3 r(floor(fE*10000));
-                          double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
-                          return fE*smear;
-                        });
+  // These are 2D reco-vs-true distributions
+  OscillatableSpectrum sOscND(loaderSBND,   axEnergy, kIsNumuCC, kNoShift, kWeight);
+  OscillatableSpectrum sOscFD(loaderIcarus, axEnergy, kIsNumuCC, kNoShift, kWeight);
 
-  const Binning binsEnergy = Binning::Simple(50, 0, 5);
-  const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);
+  loaderSBND.Go();
+  loaderIcarus.Go();
 
-  // Fake POT: we need to sort this out in the files first
-  const double pot = 6.e20;
+  sOscFD.ToTH2(kPOTnominal)->Draw("colz");
+  gPad->SetLogy();
 
-  const Cut kSelectionCut([](const caf::SRProxy* sr)
-                          {
-                            double fE = sr->truth[0].neutrino.energy;
-                            TRandom3 r(floor(fE*10000));
-                            bool isCC = sr->truth[0].neutrino.iscc;
-                            double p = r.Uniform();
-                            // 80% eff for CC, 10% for NC
-                            if(isCC) return p < 0.8;
-                            else return p < 0.10;
-                          });
+  if(step < 2) return;
 
-  // In many cases it's easier to form them from existing Vars like this
-  //  const Cut kPassesMVA = kMVANumu > 0;
+  // Full three/four-flavour calculators are available, but for most cases we
+  // want to use this simple two-flavour model, which also takes account of
+  // rapid oscillations.
+  OscCalcSterileApprox calc;
 
-  // A Prediction is an objects holding a variety of "OscillatableSpectrum"
-  // objects, one for each original and final flavour combination.
-  PredictionNoExtrap pred(loaderBeam, loaderSwap, kNullLoader,
-                          axEnergy, kSelectionCut);
+  calc.SetDmsq(1); // oscillations at 1eV^2
 
-  // This call will fill all of the constituent parts of the prediction
-  loaderBeam.Go();
-  loaderSwap.Go();
+  calc.SetSinSq2ThetaMuMu(0.2); // numu disappearance
+  calc.SetSinSq2ThetaMuE(0);
 
-  // We can extract a total prediction unoscillated
-  const Spectrum sUnosc = pred.PredictUnoscillated();
-  // Or oscillated, in this case using reasonable parameters from
-  // Analysis/Calcs.h
-  osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
-  calc->SetL(0.11); // SBND only, temporary
-  calc->SetAngle(2, 4, 0.55);
-  calc->SetDm(4, 1); // Some dummy values
+  // NB: the baseline is a property of the oscillation calculator! You will
+  // need to set it appropriately before calls involving each detector.
+  calc.SetL(kBaselineSBND);
 
-  const Spectrum sOsc = pred.Predict(calc);
+  new TCanvas;
 
-  // And we can break things down by flavour
-  const Spectrum sUnoscNC = pred.PredictComponent(calc,
-                                                  Flavors::kAll,
-                                                  Current::kNC,
-                                                  Sign::kBoth);
+  // This is just the projection onto the reco axis
+  const Spectrum sUnosc = sOscND.Unoscillated();
+  // And this is the same projection, but applying oscillation weights (here numu survival)
+  const Spectrum sOsc = sOscND.Oscillated(&calc, 14, 14);
 
-  // Plot what we have so far
-  TCanvas* c1 = new TCanvas("c1");
-  sUnosc.ToTH1(pot)->Draw("hist");
-  sUnoscNC.ToTH1(pot, kBlue)->Draw("hist same");
-  sOsc.ToTH1(pot, kRed)->Draw("hist same");
-  c1->SaveAs("demo1_plot1.pdf");
+  sUnosc.ToTH1(kPOTnominal)->Draw("hist");
+  sOsc.ToTH1(kPOTnominal, kRed)->Draw("hist same");
 
-  // "Fake" data is synonymous with the Asimov data sample
-  sOsc.ToTH1(pot, kRed)->Draw("hist");
-  sUnoscNC.ToTH1(pot, kBlue)->Draw("hist same");
-  sOsc.FakeData(pot).ToTH1(pot)->Draw("ep same");
-  c1->SaveAs("demo1_plot2.pdf");
+  // Have to set this before making the corresponding Icarus plot
+  calc.SetL(kBaselineIcarus);
 
-  // While "mock" data has statistical fluctuations in
-  sOsc.ToTH1(pot, kRed)->Draw("hist");
-  sUnoscNC.ToTH1(pot, kBlue)->Draw("hist same");
-  sOsc.MockData(pot).ToTH1(pot)->Draw("ep same");
-  c1->SaveAs("demo1_plot3.pdf");
+  new TCanvas;
+
+  sOscFD.Unoscillated().ToTH1(kPOTnominal)->Draw("hist");
+  sOscFD.Oscillated(&calc, 14, 14).ToTH1(kPOTnominal, kRed)->Draw("hist same");
 }

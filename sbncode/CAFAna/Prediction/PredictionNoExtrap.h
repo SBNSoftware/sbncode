@@ -8,13 +8,12 @@ namespace ana
 {
   class Loaders;
 
-  /// Prediction that just uses FD MC, with no extrapolation
+  /// Prediction that just uses one detector's MC, with no extrapolation
   class PredictionNoExtrap: public PredictionExtrap
   {
   public:
     PredictionNoExtrap(PredictionExtrap* pred);
 
-    // This is the DUNE constructor
     PredictionNoExtrap(SpectrumLoaderBase& loaderNonswap,
                        SpectrumLoaderBase& loaderNue,
                        SpectrumLoaderBase& loaderNuTau,

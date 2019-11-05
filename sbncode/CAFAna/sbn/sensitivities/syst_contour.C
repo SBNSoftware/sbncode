@@ -24,9 +24,35 @@ const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
 const double uboonePOT = 1.3e21;
 
+void SpectrumPlots(const PredictionInterp* p, const ISyst* s, double pot, const char* detName)
+{
+  osc::NoOscillations unosc;
+
+  p->DebugPlot(s, &unosc);
+  gPad->Print(TString::Format("plots/debug_%s_%s.pdf", detName, s->ShortName().c_str()).Data());
+
+  p->Predict(&unosc).ToTH1(pot)->Draw("hist");
+  p->PredictSyst(&unosc, SystShifts(s, -1)).ToTH1(pot, kBlue)->Draw("hist same");
+  p->PredictSyst(&unosc, SystShifts(s, +1)).ToTH1(pot, kRed )->Draw("hist same");
+  p->Predict(&unosc).ToTH1(pot)->Draw("hist same");
+
+  TLegend* leg = new TLegend(.6, .6, .85, .85);
+  leg->SetFillStyle(0);
+  TH1* dummy = new TH1F("", "", 1, 0, 1);
+  leg->AddEntry(dummy->Clone(), "Nominal", "l");
+  dummy->SetLineColor(kBlue);
+  leg->AddEntry(dummy->Clone(), "-1#sigma", "l");
+  dummy->SetLineColor(kRed);
+  leg->AddEntry(dummy->Clone(), "+1#sigma", "l");
+
+  leg->Draw();
+
+  gPad->Print(TString::Format("plots/spect_%s_%s.pdf", detName, s->ShortName().c_str()).Data());
+}
+
+
 void syst_contour()
 {
-  //  GetSBNWeightSysts(); // initialize
   const std::vector<const ISyst*>& systs = GetSBNWeightSysts();
 
   TFile fin("cafe_state_syst_numu.root");
@@ -44,58 +70,23 @@ void syst_contour()
   dummy->SetLineColor(kRed);
   leg_updn->AddEntry(dummy->Clone(), "+1#sigma", "l");
 
+  // We'll accumulate all the systematics that have more than a 1% effect on
+  // the normalization in this vector.
   std::vector<const ISyst*> bigsysts;
 
   osc::NoOscillations unosc;
   for(const ISyst* s: systs){
-    p_nd->DebugPlot(s, &unosc);
-    gPad->Print(TString::Format("plots/debug_nd_%s.pdf", s->ShortName().c_str()).Data());
-    p_fd->DebugPlot(s, &unosc);
-    gPad->Print(TString::Format("plots/debug_fd_%s.pdf", s->ShortName().c_str()).Data());
+    SpectrumPlots(p_nd, s, sbndPOT, "nd");
+    SpectrumPlots(p_fd, s, icarusPOT, "fd");
+    SpectrumPlots(p_ub, s, uboonePOT, "ub");
 
-
-    p_nd->Predict(&unosc).ToTH1(sbndPOT)->Draw("hist");
-    p_nd->PredictSyst(&unosc, SystShifts(s, -1)).ToTH1(sbndPOT, kBlue)->Draw("hist same");
-    p_nd->PredictSyst(&unosc, SystShifts(s, +1)).ToTH1(sbndPOT, kRed)->Draw("hist same");
-    p_nd->Predict(&unosc).ToTH1(sbndPOT)->Draw("hist same");
-    leg_updn->Draw();
-    gPad->Print(TString::Format("plots/spect_nd_%s.pdf", s->ShortName().c_str()).Data());
-
-    p_fd->Predict(&unosc).ToTH1(icarusPOT)->Draw("hist");
-    p_fd->PredictSyst(&unosc, SystShifts(s, -1)).ToTH1(icarusPOT, kBlue)->Draw("hist same");
-    p_fd->PredictSyst(&unosc, SystShifts(s, +1)).ToTH1(icarusPOT, kRed)->Draw("hist same");
-    p_fd->Predict(&unosc).ToTH1(icarusPOT)->Draw("hist same");
-    leg_updn->Draw();
-    gPad->Print(TString::Format("plots/spect_fd_%s.pdf", s->ShortName().c_str()).Data());
-
-    p_ub->Predict(&unosc).ToTH1(uboonePOT)->Draw("hist");
-    p_ub->PredictSyst(&unosc, SystShifts(s, -1)).ToTH1(icarusPOT, kBlue)->Draw("hist same");
-    p_ub->PredictSyst(&unosc, SystShifts(s, +1)).ToTH1(icarusPOT, kRed)->Draw("hist same");
-    p_ub->Predict(&unosc).ToTH1(icarusPOT)->Draw("hist same");
-    leg_updn->Draw();
-    gPad->Print(TString::Format("plots/spect_ub_%s.pdf", s->ShortName().c_str()).Data());
-
+    osc::NoOscillations unosc;
     if(fabs(p_fd->PredictSyst(&unosc, SystShifts(s, +1)).Integral(1e20)/p_fd->Predict(&unosc).Integral(1e20)-1) > .01) bigsysts.push_back(s);
-  }
+  } // end for s
 
   std::cout << bigsysts.size() << " big systs out of " << systs.size() << std::endl;
   for(const ISyst* s: bigsysts) std::cout << s->ShortName() << " ";
   std::cout << std::endl;
-
-
-  TLegend* leg = new TLegend(.15, .15, .45, .4);
-  leg->SetFillStyle(0);
-  dummy->SetLineColor(kRed);
-  leg->AddEntry(dummy->Clone(), "SBND only", "l");
-  dummy->SetLineColor(kGreen+2);
-  leg->AddEntry(dummy->Clone(), "Microboone only", "l");
-  dummy->SetLineColor(kBlue);
-  leg->AddEntry(dummy->Clone(), "Icarus only", "l");
-  dummy->SetLineColor(kBlack);
-  leg->AddEntry(dummy->Clone(), "Combined fit", "l");
-  dummy->SetLineStyle(7);
-  leg->AddEntry(dummy->Clone(), "Stats only", "l");
-  leg->Draw();
 
 
   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
@@ -104,7 +95,6 @@ void syst_contour()
   const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 20/*40*/, 1e-3, 1, true);
   const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 1e-2, 1e2, true);
 
-  // We'll call zero nominal
   calc->SetL(kBaselineSBND);
   const Spectrum data_nd = p_nd->Predict(calc).FakeData(sbndPOT);
   calc->SetL(kBaselineIcarus);
@@ -126,11 +116,43 @@ void syst_contour()
   Surface surf_nom_fd(&expt_fd, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
   calc->SetL(kBaselineMicroBoone);
   Surface surf_nom_ub(&expt_ub, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
-    
 
+
+  //TH2* crit90 = Gaussian90Percent1D1Sided(surf_nom);
+  TH2* crit3sig = Gaussian3Sigma1D1Sided(surf_nom);
+  //TH2* crit5sig = Gaussian5Sigma1D1Sided(surf_nom);
+
+  new TCanvas;
+  surf_nom_nd.DrawContour(crit3sig, kSolid, kRed);
+  surf_nom_fd.DrawContour(crit3sig, kSolid, kBlue);
+  surf_nom_ub.DrawContour(crit3sig, kSolid, kGreen+2);
+  surf_nom.DrawContour(crit3sig, kSolid, kBlack);
+
+
+  TLegend* leg = new TLegend(.15, .15, .45, .4);
+  leg->SetFillStyle(0);
+  dummy->SetLineColor(kRed);
+  leg->AddEntry(dummy->Clone(), "SBND only", "l");
+  dummy->SetLineColor(kGreen+2);
+  leg->AddEntry(dummy->Clone(), "Microboone only", "l");
+  dummy->SetLineColor(kBlue);
+  leg->AddEntry(dummy->Clone(), "Icarus only", "l");
+  dummy->SetLineColor(kBlack);
+  leg->AddEntry(dummy->Clone(), "Combined fit", "l");
+
+
+  leg->Draw();
+
+  gPad->Print("plots/conts_nom.pdf");
+
+  dummy->SetLineStyle(7);
+  leg->AddEntry(dummy->Clone(), "Stats only", "l");
+
+  // We'll make contours first for all the big systematics together, and then
+  // we'll make the effect of each systematic independently.
   std::vector<std::vector<const ISyst*>> slists;
-  slists.push_back(bigsysts);
-  for(const ISyst* s: systs) slists.emplace_back(1, s); // and then each
+  slists.push_back(bigsysts); // all systs
+  for(const ISyst* s: systs) slists.emplace_back(1, s); // then each individually
 
   for(const std::vector<const ISyst*> slist: slists){
     new TCanvas;
@@ -143,11 +165,6 @@ void syst_contour()
     Surface surf_syst_fd(&expt_fd, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
     calc->SetL(kBaselineMicroBoone);
     Surface surf_syst_ub(&expt_ub, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
-
-
-    //TH2* crit90 = Gaussian90Percent1D1Sided(surf_nom);
-    TH2* crit3sig = Gaussian3Sigma1D1Sided(surf_nom);
-    //TH2* crit5sig = Gaussian5Sigma1D1Sided(surf_nom);
 
     std::string suffix = "big";
     if(slist.size() == 1) suffix = slist[0]->ShortName();
@@ -165,9 +182,11 @@ void syst_contour()
     surf_syst.DrawContour(crit3sig, kSolid, kBlack);
 
     leg->Draw();
- 
+
     gPad->Print(TString::Format("plots/conts_%s.pdf", suffix.c_str()).Data());
 
+    // Show the profiled value of each syst for the fits that use only a single
+    // syst
     if(slist.size() == 1){
       new TCanvas;
       TH2* h = surf_syst.GetProfiledHists()[0];

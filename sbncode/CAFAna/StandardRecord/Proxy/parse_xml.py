@@ -8,8 +8,9 @@ try:
 except Exception as e:
     print e
     print
-    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
-    print "and 'setup castxml v0_00_00_f20180122 -f Linux64bit+2.6-2.12 -z /cvmfs/nova.opensciencegrid.org/externals'"
+#    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
+    print "Try 'setup pygccxml v1_9_1a -f NULL -z /cvmfs/nova.opensciencegrid.org/externals -q p2715a'"
+    print "and 'setup castxml v0_00_00_f20180122'"
     print
     sys.exit(1)
 
@@ -219,7 +220,7 @@ print disclaimer
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
 print
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
 print
 print 'namespace caf{'
 print joinFunc
@@ -287,7 +288,7 @@ print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/CheckEquals.h"'
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print
 print '#include <type_traits>'
 print
@@ -406,7 +407,7 @@ sys.stdout = file(cxxDir+'/CopyRecord.cxx', 'w')
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/CopyRecord.h"'
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
-print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
+#print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
 print disclaimer
 print 'namespace caf{'
 

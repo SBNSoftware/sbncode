@@ -6,114 +6,115 @@
 #include "CAFAna/Core/Binning.h"
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Cuts/TruthCuts.h"
+#include "CAFAna/Core/OscCalcSterileApprox.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
-#include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/OscCalculatorSterile.h"
-#include "StandardRecord/Proxy/SRProxy.h"
-#include "TCanvas.h"
-#include "TH1.h"
-#include "TGraph.h"
+#include "CAFAna/Analysis/ExpInfo.h"
 
 // New includes required
 #include "CAFAna/Experiment/SingleSampleExperiment.h"
 #include "CAFAna/Analysis/Fit.h"
-#include "CAFAna/Vars/FitVarsSterile.h"
-
-// Random numbers to fake an efficiency and resolution
-#include "TRandom3.h"
+#include "CAFAna/Analysis/FitAxis.h"
+#include "CAFAna/Analysis/Surface.h"
+#include "CAFAna/Vars/FitVarsSterileApprox.h"
+#include "CAFAna/Experiment/MultiExperimentSBN.h"
 
 using namespace ana;
 
-void demo2()
+#include "StandardRecord/Proxy/SRProxy.h"
+
+#include "TCanvas.h"
+#include "TH1.h"
+
+void demo2(int step = 99)
 {
+  // Repeated from previous macros
+  const std::string fnameIcarus = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_Icarus.flat.root";
+  const std::string fnameSBND = "/sbnd/data/users/bckhouse/sample_2.1_fitters/output_SBNOsc_NumuSelection_Proposal_SBND.flat.root";
+  SpectrumLoader loaderIcarus(fnameIcarus);
+  SpectrumLoader loaderSBND(fnameSBND);
+  const Var kRecoE = SIMPLEVAR(reco.reco_energy);
+  const Var kWeight = SIMPLEVAR(reco.weight);
+  const HistAxis axEnergy("Reconstructed energy (GeV)", Binning::Simple(50, 0, 5), kRecoE);
+  PredictionNoExtrap predSBND(loaderSBND, kNullLoader, kNullLoader, kNullLoader,
+                              axEnergy, kNoCut, kNoShift, kWeight);
+  PredictionNoExtrap predIcarus(loaderIcarus, kNullLoader, kNullLoader, kNullLoader,
+                                axEnergy, kNoCut, kNoShift, kWeight);
 
-    // See demo0.C for explanation of these repeated parts
+  loaderSBND.Go();
+  loaderIcarus.Go();
 
-  const std::string fnameBeam = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_nu_ExampleAnalysis_ExampleSelection.root";
-  const std::string fnameSwap = "/sbnd/app/users/bzamoran/sbncode-v07_11_00/output_largesample_oscnue_ExampleAnalysis_ExampleSelection.root";
-
-  // Source of events
-  SpectrumLoader loaderBeam(fnameBeam);
-  SpectrumLoader loaderSwap(fnameSwap);
-
-  const Var kRecoEnergy(// ToDo: smear with some resolution
-                        [](const caf::SRProxy* sr)
-                        {
-                          double fE = sr->truth[0].neutrino.energy;
-                          TRandom3 r(floor(fE*10000));
-                          double smear = r.Gaus(1, 0.05); // Flat 5% E resolution
-                          return fE*smear;
-                        });
-
-  const Binning binsEnergy = Binning::Simple(50, 0, 5);
-  const HistAxis axEnergy("Fake reconsturcted energy (GeV)", binsEnergy, kRecoEnergy);
-
-  // Fake POT: we need to sort this out in the files first
-  const double pot = 6.e20;
-
-  const Cut kSelectionCut([](const caf::SRProxy* sr)
-                          {
-                            double fE = sr->truth[0].neutrino.energy;
-                            TRandom3 r(floor(fE*10000));
-                            bool isCC = sr->truth[0].neutrino.iscc;
-                            double p = r.Uniform();
-                            // 80% eff for CC, 10% for NC
-                            if(isCC) return p < 0.8;
-                            else return p < 0.10;
-                          });
-
-  PredictionNoExtrap pred(loaderBeam, loaderSwap, kNullLoader,
-                          axEnergy, kSelectionCut);
-
-  loaderBeam.Go();
-  loaderSwap.Go();
-
-  // Calculator
-  osc::OscCalculatorSterile* calc = DefaultSterileCalc(4);
-  calc->SetL(0.11); // SBND only, temporary
-  calc->SetAngle(2, 4, 0.55);
-  calc->SetDm(4, 1); // Some dummy values
-
-  TGraph* trueValues = new TGraph();
-  trueValues->SetPoint(0, pow(TMath::Sin(2*calc->GetAngle(2,4)),2), -100);
-  trueValues->SetPoint(1, pow(TMath::Sin(2*calc->GetAngle(2,4)),2), 1e5);
-  trueValues->SetLineColor(kRed);
-  trueValues->SetLineStyle(2);
-  trueValues->SetLineWidth(2);
 
   // To make a fit we need to have a "data" spectrum to compare to our MC
-  // Prediction object
-  const Spectrum data = pred.Predict(calc).FakeData(pot);
+  // Prediction object. "FakeData" here is an Asimov dataset. "MockData" would
+  // include random poisson fluctuations.
+  const Spectrum dataSBND = predSBND.PredictUnoscillated().FakeData(kPOTnominal);
+  const Spectrum dataIcarus = predIcarus.PredictUnoscillated().FakeData(kPOTnominal);
 
   // An Experiment object is something that can turn oscillation parameters
   // into a chisq, in this case by comparing a Prediction and a data Spectrum
-  SingleSampleExperiment expt(&pred, data);
+  SingleSampleExperiment exptSBND(&predSBND, dataSBND);
+  SingleSampleExperiment exptIcarus(&predIcarus, dataIcarus);
 
-  std::cout << "At nominal parameters chisq = " << expt.ChiSq(calc) << std::endl;
-  calc->SetAngle(2, 4, 0);
-  std::cout << "At 3-flavour only chisq = " << expt.ChiSq(calc) << std::endl;
+  // A bit of faff setting this up this time because we need a version coerced
+  // into satisfying the standard fitter interface.
+  OscCalcSterileApproxAdjustable calc;
+  calc.calc.SetDmsq(1);
+  calc.calc.SetSinSq2ThetaMuMu(0.2); // these two don't really matter, the fitter will vary them.
+  calc.calc.SetSinSq2ThetaMuE(0); // We'll be holding this one fixed at zero though
+
+  // Let's make an SBND contour first
+  calc.SetL(kBaselineSBND);
 
   // A fitter finds the minimum chisq using MINUIT by varying the list of
   // parameters given. These are FitVars from Vars/FitVars.h. They can contain
   // snippets of code to convert from the underlying angles etc to whatever
   // function you want to fit.
-  Fitter fit(&expt, {&kFitDmSq41Sterile, &kFitSinSqTheta24Sterile});
-  const double best_chisq = fit.Fit(calc);
+  Fitter fit(&exptSBND, {&kFitDmSqSterile, &kFitSinSq2ThetaMuMu});
+  const double best_chisq = fit.Fit(&calc);
 
-  // The osc calculator is updated in-place with the best oscillation
-  // parameters
-  std::cout << "Best chisq is " << best_chisq << " with "
-            << "dmsq41 = " << calc->GetDm(4)
-            << " and th14 = " << TMath::ASin(sqrt(kFitSinSqTheta24Sterile.GetValue(calc)))
-            << std::endl;
+  if(step < 2) return;
 
-  // We can obtain the 1-D ChiSquare plot for one of the variables, profiling over the other
-  TH1* h1 = SqrtProfile(&expt, calc, &kFitSinSq2Theta24Sterile, 80, 0.6, 1, -1, {&kFitDmSq41Sterile});
-  TCanvas* c1 = new TCanvas("c1");
-  c1->SetLeftMargin(0.12);
-  c1->SetBottomMargin(0.15);
-  h1->SetLineColor(kBlue);
-  h1->Draw("hist");
-  trueValues->Draw("L");
-  c1->SaveAs("demo2_plot1.pdf");
+  // 'calc' has been updated in place, so we could extract the best fit
+  // oscillation parameters from it here
+
+  //Define fit axes. 'true' here indicates a log scale
+  const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 30, 1e-3, 1, true);
+  const FitAxis kAxDmSq(&kFitDmSqSterile, 30, 2e-2, 1e2, true);
+
+  // A Surface is a map of chisq values in a 2D space
+  Surface surfSBND(&exptSBND, &calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+
+  // Inspect the chisq map directly
+  surfSBND.Draw();
+
+  if(step < 3) return;
+
+  // To draw a confidence interval we need a suitable critical value
+  // surface. This generality is so that we can support Feldman-Cousins
+  // corrections. For now we just want a constant critical value. Please check
+  // carefully what significance, how many DoF, and one/two-sidedness you want.
+  TH2* critSurf = Gaussian3Sigma1D1Sided(surfSBND);
+
+  surfSBND.DrawContour(critSurf, kSolid, kRed);
+
+
+  new TCanvas;
+
+  // Let's repeat for the Icarus-only contour
+  calc.SetL(kBaselineIcarus);
+
+  Surface surfIcarus(&exptIcarus, &calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+
+  surfSBND.DrawContour(critSurf, kSolid, kRed);
+  surfIcarus.DrawContour(critSurf, kSolid, kBlue);
+
+  // MultiExperimentSBN sums the chisqs from its constituent parts. It also
+  // makes sure to set the right baselines at the right times during the fit.
+  MultiExperimentSBN exptMulti({&exptSBND, &exptIcarus}, {kSBND, kICARUS});
+  Surface surfMulti(&exptMulti, &calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+
+  surfMulti.DrawContour(critSurf, kSolid, kMagenta);
+
+  // Exercise - plot the MicroBooNE sensitivity and the three-detector joint
+  // sensitivity.
 }

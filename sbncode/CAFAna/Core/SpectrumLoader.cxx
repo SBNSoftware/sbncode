@@ -8,7 +8,6 @@
 
 #include "CAFAna/Core/GenieWeightList.h"
 
-#include "StandardRecord/StandardRecord.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 
 #include <cassert>

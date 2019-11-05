@@ -57,7 +57,7 @@ namespace ana
   // constants to be easily duplicated.
 
   /// Select CC \f$ \nu_\mu\to\nu_e \f$
-  const Cut kIsSig    (CCFlavSel(12, 14));
+  const Cut kIsNueApp (CCFlavSel(12, 14));
   /// Select CC \f$ \nu_\mu\to\nu_\mu \f$
   const Cut kIsNumuCC (CCFlavSel(14, 14));
   /// Select CC \f$ \nu_e\to\nu_e \f$
