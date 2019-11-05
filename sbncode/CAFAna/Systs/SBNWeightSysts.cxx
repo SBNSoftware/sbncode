@@ -20,7 +20,16 @@ namespace ana
   {
     if(sr->truth.empty()) return 1;
     const auto& ws = sr->truth[0].weights;
-    return ws[GetIdx(ws)].second[fUnivIdx];
+
+    // This hack improves throughput vastly
+    if(fUnivIdx == 0) for(const auto& b: ws[GetIdx(ws)].second) (void)((float)b);
+
+    // TODO: might want to "wrap around" differently in different systs to
+    // avoid unwanted correlations between systs with the same number of
+    // universes.
+    const unsigned int i = fUnivIdx % ws[GetIdx(ws)].second.size();
+
+    return ws[GetIdx(ws)].second[i];//fUnivIdx];
   }
 
   // --------------------------------------------------------------------------
