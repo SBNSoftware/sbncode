@@ -18,6 +18,7 @@ struct RecoParticle {
   std::vector<size_t> daughters; //!< Daughters of the particle in the "particle flow". Value represents index into pandora information.
   size_t ID; //!< ID of particle
   int trackID; //!< Id of associated track. "-1" is no such track exits
+  int pandora_pid; //!< Particle ID from pandora
 };
 }
 #endif

@@ -123,6 +123,7 @@ private:
     std::array<float, 2> CRTHitTimeRange;
     float CRTTrackAngle;
     float TrackLength;
+    float MCSTrackLength;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
     std::vector<VolYZ> cosmic_containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;

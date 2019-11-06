@@ -14,6 +14,7 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.TruthCompletion = cfg.get<float>("TruthCompletion", 0.5);
   fConfig.TruthMatchDist = cfg.get<float>("TruthMatchDist", 5.);
 
+  fConfig.MCSTrackLength = cfg.get<float>("MCSTrackLength", 100.);
   fConfig.TrackLength = cfg.get<float>("TrackLength", 50.);
 
   fConfig.CRTHitDist = cfg.get<float>("CRTHitDist", 35.);
@@ -87,6 +88,10 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool fiducial = InFV(event.reco[reco_vertex_index].position);
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
+
+  bool good_mcs = (InCalorimetricContainment(primary_track.start) && InCalorimetricContainment(primary_track.end)) /* use range momentum */ ||
+                  (primary_track.mcs_momentum < 7. /* garbage value */ && (fConfig.MCSTrackLength <0. || primary_track.length > fConfig.MCSTrackLength)) /* use MCS*/
+                  && fiducial;
   
   bool pass_crt_track = !HasCRTTrackMatch(primary_track) && fiducial;
   bool pass_crt_hit = (!HasCRTHitMatch(primary_track) || TimeInSpill(CRTMatchTime(primary_track)))
@@ -96,7 +101,6 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     && pass_crt_hit;
 
   bool is_contained = InCosmicContainment(primary_track.start) && InCosmicContainment(primary_track.end) && fiducial && pass_crt_track && pass_crt_hit && pass_length;
-  bool single_interaction = event.reco.size() == 1 && pass_length;
 
   bool crt_activity = is_contained;
   for (const numu::CRTHit &crt_hit: event.in_time_crt_hits) {
@@ -109,11 +113,11 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   return {
     is_reco,
     fiducial,
+    good_mcs,
     pass_crt_track,
     pass_crt_hit,
     pass_length,
     is_contained,
-    single_interaction,
     crt_activity
   };
 }

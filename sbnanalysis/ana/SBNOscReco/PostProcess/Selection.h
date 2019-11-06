@@ -30,6 +30,7 @@
 #include "../Histograms/TrajHistograms.h"
 #include "../Histograms/DynamicSelector.h"
 #include "../Data/RecoEvent.h"
+#include "../Data/MCType.h" 
 
 class TTree;
 
@@ -70,9 +71,8 @@ private:
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
 
-  std::vector<std::string> fFileTypes;
   int fFileIndex;
-  std::string fFileType;
+  numu::MCType fFileType;
 
 };
 

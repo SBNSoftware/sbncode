@@ -11,8 +11,9 @@ enum InteractionMode {
   mNC = 2, 
   mNCNonPrimary = 3,
   mCosmic = 4, 
-  mOther = 5,
-  mAll = 6
+  mIntimeCosmic = 5,
+  mOther = 6,
+  mAll = 7
 };
 
 /**

@@ -10,6 +10,7 @@
 #include <cassert>
 
 #include <TFile.h>
+#include <TParameter.h>
 #include <TVector3.h>
 #include <TH1D.h>
 #include <TH2D.h>
@@ -67,7 +68,6 @@ namespace SBNOsc {
 
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
-      fFileTypes = config->get<std::vector<std::string>>("FileTypes");
       fNCosmicData = config->get<double>("NCosmicData", 0.);
     }
     fTrajHistograms.Initialize(fTrajHistoNames);
@@ -83,12 +83,14 @@ namespace SBNOsc {
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
     eventTree->SetBranchAddress("reco_event", &fRecoEvent);
     fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
+    TParameter<int> *file_type = (TParameter<int> *)f->Get("MCType");
+    fFileType = (numu::MCType) file_type->GetVal();
+
     if (fDoNormalize) {
-      fFileType = fFileTypes[fFileIndex];
-      if (fFileType == "cosmic") {
+      if (fFileType == numu::fIntimeCosmic) {
         fHistsToFill = &fCosmicHistograms;
       }
-      else if (fFileType == "neutrino") {
+      else if (fFileType == numu::fOverlay) {
         fHistsToFill = &fNeutrinoHistograms;
       }
       else assert(false);
@@ -135,6 +137,12 @@ namespace SBNOsc {
       fRecoEvent->reco[i].primary_track = fRecoEvent->reco_tracks.at(primary_track);
       // re-do truth matching
       fRecoEvent->reco[i].match = numu::InteractionTruthMatch(fRecoEvent->truth, fRecoEvent->reco_tracks, fRecoEvent->reco[i]);
+
+      // if this is an in-time cosmic file, update the cosmic mode
+      if (fFileType == numu::fIntimeCosmic) {
+        assert(fRecoEvent->reco[i].match.mode == numu::mCosmic);
+        fRecoEvent->reco[i].match.mode = numu::mIntimeCosmic;
+      }
 
       i += 1;
     }
@@ -193,7 +201,7 @@ namespace SBNOsc {
 
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
     if (fDoNormalize) {
-      if (fFileType == "cosmic") fNormalize.AddCosmicEvent(*core_event);
+      if (fFileType == numu::fIntimeCosmic) fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);
     }
 
@@ -202,6 +210,12 @@ namespace SBNOsc {
   void Selection::Finalize() {
     fOutputFile->cd();
     if (fDoNormalize) {
+      // save scale per 1e20 POT
+      TParameter<float> scale_neutrino("ScaleNeutrino", fNormalize.ScaleNeutrino(1.e20));
+      TParameter<float> scale_cosmic("ScaleCosmic", fNormalize.ScaleCosmic(1.e20));
+      scale_neutrino.Write();
+      scale_cosmic.Write();
+
       fNeutrinoHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));
       fHistograms.Add(fNeutrinoHistograms);

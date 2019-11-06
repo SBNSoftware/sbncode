@@ -7,6 +7,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 
+#include <TParameter.h>
 #include <TH2D.h>
 #include <TH1D.h>
 
@@ -42,6 +43,7 @@
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
 #include "../NumuReco/TrackAlgo.h"
+#include "../Data/MCType.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -74,6 +76,13 @@ void DumpTrueStart(const gallery::Event &ev, int mcparticle_id) {
 numu::Wall GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
+  
+  /*
+  std::cout << "p0: " << p0.X() << " " << p0.Y() << " " << p0.Z() << std::endl;
+  std::cout << "p1: " << p1.X() << " " << p1.Y() << " " << p1.Z() << std::endl;
+  std::cout << "i0: " << intersections[0].X() << " " << intersections[0].Y() << " " << intersections[0].Z() << std::endl; 
+  std::cout << "i1: " << intersections[1].X() << " " << intersections[1].Y() << " " << intersections[1].Z() << std::endl; 
+  */
 
   assert(intersections.size() == 2);
 
@@ -298,6 +307,33 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
               << "(" << _nu_count << " neutrinos selected)"
               << std::endl;
   }
+  // on the first event, store the type of MC we are processing
+  if (_event_counter == 0) {
+    // Get neutrino truth
+    gallery::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+    bool has_mctruth = ev.getByLabel(fTruthTag, mctruth_handle);
+
+    // also cosmics
+    gallery::Handle<std::vector<simb::MCTruth>> cosmics;
+    bool has_cosmics = ev.getByLabel(_config.CorsikaTag, cosmics);
+    
+    numu::MCType type;
+    // cosmic + neutrino -- overlay 
+    if (has_mctruth && has_cosmics) {
+      type = numu::fOverlay;
+    } 
+    else if (has_cosmics) {
+      type = numu::fIntimeCosmic;
+    }
+    else {
+      type = numu::fUnknown;
+    }
+    TParameter<int> mc_type("MCType", (int)type);
+    fOutputFile->cd();
+    mc_type.Write();
+  }
+
+
   std::cout << "New Event! " << _event_counter << std::endl;
   // clear out old containers
   _selected->clear();
@@ -1007,6 +1043,10 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 
     // get the PFParticle
     const recob::PFParticle& this_pfp = *_tpc_particles.at(i);
+
+    // assign pandora PDG
+    this_particle.pandora_pid = this_pfp.PdgCode();
+
     // get its daughters in the partcle "flow"
     this_particle.daughters.assign(_tpc_particles_to_daughters[i].begin(), _tpc_particles_to_daughters[i].end());
     // get the metadata
@@ -1069,7 +1109,9 @@ bool NumuReco::HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, 
 }
 
 bool NumuReco::SelectSlice(const numu::RecoSlice &slice) {
-  return slice.primary_index >= 0 && slice.particles.at(slice.primary_index).p_is_neutrino;
+  return slice.primary_index >= 0 && 
+         slice.particles.at(slice.primary_index).p_is_neutrino && 
+         abs(slice.particles.at(slice.primary_index).pandora_pid) == 14;
 }
 
 numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
@@ -1105,6 +1147,12 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
   ret.mctruth_has_neutrino = truth->NeutrinoSet();
   ret.mctruth_vertex = ret.mctruth_has_neutrino ? truth->GetNeutrino().Nu().Position().Vect() : TVector3(-999, -999, -999);
   ret.mctruth_origin = truth->Origin();
+
+  // TODO: fix -- in time cosmics will not have the origin set correctly. Fix and set this to 2.
+  if (ret.mctruth_origin == simb::kUnknown) {
+    ret.mctruth_origin = simb::kCosmicRay; 
+  }
+
   ret.mctruth_ccnc = ret.mctruth_has_neutrino ? truth->GetNeutrino().CCNC() : -1;
   ret.mcparticle_id = mcp_track_id;
   ret.completion = completion;
@@ -1479,6 +1527,7 @@ std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
     if (InBeamSpill(time)) {
       numu::CRTHit this_hit;
       this_hit.time = time;
+      this_hit.pes = hit.peshit;
       ret.push_back(this_hit);
     } 
   }

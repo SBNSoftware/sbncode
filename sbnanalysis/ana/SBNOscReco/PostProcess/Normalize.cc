@@ -3,7 +3,7 @@
 
 
 void ana::SBNOsc::Normalize::Initialize(const fhicl::ParameterSet &fcl) {
-  fPotPerReadout = fcl.get<double>("PotPerReadout");
+  fPotPerReadout = fcl.get<double>("PotPerReadout", 5.e12);
 
   fLastCosmicFileID = -1;
   fLastCosmicEventID = -1;
@@ -19,7 +19,7 @@ void ana::SBNOsc::Normalize::Initialize(const fhicl::ParameterSet &fcl) {
   // rely on knowing number of cosmic events per file. This
   // number is hard-coded, since we will want to change
   // how we do this long term
-  fCosmicEventsPerFile = 666;
+  fCosmicEventsPerFile = 50;
 
 }
 
@@ -33,15 +33,7 @@ void ana::SBNOsc::Normalize::AddCosmicEvent(const event::Event &event) {
 }
 
 void ana::SBNOsc::Normalize::AddNeutrinoEvent(const event::Event &event) {
-  // new file -- just count the event
-  if (fLastNeutrinoFileID == -1 || event.metadata.fileEntry != fLastNeutrinoFileID) {
-    fNNeutrinoEvents += 1;
-  }
-  else {
-    fNNeutrinoEvents += event.metadata.eventID - fLastNeutrinoEventID;
-  }
-  fLastNeutrinoFileID = event.metadata.fileEntry;
-  fLastNeutrinoEventID = event.metadata.eventID;
+  fNNeutrinoEvents ++;
 }
 
 void ana::SBNOsc::Normalize::AddNeutrinoSubRun(const SubRun &subrun) {
