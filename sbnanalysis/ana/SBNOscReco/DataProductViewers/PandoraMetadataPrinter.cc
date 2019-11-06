@@ -65,6 +65,7 @@ public:
       art::FindManyP<larpandoraobj::PFParticleMetadata, void> particles_to_metadata(particles_handle, ev, fPandoraTags[j]);
       std::cout << "TAG: " << fPandoraTags[j] << std::endl;
       for (unsigned i = 0; i < particles_handle->size(); i++) {
+        std::cout << "Particle PDG: " << particles_handle->at(i).PdgCode() << std::endl; 
         std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = particles_to_metadata.at(i);
         if (metadatas.size() > 0) {
           assert(metadatas.size() == 1);

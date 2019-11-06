@@ -87,6 +87,7 @@ public:
       std::cout << "X: " << crt_hit.x_pos << " Y: " << crt_hit.y_pos << " Z: " << crt_hit.z_pos << std::endl;
       std::cout << "Xerr: " << crt_hit.x_err << " Yerr: " << crt_hit.y_err << " Z: " << crt_hit.z_err << std::endl;
       std::cout << "Plane: " << crt_hit.plane << std::endl;
+      std::cout << "PE's Hit: " << crt_hit.peshit << std::endl;
       const std::vector<art::Ptr<icarus::crt::CRTData>> &crt_datas = hits_to_data.at(i);
       std::cout << "Track IDs: ";
       for (auto const &crt_data: crt_datas) {
@@ -125,6 +126,7 @@ public:
       std::cout << "X: " << crt_hit.x_pos << " Y: " << crt_hit.y_pos << " Z: " << crt_hit.z_pos << std::endl;
       std::cout << "Xerr: " << crt_hit.x_err << " Yerr: " << crt_hit.y_err << " Z: " << crt_hit.z_err << std::endl;
       std::cout << "Plane: " << crt_hit.plane << std::endl;
+      std::cout << "PE's Hit: " << crt_hit.peshit << std::endl;
     }
 
     }
