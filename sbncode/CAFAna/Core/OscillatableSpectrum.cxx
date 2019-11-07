@@ -6,6 +6,8 @@
 #include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Core/Utilities.h"
 
+#include "CAFAna/Analysis/ExpInfo.h"
+
 #include "StandardRecord/Proxy/SRProxy.h"
 
 #include "OscLib/IOscCalculator.h"
@@ -22,6 +24,13 @@ namespace ana
 {
   // Duplicate here because we can't include Vars.h
   const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy;});
+  //const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy * 1000 * kBLs[sr->experiment] / sr->truth[0].neutrino.baseline;});
+  const Var kTrueE_hack([](const caf::SRProxy* sr){
+            int exp;
+            if (sr->truth[0].neutrino.baseline < 150) exp = 0;
+            else if (sr->truth[0].neutrino.baseline < 500) exp = 1;
+            else exp = 2;
+            return sr->truth[0].neutrino.energy * 1000 * kBLs[exp] / sr->truth[0].neutrino.baseline;});
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::
@@ -31,7 +40,7 @@ namespace ana
                        const Cut& cut,
                        const SystShifts& shift,
                        const Var& wei)
-    : ReweightableSpectrum(label, bins, kTrueE),
+    : ReweightableSpectrum(label, bins, kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -50,7 +59,7 @@ namespace ana
                                              const Cut& cut,
                                              const SystShifts& shift,
                                              const Var& wei)
-    : ReweightableSpectrum(axis.GetLabels(), axis.GetBinnings(), kTrueE),
+    : ReweightableSpectrum(axis.GetLabels(), axis.GetBinnings(), kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -86,7 +95,7 @@ namespace ana
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const std::string& label,
                                              const Binning& bins)
-    : ReweightableSpectrum(label, bins, kTrueE),
+    : ReweightableSpectrum(label, bins, kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -103,7 +112,7 @@ namespace ana
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const std::string& label, double pot, double livetime,
                                              const Binning& bins)
-    : ReweightableSpectrum(label, bins, kTrueE),
+    : ReweightableSpectrum(label, bins, kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -122,7 +131,7 @@ namespace ana
                                              const std::vector<std::string>& labels,
                                              const std::vector<Binning>& bins,
                                              double pot, double livetime)
-    : ReweightableSpectrum(kTrueE, h, labels, bins, pot, livetime),
+    : ReweightableSpectrum(kTrueE_hack, h, labels, bins, pot, livetime),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -134,7 +143,7 @@ namespace ana
                                              const std::vector<std::string>& labels,
                                              const std::vector<Binning>& bins,
                                              double pot, double livetime)
-    : ReweightableSpectrum(kTrueE, std::move(h), labels, bins, pot, livetime),
+    : ReweightableSpectrum(kTrueE_hack, std::move(h), labels, bins, pot, livetime),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -155,7 +164,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const OscillatableSpectrum& rhs)
-    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE),
+    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -176,7 +185,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(OscillatableSpectrum&& rhs)
-    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE),
+    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE_hack),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
