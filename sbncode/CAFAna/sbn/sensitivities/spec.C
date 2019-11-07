@@ -32,7 +32,7 @@ using namespace ana;
 //const char* basicFname = "cafe_state_smear_numu.root";
 
 //void spec(const char* stateFname = basicFname)
-void spec_old()
+void spec()
 {
 
   const char* stateFname = "cafe_state_smear_numu.root";
