@@ -22,6 +22,8 @@ def main(args):
     if isinstance(hist, ROOT.TGraph):
         drawstr = "AL"
     hist.Draw(drawstr)
+    if args.title is not None:
+        hist.SetTitle(args.title)
     util.style(args, hist)
     if args.logy:
         canvas.SetLogy()
@@ -73,6 +75,7 @@ if __name__ == "__main__":
     parser = util.with_io_args(parser)
     parser = util.with_histosize_args(parser)
     parser = util.with_histostyle_args(parser)
+    parser.add_argument("-t" ,"--title", default=None)
     parser.add_argument("-hn", "--hist", required=True)
     parser.add_argument("-ly", "--logy", action="store_true")
     parser.add_argument("-lz", "--logz", action="store_true")

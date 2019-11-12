@@ -5,18 +5,23 @@ import argparse
 
 def main(args):
     f = ROOT.TFile(args.input)
-    hists = [[h for h in hlist] for hlist in args.hstack]
+    hists = [[f.Get(h.lstrip("-")) for h in hlist] for hlist in args.hstack]
     util.validate_hists(args.hstack, hists)
-    hists = [[util.resize_histo(args, f.Get(h)) for h in hlist] for hlist in hists]
+    hists = [[util.resize_histo(args, h) for h in hlist] for hlist in hists]
 
     canvas = ROOT.TCanvas("canvas", "Canvas", 250,100,700,500)
     hstack = ROOT.THStack()
 
-    for i, hlist in enumerate(hists):
+    for i, (hlist,hnames) in enumerate(zip(hists, args.hstack)):
         h = hlist[0]
         if len(hlist) > 1:
-            for hadd in hlist[1:]:
-                h.Add(hadd)
+            for hadd,hname in zip(hlist[1:],hnames[1:]):
+                #if "InTime-" in hname:
+                #   h.Add(hadd, 10. / 1837.)
+                if hname.startswith("-"):
+                    h.Add(hadd, -1)
+                else:
+                    h.Add(hadd)
   
         if args.area_normalize and h.Integral() > 1e-4: h.Scale(1. / h.Integral())
         if args.stack:

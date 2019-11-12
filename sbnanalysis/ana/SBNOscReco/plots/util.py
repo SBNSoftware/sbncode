@@ -204,7 +204,7 @@ def legend_position(inp):
     elif inp == "ul":
         return [0.35,0.75,0.15,0.95]
     elif inp == "um":
-        return [0.4, 0.75, 0.6, 0.95]
+        return [0.4, 0.69, 0.6, 0.89]
     else:
         return [float(x) for x in inp.split(",")][:4]
 
