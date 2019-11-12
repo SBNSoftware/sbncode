@@ -63,6 +63,8 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 }
 
 std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const {
+  bool is_truth = true;
+
   bool is_neutrino = event.truth[truth_vertex_index].match.mode == numu::mCC || event.truth[truth_vertex_index].match.mode == numu::mNC;
   bool is_fiducial = InFV(event.truth[truth_vertex_index].position) && is_neutrino;
   bool is_matched = (fConfig.TruthMatchDist < 0. || dist2Match(event.truth[truth_vertex_index], event.reco) < fConfig.TruthMatchDist) 
@@ -78,7 +80,7 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
     }
   }
 
-  return {is_neutrino, is_fiducial, is_matched, is_completed, has_reco};
+  return {is_truth, is_fiducial, is_matched, is_completed, has_reco};
 }
 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
@@ -93,9 +95,9 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
                   (primary_track.mcs_momentum < 7. /* garbage value */ && (fConfig.MCSTrackLength <0. || primary_track.length > fConfig.MCSTrackLength)) /* use MCS*/
                   && fiducial;
   
-  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && fiducial;
+  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && good_mcs;
   bool pass_crt_hit = (!HasCRTHitMatch(primary_track) || TimeInSpill(CRTMatchTime(primary_track)))
-    && fiducial && pass_crt_track;
+    && pass_crt_track;
 
   bool pass_length = fConfig.TrackLength < 0. || primary_track.length > fConfig.TrackLength
     && pass_crt_hit;

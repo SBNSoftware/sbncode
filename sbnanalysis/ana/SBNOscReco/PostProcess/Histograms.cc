@@ -5,6 +5,7 @@
 
 #include "Histograms.h"
 #include "../Histograms/Derived.h"
+#include "../RecoUtils/GeoUtil.h"
 
 namespace ana {
   namespace SBNOsc {
@@ -16,6 +17,14 @@ void Histograms::Fill(
   const std::vector<numu::TrackSelector> &selectors, 
   const std::vector<numu::ROOTValue> &xvalues, 
   bool fill_all_tracks) { 
+
+  if (event.type == numu::fOverlay) {
+    fCosmic.first.Fill(event.truth[event.truth.size()-1].slice.tracks, event.true_tracks);
+  }
+  else {
+    std::cout << "Filling Cosmic!\n";
+    fCosmic.second.Fill(event.truth[event.truth.size()-1].slice.tracks, event.true_tracks);
+  }
 
   if (fill_all_tracks) {
     for (const auto &track_pair: event.reco_tracks) {
@@ -65,6 +74,7 @@ void Histograms::Fill(
     std::array<bool, Cuts::nTruthCuts> cuts = cutmaker.ProcessTruthCuts(event, i); 
     for (int cut_i = 0; cut_i < Cuts::nTruthCuts; cut_i++) {
       int mode = truth.match.mode;
+      std::cout << "Filling mode: " << mode2Str((numu::InteractionMode)mode) << std::endl;
       if (cuts[cut_i]) {
         fInteraction[cut_i][mode].Fill(i, true, event, core.truth);
         fInteraction[cut_i][numu::mAll].Fill(i, true, event, core.truth);
@@ -74,15 +84,21 @@ void Histograms::Fill(
 }
 
 void Histograms::Initialize(
+  const geo::GeometryCore *geometry,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,
   const std::vector<std::tuple<unsigned, float, float>> &track_profile_xranges) {
 
+  double max_length = SBNRecoUtils::MaxLength(geometry);
+  geo::BoxBoundedGeo detector = SBNRecoUtils::DetectorVolume(geometry);
+
+  fCosmic.first.Initialize(prefix + "_Cosmic", detector);
+  fCosmic.second.Initialize(prefix + "_IntimeCosmic", detector);
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       std::string postfix = mode2Str(mode) + prefix + histoNames[i];
-      fInteraction[i][mode].Initialize(postfix); 
+      fInteraction[i][mode].Initialize(postfix, detector, max_length); 
     }
   }
   fAllTracks.reserve(track_histo_types.size());
@@ -92,9 +108,9 @@ void Histograms::Initialize(
     fAllTracks.emplace_back();
     fPrimaryTracks.emplace_back();
     fPrimaryTrackProfiles.emplace_back();
-    fAllTracks[i].Initialize(prefix + "All_" + track_histo_types[i]);
+    fAllTracks[i].Initialize(prefix + "All_" + track_histo_types[i], detector, max_length);
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
-      fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + track_histo_types[i] + "_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+j]));
+      fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + track_histo_types[i] + "_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+j]), detector, max_length);
 
       for (unsigned k = 0; k < track_profile_types.size(); k++) {
         if (j == 0) fPrimaryTrackProfiles[i].emplace_back();
@@ -109,6 +125,9 @@ void Histograms::Initialize(
     }
   }
 
+
+  fAllHistos.insert(fAllHistos.end(), fCosmic.first.fAllHistos.begin(), fCosmic.first.fAllHistos.end());
+  fAllHistos.insert(fAllHistos.end(), fCosmic.second.fAllHistos.begin(), fCosmic.second.fAllHistos.end());
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       fAllHistos.insert(fAllHistos.end(), fInteraction[i][mode].fAllHistos.begin(), fInteraction[i][mode].fAllHistos.end());

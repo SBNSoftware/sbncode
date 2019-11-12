@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <core/Event.hh>
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 #include "../Data/RecoEvent.h"
 #include "../Data/RecoTrack.h"
@@ -35,6 +36,10 @@ struct InteractionHistos : public HistoList {
   TH1D *dist_to_match; //!< Distance from this vertex to the closest matching vertex reco->truth and truth->reco
   TH1D *primary_track_completion; //!< Completion of the primary track
   TH1D *n_reco_vertices; //!< Number of reconstructed vertices in the event with this vertex
+  TH1D *maxpe_crt_intime_hit; //!< Maximum number of PE's in a single CRT hit in time with the beam
+  TH2D *vertex_xy;
+  TH2D *vertex_yz;
+  TH2D *vertex_xz;
 
   /**
  *  Intialize the histograms
@@ -42,7 +47,7 @@ struct InteractionHistos : public HistoList {
  *  \param mode The mode of interaction for these histograms
  *  \param index The cut index for these histograms.
  */
-  void Initialize(const std::string &prefix);
+  void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume, double max_length);
  
   /**
  * Fill the histograms with a single interaction

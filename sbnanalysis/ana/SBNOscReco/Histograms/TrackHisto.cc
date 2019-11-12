@@ -6,7 +6,7 @@
 namespace ana {
   namespace SBNOsc {
 
-void TrackHistos::Initialize(const std::string &postfix) {
+void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length) {
 #define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
 #define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); fAllHistos.push_back(name)
 
@@ -15,10 +15,10 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_HISTO(chi2_kaon_diff, 100, 0, 1000);
   TRACK_HISTO(chi2_pion_diff, 100, 0, 1000);
 
-  TRACK_HISTO(chi2_muon, 100, 0, 1000);
-  TRACK_HISTO(chi2_pion, 100, 0, 1000);
-  TRACK_HISTO(chi2_kaon, 100, 0, 1000);
-  TRACK_HISTO(chi2_proton, 100, 0, 1000);
+  TRACK_HISTO(chi2_muon, 100, 0, 100);
+  TRACK_HISTO(chi2_pion, 100, 0, 100);
+  TRACK_HISTO(chi2_kaon, 100, 0, 100);
+  TRACK_HISTO(chi2_proton, 100, 0, 100);
 
   TRACK_HISTO(chi2_proton_m_muon, 200, -1000, 1000);
 
@@ -33,7 +33,7 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
-  TRACK_HISTO(length, 100, 0., 500.);
+  TRACK_HISTO(length, 100, 0., max_length);
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
   
@@ -45,12 +45,12 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
 
-  TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., 600.);
+  TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
 
-  TRACK_HISTO(border_y, 400, -200., 200.);
-  TRACK_HISTO(border_x, 400, -200., 200.);
-  TRACK_HISTO(border_z, 500, 0., 500.); 
-  TRACK_HISTO(true_start_time, 100, -4000., 3000.);
+  TRACK_HISTO(border_y, 400, detector_volume.MinY(), detector_volume.MaxY());
+  TRACK_HISTO(border_x, 400, detector_volume.MinX(), detector_volume.MaxX());
+  TRACK_HISTO(border_z, 500, detector_volume.MinZ(), detector_volume.MaxZ()); 
+  TRACK_HISTO(true_start_time, 1400, -4000., 3000.);
 
   TRACK_HISTO(wall_enter, 7, -0.5, 6.5);
   TRACK_HISTO(wall_exit, 7, -0.5, 6.5);
@@ -59,6 +59,8 @@ void TrackHistos::Initialize(const std::string &postfix) {
   TRACK_HISTO(has_crt_track_match, 3, -0.5, 1.5);
   TRACK_HISTO(has_crt_hit_match, 3, -0.5, 1.5); 
   TRACK_HISTO(has_flash_match, 3, -0.5, 1.5);
+  TRACK_HISTO(crt_hit_distance, 500, 0., 2000.);
+  TRACK_HISTO(crt_track_angle, 150, 0., 3.);
   
   double min_matchtime_t = -1640;
   double max_matchtime_t =  3280;
@@ -93,10 +95,10 @@ void TrackHistos::Fill(
     chi2_pion_diff->Fill(track.chi2_pion - track.min_chi2);
     chi2_kaon_diff->Fill(track.chi2_kaon - track.min_chi2);
 
-    chi2_muon->Fill(track.chi2_muon);
-    chi2_kaon->Fill(track.chi2_kaon);
-    chi2_pion->Fill(track.chi2_pion);
-    chi2_proton->Fill(track.chi2_proton);
+    chi2_muon->Fill(track.chi2_muon/track.pid_n_dof);
+    chi2_kaon->Fill(track.chi2_kaon/track.pid_n_dof);
+    chi2_pion->Fill(track.chi2_pion/track.pid_n_dof);
+    chi2_proton->Fill(track.chi2_proton/track.pid_n_dof);
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 
@@ -146,9 +148,11 @@ void TrackHistos::Fill(
   has_crt_track_match->Fill(track.crt_match.track.present);
   if (track.crt_match.track.present) {
     crt_match_time->Fill(track.crt_match.track.time);
+    crt_track_angle->Fill(track.crt_match.track.angle);
   }
   else if (track.crt_match.hit.present) {
     crt_match_time->Fill(track.crt_match.hit.time);
+    crt_hit_distance->Fill(track.crt_match.hit.distance);
   }
   has_flash_match->Fill(track.flash_match.present);
   if (track.flash_match.present) {

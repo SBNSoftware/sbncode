@@ -44,6 +44,7 @@ public:
   void FileSetup(TFile *f, TTree *eventTree);
   void Initialize(fhicl::ParameterSet *config);
   void ProcessEvent(const event::Event *event);
+  void ProcessSubRun(const SubRun *subrun);
   void Finalize();
 
 private:

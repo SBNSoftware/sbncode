@@ -5,10 +5,14 @@
 #include <string>
 #include <tuple>
 
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+
 #include "../Histograms/HistoList.h"
 #include "../Histograms/TrackHisto.h"
 #include "../Histograms/Profile.h"
 #include "../Histograms/InteractionHisto.h"
+#include "../Histograms/CosmicHisto.h"
 #include "../Histograms/DynamicSelector.h"
 
 #include "Cuts.h"
@@ -22,6 +26,7 @@ namespace ana {
 struct Histograms : public HistoList {
 
   void Initialize(
+  const geo::GeometryCore *geometry,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,
@@ -73,6 +78,7 @@ struct Histograms : public HistoList {
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
   std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
+  std::pair<CosmicHistos, CosmicHistos> fCosmic;
 
 };
 

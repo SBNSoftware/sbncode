@@ -74,9 +74,9 @@ namespace SBNOsc {
     fROC.Initialize();
     fRecoEvent = NULL;
 
-    fHistograms.Initialize("",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
-    fNeutrinoHistograms.Initialize("Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-    fCosmicHistograms.Initialize("Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), "",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
+    fNeutrinoHistograms.Initialize(fProviderManager->GetGeometryProvider(), "Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
 
   }
 
@@ -105,6 +105,13 @@ namespace SBNOsc {
     fTrajHistograms.Add(from_file);
   }
 
+  void Selection::ProcessSubRun(const SubRun *subrun) {
+    if (fDoNormalize && fFileType == numu::fOverlay) {
+      fNormalize.AddNeutrinoSubRun(*subrun);
+      
+    }
+  }
+
   void Selection::ProcessEvent(const event::Event *core_event) {
     std::cout << "Event: " << core_event->metadata.eventID << std::endl;
 
@@ -128,9 +135,11 @@ namespace SBNOsc {
       track.mcs_momentum = track.mcs_muon.fwd_mcs_momentum;
       if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
         track.momentum = track.range_momentum;
+        track.is_contained = true;
       }
       else {
         track.momentum = track.mcs_momentum;
+        track.is_contained = false;
       }
 
       fRecoEvent->reco[i].slice.primary_track_index = primary_track;
@@ -140,11 +149,17 @@ namespace SBNOsc {
 
       // if this is an in-time cosmic file, update the cosmic mode
       if (fFileType == numu::fIntimeCosmic) {
-        assert(fRecoEvent->reco[i].match.mode == numu::mCosmic);
+        assert(fRecoEvent->reco[i].match.mode == numu::mCosmic || fRecoEvent->reco[i].match.mode == numu::mOther);
         fRecoEvent->reco[i].match.mode = numu::mIntimeCosmic;
       }
 
       i += 1;
+    }
+
+    // if this is an in-time cosmic file, update the cosmic mode
+    if (fFileType == numu::fIntimeCosmic) {
+      assert(fRecoEvent->truth.size() == 1);
+      fRecoEvent->truth[0].match.mode = numu::mIntimeCosmic;
     }
 
     fROC.Fill(fCuts, *fRecoEvent);
@@ -183,6 +198,7 @@ namespace SBNOsc {
     }
 
     // further refine reco stuff
+    /*
     for (numu::RecoInteraction &reco: fRecoEvent->reco) {
       numu::RecoTrack &track = fRecoEvent->reco_tracks.at(reco.slice.primary_track_index); 
       // refine CRT information on primary track
@@ -194,7 +210,7 @@ namespace SBNOsc {
       }
 
       reco.primary_track = track;
-    }
+    }*/
 
     // make sure no two vertices match to the same true neutrino interaction
     numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
@@ -209,12 +225,16 @@ namespace SBNOsc {
 
   void Selection::Finalize() {
     fOutputFile->cd();
+    std::cout << "Finalizing!\n";
     if (fDoNormalize) {
+      std::cout << "Normalizing!\n";
       // save scale per 1e20 POT
       TParameter<float> scale_neutrino("ScaleNeutrino", fNormalize.ScaleNeutrino(1.e20));
       TParameter<float> scale_cosmic("ScaleCosmic", fNormalize.ScaleCosmic(1.e20));
       scale_neutrino.Write();
       scale_cosmic.Write();
+      std::cout << "Scale Neutrino: " << fNormalize.ScaleNeutrino(1.e20) << std::endl;
+      std::cout << "Scale Cosmic: " << fNormalize.ScaleCosmic(1.e20) << std::endl;
 
       fNeutrinoHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));

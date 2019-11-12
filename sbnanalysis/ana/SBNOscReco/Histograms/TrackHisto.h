@@ -4,6 +4,8 @@
 #include <vector>
 #include <map>
 
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
+
 #include "../Data/RecoEvent.h"
 #include "HistoList.h"
 
@@ -65,6 +67,8 @@ struct TrackHistos : public HistoList {
   TH1D *has_crt_track_match;
   TH1D *has_crt_hit_match;
   TH1D *has_flash_match;
+  TH1D *crt_hit_distance;
+  TH1D *crt_track_angle;
 
   TH1D *crt_match_time;
   TH1D *flash_match_time;
@@ -78,7 +82,7 @@ struct TrackHistos : public HistoList {
  * Initialize this set of histograms
  * \param postfix The postfix to add to all histogram names
  */
-  void Initialize(const std::string &postfix);
+  void Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length);
 
   /**
  * Fill all of the histograms in this class with a track
