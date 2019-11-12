@@ -18,6 +18,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 #include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -60,6 +61,31 @@ public:
    */
   bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
     std::cout << "\nNew Event!\n";
+    for (unsigned j = 0; j < fPandoraTags.size(); j++) {
+      auto const &slices_handle = ev.getValidHandle<std::vector<recob::Slice>>(fPandoraTags[j]);
+      auto const &particles_handle = ev.getValidHandle<std::vector<recob::PFParticle>>(fPandoraTags[j]); 
+
+      art::FindManyP<recob::PFParticle, void> slice_to_particle(slices_handle, ev, fPandoraTags[j]);
+      art::FindManyP<larpandoraobj::PFParticleMetadata, void> particles_to_metadata(particles_handle, ev, fPandoraTags[j]);
+
+      for (unsigned i = 0; i < slices_handle->size(); i++) {
+        std::cout << "New Slice!\n";
+        const recob::Slice &slice = (*slices_handle)[i];
+        const std::vector<art::Ptr<recob::PFParticle>> slice_particles = slice_to_particle.at(i);
+        for (unsigned k = 0; k < slice_particles.size(); k++) {
+          const art::Ptr<recob::PFParticle> pfp_part = slice_particles[k];
+          if (pfp_part->IsPrimary()) {
+            const larpandoraobj::PFParticleMetadata &meta = *particles_to_metadata.at(pfp_part->Self()).at(0);
+            auto const &properties = meta.GetPropertiesMap();
+            if (properties.count("NuScore")) {
+              std::cout << "NuScore: " << properties.at("NuScore") << std::endl;
+            }
+          } 
+        } 
+      } 
+    }
+
+    // print particle information
     for (unsigned j = 0; j < fPandoraTags.size(); j++) {
       auto const &particles_handle = ev.getValidHandle<std::vector<recob::PFParticle>>(fPandoraTags[j]); 
       art::FindManyP<larpandoraobj::PFParticleMetadata, void> particles_to_metadata(particles_handle, ev, fPandoraTags[j]);
