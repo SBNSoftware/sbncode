@@ -10,6 +10,7 @@
 #include "ana/SBNOscReco/Data/RecoTrack.h"
 #include "ana/SBNOscReco/Data/TruthMatch.h"
 #include "ana/SBNOscReco/Data/DetInfo.h"
+#include "ana/SBNOscReco/Data/MCType.h"
 
 namespace numu {
 
@@ -40,7 +41,6 @@ struct RecoInteraction {
   RecoTrack primary_track; //!< Stores the primary track in the slice
 };
 
-
 /** Reconstruction Information about Event */
 struct RecoEvent {
   std::map<size_t, RecoTrack> reco_tracks; //!< Map of track indices to Track information.
@@ -48,6 +48,7 @@ struct RecoEvent {
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
   std::vector<RecoInteraction> truth; //!< List of truth vertices
   std::vector<CRTHit> in_time_crt_hits; //!< List of crt hits in time with the beam spill
+  MCType type;
 };
 }
 #endif
