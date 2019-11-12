@@ -23,6 +23,15 @@ NumuReco: {
   CRTT0MatchAlg:  @local::standard_crtt0matchingalg
   CRTTrackMatchAlg: @local::standard_crttrackmatchingalg
 
+  containment_volume_inset: {
+    x: 0
+    y: 0
+    zfront: 0
+    zback: 0
+  }
+
+
+  StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
   ApaCrossCosmicIdAlg: {
     DistanceLimit:  1.1 #2.# Max distance between track end and APA for successful match[cm]
     MaxApaDistance: 5. #10. # Distance from Apa to not try to shift track [cm]
@@ -31,30 +40,8 @@ NumuReco: {
       BeamTimeMax: 2.0 
     }
   }
-  MakeOpHits: true
-
-  OpHitMaker: {
-    InputModule:        "opdaq"
-    BaselineSample:     95        #ticks (make it slightly smaller than the pre-trigger)
-    ThresholdPMT:       8         #in ADC
-    ThresholdArapuca:   20        #in ADC
-    Area1pePMT:         132.66    #in ADC*ns
-    Area1peSiPM:        8541.     #in ADC*ns
-    Saturation:         300       #in number of p.e. to see saturation effects in the signal
-    # Sampling:           0.5      #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency
-    PulsePolarityPMT:   -1        #use -1 for inverse polarity
-    PulsePolarityArapuca: 1       #use -1 for inverse polarity
-    UseDenoising:        1        #if you want a denoising algorithm to use with arapucas choose 1
-  }
-
-  containment_volume_inset: {
-    y: 10
-    x: 10
-    zfront: 10
-    zback: 10
-  }
-
-  StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
 }
-# NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
+
+NumuReco.TSMode: 1
+NumuReco.CRTT0MatchAlg.TSMode: 1
 

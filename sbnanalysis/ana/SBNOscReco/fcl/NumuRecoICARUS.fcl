@@ -1,30 +1,30 @@
 #include "crttrackmatchingalg_sbnd.fcl"
 #include "crtt0matchingalg_sbnd.fcl"
+#include "cosmicidmodules_sbnd.fcl"
 
 OutputFile: "output_numureco.root"
 
 ExperimentID: 2
-ProviderConfigFile: "services_icarus_3drift.fcl"
 
-PFParticleTag: "pandoraGausCryo0"
-RecoSliceTag: "pandoraGausCryo0"
-RecoVertexTag: "pandoraGausCryo0"
-RecoTrackTag: "pandoraTrackGausCryo0"
-CaloTag: "pandoraGausCaloCryo0"
-PIDTag: "pandoraGausPidCryo0"
+GeneratorProcess: GenGenieCorsika
+
+TPCRecoTagSuffixes: ["Cryo0", "Cryo1"] 
+PFParticleTag: "pandoraGaus"
+RecoSliceTag: "pandoraGaus"
+RecoVertexTag: "pandoraGaus"
+RecoTrackTag: "pandoraTrackGaus"
+CaloTag: "pandoraGausCalo"
+PIDTag: "pandoraGausPid"
 CRTHitTag: "crtsimhit"
 
-# sbnd_beamtime: [0, 1.600] # [us]
-sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
-
-NumuRecoSelection: {
+NumuReco: {
   shakyMCTracks: true
   requireMatched: false
   requireContained: false
 
+  # CRTHitDist: 35
+  trackMatchContainmentCut: 0.5
   flashMatchTimeDifference: 1000
-  TSMode: 0
-  CRTHitDist: 35
 
   CRTT0MatchAlg:  @local::standard_crtt0matchingalg
   CRTTrackMatchAlg: @local::standard_crttrackmatchingalg
@@ -37,21 +37,18 @@ NumuRecoSelection: {
       BeamTimeMax: 2.0 
     }
   }
-
   containment_volume_inset: {
-    y: 10
-    x: 10
-    zfront: 10
-    zback: 10
+    x: 0
+    y: 0
+    zfront: 0
+    zback: 0
   }
 
-  fiducial_volume_inset: {
-    y: 10
-    x: 10
-    zfront: 15
-    zback: 85
-  }
+  StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
 }
-NumuRecoSelection.CRTT0MatchAlg.TSMode: 0
-# NumuRecoSelection.CRTT0MatchAlg.T0Alg.DistanceLimit: 35. #35.
+
+NumuReco.TSMode: 0
+NumuReco.CRTHitTimeCorrection: 1.1e3
+NumuReco.CRTT0MatchAlg.TSMode: 0
+NumuReco.CRTT0MatchAlg.TimeCorrection: 1.1e3
 

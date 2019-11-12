@@ -1,7 +1,7 @@
 DoNormalize: true
 GoalPOT: 1.e20
-ExperimentID: 0
-Normalize.NCosmicEvents: 91850
+ExperimentID: 2
+Normalize.NCosmicEvents: 15500
 
 selection_fiducial_volume_inset: {
   y: 10
@@ -39,11 +39,11 @@ calorimetric_containment_volume_inset: {
 
 }
 
-CRTHitDistance: 35
 Cuts: {
    fiducial_volume_inset: @local::fiducial_volume_inset
    cosmic_containment_volume_inset: @local::cosmic_containment_volume_inset
    calorimetric_containment_volume_inset: @local::calorimetric_containment_volume_inset
+   CRTHitDist: 50
 }
 
 pdg_selectors: ["",
@@ -137,15 +137,13 @@ TrackSelectorNames: [
 
 #TrackSelectors: [
 #  @local::neutrino_selectors,
-#  #@local::primary_pdg_selectors,
-#  @local::reco_contained_selectors,
-#  @local::true_contained_selectors
+#  @local::primary_pdg_selectors,
+#  @local::reco_contained_selectors
 #]
 
 #TrackSelectorNames: [
 #  @local::neutrinos,
-  #@local::primary_pdgs,
-#  @local::contained,
+#  @local::primary_pdgs,
 #  @local::contained
 #]
 
