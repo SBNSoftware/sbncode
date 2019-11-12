@@ -22,10 +22,10 @@ using namespace ana;
 
 void make_state_syst()
 {
-  const std::string dir = "/sbnd/data/users/bckhouse/sample_2.1_fitters/";
-  const std::string fnameBeam_nd = dir + "output_SBNOsc_NumuSelection_Proposal_SBND.flat.root";
-  const std::string fnameBeam_fd = dir + "output_SBNOsc_NumuSelection_Proposal_Icarus.flat.root";
-  const std::string fnameBeam_ub = dir + "output_SBNOsc_NumuSelection_Proposal_Uboone.flat.root";
+  const std::string dir = "/sbnd/data/users/jlarkin/workshop_samples/";
+  const std::string fnameBeam_nd = dir + "output_SBNOsc_NumuSelection_Modern_SBND.flat.root";
+  const std::string fnameBeam_fd = dir + "output_SBNOsc_NumuSelection_Modern_Icarus.flat.root";
+  const std::string fnameBeam_ub = dir + "output_SBNOsc_NumuSelection_Modern_Uboone.flat.root";
 
   Loaders loaders_nd, loaders_fd, loaders_ub;
 
@@ -36,7 +36,10 @@ void make_state_syst()
   const Var kRecoE = SIMPLEVAR(reco.reco_energy);
   const Var kWeight = SIMPLEVAR(reco.weight);
 
-  const Binning binsEnergy = Binning::Simple(30, 0, 3);
+  const vector<double> binEdges = {0.2, 0.3, 0.4, 0.45, 0.5,
+                           0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0,
+                           1.25, 1.5, 2.0, 2.5, 3.0};
+  const Binning binsEnergy = Binning::Custom(binEdges);
   const HistAxis axEnergy("Reconstructed energy (GeV)", binsEnergy, kRecoE);
 
   NoExtrapGenerator nom_gen(axEnergy, kNoCut, kWeight);
