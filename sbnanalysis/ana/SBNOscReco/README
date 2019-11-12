@@ -58,11 +58,15 @@ through the full SBND/ICARUS reconstruction chain. It is possible to
 specify the <input files> as a filelist using some file the ends in
 ".list".
 
+To run in ICARUS, use the fcl: NumuRecoICARUS.fcl.
+
 Post Process:
 	sbn-postprocess -m SBNOscReco_Selection -c fcl/SBNDSelection.fcl <input files>
 
 Where <input files> are a set of normal ROOT files that have been
 produced by the SBNOscReco_NumuReco pre-selection moudle.
+
+To run in ICARUS, use the fcl: ICARUSSelection.fcl.
 
 On the grid:
 
