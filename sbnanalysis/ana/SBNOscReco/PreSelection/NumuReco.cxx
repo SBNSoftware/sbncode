@@ -43,7 +43,6 @@
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
 #include "../NumuReco/TrackAlgo.h"
-#include "../Data/MCType.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -202,8 +201,9 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     
     _config.requireMatched = pconfig.get<bool>("requireMatched", false);
     _config.requireContained = pconfig.get<bool>("requireContained", false);
+    _config.CRTHitTimeCorrection = pconfig.get<double>("CRTHitTimeCorrection", 0.);
 
-    _config.BeamSpillWindow = pconfig.get<std::array<float, 2>>("BeamSpillWindow", {-0.2, 1.8}); // default -- give 0.2us buffer on each side
+    _config.BeamSpillWindow = pconfig.get<std::array<float, 2>>("BeamSpillWindow", {-10., 5.}); // default -- give 0.2us buffer on each side
 
     // setup weight config
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
@@ -317,24 +317,24 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
     gallery::Handle<std::vector<simb::MCTruth>> cosmics;
     bool has_cosmics = ev.getByLabel(_config.CorsikaTag, cosmics);
     
-    numu::MCType type;
     // cosmic + neutrino -- overlay 
     if (has_mctruth && has_cosmics) {
-      type = numu::fOverlay;
+      fType = numu::fOverlay;
     } 
     else if (has_cosmics) {
-      type = numu::fIntimeCosmic;
+      fType = numu::fIntimeCosmic;
     }
     else {
-      type = numu::fUnknown;
+      fType = numu::fUnknown;
     }
-    TParameter<int> mc_type("MCType", (int)type);
+    TParameter<int> mc_type("MCType", (int)fType);
     fOutputFile->cd();
     mc_type.Write();
   }
 
 
   std::cout << "New Event! " << _event_counter << std::endl;
+  std::cout << "ART Event no: " << ev.eventAuxiliary().event() << std::endl;
   // clear out old containers
   _selected->clear();
 
@@ -353,6 +353,9 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
 
   // complete the information
   _recoEvent.true_tracks = std::move(true_tracks);
+
+  // set the file type
+  _recoEvent.type = fType;
 
   // save the information
   for (unsigned i = 0; i < _recoEvent.reco.size(); i++) {
@@ -638,6 +641,12 @@ std::vector<numu::RecoInteraction> NumuReco::MCTruthInteractions(const gallery::
   gallery::Handle<std::vector<simb::MCTruth>> cosmics;
   bool has_cosmics = event.getByLabel(_config.CorsikaTag, cosmics);
 
+  // check for intime / outtime truth
+  gallery::Handle<std::vector<simb::MCTruth>> intime;
+  bool has_intime = event.getByLabel({"GenInTimeSorter", "intime"}, intime);
+  gallery::Handle<std::vector<simb::MCTruth>> outtime;
+  bool has_outtime = event.getByLabel({"GenInTimeSorter", "outtime"}, outtime);
+
   auto const& mcparticle_list = \
     *event.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
 
@@ -686,26 +695,39 @@ std::vector<numu::RecoInteraction> NumuReco::MCTruthInteractions(const gallery::
   // iterate over cosmics
   if (has_cosmics) {
     // match corsika to G4
-    art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> cosmic_to_particles(cosmics, event, fMCParticleTag);
-    for (unsigned i = 0; i < cosmics->size(); i++) {
-      auto const &cosmic = (*cosmics)[i];
-      numu::RecoInteraction this_interaction;
-      this_interaction.position = InvalidTVector3;
-      this_interaction.nu_energy = -1; 
-      this_interaction.slice.tracks = std::move(MCTruthTracks(true_tracks, cosmic_to_particles, cosmic, i));
-      this_interaction.multiplicity = -1;
-      this_interaction.slice.primary_track_index = -1;
-      this_interaction.match.has_match = true;
-      this_interaction.match.mode = numu::mCosmic; 
-      this_interaction.match.tmode = numu::tmCosmic;
-      this_interaction.match.mctruth_vertex_id = n_truth + i;
-      this_interaction.match.event_vertex_id = ret.size();
-      this_interaction.match.mctruth_track_id = -1;
-      this_interaction.match.event_track_id = ret.size();
-      this_interaction.match.truth_vertex_distance = -1;
-      this_interaction.match.is_misreconstructed = false;
-      ret.push_back(std::move(this_interaction));
+    assert(cosmics->size() == 1);
+    auto const &cosmic = (*cosmics)[0];
+    numu::RecoInteraction this_interaction;
+    this_interaction.position = InvalidTVector3;
+    this_interaction.nu_energy = -1; 
+
+    // collect the matching tracks -- either from intime/outtime or from cosmics
+    if (has_intime && has_outtime) {
+      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> intime_to_particles(intime, event, fMCParticleTag);
+      std::vector<size_t> intime_tracks = std::move(MCTruthTracks(true_tracks, intime_to_particles, cosmic, 0));
+      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> outtime_to_particles(outtime, event, fMCParticleTag);
+      std::vector<size_t> outtime_tracks = std::move(MCTruthTracks(true_tracks, outtime_to_particles, cosmic, 0));
+
+      this_interaction.slice.tracks = std::move(intime_tracks);
+      this_interaction.slice.tracks.insert(this_interaction.slice.tracks.end(), outtime_tracks.begin(), outtime_tracks.end());
     }
+    else {
+      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> cosmic_to_particles(cosmics, event, fMCParticleTag);
+      this_interaction.slice.tracks = std::move(MCTruthTracks(true_tracks, cosmic_to_particles, cosmic, 0));
+    }
+
+    this_interaction.multiplicity = -1;
+    this_interaction.slice.primary_track_index = -1;
+    this_interaction.match.has_match = true;
+    this_interaction.match.mode = numu::mCosmic; 
+    this_interaction.match.tmode = numu::tmCosmic;
+    this_interaction.match.mctruth_vertex_id = n_truth;
+    this_interaction.match.event_vertex_id = ret.size();
+    this_interaction.match.mctruth_track_id = -1;
+    this_interaction.match.event_track_id = ret.size();
+    this_interaction.match.truth_vertex_distance = -1;
+    this_interaction.match.is_misreconstructed = false;
+    ret.push_back(std::move(this_interaction));
   }
 
   return ret;
@@ -1276,23 +1298,27 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
 
     // slice to particle
     art::FindManyP<recob::PFParticle> slice_to_particle(slice_handle, ev, _config.PFParticleTag + suffix); 
+    unsigned i0 = _tpc_slices_to_particle_index.size();
     for (unsigned i = 0; i < slice_handle->size(); i++) {
+      unsigned iset = i + i0;
       _tpc_slices_to_particles.push_back(slice_to_particle.at(i));
       _tpc_slices_to_particle_index.emplace_back();
       for (unsigned j = 0; j < slice_to_particle.at(i).size(); j++) {
-        _tpc_slices_to_particle_index[i].push_back(slice_to_particle.at(i)[j]->Self() + particle_id_offset);
-        assert(_tpc_particles[_tpc_slices_to_particle_index[i][j]] == _tpc_slices_to_particles[i][j]);
+        _tpc_slices_to_particle_index[iset].push_back(slice_to_particle.at(i)[j]->Self() + particle_id_offset);
+        assert(_tpc_particles[_tpc_slices_to_particle_index[iset][j]] == _tpc_slices_to_particles[iset][j]);
       } 
     }
   
     // track to particle and particle to track
     art::FindManyP<recob::PFParticle> track_to_particle(track_handle, ev, _config.RecoTrackTag + suffix);
+    i0 = _tpc_tracks_to_particles.size();
     for (unsigned i = 0; i < track_handle->size(); i++) {
+      unsigned iset = i + i0;
       _tpc_tracks_to_particles.push_back(track_to_particle.at(i).at(0));
-      _tpc_tracks_to_particle_index.push_back(particle_id_offset + _tpc_tracks_to_particles[i]->Self());
-      _tpc_particles_to_track_index[particle_id_offset + _tpc_tracks_to_particles[i]->Self()] = i;
+      _tpc_tracks_to_particle_index.push_back(particle_id_offset + _tpc_tracks_to_particles[iset]->Self());
+      _tpc_particles_to_track_index[particle_id_offset + _tpc_tracks_to_particles[iset]->Self()] = iset;
       // if this isn't true something went wrong
-      assert(_tpc_particles[_tpc_tracks_to_particle_index[i]] == _tpc_tracks_to_particles[i]);
+      assert(_tpc_particles[_tpc_tracks_to_particle_index[iset]] == _tpc_tracks_to_particles[iset]);
     }
 
     // track to Calo
@@ -1329,7 +1355,7 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
     // particle to daughters
     for (unsigned i = 0; i < particle_handle->size(); i++) {
       std::vector<unsigned> daughters;
-      for (unsigned d: _tpc_particles[i]->Daughters()) {
+      for (unsigned d: _tpc_particles[i+particle_id_offset]->Daughters()) {
         daughters.push_back(particle_id_offset + d); 
       }
       _tpc_particles_to_daughters.push_back(std::move(daughters));
@@ -1424,15 +1450,19 @@ numu::CRTMatch NumuReco::CRTMatching(
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
     }
     else {
+      std::cout << "Tryin CRT Hit match\n";
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
     }
   }
 
   double distance = hit_pair.second;
   if (distance >= 0 /* matching succeeded*/) {
+    std::cout << "Matching succeeded! Dist: " << distance << " time: " << (hit_pair.first.ts0_ns/ 1000.) << std::endl;
     match.hit.present = true;
-    if (_config.TSMode == 0) match.hit.time = hit_pair.first.ts0_ns / 1000. /* ns -> us */;
-    else match.hit.time = hit_pair.first.ts1_ns/ 1000. /* ns -> us */;
+    if (_config.TSMode == 0) match.hit.time = (int)hit_pair.first.ts0_ns / 1000. /* ns -> us */;
+    else match.hit.time = (int)hit_pair.first.ts1_ns/ 1000. /* ns -> us */;
+    match.hit.time += _config.CRTHitTimeCorrection;
+    std::cout << "Recorded time: " << match.hit.time << std::endl;
     match.hit.distance = distance;
   }
   else {
@@ -1522,8 +1552,9 @@ std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
 
   for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
     float time;
-    if (_config.TSMode == 0) time = hit.ts0_ns / 1000. /* ns -> us */;
-    else time = hit.ts1_ns / 1000. /* ns -> us */;
+    if (_config.TSMode == 0) time = (int)hit.ts0_ns / 1000. /* ns -> us */;
+    else time = (int)hit.ts1_ns / 1000. /* ns -> us */;
+    time += _config.CRTHitTimeCorrection;
     if (InBeamSpill(time)) {
       numu::CRTHit this_hit;
       this_hit.time = time;

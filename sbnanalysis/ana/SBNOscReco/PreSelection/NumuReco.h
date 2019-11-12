@@ -53,6 +53,7 @@
 #include "../Data/RecoParticle.h"
 #include "../Data/RecoTrack.h"
 #include "../Data/TruthMatch.h"
+#include "../Data/MCType.h"
 
 #include "../Histograms/TrajHistograms.h"
 #include "../Histograms/DynamicSelector.h"
@@ -114,6 +115,7 @@ protected:
     bool requireContained; //!< Apply cut that requires each primary track to be contained inside the containment volume
     double trackMatchContainmentCut;
 
+    double CRTHitTimeCorrection;
     bool CRTHitinOpHitRange;
     double CRT2OPTimeWidth;
 
@@ -424,6 +426,9 @@ protected:
   std::vector<art::Ptr<simb::MCParticle>> _true_particles;
   std::vector<art::Ptr<simb::MCTruth>> _true_particles_to_truth;
   std::vector<const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;
+
+  // type of Monte Carlo
+  numu::MCType fType;
 
   // trajectory-based histograms
   TrajHistograms _histograms;
