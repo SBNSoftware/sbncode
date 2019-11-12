@@ -48,7 +48,13 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<numu::RecoInterac
     }
     else if (ptrack_match.has_match) {
       match.tmode = numu::tmOther;
-      std::cout << "Track matched to other.\n";
+      std::cout << "Track matched to other: " << ptrack_match.mctruth_origin << std::endl;
+      std::cout << "Match PDG: " << ptrack_match.match_pdg << std::endl;
+      std::cout << "Match completion: " << ptrack_match.completion << std::endl;
+      std::cout << "Is primary: " << ptrack_match.is_primary << std::endl;
+      const numu::RecoTrack &track = reco_tracks.at(reco.slice.primary_track_index);
+      std::cout << "reco start: " << track.start.X() << " " << track.start.Y() << " " << track.start.Z() << std::endl;
+      std::cout << "reco end: " << track.end.X() << " " << track.end.Y() << " " << track.end.Z() << std::endl;
     }
     else {
       match.tmode = numu::tmOther;
