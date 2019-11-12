@@ -19,7 +19,7 @@
 
 namespace core {
 
-PostProcessorBase::PostProcessorBase(): fEvent(NULL), fProviderManager(NULL) {}
+PostProcessorBase::PostProcessorBase(): fEvent(NULL), fProviderManager(NULL), fExperimentID(NULL), fConfigExperimentID(-1) {}
 
 
 PostProcessorBase::~PostProcessorBase() {}
@@ -28,6 +28,12 @@ PostProcessorBase::~PostProcessorBase() {}
 void PostProcessorBase::Initialize(char* config, const std::string &output_fname) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
   if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
+  fConfigExperimentID = cfg->get("ExperimentID", -1);
+
+  if (fConfigExperimentID >= 0) {
+    fProviderManager = new ProviderManager((Experiment)fConfigExperimentID, "", false); 
+  }
+
   Initialize(cfg);
   fSubRun = 0;
   fEvent = 0;
@@ -45,11 +51,13 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       break;
     }
 
+
     // first file -- setup the provider manager
     if (fExperimentID == NULL) {
       // get the Experiment ID
       f.GetObject("experiment", fExperimentID);
-      if ((Experiment)fExperimentID->GetVal() != kExpOther) {
+      if (fConfigExperimentID >= 0) assert(fConfigExperimentID == fExperimentID->GetVal());
+      else if ((Experiment)fExperimentID->GetVal() != kExpOther) {
         fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false); 
       }
     }
@@ -58,7 +66,8 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       Experiment last_experiment_id = (Experiment)fExperimentID->GetVal();
       // get the Experiment ID
       f.GetObject("experiment", fExperimentID);
-      if ((Experiment)fExperimentID->GetVal() != kExpOther) {
+      if (fConfigExperimentID >= 0) assert(fConfigExperimentID == fExperimentID->GetVal());
+      else if ((Experiment)fExperimentID->GetVal() != kExpOther) {
         if ((Experiment)fExperimentID->GetVal() == last_experiment_id) {} // reuse provider manager 
         else {
           delete fProviderManager;

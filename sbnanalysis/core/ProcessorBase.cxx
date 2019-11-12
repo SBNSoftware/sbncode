@@ -77,6 +77,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
     fExperimentID = \
       static_cast<Experiment>(config->get<int>("ExperimentID", kExpOther));
     fTruthTag = { config->get<std::string>("MCTruthTag", "generator") };
+    fGeneratorProcess = config->get<std::string>("GeneratorProcess", "GenieGen");
     fFluxTag = { config->get<std::string>("MCFluxTag", "generator") };
     fMCTrackTag = { config->get<std::string>("MCTrackTag", "mcreco") };
     fMCShowerTag = { config->get<std::string>("MCShowerTag", "mcreco") };
@@ -107,6 +108,7 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   else {
     fExperimentID = kExpOther;
     fTruthTag = { "generator" };
+    fGeneratorProcess = "GenieGen";
     fFluxTag = { "generator" };
     fWeightTags = {};
     fMCTrackTag = { "mcreco" };
@@ -184,25 +186,33 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     std::pair<int, int> id = { runid, subrunid };
 
     // Add subrun if not in cache
-    if (fSubRunCache.find(id) == fSubRunCache.end()) {
-      TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
+    // if (fSubRunCache.find(id) == fSubRunCache.end()) {
+    
+      std::string totpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totpot";
+      std::string totgoodpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totgoodpot";
+      std::string totspills_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totspills";
+      std::string goodspills_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.goodspills";
+
+      TLeaf* potLeaf = srtree->GetLeaf(totpot_str.c_str());
       float pot = potLeaf ? potLeaf->GetValue() : -1;
-      TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
+      TLeaf* goodpotLeaf = srtree->GetLeaf(totgoodpot_str.c_str());
       float goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
-      TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
+      TLeaf* spillsLeaf = srtree->GetLeaf(totspills_str.c_str());
       int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
-      TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
+      TLeaf* goodspillsLeaf = srtree->GetLeaf(goodspills_str.c_str());
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
-      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
-      fSubRunTree->Fill();
 
-      fSubRunCache.insert(id);
+      // fSubRunCache.insert(id);
 
+    if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
       std::cout << "Subrun " << runid << "/" << subrunid << " added "
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
+      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
+      fSubRunTree->Fill();
     }
+    //}
   }
 }
 

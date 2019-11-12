@@ -107,6 +107,7 @@ protected:
   TTree* fSubRunTree;
   ProviderManager* fProviderManager;  //!< Interface for provider access
   TParameter<int>* fExperimentID;
+  int fConfigExperimentID;
 };
 
 }  // namespace core

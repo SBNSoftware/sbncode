@@ -188,6 +188,7 @@ protected:
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower
   art::InputTag fMCParticleTag; //!< art tag for MCParticle
+  std::string fGeneratorProcess; //!< process_name of process used to run genie. Used to extract subrun/POT information
 };
 
 }  // namespace core
