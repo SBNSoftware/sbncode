@@ -5,5 +5,7 @@
 namespace SBNRecoUtils {
   std::vector<geo::BoxBoundedGeo> ActiveVolumes(const geo::GeometryCore *geometry);
   std::vector<std::vector<geo::BoxBoundedGeo>> TPCVolumes(const geo::GeometryCore *geometry);
+  geo::BoxBoundedGeo DetectorVolume(const geo::GeometryCore *geometry);
+  double MaxLength(const geo::GeometryCore *geometry);
 }
 #endif
