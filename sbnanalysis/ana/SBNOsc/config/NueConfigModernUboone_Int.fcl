@@ -1,21 +1,21 @@
 #include "NueConfig.fcl"    
 
-OutputFile: "output_SBNOsc_NueSelection_Proposal_Icarus.root"
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
 MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
-  fiducial_volumes: @local::ICARUS_fiducial_volumes 
-  active_volumes: @local::ICARUS_active_volumes 
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
+  active_volumes: @local::MicroBooNE_active_volumes 
   @table::standard_selection
   UniformWeights: @local::standard_UniformWeights
-  ApplyKMECCut: true 
-  Detector: "ICARUS" 
+  ApplyKMECCut: false
+  Detector: "SBND"
   Verbose: false
   IncludeCosmics: false
   IncludeDirt: false
-  OscOnly:       false
-  ApplyGENIEVersionWeight: true
+  IntrinsicOnly: false
+  ApplyGENIEVersionWeight: false
   DontUseSimChannels: false
-  UseGenieHists: true
+  UseGenieHists: false
+#  FillHistograms: true
 }
-

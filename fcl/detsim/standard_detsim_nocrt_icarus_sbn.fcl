@@ -3,7 +3,7 @@
 process_name: DetSim
 
 
-physics.simulate: [ rns, opdaq, daq, crtdaq]
+physics.simulate: [ rns, opdaq, daq]
 
 
 physics.producers.crtdaq.module_type: "icaruscode/CRT/CRTDetSim"

@@ -95,6 +95,8 @@ protected:
     double CosmicWeight;
     double CosmicGlobalWeight;
     double CosmicVolumeRadius;
+    double ElectronWeight; 
+    double PhotonWeight;
 
     std::string Detector;  
 

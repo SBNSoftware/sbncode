@@ -52,3 +52,10 @@ physics.reco: [ rns
                 ]
 
 outputs.out1.fileName: "%ifb_%tc_reco.root"
+
+
+outputs.out1.outputCommands: [
+    "keep *",
+    "drop raw::RawDigits_daq_*_*",
+    "drop *_caldata_*_*"
+]

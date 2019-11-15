@@ -6,7 +6,7 @@
 # A. Mastbaum <mastbaum@uchicago.edu>, 2018/06/12
 ###############################################################################
 
-LAR_VERSION="v08_03_00"
+LAR_VERSION="v08_30_00"
 LAR_QUAL="e17:prof"
 
 # Check we're in a good location

@@ -3,7 +3,8 @@
 OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
 #MCWeightTags: ["genieeventweight" ] 
 MCWeightTags: @local::eventweight_tags
-MCTruthTags: ["generator"]
+#MCTruthTags: ["generator"]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
   fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 

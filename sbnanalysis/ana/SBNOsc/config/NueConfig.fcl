@@ -142,24 +142,26 @@ ICARUS_active_volumes: [
     }
 ]
 
-standard_selection: {
+reco_selection: {
 
-      minLengthExitingTrack:           100     
-      trackVisibleEnergyThreshold:     0.021
-      showerVisibleEnergyThreshold:    200
-      showerEnergyDistortion:          0.15            
-      trackEnergyDistortion:           0.05
+      minLengthExitingTrack:           30     
+      trackVisibleEnergyThreshold:     0.1
+      showerVisibleEnergyThreshold:    210
+      showerEnergyDistortion:          0.089            
+      trackEnergyDistortion:           0.1
       leptonEnergyDistortionContained: 0.15
-      nueEfficency:                    0.8                 
-      vtxEnergyCut:                    50
-      photonConvLenghCut:              3
-      dEdxPhotonCut:                   0.06                 
+      nueEfficency:                    1                 
+      vtxEnergyCut:                    0
+      photonConvLenghCut:              2.1
+      dEdxPhotonCut:                   0.24                 
       GlobalWeight:                    1
       POTWeight:                       1 #weighting done outside. 
-      photonVisibleEnergyThreshold:    100
+      photonVisibleEnergyThreshold:    210
       CosmicWeight:                    0.05
       CosmicGlobalWeight:              1
       CosmicVolumeRadius:              15 #cm
+      ElectronWeight: 0.251279
+      PhotonWeight: 1.15
 
       GlobalTimeOffset:  0    #Offset In the spill time in the simulation (in ns) 
       SpillTime:         1600 #Time a spill last for in ns.
@@ -197,6 +199,65 @@ standard_selection: {
       FillIntTypeHistograms: false
       UseGenieHists: false
 }
+
+standard_selection: {
+
+      minLengthExitingTrack:           100     
+      trackVisibleEnergyThreshold:     0.021
+      showerVisibleEnergyThreshold:    200
+      showerEnergyDistortion:          0.15            
+      trackEnergyDistortion:           0.05
+      leptonEnergyDistortionContained: 0.15
+      nueEfficency:                    0.8                 
+      vtxEnergyCut:                    50
+      photonConvLenghCut:              3
+      dEdxPhotonCut:                   0.06                 
+      GlobalWeight:                    1
+      POTWeight:                       1 #weighting done outside. 
+      photonVisibleEnergyThreshold:    100
+      CosmicWeight:                    0.05
+      CosmicGlobalWeight:              1
+      CosmicVolumeRadius:              15 #cm
+      ElectronWeight: 1 
+      PhotonWeight: 1
+
+      GlobalTimeOffset:  0    #Offset In the spill time in the simulation (in ns) 
+      SpillTime:         1600 #Time a spill last for in ns.
+      ReadOutWindowSize: 1 
+ 
+      ApplyNueEfficiency:          true    
+      ApplyElectronEnergyCut:      true
+      ApplyFVCut:                  true 
+      ApplyAVCut:                  true
+      ApplyPhotonEnergyCut:        true
+      ApplyConversionGapCut:       true
+      ApplydEdxCut:                true
+      ApplyMuonLenghtCut:          true 
+      ApplyCosmicInSpillWindowCut: true
+      ApplyKMECCut:                false
+      ApplyGENIEVersionWeight:     false
+      ApplyCosmicCylinderCut:      true
+      ApplyCosmicFVCut:            true
+
+
+      IncludeCosmics:        true 
+      IncludeDirt:           true
+      CosmicsOnly:           false
+      DirtOnly:              false
+
+      IntrinsicOnly: false
+      NuMuOnly:      false 
+      OscOnly:       false   
+      
+      DontUseSimChannels:    false
+      Verbose:               false 
+
+      FillHistograms: false
+      FillModeHistograms: false
+      FillIntTypeHistograms: false
+      UseGenieHists: false
+}
+
 
 
 standard_UniformWeights: ["bnbcorrection_FluxHist"]

@@ -75,6 +75,8 @@ namespace ana {
       fConfig.CosmicGlobalWeight              = pconfig.get<double>("CosmicWeight",1);
       fConfig.CosmicVolumeRadius              = pconfig.get<double>("CosmicVolumeRadius",15);
       fConfig.UniformWeights = pconfig.get<std::vector<std::string>>("UniformWeights", {});
+      fConfig.ElectronWeight                  = pconfig.get<double>("ElectronWeight",1);
+      fConfig.PhotonWeight                    = pconfig.get<double>("PhotonWeight",1);
 
       fConfig.Detector               = pconfig.get<std::string>("Detector"," "); 
       
@@ -525,15 +527,15 @@ namespace ana {
 	
       	mcparticles[mcparticle.TrackId()] = &mcparticle;
 
-	if(TMath::Abs(mcparticle.PdgCode()) == 11 || TMath::Abs(mcparticle.PdgCode()) == 13){continue;}
+	// if(TMath::Abs(mcparticle.PdgCode()) == 11 || TMath::Abs(mcparticle.PdgCode()) == 13){continue;}
 	
-	if(mcparticle.PdgCode() == 22){
-	  if(mcparticles.find(mcparticle.Mother()) != mcparticles.end()){
-	    if(TMath::Abs(mcparticles[mcparticle.Mother()]->PdgCode()) == 13){
-	      continue;
-	    }
-	  }
-	}
+	// if(mcparticle.PdgCode() == 22){
+	//   if(mcparticles.find(mcparticle.Mother()) != mcparticles.end()){
+	//     if(TMath::Abs(mcparticles[mcparticle.Mother()]->PdgCode()) == 13){
+	//       continue;
+	//     }
+	//   }
+	// }
 
 	if(mcparticle.E() < 0.03){continue;}
 
@@ -869,10 +871,21 @@ namespace ana {
 	    //Make the reco interaction event. 
 	    event::RecoInteraction reco_interaction(truth_int);
 	    reco_interaction.reco_energy = intInfo.GetNueEnergy();
-	    reco_interaction.weight = intInfo.weight; 
+	    reco_interaction.weight = intInfo.weight;
+	    if(dirtevent){ 
+	      reco_interaction.wasDirt = true;
+	    }
+
+	    if(intInfo.leptonpdgID == 11){
+	      reco_interaction.weight *= fConfig.ElectronWeight;
+	    }
+	    else if (intInfo.leptonpdgID == 22){
+	      reco_interaction.weight *= fConfig.PhotonWeight;
+	    }
+
 	    reco.push_back(reco_interaction);
 	    selected =  selection;
-	    
+
 	    //Fill the histograms
 	    FillHistograms(fRootHists.VisibleEnergy_Selection_Hist,fRootHists.VisibleEnergy_Selection_HistMode,fRootHists.VisibleEnergy_Selection_HistIntType,nu,intInfo,dirtevent);
 	    FillHistograms(fRootHists.TrueEnergy_Hist,fRootHists.TrueEnergy_HistMode,fRootHists.TrueEnergy_HistIntType,nu,intInfo,nu.Nu().E(),dirtevent);
@@ -898,7 +911,6 @@ namespace ana {
 	    if(selection){
 	      std::cout << "Event Was Selected with energy: " << intInfo.GetNueEnergy()<< "and weight" << intInfo.weight << std::endl;
 	      if(mctruth.GetNeutrino().CCNC() == simb::kNC){
-		std::cout << "Event was NC" << std::endl;
 		if(intInfo.weight > 0.1){std::cout << "dodgy weight" << std::endl;}
 		if(intInfo.GetNueEnergy() < 0.35){
 		  FillHistograms(fRootHists.LowNCEnergy_Hist,fRootHists.LowNCEnergy_HistMode,fRootHists.LowNCEnergy_HistIntType,nu,intInfo,nu.Nu().E(),dirtevent);
@@ -950,10 +962,10 @@ namespace ana {
 	      if(selection){
 	    	//Make the reco interaction event. 
 	    	event::RecoInteraction reco_interaction(truth_cosint);
+		reco_interaction.wasCosmic = true;
 	    	reco_interaction.reco_energy = intInfo.GetNueEnergy();
 	    	reco_interaction.weight = intInfo.weight; 
 	    	std::cout << " Cosmic Selected with track id: " << mcs.TrackID() << " energy: " << reco_interaction.reco_energy << " weight: " << reco_interaction.weight  << std::endl;
-		
 	    	reco.push_back(reco_interaction);
 	    	selected =  selection;
 	    	NuCount++;

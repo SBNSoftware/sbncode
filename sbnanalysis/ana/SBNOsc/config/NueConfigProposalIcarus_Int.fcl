@@ -1,7 +1,7 @@
 #include "NueConfig.fcl"    
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_Icarus.root"
-MCWeightTags: @local::eventweight_tags
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
   fiducial_volumes: @local::ICARUS_fiducial_volumes 
@@ -17,5 +17,8 @@ NueSelection: {
   ApplyGENIEVersionWeight: true
   DontUseSimChannels: false
   UseGenieHists: true
+
+  FillHistograms: true
+
 }
 

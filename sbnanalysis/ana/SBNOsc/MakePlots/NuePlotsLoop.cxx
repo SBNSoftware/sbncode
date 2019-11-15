@@ -159,7 +159,7 @@ void NuePlotsLoop(){
       if(found_numu!=std::string::npos){
         HistType = "NuMu";
       }
-      found_numu = line.find("Nu.");
+      found_numu = line.find("Numu.");
       if(found_numu!=std::string::npos){
         HistType = "NuMu";
       }
@@ -419,7 +419,9 @@ void NuePlotsLoop(){
       }
 
       Long64_t nentries = sbnreco->GetEntries();
+      std::cout << "nentries: " << nentries << std::endl;
       for (Long64_t i=0;i<nentries;i++) {
+
 
 	sbnreco->LoadTree(i);
         sbnreco->GetEntry(i);
@@ -441,56 +443,60 @@ void NuePlotsLoop(){
 	
 	std::cout << " energy: " << reco->reco_energy << " weight: " << reco->weight << " HistType: " << HistType  <<  " POTWeight: " << POTWeight  << " oscw: " <<  osc_w<< std::endl;
 	
+	bool  wasCosmic = reco->wasCosmic;
+	bool  wasDirt   = reco->wasDirt;
+
+
 	//Are we cosmic
-	if(truth->at(0).neutrino.iscc == false && truth->at(0).neutrino.isnc == false){
+	if(wasCosmic){
 	  VisibleEnergyHist["Cosmic"]->Fill(reco->reco_energy, reco->weight*POTWeight);
 	  continue;
 	}
 	
 	//Are we dirt backround
-	std::size_t found_cosdirt = line.find("nu_cosdirt/");
-	if(found_cosdirt!=std::string::npos){
+	if(wasDirt){
 	  
 	  
 	  if(truth->at(0).neutrino.isnc == false){
 
-	      //Are we oscillated 
-	      if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
-		continue; 
-	      }
-	      
-	      //Are we intrinsic?
-	      if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
-		continue;
-	      }
-	      
-	      //Are we charged current background 
-	      if(TMath::Abs(truth->at(0).neutrino.pdg == 14) && truth->at(0).neutrino.iscc == true){
-		VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
-		continue;
-	      }
+	    //Are we oscillated 
+	    if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["DirtOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
+	      continue; 
 	    }
+	      
+	    //Are we intrinsic?
+	    if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["DirtInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
+	      continue;
+	    }
+	      
+	    //Are we charged current background 
+	    if(TMath::Abs(truth->at(0).neutrino.pdg == 14) && truth->at(0).neutrino.iscc == true){
+	      VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
+	      continue;
+	    }
+	  }
 	    
-	    //Are we NC background 
-	    if(truth->at(0).neutrino.isnc == true){
-	      //Are we oscillated 
-	      if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtNCOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
-		continue; 
-	      }
-	      //Are we intrinsic?
-	      if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
-		VisibleEnergyHist["DirtNCInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
-		continue;
-	      }
-	      //Are we charged current background 
-	      if(TMath::Abs(truth->at(0).neutrino.pdg) == 14 && truth->at(0).neutrino.iscc == true){
-		VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
-		continue;
+	  //Are we NC background 
+	  if(truth->at(0).neutrino.isnc == true){
+	    //Are we oscillated 
+	    if(truth->at(0).neutrino.initpdg != truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["DirtNCOscNuE"]->Fill(reco->reco_energy,reco->weight*osc_w*POTWeight);
+	      continue; 
+	    }
+	    //Are we intrinsic?
+	    if(truth->at(0).neutrino.initpdg == truth->at(0).neutrino.pdg && TMath::Abs(truth->at(0).neutrino.pdg) == 12){
+	      VisibleEnergyHist["DirtNCInNuE"]->Fill(reco->reco_energy,reco->weight*POTWeight);
+	      continue;
+	    }
+	    //Are we charged current background 
+	    if(TMath::Abs(truth->at(0).neutrino.pdg) == 14 && truth->at(0).neutrino.iscc == true){
+	      VisibleEnergyHist["DirtNCNuMu"]->Fill(reco->reco_energy,reco->weight*POTWeight);
+	      continue;
 	      }
 	    }
+	  continue;
 	  }
 	  
 	  if(truth->at(0).neutrino.isnc == false){
@@ -516,7 +522,7 @@ void NuePlotsLoop(){
 	  //Are we NC background 
 	  if(truth->at(0).neutrino.isnc == true){
 	    
-	    std::cout << " energy: " << reco->reco_energy << " weight: " << reco->weight << " mode: " << truth->at(0).neutrino.genie_intcode<< std::endl;
+	    //	    std::cout << " energy: " << reco->reco_energy << " weight: " << reco->weight << " mode: " << truth->at(0).neutrino.genie_intcode<< std::endl;
 	    if(reco->weight > 0.1){std::cout << "WARNING DODGY WEIGHT" << std::endl;}
 	    if(reco->weight > 0.1){continue;}
 
@@ -539,7 +545,7 @@ void NuePlotsLoop(){
 	    }
 	  }
 	  std::cout << "end" <<  truth->at(0).neutrino.pdg << " " << truth->at(0).neutrino.iscc <<  std::endl;
-	}
+      }
     
       InputFile->Close();
     }
@@ -563,14 +569,14 @@ void NuePlotsLoop(){
       POTWeight = ProposalPOT/POTFlavourMap[HistTypes[i]];
     }
 
-    std::cout << "POTWeight: " << POTWeight << " for sample:" << HistTypes[i]  << " proposal POT: " << ProposalPOT<<  std::endl;
+       std::cout << "POTWeight: " << POTWeight << " for sample:" << HistTypes[i]  << " proposal POT: " << ProposalPOT<<  std::endl;
 
     VisibleEnergyHist[HistTypes[i]]->Write();
 
     float Totalint = 0;
     for(int bin=0; bin< VisibleEnergyHist[HistTypes[i]]->GetNbinsX(); ++bin){                                    
       Totalint += VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin);
-      std::cout << " VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin): " << VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) << std::endl;
+      std::cout << " VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin): " << VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) << " POTWeight: " << POTWeight << " width: " <<  VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin)  << std::endl;
       VisibleEnergyHist[HistTypes[i]]->SetBinContent(1+bin, POTWeight*VisibleEnergyHist[HistTypes[i]]->GetBinContent(1+bin) / VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin));
       float Error =  VisibleEnergyHist[HistTypes[i]]->GetBinError(1+bin)*POTWeight/VisibleEnergyHist[HistTypes[i]]->GetBinWidth(1+bin);
       VisibleEnergyHist[HistTypes[i]]->SetBinError(1+bin,Error);

@@ -3,19 +3,21 @@
 OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
 MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
+#ExperimentID: 1
+
 NueSelection: {
   fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
   active_volumes: @local::MicroBooNE_active_volumes 
-  @table::standard_selection
+  @table::reco_selection
   UniformWeights: @local::standard_UniformWeights
-  ApplyKMECCut: true 
+  ApplyKMECCut: false
   Detector: "SBND"
   Verbose: false
   IncludeCosmics: false
   IncludeDirt: false
   IntrinsicOnly: false
-  ApplyGENIEVersionWeight: true
+  ApplyGENIEVersionWeight: false
   DontUseSimChannels: false
-  UseGenieHists: true
+  UseGenieHists: false
 #  FillHistograms: true
 }

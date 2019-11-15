@@ -206,6 +206,7 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
       int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
       TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
+
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
       *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };

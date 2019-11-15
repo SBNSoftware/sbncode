@@ -63,3 +63,9 @@ physics.reco: [ rns
 physics.trigger_paths: [ reco ]
 
 outputs.out1.fileName: "%ifb_%tc_reco.root"
+
+outputs.out1.outputCommands: [
+    "keep *",
+    "drop raw::RawDigits_daq_*_*",
+    "drop *_caldata_*_*"
+]

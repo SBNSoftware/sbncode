@@ -3,13 +3,12 @@
 process_name: GenieGen
 
 outputs.out1.fileName: "prodgenie_bnb_nu_osc_cosmic_dirt_sbn_sbnd_%tc_gen.root"
-physics.producers.generator: { 
-     @table::physics.producers.generator
-     @table::sbnd_flux_bnb_nu_Ev1
-     EventsPerSpill: 0
-     TopVolume: "volWorld"
-     FluxUpstreamZ: -18 
-}
+# physics.producers.generator: { 
+#      @table::physics.producers.generator
+#      @table::sbnd_flux_bnb_nu_Ev1
+#      EventsPerSpill: 0
+#      TopVolume: "volWorld"
+# }
 
 
 services.IFDH: {}
@@ -17,5 +16,6 @@ physics.producers.generator.FluxCopyMethod: "IFDH"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
 physics.producers.generator.FluxType:       "simple_flux"
-physics.producers.generator.FluxSearchPaths: "/pnfs/sbnd/persistent/fluxFiles/bnb/BooNEtoGSimple/configE-v1/april07/neutrinoMode"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/sbnd/configD-v1_april07_neutrinoMode"
+physics.producers.generator.TopVolume: "volWorld"
 

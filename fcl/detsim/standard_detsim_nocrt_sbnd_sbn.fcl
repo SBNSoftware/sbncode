@@ -2,5 +2,4 @@
 
 process_name: DetSim
 
-
-
+simulate:  [ rns, daq ]

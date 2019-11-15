@@ -1,8 +1,10 @@
 #include "NueConfig.fcl"    
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
-MCWeightTags: ["genieeventweight" ] 
-MCTruthTags: ["generator","corsika"]
+#MCWeightTags: ["genieeventweight" ] 
+MCWeightTags: @local::eventweight_tags
+#MCTruthTags: ["generator"]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
   fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
@@ -10,16 +12,15 @@ NueSelection: {
   @table::standard_selection
   UniformWeights: @local::standard_UniformWeights
   GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
-  ApplyKMECCut: true  
+  ApplyKMECCut: false  
   Verbose: false
   Detector: "SBND"
-  IncludeCosmics:        true
-  IncludeDirt:           true
-  ReadoutWindowSize: 3000
-  UseAllCosmics: true
-  DontUseSimChannels: true
-  DirtOnly: true
-  ApplyGENIEVersionWeight: true
-  UseGenieHists: true
+  IncludeCosmics: false
+  IncludeDirt: false 
+  IntrinsicOnly: false
+  ApplyGENIEVersionWeight: false
+  DontUseSimChannels: false
+  UseGenieHists: false
+  #MCTruths: [ "generator" ]
 }
 

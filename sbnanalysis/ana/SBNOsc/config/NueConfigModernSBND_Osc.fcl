@@ -10,16 +10,15 @@ NueSelection: {
   active_volumes: @local::SBND_Proposal_active_volumes 
   @table::standard_selection
   UniformWeights: @local::standard_UniformWeights
-  GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
-  ApplyKMECCut: true  
+  ApplyKMECCut: false
   Verbose: false
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt:    false 
   OscOnly:       false  
-  ApplyGENIEVersionWeight: true
+  ApplyGENIEVersionWeight: false
   DontUseSimChannels: false
-  UseGenieHists: true
+  UseGenieHists: false
   #MCTruths: [ "generator" ]
 }
 

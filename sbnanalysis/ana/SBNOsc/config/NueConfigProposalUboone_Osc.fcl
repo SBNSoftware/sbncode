@@ -1,7 +1,7 @@
 #include "NueConfig.fcl"    
 
 OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
-MCWeightTags: @local::eventweight_tags
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
 
 NueSelection: {
   fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
