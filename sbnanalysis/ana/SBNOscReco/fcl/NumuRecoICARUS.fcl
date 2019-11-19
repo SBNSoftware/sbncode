@@ -22,6 +22,8 @@ NumuReco: {
   requireMatched: false
   requireContained: false
 
+  PMTTriggerThreshold: 7090 # 8000 (baseline) - 10 (single PE threshold)
+
   # CRTHitDist: 35
   trackMatchContainmentCut: 0.5
   flashMatchTimeDifference: 1000

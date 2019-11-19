@@ -1,7 +1,8 @@
-DoNormalize: true
 GoalPOT: 1.e20
 ExperimentID: 2
-Normalize.NCosmicEvents: 15500
+# DoNormalize: true
+# Normalize.NCosmicEvents: 15500
+# Normalize.NCosmicEvents: 2500
 
 selection_fiducial_volume_inset: {
   y: 10
@@ -123,34 +124,34 @@ reco_contained_selectors: ["",
 
 contained: ["all", "exiting", "contained"]
 
-TrackSelectors: [
-  @local::interaction_selectors,
-  @local::pdg_selectors,
-  @local::wall_selectors_enter
-]
-
-TrackSelectorNames: [
-  @local::interactions,
-  @local::pdgs,
-  @local::walls
-]
-
 #TrackSelectors: [
-#  @local::neutrino_selectors,
-#  @local::primary_pdg_selectors,
-#  @local::reco_contained_selectors
+#  @local::interaction_selectors,
+#  @local::pdg_selectors,
+#  @local::wall_selectors_either
 #]
 
 #TrackSelectorNames: [
-#  @local::neutrinos,
-#  @local::primary_pdgs,
-#  @local::contained
+#  @local::interactions,
+#  @local::pdgs,
+#  @local::walls
 #]
 
-#TrackProfileValues: ["track.length"]
-#TrackProfileValueNames: ["length"]
+TrackSelectors: [
+  @local::neutrino_selectors,
+  @local::reco_contained_selectors,
+  @local::true_contained_selectors
+]
 
-#TrackProfileXRanges: [ [60, 0., 600.]]
+TrackSelectorNames: [
+  @local::neutrinos,
+  @local::contained,
+  @local::contained
+]
+
+TrackProfileValues: ["track.length"]
+TrackProfileValueNames: ["length"]
+
+TrackProfileXRanges: [ [60, 0., 600.]]
 
 FillAllTracks: false
 
