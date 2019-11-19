@@ -4,6 +4,8 @@
 #include "sbndcode/CRT/CRTProducts/CRTTrack.hh"
 #include "sbndcode/CRT/CRTProducts/CRTHit.hh"
 
+#include "ana/SBNOscReco/Data/DetInfo.h"
+
 namespace numu {
 
 /**
@@ -24,8 +26,8 @@ struct CRTMatch {
   */
   struct Hit {
     bool present; //!< Whether this CRTMatch has a matching hit
-    float time; //!< Matching time [us] of hit. T==0 is set to beam spill start time.
     float distance; //!< //!< Distance from projected track to CRT Hit. Nonsense if present is false.
+    numu::CRTHit hit; // !< CRT hit object corresponsing to this one
   };
 
   Track track; //!< CRT Track match

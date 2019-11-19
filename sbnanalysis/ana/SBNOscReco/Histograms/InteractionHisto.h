@@ -37,6 +37,11 @@ struct InteractionHistos : public HistoList {
   TH1D *primary_track_completion; //!< Completion of the primary track
   TH1D *n_reco_vertices; //!< Number of reconstructed vertices in the event with this vertex
   TH1D *maxpe_crt_intime_hit; //!< Maximum number of PE's in a single CRT hit in time with the beam
+  TH1D *crt_hit_times;
+  TH1D *closest_crt_hit_time;
+  TH2D *intime_crt_hits_xy;
+  TH2D *intime_crt_hits_xz;
+  TH2D *intime_crt_hits_yz;
   TH2D *vertex_xy;
   TH2D *vertex_yz;
   TH2D *vertex_xz;
@@ -47,7 +52,7 @@ struct InteractionHistos : public HistoList {
  *  \param mode The mode of interaction for these histograms
  *  \param index The cut index for these histograms.
  */
-  void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume, double max_length);
+  void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume);
  
   /**
  * Fill the histograms with a single interaction

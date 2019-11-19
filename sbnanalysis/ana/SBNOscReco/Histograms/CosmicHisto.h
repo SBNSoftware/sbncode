@@ -24,6 +24,7 @@ struct CosmicHistos : public HistoList {
 
   TH1D *momentum;
   TH1D *enter_time;
+  TH1D *enter_time_zoom;
   TH1D *enter_y;
   TH1D *enter_x;
   TH1D *enter_z;

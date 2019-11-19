@@ -151,7 +151,7 @@ void TrackHistos::Fill(
     crt_track_angle->Fill(track.crt_match.track.angle);
   }
   else if (track.crt_match.hit.present) {
-    crt_match_time->Fill(track.crt_match.hit.time);
+    crt_match_time->Fill(track.crt_match.hit.hit.time);
     crt_hit_distance->Fill(track.crt_match.hit.distance);
   }
   has_flash_match->Fill(track.flash_match.present);
@@ -163,7 +163,7 @@ void TrackHistos::Fill(
       crt_v_flash_match_time->Fill(track.crt_match.track.time - flash_time);
     }
     else if (track.crt_match.hit.present) {
-      crt_v_flash_match_time->Fill(track.crt_match.hit.time - flash_time);
+      crt_v_flash_match_time->Fill(track.crt_match.hit.hit.time - flash_time);
     }  
   }
   

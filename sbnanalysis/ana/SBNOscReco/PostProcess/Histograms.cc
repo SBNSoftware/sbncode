@@ -85,6 +85,7 @@ void Histograms::Fill(
 
 void Histograms::Initialize(
   const geo::GeometryCore *geometry,
+  const sbnd::CRTGeoAlg &crt_geo,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,
@@ -92,13 +93,16 @@ void Histograms::Initialize(
 
   double max_length = SBNRecoUtils::MaxLength(geometry);
   geo::BoxBoundedGeo detector = SBNRecoUtils::DetectorVolume(geometry);
+  std::vector<double> tagger_volume = crt_geo.CRTLimits();
+
+  std::cout << "Limits: " << tagger_volume[0] << " " << tagger_volume[3] << " " << tagger_volume[1] << " " << tagger_volume[4] << " " << tagger_volume[2] << " " << tagger_volume[5] << std::endl;
 
   fCosmic.first.Initialize(prefix + "_Cosmic", detector);
   fCosmic.second.Initialize(prefix + "_IntimeCosmic", detector);
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       std::string postfix = mode2Str(mode) + prefix + histoNames[i];
-      fInteraction[i][mode].Initialize(postfix, detector, max_length); 
+      fInteraction[i][mode].Initialize(postfix, detector, tagger_volume); 
     }
   }
   fAllTracks.reserve(track_histo_types.size());

@@ -48,6 +48,7 @@ struct RecoEvent {
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
   std::vector<RecoInteraction> truth; //!< List of truth vertices
   std::vector<CRTHit> in_time_crt_hits; //!< List of crt hits in time with the beam spill
+  std::vector<FlashTriggerPrimitive> flash_trigger_primitives; //!< List of trigger primitives from optical detectors
   MCType type;
 };
 }

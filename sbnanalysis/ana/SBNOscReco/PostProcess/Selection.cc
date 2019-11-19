@@ -74,9 +74,10 @@ namespace SBNOsc {
     fROC.Initialize();
     fRecoEvent = NULL;
 
-    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), "",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
-    fNeutrinoHistograms.Initialize(fProviderManager->GetGeometryProvider(), "Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-    fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    fCRTGeo = new sbnd::CRTGeoAlg(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
+    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
+    fNeutrinoHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
 
   }
 

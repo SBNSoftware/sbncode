@@ -22,6 +22,8 @@
 #include <TH3D.h>
 #include <TMatrixDSym.h>
 
+#include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"
+
 #include "Histograms.h"
 #include "Cuts.h"
 #include "Normalize.h"
@@ -48,6 +50,7 @@ public:
   void Finalize();
 
 private:
+  sbnd::CRTGeoAlg *fCRTGeo;
   Cuts fCuts;
   ROC fROC;
   Histograms fHistograms;

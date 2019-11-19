@@ -21,6 +21,8 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.4, 2.0});
   fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
 
+  fConfig.TruthFlashMatch = cfg.get<bool>("TruthFlashMatch", true);
+
   {
     fhicl::ParameterSet dFV = \
      cfg.get<fhicl::ParameterSet>("fiducial_volume_inset");
@@ -94,8 +96,15 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   bool good_mcs = (InCalorimetricContainment(primary_track.start) && InCalorimetricContainment(primary_track.end)) /* use range momentum */ ||
                   (primary_track.mcs_momentum < 7. /* garbage value */ && (fConfig.MCSTrackLength <0. || primary_track.length > fConfig.MCSTrackLength)) /* use MCS*/
                   && fiducial;
+
+  // for now, use truth-based flash matching
+  bool time_in_spill = false;
+  if (primary_track.match.has_match) {
+    time_in_spill = TimeInSpill(event.true_tracks.at(primary_track.match.mcparticle_id).start_time);
+  }
+  bool flash_match = (!fConfig.TruthFlashMatch || time_in_spill) && good_mcs; 
   
-  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && good_mcs;
+  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && flash_match;
   bool pass_crt_hit = (!HasCRTHitMatch(primary_track) || TimeInSpill(CRTMatchTime(primary_track)))
     && pass_crt_track;
 
@@ -134,7 +143,7 @@ bool Cuts::HasCRTHitMatch(const numu::RecoTrack &track) const {
 
 float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
   if (HasCRTTrackMatch(track)) return track.crt_match.track.time;
-  if (HasCRTHitMatch(track)) return track.crt_match.hit.time;
+  if (HasCRTHitMatch(track)) return track.crt_match.hit.hit.time;
   return -99999;
 }
 

@@ -8,6 +8,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_Selection
   sbnanalysis_SBNOscReco_Histograms
   sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo
+  sbndcode_GeoWrappers
   sbnanalysis_SBNOscReco_classes
   sbnanalysis_SBNOscReco_RecoUtils
 )

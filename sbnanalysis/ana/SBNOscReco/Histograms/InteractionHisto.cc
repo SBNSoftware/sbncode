@@ -7,23 +7,30 @@
 namespace ana {
   namespace SBNOsc {
 
-void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length) {
+void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume) {
 #define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
 #define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); fAllHistos.push_back(name)
 
-  INT_HISTO(track_length, 100, 0., max_length);
+  INT_HISTO(track_length, 100, 0., 600.);
   INT_HISTO(track_p, 50, 0., 5.);
   INT_HISTO(true_deposited_energy, 50., 0., 5.);
   INT_HISTO(nuE, 50, 0., 5.);
   INT_HISTO(beam_center_distance, 60, 0., 300.);
   INT_HISTO(Q2, 50, 0., 10.);
-  INT_HISTO(true_contained_length, 100, 0., max_length);
+  INT_HISTO(true_contained_length, 100, 0., 600.);
   INT_HISTO(true_track_multiplicity, 10, 0., 10);
   INT_HISTO(crosses_tpc, 2, -0.5, 1.5);
   INT_HISTO(dist_to_match, 101, -1., 100.);
   INT_HISTO(primary_track_completion, 100, 0., 1.);
   INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
   INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 10000.);
+
+  INT_HISTO(crt_hit_times, 300, -20., 10.);
+  INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
+
+  INT_HISTO2D(intime_crt_hits_xy, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[1], tagger_volume[4]);
+  INT_HISTO2D(intime_crt_hits_xz, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[2], tagger_volume[5]);
+  INT_HISTO2D(intime_crt_hits_yz, 100, tagger_volume[1], tagger_volume[4], 100, tagger_volume[2], tagger_volume[5]);
 
   INT_HISTO2D(vertex_xy, 200, detector_volume.MinX(), detector_volume.MaxX(), 200, detector_volume.MinY(), detector_volume.MaxY());
   INT_HISTO2D(vertex_yz, 200, detector_volume.MinY(), detector_volume.MaxY(), 200, detector_volume.MinZ(), detector_volume.MaxZ());
@@ -65,10 +72,33 @@ void InteractionHistos::Fill(
   n_reco_vertices->Fill(event.reco.size());
 
   double maxpe = 0.;
+  double closest_time_dist = -1;
+  double closest_time = 0.;
   for (const numu::CRTHit &hit: event.in_time_crt_hits) {
+    intime_crt_hits_xy->Fill(hit.location.X(), hit.location.Y());
+    intime_crt_hits_xz->Fill(hit.location.X(), hit.location.Z());
+    intime_crt_hits_yz->Fill(hit.location.Y(), hit.location.Z());
+
     std::cout << "PE: " << hit.pes << std::endl;
     std::cout << "Time: " << hit.time << std::endl;
     if (hit.pes > maxpe) maxpe = hit.pes;
+    crt_hit_times->Fill(hit.time);
+
+    if (closest_time_dist < 0. || closest_time_dist > 1e-3) {
+       double this_time_dist = -1;
+       if (hit.time > -0.2 && hit.time < 1.8) this_time_dist = 0.;
+       else if (hit.time < 0.) this_time_dist = -hit.time -0.2;
+       if (this_time_dist >= 0. && (this_time_dist < closest_time_dist || closest_time_dist < 0.)) {
+         closest_time = hit.time;
+         closest_time_dist = this_time_dist;
+       }
+    }
+    if (closest_time_dist >= 0.) {
+      closest_crt_hit_time->Fill(closest_time);
+    }
+    else {
+      closest_crt_hit_time->Fill(30.);
+    }
   }
   std::cout << "Max PE: " << maxpe << std::endl; 
   maxpe_crt_intime_hit->Fill(maxpe);

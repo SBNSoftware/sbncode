@@ -8,6 +8,8 @@
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
+#include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"
+
 #include "../Histograms/HistoList.h"
 #include "../Histograms/TrackHisto.h"
 #include "../Histograms/Profile.h"
@@ -27,6 +29,7 @@ struct Histograms : public HistoList {
 
   void Initialize(
   const geo::GeometryCore *geometry,
+  const sbnd::CRTGeoAlg &crt_geo,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,
@@ -72,7 +75,7 @@ struct Histograms : public HistoList {
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = 
   {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-   "Reco", "R_fid", "R_goodmcs", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
+   "Reco", "R_fid", "R_goodmcs", "R_flashmatch", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
 
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
