@@ -11,6 +11,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuReco
   sbnanalysis_SBNOscReco_classes
   sbnanalysis_SBNOscReco_RecoUtils
   sbnanalysis_SBNOscReco_LArReco
+  sbnanalysis_SBNOscReco_TriggerEmulator
   ubana_BasicTool_GeoAlgo
   sbncode_CosmicIdAlgs
   sbnanalysis_SBNOscReco_opHitFinderSBND

@@ -43,6 +43,7 @@
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
 #include "../NumuReco/TrackAlgo.h"
+#include "ana/SBNOscReco/TriggerEmulator/PMTTrigger.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
@@ -203,7 +204,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.requireContained = pconfig.get<bool>("requireContained", false);
     _config.CRTHitTimeCorrection = pconfig.get<double>("CRTHitTimeCorrection", 0.);
 
-    _config.BeamSpillWindow = pconfig.get<std::array<float, 2>>("BeamSpillWindow", {-10., 5.}); // default -- give 0.2us buffer on each side
+    _config.BeamSpillWindow = pconfig.get<std::array<float, 2>>("BeamSpillWindow", {-25., 10.}); // default -- give 0.2us buffer on each side
 
     // setup weight config
     _config.uniformWeights = pconfig.get<std::vector<std::string>>("uniformWeights", {});
@@ -213,6 +214,8 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     // flash match method
     _config.FlashMatchMethod = pconfig.get<int>("FlashMatchMethod", 2);
     _config.flashMatchTimeDifference = pconfig.get<double>("flashMatchTimeDifference");
+
+    _config.PMTTriggerThreshold = pconfig.get<int>("PMTTriggerThreshold");
 
     _config.CosmicIDAllTracks = pconfig.get<bool>("CosmicIDAllTracks", false);
 
@@ -1457,17 +1460,12 @@ numu::CRTMatch NumuReco::CRTMatching(
 
   double distance = hit_pair.second;
   if (distance >= 0 /* matching succeeded*/) {
-    std::cout << "Matching succeeded! Dist: " << distance << " time: " << (hit_pair.first.ts0_ns/ 1000.) << std::endl;
     match.hit.present = true;
-    if (_config.TSMode == 0) match.hit.time = (int)hit_pair.first.ts0_ns / 1000. /* ns -> us */;
-    else match.hit.time = (int)hit_pair.first.ts1_ns/ 1000. /* ns -> us */;
-    match.hit.time += _config.CRTHitTimeCorrection;
-    std::cout << "Recorded time: " << match.hit.time << std::endl;
     match.hit.distance = distance;
+    match.hit.hit = SBND2numuCRTHit(hit_pair.first);
   }
   else {
     match.hit.present = false;
-    match.hit.time = -99999.;
     match.hit.distance = -99999.;
   }
  
@@ -1547,18 +1545,23 @@ bool NumuReco::InBeamSpill(float time) {
   return time > _config.BeamSpillWindow[0] && time < _config.BeamSpillWindow[1];
 }
 
+numu::CRTHit NumuReco::SBND2numuCRTHit(const sbnd::crt::CRTHit &hit) {
+  numu::CRTHit ret;
+  if (_config.TSMode == 0) ret.time = (int)hit.ts0_ns / 1000. /* ns -> us */;
+  else ret.time = (int)hit.ts1_ns / 1000. /* ns -> us */;
+  ret.time += _config.CRTHitTimeCorrection;
+  ret.pes = hit.peshit;
+  ret.location = TVector3(hit.x_pos, hit.y_pos, hit.z_pos);
+  ret.uncertainty = TVector3(hit.x_err, hit.y_err, hit.z_err);
+  return ret;
+}
+
 std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
   std::vector<numu::CRTHit> ret;
 
   for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
-    float time;
-    if (_config.TSMode == 0) time = (int)hit.ts0_ns / 1000. /* ns -> us */;
-    else time = (int)hit.ts1_ns / 1000. /* ns -> us */;
-    time += _config.CRTHitTimeCorrection;
-    if (InBeamSpill(time)) {
-      numu::CRTHit this_hit;
-      this_hit.time = time;
-      this_hit.pes = hit.peshit;
+    numu::CRTHit this_hit = NumuReco::SBND2numuCRTHit(hit);
+    if (InBeamSpill(this_hit.time)) {
       ret.push_back(this_hit);
     } 
   }
@@ -1615,6 +1618,17 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
 
   // collect spare detector information
   event.in_time_crt_hits = InTimeCRTHits();
+  gallery::Handle<std::vector<raw::OpDetWaveform>> waveforms;
+  if (ev.getByLabel("opdaq", waveforms)) {
+    double tick_period = fProviderManager->GetDetectorClocksProvider()->OpticalClock().TickPeriod();
+    int threshold = _config.PMTTriggerThreshold; 
+    bool is_sbnd = fExperimentID == kExpSBND;
+    std::pair<double, double> window; //  = (is_sbnd) ? {0., 1.6} : {1500., 1501.6};
+    if (is_sbnd) window = {0., 1.6};
+    else window = {1500., 1501.6};
+    event.flash_trigger_primitives = numu::TriggerPrimitives(*waveforms, tick_period, window, threshold, is_sbnd);
+  }
+  
  
   return std::move(event);
 }

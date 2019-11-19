@@ -127,6 +127,8 @@ protected:
     int TSMode;
     double flashMatchTimeDifference;
 
+    unsigned PMTTriggerThreshold;
+
     std::array<float, 2> BeamSpillWindow;
     double beamCenterX;
     double beamCenterY;
@@ -163,6 +165,11 @@ protected:
  * \return In time CRT Hits in the numu reco format
  */
   std::vector<numu::CRTHit> InTimeCRTHits();
+
+  /**
+ *
+ */
+  numu::CRTHit SBND2numuCRTHit(const sbnd::crt::CRTHit &hit);
 
   /**
  * Returns whether the povided time is inside the configured beam spill.
