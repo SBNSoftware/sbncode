@@ -9,6 +9,7 @@
 services: {
   message:                   @local::icarus_message_services_interactive
   Geometry:                  @local::icarus_geo
+  AuxDetGeometry:	     @local::icarus_auxdetgeo
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
   DetectorPropertiesService: @local::icarus_detproperties

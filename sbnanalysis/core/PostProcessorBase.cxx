@@ -10,6 +10,7 @@
 #include "Experiment.hh"
 
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/PhotonBackTracker.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"

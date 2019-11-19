@@ -20,6 +20,7 @@
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "Event.hh"
 #include "SubRun.hh"
 #include "Loader.hh"

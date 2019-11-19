@@ -10,6 +10,7 @@
 
 namespace geo {
   class GeometryCore;
+  class AuxDetGeometryCore;
 }
 
 namespace detinfo {
@@ -54,6 +55,10 @@ public:
     return fGeometryProvider.get();
   }
 
+  const geo::AuxDetGeometryCore* GetAuxDetGeometryProvider() const {
+    return fAuxDetGeometryProvider.get();
+  }
+
   const detinfo::LArPropertiesStandard* GetLArPropertiesProvider() const {
     return fLArPropertiesProvider.get();
   }
@@ -83,6 +88,7 @@ public:
 private:
   fhicl::ParameterSet* config;
   std::unique_ptr<geo::GeometryCore> fGeometryProvider;
+  std::unique_ptr<geo::AuxDetGeometryCore> fAuxDetGeometryProvider;
   std::unique_ptr<detinfo::LArPropertiesStandard> fLArPropertiesProvider;
   std::unique_ptr<detinfo::DetectorClocksStandard> fDetectorClocksProvider;
   std::unique_ptr<detinfo::DetectorPropertiesStandard> fDetectorPropertiesProvider;

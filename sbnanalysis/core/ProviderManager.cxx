@@ -8,6 +8,7 @@
 #include "sbndcode/Geometry/ChannelMapSBNDAlg.h"
 #include "ubcore/Geometry/ChannelMapUBooNEAlg.h"
 #include "larcorealg/Geometry/StandaloneBasicSetup.h"
+#include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandardTestHelpers.h"
@@ -73,6 +74,30 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl, bool setup_eve
   }
   config = new fhicl::ParameterSet(cfg);
 
+  // AuxDetGeometry
+  fAuxDetGeometryProvider = std::make_unique<geo::AuxDetGeometryCore>(cfg.get<fhicl::ParameterSet>("services.AuxDetGeometry"));
+
+  // find the GDML and load it
+  std::string relPath              = config->get<std::string>("services.AuxDetGeometry.RelativePath",     ""   );
+  const std::string GDMLFileName   = config->get<std::string>("services.AuxDetGeometry.GDML"                   );
+
+  cet::search_path sp("FW_SEARCH_PATH");
+
+  std::string GDMLFilePathHint = relPath + GDMLFileName;
+  std::string GDMLFilePath;
+  if( !sp.find_file(GDMLFilePathHint, GDMLFilePath) ) {
+    throw cet::exception("StaticLoadGeometry")
+      << "Can't find geometry file '" << GDMLFilePathHint << std::endl;
+  }
+
+  std::string ROOTFilePathHint = relPath + GDMLFileName;
+  std::string ROOTFilePath;
+  if( !sp.find_file(ROOTFilePathHint, ROOTFilePath) ) {
+    throw cet::exception("StaticLoadGeometry")
+      << "Can't find geometry file '" << ROOTFilePathHint
+      << "' (for geometry)!\n";
+  }
+  fAuxDetGeometryProvider->LoadGeometryFile(GDMLFilePath, ROOTFilePath);
 
   // LArProperties
   fLArPropertiesProvider = \
