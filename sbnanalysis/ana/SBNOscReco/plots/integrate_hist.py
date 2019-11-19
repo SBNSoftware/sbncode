@@ -13,7 +13,11 @@ def main(args):
     else:
         integral = hist.Integral()
     if args.ratio:
-        integral = integral / hist.Integral()
+        if args.overflow:
+            total = sum([hist.GetBinContent(i) for i in range(hist.GetNbinsX()+2)])
+        else:
+            total = hist.Integral()
+        integral = integral / total
     print integral
 
 if __name__ == "__main__":
@@ -23,5 +27,6 @@ if __name__ == "__main__":
     parser.add_argument("-rh", "--range_hi", default=None, type=float)
     parser.add_argument("-hn", "--hist", required=True)
     parser.add_argument("-r", "--ratio", action="store_true")
+    parser.add_argument("-o", "--overflow", action="store_true")
     main(parser.parse_args())
 

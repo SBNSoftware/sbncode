@@ -15,11 +15,13 @@ def main(args):
         hist = project_mean(hist)
     canvas = ROOT.TCanvas("canvas", "Canvas", 250,100,700,500)
     drawstr = ""
-    if isinstance(hist, ROOT.TH2D):
+    if args.drawstr is not None:
+        drawstr = args.drawstr
+    elif isinstance(hist, ROOT.TH2D):
         drawstr = "COLZ"
-    if isinstance(hist, ROOT.TH1D):
+    elif isinstance(hist, ROOT.TH1D):
         drawstr = "HIST"
-    if isinstance(hist, ROOT.TGraph):
+    elif isinstance(hist, ROOT.TGraph):
         drawstr = "AL"
     hist.Draw(drawstr)
     if args.title is not None:
@@ -81,5 +83,6 @@ if __name__ == "__main__":
     parser.add_argument("-lz", "--logz", action="store_true")
     parser.add_argument("-varY", "--varianceY", action="store_true")
     parser.add_argument("-meanY", "--meanY", action="store_true")
+    parser.add_argument("-ds", "--drawstr", default=None)
     main(parser.parse_args())
 

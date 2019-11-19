@@ -23,7 +23,10 @@ def write(args, canvas):
         canvas.SaveAs(args.output)
 
 def with_input_args(parser):
-    parser.add_argument("-i", "--input", required=True)
+    if "INPUTFILE" in os.environ:
+        parser.add_argument("-i", "--input", default=os.environ["INPUTFILE"])
+    else:
+        parser.add_argument("-i", "--input", required=True)
     return parser
 
 def with_display_args(parser):
@@ -120,7 +123,7 @@ def resize_histo(args, hist):
                 if histdim == 1:
                     new_hist.SetBinContent(i - range_lo_ind, hist.GetBinContent(i))
                 elif histdim == 2:
-                    other_axis = hist.GetXaxis() if i_axis == 0 else hist.GetYaxis()
+                    other_axis = hist.GetYaxis() if i_axis == 0 else hist.GetXaxis()
                     for j in range(1, other_axis.GetNbins()+1):
                         i_bin_old = hist.GetBin(i, j) if i_axis == 0 else hist.GetBin(j, i)
                         i_bin_new = new_hist.GetBin(i_set, j) if i_axis == 0 else new_hist.GetBin(j, i_set)
