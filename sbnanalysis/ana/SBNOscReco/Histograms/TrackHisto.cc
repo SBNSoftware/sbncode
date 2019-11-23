@@ -34,6 +34,9 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
   TRACK_HISTO(length, 100, 0., max_length);
+  TRACK_HISTO(artlength, 100, 0., max_length);
+  TRACK_HISTO(lengthdiff, 100, 0., 50);
+
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
   
@@ -109,6 +112,9 @@ void TrackHistos::Fill(
   deposited_e_max->Fill(track.deposited_energy_max);
   
   length->Fill(track.length);
+  artlength->Fill(track.artlength);
+  lengthdiff->Fill((track.length)-(track.artlength));
+
   reco_momentum->Fill(track.momentum);
   is_contained->Fill(track.is_contained);
 

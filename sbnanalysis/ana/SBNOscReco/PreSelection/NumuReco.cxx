@@ -829,6 +829,7 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
 
     // track length
     this_track.length = RecoTrackLength(track);
+    this_track.artlength = track->Length();
 
     // get the associated PID and Calo
     assert(_tpc_tracks_to_pid.at(pfp_track_index).size() == 3); // one per plane

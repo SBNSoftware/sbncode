@@ -42,6 +42,8 @@ struct TrackHistos : public HistoList {
   TH1D *deposited_e_med_minus_truth;
 
   TH1D *length;
+  TH1D *artlength;
+  TH1D *lengthdiff;
   TH1D *reco_momentum;
   TH1D *is_contained;
 
