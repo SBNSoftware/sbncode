@@ -71,7 +71,6 @@ struct RecoTrack {
   Wall wall_exit; //!< the face of the TPC that the track crosses on exit
   bool is_muon; //!< Whether the particle ID is a muon
   float length; //!< Length of track
-  float artlength; //!< Test to check default length from pandora
   float costh; //!< cosine of angle to z axis
   bool contained_in_cryo; //!< is it contained a single cryostat?
   bool contained_in_tpc; //!< is it contained in a single TPC?
@@ -115,7 +114,6 @@ struct RecoTrack {
     wall_exit(numu::wNone),
     is_muon(false),
     length(-1),
-    artlength(-1),
     costh(-999),
     contained_in_cryo(false),
     contained_in_tpc(false),
