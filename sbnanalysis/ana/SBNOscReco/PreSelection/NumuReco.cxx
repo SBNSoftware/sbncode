@@ -1559,6 +1559,9 @@ std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
       numu::CRTHit this_hit;
       this_hit.time = time;
       this_hit.pes = hit.peshit;
+      this_hit.x_pos = hit.x_pos;
+      this_hit.y_pos = hit.y_pos;
+      this_hit.z_pos = hit.z_pos;
       ret.push_back(this_hit);
     } 
   }
