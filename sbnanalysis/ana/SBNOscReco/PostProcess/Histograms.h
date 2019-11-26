@@ -68,11 +68,17 @@ struct Histograms : public HistoList {
   static const unsigned nHistos = Cuts::nCuts + Cuts::nTruthCuts;
   static const unsigned nModes = 8; //!< number of interaction modes
   static constexpr numu::InteractionMode allModes[nModes] = 
-    {numu::mCC, numu::mCCNonPrimary, numu::mNC, numu::mNCNonPrimary, numu::mCosmic, numu::mIntimeCosmic, numu::mOther, numu::mAll}; //!< List of all interaction modes
+    { numu::mCC, numu::mCCNonPrimary, 
+      numu::mNC, numu::mNCNonPrimary, 
+      numu::mCosmic, numu::mIntimeCosmic, 
+      numu::mOther, numu::mAll }; //!< List of all interaction modes
+
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
+
   static constexpr const char* histoNames[nHistos] = 
-  {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-   "Reco", "R_fid", "R_goodmcs", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
+    { "Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
+      "Reco", "R_fid", "R_goodmcs", "R_crttrack", "R_crthit",
+      "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
 
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
