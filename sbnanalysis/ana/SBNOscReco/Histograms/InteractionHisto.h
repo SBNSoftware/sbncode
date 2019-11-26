@@ -40,6 +40,9 @@ struct InteractionHistos : public HistoList {
   TH2D *vertex_xy;
   TH2D *vertex_yz;
   TH2D *vertex_xz;
+  TH2D *crthit_xy;
+  TH2D *crthit_yz;
+  TH2D *crthit_xz;
 
   /**
  *  Intialize the histograms
