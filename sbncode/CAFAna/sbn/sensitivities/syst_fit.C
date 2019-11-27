@@ -8,7 +8,7 @@
 #include "CAFAna/Analysis/ExpInfo.h"
 #include "CAFAna/Analysis/Surface.h"
 #include "CAFAna/Systs/SBNWeightSysts.h"
-#include "mySysts.h"
+//#include "mySysts.h"
 using namespace ana;
 
 #include "OscLib/IOscCalculator.h"
@@ -30,7 +30,7 @@ void syst_fit()
   //  GetSBNWeightSysts(); // initialize
   const std::vector<const ISyst*>& wtsysts = GetSBNWeightSysts();
   std::vector<const ISyst*> systs;
-  for (const ISyst* s : det_systs) systs.push_back(s);
+  // for (const ISyst* s : det_systs) systs.push_back(s);
   for (const ISyst* s : wtsysts) systs.push_back(s);
 
   //const std::vector<const ISyst*>& allsysts = GetSBNWeightSysts();

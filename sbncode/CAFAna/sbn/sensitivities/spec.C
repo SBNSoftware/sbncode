@@ -29,33 +29,30 @@
 
 using namespace ana;
 
-//const char* basicFname = "cafe_state_smear_numu.root";
-
-//void spec(const char* stateFname = basicFname)
 void spec()
 {
 
-  const char* stateFname = "cafe_state_syst_numu.root";
-  const char* stateFname2 = "cafe_state_syst_nue.root";
-  if (TFile(stateFname).IsZombie()){
+  const char* stateFname_numu = "cafe_state_syst_numu.root";
+  const char* stateFname_nue = "cafe_state_syst_nue.root";
+  if (TFile(stateFname_numu).IsZombie()){
     std:: cout << "Run make_state_syst.C first!" << std::endl;
     return;
   }
-  if (TFile(stateFname2).IsZombie()){
+  if (TFile(stateFname_nue).IsZombie()){
     std:: cout << "Run make_state_syst.C(nue) first!" << std::endl;
     return;
   }
 
-  std::cout << "Loading state from " << stateFname << std::endl; 
-  std::cout << "Loading state from " << stateFname2 << std::endl; 
-  TFile fin(stateFname);
-  TFile fin2(stateFname2);
-  PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
-  PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
-  PredictionInterp& pred_nd_nue  = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_nd")).release();
-  PredictionInterp& pred_fd_nue  = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_fd")).release();
-  PredictionInterp& pred_ub_numu = *ana::LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
-  PredictionInterp& pred_ub_nue  = *ana::LoadFrom<PredictionInterp>(fin2.GetDirectory("pred_ub")).release();
+  std::cout << "Loading state from " << stateFname_numu << std::endl; 
+  std::cout << "Loading state from " << stateFname_nue << std::endl; 
+  TFile fin_numu(stateFname_numu);
+  TFile fin_nue(stateFname_nue);
+  PredictionInterp& pred_nd_numu = *ana::LoadFrom<PredictionInterp>(fin_numu.GetDirectory("pred_nd")).release();
+  PredictionInterp& pred_fd_numu = *ana::LoadFrom<PredictionInterp>(fin_numu.GetDirectory("pred_fd")).release();
+  PredictionInterp& pred_ub_numu = *ana::LoadFrom<PredictionInterp>(fin_numu.GetDirectory("pred_ub")).release();
+  PredictionInterp& pred_nd_nue  = *ana::LoadFrom<PredictionInterp>(fin_nue.GetDirectory("pred_nd")).release();
+  PredictionInterp& pred_fd_nue  = *ana::LoadFrom<PredictionInterp>(fin_nue.GetDirectory("pred_fd")).release();
+  PredictionInterp& pred_ub_nue  = *ana::LoadFrom<PredictionInterp>(fin_nue.GetDirectory("pred_ub")).release();
   
   std::cout << "read in done" << std::endl;
 
