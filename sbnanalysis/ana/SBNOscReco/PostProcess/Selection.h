@@ -30,6 +30,7 @@
 #include "ROC.h"
 
 #include "../Histograms/TrajHistograms.h"
+#include "../Histograms/CRTHisto.h"
 #include "../Histograms/DynamicSelector.h"
 #include "../Data/RecoEvent.h"
 #include "../Data/MCType.h" 
@@ -58,6 +59,10 @@ private:
   Histograms fCosmicHistograms;
   Histograms *fHistsToFill;
   TrajHistograms fTrajHistograms;
+
+  CRTHistos fCRTCosmicHistos;
+  CRTHistos fCRTNeutrinoHistos;
+
   Normalize fNormalize;
   fhicl::ParameterSet fCutConfig;
   double fCRTHitDistance;

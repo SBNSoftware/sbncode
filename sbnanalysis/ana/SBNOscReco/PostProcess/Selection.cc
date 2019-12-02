@@ -104,6 +104,15 @@ namespace SBNOsc {
     TrajHistograms from_file;
     from_file.Get(*f, fTrajHistoNames);
     fTrajHistograms.Add(from_file);
+
+    CRTHistos crt_from_file;
+    crt_from_file.Get(*f, "_all");
+    if (fFileType == numu::fIntimeCosmic) {
+      fCRTCosmicHistos.Add(crt_from_file);
+    }
+    else if (fFileType == numu::fOverlay) {
+      fCRTNeutrinoHistos.Add(crt_from_file);
+    }
   }
 
   void Selection::ProcessSubRun(const SubRun *subrun) {
@@ -239,6 +248,10 @@ namespace SBNOsc {
 
       fNeutrinoHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));
+
+      fCRTCosmicHistos.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
+      fCRTNeutrinoHistos.Scale(fNormalize.ScaleCosmic(fGoalPOT));
+
       fHistograms.Add(fNeutrinoHistograms);
       fHistograms.Add(fCosmicHistograms);
       fROC.Normalize(fNormalize.ScaleNeutrino(fGoalPOT), fNormalize.ScaleCosmic(fGoalPOT));  
@@ -247,6 +260,9 @@ namespace SBNOsc {
     fROC.Write();
     fHistograms.Write();
     fTrajHistograms.Write();
+    fCRTCosmicHistos.Write();
+    fCRTNeutrinoHistos.Write();
+
   }
   }   // namespace SBNOsc
 }   // namespace ana

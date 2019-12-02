@@ -19,7 +19,11 @@ struct CRTHit {
 
 struct FlashTriggerPrimitive {
   unsigned channel;
-  std::vector<std::pair<int, unsigned>> triggers;
+  struct Trig {
+    int adc;
+    int tdc;
+  };
+  std::vector<Trig> triggers;
 };
 
 }

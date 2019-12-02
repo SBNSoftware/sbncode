@@ -23,4 +23,6 @@
 #pragma link C++ class std::optional<numu::CRTMatch>+;
 #pragma link C++ class std::optional<numu::FlashMatch>+;
 #pragma link C++ class numu::CRTHit;
+#pragma link C++ class numu::FlastTriggerPrimitive+;
+#pragma link C++ class numu::FlastTriggerPrimitive::Trig+;
 #endif

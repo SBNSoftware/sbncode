@@ -16,7 +16,7 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 9; //!< total number of cuts
+  static const unsigned nCuts = 10; //!< total number of cuts
   static const unsigned nTruthCuts = 5; //!< Total number of truth cuts
   /**
  * Initialize this class.
@@ -129,6 +129,8 @@ private:
     std::vector<geo::BoxBoundedGeo> active_volumes;
     std::vector<geo::BoxBoundedGeo> calorimetric_containment_volumes;
     bool TruthFlashMatch;
+    int PMTTriggerTreshold;
+    unsigned PMTNAboveThreshold;
   };
 
   Config fConfig;

@@ -58,6 +58,8 @@
 #include "../Histograms/TrajHistograms.h"
 #include "../Histograms/DynamicSelector.h"
 
+#include "../Histograms/CRTHisto.h"
+
 class TH2D;
 class TH1D;
 
@@ -165,6 +167,7 @@ protected:
  * \return In time CRT Hits in the numu reco format
  */
   std::vector<numu::CRTHit> InTimeCRTHits();
+  void FillCRTHits();
 
   /**
  *
@@ -439,6 +442,7 @@ protected:
 
   // trajectory-based histograms
   TrajHistograms _histograms;
+  CRTHistos _crt_histograms;
 
 };
 

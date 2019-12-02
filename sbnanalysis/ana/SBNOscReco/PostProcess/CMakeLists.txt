@@ -5,6 +5,7 @@
 add_library(sbnanalysis_SBNOscReco_Selection SHARED Selection.cc Normalize.cc ROC.cc Histograms.cc Cuts.cc)
 
 target_link_libraries(sbnanalysis_SBNOscReco_Selection
+  sbnanalysis_SBNOscReco_TriggerEmulator
   sbnanalysis_SBNOscReco_Histograms
   sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo

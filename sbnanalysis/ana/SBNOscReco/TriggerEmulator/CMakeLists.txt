@@ -5,6 +5,7 @@
 add_library(sbnanalysis_SBNOscReco_TriggerEmulator SHARED PMTTrigger.cc)
 
 target_link_libraries(sbnanalysis_SBNOscReco_TriggerEmulator
+  sbndcode_OpDetSim
   sbnanalysis_SBNOscReco_classes
 )
 

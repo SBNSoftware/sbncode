@@ -2,7 +2,7 @@
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
-add_library(sbnanalysis_SBNOscReco_Histograms SHARED Derived.cc CosmicHisto.cc InteractionHisto.cc TrackHisto.cc TrajHistograms.cc DynamicSelector.cc Profile.cc HistoList.cc)
+add_library(sbnanalysis_SBNOscReco_Histograms SHARED Derived.cc CosmicHisto.cc InteractionHisto.cc TrackHisto.cc TrajHistograms.cc DynamicSelector.cc Profile.cc HistoList.cc CRTHisto.cc)
 
 target_link_libraries(sbnanalysis_SBNOscReco_Histograms
   sbnanalysis_SBNOscReco_Reco

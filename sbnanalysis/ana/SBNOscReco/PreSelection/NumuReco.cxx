@@ -53,6 +53,7 @@
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 #include "sbndcode/CRT/CRTUtils/TPCGeoUtil.h"
+#include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"
 
 // copied in RecoUtils here to not use art services
 
@@ -274,6 +275,12 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
   // initialize histograms
   _histograms.Initialize(_config.TrackSelectorNames);
 
+  sbnd::CRTGeoAlg crt_geo(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
+  std::vector<double> tagger_volumes = crt_geo.CRTLimits();
+
+  // crt histograms
+  _crt_histograms.Initialize("crt_all", tagger_volumes);
+
   // add branches
   fTree->Branch("reco_event", &_recoEvent);
   fTree->Branch("reco_vertices", &_selected);
@@ -292,6 +299,7 @@ void NumuReco::Finalize() {
  fOutputFile->cd();
  // finish histograms
  _histograms.Write();
+ _crt_histograms.Write();
 }
 
 event::RecoInteraction NumuReco::CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight) {
@@ -1556,6 +1564,12 @@ numu::CRTHit NumuReco::SBND2numuCRTHit(const sbnd::crt::CRTHit &hit) {
   return ret;
 }
 
+void NumuReco::FillCRTHits() {
+  for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
+    _crt_histograms.Fill(hit);
+  }
+}
+
 std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
   std::vector<numu::CRTHit> ret;
 
@@ -1628,6 +1642,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     else window = {1500., 1501.6};
     event.flash_trigger_primitives = numu::TriggerPrimitives(*waveforms, tick_period, window, threshold, is_sbnd);
   }
+
+  // fill spare histograms
+  FillCRTHits();
   
  
   return std::move(event);

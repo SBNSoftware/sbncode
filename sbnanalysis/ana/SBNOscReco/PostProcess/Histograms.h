@@ -15,6 +15,7 @@
 #include "../Histograms/Profile.h"
 #include "../Histograms/InteractionHisto.h"
 #include "../Histograms/CosmicHisto.h"
+#include "../Histograms/CRTHisto.h"
 #include "../Histograms/DynamicSelector.h"
 
 #include "Cuts.h"
@@ -75,13 +76,15 @@ struct Histograms : public HistoList {
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
   static constexpr const char* histoNames[nHistos] = 
   {"Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-   "Reco", "R_fid", "R_goodmcs", "R_flashmatch", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
+   "Reco", "R_trig", "R_fid", "R_goodmcs", "R_flashmatch", "R_crttrack", "R_crthit", "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
 
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
   std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
   std::pair<CosmicHistos, CosmicHistos> fCosmic;
+
+  std::array<CRTHistos, Cuts::nCuts> fCRTs;
 
 };
 

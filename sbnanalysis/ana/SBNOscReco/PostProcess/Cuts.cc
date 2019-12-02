@@ -1,6 +1,7 @@
 #include "Cuts.h"
 #include "../Histograms/Derived.h"
 #include "../RecoUtils/GeoUtil.h"
+#include "../TriggerEmulator/PMTTrigger.h"
 
 namespace ana {
  namespace SBNOsc {
@@ -22,6 +23,9 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
 
   fConfig.TruthFlashMatch = cfg.get<bool>("TruthFlashMatch", true);
+
+  fConfig.PMTTriggerTreshold = cfg.get<int>("PMTTriggerTreshold", 7050);
+  fConfig.PMTNAboveThreshold = cfg.get<unsigned>("PMTNAboveThreshold", 5);
 
   {
     fhicl::ParameterSet dFV = \
@@ -88,8 +92,10 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const {
   bool is_reco = true;
 
+  bool has_trigger = numu::HasTrigger(event.flash_trigger_primitives, fConfig.PMTTriggerTreshold, fConfig.PMTNAboveThreshold);
+
   // require fiducial
-  bool fiducial = InFV(event.reco[reco_vertex_index].position);
+  bool fiducial = InFV(event.reco[reco_vertex_index].position) && has_trigger;
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
 
@@ -123,8 +129,10 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   return {
     is_reco,
+    has_trigger,
     fiducial,
     good_mcs,
+    flash_match,
     pass_crt_track,
     pass_crt_hit,
     pass_length,

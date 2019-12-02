@@ -24,8 +24,8 @@ std::vector<numu::FlashTriggerPrimitive> numu::TriggerPrimitives(const std::vect
       prim.channel = wvf.ChannelNumber();
       for (int i = waveform_index_start; i < waveform_index_end; i++) {
         if (wvf[i] <= thresh) { // PMT waveforms go down
-          std::pair<int, unsigned> this_prim {wvf[i], i + (int)(waveform_start - window.first) / tick_period};
-          prim.triggers.push_back(this_prim);
+          FlashTriggerPrimitive::Trig this_trig {wvf[i], i + (int)((waveform_start - window.first) / tick_period)};
+          prim.triggers.push_back(this_trig);
         }
       }
       ret.push_back(prim);
@@ -35,13 +35,15 @@ std::vector<numu::FlashTriggerPrimitive> numu::TriggerPrimitives(const std::vect
 }
 
 bool numu::HasTrigger(const std::vector<numu::FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold) {
-  std::map<unsigned, unsigned> above_threshold;
+  if (n_above_threshold == 0) return true;
+
+  std::map<int, unsigned> above_threshold;
 
   for (const numu::FlashTriggerPrimitive &primitive: primitives) {
-    for (const std::pair<unsigned, unsigned> &trig: primitive.triggers) {
-      if (trig.first > threshold) {
-        if (above_threshold.count(trig.second)) above_threshold[trig.second] = 1;
-        else above_threshold[trig.second] += 1;
+    for (const numu::FlashTriggerPrimitive::Trig &trig: primitive.triggers) {
+      if (trig.adc <= threshold) {
+        if (!above_threshold.count(trig.tdc)) above_threshold[trig.tdc] = 1;
+        else above_threshold[trig.tdc] += 1;
       }
     }
   }

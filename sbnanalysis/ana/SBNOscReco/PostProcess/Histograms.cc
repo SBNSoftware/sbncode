@@ -42,8 +42,16 @@ void Histograms::Fill(
     std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, i);
     const numu::RecoInteraction &interaction = event.reco[i];
 
+
     if (event.reco_tracks.size() > (unsigned)interaction.slice.primary_track_index) {
       const numu::RecoTrack &track = event.reco_tracks.at(interaction.slice.primary_track_index);
+
+      for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
+        if (cuts[cut_i] && track.crt_match.hit.present) {
+          fCRTs[cut_i].Fill(track.crt_match.hit.hit);
+        }
+      }
+
       for (unsigned j = 0; j < fPrimaryTracks.size(); j++) { 
         bool select = selectors[j](track, event);
         if (select) {
@@ -105,6 +113,11 @@ void Histograms::Initialize(
       fInteraction[i][mode].Initialize(postfix, detector, tagger_volume); 
     }
   }
+
+  for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
+    fCRTs[cut_i].Initialize(prefix + "_crt_cut_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+cut_i]), tagger_volume); 
+  }
+
   fAllTracks.reserve(track_histo_types.size());
   fPrimaryTracks.reserve(track_histo_types.size());
 
@@ -136,6 +149,10 @@ void Histograms::Initialize(
     for (const auto mode: Histograms::allModes) {
       fAllHistos.insert(fAllHistos.end(), fInteraction[i][mode].fAllHistos.begin(), fInteraction[i][mode].fAllHistos.end());
     }
+  }
+
+  for (unsigned i = 0; i < Cuts::nCuts; i++) {
+    fAllHistos.insert(fAllHistos.end(), fCRTs[i].fAllHistos.begin(), fCRTs[i].fAllHistos.end());
   }
 
   for (unsigned i = 0; i < fAllTracks.size(); i++) {
