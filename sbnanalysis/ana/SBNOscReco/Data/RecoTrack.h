@@ -70,7 +70,7 @@ struct RecoTrack {
   Wall wall_enter; //!< the face of the TPC that the track crosses on enter
   Wall wall_exit; //!< the face of the TPC that the track crosses on exit
   bool is_muon; //!< Whether the particle ID is a muon
-  float length; //!< Length og track
+  float length; //!< Length of track
   float costh; //!< cosine of angle to z axis
   bool contained_in_cryo; //!< is it contained a single cryostat?
   bool contained_in_tpc; //!< is it contained in a single TPC?

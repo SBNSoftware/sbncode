@@ -23,7 +23,8 @@ public:
  * \param cfg fhicl configuration for the class
  * \geometry A pointer to the geoemtry of the detector to configure
  */
-  void Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *geometry);
+  void Initialize(const fhicl::ParameterSet &cfg, 
+		  const geo::GeometryCore *geometry);
   /** 
  * Process each cut associated with reconstructed events
  * \param event The reconstructed event information
@@ -31,7 +32,8 @@ public:
  *
  * \return A list of bool's of whether the reco event passes each cut
  */
-  std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, unsigned reco_vertex_index) const;
+  std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, 
+					  unsigned reco_vertex_index) const;
 
   /**
  * Process each cut associated with true events
@@ -40,7 +42,8 @@ public:
  * 
  * \return A list of bool's of whether the true event passes each cut
  */
-  std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index) const;
+  std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, 
+						unsigned truth_vertex_index) const;
 
   /**
  * Select a reco event based on the cut values provided by ProcessRecoCuts

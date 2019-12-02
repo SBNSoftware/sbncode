@@ -839,10 +839,10 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.ID = pfp_track_index;
 
     // track length
-    this_track.length = RecoTrackLength(track);
+    this_track.length = track->Length();
 
     // get the associated PID and Calo
-    assert(_tpc_tracks_to_pid.at(pfp_track_index).size() == 3); // one per plane
+    assert(_tpc_tracks_to_pid.at(pfp_track_index).size() == 3); //one per plane
     
     // sum up all the pid scores weighted by n dof
     double chi2_proton = 0.;

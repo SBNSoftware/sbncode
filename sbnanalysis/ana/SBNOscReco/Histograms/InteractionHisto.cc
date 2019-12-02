@@ -36,6 +36,10 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO2D(vertex_yz, 200, detector_volume.MinY(), detector_volume.MaxY(), 200, detector_volume.MinZ(), detector_volume.MaxZ());
   INT_HISTO2D(vertex_xz, 200, detector_volume.MinX(), detector_volume.MaxX(), 200, detector_volume.MinZ(), detector_volume.MaxZ());
 
+  INT_HISTO2D(crthit_xy, 200, detector_volume.MinX()*0.8, detector_volume.MaxX()*1.2, 200, detector_volume.MinY()*0.8, detector_volume.MaxY()*1.2);
+  INT_HISTO2D(crthit_yz, 200, detector_volume.MinY()*0.8, detector_volume.MaxY()*1.2, 200, detector_volume.MinZ()*0.8, detector_volume.MaxZ()*1.2);
+  INT_HISTO2D(crthit_xz, 200, detector_volume.MinX()*0.8, detector_volume.MaxX()*1.2, 200, detector_volume.MinZ()*0.8, detector_volume.MaxZ()*1.2);
+
 #undef INT_HISTO
 }
 
@@ -81,6 +85,9 @@ void InteractionHistos::Fill(
 
     std::cout << "PE: " << hit.pes << std::endl;
     std::cout << "Time: " << hit.time << std::endl;
+    crthit_xy->Fill(hit.location.X(), hit.location.Y());
+    crthit_yz->Fill(hit.location.Y(), hit.location.Z());
+    crthit_xz->Fill(hit.location.X(), hit.location.Z());
     if (hit.pes > maxpe) maxpe = hit.pes;
     crt_hit_times->Fill(hit.time);
 
