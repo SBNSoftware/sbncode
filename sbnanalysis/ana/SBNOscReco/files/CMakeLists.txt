@@ -1,4 +1,12 @@
-INSTALL(FILES intime_files.list  overlay_files.list  test_10.list  test_single.list psihas_intime_files.list icarus_overlay.list
+INSTALL(
+  FILES 
+    icarus_intime_v08_32_01.list
+    icarus_overlay_v08_32_01.list
+    sbnd_intime_v08_32_01.list
+    sbnd_intime_v08_36_00.list
+    sbnd_old_overlay.list
+    sbnd_overlay_v08_36_00.list
+    test_files.list
   DESTINATION
     ${CMAKE_INSTALL_PREFIX}/files
 )
