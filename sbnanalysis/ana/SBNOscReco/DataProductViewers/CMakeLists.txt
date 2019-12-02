@@ -14,6 +14,7 @@ add_library(sbnanalysis_SBNOscReco_PandoraMetadataPrinter SHARED PandoraMetadata
 add_library(sbnanalysis_SBNOscReco_CaloPrinter SHARED CaloPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_CosmicArrivalTimes SHARED CosmicArrivalTimes.cc)
 add_library(sbnanalysis_SBNOscReco_CRTSimHitViewer SHARED CRTSimHitViewer.cc)
+add_library(sbnanalysis_SBNOscReco_CRTHitTiming SHARED CRTHitTiming.cc)
 
 # Add in ROOT dictionary
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV
@@ -90,6 +91,13 @@ target_link_libraries(sbnanalysis_SBNOscReco_CRTSimHitViewer
   icaruscode_CRTProducts
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_CRTHitTiming
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+  icaruscode_CRTProducts
+)
+
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
@@ -103,4 +111,5 @@ install(TARGETS sbnanalysis_SBNOscReco_PandoraMetadataPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CaloPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CosmicArrivalTimes DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CRTSimHitViewer DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_CRTHitTiming DESTINATION lib)
 
