@@ -57,3 +57,4 @@ link_directories(
 add_subdirectory(ExampleAnalysis)
 add_subdirectory(SBNOsc)
 add_subdirectory(SBNOscReco)
+add_subdirectory(TrackReducer)
