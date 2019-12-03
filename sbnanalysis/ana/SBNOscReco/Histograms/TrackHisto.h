@@ -68,13 +68,10 @@ struct TrackHistos : public HistoList {
 
   TH1D *has_crt_track_match;
   TH1D *has_crt_hit_match;
-  TH1D *has_flash_match;
   TH1D *crt_hit_distance;
   TH1D *crt_track_angle;
 
   TH1D *crt_match_time;
-  TH1D *flash_match_time;
-  TH1D *crt_v_flash_match_time;
 
   TH1D *stopping_chisq_start;
   TH1D *stopping_chisq_finish;
