@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 

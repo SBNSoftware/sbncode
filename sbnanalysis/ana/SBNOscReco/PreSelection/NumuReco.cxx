@@ -1468,13 +1468,15 @@ numu::CRTMatch NumuReco::CRTMatching(
 
   double distance = hit_pair.second;
   if (distance >= 0 /* matching succeeded*/) {
-    match.hit.present = true;
-    match.hit.distance = distance;
-    match.hit.hit = SBND2numuCRTHit(hit_pair.first);
+    match.hit_match.present = true;
+    match.hit_match.distance = distance;
+    match.hit = SBND2numuCRTHit(hit_pair.first);
+    match.hit_match.time = match.hit.time;
+    std::cout << "Match: " << match.hit.location.X() << std::endl;
   }
   else {
-    match.hit.present = false;
-    match.hit.distance = -99999.;
+    match.hit_match.present = false;
+    match.hit_match.distance = -99999.;
   }
  
   return match;

@@ -33,7 +33,7 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
-  TRACK_HISTO(length, 100, 0., max_length);
+  TRACK_HISTO(length, 100, 0., 600.);
 
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
@@ -146,15 +146,15 @@ void TrackHistos::Fill(
     border_z->Fill(track.end.Z());
   }
 
-  has_crt_hit_match->Fill(track.crt_match.hit.present);
+  has_crt_hit_match->Fill(track.crt_match.hit_match.present);
   has_crt_track_match->Fill(track.crt_match.track.present);
   if (track.crt_match.track.present) {
     crt_match_time->Fill(track.crt_match.track.time);
     crt_track_angle->Fill(track.crt_match.track.angle);
   }
-  else if (track.crt_match.hit.present) {
-    crt_match_time->Fill(track.crt_match.hit.hit.time);
-    crt_hit_distance->Fill(track.crt_match.hit.distance);
+  else if (track.crt_match.hit_match.present) {
+    crt_match_time->Fill(track.crt_match.hit_match.time);
+    crt_hit_distance->Fill(track.crt_match.hit_match.distance);
   }
   has_flash_match->Fill(track.flash_match.present);
   if (track.flash_match.present) {
@@ -164,8 +164,8 @@ void TrackHistos::Fill(
     if (track.crt_match.track.present) {
       crt_v_flash_match_time->Fill(track.crt_match.track.time - flash_time);
     }
-    else if (track.crt_match.hit.present) {
-      crt_v_flash_match_time->Fill(track.crt_match.hit.hit.time - flash_time);
+    else if (track.crt_match.hit_match.present) {
+      crt_v_flash_match_time->Fill(track.crt_match.hit_match.time - flash_time);
     }  
   }
   

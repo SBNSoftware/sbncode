@@ -81,14 +81,14 @@ struct Histograms : public HistoList {
 
   static constexpr const char* histoNames[nHistos] = 
     { "Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-      "Reco", "R_trig", "R_fid", "R_goodmcs", "R_flashmatch", "R_crttrack", "R_crthit",
-      "R_length", "R_contained", "R_crtactive"}; //!< Names of histograms
+      "Reco", "R_trig", "R_fid", "R_goodmcs", "R_crttrack", "R_crthit",
+      "R_flashmatch", "R_crtactive", "R_contained", "R_length"}; //!< Names of histograms
 
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
   std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
-  std::pair<CosmicHistos, CosmicHistos> fCosmic;
+  std::array<CosmicHistos, 4> fCosmic;
 
   std::array<CRTHistos, Cuts::nCuts> fCRTs;
 

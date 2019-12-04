@@ -18,13 +18,21 @@ void Histograms::Fill( const numu::RecoEvent &event,
 		       bool fill_all_tracks) { 
 
   if (event.type == numu::fOverlay) {
-    fCosmic.first.Fill(event.truth[event.truth.size()-1].slice.tracks, 
+    fCosmic[0].Fill(event.truth[event.truth.size()-1].slice.tracks, 
 		       event.true_tracks);
+    if (cutmaker.PassFlashTrigger(event)) {
+      fCosmic[1].Fill(event.truth[event.truth.size()-1].slice.tracks, 
+  		       event.true_tracks);
+    }
   }
   else {
     std::cout << "Filling Cosmic!\n";
-    fCosmic.second.Fill(event.truth[event.truth.size()-1].slice.tracks, 
+    fCosmic[2].Fill(event.truth[event.truth.size()-1].slice.tracks, 
 			event.true_tracks);
+    if (cutmaker.PassFlashTrigger(event)) {
+      fCosmic[3].Fill(event.truth[event.truth.size()-1].slice.tracks, 
+  		       event.true_tracks);
+    }
   }
 
   if (fill_all_tracks) {
@@ -48,8 +56,9 @@ void Histograms::Fill( const numu::RecoEvent &event,
       const numu::RecoTrack &track = event.reco_tracks.at(interaction.slice.primary_track_index);
 
       for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
-        if (cuts[cut_i] && track.crt_match.hit.present) {
-          fCRTs[cut_i].Fill(track.crt_match.hit.hit);
+        if (cuts[cut_i] && cutmaker.HasCRTHitMatch(track)) {
+          std::cout << "Filling CRT Histo!\n";
+          fCRTs[cut_i].Fill(track.crt_match.hit);
         }
       }
 
@@ -115,8 +124,10 @@ void Histograms::Initialize(
 
   std::cout << "Limits: " << tagger_volume[0] << " " << tagger_volume[3] << " " << tagger_volume[1] << " " << tagger_volume[4] << " " << tagger_volume[2] << " " << tagger_volume[5] << std::endl;
 
-  fCosmic.first.Initialize(prefix + "_Cosmic", detector);
-  fCosmic.second.Initialize(prefix + "_IntimeCosmic", detector);
+  fCosmic[0].Initialize(prefix + "_Cosmic", detector);
+  fCosmic[1].Initialize(prefix + "_CosmicTrig", detector);
+  fCosmic[2].Initialize(prefix + "_IntimeCosmic", detector);
+  fCosmic[3].Initialize(prefix + "_IntimeCosmicTrig", detector);
 
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
@@ -164,12 +175,12 @@ void Histograms::Initialize(
   }
 
 
-  fAllHistos.insert(fAllHistos.end(), 
-		    fCosmic.first.fAllHistos.begin(), 
-		    fCosmic.first.fAllHistos.end());
-  fAllHistos.insert(fAllHistos.end(), 
-		    fCosmic.second.fAllHistos.begin(), 
-		    fCosmic.second.fAllHistos.end());
+  for (unsigned i = 0; i < 4; i++) {
+    fAllHistos.insert(fAllHistos.end(), 
+		      fCosmic[i].fAllHistos.begin(), 
+		      fCosmic[i].fAllHistos.end());
+
+  }
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       fAllHistos.insert(fAllHistos.end(), 

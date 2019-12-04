@@ -34,22 +34,52 @@ std::vector<numu::FlashTriggerPrimitive> numu::TriggerPrimitives(const std::vect
   return ret;
 }
 
+std::vector<int> numu::TriggerThresholds(const std::vector<numu::FlashTriggerPrimitive> &primitives, unsigned size) {
+  std::map<int, std::vector<int>> trigs;
+  for (const numu::FlashTriggerPrimitive &primitive: primitives) {
+    for (const numu::FlashTriggerPrimitive::Trig &trig: primitive.triggers) {
+      trigs[trig.tdc].push_back(trig.adc);
+    }
+  }
+
+  std::map<int, std::pair<unsigned, int>> time_sorted;
+  for (const auto &pair: trigs) {
+    time_sorted[pair.first].first = pair.second.size();
+    time_sorted[pair.first].second = *std::max_element(pair.second.begin(), pair.second.end());
+  }
+
+  std::vector<int> ret;
+  for (unsigned i = 1; i <= size; i++) {
+    int min = 8000;
+    for (const auto &pair: time_sorted) {
+      if (pair.second.first >= i) {
+        if (pair.second.second < min) min = pair.second.second;
+      }
+    } 
+    ret.push_back(min); 
+  }
+
+  return ret;
+}
+
 bool numu::HasTrigger(const std::vector<numu::FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold) {
   if (n_above_threshold == 0) return true;
 
-  std::map<int, unsigned> above_threshold;
+  std::map<int, std::vector<unsigned>> above_threshold;
 
   for (const numu::FlashTriggerPrimitive &primitive: primitives) {
     for (const numu::FlashTriggerPrimitive::Trig &trig: primitive.triggers) {
       if (trig.adc <= threshold) {
-        if (!above_threshold.count(trig.tdc)) above_threshold[trig.tdc] = 1;
-        else above_threshold[trig.tdc] += 1;
+        above_threshold[trig.tdc].push_back(primitive.channel);
       }
     }
   }
 
   for (auto const &pair: above_threshold) {
-    if (pair.second >= n_above_threshold) {
+    std::cout << "At time: " << pair.first << " above thresh: ";
+    for (unsigned ch: pair.second) std::cout << ch << " ";
+    std::cout << std::endl;
+    if (pair.second.size() >= n_above_threshold) {
       return true;
     }
   }

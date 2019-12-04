@@ -19,13 +19,16 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.TrackLength = cfg.get<float>("TrackLength", 50.);
 
   fConfig.CRTHitDist = cfg.get<float>("CRTHitDist", 35.);
-  fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.4, 2.0});
+  fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.2, 1.8});
+  fConfig.CRTActivityTimeRange = cfg.get<std::array<float, 2>>("CRTActivityTimeRange", {-0.2, 1.8});
   fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
 
   fConfig.TruthFlashMatch = cfg.get<bool>("TruthFlashMatch", true);
 
-  fConfig.PMTTriggerTreshold = cfg.get<int>("PMTTriggerTreshold", 7050);
+  fConfig.PMTTriggerTreshold = cfg.get<int>("PMTTriggerTreshold", 7950);
   fConfig.PMTNAboveThreshold = cfg.get<unsigned>("PMTNAboveThreshold", 5);
+
+  fConfig.CRTActivityPEThreshold = cfg.get<float>("CRTActivityPEThreshold", 100.);
 
   {
     fhicl::ParameterSet dFV = \
@@ -102,11 +105,15 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
   return {is_truth, is_fiducial, is_matched, is_completed, has_reco};
 }
 
+bool Cuts::PassFlashTrigger(const numu::RecoEvent &event) const {
+  return numu::HasTrigger(event.flash_trigger_primitives, fConfig.PMTTriggerTreshold, fConfig.PMTNAboveThreshold);
+}
+
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, 
 						    unsigned reco_vertex_index) const {
   bool is_reco = true;
 
-  bool has_trigger = numu::HasTrigger(event.flash_trigger_primitives, fConfig.PMTTriggerTreshold, fConfig.PMTNAboveThreshold);
+  bool has_trigger = PassFlashTrigger(event);
 
   // require fiducial
   bool fiducial = InFV(event.reco[reco_vertex_index].position) && has_trigger;
@@ -120,48 +127,44 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
        primary_track.length > fConfig.MCSTrackLength) ) /* use MCS*/&& 
     fiducial;
   
+  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && good_mcs;
+  bool pass_crt_hit = ( !HasCRTHitMatch(primary_track) || 
+			TimeInSpill(CRTMatchTime(primary_track) )) && 
+                        pass_crt_track;
+
   // for now, use truth-based flash matching
   bool time_in_spill = false;
   if (primary_track.match.has_match) {
     time_in_spill = TimeInSpill(event.true_tracks.at(primary_track.match.mcparticle_id).start_time);
   }
-  bool flash_match = (!fConfig.TruthFlashMatch || time_in_spill) && good_mcs; 
+  bool flash_match = (!fConfig.TruthFlashMatch || time_in_spill) && pass_crt_hit; 
 
-  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && flash_match;
-  bool pass_crt_hit = ( !HasCRTHitMatch(primary_track) || 
-			TimeInSpill(CRTMatchTime(primary_track) )) && 
-                        pass_crt_track;
-
-  bool pass_length = fConfig.TrackLength < 0. || 
-                     primary_track.length > fConfig.TrackLength
-                     && pass_crt_hit;
-
-  bool is_contained = InCosmicContainment(primary_track.start) && 
-                      InCosmicContainment(primary_track.end) && 
-                      fiducial && 
-                      pass_crt_track && 
-                      pass_crt_hit && 
-                      pass_length;
-
-  bool crt_activity = is_contained;
+  bool crt_activity = flash_match;
   for (const numu::CRTHit &crt_hit: event.in_time_crt_hits) {
-     if (TimeInSpill(crt_hit.time)) {
+     if (TimeInCRTActiveSpill(crt_hit.time) && crt_hit.pes > fConfig.CRTActivityPEThreshold) {
        crt_activity = false;
      }
      if (!crt_activity) break;
   }
 
+  bool is_contained = InCosmicContainment(primary_track.start) && 
+                      InCosmicContainment(primary_track.end) && 
+                      crt_activity;
+
+  bool pass_length = fConfig.TrackLength < 0. || 
+                     primary_track.length > fConfig.TrackLength
+                     && is_contained;
   return {
     is_reco,
     has_trigger,
     fiducial,
     good_mcs,
-    flash_match,
     pass_crt_track,
     pass_crt_hit,
-    pass_length,
+    flash_match,
+    crt_activity,
     is_contained,
-    crt_activity
+    pass_length
   };
 }
 
@@ -172,20 +175,25 @@ bool Cuts::HasCRTTrackMatch(const numu::RecoTrack &track) const {
 }
 
 bool Cuts::HasCRTHitMatch(const numu::RecoTrack &track) const {
-  return track.crt_match.hit.present && 
+  return track.crt_match.hit_match.present && 
          (fConfig.CRTHitDist < 0. || 
-	  track.crt_match.hit.distance < fConfig.CRTHitDist);
+	  track.crt_match.hit_match.distance < fConfig.CRTHitDist);
 }
 
 float Cuts::CRTMatchTime(const numu::RecoTrack &track) const {
   if (HasCRTTrackMatch(track)) return track.crt_match.track.time;
-  if (HasCRTHitMatch(track)) return track.crt_match.hit.hit.time;
+  if (HasCRTHitMatch(track)) return track.crt_match.hit_match.time;
   return -99999;
 }
 
 bool Cuts::TimeInSpill(float time) const {
   return time > fConfig.CRTHitTimeRange[0] && 
          time < fConfig.CRTHitTimeRange[1]; 
+}
+
+bool Cuts::TimeInCRTActiveSpill(float time) const {
+  return time > fConfig.CRTActivityTimeRange[0] && 
+         time < fConfig.CRTActivityTimeRange[1]; 
 }
 
 bool Cuts::InFV(const geo::Point_t &v) const {

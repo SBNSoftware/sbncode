@@ -48,6 +48,7 @@ struct InteractionHistos : public HistoList {
   TH2D *crthit_xy;
   TH2D *crthit_yz;
   TH2D *crthit_xz;
+  TH2D *light_trigger;
 
   /**
  *  Intialize the histograms

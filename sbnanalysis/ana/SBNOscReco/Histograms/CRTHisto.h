@@ -5,6 +5,7 @@
 #include <map>
 
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
+#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
 
 #include "../Data/RecoEvent.h"
 #include "HistoList.h"

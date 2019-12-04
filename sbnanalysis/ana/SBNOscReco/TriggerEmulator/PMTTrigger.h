@@ -16,7 +16,8 @@ std::vector<FlashTriggerPrimitive> TriggerPrimitives(
   int thresh,
   bool is_sbnd);
 
-bool HasTrigger(const std::vector<FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold);
+  bool HasTrigger(const std::vector<FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold);
+  std::vector<int> TriggerThresholds(const std::vector<numu::FlashTriggerPrimitive> &primitives, unsigned size);
 }
 
 #endif

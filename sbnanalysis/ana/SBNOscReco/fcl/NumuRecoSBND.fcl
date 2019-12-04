@@ -15,7 +15,7 @@ NumuReco: {
   requireMatched: false
   requireContained: false
 
-  PMTTriggerThreshold: 7090 # 8000 (baseline) - 10 (single PE threshold)
+  PMTTriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold)
 
   # CRTHitDist: 35
 

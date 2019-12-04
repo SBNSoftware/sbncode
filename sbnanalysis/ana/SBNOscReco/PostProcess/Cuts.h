@@ -103,6 +103,7 @@ public:
  * \return True when the time is in the beam spill window.
  */
   bool TimeInSpill(float time) const;
+  bool TimeInCRTActiveSpill(float time) const;
 
   /**
  * Whether a TPC track has a CRT track match
@@ -111,6 +112,7 @@ public:
  */
   bool HasCRTTrackMatch(const numu::RecoTrack &track) const;
   
+  bool PassFlashTrigger(const numu::RecoEvent &event) const;
 
 private:
   struct VolYZ {
@@ -124,9 +126,11 @@ private:
     float TruthMatchDist;
     float CRTHitDist;
     std::array<float, 2> CRTHitTimeRange;
+    std::array<float, 2> CRTActivityTimeRange;
     float CRTTrackAngle;
     float TrackLength;
     float MCSTrackLength;
+    float CRTActivityPEThreshold;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
     std::vector<VolYZ> cosmic_containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
