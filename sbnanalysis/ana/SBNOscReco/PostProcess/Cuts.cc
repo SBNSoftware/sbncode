@@ -110,7 +110,8 @@ bool Cuts::PassFlashTrigger(const numu::RecoEvent &event) const {
 }
 
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, 
-						    unsigned reco_vertex_index) const {
+						    unsigned reco_vertex_index, 
+						    bool fSequentialCuts) const {
   bool is_reco = true;
 
   bool has_trigger = PassFlashTrigger(event);
@@ -120,40 +121,62 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
 
-  bool good_mcs = (InCalorimetricContainment(primary_track.start) && 
-		   InCalorimetricContainment(primary_track.end) )  || /* use range momentum */
-    ( primary_track.mcs_momentum < 7. /* garbage value */ && 
-      (fConfig.MCSTrackLength <0. || 
-       primary_track.length > fConfig.MCSTrackLength) ) /* use MCS*/&& 
-    fiducial;
+
+  //   good_mcs = track contain OR (range momentum OR mcs trk length)
+  bool good_mcs = ( ( InCalorimetricContainment(primary_track.start) && 
+		      InCalorimetricContainment(primary_track.end) )  || 
+		    ( primary_track.mcs_momentum < 7. /*garbage value*/&& 
+		      (fConfig.MCSTrackLength <0. || 
+		       primary_track.length > fConfig.MCSTrackLength) )
+		    );
   
-  bool pass_crt_track = !HasCRTTrackMatch(primary_track) && good_mcs;
+  bool pass_crt_track = !HasCRTTrackMatch(primary_track);
+
   bool pass_crt_hit = ( !HasCRTHitMatch(primary_track) || 
-			TimeInSpill(CRTMatchTime(primary_track) )) && 
-                        pass_crt_track;
+			TimeInSpill(CRTMatchTime(primary_track)) );
+
+  bool pass_length = fConfig.TrackLength < 0. || 
+                     primary_track.length > fConfig.TrackLength;
+
+  bool is_contained = ( InCosmicContainment(primary_track.start) && 
+			InCosmicContainment(primary_track.end) );
 
   // for now, use truth-based flash matching
   bool time_in_spill = false;
   if (primary_track.match.has_match) {
     time_in_spill = TimeInSpill(event.true_tracks.at(primary_track.match.mcparticle_id).start_time);
   }
-  bool flash_match = (!fConfig.TruthFlashMatch || time_in_spill) && pass_crt_hit; 
+  bool flash_match = ( !fConfig.TruthFlashMatch || time_in_spill ); 
 
-  bool crt_activity = flash_match;
+  bool crt_activity = true; //is_contained;
   for (const numu::CRTHit &crt_hit: event.in_time_crt_hits) {
-     if (TimeInCRTActiveSpill(crt_hit.time) && crt_hit.pes > fConfig.CRTActivityPEThreshold) {
+     if ( TimeInSpill(crt_hit.time)  && 
+	  crt_hit.pes > fConfig.CRTActivityPEThreshold ) 
        crt_activity = false;
-     }
-     if (!crt_activity) break;
+     if ( !crt_activity )  break;
   }
 
-  bool is_contained = InCosmicContainment(primary_track.start) && 
-                      InCosmicContainment(primary_track.end) && 
-                      crt_activity;
+  // Sequential Cuts
+  bool fiducial_seq       = is_reco            && fiducial;
+  bool good_mcs_seq       = fiducial_seq       && good_mcs;
+  bool pass_crt_track_seq = good_mcs_seq       && pass_crt_track;
+  bool pass_crt_hit_seq   = pass_crt_track_seq && pass_crt_hit;
+  bool pass_length_seq    = pass_crt_hit_seq   && pass_length;
+  bool is_contained_seq   = pass_length_seq    && is_contained;
+  bool flash_match_seq    = is_contained_seq   && flash_match;
+  bool crt_activity_seq   = flash_match_seq   && crt_activity;
 
-  bool pass_length = fConfig.TrackLength < 0. || 
-                     primary_track.length > fConfig.TrackLength
-                     && is_contained;
+  if ( fSequentialCuts ){
+    fiducial = fiducial_seq;
+    good_mcs = good_mcs_seq;
+    pass_crt_track = pass_crt_track_seq;
+    pass_crt_hit = pass_crt_hit_seq;
+    pass_length = pass_length_seq;
+    is_contained = is_contained_seq;
+    flash_match  = flash_match_seq;
+    crt_activity = crt_activity_seq;
+  }
+
   return {
     is_reco,
     has_trigger,
@@ -165,7 +188,8 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     crt_activity,
     is_contained,
     pass_length
-  };
+      };
+
 }
 
 bool Cuts::HasCRTTrackMatch(const numu::RecoTrack &track) const {
