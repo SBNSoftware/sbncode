@@ -19,6 +19,7 @@ add_custom_target(data)
 add_dependencies(data
   sbnanalysis_Event 
   sbnanalysis_SBNOscReco_classes
+  sbnanalysis_TrackReducer_Data
 )
 
 include_directories(${PROJECT_SOURCE_DIR})
