@@ -15,6 +15,12 @@ list(APPEND CMAKE_PREFIX_PATH $ENV{ROOTSYS})
 find_package(ROOT REQUIRED COMPONENTS RIO Net)
 include(${ROOT_USE_FILE})
 
+add_custom_target(data)
+add_dependencies(data
+  sbnanalysis_Event 
+  sbnanalysis_SBNOscReco_classes
+)
+
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories($ENV{HEP_CONCURRENCY_INC})
 
