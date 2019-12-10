@@ -16,6 +16,7 @@ struct TrackProfiles : public HistoList {
   TH3D *range_v_true_mom;
   TH3D *mcs_minus_true;
   TH3D *mcs_v_true_mom;
+  TH3D *pid_confusion_tr;
 
   void Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi);
   void Fill(const numu::ROOTValue &val, const numu::RecoTrack &track, const numu::RecoEvent &event);

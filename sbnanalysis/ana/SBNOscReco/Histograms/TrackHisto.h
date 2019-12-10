@@ -80,6 +80,8 @@ struct TrackHistos : public HistoList {
   TH1D *stopping_chisq_finish;
   TH1D *stopping_chisq;
 
+  TH2D *pid_confusion_tr;
+
   /**
  * Initialize this set of histograms
  * \param postfix The postfix to add to all histogram names

@@ -25,6 +25,7 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(primary_track_completion, 100, 0., 1.);
   INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
   INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 10000.);
+  INT_HISTO(crt_pes, 1000, 0., 10000.);
 
   INT_HISTO(crt_hit_times, 300, -20., 10.);
   INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
@@ -96,9 +97,11 @@ void InteractionHistos::Fill(
     crthit_xy->Fill(hit.location.X(), hit.location.Y());
     crthit_yz->Fill(hit.location.Y(), hit.location.Z());
     crthit_xz->Fill(hit.location.X(), hit.location.Z());
+    crt_pes->Fill(hit.pes);
     if (hit.pes > maxpe) maxpe = hit.pes;
 
-    if (hit.pes < 100.) continue;
+
+    //if (hit.pes < 100.) continue;
 
     crt_hit_times->Fill(hit.time);
 
@@ -120,7 +123,12 @@ void InteractionHistos::Fill(
   }
 
   std::cout << "Max PE: " << maxpe << std::endl; 
-  maxpe_crt_intime_hit->Fill(maxpe);
+  if (event.in_time_crt_hits.size() == 0) {
+    maxpe_crt_intime_hit->Fill(-1);
+  }
+  else {
+    maxpe_crt_intime_hit->Fill(maxpe);
+  }
 
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;

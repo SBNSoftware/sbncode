@@ -13,6 +13,7 @@ void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, doub
 
   TRACK_PROFILE3D(range_minus_true, 50, 0., 2.5, 50, -1., 1.); 
   TRACK_PROFILE3D(mcs_minus_true, 50, 0., 2.5, 50, -1., 1.); 
+  TRACK_PROFILE3D(pid_confusion_tr, 2, -0.5, 1.5, 2, -0.5, 1.5);
 #undef TRACK_PROFILE3D
 #undef TRACK_PROFILE
 }
@@ -32,6 +33,16 @@ void TrackProfiles::Fill(const numu::ROOTValue &rootval, const numu::RecoTrack &
 
     range_minus_true->Fill(val, true_track.momentum, (track.range_momentum - true_track.momentum) / true_track.momentum);
     mcs_minus_true->Fill(val, true_track.momentum, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+  }
+  if (track.min_chi2 > 0) {
+    bool is_proton_reco = track.chi2_proton < track.chi2_muon;
+    if (track.match.has_match) {
+      bool is_proton_true = abs(track.match.match_pdg) == 2212;
+      bool is_muon_true = abs(track.match.match_pdg) == 13;
+      if (is_proton_true || is_muon_true) {
+        pid_confusion_tr->Fill(val, is_proton_true, is_proton_reco);
+      }
+    }
   }
 }
 
