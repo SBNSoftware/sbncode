@@ -18,7 +18,7 @@
 #pragma link C++ class numu::RecoSlice+;
 #pragma link C++ class numu::CRTMatch+;
 #pragma link C++ class numu::CRTMatch::Track+;
-#pragma link C++ class numu::CRTMatch::Hit+;
+#pragma link C++ class numu::CRTMatch::HitMatch+;
 #pragma link C++ class numu::FlashMatch+;
 #pragma link C++ class std::optional<numu::CRTMatch>+;
 #pragma link C++ class std::optional<numu::FlashMatch>+;
