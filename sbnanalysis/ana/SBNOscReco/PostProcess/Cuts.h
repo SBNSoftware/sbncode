@@ -33,7 +33,8 @@ public:
  * \return A list of bool's of whether the reco event passes each cut
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, 
-					  unsigned reco_vertex_index) const;
+					  unsigned reco_vertex_index, 
+					  bool fSequentialCuts = false) const;
 
   /**
  * Process each cut associated with true events
