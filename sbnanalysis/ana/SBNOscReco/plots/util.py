@@ -29,6 +29,32 @@ def with_input_args(parser):
         parser.add_argument("-i", "--input", required=True)
     return parser
 
+def with_text_args(parser):
+    parser.add_argument("-txt", "--text", nargs="+", default=None)
+    parser.add_argument("-tp", "--text_position", default=[0.5,0.4, 0.75, 0.6], type=comma_separated)
+    parser.add_argument("-ts", "--text_size", default=30, type=int)
+    parser.add_argument("-tf", "--text_font", default=43, type=int)
+    parser.add_argument("-tc", "--text_color", default=ROOT.kBlack, type=int)
+    return parser
+
+def draw_text(args):
+    textbox = None
+    if args.text:
+        print [float(x) for x in args.text_position]
+        textbox = ROOT.TPaveText(*[float(x) for x in args.text_position])
+        textbox.SetOption("NDC")
+        for text in args.text:
+            textbox.AddText(text)
+        textbox.SetMargin(0)
+        textbox.SetBorderSize(0)
+        textbox.SetTextFont(args.text_font)
+        textbox.SetTextSize(args.text_size)
+        textbox.SetTextColor(args.text_color)
+        textbox.SetFillStyle(0)
+        textbox.Draw()
+    return textbox
+        
+
 def with_display_args(parser):
     parser.add_argument("-w", "--wait", action="store_true")
     parser.add_argument("-o", "--output", default=None)
@@ -165,16 +191,22 @@ def resize_histo(args, hist):
     return hist
 
 def with_histostyle_args(parser):
-    parser.add_argument("-xl", "--xlabel", default=None)
-    parser.add_argument("-yl", "--ylabel", default=None)
+    parser.add_argument("-xt", "--xtitle", default=None)
+    parser.add_argument("-yt", "--ytitle", default=None)
+    parser.add_argument("-yl", "--ylabel", nargs="+", default=None)
+    parser.add_argument("-xl", "--xlabel", nargs="+", default=None)
     parser.add_argument("-os", "--optstat", default=None)
+    parser.add_argument("-ml", "--margin_left", default=None, type=float)
+    parser.add_argument("-mr", "--margin_right", default=None, type=float)
+    parser.add_argument("-mt", "--margin_top", default=None, type=float)
+    parser.add_argument("-mb", "--margin_bottom", default=None, type=float)
     return parser
 
 def optstat(args):
     if args.optstat:
         ROOT.gStyle.SetOptStat(args.optstat)
 
-def style(args, hist):
+def style(args, canvas, hist):
     hist.GetYaxis().SetTitleSize(20)
     hist.GetYaxis().SetTitleFont(43)
     hist.GetYaxis().SetLabelFont(43)
@@ -187,8 +219,26 @@ def style(args, hist):
     hist.GetXaxis().SetLabelSize(20)
     hist.GetXaxis().CenterTitle()
 
-    if args.xlabel: hist.GetXaxis().SetTitle(args.xlabel)
-    if args.ylabel: hist.GetYaxis().SetTitle(args.ylabel)
+    if args.margin_left is not None:
+        canvas.SetLeftMargin(args.margin_left)
+    if args.margin_right is not None:
+        canvas.SetRightMargin(args.margin_right)
+    if args.margin_bottom is not None:
+        canvas.SetBottomMargin(args.margin_bottom)
+    if args.margin_top is not None:
+        canvas.SetTopMargin(args.margin_top)
+
+    if args.xlabel is not None:
+        for i, xlabel in enumerate(args.xlabel):
+            hist.GetXaxis().SetBinLabel(i+1, xlabel)
+    if args.ylabel is not None:
+        for i, ylabel in enumerate(args.ylabel):
+            hist.GetYaxis().SetBinLabel(i+1, ylabel)
+            hist.GetYaxis().LabelsOption("v")
+
+
+    if args.xtitle: hist.GetXaxis().SetTitle(args.xtitle)
+    if args.ytitle: hist.GetYaxis().SetTitle(args.ytitle)
 
 def colors(index):
     colors = [ROOT.kRed, ROOT.kGreen]

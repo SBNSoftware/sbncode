@@ -1,5 +1,6 @@
 #include "InteractionHisto.h"
 #include "Derived.h"
+#include "../TriggerEmulator/PMTTrigger.h"
 
 #include "TH1D.h"
 #include "TH2D.h"
@@ -24,9 +25,12 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(primary_track_completion, 100, 0., 1.);
   INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
   INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 10000.);
+  INT_HISTO(crt_pes, 1000, 0., 10000.);
 
   INT_HISTO(crt_hit_times, 300, -20., 10.);
   INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
+
+  INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
 
   INT_HISTO2D(intime_crt_hits_xy, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[1], tagger_volume[4]);
   INT_HISTO2D(intime_crt_hits_xz, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[2], tagger_volume[5]);
@@ -69,6 +73,11 @@ void InteractionHistos::Fill(
     vertex_tracks = &event.reco_tracks;
   }
 
+  std::vector<int> thresholds = numu::TriggerThresholds(event.flash_trigger_primitives, 20);
+  for (int i = 0; i < thresholds.size(); i++) {
+    light_trigger->Fill(i, thresholds[i]);
+  }
+
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
   vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
   vertex_xz->Fill(vertex.position.X(), vertex.position.Z());
@@ -88,7 +97,12 @@ void InteractionHistos::Fill(
     crthit_xy->Fill(hit.location.X(), hit.location.Y());
     crthit_yz->Fill(hit.location.Y(), hit.location.Z());
     crthit_xz->Fill(hit.location.X(), hit.location.Z());
+    crt_pes->Fill(hit.pes);
     if (hit.pes > maxpe) maxpe = hit.pes;
+
+
+    //if (hit.pes < 100.) continue;
+
     crt_hit_times->Fill(hit.time);
 
     if (closest_time_dist < 0. || closest_time_dist > 1e-3) {
@@ -100,15 +114,21 @@ void InteractionHistos::Fill(
          closest_time_dist = this_time_dist;
        }
     }
-    if (closest_time_dist >= 0.) {
-      closest_crt_hit_time->Fill(closest_time);
-    }
-    else {
-      closest_crt_hit_time->Fill(30.);
-    }
   }
+  if (closest_time_dist >= 0.) {
+    closest_crt_hit_time->Fill(closest_time);
+  }
+  else {
+    closest_crt_hit_time->Fill(30.);
+  }
+
   std::cout << "Max PE: " << maxpe << std::endl; 
-  maxpe_crt_intime_hit->Fill(maxpe);
+  if (event.in_time_crt_hits.size() == 0) {
+    maxpe_crt_intime_hit->Fill(-1);
+  }
+  else {
+    maxpe_crt_intime_hit->Fill(maxpe);
+  }
 
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;

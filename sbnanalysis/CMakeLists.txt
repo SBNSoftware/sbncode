@@ -26,6 +26,17 @@ ADD_SUBDIRECTORY(ana)
 ADD_SUBDIRECTORY(core)
 ADD_SUBDIRECTORY(util)
 
+add_custom_target(data
+  ${CMAKE_COMMAND}
+  -DBUILD_TYPE=${CMAKE_BUILD_TYPE}
+  -DCOMPONENT=DATA
+  -P ${CMAKE_BINARY_DIR}/cmake_install.cmake
+)
+add_dependencies(data
+  sbnanalysis_Event 
+  sbnanalysis_TrackReducer_Data
+)
+
 file(WRITE ${CMAKE_INSTALL_PREFIX}/bin/setup_sbnanalysis.sh
 "export SBN_ANALYSIS_DIR=${CMAKE_INSTALL_PREFIX}
 export SBN_LIB_DIR=$SBN_ANALYSIS_DIR/lib
@@ -35,4 +46,3 @@ export PATH=$SBN_ANALYSIS_DIR/bin:$PATH
 export FHICL_FILE_PATH=.:${CMAKE_INSTALL_PREFIX}/fcl:$FHICL_FILE_PATH
 export ROOT_INCLUDE_PATH=$ROOT_INCLUDE_PATH:$SBN_ANALYSIS_DIR/inc
 ")
-

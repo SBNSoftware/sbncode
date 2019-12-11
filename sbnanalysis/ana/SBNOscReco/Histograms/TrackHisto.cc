@@ -33,7 +33,7 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
 
-  TRACK_HISTO(length, 100, 0., max_length);
+  TRACK_HISTO(length, 100, 0., 600.);
 
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
@@ -78,6 +78,8 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq, 100., 0., 10.);
 
+  TRACK_2DHISTO(pid_confusion_tr, 2, -0.5, 1.5, 2, -0.5, 1.5);
+
 #undef TRACK_HISTO
 #undef TRACK_2DHISTO
 }
@@ -100,6 +102,14 @@ void TrackHistos::Fill(
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 
+    bool is_proton_reco = track.chi2_proton < track.chi2_muon;
+    if (track.match.has_match) {
+      bool is_proton_true = abs(track.match.match_pdg) == 2212;
+      bool is_muon_true = abs(track.match.match_pdg) == 13;
+      if (is_proton_true || is_muon_true) {
+        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
+      }
+    }
   }
 	  
   range_p->Fill(track.range_momentum); 
@@ -143,15 +153,28 @@ void TrackHistos::Fill(
     border_z->Fill(track.end.Z());
   }
 
-  has_crt_hit_match->Fill(track.crt_match.hit.present);
+  has_crt_hit_match->Fill(track.crt_match.hit_match.present);
   has_crt_track_match->Fill(track.crt_match.track.present);
   if (track.crt_match.track.present) {
     crt_match_time->Fill(track.crt_match.track.time);
     crt_track_angle->Fill(track.crt_match.track.angle);
   }
-  else if (track.crt_match.hit.present) {
-    crt_match_time->Fill(track.crt_match.hit.hit.time);
-    crt_hit_distance->Fill(track.crt_match.hit.distance);
+  else if (track.crt_match.hit_match.present) {
+    crt_match_time->Fill(track.crt_match.hit_match.time);
+    crt_hit_distance->Fill(track.crt_match.hit_match.distance);
+  }
+
+  has_flash_match->Fill(track.flash_match.present);
+  if (track.flash_match.present) {
+    const numu::FlashMatch &flash_match = track.flash_match;
+    double flash_time = flash_match.match_time_first;
+    flash_match_time->Fill(flash_time);
+    if (track.crt_match.track.present) {
+      crt_v_flash_match_time->Fill(track.crt_match.track.time - flash_time);
+    }
+    else if (track.crt_match.hit_match.present) {
+      crt_v_flash_match_time->Fill(track.crt_match.hit_match.time - flash_time);
+    }  
   }
   
   // check if truth match

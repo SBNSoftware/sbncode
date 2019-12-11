@@ -9,7 +9,7 @@ namespace ana {
 void CosmicHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume) {
 #define COSMIC_HISTO(name, n_bins, lo, hi) name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
 
-  COSMIC_HISTO(enter_time, 100, -4000., 3000.);
+  COSMIC_HISTO(enter_time, 600, -3000., 3000.);
   COSMIC_HISTO(enter_time_zoom, 300, -20., 10.);
   COSMIC_HISTO(enter_x, 400, detector_volume.MinX(), detector_volume.MaxX());
   COSMIC_HISTO(enter_y, 400, detector_volume.MinY(), detector_volume.MaxY());

@@ -142,7 +142,7 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
-install(TARGETS sbnanalysis_Event DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR})
+install(TARGETS sbnanalysis_Event DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR} COMPONENT DATA)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)

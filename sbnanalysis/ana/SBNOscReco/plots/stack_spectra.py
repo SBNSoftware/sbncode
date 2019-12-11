@@ -35,13 +35,15 @@ def main(args):
                 name += " (%i)" % int(h.Integral()) 
             h.SetTitle(name)
         hstack.Add(h)
-        
+
     drawstr = "HIST" if args.stack else "NOSTACK HIST"
     hstack.Draw(drawstr)
-    util.style(args, hstack)
+    util.style(args, canvas, hstack)
     legend = ROOT.gPad.BuildLegend(*(args.legend_position + [""]))
     if args.logy:
         canvas.SetLogy()
+
+    box = util.draw_text(args)
     canvas.Update()
 
     util.wait(args)
@@ -52,6 +54,7 @@ if __name__ == "__main__":
     parser = util.with_io_args(parser)
     parser = util.with_histosize_args(parser)
     parser = util.with_histostyle_args(parser)
+    parser = util.with_text_args(parser)
     parser.add_argument("-ly", "--logy", action="store_true")
     parser.add_argument("-hs", "--hstack", required=True, type=util.histo_list)
     parser.add_argument("-s", "--stack", action="store_true")

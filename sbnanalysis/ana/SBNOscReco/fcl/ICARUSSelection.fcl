@@ -1,8 +1,13 @@
+DoNormalize: true
 GoalPOT: 1.e20
 ExperimentID: 2
 # DoNormalize: true
 # Normalize.NCosmicEvents: 15500
 # Normalize.NCosmicEvents: 2500
+#Normalize.NCosmicEvents: 364250 # 1457 * 250
+# Normalize.NCosmicEvents: 25000  # 100 * 250
+#Normalize.NCosmicEvents: 339500 # 1358 * 250
+Normalize.NCosmicEvents: 342000 # 1368 * 250 
 
 selection_fiducial_volume_inset: {
   y: 10
@@ -79,9 +84,10 @@ interactions: ["All", "Cosmic", "InTime-Cosmic", "CC", "CC-Other", "NC", "NC-Oth
 
 neutrino_selectors: ["",
    "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
-   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1"
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.is_primary==0"
 ]
-neutrinos: ["All", "CC", "NC"]
+neutrinos: ["All", "CC", "NC", "Other"]
 
 wall_selectors_enter: ["",
   "true_track.wall_enter==0",
@@ -153,5 +159,5 @@ TrackProfileValueNames: ["length"]
 
 TrackProfileXRanges: [ [60, 0., 600.]]
 
-FillAllTracks: false
+FillAllTracks: true
 

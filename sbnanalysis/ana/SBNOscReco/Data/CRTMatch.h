@@ -1,9 +1,6 @@
 #ifndef _sbnumurecodata_CRTMatch_hh
 #define _sbnumurecodata_CRTMatch_hh
 
-#include "sbndcode/CRT/CRTProducts/CRTTrack.hh"
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
-
 #include "ana/SBNOscReco/Data/DetInfo.h"
 
 namespace numu {
@@ -24,14 +21,15 @@ struct CRTMatch {
   /**
   * Hit Match
   */
-  struct Hit {
+  struct HitMatch {
     bool present; //!< Whether this CRTMatch has a matching hit
     float distance; //!< //!< Distance from projected track to CRT Hit. Nonsense if present is false.
-    numu::CRTHit hit; // !< CRT hit object corresponsing to this one
+    float time;
   };
 
   Track track; //!< CRT Track match
-  Hit hit; //!< CRT Hit match
+  HitMatch hit_match; //!< CRT Hit match
+  CRTHit hit; // !< CRT hit object corresponsing to this one
 
 };
 }
