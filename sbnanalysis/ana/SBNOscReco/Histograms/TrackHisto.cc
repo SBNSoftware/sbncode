@@ -164,6 +164,7 @@ void TrackHistos::Fill(
     crt_hit_distance->Fill(track.crt_match.hit_match.distance);
   }
 
+  /*
   has_flash_match->Fill(track.flash_match.present);
   if (track.flash_match.present) {
     const numu::FlashMatch &flash_match = track.flash_match;
@@ -175,7 +176,7 @@ void TrackHistos::Fill(
     else if (track.crt_match.hit_match.present) {
       crt_v_flash_match_time->Fill(track.crt_match.hit_match.time - flash_time);
     }  
-  }
+  }*/
   
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {

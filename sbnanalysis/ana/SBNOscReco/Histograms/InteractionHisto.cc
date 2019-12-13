@@ -30,6 +30,9 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(crt_hit_times, 300, -20., 10.);
   INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
 
+  INT_HISTO(fmatch_score, 1000, 0., 1000.);
+  INT_HISTO(fmatch_time, 3000, -1., 2.);
+
   INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
 
   INT_HISTO2D(intime_crt_hits_xy, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[1], tagger_volume[4]);
@@ -128,6 +131,11 @@ void InteractionHistos::Fill(
   }
   else {
     maxpe_crt_intime_hit->Fill(maxpe);
+  }
+
+  if (vertex.slice.flash_match.present) {
+    fmatch_score->Fill(vertex.slice.flash_match.score);
+    fmatch_time->Fill(vertex.slice.flash_match.time);
   }
 
 

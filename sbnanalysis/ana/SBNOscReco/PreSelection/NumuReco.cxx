@@ -1234,7 +1234,7 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
 
     std::cout << "Primary index: " << slice_ret.primary_index << std::endl;
     std::cout << "Is primary: " << _tpc_particles[slice_ret.primary_index]->IsPrimary() << std::endl;
-    if (_tpc_particles_to_flashT0.at(slice_ret.primary_index).size()) {
+    if (_tpc_particles_to_flashT0.size() && _tpc_particles_to_flashT0.at(slice_ret.primary_index).size()) {
       const anab::T0 &fmatch = *_tpc_particles_to_flashT0.at(slice_ret.primary_index).at(0);
       slice_ret.flash_match.present = true;
       slice_ret.flash_match.time = fmatch.Time(); 
@@ -1377,11 +1377,15 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
       _tpc_particles_to_T0.push_back(particle_to_T0.at(i));
     }
 
-    // particle to flash match
-    art::FindManyP<anab::T0> particle_to_flash(particle_handle, ev, _config.FlashMatchTag + suffix);
-    for (unsigned i = 0; i < particle_handle->size(); i++) {
-      assert(particle_to_flash.at(i).size() == 0 || particle_to_flash.at(i).size() == 1);
-      _tpc_particles_to_flashT0.push_back(particle_to_flash.at(i));
+    gallery::Handle<art::Assns<recob::PFParticle,anab::T0,void>> assns_check;
+    ev.getByLabel(_config.FlashMatchTag + suffix, assns_check);
+    if (assns_check.isValid()) {
+      // particle to flash match
+      art::FindManyP<anab::T0> particle_to_flash(particle_handle, ev, _config.FlashMatchTag + suffix);
+      for (unsigned i = 0; i < particle_handle->size(); i++) {
+        assert(particle_to_flash.at(i).size() == 0 || particle_to_flash.at(i).size() == 1);
+        _tpc_particles_to_flashT0.push_back(particle_to_flash.at(i));
+      }
     }
 
     // particle to vertex

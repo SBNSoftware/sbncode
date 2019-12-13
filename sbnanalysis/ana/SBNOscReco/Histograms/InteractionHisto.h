@@ -40,6 +40,8 @@ struct InteractionHistos : public HistoList {
   TH1D *crt_hit_times;
   TH1D *closest_crt_hit_time;
   TH1D *crt_pes;
+  TH1D *fmatch_score;
+  TH1D *fmatch_time;
   TH2D *intime_crt_hits_xy;
   TH2D *intime_crt_hits_xz;
   TH2D *intime_crt_hits_yz;
