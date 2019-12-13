@@ -1,8 +1,6 @@
 DoNormalize: true
 GoalPOT: 1.e20
 ExperimentID: 0
-Normalize.NCosmicEvents: 865000 # 1730 * 500
-#Normalize.NCosmicEvents: 90000 # 180 * 500
 
 selection_fiducial_volume_inset: {
   y: 10

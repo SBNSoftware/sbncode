@@ -14,35 +14,13 @@ void ana::SBNOsc::Normalize::Initialize(const fhicl::ParameterSet &fcl) {
   fNeutrinoPOT = 0.;
   fNNeutrinoEvents = 0;
   fNCosmicEvents = 0;
-
-  // TODO: get number of cosmic events pre-filtering. For now, 
-  // rely on knowing number of cosmic events per file. This
-  // number is hard-coded, since we will want to change
-  // how we do this long term
-  fCosmicEventsPerFile = 50;
-
-  // Also hardcode the total number of files -- this also should be fixed
-  unsigned n_cosmic_files = 1837;
-  // unsigned n_cosmic_files = 10;
-
-  // TODO: fix -- also allow configuration
-  fNCosmicEvents = fcl.get<unsigned>("NCosmicEvents"); //, n_cosmic_files * fCosmicEventsPerFile);
-  std::cerr << "Total cosmic events: " << fNCosmicEvents << std::endl;
-  
 }
 
-void ana::SBNOsc::Normalize::AddCosmicEvent(const event::Event &event) {
-/*
-  std::cout << "New Cosmic event: " << event.metadata.fileEntry << std::endl;
-  // new file -- increment the total
-  if (fLastCosmicFileID == -1 || event.metadata.fileEntry != fLastCosmicFileID) {
-    std::cout << "Incrementing N cosmic events\n";
-    fNCosmicEvents += fCosmicEventsPerFile;
-  }
-  fLastCosmicFileID = event.metadata.fileEntry;
-  fLastCosmicEventID = event.metadata.eventID;
-*/
+void ana::SBNOsc::Normalize::AddCosmicFile(const FileMeta &meta) {
+  fNCosmicEvents += meta.n_gen_events;  
 }
+
+void ana::SBNOsc::Normalize::AddCosmicEvent(const event::Event &event) {}
 
 void ana::SBNOsc::Normalize::AddNeutrinoEvent(const event::Event &event) {
   fNNeutrinoEvents ++;

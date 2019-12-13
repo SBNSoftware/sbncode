@@ -52,6 +52,7 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(border_x, 400, detector_volume.MinX(), detector_volume.MaxX());
   TRACK_HISTO(border_z, 500, detector_volume.MinZ(), detector_volume.MaxZ()); 
   TRACK_HISTO(true_start_time, 1400, -4000., 3000.);
+  TRACK_HISTO(true_start_time_zoom, 3000, -1., 2.);
 
   TRACK_HISTO(wall_enter, 7, -0.5, 6.5);
   TRACK_HISTO(wall_exit, 7, -0.5, 6.5);
@@ -61,6 +62,9 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(has_crt_hit_match, 3, -0.5, 1.5); 
   TRACK_HISTO(crt_hit_distance, 500, 0., 2000.);
   TRACK_HISTO(crt_track_angle, 150, 0., 3.);
+
+  TRACK_HISTO(flash_match_time, 2000, -0.2, 1.8);
+  TRACK_HISTO(crt_v_flash_match_time, 2000, -4., 4.);
   
   double min_matchtime_t = -1640;
   double max_matchtime_t =  3280;
@@ -200,6 +204,7 @@ void TrackHistos::Fill(
     wall_enter->Fill(true_track.wall_enter);
     wall_exit->Fill(true_track.wall_exit);
     true_start_time->Fill(true_track.start_time);
+    true_start_time_zoom->Fill(true_track.start_time);
   }
   else {
     completion->Fill(-0.5);

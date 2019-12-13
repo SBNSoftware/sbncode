@@ -14,6 +14,7 @@
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
+#include "FileMeta.hh"
 
 class TBranch;
 class TFile;
@@ -165,6 +166,8 @@ protected:
    */
   void UpdateSubRuns(gallery::Event& ev);
 
+  void UpdateFileMeta(gallery::Event& ev);
+
   unsigned long fEventIndex;  //!< An incrementing index
   Experiment fExperimentID;  //!< Experiment identifier
   ProviderManager* fProviderManager;  //!< Interface for provider access
@@ -180,6 +183,8 @@ protected:
   event::RecoEvent* fRecoEvent;  //!< The standard output reco event data structure
   TTree* fSubRunTree;  //!< Subrun output tree
   SubRun* fSubRun;  //!< Standard output subrun structure
+  TTree* fFileMetaTree; //!< File metadata output tree
+  FileMeta *fFileMeta; //!< standard output file metadata structure
   TParameter<int>* fExperimentParameter; //!< Saves value of experiment enum
   std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
