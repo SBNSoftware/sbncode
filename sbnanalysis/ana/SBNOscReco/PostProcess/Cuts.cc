@@ -121,7 +121,6 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
 
-
   //   good_mcs = track contain OR (range momentum OR mcs trk length)
   bool good_mcs = ( ( InCalorimetricContainment(primary_track.start) && 
 		      InCalorimetricContainment(primary_track.end) )  || 
@@ -129,7 +128,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 		      (fConfig.MCSTrackLength <0. || 
 		       primary_track.length > fConfig.MCSTrackLength) )
 		    );
-  
+
   bool pass_crt_track = !HasCRTTrackMatch(primary_track);
 
   bool pass_crt_hit = ( !HasCRTHitMatch(primary_track) || 
@@ -157,16 +156,18 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   }
 
   // Sequential Cuts
-  bool fiducial_seq       = is_reco            && fiducial;
+  bool has_trigger_seq    = is_reco            && has_trigger;
+  bool fiducial_seq       = has_trigger_seq    && fiducial;
   bool good_mcs_seq       = fiducial_seq       && good_mcs;
   bool pass_crt_track_seq = good_mcs_seq       && pass_crt_track;
   bool pass_crt_hit_seq   = pass_crt_track_seq && pass_crt_hit;
-  bool pass_length_seq    = pass_crt_hit_seq   && pass_length;
-  bool is_contained_seq   = pass_length_seq    && is_contained;
-  bool flash_match_seq    = is_contained_seq   && flash_match;
-  bool crt_activity_seq   = flash_match_seq   && crt_activity;
+  bool flash_match_seq    = pass_crt_hit_seq   && flash_match;
+  bool crt_activity_seq   = flash_match_seq    && crt_activity;
+  bool is_contained_seq   = crt_activity_seq   && is_contained;
+  bool pass_length_seq    = is_contained_seq   && pass_length;
 
   if ( fSequentialCuts ){
+    has_trigger = has_trigger_seq;
     fiducial = fiducial_seq;
     good_mcs = good_mcs_seq;
     pass_crt_track = pass_crt_track_seq;
@@ -188,7 +189,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
     crt_activity,
     is_contained,
     pass_length
-      };
+  };
 
 }
 

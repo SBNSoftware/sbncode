@@ -84,9 +84,10 @@ interactions: ["All", "Cosmic", "InTime-Cosmic", "CC", "CC-Other", "NC", "NC-Oth
 
 neutrino_selectors: ["",
    "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
-   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1"
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.is_primary==0"
 ]
-neutrinos: ["All", "CC", "NC"]
+neutrinos: ["All", "CC", "NC", "Other"]
 
 wall_selectors_enter: ["",
   "true_track.wall_enter==0",
@@ -158,5 +159,5 @@ TrackProfileValueNames: ["length"]
 
 TrackProfileXRanges: [ [60, 0., 600.]]
 
-FillAllTracks: false
+FillAllTracks: true
 

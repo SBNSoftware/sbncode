@@ -23,7 +23,7 @@ def main(args):
     for h in bkgs:
       n_bkg += h.Integral()
 
-    print n_sig / n_bkg
+    print args.format % (n_sig / n_bkg)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -31,5 +31,6 @@ if __name__ == "__main__":
     parser = util.with_histosize_args(parser)
     parser.add_argument("-hs", "--histo_sig", required=True, type=util.comma_separated)
     parser.add_argument("-hb", "--histo_bkg", required=True, type=util.comma_separated)
+    parser.add_argument("-f", "--format", default="%f")
     main(parser.parse_args())
 

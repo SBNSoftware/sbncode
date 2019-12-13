@@ -19,6 +19,10 @@ set_target_properties(sbnanalysis_TrackReducer_Data PROPERTIES PUBLIC_HEADER "Da
 add_custom_command(TARGET sbnanalysis_TrackReducer_Data POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   libTrackReducer_dict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)
+target_link_libraries(
+  sbnanalysis_TrackReducer_Data
+  ${ROOT_LIBRARIES}
+)
 
 add_library(sbnanalysis_TrackReducer SHARED TrackReducer.cxx)
 
@@ -28,7 +32,7 @@ target_link_libraries(sbnanalysis_TrackReducer
 )
 
 # Install all libraries to the main "lib" directory
-install(TARGETS sbnanalysis_TrackReducer_Data DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR})
+install(TARGETS sbnanalysis_TrackReducer_Data DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR} COMPONENT DATA)
 install(TARGETS sbnanalysis_TrackReducer DESTINATION lib)
 
 

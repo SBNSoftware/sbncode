@@ -81,6 +81,8 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq, 100., 0., 10.);
 
+  TRACK_2DHISTO(pid_confusion_tr, 2, -0.5, 1.5, 2, -0.5, 1.5);
+
 #undef TRACK_HISTO
 #undef TRACK_2DHISTO
 }
@@ -103,6 +105,14 @@ void TrackHistos::Fill(
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 
+    bool is_proton_reco = track.chi2_proton < track.chi2_muon;
+    if (track.match.has_match) {
+      bool is_proton_true = abs(track.match.match_pdg) == 2212;
+      bool is_muon_true = abs(track.match.match_pdg) == 13;
+      if (is_proton_true || is_muon_true) {
+        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
+      }
+    }
   }
 	  
   range_p->Fill(track.range_momentum); 

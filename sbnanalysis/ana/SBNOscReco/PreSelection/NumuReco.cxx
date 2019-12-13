@@ -145,7 +145,12 @@ sbnd::crt::CRTHit ICARUS2SBNDCrtHit(const icarus::crt::CRTHit& inp) {
   sbnd::crt::CRTHit ret;
   ret.feb_id = inp.feb_id;
   ret.pesmap = inp.pesmap;
-  ret.peshit = inp.peshit;
+  // convert ADC -> PE's
+  // TODO: fix -- hardcoded for now as temporary hack
+  unsigned n_strip = 2;
+  double baseline = 63.6; // ADC
+  double gain = 70; // ADC / PE
+  ret.peshit = (inp.peshit - n_strip*baseline) / (gain * n_strip);
   ret.ts0_s = inp.ts0_s;
   ret.ts0_s_corr = inp.ts0_s_corr;
   ret.ts0_ns = inp.ts0_ns;
