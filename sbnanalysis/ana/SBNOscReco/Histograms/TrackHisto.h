@@ -62,6 +62,7 @@ struct TrackHistos : public HistoList {
   TH1D *border_z;
   TH1D *border_x;
   TH1D *true_start_time;
+  TH1D *true_start_time_zoom;
 
   TH1D *wall_enter;
   TH1D *wall_exit;
@@ -79,6 +80,9 @@ struct TrackHistos : public HistoList {
   TH1D *stopping_chisq_start;
   TH1D *stopping_chisq_finish;
   TH1D *stopping_chisq;
+
+  TH1D *flash_match_time;
+  TH1D *crt_v_flash_match_time;
 
   TH2D *pid_confusion_tr;
 

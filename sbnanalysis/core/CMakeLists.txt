@@ -26,6 +26,7 @@ include_directories($ENV{UBCORE_INC})
 include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
 include_directories($ENV{NUG4_INC})
+include_directories($ENV{ART_ROOT_IO_INC})
 
 link_directories(
   $ENV{BOOST_LIB}
@@ -50,10 +51,11 @@ file(RELATIVE_PATH RELATIVE_CURRENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} ${CMAKE_CURRE
 FUTURE_ROOT_GENERATE_DICTIONARY(sbn_eventdict 
   ${RELATIVE_CURRENT_SOURCE_DIR}/Event.hh 
   ${RELATIVE_CURRENT_SOURCE_DIR}/SubRun.hh 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/FileMeta.hh 
   LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx)
-set_target_properties(sbnanalysis_Event PROPERTIES PUBLIC_HEADER "Event.hh;SubRun.hh")
+set_target_properties(sbnanalysis_Event PROPERTIES PUBLIC_HEADER "Event.hh;SubRun.hh;FileMeta.hh")
 target_link_libraries(
   sbnanalysis_Event
   ${ROOT_LIBRARIES}

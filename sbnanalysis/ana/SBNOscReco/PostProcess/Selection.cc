@@ -75,10 +75,10 @@ namespace SBNOsc {
     fRecoEvent = NULL;
 
     fCRTGeo = new sbnd::CRTGeoAlg(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
+    if (fDoNormalize) {
+      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    }
     fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
-    fNeutrinoHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-    fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
@@ -92,7 +92,7 @@ namespace SBNOsc {
         fHistsToFill = &fCosmicHistograms;
       }
       else if (fFileType == numu::fOverlay) {
-        fHistsToFill = &fNeutrinoHistograms;
+        fHistsToFill = &fHistograms;
       }
       else assert(false);
     }
@@ -118,7 +118,12 @@ namespace SBNOsc {
   void Selection::ProcessSubRun(const SubRun *subrun) {
     if (fDoNormalize && fFileType == numu::fOverlay) {
       fNormalize.AddNeutrinoSubRun(*subrun);
-      
+    }
+  }
+
+  void Selection::ProcessFileMeta(const FileMeta *meta) {
+    if (fDoNormalize && fFileType == numu::fIntimeCosmic) {
+      fNormalize.AddCosmicFile(*meta);
     }
   }
 
@@ -246,13 +251,12 @@ namespace SBNOsc {
       std::cout << "Scale Neutrino: " << fNormalize.ScaleNeutrino(1.e20) << std::endl;
       std::cout << "Scale Cosmic: " << fNormalize.ScaleCosmic(1.e20) << std::endl;
 
-      fNeutrinoHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
+      fHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));
 
       fCRTCosmicHistos.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCRTNeutrinoHistos.Scale(fNormalize.ScaleCosmic(fGoalPOT));
 
-      fHistograms.Add(fNeutrinoHistograms);
       fHistograms.Add(fCosmicHistograms);
       fROC.Normalize(fNormalize.ScaleNeutrino(fGoalPOT), fNormalize.ScaleCosmic(fGoalPOT));  
     }

@@ -37,6 +37,7 @@ void PostProcessorBase::Initialize(char* config, const std::string &output_fname
 
   Initialize(cfg);
   fSubRun = 0;
+  fFileMeta = 0;
   fEvent = 0;
   fExperimentID = 0;
 }
@@ -105,6 +106,17 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       fSubRunTree->GetEntry(subrun_ind);
       ProcessSubRun(fSubRun);
     }
+
+    // process all the file meta-data
+    f.GetObject("sbnfilemeta", fFileMetaTree);
+    if (fFileMetaTree == NULL) {
+      std::cerr << "Error: NULL filemeta tree" << std::endl;
+    }
+    fFileMetaTree->SetBranchAddress("filemeta", &fFileMeta);
+    for (int filemeta_ind = 0; filemeta_ind < fFileMetaTree->GetEntries(); filemeta_ind++) {
+      fFileMetaTree->GetEntry(filemeta_ind);
+      ProcessFileMeta(fFileMeta);
+    } 
 
     FileCleanup(fEventTree);
   } 
