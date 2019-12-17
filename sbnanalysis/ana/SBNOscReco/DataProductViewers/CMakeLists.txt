@@ -96,6 +96,7 @@ target_link_libraries(sbnanalysis_SBNOscReco_CRTHitTiming
   sbnanalysis_SBNOscReco_classes
   ubana_BasicTool_GeoAlgo
   icaruscode_CRTProducts
+  sbndcode_CRTProducts
 )
 
 # Install all libraries to the main "lib" directory

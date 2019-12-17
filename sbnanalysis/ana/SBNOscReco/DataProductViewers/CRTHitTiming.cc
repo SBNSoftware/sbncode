@@ -8,6 +8,8 @@
 #include <iostream>
 #include <array>
 
+#include "nusimdata/SimulationBase/MCParticle.h"
+
 #include "canvas/Utilities/InputTag.h"
 #include "core/SelectionBase.hh"
 #include "core/Event.hh"
@@ -56,6 +58,9 @@ public:
     _true_v_hit_time_d = new TH1D("true_v_hit_time_d", "true_v_hit_time_d", 200, -100., 100.);
     _true_v_hit_time_m = new TH1D("true_v_hit_time_m", "true_v_hit_time_m", 200, -100., 100.);
     _true_v_hit_time_coince = new TH1D("true_v_hit_time_coince", "true_v_hit_time_coince", 200, -100., 100.);
+    _hitpe_muon = new TH1D("hitpe_muon", "hitpe_muon", 1000, 0., 1000.);
+    _hitpe_proton = new TH1D("hitpe_proton", "hitpe_proton", 1000, 0., 1000.);
+    _hitpe_neutron = new TH1D("hitpe_neutron", "hitpe_neutron", 1000, 0., 1000.);
     FillFebMap();
   }
 
@@ -67,6 +72,15 @@ public:
     _true_v_hit_time_c->Write();
     _true_v_hit_time_m->Write();
     _true_v_hit_time_d->Write();
+    _hitpe_muon->Write();
+    _hitpe_proton->Write();
+    _hitpe_neutron->Write();
+  }
+
+  int GetPDG(const std::vector<simb::MCParticle> &mc_particles, int trackID) {
+    for (const simb::MCParticle &part: mc_particles) {
+      if (part.TrackId() == trackID) return part.PdgCode();
+    }
   }
 
   /**
@@ -77,6 +91,7 @@ public:
    * \return True to keep event
    */
   bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
+      const std::vector<simb::MCParticle> &mc_particles = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
 
     if (fIsICARUS) {
       auto const &crt_hits_handle = ev.getValidHandle<std::vector<icarus::crt::CRTHit>>(fCRTHitTag);;
@@ -121,6 +136,9 @@ public:
         double true_time_sum = 0.;
         unsigned n_true_time = 0;
 
+        bool has_muon = false;
+        bool has_proton = false;
+        bool has_neutron = false;
         for (unsigned j = 0; j < datas.size(); j++) {
           const icarus::crt::CRTData &data = *datas[j];
           if (_verbose) std::cout << "CRT Data at: " << data.TTrig() << " Mac5: " << data.Mac5() << " chan: " << data.ChanTrig() << std::endl;
@@ -131,6 +149,10 @@ public:
             const std::vector<int> track_ids = chan.TrackID();
             if (_verbose) std::cout << "Channel Data at: " << chan.T0() << " chan: " << chan.Channel() << std::endl; 
             for (int track_id: track_ids) {
+              int pdg_match = abs(GetPDG(mc_particles, track_id));
+              if (abs(pdg_match) == 13) has_muon = true;
+              else if (abs(pdg_match) == 2212) has_proton = true;
+              else if (abs(pdg_match) == 2112) has_neutron = true;
               if (_verbose) std::cout << "True Particle: " << track_id << std::endl;
               for (const auto &ide_pair: tracks_to_ides.at(track_id)) {
                 const sim::AuxDetIDE &ide = ide_pair.second;
@@ -157,11 +179,44 @@ public:
         else if (auxDetType == 'd') _true_v_hit_time_d->Fill((true_time_sum/n_true_time) - hit_time);
         else if (auxDetType == 'c') _true_v_hit_time_c->Fill((true_time_sum/n_true_time) - hit_time);
         else assert(false);
+
+        double pes = (hit.peshit - 2*63.6) / (70.*2);
+        if (has_muon) _hitpe_muon->Fill(pes);
+        else if (has_proton) _hitpe_proton->Fill(pes);
+        else if (has_neutron) _hitpe_neutron->Fill(pes);
         
       }
       // fOutputFile->cd();
     }
-    else {}
+    else {
+      auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTHit>>(fCRTHitTag);;
+      const std::vector<sbnd::crt::CRTHit> &crt_hits = *crt_hits_handle;
+      const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
+      art::FindManyP<sbnd::crt::CRTData, void> hits_to_data(crt_hits_handle, ev, fCRTHitTag);
+      auto const &crt_data_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTData>>("crt");
+      for (unsigned i = 0; i < crt_hits.size(); i++) {
+        int track_id = -1;
+        const sbnd::crt::CRTHit &hit = crt_hits[i];
+        std::vector<art::Ptr<sbnd::crt::CRTData>> datas = hits_to_data.at(i);
+        art::FindManyP<sim::AuxDetIDE, void> sims(datas, ev, "crt");
+        bool has_muon = false;
+        bool has_proton = false;
+        bool has_neutron = false;
+        for (unsigned j = 0; j < datas.size(); j++) {
+          for (unsigned k = 0; k < sims.at(j).size(); k++) {
+            track_id = sims.at(j).at(k)->trackID;
+            int pdg_match = GetPDG(mc_particles, track_id);
+	    if (abs(pdg_match) == 13) has_muon = true;
+	    else if (abs(pdg_match) == 2212) has_proton = true;
+	    else if (abs(pdg_match) == 2112) has_neutron = true;
+          }
+        }
+        double pes = hit.peshit;
+        if (has_muon) _hitpe_muon->Fill(pes);
+        else if (has_proton) _hitpe_proton->Fill(pes);
+        else if (has_neutron) _hitpe_neutron->Fill(pes);
+      }
+    }
     event_ind += 1;
 
     return false; 
@@ -322,6 +377,9 @@ char GetAuxDetType(geo::AuxDetGeo const& adgeo)
   TH1D *_true_v_hit_time_c;
   TH1D *_true_v_hit_time_d;
   TH1D *_true_v_hit_time_m;
+  TH1D *_hitpe_muon;
+  TH1D *_hitpe_proton;
+  TH1D *_hitpe_neutron;
 };
 
   }  // namespace SBNOsc
