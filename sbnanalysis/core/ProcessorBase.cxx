@@ -193,22 +193,26 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 }
 
 void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
-  // FIXME: This should use official gallery subrun access once available.
-  // N.B. Implementation is fragile and depends on the naming of the subrun
-  // producer (generator__GenieGen), can be made a fcl parameter.
-  TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
+  // FIXME: HACK
+  static TFile *last_tfile = NULL; // only set at initialization
 
-  art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
-  srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
+  TFile *this_file = ev.getTFile();
+  // it's a new file!
+  if (this_file != last_tfile) {
+    // FIXME: This should use official gallery subrun access once available.
+    // N.B. Implementation is fragile and depends on the naming of the subrun
+    // producer (generator__GenieGen), can be made a fcl parameter.
+    TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
 
-  for (long i=0; i<srtree->GetEntries(); i++) {
-    srtree->GetEntry(i);
-    int runid = sraux->run();
-    int subrunid = sraux->subRun();
-    std::pair<int, int> id = { runid, subrunid };
+    art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
+    srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
 
-    if (fSubRunCache.find(id) == fSubRunCache.end()) {
-    
+    for (long i=0; i<srtree->GetEntries(); i++) {
+      srtree->GetEntry(i);
+
+      int runid = sraux->run();
+      int subrunid = sraux->subRun();
+
       std::string totpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totpot";
       std::string totgoodpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totgoodpot";
       std::string totspills_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totspills";
@@ -223,17 +227,15 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* goodspillsLeaf = srtree->GetLeaf(goodspills_str.c_str());
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
-      fSubRunCache.insert(id);
-
-    //if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
       std::cout << "Subrun " << runid << "/" << subrunid << " added "
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
       *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
       fSubRunTree->Fill();
-    //}
     }
   }
+  // set the file for next time
+  last_tfile = ev.getTFile();
 }
 
 void ProcessorBase::UpdateFileMeta(gallery::Event& ev) {
