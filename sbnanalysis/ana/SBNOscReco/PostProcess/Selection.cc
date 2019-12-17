@@ -68,7 +68,6 @@ namespace SBNOsc {
 
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
-      fNCosmicData = config->get<double>("NCosmicData", 0.);
     }
     fTrajHistograms.Initialize(fTrajHistoNames);
     fROC.Initialize();
@@ -177,7 +176,7 @@ namespace SBNOsc {
       fRecoEvent->truth[0].match.mode = numu::mIntimeCosmic;
     }
 
-    fROC.Fill(fCuts, *fRecoEvent);
+    fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
 
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
       if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==1) { // kBeamNeutrino

@@ -24,14 +24,17 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(dist_to_match, 101, -1., 100.);
   INT_HISTO(primary_track_completion, 100, 0., 1.);
   INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
-  INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 10000.);
-  INT_HISTO(crt_pes, 1000, 0., 10000.);
+  INT_HISTO(maxpe_crt_intime_hit, 100, 0., 5000.);
+  INT_HISTO(crt_pes, 100, 0., 5000.);
 
   INT_HISTO(crt_hit_times, 300, -20., 10.);
   INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
 
-  INT_HISTO(fmatch_score, 1000, 0., 1000.);
-  INT_HISTO(fmatch_time, 3000, -1., 2.);
+  INT_HISTO(fmatch_score, 200, 0., 200.);
+  INT_HISTO2D(fmatch_score_true_time, 100, 0., 100., 1400, -4000., 3000.);
+  INT_HISTO2D(fmatch_score_true_time_zoom, 100, 0., 100., 100, -5., 5.);
+  INT_HISTO2D(fmatch_time_true_time_zoom, 300, -1., 2., 100, -5., 5.);
+  INT_HISTO(fmatch_time, 700, -5., 2.);
 
   INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
 
@@ -127,6 +130,13 @@ void InteractionHistos::Fill(
   if (vertex.slice.flash_match.present) {
     fmatch_score->Fill(vertex.slice.flash_match.score);
     fmatch_time->Fill(vertex.slice.flash_match.time);
+    if (vertex.slice.primary_track_index >= 0 && vertex_tracks->at(vertex.slice.primary_track_index).match.has_match) {
+      int mcparticle_id = vertex_tracks->at(vertex.slice.primary_track_index).match.mcparticle_id;
+      double true_time = event.true_tracks.at(mcparticle_id).start_time;
+      fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
+      fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
+      fmatch_time_true_time_zoom->Fill(vertex.slice.flash_match.time, true_time);
+    }
   }
 
 

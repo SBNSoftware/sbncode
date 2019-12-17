@@ -3,9 +3,9 @@
 #include "TGraph.h"
 
 void ana::SBNOsc::ROC::Initialize() {
-  crt_track_angle.Initialize("crt_track_angle", 0, 6, 360);
+  crt_track_angle.Initialize("crt_track_angle", 0, 6, 60);
   fAllPrimitives.push_back(&crt_track_angle);
-  crt_hit_distance.Initialize("crt_hit_distance", 0, 50, 500);
+  crt_hit_distance.Initialize("crt_hit_distance", 0, 100, 100);
   fAllPrimitives.push_back(&crt_hit_distance);
 }
 
@@ -27,24 +27,30 @@ void ana::SBNOsc::ROC::BestCuts() const {
   }
 }
 
-void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts cuts, const numu::RecoEvent &event) {
+void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts cuts, const numu::RecoEvent &event, bool file_is_neutrino) {
   for (const numu::RecoInteraction &reco: event.reco) {
-    // bool is_signal = reco.match.has_match && (reco.match.mode == numu::mCC || reco.match.mode == numu::mNC);
-    bool is_signal = (reco.match.mode == numu::mCC || reco.match.mode == numu::mNC);
+    bool is_signal = reco.match.mode == numu::mCC;
+    bool is_bkg = reco.match.mode == numu::mCosmic || reco.match.mode == numu::mIntimeCosmic;
+    if (!is_signal && !is_bkg) continue; // ignore NC stuff for now
+    
     const numu::RecoTrack &track = event.reco_tracks.at(reco.slice.primary_track_index);
     
     // CRT stuff
     if (track.crt_match.track.present) {
-      crt_track_angle.FillNeutrino(is_signal, track.crt_match.track.angle);
-      crt_hit_distance.FillAlwaysNeutrino(is_signal);
-    }
-    else if (track.crt_match.hit_match.present && !cuts.TimeInSpill(track.crt_match.hit.time)) {
-      crt_track_angle.FillNeverNeutrino(is_signal);
-      crt_hit_distance.FillNeutrino(is_signal, track.crt_match.hit_match.distance);
+      if (file_is_neutrino) crt_track_angle.FillNeutrino(is_signal, track.crt_match.track.angle);
+      else crt_track_angle.FillCosmic(is_signal, track.crt_match.track.angle);
     }
     else {
-      crt_track_angle.FillNeverNeutrino(is_signal);
-      crt_hit_distance.FillNeverNeutrino(is_signal);
+      if (file_is_neutrino) crt_track_angle.FillNeverNeutrino(is_signal);
+      else crt_track_angle.FillNeverCosmic(is_signal);
+    }
+    if (track.crt_match.hit_match.present && !cuts.TimeInSpill(track.crt_match.hit_match.time)) {
+      if (file_is_neutrino) crt_hit_distance.FillNeutrino(is_signal, track.crt_match.hit_match.distance);
+      else crt_hit_distance.FillCosmic(is_signal, track.crt_match.hit_match.distance);
+    }
+    else {
+      if (file_is_neutrino) crt_hit_distance.FillNeverNeutrino(is_signal);
+      else crt_hit_distance.FillNeverCosmic(is_signal);
     }
   }
 }

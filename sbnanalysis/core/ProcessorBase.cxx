@@ -207,8 +207,7 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     int subrunid = sraux->subRun();
     std::pair<int, int> id = { runid, subrunid };
 
-    // Add subrun if not in cache
-    // if (fSubRunCache.find(id) == fSubRunCache.end()) {
+    if (fSubRunCache.find(id) == fSubRunCache.end()) {
     
       std::string totpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totpot";
       std::string totgoodpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totgoodpot";
@@ -224,16 +223,16 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* goodspillsLeaf = srtree->GetLeaf(goodspills_str.c_str());
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
-      // fSubRunCache.insert(id);
+      fSubRunCache.insert(id);
 
-    if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
+    //if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
       std::cout << "Subrun " << runid << "/" << subrunid << " added "
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
       *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
       fSubRunTree->Fill();
-    }
     //}
+    }
   }
 }
 
@@ -244,8 +243,8 @@ void ProcessorBase::UpdateFileMeta(gallery::Event& ev) {
   TFile *this_file = ev.getTFile();
   // it's a new file!
   if (this_file != last_tfile) {
-    unsigned n_gen_event = -1; // MAX unsigned 
-    unsigned n_event = -1;
+    unsigned n_gen_event = 0;
+    unsigned n_event = 0;
 
     // get the SQLite thingy
     art::SQLite3Wrapper sqliteDB(this_file, "RootFileDB", SQLITE_OPEN_READONLY);
@@ -275,13 +274,16 @@ void ProcessorBase::UpdateFileMeta(gallery::Event& ev) {
       if (pset.has_key("source") && pset.has_key("source.maxEvents") && pset.has_key("source.module_type")) {
         unsigned max_events = pset.get<unsigned>("source.maxEvents");
         std::string module_type = pset.get<std::string>("source.module_type");
+        // this will show up once for every input file
         if (module_type == "EmptyEvent") {
-          n_gen_event = max_events;
-          std::cout << "FILEMETA: " << n_gen_event << std::endl;
+          n_gen_event += max_events;
+          std::cout << "FILEMETA: " << max_events << std::endl;
         }
       }
     }
     n_event = ev.numberOfEventsInFile();
+    std::cout << "FILEMETA nevent: " << n_event << std::endl;
+    std::cout << "FILEMETA ngenevent: " << n_gen_event << std::endl;
     *fFileMeta = {n_event, n_gen_event};
     fFileMetaTree->Fill();
   }

@@ -40,11 +40,11 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   
   TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
   TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
-  TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
+  // TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
 
   TRACK_2DHISTO(range_p_comp, 25, 0, 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
-  TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
+  // TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
 
   TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
 
@@ -60,11 +60,11 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   // timing histos
   TRACK_HISTO(has_crt_track_match, 3, -0.5, 1.5);
   TRACK_HISTO(has_crt_hit_match, 3, -0.5, 1.5); 
-  TRACK_HISTO(crt_hit_distance, 500, 0., 2000.);
+  TRACK_HISTO(crt_hit_distance, 80, 0., 400.);
   TRACK_HISTO(crt_track_angle, 150, 0., 3.);
 
-  TRACK_HISTO(flash_match_time, 2000, -0.2, 1.8);
-  TRACK_HISTO(crt_v_flash_match_time, 2000, -4., 4.);
+  // TRACK_HISTO(flash_match_time, 2000, -0.2, 1.8);
+  // TRACK_HISTO(crt_v_flash_match_time, 2000, -4., 4.);
   
   double min_matchtime_t = -1640;
   double max_matchtime_t =  3280;
@@ -193,11 +193,11 @@ void TrackHistos::Fill(
     
     range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
     mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
-    deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
+    // deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
     
     range_p_comp->Fill(true_track.momentum, track.range_momentum);
     mcs_p_comp->Fill(true_track.momentum, track.mcs_momentum);
-    deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
+    // deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
 
     completion->Fill(track.match.completion);
 

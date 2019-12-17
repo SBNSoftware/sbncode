@@ -16,8 +16,8 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 10; //!< total number of cuts
-  static const unsigned nTruthCuts = 5; //!< Total number of truth cuts
+  static const unsigned nCuts = 11; //!< total number of cuts
+  static const unsigned nTruthCuts = 6; //!< Total number of truth cuts
   /**
  * Initialize this class.
  * \param cfg fhicl configuration for the class
@@ -137,6 +137,7 @@ private:
     std::vector<geo::BoxBoundedGeo> active_volumes;
     std::vector<geo::BoxBoundedGeo> calorimetric_containment_volumes;
     bool TruthFlashMatch;
+    float FlashMatchScore;
     int PMTTriggerTreshold;
     unsigned PMTNAboveThreshold;
   };
