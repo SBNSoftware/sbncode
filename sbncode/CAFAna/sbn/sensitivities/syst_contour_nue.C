@@ -22,7 +22,7 @@ using namespace ana;
 
 const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
-const double uboonePOT = 1.3e21;
+const double uboonePOT = kPOTuBoone;
 
 void SpectrumPlots(const PredictionInterp* p, const ISyst* s, double pot, const char* detName)
 {
