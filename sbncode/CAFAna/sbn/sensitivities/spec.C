@@ -43,6 +43,7 @@ void spec(const std::string anatype = numuStr)
   }
   else {
     std::cout << "Must specifiy nue or numu" << std::endl;
+    return;
   }
 
   if (TFile(stateFname).IsZombie()){

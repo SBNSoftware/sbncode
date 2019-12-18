@@ -25,7 +25,10 @@ const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
 const double uboonePOT = 1.3e21;
 
-void syst_spec()
+const std::string numuStr = "numu";
+const std::string nueStr = "nue";
+
+void syst_spec(const std::string anatype = numuStr)
 {
   //  GetSBNWeightSysts(); // initialize
   const std::vector<const ISyst*>& systs = GetSBNWeightSysts();
@@ -40,22 +43,36 @@ void syst_spec()
   
  std::string n[] = {"all", "flux", "genie"};
 
-  TFile fin("cafe_state_syst_numu.root");
-  TFile fout("syst_spec.root","RECREATE");
+ const char* name_in;
+ const char* name_out;
+ if (anatype == numuStr) {
+   name_in = "cafe_state_syst_numu.root";
+   name_out = "output_syst_spec_numu.root";
+ }
+ else if (anatype == nueStr) {
+   name_in = "cafe_state_syst_nue.root";
+   name_out = "output_syst_spec_nue.root";
+ }
+ else {
+   std::cout << "Must specifiy nue or numu" << std::endl;
+   return;
+ }
 
+ TFile fin(name_in);
+ TFile fout(name_out,"RECREATE");
 
-  PredictionInterp* p_nd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
-  PredictionInterp* p_fd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
-  PredictionInterp* p_ub = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
-
-  TLegend* leg_updn = new TLegend(.6, .6, .85, .85);
-  leg_updn->SetFillStyle(0);
-  TH1* dummy = new TH1F("", "", 1, 0, 1);
-  leg_updn->AddEntry(dummy->Clone(), "Nominal", "l");
-  dummy->SetLineColor(kBlue);
-  leg_updn->AddEntry(dummy->Clone(), "-1#sigma", "l");
-  dummy->SetLineColor(kRed);
-  leg_updn->AddEntry(dummy->Clone(), "+1#sigma", "l");
+ PredictionInterp* p_nd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
+ PredictionInterp* p_fd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
+ PredictionInterp* p_ub = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
+ 
+ TLegend* leg_updn = new TLegend(.6, .6, .85, .85);
+ leg_updn->SetFillStyle(0);
+ TH1* dummy = new TH1F("", "", 1, 0, 1);
+ leg_updn->AddEntry(dummy->Clone(), "Nominal", "l");
+ dummy->SetLineColor(kBlue);
+ leg_updn->AddEntry(dummy->Clone(), "-1#sigma", "l");
+ dummy->SetLineColor(kRed);
+ leg_updn->AddEntry(dummy->Clone(), "+1#sigma", "l");
 
   std::vector<const ISyst*> bigsysts;
 
