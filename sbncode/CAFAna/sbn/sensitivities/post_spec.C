@@ -31,13 +31,22 @@ const std::string nueStr = "nue";
 void post_spec(const std::string anatype = numuStr)
 {
   //  GetSBNWeightSysts(); // initialize
+  // ETW 12/18/2019 Just use the agreed list for all. Should fix the flux and genie separate ones too but didn't do that yet
   const std::vector<const ISyst*>& systs = GetSBNWeightSysts();
 
   auto systs_flux = GetSBNFluxWeightSysts();
   auto systs_genie = GetSBNGenieWeightSysts();
+
+  std::vector<const ISyst*> systs_to_process;
+
+  std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
+
+  for (auto s : systs) {
+    for (auto n : syst_names) if (n == s->ShortName()) systs_to_process.push_back(s);
+  }
   
   std::vector<std::vector<const ISyst*>> all_systs_vec;
-  all_systs_vec.push_back(systs);
+  all_systs_vec.push_back(systs_to_process);
   all_systs_vec.push_back(systs_flux);
   all_systs_vec.push_back(systs_genie);
   

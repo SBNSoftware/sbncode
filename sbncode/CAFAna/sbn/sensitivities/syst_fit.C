@@ -32,73 +32,79 @@ void syst_fit(const std::string anatype = numuStr)
 {
   //  GetSBNWeightSysts(); // initialize
   const std::vector<const ISyst*>& wtsysts = GetSBNWeightSysts();
+
+  std::vector<const ISyst*> systs_to_process;
+
+  std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
+
+  for (auto s : wtsysts) {
+    for (auto n : syst_names) if (n == s->ShortName()) systs_to_process.push_back(s);
+  }
+  
   std::vector<const ISyst*> systs;
   //for (const ISyst* s : det_systs) systs.push_back(s);
-  for (const ISyst* s : wtsysts) systs.push_back(s);
+  for (const ISyst* s : systs_to_process) systs.push_back(s);
 
-  //const std::vector<const ISyst*>& allsysts = GetSBNWeightSysts();
-  //for (const ISyst* s: allsysts) {
-  //if (s->ShortName() == "genie_qema_Genie") systs.push_back(s);
+  const char* name_in;
+  const char* name_out;
+  if (anatype == numuStr) {
+    name_in = "cafe_state_syst_numu.root";
+    name_out = "output_syst_fit_numu.root";
+  }
+  else if (anatype == nueStr) {
+    name_in = "cafe_state_syst_nue.root";
+    name_out = "output_syst_fit_nue.root";
+  }
+  else {
+    std::cout << "Must specifiy nue or numu" << std::endl;
+    return;
+  }
+  
+  TFile fin(name_in);
+  
+  PredictionInterp* p_nd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
+  PredictionInterp* p_fd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
+  PredictionInterp* p_ub = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
+  
+  //std::vector<const ISyst*> bigsysts;
+  
+  //osc::NoOscillations unosc;
+  //for(const ISyst* s: systs){
+  //if(fabs(p_fd->PredictSyst(&unosc, SystShifts(s, +1)).Integral(1e20)/p_fd->Predict(&unosc).Integral(1e20)-1) > .01) bigsysts.push_back(s);
   //}
-
-   const char* name_in;
-   const char* name_out;
-   if (anatype == numuStr) {
-     name_in = "cafe_state_syst_numu.root";
-     name_out = "output_syst_fit_numu.root";
-   }
-   else if (anatype == nueStr) {
-     name_in = "cafe_state_syst_nue.root";
-     name_out = "output_syst_fit_nue.root";
-   }
-   else {
-     std::cout << "Must specifiy nue or numu" << std::endl;
-     return;
-   }
-
-   TFile fin(name_in);
+  
+  //std::cout << bigsysts.size() << " big systs out of " << systs.size() << std::endl;
+  //for(const ISyst* s: bigsysts) std::cout << s->ShortName() << " ";
+  //std::cout << std::endl;
+  
+  OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
+  
+  // We'll call zero nominal
+  calc->SetL(kBaselineSBND);
+  const Spectrum data_nd = p_nd->Predict(calc).FakeData(sbndPOT);
+  calc->SetL(kBaselineIcarus);
+  const Spectrum data_fd = p_fd->Predict(calc).FakeData(icarusPOT);
+  calc->SetL(kBaselineMicroBoone);
+  const Spectrum data_ub = p_ub->Predict(calc).FakeData(uboonePOT);
+  
+  SingleSampleExperiment expt_nd(p_nd, data_nd);
+  SingleSampleExperiment expt_fd(p_fd, data_fd);
+  SingleSampleExperiment expt_ub(p_ub, data_ub);
    
-   PredictionInterp* p_nd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
-   PredictionInterp* p_fd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
-   PredictionInterp* p_ub = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
-
-   //std::vector<const ISyst*> bigsysts;
-
-   //osc::NoOscillations unosc;
-   //for(const ISyst* s: systs){
-   //if(fabs(p_fd->PredictSyst(&unosc, SystShifts(s, +1)).Integral(1e20)/p_fd->Predict(&unosc).Integral(1e20)-1) > .01) bigsysts.push_back(s);
-   //}
-
-   //std::cout << bigsysts.size() << " big systs out of " << systs.size() << std::endl;
-   //for(const ISyst* s: bigsysts) std::cout << s->ShortName() << " ";
-   //std::cout << std::endl;
-
-   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
-
-   //Define fit axes
-   const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 20/*40*/, 1e-3, 1, true);
-   const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 1e-2, 1e2, true);
-
-   // We'll call zero nominal
-   calc->SetL(kBaselineSBND);
-   const Spectrum data_nd = p_nd->Predict(calc).FakeData(sbndPOT);
-   calc->SetL(kBaselineIcarus);
-   const Spectrum data_fd = p_fd->Predict(calc).FakeData(icarusPOT);
-   calc->SetL(kBaselineMicroBoone);
-   const Spectrum data_ub = p_ub->Predict(calc).FakeData(uboonePOT);
-
-   SingleSampleExperiment expt_nd(p_nd, data_nd);
-   SingleSampleExperiment expt_fd(p_fd, data_fd);
-   SingleSampleExperiment expt_ub(p_ub, data_ub);
-   
-   MultiExperimentSBN multiExpt({&expt_nd, &expt_fd, &expt_ub}, {kSBND, kICARUS, kMicroBoone});
-
+  MultiExperimentSBN multiExpt({&expt_nd, &expt_fd, &expt_ub}, {kSBND, kICARUS, kMicroBoone});
+  
    std::vector<std::vector<const ISyst*>> slists;
    //slists.push_back(bigsysts);
    slists.push_back(systs);
    //for(const ISyst* s: systs) slists.emplace_back(1, s); // and then each
 
-   std::vector<const IFitVar*> oscVars = {&kFitDmSqSterile, &kFitSinSq2ThetaMuMu};
+   std::vector<const IFitVar*> oscVars;
+   if (anatype == numuStr) {   
+     oscVars = {&kFitDmSqSterile, &kFitSinSq2ThetaMuMu};
+   }
+   else {
+     oscVars = {&kFitDmSqSterile, &kFitSinSq2ThetaMuE};
+   }
 
    for(const std::vector<const ISyst*> slist: slists){
 
@@ -131,10 +137,10 @@ void syst_fit(const std::string anatype = numuStr)
 
      int nsyst = systs.size();
      int nvar = oscVars.size();
-     TH1D *hsyst_pre = new TH1D("hsyst_pre","hsyst_pre",nsyst-nvar, 0, nsyst-nvar);
-     TH1D *hsyst_post = new TH1D("hsyst_post","hsyst_post",nsyst-nvar, 0, nsyst-nvar);
-     for (int i=0;i<nsyst;i++) {
-       if (i>=nvar) {
+     TH1D *hsyst_pre = new TH1D("hsyst_pre","hsyst_pre",nsyst, 0, nsyst);
+     TH1D *hsyst_post = new TH1D("hsyst_post","hsyst_post",nsyst, 0, nsyst);
+     for (int i=0;i<nsyst+nvar;i++) {
+       if (i>nvar-1) {
 	 hsyst_pre->GetXaxis()->SetBinLabel(i+1-nvar,pnames[i].c_str());
 	 hsyst_pre->Fill(i-nvar,prefit_err[i]);
 	 hsyst_post->GetXaxis()->SetBinLabel(i+1-nvar,pnames[i].c_str());
