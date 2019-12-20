@@ -8,9 +8,10 @@
 
 // #include "CAFAna/Cuts/TruthCuts.h"
 
-#include "StandardRecord/StandardRecord.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Analysis/Calcs.h"
+#include "CAFAna/Analysis/ExpInfo.h"
 #include "CAFAna/Core/MultiVar.h"
 #include "OscLib/OscCalculatorSterile.h"
 
@@ -36,8 +37,8 @@ void Experiment(std::string expt)
 
 void event_numbers_finalstate(const std::string expt = "SBND")
 {
-  const std::string fDir = "/pnfs/sbnd/persistent/users/gputnam/numu_simulation_reweight/processed_2.a/";
-  const std::string fnameBeam = fDir + "output_SBNOsc_NumuSelection_Modern_" + expt + ".root";
+  const std::string dir = "/sbnd/data/users/jlarkin/workshop_samples/";
+  const std::string fnameBeam = dir + "output_SBNOsc_NumuSelection_Modern_" + expt + ".flat.root";
 
   // Source of events
   SpectrumLoader loaderBeam(fnameBeam);
@@ -79,15 +80,8 @@ void event_numbers_finalstate(const std::string expt = "SBND")
     {ana::Current::kNC, "NC"}
   };
 
-  const Var kSmearedE([](const caf::SRProxy* sr)
-                        {
-        return sr->reco[0].reco_energy;
-      });
-
-  const Var kWeight([](const caf::SRProxy* sr)
-                        {
-        return sr->reco[0].weight;
-      });
+  const Var kRecoE = SIMPLEVAR(reco.reco_energy);
+  const Var kWeight = SIMPLEVAR(reco.weight);
 
   const Var kNumPiZeros(
          [](const caf::SRProxy *sr)
@@ -110,7 +104,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
             });
 
   const Binning binsEnergy = Binning::Simple(30, 0, 3);
-  const HistAxis axEnergy("Fake reconstructed energy (GeV)", binsEnergy, kSmearedE);
+  const HistAxis axEnergy("Rconstructed energy (GeV)", binsEnergy, kRecoE);
 
   const Var kCC = SIMPLEVAR(truth[0].neutrino.iscc);
   const Cut kIsCC = kCC > 0;
@@ -152,8 +146,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
   PredictionNoExtrap* pred[kNumModes];
 
   for(unsigned int m = 0; m < kNumModes; m++){
-    //pred[m] = new PredictionNoExtrap(loaderBeam, loaderSwap, kNullLoader,
-    pred[m] = new PredictionNoExtrap(loaderBeam, kNullLoader, kNullLoader,
+    pred[m] = new PredictionNoExtrap(loaderBeam, kNullLoader, kNullLoader, kNullLoader,
       axEnergy, cuts[m].cut, kNoShift, kWeight);
   }
 
@@ -161,8 +154,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
   loaderBeam.Go();
   // loaderSwap.Go();
 
-  // Fake POT: we need to sort this out in the files first
-  const double pot = 6.6e20;
+  const double pot = kPOTnominal;
 
   std::cout << "     NuMu,  Nue,  All,  anti-Numu,  anti-Nue,  anti-All,  NC" << std::endl;
 
@@ -185,7 +177,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
     std::cout << endl;
   } // end loop over modes
 
-  TFile* fOutput = new TFile(("output_finalstate/output_"+expt+".root").c_str(),"RECREATE");
+  TFile* fOutput = new TFile(("output/output_finalstate_"+expt+".root").c_str(),"RECREATE");
 
   TCanvas* c1 = new TCanvas("c1","c1");
 
@@ -204,7 +196,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
           h[m][k][j][i]->SetName((cuts[m].label+"_"+currLabel+"_"+signLabel+flavLabel).c_str());      
           h[m][k][j][i]->Draw("hist");
           Experiment(expt);
-          c1->SaveAs(("output_finalstate/"+expt+"_"+cuts[m].label+"_"+currLabel+"_"+signLabel+flavLabel+".pdf").c_str());
+          c1->SaveAs(("output/"+expt+"_"+cuts[m].label+"_"+currLabel+"_"+signLabel+flavLabel+".pdf").c_str());
 
         } // loop over flavours
       } // loop over signs
