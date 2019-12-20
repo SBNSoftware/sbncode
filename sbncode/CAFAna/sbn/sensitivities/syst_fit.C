@@ -79,7 +79,6 @@ void syst_fit(const std::string anatype = numuStr)
   
   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
   
-  // We'll call zero nominal
   calc->SetL(kBaselineSBND);
   const Spectrum data_nd = p_nd->Predict(calc).FakeData(sbndPOT);
   calc->SetL(kBaselineIcarus);
@@ -108,32 +107,38 @@ void syst_fit(const std::string anatype = numuStr)
 
    for(const std::vector<const ISyst*> slist: slists){
 
-     Fitter fit_syst(&multiExpt, oscVars, slist);
+     std::cout << "Fitting all 3 expts together..." << std::endl;
+     Fitter fit_syst(&multiExpt, oscVars, slist, Fitter::kCareful);
      OscCalcSterileApproxAdjustable* calc_multi = DefaultSterileApproxCalc();
-     SystShifts bestSysts_multi;
+     SystShifts bestSysts_multi = kNoShift;
      double chi_multi = fit_syst.Fit(calc_multi, bestSysts_multi);
+
      std::vector<std::string> pnames = fit_syst.GetParamNames();
      std::vector<double> prefit = fit_syst.GetPreFitValues();
      std::vector<double> prefit_err = fit_syst.GetPreFitErrors();
      std::vector<double> postfit = fit_syst.GetPostFitValues();
      std::vector<double> postfit_err = fit_syst.GetPostFitErrors();
   
-     //std::cout << "Parameters considered: " << std::endl;
-     //for (const string st: pnames) {
-     //std::cout << st << std::endl;
-     //}
+     // std::cout << "Parameters considered: " << std::endl;
+     // for (const string st: pnames) {
+     //   std::cout << st << std::endl;
+     // }
+     // std::cout << "Prefit params: " << std::endl;
      // for(const double d: prefit) {
      //   std::cout << d << std::endl;
      // }
+     // std::cout << "Postfit params: " << std::endl;
      // for(const double d: postfit) {
-    //   std::cout << d << std::endl;
-    // }
-    // for(const double d: prefit_err) {
-    //   std::cout << d << std::endl;
-    // }
-    // for(const double d: postfit_err) {
-    //   std::cout << d << std::endl;
-    // }
+     //   std::cout << d << std::endl;
+     // }
+     // std::cout << "Prefit param errs: " << std::endl;
+     // for(const double d: prefit_err) {
+     //   std::cout << d << std::endl;
+     // }
+     // std::cout << "Postfit param errs: " << std::endl;
+     // for(const double d: postfit_err) {
+     //   std::cout << d << std::endl;
+     // }
 
      int nsyst = systs.size();
      int nvar = oscVars.size();
@@ -148,7 +153,8 @@ void syst_fit(const std::string anatype = numuStr)
        }
      }
 
-     Fitter fit_nd(&expt_nd, oscVars, slist);
+     std::cout << "Fitting ND only..." << std::endl;
+     Fitter fit_nd(&expt_nd, oscVars, slist, Fitter::kCareful);
      OscCalcSterileApproxAdjustable* calc_nd = DefaultSterileApproxCalc();
      calc_nd->SetL(kBaselineSBND);
      SystShifts bestSysts_nd;
@@ -168,7 +174,8 @@ void syst_fit(const std::string anatype = numuStr)
       }
      }
 
-     Fitter fit_fd(&expt_fd, oscVars, slist);
+     std::cout << "Fitting FD only..." << std::endl;
+     Fitter fit_fd(&expt_fd, oscVars, slist, Fitter::kCareful);
      OscCalcSterileApproxAdjustable* calc_fd = DefaultSterileApproxCalc();
      calc_fd->SetL(kBaselineIcarus);
      SystShifts bestSysts_fd;
