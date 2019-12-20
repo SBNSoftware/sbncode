@@ -49,8 +49,10 @@ Cuts: {
    # CRTActivityTimeRange: [-1, 2]
    FlashMatchScore: 6
    PMTNAboveThreshold: 4
-   CRTHitDist: 5
+   CRTHitDist: 50
    CRTActivityPEThreshold: 70
+   CutOrder: @local::cut_order_summary_separate_contained
+   TruthCutOrder: @local::truth_cut_order
 }
 
 TrackSelectors: [

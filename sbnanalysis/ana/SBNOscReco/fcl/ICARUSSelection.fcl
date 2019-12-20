@@ -52,7 +52,9 @@ Cuts: {
    PMTTriggerTreshold: 7875
    PMTNAboveThreshold: 4
    CRTActivityPEThreshold: 0
-   FlashMatchScore: 6
+   FlashMatchScore: 4
+   CutOrder: @local::cut_order_summary_separate_contained
+   TruthCutOrder: @local::truth_cut_order
 }
 
 TrackSelectors: [
