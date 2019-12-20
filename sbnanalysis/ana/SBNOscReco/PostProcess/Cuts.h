@@ -34,7 +34,7 @@ public:
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, 
 					  unsigned reco_vertex_index, 
-					  bool fSequentialCuts = false) const;
+					  bool fSequentialCuts = true) const;
 
   /**
  * Process each cut associated with true events

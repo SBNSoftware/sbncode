@@ -80,6 +80,8 @@ private:
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
 
+  std::string fHistogramPostfix;
+  bool fUseCalorimetry;
   int fFileIndex;
   numu::MCType fFileType;
 

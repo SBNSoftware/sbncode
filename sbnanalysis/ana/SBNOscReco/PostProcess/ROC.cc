@@ -27,32 +27,39 @@ void ana::SBNOsc::ROC::BestCuts() const {
   }
 }
 
-void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts cuts, const numu::RecoEvent &event, bool file_is_neutrino) {
-  for (const numu::RecoInteraction &reco: event.reco) {
+void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent &event, bool file_is_neutrino) {
+  for (unsigned i = 0; i < event.reco.size(); i++) {
+    const numu::RecoInteraction &reco = event.reco[i];
     bool is_signal = reco.match.mode == numu::mCC;
     bool is_bkg = reco.match.mode == numu::mCosmic || reco.match.mode == numu::mIntimeCosmic;
     if (!is_signal && !is_bkg) continue; // ignore NC stuff for now
     
     const numu::RecoTrack &track = event.reco_tracks.at(reco.slice.primary_track_index);
-    
-    // CRT stuff
-    if (track.crt_match.track.present) {
-      if (file_is_neutrino) crt_track_angle.FillNeutrino(is_signal, track.crt_match.track.angle);
-      else crt_track_angle.FillCosmic(is_signal, track.crt_match.track.angle);
-    }
-    else {
-      if (file_is_neutrino) crt_track_angle.FillNeverNeutrino(is_signal);
-      else crt_track_angle.FillNeverCosmic(is_signal);
-    }
-    if (track.crt_match.hit_match.present && !cuts.TimeInSpill(track.crt_match.hit_match.time)) {
-      if (file_is_neutrino) crt_hit_distance.FillNeutrino(is_signal, track.crt_match.hit_match.distance);
-      else crt_hit_distance.FillCosmic(is_signal, track.crt_match.hit_match.distance);
-    }
-    else {
-      if (file_is_neutrino) crt_hit_distance.FillNeverNeutrino(is_signal);
-      else crt_hit_distance.FillNeverCosmic(is_signal);
+
+    std::array<bool, ana::SBNOsc::Cuts::nCuts> results = cuts.ProcessRecoCuts(event, i, true);
+
+    // only apply to events that already pass flash matching
+    if (results[5] /* flashmatch */) {
+      // CRT stuff
+      if (track.crt_match.track.present) {
+        if (file_is_neutrino) crt_track_angle.FillNeutrino(is_signal, track.crt_match.track.angle);
+        else crt_track_angle.FillCosmic(is_signal, track.crt_match.track.angle);
+      }
+      else {
+        if (file_is_neutrino) crt_track_angle.FillNeverNeutrino(is_signal);
+        else crt_track_angle.FillNeverCosmic(is_signal);
+      }
+      if (track.crt_match.hit_match.present && !cuts.TimeInSpill(track.crt_match.hit_match.time)) {
+        if (file_is_neutrino) crt_hit_distance.FillNeutrino(is_signal, track.crt_match.hit_match.distance);
+        else crt_hit_distance.FillCosmic(is_signal, track.crt_match.hit_match.distance);
+      }
+      else {
+        if (file_is_neutrino) crt_hit_distance.FillNeverNeutrino(is_signal);
+        else crt_hit_distance.FillNeverCosmic(is_signal);
+      }
     }
   }
+    
 }
 
 void ana::SBNOsc::ROC::NormalizedPrimitive::Initialize(const std::string &this_name, float cut_low, float cut_high, unsigned n_bin) {

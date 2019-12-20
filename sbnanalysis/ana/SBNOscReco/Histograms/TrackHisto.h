@@ -37,6 +37,10 @@ struct TrackHistos : public HistoList {
 
   TH1D *range_p_minus_truth;
   TH1D *mcs_p_minus_truth;
+
+  TH2D *range_p_minus_truth_length;
+  TH2D *mcs_p_minus_truth_length;
+
   TH1D *deposited_e_max_minus_truth;
   TH1D *deposited_e_avg_minus_truth;
   TH1D *deposited_e_med_minus_truth;

@@ -43,8 +43,11 @@ struct InteractionHistos : public HistoList {
   TH1D *fmatch_score;
   TH2D *fmatch_score_true_time;
   TH2D *fmatch_score_true_time_zoom;
+  TH1D *fmatch_score_outtime;
+  TH1D *fmatch_score_intime;
   TH2D *fmatch_time_true_time_zoom;
   TH1D *fmatch_time;
+  TH1D *fmatch_time_real_time;
   TH2D *intime_crt_hits_xy;
   TH2D *intime_crt_hits_xz;
   TH2D *intime_crt_hits_yz;

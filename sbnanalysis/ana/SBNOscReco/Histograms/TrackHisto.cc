@@ -29,6 +29,10 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   
   TRACK_HISTO(range_p_minus_truth, 100, -2., 2);
   TRACK_HISTO(mcs_p_minus_truth, 100, -2., 2.);
+
+  TRACK_2DHISTO(range_p_minus_truth_length, 60, 0., 600., 50, -1., 1);
+  TRACK_2DHISTO(mcs_p_minus_truth_length, 60, 0., 600., 50, -1., 1.);
+
   TRACK_HISTO(deposited_e_max_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
@@ -38,15 +42,15 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
   
-  TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
-  TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
+  //TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
+  //TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
   // TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
 
   TRACK_2DHISTO(range_p_comp, 25, 0, 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
   // TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
 
-  TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
+  //TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
 
   TRACK_HISTO(border_y, 400, detector_volume.MinY(), detector_volume.MaxY());
   TRACK_HISTO(border_x, 400, detector_volume.MinX(), detector_volume.MaxX());
@@ -125,7 +129,7 @@ void TrackHistos::Fill(
   reco_momentum->Fill(track.momentum);
   is_contained->Fill(track.is_contained);
 
-  dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
+  //dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
 
   if (std::min(abs(track.start.Y() - border_y->GetBinLowEdge(1)), 
                abs(track.start.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))
@@ -185,14 +189,18 @@ void TrackHistos::Fill(
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {
     const numu::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
-    range_p_minus_truth->Fill(track.range_momentum - true_track.momentum);
-    mcs_p_minus_truth->Fill(track.mcs_momentum - true_track.momentum); 
+    range_p_minus_truth->Fill((track.range_momentum - true_track.momentum) / true_track.momentum);
+    mcs_p_minus_truth->Fill((track.mcs_momentum - true_track.momentum) / true_track.momentum);
+ 
+    range_p_minus_truth_length->Fill(track.length, (track.range_momentum - true_track.momentum) / true_track.momentum); 
+    mcs_p_minus_truth_length->Fill(track.length, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+
     deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
     deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
     deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
     
-    range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
-    mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
+    //range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
+    //mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
     // deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
     
     range_p_comp->Fill(true_track.momentum, track.range_momentum);

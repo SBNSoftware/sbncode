@@ -1671,9 +1671,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     double tick_period = fProviderManager->GetDetectorClocksProvider()->OpticalClock().TickPeriod();
     int threshold = _config.PMTTriggerThreshold; 
     bool is_sbnd = fExperimentID == kExpSBND;
-    std::pair<double, double> window; //  = (is_sbnd) ? {0., 1.6} : {1500., 1501.6};
-    if (is_sbnd) window = {0., 1.6};
-    else window = {1500., 1501.6};
+    std::pair<double, double> window;
+    if (is_sbnd) window = {0., 2.}; // go out to 0.4us past end of beam gate
+    else window = {1500., 1502.};
     event.flash_trigger_primitives = numu::TriggerPrimitives(*waveforms, tick_period, window, threshold, is_sbnd);
   }
 

@@ -1,0 +1,82 @@
+pdg_selectors: ["",
+   "track.match.has_match==1&&(track.match.match_pdg==11||track.match.match_pdg==-11)",
+   "track.match.has_match==1&&(track.match.match_pdg==13||track.match.match_pdg==-13)",
+   "track.match.has_match==1&&(track.match.match_pdg==211||track.match.match_pdg==-211)",
+   "track.match.has_match==1&&(track.match.match_pdg==321||track.match.match_pdg==-321)",
+   "track.match.has_match==1&&(track.match.match_pdg==2212||track.match.match_pdg==-2212)",
+   "track.match.has_match==1&&(track.match.match_pdg==2224||track.match.match_pdg==-2224||track.match.match_pdg==2214||track.match.match_pdg==-2214||track.match.match_pdg==1114||track.match.match_pdg==-1114||track.match.match_pdg==3222||track.match.match_pdg==-3222||track.match.match_pdg==3112||track.match.match_pdg==3112||track.match.match_pdg>1000000000)",
+   "track.match.has_match==0||track.match.match_pdg==22||track.match.match_pdg==2112||track.match.match_pdg==-2112"
+  ]
+pdgs: ["all", "e", "mu", "pi", "k", "p", "nucl", "none"]
+
+primary_pdg_selectors: ["",
+   "track.match.has_match==1&&(track.match.match_pdg==13||track.match.match_pdg==-13)",
+   "track.match.has_match==1&&(track.match.match_pdg==211||track.match.match_pdg==-211)",
+   "track.match.has_match==1&&(track.match.match_pdg==2212||track.match.match_pdg==-2212)"
+]
+primary_pdgs: ["all", "mu", "pi", "p"]
+
+
+interaction_selectors: ["",
+   "track.match.has_match==1&&track.match.mctruth_origin==2&&event.type==1", // kCosmicRay
+   "track.match.has_match==1&&track.match.mctruth_origin==2&&event.type==2", // kCosmicRay
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==0",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==0",
+   "track.match.has_match==0"
+  ] 
+interactions: ["All", "Cosmic", "InTime-Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"]
+
+neutrino_selectors: ["",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==0&&track.match.is_primary==1", // kBeamNeutrino
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.mctruth_ccnc==1&&track.match.is_primary==1",
+   "track.match.has_match==1&&track.match.mctruth_origin==1&&track.match.is_primary==0"
+]
+neutrinos: ["All", "CC", "NC", "Other"]
+
+wall_selectors_enter: ["",
+  "true_track.wall_enter==0",
+  "true_track.wall_enter==1",
+  "true_track.wall_enter==2",
+  "true_track.wall_enter==3",
+  "true_track.wall_enter==4",
+  "true_track.wall_enter==5",
+  "true_track.wall_enter==6"
+]
+wall_selectors_exit: ["",
+  "true_track.wall_exit==0",
+  "true_track.wall_exit==1",
+  "true_track.wall_exit==2",
+  "true_track.wall_exit==3",
+  "true_track.wall_exit==4",
+  "true_track.wall_exit==5",
+  "true_track.wall_exit==6"
+]
+wall_selectors_either: ["",
+  "true_track.wall_exit==0&&true_track.wall_enter==0",
+  "true_track.wall_exit==1||true_track.wall_enter==1",
+  "true_track.wall_exit==2||true_track.wall_enter==2",
+  "true_track.wall_exit==3||true_track.wall_enter==3",
+  "true_track.wall_exit==4||true_track.wall_enter==4",
+  "true_track.wall_exit==5||true_track.wall_enter==5",
+  "true_track.wall_exit==6||true_track.wall_enter==6"
+]
+walls: ["all", "no-wall", "top", "bottom", "left", "right", "front", "back"]
+
+true_contained_selectors: ["",
+  "true_track.is_contained==0",
+  "true_track.is_contained==1"
+]
+
+reco_contained_selectors: ["",
+  "track.is_contained==0",
+  "track.is_contained==1"
+]
+
+contained: ["all", "exiting", "contained"]
+
+timing_selectors: ["", "true_track.start_time<0.0||true_track.start_time>1.6", "true_track.start_time>=0.0&&true_track.start_time<=1.6"]
+timings: ["all", "outtime", "intime"]
+
+
