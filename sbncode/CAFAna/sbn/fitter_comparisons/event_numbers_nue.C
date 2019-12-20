@@ -96,10 +96,11 @@ void event_numbers_nue(const std::string expt = "SBND")
   const Var kCC = SIMPLEVAR(truth[0].neutrino.iscc);
   const Cut kIsCC = kCC > 0;
 
-  OscCalcSterileApproxAdjustable* osc_sbnd = DefaultSterileApproxCalc();
-  osc_sbnd->SetL(expt == "SBND" ? kBaselineSBND : kBaselineIcarus);
-  osc_sbnd->calc.SetSinSq2ThetaMuE(0.001);
-  osc_sbnd->calc.SetDmsq(1.32);
+  // LSND best fit
+  OscCalcSterileApproxAdjustable* osc_lsnd = DefaultSterileApproxCalc();
+  osc_lsnd->SetL(expt == "SBND" ? kBaselineSBND : kBaselineIcarus);
+  osc_lsnd->calc.SetSinSq2ThetaMuE(0.003);
+  osc_lsnd->calc.SetDmsq(1.2);
 
   // The main predictions
   PredictionNoExtrap* pred = new PredictionNoExtrap(loaders, axEnergy, kNoCut, kNoShift, kWeight);
@@ -109,10 +110,10 @@ void event_numbers_nue(const std::string expt = "SBND")
 
   const double pot = kPOTnominal;
 
-  TH1* h_numu = pred->PredictComponent(osc_sbnd, Flavors::kAllNuMu,   Current::kCC, Sign::kBoth).ToTH1(pot);
-  TH1* h_NC   = pred->PredictComponent(osc_sbnd, Flavors::kAll,       Current::kNC, Sign::kBoth).ToTH1(pot);
-  TH1* h_int  = pred->PredictComponent(osc_sbnd, Flavors::kNuEToNuE,  Current::kCC, Sign::kBoth).ToTH1(pot);
-  TH1* h_osc  = pred->PredictComponent(osc_sbnd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* h_numu = pred->PredictComponent(osc_lsnd, Flavors::kAllNuMu,   Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* h_NC   = pred->PredictComponent(osc_lsnd, Flavors::kAll,       Current::kNC, Sign::kBoth).ToTH1(pot);
+  TH1* h_int  = pred->PredictComponent(osc_lsnd, Flavors::kNuEToNuE,  Current::kCC, Sign::kBoth).ToTH1(pot);
+  TH1* h_osc  = pred->PredictComponent(osc_lsnd, Flavors::kNuMuToNuE, Current::kCC, Sign::kBoth).ToTH1(pot);
 
   std::cout << "Numu: " << h_numu->Integral() << std::endl;
   std::cout << "NC:   " << h_NC->Integral() << std::endl;
