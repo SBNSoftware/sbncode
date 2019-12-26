@@ -48,6 +48,7 @@ public:
   void Initialize(fhicl::ParameterSet *config);
   void ProcessEvent(const event::Event *event);
   void ProcessSubRun(const SubRun *subrun);
+  void ProcessFileMeta(const FileMeta *meta);
   void Finalize();
 
 private:
@@ -55,7 +56,6 @@ private:
   Cuts fCuts;
   ROC fROC;
   Histograms fHistograms;
-  Histograms fNeutrinoHistograms;
   Histograms fCosmicHistograms;
   Histograms *fHistsToFill;
   TrajHistograms fTrajHistograms;
@@ -80,6 +80,8 @@ private:
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;
 
+  std::string fHistogramPostfix;
+  bool fUseCalorimetry;
   int fFileIndex;
   numu::MCType fFileType;
 

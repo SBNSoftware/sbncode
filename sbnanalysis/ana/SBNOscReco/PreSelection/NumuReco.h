@@ -142,6 +142,7 @@ protected:
     std::string CaloTag;
     std::string PIDTag;
     std::string PFParticleTag; //!< art tag for PFParticles
+    std::string FlashMatchTag;
     std::string CorsikaTag; //!< art tag for corsika MCTruth
     std::string CRTTrackTag; //!< art tag for CRT tracks
     std::string CRTHitTag;
@@ -431,6 +432,7 @@ protected:
   std::vector<std::vector<art::Ptr<recob::Vertex>>> _tpc_particles_to_vertex;
   std::vector<std::vector<unsigned>> _tpc_particles_to_daughters;
   std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> _tpc_particles_to_metadata;
+  std::vector<std::vector<art::Ptr<anab::T0>>> _tpc_particles_to_flashT0;
 
   // holders for truth information
   std::vector<art::Ptr<simb::MCParticle>> _true_particles;

@@ -8,6 +8,7 @@
 #pragma link C++ class event::Event+;
 #pragma link C++ class event::RecoEvent+;
 #pragma link C++ class SubRun+;
+#pragma link C++ class FileMeta+;
 #pragma link C++ class event::Metadata+;
 #pragma link C++ class event::Interaction+;
 #pragma link C++ class event::RecoInteraction+;

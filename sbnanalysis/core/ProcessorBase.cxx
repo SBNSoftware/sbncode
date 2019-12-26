@@ -4,6 +4,7 @@
 #include <TLeaf.h>
 #include <TTree.h>
 #include <TParameter.h>
+#include <unordered_map>
 #include "gallery/ValidHandle.h"
 #include "gallery/Handle.h"
 #include "canvas/Utilities/InputTag.h"
@@ -15,7 +16,20 @@
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
+
 #include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/ParameterSetID.h"
+#include "fhiclcpp/make_ParameterSet.h"
+#include "fhiclcpp/ParameterSetRegistry.h"
+
+#include "cetlib/sqlite/query_result.h"
+#include "cetlib/sqlite/select.h"
+
+#include "canvas/Persistency/Provenance/ParameterSetBlob.h"
+#include "canvas/Persistency/Provenance/ParameterSetMap.h"
+#include "art_root_io/RootDB/SQLite3Wrapper.h"
+#include "art_root_io/RootDB/tkeyvfs.h"
+
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
@@ -165,30 +179,40 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   fSubRun = new SubRun();
   fSubRunTree->Branch("subruns", &fSubRun);
 
+  // Create the file metadata tree
+  fFileMetaTree = new TTree("sbnfilemeta", "SBN Analysis File Metadata Tree");
+  fFileMeta = new FileMeta();
+  fFileMetaTree->Branch("filemeta", &fFileMeta);
+
   // save the experiment ID
   fExperimentParameter = new TParameter<int>("experiment", fExperimentID);
   fExperimentParameter->Write();
+
+  // setup the connection to the sqlite database
+  tkeyvfs_init();
 }
 
-
 void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
-  // FIXME: This should use official gallery subrun access once available.
-  // N.B. Implementation is fragile and depends on the naming of the subrun
-  // producer (generator__GenieGen), can be made a fcl parameter.
-  TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
+  // FIXME: HACK
+  static TFile *last_tfile = NULL; // only set at initialization
 
-  art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
-  srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
+  TFile *this_file = ev.getTFile();
+  // it's a new file!
+  if (this_file != last_tfile) {
+    // FIXME: This should use official gallery subrun access once available.
+    // N.B. Implementation is fragile and depends on the naming of the subrun
+    // producer (generator__GenieGen), can be made a fcl parameter.
+    TTree* srtree = (TTree*) ev.getTFile()->Get("SubRuns");
 
-  for (long i=0; i<srtree->GetEntries(); i++) {
-    srtree->GetEntry(i);
-    int runid = sraux->run();
-    int subrunid = sraux->subRun();
-    std::pair<int, int> id = { runid, subrunid };
+    art::SubRunAuxiliary* sraux = new art::SubRunAuxiliary;
+    srtree->SetBranchAddress("SubRunAuxiliary", &sraux);
 
-    // Add subrun if not in cache
-    // if (fSubRunCache.find(id) == fSubRunCache.end()) {
-    
+    for (long i=0; i<srtree->GetEntries(); i++) {
+      srtree->GetEntry(i);
+
+      int runid = sraux->run();
+      int subrunid = sraux->subRun();
+
       std::string totpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totpot";
       std::string totgoodpot_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totgoodpot";
       std::string totspills_str = "sumdata::POTSummary_generator__" + fGeneratorProcess + ".obj.totspills";
@@ -203,18 +227,70 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* goodspillsLeaf = srtree->GetLeaf(goodspills_str.c_str());
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
-
-      // fSubRunCache.insert(id);
-
-    if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
       std::cout << "Subrun " << runid << "/" << subrunid << " added "
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
       *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
       fSubRunTree->Fill();
     }
-    //}
   }
+  // set the file for next time
+  last_tfile = ev.getTFile();
+}
+
+void ProcessorBase::UpdateFileMeta(gallery::Event& ev) {
+  // FIXME: this is also a bit of a hack
+  static TFile *last_tfile = NULL; // only set at initialization
+
+  TFile *this_file = ev.getTFile();
+  // it's a new file!
+  if (this_file != last_tfile) {
+    unsigned n_gen_event = 0;
+    unsigned n_event = 0;
+
+    // get the SQLite thingy
+    art::SQLite3Wrapper sqliteDB(this_file, "RootFileDB", SQLITE_OPEN_READONLY);
+    sqlite3 *db = sqliteDB;
+    // add to the registry and parse yourself
+    fhicl::ParameterSetRegistry::importFrom(db);
+    fhicl::ParameterSetRegistry::stageIn();
+
+    // TODO: make this better
+    // 
+    std::unordered_map<fhicl::ParameterSetID, fhicl::ParameterSet, fhicl::detail::HashParameterSetID> registry;
+    using namespace cet::sqlite;
+    query_result<std::string, std::string> entriesToStageIn;
+    entriesToStageIn << select("*").from(db, "ParameterSets");
+
+    cet::transform_all(entriesToStageIn,
+                     std::inserter(registry, std::begin(registry)),
+                     [](auto const& row) {
+                       auto const& [idString, psBlob] = row;
+                       fhicl::ParameterSet pset;
+                       fhicl::make_ParameterSet(psBlob, pset);
+                       return std::make_pair(fhicl::ParameterSetID{idString}, pset);
+                     });
+
+    for (auto const& pr: registry) {
+      const fhicl::ParameterSet pset = pr.second;
+      if (pset.has_key("source") && pset.has_key("source.maxEvents") && pset.has_key("source.module_type")) {
+        unsigned max_events = pset.get<unsigned>("source.maxEvents");
+        std::string module_type = pset.get<std::string>("source.module_type");
+        // this will show up once for every input file
+        if (module_type == "EmptyEvent") {
+          n_gen_event += max_events;
+          std::cout << "FILEMETA: " << max_events << std::endl;
+        }
+      }
+    }
+    n_event = ev.numberOfEventsInFile();
+    std::cout << "FILEMETA nevent: " << n_event << std::endl;
+    std::cout << "FILEMETA ngenevent: " << n_gen_event << std::endl;
+    *fFileMeta = {n_event, n_gen_event};
+    fFileMetaTree->Fill();
+  }
+  // set the file for next time
+  last_tfile = ev.getTFile();
 }
 
 
@@ -228,6 +304,7 @@ void ProcessorBase::Teardown() {
     fRecoTree->Write("sbnreco", TObject::kOverwrite);
   }
   fSubRunTree->Write("sbnsubrun", TObject::kOverwrite);
+  fFileMetaTree->Write("sbnfilemeta", TObject::kOverwrite);
   fOutputFile->Purge();
   fOutputFile->Close();
 }
@@ -272,6 +349,7 @@ const simb::MCParticle *Genie2G4MCParticle(
 void ProcessorBase::BuildEventTree(gallery::Event& ev) {
   // Add any new subruns to the subrun tree
   UpdateSubRuns(ev);
+  UpdateFileMeta(ev);
 
   // Get MC truth information
   gallery::Handle<std::vector<simb::MCTruth>> mctruths_handle;

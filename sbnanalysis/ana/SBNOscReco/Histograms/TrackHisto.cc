@@ -29,6 +29,10 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   
   TRACK_HISTO(range_p_minus_truth, 100, -2., 2);
   TRACK_HISTO(mcs_p_minus_truth, 100, -2., 2.);
+
+  TRACK_2DHISTO(range_p_minus_truth_length, 60, 0., 600., 50, -1., 1);
+  TRACK_2DHISTO(mcs_p_minus_truth_length, 60, 0., 600., 50, -1., 1.);
+
   TRACK_HISTO(deposited_e_max_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_avg_minus_truth, 100, -2., 2.);
   TRACK_HISTO(deposited_e_med_minus_truth, 100, -2., 2.); 
@@ -38,20 +42,21 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(reco_momentum, 100, 0., 5.);
   TRACK_HISTO(is_contained, 2, -0.5, 1.5);
   
-  TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
-  TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
-  TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
+  //TRACK_2DHISTO(range_p_diff, 25, 0, 2.5, 40, -2., 2.); 
+  //TRACK_2DHISTO(mcs_p_diff, 25, 0., 2.5, 40, -2., 2.);
+  // TRACK_2DHISTO(deposited_e_max_diff, 25, 0., 2.5, 40, -2., 2.);
 
   TRACK_2DHISTO(range_p_comp, 25, 0, 2.5, 25, 0., 2.5);
   TRACK_2DHISTO(mcs_p_comp, 25, 0., 2.5, 25, 0., 2.5);
-  TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
+  // TRACK_2DHISTO(deposited_e_max_comp,  25, 0., 2.5, 25, 0., 2.5);
 
-  TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
+  //TRACK_2DHISTO(dQdx_length, 100, 0., 1000., 100, 0., max_length);
 
   TRACK_HISTO(border_y, 400, detector_volume.MinY(), detector_volume.MaxY());
   TRACK_HISTO(border_x, 400, detector_volume.MinX(), detector_volume.MaxX());
   TRACK_HISTO(border_z, 500, detector_volume.MinZ(), detector_volume.MaxZ()); 
   TRACK_HISTO(true_start_time, 1400, -4000., 3000.);
+  TRACK_HISTO(true_start_time_zoom, 3000, -1., 2.);
 
   TRACK_HISTO(wall_enter, 7, -0.5, 6.5);
   TRACK_HISTO(wall_exit, 7, -0.5, 6.5);
@@ -59,9 +64,11 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   // timing histos
   TRACK_HISTO(has_crt_track_match, 3, -0.5, 1.5);
   TRACK_HISTO(has_crt_hit_match, 3, -0.5, 1.5); 
-  TRACK_HISTO(has_flash_match, 3, -0.5, 1.5);
-  TRACK_HISTO(crt_hit_distance, 500, 0., 2000.);
+  TRACK_HISTO(crt_hit_distance, 80, 0., 400.);
   TRACK_HISTO(crt_track_angle, 150, 0., 3.);
+
+  // TRACK_HISTO(flash_match_time, 2000, -0.2, 1.8);
+  // TRACK_HISTO(crt_v_flash_match_time, 2000, -4., 4.);
   
   double min_matchtime_t = -1640;
   double max_matchtime_t =  3280;
@@ -72,8 +79,6 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   int n_comptime_bins = 1000;
   
   TRACK_HISTO(crt_match_time, n_matchtime_bins, min_matchtime_t, max_matchtime_t);
-  TRACK_HISTO(flash_match_time, n_matchtime_bins, min_matchtime_t, max_matchtime_t);
-  TRACK_HISTO(crt_v_flash_match_time, n_comptime_bins, min_comptime, max_comptime);
 
   TRACK_HISTO(completion, 200, -1, 1);
 
@@ -124,7 +129,7 @@ void TrackHistos::Fill(
   reco_momentum->Fill(track.momentum);
   is_contained->Fill(track.is_contained);
 
-  dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
+  //dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
 
   if (std::min(abs(track.start.Y() - border_y->GetBinLowEdge(1)), 
                abs(track.start.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))
@@ -166,6 +171,8 @@ void TrackHistos::Fill(
     crt_match_time->Fill(track.crt_match.hit_match.time);
     crt_hit_distance->Fill(track.crt_match.hit_match.distance);
   }
+
+  /*
   has_flash_match->Fill(track.flash_match.present);
   if (track.flash_match.present) {
     const numu::FlashMatch &flash_match = track.flash_match;
@@ -177,30 +184,35 @@ void TrackHistos::Fill(
     else if (track.crt_match.hit_match.present) {
       crt_v_flash_match_time->Fill(track.crt_match.hit_match.time - flash_time);
     }  
-  }
+  }*/
   
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {
     const numu::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
-    range_p_minus_truth->Fill(track.range_momentum - true_track.momentum);
-    mcs_p_minus_truth->Fill(track.mcs_momentum - true_track.momentum); 
+    range_p_minus_truth->Fill((track.range_momentum - true_track.momentum) / true_track.momentum);
+    mcs_p_minus_truth->Fill((track.mcs_momentum - true_track.momentum) / true_track.momentum);
+ 
+    range_p_minus_truth_length->Fill(track.length, (track.range_momentum - true_track.momentum) / true_track.momentum); 
+    mcs_p_minus_truth_length->Fill(track.length, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+
     deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
     deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
     deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
     
-    range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
-    mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
-    deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
+    //range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
+    //mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
+    // deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
     
     range_p_comp->Fill(true_track.momentum, track.range_momentum);
     mcs_p_comp->Fill(true_track.momentum, track.mcs_momentum);
-    deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
+    // deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
 
     completion->Fill(track.match.completion);
 
     wall_enter->Fill(true_track.wall_enter);
     wall_exit->Fill(true_track.wall_exit);
     true_start_time->Fill(true_track.start_time);
+    true_start_time_zoom->Fill(true_track.start_time);
   }
   else {
     completion->Fill(-0.5);

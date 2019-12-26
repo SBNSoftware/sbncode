@@ -37,6 +37,10 @@ struct TrackHistos : public HistoList {
 
   TH1D *range_p_minus_truth;
   TH1D *mcs_p_minus_truth;
+
+  TH2D *range_p_minus_truth_length;
+  TH2D *mcs_p_minus_truth_length;
+
   TH1D *deposited_e_max_minus_truth;
   TH1D *deposited_e_avg_minus_truth;
   TH1D *deposited_e_med_minus_truth;
@@ -62,23 +66,24 @@ struct TrackHistos : public HistoList {
   TH1D *border_z;
   TH1D *border_x;
   TH1D *true_start_time;
+  TH1D *true_start_time_zoom;
 
   TH1D *wall_enter;
   TH1D *wall_exit;
 
   TH1D *has_crt_track_match;
   TH1D *has_crt_hit_match;
-  TH1D *has_flash_match;
   TH1D *crt_hit_distance;
   TH1D *crt_track_angle;
 
   TH1D *crt_match_time;
-  TH1D *flash_match_time;
-  TH1D *crt_v_flash_match_time;
 
   TH1D *stopping_chisq_start;
   TH1D *stopping_chisq_finish;
   TH1D *stopping_chisq;
+
+  TH1D *flash_match_time;
+  TH1D *crt_v_flash_match_time;
 
   TH2D *pid_confusion_tr;
 

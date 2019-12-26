@@ -11,6 +11,7 @@ namespace ana {
 void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume) {
 #define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
 #define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); fAllHistos.push_back(name)
+#define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy); fAllHistos.push_back(name)
 
   INT_HISTO(track_length, 100, 0., 600.);
   INT_HISTO(track_p, 50, 0., 5.);
@@ -24,25 +25,31 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(dist_to_match, 101, -1., 100.);
   INT_HISTO(primary_track_completion, 100, 0., 1.);
   INT_HISTO(n_reco_vertices, 10, -0.5, 9.5);
-  INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 10000.);
-  INT_HISTO(crt_pes, 1000, 0., 10000.);
+  INT_HISTO(maxpe_crt_intime_hit, 1000, 0., 1000.);
+  INT_HISTO(crt_pes, 1000, 0., 1000.);
 
   INT_HISTO(crt_hit_times, 300, -20., 10.);
   INT_HISTO(closest_crt_hit_time, 300, -20., 10.);
 
-  INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
+  INT_HISTO(fmatch_score, 200, 0., 200.);
+  INT_HISTO2D(fmatch_score_true_time, 100, 0., 100., 1400, -4000., 3000.);
+  INT_HISTO2D(fmatch_score_true_time_zoom, 100, 0., 100., 100, -5., 5.);
+  double intout_times[4] = {-3000., 0., 1.6, 3000.};
+  INT_HISTO(fmatch_score_intime, 100, 0., 100.);
+  INT_HISTO(fmatch_score_outtime, 100, 0., 100.);
+  INT_HISTO2D(fmatch_time_true_time_zoom, 100, -5., 5., 100, -5., 5.);
+  INT_HISTO(fmatch_time_real_time, 4000, -2, 2);
+  INT_HISTO(fmatch_time, 700, -5., 2.);
+
+  // INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
 
   INT_HISTO2D(intime_crt_hits_xy, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[1], tagger_volume[4]);
   INT_HISTO2D(intime_crt_hits_xz, 100, tagger_volume[0], tagger_volume[3], 100, tagger_volume[2], tagger_volume[5]);
   INT_HISTO2D(intime_crt_hits_yz, 100, tagger_volume[1], tagger_volume[4], 100, tagger_volume[2], tagger_volume[5]);
 
-  INT_HISTO2D(vertex_xy, 200, detector_volume.MinX(), detector_volume.MaxX(), 200, detector_volume.MinY(), detector_volume.MaxY());
-  INT_HISTO2D(vertex_yz, 200, detector_volume.MinY(), detector_volume.MaxY(), 200, detector_volume.MinZ(), detector_volume.MaxZ());
-  INT_HISTO2D(vertex_xz, 200, detector_volume.MinX(), detector_volume.MaxX(), 200, detector_volume.MinZ(), detector_volume.MaxZ());
-
-  INT_HISTO2D(crthit_xy, 200, detector_volume.MinX()*0.8, detector_volume.MaxX()*1.2, 200, detector_volume.MinY()*0.8, detector_volume.MaxY()*1.2);
-  INT_HISTO2D(crthit_yz, 200, detector_volume.MinY()*0.8, detector_volume.MaxY()*1.2, 200, detector_volume.MinZ()*0.8, detector_volume.MaxZ()*1.2);
-  INT_HISTO2D(crthit_xz, 200, detector_volume.MinX()*0.8, detector_volume.MaxX()*1.2, 200, detector_volume.MinZ()*0.8, detector_volume.MaxZ()*1.2);
+  INT_HISTO2D(vertex_xy, 100, detector_volume.MinX(), detector_volume.MaxX(), 100, detector_volume.MinY(), detector_volume.MaxY());
+  INT_HISTO2D(vertex_yz, 100, detector_volume.MinY(), detector_volume.MaxY(), 100, detector_volume.MinZ(), detector_volume.MaxZ());
+  INT_HISTO2D(vertex_xz, 100, detector_volume.MinX(), detector_volume.MaxX(), 100, detector_volume.MinZ(), detector_volume.MaxZ());
 
 #undef INT_HISTO
 }
@@ -73,10 +80,10 @@ void InteractionHistos::Fill(
     vertex_tracks = &event.reco_tracks;
   }
 
-  std::vector<int> thresholds = numu::TriggerThresholds(event.flash_trigger_primitives, 20);
-  for (int i = 0; i < thresholds.size(); i++) {
-    light_trigger->Fill(i, thresholds[i]);
-  }
+  //std::vector<int> thresholds = numu::TriggerThresholds(event.flash_trigger_primitives, 20);
+  //for (int i = 0; i < thresholds.size(); i++) {
+  //  light_trigger->Fill(i, thresholds[i]);
+  //}
 
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
   vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
@@ -92,11 +99,6 @@ void InteractionHistos::Fill(
     intime_crt_hits_xz->Fill(hit.location.X(), hit.location.Z());
     intime_crt_hits_yz->Fill(hit.location.Y(), hit.location.Z());
 
-    std::cout << "PE: " << hit.pes << std::endl;
-    std::cout << "Time: " << hit.time << std::endl;
-    crthit_xy->Fill(hit.location.X(), hit.location.Y());
-    crthit_yz->Fill(hit.location.Y(), hit.location.Z());
-    crthit_xz->Fill(hit.location.X(), hit.location.Z());
     crt_pes->Fill(hit.pes);
     if (hit.pes > maxpe) maxpe = hit.pes;
 
@@ -130,6 +132,22 @@ void InteractionHistos::Fill(
     maxpe_crt_intime_hit->Fill(maxpe);
   }
 
+  if (vertex.slice.flash_match.present) {
+    fmatch_score->Fill(vertex.slice.flash_match.score);
+    fmatch_time->Fill(vertex.slice.flash_match.time);
+    if (vertex.slice.primary_track_index >= 0 && vertex_tracks->at(vertex.slice.primary_track_index).match.has_match) {
+      int mcparticle_id = vertex_tracks->at(vertex.slice.primary_track_index).match.mcparticle_id;
+      double true_time = event.true_tracks.at(mcparticle_id).start_time;
+      fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
+      fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
+      fmatch_time_true_time_zoom->Fill(vertex.slice.flash_match.time, true_time);
+      if (true_time < 0. || true_time > 1.6) fmatch_score_outtime->Fill(vertex.slice.flash_match.score);
+      else                                    fmatch_score_intime->Fill(vertex.slice.flash_match.score);
+
+      fmatch_time_real_time->Fill(vertex.slice.flash_match.time - true_time);
+    }
+  }
+
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;
   track_length->Fill(track_length_val);
@@ -147,7 +165,7 @@ void InteractionHistos::Fill(
     true_contained_length->Fill(length);
   }
    
-  if (vertex.match.event_track_id >= 0 && vertex.primary_track.match.is_primary) {
+  if (vertex.match.event_track_id >= 0) {
     int event_id = vertex.match.event_track_id;
     int mctruth_id = vertex.match.mctruth_track_id;
 

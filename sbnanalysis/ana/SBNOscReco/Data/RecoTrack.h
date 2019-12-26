@@ -6,7 +6,6 @@
 #include "TVector3.h"
 
 #include "ana/SBNOscReco/Data/CRTMatch.h"
-#include "ana/SBNOscReco/Data/FlashMatch.h"
 #include "ana/SBNOscReco/Data/TruthMatch.h"
 
 namespace numu {
@@ -84,7 +83,6 @@ struct RecoTrack {
   TrackTruthMatch match; //!< Truth matching information
   
   CRTMatch crt_match; //!< CRTMatch
-  FlashMatch flash_match; //!< Flash matching info
   int ID; //!< ID/index of this track. Does not necessarily correspond to the Pandora index
   
   float stopping_chisq_start; //!< Chi2 fraction of stopping vs. not-stopping hypothesis to track start points
@@ -123,7 +121,6 @@ struct RecoTrack {
     end(-999, -999, -999),
     dist_to_vertex(-1),
     crt_match({}),
-    flash_match({}),
     ID(-1),
     stopping_chisq_start(-1),
     stopping_chisq_finish(-1),

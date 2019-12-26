@@ -23,6 +23,23 @@
 namespace ana {
   namespace SBNOsc {
 
+  // boilerplate to constexpr-append two arrays
+  template <typename T, std::size_t N1, std::size_t N2>
+  constexpr std::array<T, N1+N2> concat(std::array<T, N1> lhs, std::array<T, N2> rhs) {
+    std::array<T,N1+N2> result{};
+    size_t index = 0;
+    for (auto &el : lhs)  {
+      result[index] = std::move(el);
+      index ++;
+    }
+    for (auto &el : rhs) {
+      result[index] = std::move(el);
+      index ++;
+    }
+    return result;
+  }
+  // std::array<const char *, Cuts::nTruthCuts+Cuts::nCuts> concat<const char *, Cuts::nTruthCuts, Cuts::nCuts>();
+
 /**
  * Set of Track and Interaction histos for all modes/cuts/sub-types
  */
@@ -79,10 +96,8 @@ struct Histograms : public HistoList {
 
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
 
-  static constexpr const char* histoNames[nHistos] = 
-    { "Truth", "T_fid", "T_vqual", "T_tqual", "T_reco", 
-      "Reco", "R_trig", "R_fid", "R_goodmcs", "R_crttrack", "R_crthit",
-      "R_flashmatch", "R_crtactive", "R_contained", "R_length"}; //!< Names of histograms
+
+  static constexpr std::array<const char *, nHistos> histoNames = concat(Cuts::truthCutNames, Cuts::cutNames); //!< Names of histograms
 
   InteractionHistos fInteraction[nHistos][nModes]; //!< all the interaction histograms
   std::vector<TrackHistos> fAllTracks; //!< Track histograms for all tracks

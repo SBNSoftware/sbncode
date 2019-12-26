@@ -94,7 +94,7 @@ def resize_graph(args, hist):
     if args.y_min is not None and args.y_max is not None: 
         hist.GetYaxis().SetRangeUser(args.y_min, args.y_max)
 
-def resize_histo(args, hist):
+def resize_histo(args, hist, name_postfix=""):
     histdim = 0
     if isinstance(hist, ROOT.TH1D): histdim = 1
     elif isinstance(hist, ROOT.TH2D): histdim = 2
@@ -126,12 +126,12 @@ def resize_histo(args, hist):
 
             new_axis_args = [range_hi_ind - range_lo_ind - 1, axis_range[range_lo_ind], axis_range[range_hi_ind-1]]
             if histdim == 1:
-                new_hist = ROOT.TH1D(hist.GetName() + " resized", hist.GetTitle(), *new_axis_args)
+               new_hist = ROOT.TH1D(hist.GetName() + " resized " + name_postfix, hist.GetTitle() + name_postfix, *new_axis_args)
             elif histdim == 2:
                x_axis_args =  [hist.GetXaxis().GetNbins(), hist.GetXaxis().GetBinLowEdge(1), hist.GetXaxis().GetBinUpEdge(hist.GetXaxis().GetNbins())]
                y_axis_args = [hist.GetYaxis().GetNbins(), hist.GetYaxis().GetBinLowEdge(1), hist.GetYaxis().GetBinUpEdge(hist.GetYaxis().GetNbins())]
                histo_args = new_axis_args + y_axis_args if i_axis == 0 else x_axis_args + new_axis_args
-               new_hist = ROOT.TH2D(hist.GetName() + " resized", hist.GetTitle(), *histo_args)
+               new_hist = ROOT.TH2D(hist.GetName() + " resized " + name_postfix, hist.GetTitle() + name_postfix, *histo_args)
             elif histdim == 3:
                x_axis_args = [hist.GetXaxis().GetNbins(), hist.GetXaxis().GetBinLowEdge(1), hist.GetXaxis().GetBinUpEdge(hist.GetXaxis().GetNbins())]
                y_axis_args = [hist.GetYaxis().GetNbins(), hist.GetYaxis().GetBinLowEdge(1), hist.GetYaxis().GetBinUpEdge(hist.GetYaxis().GetNbins())]
@@ -142,7 +142,7 @@ def resize_histo(args, hist):
                    histo_args = x_axis_args + new_axis_args + z_axis_args
                elif i_axis == 2:
                    histo_args = x_axis_args + y_axis_args + new_axis_args
-               new_hist = ROOT.TH3D(hist.GetName() + " resized", hist.GetTitle(), *histo_args)
+               new_hist = ROOT.TH3D(hist.GetName() + " resized " + name_postfix, hist.GetTitle() + name_postfix, *histo_args)
 
             for i in range(range_lo_ind+1, range_hi_ind+1):
                 i_set = i - range_lo_ind
@@ -182,11 +182,11 @@ def resize_histo(args, hist):
     if args.projectionXZ:
         hist = hist.Project3D("zx")
 
-    if args.rebinX != 1:
+    if args.rebinX is not None and args.rebinX != 1:
         hist.RebinX(args.rebinX) 
-    if args.rebinY != 1:
+    if args.rebinY is not None and args.rebinY != 1:
         hist.RebinY(args.rebinY) 
-    if args.rebinZ != 1:
+    if args.rebinZ is not None and args.rebinZ != 1:
         hist.RebinZ(args.rebinZ) 
     return hist
 

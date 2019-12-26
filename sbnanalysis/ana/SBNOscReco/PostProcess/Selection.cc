@@ -43,6 +43,10 @@ namespace SBNOsc {
     fGoalPOT = config->get<double>("GoalPOT", 0.);
     fFillAllTracks = config->get<bool>("FillAllTracks", true);
 
+    fUseCalorimetry = config->get<bool>("UseCalorimetry", true);
+
+    fHistogramPostfix = config->get<std::string>("HistogramPostfix", "");
+
     std::vector<std::vector<std::string>> track_selector_strings = config->get<std::vector<std::vector<std::string>>>("TrackSelectors", {{""}});
     std::vector<std::vector<std::string>> track_selector_names = config->get<std::vector<std::vector<std::string>>>("TrackSelectorNames", {{""}});
 
@@ -68,17 +72,16 @@ namespace SBNOsc {
 
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
-      fNCosmicData = config->get<double>("NCosmicData", 0.);
     }
     fTrajHistograms.Initialize(fTrajHistoNames);
     fROC.Initialize();
     fRecoEvent = NULL;
 
     fCRTGeo = new sbnd::CRTGeoAlg(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
-    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "",  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
-    fNeutrinoHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Neutrino", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-    fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
-
+    if (fDoNormalize) {
+      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+    }
+    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
@@ -92,7 +95,7 @@ namespace SBNOsc {
         fHistsToFill = &fCosmicHistograms;
       }
       else if (fFileType == numu::fOverlay) {
-        fHistsToFill = &fNeutrinoHistograms;
+        fHistsToFill = &fHistograms;
       }
       else assert(false);
     }
@@ -118,7 +121,12 @@ namespace SBNOsc {
   void Selection::ProcessSubRun(const SubRun *subrun) {
     if (fDoNormalize && fFileType == numu::fOverlay) {
       fNormalize.AddNeutrinoSubRun(*subrun);
-      
+    }
+  }
+
+  void Selection::ProcessFileMeta(const FileMeta *meta) {
+    if (fDoNormalize && fFileType == numu::fIntimeCosmic) {
+      fNormalize.AddCosmicFile(*meta);
     }
   }
 
@@ -128,28 +136,37 @@ namespace SBNOsc {
     // update each reco Interaction to a smarter primary track selector
     unsigned i = 0;
     while (i < fRecoEvent->reco.size()) {
-      // int primary_track = numu::SelectLongestIDdMuon(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
-      int primary_track = numu::SelectLongestTrack(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+      for (size_t ind: fRecoEvent->reco[i].slice.tracks) {
+        if (ind >= fRecoEvent->reco_tracks.size()) continue;
+   
+        // Set final momentum values
+        numu::RecoTrack &track = fRecoEvent->reco_tracks.at(ind);
+        // TODO: apply calorimetry, set for non-primary tracks
+        track.range_momentum = track.range_momentum_muon;
+        // TODO: use forward/backward?
+        track.mcs_momentum = track.mcs_muon.fwd_mcs_momentum;
+        if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
+          track.momentum = track.range_momentum;
+          track.is_contained = true;
+        }
+        else {
+          track.momentum = track.mcs_momentum;
+          track.is_contained = false;
+        }
+      }
+
+      int primary_track;
+      if (fUseCalorimetry) {
+        primary_track = numu::SelectLongestIDdMuon(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+      }
+      else {
+        primary_track = numu::SelectLongestTrack(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+      }
 
       // remove vertices without a good primary track
       if (primary_track < 0) {
         fRecoEvent->reco.erase(fRecoEvent->reco.begin() + i); 
         continue;
-      }
-
-      // Set final momentum values
-      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(primary_track);
-      // TODO: apply calorimetry, set for non-primary tracks
-      track.range_momentum = track.range_momentum_muon;
-      // TODO: use forward/backward?
-      track.mcs_momentum = track.mcs_muon.fwd_mcs_momentum;
-      if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
-        track.momentum = track.range_momentum;
-        track.is_contained = true;
-      }
-      else {
-        track.momentum = track.mcs_momentum;
-        track.is_contained = false;
       }
 
       fRecoEvent->reco[i].slice.primary_track_index = primary_track;
@@ -172,7 +189,7 @@ namespace SBNOsc {
       fRecoEvent->truth[0].match.mode = numu::mIntimeCosmic;
     }
 
-    fROC.Fill(fCuts, *fRecoEvent);
+    fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
 
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
       if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==1) { // kBeamNeutrino
@@ -246,13 +263,12 @@ namespace SBNOsc {
       std::cout << "Scale Neutrino: " << fNormalize.ScaleNeutrino(1.e20) << std::endl;
       std::cout << "Scale Cosmic: " << fNormalize.ScaleCosmic(1.e20) << std::endl;
 
-      fNeutrinoHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
+      fHistograms.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCosmicHistograms.Scale(fNormalize.ScaleCosmic(fGoalPOT));
 
       fCRTCosmicHistos.Scale(fNormalize.ScaleNeutrino(fGoalPOT));
       fCRTNeutrinoHistos.Scale(fNormalize.ScaleCosmic(fGoalPOT));
 
-      fHistograms.Add(fNeutrinoHistograms);
       fHistograms.Add(fCosmicHistograms);
       fROC.Normalize(fNormalize.ScaleNeutrino(fGoalPOT), fNormalize.ScaleCosmic(fGoalPOT));  
     }

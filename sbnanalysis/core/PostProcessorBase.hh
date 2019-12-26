@@ -16,6 +16,7 @@
 #include "Event.hh"
 #include "SubRun.hh"
 #include "ProviderManager.hh"
+#include "FileMeta.hh"
 
 class TBranch;
 class TFile;
@@ -70,6 +71,8 @@ protected:
 
   virtual void ProcessSubRun(const SubRun *subrun) {}
 
+  virtual void ProcessFileMeta(const FileMeta *filemeta) {}
+
   /**
    * Setup anything needed per file
    *
@@ -103,6 +106,8 @@ protected:
   event::Event* fEvent;
   TTree* fEventTree;
 
+  FileMeta* fFileMeta;
+  TTree* fFileMetaTree;
   SubRun* fSubRun;
   TTree* fSubRunTree;
   ProviderManager* fProviderManager;  //!< Interface for provider access

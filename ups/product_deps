@@ -1,8 +1,8 @@
 # This @product_deps@ file defines dependencies for this package. 
 
 # The *parent* line must the first non-commented line and defines this product and version
-# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v08_30_01
+# The version should be of the form vxx_yy_zz (e.g. v02_02_03)
+parent sbncode v08_36_01
 defaultqual e17
 
 # These optional lines define the installed directories where headers,
@@ -35,10 +35,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-sbndcode         v08_30_01
-uboonecode       v08_30_01
-icaruscode       v08_30_01
-ubcore           v08_30_01
+sbndcode         v08_36_01_3_MCP2_0
+uboonecode       v08_36_01
+icaruscode       v08_36_01
+ubcore           v08_36_01
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers

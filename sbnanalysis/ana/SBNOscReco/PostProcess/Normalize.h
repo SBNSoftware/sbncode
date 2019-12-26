@@ -4,6 +4,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "core/Event.hh"
 #include "core/SubRun.hh"
+#include "core/FileMeta.hh"
 
 namespace ana {
 namespace SBNOsc {
@@ -36,6 +37,8 @@ public:
  * \param subrun The sbncode core Subrun information
  */
   void AddNeutrinoSubRun(const SubRun &subrun);
+
+  void AddCosmicFile(const FileMeta &meta);
 
   /**
  * Scale the neutrino events to a certain POT. To be called after all events are processed

@@ -234,6 +234,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.RecoSliceTag = config->get<std::string>("RecoSliceTag", "pandora");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
     _config.PFParticleTag = config->get<std::string>("PFParticleTag", "pandora");
+    _config.FlashMatchTag = config->get<std::string>("FlashMatchTag ", "fmatch");
     _config.CaloTag = config->get<std::string>("CaloTag", "pandoraCalo");
     _config.PIDTag = config->get<std::string>("PIDTag", "pandoraPid");
     _config.CorsikaTag = config->get<std::string>("CorsikaTag", "cosmgen");
@@ -1034,9 +1035,6 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
 void NumuReco::ApplyCosmicID(numu::RecoTrack &track) {
   const art::Ptr<recob::Track> &pfp_track = _tpc_tracks[track.ID];
 
-  // do Flash Matching
-  track.flash_match = FlashMatching(*pfp_track, track);
-  
   // do CRT matching
   track.crt_match = CRTMatching(track, *pfp_track, _tpc_tracks_to_hits.at(track.ID));
   
@@ -1234,6 +1232,23 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
     // now get information from particles which are tracks
     slice_ret.tracks = RecoSliceTracks(reco_tracks, slice_ret.particles);
 
+    std::cout << "Primary index: " << slice_ret.primary_index << std::endl;
+    std::cout << "Is primary: " << _tpc_particles[slice_ret.primary_index]->IsPrimary() << std::endl;
+    if (_tpc_particles_to_flashT0.size() && _tpc_particles_to_flashT0.at(slice_ret.primary_index).size()) {
+      const anab::T0 &fmatch = *_tpc_particles_to_flashT0.at(slice_ret.primary_index).at(0);
+      slice_ret.flash_match.present = true;
+      slice_ret.flash_match.time = fmatch.Time(); 
+      slice_ret.flash_match.score = fmatch.TriggerConfidence();
+      slice_ret.flash_match.pe = fmatch.TriggerType();
+      std::cout << "Match time: " << slice_ret.flash_match.time << std::endl;
+      std::cout << "Match score: " << slice_ret.flash_match.score << std::endl;
+      std::cout << "Match PE: " << slice_ret.flash_match.pe << std::endl;
+    }
+    else {
+      slice_ret.flash_match.present = false;
+      std::cout << "No match :(\n";
+    }
+
     // throw away slices which do not have a primary track candidate
     if (!HasPrimaryTrack(reco_tracks, slice_ret)) continue;
     
@@ -1292,6 +1307,7 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
   _tpc_particles_to_vertex.clear();
   _tpc_particles_to_daughters.clear();
   _tpc_particles_to_metadata.clear();
+  _tpc_particles_to_flashT0.clear();
 
   for (const std::string &suffix: _config.TPCRecoTagSuffixes) {
     // Offset to convert a pandora particle ID to a NumuReco particle ID
@@ -1359,6 +1375,17 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
     art::FindManyP<anab::T0> particle_to_T0(particle_handle, ev, _config.PFParticleTag + suffix);
     for (unsigned i = 0; i < particle_handle->size(); i++) {
       _tpc_particles_to_T0.push_back(particle_to_T0.at(i));
+    }
+
+    gallery::Handle<art::Assns<recob::PFParticle,anab::T0,void>> assns_check;
+    ev.getByLabel(_config.FlashMatchTag + suffix, assns_check);
+    if (assns_check.isValid()) {
+      // particle to flash match
+      art::FindManyP<anab::T0> particle_to_flash(particle_handle, ev, _config.FlashMatchTag + suffix);
+      for (unsigned i = 0; i < particle_handle->size(); i++) {
+        assert(particle_to_flash.at(i).size() == 0 || particle_to_flash.at(i).size() == 1);
+        _tpc_particles_to_flashT0.push_back(particle_to_flash.at(i));
+      }
     }
 
     // particle to vertex
@@ -1456,12 +1483,13 @@ numu::CRTMatch NumuReco::CRTMatching(
   // try to match a hit
   std::pair<sbnd::crt::CRTHit, double> hit_pair = std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
   if (_has_crt_hits) {
-    if (_config.CRTHitinOpHitRange && track.flash_match.present) {
-      const numu::FlashMatch &match = track.flash_match;
-      double time_width = (match.match_time_width + _config.CRT2OPTimeWidth) / 2;
+    numu::FlashMatch flash_match; // TODO: fix
+    if (_config.CRTHitinOpHitRange && flash_match.present) {
+      const numu::FlashMatch &match = flash_match;
+      double time_width = (_config.CRT2OPTimeWidth) / 2;
       std::pair<double, double> time_range; 
-      time_range.first = match.match_time_first - time_width;
-      time_range.second = match.match_time_first + time_width;
+      time_range.first = match.time - time_width;
+      time_range.second = match.time + time_width;
       int drift_dir = sbnd::TPCGeoUtil::DriftDirectionFromHits(fProviderManager->GetGeometryProvider(), hits);
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
     }
@@ -1547,8 +1575,7 @@ numu::FlashMatch NumuReco::FlashMatching(
       if (match_pe > 0) {
         double match_time = average / match_pe;
         numu::FlashMatch match;
-        match.match_time = match_time;
-        match.match_time_first = min_time;
+        match.time = min_time;
         return match;
       }
     }
@@ -1644,9 +1671,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
     double tick_period = fProviderManager->GetDetectorClocksProvider()->OpticalClock().TickPeriod();
     int threshold = _config.PMTTriggerThreshold; 
     bool is_sbnd = fExperimentID == kExpSBND;
-    std::pair<double, double> window; //  = (is_sbnd) ? {0., 1.6} : {1500., 1501.6};
-    if (is_sbnd) window = {0., 1.6};
-    else window = {1500., 1501.6};
+    std::pair<double, double> window;
+    if (is_sbnd) window = {0., 2.}; // go out to 0.4us past end of beam gate
+    else window = {1500., 1502.};
     event.flash_trigger_primitives = numu::TriggerPrimitives(*waveforms, tick_period, window, threshold, is_sbnd);
   }
 

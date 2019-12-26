@@ -13,8 +13,8 @@ PFParticleTag: "pandoraGaus"
 RecoSliceTag: "pandoraGaus"
 RecoVertexTag: "pandoraGaus"
 RecoTrackTag: "pandoraTrackGaus"
-CaloTag: "pandoraGausCalo"
-PIDTag: "pandoraGausPid"
+CaloTag: "pandoraGausReCalo"
+PIDTag: "pandoraGausRePid"
 CRTHitTag: "crtsimhit"
 
 NumuReco: {

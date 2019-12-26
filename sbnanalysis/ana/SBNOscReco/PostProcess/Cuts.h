@@ -16,8 +16,8 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 10; //!< total number of cuts
-  static const unsigned nTruthCuts = 5; //!< Total number of truth cuts
+  static const unsigned nCuts = 11; //!< total number of cuts
+  static const unsigned nTruthCuts = 6; //!< Total number of truth cuts
   /**
  * Initialize this class.
  * \param cfg fhicl configuration for the class
@@ -34,7 +34,7 @@ public:
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, 
 					  unsigned reco_vertex_index, 
-					  bool fSequentialCuts = false) const;
+					  bool fSequentialCuts = true) const;
 
   /**
  * Process each cut associated with true events
@@ -44,7 +44,8 @@ public:
  * \return A list of bool's of whether the true event passes each cut
  */
   std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, 
-						unsigned truth_vertex_index) const;
+						unsigned truth_vertex_index,
+                                                bool SequentialCuts=true) const;
 
   /**
  * Select a reco event based on the cut values provided by ProcessRecoCuts
@@ -115,6 +116,11 @@ public:
   
   bool PassFlashTrigger(const numu::RecoEvent &event) const;
 
+  static constexpr std::array<const char *, nTruthCuts> truthCutNames = { "Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"};
+  static constexpr std::array<const char *, nCuts> cutNames =
+      {"Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch", 
+       "R_crttrack", "R_crthit", "R_crtactive", "R_contained", "R_length"};
+
 private:
   struct VolYZ {
     std::array<double, 2> Y;
@@ -132,11 +138,14 @@ private:
     float TrackLength;
     float MCSTrackLength;
     float CRTActivityPEThreshold;
+    std::vector<std::string> CutOrder;
+    std::vector<std::string> TruthCutOrder;
     std::vector<geo::BoxBoundedGeo> fiducial_volumes;
     std::vector<VolYZ> cosmic_containment_volumes;
     std::vector<geo::BoxBoundedGeo> active_volumes;
     std::vector<geo::BoxBoundedGeo> calorimetric_containment_volumes;
     bool TruthFlashMatch;
+    float FlashMatchScore;
     int PMTTriggerTreshold;
     unsigned PMTNAboveThreshold;
   };

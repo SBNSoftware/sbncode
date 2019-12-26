@@ -47,10 +47,6 @@ public:
 
   /** Finalize and write objects to the output file. */
   void Finalize() {
-    fOutputFile->cd();
-    for (TGraph *plot: plots) {
-      plot->Write();
-    }
   }
 
   /**
@@ -100,11 +96,17 @@ public:
       std::cout << std::endl;
     }
 
+    std::vector<TGraph *> plots;
     for (auto &plot_info: waveform_plots) {
       TGraph *plot = new TGraph(plot_info.second.first.size(), &plot_info.second.first[0], &plot_info.second.second[0]);
       plot->SetName((std::string("Waveform ch: ") + std::to_string(plot_info.first) + " ev: " + std::to_string(event_ind)).c_str());
       plot->SetTitle((std::string("Waveform ch: ") + std::to_string(plot_info.first) + " ev: " + std::to_string(event_ind)).c_str());
       plots.push_back(plot);
+    }
+    fOutputFile->cd();
+    for (TGraph *plot: plots) {
+      plot->Write();
+      delete plot;
     }
     event_ind += 1;
 
@@ -115,7 +117,6 @@ protected:
   std::string fOpDetWaveformTag;
   float clock_freq;
   unsigned event_ind;
-  std::vector<TGraph *> plots;
 };
 
   }  // namespace SBNOsc

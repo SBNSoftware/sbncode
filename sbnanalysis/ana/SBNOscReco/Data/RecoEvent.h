@@ -11,6 +11,7 @@
 #include "ana/SBNOscReco/Data/TruthMatch.h"
 #include "ana/SBNOscReco/Data/DetInfo.h"
 #include "ana/SBNOscReco/Data/MCType.h"
+#include "ana/SBNOscReco/Data/FlashMatch.h"
 
 namespace numu {
 
@@ -25,6 +26,7 @@ struct RecoSlice {
   int primary_track_index; //!< Index of the primary track
   std::map<size_t, RecoParticle> particles; //!< Map of particle index to particle information
   std::vector<size_t> tracks; //!< List of track indices contained in this slice
+  FlashMatch flash_match; //!< Result of flash matching algorithm on this slice
 };
 
 
