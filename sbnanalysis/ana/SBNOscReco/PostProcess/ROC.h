@@ -3,9 +3,8 @@
 
 #include <vector>
 
-#include "TH1D.h"
-
 #include "../Data/RecoEvent.h"
+#include "../MultiThread/THShared.h"
 
 #include "Cuts.h"
 
@@ -41,10 +40,10 @@ namespace ana {
       ~Primitive();
 
       std::string name;
-      TH1D *signal;
-      unsigned n_signal;
-      TH1D *background;
-      unsigned n_background;
+      TH1Shared signal;
+      std::atomic<double> n_signal;
+      TH1Shared background;
+      std::atomic<double> n_background;
     };
 
     struct NormalizedPrimitive {

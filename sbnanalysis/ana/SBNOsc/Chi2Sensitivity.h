@@ -26,7 +26,7 @@ class Chi2Sensitivity: public core::PostProcessorBase {
         Chi2Sensitivity() {}
         // Implement post-processor
         void Initialize(fhicl::ParameterSet* config);
-        void ProcessEvent(const event::Event* event);
+        void ProcessEvent(const event::Event* event, unsigned thread_index);
         void ProcessSubRun(const SubRun *subrun);
         void FileCleanup(TTree* eventTree);
 

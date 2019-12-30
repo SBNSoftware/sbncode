@@ -69,44 +69,47 @@ void ana::SBNOsc::ROC::NormalizedPrimitive::Initialize(const std::string &this_n
 }
 
 void ana::SBNOsc::ROC::Primitive::Initialize(const std::string &this_name, float cut_low, float cut_high, unsigned n_bin) {
-  signal = new TH1D((this_name + "signal").c_str(), this_name.c_str(), n_bin, cut_low, cut_high);
-  background = new TH1D((this_name + "background").c_str(), this_name.c_str(), n_bin, cut_low, cut_high);
+  signal = TH1Shared(new TH1D((this_name + "signal").c_str(), this_name.c_str(), n_bin, cut_low, cut_high));
+  background = TH1Shared(new TH1D((this_name + "background").c_str(), this_name.c_str(), n_bin, cut_low, cut_high));
   n_signal = 0;
   n_background = 0;
   name = this_name;
 }
 
+#define FILL(hist, val) hist.Fill(val);
 void ana::SBNOsc::ROC::Primitive::Fill(bool is_signal, float value) {
-  TH1D *hist = is_signal ? signal : background;
+  TH1Shared &hist = is_signal ? signal : background;
   unsigned bin = 1;
-  while (bin <= hist->GetNbinsX() && value > hist->GetXaxis()->GetBinCenter(bin)) {
-    hist->Fill(hist->GetXaxis()->GetBinCenter(bin));
+  while (bin <= hist.Get()->GetNbinsX() && value > hist.Get()->GetXaxis()->GetBinCenter(bin)) {
+    FILL(hist, hist.Get()->GetXaxis()->GetBinCenter(bin));
     bin += 1;
   }
-  n_signal += is_signal;
-  n_background += !is_signal;
+  if (is_signal) for (double g = n_signal; !n_signal.compare_exchange_strong(g, g + 1.0););
+  else           for (double g = n_background; !n_background.compare_exchange_strong(g, g + 1.0););
 }
 
 void ana::SBNOsc::ROC::Primitive::FillNever(bool is_signal) {
-  TH1D *hist = is_signal ? signal : background;
+  TH1Shared &hist = is_signal ? signal : background;
   unsigned bin = 1;
-  for (unsigned bin = 1; bin <= hist->GetNbinsX(); bin++) {
-    hist->Fill(hist->GetXaxis()->GetBinCenter(bin));
+  for (unsigned bin = 1; bin <= hist.Get()->GetNbinsX(); bin++) {
+    FILL(hist, hist.Get()->GetXaxis()->GetBinCenter(bin));
   }
-  n_signal += is_signal;
-  n_background += !is_signal;
+  if (is_signal) for (double g = n_signal; !n_signal.compare_exchange_strong(g, g + 1.0););
+  else           for (double g = n_background; !n_background.compare_exchange_strong(g, g + 1.0););
 }
+#undef FILL
 
 void ana::SBNOsc::ROC::Primitive::FillAlways(bool is_signal) {
-  n_signal += is_signal;
-  n_background += !is_signal;
+  if (is_signal) for (double g = n_signal; !n_signal.compare_exchange_strong(g, g + 1.0););
+  else           for (double g = n_background; !n_background.compare_exchange_strong(g, g + 1.0););
 }
 
 void ana::SBNOsc::ROC::Primitive::Scale(float scale) {
-  signal->Scale(scale);
-  background->Scale(scale);
-  n_signal *= scale;
-  n_background *= scale;
+  signal.Get()->Scale(scale);
+  background.Get()->Scale(scale);
+  // WARNING: not thread safe
+  n_signal.store(n_signal.load() * scale);
+  n_background.store(n_background.load() * scale);
 }
 
 float ana::SBNOsc::ROC::NormalizedPrimitive::Normalize(float scale_neutrino, float scale_cosmic) {
@@ -115,19 +118,19 @@ float ana::SBNOsc::ROC::NormalizedPrimitive::Normalize(float scale_neutrino, flo
 }
 
 float ana::SBNOsc::ROC::NormalizedPrimitive::Signal(unsigned bin) const {
-  return fNeutrino.signal->GetBinContent(bin) + fCosmic.signal->GetBinContent(bin);
+  return fNeutrino.signal.Get()->GetBinContent(bin) + fCosmic.signal.Get()->GetBinContent(bin);
 }
 
 float ana::SBNOsc::ROC::NormalizedPrimitive::Background(unsigned bin) const {
-  return fNeutrino.background->GetBinContent(bin) + fCosmic.background->GetBinContent(bin);
+  return fNeutrino.background.Get()->GetBinContent(bin) + fCosmic.background.Get()->GetBinContent(bin);
 }
 
 unsigned ana::SBNOsc::ROC::NormalizedPrimitive::NCutVals() const {
-  return fNeutrino.signal->GetNbinsX();
+  return fNeutrino.signal.Get()->GetNbinsX();
 }
 
 float ana::SBNOsc::ROC::NormalizedPrimitive::GetCutVal(unsigned bin) const {
-  return fNeutrino.signal->GetBinCenter(bin);
+  return fNeutrino.signal.Get()->GetBinCenter(bin);
 }
 
 float ana::SBNOsc::ROC::NormalizedPrimitive::NSignal() const {
@@ -169,13 +172,6 @@ void ana::SBNOsc::ROC::NormalizedPrimitive::Write() const {
   ROC->SetTitle(name.c_str());
   ROC->SetName(name.c_str());
   ROC->Write();
-
-  delete ROC;
 }
 
-ana::SBNOsc::ROC::Primitive::~Primitive() {
-  delete signal;
-  delete background;
-}
-
-
+ana::SBNOsc::ROC::Primitive::~Primitive() {}

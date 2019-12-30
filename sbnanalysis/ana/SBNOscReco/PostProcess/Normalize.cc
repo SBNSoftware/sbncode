@@ -16,14 +16,12 @@ void ana::SBNOsc::Normalize::Initialize(const fhicl::ParameterSet &fcl) {
   fNCosmicEvents = 0;
 }
 
-void ana::SBNOsc::Normalize::AddCosmicFile(const FileMeta &meta) {
-  fNCosmicEvents += meta.n_gen_events;  
+void ana::SBNOsc::Normalize::AddNeutrinoFile(const FileMeta &meta) {
+  fNNeutrinoEvents += meta.n_gen_events;
 }
 
-void ana::SBNOsc::Normalize::AddCosmicEvent(const event::Event &event) {}
-
-void ana::SBNOsc::Normalize::AddNeutrinoEvent(const event::Event &event) {
-  fNNeutrinoEvents ++;
+void ana::SBNOsc::Normalize::AddCosmicFile(const FileMeta &meta) {
+  fNCosmicEvents += meta.n_gen_events;  
 }
 
 void ana::SBNOsc::Normalize::AddNeutrinoSubRun(const SubRun &subrun) {

@@ -8,16 +8,22 @@
 #include <core/PostProcessorBase.hh>
 #include <core/Loader.hh>
 
+#include <TROOT.h>
+
 int main(int argc, char* argv[]) {
   // Parse command line arguments
   char *post_processor = NULL;
   char *config_name = NULL; // optional
   std::string output_fname = "";
+  unsigned n_threads = 1;
 
   int c;
   unsigned procindex = 0;
-  while ((c=getopt(argc, argv, "m:c:o:")) != -1) {
+  while ((c=getopt(argc, argv, "m:c:o:t:")) != -1) {
     switch (c) {
+      case 't':
+        n_threads = std::stoi(optarg);
+        break;
       case 'm':
         if (post_processor != NULL) {
           fprintf(stderr, "Only specify one post-processor.\n");
@@ -81,7 +87,10 @@ int main(int argc, char* argv[]) {
   std::cout << "Configuring... " << std::endl;
   core::export_table_postprocess *exp = core::LoadPostProcessor(post_processor);
   core::PostProcessorBase *proc = exp->create();
-  proc->Initialize(config_name, output_fname);
+  proc->Initialize(config_name, output_fname, n_threads);
+
+  // enable multi-threading (maybe)
+  ROOT::EnableImplicitMT(n_threads);
 
   // Run
   std::cout << "Running... " << std::endl;

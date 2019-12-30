@@ -9,11 +9,9 @@
 
 #include "../Data/RecoEvent.h"
 #include "HistoList.h"
+#include "../MultiThread/THShared.h"
 
 #include "TFile.h"
-
-class TH1D;
-class TH2D;
 
 namespace ana {
  namespace SBNOsc {
@@ -39,9 +37,9 @@ struct CRTHistos : public HistoList {
   void Get(TFile &f, const std::string &postfix);
 
 public:
-  TH2D *crt_hits_xy;
-  TH2D *crt_hits_xz;
-  TH2D *crt_hits_yz;
+  TH2Shared crt_hits_xy;
+  TH2Shared crt_hits_xz;
+  TH2Shared crt_hits_yz;
 };
   } // namespace SBNOSc
 } // namespace ana

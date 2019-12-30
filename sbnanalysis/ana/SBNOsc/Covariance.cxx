@@ -148,7 +148,10 @@ void Covariance::ProcessSubRun(const SubRun *subrun) {
   fEventSamples[fSampleIndex].fPOT += subrun->totgoodpot;
 }
 
-void Covariance::ProcessEvent(const event::Event *event) {
+void Covariance::ProcessEvent(const event::Event *event, unsigned thread_index) {
+    // not multi-threaded
+    assert(thread_index == 0);
+
     // iterate over each interaction in the event
     for (int n = 0; n < event->reco.size(); n++) {
         unsigned truth_ind = event->reco[n].truth_index;

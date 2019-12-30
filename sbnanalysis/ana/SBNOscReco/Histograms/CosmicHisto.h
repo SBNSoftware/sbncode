@@ -9,11 +9,10 @@
 
 #include "../Data/RecoTrack.h"
 #include "../Data/Mode.h"
+#include "../MultiThread/THShared.h"
 
 #include "HistoList.h"
 
-class TH1D;
-class TH2D;
 namespace ana {
  namespace SBNOsc {
 
@@ -23,12 +22,12 @@ namespace ana {
  */
 struct CosmicHistos : public HistoList {
 
-  TH1D *momentum;
-  TH1D *enter_time;
-  TH1D *enter_time_zoom;
-  TH1D *enter_y;
-  TH1D *enter_x;
-  TH1D *enter_z;
+  TH1Shared momentum;
+  TH1Shared enter_time;
+  TH1Shared enter_time_zoom;
+  TH1Shared enter_y;
+  TH1Shared enter_x;
+  TH1Shared enter_z;
 
   /**
  *  Intialize the histograms

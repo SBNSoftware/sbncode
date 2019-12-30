@@ -10,6 +10,7 @@
 #include "../Data/RecoEvent.h"
 #include "../Data/RecoTrack.h"
 #include "../Data/Mode.h"
+#include "../MultiThread/THShared.h"
 
 #include "HistoList.h"
 
@@ -24,37 +25,37 @@ namespace ana {
  */
 struct InteractionHistos : public HistoList {
 
-  TH1D *track_length; //!< Length of the reconstructed primary track
-  TH1D *nuE; //!< Neutrino energy
-  TH1D *track_p; //!< Primary track momentum
-  TH1D *true_deposited_energy; //!< Deposited energy of true track
-  TH1D *beam_center_distance; //!< Distance of the neutrino interaction to the beam center
-  TH1D *Q2; //!< Q2 of the interaction
-  TH1D *true_contained_length; //!< True contained length of primary track
-  TH1D *true_track_multiplicity; //!< True particle multiplicity of the interaction
-  TH1D *crosses_tpc; //!< Whether the primary track crosses a TPC boundary
-  TH1D *dist_to_match; //!< Distance from this vertex to the closest matching vertex reco->truth and truth->reco
-  TH1D *primary_track_completion; //!< Completion of the primary track
-  TH1D *n_reco_vertices; //!< Number of reconstructed vertices in the event with this vertex
-  TH1D *maxpe_crt_intime_hit; //!< Maximum number of PE's in a single CRT hit in time with the beam
-  TH1D *crt_hit_times;
-  TH1D *closest_crt_hit_time;
-  TH1D *crt_pes;
-  TH1D *fmatch_score;
-  TH2D *fmatch_score_true_time;
-  TH2D *fmatch_score_true_time_zoom;
-  TH1D *fmatch_score_outtime;
-  TH1D *fmatch_score_intime;
-  TH2D *fmatch_time_true_time_zoom;
-  TH1D *fmatch_time;
-  TH1D *fmatch_time_real_time;
-  TH2D *intime_crt_hits_xy;
-  TH2D *intime_crt_hits_xz;
-  TH2D *intime_crt_hits_yz;
-  TH2D *vertex_xy;
-  TH2D *vertex_yz;
-  TH2D *vertex_xz;
-  TH2D *light_trigger;
+  TH1Shared track_length; //!< Length of the reconstructed primary track
+  TH1Shared nuE; //!< Neutrino energy
+  TH1Shared track_p; //!< Primary track momentum
+  TH1Shared true_deposited_energy; //!< Deposited energy of true track
+  TH1Shared beam_center_distance; //!< Distance of the neutrino interaction to the beam center
+  TH1Shared Q2; //!< Q2 of the interaction
+  TH1Shared true_contained_length; //!< True contained length of primary track
+  TH1Shared true_track_multiplicity; //!< True particle multiplicity of the interaction
+  TH1Shared crosses_tpc; //!< Whether the primary track crosses a TPC boundary
+  TH1Shared dist_to_match; //!< Distance from this vertex to the closest matching vertex reco->truth and truth->reco
+  TH1Shared primary_track_completion; //!< Completion of the primary track
+  TH1Shared n_reco_vertices; //!< Number of reconstructed vertices in the event with this vertex
+  TH1Shared maxpe_crt_intime_hit; //!< Maximum number of PE's in a single CRT hit in time with the beam
+  TH1Shared crt_hit_times;
+  TH1Shared closest_crt_hit_time;
+  TH1Shared crt_pes;
+  TH1Shared fmatch_score;
+  TH2Shared fmatch_score_true_time;
+  TH2Shared fmatch_score_true_time_zoom;
+  TH1Shared fmatch_score_outtime;
+  TH1Shared fmatch_score_intime;
+  TH2Shared fmatch_time_true_time_zoom;
+  TH1Shared fmatch_time;
+  TH1Shared fmatch_time_real_time;
+  TH2Shared intime_crt_hits_xy;
+  TH2Shared intime_crt_hits_xz;
+  TH2Shared intime_crt_hits_yz;
+  TH2Shared vertex_xy;
+  TH2Shared vertex_yz;
+  TH2Shared vertex_xz;
+  TH2Shared light_trigger;
 
   /**
  *  Intialize the histograms

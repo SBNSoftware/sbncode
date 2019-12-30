@@ -7,8 +7,8 @@ namespace ana {
   namespace SBNOsc {
 
 void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length) {
-#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
-#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); fAllHistos.push_back(name)
+#define TRACK_HISTO(name, n_bins, lo, hi)    name = TH1Shared(new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi)); fAllHistos.push_back(name.Get())
+#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = TH2Shared(new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y)); fAllHistos.push_back(name.Get())
 
   TRACK_HISTO(chi2_muon_diff, 100, 0., 1000.);
   TRACK_HISTO(chi2_proton_diff, 100, 0, 1000);
@@ -95,81 +95,82 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
 void TrackHistos::Fill(
     const numu::RecoTrack &track, 
     const std::map<size_t, numu::RecoTrack> &true_tracks) {
+#define FILL(hist, x) hist.Fill(x)
+#define FILL2D(hist, x, y) hist.Fill(x, y)
 
   // Primary track histos
   if (track.min_chi2 > 0) {
-    chi2_proton_diff->Fill(track.chi2_proton - track.min_chi2);
-    chi2_muon_diff->Fill(track.chi2_muon - track.min_chi2);
-    chi2_pion_diff->Fill(track.chi2_pion - track.min_chi2);
-    chi2_kaon_diff->Fill(track.chi2_kaon - track.min_chi2);
+    FILL(chi2_proton_diff, track.chi2_proton - track.min_chi2);
+    FILL(chi2_muon_diff, track.chi2_muon - track.min_chi2);
+    FILL(chi2_pion_diff, track.chi2_pion - track.min_chi2);
+    FILL(chi2_kaon_diff, track.chi2_kaon - track.min_chi2);
 
-    chi2_muon->Fill(track.chi2_muon/track.pid_n_dof);
-    chi2_kaon->Fill(track.chi2_kaon/track.pid_n_dof);
-    chi2_pion->Fill(track.chi2_pion/track.pid_n_dof);
-    chi2_proton->Fill(track.chi2_proton/track.pid_n_dof);
-
-    chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
+    FILL(chi2_muon, track.chi2_muon/track.pid_n_dof);
+    FILL(chi2_kaon, track.chi2_kaon/track.pid_n_dof);
+    FILL(chi2_pion, track.chi2_pion/track.pid_n_dof);
+    FILL(chi2_proton, track.chi2_proton/track.pid_n_dof);
+    FILL(chi2_proton_m_muon, track.chi2_proton - track.chi2_muon);
 
     bool is_proton_reco = track.chi2_proton < track.chi2_muon;
     if (track.match.has_match) {
       bool is_proton_true = abs(track.match.match_pdg) == 2212;
       bool is_muon_true = abs(track.match.match_pdg) == 13;
       if (is_proton_true || is_muon_true) {
-        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
+        FILL2D(pid_confusion_tr, is_proton_true, is_proton_reco);
       }
     }
   }
 	  
-  range_p->Fill(track.range_momentum); 
-  mcs_p->Fill(track.mcs_momentum);
-  deposited_e_max->Fill(track.deposited_energy_max);
+  FILL(range_p, track.range_momentum);
+  FILL(mcs_p, track.mcs_momentum);
+  FILL(deposited_e_max, track.deposited_energy_max);
   
-  length->Fill(track.length);
+  FILL(length, track.length);
 
-  reco_momentum->Fill(track.momentum);
-  is_contained->Fill(track.is_contained);
+  FILL(reco_momentum, track.momentum);
+  FILL(is_contained, track.is_contained);
 
   //dQdx_length->Fill(track.mean_trucated_dQdx, track.length);
 
-  if (std::min(abs(track.start.Y() - border_y->GetBinLowEdge(1)), 
-               abs(track.start.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))
-   <  std::min(abs(track.end.Y() - border_y->GetBinLowEdge(1)), 
-               abs(track.end.Y() - (border_y->GetBinLowEdge(border_y->GetNbinsX()) + border_y->GetBinWidth(border_y->GetNbinsX()))))) {
-    border_y->Fill(track.start.Y());
+  if (std::min(abs(track.start.Y() - border_y.Get()->GetBinLowEdge(1)), 
+               abs(track.start.Y() - (border_y.Get()->GetBinLowEdge(border_y.Get()->GetNbinsX()) + border_y.Get()->GetBinWidth(border_y.Get()->GetNbinsX()))))
+   <  std::min(abs(track.end.Y() - border_y.Get()->GetBinLowEdge(1)), 
+               abs(track.end.Y() - (border_y.Get()->GetBinLowEdge(border_y.Get()->GetNbinsX()) + border_y.Get()->GetBinWidth(border_y.Get()->GetNbinsX()))))) {
+    FILL(border_y, track.start.Y());
   }
   else {
-    border_y->Fill(track.end.Y());
+    FILL(border_y, track.end.Y());
   }
 
-  if (std::min(abs(track.start.X() - border_x->GetBinLowEdge(1)), 
-               abs(track.start.X() - (border_x->GetBinLowEdge(border_x->GetNbinsX()) + border_x->GetBinWidth(border_x->GetNbinsX()))))
-   <  std::min(abs(track.end.X() - border_x->GetBinLowEdge(1)), 
-               abs(track.end.X() - (border_x->GetBinLowEdge(border_x->GetNbinsX()) + border_x->GetBinWidth(border_x->GetNbinsX()))))) {
-    border_x->Fill(track.start.X());
+  if (std::min(abs(track.start.X() - border_x.Get()->GetBinLowEdge(1)), 
+               abs(track.start.X() - (border_x.Get()->GetBinLowEdge(border_x.Get()->GetNbinsX()) + border_x.Get()->GetBinWidth(border_x.Get()->GetNbinsX()))))
+   <  std::min(abs(track.end.X() - border_x.Get()->GetBinLowEdge(1)), 
+               abs(track.end.X() - (border_x.Get()->GetBinLowEdge(border_x.Get()->GetNbinsX()) + border_x.Get()->GetBinWidth(border_x.Get()->GetNbinsX()))))) {
+    FILL(border_x, track.start.X());
   }
   else {
-    border_x->Fill(track.end.X());
+    FILL(border_x, track.end.X());
   }
 
-  if (std::min(abs(track.start.Z() - border_z->GetBinLowEdge(1)), 
-               abs(track.start.Z() - (border_z->GetBinLowEdge(border_z->GetNbinsX()) + border_z->GetBinWidth(border_z->GetNbinsX()))))
-   <  std::min(abs(track.end.Z() - border_z->GetBinLowEdge(1)), 
-               abs(track.end.Z() - (border_z->GetBinLowEdge(border_z->GetNbinsX()) + border_z->GetBinWidth(border_z->GetNbinsX()))))) {
-    border_z->Fill(track.start.Z());
+  if (std::min(abs(track.start.Z() - border_z.Get()->GetBinLowEdge(1)), 
+               abs(track.start.Z() - (border_z.Get()->GetBinLowEdge(border_z.Get()->GetNbinsX()) + border_z.Get()->GetBinWidth(border_z.Get()->GetNbinsX()))))
+   <  std::min(abs(track.end.Z() - border_z.Get()->GetBinLowEdge(1)), 
+               abs(track.end.Z() - (border_z.Get()->GetBinLowEdge(border_z.Get()->GetNbinsX()) + border_z.Get()->GetBinWidth(border_z.Get()->GetNbinsX()))))) {
+    FILL(border_z, track.start.Z());
   }
   else {
-    border_z->Fill(track.end.Z());
+    FILL(border_z, track.end.Z());
   }
 
-  has_crt_hit_match->Fill(track.crt_match.hit_match.present);
-  has_crt_track_match->Fill(track.crt_match.track.present);
+  FILL(has_crt_hit_match, track.crt_match.hit_match.present);
+  FILL(has_crt_track_match, track.crt_match.track.present);
   if (track.crt_match.track.present) {
-    crt_match_time->Fill(track.crt_match.track.time);
-    crt_track_angle->Fill(track.crt_match.track.angle);
+    FILL(crt_match_time, track.crt_match.track.time);
+    FILL(crt_track_angle, track.crt_match.track.angle);
   }
   else if (track.crt_match.hit_match.present) {
-    crt_match_time->Fill(track.crt_match.hit_match.time);
-    crt_hit_distance->Fill(track.crt_match.hit_match.distance);
+    FILL(crt_match_time, track.crt_match.hit_match.time);
+    FILL(crt_hit_distance, track.crt_match.hit_match.distance);
   }
 
   /*
@@ -189,41 +190,43 @@ void TrackHistos::Fill(
   // check if truth match
   if (track.match.has_match && track.match.mcparticle_id >= 0) {
     const numu::RecoTrack &true_track = true_tracks.at(track.match.mcparticle_id);
-    range_p_minus_truth->Fill((track.range_momentum - true_track.momentum) / true_track.momentum);
-    mcs_p_minus_truth->Fill((track.mcs_momentum - true_track.momentum) / true_track.momentum);
- 
-    range_p_minus_truth_length->Fill(track.length, (track.range_momentum - true_track.momentum) / true_track.momentum); 
-    mcs_p_minus_truth_length->Fill(track.length, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+    FILL(range_p_minus_truth, (track.range_momentum - true_track.momentum) / true_track.momentum);
+    FILL(mcs_p_minus_truth, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
 
-    deposited_e_max_minus_truth->Fill(track.deposited_energy_max - true_track.energy);
-    deposited_e_avg_minus_truth->Fill(track.deposited_energy_avg - true_track.energy);
-    deposited_e_med_minus_truth->Fill(track.deposited_energy_med - true_track.energy);
+    FILL2D(range_p_minus_truth_length, track.length, (track.range_momentum - true_track.momentum) / true_track.momentum);
+    FILL2D(mcs_p_minus_truth_length, track.length, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+
+    FILL(deposited_e_max_minus_truth, track.deposited_energy_max - true_track.energy);
+    FILL(deposited_e_avg_minus_truth, track.deposited_energy_avg - true_track.energy);
+    FILL(deposited_e_med_minus_truth, track.deposited_energy_med - true_track.energy);
     
     //range_p_diff->Fill(true_track.momentum, track.range_momentum - true_track.momentum);
     //mcs_p_diff->Fill(true_track.momentum, track.mcs_momentum - true_track.momentum);
     // deposited_e_max_diff->Fill(true_track.energy, track.deposited_energy_max - true_track.energy);
     
-    range_p_comp->Fill(true_track.momentum, track.range_momentum);
-    mcs_p_comp->Fill(true_track.momentum, track.mcs_momentum);
+    FILL2D(range_p_comp, true_track.momentum, track.range_momentum);
+    FILL2D(mcs_p_comp, true_track.momentum, track.mcs_momentum);
     // deposited_e_max_comp->Fill(true_track.energy, track.deposited_energy_max);
 
-    completion->Fill(track.match.completion);
+    FILL(completion, track.match.completion);
 
-    wall_enter->Fill(true_track.wall_enter);
-    wall_exit->Fill(true_track.wall_exit);
-    true_start_time->Fill(true_track.start_time);
-    true_start_time_zoom->Fill(true_track.start_time);
+    FILL(wall_enter, true_track.wall_enter);
+    FILL(wall_exit, true_track.wall_exit);
+    FILL(true_start_time, true_track.start_time);
+    FILL(true_start_time_zoom, true_track.start_time);
   }
   else {
-    completion->Fill(-0.5);
+    FILL(completion, -0.5);
   }
 
-  stopping_chisq_start->Fill(track.stopping_chisq_start);
-  stopping_chisq_finish->Fill(track.stopping_chisq_finish);
+  FILL(stopping_chisq_start, track.stopping_chisq_start);
+  FILL(stopping_chisq_finish, track.stopping_chisq_finish);
 
-  stopping_chisq->Fill(track.stopping_chisq_start);
-  stopping_chisq->Fill(track.stopping_chisq_finish);
+  FILL(stopping_chisq, track.stopping_chisq_start);
+  FILL(stopping_chisq, track.stopping_chisq_finish);
 
+#undef FILL
+#undef FILL2D
 }
   } // namespace SBNOsc
 } // namespace ana

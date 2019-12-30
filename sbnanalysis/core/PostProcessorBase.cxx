@@ -3,6 +3,9 @@
 #include <TFile.h>
 #include <TTree.h>
 #include <TParameter.h>
+#include <TTreeReader.h>
+#include <TTreeReaderValue.h>
+#include <ROOT/TTreeProcessorMT.hxx>
 #include "fhiclcpp/ParameterSet.h"
 #include "Event.hh"
 #include "Loader.hh"
@@ -26,9 +29,13 @@ PostProcessorBase::PostProcessorBase(): fEvent(NULL), fProviderManager(NULL), fE
 PostProcessorBase::~PostProcessorBase() {}
 
 
-void PostProcessorBase::Initialize(char* config, const std::string &output_fname) {
+void PostProcessorBase::Initialize(char* config, const std::string &output_fname, unsigned n_threads) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
+
+  // setup config
+  cfg->put("NThreads", n_threads);
   if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
+
   fConfigExperimentID = cfg->get("ExperimentID", -1);
 
   if (fConfigExperimentID >= 0) {
@@ -84,16 +91,20 @@ void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
       }
     }
 
-    // set Event
     f.GetObject("sbnana", fEventTree);
-    fEventTree->SetBranchAddress("events", &fEvent);
+    ROOT::TTreeProcessorMT tp(*fEventTree);
+    FileSetup(&f);
 
-    FileSetup(&f, fEventTree);
-    // process all events
-    for (int event_ind = 0; event_ind < fEventTree->GetEntries(); event_ind++) {
-      fEventTree->GetEntry(event_ind);
-      ProcessEvent(fEvent);
-    }
+    std::atomic_uint16_t index = 0;
+    tp.Process([&](TTreeReader &tree) {
+      TTreeReaderValue<event::Event> event(tree, "events");
+      uint16_t this_index = index.fetch_add(1);
+      std::cerr << "Index: " << this_index << std::endl;
+      EventTreeSetup(tree, this_index);
+      while (tree.Next()) {
+        ProcessEvent(event.Get(), this_index);
+      }
+    });
 
     // process all subruns
     f.GetObject("sbnsubrun", fSubRunTree);

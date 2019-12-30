@@ -21,6 +21,8 @@
 #include <TH2D.h>
 #include <TH3D.h>
 #include <TMatrixDSym.h>
+#include <TTreeReader.h>
+#include <TTreeReaderValue.h>
 
 #include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"
 
@@ -44,9 +46,10 @@ class Selection: public core::PostProcessorBase {
 public:
   // implementing PostProcessor
   void FileCleanup(TTree *eventTree) {}
-  void FileSetup(TFile *f, TTree *eventTree);
+  void FileSetup(TFile *f);
+  void EventTreeSetup(TTreeReader &tree, unsigned thread_index);
   void Initialize(fhicl::ParameterSet *config);
-  void ProcessEvent(const event::Event *event);
+  void ProcessEvent(const event::Event *event, unsigned thread_index);
   void ProcessSubRun(const SubRun *subrun);
   void ProcessFileMeta(const FileMeta *meta);
   void Finalize();
@@ -77,7 +80,8 @@ private:
 
   std::vector<numu::ROOTValue> fTrackProfileValues;
 
-  numu::RecoEvent *fRecoEvent;
+  std::vector<TTreeReaderValue<numu::RecoEvent>*> fRecoEventReaders;
+  
   TFile *fOutputFile;
 
   std::string fHistogramPostfix;

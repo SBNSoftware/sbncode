@@ -254,9 +254,11 @@ void Chi2Sensitivity::ProcessSubRun(const SubRun *subrun) {
   fEventSamples[fSampleIndex].fPOT += subrun->totgoodpot;
 }
             
-void Chi2Sensitivity::ProcessEvent(const event::Event *event) {
+void Chi2Sensitivity::ProcessEvent(const event::Event *event, unsigned thread_index) {
+    // not multithreaded
+    assert(thread_index == 0);
     // have the covariance process the event
-    fCovariance.ProcessEvent(event);
+    fCovariance.ProcessEvent(event, 0);
 
     // Iterate over each interaction in the event
     for (int n = 0; n < event->reco.size(); n++) {

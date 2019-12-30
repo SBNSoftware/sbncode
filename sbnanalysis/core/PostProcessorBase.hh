@@ -23,6 +23,7 @@ class TFile;
 class TTree;
 template<typename Param>
 class TParameter;
+class TTreeReader;
 
 namespace event {
   class Event;
@@ -59,7 +60,7 @@ public:
    *
    * \param config A configuration, as a JSON filename.
    */
-  void Initialize(char* config=NULL, const std::string &output_fname="");
+  void Initialize(char* config=NULL, const std::string &output_fname="", unsigned n_threads=1);
 
 protected:
   /**
@@ -67,7 +68,7 @@ protected:
    *
    * \param event The sbncode event for the current event
    */
-  virtual void ProcessEvent(const event::Event *event) = 0;
+  virtual void ProcessEvent(const event::Event* event, unsigned thread_index) = 0;
 
   virtual void ProcessSubRun(const SubRun *subrun) {}
 
@@ -77,14 +78,13 @@ protected:
    * Setup anything needed per file
    *
    * \param f the TFile being opened
-   * \param eventTree the TTree associated with the sbncode event.
-   * Use this TTree to set branch addresses for everything other than
-   * the sbncode event.
    *
    * Files are guaranteed to be processed in the order they are specified on
    * the command line for sbn-postprocess
    */
-  virtual void FileSetup(TFile *f, TTree *eventTree) {}
+  virtual void FileSetup(TFile *f) {}
+
+  virtual void EventTreeSetup(TTreeReader &tree, unsigned thread_index) {}
 
   /**
    * Any cleanup needed per file

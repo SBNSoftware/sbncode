@@ -7,7 +7,7 @@ namespace ana {
   namespace SBNOsc {
 
 void CosmicHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume) {
-#define COSMIC_HISTO(name, n_bins, lo, hi) name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
+#define COSMIC_HISTO(name, n_bins, lo, hi) name = TH1Shared(new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi)); fAllHistos.push_back(name.Get())
 
   COSMIC_HISTO(enter_time, 600, -3000., 3000.);
   COSMIC_HISTO(enter_time_zoom, 300, -20., 10.);
@@ -20,17 +20,19 @@ void CosmicHistos::Initialize(const std::string &postfix, const geo::BoxBoundedG
 }
 
 void CosmicHistos::Fill(const std::vector<size_t> &cosmic_tracks, const std::map<size_t, numu::RecoTrack> &true_tracks) { 
+#define FILL(hist, val) hist.Fill(val);
   for (size_t id: cosmic_tracks) {
     const numu::RecoTrack &track = true_tracks.at(id);
     if (abs(track.pdgid) == 13) {
-      enter_time->Fill(track.start_time);
-      enter_time_zoom->Fill(track.start_time);
-      enter_x->Fill(track.start.X());
-      enter_y->Fill(track.start.Y());
-      enter_z->Fill(track.start.Z());
-      momentum->Fill(track.momentum); 
+      FILL(enter_time, track.start_time);
+      FILL(enter_time_zoom, track.start_time);
+      FILL(enter_x, track.start.X());
+      FILL(enter_y, track.start.Y());
+      FILL(enter_z, track.start.Z());
+      FILL(momentum, track.momentum);
     }
   }
+#undef FILL
 }
 
   } // namespace SBNOsc

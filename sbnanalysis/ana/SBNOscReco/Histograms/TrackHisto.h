@@ -7,6 +7,7 @@
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 #include "../Data/RecoEvent.h"
+#include "../MultiThread/THShared.h"
 #include "HistoList.h"
 
 class TH1D;
@@ -18,74 +19,74 @@ namespace ana {
  * Histograms to be filled per track
  */
 struct TrackHistos : public HistoList {
-  TH1D *chi2_proton_diff;
-  TH1D *chi2_muon_diff;
-  TH1D *chi2_pion_diff;
-  TH1D *chi2_kaon_diff;
+  TH1Shared chi2_proton_diff;
+  TH1Shared chi2_muon_diff;
+  TH1Shared chi2_pion_diff;
+  TH1Shared chi2_kaon_diff;
 
-  TH1D *chi2_proton;
-  TH1D *chi2_muon;
-  TH1D *chi2_pion;
-  TH1D *chi2_kaon;
+  TH1Shared chi2_proton;
+  TH1Shared chi2_muon;
+  TH1Shared chi2_pion;
+  TH1Shared chi2_kaon;
 
-  TH1D *chi2_proton_m_muon;
+  TH1Shared chi2_proton_m_muon;
 
-  TH1D *range_p;
-  TH1D *mcs_p;
-  TH1D *deposited_e_max;
-  TH1D *deposited_e_avg;
+  TH1Shared range_p;
+  TH1Shared mcs_p;
+  TH1Shared deposited_e_max;
+  TH1Shared deposited_e_avg;
 
-  TH1D *range_p_minus_truth;
-  TH1D *mcs_p_minus_truth;
+  TH1Shared range_p_minus_truth;
+  TH1Shared mcs_p_minus_truth;
 
-  TH2D *range_p_minus_truth_length;
-  TH2D *mcs_p_minus_truth_length;
+  TH2Shared range_p_minus_truth_length;
+  TH2Shared mcs_p_minus_truth_length;
 
-  TH1D *deposited_e_max_minus_truth;
-  TH1D *deposited_e_avg_minus_truth;
-  TH1D *deposited_e_med_minus_truth;
+  TH1Shared deposited_e_max_minus_truth;
+  TH1Shared deposited_e_avg_minus_truth;
+  TH1Shared deposited_e_med_minus_truth;
 
-  TH1D *length;
-  TH1D *artlength;
-  TH1D *lengthdiff;
-  TH1D *reco_momentum;
-  TH1D *is_contained;
+  TH1Shared length;
+  TH1Shared artlength;
+  TH1Shared lengthdiff;
+  TH1Shared reco_momentum;
+  TH1Shared is_contained;
 
-  TH1D *completion; 
+  TH1Shared completion; 
  
-  TH2D *range_p_diff;
-  TH2D *mcs_p_diff;
-  TH2D *deposited_e_max_diff;
+  TH2Shared range_p_diff;
+  TH2Shared mcs_p_diff;
+  TH2Shared deposited_e_max_diff;
 
-  TH2D *range_p_comp;
-  TH2D *mcs_p_comp;
-  TH2D *deposited_e_max_comp;
+  TH2Shared range_p_comp;
+  TH2Shared mcs_p_comp;
+  TH2Shared deposited_e_max_comp;
 
-  TH2D *dQdx_length;
-  TH1D *border_y;
-  TH1D *border_z;
-  TH1D *border_x;
-  TH1D *true_start_time;
-  TH1D *true_start_time_zoom;
+  TH2Shared dQdx_length;
+  TH1Shared border_y;
+  TH1Shared border_z;
+  TH1Shared border_x;
+  TH1Shared true_start_time;
+  TH1Shared true_start_time_zoom;
 
-  TH1D *wall_enter;
-  TH1D *wall_exit;
+  TH1Shared wall_enter;
+  TH1Shared wall_exit;
 
-  TH1D *has_crt_track_match;
-  TH1D *has_crt_hit_match;
-  TH1D *crt_hit_distance;
-  TH1D *crt_track_angle;
+  TH1Shared has_crt_track_match;
+  TH1Shared has_crt_hit_match;
+  TH1Shared crt_hit_distance;
+  TH1Shared crt_track_angle;
 
-  TH1D *crt_match_time;
+  TH1Shared crt_match_time;
 
-  TH1D *stopping_chisq_start;
-  TH1D *stopping_chisq_finish;
-  TH1D *stopping_chisq;
+  TH1Shared stopping_chisq_start;
+  TH1Shared stopping_chisq_finish;
+  TH1Shared stopping_chisq;
 
-  TH1D *flash_match_time;
-  TH1D *crt_v_flash_match_time;
+  TH1Shared flash_match_time;
+  TH1Shared crt_v_flash_match_time;
 
-  TH2D *pid_confusion_tr;
+  TH2Shared pid_confusion_tr;
 
   /**
  * Initialize this set of histograms

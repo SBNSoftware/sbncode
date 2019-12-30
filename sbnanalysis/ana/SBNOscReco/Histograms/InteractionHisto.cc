@@ -9,9 +9,9 @@ namespace ana {
   namespace SBNOsc {
 
 void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume) {
-#define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
-#define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); fAllHistos.push_back(name)
-#define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy); fAllHistos.push_back(name)
+#define INT_HISTO(name, n_bins, lo, hi)    name = TH1Shared(new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi)); fAllHistos.push_back(name.Get())
+#define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = TH2Shared(new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi)); fAllHistos.push_back(name.Get())
+#define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = TH2Shared(new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy)); fAllHistos.push_back(name.Get())
 
   INT_HISTO(track_length, 100, 0., 600.);
   INT_HISTO(track_p, 50, 0., 5.);
@@ -60,6 +60,8 @@ void InteractionHistos::Fill(
   bool is_truth,
   const numu::RecoEvent &event,
   const std::vector<event::Interaction> &core_truth) {
+#define FILL(hist, val) hist.Fill(val);
+#define FILL2D(hist, x, y) hist.Fill(x, y);
 
   const numu::RecoInteraction &vertex = (is_truth) ? event.truth[vertex_index] : event.reco[vertex_index];
 
@@ -69,14 +71,14 @@ void InteractionHistos::Fill(
   if (is_truth) {
     // find the closest reconstructed vertex to this one
     double dist = numu::dist2Match(vertex, event.reco);
-    dist_to_match->Fill(dist);
-    primary_track_completion->Fill(numu::trackMatchCompletion(vertex_index, event));
+    FILL(dist_to_match, dist);
+    FILL(primary_track_completion, numu::trackMatchCompletion(vertex_index, event));
     vertex_tracks = &event.true_tracks;
   }
   // closest reconstructed vertex to this one (already contained in object)
   else {
-    dist_to_match->Fill(vertex.match.truth_vertex_distance);
-    primary_track_completion->Fill(vertex.primary_track.match.completion);
+    FILL(dist_to_match, vertex.match.truth_vertex_distance);
+    FILL(primary_track_completion, vertex.primary_track.match.completion);
     vertex_tracks = &event.reco_tracks;
   }
 
@@ -85,27 +87,27 @@ void InteractionHistos::Fill(
   //  light_trigger->Fill(i, thresholds[i]);
   //}
 
-  vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
-  vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
-  vertex_xz->Fill(vertex.position.X(), vertex.position.Z());
+  FILL2D(vertex_xy, vertex.position.X(), vertex.position.Y());
+  FILL2D(vertex_yz, vertex.position.Y(), vertex.position.Z());
+  FILL2D(vertex_xz, vertex.position.X(), vertex.position.Z());
 
-  n_reco_vertices->Fill(event.reco.size());
+  FILL(n_reco_vertices, event.reco.size());
 
   double maxpe = 0.;
   double closest_time_dist = -1;
   double closest_time = 0.;
   for (const numu::CRTHit &hit: event.in_time_crt_hits) {
-    intime_crt_hits_xy->Fill(hit.location.X(), hit.location.Y());
-    intime_crt_hits_xz->Fill(hit.location.X(), hit.location.Z());
-    intime_crt_hits_yz->Fill(hit.location.Y(), hit.location.Z());
+    FILL2D(intime_crt_hits_xy, hit.location.X(), hit.location.Y());
+    FILL2D(intime_crt_hits_xz, hit.location.X(), hit.location.Z());
+    FILL2D(intime_crt_hits_yz, hit.location.Y(), hit.location.Z());
 
-    crt_pes->Fill(hit.pes);
+    FILL(crt_pes, hit.pes);
     if (hit.pes > maxpe) maxpe = hit.pes;
 
 
     //if (hit.pes < 100.) continue;
 
-    crt_hit_times->Fill(hit.time);
+    FILL(crt_hit_times, hit.time);
 
     if (closest_time_dist < 0. || closest_time_dist > 1e-3) {
        double this_time_dist = -1;
@@ -118,62 +120,67 @@ void InteractionHistos::Fill(
     }
   }
   if (closest_time_dist >= 0.) {
-    closest_crt_hit_time->Fill(closest_time);
+    FILL(closest_crt_hit_time, closest_time);
   }
   else {
-    closest_crt_hit_time->Fill(30.);
+    FILL(closest_crt_hit_time, 30.);
   }
 
   std::cout << "Max PE: " << maxpe << std::endl; 
   if (event.in_time_crt_hits.size() == 0) {
-    maxpe_crt_intime_hit->Fill(-1);
+    FILL(maxpe_crt_intime_hit, -1);
   }
   else {
-    maxpe_crt_intime_hit->Fill(maxpe);
+    FILL(maxpe_crt_intime_hit, maxpe);
   }
 
   if (vertex.slice.flash_match.present) {
-    fmatch_score->Fill(vertex.slice.flash_match.score);
-    fmatch_time->Fill(vertex.slice.flash_match.time);
+    FILL(fmatch_score, vertex.slice.flash_match.score);
+    FILL(fmatch_time, vertex.slice.flash_match.time);
     if (vertex.slice.primary_track_index >= 0 && vertex_tracks->at(vertex.slice.primary_track_index).match.has_match) {
       int mcparticle_id = vertex_tracks->at(vertex.slice.primary_track_index).match.mcparticle_id;
       double true_time = event.true_tracks.at(mcparticle_id).start_time;
-      fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
-      fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
-      fmatch_time_true_time_zoom->Fill(vertex.slice.flash_match.time, true_time);
-      if (true_time < 0. || true_time > 1.6) fmatch_score_outtime->Fill(vertex.slice.flash_match.score);
-      else                                    fmatch_score_intime->Fill(vertex.slice.flash_match.score);
+      FILL2D(fmatch_score_true_time, vertex.slice.flash_match.score, true_time);
+      FILL2D(fmatch_score_true_time_zoom, vertex.slice.flash_match.score, true_time);
+      FILL2D(fmatch_time_true_time_zoom, vertex.slice.flash_match.time, true_time);
 
-      fmatch_time_real_time->Fill(vertex.slice.flash_match.time - true_time);
+      if (true_time < 0. || true_time > 1.6) {
+        FILL(fmatch_score_outtime, vertex.slice.flash_match.score); 
+      }
+      else {
+        FILL(fmatch_score_intime, vertex.slice.flash_match.score); 
+      }
+
+      FILL(fmatch_time_real_time, vertex.slice.flash_match.time - true_time);
     }
   }
 
 
   double track_length_val = vertex.slice.primary_track_index >= 0 ? vertex_tracks->at(vertex.slice.primary_track_index).length: -1;
-  track_length->Fill(track_length_val);
+  FILL(track_length, track_length_val);
   if (vertex.slice.primary_track_index >= 0 && vertex_tracks->at(vertex.slice.primary_track_index).match.has_match) {
     int mcparticle_id = vertex_tracks->at(vertex.slice.primary_track_index).match.mcparticle_id;
   
     double true_track_momentum = event.true_tracks.at(mcparticle_id).momentum; 
-    track_p->Fill(true_track_momentum);
-    true_deposited_energy->Fill(event.true_tracks.at(mcparticle_id).deposited_energy);
+    FILL(track_p, true_track_momentum);
+    FILL(true_deposited_energy, event.true_tracks.at(mcparticle_id).deposited_energy);
 
     int crosses_tpc_val = event.true_tracks.at(mcparticle_id).crosses_tpc;
-    crosses_tpc->Fill(crosses_tpc_val);
+    FILL(crosses_tpc, crosses_tpc_val);
 
     double length = event.true_tracks.at(mcparticle_id).length;
-    true_contained_length->Fill(length);
+    FILL(true_contained_length, length);
   }
    
   if (vertex.match.event_track_id >= 0) {
     int event_id = vertex.match.event_track_id;
     int mctruth_id = vertex.match.mctruth_track_id;
 
-    true_track_multiplicity->Fill(truth[event_id].multiplicity);
+    FILL(true_track_multiplicity, truth[event_id].multiplicity);
     
     if (mctruth_id >= 0) {
-      nuE->Fill(core_truth[mctruth_id].neutrino.energy);
-      Q2->Fill(core_truth[mctruth_id].neutrino.Q2);
+      FILL(nuE, core_truth[mctruth_id].neutrino.energy);
+      FILL(Q2, core_truth[mctruth_id].neutrino.Q2);
       // get the distance from the beam center
       /*
       float beam_center_distance = sqrt( (core_truth[mctruth_id].neutrino.position.X() - _config.beamCenterX) * 
@@ -185,6 +192,8 @@ void InteractionHistos::Fill(
       */
     }
   }
+#undef FILL
+#undef FILL2D
 }
 
   } // namespace SBNOsc

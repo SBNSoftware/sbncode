@@ -21,24 +21,13 @@ public:
   void Initialize(const fhicl::ParameterSet &fcl);
 
   /**
- * Add a cosmic event to the normalization
- * \param event The sbncode core event information
- */
-  void AddCosmicEvent(const event::Event &event);
-
-  /**
- * Add a neutrino event to the normalization
- * \param event The sbncode core event information
- */
-  void AddNeutrinoEvent(const event::Event &event);
-
-  /**
  * Add a neutrino subrunto the normalization
  * \param subrun The sbncode core Subrun information
  */
   void AddNeutrinoSubRun(const SubRun &subrun);
 
   void AddCosmicFile(const FileMeta &meta);
+  void AddNeutrinoFile(const FileMeta &meta);
 
   /**
  * Scale the neutrino events to a certain POT. To be called after all events are processed

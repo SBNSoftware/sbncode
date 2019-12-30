@@ -4,7 +4,7 @@
 #include "TH2D.h"
 
 void ana::SBNOsc::CRTHistos::Initialize(const std::string &postfix, const std::vector<double> &tagger_volume) {
-#define CRT_HISTO2D(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); fAllHistos.push_back(name) 
+#define CRT_HISTO2D(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = TH2Shared(new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y)); fAllHistos.push_back(name.Get()) 
 
   unsigned n_bins = 200;
   CRT_HISTO2D(crt_hits_xy, n_bins, tagger_volume[0], tagger_volume[3], n_bins, tagger_volume[1], tagger_volume[4]);
@@ -14,23 +14,25 @@ void ana::SBNOsc::CRTHistos::Initialize(const std::string &postfix, const std::v
 }
 
 void ana::SBNOsc::CRTHistos::Get(TFile &f, const std::string &postfix) {
-#define GET_CRT_HISTO2D(name, postfix) name = (TH2D *) f.Get((#name "_" + postfix).c_str()); fAllHistos.push_back(name);
+#define GET_CRT_HISTO2D(name, postfix) name = TH2Shared((TH2D *) f.Get((#name "_" + postfix).c_str())); fAllHistos.push_back(name.Get());
   GET_CRT_HISTO2D(crt_hits_xy, postfix);
   GET_CRT_HISTO2D(crt_hits_xz, postfix);
   GET_CRT_HISTO2D(crt_hits_yz, postfix);
 #undef GET_CRT_HISTO2D
 }
 
+#define FILL2D(hist, x, y) hist.Fill(x, y)
 void ana::SBNOsc::CRTHistos::Fill(const numu::CRTHit &hit) {
-  crt_hits_xy->Fill(hit.location.X(), hit.location.Y()); 
-  crt_hits_xz->Fill(hit.location.X(), hit.location.Z()); 
-  crt_hits_yz->Fill(hit.location.Y(), hit.location.Z()); 
+  std::cout << "Location: " << hit.location.X() << " " << hit.location.Y() << " " << hit.location.Z() << std::endl;
+  FILL2D(crt_hits_xy, hit.location.X(), hit.location.Y());
+  FILL2D(crt_hits_xz, hit.location.X(), hit.location.Z());
+  FILL2D(crt_hits_yz, hit.location.Y(), hit.location.Z());
 }
 
 
 void ana::SBNOsc::CRTHistos::Fill(const sbnd::crt::CRTHit &hit) {
-  crt_hits_xy->Fill(hit.x_pos, hit.y_pos);  
-  crt_hits_xz->Fill(hit.x_pos, hit.z_pos);  
-  crt_hits_yz->Fill(hit.y_pos, hit.z_pos);  
+  FILL2D(crt_hits_xy, hit.x_pos, hit.y_pos);
+  FILL2D(crt_hits_xz, hit.x_pos, hit.z_pos);
+  FILL2D(crt_hits_yz, hit.y_pos, hit.z_pos);
 }
-
+#undef FILL2D
