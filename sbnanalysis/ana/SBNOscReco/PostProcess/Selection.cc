@@ -136,11 +136,14 @@ namespace SBNOsc {
     // update each reco Interaction to a smarter primary track selector
     unsigned i = 0;
     while (i < fRecoEvent->reco.size()) {
-      for (size_t ind: fRecoEvent->reco[i].slice.tracks) {
-        if (ind >= fRecoEvent->reco_tracks.size()) continue;
+      for (size_t particle_ind: fRecoEvent->reco[i].slice.tracks) {
+        int track_ind = fRecoEvent->reco[i].slice.particles.at(particle_ind).trackID;
+
+        // if (ind >= fRecoEvent->reco_tracks.size()) continue;
    
         // Set final momentum values
-        numu::RecoTrack &track = fRecoEvent->reco_tracks.at(ind);
+        numu::RecoTrack &track = fRecoEvent->reco_tracks.at(track_ind);
+
         // TODO: apply calorimetry, set for non-primary tracks
         track.range_momentum = track.range_momentum_muon;
         // TODO: use forward/backward?

@@ -141,8 +141,12 @@ void InteractionHistos::Fill(
       fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
       fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
       fmatch_time_true_time_zoom->Fill(vertex.slice.flash_match.time, true_time);
-      if (true_time < 0. || true_time > 1.6) fmatch_score_outtime->Fill(vertex.slice.flash_match.score);
-      else                                    fmatch_score_intime->Fill(vertex.slice.flash_match.score);
+      if (true_time < 0. || true_time > 1.6) {
+        fmatch_score_outtime->Fill(vertex.slice.flash_match.score);
+      }
+      else {
+        fmatch_score_intime->Fill(vertex.slice.flash_match.score);
+      }
 
       fmatch_time_real_time->Fill(vertex.slice.flash_match.time - true_time);
     }

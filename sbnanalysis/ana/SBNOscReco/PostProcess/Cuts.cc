@@ -158,7 +158,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   }
 
   if (fConfig.TruthFlashMatch) cuts["R_flashmatch"] = time_in_spill;
-  else cuts["R_flashmatch"] = fConfig.FlashMatchScore < 0. || event.reco[reco_vertex_index].slice.flash_match.score < fConfig.FlashMatchScore;
+  else cuts["R_flashmatch"] = fConfig.FlashMatchScore < 0. || (event.reco[reco_vertex_index].slice.flash_match.present && event.reco[reco_vertex_index].slice.flash_match.score < fConfig.FlashMatchScore);
 
   cuts["R_crttrack"] = !HasCRTTrackMatch(primary_track);
 

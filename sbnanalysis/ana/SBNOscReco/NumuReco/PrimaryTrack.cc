@@ -29,7 +29,8 @@ int numu::SelectLongestIDdMuon(const std::map<size_t, numu::RecoTrack> &tracks, 
     const numu::RecoParticle &daughter = slice.particles.at(pfp_index);
     if (daughter.trackID >= 0) {
       const numu::RecoTrack &track = tracks.at(daughter.trackID);
-      if (track.chi2_muon < track.chi2_proton) {
+      // muon ID: exiting or chi2 hypothesis smaller than proton
+      if (!track.is_contained || track.chi2_muon < track.chi2_proton) {
         if (ret < 0 || track.length > max_len) {
           max_len = track.length;
           ret = daughter.trackID;
