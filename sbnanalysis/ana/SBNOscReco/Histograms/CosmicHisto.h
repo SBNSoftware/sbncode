@@ -7,7 +7,7 @@
 
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 
-#include "../Data/RecoTrack.h"
+#include "../Data/TrueParticle.h"
 #include "../Data/Mode.h"
 
 #include "HistoList.h"
@@ -37,13 +37,11 @@ struct CosmicHistos : public HistoList {
   void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume);
  
   /**
- * Fill the histograms with a single interaction
- * \param vertex_index The index of this vertex into the list of truth/reco interactions
- * \param is_truth Whether this interaction is true or reco
- * \param event The reco event object
- * \param core_truth The list of true interactions from sbncode core
+ * Fill the histograms with all cosmic muons in a single event
+ *
+ * \param true_particles The map of true particles in the event
  */
-  void Fill(const std::vector<size_t> &cosmic_tracks, const std::map<size_t, numu::RecoTrack> &true_tracks);
+  void Fill(const std::map<size_t, numu::TrueParticle> &true_particles);
 };
   
   } // namespace SBNOSc

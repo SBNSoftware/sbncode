@@ -2,6 +2,7 @@
 #include "../Histograms/Derived.h"
 #include "../RecoUtils/GeoUtil.h"
 #include "../TriggerEmulator/PMTTrigger.h"
+#include "../NumuReco/TrackAlgo.h"
 
 namespace ana {
  namespace SBNOsc {
@@ -81,25 +82,24 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
 
 }
 
-std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, unsigned truth_vertex_index, bool SequentialCuts) const {
+std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, const event::Event &core, unsigned truth_vertex_index, bool SequentialCuts) const {
   std::map<std::string, bool> cuts;
   cuts["Truth"] = true;
 
-  bool is_neutrino = event.truth[truth_vertex_index].match.mode == numu::mCC ||
-                     event.truth[truth_vertex_index].match.mode == numu::mNC;
-  cuts["T_fid"]  = InFV(event.truth[truth_vertex_index].position) &&
-                     is_neutrino;
+
+  cuts["T_fid"]  = InFV(core.truth[truth_vertex_index].neutrino.position);
+
   cuts["T_trig"] = PassFlashTrigger(event);
 
   cuts["T_vqual"]  = (fConfig.TruthMatchDist < 0. || 
-                     dist2Match(event.truth[truth_vertex_index], event.reco) < fConfig.TruthMatchDist); 
+                     dist2Match(core.truth[truth_vertex_index], event.reco) < fConfig.TruthMatchDist); 
   cuts["T_tqual"]  = (fConfig.TruthCompletion < 0. || 
 		       trackMatchCompletion(truth_vertex_index, event) > fConfig.TruthCompletion);
 
   bool has_reco = false;
   for (unsigned i = 0; i < event.reco.size(); i++) {
     if (event.reco[i].match.has_match && 
-	event.reco[i].match.event_track_id == truth_vertex_index && 
+	event.reco[i].match.mctruth_track_id == truth_vertex_index && 
 	event.reco[i].primary_track.match.is_primary) {
       has_reco = true;
       break;
@@ -141,12 +141,12 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   // require fiducial
   cuts["R_fid"] = InFV(event.reco[reco_vertex_index].position);
 
-  const numu::RecoTrack &primary_track = event.reco_tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
+  const numu::RecoTrack &primary_track = event.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
 
   //   good_mcs = track contain OR (range momentum OR mcs trk length)
   cuts["R_goodmcs"] = ( ( InCalorimetricContainment(primary_track.start) && 
 		      InCalorimetricContainment(primary_track.end) )  || 
-		    ( primary_track.mcs_momentum < 7. /*garbage value*/&& 
+		    ( numu::MCSMomentum(primary_track) < 7. /*garbage value*/&& 
 		      (fConfig.MCSTrackLength <0. || 
 		       primary_track.length > fConfig.MCSTrackLength) )
 		    );
@@ -154,7 +154,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   // allow truth-based flash matching or reco based
   bool time_in_spill = false;
   if (primary_track.match.has_match) {
-    time_in_spill = TimeInSpill(event.true_tracks.at(primary_track.match.mcparticle_id).start_time);
+    time_in_spill = TimeInSpill(event.particles.at(primary_track.match.mcparticle_id).start_time);
   }
 
   if (fConfig.TruthFlashMatch) cuts["R_flashmatch"] = time_in_spill;

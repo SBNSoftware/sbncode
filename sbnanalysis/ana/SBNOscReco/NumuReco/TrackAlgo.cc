@@ -1,6 +1,27 @@
 #include "TrackAlgo.h"
 #include <numeric>
 
+// TODO: make this more sophisticated
+float numu::TrackMomentum(const numu::RecoTrack &track) {
+  if (track.is_contained) {
+    return numu::RangeMomentum(track);
+  }
+  else {
+    return numu::MCSMomentum(track);
+  }
+}
+
+// TODO: make this more sophisticated
+float numu::RangeMomentum(const numu::RecoTrack &track) {
+  return track.range_momentum_muon;
+}
+
+// TODO: make this more sophisticated
+float numu::MCSMomentum(const numu::RecoTrack &track) {
+  return track.mcs_muon.fwd_mcs_momentum;
+}
+
+
 float numu::MeanTruncateddQdx(const anab::Calorimetry &calo) {
   // copy the dQdx list for partial sorting to find median
   std::vector<float> dQdx = calo.dQdx();

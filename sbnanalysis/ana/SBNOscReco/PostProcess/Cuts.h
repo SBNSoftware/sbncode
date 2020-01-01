@@ -9,6 +9,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "../Data/RecoEvent.h"
+#include "core/Event.hh"
 
 namespace ana {
  namespace SBNOsc {
@@ -44,6 +45,7 @@ public:
  * \return A list of bool's of whether the true event passes each cut
  */
   std::array<bool, nTruthCuts> ProcessTruthCuts(const numu::RecoEvent &event, 
+                                                const event::Event &core,
 						unsigned truth_vertex_index,
                                                 bool SequentialCuts=true) const;
 

@@ -34,7 +34,7 @@ void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent
     bool is_bkg = reco.match.mode == numu::mCosmic || reco.match.mode == numu::mIntimeCosmic;
     if (!is_signal && !is_bkg) continue; // ignore NC stuff for now
     
-    const numu::RecoTrack &track = event.reco_tracks.at(reco.slice.primary_track_index);
+    const numu::RecoTrack &track = event.tracks.at(reco.slice.primary_track_index);
 
     std::array<bool, ana::SBNOsc::Cuts::nCuts> results = cuts.ProcessRecoCuts(event, i, true);
 

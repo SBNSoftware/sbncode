@@ -6,6 +6,7 @@
 #include "Histograms.h"
 #include "../Histograms/Derived.h"
 #include "../RecoUtils/GeoUtil.h"
+#include "../NumuReco/TruthMatch.h"
 
 namespace ana {
   namespace SBNOsc {
@@ -18,30 +19,26 @@ void Histograms::Fill( const numu::RecoEvent &event,
 		       bool fill_all_tracks) { 
 
   if (event.type == numu::fOverlay) {
-    fCosmic[0].Fill(event.truth[event.truth.size()-1].slice.tracks, 
-		       event.true_tracks);
+    fCosmic[0].Fill(event.particles);
     if (cutmaker.PassFlashTrigger(event)) {
-      fCosmic[1].Fill(event.truth[event.truth.size()-1].slice.tracks, 
-  		       event.true_tracks);
+      fCosmic[1].Fill(event.particles);
     }
   }
   else {
     std::cout << "Filling Cosmic!\n";
-    fCosmic[2].Fill(event.truth[event.truth.size()-1].slice.tracks, 
-			event.true_tracks);
+    fCosmic[2].Fill(event.particles);
     if (cutmaker.PassFlashTrigger(event)) {
-      fCosmic[3].Fill(event.truth[event.truth.size()-1].slice.tracks, 
-  		       event.true_tracks);
+      fCosmic[3].Fill(event.particles);
     }
   }
 
   if (fill_all_tracks) {
-    for (const auto &track_pair: event.reco_tracks) {
+    for (const auto &track_pair: event.tracks) {
       const numu::RecoTrack &track = track_pair.second;
       for (unsigned i = 0; i < fAllTracks.size(); i++) {
         bool select = selectors[i](track, event);
         if (select) {
-          fAllTracks[i].Fill(track, event.true_tracks);
+          fAllTracks[i].Fill(track, event.particles);
         }
       }
     }
@@ -52,8 +49,8 @@ void Histograms::Fill( const numu::RecoEvent &event,
     const numu::RecoInteraction &interaction = event.reco[i];
 
 
-    if (event.reco_tracks.size() > (unsigned)interaction.slice.primary_track_index) {
-      const numu::RecoTrack &track = event.reco_tracks.at(interaction.slice.primary_track_index);
+    if (event.tracks.size() > (unsigned)interaction.slice.primary_track_index) {
+      const numu::RecoTrack &track = event.tracks.at(interaction.slice.primary_track_index);
 
       for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
         if (cuts[cut_i] && cutmaker.HasCRTHitMatch(track)) {
@@ -67,7 +64,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
         if (select) {
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
             if (cuts[cut_i]) {
-              fPrimaryTracks[j][cut_i].Fill(track, event.true_tracks);
+              fPrimaryTracks[j][cut_i].Fill(track, event.particles);
               for (unsigned k = 0; k < xvalues.size(); k++) {
                 fPrimaryTrackProfiles[j][k][cut_i].Fill(xvalues[k], 
 							track, event);
@@ -82,29 +79,23 @@ void Histograms::Fill( const numu::RecoEvent &event,
     for (size_t cut_i=0; cut_i < Cuts::nCuts; cut_i++) {
       int mode = interaction.match.mode; 
       if (cuts[cut_i]) {
-        fInteraction[cut_i+Cuts::nTruthCuts][mode].Fill(i, 
-							false, 
+        fInteraction[cut_i+Cuts::nTruthCuts][mode].Fill(event.reco[i], 
 							event, 
 							core.truth);
-        fInteraction[cut_i+Cuts::nTruthCuts][numu::mAll].Fill(i, 
-							      false, 
+        fInteraction[cut_i+Cuts::nTruthCuts][numu::mAll].Fill(event.reco[i], 
 							      event, 
 							      core.truth);
       }
     }
   }
 
-  for (unsigned i = 0; i < event.truth.size(); i++) {
-    const numu::RecoInteraction &truth = event.truth[i];
-    std::array<bool, Cuts::nTruthCuts> cuts = cutmaker.ProcessTruthCuts(event,i); 
+  for (unsigned i = 0; i < core.truth.size(); i++) {
+    std::array<bool, Cuts::nTruthCuts> cuts = cutmaker.ProcessTruthCuts(event, core, i); 
     for (int cut_i = 0; cut_i < Cuts::nTruthCuts; cut_i++) {
-      int mode = truth.match.mode;
-      std::cout << "Filling mode: " 
-		<< mode2Str((numu::InteractionMode)mode) 
-		<< std::endl;
+      int mode = numu::GetMode(core.truth[i]);
       if (cuts[cut_i]) {
-        fInteraction[cut_i][mode].Fill(i, true, event, core.truth);
-        fInteraction[cut_i][numu::mAll].Fill(i, true, event, core.truth);
+        fInteraction[cut_i][mode].Fill(core.truth[i], i, event);
+        fInteraction[cut_i][numu::mAll].Fill(core.truth[i], i, event);
       }
     }
   }

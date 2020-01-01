@@ -19,16 +19,17 @@ void CosmicHistos::Initialize(const std::string &postfix, const geo::BoxBoundedG
 #undef COSMIC_HISTO
 }
 
-void CosmicHistos::Fill(const std::vector<size_t> &cosmic_tracks, const std::map<size_t, numu::RecoTrack> &true_tracks) { 
-  for (size_t id: cosmic_tracks) {
-    const numu::RecoTrack &track = true_tracks.at(id);
-    if (abs(track.pdgid) == 13) {
-      enter_time->Fill(track.start_time);
-      enter_time_zoom->Fill(track.start_time);
-      enter_x->Fill(track.start.X());
-      enter_y->Fill(track.start.Y());
-      enter_z->Fill(track.start.Z());
-      momentum->Fill(track.momentum); 
+void CosmicHistos::Fill(const std::map<size_t, numu::TrueParticle> &true_particles) { 
+  for (const auto &pair: true_particles) {
+    const numu::TrueParticle &particle = pair.second;
+    // only plot cosmic muons
+    if (particle.is_cosmic && abs(particle.pdgid) == 13) {
+      enter_time->Fill(particle.start_time);
+      enter_time_zoom->Fill(particle.start_time);
+      enter_x->Fill(particle.start.X());
+      enter_y->Fill(particle.start.Y());
+      enter_z->Fill(particle.start.Z());
+      momentum->Fill(particle.start_momentum.Mag()); 
     }
   }
 }

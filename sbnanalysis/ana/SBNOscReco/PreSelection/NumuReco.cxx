@@ -42,7 +42,6 @@
 #include "../RecoUtils/GeoUtil.h"
 #include "../NumuReco/PrimaryTrack.h"
 #include "../NumuReco/TruthMatch.h"
-#include "../NumuReco/TrackAlgo.h"
 #include "ana/SBNOscReco/TriggerEmulator/PMTTrigger.h"
 
 #include "ubcore/LLBasicTool/GeoAlgo/GeoAABox.h"
@@ -123,17 +122,9 @@ numu::Wall GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, con
 }
 
 int NumuReco::GetPhotonMotherID(int mcparticle_id) {
-  int index = -1;
-  for (unsigned i = 0; i < _true_particles.size(); i++) {
-    if (_true_particles[i]->TrackId() == mcparticle_id) {
-      index = (int)i;
-      break;
-    }
-  }
-  assert(index >= 0);
-  bool is_cosmic = _true_particles_to_truth.at(index)->Origin() != simb::Origin_t::kBeamNeutrino;
+  bool is_cosmic = _true_particles_to_truth.at(mcparticle_id)->Origin() != simb::Origin_t::kBeamNeutrino;
   if (is_cosmic) {
-    unsigned truth_index = _true_particles_to_generator_info.at(index)->generatedParticleIndex();
+    unsigned truth_index = _true_particles_to_generator_info.at(mcparticle_id)->generatedParticleIndex();
     return (int) truth_index +1;
   }
   else {
@@ -196,7 +187,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.beamCenterX = pconfig.get<float>("beamCenterX", 130.);
     _config.beamCenterY = pconfig.get<float>("beamCenterY", 0.);
 
-    _config.shakyMCTracks = pconfig.get<bool>("shakyMCTracks", false);
     _config.verbose = pconfig.get<bool>("verbose", false);
 
     _config.requireTrack = pconfig.get<bool>("requireTrack", false);
@@ -360,16 +350,13 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
   _event_counter++;
   CollectTruthInformation(ev);
 
-  std::map<size_t, numu::RecoTrack> true_tracks = MCParticleTracks(ev);
-
-  // get the truth vertex info
-  std::vector<numu::RecoInteraction> truth = MCTruthInteractions(ev, true_tracks);
+  std::map<size_t, numu::TrueParticle> particles = MCParticleInfos();
 
   // get the event info
-  _recoEvent = Reconstruct(ev, truth);
+  _recoEvent = Reconstruct(ev, core_truth);
 
   // complete the information
-  _recoEvent.true_tracks = std::move(true_tracks);
+  _recoEvent.particles = std::move(particles);
 
   // set the file type
   _recoEvent.type = fType;
@@ -390,6 +377,8 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
       weight *= _config.cosmicWeight;
     }
 
+    const numu::RecoTrack &track = _recoEvent.reco[i].primary_track;
+
     // store reco interaction
     _selected->push_back(vertex);
     // store sbncode reco interaction
@@ -401,38 +390,24 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
   return true;
 }
 
-numu::TrackTruthMatch MCTrackMatch(const simb::MCTruth &truth, const simb::MCParticle &track) {
-  // get the match info
-  numu::TrackTruthMatch track_match;
-  track_match.has_match = true;
-  track_match.mctruth_has_neutrino = truth.NeutrinoSet();
-  track_match.mctruth_vertex = truth.NeutrinoSet() ? truth.GetNeutrino().Nu().Position().Vect() : InvalidTVector3;
-  track_match.mctruth_origin = truth.Origin();
-  track_match.mctruth_ccnc = truth.NeutrinoSet() ? truth.GetNeutrino().CCNC() : -1;
-  track_match.mcparticle_id = track.TrackId();
-  track_match.completion = 1.;
-  track_match.match_pdg = track.PdgCode();
-  track_match.is_primary = true;
-  return track_match;
-}
+// get information associated with true particle
+numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
+  numu::TrueParticle ret;
 
-// get information associated with track
-numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   // default values
-  double contained_length = 0;
-  bool crosses_tpc = false;
-  float deposited_energy = 0;
+  ret.length = 0.;
+  ret.crosses_tpc = false;
+  ret.wall_enter = numu::wNone;
+  ret.wall_exit = numu::wNone;
+  ret.deposited_energy = 0.;
 
-  numu::Wall enter = numu::wNone;
-  numu::Wall exit = numu::wNone;
-
-  // If the interaction is outside the active volume, then g4 won't generate positions for the track.
+  // If the interaction is outside the active volume, then g4 won't generate positions for the particle.
   // So size == 0 => outside FV
   //
   // If size != 0, then we have to check volumes
-  bool contained_in_cryo = track.NumberTrajectoryPoints() > 0;
-  bool contained_in_tpc = track.NumberTrajectoryPoints() > 0;
-  bool is_contained = track.NumberTrajectoryPoints() > 0;
+  ret.contained_in_cryo = particle.NumberTrajectoryPoints() > 0;
+  ret.contained_in_tpc = particle.NumberTrajectoryPoints() > 0;
+  ret.is_contained = particle.NumberTrajectoryPoints() > 0;
 
   // get the point at which the Trajectory enters the cryostat (which may be non-zero for cosmics)
   int entry_point = -1;
@@ -440,9 +415,9 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   int cryostat_index = -1;
   int tpc_index = -1;
 
-  for (unsigned j = 0; j < track.NumberTrajectoryPoints(); j++) {
+  for (unsigned j = 0; j < particle.NumberTrajectoryPoints(); j++) {
     for (unsigned i = 0;  i < _config.active_volumes.size(); i++) {
-      if (_config.active_volumes[i].ContainsPosition(track.Position(j).Vect())) {
+      if (_config.active_volumes[i].ContainsPosition(particle.Position(j).Vect())) {
         entry_point = j;
         cryostat_index = i;
         break;
@@ -453,7 +428,7 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
 
   // find the entering wall
   if (entry_point > 0) {
-    enter = GetWallCross(_config.active_volumes[cryostat_index], track.Position(entry_point).Vect(), track.Position(entry_point-1).Vect());
+    ret.wall_enter = GetWallCross(_config.active_volumes[cryostat_index], particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
   }
 
   std::vector<geo::BoxBoundedGeo> volumes;
@@ -461,22 +436,22 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
     volumes = _config.tpc_volumes[cryostat_index];
     // setup the initial TPC index
     for (int i = 0; i < volumes.size(); i++) {
-      if (volumes[i].ContainsPosition(track.Position(entry_point).Vect())) {
+      if (volumes[i].ContainsPosition(particle.Position(entry_point).Vect())) {
         tpc_index = i;
-        contained_in_tpc = entry_point == 0;
+        ret.contained_in_tpc = entry_point == 0;
         break;
       }
     }
-    is_contained = entry_point == 0;
-    contained_in_cryo = entry_point == 0;
+    ret.is_contained = entry_point == 0;
+    ret.contained_in_cryo = entry_point == 0;
   }
   // if we couldn't find a volume for the intial point, set not contained
   else {
-    contained_in_cryo = false;
-    is_contained = false;
+    ret.contained_in_cryo = false;
+    ret.is_contained = false;
   }
   if (tpc_index < 0) {
-    contained_in_tpc = false;
+    ret.contained_in_tpc = false;
   }
 
   // setup aa volumes too for length calc
@@ -492,35 +467,35 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
   // Use every trajectory point if possible
   if (entry_point >= 0) {
     // particle trajectory
-    const simb::MCTrajectory &trajectory = track.Trajectory();
+    const simb::MCTrajectory &trajectory = particle.Trajectory();
     TVector3 pos = trajectory.Position(entry_point).Vect();
-    for (int i = entry_point+1; i < track.NumberTrajectoryPoints(); i++) {
+    for (int i = entry_point+1; i < particle.NumberTrajectoryPoints(); i++) {
       TVector3 this_point = trajectory.Position(i).Vect();
       // get the exit point
-      // update if track is contained
-      if (contained_in_cryo) {
-        contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(this_point);
+      // update if particle is contained
+      if (ret.contained_in_cryo) {
+        ret.contained_in_cryo = _config.active_volumes[cryostat_index].ContainsPosition(this_point);
       }
-      // check if track has crossed TPC
-      if (!crosses_tpc) {
+      // check if particle has crossed TPC
+      if (!ret.crosses_tpc) {
         for (int j = 0; j < volumes.size(); j++) {
           if (volumes[j].ContainsPosition(this_point) && j != tpc_index) {
-            crosses_tpc = true;
+            ret.crosses_tpc = true;
             break;
           }
         }
       }
-      // check if track has left tpc
-      if (contained_in_tpc) {
-        contained_in_tpc = volumes[tpc_index].ContainsPosition(this_point);
+      // check if particle has left tpc
+      if (ret.contained_in_tpc) {
+        ret.contained_in_tpc = volumes[tpc_index].ContainsPosition(this_point);
       }
 
-      if (is_contained) {
-        is_contained = _config.containment_volumes[cryostat_index].ContainsPosition(this_point);
+      if (ret.is_contained) {
+        ret.is_contained = _config.containment_volumes[cryostat_index].ContainsPosition(this_point);
       }
       
       // update length
-      contained_length += containedLength(this_point, pos, aa_volumes);
+      ret.length += containedLength(this_point, pos, aa_volumes);
 
       if (!_config.active_volumes[cryostat_index].ContainsPosition(this_point) && _config.active_volumes[cryostat_index].ContainsPosition(pos)) {
         exit_point = i-1;
@@ -528,225 +503,47 @@ numu::RecoTrack NumuReco::MCTrackInfo(const simb::MCParticle &track) {
 
       // update energy
       if (InActive(this_point) && InActive(pos)) {
-        deposited_energy += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
+        ret.deposited_energy += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
       }
       pos = trajectory.Position(i).Vect();
     }
   }
   if (exit_point < 0 && entry_point >= 0) {
-    exit_point = track.NumberTrajectoryPoints() - 1; 
+    exit_point = particle.NumberTrajectoryPoints() - 1; 
   }
-  if (exit_point < track.NumberTrajectoryPoints() - 1) {
-    exit = GetWallCross(_config.active_volumes[cryostat_index], track.Position(exit_point).Vect(), track.Position(exit_point+1).Vect()); 
+  if (exit_point < particle.NumberTrajectoryPoints() - 1) {
+    ret.wall_exit = GetWallCross(_config.active_volumes[cryostat_index], particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect()); 
   }
+
+  // get the generation mode
+  ret.is_cosmic = _true_particles_to_truth.at(particle.TrackId())->Origin() != simb::kBeamNeutrino;
+
+  //double costh = (entry_point >= 0 && particle.Momentum(entry_point).Vect().Mag() > 1e-4) ? particle.Pz(entry_point) / particle.Momentum(entry_point).Vect().Mag(): -999.;
+  //double kinetic_energy =  (entry_point >= 0) ? particle.E(entry_point) /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */: -999.;
 
   // other truth information
-  int pdgid = track.PdgCode();
+  ret.pdgid = particle.PdgCode();
 
-  double costh = (entry_point >= 0 && track.Momentum(entry_point).Vect().Mag() > 1e-4) ? track.Pz(entry_point) / track.Momentum(entry_point).Vect().Mag(): -999.;
-  double kinetic_energy =  (entry_point >= 0) ? track.E(entry_point) /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */: -999.;
-
-
-  // get the distance to the truth vertex
-  // double dist_to_vertex = truth.NeutrinoSet() ? (track.Position().Vect() - truth.GetNeutrino().Nu().Position(0).Vect()).Mag(): -1;
-  // TODO: set
-  double dist_to_vertex = -1;
-
-  // ret info
-  numu::RecoTrack ret;
-
-  // ret.kinetic_energy = kinetic_energy;
-  ret.pdgid = pdgid;
-  ret.is_muon = abs(pdgid) == 13;
-  ret.length = contained_length;
-  ret.deposited_energy = deposited_energy;
-  ret.costh = costh;
-  ret.contained_in_cryo = contained_in_cryo;
-  ret.contained_in_tpc = contained_in_tpc;
-  ret.crosses_tpc = crosses_tpc;
-  ret.is_contained = is_contained;
-  ret.start = (entry_point >= 0) ? track.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
-  ret.start_time = (entry_point >= 0) ? track.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
-  ret.end = (exit_point >= 0) ? track.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
-  ret.end_time = (exit_point >= 0) ? track.Position(exit_point).T() / 1000. /* ns -> us */ : -9999;
+  ret.start = (entry_point >= 0) ? particle.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.start_time = (entry_point >= 0) ? particle.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
+  ret.end = (exit_point >= 0) ? particle.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
+  ret.end_time = (exit_point >= 0) ? particle.Position(exit_point).T() / 1000. /* ns -> us */ : -9999;
   
-  ret.momentum = (entry_point >= 0) ? track.Momentum(entry_point).Vect().Mag() : -9999.;
-  ret.energy = kinetic_energy;
-  ret.wall_enter = enter;
-  ret.wall_exit = exit;
-  ret.dist_to_vertex = dist_to_vertex;
-  ret.ID = track.TrackId();
+  ret.start_momentum = (entry_point >= 0) ? particle.Momentum(entry_point).Vect() : TVector3(-9999, -9999, -9999);
+  ret.start_energy = (entry_point >= 0) ? particle.Momentum(entry_point).E() : -9999.;
+  ret.end_momentum = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
+  ret.end_energy = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
+
+  ret.ID = particle.TrackId();
 
   return ret;
 }
 
-
-
-int NumuReco::MCTruthPrimaryTrack(const simb::MCTruth &mctruth, const std::vector<simb::MCParticle> &mcparticle_list) {
-  // Get the length and determine if any point leaves the active volume
-  //
-  // get lepton track
-  // if multiple, get the one with the highest energy
-  int track_ind = -1;
-  for (int i = 0; i < mcparticle_list.size(); i++) {
-    if (isFromNuVertex(mctruth, mcparticle_list[i]) && abs(mcparticle_list[i].PdgCode()) == 13 && mcparticle_list[i].Process() == "primary") {
-      if (track_ind == -1 || mcparticle_list[track_ind].E() < mcparticle_list[i].E()) {
-        track_ind = i;
-      }
-    }
+std::map<size_t, numu::TrueParticle> NumuReco::MCParticleInfos() {
+  std::map<size_t, numu::TrueParticle> ret;
+  for (unsigned i = 0; i < _true_particles.size(); i++) {
+    ret[_true_particles[i]->TrackId()] = MCParticleInfo(*_true_particles[i]);
   }
-  /*
-  // if there's no lepton, look for a pi+ that can "fake" a muon
-  // if there's multiple, get the one with the highest energy
-  if (track_ind == -1 && mctruth.GetNeutrino().CCNC() == 1) {
-    // assert(mctruth.GetNeutrino().CCNC() == 1);
-    double track_contained_length = -1;
-    for (int i = 0; i < mcparticle_list.size(); i++) {
-      if (isFromNuVertex(mctruth, mcparticle_list[i]) && abs(mcparticle_list[i].PdgCode()) == 211 && mcparticle_list[i].Process() == "primary") {
-        if (track_ind == -1 || mcparticle_list[track_ind].E() < mcparticle_list[i].E()) {
-          track_ind = mcparticle_list[i].TrackId();
-        }
-      }
-    }
-  }*/
-  return (track_ind == -1) ? track_ind : mcparticle_list[track_ind].TrackId();
-}
-
-int NumuReco::TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list) {
-  int multiplicity = 0;
-  for (int i = 0; i < mcparticle_list.size(); i++) {
-    if (isFromNuVertex(mc_truth, mcparticle_list[i]) &&  mcparticle_list[i].Process() == "primary") {
-      if (PDGCharge(mcparticle_list[i].PdgCode()) > 1e-4 && mcparticle_list[i].E() - PDGMass(mcparticle_list[i].PdgCode()) > 21) {
-        multiplicity ++;
-      }
-    }
-  }
-  return multiplicity;
-}
-
-std::map<size_t, numu::RecoTrack> NumuReco::MCParticleTracks(const gallery::Event &event) {
-  std::map<size_t, numu::RecoTrack> ret;
-  const std::vector<simb::MCParticle> &mcparticles = *event.getValidHandle<std::vector<simb::MCParticle>>(_config.MCParticleTag);
-  for (unsigned i = 0; i < mcparticles.size(); i++) {
-    ret[mcparticles[i].TrackId()] = std::move(MCTrackInfo(mcparticles[i]));
-  }
-  return ret;
-}
-
-std::vector<size_t> NumuReco::MCTruthTracks(
-    std::map<size_t,  numu::RecoTrack> &true_tracks,
-    const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
-    const simb::MCTruth &mc_truth, 
-    int mc_truth_index) 
-{
-
-  std::vector<size_t> ret;
-  std::vector<art::Ptr<simb::MCParticle>> mcparticle_list = truth_to_particles.at(mc_truth_index);
-  for (unsigned i = 0; i < mcparticle_list.size(); i++) {
-    true_tracks.at(mcparticle_list[i]->TrackId()).match = MCTrackMatch(mc_truth, *mcparticle_list[i]);
-    ret.push_back(mcparticle_list[i]->TrackId());
-  }
-  return ret;
-}
-
-std::vector<numu::RecoInteraction> NumuReco::MCTruthInteractions(const gallery::Event &event, std::map<size_t, numu::RecoTrack> &true_tracks) {
-  // Get truth
-  gallery::Handle<std::vector<simb::MCTruth>> mctruth_handle;
-  bool has_mctruth = event.getByLabel(fTruthTag, mctruth_handle);
-
-  // also cosmics
-  gallery::Handle<std::vector<simb::MCTruth>> cosmics;
-  bool has_cosmics = event.getByLabel(_config.CorsikaTag, cosmics);
-
-  // check for intime / outtime truth
-  gallery::Handle<std::vector<simb::MCTruth>> intime;
-  bool has_intime = event.getByLabel({"GenInTimeSorter", "intime"}, intime);
-  gallery::Handle<std::vector<simb::MCTruth>> outtime;
-  bool has_outtime = event.getByLabel({"GenInTimeSorter", "outtime"}, outtime);
-
-  auto const& mcparticle_list = \
-    *event.getValidHandle<std::vector<simb::MCParticle>>(fMCParticleTag);
-
-  std::vector<numu::RecoInteraction> ret;
-
-
-  // iterate over truth interactions
-  unsigned n_truth = has_mctruth ? mctruth_handle->size() :0;
-  for (unsigned i = 0; i < n_truth; i++) {
-    // match Genie to G4
-    art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> truth_to_particles(mctruth_handle, event, fMCParticleTag);
-
-    auto const &truth = (*mctruth_handle)[i];
-    auto neutrino = truth.GetNeutrino();
-    TVector3 position = neutrino.Nu().Position().Vect();
-
-    numu::RecoInteraction this_interaction;
-    this_interaction.position = position;
-    this_interaction.nu_energy = neutrino.Nu().E();
-    this_interaction.slice.tracks = MCTruthTracks(true_tracks, truth_to_particles, truth, i); 
-    this_interaction.multiplicity = TrueTrackMultiplicity(truth, mcparticle_list);
-    // get the primary track
-    this_interaction.slice.primary_track_index = MCTruthPrimaryTrack(truth, mcparticle_list);
-    if (this_interaction.slice.primary_track_index >= 0) {
-      this_interaction.primary_track = true_tracks.at(this_interaction.slice.primary_track_index); 
-    }
-
-    this_interaction.match.has_match = true;
-    // get the matching info (to itself)
-    if (neutrino.CCNC() == simb::kCC) {
-      this_interaction.match.mode = numu::mCC;
-    }
-    else {
-      this_interaction.match.mode = numu::mNC;
-    }
-    this_interaction.match.tmode = numu::tmNeutrino;
-    this_interaction.match.mctruth_vertex_id = i;
-    this_interaction.match.event_vertex_id = ret.size();
-    this_interaction.match.mctruth_track_id = i;
-    this_interaction.match.event_track_id = ret.size();
-    this_interaction.match.truth_vertex_distance = 0;
-    this_interaction.match.is_misreconstructed = false;
-
-    ret.push_back(std::move(this_interaction)); 
-  }
-  // iterate over cosmics
-  if (has_cosmics) {
-    // match corsika to G4
-    assert(cosmics->size() == 1);
-    auto const &cosmic = (*cosmics)[0];
-    numu::RecoInteraction this_interaction;
-    this_interaction.position = InvalidTVector3;
-    this_interaction.nu_energy = -1; 
-
-    // collect the matching tracks -- either from intime/outtime or from cosmics
-    if (has_intime && has_outtime) {
-      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> intime_to_particles(intime, event, fMCParticleTag);
-      std::vector<size_t> intime_tracks = std::move(MCTruthTracks(true_tracks, intime_to_particles, cosmic, 0));
-      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> outtime_to_particles(outtime, event, fMCParticleTag);
-      std::vector<size_t> outtime_tracks = std::move(MCTruthTracks(true_tracks, outtime_to_particles, cosmic, 0));
-
-      this_interaction.slice.tracks = std::move(intime_tracks);
-      this_interaction.slice.tracks.insert(this_interaction.slice.tracks.end(), outtime_tracks.begin(), outtime_tracks.end());
-    }
-    else {
-      art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> cosmic_to_particles(cosmics, event, fMCParticleTag);
-      this_interaction.slice.tracks = std::move(MCTruthTracks(true_tracks, cosmic_to_particles, cosmic, 0));
-    }
-
-    this_interaction.multiplicity = -1;
-    this_interaction.slice.primary_track_index = -1;
-    this_interaction.match.has_match = true;
-    this_interaction.match.mode = numu::mCosmic; 
-    this_interaction.match.tmode = numu::tmCosmic;
-    this_interaction.match.mctruth_vertex_id = n_truth;
-    this_interaction.match.event_vertex_id = ret.size();
-    this_interaction.match.mctruth_track_id = -1;
-    this_interaction.match.event_track_id = ret.size();
-    this_interaction.match.truth_vertex_distance = -1;
-    this_interaction.match.is_misreconstructed = false;
-    ret.push_back(std::move(this_interaction));
-  }
-
   return ret;
 }
 
@@ -842,7 +639,8 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     // information to be saved
     numu::RecoTrack this_track;
 
-    this_track.ID = pfp_track_index;
+    // Use the particle ID as a global ID
+    this_track.ID = _tpc_tracks_to_particle_index.at(pfp_track_index);
 
     // track length
     this_track.length = track->Length();
@@ -913,56 +711,8 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.min_chi2 = min_chi2;
     this_track.pid_n_dof = n_dof;
 
+    // TODO: add in calo stuff??
     assert(_tpc_tracks_to_calo.at(pfp_track_index).size() == 3);
-    // average and sum the deposited energies
-    int n_calo = 0;
-    std::vector<double> deposited_energies;
-    double deposited_energy_avg = 0.;
-    double deposited_energy_max = 0.;
-    double deposited_energy_med = 0.;
-    const anab::Calorimetry *collection_calo = NULL;
-    for (int i =0; i < 3; i++) {
-      if (!_tpc_tracks_to_calo.at(pfp_track_index).at(i)->PlaneID()) continue;
-      const art::Ptr<anab::Calorimetry> &calo = _tpc_tracks_to_calo.at(pfp_track_index).at(i);
-      if (calo->KineticEnergy() > 1000000) {
-        std::cout << "Baaaaadddd energy: " << calo->KineticEnergy() << std::endl;
-        continue;
-      }
-      n_calo ++;
-      deposited_energies.push_back(calo->KineticEnergy() / 1000.); /* MeV -> GeV */
-      if (fProviderManager->GetGeometryProvider()->SignalType(_tpc_tracks_to_calo.at(pfp_track_index).at(i)->PlaneID()) == geo::kCollection) {
-        collection_calo = _tpc_tracks_to_calo.at(pfp_track_index).at(i).get();
-      }
-    }
-    if (n_calo > 0) {
-      deposited_energy_avg = std::accumulate(deposited_energies.begin(), deposited_energies.end(), 0.) / n_calo;
-      deposited_energy_max = *std::max_element(deposited_energies.begin(), deposited_energies.end());
-
-      // 1 or 3 values -- take the middle
-      if (n_calo != 2) {
-        // compute the median
-        std::sort(deposited_energies.begin(), deposited_energies.end());
-        deposited_energy_med = deposited_energies[deposited_energies.size() / 2];
-      }
-      // otherwise take the average
-      else if (n_calo == 2) {
-        deposited_energy_med = deposited_energy_avg;
-      }
-      // bad
-      else assert(false);
-      
-    }
-    else {
-      deposited_energy_max = -1;
-      deposited_energy_avg = -1;
-      deposited_energy_med = -1;
-    }
-
-    this_track.deposited_energy_max = deposited_energy_max;
-    this_track.deposited_energy_avg = deposited_energy_avg;
-    this_track.deposited_energy_med = deposited_energy_med;
-
-    this_track.deposited_energy = -1; // TODO: decide best deposited energy
 
     // calculator only has inputs for protons and muons
     this_track.range_momentum_proton = _track_momentum_calculator->GetTrackMomentum(this_track.length, 2212);
@@ -992,21 +742,11 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.mcs_kaon.bwd_mcs_momentum = mcs_fit_kaon.bwdMomentum();
     this_track.mcs_kaon.bwd_mcs_momentum_err = mcs_fit_kaon.bwdMomUncertainty();
 
-    // Filled downstream
-    this_track.momentum = -1;
-    this_track.energy = -1;
-
-    // TODO: fill this
-    this_track.dist_to_vertex = -1;
-
     this_track.costh = track->StartDirection().Z() / sqrt( track->StartDirection().Mag2() );  
 
     // get track topology
     std::array<bool, 4> topology = RecoTrackTopology(track);
-    this_track.contained_in_cryo = topology[0];
-    this_track.contained_in_tpc = topology[1];
     this_track.crosses_tpc = topology[2];
-    this_track.is_contained = topology[3];
 
     this_track.start = TVector3(track->Start().X(), track->Start().Y(), track->Start().Z());
     this_track.end = TVector3(track->End().X(), track->End().Y(), track->End().Z());
@@ -1017,14 +757,6 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     // if configured, apply Cosmic ID to all tracks
     if (_config.CosmicIDAllTracks) {
       ApplyCosmicID(this_track);
-    }
-
-    // calculate stuff with calo information from the collection plane
-    if (collection_calo != NULL) {
-      this_track.mean_trucated_dQdx = numu::MeanTruncateddQdx(*collection_calo); 
-      // TODO: fix -- garbage event for histograms
-      numu::RecoEvent event;
-      _histograms.Fill(this_track, *collection_calo, event, _config.TrackSelectors);
     }
 
     ret[this_track.ID] = this_track;
@@ -1091,14 +823,8 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
     auto const &properties = this_metadata.GetPropertiesMap();
     // get the reco vertices
     for (const art::Ptr<recob::Vertex> vert: _tpc_particles_to_vertex.at(i)) {
-      this_particle.vertices.push_back(vert->position());
-    }
-    // get matched track if it exists
-    if (_tpc_particles_to_track_index.count(i)) {
-      this_particle.trackID = _tpc_particles_to_track_index.at(i);
-    }
-    else {
-      this_particle.trackID = -1;
+      TVector3 vect(vert->position().X(), vert->position().Y(), vert->position().Z());
+      this_particle.vertices.push_back(vect);
     }
 
     // access pandora special values
@@ -1131,11 +857,16 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 bool NumuReco::HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
   if (slice.primary_index < 0) return false;
 
+  std::cout << "Checking slice particle: " << slice.primary_index << std::endl;
+  for (const auto &part_pair: slice.particles) {
+    std::cout << "ID: " << part_pair.first << "\n";
+  }
   const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
   for (size_t pfp_index: neutrino.daughters) {
+    std::cout << "Neutrino daughter ID: " << pfp_index << std::endl;
     const numu::RecoParticle &daughter = slice.particles.at(pfp_index);
-    if (daughter.trackID >= 0) {
-      if (tracks.at(daughter.trackID).length > 1e-4) {
+    if (tracks.count(daughter.ID)) {
+      if (tracks.at(daughter.ID).length > 1e-4) {
         return true;
       }
     }
@@ -1156,9 +887,11 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
 
   // get its hits
   std::vector<art::Ptr<recob::Hit>> hits = _tpc_tracks_to_hits.at(pfp_track_id);
+
   // this id is the same as the mcparticle ID as long as we got it from geant4
   // int id = SBNRecoUtils::TrueParticleIDFromTotalRecoHits(*fProviderManager, hits, false);
   int mcp_track_id = SBNRecoUtils::TrueParticleIDFromTotalTrueEnergy(*fProviderManager, hits, true);
+
 
   int mcparticle_index = -1;
   for (int i = 0; i < _true_particles.size(); i++) {
@@ -1261,8 +994,8 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
       const numu::RecoParticle &neutrino = slice_ret.particles.at(slice_ret.primary_index);
       for (size_t ind: neutrino.daughters) {
         const numu::RecoParticle &daughter = slice_ret.particles.at(ind);
-        if (daughter.trackID >= 0) {
-          ApplyCosmicID(reco_tracks.at(daughter.trackID));
+        if (reco_tracks.count(daughter.ID)) {
+          ApplyCosmicID(reco_tracks.at(daughter.ID));
         }
       }
     }
@@ -1285,8 +1018,8 @@ void NumuReco::CollectTruthInformation(const gallery::Event &ev) {
   // MC particle (G4) to MCTruth (generator -- corsika or genie)
   art::FindManyP<simb::MCTruth, sim::GeneratedParticleInfo> particles_to_truth(mcparticles, ev, "largeant");
   for (unsigned i = 0; i < mcparticles->size(); i++) {
-    _true_particles_to_truth.push_back(particles_to_truth.at(i).at(0));
-    _true_particles_to_generator_info.push_back(particles_to_truth.data(i).at(0));
+    _true_particles_to_truth[mcparticles->at(i).TrackId()] = particles_to_truth.at(i).at(0);
+    _true_particles_to_generator_info[mcparticles->at(i).TrackId()] = particles_to_truth.data(i).at(0);
   }
 }
 
@@ -1617,7 +1350,7 @@ std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
   return std::move(ret);
 }
 
-numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu::RecoInteraction> truth) {
+numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vector<event::Interaction> &truth) {
   // setup products
   CollectCRTInformation(ev);
   CollectPMTInformation(ev);
@@ -1636,13 +1369,10 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   for (unsigned reco_i = 0; reco_i < reco_slices.size(); reco_i++) {
     const numu::RecoParticle &neutrino = reco_slices[reco_i].particles.at(reco_slices[reco_i].primary_index);
 
-    geo::Point_t g_pos = neutrino.vertices[0];
-    TVector3 reco_position(g_pos.X(), g_pos.Y(), g_pos.Z());
-
     numu::RecoInteraction this_interaction;
 
     this_interaction.slice = reco_slices[reco_i];
-    this_interaction.position = reco_position;
+    this_interaction.position = neutrino.vertices[0];
 
     this_interaction.primary_track = reco_tracks.at(this_interaction.slice.primary_track_index);
   
@@ -1660,9 +1390,8 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, std::vector<numu
   }
 
   numu::RecoEvent event;
-  event.truth = std::move(truth);
   event.reco = std::move(reco);
-  event.reco_tracks = std::move(reco_tracks);
+  event.tracks = std::move(reco_tracks);
 
   // collect spare detector information
   event.in_time_crt_hits = InTimeCRTHits();

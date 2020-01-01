@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../Data/RecoEvent.h"
+#include "core/Event.hh"
 
 // helper functions to calculate derived quantities from
 // output classes of the reconstruction processing
@@ -10,12 +11,12 @@
 namespace numu {
   /**
  * Distance between one interation vertex and a list of candidate matching vertices
- * \param vertex The vertex to match
+ * \param truth The true neutrino interaction to match
  * \param candidates The list of candidate vertices matching to this one
  *
  * \return The minimum distance between the list of candidates and the vertex
  */
-  float dist2Match(const numu::RecoInteraction &vertex, const std::vector<numu::RecoInteraction> &candidates);
+  float dist2Match(const event::Interaction &truth, const std::vector<numu::RecoInteraction> &candidates);
 
   /**
  * Get the completon of a reconstructed track matching to a true track

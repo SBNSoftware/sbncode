@@ -6,6 +6,7 @@
 
 #include "TVector3.h"
 
+#include "ana/SBNOscReco/Data/TrueParticle.h"
 #include "ana/SBNOscReco/Data/RecoParticle.h"
 #include "ana/SBNOscReco/Data/RecoTrack.h"
 #include "ana/SBNOscReco/Data/TruthMatch.h"
@@ -45,10 +46,9 @@ struct RecoInteraction {
 
 /** Reconstruction Information about Event */
 struct RecoEvent {
-  std::map<size_t, RecoTrack> reco_tracks; //!< Map of track indices to Track information.
-  std::map<size_t, RecoTrack> true_tracks; //!< Map of indices to Track information for true particles (taken from MCParticle).
+  std::map<size_t, RecoTrack> tracks; //!< Map of track indices to Track information.
+  std::map<size_t, TrueParticle> particles; //!< Map of indices to True particle information
   std::vector<RecoInteraction> reco; //!< List of reconstructed vertices
-  std::vector<RecoInteraction> truth; //!< List of truth vertices
   std::vector<CRTHit> in_time_crt_hits; //!< List of crt hits in time with the beam spill
   std::vector<FlashTriggerPrimitive> flash_trigger_primitives; //!< List of trigger primitives from optical detectors
   MCType type;

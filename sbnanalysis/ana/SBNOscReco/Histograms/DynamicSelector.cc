@@ -315,7 +315,7 @@ numu::LiteralValue numu::MakeROOTLiteral(const numu::ROOTValue &value, const num
       break;
     case RVTrueTrack:
       if (track.match.has_match) {
-        dataptr = ((const uint8_t *)&event.true_tracks.at(track.match.mcparticle_id)) + value.offset;
+        dataptr = ((const uint8_t *)&event.tracks.at(track.match.mcparticle_id)) + value.offset;
       }
       break;
     case RVEvent:

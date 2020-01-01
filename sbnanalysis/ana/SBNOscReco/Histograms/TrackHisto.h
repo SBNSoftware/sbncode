@@ -32,8 +32,6 @@ struct TrackHistos : public HistoList {
 
   TH1D *range_p;
   TH1D *mcs_p;
-  TH1D *deposited_e_max;
-  TH1D *deposited_e_avg;
 
   TH1D *range_p_minus_truth;
   TH1D *mcs_p_minus_truth;
@@ -41,9 +39,6 @@ struct TrackHistos : public HistoList {
   TH2D *range_p_minus_truth_length;
   TH2D *mcs_p_minus_truth_length;
 
-  TH1D *deposited_e_max_minus_truth;
-  TH1D *deposited_e_avg_minus_truth;
-  TH1D *deposited_e_med_minus_truth;
 
   TH1D *length;
   TH1D *artlength;
@@ -55,11 +50,9 @@ struct TrackHistos : public HistoList {
  
   TH2D *range_p_diff;
   TH2D *mcs_p_diff;
-  TH2D *deposited_e_max_diff;
 
   TH2D *range_p_comp;
   TH2D *mcs_p_comp;
-  TH2D *deposited_e_max_comp;
 
   TH2D *dQdx_length;
   TH1D *border_y;
@@ -100,7 +93,7 @@ struct TrackHistos : public HistoList {
  */
   void Fill(
     const numu::RecoTrack &track,
-    const std::map<size_t, numu::RecoTrack> &true_tracks);
+    const std::map<size_t, numu::TrueParticle> &true_particles);
 
 };
   } // namespace SBNOSc

@@ -24,7 +24,6 @@
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
-#include "lardataobj/MCBase/MCTrack.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -107,7 +106,6 @@ protected:
     std::vector<std::string> TrackSelectorNames;
 
     bool verbose; //!< Whether to print out info associated w/ selection.
-    bool shakyMCTracks; //!< How to handle MC tracks with some missing truth information
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
     double constantWeight; //!< Constant weight to apply uniformly to each event
     double cosmicWeight; //!< Weight applied to all events matched to a cosmic track
@@ -160,8 +158,17 @@ protected:
  * \param truth the list of truth interactions for this event
  * \return the RecoEvent object for this event
  */
-  numu::RecoEvent Reconstruct(const gallery::Event &ev, std::vector<numu::RecoInteraction> truth);
+  numu::RecoEvent Reconstruct(const gallery::Event &ev, const std::vector<event::Interaction> &truth);
 
+  /**
+ *  Collect information on true particles for this event
+ */
+  std::map<size_t, numu::TrueParticle> MCParticleInfos();
+
+  /**
+ *  Adapt an MCParticle to the information needed for this event selection module
+ */
+  numu::TrueParticle MCParticleInfo(const simb::MCParticle &particle);
 
   /**
  * Return the list of intime CRTHits in the reconstructed event.
@@ -251,24 +258,6 @@ protected:
   event::RecoInteraction CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight);
 
   /**
- * Produce vertex information from truth information
- * \param ev The gallery Event
- * \param true_tracks The list of true particles as RecoTrack objects
- *
- * \return The list of truth objects converted into interactions. One for each true
- *         neutrino interaction, plus one for cosmics.
- */
-  std::vector<numu::RecoInteraction> MCTruthInteractions(const gallery::Event &ev, std::map<size_t, numu::RecoTrack> &true_tracks);
-
-  /**
- *  Gets the list of true MCParticles as RecoTrack objects
- *  \param event The gallery event
- *
- *  \return The list of true particles as RecoTrack objects
- */
-  std::map<size_t, numu::RecoTrack> MCParticleTracks(const gallery::Event &event);
-
-  /**
  *  Gets the ID of a true particle is stored by MC photon information
  *  \param mcparticle_id The MCParticleID of the true particle as returned by G4
  *
@@ -295,48 +284,6 @@ protected:
   numu::CRTMatch CRTMatching(const numu::RecoTrack &track, const recob::Track &pandora_track, const std::vector<art::Ptr<recob::Hit>> &track_hits);
 
   void ApplyCosmicID(numu::RecoTrack &track);
-
-  /**
- * Get the primary track associated with a truth neutrino interaction.
- * \param ev the gallery Event
- * \param mctruth the MCTruth object for the considered truth neutrino interaction
- *
- * \return the index into the list of MCTrack's containing this track. Equal to -1 if no such track exists.
- */
-  int MCTruthPrimaryTrack(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
-
-  /**
- * Get the list of true particles associated with a true interaction
- * \param true_tracks The list of all true particles as RecoTrack objects
- * \param truth_to_particles The association of MCParticle to MCTruth objects
- * \param mc_truth The MCTruth object for the considered true interaction
- * \param mc_truth_index The index of the MCTruth objects for the considered true
- *                       interaction
- * \return The list of MCParticle ids associated with this interaction
- */
-  std::vector<size_t> MCTruthTracks(
-    std::map<size_t, numu::RecoTrack> &true_tracks, 
-    const art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> &truth_to_particles, 
-    const simb::MCTruth &mc_truth, 
-    int mc_truth_index);
-
-  /**
- * The number of true particles from an interaction above a certain energy threshold
- *
- * \param mc_truth The truth object associated with this interaction
- * \param mcparticle_list The list of all MCParticles from G4
- *
- * \return The number of particles coming from the interaction vertex
- */
-  int TrueTrackMultiplicity(const simb::MCTruth &mc_truth, const std::vector<simb::MCParticle> &mcparticle_list);
-
-  /**
- * Get the TrackInfo information associated with a true particle
- * \param track The MCParticle information for this true particle
- *
- * \return RecoTrack information on the true particle
- */
-  numu::RecoTrack MCTrackInfo(const simb::MCParticle &track);
 
   /**
  * Calculate some topology factoids about a reconstructed track
@@ -436,8 +383,8 @@ protected:
 
   // holders for truth information
   std::vector<art::Ptr<simb::MCParticle>> _true_particles;
-  std::vector<art::Ptr<simb::MCTruth>> _true_particles_to_truth;
-  std::vector<const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;
+  std::map<int, art::Ptr<simb::MCTruth>> _true_particles_to_truth;
+  std::map<int, const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;
 
   // type of Monte Carlo
   numu::MCType fType;

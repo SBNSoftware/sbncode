@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "../Data/RecoEvent.h"
+#include "core/Event.hh"
 
 // Do truth match with the NumuReco objects defined in Data/
 
@@ -16,7 +17,7 @@ namespace numu {
  *              of the reco.match instance does not affect the algorithm
  *  \return The TruthMatch object for the RecoInteraction reco  
  */
-  TruthMatch InteractionTruthMatch(const std::vector<RecoInteraction> &truth, const std::map<size_t, RecoTrack> &reco_tracks, const RecoInteraction &reco);
+  TruthMatch InteractionTruthMatch(const std::vector<event::Interaction> &truth,  const std::map<size_t, numu::RecoTrack> &reco_tracks, const numu::RecoInteraction &reco);
 
   /**
  * Corrects a list of reco interaction objects when some are matched to the
@@ -28,6 +29,8 @@ namespace numu {
  *
  */
   void CorrectMultiMatches(const RecoEvent &event, std::vector<RecoInteraction> &recos);
+
+  InteractionMode GetMode(const event::Interaction &truth);
 }
 
 

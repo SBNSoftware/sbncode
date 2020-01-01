@@ -27,7 +27,6 @@ struct InteractionHistos : public HistoList {
   TH1D *track_length; //!< Length of the reconstructed primary track
   TH1D *nuE; //!< Neutrino energy
   TH1D *track_p; //!< Primary track momentum
-  TH1D *true_deposited_energy; //!< Deposited energy of true track
   TH1D *beam_center_distance; //!< Distance of the neutrino interaction to the beam center
   TH1D *Q2; //!< Q2 of the interaction
   TH1D *true_contained_length; //!< True contained length of primary track
@@ -65,17 +64,26 @@ struct InteractionHistos : public HistoList {
   void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume);
  
   /**
- * Fill the histograms with a single interaction
- * \param vertex_index The index of this vertex into the list of truth/reco interactions
- * \param is_truth Whether this interaction is true or reco
+ * Fill the histograms with a single reconstructed neutrino candidate
+ * \param vertex The reconstructed vertex being filled
  * \param event The reco event object
  * \param core_truth The list of true interactions from sbncode core
  */
   void Fill(
-    unsigned vertex_index,
-    bool is_truth,
+    const numu::RecoInteraction &vertex,
     const numu::RecoEvent &event,
     const std::vector<event::Interaction> &core_truth);
+
+  /**
+ * Fill the histograms with a single true interaction
+ * \param interaction The true interaction
+ * \param mctruth_id ID of the interaction (index into the list of Interactions)
+ * \param event The reco event object
+ */
+  void Fill(const event::Interaction &interaction, unsigned mctruth_id, const numu::RecoEvent &event);
+
+private:
+  void FillEvent(const numu::RecoEvent &event);
 };
   
   } // namespace SBNOSc

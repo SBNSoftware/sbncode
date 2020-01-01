@@ -2,6 +2,8 @@
 #include "TH2D.h"
 #include "TH3D.h"
 
+#include "../NumuReco/TrackAlgo.h"
+
 namespace ana {
  namespace SBNOsc {
 
@@ -26,13 +28,13 @@ void TrackProfiles::Fill(const numu::ROOTValue &rootval, const numu::RecoTrack &
   float val = literal.is_float ? literal.data_num : (float) literal.data_int;
 
   if (track.match.has_match) {
-    const numu::RecoTrack &true_track = event.true_tracks.at(track.match.mcparticle_id);
+    const numu::TrueParticle &true_particle = event.particles.at(track.match.mcparticle_id);
 
-    range_v_true_mom->Fill(val, true_track.momentum, track.range_momentum);
-    mcs_v_true_mom->Fill(val, true_track.momentum, track.mcs_momentum);
+    range_v_true_mom->Fill(val, true_particle.start_momentum.Mag(), numu::RangeMomentum(track));
+    mcs_v_true_mom->Fill(val, true_particle.start_momentum.Mag(), numu::MCSMomentum(track));
 
-    range_minus_true->Fill(val, true_track.momentum, (track.range_momentum - true_track.momentum) / true_track.momentum);
-    mcs_minus_true->Fill(val, true_track.momentum, (track.mcs_momentum - true_track.momentum) / true_track.momentum);
+    range_minus_true->Fill(val, true_particle.start_momentum.Mag(), (numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
+    mcs_minus_true->Fill(val, true_particle.start_momentum.Mag(), (numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
   }
   if (track.min_chi2 > 0) {
     bool is_proton_reco = track.chi2_proton < track.chi2_muon;

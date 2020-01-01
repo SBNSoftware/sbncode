@@ -137,33 +137,23 @@ namespace SBNOsc {
     unsigned i = 0;
     while (i < fRecoEvent->reco.size()) {
       for (size_t particle_ind: fRecoEvent->reco[i].slice.tracks) {
-        int track_ind = fRecoEvent->reco[i].slice.particles.at(particle_ind).trackID;
+        numu::RecoTrack &track = fRecoEvent->tracks.at(particle_ind);
 
-        // if (ind >= fRecoEvent->reco_tracks.size()) continue;
-   
-        // Set final momentum values
-        numu::RecoTrack &track = fRecoEvent->reco_tracks.at(track_ind);
-
-        // TODO: apply calorimetry, set for non-primary tracks
-        track.range_momentum = track.range_momentum_muon;
-        // TODO: use forward/backward?
-        track.mcs_momentum = track.mcs_muon.fwd_mcs_momentum;
+        // set containment
         if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
-          track.momentum = track.range_momentum;
           track.is_contained = true;
         }
         else {
-          track.momentum = track.mcs_momentum;
           track.is_contained = false;
         }
       }
 
       int primary_track;
       if (fUseCalorimetry) {
-        primary_track = numu::SelectLongestIDdMuon(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+        primary_track = numu::SelectLongestIDdMuon(fRecoEvent->tracks, fRecoEvent->reco[i].slice);
       }
       else {
-        primary_track = numu::SelectLongestTrack(fRecoEvent->reco_tracks, fRecoEvent->reco[i].slice);
+        primary_track = numu::SelectLongestTrack(fRecoEvent->tracks, fRecoEvent->reco[i].slice);
       }
 
       // remove vertices without a good primary track
@@ -173,9 +163,10 @@ namespace SBNOsc {
       }
 
       fRecoEvent->reco[i].slice.primary_track_index = primary_track;
-      fRecoEvent->reco[i].primary_track = fRecoEvent->reco_tracks.at(primary_track);
+      fRecoEvent->reco[i].primary_track = fRecoEvent->tracks.at(primary_track);
+
       // re-do truth matching
-      fRecoEvent->reco[i].match = numu::InteractionTruthMatch(fRecoEvent->truth, fRecoEvent->reco_tracks, fRecoEvent->reco[i]);
+      fRecoEvent->reco[i].match = numu::InteractionTruthMatch(core_event->truth, fRecoEvent->tracks, fRecoEvent->reco[i]);
 
       // if this is an in-time cosmic file, update the cosmic mode
       if (fFileType == numu::fIntimeCosmic) {
@@ -186,61 +177,7 @@ namespace SBNOsc {
       i += 1;
     }
 
-    // if this is an in-time cosmic file, update the cosmic mode
-    if (fFileType == numu::fIntimeCosmic) {
-      assert(fRecoEvent->truth.size() == 1);
-      fRecoEvent->truth[0].match.mode = numu::mIntimeCosmic;
-    }
-
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
-
-    for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
-      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==1) { // kBeamNeutrino
-        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 0 &&
-            fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_exit == 0) { // wNone
-          if (abs(reco.primary_track.end.Y() - 200.) < 2. || abs(reco.primary_track.start.Y() - 200.) < 2.) {
-            std::cout << "Weird CC Track\n";
-            std::cout << "start: " << reco.primary_track.start.X() << " " << reco.primary_track.start.Y() << " " << reco.primary_track.start.Z() << std::endl;
-            std::cout << "end: " << reco.primary_track.end.X() << " " << reco.primary_track.end.Y() << " " << reco.primary_track.end.Z() << std::endl;
-            std::cout << "true start: " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.X() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.Y() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).start.Z() << std::endl;
-            std::cout << "true end: " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.X() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.Y() << " " << fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).end.Z() << std::endl;
-          }
-        }
-      }
-      /*
-      if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==2) { // kComsicRay
-        if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 1) { // wTop
-          if (abs(reco.primary_track.start.Y()) < 50. && abs(reco.primary_track.end.Y()) < 50.) {
-            std::cout << "Weird Cosmic track\n"; 
-            std::cout << "vertex: " << reco.position.X() << " " << reco.position.Y() << " " << reco.position.Z() << std::endl;
-            std::cout << "start: " << reco.primary_track.start.X() << " " << reco.primary_track.start.Y() << " " << reco.primary_track.start.Z() << std::endl;
-            std::cout << "end: " << reco.primary_track.end.X() << " " << reco.primary_track.end.Y() << " " << reco.primary_track.end.Z() << std::endl;
-            std::cout << "length: " << reco.primary_track.length << std::endl;
-            std::cout << "True PDG: " << reco.primary_track.match.match_pdg << std::endl;
-            std::cout << "True Completion: " << reco.primary_track.match.completion << std::endl; 
-            const numu::RecoTrack &true_track = fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id);
-            std::cout << "True start: " << true_track.start.X() << " " << true_track.start.Y() << " " << true_track.start.Z() << std::endl;
-            std::cout << "True end: " << true_track.end.X() << " " << true_track.end.Y() << " " << true_track.end.Z() << std::endl;
-            std::cout << "True length: " << true_track.length << std::endl;
-          }
-        }
-      }*/
-    }
-
-    // further refine reco stuff
-    /*
-    for (numu::RecoInteraction &reco: fRecoEvent->reco) {
-      numu::RecoTrack &track = fRecoEvent->reco_tracks.at(reco.slice.primary_track_index); 
-      // refine CRT information on primary track
-      if (!fCuts.HasCRTHitMatch(track)) {
-        track.crt_match.hit.present = false;
-      }
-      if (!fCuts.HasCRTTrackMatch(track)) {
-        track.crt_match.track.present = false;
-      }
-
-      reco.primary_track = track;
-    }*/
 
     // make sure no two vertices match to the same true neutrino interaction
     numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
