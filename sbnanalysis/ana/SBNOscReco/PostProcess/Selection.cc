@@ -23,10 +23,8 @@
 #include <core/Event.hh>
 
 #include "Selection.h"
+#include "SetEvent.h"
 #include "../Histograms/DynamicSelector.h"
-
-#include "../NumuReco/PrimaryTrack.h"
-#include "../NumuReco/TruthMatch.h"
 
 namespace ana {
 namespace SBNOsc {
@@ -133,54 +131,11 @@ namespace SBNOsc {
   void Selection::ProcessEvent(const event::Event *core_event) {
     std::cout << "Event: " << core_event->metadata.eventID << std::endl;
 
-    // update each reco Interaction to a smarter primary track selector
-    unsigned i = 0;
-    while (i < fRecoEvent->reco.size()) {
-      for (size_t particle_ind: fRecoEvent->reco[i].slice.tracks) {
-        numu::RecoTrack &track = fRecoEvent->tracks.at(particle_ind);
-
-        // set containment
-        if (fCuts.InCalorimetricContainment(track.start) && fCuts.InCalorimetricContainment(track.end)) {
-          track.is_contained = true;
-        }
-        else {
-          track.is_contained = false;
-        }
-      }
-
-      int primary_track;
-      if (fUseCalorimetry) {
-        primary_track = numu::SelectLongestIDdMuon(fRecoEvent->tracks, fRecoEvent->reco[i].slice);
-      }
-      else {
-        primary_track = numu::SelectLongestTrack(fRecoEvent->tracks, fRecoEvent->reco[i].slice);
-      }
-
-      // remove vertices without a good primary track
-      if (primary_track < 0) {
-        fRecoEvent->reco.erase(fRecoEvent->reco.begin() + i); 
-        continue;
-      }
-
-      fRecoEvent->reco[i].slice.primary_track_index = primary_track;
-      fRecoEvent->reco[i].primary_track = fRecoEvent->tracks.at(primary_track);
-
-      // re-do truth matching
-      fRecoEvent->reco[i].match = numu::InteractionTruthMatch(core_event->truth, fRecoEvent->tracks, fRecoEvent->reco[i]);
-
-      // if this is an in-time cosmic file, update the cosmic mode
-      if (fFileType == numu::fIntimeCosmic) {
-        assert(fRecoEvent->reco[i].match.mode == numu::mCosmic || fRecoEvent->reco[i].match.mode == numu::mOther);
-        fRecoEvent->reco[i].match.mode = numu::mIntimeCosmic;
-      }
-
-      i += 1;
-    }
+    // set stuff in the event
+    SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
 
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
 
-    // make sure no two vertices match to the same true neutrino interaction
-    numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
 
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
     if (fDoNormalize) {
