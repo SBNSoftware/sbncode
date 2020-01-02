@@ -25,4 +25,12 @@
 #pragma link C++ class numu::CRTHit;
 #pragma link C++ class numu::FlastTriggerPrimitive+;
 #pragma link C++ class numu::FlastTriggerPrimitive::Trig+;
+
+#pragma link C++ class numu::flat::FlatInteraction;
+#pragma link C++ class numu::flat::PrimaryTrack;
+#pragma link C++ class numu::flat::Slice;
+#pragma link C++ class numu::flat::TrueNeutrino;
+#pragma link C++ class numu::flat::TrackTruth;
+#pragma link C++ class numu::flat::EventInfo;
+#pragma link C++ class numu::flat::EventMeta;
 #endif
