@@ -20,13 +20,13 @@
 
 namespace core {
 
-PostProcessorBase::PostProcessorBase(): fEvent(NULL), fProviderManager(NULL), fExperimentID(NULL), fConfigExperimentID(-1) {}
+PostProcessorBase::PostProcessorBase(): fProviderManager(NULL), fConfigExperimentID(-1), fNWorkers(1) {}
 
 
 PostProcessorBase::~PostProcessorBase() {}
 
 
-void PostProcessorBase::Initialize(char* config, const std::string &output_fname) {
+void PostProcessorBase::Initialize(char* config, const std::string &output_fname, unsigned n_workers) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
   if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
   fConfigExperimentID = cfg->get("ExperimentID", -1);
@@ -35,91 +35,101 @@ void PostProcessorBase::Initialize(char* config, const std::string &output_fname
     fProviderManager = new ProviderManager((Experiment)fConfigExperimentID, "", false); 
   }
 
+  fNWorkers = n_workers;
+
   Initialize(cfg);
-  fSubRun = 0;
-  fFileMeta = 0;
-  fEvent = 0;
-  fExperimentID = 0;
 }
 
+void PostProcessorBase::ProcessFile(const std::string &fname) {
+  // get ROOT file
+  TFile f(fname.c_str());
+  if (f.IsZombie()) {
+    std::cerr << "Failed openning file: " << fname << ". "
+              << "Cleaning up and exiting." << std::endl;
+    return;
+  }
+
+  TTree *event_tree = 0;
+  event::Event *event = 0;
+
+  TTree *subrun_tree = 0;
+  SubRun *subrun = 0;
+  
+  TTree *filemeta_tree = 0;
+  FileMeta *filemeta = 0;
+
+  f.GetObject("sbnana", event_tree);
+  event_tree->SetBranchAddress("events", &event);
+  FileSetup(&f, event_tree);
+  // process all events
+  for (int event_ind = 0; event_ind < event_tree->GetEntries(); event_ind++) {
+    event_tree->GetEntry(event_ind);
+    ProcessEvent(event);
+  }
+  // process all subruns
+  f.GetObject("sbnsubrun", subrun_tree);
+  if (subrun_tree == NULL) {
+    std::cerr << "Error: NULL subrun tree" << std::endl;
+  }
+  subrun_tree->SetBranchAddress("subruns", &subrun);
+
+  for (int subrun_ind = 0; subrun_ind < subrun_tree->GetEntries(); subrun_ind++) {
+    subrun_tree->GetEntry(subrun_ind);
+    ProcessSubRun(subrun);
+  }
+
+  // process all the file meta-data
+  f.GetObject("sbnfilemeta", filemeta_tree);
+  if (filemeta_tree == NULL) {
+    std::cerr << "Error: NULL filemeta tree" << std::endl;
+  }
+  filemeta_tree->SetBranchAddress("filemeta", &filemeta);
+  for (int filemeta_ind = 0; filemeta_ind < filemeta_tree->GetEntries(); filemeta_ind++) {
+    filemeta_tree->GetEntry(filemeta_ind);
+    ProcessFileMeta(filemeta);
+  } 
+
+  FileCleanup(event_tree);
+}
+
+unsigned PostProcessorBase::WorkerID() {
+  std::thread::id this_id = std::this_thread::get_id();
+  for (unsigned index = 0; index < fThreadIDs.size(); index++) {
+    if (this_id == fThreadIDs[index]) return index;
+  }
+  assert(false);
+}
 
 void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
-  for (auto const& fname: inputFiles) {
-    // get ROOT file
-    TFile f(fname.c_str());
-    if (f.IsZombie()) {
-      std::cerr << "Failed openning file: " << fname << ". "
-                << "Cleaning up and exiting." << std::endl;
-      break;
-    }
-
-
-    // first file -- setup the provider manager
-    if (fExperimentID == NULL) {
-      // get the Experiment ID
-      f.GetObject("experiment", fExperimentID);
-      if (fConfigExperimentID >= 0) assert(fConfigExperimentID == fExperimentID->GetVal());
-      else if ((Experiment)fExperimentID->GetVal() != kExpOther) {
-        fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false); 
-      }
-    }
-    // otherwise -- check if we can re-use
-    else {
-      Experiment last_experiment_id = (Experiment)fExperimentID->GetVal();
-      // get the Experiment ID
-      f.GetObject("experiment", fExperimentID);
-      if (fConfigExperimentID >= 0) assert(fConfigExperimentID == fExperimentID->GetVal());
-      else if ((Experiment)fExperimentID->GetVal() != kExpOther) {
-        if ((Experiment)fExperimentID->GetVal() == last_experiment_id) {} // reuse provider manager 
-        else {
-          delete fProviderManager;
-          fProviderManager = new ProviderManager((Experiment)fExperimentID->GetVal(), "", false);
-        }
-      }
-      else {
-        if (fProviderManager != NULL) {
-          delete fProviderManager;
-          fProviderManager = NULL;
-        }
-      }
-    }
-
-    // set Event
-    f.GetObject("sbnana", fEventTree);
-    fEventTree->SetBranchAddress("events", &fEvent);
-
-    FileSetup(&f, fEventTree);
-    // process all events
-    for (int event_ind = 0; event_ind < fEventTree->GetEntries(); event_ind++) {
-      fEventTree->GetEntry(event_ind);
-      ProcessEvent(fEvent);
-    }
-
-    // process all subruns
-    f.GetObject("sbnsubrun", fSubRunTree);
-    if (fSubRunTree == NULL) {
-      std::cerr << "Error: NULL subrun tree" << std::endl;
-    }
-    fSubRunTree->SetBranchAddress("subruns", &fSubRun);
-
-    for (int subrun_ind = 0; subrun_ind < fSubRunTree->GetEntries(); subrun_ind++) {
-      fSubRunTree->GetEntry(subrun_ind);
-      ProcessSubRun(fSubRun);
-    }
-
-    // process all the file meta-data
-    f.GetObject("sbnfilemeta", fFileMetaTree);
-    if (fFileMetaTree == NULL) {
-      std::cerr << "Error: NULL filemeta tree" << std::endl;
-    }
-    fFileMetaTree->SetBranchAddress("filemeta", &fFileMeta);
-    for (int filemeta_ind = 0; filemeta_ind < fFileMetaTree->GetEntries(); filemeta_ind++) {
-      fFileMetaTree->GetEntry(filemeta_ind);
-      ProcessFileMeta(fFileMeta);
+  // single threaded
+  if (fNWorkers == 1) {
+    fThreadIDs.push_back(std::this_thread::get_id());
+    for (auto const& fname: inputFiles) {
+      ProcessFile(fname);
     } 
-
-    FileCleanup(fEventTree);
-  } 
+  }
+  // multi-threaded
+  else {
+    fThreadIDs = std::vector<std::thread::id>(fNWorkers);
+    std::atomic<unsigned> f_index = 0;
+    std::atomic<unsigned> w_index = 0;
+    std::vector<std::thread> workers;
+    for (unsigned i = 0; i < fNWorkers; i++) {
+      workers.emplace_back([&]() {
+        // setup the mapping to thread indices
+        unsigned this_index = w_index.fetch_add(1);
+        fThreadIDs[this_index] = std::this_thread::get_id();
+        InitializeThread();
+        // start fetching files
+        unsigned file_index = f_index.fetch_add(1);
+        while (file_index < inputFiles.size()) {
+          ProcessFile(inputFiles[file_index]);
+          file_index = f_index.fetch_add(1);
+        } 
+      });
+    }
+    for (std::thread &w: workers) w.join();
+  }
 
   if (fProviderManager != NULL) {
     delete fProviderManager;

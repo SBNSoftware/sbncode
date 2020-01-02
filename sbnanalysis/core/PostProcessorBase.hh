@@ -9,6 +9,7 @@
  * Author: G. Putnam <gputnam@uchicago.edu>, 2018/10/08
  */
 
+#include <thread>
 #include <string>
 #include <vector>
 #include "gallery/Event.h"
@@ -59,7 +60,7 @@ public:
    *
    * \param config A configuration, as a JSON filename.
    */
-  void Initialize(char* config=NULL, const std::string &output_fname="");
+  void Initialize(char* config=NULL, const std::string &output_fname="", unsigned n_workers=1);
 
 protected:
   /**
@@ -100,19 +101,27 @@ protected:
    */
   virtual void Initialize(fhicl::ParameterSet* config=NULL) = 0;
 
+  /**
+ * Perform user-level initialization per-thread. Only 
+ * called when multiple workers are specified on the
+ * command line.
+ */
+  virtual void InitializeThread() {}
+
   /** Perform user-level finalization. Called after all events have been processed. */
   virtual void Finalize() {}
 
-  event::Event* fEvent;
-  TTree* fEventTree;
-
-  FileMeta* fFileMeta;
-  TTree* fFileMetaTree;
-  SubRun* fSubRun;
-  TTree* fSubRunTree;
   ProviderManager* fProviderManager;  //!< Interface for provider access
-  TParameter<int>* fExperimentID;
   int fConfigExperimentID;
+
+  unsigned NWorkers() { return fNWorkers; }
+  unsigned WorkerID();
+
+private:
+  void ProcessFile(const std::string &fname);
+
+  unsigned fNWorkers;
+  std::vector<std::thread::id> fThreadIDs;
 };
 
 }  // namespace core
