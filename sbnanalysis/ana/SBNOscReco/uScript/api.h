@@ -15,51 +15,46 @@ template<typename T>
 using JustAChar = const char *;
 
 template<typename... TObjs>
-void RegisterAll(Chunk &chunk, const char *name, JustAChar<TObjs> ...names);
+void AddAll(VM &vm, JustAChar<TObjs> ...names, const TObjs *...objs); 
 
-template<typename... TObjs>
-void RegisterAll(VM &vm, JustAChar<TObjs> ...names, const TObjs *...objs); 
-
-template<typename... TObjs>
-void RegisterAll(Chunk &chunk) {}
+template<typename none = void>
+void RegisterAll() {}
 
 template<typename T, typename... TObjs>
-void RegisterAll(Chunk &chunk, const char *name, JustAChar<TObjs> ...names) {
-  chunk.Register<T>(name);
-  RegisterAll<TObjs...>(chunk, names...);
+void RegisterAll() {
+  Compiler::Register<T>();
+  RegisterAll<TObjs...>();
 }
 
 
 template<typename... TObjs>
-void RegisterAll(VM &vm) {}
+void AddAll(VM &vm) {}
 
 template<typename T, typename... TObjs>
-void RegisterAll(VM &vm, const char *name, JustAChar<TObjs> ...names, const T *obj, const TObjs *...objs) { 
-  vm.Register(name, obj); 
-  RegisterAll<TObjs...>(vm, names..., objs...);
+void AddAll(VM &vm, const char *name, JustAChar<TObjs> ...names, const T *obj, const TObjs *...objs) { 
+  vm.AddGlobal(name, obj); 
+  AddAll<TObjs...>(vm, names..., objs...);
 }
 
 
 template<typename... TObjs>
-Chunk compileChunk(JustAChar<TObjs> ...names, const char *source) {
-  Scanner scanner(source);
+Chunk compileChunk(const char *source) {
   Chunk chunk;
-  RegisterAll<TObjs...>(chunk, names...); 
+  RegisterAll<TObjs...>();
 
-  Compiler compiler;
-  assert(compiler.Compile(source, &chunk));
+  uscript::Compiler::Compile(source, &chunk);
 
   return std::move(chunk);
 }
 
 template<typename... TObjs>
 std::function<bool (std::reference_wrapper<const TObjs>...)> compile(JustAChar<TObjs> ...names, const char *source) {
-  Chunk chunk = compile<TObjs...>(source, names...);
+  Chunk chunk = compile<TObjs...>(source);
 
   return [chunk](std::reference_wrapper<const TObjs>... data) {
     VM vm;
-    vm.SetChunk(chunk);
-    RegisterAll(vm, &data...);
+    vm.SetChunk(&chunk);
+    AddAll(vm, &data...);
     Value value;
     vm.Run(&value);
     return !!value;

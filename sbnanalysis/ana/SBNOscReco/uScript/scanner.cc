@@ -3,10 +3,15 @@
 
 #include "scanner.h"
 
-uscript::Scanner::Scanner(const char *_start):
-  start(_start),
-  current(_start) 
+uscript::Scanner::Scanner():
+  start(NULL),
+  current(NULL)
 {}
+
+void uscript::Scanner::SetSource(const char *_start) {
+  start = _start;
+  current = _start;
+}
 
 void uscript::Scanner::SkipWhitespace() {
   while (1) {
@@ -120,7 +125,7 @@ uscript::Token uscript::Scanner::String() {
 uscript::Token uscript::Scanner::Number() {
   while (isDigit(*current)) Advance();
 
-  if (*current == '.' && isDigit(current[1])) {
+  if (*current == '.') { // && isDigit(current[1])) {
     // consume the '.'
     Advance();
 

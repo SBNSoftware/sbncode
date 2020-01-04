@@ -8,7 +8,6 @@
 
 #include "chunk.h"
 #include "value.h"
-#include "object.h"
 
 namespace uscript {
 
@@ -19,11 +18,10 @@ enum InterpretResult {
 };
 
 class VM {
-  Chunk chunk;
+  const Chunk *chunk;
   unsigned ip;
   std::vector<Value> stack;
-  std::vector<Obj *> objects;
-  std::map<std::string, Value> globals;
+  std::map<const char *, Value> globals;
 
   uint8_t ReadInstruction();
   Value ReadConstant();
@@ -36,21 +34,21 @@ class VM {
   
   bool CallValue(Value callee, int argCount);
 
-  bool AccessValue(Value instance, const std::string &name, Value *result);
-  bool GetTField(ObjTInstance *instance, const std::string &name, Value *ret);
+  bool AccessValue(Value instance, const char *name, Value *result);
+  bool GetTField(ObjTInstance instance, const char *name, Value *ret);
   bool CallTMethod(ObjTMethod *method, int argCount);
-  void DoRegister(const char *classname, const char *name, uint8_t *data);
+  void DoAddGlobal(const char *classname, const char *name, uint8_t *data);
 
 public:
   VM();
   InterpretResult Interpret(const char* source);
-  InterpretResult Interpret(Chunk chunk);
-  void SetChunk(Chunk _chunk);
+  InterpretResult Interpret(Chunk *chunk);
+  void SetChunk(const Chunk *_chunk);
   InterpretResult Run(Value *ret=NULL);
 
   template <typename TObj>
-  void inline Register(const char *name, const TObj *object) {
-    DoRegister(std::string(type_name<TObj>()).c_str(), name, (uint8_t*)object);
+  void inline AddGlobal(const char *name, const TObj *object) {
+    DoAddGlobal(std::string(type_name<TObj>()).c_str(), name, (uint8_t*)object);
   }
 };
 

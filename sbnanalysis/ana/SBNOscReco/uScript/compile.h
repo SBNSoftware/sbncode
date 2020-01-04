@@ -1,9 +1,12 @@
 #ifndef uscript_compile_h
 #define uscript_compile_h
 
+#include <unordered_set>
+
 #include "vm.h"
 #include "chunk.h"
 #include "scanner.h"
+#include "tclass.h"
 
 namespace uscript {
 
@@ -43,11 +46,14 @@ class Compiler {
     int depth;
   };
 
+  std::unordered_set<std::string> strings;
   Parser parser;
+  Scanner scanner;
   Chunk *current;
-  Scanner *scanner;
   std::vector<Local> locals;
   int scopeDepth;
+
+  TClassList tclasslist;
 
   void Declaration();
   void Statement();
@@ -105,18 +111,37 @@ class Compiler {
 
   uint8_t ArgumentList();
 
-public:
-  Compiler();
-
-  bool HadError() const { return parser.hadError; }
-  bool Compile(const char *source, Chunk *chunk);
   void Advance();
   void Expression();
   void Consume(TokenType type, const char *message);
   void SetChunk(Chunk *chunk) { current = chunk; }
-  void SetScanner(Scanner *_scanner) { scanner = _scanner; }
   void Finish();
   Chunk *CurrentChunk() { return current; }
+
+  Compiler();
+
+  bool DoCompile(const char *source, Chunk *chunk);
+  const char *DoIntern(const std::string &str);
+  void DoRegister(const char *classname);
+
+  static Compiler &Instance() {
+    static Compiler c;
+    return c;
+  }
+
+public:
+  static const char *Intern(const std::string &str) { return Instance().DoIntern(str); }
+  static bool HadError() { return Instance().parser.hadError; }
+  static bool Compile(const char *source, Chunk *chunk) { Instance().DoCompile(source, chunk); }
+  
+  static TClassInfo *GetClassInfo(const char *classname) {
+    return Instance().tclasslist.Add(classname);
+  }
+
+  template <typename TObj>
+  static void inline Register() {
+    Instance().DoRegister(std::string(type_name<TObj>()).c_str());
+  }
 
 };
 

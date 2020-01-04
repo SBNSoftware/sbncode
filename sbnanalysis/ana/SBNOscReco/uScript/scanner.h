@@ -41,7 +41,9 @@ class Scanner {
   const char *start;
   const char *current;
 public:
-  explicit Scanner(const char *_start);
+  Scanner();
+  void SetSource(const char *_start);
+
   Token ScanToken();
   Token MakeToken(TokenType type) const;
   Token ErrorToken(const char *message) const;

@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include "tclass.h"
+#include "compile.h"
 
 #include "TClassTable.h"
 #include "TClass.h"
@@ -11,17 +12,18 @@
 #include "TParameter.h"
 #include "TFunction.h"
 
-int uscript::TClassList::Add(const char *classname) {
-  int index = std::distance(classnames.begin(), std::find(classnames.begin(), classnames.end(), std::string(classname)));
+uscript::TClassInfo *uscript::TClassList::Add(const char *classname) {
+  classname = uscript::Compiler::Intern(std::string(classname));
+  auto search = classes.find(classname);
   // already added -- ok
-  if (index < classnames.size()) {
-    return index;
+  if (search != classes.end()) {
+    return &search->second;
   }
 
-  std::map<std::string, uscript::TField> fields;
+  std::map<const char *, uscript::TField> fields;
 
   DictFuncPtr_t classdict = gClassTable->GetDict(classname);
-  if (!classdict) return -1;
+  if (!classdict) return NULL;
 
   TClass *tclass = classdict();
 
@@ -38,13 +40,13 @@ int uscript::TClassList::Add(const char *classname) {
 
     // treat enum as unsigned
     if (member->IsEnum()) {
-      this_field.tclassIndex = -1; // no tclass index      
+      this_field.info = NULL; // no tclass info
       this_field.type = uscript::FIELD_UNSIGNED;
       assert(member->GetUnitSize() == 4);// make sure size is actually 4
     }
     // non-enum basic type
     else if (basic_type != NULL) {
-      this_field.tclassIndex = -1; // no tclass index
+      this_field.info = NULL; // no tclass info
       switch (basic_type->GetType()) {
         case kBool_t:
           this_field.type = uscript::FIELD_BOOL;
@@ -69,23 +71,22 @@ int uscript::TClassList::Add(const char *classname) {
     // complex-type (TClass)
     else {
       // must have a class dictionary
-      int index = Add(member->GetTypeName());
-      if (index >= 0) {
+      uscript::TClassInfo *field_info = Add(member->GetTypeName());
+      if (field_info != NULL) {
         this_field.type = uscript::FIELD_TINSTANCE;
-        this_field.tclassIndex = index;
+        this_field.info = field_info;
       }
       else {
         can_use = false;
       }
     }
     if (can_use) {
-      fields[std::string(obj->GetName())] = this_field;
+      fields[uscript::Compiler::Intern(std::string(obj->GetName()))] = this_field;
     }
   }
   uscript::TClassInfo tclassinfo;
   tclassinfo.fields = std::move(fields);
   tclassinfo.name = classname;
-  classes.push_back(std::move(tclassinfo));
-  return classes.size() - 1;
+  return &classes.insert({classname, tclassinfo}).first->second;
 }
 

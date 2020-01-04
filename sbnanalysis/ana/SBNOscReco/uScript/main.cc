@@ -20,6 +20,9 @@ static void repl() {
   numu::RecoSlice slice;
   slice.flash_match.time = 2.;
 
+  uscript::Compiler::Register<numu::RecoEvent>();
+  uscript::Compiler::Register<numu::RecoSlice>();
+
   char line[1024];
   uscript::VM vm;
   while (1) {
@@ -28,10 +31,10 @@ static void repl() {
       std::cout << "\n";
       break;
     }
-    uscript::Chunk chunk = uscript::compileChunk<numu::RecoEvent, numu::RecoSlice>("event", "slice", line);
-    vm.SetChunk(std::move(chunk));
-    vm.Register("event", &event);
-    vm.Register("slice", &slice);
+    uscript::Chunk chunk = uscript::compileChunk(line);
+    vm.SetChunk(&chunk);
+    vm.AddGlobal("event", &event);
+    vm.AddGlobal("slice", &slice);
     vm.Run();
   }
 }

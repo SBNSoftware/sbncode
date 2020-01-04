@@ -6,7 +6,6 @@
 #include <map>
 
 #include "value.h"
-#include "tclass.h"
 #include "common.h"
 
 namespace uscript {
@@ -46,18 +45,8 @@ public:
   void Write(uint8_t instruction);
   void Disassemble(const std::string &name) const;
 
-
-  void DoRegister(const char *classname, const char *name);
-
-  template <typename TObj>
-  void inline Register(const char *name) {
-    DoRegister(std::string(type_name<TObj>()).c_str(), name);
-  }
-
   std::vector<uint8_t> code;
   std::vector<Value> constants;
-  TClassList tclasslist;
-  std::map<std::string, int> tglobals;
   unsigned DisassembleInstruction(unsigned index) const;
 
 };

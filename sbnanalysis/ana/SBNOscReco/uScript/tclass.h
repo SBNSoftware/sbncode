@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include <set>
+#include <unordered_map>
 
 namespace uscript {
 
@@ -17,22 +17,23 @@ enum TFieldType {
   FIELD_TINSTANCE
 };
 
+struct TClassInfo;
+
 struct TField {
   int offset;
-  int tclassIndex;
+  TClassInfo *info;
   TFieldType type;
 };
 
 struct TClassInfo {
-  std::map<std::string, TField> fields;  
+  std::map<const char *, TField> fields;
   std::string name;
 };
 
 class TClassList {
 public:
-  int Add(const char *classname);
-  std::vector<TClassInfo> classes;
-  std::set<std::string> classnames;
+  TClassInfo *Add(const char *classname);
+  std::unordered_map<const char *, TClassInfo> classes;
 
 };
 

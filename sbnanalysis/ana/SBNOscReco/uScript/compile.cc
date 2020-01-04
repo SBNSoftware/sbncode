@@ -1,15 +1,14 @@
 #include <iostream>
 #include <string.h>
+#include <cassert>
 
 #include "compile.h"
 #include "scanner.h"
-#include "object.h"
 
-bool uscript::Compiler::Compile(const char *source, Chunk *chunk) {
-  uscript::Scanner scanner(source);
+bool uscript::Compiler::DoCompile(const char *source, Chunk *chunk) {
+  scanner.SetSource(source);
 
   SetChunk(chunk);
-  SetScanner(&scanner);
 
   Advance();
 
@@ -21,7 +20,7 @@ bool uscript::Compiler::Compile(const char *source, Chunk *chunk) {
 
   Finish();
 
-  return !HadError();
+  return !parser.hadError;
 }
 
 uscript::Compiler::Compiler() {
@@ -57,7 +56,9 @@ void uscript::Compiler::VarDeclaration() {
 }
 
 uint8_t uscript::Compiler::IdentifierConstant(uscript::Token *token) {
-  return MakeConstant(OBJ_VAL(new ObjString(std::string(token->start, token->start + token->length))));
+  std::string str(token->start, token->start + token->length);
+  const char *interned = DoIntern(str);
+  return MakeConstant(STRING_VAL(interned));
 }
 
 uint8_t uscript::Compiler::ParseVariable(const char *errorMessage) {
@@ -369,7 +370,7 @@ void uscript::Compiler::Advance() {
   parser.previous = parser.current;
 
   while (1) {
-    parser.current = scanner->ScanToken();
+    parser.current = scanner.ScanToken();
     if (parser.current.type != uscript::TOKEN_ERROR) break;
 
     ErrorAt(parser.current, parser.current.start);
@@ -412,8 +413,16 @@ uint8_t uscript::Compiler::MakeConstant(Value value) {
 }
 
 void uscript::Compiler::Number(bool canAssign) {
-  double value = strtod(parser.previous.start, NULL);
-  EmitConstant(NUMBER_VAL(value));
+  // try to see if we can convert to integer
+  char *end;
+  int v_int = strtol(parser.previous.start, &end, 10 /* base 10*/);
+  if (end == parser.previous.start + parser.previous.length) {
+    return EmitConstant(INTEGER_VAL(v_int));
+  }
+  else {
+    double value = strtod(parser.previous.start, NULL);
+    EmitConstant(NUMBER_VAL(value));
+  }
 }
 
 void uscript::Compiler::Grouping(bool canAssign) {
@@ -494,7 +503,8 @@ void uscript::Compiler::Literal(bool canAssign) {
 }
 
 void uscript::Compiler::String(bool canAssign) {
-  EmitConstant(OBJ_VAL(new ObjString(std::string(parser.previous.start+1, parser.previous.start + parser.previous.length - 1))));
+  std::string str(parser.previous.start+1, parser.previous.start + parser.previous.length - 1);
+  EmitConstant(STRING_VAL(DoIntern(str)));
 }
 
 void uscript::Compiler::Variable(bool canAssign) {
@@ -617,4 +627,13 @@ uscript::Compiler::ParseRule *uscript::Compiler::GetRule(uscript::TokenType type
 
 }
 
+const char *uscript::Compiler::DoIntern(const std::string &str) {
+  auto ret = strings.insert(str);
+  return ret.first->c_str();
+}
+
+void uscript::Compiler::DoRegister(const char *classname) {
+  uscript::TClassInfo *ret = tclasslist.Add(classname);
+  assert(ret != NULL);
+}
 

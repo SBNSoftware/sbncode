@@ -106,11 +106,3 @@ unsigned uscript::Chunk::DisassembleInstruction(unsigned index) const {
   }
 }
 
-void uscript::Chunk::DoRegister(const char *classname, const char *name) {
-  assert(!tglobals.count(name));
-
-  int index = tclasslist.Add(classname);
-  assert(index >= 0);
-  tglobals[name] = index;
-}
-

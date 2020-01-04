@@ -5,21 +5,20 @@
 #include "common.h"
 #include "compile.h"
 
-uscript::InterpretResult uscript::VM::Interpret(Chunk chunk) {
+uscript::InterpretResult uscript::VM::Interpret(Chunk *chunk) {
   ip = 0;
-  SetChunk(std::move(chunk));
+  SetChunk(chunk);
   return Run();
 }
 
 uscript::InterpretResult uscript::VM::Interpret(const char* source) {
   ip = 0;
   Chunk chunk;
-  Compiler compiler;
-  if (!compiler.Compile(source, &chunk)) {
+  if (!uscript::Compiler::Compile(source, &chunk)) {
     return uscript::INTERPRET_COMPILE_ERROR;
   }
 
-  SetChunk(std::move(chunk));
+  SetChunk(&chunk);
 
   return Run();
 }
@@ -29,7 +28,7 @@ uscript::VM::VM():
   ip(0)
   {}
 
-void uscript::VM::SetChunk(Chunk _chunk) {
+void uscript::VM::SetChunk(const Chunk *_chunk) {
   chunk = _chunk;
   ip = 0;
 }
@@ -39,11 +38,11 @@ void uscript::VM::Reset() {
 }
 
 uint8_t uscript::VM::ReadInstruction() {
-  return chunk.code[ip++];
+  return chunk->code[ip++];
 }
 
 uscript::Value uscript::VM::ReadConstant() {
-  return chunk.constants[ReadInstruction()];
+  return chunk->constants[ReadInstruction()];
 }
 
 static bool valuesEqual(uscript::Value a, uscript::Value b) {
@@ -54,9 +53,11 @@ static bool valuesEqual(uscript::Value a, uscript::Value b) {
     case uscript::VAL_NIL:  return true;
     case uscript::VAL_NUMBER: return AS_NUMBER(a) == AS_NUMBER(b);
     case uscript::VAL_INTEGER: return AS_INTEGER(a) == AS_INTEGER(b);
-    case uscript::VAL_OBJ: {
-      return AS_STRING(a) == AS_STRING(b);
+    case uscript::VAL_OBJ_STRING: {
+      return AS_CSTRING(a) == AS_CSTRING(b);
     }
+    default:
+      return false;
   }
 
 }
@@ -100,8 +101,8 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
 
   while (1) {
 
-#define READ_STRING() AS_STRING(ReadConstant())
-#define READ_SHORT() (ip += 2, (uint16_t)((chunk.code[ip-2] << 8) | chunk.code[ip-1])) 
+#define READ_STRING() AS_CSTRING(ReadConstant())
+#define READ_SHORT() (ip += 2, (uint16_t)((chunk->code[ip-2] << 8) | chunk->code[ip-1])) 
 
 #ifdef DEBUG_TRACE_EXECUTION
     std::cout << "    ";
@@ -111,13 +112,13 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
       std::cout << " ]";
     }
     std::cout << std::endl;
-    chunk.DisassembleInstruction(ip);
+    chunk->DisassembleInstruction(ip);
 #endif
     uint8_t instruction = ReadInstruction();
     switch (instruction) {
       case uscript::OP_GET_PROPERTY: {
         Value instance = Pop();
-        const std::string &name = READ_STRING();
+        const char *name = READ_STRING();
         Value result;
         if (!AccessValue(instance, name, &result)) {
           return uscript::INTERPRET_RUNTIME_ERROR;
@@ -156,17 +157,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         std::cout << std::endl;
         break;
       }
-      case uscript::OP_ADD: {
-        if (IS_STRING(Peek(0)) && IS_STRING(Peek(1))) {
-          std::string b = AS_STRING(Pop());
-          std::string a = AS_STRING(Pop());
-          Obj *obj = new ObjString(a+b);
-          objects.push_back(obj);
-          Push(OBJ_VAL(obj));
-        }
-        else  BINARY_OP(+);
-        break;
-      }
+      case uscript::OP_ADD: BINARY_OP(+); break;
       case uscript::OP_SUBTRACT: BINARY_OP(-); break;
       case uscript::OP_MULTIPLY: BINARY_OP(*); break;
       case uscript::OP_DIVIDE:   BINARY_OP(/); break;
@@ -191,20 +182,20 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         break;
       }
       case uscript::OP_GET_GLOBAL: {
-        const std::string &name = READ_STRING();
+        const char *name = READ_STRING();
         if (globals.count(name)) {
           Push(globals.at(name));
         }
         else {
-          RuntimeError("Undefined variable '%s'", name.c_str());
+          RuntimeError("Undefined variable '%s'", name);
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         break;
       }
       case uscript::OP_SET_GLOBAL: {
-        const std::string &name = READ_STRING();
+        const char *name = READ_STRING();
         if (!globals.count(name)) {
-          RuntimeError("Undefined variable '%s'", name.c_str());
+          RuntimeError("Undefined variable '%s'", name);
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         globals[name] = Peek();
@@ -244,13 +235,8 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
 }
 
 bool uscript::VM::CallValue(Value callee, int argCount) {
-  if (IS_OBJ(callee)) {
-    switch (OBJ_TYPE(callee)) {
-      case OBJ_TMETHOD:
-        return CallTMethod(AS_TMETHOD(callee), argCount);
-      default:
-        break;
-    }
+  if (IS_TMETHOD(callee)) {
+    return true;
   }
   RuntimeError("Cannot call on non-TMethod.");
   return false;
@@ -266,49 +252,44 @@ bool uscript::VM::CallTMethod(uscript::ObjTMethod *method, int argCount) {
   return success;
 }
 
-bool uscript::VM::AccessValue(Value instance, const std::string &name, Value *result) {
-  std::cout << "Accessing value\n";
-  if (IS_OBJ(instance)) {
-    switch (OBJ_TYPE(instance)) {
-      case uscript::OBJ_TINSTANCE:
-        return GetTField(AS_TINSTANCE(instance), name, result);
-      default:
-        break;
-    }
+bool uscript::VM::AccessValue(Value instance, const char *name, Value *result) {
+  if (IS_TINSTANCE(instance)) {
+    bool success = GetTField(AS_TINSTANCE(instance), name, result);
+    if (!success) RuntimeError("Could not find value %s.", name);
+    return success;
   }
   RuntimeError("Cannot access on non-TInstance.");
   return false;
    
 }
 
-bool uscript::VM::GetTField(uscript::ObjTInstance *instance, const std::string &name, uscript::Value *ret) {
-  if (!instance->data) return false;
+bool uscript::VM::GetTField(uscript::ObjTInstance instance, const char *name, uscript::Value *ret) {
+  if (!instance.data) return false;
 
-  uscript::TClassInfo &classinfo = chunk.tclasslist.classes[instance->tclassIndex];
-  if (classinfo.fields.count(name)) {
-    uscript::TField field = classinfo.fields.at(name);
+  uscript::TClassInfo *classinfo = instance.info;
+  if (classinfo->fields.count(name)) {
+    uscript::TField field = classinfo->fields.at(name);
     switch(field.type) {
       case uscript::FIELD_BOOL:
-        *ret = BOOL_VAL((bool)instance->data[field.offset]);
+        *ret = BOOL_VAL((bool)instance.data[field.offset]);
         break;
       case uscript::FIELD_INT:
-        *ret = INTEGER_VAL(*((int*)(instance->data+field.offset)));
+        *ret = INTEGER_VAL(*((int*)(instance.data+field.offset)));
         break;
       case uscript::FIELD_UNSIGNED:
-        *ret = INTEGER_VAL((int)*((unsigned*)(instance->data+field.offset)));
+        *ret = INTEGER_VAL((int)*((unsigned*)(instance.data+field.offset)));
         break;
       case uscript::FIELD_FLOAT:
-        *ret = NUMBER_VAL((double)*((float*)(instance->data+field.offset)));
+        *ret = NUMBER_VAL((double)*((float*)(instance.data+field.offset)));
         break;
       case uscript::FIELD_DOUBLE:
-        *ret = NUMBER_VAL(*((double*)(instance->data+field.offset)));
+        *ret = NUMBER_VAL(*((double*)(instance.data+field.offset)));
         break;
       case uscript::FIELD_TINSTANCE: {
-        ObjTInstance *inst = new ObjTInstance;
-        inst->type = uscript::OBJ_TINSTANCE;
-        inst->data = instance->data + field.offset;
-        inst->tclassIndex = field.tclassIndex;
-        *ret = OBJ_VAL(inst);
+        ObjTInstance inst;
+        inst.data = instance.data + field.offset;
+        inst.info = field.info;
+        *ret = TINSTANCE_VAL(inst);
         break;
       }
     }
@@ -319,18 +300,14 @@ bool uscript::VM::GetTField(uscript::ObjTInstance *instance, const std::string &
 
 }
 
-void uscript::VM::DoRegister(const char *classname, const char *name, uint8_t *data) {
-
-  int index = chunk.tglobals.at(name);
-  const uscript::TClassInfo &classinfo = chunk.tclasslist.classes[index];
-  assert(classinfo.name == classname);
-  // make a global
-  ObjTInstance *obj = new ObjTInstance; 
-  obj->type = uscript::OBJ_TINSTANCE;
-  obj->data = data;
-  obj->tclassIndex = index; 
-  
-  globals[name] = OBJ_VAL(obj);
+void uscript::VM::DoAddGlobal(const char *classname, const char *name, uint8_t *data) {
+  uscript::TClassInfo *classinfo = uscript::Compiler::GetClassInfo(classname);
+  ObjTInstance inst;
+  inst.data = data;
+  inst.info = classinfo;
+  // intern the name
+  name = uscript::Compiler::Intern(name);
+  globals[name] = TINSTANCE_VAL(inst);
 }
 
 void uscript::VM::RuntimeError(const char *format, ...) { 

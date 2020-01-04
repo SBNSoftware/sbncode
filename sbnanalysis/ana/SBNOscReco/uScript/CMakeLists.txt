@@ -2,7 +2,7 @@
 # Note that the library names (the first argument) should follow the convention
 # "sbnanalysis_ThisAnalysis_LibraryName)". Libraries can be built from multiple
 # source files.
-add_library(uscript_lib chunk.cc value.cc vm.cc compile.cc scanner.cc object.cc tclass.cc)
+add_library(uscript_lib chunk.cc value.cc vm.cc compile.cc scanner.cc tclass.cc)
 
 target_link_libraries(uscript_lib
   ${ROOT_LIBRARIES}

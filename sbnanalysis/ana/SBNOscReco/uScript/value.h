@@ -4,14 +4,28 @@
 
 namespace uscript {
 
-struct Obj;
-
 enum ValueType {
   VAL_BOOL,
   VAL_NIL,
   VAL_NUMBER,
   VAL_INTEGER,
-  VAL_OBJ
+  VAL_OBJ_STRING,
+  VAL_OBJ_TINSTANCE,
+  VAL_OBJ_TMETHOD
+};
+
+struct ObjString {
+  const char *string;
+};
+
+struct TClassInfo;
+
+struct ObjTInstance {
+  uint8_t *data;
+  TClassInfo *info;
+};
+
+struct ObjTMethod {
 };
 
 struct Value {
@@ -20,7 +34,8 @@ struct Value {
     bool boolean;
     double number;
     int integer;
-    Obj *obj;
+    ObjString string;
+    ObjTInstance tinst;
   } as;
   void Print() const;
   void PrintObj() const;
@@ -29,21 +44,27 @@ struct Value {
 };
 } // end namespace
 
-#define BOOL_VAL(value)    ((uscript::Value){ uscript::VAL_BOOL, { .boolean = value }})
-#define NIL_VAL            ((uscript::Value){ uscript::VAL_NIL,  { .integer = 0 }})
-#define NUMBER_VAL(value)  ((uscript::Value){ uscript::VAL_NUMBER, { .number = value }})
-#define INTEGER_VAL(value) ((uscript::Value){ uscript::VAL_INTEGER, { .integer = value }})
-#define OBJ_VAL(value)     ((uscript::Value){ uscript::VAL_OBJ, { .obj = value }})
+#define BOOL_VAL(value)      ((uscript::Value){ uscript::VAL_BOOL, { .boolean = value }})
+#define NIL_VAL              ((uscript::Value){ uscript::VAL_NIL,  { .integer = 0 }})
+#define NUMBER_VAL(value)    ((uscript::Value){ uscript::VAL_NUMBER, { .number = value }})
+#define INTEGER_VAL(value)   ((uscript::Value){ uscript::VAL_INTEGER, { .integer = value }})
+#define STRING_VAL(value)    ((uscript::Value){ uscript::VAL_OBJ_STRING, { .string = (uscript::ObjString){ value } }})
+#define TINSTANCE_VAL(value) ((uscript::Value){ uscript::VAL_OBJ_TINSTANCE, { .tinst = value }})
 
 #define AS_BOOL(value)    ((value).as.boolean)
 #define AS_NUMBER(value)  ((value).as.number)
 #define AS_INTEGER(value) ((value).as.integer)
-#define AS_OBJ(value)     ((value).as.obj)
+#define AS_STRING(value)  ((value).as.string)
+#define AS_CSTRING(value) ((value).as.string.string)
+// #define AS_TMETHOD(value) (assert(false);)
+#define AS_TINSTANCE(value) ((value).as.tinst)
 
-#define IS_NIL(value)     ((value).val == uscript::VAL_NIL)
-#define IS_BOOL(value)    ((value).val == uscript::VAL_BOOL)
-#define IS_NUMBER(value)  ((value).val == uscript::VAL_NUMBER)
-#define IS_INTEGER(value) ((value).val == uscript::VAL_INTEGER)
-#define IS_OBJ(value)     ((value).val == uscript::VAL_OBJ)
+#define IS_NIL(value)       ((value).val == uscript::VAL_NIL)
+#define IS_BOOL(value)      ((value).val == uscript::VAL_BOOL)
+#define IS_NUMBER(value)    ((value).val == uscript::VAL_NUMBER)
+#define IS_INTEGER(value)   ((value).val == uscript::VAL_INTEGER)
+#define IS_STRING(value)    ((value).val == uscript::VAL_OBJ_STRING)
+#define IS_TINSTANCE(value) ((value).val == uscript::VAL_OBJ_TINSTANCE)
+#define IS_TMETHOD(value)   ((value).val == uscript::VAL_OBJ_TMETHOD)
 
 #endif
