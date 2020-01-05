@@ -32,10 +32,13 @@ enum OpCode {
   OP_NOT,
   OP_NEGATE,
   OP_PRINT,
+  OP_FIELDS,
+  OP_LENGTH,
   OP_JUMP_IF_FALSE,
   OP_JUMP,
   OP_LOOP,
   OP_CALL,
+  OP_INDEX,
   OP_GET_PROPERTY
 };
 

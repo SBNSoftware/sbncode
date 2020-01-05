@@ -64,6 +64,8 @@ uscript::Token uscript::Scanner::ScanToken() {
     case ')': return MakeToken(uscript::TOKEN_RIGHT_PAREN);
     case '{': return MakeToken(uscript::TOKEN_LEFT_BRACE);
     case '}': return MakeToken(uscript::TOKEN_RIGHT_BRACE);
+    case ']': return MakeToken(uscript::TOKEN_RIGHT_BRACKET);
+    case '[': return MakeToken(uscript::TOKEN_LEFT_BRACKET);
     case ';': return MakeToken(uscript::TOKEN_SEMICOLON);
     case ',': return MakeToken(uscript::TOKEN_COMMA);
     case '.': return MakeToken(uscript::TOKEN_DOT);
@@ -136,7 +138,7 @@ uscript::Token uscript::Scanner::Number() {
 }
 
 uscript::TokenType uscript::Scanner::IdentifierType() const {
-  static const std::vector<std::string> keywords {"and", "or", "if", "else", "for", "while", "return", "true", "false", "fun", "nil", "var", "print"};
+  static const std::vector<std::string> keywords {"and", "or", "if", "else", "for", "while", "return", "true", "false", "fun", "nil", "var", "print", "length", "fields"};
   static const std::vector<uscript::TokenType> keyword_types {
     uscript::TOKEN_AND,
     uscript::TOKEN_OR,
@@ -150,7 +152,9 @@ uscript::TokenType uscript::Scanner::IdentifierType() const {
     uscript::TOKEN_FUN,
     uscript::TOKEN_NIL,
     uscript::TOKEN_VAR,
-    uscript::TOKEN_PRINT
+    uscript::TOKEN_PRINT,
+    uscript::TOKEN_LENGTH,
+    uscript::TOKEN_FIELDS
   };
   std::string comp = std::string(start, current);
   for (unsigned i = 0; i < keywords.size(); i++) {

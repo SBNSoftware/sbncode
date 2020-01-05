@@ -126,6 +126,19 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         Push(result);
         break;
       }
+      case uscript::OP_INDEX: {
+        Value index = Pop();
+        if (!IS_INTEGER(index)) {
+          RuntimeError("Cannot index with non-integer.");
+          return uscript::INTERPRET_RUNTIME_ERROR;
+        }
+        int ind = AS_INTEGER(index);
+        Value callee = Pop();
+        if (!IndexValue(callee, ind)) {
+          return uscript::INTERPRET_RUNTIME_ERROR;
+        }
+        break;
+      }
       case uscript::OP_CALL: {
         int argCount = ReadInstruction();
         if (!CallValue(Peek(argCount), argCount)) {
@@ -156,6 +169,41 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         Pop().Print();
         std::cout << std::endl;
         break;
+      }
+      case uscript::OP_LENGTH: {
+        Value val = Pop();
+        if (IS_TINSTANCE(val)) {
+          ObjTInstance inst = AS_TINSTANCE(val);
+          Value length = INTEGER_VAL(inst.data.Length(inst.loc));
+          Push(length);
+          break;
+        }
+        else {
+          RuntimeError("Cannot access length of non-tinstance.");   
+          return uscript::INTERPRET_RUNTIME_ERROR;
+        }
+      }
+      case uscript::OP_FIELDS: {
+        Value val = Pop();
+        if (IS_TINSTANCE(val)) {
+          ObjTInstance inst = AS_TINSTANCE(val);
+          if (inst.data.info) {
+             TClassInfo *info = inst.data.info;
+             for (auto const &field: info->fields) {
+               std::cout << field.first << std::endl;
+             }
+          }
+          
+          int length = inst.data.Length(inst.loc);
+          if (length >= 0) {
+            std::cout << "Indexable with length: " << length << std::endl;
+          }
+          break;
+        }
+        else {
+          RuntimeError("Cannot access fields of non-tinstance.");   
+          return uscript::INTERPRET_RUNTIME_ERROR;
+        }
       }
       case uscript::OP_ADD: BINARY_OP(+); break;
       case uscript::OP_SUBTRACT: BINARY_OP(-); break;
@@ -234,22 +282,81 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
 #undef COMP_OP
 }
 
-bool uscript::VM::CallValue(Value callee, int argCount) {
-  if (IS_TMETHOD(callee)) {
-    return true;
+bool uscript::VM::IndexValue(Value callee, int index) {
+  if (IS_TINSTANCE(callee)) {
+    uscript::ObjTInstance inst = AS_TINSTANCE(callee);
+    if (index >= 0 && index < inst.data.len) {
+      // indexed value itself has no length and is not a vector
+      TData field_data = inst.data;
+      field_data.len = -1; 
+      Value ret = GetTValue(inst.loc + index * inst.data.Size(), field_data);
+      Push(ret);
+      return true;
+    } 
+    else {
+      RuntimeError("Cannot index with value (%i) into instance of size (%i)", index, inst.data.len);
+      return false;
+    }
   }
-  RuntimeError("Cannot call on non-TMethod.");
   return false;
 }
 
-bool uscript::VM::CallTMethod(uscript::ObjTMethod *method, int argCount) {
-  Value result;
-  // bool success = method->Call(argCount, &stack[stack.size() - argCount], &result);
-  bool success = true;
-  // clean the stack
-  stack.resize(stack.size() - argCount - 1);
-  Push(result);
-  return success;
+bool uscript::VM::CallValue(Value callee, int argCount) {
+  RuntimeError("Functions are not implemented.");
+  return false;
+}
+
+uscript::Value uscript::VM::GetTValue(uint8_t *loc, uscript::TData data) {
+  // case where this is a vector
+  if (data.info != NULL && data.info->is_vec) {
+    // go to the location of the start of the vector
+    // FIXME: this is probably implementation defined -- needs to be fixed
+
+    // get the contents of the vector
+    uint8_t **vec = (uint8_t**)loc;
+    uint8_t *start = vec[0];
+    uint8_t *end = vec[1];
+
+    // the data is now what the vector was pointing to
+    data = data.info->vec_data;
+
+    // update the size
+    data.len = (end - start) / data.Size();
+
+    // update the loc
+    loc = start;
+  }
+  // all non-zero size Tdata's are instances
+  if (data.len >= 0 || data.type == uscript::FIELD_TINSTANCE) {
+    ObjTInstance inst;
+    inst.loc = loc;
+    inst.data = data;
+    return TINSTANCE_VAL(inst);
+  }
+  Value ret;
+  switch(data.type) {
+    case uscript::FIELD_BOOL:
+      ret = BOOL_VAL((bool)*loc);
+      break;
+    case uscript::FIELD_INT:
+      ret = INTEGER_VAL(*((int*)loc));
+      break;
+    case uscript::FIELD_ENUM:
+      ret = INTEGER_VAL((int)*((uint32_t*)loc));
+      break;
+    case uscript::FIELD_UNSIGNED:
+      ret = INTEGER_VAL((int)*((unsigned*)loc));
+      break;
+    case uscript::FIELD_FLOAT:
+      ret = NUMBER_VAL((double)*((float*)loc));
+      break;
+    case uscript::FIELD_DOUBLE:
+      ret = NUMBER_VAL(*((double*)loc));
+      break;
+    case uscript::FIELD_TINSTANCE: 
+      break; // unreachable
+  }
+  return ret;
 }
 
 bool uscript::VM::AccessValue(Value instance, const char *name, Value *result) {
@@ -264,35 +371,16 @@ bool uscript::VM::AccessValue(Value instance, const char *name, Value *result) {
 }
 
 bool uscript::VM::GetTField(uscript::ObjTInstance instance, const char *name, uscript::Value *ret) {
-  if (!instance.data) return false;
+  if (!instance.loc) return false; // shouldn't happen
+  if (!instance.data.info) return false; // possible for list of built-in type (e.g. vector<int> or double[4])
 
-  uscript::TClassInfo *classinfo = instance.info;
+  // if this is a list, then you have to index it before accessing a value
+  if (instance.data.len >= 0) return false;
+
+  uscript::TClassInfo *classinfo = instance.data.info;
   if (classinfo->fields.count(name)) {
     uscript::TField field = classinfo->fields.at(name);
-    switch(field.type) {
-      case uscript::FIELD_BOOL:
-        *ret = BOOL_VAL((bool)instance.data[field.offset]);
-        break;
-      case uscript::FIELD_INT:
-        *ret = INTEGER_VAL(*((int*)(instance.data+field.offset)));
-        break;
-      case uscript::FIELD_UNSIGNED:
-        *ret = INTEGER_VAL((int)*((unsigned*)(instance.data+field.offset)));
-        break;
-      case uscript::FIELD_FLOAT:
-        *ret = NUMBER_VAL((double)*((float*)(instance.data+field.offset)));
-        break;
-      case uscript::FIELD_DOUBLE:
-        *ret = NUMBER_VAL(*((double*)(instance.data+field.offset)));
-        break;
-      case uscript::FIELD_TINSTANCE: {
-        ObjTInstance inst;
-        inst.data = instance.data + field.offset;
-        inst.info = field.info;
-        *ret = TINSTANCE_VAL(inst);
-        break;
-      }
-    }
+    *ret = GetTValue(instance.loc + field.offset, field.data); 
     return true;
   }
 
@@ -300,11 +388,14 @@ bool uscript::VM::GetTField(uscript::ObjTInstance instance, const char *name, us
 
 }
 
-void uscript::VM::DoAddGlobal(const char *classname, const char *name, uint8_t *data) {
+void uscript::VM::DoAddGlobal(const char *classname, const char *name, uint8_t *loc) {
   uscript::TClassInfo *classinfo = uscript::Compiler::GetClassInfo(classname);
   ObjTInstance inst;
-  inst.data = data;
-  inst.info = classinfo;
+  inst.loc = loc;
+  inst.data.info = classinfo;
+  inst.data.info = classinfo;
+  inst.data.len = -1;
+  inst.data.type = uscript::FIELD_TINSTANCE;
   // intern the name
   name = uscript::Compiler::Intern(name);
   globals[name] = TINSTANCE_VAL(inst);
@@ -318,5 +409,40 @@ void uscript::VM::RuntimeError(const char *format, ...) {
   fputs("\n", stderr);
 
   Reset();
+}
+
+template<>
+void uscript::VM::AddGlobal<int>(const char *name, const int *obj) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = INTEGER_VAL(*obj);
+}
+
+template<>
+void uscript::VM::AddGlobal<unsigned>(const char *name, const unsigned *obj) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = INTEGER_VAL((int)*obj);
+}
+
+template<>
+void uscript::VM::AddGlobal<float>(const char *name, const float *obj) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = NUMBER_VAL(*obj);
+}
+
+template<>
+void uscript::VM::AddGlobal<double>(const char *name, const double *obj) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = NUMBER_VAL(*obj);
+}
+
+template<>
+void uscript::VM::AddGlobal<bool>(const char *name, const bool *obj) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = BOOL_VAL(*obj);
+}
+
+void uscript::VM::AddGlobal(const char *name) {
+  name = uscript::Compiler::Intern(name);
+  globals[name] = NIL_VAL;
 }
 

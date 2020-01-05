@@ -10,7 +10,6 @@ void uscript::Value::Print() const {
     case uscript::VAL_INTEGER: std::cout << AS_INTEGER(*this); break;
     case uscript::VAL_OBJ_STRING: std::cout << AS_CSTRING(*this); break;
     case uscript::VAL_OBJ_TINSTANCE: std::cout << "TInstance"; break;
-    case uscript::VAL_OBJ_TMETHOD: std::cout << "TMethod"; break;
   }
 }
 

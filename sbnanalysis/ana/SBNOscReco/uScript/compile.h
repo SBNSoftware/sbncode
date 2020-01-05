@@ -71,6 +71,7 @@ class Compiler {
   void AddLocal(Token name);
   int ResolveLocal(Token *name);
   void MarkIntialized();
+  void FieldsStatement();
   void PrintStatement();
   void ExpressionStatement();
   void IfStatement();
@@ -101,6 +102,7 @@ class Compiler {
   void And(bool canAssign);
   void Or(bool canAssign);
   void Call(bool canAssign);
+  void Index(bool canAssign);
   void Dot(bool canAssign);
 
   void NamedVariable(Token token, bool canAssign);

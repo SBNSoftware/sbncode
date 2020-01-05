@@ -12,16 +12,24 @@
 #include "api.h"
 
 #include "../Data/RecoEvent.h"
+#include "../Data/FlatInteraction.h"
 
 static void repl() {
   numu::RecoEvent event;
   event.type = (numu::MCType)1;
+  numu::CRTHit hit;
+  hit.pes = -5.6;
+  event.in_time_crt_hits.push_back(hit);
 
   numu::RecoSlice slice;
   slice.flash_match.time = 2.;
 
+  numu::flat::FlatInteraction flat;
+  flat.ptrack.start[1] = 5.;
+
   uscript::Compiler::Register<numu::RecoEvent>();
   uscript::Compiler::Register<numu::RecoSlice>();
+  uscript::Compiler::Register<numu::flat::FlatInteraction>();
 
   char line[1024];
   uscript::VM vm;
@@ -33,8 +41,11 @@ static void repl() {
     }
     uscript::Chunk chunk = uscript::compileChunk(line);
     vm.SetChunk(&chunk);
+    vm.AddGlobal("flat", &flat);
     vm.AddGlobal("event", &event);
     vm.AddGlobal("slice", &slice);
+    int global = 5;
+    vm.AddGlobal("int", &global);
     vm.Run();
   }
 }

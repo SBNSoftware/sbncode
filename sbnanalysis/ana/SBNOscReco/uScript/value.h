@@ -2,6 +2,8 @@
 #define uscript_value_h
 #include <string>
 
+#include "tclass.h"
+
 namespace uscript {
 
 enum ValueType {
@@ -11,7 +13,6 @@ enum ValueType {
   VAL_INTEGER,
   VAL_OBJ_STRING,
   VAL_OBJ_TINSTANCE,
-  VAL_OBJ_TMETHOD
 };
 
 struct ObjString {
@@ -21,11 +22,8 @@ struct ObjString {
 struct TClassInfo;
 
 struct ObjTInstance {
-  uint8_t *data;
-  TClassInfo *info;
-};
-
-struct ObjTMethod {
+  uint8_t *loc;
+  TData data; 
 };
 
 struct Value {
@@ -56,7 +54,6 @@ struct Value {
 #define AS_INTEGER(value) ((value).as.integer)
 #define AS_STRING(value)  ((value).as.string)
 #define AS_CSTRING(value) ((value).as.string.string)
-// #define AS_TMETHOD(value) (assert(false);)
 #define AS_TINSTANCE(value) ((value).as.tinst)
 
 #define IS_NIL(value)       ((value).val == uscript::VAL_NIL)
@@ -65,6 +62,5 @@ struct Value {
 #define IS_INTEGER(value)   ((value).val == uscript::VAL_INTEGER)
 #define IS_STRING(value)    ((value).val == uscript::VAL_OBJ_STRING)
 #define IS_TINSTANCE(value) ((value).val == uscript::VAL_OBJ_TINSTANCE)
-#define IS_TMETHOD(value)   ((value).val == uscript::VAL_OBJ_TMETHOD)
 
 #endif

@@ -33,10 +33,11 @@ class VM {
   void RuntimeError(const char *format, ...);
   
   bool CallValue(Value callee, int argCount);
+  bool IndexValue(Value callee, int index);
 
   bool AccessValue(Value instance, const char *name, Value *result);
   bool GetTField(ObjTInstance instance, const char *name, Value *ret);
-  bool CallTMethod(ObjTMethod *method, int argCount);
+  Value GetTValue(uint8_t *loc, TData data);
   void DoAddGlobal(const char *classname, const char *name, uint8_t *data);
 
 public:
@@ -47,10 +48,23 @@ public:
   InterpretResult Run(Value *ret=NULL);
 
   template <typename TObj>
-  void inline AddGlobal(const char *name, const TObj *object) {
+  void AddGlobal(const char *name, const TObj *object) {
     DoAddGlobal(std::string(type_name<TObj>()).c_str(), name, (uint8_t*)object);
   }
+
+  void AddGlobal(const char *name);
 };
 
+#define DECLARE_ADDGLOBAL_SPECIAL(type) \
+  template<> \
+  void uscript::VM::AddGlobal<type>(const char *name, const type *obj)
+
+DECLARE_ADDGLOBAL_SPECIAL(int);
+DECLARE_ADDGLOBAL_SPECIAL(unsigned);
+DECLARE_ADDGLOBAL_SPECIAL(float);
+DECLARE_ADDGLOBAL_SPECIAL(double);
+DECLARE_ADDGLOBAL_SPECIAL(bool);
+
+#undef DECLARE_ADDGLOBAL_SPECIAL
 } // end namespace
 #endif

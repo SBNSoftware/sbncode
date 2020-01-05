@@ -14,20 +14,31 @@ enum TFieldType {
   FIELD_UNSIGNED,
   FIELD_FLOAT,
   FIELD_DOUBLE,
+  FIELD_ENUM,
   FIELD_TINSTANCE
 };
 
 struct TClassInfo;
 
-struct TField {
-  int offset;
+struct TData {
   TClassInfo *info;
   TFieldType type;
+  int len;
+  int Size() const;
+  int Length(uint8_t *loc) const;
+};
+
+struct TField {
+  int offset;
+  TData data;
 };
 
 struct TClassInfo {
   std::map<const char *, TField> fields;
   std::string name;
+  bool is_vec;
+  TData vec_data;
+  int size;
 };
 
 class TClassList {

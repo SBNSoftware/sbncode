@@ -152,6 +152,9 @@ void uscript::Compiler::Statement() {
   if (Match(uscript::TOKEN_PRINT)) {
     PrintStatement();
   }
+  else if (Match(uscript::TOKEN_FIELDS)) {
+    FieldsStatement();
+  }
   else if (Match(uscript::TOKEN_IF)) {
     IfStatement();
   }
@@ -293,6 +296,12 @@ void uscript::Compiler::EndScope() {
     locals.pop_back();
   } 
 
+}
+
+void uscript::Compiler::FieldsStatement() {
+  Expression();
+  Consume(uscript::TOKEN_SEMICOLON, "Expect ';' after value.");
+  EmitByte(uscript::OP_FIELDS);
 }
 
 void uscript::Compiler::PrintStatement() {
@@ -463,6 +472,12 @@ void uscript::Compiler::Dot(bool canAssign) {
   EmitBytes(uscript::OP_GET_PROPERTY, name);
 }
 
+void uscript::Compiler::Index(bool canAssign) {
+  Expression();
+  Consume(uscript::TOKEN_RIGHT_BRACKET, "Expect ']' to close index."); 
+  EmitByte(uscript::OP_INDEX);
+}
+
 void uscript::Compiler::Call(bool canAssign) {
   uint8_t argCount = ArgumentList();
   EmitBytes(uscript::OP_CALL, argCount);
@@ -488,6 +503,7 @@ void uscript::Compiler::Unary(bool canAssign) {
   switch (operatorType) {
     case uscript::TOKEN_BANG: EmitByte(uscript::OP_NOT); break;
     case uscript::TOKEN_MINUS: EmitByte(uscript::OP_NEGATE); break;
+    case uscript::TOKEN_LENGTH: EmitByte(uscript::OP_LENGTH); break;
     default: return; // unreachable
   }
 }
@@ -581,10 +597,12 @@ void uscript::Compiler::ParsePrecedence(uscript::Compiler::Precedence precedence
 
 uscript::Compiler::ParseRule *uscript::Compiler::GetRule(uscript::TokenType type) const {
   static ParseRule rules[] = {
-    { &uscript::Compiler::Grouping, &uscript::Compiler::Call,    uscript::Compiler::PREC_NONE },       // TOKEN_LEFT_PAREN
+    { &uscript::Compiler::Grouping, &uscript::Compiler::Call,    uscript::Compiler::PREC_CALL },       // TOKEN_LEFT_PAREN
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_RIGHT_PAREN
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_LEFT_BRACE
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_RIGHT_BRACE
+    { NULL,     &uscript::Compiler::Index, uscript::Compiler::PREC_CALL }, // TOKEN_LEFT_BRACKET
+    { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_RIGHT_BRACKET
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_COMMA
     { NULL,     &uscript::Compiler::Dot,    uscript::Compiler::PREC_CALL },       // TOKEN_DOT
     { &uscript::Compiler::Unary,    &uscript::Compiler::Binary,  uscript::Compiler::PREC_TERM },       // TOKEN_MINUS
@@ -619,6 +637,8 @@ uscript::Compiler::ParseRule *uscript::Compiler::GetRule(uscript::TokenType type
     { &uscript::Compiler::Literal,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_TRUE
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_VAR
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_WHILE
+    { &uscript::Compiler::Unary,     NULL, uscript::Compiler::PREC_NONE }, // TOKEN LENGTH
+    { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_FIELDS
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_ERROR
     { NULL,     NULL,    uscript::Compiler::PREC_NONE },       // TOKEN_EOF
   };

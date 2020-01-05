@@ -52,6 +52,10 @@ unsigned uscript::Chunk::DisassembleInstruction(unsigned index) const {
       return simpleInstruction("OP_RETURN", index);
     case uscript::OP_PRINT:
       return simpleInstruction("OP_PRINT", index);
+    case uscript::OP_FIELDS:
+      return simpleInstruction("OP_FIELDS", index);
+    case uscript::OP_LENGTH:
+      return simpleInstruction("OP_LENGTH", index);
     case uscript::OP_CONSTANT:
       return constantInstruction("OP_CONSTANT", index, code[index+1], constants[code[index+1]]);
     case uscript::OP_ADD:
@@ -84,6 +88,8 @@ unsigned uscript::Chunk::DisassembleInstruction(unsigned index) const {
       return constantInstruction("OP_GET_PROPERTY", index, code[index+1], constants[code[index+1]]);
     case uscript::OP_CALL:
       return byteInstruction("OP_CALL", index, code[index+1]);
+    case uscript::OP_INDEX:
+      return simpleInstruction("OP_INDEX", index);
     case uscript::OP_SET_LOCAL:
       return byteInstruction("OP_SET_LOCAL", index, code[index+1]);
     case uscript::OP_GET_LOCAL:
