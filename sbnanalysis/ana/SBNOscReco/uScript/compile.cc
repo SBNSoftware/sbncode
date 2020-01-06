@@ -6,6 +6,7 @@
 #include "scanner.h"
 
 bool uscript::Compiler::DoCompile(const char *source, Chunk *chunk) {
+  parser.hadError = false;
   scanner.SetSource(source);
 
   SetChunk(chunk);
@@ -164,6 +165,9 @@ void uscript::Compiler::Statement() {
   else if (Match(uscript::TOKEN_FOR)) {
     ForStatement();
   }
+  else if (Match(uscript::TOKEN_RETURN)) {
+    ReturnStatement();
+  }
   else if (Match(uscript::TOKEN_LEFT_BRACE)) {
     BeginScope();
     Block();
@@ -242,6 +246,19 @@ void uscript::Compiler::ForStatement() {
   }
   
   EndScope();
+}
+
+void uscript::Compiler::ReturnStatement() {
+  if (Match(uscript::TOKEN_SEMICOLON)) {
+    EmitConstant(NIL_VAL);
+    EmitByte(uscript::OP_RETURN);
+    return;
+  } 
+  Expression();
+
+  Consume(uscript::TOKEN_SEMICOLON, "Expect ';' after return.");
+  EmitByte(uscript::OP_RETURN);
+  return;
 }
 
 void uscript::Compiler::IfStatement() {
@@ -396,7 +413,10 @@ void uscript::Compiler::Consume(uscript::TokenType type, const char *message) {
 }
 
 void uscript::Compiler::Finish() {
-  EmitReturn();
+  if (CurrentChunk()->code.size() == 0 || CurrentChunk()->code[CurrentChunk()->code.size()-1] != uscript::OP_RETURN) {
+    EmitConstant(NIL_VAL);
+    EmitReturn();
+  }
 #ifdef DEBUG_PRINT_CODE
   if (!parser.hadError) {
     CurrentChunk()->Disassemble("code");

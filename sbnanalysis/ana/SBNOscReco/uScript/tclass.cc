@@ -44,6 +44,7 @@ uscript::TClassInfo *uscript::TClassList::Add(const char *classname) {
     // vec data
     uscript::TData data;
     data.len = -1;
+    data.info = NULL;
 
     if (classdict == NULL) {
       // try to see if it is a basic type

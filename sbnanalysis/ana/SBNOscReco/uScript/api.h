@@ -5,7 +5,7 @@
 #include <functional>
 
 #include "common.h"
-#include "chunk.h"
+#include "compile.h"
 #include "vm.h"
 
 namespace uscript {
@@ -14,24 +14,31 @@ namespace uscript {
 template<typename T>
 using JustAChar = const char *;
 
+template<typename T>
+using JustACharRef = const char *&;
+
 template<typename... TObjs>
-void AddAll(VM &vm, JustAChar<TObjs> ...names, const TObjs *...objs); 
+void AddAll(VM &vm, JustACharRef<TObjs> ...names, const TObjs *&...objs); 
 
-template<typename none = void>
-void RegisterAll() {}
-
-template<typename T, typename... TObjs>
-void RegisterAll() {
-  Compiler::Register<T>();
-  RegisterAll<TObjs...>();
+void inline SetAll(VM &vm, std::initializer_list<const char *> names) {
+  for (const char *name: names) {
+    vm.AddGlobal(name);
+  }
 }
 
+template <typename... Ts>
+void _swallow(Ts&&...) {}
+
+template<typename... TObjs>
+void RegisterAll() {
+  _swallow(uscript::Compiler::Register<TObjs>...);
+}
 
 template<typename... TObjs>
 void AddAll(VM &vm) {}
 
 template<typename T, typename... TObjs>
-void AddAll(VM &vm, const char *name, JustAChar<TObjs> ...names, const T *obj, const TObjs *...objs) { 
+void AddAll(VM &vm, JustACharRef<T> name, JustACharRef<TObjs> ...names, const T *&obj, const TObjs *&...objs) { 
   vm.AddGlobal(name, obj); 
   AddAll<TObjs...>(vm, names..., objs...);
 }
@@ -48,16 +55,17 @@ Chunk compileChunk(const char *source) {
 }
 
 template<typename... TObjs>
-std::function<bool (std::reference_wrapper<const TObjs>...)> compile(JustAChar<TObjs> ...names, const char *source) {
-  Chunk chunk = compile<TObjs...>(source);
+std::function<uscript::Value (const TObjs*...)> compile(JustAChar<TObjs> ...names, const char *source) {
+  Chunk chunk = compileChunk<TObjs...>(source);
 
-  return [chunk](std::reference_wrapper<const TObjs>... data) {
-    VM vm;
+  VM vm;
+  SetAll(vm, {names...}); 
+  return [chunk, vm, names...](const TObjs *... data) mutable {
     vm.SetChunk(&chunk);
-    AddAll(vm, &data...);
+    AddAll<TObjs...>(vm, names..., data...);
     Value value;
     vm.Run(&value);
-    return !!value;
+    return value;
   }; 
 }
 

@@ -26,6 +26,7 @@ static void repl() {
 
   numu::flat::FlatInteraction flat;
   flat.ptrack.start[1] = 5.;
+  flat.test.push_back( { 4., 5.} );
 
   uscript::Compiler::Register<numu::RecoEvent>();
   uscript::Compiler::Register<numu::RecoSlice>();
@@ -40,13 +41,19 @@ static void repl() {
       break;
     }
     uscript::Chunk chunk = uscript::compileChunk(line);
+    if (uscript::Compiler::HadError()) continue;
     vm.SetChunk(&chunk);
     vm.AddGlobal("flat", &flat);
     vm.AddGlobal("event", &event);
     vm.AddGlobal("slice", &slice);
     int global = 5;
     vm.AddGlobal("int", &global);
-    vm.Run();
+    uscript::Value v;
+    vm.Run(&v);
+    if (!IS_NIL(v)) {
+      v.Print();
+      std::cout << std::endl;
+    }
   }
 }
 

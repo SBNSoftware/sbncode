@@ -162,7 +162,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         break;
       }
       case uscript::OP_RETURN: {
-        // if (ret) *ret = Pop();
+        if (ret) *ret = Pop();
         return uscript::INTERPRET_OK;
       }
       case uscript::OP_PRINT: {
@@ -174,7 +174,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         Value val = Pop();
         if (IS_TINSTANCE(val)) {
           ObjTInstance inst = AS_TINSTANCE(val);
-          Value length = INTEGER_VAL(inst.data.Length(inst.loc));
+          Value length = INTEGER_VAL(inst.data.len);
           Push(length);
           break;
         }
@@ -194,7 +194,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
              }
           }
           
-          int length = inst.data.Length(inst.loc);
+          int length = inst.data.len;
           if (length >= 0) {
             std::cout << "Indexable with length: " << length << std::endl;
           }
@@ -285,7 +285,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
 bool uscript::VM::IndexValue(Value callee, int index) {
   if (IS_TINSTANCE(callee)) {
     uscript::ObjTInstance inst = AS_TINSTANCE(callee);
-    if (index >= 0 && index < inst.data.len) {
+    if (index >= 0  && index < inst.data.len) {
       // indexed value itself has no length and is not a vector
       TData field_data = inst.data;
       field_data.len = -1; 

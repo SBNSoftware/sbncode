@@ -77,6 +77,7 @@ class Compiler {
   void IfStatement();
   void WhileStatement();
   void ForStatement();
+  void ReturnStatement();
 
   bool Match(TokenType type);
   bool Check(TokenType type);
