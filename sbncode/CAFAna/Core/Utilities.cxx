@@ -140,8 +140,11 @@ namespace ana
       e = minexp;
     }
 
-    chi += 2*(e-o);
-    if(o) chi += 2*o*log(o/e);
+    if(o)
+      // This strange form is for numerical stability when e~o
+      chi += 2*o*((e-o)/o + log1p((o-e)/e));
+    else
+      chi += 2*(e-o);
 
     return chi;
   }
