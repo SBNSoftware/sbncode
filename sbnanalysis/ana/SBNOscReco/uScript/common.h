@@ -3,8 +3,8 @@
 
 #include <string_view>
 
-#define DEBUG_TRACE_EXECUTION
-#define DEBUG_PRINT_CODE
+// #define DEBUG_TRACE_EXECUTION
+// #define DEBUG_PRINT_CODE
 
 // Get the name of a type
 // From: https://stackoverflow.com/questions/81870/is-it-possible-to-print-a-variables-type-in-standard-c
