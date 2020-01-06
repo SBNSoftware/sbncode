@@ -26,7 +26,6 @@ static void repl() {
 
   numu::flat::FlatInteraction flat;
   flat.ptrack.start[1] = 5.;
-  flat.test.push_back( { 4., 5.} );
 
   uscript::Compiler::Register<numu::RecoEvent>();
   uscript::Compiler::Register<numu::RecoSlice>();
