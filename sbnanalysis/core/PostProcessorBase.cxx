@@ -28,6 +28,7 @@ PostProcessorBase::~PostProcessorBase() {}
 
 void PostProcessorBase::Initialize(char* config, const std::string &output_fname, unsigned n_workers) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
+  if (cfg == NULL) cfg = new fhicl::ParameterSet;
   if (output_fname.size() != 0) cfg->put("OutputFile", output_fname);
   fConfigExperimentID = cfg->get("ExperimentID", -1);
 
