@@ -55,6 +55,8 @@ class Compiler {
 
   TClassList tclasslist;
 
+  const char *source;
+
   void Declaration();
   void Statement();
   void Synchronize();
@@ -123,7 +125,7 @@ class Compiler {
 
   Compiler();
 
-  bool DoCompile(const char *source, Chunk *chunk);
+  bool DoCompile(const char *_source, Chunk *chunk);
   const char *DoIntern(const std::string &str);
   void DoRegister(const char *classname);
 

@@ -5,9 +5,10 @@
 #include "compile.h"
 #include "scanner.h"
 
-bool uscript::Compiler::DoCompile(const char *source, Chunk *chunk) {
+bool uscript::Compiler::DoCompile(const char *_source, Chunk *chunk) {
   parser.hadError = false;
-  scanner.SetSource(source);
+  source = _source;
+  scanner.SetSource(_source);
 
   SetChunk(chunk);
 
@@ -363,7 +364,7 @@ void uscript::Compiler::EmitBytes(uint8_t bytea, uint8_t byteb) {
   CurrentChunk()->Write(byteb);
 }
 
-static void PrintErrorAt(uscript::Token &token, const char *message) {
+static void PrintErrorAt(uscript::Token &token, const char *message, const char *source) {
   std::cerr << "Error";
   if (token.type == uscript::TOKEN_EOF) {
     std::cerr << " at end";
@@ -377,6 +378,7 @@ static void PrintErrorAt(uscript::Token &token, const char *message) {
   }
 
   std::cerr << ": " << message << std::endl;
+  std::cerr << "In script: " << source << std::endl;
   return;
 }
 
@@ -385,7 +387,7 @@ void uscript::Compiler::ErrorAt(uscript::Token &token, const char *message) {
 
   parser.hadError = true;
   parser.panicMode = true;
-  PrintErrorAt(token, message);
+  PrintErrorAt(token, message, source);
 }
 
 void uscript::Compiler::Expression() {
