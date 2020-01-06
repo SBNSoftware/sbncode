@@ -168,7 +168,8 @@ namespace ana
                const std::vector<IPrediction*>& preds,
                Flavors::Flavors_t flav,
                Current::Current_t curr,
-               Sign::Sign_t sign) const
+               Sign::Sign_t sign,
+               const std::string& shortName) const
   {
     IPrediction* pNom = 0;
     for(unsigned int i = 0; i < shifts.size(); ++i){
@@ -194,7 +195,8 @@ namespace ana
 	const double y = r->GetBinContent(i);
 	if(y > 500){
 	  std::cout << "PredictionInterp: WARNING, ratio in bin "
-		    << i << " is " << y << ". Ignoring." << std::endl;
+		    << i << " is " << y
+                    << " for '" << shortName << "'. Ignoring." << std::endl;
 	  r->SetBinContent(i, 1);
 	}
       }
@@ -210,13 +212,13 @@ namespace ana
   {
     fits.resize(kNCoeffTypes);
 
-    fits[kNueApp]   = FitComponent(sp.shifts, sp.preds, Flavors::kNuMuToNuE,  Current::kCC, sign);
-    fits[kNueSurv]  = FitComponent(sp.shifts, sp.preds, Flavors::kNuEToNuE,   Current::kCC, sign);
-    fits[kNumuSurv] = FitComponent(sp.shifts, sp.preds, Flavors::kNuMuToNuMu, Current::kCC, sign);
+    fits[kNueApp]   = FitComponent(sp.shifts, sp.preds, Flavors::kNuMuToNuE,  Current::kCC, sign, sp.systName);
+    fits[kNueSurv]  = FitComponent(sp.shifts, sp.preds, Flavors::kNuEToNuE,   Current::kCC, sign, sp.systName);
+    fits[kNumuSurv] = FitComponent(sp.shifts, sp.preds, Flavors::kNuMuToNuMu, Current::kCC, sign, sp.systName);
 
-    fits[kNC]       = FitComponent(sp.shifts, sp.preds, Flavors::kAll, Current::kNC, sign);
+    fits[kNC]       = FitComponent(sp.shifts, sp.preds, Flavors::kAll, Current::kNC, sign, sp.systName);
 
-    fits[kOther] = FitComponent(sp.shifts, sp.preds, Flavors::kNuEToNuMu | Flavors::kAllNuTau, Current::kCC, sign);
+    fits[kOther] = FitComponent(sp.shifts, sp.preds, Flavors::kNuEToNuMu | Flavors::kAllNuTau, Current::kCC, sign, sp.systName);
   }
 
   //----------------------------------------------------------------------

@@ -131,7 +131,8 @@ namespace ana
                  const std::vector<IPrediction*>& preds,
                  Flavors::Flavors_t flav,
                  Current::Current_t curr,
-                 Sign::Sign_t sign) const;
+                 Sign::Sign_t sign,
+                 const std::string& shortName) const;
 
     Spectrum ShiftSpectrum(const Spectrum& s,
                            CoeffsType type,
