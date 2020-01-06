@@ -33,7 +33,6 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
     }
 
     event.reco[i].slice.primary_track_index = primary_track;
-    event.reco[i].primary_track = event.tracks.at(primary_track);
 
     // re-do truth matching
     event.reco[i].match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);

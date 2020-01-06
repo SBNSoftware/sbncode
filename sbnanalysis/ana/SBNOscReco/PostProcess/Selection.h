@@ -29,7 +29,6 @@
 #include "Normalize.h"
 #include "ROC.h"
 
-#include "../Histograms/TrajHistograms.h"
 #include "../Histograms/CRTHisto.h"
 #include "../Histograms/DynamicSelector.h"
 #include "../Data/RecoEvent.h"
@@ -58,7 +57,6 @@ private:
   Histograms fHistograms;
   Histograms fCosmicHistograms;
   Histograms *fHistsToFill;
-  TrajHistograms fTrajHistograms;
 
   CRTHistos fCRTCosmicHistos;
   CRTHistos fCRTNeutrinoHistos;
@@ -73,9 +71,8 @@ private:
 
   std::vector<numu::TrackSelector> fTrackSelectors;
   std::vector<std::string> fTrackSelectorNames;
-  std::vector<std::string> fTrajHistoNames;
 
-  std::vector<numu::ROOTValue> fTrackProfileValues;
+  std::vector<numu::TrackFunction> fTrackProfileValues;
 
   numu::RecoEvent *fRecoEvent;
   TFile *fOutputFile;

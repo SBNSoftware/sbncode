@@ -24,7 +24,8 @@
 
 #include "Selection.h"
 #include "SetEvent.h"
-#include "../Histograms/DynamicSelector.h"
+#include "../uScript/api.h"
+#include "../uScript/value.h"
 
 namespace ana {
 namespace SBNOsc {
@@ -51,15 +52,13 @@ namespace SBNOsc {
     assert(track_selector_strings.size() == track_selector_names.size());
 
     fTrackSelectorNames = numu::MultiplyNames(track_selector_names);
-    fTrackSelectors = numu::MultiplySelectors(track_selector_strings);
+    fTrackSelectors = numu::MultiplyTrackSelectors(track_selector_strings);
 
     assert(fTrackSelectorNames.size() == fTrackSelectors.size());
 
-    fTrajHistoNames = numu::MultiplyNames(config->get<std::vector<std::vector<std::string>>>("TrajHistoNames", {{""}}));
-
     std::vector<std::string> track_profile_values = config->get<std::vector<std::string>>("TrackProfileValues", {});
-    for (const std::string &name: track_profile_values) {
-      fTrackProfileValues.push_back(numu::MakeROOTValue(name));
+    for (const std::string &source: track_profile_values) {
+      fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, unsigned>("track", "particle", "mctype", source.c_str()));
     }
 
     std::vector<std::string> track_profile_value_names = config->get<std::vector<std::string>>("TrackProfileValueNames", {});
@@ -71,7 +70,6 @@ namespace SBNOsc {
     if (fDoNormalize) {
       fNormalize.Initialize(config->get<fhicl::ParameterSet>("Normalize", {}));
     }
-    fTrajHistograms.Initialize(fTrajHistoNames);
     fROC.Initialize();
     fRecoEvent = NULL;
 
@@ -102,10 +100,6 @@ namespace SBNOsc {
     }
     fFileIndex += 1;
     
-    TrajHistograms from_file;
-    from_file.Get(*f, fTrajHistoNames);
-    fTrajHistograms.Add(from_file);
-
     CRTHistos crt_from_file;
     crt_from_file.Get(*f, "_all");
     if (fFileType == numu::fIntimeCosmic) {
@@ -135,7 +129,6 @@ namespace SBNOsc {
     SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
 
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
-
 
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
     if (fDoNormalize) {
@@ -170,7 +163,6 @@ namespace SBNOsc {
     fROC.BestCuts();
     fROC.Write();
     fHistograms.Write();
-    fTrajHistograms.Write();
     fCRTCosmicHistos.Write();
     fCRTNeutrinoHistos.Write();
 

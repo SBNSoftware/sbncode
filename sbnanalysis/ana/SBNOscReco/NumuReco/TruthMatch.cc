@@ -106,66 +106,69 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interactio
   return match;
 }
 
-void numu::CorrectMultiMatches(const numu::RecoEvent &event, std::vector<numu::RecoInteraction> &recos) {
+void numu::CorrectMultiMatches(numu::RecoEvent &event, std::vector<numu::RecoInteraction> &recos) {
   // check for no two reco matched to same truth
   std::map<int, unsigned> matched_vertices;
   for (unsigned reco_i = 0; reco_i < recos.size(); reco_i++) {
     numu::RecoInteraction &reco = recos[reco_i];
     unsigned set_i = reco_i; 
 
-    if (reco.primary_track.match.has_match && reco.primary_track.match.is_primary && reco.match.mctruth_track_id >= 0) {
+    numu::RecoTrack &primary_track = event.tracks.at(reco.slice.primary_track_index);
+
+    if (primary_track.match.has_match && primary_track.match.is_primary && reco.match.mctruth_track_id >= 0) {
       if (matched_vertices.count(reco.match.mctruth_track_id)) {
         std::cout << "BAAAAAAAAD: two reco matched to same truth." << std::endl;
         std::cout << "This id: " << reco.match.mctruth_track_id << std::endl;
         for (const numu::RecoInteraction &reco: recos) {
-          std::cout << "Interaction x: " << reco.position.X() << " match: " << reco.match.mctruth_track_id << " primary track pdg: " << reco.primary_track.match.match_pdg << std::endl;
+          std::cout << "Interaction x: " << reco.position.X() << " match: " << reco.match.mctruth_track_id << " primary track pdg: " << primary_track.match.match_pdg << std::endl;
         }
 
         numu::RecoInteraction &other = recos[matched_vertices[reco.match.mctruth_track_id]];
+        numu::RecoTrack &other_primary_track = event.tracks.at(other.slice.primary_track_index);
 
-        float dist_reco = std::min( (reco.primary_track.start - event.particles.at(reco.primary_track.match.mcparticle_id).start).Mag(),
-                                    (reco.primary_track.end   - event.particles.at(reco.primary_track.match.mcparticle_id).start).Mag());
+        float dist_reco = std::min( (primary_track.start - event.particles.at(primary_track.match.mcparticle_id).start).Mag(),
+                                    (primary_track.end   - event.particles.at(primary_track.match.mcparticle_id).start).Mag());
 
-        float dist_other = std::min( (other.primary_track.start - event.particles.at(other.primary_track.match.mcparticle_id).start).Mag(),
-                                    (other.primary_track.end   - event.particles.at(other.primary_track.match.mcparticle_id).start).Mag());
+        float dist_other = std::min( (other_primary_track.start - event.particles.at(other_primary_track.match.mcparticle_id).start).Mag(),
+                                    (other_primary_track.end   - event.particles.at(other_primary_track.match.mcparticle_id).start).Mag());
 
         // Handle if one of the matched particles in not a muon
-        if (abs(reco.primary_track.match.match_pdg) != 13 && abs(other.primary_track.match.match_pdg) == 13) {
+        if (abs(primary_track.match.match_pdg) != 13 && abs(other_primary_track.match.match_pdg) == 13) {
           set_i = matched_vertices[reco.match.mctruth_track_id];
-          reco.primary_track.match.is_primary = false; 
+          primary_track.match.is_primary = false; 
           std::cout << "Corrected -- matched track is non-muon\n";
         } 
-        else if (abs(reco.primary_track.match.match_pdg) == 13 && abs(other.primary_track.match.match_pdg) != 13) {
-          other.primary_track.match.is_primary = false; 
+        else if (abs(primary_track.match.match_pdg) == 13 && abs(other_primary_track.match.match_pdg) != 13) {
+          other_primary_track.match.is_primary = false; 
           std::cout << "Corrected -- matched track is non-muon\n";
         } 
         // Handle both two different particles neither of which are muons
-        else if (reco.primary_track.match.mcparticle_id != other.primary_track.match.mcparticle_id) {
-          std::cout << "Reco track 1 length: " << reco.primary_track.length << " pdg: " << reco.primary_track.match.match_pdg << std::endl; 
-          std::cout << "Reco track 2 length: " << other.primary_track.length << " pdg: " << other.primary_track.match.match_pdg << std::endl; 
-          if (reco.primary_track.length > other.primary_track.length) {
-            other.primary_track.match.is_primary = false;
+        else if (primary_track.match.mcparticle_id != other_primary_track.match.mcparticle_id) {
+          std::cout << "Reco track 1 length: " << primary_track.length << " pdg: " << primary_track.match.match_pdg << std::endl; 
+          std::cout << "Reco track 2 length: " << other_primary_track.length << " pdg: " << other_primary_track.match.match_pdg << std::endl; 
+          if (primary_track.length > other_primary_track.length) {
+            other_primary_track.match.is_primary = false;
             std::cout << "Corrected -- used longer track. Track 1 is primary.\n";
           }
           else {
-            reco.primary_track.match.is_primary = false;
+            primary_track.match.is_primary = false;
             std::cout << "Corrected -- used longer track. Track 2 is primary.\n";
           }
         }
         // Handle if the priamry track was split in two
-        else if (reco.primary_track.match.mcparticle_id == other.primary_track.match.mcparticle_id) {
-          std::cout << "Reco track 1 pos: " << reco.primary_track.start.X() << " " << reco.primary_track.start.Y() << " " << reco.primary_track.start.Z() << " to: " << reco.primary_track.end.X() << " " << reco.primary_track.end.Y() << " " << reco.primary_track.end.Z() << std::endl;
-          std::cout << "Reco track 2 pos: " << other.primary_track.start.X() << " " << other.primary_track.start.Y() << " " << other.primary_track.start.Z() << " to: " << other.primary_track.end.X() << " " << other.primary_track.end.Y() << " " << other.primary_track.end.Z() << std::endl;
-          TVector3 match_start = event.particles.at(other.primary_track.match.mcparticle_id).start;
+        else if (primary_track.match.mcparticle_id == other_primary_track.match.mcparticle_id) {
+          std::cout << "Reco track 1 pos: " << primary_track.start.X() << " " << primary_track.start.Y() << " " << primary_track.start.Z() << " to: " << primary_track.end.X() << " " << primary_track.end.Y() << " " << primary_track.end.Z() << std::endl;
+          std::cout << "Reco track 2 pos: " << other_primary_track.start.X() << " " << other_primary_track.start.Y() << " " << other_primary_track.start.Z() << " to: " << other_primary_track.end.X() << " " << other_primary_track.end.Y() << " " << other_primary_track.end.Z() << std::endl;
+          TVector3 match_start = event.particles.at(other_primary_track.match.mcparticle_id).start;
           std::cout << "Match start pos: " << match_start.X() << " " << match_start.Y() << " " << match_start.Z() << std::endl;
           if (dist_reco <= dist_other) {
             std::cout << "Corrected -- split muon. Track 1 is primary.\n";
-            other.primary_track.match.is_primary = false; 
+            other_primary_track.match.is_primary = false; 
           }
           else {
             std::cout << "Corrected -- split muon. Track 2 is primary.\n";
             set_i = matched_vertices[reco.match.mctruth_track_id];
-            reco.primary_track.match.is_primary = false; 
+            primary_track.match.is_primary = false; 
           }
         }
         else { 

@@ -98,9 +98,10 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
 
   bool has_reco = false;
   for (unsigned i = 0; i < event.reco.size(); i++) {
+    const numu::RecoTrack &primary_track = event.tracks.at(event.reco[i].slice.primary_track_index);
     if (event.reco[i].match.has_match && 
 	event.reco[i].match.mctruth_track_id == truth_vertex_index && 
-	event.reco[i].primary_track.match.is_primary) {
+	primary_track.match.is_primary) {
       has_reco = true;
       break;
     }

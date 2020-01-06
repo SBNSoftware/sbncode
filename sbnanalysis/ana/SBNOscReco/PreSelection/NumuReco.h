@@ -54,9 +54,6 @@
 #include "../Data/TruthMatch.h"
 #include "../Data/MCType.h"
 
-#include "../Histograms/TrajHistograms.h"
-#include "../Histograms/DynamicSelector.h"
-
 #include "../Histograms/CRTHisto.h"
 
 class TH2D;
@@ -101,9 +98,6 @@ protected:
     std::vector<geo::BoxBoundedGeo> containment_volumes; //!< List of volumes for containment cuts -- set by "containment_volumes"
     std::vector<geo::BoxBoundedGeo> active_volumes; //!< List of active volumes per cryostat
     std::vector<std::vector<geo::BoxBoundedGeo>> tpc_volumes; //!< List of active tpc volumes -- retreived from Geoemtry service
-
-    std::vector<numu::TrackSelector> TrackSelectors;
-    std::vector<std::string> TrackSelectorNames;
 
     bool verbose; //!< Whether to print out info associated w/ selection.
     std::vector<std::string> uniformWeights; //!< Weights taken from "EventWeight" that should be applied to the weight of each event
@@ -389,8 +383,6 @@ protected:
   // type of Monte Carlo
   numu::MCType fType;
 
-  // trajectory-based histograms
-  TrajHistograms _histograms;
   CRTHistos _crt_histograms;
 
 };

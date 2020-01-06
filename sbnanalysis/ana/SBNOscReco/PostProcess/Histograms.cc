@@ -15,7 +15,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
 		       const event::Event &core, 
 		       const Cuts &cutmaker, 
 		       const std::vector<numu::TrackSelector> &selectors, 
-		       const std::vector<numu::ROOTValue> &xvalues, 
+                       const std::vector<numu::TrackFunction> &xfunctions,
 		       bool fill_all_tracks) { 
 
   if (event.type == numu::fOverlay) {
@@ -32,11 +32,14 @@ void Histograms::Fill( const numu::RecoEvent &event,
     }
   }
 
+  numu::TrueParticle bad;
+
   if (fill_all_tracks) {
     for (const auto &track_pair: event.tracks) {
       const numu::RecoTrack &track = track_pair.second;
       for (unsigned i = 0; i < fAllTracks.size(); i++) {
-        bool select = selectors[i](track, event);
+        const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
+        bool select = selectors[i](track, part, event.type);
         if (select) {
           fAllTracks[i].Fill(track, event.particles);
         }
@@ -60,13 +63,17 @@ void Histograms::Fill( const numu::RecoEvent &event,
       }
 
       for (unsigned j = 0; j < fPrimaryTracks.size(); j++) { 
-        bool select = selectors[j](track, event);
+        const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
+        bool select = selectors[i](track, part, event.type);
         if (select) {
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
             if (cuts[cut_i]) {
               fPrimaryTracks[j][cut_i].Fill(track, event.particles);
-              for (unsigned k = 0; k < xvalues.size(); k++) {
-                fPrimaryTrackProfiles[j][k][cut_i].Fill(xvalues[k], 
+              for (unsigned k = 0; k < xfunctions.size(); k++) {
+                const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
+                uscript::Value x = xfunctions[k](&track, &part, (unsigned*)&event.type);
+                assert(IS_NUMBER(x));
+                fPrimaryTrackProfiles[j][k][cut_i].Fill(AS_NUMBER(x), 
 							track, event);
               }
             }

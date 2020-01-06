@@ -1,7 +1,6 @@
 #ifndef _sbnnumu_Profile_h__
 #define _sbnnumu_Profile_h__
 
-#include "DynamicSelector.h"
 #include "HistoList.h"
 #include "../Data/RecoEvent.h"
 
@@ -19,7 +18,7 @@ struct TrackProfiles : public HistoList {
   TH3D *pid_confusion_tr;
 
   void Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi);
-  void Fill(const numu::ROOTValue &val, const numu::RecoTrack &track, const numu::RecoEvent &event);
+  void Fill(float val, const numu::RecoTrack &track, const numu::RecoEvent &event);   
 };
   }
 }

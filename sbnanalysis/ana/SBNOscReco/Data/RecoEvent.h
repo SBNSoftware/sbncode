@@ -41,7 +41,6 @@ struct RecoInteraction {
   float nu_energy; //!< true/reconstructed neutrino energy
   TruthMatch match; //!< Info for mathing to truth
   int multiplicity; //!< Number of tracks in this interaction
-  RecoTrack primary_track; //!< Stores the primary track in the slice
 };
 
 /** Reconstruction Information about Event */

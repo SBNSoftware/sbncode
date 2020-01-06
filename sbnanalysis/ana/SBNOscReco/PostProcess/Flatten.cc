@@ -120,22 +120,23 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
   unsigned index = WorkerID();
   ana::SBNOsc::SetEvent(*fRecoEvents[index], *ev, fCuts, fMCTypes[index], true);
   for (const numu::RecoInteraction &interaction: fRecoEvents[index]->reco) {
+    const numu::RecoTrack &primary_track = fRecoEvents[index]->tracks.at(interaction.slice.primary_track_index);
     // set stuff
     // 
     // Primary Track
     numu::flat::PrimaryTrack track;
-    track.length = interaction.primary_track.length; 
-    track.costh = interaction.primary_track.costh;
-    track.range_momentum = numu::RangeMomentum(interaction.primary_track);
-    track.mcs_momentum = numu::MCSMomentum(interaction.primary_track);
-    track.crt_hit_distance = (interaction.primary_track.crt_match.hit_match.present) ? interaction.primary_track.crt_match.hit_match.distance : -1;
-    track.crt_hit_time = interaction.primary_track.crt_match.hit_match.time;
-    track.crt_track_angle = (interaction.primary_track.crt_match.track.present) ? interaction.primary_track.crt_match.track.angle: -1;
-    track.crt_track_time = interaction.primary_track.crt_match.track.time;
-    interaction.primary_track.start.GetXYZ(track.start);
-    interaction.primary_track.end.GetXYZ(track.end);
-    if (interaction.primary_track.match.has_match) {
-      const numu::TrueParticle &truth = fRecoEvents[index]->particles.at(interaction.primary_track.match.mcparticle_id);
+    track.length = primary_track.length; 
+    track.costh = primary_track.costh;
+    track.range_momentum = numu::RangeMomentum(primary_track);
+    track.mcs_momentum = numu::MCSMomentum(primary_track);
+    track.crt_hit_distance = (primary_track.crt_match.hit_match.present) ? primary_track.crt_match.hit_match.distance : -1;
+    track.crt_hit_time = primary_track.crt_match.hit_match.time;
+    track.crt_track_angle = (primary_track.crt_match.track.present) ? primary_track.crt_match.track.angle: -1;
+    track.crt_track_time = primary_track.crt_match.track.time;
+    primary_track.start.GetXYZ(track.start);
+    primary_track.end.GetXYZ(track.end);
+    if (primary_track.match.has_match) {
+      const numu::TrueParticle &truth = fRecoEvents[index]->particles.at(primary_track.match.mcparticle_id);
       truth.start_momentum.GetXYZ(track.truth.momentum);
       track.truth.wall_enter = truth.wall_enter;
       track.truth.wall_exit = truth.wall_exit;

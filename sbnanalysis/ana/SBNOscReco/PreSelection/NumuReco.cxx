@@ -234,16 +234,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
     _config.MCParticleTag = config->get<std::string>("MCParticleTag", "largeant");
     _config.TPCRecoTagSuffixes = config->get<std::vector<std::string>>("TPCRecoTagSuffixes", { "" });
 
-    std::vector<std::vector<std::string>> track_selector_strings = config->get<std::vector<std::vector<std::string>>>("TrackSelectors", {{""}});
-    std::vector<std::vector<std::string>> track_selector_names = config->get<std::vector<std::vector<std::string>>>("TrackSelectorNames", {{""}});
-
-    assert(track_selector_strings.size() == track_selector_names.size());
-
-    _config.TrackSelectorNames = numu::MultiplyNames(track_selector_names);
-    _config.TrackSelectors = numu::MultiplySelectors(track_selector_strings);
-
-    assert(_config.TrackSelectorNames.size() == _config.TrackSelectors.size());
-
     {
       fhicl::ParameterSet dCV = \
         pconfig.get<fhicl::ParameterSet>("containment_volume_inset");
@@ -268,9 +258,6 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
   // Setup histo's for root output
   fOutputFile->cd();
 
-  // initialize histograms
-  _histograms.Initialize(_config.TrackSelectorNames);
-
   sbnd::CRTGeoAlg crt_geo(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
   std::vector<double> tagger_volumes = crt_geo.CRTLimits();
 
@@ -294,7 +281,6 @@ void NumuReco::Finalize() {
  if (_mcs_fitter != NULL) delete _mcs_fitter;
  fOutputFile->cd();
  // finish histograms
- _histograms.Write();
  _crt_histograms.Write();
 }
 
@@ -376,8 +362,6 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
     if (vertex.match.mode == numu::mCosmic) {
       weight *= _config.cosmicWeight;
     }
-
-    const numu::RecoTrack &track = _recoEvent.reco[i].primary_track;
 
     // store reco interaction
     _selected->push_back(vertex);
@@ -765,21 +749,17 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
 }
 
 void NumuReco::ApplyCosmicID(numu::RecoTrack &track) {
-  const art::Ptr<recob::Track> &pfp_track = _tpc_tracks[track.ID];
+  unsigned track_id = _tpc_particles_to_track_index.at(track.ID);
+  const art::Ptr<recob::Track> &pfp_track = _tpc_tracks[track_id];
 
   // do CRT matching
-  track.crt_match = CRTMatching(track, *pfp_track, _tpc_tracks_to_hits.at(track.ID));
+  track.crt_match = CRTMatching(track, *pfp_track, _tpc_tracks_to_hits.at(track_id));
   
   // Cosmic ID: 
   //
   // See if start or end looks like stopping
-  track.stopping_chisq_start = _stopping_cosmic_alg.StoppingChiSq(pfp_track->Vertex(), _tpc_tracks_to_calo.at(track.ID));
-  track.stopping_chisq_finish = _stopping_cosmic_alg.StoppingChiSq(pfp_track->End(), _tpc_tracks_to_calo.at(track.ID));
-  
-  // gather the pandora T0's
-  // first get the particle
-  unsigned particle_index = _tpc_tracks_to_particle_index.at(track.ID);
-  const std::vector<art::Ptr<anab::T0>> &pandora_T0s = _tpc_particles_to_T0.at(particle_index);
+  track.stopping_chisq_start = _stopping_cosmic_alg.StoppingChiSq(pfp_track->Vertex(), _tpc_tracks_to_calo.at(track_id));
+  track.stopping_chisq_finish = _stopping_cosmic_alg.StoppingChiSq(pfp_track->End(), _tpc_tracks_to_calo.at(track_id));
 }
 
 
@@ -789,10 +769,9 @@ std::vector<size_t> NumuReco::RecoSliceTracks(
 
   std::vector<size_t> ret;
 
-  for (const auto &track_pair: tracks) {
-    const numu::RecoTrack &track = track_pair.second;
-    if (particles.count(_tpc_tracks_to_particle_index[track.ID])) {
-      ret.push_back(_tpc_tracks_to_particle_index[track.ID]);
+  for (const auto &particle_pair: particles) {
+    if (tracks.count(particle_pair.first)) {
+      ret.push_back(particle_pair.first);
     }
   }
 
@@ -1374,8 +1353,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
     this_interaction.slice = reco_slices[reco_i];
     this_interaction.position = neutrino.vertices[0];
 
-    this_interaction.primary_track = reco_tracks.at(this_interaction.slice.primary_track_index);
-  
     // TODO: get the enrgy
     this_interaction.nu_energy = -1;
 

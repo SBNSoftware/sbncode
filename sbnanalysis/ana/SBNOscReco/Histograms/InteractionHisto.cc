@@ -83,8 +83,10 @@ void InteractionHistos::Fill(
   const numu::RecoEvent &event,
   const std::vector<event::Interaction> &truth) {
 
+  const numu::RecoTrack &primary_track = event.tracks.at(vertex.slice.primary_track_index);
+
   dist_to_match->Fill(vertex.match.truth_vertex_distance);
-  primary_track_completion->Fill(vertex.primary_track.match.completion);
+  primary_track_completion->Fill(primary_track.match.completion);
 
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
   vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
@@ -110,7 +112,6 @@ void InteractionHistos::Fill(
     }
   }
 
-  const numu::RecoTrack &primary_track = event.tracks.at(vertex.slice.primary_track_index);
   track_length->Fill(primary_track.length);
   if (primary_track.match.has_match) {
     int mcparticle_id = primary_track.match.mcparticle_id;

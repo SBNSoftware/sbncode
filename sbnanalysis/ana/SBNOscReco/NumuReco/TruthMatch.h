@@ -28,7 +28,7 @@ namespace numu {
  *              RecoInteraction may be edited by this function
  *
  */
-  void CorrectMultiMatches(const RecoEvent &event, std::vector<RecoInteraction> &recos);
+  void CorrectMultiMatches(RecoEvent &event, std::vector<RecoInteraction> &recos);
 
   InteractionMode GetMode(const event::Interaction &truth);
 }

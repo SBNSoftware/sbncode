@@ -21,11 +21,7 @@ void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, doub
 }
 
 
-void TrackProfiles::Fill(const numu::ROOTValue &rootval, const numu::RecoTrack &track, const numu::RecoEvent &event) {
-  numu::LiteralValue literal = numu::MakeROOTLiteral(rootval, track, event);
-  if (!literal.is_valid) return;
-
-  float val = literal.is_float ? literal.data_num : (float) literal.data_int;
+void TrackProfiles::Fill(float val, const numu::RecoTrack &track, const numu::RecoEvent &event) {
 
   if (track.match.has_match) {
     const numu::TrueParticle &true_particle = event.particles.at(track.match.mcparticle_id);

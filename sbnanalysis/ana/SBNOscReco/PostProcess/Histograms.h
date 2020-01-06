@@ -65,7 +65,7 @@ struct Histograms : public HistoList {
   const event::Event &core, 
   const Cuts &cutmaker, 
   const std::vector<numu::TrackSelector> &selectors, 
-  const std::vector<numu::ROOTValue> &xvalues, 
+  const std::vector<numu::TrackFunction> &xfunctions,
   bool fill_all_tracks=true);
 
   /**

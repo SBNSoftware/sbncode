@@ -13,6 +13,7 @@
 #pragma link C++ class numu::TruthMatch+;
 #pragma link C++ class numu::TrackTruthMatch+;
 #pragma link C++ class std::vector<numu::RecoInteraction>+;
+#pragma link C++ class std::vector<numu::CRTHit>+;
 #pragma link C++ class std::map<size_t, numu::RecoParticle>+;
 #pragma link C++ class std::map<size_t, numu::RecoTrack>+;
 #pragma link C++ class numu::RecoSlice+;
@@ -23,8 +24,6 @@
 #pragma link C++ class std::optional<numu::CRTMatch>+;
 #pragma link C++ class std::optional<numu::FlashMatch>+;
 #pragma link C++ class numu::CRTHit;
-#pragma link C++ class numu::FlastTriggerPrimitive+;
-#pragma link C++ class numu::FlastTriggerPrimitive::Trig+;
 
 #pragma link C++ class numu::flat::FlatInteraction;
 #pragma link C++ class numu::flat::PrimaryTrack;
@@ -33,4 +32,6 @@
 #pragma link C++ class numu::flat::TrackTruth;
 #pragma link C++ class numu::flat::EventInfo;
 #pragma link C++ class numu::flat::EventMeta;
+#pragma link C++ class std::vector<float>+;
+#pragma link C++ class std::vector<std::vector<float>>+;
 #endif
