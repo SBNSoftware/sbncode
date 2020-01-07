@@ -51,6 +51,7 @@ namespace ana
     osc::NoOscillations calc; // TODO class member?
 
     const Spectrum snom = fNom->Predict(&calc);
+
     TH1D* hnom = snom.ToTH1(1); // only need this to count the bins :(
     const int Nbins = hnom->GetNbinsX();
     HistCache::Delete(hnom);

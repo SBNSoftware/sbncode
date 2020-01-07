@@ -15,12 +15,12 @@ namespace ana
   class PredictionLinFit: public IPrediction
   {
   public:
-    // Direct creation from an ensemble of universes
+    /// Direct creation from an ensemble of universes
     PredictionLinFit(const std::vector<const ISyst*>& systs,
                      const IPrediction* pnom,
                      const std::vector<std::pair<SystShifts, const IPrediction*>>& univs);
 
-    // Constructor in the PredictionInterp style
+    /// Constructor in the PredictionInterp style
     PredictionLinFit(const std::vector<const ISyst*>& systs,
                      const IPredictionGenerator& predGen,
                      Loaders& loaders,
