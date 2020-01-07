@@ -13,6 +13,7 @@
 // To implement LoadFrom()
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Prediction/PredictionInterp.h"
+#include "CAFAna/Prediction/PredictionLinFit.h"
 #include "CAFAna/Prediction/PredictionNoOsc.h"
 #include "CAFAna/Prediction/PredictionScaleComp.h"
 #include "CAFAna/Prediction/PredictionIncDirt.h"
@@ -33,6 +34,8 @@ namespace ana
     // Backwards compatibility
     if(tag == "PredictionInterp" ||
        tag == "PredictionInterp2") return PredictionInterp::LoadFrom(dir);
+
+    if(tag == "PredictionLinFit") return PredictionLinFit::LoadFrom(dir);
 
     if(tag == "PredictionNoOsc") return PredictionNoOsc::LoadFrom(dir);
 
