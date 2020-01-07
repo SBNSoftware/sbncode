@@ -6,15 +6,25 @@
 
 namespace ana
 {
+  class Loaders;
+  class IPredictionGenerator;
+
   /// Parameterize a collection of universes as a linear function of the syst
   /// knobs. Profiling over this should produce the same results as a
   /// covariance matrix fit.
   class PredictionLinFit: public IPrediction
   {
   public:
+    // Direct creation from an ensemble of universes
     PredictionLinFit(const std::vector<const ISyst*>& systs,
                      const IPrediction* pnom,
                      const std::vector<std::pair<SystShifts, const IPrediction*>>& univs);
+
+    // Constructor in the PredictionInterp style
+    PredictionLinFit(const std::vector<const ISyst*>& systs,
+                     const IPredictionGenerator& predGen,
+                     Loaders& loaders,
+                     int nUniv);
 
     ~PredictionLinFit();
 
@@ -36,12 +46,14 @@ namespace ana
     static std::unique_ptr<PredictionLinFit> LoadFrom(TDirectory* dir);
 
   protected:
+    void InitFits() const;
+
     Ratio GetRatio(const SystShifts& shift) const;
 
     const std::vector<const ISyst*> fSysts;
     const IPrediction* fNom;
     std::vector<std::pair<SystShifts, const IPrediction*>> fUnivs;
 
-    std::vector<TVectorD> fCoeffs;
+    mutable std::vector<TVectorD> fCoeffs;
   };
 }
