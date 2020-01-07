@@ -17,19 +17,26 @@ namespace ana
   class UniverseWeight
   {
   public:
-    UniverseWeight(const std::string& syst, int univIdx);
+    UniverseWeight(const std::vector<std::string>& systs, int univIdx);
+    UniverseWeight(const std::vector<const ISyst*>& systs, int univIdx);
+
     double operator()(const caf::SRProxy* sr) const;
   protected:
-    int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const;
+    int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws, int isyst) const;
 
-    std::string fName;
+    std::vector<std::string> fNames;
     int fUnivIdx;
-    mutable int fSystIdx;
+    mutable std::vector<int> fSystIdxs;
   };
 
   Var GetUniverseWeight(const std::string& syst, int univIdx)
   {
-    return Var(UniverseWeight(syst, univIdx));
+    return Var(UniverseWeight(std::vector<std::string>(1, syst), univIdx));
+  }
+
+  Var GetUniverseWeight(const std::vector<const ISyst*> systs, int univIdx)
+  {
+    return Var(UniverseWeight(systs, univIdx));
   }
 
 

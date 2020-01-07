@@ -10,9 +10,16 @@
 namespace ana
 {
   // --------------------------------------------------------------------------
-  UniverseWeight::UniverseWeight(const std::string& syst, int univIdx)
-    : fName(syst), fUnivIdx(univIdx), fSystIdx(-1)
+  UniverseWeight::UniverseWeight(const std::vector<std::string>& systs, int univIdx)
+    : fNames(systs), fUnivIdx(univIdx)
   {
+  }
+
+  // --------------------------------------------------------------------------
+  UniverseWeight::UniverseWeight(const std::vector<const ISyst*>& systs, int univIdx)
+    : fUnivIdx(univIdx)
+  {
+    for(const ISyst* s: systs) fNames.push_back(s->ShortName());
   }
 
   // --------------------------------------------------------------------------
@@ -22,25 +29,42 @@ namespace ana
     const auto& ws = sr->truth[0].weights;
 
     // This hack improves throughput vastly
-    if(fUnivIdx == 0) for(const auto& b: ws[GetIdx(ws)].second) (void)((float)b);
+    if(fUnivIdx == 0){
+      for(unsigned int i = 0; i < fNames.size(); ++i){
+        for(const auto& b: ws[GetIdx(ws, i)].second) (void)((float)b);
+      }
+    }
 
-    // TODO: might want to "wrap around" differently in different systs to
-    // avoid unwanted correlations between systs with the same number of
-    // universes.
-    const unsigned int i = fUnivIdx % ws[GetIdx(ws)].second.size();
+    double w = 1;
 
-    return ws[GetIdx(ws)].second[i];//fUnivIdx];
+    for(unsigned int i = 0; i < fNames.size(); ++i){
+      // TODO: might want to "wrap around" differently in different systs to
+      // avoid unwanted correlations between systs with the same number of
+      // universes.
+      const unsigned int unividx = fUnivIdx % ws[GetIdx(ws, i)].second.size();
+
+      w *= ws[GetIdx(ws, i)].second[unividx];
+    }
+
+    return w;
   }
 
   // --------------------------------------------------------------------------
-  int UniverseWeight::GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const
+  int UniverseWeight::GetIdx(const caf::VectorProxy<caf::PairProxy>& ws,
+                             int isyst) const
   {
-    if(fSystIdx == -1){
-      for(unsigned int i = 0; i < ws.size(); ++i){
-        if(ws[i].first == fName) fSystIdx = i;
+    if(fSystIdxs.empty()){
+      for(const std::string& name: fNames){
+        for(unsigned int i = 0; i < ws.size(); ++i){
+          if(ws[i].first == name){
+            fSystIdxs.push_back(i);
+            break;
+          }
+        }
       }
     }
-    return fSystIdx;
+
+    return fSystIdxs[isyst];
   }
 
 
