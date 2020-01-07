@@ -3,9 +3,12 @@
 #include "CAFAna/Core/ISyst.h"
 
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+class TDirectory;
 
 namespace ana
 {
@@ -41,6 +44,12 @@ namespace ana
     int ID() const {return fID;}
 
     std::vector<const ISyst*> ActiveSysts() const;
+
+
+    void SaveTo(TDirectory* dir) const;
+    static std::unique_ptr<SystShifts> LoadFrom(TDirectory* dir);
+
+
   protected:
     std::unordered_map<const ISyst*, double> fSysts;
 

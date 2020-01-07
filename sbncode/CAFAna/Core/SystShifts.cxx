@@ -1,9 +1,13 @@
 #include "CAFAna/Core/SystShifts.h"
 
 #include "CAFAna/Core/MathUtil.h"
+#include "CAFAna/Core/SystRegistry.h"
 
 #include <cassert>
 
+#include "TDirectory.h"
+#include "TH1.h"
+#include "TObjString.h"
 #include "TString.h"
 
 namespace ana
@@ -109,6 +113,49 @@ namespace ana
   {
     std::vector<const ISyst*> ret;
     for(auto it: fSysts) ret.push_back(it.first);
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+  void SystShifts::SaveTo(TDirectory* dir) const
+  {
+    TDirectory* tmp = gDirectory;
+
+    dir->cd();
+    TObjString("SystShifts").Write("type");
+
+    // Don't write any histogram for the nominal case
+    if(!fSysts.empty()){
+      TH1D h("", "", fSysts.size(), 0, fSysts.size());
+      int ibin = 0;
+      for(auto it: fSysts){
+        ++ibin;
+        h.GetXaxis()->SetBinLabel(ibin, it.first->ShortName().c_str());
+        h.SetBinContent(ibin, it.second);
+      }
+      h.Write("vals");
+    }
+
+    tmp->cd();
+  }
+
+  //----------------------------------------------------------------------
+  std::unique_ptr<SystShifts> SystShifts::LoadFrom(TDirectory* dir)
+  {
+    TObjString* tag = (TObjString*)dir->Get("type");
+    assert(tag);
+    assert(tag->GetString() == "SystShifts");
+
+    auto ret = std::make_unique<SystShifts>();
+
+    TH1* h = (TH1*)dir->Get("vals");
+    if(h){ // no histogram means nominal
+      for(int i = 1; i <= h->GetNbinsX(); ++i){
+        ret->SetShift(SystRegistry::ShortNameToSyst(h->GetXaxis()->GetBinLabel(i)),
+                      h->GetBinContent(i));
+      }
+    }
+
     return ret;
   }
 }
