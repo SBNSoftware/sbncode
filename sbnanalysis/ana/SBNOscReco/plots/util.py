@@ -245,12 +245,41 @@ def colors(index):
     return colors[index]
 
 def fillcolors(index):
-    colors = [ROOT.kGreen + 1, ROOT.kCyan -9 , ROOT.kBlue+1,  ROOT.kViolet, ROOT.kRed +2, ROOT.kYellow+3, ROOT.kBlack]
+    colors = [ROOT.kPink+2, ROOT.kGray+1 , ROOT.kGray+2,  ROOT.kAzure+3, ROOT.kAzure+4, ROOT.kRed+2, ROOT.kBlack]
     return colors[index]
 
 def comma_separated(inp):
     return inp.split(",")
 
+def draw_potlabel():
+    pot = ROOT.TLatex(0.925,0.88,"1x10^{20} POT normalized")
+    pot.SetNDC()
+    pot.SetTextSize(18)
+    pot.SetTextAlign(32)
+    pot.Draw()
+
+def draw_sbnlabel():
+    sbn = ROOT.TLatex(.95, .92, "SBN Simulation")
+    sbn.SetTextColor(kGray+1)
+    sbn.SetNDC()
+    sbn.SetTextSize(20)
+    sbn.SetTextAlign(32)
+    sbn.Draw()
+
+def draw_iclabel():
+    exp = ROOT.TLatex(0.22,0.91,"ICARUS Sample")
+    exp.SetNDC()
+    exp.SetTextSize(18)
+    exp.SetTextAlign(12)
+    exp.Draw()
+
+def draw_sbndlabel():
+    exp = ROOT.TLatex(0.22,0.91,"SBND Sample")
+    exp.SetNDC()
+    exp.SetTextSize(18)
+    exp.SetTextAlign(12)
+    exp.Draw()
+ 
 def legend_position(inp):
     if inp == "ur":
         return [0.75,0.75,0.95,0.95]
