@@ -31,7 +31,10 @@ const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
 const double uboonePOT = 1.3e21;
 
-void make_surfaces()
+const std::string numuStr = "numu";
+const std::string nueStr = "nue";
+
+void make_surfaces(const std::string anatype = numuStr)
 {
   const std::vector<const ISyst*>& systs = GetSBNWeightSysts();
 
@@ -40,14 +43,32 @@ void make_surfaces()
   
   std::vector<const ISyst*> systs_to_process;
 
-  std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
+  //std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
+
+  //ETW try just one syst to isolate problem (hopefully)
+  std::vector<std::string> syst_names{"expskin_FluxUnisim"};
 
   for (auto s : systs) {
     for (auto n : syst_names) if (n == s->ShortName()) systs_to_process.push_back(s);
   }
 
-  TFile fin("cafe_state_syst_numu.root");
-  TFile fout("surfaces.root","RECREATE");
+  const char* name_in;
+  const char* name_out;
+  if (anatype == numuStr) {
+    name_in = "cafe_state_syst_numu.root";
+    name_out = "surfaces_numu.root";
+  }
+  else if (anatype == nueStr) {
+    name_in = "cafe_state_syst_nue.root";
+    name_out = "surfaces_nue.root";
+  }
+  else {
+    std::cout << "Must specifiy nue or numu" << std::endl;
+    return;
+  }
+
+  TFile fin(name_in);
+  TFile fout(name_out,"RECREATE");
 
   PredictionInterp* p_nd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_nd")).release();
   PredictionInterp* p_fd = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_fd")).release();
@@ -56,8 +77,18 @@ void make_surfaces()
   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
 
   //Define fit axes
-  const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
-  const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 1e-2, 1e2, true);
+  //smaller fit axes for no
+  const IFitVar* SterileTh;
+  double thlim = 1e-3;
+  if (anatype == numuStr) {
+    SterileTh = &kFitSinSq2ThetaMuMu;
+  }
+  else {
+    SterileTh = &kFitSinSq2ThetaMuE;
+    thlim = 5e-5;
+  }
+  const FitAxis kAxForTh(SterileTh, 10, thlim, 1, true);
+  const FitAxis kAxDmSq(&kFitDmSqSterile, 10, 1e-2, 1e2, true);
 
   // We'll call zero nominal
   calc->SetL(kBaselineSBND);
@@ -74,22 +105,22 @@ void make_surfaces()
   MultiExperimentSBN multiExpt({&expt_nd, &expt_fd, &expt_ub}, {kSBND, kICARUS, kMicroBoone});
   MultiExperimentSBN fd_nd({&expt_nd, &expt_fd}, {kSBND, kICARUS});
 
-  Surface surf_nom(&multiExpt, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
-  Surface surf_nd_fd(&fd_nd, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+  //Surface surf_nom(&multiExpt, calc, kAxForTh, kAxDmSq);
+  Surface surf_nd_fd(&fd_nd, calc, kAxForTh, kAxDmSq);
   calc->SetL(kBaselineSBND);
-  Surface surf_nom_nd(&expt_nd, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+  //Surface surf_nom_nd(&expt_nd, calc, kAxForTh, kAxDmSq);
   calc->SetL(kBaselineIcarus);
-  Surface surf_nom_fd(&expt_fd, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+  //Surface surf_nom_fd(&expt_fd, calc, kAxForTh, kAxDmSq);
   calc->SetL(kBaselineMicroBoone);
-  Surface surf_nom_ub(&expt_ub, calc, kAxSinSq2ThetaMuMu, kAxDmSq);
+  //Surface surf_nom_ub(&expt_ub, calc, kAxForTh, kAxDmSq);
 
   fout.mkdir("exclusion");
   fout.cd("exclusion");    
 
-  surf_nom.SaveTo(gDirectory->mkdir("nom"));
-  surf_nom_nd.SaveTo(gDirectory->mkdir("nom_nd"));
-  surf_nom_fd.SaveTo(gDirectory->mkdir("nom_fd"));
-  surf_nom_ub.SaveTo(gDirectory->mkdir("nom_ub"));
+  //surf_nom.SaveTo(gDirectory->mkdir("nom"));
+  //surf_nom_nd.SaveTo(gDirectory->mkdir("nom_nd"));
+  //surf_nom_fd.SaveTo(gDirectory->mkdir("nom_fd"));
+  //surf_nom_ub.SaveTo(gDirectory->mkdir("nom_ub"));
   surf_nd_fd.SaveTo(gDirectory->mkdir("nom_nd_fd"));
 
   std::vector<std::vector<const ISyst*>> slists;
@@ -97,21 +128,21 @@ void make_surfaces()
   slists.push_back(systs_to_process);
 
   for(const std::vector<const ISyst*> slist: slists){
-    Surface surf_syst(&multiExpt, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
-    Surface surf_syst_nd_fd(&fd_nd, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
+    //Surface surf_syst(&multiExpt, calc, kAxForTh, kAxDmSq, {}, slist);
+    Surface surf_syst_nd_fd(&fd_nd, calc, kAxForTh, kAxDmSq, {}, slist);
     calc->SetL(kBaselineSBND);
-    Surface surf_syst_nd(&expt_nd, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
+    //Surface surf_syst_nd(&expt_nd, calc, kAxForTh, kAxDmSq, {}, slist);
     calc->SetL(kBaselineIcarus);
-    Surface surf_syst_fd(&expt_fd, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
+    //Surface surf_syst_fd(&expt_fd, calc, kAxForTh, kAxDmSq, {}, slist);
     calc->SetL(kBaselineMicroBoone);
-    Surface surf_syst_ub(&expt_ub, calc, kAxSinSq2ThetaMuMu, kAxDmSq, {}, slist);
+    //Surface surf_syst_ub(&expt_ub, calc, kAxForTh, kAxDmSq, {}, slist);
 
     std::string suffix = "prop_systs";
 
-    surf_syst_nd.SaveTo(gDirectory->mkdir(("nd_"+suffix).c_str()));
-    surf_syst_fd.SaveTo(gDirectory->mkdir(("fd_"+suffix).c_str()));
-    surf_syst_ub.SaveTo(gDirectory->mkdir(("ub_"+suffix).c_str()));
-    surf_syst.SaveTo(gDirectory->mkdir(("allexpt_"+suffix).c_str()));
+    //surf_syst_nd.SaveTo(gDirectory->mkdir(("nd_"+suffix).c_str()));
+    //surf_syst_fd.SaveTo(gDirectory->mkdir(("fd_"+suffix).c_str()));
+    //surf_syst_ub.SaveTo(gDirectory->mkdir(("ub_"+suffix).c_str()));
+    //surf_syst.SaveTo(gDirectory->mkdir(("allexpt_"+suffix).c_str()));
     surf_syst_nd_fd.SaveTo(gDirectory->mkdir(("nd_fd_"+suffix).c_str()));
 
   } // end for s
@@ -120,12 +151,19 @@ void make_surfaces()
   // Allowed Region
 
   OscCalcSterileApproxAdjustable* calc2 = DefaultSterileApproxCalc();
-  calc2->calc.SetSinSq2ThetaMuMu(4*0.135*0.135*(1-0.135*0.135));
-  calc2->calc.SetDmsq(1.32);
+  if (anatype == numuStr) {
+    calc2->calc.SetSinSq2ThetaMuMu(4*0.135*0.135*(1-0.135*0.135));
+    calc2->calc.SetDmsq(1.32);
+  }
+  else {
+    calc2->calc.SetSinSq2ThetaMuMu(4*0.135*0.135*(1-0.135*0.135));
+    calc2->calc.SetDmsq(1.32);
+    std::cout << "WARNING WRONG INJECTED VALUES FIX ME!!!!" << std::endl;
+  }
 
   //Define fit axes
-  const FitAxis kAxSinSq2ThetaMuMu2(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
-  const FitAxis kAxDmSq2(&kFitDmSqSterile, 40, 1e-1, 1e1, true);
+  //const FitAxis kAxForTh2(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
+  //const FitAxis kAxDmSq2(&kFitDmSqSterile, 40, 1e-1, 1e1, true);
 
   // We'll call zero nominal
   calc2->SetL(kBaselineSBND);
@@ -142,42 +180,42 @@ void make_surfaces()
   MultiExperimentSBN multiExpt2({&expt_nd2, &expt_fd2, &expt_ub2}, {kSBND, kICARUS, kMicroBoone});
   MultiExperimentSBN fd_nd2({&expt_nd2, &expt_fd2}, {kSBND, kICARUS});
 
-  Surface surf_nom2(&multiExpt2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2);
-  Surface surf_nd_fd2(&fd_nd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2);
+  //Surface surf_nom2(&multiExpt2, calc2, kAxForTh, kAxDmSq);
+  //Surface surf_nd_fd2(&fd_nd2, calc2, kAxForTh, kAxDmSq);
   calc2->SetL(kBaselineSBND);
-  Surface surf_nom_nd2(&expt_nd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2);
+  //Surface surf_nom_nd2(&expt_nd2, calc2, kAxForTh, kAxDmSq);
   calc2->SetL(kBaselineIcarus);
-  Surface surf_nom_fd2(&expt_fd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2);
+  //Surface surf_nom_fd2(&expt_fd2, calc2, kAxForTh, kAxDmSq);
   calc2->SetL(kBaselineMicroBoone);
-  Surface surf_nom_ub2(&expt_ub2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2);
+  //Surface surf_nom_ub2(&expt_ub2, calc2, kAxForTh, kAxDmSq);
     
-  fout.cd("..");
-  fout.mkdir("allowed");
-  fout.cd("allowed");
+  //fout.cd("..");
+  //fout.mkdir("allowed");
+  //fout.cd("allowed");
 
-  surf_nom2.SaveTo(gDirectory->mkdir("nom"));
-  surf_nom_nd2.SaveTo(gDirectory->mkdir("nom_nd"));
-  surf_nom_fd2.SaveTo(gDirectory->mkdir("nom_fd"));
-  surf_nom_ub2.SaveTo(gDirectory->mkdir("nom_ub"));
-  surf_nd_fd2.SaveTo(gDirectory->mkdir("nom_nd_fd"));
+  //surf_nom2.SaveTo(gDirectory->mkdir("nom"));
+  //surf_nom_nd2.SaveTo(gDirectory->mkdir("nom_nd"));
+  //surf_nom_fd2.SaveTo(gDirectory->mkdir("nom_fd"));
+  //surf_nom_ub2.SaveTo(gDirectory->mkdir("nom_ub"));
+  //surf_nd_fd2.SaveTo(gDirectory->mkdir("nom_nd_fd"));
 
   for(const std::vector<const ISyst*> slist: slists){
-    Surface surf_syst2(&multiExpt2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2, {}, slist);
-    Surface surf_syst_nd_fd2(&fd_nd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2, {}, slist);
+    //Surface surf_syst2(&multiExpt2, calc2, kAxForTh, kAxDmSq, {}, slist);
+    //Surface surf_syst_nd_fd2(&fd_nd2, calc2, kAxForTh, kAxDmSq, {}, slist);
     calc2->SetL(kBaselineSBND);
-    Surface surf_syst_nd2(&expt_nd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2, {}, slist);
+    //Surface surf_syst_nd2(&expt_nd2, calc2, kAxForTh, kAxDmSq, {}, slist);
     calc2->SetL(kBaselineIcarus);
-    Surface surf_syst_fd2(&expt_fd2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2, {}, slist);
+    //Surface surf_syst_fd2(&expt_fd2, calc2, kAxForTh, kAxDmSq, {}, slist);
     calc2->SetL(kBaselineMicroBoone);
-    Surface surf_syst_ub2(&expt_ub2, calc2, kAxSinSq2ThetaMuMu2, kAxDmSq2, {}, slist);
+    //Surface surf_syst_ub2(&expt_ub2, calc2, kAxForTh, kAxDmSq, {}, slist);
 
     std::string suffix = "prop_systs";
 
-    surf_syst_nd2.SaveTo(gDirectory->mkdir(("nd_"+suffix).c_str()));
-    surf_syst_fd2.SaveTo(gDirectory->mkdir(("fd_"+suffix).c_str()));
-    surf_syst_ub2.SaveTo(gDirectory->mkdir(("ub_"+suffix).c_str()));
-    surf_syst2.SaveTo(gDirectory->mkdir(("allexpt_"+suffix).c_str()));
-    surf_syst_nd_fd2.SaveTo(gDirectory->mkdir(("nd_fd_"+suffix).c_str()));
+    //surf_syst_nd2.SaveTo(gDirectory->mkdir(("nd_"+suffix).c_str()));
+    //surf_syst_fd2.SaveTo(gDirectory->mkdir(("fd_"+suffix).c_str()));
+    //surf_syst_ub2.SaveTo(gDirectory->mkdir(("ub_"+suffix).c_str()));
+    //surf_syst2.SaveTo(gDirectory->mkdir(("allexpt_"+suffix).c_str()));
+    //surf_syst_nd_fd2.SaveTo(gDirectory->mkdir(("nd_fd_"+suffix).c_str()));
 
   } // end for s
 }

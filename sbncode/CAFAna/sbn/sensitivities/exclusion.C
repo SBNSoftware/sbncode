@@ -26,22 +26,40 @@ const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
 const double uboonePOT = 1.3e21;
 
-void exclusion()
+const std::string numuStr = "numu";
+const std::string nueStr = "nue";
+
+void exclusion(const std::string anatype = numuStr)
 {
-  TFile fin("surfaces.root");  
+  const char* name_in;
+  const char* name_out;
+  if (anatype == numuStr) {
+    name_in = "surfaces_numu.root";
+    name_out = "exclusion_numu.pdf";
+  }
+  else if (anatype == nueStr) {
+    name_in = "surfaces_nue.root";
+    name_out = "exclusion_nue.pdf";
+  }
+  else {
+    std::cout << "Must specifiy nue or numu" << std::endl;
+    return;
+  }
+
+  TFile fin(name_in);  
   TFile fprop("sterile_3p1_limits.root");
 
-  Surface& surf_syst_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nd_prop_systs")).release(); 
-  Surface& surf_syst_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/fd_prop_systs")).release(); 
-  Surface& surf_syst_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/ub_prop_systs")).release(); 
+  //Surface& surf_syst_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nd_prop_systs")).release(); 
+  //Surface& surf_syst_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/fd_prop_systs")).release(); 
+  //Surface& surf_syst_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/ub_prop_systs")).release(); 
   Surface& surf_syst_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nd_fd_prop_systs")).release();
-  Surface& surf_syst_all = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/allexpt_prop_systs")).release(); 
+  //Surface& surf_syst_all = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/allexpt_prop_systs")).release(); 
   
-  Surface& surf_nom_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_nd")).release(); 
-  Surface& surf_nom_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_ub")).release(); 
-  Surface& surf_nom_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_fd")).release(); 
+  //Surface& surf_nom_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_nd")).release(); 
+  //Surface& surf_nom_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_ub")).release(); 
+  //Surface& surf_nom_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_fd")).release(); 
   Surface& surf_nom_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_nd_fd")).release(); 
-  Surface& surf_nom = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom")).release(); 
+  //Surface& surf_nom = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom")).release(); 
 
   TGraph * proposal_90pctCL  = (TGraph *) fprop.Get( "lim_dis_3p1_sbnproposal_90pctCL"  );
   TGraph * proposal_3sigCL   = (TGraph *) fprop.Get( "lim_dis_3p1_sbnproposal_3sigCL"   );
@@ -49,39 +67,39 @@ void exclusion()
   TGraph * minosp_90pctCL       = (TGraph *) fprop.Get( "lim_dis_3p1_minosp_90pctCL"       );
   TGraph * minisciboone_90pctCL = (TGraph *) fprop.Get( "lim_dis_3p1_minisciboone_90pctCL" );
 
-  TH2* crit5sig = Gaussian5Sigma1D1Sided(surf_nom);
-  TH2* crit3sig = Gaussian3Sigma1D1Sided(surf_nom);
-  TH2* crit90 = Gaussian90Percent1D1Sided(surf_nom);
-  TH2* crit95 = Gaussian95Percent1D1Sided(surf_nom);
-  TH2* crit99 = Gaussian99Percent1D1Sided(surf_nom);
+  TH2* crit5sig = Gaussian5Sigma1D1Sided(surf_nom_nd_fd);
+  TH2* crit3sig = Gaussian3Sigma1D1Sided(surf_nom_nd_fd);
+  TH2* crit90 = Gaussian90Percent1D1Sided(surf_nom_nd_fd);
+  TH2* crit95 = Gaussian95Percent1D1Sided(surf_nom_nd_fd);
+  TH2* crit99 = Gaussian99Percent1D1Sided(surf_nom_nd_fd);
 
-  surf_nom.SetTitle("90% Exclusion");
+  //surf_nom.SetTitle("90% Exclusion");
  
-  surf_nom.DrawContour(crit90, 7, kBlack);
+  //surf_nom.DrawContour(crit90, 7, kBlack);
   surf_nom_nd_fd.DrawContour(crit90, 7, kMagenta);
-  surf_nom_nd.DrawContour(crit90,7,kRed);
-  surf_nom_ub.DrawContour(crit90,7,kGreen+3);
-  surf_nom_fd.DrawContour(crit90, 7, kBlue);
+  //surf_nom_nd.DrawContour(crit90,7,kRed);
+  //surf_nom_ub.DrawContour(crit90,7,kGreen+3);
+  //surf_nom_fd.DrawContour(crit90, 7, kBlue);
 
-  surf_syst_all.DrawContour(crit90, kSolid, kBlack);
-  surf_syst_nd.DrawContour(crit90, kSolid, kRed);
-  surf_syst_ub.DrawContour(crit90, kSolid, kGreen+3);
-  surf_syst_fd.DrawContour(crit90, kSolid, kBlue);
+  //surf_syst_all.DrawContour(crit90, kSolid, kBlack);
+  //surf_syst_nd.DrawContour(crit90, kSolid, kRed);
+  //surf_syst_ub.DrawContour(crit90, kSolid, kGreen+3);
+  //surf_syst_fd.DrawContour(crit90, kSolid, kBlue);
   surf_syst_nd_fd.DrawContour(crit90, kSolid, kMagenta);
     
-  proposal_90pctCL->SetLineColor(kGreen);
-  proposal_90pctCL->Draw("l");
-  minosp_90pctCL->SetLineColor(kCyan);
-  minosp_90pctCL->Draw("l");
-  minisciboone_90pctCL->SetLineColor(kOrange);
-  minisciboone_90pctCL->Draw("l");
+  //proposal_90pctCL->SetLineColor(kGreen);
+  //proposal_90pctCL->Draw("l");
+  //minosp_90pctCL->SetLineColor(kCyan);
+  //minosp_90pctCL->Draw("l");
+  //minisciboone_90pctCL->SetLineColor(kOrange);
+  //minisciboone_90pctCL->Draw("l");
 
   TLegend * lgdis = new TLegend(0.11,0.11,0.40,0.40);
   lgdis->SetFillColor(0);
   lgdis->SetBorderSize(0);
-  lgdis->AddEntry(proposal_90pctCL, "Proposal 90%");
-  lgdis->AddEntry(minosp_90pctCL, "Minos/Minos+ 90%");
-  lgdis->AddEntry(minisciboone_90pctCL, "MiniBoone/SciBoone 90%");
+  //lgdis->AddEntry(proposal_90pctCL, "Proposal 90%");
+  //lgdis->AddEntry(minosp_90pctCL, "Minos/Minos+ 90%");
+  //lgdis->AddEntry(minisciboone_90pctCL, "MiniBoone/SciBoone 90%");
   TH1* dummy = new TH1F("", "", 1, 0, 1);
   dummy->SetLineColor(kRed);
   lgdis->AddEntry(dummy->Clone(), "SBND");
@@ -97,7 +115,7 @@ void exclusion()
   lgdis->AddEntry(dummy->Clone(), "Stats Only");
 
   lgdis->Draw("same");
-  gPad->Print("exclusion_90.pdf");
+  gPad->Print(name_out);
 
 //  TFile fout("exclusion_graphs.root", "RECREATE");
 //  
