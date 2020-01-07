@@ -7,6 +7,7 @@
 
 #include "CAFAna/Prediction/PredictionGenerator.h"
 
+#include "CAFAna/Systs/SBNWeightSysts.h"
 #include "CAFAna/Systs/UniverseOracle.h"
 
 #include "OscLib/IOscCalculator.h"
@@ -35,8 +36,31 @@ namespace ana
   {
     fNom = predGen.Generate(loaders, SystShifts::Nominal()).release();
 
-    for(const SystShifts& shift: UniverseOracle::Instance().ShiftsForSysts(systs, nUniv)){
-      fUnivs.emplace_back(shift, predGen.Generate(loaders, shift).release());
+    // We really want to apply a weight - but PredictionGenerator is set up to
+    // take a SystShifts, so...
+    class DummyUnivWeightSyst: public ISyst
+    {
+    public:
+      DummyUnivWeightSyst(const std::vector<const ISyst*> systs, int univIdx)
+        : ISyst(UniqueName(), UniqueName()),
+          fVar(GetUniverseWeight(systs, univIdx))
+      {
+      }
+
+      void Shift(double sigma, caf::SRProxy* sr, double& weight) const override
+      {
+        weight *= fVar(sr);
+      }
+    protected:
+      Var fVar;
+    };
+
+    for(int univIdx = 0; univIdx < nUniv; ++univIdx){
+      // This one is an accurate label for what the shift is
+      const SystShifts s1 = UniverseOracle::Instance().ShiftsForSysts(systs, nUniv)[univIdx];
+      // But this is the sane way to compute its effect
+      const SystShifts s2(new DummyUnivWeightSyst(systs, univIdx), 1);
+      fUnivs.emplace_back(s1, predGen.Generate(loaders, s2).release());
     }
   }
 
