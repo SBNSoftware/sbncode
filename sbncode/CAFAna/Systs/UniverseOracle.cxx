@@ -94,6 +94,19 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
+  std::vector<SystShifts> UniverseOracle::ShiftsForSysts(const std::vector<const ISyst*>& systs, int nUniv) const
+  {
+    std::vector<SystShifts> ret(nUniv);
+
+    for(const ISyst* s: systs){
+      const std::vector<double>& xs = ShiftsForSyst(s->ShortName());
+      for(int i = 0; i < nUniv; ++i) ret[i].SetShift(s, xs[i%xs.size()]);
+    }
+
+    return ret;
+  }
+
+  // --------------------------------------------------------------------------
   unsigned int UniverseOracle::ClosestIndex(const std::string& name,
                                             double shift,
                                             ESide side,

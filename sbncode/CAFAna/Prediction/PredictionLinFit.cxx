@@ -5,6 +5,10 @@
 #include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Core/SystRegistry.h"
 
+#include "CAFAna/Prediction/PredictionGenerator.h"
+
+#include "CAFAna/Systs/UniverseOracle.h"
+
 #include "OscLib/IOscCalculator.h"
 
 #include "TDecompLU.h"
@@ -20,24 +24,49 @@ namespace ana
                                      const std::vector<std::pair<SystShifts, const IPrediction*>>& univs)
     : fSysts(systs), fNom(pnom), fUnivs(univs)
   {
-    osc::NoOscillations calc; // TODO pass this in?
+  }
 
-    const Spectrum snom = pnom->Predict(&calc);
+  // --------------------------------------------------------------------------
+  PredictionLinFit::PredictionLinFit(const std::vector<const ISyst*>& systs,
+                                     const IPredictionGenerator& predGen,
+                                     Loaders& loaders,
+                                     int nUniv)
+    : fSysts(systs)
+  {
+    fNom = predGen.Generate(loaders, SystShifts::Nominal()).release();
+
+    for(const SystShifts& shift: UniverseOracle::Instance().ShiftsForSysts(systs, nUniv)){
+      fUnivs.emplace_back(shift, predGen.Generate(loaders, shift).release());
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  PredictionLinFit::~PredictionLinFit()
+  {
+  }
+
+  // --------------------------------------------------------------------------
+  void PredictionLinFit::InitFits() const
+  {
+    osc::NoOscillations calc; // TODO class member?
+
+    const Spectrum snom = fNom->Predict(&calc);
+
     TH1D* hnom = snom.ToTH1(1); // only need this to count the bins :(
     const int Nbins = hnom->GetNbinsX();
     HistCache::Delete(hnom);
 
-    std::vector<std::vector<double>> coords(univs.size());
+    std::vector<std::vector<double>> coords(fUnivs.size());
 
-    for(unsigned int univIdx = 0; univIdx < univs.size(); ++univIdx){
-      coords[univIdx].reserve(systs.size());
-      for(const ISyst* s: systs) coords[univIdx].push_back(univs[univIdx].first.GetShift(s));
+    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+      coords[univIdx].reserve(fSysts.size());
+      for(const ISyst* s: fSysts) coords[univIdx].push_back(fUnivs[univIdx].first.GetShift(s));
     }
 
-    TMatrixD M(systs.size(), systs.size());
-    for(unsigned int univIdx = 0; univIdx < univs.size(); ++univIdx){
-      for(unsigned int i = 0; i < systs.size(); ++i){
-        for(unsigned int j = 0; j < systs.size(); ++j){
+    TMatrixD M(fSysts.size(), fSysts.size());
+    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+      for(unsigned int i = 0; i < fSysts.size(); ++i){
+        for(unsigned int j = 0; j < fSysts.size(); ++j){
           M(i, j) += coords[univIdx][i] * coords[univIdx][j];
         }
       }
@@ -45,16 +74,16 @@ namespace ana
 
     TDecompLU decomp(M);
 
-    std::vector<TVectorD> vs(Nbins+2, TVectorD(systs.size()));
+    std::vector<TVectorD> vs(Nbins+2, TVectorD(fSysts.size()));
 
-    for(unsigned int univIdx = 0; univIdx < univs.size(); ++univIdx){
-      const Ratio r(univs[univIdx].second->Predict(&calc), snom);
+    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+      const Ratio r(fUnivs[univIdx].second->Predict(&calc), snom);
       TH1D* hr = r.ToTH1();
 
       for(int binIdx = 0; binIdx < Nbins+2; ++binIdx){
         const double d = hr->GetBinContent(binIdx);
 
-        for(unsigned int i = 0; i < systs.size(); ++i){
+        for(unsigned int i = 0; i < fSysts.size(); ++i){
           vs[binIdx](i) += coords[univIdx][i] * log(d);
         }
       }
@@ -66,11 +95,6 @@ namespace ana
       decomp.Solve(v);
       fCoeffs.push_back(v);
     }
-  }
-
-  // --------------------------------------------------------------------------
-  PredictionLinFit::~PredictionLinFit()
-  {
   }
 
   // --------------------------------------------------------------------------
@@ -108,6 +132,8 @@ namespace ana
   // --------------------------------------------------------------------------
   Ratio PredictionLinFit::GetRatio(const SystShifts& shift) const
   {
+    if(fCoeffs.empty()) InitFits();
+
     // To get correct binning
     TH1D* hret = fNom->PredictUnoscillated().ToTH1(1);
     hret->Reset();
