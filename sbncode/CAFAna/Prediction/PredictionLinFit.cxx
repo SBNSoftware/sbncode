@@ -98,27 +98,40 @@ namespace ana
 
     TDecompLU decomp(M);
 
-    std::vector<TVectorD> vs(Nbins+2, TVectorD(fSysts.size()));
+    // The data (ratios) that we're trying to fit
+    std::vector<std::vector<double>> ds(Nbins+2, std::vector<double>(fUnivs.size()));
 
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
       const Ratio r(fUnivs[univIdx].second->Predict(&calc), snom);
       TH1D* hr = r.ToTH1();
 
       for(int binIdx = 0; binIdx < Nbins+2; ++binIdx){
-        const double d = hr->GetBinContent(binIdx);
-
-        for(unsigned int i = 0; i < fSysts.size(); ++i){
-          vs[binIdx](i) += coords[univIdx][i] * log(d);
-        }
+        ds[binIdx][univIdx] = log(hr->GetBinContent(binIdx));
       }
 
       HistCache::Delete(hr);
     }
 
-    for(TVectorD& v: vs){
-      decomp.Solve(v);
-      fCoeffs.push_back(v);
+    for(int binIdx = 0; binIdx < Nbins+2; ++binIdx){
+      fCoeffs.push_back(InitFitsBin(decomp, ds[binIdx], coords));
     }
+  }
+
+  // --------------------------------------------------------------------------
+  TVectorD PredictionLinFit::InitFitsBin(TDecompLU& decomp,
+                                         const std::vector<double>& ds,
+                                         const std::vector<std::vector<double>>& coords) const
+  {
+    TVectorD v(fSysts.size());
+
+    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+      for(unsigned int i = 0; i < fSysts.size(); ++i){
+        v(i) += coords[univIdx][i] * ds[univIdx];
+      }
+    }
+
+    decomp.Solve(v);
+    return v;
   }
 
   // --------------------------------------------------------------------------

@@ -4,6 +4,8 @@
 
 #include "TVectorD.h"
 
+class TDecompLU;
+
 namespace ana
 {
   class Loaders;
@@ -47,6 +49,11 @@ namespace ana
 
   protected:
     void InitFits() const;
+
+    /// Helper for InitFits()
+    TVectorD InitFitsBin(TDecompLU& decomp,
+                         const std::vector<double>& ds,
+                         const std::vector<std::vector<double>>& coords) const;
 
     Ratio GetRatio(const SystShifts& shift) const;
 
