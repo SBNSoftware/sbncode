@@ -2,6 +2,7 @@
 
 #include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/LoadFromFile.h"
+#include "CAFAna/Core/MathUtil.h"
 #include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Core/SystRegistry.h"
 
@@ -83,20 +84,19 @@ namespace ana
     std::vector<std::vector<double>> coords(fUnivs.size());
 
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      coords[univIdx].reserve(fSysts.size());
-      for(const ISyst* s: fSysts) coords[univIdx].push_back(fUnivs[univIdx].first.GetShift(s));
+      coords[univIdx] = GetCoords(fUnivs[univIdx].first);
     }
 
-    TMatrixD M(fSysts.size(), fSysts.size());
+    const unsigned int N = coords[0].size();
+
+    TMatrixD M(N, N);
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      for(unsigned int i = 0; i < fSysts.size(); ++i){
-        for(unsigned int j = 0; j < fSysts.size(); ++j){
+      for(unsigned int i = 0; i < N; ++i){
+        for(unsigned int j = 0; j < N; ++j){
           M(i, j) += coords[univIdx][i] * coords[univIdx][j];
         }
       }
     }
-
-    TDecompLU decomp(M);
 
     // The data (ratios) that we're trying to fit
     std::vector<std::vector<double>> ds(Nbins+2, std::vector<double>(fUnivs.size()));
@@ -113,25 +113,122 @@ namespace ana
     }
 
     for(int binIdx = 0; binIdx < Nbins+2; ++binIdx){
-      fCoeffs.push_back(InitFitsBin(decomp, ds[binIdx], coords));
+      fCoeffs.push_back(InitFitsBin(M, ds[binIdx], coords));
     }
   }
 
   // --------------------------------------------------------------------------
-  TVectorD PredictionLinFit::InitFitsBin(TDecompLU& decomp,
+  TVectorD PredictionLinFit::InitFitsBin(const TMatrixD& M,
                                          const std::vector<double>& ds,
                                          const std::vector<std::vector<double>>& coords) const
   {
-    TVectorD v(fSysts.size());
+    const int N = M.GetNrows();
+
+    TVectorD v(N);
 
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      for(unsigned int i = 0; i < fSysts.size(); ++i){
+      for(int i = 0; i < N; ++i){
         v(i) += coords[univIdx][i] * ds[univIdx];
       }
     }
 
-    decomp.Solve(v);
-    return v;
+    std::cout << "-----" << std::endl;
+    double best_mse = std::numeric_limits<double>::infinity();
+    std::vector<bool> already(N);
+
+    TMatrixD Msub(1, 1);
+    TVectorD vsub(1);
+
+    std::vector<int> vars;
+
+    for(int matSize = 1; matSize <= 50/*std::min(N, fUnivs.size())*/; ++matSize){
+      Msub.ResizeTo(matSize, matSize);
+      vsub.ResizeTo(matSize);
+      vars.resize(matSize);
+
+      int bestVarIdx = -1;
+      for(int varIdx = 0; varIdx < N; ++varIdx){
+        if(already[varIdx]) continue;
+
+        // Provisionally add this var to the list
+        vars.back() = varIdx;
+
+        // Rewrite the last row/col to match
+        for(int i = 0; i < matSize; ++i){
+          //          Msub(matSize-1, i) = Msub(i, matSize-1) = M(vars[i], varIdx);
+          Msub(matSize-1, i) = M(varIdx, vars[i]);
+          Msub(i, matSize-1) = M(vars[i], varIdx);
+        }
+        vsub(matSize-1) = v(varIdx);
+
+        //        Msub.Print();
+
+        bool ok;
+        const TVectorD a = TDecompLU(Msub).Solve(vsub, ok);
+        const double* ap = &a[0]; // circumvent slow bounds-checking
+
+        // Mean squared error
+        double mse = 0;
+        for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+          const double target = ds[univIdx];
+
+          const double* cp = &coords[univIdx][0];
+
+          double estimate = 0;
+          for(unsigned int i = 0; i < vars.size(); ++i){
+            estimate += ap[i] * cp[vars[i]];
+          }
+
+          //          for(unsigned int i = 0; i < fSysts.size(); ++i){
+          //            if(int(i) == varIdx) estimate += vsub[0] * coords[univIdx][i];
+            //          estimate += v[i] * coords[univIdx][i];
+          //        }
+          mse += util::sqr(estimate-target);
+        }
+
+        mse /= fUnivs.size();
+
+        //        std::cout << "    " << fSysts[varIdx]->ShortName() << " " << sqrt(mse) << std::endl;
+
+        if(mse < best_mse){
+          best_mse = mse;
+          bestVarIdx = varIdx;
+          //          Msub.Print();
+          //          vsub.Print();
+        }
+      } // end for varIdx
+
+      if(bestVarIdx == -1){
+        std::cout << "No var improved. Done" << std::endl;
+        vars.pop_back();
+        break;
+      }
+
+      std::cout << "  " << matSize << ": best var " << bestVarIdx/*fSysts[bestVarIdx]->ShortName()*/ << " " << sqrt(best_mse) << std::endl;
+      vars.back() = bestVarIdx;
+
+      // Ouch, this is ugly
+      for(int i = 0; i < matSize; ++i){
+        Msub(matSize-1, i) = M(vars.back(), vars[i]);
+        Msub(i, matSize-1) = M(vars[i], vars.back());
+      }
+      vsub(matSize-1) = v(vars.back());
+
+      already[bestVarIdx] = true;
+    } // end for matSize
+
+    std::cout << "VARS:";
+    for(int v: vars) std::cout << " " << v;
+    std::cout << " MSE: " << sqrt(best_mse) << std::endl;
+    std::cout << std::endl;
+
+    // Solve one last time
+    bool ok;
+    const TVectorD a = TDecompLU(Msub).Solve(vsub, ok);
+    // And package up
+    TVectorD ret(N);
+    for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = a[i];
+    return ret;
   }
 
   // --------------------------------------------------------------------------
@@ -167,6 +264,24 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
+  std::vector<double> PredictionLinFit::GetCoords(const SystShifts& shift) const
+  {
+    std::vector<double> coords;
+    // Add all the linear terms
+    for(const ISyst* s: fSysts) coords.push_back(shift.GetShift(s));
+
+    // Now add all the quadratic and cross terms
+    const unsigned int N = fSysts.size();
+    for(unsigned int i = 0; i < N; ++i){
+      for(unsigned int j = i; j < N; ++j){
+        coords.push_back(coords[i] * coords[j]);
+      }
+    }
+
+    return coords;
+  }
+
+  // --------------------------------------------------------------------------
   Ratio PredictionLinFit::GetRatio(const SystShifts& shift) const
   {
     if(fCoeffs.empty()) InitFits();
@@ -175,14 +290,13 @@ namespace ana
     TH1D* hret = fNom->PredictUnoscillated().ToTH1(1);
     hret->Reset();
 
+    const std::vector<double> coords = GetCoords(shift);
+    const unsigned int N = coords.size();
+
     for(unsigned int binIdx = 0; binIdx < fCoeffs.size(); ++binIdx){
       double factor = 0;
-      // TODO consider looping through the set entries in 'shift', rather than
-      // fSysts
-      for(unsigned int systIdx = 0; systIdx < fSysts.size(); ++systIdx){
-        const double x = shift.GetShift(fSysts[systIdx]);
-        factor += fCoeffs[binIdx][systIdx] * x;
-      }
+      for(unsigned int i = 0; i < N; ++i) factor += fCoeffs[binIdx][i] * coords[i];
+
       hret->SetBinContent(binIdx, exp(factor));
     }
 
