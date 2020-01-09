@@ -49,7 +49,7 @@ namespace ana
     void InitFits() const;
 
     /// Helper for InitFits()
-    TVectorD InitFitsBin(const TMatrixD& M,
+    TVectorD InitFitsBin(const TMatrixDSym& M,
                          const std::vector<double>& ds,
                          const std::vector<std::vector<double>>& coords) const;
 

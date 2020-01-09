@@ -13,7 +13,7 @@
 
 #include "OscLib/IOscCalculator.h"
 
-#include "TDecompLU.h"
+#include "TDecompChol.h"
 #include "TDirectory.h"
 #include "TH1.h"
 #include "TObjString.h"
@@ -73,23 +73,13 @@ namespace ana
   // --------------------------------------------------------------------------
   void PredictionLinFit::InitFits() const
   {
-    osc::NoOscillations calc; // TODO class member?
-
-    const Spectrum snom = fNom->Predict(&calc);
-
-    TH1D* hnom = snom.ToTH1(1); // only need this to count the bins :(
-    const int Nbins = hnom->GetNbinsX();
-    HistCache::Delete(hnom);
-
-    std::vector<std::vector<double>> coords(fUnivs.size());
-
-    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      coords[univIdx] = GetCoords(fUnivs[univIdx].first);
-    }
+    std::vector<std::vector<double>> coords;
+    coords.reserve(fUnivs.size());
+    for(const auto& it: fUnivs) coords.push_back(GetCoords(it.first));
 
     const unsigned int N = coords[0].size();
 
-    TMatrixD M(N, N);
+    TMatrixDSym M(N);
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
       for(unsigned int i = 0; i < N; ++i){
         for(unsigned int j = 0; j < N; ++j){
@@ -97,6 +87,14 @@ namespace ana
         }
       }
     }
+
+    osc::NoOscillations calc; // TODO class member?
+
+    const Spectrum snom = fNom->Predict(&calc);
+
+    TH1D* hnom = snom.ToTH1(1); // only need this to count the bins :(
+    const int Nbins = hnom->GetNbinsX();
+    HistCache::Delete(hnom);
 
     // The data (ratios) that we're trying to fit
     std::vector<std::vector<double>> ds(Nbins+2, std::vector<double>(fUnivs.size()));
@@ -118,7 +116,7 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  TVectorD PredictionLinFit::InitFitsBin(const TMatrixD& M,
+  TVectorD PredictionLinFit::InitFitsBin(const TMatrixDSym& M,
                                          const std::vector<double>& ds,
                                          const std::vector<std::vector<double>>& coords) const
   {
@@ -136,7 +134,7 @@ namespace ana
     double best_mse = std::numeric_limits<double>::infinity();
     std::vector<bool> already(N);
 
-    TMatrixD Msub(1, 1);
+    TMatrixDSym Msub(1);
     TVectorD vsub(1);
 
     std::vector<int> vars;
@@ -155,7 +153,6 @@ namespace ana
 
         // Rewrite the last row/col to match
         for(int i = 0; i < matSize; ++i){
-          //          Msub(matSize-1, i) = Msub(i, matSize-1) = M(vars[i], varIdx);
           Msub(matSize-1, i) = M(varIdx, vars[i]);
           Msub(i, matSize-1) = M(vars[i], varIdx);
         }
@@ -163,8 +160,10 @@ namespace ana
 
         //        Msub.Print();
 
+        // NB https://en.wikipedia.org/wiki/Cholesky_decomposition#Adding_and_removing_rows_and_columns
+
         bool ok;
-        const TVectorD a = TDecompLU(Msub).Solve(vsub, ok);
+        const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
         const double* ap = &a[0]; // circumvent slow bounds-checking
 
         // Mean squared error
@@ -179,10 +178,6 @@ namespace ana
             estimate += ap[i] * cp[vars[i]];
           }
 
-          //          for(unsigned int i = 0; i < fSysts.size(); ++i){
-          //            if(int(i) == varIdx) estimate += vsub[0] * coords[univIdx][i];
-            //          estimate += v[i] * coords[univIdx][i];
-          //        }
           mse += util::sqr(estimate-target);
         }
 
@@ -266,12 +261,15 @@ namespace ana
   // --------------------------------------------------------------------------
   std::vector<double> PredictionLinFit::GetCoords(const SystShifts& shift) const
   {
+    const unsigned int N = fSysts.size();
+
     std::vector<double> coords;
+    coords.reserve(N + (N*(N+1))/2);
+
     // Add all the linear terms
     for(const ISyst* s: fSysts) coords.push_back(shift.GetShift(s));
 
     // Now add all the quadratic and cross terms
-    const unsigned int N = fSysts.size();
     for(unsigned int i = 0; i < N; ++i){
       for(unsigned int j = i; j < N; ++j){
         coords.push_back(coords[i] * coords[j]);
