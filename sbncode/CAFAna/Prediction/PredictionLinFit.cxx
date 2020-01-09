@@ -8,6 +8,8 @@
 
 #include "CAFAna/Prediction/PredictionGenerator.h"
 
+#include "CAFAna/Prediction/IncrementalCholeskyDecomp.h"
+
 #include "CAFAna/Systs/SBNWeightSysts.h"
 #include "CAFAna/Systs/UniverseOracle.h"
 
@@ -83,6 +85,7 @@ namespace ana
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
       for(unsigned int i = 0; i < N; ++i){
         for(unsigned int j = 0; j < N; ++j){
+          // TODO bypass the bounds checking here
           M(i, j) += coords[univIdx][i] * coords[univIdx][j];
         }
       }
@@ -134,15 +137,18 @@ namespace ana
     double best_mse = std::numeric_limits<double>::infinity();
     std::vector<bool> already(N);
 
-    TMatrixDSym Msub(1);
+    IncrementalCholeskyDecomp icd;
+
+    //    TMatrixDSym Msub(1);
     TVectorD vsub(1);
 
     std::vector<int> vars;
 
     for(int matSize = 1; matSize <= 50/*std::min(N, fUnivs.size())*/; ++matSize){
-      Msub.ResizeTo(matSize, matSize);
+      //      Msub.ResizeTo(matSize, matSize);
       vsub.ResizeTo(matSize);
       vars.resize(matSize);
+      icd.Extend();
 
       int bestVarIdx = -1;
       for(int varIdx = 0; varIdx < N; ++varIdx){
@@ -151,20 +157,33 @@ namespace ana
         // Provisionally add this var to the list
         vars.back() = varIdx;
 
+        std::vector<double> newrow(matSize);
+        for(int i = 0; i < matSize; ++i){
+          newrow[i] = M(varIdx, vars[i]);
+        }
+        icd.SetLastRow(newrow);
+
         // Rewrite the last row/col to match
+        /*
         for(int i = 0; i < matSize; ++i){
           Msub(matSize-1, i) = M(varIdx, vars[i]);
           Msub(i, matSize-1) = M(vars[i], varIdx);
         }
+        */
         vsub(matSize-1) = v(varIdx);
 
         //        Msub.Print();
 
         // NB https://en.wikipedia.org/wiki/Cholesky_decomposition#Adding_and_removing_rows_and_columns
 
-        bool ok;
-        const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
-        const double* ap = &a[0]; // circumvent slow bounds-checking
+        //        bool ok;
+        //        const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
+        //        const double* ap = &a[0]; // circumvent slow bounds-checking
+
+        std::vector<double> av(matSize);
+        for(int i = 0; i < matSize; ++i) av[i] = vsub[i];
+        av = icd.Solve(av);
+        const double* ap = &av[0];
 
         // Mean squared error
         double mse = 0;
@@ -203,27 +222,46 @@ namespace ana
       vars.back() = bestVarIdx;
 
       // Ouch, this is ugly
+      /*
       for(int i = 0; i < matSize; ++i){
         Msub(matSize-1, i) = M(vars.back(), vars[i]);
         Msub(i, matSize-1) = M(vars[i], vars.back());
       }
+      */
       vsub(matSize-1) = v(vars.back());
+
+      std::vector<double> newrow(matSize);
+      for(int i = 0; i < matSize; ++i){
+        newrow[i] = M(vars.back(), vars[i]);
+      }
+      icd.SetLastRow(newrow);
 
       already[bestVarIdx] = true;
     } // end for matSize
+
+    //    icd.Print();
 
     std::cout << "VARS:";
     for(int v: vars) std::cout << " " << v;
     std::cout << " MSE: " << sqrt(best_mse) << std::endl;
     std::cout << std::endl;
 
+    std::vector<double> av(vsub.GetNrows());
+    for(int i = 0; i < vsub.GetNrows(); ++i) av[i] = vsub[i];
+    av = icd.Solve(av);
+
+    TVectorD ret(N);
+    for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = av[i];
+    return ret;
+    /*
     // Solve one last time
     bool ok;
-    const TVectorD a = TDecompLU(Msub).Solve(vsub, ok);
+    const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
     // And package up
     TVectorD ret(N);
     for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = a[i];
     return ret;
+    */
   }
 
   // --------------------------------------------------------------------------
