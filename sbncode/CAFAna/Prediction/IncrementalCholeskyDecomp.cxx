@@ -25,22 +25,26 @@ namespace ana
     // S11 = L11  -- true automatically
 
     // S12 = L11^T \ A12
-    //    for(int i = int(N-2); i >= 0; --i){ // which row we're solving
     for(unsigned int i = 0; i+1 < N; ++i){ // which row we're solving
-      //      std::cout << "SOLVING ROW " << i << std::endl;
       double res = row[i];
-      //      for(unsigned int j = i+1; j+1 < N; ++j) res -= fUpper[i][j] * fUpper[j][N-1];
       for(unsigned int j = 0; j < i; ++j) res -= fUpper[j][i] * fUpper[j][N-1];
-      //      std::cout << "RES " << res << std::endl;
-      //      std::cout << "DENOM " << fUpper[i][i] << std::endl;
       if(res != 0) fUpper[i][N-1] = res/fUpper[i][i];
     }
 
     // S22 = chol(A22 - S12T S12)
     double dot = 0;
     for(unsigned int i = 0; i+1 < N; ++i) dot += util::sqr(fUpper[i][N-1]);
-    //    std::cout << "SQRT " << row[N-1] << " - " << dot << std::endl;
     fUpper[N-1][N-1] = sqrt(row[N-1] - dot);
+  }
+
+  // --------------------------------------------------------------------------
+  void IncrementalCholeskyDecomp::SetLastRow(const std::vector<double>& bigrow,
+                                             const std::vector<int>& idxs)
+  {
+    std::vector<double> row;
+    row.reserve(idxs.size());
+    for(int i: idxs) row.push_back(bigrow[i]);
+    SetLastRow(row);
   }
 
   // --------------------------------------------------------------------------
@@ -65,9 +69,6 @@ namespace ana
       for(unsigned int j = i+1; j < N; ++j) res -= fUpper[i][j] * x[j];
       if(res != 0) x[i] = res/fUpper[i][i];
     }
-
-    //    for(unsigned int i = 0; i < N; ++i) std::cout << x[i] << " ";
-    //    std::cout << std::endl;
 
     return x;
   }

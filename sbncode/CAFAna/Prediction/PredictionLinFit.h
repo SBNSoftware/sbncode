@@ -2,16 +2,12 @@
 
 #include "CAFAna/Prediction/IPrediction.h"
 
-#include "TVectorD.h"
-
 namespace ana
 {
   class Loaders;
   class IPredictionGenerator;
 
-  /// Parameterize a collection of universes as a linear function of the syst
-  /// knobs. Profiling over this should produce the same results as a
-  /// covariance matrix fit.
+  /// Parameterize a collection of universes as a function of the syst knobs
   class PredictionLinFit: public IPrediction
   {
   public:
@@ -49,9 +45,9 @@ namespace ana
     void InitFits() const;
 
     /// Helper for InitFits()
-    TVectorD InitFitsBin(const TMatrixDSym& M,
-                         const std::vector<double>& ds,
-                         const std::vector<std::vector<double>>& coords) const;
+    std::vector<double> InitFitsBin(const std::vector<std::vector<double>>& M,
+                                    const std::vector<double>& ds,
+                                    const std::vector<std::vector<double>>& coords) const;
 
     std::vector<double> GetCoords(const SystShifts& shift) const;
 
@@ -61,6 +57,6 @@ namespace ana
     const IPrediction* fNom;
     std::vector<std::pair<SystShifts, const IPrediction*>> fUnivs;
 
-    mutable std::vector<TVectorD> fCoeffs;
+    mutable std::vector<std::vector<double>> fCoeffs;
   };
 }

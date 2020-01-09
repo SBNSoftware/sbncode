@@ -17,6 +17,9 @@ namespace ana
     /// This is of course also the right-most column...
     void SetLastRow(const std::vector<double>& row);
 
+    void SetLastRow(const std::vector<double>& bigrow,
+                    const std::vector<int>& idxs);
+
     void AddRow(const std::vector<double>& row)
     {
       Extend();

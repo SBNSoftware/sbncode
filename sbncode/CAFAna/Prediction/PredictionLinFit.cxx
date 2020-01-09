@@ -15,7 +15,6 @@
 
 #include "OscLib/IOscCalculator.h"
 
-#include "TDecompChol.h"
 #include "TDirectory.h"
 #include "TH1.h"
 #include "TObjString.h"
@@ -81,12 +80,12 @@ namespace ana
 
     const unsigned int N = coords[0].size();
 
-    TMatrixDSym M(N);
+    std::vector<std::vector<double>> M(N, std::vector<double>(N));
+
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
       for(unsigned int i = 0; i < N; ++i){
         for(unsigned int j = 0; j < N; ++j){
-          // TODO bypass the bounds checking here
-          M(i, j) += coords[univIdx][i] * coords[univIdx][j];
+          M[i][j] += coords[univIdx][i] * coords[univIdx][j];
         }
       }
     }
@@ -119,17 +118,18 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  TVectorD PredictionLinFit::InitFitsBin(const TMatrixDSym& M,
-                                         const std::vector<double>& ds,
-                                         const std::vector<std::vector<double>>& coords) const
+  std::vector<double> PredictionLinFit::
+  InitFitsBin(const std::vector<std::vector<double>>& M,
+              const std::vector<double>& ds,
+              const std::vector<std::vector<double>>& coords) const
   {
-    const int N = M.GetNrows();
+    const unsigned int N = M.size();
 
-    TVectorD v(N);
+    std::vector<double> v(N);
 
     for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      for(int i = 0; i < N; ++i){
-        v(i) += coords[univIdx][i] * ds[univIdx];
+      for(unsigned int i = 0; i < N; ++i){
+        v[i] += coords[univIdx][i] * ds[univIdx];
       }
     }
 
@@ -139,62 +139,42 @@ namespace ana
 
     IncrementalCholeskyDecomp icd;
 
-    //    TMatrixDSym Msub(1);
-    TVectorD vsub(1);
+    std::vector<double> vsub;
 
     std::vector<int> vars;
 
-    for(int matSize = 1; matSize <= 50/*std::min(N, fUnivs.size())*/; ++matSize){
-      //      Msub.ResizeTo(matSize, matSize);
-      vsub.ResizeTo(matSize);
-      vars.resize(matSize);
+    std::vector<std::vector<double>> coords_sub(fUnivs.size());
+
+    for(unsigned int matSize = 1; matSize <= 50/*std::min(N, fUnivs.size())*/; ++matSize){
+      vsub.push_back(0);
+      vars.push_back(-1);
       icd.Extend();
+      for(std::vector<double>& c: coords_sub) c.push_back(0);
 
       int bestVarIdx = -1;
-      for(int varIdx = 0; varIdx < N; ++varIdx){
+      for(unsigned int varIdx = 0; varIdx < N; ++varIdx){
         if(already[varIdx]) continue;
 
         // Provisionally add this var to the list
         vars.back() = varIdx;
 
-        std::vector<double> newrow(matSize);
-        for(int i = 0; i < matSize; ++i){
-          newrow[i] = M(varIdx, vars[i]);
-        }
-        icd.SetLastRow(newrow);
+        icd.SetLastRow(M[varIdx], vars);
 
-        // Rewrite the last row/col to match
-        /*
-        for(int i = 0; i < matSize; ++i){
-          Msub(matSize-1, i) = M(varIdx, vars[i]);
-          Msub(i, matSize-1) = M(vars[i], varIdx);
-        }
-        */
-        vsub(matSize-1) = v(varIdx);
+        vsub.back() = v[varIdx];
 
-        //        Msub.Print();
-
-        // NB https://en.wikipedia.org/wiki/Cholesky_decomposition#Adding_and_removing_rows_and_columns
-
-        //        bool ok;
-        //        const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
-        //        const double* ap = &a[0]; // circumvent slow bounds-checking
-
-        std::vector<double> av(matSize);
-        for(int i = 0; i < matSize; ++i) av[i] = vsub[i];
-        av = icd.Solve(av);
-        const double* ap = &av[0];
+        const std::vector<double> a = icd.Solve(vsub);
 
         // Mean squared error
         double mse = 0;
         for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
           const double target = ds[univIdx];
 
-          const double* cp = &coords[univIdx][0];
+          std::vector<double>& c = coords_sub[univIdx];
+          c.back() = coords[univIdx][varIdx];
 
           double estimate = 0;
-          for(unsigned int i = 0; i < vars.size(); ++i){
-            estimate += ap[i] * cp[vars[i]];
+          for(unsigned int i = 0; i < matSize; ++i){
+            estimate += a[i] * c[i];
           }
 
           mse += util::sqr(estimate-target);
@@ -207,8 +187,6 @@ namespace ana
         if(mse < best_mse){
           best_mse = mse;
           bestVarIdx = varIdx;
-          //          Msub.Print();
-          //          vsub.Print();
         }
       } // end for varIdx
 
@@ -221,47 +199,30 @@ namespace ana
       std::cout << "  " << matSize << ": best var " << bestVarIdx/*fSysts[bestVarIdx]->ShortName()*/ << " " << sqrt(best_mse) << std::endl;
       vars.back() = bestVarIdx;
 
-      // Ouch, this is ugly
-      /*
-      for(int i = 0; i < matSize; ++i){
-        Msub(matSize-1, i) = M(vars.back(), vars[i]);
-        Msub(i, matSize-1) = M(vars[i], vars.back());
-      }
-      */
-      vsub(matSize-1) = v(vars.back());
+      // And set the correct row back into the matrix and vector
+      vsub.back() = v[bestVarIdx];
 
-      std::vector<double> newrow(matSize);
-      for(int i = 0; i < matSize; ++i){
-        newrow[i] = M(vars.back(), vars[i]);
+      for(unsigned int univIdx = 0; univIdx < coords.size(); ++univIdx){
+        coords_sub[univIdx].back() = coords[univIdx][bestVarIdx];
       }
-      icd.SetLastRow(newrow);
+
+      icd.SetLastRow(M[bestVarIdx], vars);
 
       already[bestVarIdx] = true;
     } // end for matSize
-
-    //    icd.Print();
 
     std::cout << "VARS:";
     for(int v: vars) std::cout << " " << v;
     std::cout << " MSE: " << sqrt(best_mse) << std::endl;
     std::cout << std::endl;
 
-    std::vector<double> av(vsub.GetNrows());
-    for(int i = 0; i < vsub.GetNrows(); ++i) av[i] = vsub[i];
-    av = icd.Solve(av);
-
-    TVectorD ret(N);
-    for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = av[i];
-    return ret;
-    /*
     // Solve one last time
-    bool ok;
-    const TVectorD a = TDecompChol(Msub).Solve(vsub, ok);
+    vsub = icd.Solve(vsub);
+
     // And package up
-    TVectorD ret(N);
-    for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = a[i];
+    std::vector<double> ret(N);
+    for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = vsub[i];
     return ret;
-    */
   }
 
   // --------------------------------------------------------------------------
