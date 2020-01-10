@@ -44,6 +44,7 @@ link_directories(
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
   $ENV{ICARUSCODE_LIB}
+  $ENV{ART_ROOT_IO_LIB}
 )
 
 file(RELATIVE_PATH RELATIVE_CURRENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -104,6 +105,7 @@ target_link_libraries(
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
   ${ROOT_LIBRARIES}
+  art_root_io_RootDB
 )
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
