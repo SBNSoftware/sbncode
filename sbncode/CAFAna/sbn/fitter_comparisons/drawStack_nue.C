@@ -38,8 +38,8 @@
   ll.AddEntry(SBND_numu, Form("#nu_{#mu} (%3.1f%%)",nnumu*100./n), "f");
   ll.AddEntry(SBND_osc, Form("Signal #nu_{e} (%3.1f%%)",nosc*100./n), "f");
   // For LSND best-fit values
-  ll.AddEntry((TObject*)0, "sin^{2}2#theta_{#mu e} = 0.003","");
-  ll.AddEntry((TObject*)0, "#Delta m^{2}_{41} = 1.2 eV^{2}","");
+  ll.AddEntry((TObject*)0, "sin^{2}2#theta_{#mue} = 0.003","");
+  ll.AddEntry((TObject*)0, "#Deltam^{2}_{41} = 1.2 eV^{2}","");
 
   TLatex* prelim = new TLatex(.9, .96, "SBND Simulation");
   prelim->SetTextColor(kGray+1);

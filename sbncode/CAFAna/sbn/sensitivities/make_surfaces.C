@@ -43,10 +43,7 @@ void make_surfaces(const std::string anatype = numuStr)
   
   std::vector<const ISyst*> systs_to_process;
 
-  //std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
-
-  //ETW try just one syst to isolate problem (hopefully)
-  std::vector<std::string> syst_names{"expskin_FluxUnisim"};
+  std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
 
   for (auto s : systs) {
     for (auto n : syst_names) if (n == s->ShortName()) systs_to_process.push_back(s);
@@ -75,6 +72,22 @@ void make_surfaces(const std::string anatype = numuStr)
   PredictionInterp* p_ub = LoadFrom<PredictionInterp>(fin.GetDirectory("pred_ub")).release();
 
   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
+  OscCalcSterileApproxAdjustable* seed = DefaultSterileApproxCalc();
+
+  //JL - try different values here, how much does it matter what values we choose, does this
+  //have any impact on disappearance? 
+  if (anatype == nueStr) {
+    seed->calc.SetSinSq2ThetaMuE(1e-2);
+    seed->calc.SetDmsq(1);
+    seed->SetL(kBaselineSBND);
+    p_nd->SetOscSeed(seed);
+    seed->SetL(kBaselineIcarus);
+    p_fd->SetOscSeed(seed);
+    seed->SetL(kBaselineMicroBoone);
+    p_ub->SetOscSeed(seed);
+  }
+    
+
 
   //Define fit axes
   //smaller fit axes for no
@@ -161,11 +174,6 @@ void make_surfaces(const std::string anatype = numuStr)
     std::cout << "WARNING WRONG INJECTED VALUES FIX ME!!!!" << std::endl;
   }
 
-  //Define fit axes
-  //const FitAxis kAxForTh2(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
-  //const FitAxis kAxDmSq2(&kFitDmSqSterile, 40, 1e-1, 1e1, true);
-
-  // We'll call zero nominal
   calc2->SetL(kBaselineSBND);
   const Spectrum data_nd2 = p_nd->Predict(calc2).FakeData(sbndPOT);
   calc2->SetL(kBaselineIcarus);

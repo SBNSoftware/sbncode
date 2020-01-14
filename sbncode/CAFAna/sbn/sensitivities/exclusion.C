@@ -54,7 +54,7 @@ void exclusion(const std::string anatype = numuStr)
   //Surface& surf_syst_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/ub_prop_systs")).release(); 
   Surface& surf_syst_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nd_fd_prop_systs")).release();
   //Surface& surf_syst_all = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/allexpt_prop_systs")).release(); 
-  
+
   //Surface& surf_nom_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_nd")).release(); 
   //Surface& surf_nom_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_ub")).release(); 
   //Surface& surf_nom_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("exclusion/nom_fd")).release(); 
