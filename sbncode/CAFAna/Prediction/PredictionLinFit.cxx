@@ -15,8 +15,10 @@
 
 #include "OscLib/IOscCalculator.h"
 
+#include "TCanvas.h"
 #include "TDirectory.h"
-#include "TH1.h"
+#include "TGraph.h"
+#include "TH2.h"
 #include "TObjString.h"
 
 namespace ana
@@ -74,6 +76,8 @@ namespace ana
   // --------------------------------------------------------------------------
   void PredictionLinFit::InitFits() const
   {
+    if(!fCoeffs.empty()) return;
+
     std::vector<std::vector<double>> coords;
     coords.reserve(fUnivs.size());
     for(const auto& it: fUnivs) coords.push_back(GetCoords(it.first));
@@ -328,6 +332,164 @@ namespace ana
     }
 
     tmp->cd();
+  }
+
+  //----------------------------------------------------------------------
+  void PredictionLinFit::DebugPlot(const ISyst* syst,
+                                   osc::IOscCalculator* calc,
+                                   Flavors::Flavors_t flav,
+                                   Current::Current_t curr,
+                                   Sign::Sign_t sign) const
+  {
+    DontAddDirectory guard;
+
+    if(fCoeffs.empty()) InitFits();
+
+    std::unique_ptr<TH1> nom(fNom->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
+    const int nbins = nom->GetNbinsX();
+
+    TGraph* curves[nbins];
+
+    for(int i = 0; i <= 80; ++i){
+      const double x = .1*i-4;
+      const SystShifts ss(syst, x);
+      std::unique_ptr<TH1> h(PredictComponentSyst(calc, ss, flav, curr, sign).ToTH1(18e20));
+
+      for(int bin = 0; bin < nbins; ++bin){
+        if(i == 0){
+          curves[bin] = new TGraph;
+        }
+
+        const double ratio = h->GetBinContent(bin+1)/nom->GetBinContent(bin+1);
+
+        if(!std::isnan(ratio)) curves[bin]->SetPoint(curves[bin]->GetN(), x, ratio);
+        else curves[bin]->SetPoint(curves[bin]->GetN(), x, 1);
+      } // end for bin
+    } // end for i (x)
+
+    int nx = int(sqrt(nbins));
+    int ny = int(sqrt(nbins));
+    if(nx*ny < nbins) ++nx;
+    if(nx*ny < nbins) ++ny;
+
+    TCanvas* c = new TCanvas;
+    c->Divide(nx, ny);
+
+    for(int bin = 0; bin < nbins; ++bin){
+      c->cd(bin+1);
+      (new TH2F(UniqueName().c_str(),
+                TString::Format("%s %g < %s < %g;Shift;Ratio",
+                                syst->ShortName().c_str(),
+                                nom->GetXaxis()->GetBinLowEdge(bin+1),
+                                nom->GetXaxis()->GetTitle(),
+                                nom->GetXaxis()->GetBinUpEdge(bin+1)),
+                100, -4, +4, 100, .5, 1.5))->Draw();
+      curves[bin]->Draw("l same");
+    } // end for bin
+
+    c->cd(0);
+  }
+
+  //----------------------------------------------------------------------
+  void PredictionLinFit::DebugPlots(osc::IOscCalculator* calc,
+				    const std::string& savePattern,
+				    Flavors::Flavors_t flav,
+				    Current::Current_t curr,
+				    Sign::Sign_t sign) const
+  {
+    const bool save = !savePattern.empty();
+    const bool multiFile = savePattern.find("%s") != std::string::npos;
+
+    if(save && !multiFile){
+      new TCanvas;
+      gPad->Print((savePattern+"[").c_str());
+    }
+
+    for(const ISyst* s: fSysts){
+      DebugPlot(s, calc, flav, curr, sign);
+
+      if(save){
+        if(multiFile){
+          gPad->Print(TString::Format(savePattern.c_str(), s->ShortName().c_str()).Data());
+        }
+        else{
+          gPad->Print(TString::Format(savePattern.c_str(), s->ShortName()).Data());
+        }
+      }
+    } // end for s
+
+    if(save && !multiFile){
+      gPad->Print((savePattern+"]").c_str());
+    }
+  }
+
+  //----------------------------------------------------------------------
+  void PredictionLinFit::DebugPlotColz(const ISyst* syst,
+                                       osc::IOscCalculator* calc,
+                                       Flavors::Flavors_t flav,
+                                       Current::Current_t curr,
+                                       Sign::Sign_t sign) const
+  {
+    InitFits();
+
+    std::unique_ptr<TH1> nom(fNom->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
+    const int nbins = nom->GetNbinsX();
+
+    TH2* h2 = new TH2F("", (syst->LatexName()+";;#sigma").c_str(),
+                       nbins, nom->GetXaxis()->GetXmin(), nom->GetXaxis()->GetXmax(),
+                       80, -4, +4);
+    h2->GetXaxis()->SetTitle(nom->GetXaxis()->GetTitle());
+
+    for(int i = 1; i <= 80; ++i){
+      const double y = h2->GetYaxis()->GetBinCenter(i);
+      const SystShifts ss(syst, y);
+      std::unique_ptr<TH1> h(PredictComponentSyst(calc, ss, flav, curr, sign).ToTH1(18e20));
+
+      for(int bin = 0; bin < nbins; ++bin){
+        const double ratio = h->GetBinContent(bin+1)/nom->GetBinContent(bin+1);
+
+        if(!isnan(ratio) && !isinf(ratio))
+          h2->Fill(h2->GetXaxis()->GetBinCenter(bin), y, ratio);
+      } // end for bin
+    } // end for i (x)
+
+    h2->Draw("colz");
+    h2->SetMinimum(0.5);
+    h2->SetMaximum(1.5);
+  }
+
+  //----------------------------------------------------------------------
+  void PredictionLinFit::DebugPlotsColz(osc::IOscCalculator* calc,
+                                        const std::string& savePattern,
+                                        Flavors::Flavors_t flav,
+                                        Current::Current_t curr,
+                                        Sign::Sign_t sign) const
+  {
+    const bool save = !savePattern.empty();
+    const bool multiFile = savePattern.find("%s") != std::string::npos;
+
+    if(save && !multiFile){
+      new TCanvas;
+      gPad->Print((savePattern+"[").c_str());
+    }
+
+    for(const ISyst* s: fSysts){
+      new TCanvas;
+      DebugPlotColz(s, calc, flav, curr, sign);
+
+      if(save){
+        if(multiFile){
+          gPad->Print(TString::Format(savePattern.c_str(), s->ShortName().c_str()).Data());
+        }
+        else{
+          gPad->Print(savePattern.c_str());
+        }
+      }
+    } // end for it
+
+    if(save && !multiFile){
+      gPad->Print((savePattern+"]").c_str());
+    }
   }
 
   //----------------------------------------------------------------------

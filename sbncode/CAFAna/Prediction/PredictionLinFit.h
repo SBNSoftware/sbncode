@@ -38,6 +38,32 @@ namespace ana
                                   Current::Current_t curr,
                                   Sign::Sign_t sign) const override;
 
+    void DebugPlot(const ISyst* syst,
+                   osc::IOscCalculator* calc,
+                   Flavors::Flavors_t flav = Flavors::kAll,
+                   Current::Current_t curr = Current::kBoth,
+                   Sign::Sign_t sign = Sign::kBoth) const;
+
+    // If \a savePattern is not empty, print each pad. If it contains "%s" then
+    // multiple files will be written, one per systematic.
+    void DebugPlots(osc::IOscCalculator* calc,
+		    const std::string& savePattern = "",
+		    Flavors::Flavors_t flav = Flavors::kAll,
+		    Current::Current_t curr = Current::kBoth,
+		    Sign::Sign_t sign = Sign::kBoth) const;
+
+    void DebugPlotColz(const ISyst* syst,
+                       osc::IOscCalculator* calc,
+                       Flavors::Flavors_t flav = Flavors::kAll,
+                       Current::Current_t curr = Current::kBoth,
+                       Sign::Sign_t sign = Sign::kBoth) const;
+
+    void DebugPlotsColz(osc::IOscCalculator* calc,
+                        const std::string& savePattern = "",
+                        Flavors::Flavors_t flav = Flavors::kAll,
+                        Current::Current_t curr = Current::kBoth,
+                        Sign::Sign_t sign = Sign::kBoth) const;
+
     void SaveTo(TDirectory* dir) const override;
     static std::unique_ptr<PredictionLinFit> LoadFrom(TDirectory* dir);
 
