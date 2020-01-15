@@ -9,8 +9,7 @@
 
 #include "SRHeader.h"
 #include "SRSlice.h"
-//#include "SRSpill.h"
-// #include "SRTrackBranch.h"
+#include "SRSliceRecoBranch.h"
 
 /// Common Analysis Files
 namespace caf
@@ -29,7 +28,8 @@ namespace caf
     SRHeader         hdr;    ///< Header branch: run, subrun, etc.
     //    SRSpill          spill;  ///< Beam spill branch: pot, beam current, etc.
     SRSlice          slc;    ///< Slice branch: nhit, extents, time, etc.
-    //    SRTrackBranch    trk;    ///< Track branch: nhit, len, etc.
+    SRSliceRecoBranch reco;    ///< Slice reco branch: tracks, showers, etc.
+
   };
 
 } // end namespace

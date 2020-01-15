@@ -1,17 +1,19 @@
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
 // \file     CAFMaker_module.cc
 /// \brief   This module creates Common Analysis Files.
 //           Inspired by the NOvA CAFMaker package
 // \author  $Author: psihas@fnal.gov
-////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////
 
 // ---------------- TO DO ----------------
 //
 // - Give real fDet values
-// - Clean up includes
 // - Clean up code body
-// - Add reco branch 
 // - Add in cycle and batch to params
+// - Fill reco tree a bit
+// - Move this list some place useful
+// - Write insructions
+// - Add Truth branch
 //
 // ---------------------------------------
 
