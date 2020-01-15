@@ -359,11 +359,25 @@ namespace ana
   {
     for(unsigned int i = 0; i < fVars.size(); ++i){
       const double val = pars[i];
-      fVars[i]->SetValue(fCalc, val);
+      if(isnan(val) || isinf(val)){
+        std::cout << "Fitter::DecodePars(). Minuit wants to set " << fVars[i]->ShortName() << " = " << val << ". Will ignore it and hope for the best." << std::endl;
+        // To debug this problem uncomment this abort and run in gdb
+        // abort();
+      }
+      else{
+        fVars[i]->SetValue(fCalc, val);
+      }
     }
     for(unsigned int j = 0; j < fSysts.size(); ++j){
       const double val = pars[fVars.size()+j];
-      fShifts.SetShift(fSysts[j], val);
+      if(isnan(val) || isinf(val)){
+        std::cout << "Fitter::DecodePars(). Munuit wants to set " << fSysts[j]->ShortName() << " = " << val << ". Will ignore it and hope for the best." << std::endl;
+        // To debug this problem uncomment this abort and run in gdb
+        // abort();
+      }
+      else{
+        fShifts.SetShift(fSysts[j], val);
+      }
     }
   }
 
