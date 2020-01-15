@@ -371,7 +371,7 @@ namespace ana
     for(unsigned int j = 0; j < fSysts.size(); ++j){
       const double val = pars[fVars.size()+j];
       if(isnan(val) || isinf(val)){
-        std::cout << "Fitter::DecodePars(). Munuit wants to set " << fSysts[j]->ShortName() << " = " << val << ". Will ignore it and hope for the best." << std::endl;
+        std::cout << "Fitter::DecodePars(). Minuit wants to set " << fSysts[j]->ShortName() << " = " << val << ". Will ignore it and hope for the best." << std::endl;
         // To debug this problem uncomment this abort and run in gdb
         // abort();
       }
