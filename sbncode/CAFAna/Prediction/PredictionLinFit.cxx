@@ -79,18 +79,26 @@ namespace ana
   {
     if(!fCoeffs.empty()) return;
 
-    std::vector<std::vector<double>> coords;
-    coords.reserve(fUnivs.size());
-    for(const auto& it: fUnivs) coords.push_back(GetCoords(it.first));
+    std::vector<std::vector<double>> coords; // [varIdx][univIdx]
 
-    const unsigned int N = coords[0].size();
+    for(const auto& it: fUnivs){
+      const std::vector<double> c = GetCoords(it.first);
+      if(coords.empty()) coords.resize(c.size());
+      for(unsigned int varIdx = 0; varIdx < c.size(); ++varIdx){
+        coords[varIdx].push_back(c[varIdx]);
+      }
+    }
+
+    const unsigned int N = coords.size();
 
     std::vector<std::vector<double>> M(N, std::vector<double>(N));
 
-    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-      for(unsigned int i = 0; i < N; ++i){
-        for(unsigned int j = 0; j < N; ++j){
-          M[i][j] += coords[univIdx][i] * coords[univIdx][j];
+    for(unsigned int i = 0; i < N; ++i){
+      const std::vector<double>& ci = coords[i];
+      for(unsigned int j = 0; j < N; ++j){
+        const std::vector<double>& cj = coords[j];
+        for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+          M[i][j] += ci[univIdx] * cj[univIdx];
         }
       }
     }
@@ -135,9 +143,10 @@ namespace ana
 
     std::vector<double> v(N);
 
-    for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
-      for(unsigned int i = 0; i < N; ++i){
-        v[i] += coords[univIdx][i] * ds[univIdx];
+    for(unsigned int i = 0; i < N; ++i){
+      const std::vector<double>& c = coords[i];
+      for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
+        v[i] += c[univIdx]* ds[univIdx];
       }
     }
 
@@ -165,11 +174,14 @@ namespace ana
 
       for(unsigned int varIdx = 0; varIdx < N; ++varIdx){
         if(already[varIdx]) continue;
+
+        const std::vector<double>& c = coords[varIdx];
+
         double num = 0, denom = 0;
 
         for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
-          num += residual[univIdx]*coords[univIdx][varIdx];
-          denom += util::sqr(coords[univIdx][varIdx]);
+          num += residual[univIdx]*c[univIdx];
+          denom += util::sqr(c[univIdx]);
         }
 
         // Best coefficient for this variable
@@ -178,7 +190,7 @@ namespace ana
         // Evaluate this solution
         double sqErr = 0;
         for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
-          sqErr += util::sqr(residual[univIdx] - coords[univIdx][varIdx] * x);
+          sqErr += util::sqr(residual[univIdx] - c[univIdx] * x);
         }
 
         if(sqErr < bestSqErr){
@@ -191,6 +203,7 @@ namespace ana
 
       // Now that it's certain, we can shorten the variable name
       const int varIdx = bestVarIdx;
+      const std::vector<double>& c = coords[varIdx];
 
       // Make sure not to use it again
       already[varIdx] = true;
@@ -205,13 +218,13 @@ namespace ana
 
       double sqErr = 0;
       for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
-        std::vector<double>& c = coords_sub[univIdx];
-        c.push_back(coords[univIdx][varIdx]);
+        std::vector<double>& cs = coords_sub[univIdx];
+        cs.push_back(c[univIdx]);
 
         // Update the residuals for the new solution
         residual[univIdx] = ds[univIdx];
         for(unsigned int i = 0; i < matSize; ++i){
-          residual[univIdx] -= a[i] * c[i];
+          residual[univIdx] -= a[i] * cs[i];
         }
 
         // As a side effect, it's easy to compute the new squared error
