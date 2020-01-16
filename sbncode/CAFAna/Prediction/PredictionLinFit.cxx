@@ -3,6 +3,7 @@
 #include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/MathUtil.h"
+#include "CAFAna/Core/Progress.h"
 #include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Core/SystRegistry.h"
 
@@ -116,8 +117,10 @@ namespace ana
       HistCache::Delete(hr);
     }
 
+    Progress prog("Initializing PredictionLinFit");
     for(int binIdx = 0; binIdx < Nbins+2; ++binIdx){
       fCoeffs.push_back(InitFitsBin(M, ds[binIdx], coords));
+      prog.SetProgress(binIdx/double(Nbins+1));
     }
   }
 
@@ -128,17 +131,19 @@ namespace ana
               const std::vector<std::vector<double>>& coords) const
   {
     const unsigned int N = M.size();
+    const unsigned int Nuniv = fUnivs.size();
 
     std::vector<double> v(N);
 
-    for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
+    for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
       for(unsigned int i = 0; i < N; ++i){
         v[i] += coords[univIdx][i] * ds[univIdx];
       }
     }
 
-    std::cout << "-----" << std::endl;
-    double best_mse = std::numeric_limits<double>::infinity();
+    //    std::cout << "-----" << std::endl;
+
+    // Don't try to re-add an already used variable
     std::vector<bool> already(N);
 
     IncrementalCholeskyDecomp icd;
@@ -147,83 +152,80 @@ namespace ana
 
     std::vector<int> vars;
 
-    std::vector<std::vector<double>> coords_sub(fUnivs.size());
+    std::vector<double> residual = ds;
 
-    for(unsigned int matSize = 1; matSize <= 50/*std::min(N, fUnivs.size())*/; ++matSize){
-      vsub.push_back(0);
-      vars.push_back(-1);
-      icd.Extend();
-      for(std::vector<double>& c: coords_sub) c.push_back(0);
+    std::vector<std::vector<double>> coords_sub(Nuniv);
 
+    for(unsigned int matSize = 1; matSize <= 500/*std::min(N, Nuniv)*/; ++matSize){
+      // Try adding each potential variable while holding the coefficients of
+      // the rest fixed. This is a fast way to estimate which variable will be
+      // the best when added to the full fit.
       int bestVarIdx = -1;
+      double bestSqErr = std::numeric_limits<double>::infinity();
+
       for(unsigned int varIdx = 0; varIdx < N; ++varIdx){
         if(already[varIdx]) continue;
+        double num = 0, denom = 0;
 
-        // Provisionally add this var to the list
-        vars.back() = varIdx;
-
-        icd.SetLastRow(M[varIdx], vars);
-
-        vsub.back() = v[varIdx];
-
-        const std::vector<double> a = icd.Solve(vsub);
-
-        // Mean squared error
-        double mse = 0;
-        for(unsigned int univIdx = 0; univIdx < fUnivs.size(); ++univIdx){
-          const double target = ds[univIdx];
-
-          std::vector<double>& c = coords_sub[univIdx];
-          c.back() = coords[univIdx][varIdx];
-
-          double estimate = 0;
-          for(unsigned int i = 0; i < matSize; ++i){
-            estimate += a[i] * c[i];
-          }
-
-          mse += util::sqr(estimate-target);
+        for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
+          num += residual[univIdx]*coords[univIdx][varIdx];
+          denom += util::sqr(coords[univIdx][varIdx]);
         }
 
-        mse /= fUnivs.size();
+        // Best coefficient for this variable
+        const double x = num/denom;
 
-        //        std::cout << "    " << fSysts[varIdx]->ShortName() << " " << sqrt(mse) << std::endl;
+        // Evaluate this solution
+        double sqErr = 0;
+        for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
+          sqErr += util::sqr(residual[univIdx] - coords[univIdx][varIdx] * x);
+        }
 
-        if(mse < best_mse){
-          best_mse = mse;
+        if(sqErr < bestSqErr){
+          bestSqErr = sqErr;
           bestVarIdx = varIdx;
         }
       } // end for varIdx
 
-      if(bestVarIdx == -1){
-        std::cout << "No var improved. Done" << std::endl;
-        vars.pop_back();
-        break;
+      //      std::cout << matSize << ": chose to add var " << bestVarIdx << " predicting MSE = " << sqrt(bestSqErr/Nuniv) << std::endl;
+
+      // Now that it's certain, we can shorten the variable name
+      const int varIdx = bestVarIdx;
+
+      // Make sure not to use it again
+      already[varIdx] = true;
+
+      // Expand the problem with the new variable
+      vsub.push_back(v[varIdx]);
+      vars.push_back(varIdx);
+      icd.AddRow(M[varIdx], vars);
+
+      // And solve it exactly
+      const std::vector<double> a = icd.Solve(vsub);
+
+      double sqErr = 0;
+      for(unsigned int univIdx = 0; univIdx < Nuniv; ++univIdx){
+        std::vector<double>& c = coords_sub[univIdx];
+        c.push_back(coords[univIdx][varIdx]);
+
+        // Update the residuals for the new solution
+        residual[univIdx] = ds[univIdx];
+        for(unsigned int i = 0; i < matSize; ++i){
+          residual[univIdx] -= a[i] * c[i];
+        }
+
+        // As a side effect, it's easy to compute the new squared error
+        sqErr += util::sqr(residual[univIdx]);
       }
 
-      std::cout << "  " << matSize << ": best var " << bestVarIdx/*fSysts[bestVarIdx]->ShortName()*/ << " " << sqrt(best_mse) << std::endl;
-      vars.back() = bestVarIdx;
-
-      // And set the correct row back into the matrix and vector
-      vsub.back() = v[bestVarIdx];
-
-      for(unsigned int univIdx = 0; univIdx < coords.size(); ++univIdx){
-        coords_sub[univIdx].back() = coords[univIdx][bestVarIdx];
-      }
-
-      icd.SetLastRow(M[bestVarIdx], vars);
-
-      already[bestVarIdx] = true;
+      // Can remove sqErr if we don't want this printout
+      //      std::cout << "  optimized by matrix to " << sqrt(sqErr/Nuniv) << std::endl;
     } // end for matSize
 
-    std::cout << "VARS:";
-    for(int v: vars) std::cout << " " << v;
-    std::cout << " MSE: " << sqrt(best_mse) << std::endl;
-    std::cout << std::endl;
-
-    // Solve one last time
+    // Solve one last time, reuse vsub to store output
     vsub = icd.Solve(vsub);
 
-    // And package up
+    // Package up results
     std::vector<double> ret(N);
     for(unsigned int i = 0; i < vars.size(); ++i) ret[vars[i]] = vsub[i];
     return ret;

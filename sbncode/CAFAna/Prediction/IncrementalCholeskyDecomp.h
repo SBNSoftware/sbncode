@@ -26,6 +26,13 @@ namespace ana
       SetLastRow(row);
     }
 
+    void AddRow(const std::vector<double>& row,
+                const std::vector<int>& idxs)
+    {
+      Extend();
+      SetLastRow(row, idxs);
+    }
+
     std::vector<double> Solve(const std::vector<double>& b) const;
 
     void Print() const;
