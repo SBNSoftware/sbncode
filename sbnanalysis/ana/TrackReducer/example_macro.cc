@@ -3,7 +3,7 @@
 #include "TTreeReader.h"
 #include "TTreeReaderValue.h"
 
-#include "ana/TrackReducer/Data.h"
+#include "Data.h"
 
 void read_file() {
   // open the input file
@@ -65,7 +65,9 @@ void read_file() {
       // check that this is the track that matches
       // to the true primary muon
       if (track.truth_match == primary_index) {
-        start_distance->Fill((track.trajectory[0] - tracks->truth[primary_index].trajectory[0]).Mag());
+        TVector3 true_start = &tracks->truth[primary_index].trajectory[0][0]; // convert array to TVector
+        TVector3 track_start = &track.trajectory[0][0];
+        start_distance->Fill((true_start - track_start).Mag());
         break;
       }
     }
