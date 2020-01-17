@@ -1,8 +1,10 @@
 import ROOT
 import os
 from array import array
+import argparse
 ROOT.PyConfig.IgnoreCommandLineOptions = True
 ROOT.gStyle.SetOptStat(0)
+ROOT.TGaxis.SetMaxDigits(3)
 
 def root_env():
     buildpath = os.environ["SBN_LIB_DIR"]
@@ -24,10 +26,30 @@ def write(args, canvas):
 
 def with_input_args(parser):
     if "INPUTFILE" in os.environ:
-        parser.add_argument("-i", "--input", default=os.environ["INPUTFILE"])
+        parser.add_argument("-i", "--input", default=("input", ROOT.TFile(os.environ["INPUTFILE"])), nargs="+", type=filespec, action=FileSpec)
     else:
-        parser.add_argument("-i", "--input", required=True)
+        parser.add_argument("-i", "--input", required=True, nargs="+", type=filespec, action=FileSpec)
     return parser
+
+class FileSpec(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if values:
+            for key, val in values:
+                setattr(namespace, key, val)
+
+def filespec(inp):
+    split = inp.split(":")
+    if len(split) == 1:
+        return ("input", ROOT.TFile(split[0]))
+    else:
+        return (split[0], ROOT.TFile(split[1]))
+
+def get_tobject(args, name):
+    if ":" in name:
+        fname = name.split(":")[0]
+    else:
+        fname = "input"
+    return getattr(args, fname).Get(name.split(":")[-1])
 
 def with_text_args(parser):
     parser.add_argument("-txt", "--text", nargs="+", default=None)
@@ -40,7 +62,6 @@ def with_text_args(parser):
 def draw_text(args):
     textbox = None
     if args.text:
-        print [float(x) for x in args.text_position]
         textbox = ROOT.TPaveText(*[float(x) for x in args.text_position])
         textbox.SetOption("NDC")
         for text in args.text:
@@ -148,12 +169,14 @@ def resize_histo(args, hist, name_postfix=""):
                 i_set = i - range_lo_ind
                 if histdim == 1:
                     new_hist.SetBinContent(i - range_lo_ind, hist.GetBinContent(i))
+                    new_hist.SetBinError(i - range_lo_ind, hist.GetBinError(i))
                 elif histdim == 2:
                     other_axis = hist.GetYaxis() if i_axis == 0 else hist.GetXaxis()
                     for j in range(1, other_axis.GetNbins()+1):
                         i_bin_old = hist.GetBin(i, j) if i_axis == 0 else hist.GetBin(j, i)
                         i_bin_new = new_hist.GetBin(i_set, j) if i_axis == 0 else new_hist.GetBin(j, i_set)
                         new_hist.SetBinContent(i_bin_new, hist.GetBinContent(i_bin_old))
+                        new_hist.SetBinError(i_bin_new, hist.GetBinError(i_bin_old))
                 elif histdim == 3:
                     other_axes = [hist.GetXaxis(), hist.GetYaxis(), hist.GetZaxis()]
                     other_axes.pop(i_axis)
@@ -168,6 +191,7 @@ def resize_histo(args, hist, name_postfix=""):
                             i_bin_old = hist.GetBin(*old_axes_indices)
                             i_bin_new = new_hist.GetBin(*new_axes_indices)
                             new_hist.SetBinContent(i_bin_new, hist.GetBinContent(i_bin_old))
+                            new_hist.SetBinError(i_bin_new, hist.GetBinError(i_bin_old))
             hist = new_hist
     if args.projectionX:
         hist = hist.ProjectionX()
@@ -190,7 +214,11 @@ def resize_histo(args, hist, name_postfix=""):
         hist.RebinZ(args.rebinZ) 
     return hist
 
+def int_pair(inp):
+    return [int(i) for i in inp.split(",")][:2]
+
 def with_histostyle_args(parser):
+    parser.add_argument("-yr", "--yrange", default=None, type=int_pair)
     parser.add_argument("-xt", "--xtitle", default=None)
     parser.add_argument("-yt", "--ytitle", default=None)
     parser.add_argument("-yl", "--ylabel", nargs="+", default=None)
@@ -239,14 +267,22 @@ def style(args, canvas, hist):
 
     if args.xtitle: hist.GetXaxis().SetTitle(args.xtitle)
     if args.ytitle: hist.GetYaxis().SetTitle(args.ytitle)
+    if args.yrange: hist.GetYaxis().SetRangeUser(*args.yrange)
 
-def colors(index):
+def fillcolors(index):
     colors = [ROOT.kRed, ROOT.kGreen]
     return colors[index]
 
-def fillcolors(index):
-    colors = [ROOT.kPink+2, ROOT.kGray+1 , ROOT.kGray+2,  ROOT.kAzure+3, ROOT.kAzure+4, ROOT.kRed+2, ROOT.kBlack]
-    return colors[index]
+def namecolors(name):
+    colors = {
+      "CC": ROOT.kPink+2,
+      "Cosmic": ROOT.kGray+1,
+      "Intime Cosmic": ROOT.kGray+1,
+      "Outtime Cosmic": ROOT.kGray+2, 
+      "NC": ROOT.kAzure+3,
+      "Other": ROOT.kRed+2
+    }
+    return colors[name]
 
 def comma_separated(inp):
     return inp.split(",")
@@ -287,6 +323,8 @@ def legend_position(inp):
         return [0.35,0.75,0.15,0.95]
     elif inp == "um":
         return [0.4, 0.69, 0.6, 0.89]
+    elif inp == "lr":
+        return [0.75,0.15,0.95,0.35]
     else:
         return [float(x) for x in inp.split(",")][:4]
 
