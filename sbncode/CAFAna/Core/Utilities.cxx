@@ -534,16 +534,7 @@ namespace ana
   //----------------------------------------------------------------------
   std::string FindCAFAnaDir()
   {
-    const char* pub = getenv("SRT_PUBLIC_CONTEXT");
-    const char* priv = getenv("SRT_PRIVATE_CONTEXT");
-
-    if(priv && priv != std::string(".")){
-      const std::string ret = std::string(priv)+"/CAFAna/";
-      struct stat junk;
-      if(stat(ret.c_str(), &junk) == 0) return ret;
-    }
-    assert(pub);
-    return std::string(pub)+"/CAFAna/";
+    return std::string(getenv("MRB_SOURCE"))+"/sbncode/sbncode/CAFAna";
   }
 
   //----------------------------------------------------------------------
