@@ -3,15 +3,13 @@ import util
 import argparse
 
 def main(args):
-    f = ROOT.TFile(args.input)
-
-    base_histos = [f.Get(r) for r in args.base_histos]
+    base_histos = [util.get_tobject(args, r) for r in args.base_histos]
     util.validate_hists(args.base_histos, base_histos)
-    base_histos = [util.resize_histo(args, f.Get(r)) for r in args.base_histos]
+    base_histos = [util.resize_histo(args, util.get_tobject(args, r)) for r in args.base_histos]
 
-    cut_histos = [f.Get(r) for r in args.cut_histos]
+    cut_histos = [util.get_tobject(args, r) for r in args.cut_histos]
     util.validate_hists(args.cut_histos, cut_histos)
-    cut_histos = [util.resize_histo(args, f.Get(r)) for r in args.cut_histos]
+    cut_histos = [util.resize_histo(args, util.get_tobject(args, r)) for r in args.cut_histos]
 
     canvas = ROOT.TCanvas("canvas", "Canvas", 250,100,700,500)
 
@@ -23,9 +21,9 @@ def main(args):
         ratio.SetLineWidth(2)
         if i == 0:
             util.style(args, canvas, ratio)
-            ratio.Draw("L")
+            ratio.Draw("PE")
         else:
-            ratio.Draw("L SAME")
+            ratio.Draw("PE SAME")
         all_histos.append(ratio)
 
         if args.names: 

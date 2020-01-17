@@ -53,6 +53,9 @@ struct InteractionHistos : public HistoList {
   TH2D *vertex_xy;
   TH2D *vertex_yz;
   TH2D *vertex_xz;
+  TH1D *vertex_x;
+  TH1D *vertex_y;
+  TH1D *vertex_z;
   TH2D *light_trigger;
 
   /**

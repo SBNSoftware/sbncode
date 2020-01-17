@@ -47,5 +47,10 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
   }
   // make sure no two vertices match to the same true neutrino interaction
   numu::CorrectMultiMatches(event, event.reco);
+
+  // re-do the truth matching one more time with the multi-matches fixed
+  for (unsigned i = 0; i < event.reco.size(); i++) {
+    event.reco[i].match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
+  }
 }
 

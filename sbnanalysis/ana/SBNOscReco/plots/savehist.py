@@ -6,8 +6,7 @@ import math
 
 def main(args):
     util.optstat(args)
-    f = ROOT.TFile(args.input)
-    hist = f.Get(args.hist)
+    hist = util.get_tobject(args, args.hist)
     util.validate_hists([args.hist], [hist])
     hist = util.resize_histo(args, hist)
 

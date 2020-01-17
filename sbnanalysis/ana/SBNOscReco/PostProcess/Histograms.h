@@ -48,6 +48,7 @@ struct Histograms : public HistoList {
   void Initialize(
   const geo::GeometryCore *geometry,
   const sbnd::CRTGeoAlg &crt_geo,
+  const Cuts &cuts,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,

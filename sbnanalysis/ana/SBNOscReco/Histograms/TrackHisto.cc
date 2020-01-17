@@ -32,6 +32,7 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
 
   TRACK_2DHISTO(range_p_minus_truth_length, 60, 0., 600., 50, -1., 1);
   TRACK_2DHISTO(mcs_p_minus_truth_length, 60, 0., 600., 50, -1., 1.);
+  TRACK_2DHISTO(lengh_munus_truth_length, 60, 0., 600., 50, -1., 1);
 
   TRACK_HISTO(length, 100, 0., 600.);
 
@@ -187,6 +188,7 @@ void TrackHistos::Fill(
  
     range_p_minus_truth_length->Fill(track.length, (numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag()); 
     mcs_p_minus_truth_length->Fill(track.length, (numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
+    lengh_munus_truth_length->Fill(track.length, (track.length - true_particle.length) / true_particle.length);
 
     //range_p_diff->Fill(true_particle.start_momentum.Mag(), numu::RangeMomentum(track) - true_particle.start_momentum.Mag());
     //mcs_p_diff->Fill(true_particle.start_momentum.Mag(), numu::MCSMomentum(track) - true_particle.start_momentum.Mag());

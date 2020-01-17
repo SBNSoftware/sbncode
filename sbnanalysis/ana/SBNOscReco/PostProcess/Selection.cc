@@ -30,6 +30,8 @@
 namespace ana {
 namespace SBNOsc {
   void Selection::Initialize(fhicl::ParameterSet *config) {
+    std::cout << "Input Configuration:\n";
+    std::cout << config->to_indented_string() << std::endl;
     fOutputFile = new TFile(config->get<std::string>("OutputFile", "output.root").c_str(), "CREATE");
     fOutputFile->cd();
     fCRTHitDistance = config->get<double>("CRTHitDistance", -1);
@@ -74,10 +76,13 @@ namespace SBNOsc {
     fRecoEvent = NULL;
 
     fCRTGeo = new sbnd::CRTGeoAlg(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
+
+    fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
+
     if (fDoNormalize) {
-      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
     }
-    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
+    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
@@ -129,8 +134,8 @@ namespace SBNOsc {
     SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
 
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
-
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
+
     if (fDoNormalize) {
       if (fFileType == numu::fIntimeCosmic) fNormalize.AddCosmicEvent(*core_event);
       else fNormalize.AddNeutrinoEvent(*core_event);

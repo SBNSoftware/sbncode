@@ -11,6 +11,7 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.active_volumes.clear();
   fConfig.fiducial_volumes.clear();
 
+  fConfig.UseTrueVertex = cfg.get<bool>("UseTrueVertex", false);
   fConfig.trackMatchCompletionCut = cfg.get<double>("trackMatchCompletionCut", -1);
   fConfig.active_volumes = SBNRecoUtils::ActiveVolumes(geometry); 
   fConfig.TruthCompletion = cfg.get<float>("TruthCompletion", 0.5);
@@ -140,7 +141,12 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   cuts["R_flashtime"] = has_intime_flash;
 
   // require fiducial
-  cuts["R_fid"] = InFV(event.reco[reco_vertex_index].position);
+  if (fConfig.UseTrueVertex) {
+    cuts["R_fid"] = false; // TODO: implement
+  }
+  else {
+    cuts["R_fid"] = InFV(event.reco[reco_vertex_index].position);
+  }
 
   const numu::RecoTrack &primary_track = event.tracks.at(event.reco[reco_vertex_index].slice.primary_track_index);
 

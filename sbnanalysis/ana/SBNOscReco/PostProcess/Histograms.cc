@@ -111,6 +111,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
 void Histograms::Initialize(
   const geo::GeometryCore *geometry,
   const sbnd::CRTGeoAlg &crt_geo,
+  const Cuts &cuts,
   const std::string &prefix, 
   const std::vector<std::string> &track_histo_types, 
   const std::vector<std::string> &track_profile_types,
@@ -127,15 +128,19 @@ void Histograms::Initialize(
   fCosmic[2].Initialize(prefix + "_IntimeCosmic", detector);
   fCosmic[3].Initialize(prefix + "_IntimeCosmicTrig", detector);
 
+  std::vector<std::string> cut_order = cuts.CutOrder();
+  std::vector<std::string> truth_cut_order = cuts.TruthCutOrder();
+
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
-      std::string postfix = mode2Str(mode) + prefix + histoNames[i];
+      std::string cut_name = (i < truth_cut_order.size()) ? truth_cut_order[i] : cut_order[i - truth_cut_order.size()];
+      std::string postfix = mode2Str(mode) + prefix + cut_name;
       fInteraction[i][mode].Initialize(postfix, detector, tagger_volume); 
     }
   }
 
   for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
-    fCRTs[cut_i].Initialize(prefix + "_crt_cut_" + std::string(Histograms::histoNames[Cuts::nTruthCuts+cut_i]), tagger_volume); 
+    fCRTs[cut_i].Initialize(prefix + "_crt_cut_" + cut_order[cut_i], tagger_volume);
   }
 
   fAllTracks.reserve(track_histo_types.size());
@@ -152,7 +157,7 @@ void Histograms::Initialize(
       fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + 
 				      track_histo_types[i] + 
 				      "_" + 
-				      std::string(Histograms::histoNames[Cuts::nTruthCuts+j]), detector, max_length);
+                                      cut_order[j], detector, max_length);
 
       for (unsigned k = 0; k < track_profile_types.size(); k++) {
         if (j == 0) fPrimaryTrackProfiles[i].emplace_back();
@@ -165,7 +170,7 @@ void Histograms::Initialize(
 						  "_" + 
 						  track_profile_types[k] + 
 						  "_" + 
-						  std::string(Histograms::histoNames[Cuts::nTruthCuts+j]),
+						  cut_order[j],
 						  n_bin, xlo, xhi);
       } 
 
