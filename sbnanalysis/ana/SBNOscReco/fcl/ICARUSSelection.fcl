@@ -25,7 +25,7 @@ fiducial_volume_inset: {
 cosmic_containment_volume_inset: {
   ytop: 40
   #ytop: 2
-  ybottom: 2
+  ybottom: 15
   zfront: 15
   zback: 15
 }
@@ -53,22 +53,22 @@ Cuts: {
    PMTNAboveThreshold: 4
    CRTActivityPEThreshold: 0
    FlashMatchScore: 4
-   CutOrder: @local::cut_order_summary_separate_contained
-   TruthCutOrder: @local::truth_cut_order
+   CutOrder: @local::cut_order
+   #TruthCutOrder: @local::truth_cut_order
+   #               truth_cut_order: ["Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"]
+   TruthCutOrder: ["Truth", "T_trig", "T_fid", "T_reco", "T_vqual", "T_tqual"]
 }
 
 TrackSelectors: [
   @local::interaction_selectors,
   @local::pdg_selectors,
-  @local::reco_contained_selectors,
-  @local::timing_selectors
+  @local::true_contained_selectors
 ]
 
 TrackSelectorNames: [
   @local::interactions,
   @local::pdgs,
-  @local::contained,
-  @local::timings
+  @local::contained
 ]
 
 #TrackProfileValues: ["track.length"]

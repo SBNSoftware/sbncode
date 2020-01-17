@@ -51,6 +51,10 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO2D(vertex_yz, 100, detector_volume.MinY(), detector_volume.MaxY(), 100, detector_volume.MinZ(), detector_volume.MaxZ());
   INT_HISTO2D(vertex_xz, 100, detector_volume.MinX(), detector_volume.MaxX(), 100, detector_volume.MinZ(), detector_volume.MaxZ());
 
+  INT_HISTO(vertex_x, 100, detector_volume.MinX(), detector_volume.MaxX());
+  INT_HISTO(vertex_y, 100, detector_volume.MinY(), detector_volume.MaxY());
+  INT_HISTO(vertex_z, 100, detector_volume.MinZ(), detector_volume.MaxZ());
+
 #undef INT_HISTO
 }
 
@@ -88,6 +92,10 @@ void InteractionHistos::Fill(
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
   vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
   vertex_xz->Fill(vertex.position.X(), vertex.position.Z());
+
+  vertex_x->Fill(vertex.position.X());
+  vertex_y->Fill(vertex.position.Y());
+  vertex_z->Fill(vertex.position.Z());
 
   n_reco_vertices->Fill(event.reco.size());
 

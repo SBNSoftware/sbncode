@@ -31,6 +31,8 @@
 namespace ana {
 namespace SBNOsc {
   void Selection::Initialize(fhicl::ParameterSet *config) {
+    std::cout << "Input Configuration:\n";
+    std::cout << config->to_indented_string() << std::endl;
     fOutputFile = new TFile(config->get<std::string>("OutputFile", "output.root").c_str(), "CREATE");
     fOutputFile->cd();
     fCRTHitDistance = config->get<double>("CRTHitDistance", -1);
@@ -78,10 +80,13 @@ namespace SBNOsc {
     fRecoEvent = NULL;
 
     fCRTGeo = new sbnd::CRTGeoAlg(fProviderManager->GetGeometryProvider(), fProviderManager->GetAuxDetGeometryProvider());
+
+    fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
+
     if (fDoNormalize) {
-      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
+      fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
     }
-    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
+    fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
@@ -135,7 +140,7 @@ namespace SBNOsc {
 
     // update each reco Interaction to a smarter primary track selector
     unsigned i = 0;
-    while (i < fRecoEvent->reco.size()) {
+    while (i < fRecoEvent->reco.size()) { 
       for (size_t particle_ind: fRecoEvent->reco[i].slice.tracks) {
         int track_ind = fRecoEvent->reco[i].slice.particles.at(particle_ind).trackID;
 
@@ -195,6 +200,14 @@ namespace SBNOsc {
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
 
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
+      if (reco.primary_track.match.has_match) { //fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).is_contained) {
+        const numu::RecoTrack &match = fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id);
+        if (match.is_contained) { 
+          std::cout << "Contained particle match start: " << match.start.X() << " " << match.start.Y() << " " << match.start.Z() << std::endl;
+          std::cout << "Contained particle match end: " << match.end.X() << " " << match.end.Y() << " " << match.end.Z() << std::endl;
+        }
+      }
+
       if (reco.primary_track.match.has_match && reco.primary_track.match.mctruth_origin==1) { // kBeamNeutrino
         if (fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_enter == 0 &&
             fRecoEvent->true_tracks.at(reco.primary_track.match.mcparticle_id).wall_exit == 0) { // wNone
@@ -244,6 +257,10 @@ namespace SBNOsc {
 
     // make sure no two vertices match to the same true neutrino interaction
     numu::CorrectMultiMatches(*fRecoEvent, fRecoEvent->reco);
+    // re-do the truth matching one more time with the multi-matches fixed
+    for (unsigned i = 0; i < fRecoEvent->reco.size(); i++) {
+      fRecoEvent->reco[i].match = numu::InteractionTruthMatch(fRecoEvent->truth, fRecoEvent->reco_tracks, fRecoEvent->reco[i]);
+    }
 
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
     if (fDoNormalize) {

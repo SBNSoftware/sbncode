@@ -121,6 +121,14 @@ public:
       {"Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch", 
        "R_crttrack", "R_crthit", "R_crtactive", "R_contained", "R_length"};
 
+  const std::vector<std::string> &CutOrder() const {
+    return fConfig.CutOrder;
+  }
+
+  const std::vector<std::string> &TruthCutOrder() const {
+    return fConfig.TruthCutOrder;
+  }
+
 private:
   struct VolYZ {
     std::array<double, 2> Y;
@@ -128,6 +136,7 @@ private:
   };
 
   struct Config {
+    bool UseTrueVertex;
     double trackMatchCompletionCut;
     float TruthCompletion;
     float TruthMatchDist;
