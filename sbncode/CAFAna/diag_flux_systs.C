@@ -180,14 +180,17 @@ void diag_flux_systs(bool force_rebuild = false)
                        NSpectra*NEnergyBins, 0, NSpectra*NEnergyBins);
 
   for(int univIdx = 0; univIdx < NUnivs; ++univIdx){
-    // TODO logarithmic so we can have factors?
     TH1* hmnd = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("nd/numu/univ_%d", univIdx).Data())), snom_numu_nd).ToTH1();
     TH1* hmub = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("ub/numu/univ_%d", univIdx).Data())), snom_numu_ub).ToTH1();
     TH1* hmfd = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("fd/numu/univ_%d", univIdx).Data())), snom_numu_fd).ToTH1();
 
+    // We don't use these for anything. They're basically insignificant, and
+    // make the matrix decomposition fail.
+    /*
     TH1* hend = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("nd/nue/univ_%d", univIdx).Data())), snom_nue_nd).ToTH1();
     TH1* heub = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("ub/nue/univ_%d", univIdx).Data())), snom_nue_ub).ToTH1();
     TH1* hefd = Ratio(*LoadFrom<Spectrum>(fin.GetDirectory(TString::Format("fd/nue/univ_%d", univIdx).Data())), snom_nue_fd).ToTH1();
+    */
 
     TH1* htot = new TH1D("", "", NSpectra*NEnergyBins, 0, NSpectra*NEnergyBins);
     for(int i = 0; i < NEnergyBins; ++i){
@@ -207,8 +210,10 @@ void diag_flux_systs(bool force_rebuild = false)
 
     for(int i = 0; i < htot->GetNbinsX(); ++i){
       for(int j = 0; j < htot->GetNbinsX(); ++j){
-        // Bakes in 1 as the true mean
-        const double z = (htot->GetBinContent(i+1)-1) * (htot->GetBinContent(j+1)-1);
+        // We'll do the actual mathematical work in logarithmic space, since
+        // these systs presumably operate as scale factors. Note that since
+        // log(1) = 0 we're baking in 1 as the true mean here.
+        const double z = log(htot->GetBinContent(i+1)) * log(htot->GetBinContent(j+1));
         hcov->Fill(i+.5, j+.5, z);
         mcov(i, j) += z;
       }
@@ -249,13 +254,12 @@ void diag_flux_systs(bool force_rebuild = false)
   std::cout << "Converting eigenvectors to histograms..." << std::endl;
 
   std::vector<TH1*> hevecs_vec;
-  std::vector<TVectorD> evecs_vec;
   for(int i = 0; i < evals.GetNrows(); ++i){
     hevecs_vec.push_back(new TH1F("", "", NSpectra*NEnergyBins, 0, NSpectra*NEnergyBins));
-    evecs_vec.emplace_back(evals.GetNrows());
     for(int j = 0; j < evals.GetNrows(); ++j){
-      hevecs_vec.back()->SetBinContent(j+1, sqrt(evals[i])*evecs(j, i));
-      evecs_vec.back()[j] = sqrt(evals[i])*evecs(j, i);
+      // Convert the logarithmic eigenvalue back to a linear fraction away from 1
+      const double z = exp(sqrt(evals[i])*evecs(j, i))-1;
+      hevecs_vec.back()->SetBinContent(j+1, z);
     }
   }
 
