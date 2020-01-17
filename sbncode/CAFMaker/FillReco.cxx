@@ -21,4 +21,15 @@ namespace caf
   }
   //......................................................................
 
+  void FillTrackVars(const recob::Track& track,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty)
+  {
+
+    srtrack.npts         = track.CountValidPoints();
+    srtrack.len          = track.Length();
+
+  }
+  //......................................................................
+
 }

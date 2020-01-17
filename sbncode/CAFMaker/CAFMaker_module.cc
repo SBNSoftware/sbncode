@@ -8,12 +8,11 @@
 // ---------------- TO DO ----------------
 //
 // - Give real fDet values
-// - Clean up code body
 // - Add in cycle and batch to params
-// - Fill reco tree a bit
+// - Fill reco tree a bit more
 // - Move this list some place useful
-// - Write insructions
 // - Add Truth branch
+// - Add reco.CRT branch
 //
 // ---------------------------------------
 
@@ -73,7 +72,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
+#include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
+#include "lardataobj/RecoBase/Track.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -172,6 +173,10 @@ class CAFMaker : public art::EDProducer {
     return a <= (b + precision) && a >= (b - precision);
   }
 
+  static bool sortRBTrkLength(const art::Ptr<recob::Track>& a,
+                                const art::Ptr<recob::Track>& b) {
+    return a->Length() > b->Length();
+  }
   // static bool sortTrackLength(const SRTrack& a, const SRTrack& b) {
   //   return a.len > b.len;
   // }
@@ -403,8 +408,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Get a handle on the slices
   art::Handle<std::vector<recob::Slice>> slices;
   GetByLabelStrict(evt, fParams.ClusterLabel(), slices);
+  // TO DO - Create 3 labels (SliceLabel a,b,&c = pandora, 
+  //         pandorawtvCryo01, etc.) Then add them to the same 
+  //         vector with the associated CRYO var for the tree
+
 
   // Get tracks & showers here
+  art::FindManyP<recob::PFParticle> fmPFPart = 
+    FindManyPStrict<recob::PFParticle>(slices, evt, "pandora");//fParams.PFPartLabel());
+
+
+  // art::FindManyP<recob::Track> partTrks(track_handle, 
+  // 					     evt, 
+  // 					     _config.RecoTrackTag + suffix);// pandoraTrack, pandoraTrackGaus<n>
+
+  //#######################################################
+  // Loop over slices 
+  //#######################################################
 
   for (unsigned int sliceId = 0; sliceId < slices->size(); ++sliceId) {
     const recob::Slice& slice = (*slices)[sliceId];
@@ -451,22 +471,35 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     // Add reconstructed objects.
     //#######################################################
+    // Reco objects have assns to the slice PFParticles 
+    // This depends on the findMany object created above.
 
-    // if (fmTrack.isValid()) {
-    //   std::vector<art::Ptr<rb::Track>> slcTracks = fmTrack.at(sliceId);
-    //   // Sort the tracks in descending length order
-    //   std::sort(kalTracks.begin(), kalTracks.end(), sortRBTrackLength);
-    //   rec.reco.trk.idxlongest = 0;
+    if ( fmPFPart.isValid() ) {
+      std::vector<art::Ptr<recob::PFParticle>> slcPFParts = fmPFPart.at(sliceId);
 
-    //   for (size_t trackId = 0; trackId < slcTracks.size(); ++trackId) {
+      for ( size_t iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
 
-    //       rec.reco.trk.tracks.push_back(SRKalmanTrack());
+	art::FindManyP<recob::Track>       fmTrack = 
+	  FindManyPStrict<recob::Track>(slcPFParts, evt, "pandoraTrack");//fParams.TrackLabel());
 
-    //       FillTrackVars((*slcTracks[trackId]), rec.reco.trk.tracks.back(),
-    //                      sliceId);
+	if ( fmTrack.isValid() ) {
+	  std::vector<art::Ptr<recob::Track>> partTrks = fmTrack.at(iPart);
+	  std::sort(partTrks.begin(),partTrks.end(),sortRBTrkLength);
 
-    //     }// end for trackId
-    //   } // fmTrack ok
+	  rec.reco.ntrk = partTrks.size();
+	  
+	  for ( size_t iTrack = 0; iTrack < partTrks.size(); ++iTrack ) {
+	    
+	    rec.reco.trk.push_back(SRTrack());	    
+	    FillTrackVars((*partTrks[iTrack]), rec.reco.trk.back(),iPart);
+	    
+	  }// end for iTrack
+	} // fmTrack ok
+	
+      }// end for pfparts
+    } // fmPFPart ok
+    
+
 
     //#######################################################
     // Fill truth information
