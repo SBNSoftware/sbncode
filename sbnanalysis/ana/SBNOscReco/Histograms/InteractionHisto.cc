@@ -9,9 +9,9 @@ namespace ana {
   namespace SBNOsc {
 
 void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume) {
-#define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
-#define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); fAllHistos.push_back(name)
-#define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = new TH2D((#name"_" + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy); fAllHistos.push_back(name)
+#define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
+#define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); StoreHisto(name)
+#define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = new TH2D((#name + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy); StoreHisto(name)
 
   INT_HISTO(track_length, 100, 0., 600.);
   INT_HISTO(track_p, 50, 0., 5.);

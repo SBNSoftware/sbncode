@@ -53,7 +53,7 @@ namespace SBNOsc {
 
     assert(track_selector_strings.size() == track_selector_names.size());
 
-    fTrackSelectorNames = numu::MultiplyNames(track_selector_names);
+    fTrackSelectorNames = numu::MultiplyNames(track_selector_names, '/');
     fTrackSelectors = numu::MultiplyTrackSelectors(track_selector_strings);
 
     assert(fTrackSelectorNames.size() == fTrackSelectors.size());
@@ -132,6 +132,28 @@ namespace SBNOsc {
 
     // set stuff in the event
     SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
+
+    for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
+      std::cout << "Event type: " << Histograms::mode2Str(reco.match.mode) << std::endl;
+      const std::vector<size_t> &tracks = reco.slice.tracks;
+      for (size_t ind: tracks) {
+        const numu::RecoTrack &track = fRecoEvent->tracks.at(ind);
+        const numu::RecoParticle &t_particle = reco.slice.particles.at(ind);
+        std::cout << "Reco track: "; 
+        std::cout << "length: " << track.length << " PID: " << track.match.match_pdg << " Chi2 m: " << track.chi2_muon << " Chi2 p: " << track.chi2_proton << " n daughter: " << t_particle.daughters.size() << std::endl;
+        for (size_t d_ind: t_particle.daughters) {
+          if (fRecoEvent->tracks.count(d_ind)) {
+            std::cout << "Daughter track: ";
+            const numu::RecoTrack &d_track = fRecoEvent->tracks.at(ind);
+            const numu::RecoParticle &d_t_particle = reco.slice.particles.at(ind);
+            std::cout << "length: " << d_track.length << " PID: " << d_track.match.match_pdg << " Chi2 m: " << d_track.chi2_muon << " Chi2 p: " << d_track.chi2_proton <<" n daughter: " << d_t_particle.daughters.size() << std::endl;
+          }
+          else {
+            std::cout << "Shower Daughter\n";
+          }
+        }
+      }
+    }
 
     fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
