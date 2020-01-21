@@ -4,6 +4,7 @@
 #include <vector>
 
 class TH1;
+class TDirectory;
 
 namespace ana {
  namespace SBNOsc {
@@ -27,7 +28,11 @@ public:
   **/
   void Write();
 
+  void StoreHisto(TH1 *histo);
+  void Merge(const HistoList &merge);
+
   std::vector<TH1 *> fAllHistos;
+  std::vector<TDirectory *> fLocations;
 };
 
   } // end namespace ana

@@ -9,8 +9,8 @@ namespace ana {
   namespace SBNOsc {
 
 void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length) {
-#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name"_" + postfix).c_str(), #name, n_bins, lo, hi); fAllHistos.push_back(name)
-#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name"_" + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); fAllHistos.push_back(name)
+#define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
+#define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); StoreHisto(name)
 
   TRACK_HISTO(chi2_muon_diff, 100, 0., 1000.);
   TRACK_HISTO(chi2_proton_diff, 100, 0, 1000);

@@ -22,13 +22,13 @@ bool NotZero(const std::vector<unsigned> &indices) {
   return false;
 }
 
-std::vector<std::string> numu::MultiplyNames(const std::vector<std::vector<std::string>> &strings) {
+std::vector<std::string> numu::MultiplyNames(const std::vector<std::vector<std::string>> &strings, char join) {
   std::vector<std::string> ret;
   std::vector<unsigned> indices (strings.size(), 0);
   do {
     std::string this_str;
     for (unsigned i = 0; i < indices.size(); i++) {
-      this_str += strings[i][indices[i]] + "_";
+      this_str += strings[i][indices[i]] + join;
     }
     ret.push_back(this_str);
     Increment(indices, strings);
