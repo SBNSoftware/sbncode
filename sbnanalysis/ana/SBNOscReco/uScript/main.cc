@@ -97,6 +97,7 @@ static int runFile(const char* path) {
 
   if (result == uscript::INTERPRET_COMPILE_ERROR) return 65;
   if (result == uscript::INTERPRET_RUNTIME_ERROR) return 70;
+  return 0;
 } 
 
 int main(int argc, const char* argv[]) {

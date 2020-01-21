@@ -81,6 +81,7 @@ public:
     for (const simb::MCParticle &part: mc_particles) {
       if (part.TrackId() == trackID) return part.PdgCode();
     }
+    return -1;
   }
 
   /**

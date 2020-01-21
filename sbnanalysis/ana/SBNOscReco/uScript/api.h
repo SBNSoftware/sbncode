@@ -17,9 +17,6 @@ using JustAChar = const char *;
 template<typename T>
 using JustACharRef = const char *&;
 
-template<typename... TObjs>
-void AddAll(VM &vm, JustACharRef<TObjs> ...names, const TObjs *&...objs); 
-
 void inline SetAll(VM &vm, std::initializer_list<const char *> names) {
   for (const char *name: names) {
     vm.AddGlobal(name);

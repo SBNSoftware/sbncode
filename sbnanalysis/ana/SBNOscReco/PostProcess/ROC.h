@@ -61,7 +61,7 @@ namespace ana {
       void FillNeverCosmic(bool is_signal) {fCosmic.FillNever(is_signal);}
       void FillAlwaysCosmic(bool is_signal) {fCosmic.FillAlways(is_signal);}
 
-      float Normalize(float scale_neutrino, float scale_cosmic);
+      void Normalize(float scale_neutrino, float scale_cosmic);
       void Write() const;
       // float BestCut(float scale_neutrino, float scale_cosmic, float n_background_data) const;
       float BestCut() const;

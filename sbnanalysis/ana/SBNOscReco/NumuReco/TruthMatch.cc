@@ -1,5 +1,6 @@
 #include "TruthMatch.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include <cassert>
 
 numu::InteractionMode numu::GetMode(const event::Interaction &truth) {
   if (truth.neutrino.iscc) return numu::mCC;
