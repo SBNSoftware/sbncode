@@ -24,9 +24,12 @@ static void repl() {
   numu::RecoSlice slice;
   slice.flash_match.time = 2.;
 
+  numu::TrueParticle particle;
+
   numu::flat::FlatInteraction flat;
   flat.ptrack.start[1] = 5.;
 
+  uscript::Compiler::Register<numu::TrueParticle>();
   uscript::Compiler::Register<numu::RecoEvent>();
   uscript::Compiler::Register<numu::RecoSlice>();
   uscript::Compiler::Register<numu::flat::FlatInteraction>();
@@ -45,6 +48,7 @@ static void repl() {
     vm.AddGlobal("flat", &flat);
     vm.AddGlobal("event", &event);
     vm.AddGlobal("slice", &slice);
+    vm.AddGlobal("particle", &particle);
     int global = 5;
     vm.AddGlobal("int", &global);
     uscript::Value v;

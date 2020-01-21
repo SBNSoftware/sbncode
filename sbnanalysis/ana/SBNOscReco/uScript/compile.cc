@@ -9,6 +9,7 @@ bool uscript::Compiler::DoCompile(const char *_source, Chunk *chunk) {
   parser.hadError = false;
   source = _source;
   scanner.SetSource(_source);
+  chunk->source = source;
 
   SetChunk(chunk);
 
@@ -676,6 +677,9 @@ const char *uscript::Compiler::DoIntern(const std::string &str) {
 
 void uscript::Compiler::DoRegister(const char *classname) {
   uscript::TClassInfo *ret = tclasslist.Add(classname);
+  if (ret == NULL) {
+    std::cerr << "Missing class definition for cpp class: " << classname << std::endl; 
+  }
   assert(ret != NULL);
 }
 

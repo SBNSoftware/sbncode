@@ -48,10 +48,10 @@ public:
   void Write(uint8_t instruction);
   void Disassemble(const std::string &name) const;
 
+  std::string source;
   std::vector<uint8_t> code;
   std::vector<Value> constants;
   unsigned DisassembleInstruction(unsigned index) const;
-
 };
 
 } // end namespace

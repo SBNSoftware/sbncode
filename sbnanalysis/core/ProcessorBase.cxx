@@ -274,7 +274,7 @@ void ProcessorBase::UpdateFileMeta(gallery::Event& ev) {
     for (auto const& pr: registry) {
       const fhicl::ParameterSet pset = pr.second;
       if (pset.has_key("source") && pset.has_key("source.maxEvents") && pset.has_key("source.module_type")) {
-        unsigned max_events = pset.get<unsigned>("source.maxEvents");
+        int max_events = pset.get<int>("source.maxEvents");
         std::string module_type = pset.get<std::string>("source.module_type");
         // this will show up once for every input file
         if (module_type == "EmptyEvent") {
