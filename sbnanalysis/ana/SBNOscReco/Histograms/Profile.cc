@@ -8,8 +8,8 @@ namespace ana {
  namespace SBNOsc {
 
 void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, double xlo, double xhi) {
-#define TRACK_PROFILE(name, nbinsy, ylo, yhi) name = new TH2D((#name "_" + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi); fAllHistos.push_back(name);
-#define TRACK_PROFILE3D(name, nbinsy, ylo, yhi, nbinsz, zlo, zhi) name = new TH3D((#name "_" + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi, nbinsz, zlo, zhi); fAllHistos.push_back(name)
+#define TRACK_PROFILE(name, nbinsy, ylo, yhi) name = new TH2D((#name  + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi); StoreHisto(name);
+#define TRACK_PROFILE3D(name, nbinsy, ylo, yhi, nbinsz, zlo, zhi) name = new TH3D((#name  + postfix).c_str(), #name, nbinsx, xlo, xhi, nbinsy, ylo, yhi, nbinsz, zlo, zhi); StoreHisto(name)
   TRACK_PROFILE3D(range_v_true_mom, 50, 0., 2.5, 50, 0., 2.5);
   TRACK_PROFILE3D(mcs_v_true_mom, 50, 0., 2.5, 50, 0., 2.5);
 

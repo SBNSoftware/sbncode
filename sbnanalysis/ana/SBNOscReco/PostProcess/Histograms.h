@@ -75,7 +75,7 @@ struct Histograms : public HistoList {
  *  \param mode The interaction mode to be converted
  *  \return String representaiton of that mode
  */
-  std::string mode2Str(const numu::InteractionMode &mode) const {
+  static std::string mode2Str(const numu::InteractionMode &mode) {
     switch (mode) {
       case numu::mCC: return "CC";
       case numu::mCCNonPrimary: return "CC-Other";

@@ -123,55 +123,95 @@ void Histograms::Initialize(
 
   std::cout << "Limits: " << tagger_volume[0] << " " << tagger_volume[3] << " " << tagger_volume[1] << " " << tagger_volume[4] << " " << tagger_volume[2] << " " << tagger_volume[5] << std::endl;
 
-  fCosmic[0].Initialize(prefix + "_Cosmic", detector);
-  fCosmic[1].Initialize(prefix + "_CosmicTrig", detector);
-  fCosmic[2].Initialize(prefix + "_IntimeCosmic", detector);
-  fCosmic[3].Initialize(prefix + "_IntimeCosmicTrig", detector);
+  // make new directory for histograms
+  TDirectory *d_top = gDirectory->mkdir("histograms");
+
+  if (prefix.size() != 0) {
+    d_top = d_top->mkdir(prefix.c_str());
+    d_top->cd();
+  }
+
+  d_top->mkdir("cosmic");
+
+  d_top->mkdir("cosmic/outtime");
+  d_top->cd("cosmic/outtime");
+  fCosmic[0].Initialize("", detector);
+  d_top->cd();
+
+  d_top->mkdir("cosmic/outtime_trig");
+  d_top->cd("cosmic/outtime_trig");
+  fCosmic[1].Initialize("", detector);
+  d_top->cd();
+
+  d_top->mkdir("cosmic/intime");
+  d_top->cd("cosmic/intime");
+  fCosmic[2].Initialize("", detector);
+  d_top->cd();
+
+  d_top->mkdir("cosmic/intime_trig");
+  d_top->cd("cosmic/intime_trig");
+  fCosmic[3].Initialize("", detector);
+  d_top->cd();
 
   std::vector<std::string> cut_order = cuts.CutOrder();
   std::vector<std::string> truth_cut_order = cuts.TruthCutOrder();
 
+  d_top->mkdir("interaction");
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
       std::string cut_name = (i < truth_cut_order.size()) ? truth_cut_order[i] : cut_order[i - truth_cut_order.size()];
       std::string postfix = mode2Str(mode) + prefix + cut_name;
-      fInteraction[i][mode].Initialize(postfix, detector, tagger_volume); 
+      std::string dirname = "interaction/" + mode2Str(mode) + "/" + cut_name;
+      d_top->mkdir(dirname.c_str());
+      d_top->cd(dirname.c_str());
+      fInteraction[i][mode].Initialize("", detector, tagger_volume); 
+      d_top->cd();
     }
   }
 
+  d_top->mkdir("crt");
   for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
-    fCRTs[cut_i].Initialize(prefix + "_crt_cut_" + cut_order[cut_i], tagger_volume);
+    std::string dirname = "crt/" + cut_order[cut_i];
+    d_top->mkdir(dirname.c_str());
+    d_top->cd(dirname.c_str());
+    fCRTs[cut_i].Initialize("", tagger_volume);
+    d_top->cd();
   }
 
   fAllTracks.reserve(track_histo_types.size());
   fPrimaryTracks.reserve(track_histo_types.size());
 
+  d_top->mkdir("ptrack");
+  d_top->mkdir("alltrack");
   for (unsigned i = 0; i < track_histo_types.size(); i++) {
     fAllTracks.emplace_back();
     fPrimaryTracks.emplace_back();
     fPrimaryTrackProfiles.emplace_back();
-    fAllTracks[i].Initialize(prefix + "All_" + 
-			     track_histo_types[i], 
-			     detector, max_length);
+
+    std::string dirname = track_histo_types[i];
+    std::string all_dirname = "alltrack/" + dirname;
+    
+    d_top->mkdir(all_dirname.c_str());
+    d_top->cd(all_dirname.c_str());
+    fAllTracks[i].Initialize("", detector, max_length);
+    d_top->cd();
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
-      fPrimaryTracks[i][j].Initialize(prefix + "Primary_" + 
-				      track_histo_types[i] + 
-				      "_" + 
-                                      cut_order[j], detector, max_length);
+      std::string p_dirname = "ptrack/" + dirname + cut_order[j];
+      d_top->mkdir(p_dirname.c_str());
+      d_top->cd(p_dirname.c_str());
+      fPrimaryTracks[i][j].Initialize("", detector, max_length);
+      d_top->cd();
 
       for (unsigned k = 0; k < track_profile_types.size(); k++) {
         if (j == 0) fPrimaryTrackProfiles[i].emplace_back();
         unsigned n_bin;
         float xlo, xhi;
         std::tie(n_bin, xlo, xhi) = track_profile_xranges[k];
-        fPrimaryTrackProfiles[i][k][j].Initialize(prefix + 
-						  "Primary_" + 
-						  track_histo_types[i] + 
-						  "_" + 
-						  track_profile_types[k] + 
-						  "_" + 
-						  cut_order[j],
-						  n_bin, xlo, xhi);
+        std::string p_profile_dirname = "ptrack/" + dirname + cut_order[j] + "/profile_" + track_profile_types[k];
+        d_top->mkdir(p_profile_dirname.c_str());
+        d_top->cd(p_profile_dirname.c_str());
+        fPrimaryTrackProfiles[i][k][j].Initialize("", n_bin, xlo, xhi);
+        d_top->cd();
       } 
 
     }
@@ -179,35 +219,24 @@ void Histograms::Initialize(
 
 
   for (unsigned i = 0; i < 4; i++) {
-    fAllHistos.insert(fAllHistos.end(), 
-		      fCosmic[i].fAllHistos.begin(), 
-		      fCosmic[i].fAllHistos.end());
-
+    Merge(fCosmic[i]);
   }
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
-      fAllHistos.insert(fAllHistos.end(), 
-			fInteraction[i][mode].fAllHistos.begin(), 
-			fInteraction[i][mode].fAllHistos.end());
+      Merge(fInteraction[i][mode]);
     }
   }
 
   for (unsigned i = 0; i < Cuts::nCuts; i++) {
-    fAllHistos.insert(fAllHistos.end(), fCRTs[i].fAllHistos.begin(), fCRTs[i].fAllHistos.end());
+    Merge(fCRTs[i]);
   }
 
   for (unsigned i = 0; i < fAllTracks.size(); i++) {
-    fAllHistos.insert(fAllHistos.end(), 
-		      fAllTracks[i].fAllHistos.begin(), 
-		      fAllTracks[i].fAllHistos.end());
+    Merge(fAllTracks[i]);
     for (unsigned j = 0; j < Cuts::nCuts; j++) {
-      fAllHistos.insert(fAllHistos.end(), 
-			fPrimaryTracks[i][j].fAllHistos.begin(), 
-			fPrimaryTracks[i][j].fAllHistos.end());
+      Merge(fPrimaryTracks[i][j]);
       for (unsigned k = 0; k < track_profile_types.size(); k++) {
-        fAllHistos.insert(fAllHistos.end(), 
-			  fPrimaryTrackProfiles[i][k][j].fAllHistos.begin(), 
-			  fPrimaryTrackProfiles[i][k][j].fAllHistos.end());
+        Merge(fPrimaryTrackProfiles[i][k][j]);
       } 
     } 
   }
