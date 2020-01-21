@@ -362,7 +362,12 @@ uscript::Value uscript::VM::GetTValue(uint8_t *loc, uscript::TData data) {
 bool uscript::VM::AccessValue(Value instance, const char *name, Value *result) {
   if (IS_TINSTANCE(instance)) {
     bool success = GetTField(AS_TINSTANCE(instance), name, result);
-    if (!success) RuntimeError("Could not find value %s.", name);
+    if (!success) {
+      uscript::ObjTInstance &inst = AS_TINSTANCE(instance);
+      uscript::TClassInfo *classinfo = inst.data.info;
+      RuntimeError("Could not find value %s.", name);
+      //RuntimeError("Could not find value %s in class %s.", name, classinfo->name.c_str());
+    }
     return success;
   }
   RuntimeError("Cannot access on non-TInstance.");
@@ -406,7 +411,7 @@ void uscript::VM::RuntimeError(const char *format, ...) {
   va_start(args, format);
   vfprintf(stderr, format, args);
   va_end(args);
-  fputs("\n", stderr);
+  fprintf(stderr, "\nIn source: %s\n", chunk->source.c_str());
 
   Reset();
 }
