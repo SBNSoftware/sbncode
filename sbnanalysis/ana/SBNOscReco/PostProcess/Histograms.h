@@ -12,6 +12,7 @@
 
 #include "../Histograms/HistoList.h"
 #include "../Histograms/TrackHisto.h"
+#include "../Histograms/TrueParticleHisto.h"
 #include "../Histograms/Profile.h"
 #include "../Histograms/InteractionHisto.h"
 #include "../Histograms/CosmicHisto.h"
@@ -95,6 +96,10 @@ struct Histograms : public HistoList {
       numu::mCosmic, numu::mIntimeCosmic, 
       numu::mOther, numu::mAll }; //!< List of all interaction modes
 
+  static const unsigned nPIDs = 5;
+  static constexpr const char * allPIDs[nPIDs] = 
+  { "mu", "pi", "p", "k", "other"};
+
   // static constexpr const char* histoNames[nHistos] = {"Truth", "Reco", "R_track", "R_vmatch", "R_tmatch", "R_match", "R_contained"}; //!< List of all cut names 
 
 
@@ -105,6 +110,7 @@ struct Histograms : public HistoList {
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
   std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
   std::array<CosmicHistos, 4> fCosmic;
+  TrueParticleHistos fParticles[nPIDs][2];
 
   std::array<CRTHistos, Cuts::nCuts> fCRTs;
 

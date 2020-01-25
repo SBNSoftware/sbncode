@@ -27,8 +27,47 @@ void Histograms::Fill( const numu::RecoEvent &event,
   else {
     std::cout << "Filling Cosmic!\n";
     fCosmic[2].Fill(event.particles);
-    if (cutmaker.PassFlashTrigger(event)) {
+   if (cutmaker.PassFlashTrigger(event)) {
       fCosmic[3].Fill(event.particles);
+    }
+  }
+
+  // Fill the particle histos (only with CC events)
+  for (const event::Interaction &truth: core.truth) {
+    if (truth.neutrino.iscc) {
+      for (const event::FinalStateParticle &p: truth.finalstate) {
+        if (event.particles.count(p.G4ID)) {
+          const numu::TrueParticle &particle = event.particles.at(p.G4ID);
+
+          bool is_primary = particle.start_process == numu::primary;
+          if (!is_primary) continue;
+
+          int pdg_ind = -1;
+          if (abs(particle.pdgid) == 13) pdg_ind = 0;
+          else if (abs(particle.pdgid) == 212) pdg_ind = 1;
+          else if (abs(particle.pdgid) == 2122) pdg_ind = 2;
+          else if (abs(particle.pdgid) == 312) pdg_ind = 3;
+          else continue;
+
+          bool has_reco = false;
+          for (const numu::RecoInteraction &reco: event.reco) {
+            if (reco.slice.match.mode != numu::mCC) continue;
+            for (size_t ind: reco.slice.tracks) {
+              if (event.tracks.at(ind).match.mcparticle_id == p.G4ID) {
+                has_reco = true;
+                break;
+              }
+            }
+            if (has_reco) break;
+          }
+
+          fParticles[pdg_ind][0].Fill(particle); 
+          if (has_reco) {
+            fParticles[pdg_ind][1].Fill(particle); 
+          }
+
+        }
+      }
     }
   }
 
@@ -153,6 +192,22 @@ void Histograms::Initialize(
   fCosmic[3].Initialize("", detector);
   d_top->cd();
 
+  // true-particle histograms
+  d_top->mkdir("particle");
+  for (unsigned i = 0; i < Histograms::nPIDs; i++) {
+    std::string all = "particle/" + std::string(Histograms::allPIDs[i]) + "/all";
+    std::string has_reco = "particle/" + std::string(Histograms::allPIDs[i]) + "/has_reco";
+    d_top->mkdir(all.c_str());
+    d_top->cd(all.c_str());
+    fParticles[i][0].Initialize("");
+    d_top->cd();
+
+    d_top->mkdir(has_reco.c_str());
+    d_top->cd(has_reco.c_str());
+    fParticles[i][1].Initialize("");
+    d_top->cd();
+  }
+
   std::vector<std::string> cut_order = cuts.CutOrder();
   std::vector<std::string> truth_cut_order = cuts.TruthCutOrder();
 
@@ -213,13 +268,16 @@ void Histograms::Initialize(
         fPrimaryTrackProfiles[i][k][j].Initialize("", n_bin, xlo, xhi);
         d_top->cd();
       } 
-
     }
   }
 
 
   for (unsigned i = 0; i < 4; i++) {
     Merge(fCosmic[i]);
+  }
+  for (unsigned i = 0; i < Histograms::nPIDs; i++) {
+    Merge(fParticles[i][0]);
+    Merge(fParticles[i][1]);
   }
   for (unsigned i = 0; i < Histograms::nHistos; i++) {
     for (const auto mode: Histograms::allModes) {
