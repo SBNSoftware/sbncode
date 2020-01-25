@@ -132,6 +132,7 @@ public:
   float length; //!< Total length of the energy depositions [cm]
   bool is_primary; //!< Whether the process producing the particle was "primary"
   int status_code; //!< Status code returned by GENIE (see GenieStatus enum)
+  int G4ID;
 };
 
 

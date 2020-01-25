@@ -61,6 +61,64 @@ namespace ana {
 
 const static TVector3 InvalidTVector3 = TVector3(-999, -999, -999);
 
+numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
+#define MATCH_PROCESS(name) if (process_name == #name) {return numu::name;}
+#define MATCH_PROCESS_NAMED(strname, id) if (process_name == #strname) {return numu::id;}
+  MATCH_PROCESS(primary)
+  MATCH_PROCESS(CoupledTransportation)
+  MATCH_PROCESS(FastScintillation)
+  MATCH_PROCESS(Decay)
+  MATCH_PROCESS(anti_neutronInelastic)
+  MATCH_PROCESS(neutronInelastic)
+  MATCH_PROCESS(anti_protonInelastic)
+  MATCH_PROCESS(protonInelastic)
+  MATCH_PROCESS(hadInelastic)
+  MATCH_PROCESS_NAMED(kaon+Inelastic, kaonpInelastic)
+  MATCH_PROCESS_NAMED(kaon-Inelastic, kaonmInelastic)
+  MATCH_PROCESS_NAMED(kaon+Inelastic, kaonpInelastic)
+  MATCH_PROCESS_NAMED(kaon-Inelastic, kaonmInelastic)
+  MATCH_PROCESS_NAMED(sigma+Inelastic, sigmapInelastic)
+  MATCH_PROCESS_NAMED(sigma-Inelastic, sigmamInelastic)
+  MATCH_PROCESS_NAMED(pi+Inelastic, pipInelastic)
+  MATCH_PROCESS_NAMED(pi-Inelastic, pimInelastic)
+  MATCH_PROCESS(kaon0LInelastic)
+  MATCH_PROCESS(kaon0SInelastic)
+  MATCH_PROCESS(lambdaInelastic)
+  MATCH_PROCESS(He3Inelastic)
+  MATCH_PROCESS(ionInelastic)
+  MATCH_PROCESS(xi0Inelastic)
+  MATCH_PROCESS(alphaInelastic)
+  MATCH_PROCESS(tInelastic)
+  MATCH_PROCESS(dInelastic)
+  MATCH_PROCESS(anti_neutronElastic)
+  MATCH_PROCESS(neutronElastic)
+  MATCH_PROCESS(anti_protonElastic)
+  MATCH_PROCESS(protonElastic)
+  MATCH_PROCESS(hadElastic)
+  MATCH_PROCESS_NAMED(kaon+Elastic, kaonpElastic)
+  MATCH_PROCESS_NAMED(kaon-Elastic, kaonmElastic)
+  MATCH_PROCESS_NAMED(pi+Elastic, pipElastic)
+  MATCH_PROCESS_NAMED(pi-Elastic, pimElastic)
+  MATCH_PROCESS(conv)
+  MATCH_PROCESS(phot)
+  MATCH_PROCESS(annihil)
+  MATCH_PROCESS(nCapture)
+  MATCH_PROCESS(nKiller)
+  MATCH_PROCESS(muMinusCaptureAtRest)
+  MATCH_PROCESS(CoulombScat)
+  MATCH_PROCESS(hBertiniCaptureAtRest)
+  MATCH_PROCESS(hFritiofCaptureAtRest)
+  MATCH_PROCESS(photonNuclear)
+  MATCH_PROCESS(muonNuclear)
+  MATCH_PROCESS(electronNuclear)
+  MATCH_PROCESS(positronNuclear)
+  std::cerr << "Error: Process name with no match (" << process_name << ")\n";
+  assert(false);
+  return numu::primary; // unreachable
+#undef MATCH_PROCESS
+#undef MATCH_PROCESS_NAMED
+}
+
 void DumpTrueStart(const gallery::Event &ev, int mcparticle_id) {
   // track.match.mcparticle_id);
   const std::vector<simb::MCParticle> &mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
@@ -286,8 +344,8 @@ void NumuReco::Finalize() {
 
 event::RecoInteraction NumuReco::CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight) {
   event::RecoInteraction ret;
-  if (vertex.match.mctruth_vertex_id >= 0) {
-    ret.truth_index = vertex.match.mctruth_vertex_id;
+  if (vertex.slice.match.mctruth_vertex_id >= 0) {
+    ret.truth_index = vertex.slice.match.mctruth_vertex_id;
   }
   ret.reco_energy = vertex.nu_energy;
   ret.weight = weight;
@@ -354,12 +412,12 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
     double weight = 1.;
     weight *= _config.constantWeight;
     // TODO: what about cosmics?
-    // if (vertex.match.mctruth_vertex_id >= 0) {
+    // if (vertex.slice.match.mctruth_vertex_id >= 0) {
     //   for (auto const &key: _config.uniformWeights) {
-    //     weight *= core_truth[vertex.match.mctruth_vertex_id].weightmap.at(key)[0];
+    //     weight *= core_truth[vertex.slice.match.mctruth_vertex_id].weightmap.at(key)[0];
     //  }
     // }
-    if (vertex.match.mode == numu::mCosmic) {
+    if (vertex.slice.match.mode == numu::mCosmic) {
       weight *= _config.cosmicWeight;
     }
 
@@ -518,6 +576,9 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
   ret.end_momentum = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
   ret.end_energy = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
+  ret.start_process = GetG4ProcessID(particle.Process());
+  ret.end_process = GetG4ProcessID(particle.EndProcess());
+
   ret.ID = particle.TrackId();
 
   return ret;
@@ -647,18 +708,13 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
       // only use particle ID on collection plane
       if (fProviderManager->GetGeometryProvider()->SignalType(particle_id->PlaneID()) == geo::kCollection) {
         n_dof += particle_id->Ndf();
-        chi2_proton += particle_id->Chi2Proton() * particle_id->Ndf();
-        chi2_kaon += particle_id->Chi2Kaon() * particle_id->Ndf();
-        chi2_pion += particle_id->Chi2Pion() * particle_id->Ndf();
-        chi2_muon += particle_id->Chi2Muon() * particle_id->Ndf();
+        chi2_proton += particle_id->Chi2Proton();
+        chi2_kaon += particle_id->Chi2Kaon();
+        chi2_pion += particle_id->Chi2Pion();
+        chi2_muon += particle_id->Chi2Muon();
       }
     }
     if (n_dof > 0) {
-      /*
-      chi2_proton /= n_dof;
-      chi2_kaon /= n_dof;
-      chi2_pion /= n_dof;
-      chi2_muon /= n_dof;*/
       // min chi2 is PID
       std::vector<double> chi2s {chi2_proton, chi2_muon, chi2_kaon, chi2_pion};
       int min_ind = std::distance(chi2s.begin(), std::min_element(chi2s.begin(), chi2s.end()));
@@ -904,6 +960,7 @@ numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
   ret.mctruth_ccnc = ret.mctruth_has_neutrino ? truth->GetNeutrino().CCNC() : -1;
   ret.mcparticle_id = mcp_track_id;
   ret.completion = completion;
+  ret.purity = SBNRecoUtils::TrackPurity(*fProviderManager, mcp_track_id, hits);
   ret.match_pdg = _true_particles[mcparticle_index]->PdgCode(); 
   ret.is_primary = _true_particles[mcparticle_index]->Process() == "primary"; 
   return ret;
@@ -964,10 +1021,6 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
     // throw away slices which do not have a primary track candidate
     if (!HasPrimaryTrack(reco_tracks, slice_ret)) continue;
     
-    // First guess of primary track
-    slice_ret.primary_track_index = numu::SelectLongestTrack(reco_tracks, slice_ret);
-    assert(slice_ret.primary_track_index >= 0);
-
     // if we didn't do the cosmic ID for all tracks, do it for all priamry track candidates
     if (!_config.CosmicIDAllTracks) {
       const numu::RecoParticle &neutrino = slice_ret.particles.at(slice_ret.primary_index);
@@ -1352,6 +1405,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
 
     this_interaction.slice = reco_slices[reco_i];
     this_interaction.position = neutrino.vertices[0];
+    // First guess of primary track
+    this_interaction.primary_track_index = numu::SelectLongestTrack(reco_tracks, this_interaction.slice);
+    assert(this_interaction.primary_track_index >= 0);
 
     // TODO: get the enrgy
     this_interaction.nu_energy = -1;
@@ -1359,8 +1415,13 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
     // Track multiplicity
     this_interaction.multiplicity = this_interaction.slice.particles.at(this_interaction.slice.primary_index).daughters.size();
 
+    // leave per-particle multiplicity unset until particle ID is done
+    this_interaction.npion = -1;
+    this_interaction.nproton = -1;
+    this_interaction.nkaon = -1;
+
     // do initial truth matching
-    this_interaction.match = numu::InteractionTruthMatch(truth, reco_tracks, this_interaction);
+    this_interaction.slice.match = numu::InteractionTruthMatch(truth, reco_tracks, this_interaction);
 
     // store
     reco.push_back(std::move(this_interaction));

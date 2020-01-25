@@ -76,6 +76,7 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(crt_match_time, n_matchtime_bins, min_matchtime_t, max_matchtime_t);
 
   TRACK_HISTO(completion, 200, -1, 1);
+  TRACK_HISTO(purity, 200, -1, 1);
 
   TRACK_HISTO(stopping_chisq_start, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
@@ -197,6 +198,7 @@ void TrackHistos::Fill(
     mcs_p_comp->Fill(true_particle.start_momentum.Mag(), numu::MCSMomentum(track));
 
     completion->Fill(track.match.completion);
+    purity->Fill(track.match.purity);
 
     wall_enter->Fill(true_particle.wall_enter);
     wall_exit->Fill(true_particle.wall_exit);
@@ -205,6 +207,7 @@ void TrackHistos::Fill(
   }
   else {
     completion->Fill(-0.5);
+    purity->Fill(-0.5);
   }
 
   stopping_chisq_start->Fill(track.stopping_chisq_start);

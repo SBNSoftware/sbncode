@@ -46,6 +46,7 @@ namespace SBNRecoUtils{
   int TrueParticleIDFromTotalRecoHits(const core::ProviderManager &manager, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1);  //Returns the geant4 ID which contributes the most to the vector of hits.  The matching method looks for which true particle maximally contributes to the most reco hits
   bool IsInsideTPC(const core::ProviderManager &manager, TVector3 position, double distance_buffer); //Checks if a position is within any of the TPCs in the geometry (user can define some distance buffer from the TPC walls)
   double CalculateTrackLength(const core::ProviderManager &manager, const art::Ptr<recob::Track> track); //Calculates the total length of a recob::track by summing up the distances between adjacent traj. points
+  double TrackPurity(const core::ProviderManager &manager, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
   double TrackCompletion(const core::ProviderManager &manager, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
 }
 #endif

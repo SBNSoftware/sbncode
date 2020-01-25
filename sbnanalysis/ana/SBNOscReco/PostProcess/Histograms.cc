@@ -52,8 +52,8 @@ void Histograms::Fill( const numu::RecoEvent &event,
     const numu::RecoInteraction &interaction = event.reco[i];
 
 
-    if (event.tracks.size() > (unsigned)interaction.slice.primary_track_index) {
-      const numu::RecoTrack &track = event.tracks.at(interaction.slice.primary_track_index);
+    if (event.tracks.size() > (unsigned)interaction.primary_track_index) {
+      const numu::RecoTrack &track = event.tracks.at(interaction.primary_track_index);
 
       for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
         if (cuts[cut_i] && cutmaker.HasCRTHitMatch(track)) {
@@ -84,7 +84,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
     // fill histos
     for (size_t cut_i=0; cut_i < Cuts::nCuts; cut_i++) {
-      int mode = interaction.match.mode; 
+      int mode = interaction.slice.match.mode; 
       if (cuts[cut_i]) {
         fInteraction[cut_i+Cuts::nTruthCuts][mode].Fill(event.reco[i], 
 							event, 

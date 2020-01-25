@@ -120,7 +120,7 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
   unsigned index = WorkerID();
   ana::SBNOsc::SetEvent(*fRecoEvents[index], *ev, fCuts, fMCTypes[index], true);
   for (const numu::RecoInteraction &interaction: fRecoEvents[index]->reco) {
-    const numu::RecoTrack &primary_track = fRecoEvents[index]->tracks.at(interaction.slice.primary_track_index);
+    const numu::RecoTrack &primary_track = fRecoEvents[index]->tracks.at(interaction.primary_track_index);
     // set stuff
     // 
     // Primary Track
@@ -154,10 +154,10 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
   
     // True Neutrino
     numu::flat::TrueNeutrino neutrino;
-    if (interaction.match.has_match) {
-      neutrino.E = ev->truth[interaction.match.mctruth_track_id].neutrino.energy;
-      neutrino.Q2 = ev->truth[interaction.match.mctruth_track_id].neutrino.Q2;
-      ev->truth[interaction.match.mctruth_track_id].neutrino.position.GetXYZ(neutrino.vertex);
+    if (interaction.slice.match.has_match) {
+      neutrino.E = ev->truth[interaction.slice.match.mctruth_track_id].neutrino.energy;
+      neutrino.Q2 = ev->truth[interaction.slice.match.mctruth_track_id].neutrino.Q2;
+      ev->truth[interaction.slice.match.mctruth_track_id].neutrino.position.GetXYZ(neutrino.vertex);
     }
     else neutrino.E = -1;
 

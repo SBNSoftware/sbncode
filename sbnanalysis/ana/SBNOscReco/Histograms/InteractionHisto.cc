@@ -92,9 +92,9 @@ void InteractionHistos::Fill(
   const numu::RecoEvent &event,
   const std::vector<event::Interaction> &truth) {
 
-  const numu::RecoTrack &primary_track = event.tracks.at(vertex.slice.primary_track_index);
+  const numu::RecoTrack &primary_track = event.tracks.at(vertex.primary_track_index);
 
-  dist_to_match->Fill(vertex.match.truth_vertex_distance);
+  dist_to_match->Fill(vertex.slice.match.truth_vertex_distance);
   primary_track_completion->Fill(primary_track.match.completion);
 
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
@@ -109,8 +109,8 @@ void InteractionHistos::Fill(
   if (vertex.slice.flash_match.present) {
     fmatch_score->Fill(vertex.slice.flash_match.score);
     fmatch_time->Fill(vertex.slice.flash_match.time);
-    if (vertex.slice.primary_track_index >= 0 && event.tracks.at(vertex.slice.primary_track_index).match.has_match) {
-      int mcparticle_id = event.tracks.at(vertex.slice.primary_track_index).match.mcparticle_id;
+    if (vertex.primary_track_index >= 0 && event.tracks.at(vertex.primary_track_index).match.has_match) {
+      int mcparticle_id = event.tracks.at(vertex.primary_track_index).match.mcparticle_id;
       double true_time = event.particles.at(mcparticle_id).start_time;
       fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
       fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
@@ -140,8 +140,8 @@ void InteractionHistos::Fill(
     true_contained_length->Fill(length);
   }
    
-  if (vertex.match.mctruth_track_id >= 0) {
-    int mctruth_id = vertex.match.mctruth_track_id;
+  if (vertex.slice.match.mctruth_track_id >= 0) {
+    int mctruth_id = vertex.slice.match.mctruth_track_id;
 
     true_track_multiplicity->Fill(truth[mctruth_id].nfinalstate);
     nuE->Fill(truth[mctruth_id].neutrino.energy);

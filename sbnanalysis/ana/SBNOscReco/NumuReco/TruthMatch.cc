@@ -30,8 +30,8 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interactio
 
   // Match to the primary track of the event
   match.mctruth_track_id = -1;
-  if (reco.slice.primary_track_index >= 0) {
-    const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(reco.slice.primary_track_index).match;
+  if (reco.primary_track_index >= 0) {
+    const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(reco.primary_track_index).match;
     if (ptrack_match.has_match) {
       for (int truth_i = 0; truth_i < truth.size(); truth_i++) {
         if ((truth[truth_i].neutrino.position - ptrack_match.mctruth_vertex).Mag() < 1.) {
@@ -39,7 +39,7 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interactio
         }
       }
     }
-    std::cout << "Primary track index: " << reco.slice.primary_track_index << std::endl;
+    std::cout << "Primary track index: " << reco.primary_track_index << std::endl;
 
     // return the interaction mode
     if (ptrack_match.has_match && ptrack_match.mctruth_origin == simb::Origin_t::kCosmicRay) {
@@ -56,7 +56,7 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interactio
       std::cout << "Match PDG: " << ptrack_match.match_pdg << std::endl;
       std::cout << "Match completion: " << ptrack_match.completion << std::endl;
       std::cout << "Is primary: " << ptrack_match.is_primary << std::endl;
-      const numu::RecoTrack &track = reco_tracks.at(reco.slice.primary_track_index);
+      const numu::RecoTrack &track = reco_tracks.at(reco.primary_track_index);
       std::cout << "reco start: " << track.start.X() << " " << track.start.Y() << " " << track.start.Z() << std::endl;
       std::cout << "reco end: " << track.end.X() << " " << track.end.Y() << " " << track.end.Z() << std::endl;
     }
@@ -71,9 +71,9 @@ numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interactio
   }
 
   // Use the track to match the mode of the interaction
-  if (reco.slice.primary_track_index >= 0 && 
-    reco_tracks.at(reco.slice.primary_track_index).match.has_match) {
-    const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(reco.slice.primary_track_index).match;
+  if (reco.primary_track_index >= 0 && 
+    reco_tracks.at(reco.primary_track_index).match.has_match) {
+    const numu::TrackTruthMatch &ptrack_match = reco_tracks.at(reco.primary_track_index).match;
     if (ptrack_match.mctruth_origin == simb::Origin_t::kBeamNeutrino && ptrack_match.mctruth_ccnc == simb::kCC) {
       if (ptrack_match.is_primary) {
         match.mode = numu::mCC;
@@ -113,18 +113,18 @@ void numu::CorrectMultiMatches(numu::RecoEvent &event, std::vector<numu::RecoInt
     numu::RecoInteraction &reco = recos[reco_i];
     unsigned set_i = reco_i; 
 
-    numu::RecoTrack &primary_track = event.tracks.at(reco.slice.primary_track_index);
+    numu::RecoTrack &primary_track = event.tracks.at(reco.primary_track_index);
 
-    if (primary_track.match.has_match && primary_track.match.is_primary && reco.match.mctruth_track_id >= 0) {
-      if (matched_vertices.count(reco.match.mctruth_track_id)) {
+    if (primary_track.match.has_match && primary_track.match.is_primary && reco.slice.match.mctruth_track_id >= 0) {
+      if (matched_vertices.count(reco.slice.match.mctruth_track_id)) {
         std::cout << "BAAAAAAAAD: two reco matched to same truth." << std::endl;
-        std::cout << "This id: " << reco.match.mctruth_track_id << std::endl;
+        std::cout << "This id: " << reco.slice.match.mctruth_track_id << std::endl;
         for (const numu::RecoInteraction &reco: recos) {
-          std::cout << "Interaction x: " << reco.position.X() << " match: " << reco.match.mctruth_track_id << " primary track pdg: " << primary_track.match.match_pdg << std::endl;
+          std::cout << "Interaction x: " << reco.position.X() << " match: " << reco.slice.match.mctruth_track_id << " primary track pdg: " << primary_track.match.match_pdg << std::endl;
         }
 
-        numu::RecoInteraction &other = recos[matched_vertices[reco.match.mctruth_track_id]];
-        numu::RecoTrack &other_primary_track = event.tracks.at(other.slice.primary_track_index);
+        numu::RecoInteraction &other = recos[matched_vertices[reco.slice.match.mctruth_track_id]];
+        numu::RecoTrack &other_primary_track = event.tracks.at(other.primary_track_index);
 
         float dist_reco = std::min( (primary_track.start - event.particles.at(primary_track.match.mcparticle_id).start).Mag(),
                                     (primary_track.end   - event.particles.at(primary_track.match.mcparticle_id).start).Mag());
@@ -134,7 +134,7 @@ void numu::CorrectMultiMatches(numu::RecoEvent &event, std::vector<numu::RecoInt
 
         // Handle if one of the matched particles in not a muon
         if (abs(primary_track.match.match_pdg) != 13 && abs(other_primary_track.match.match_pdg) == 13) {
-          set_i = matched_vertices[reco.match.mctruth_track_id];
+          set_i = matched_vertices[reco.slice.match.mctruth_track_id];
           primary_track.match.is_primary = false; 
           std::cout << "Corrected -- matched track is non-muon\n";
         } 
@@ -167,7 +167,7 @@ void numu::CorrectMultiMatches(numu::RecoEvent &event, std::vector<numu::RecoInt
           }
           else {
             std::cout << "Corrected -- split muon. Track 2 is primary.\n";
-            set_i = matched_vertices[reco.match.mctruth_track_id];
+            set_i = matched_vertices[reco.slice.match.mctruth_track_id];
             primary_track.match.is_primary = false; 
           }
         }
@@ -177,7 +177,7 @@ void numu::CorrectMultiMatches(numu::RecoEvent &event, std::vector<numu::RecoInt
           assert(false);
         }
       }
-      matched_vertices[reco.match.mctruth_track_id] = set_i;
+      matched_vertices[reco.slice.match.mctruth_track_id] = set_i;
     } 
   }
 }

@@ -17,6 +17,56 @@ enum Wall {
   wBack=6
 };
 
+enum G4ProcessID {
+  primary,
+  CoupledTransportation,
+  FastScintillation,
+  Decay,
+  anti_neutronInelastic,
+  neutronInelastic,
+  anti_protonInelastic,
+  protonInelastic,
+  hadInelastic,
+  pipInelastic,
+  pimInelastic,
+  kaonpInelastic,
+  kaonmInelastic,
+  sigmapInelastic,
+  sigmamInelastic,
+  kaon0LInelastic,
+  kaon0SInelastic,
+  lambdaInelastic,
+  He3Inelastic,
+  ionInelastic,
+  xi0Inelastic,
+  alphaInelastic,
+  tInelastic,
+  dInelastic,
+  anti_neutronElastic,
+  neutronElastic,
+  anti_protonElastic,
+  protonElastic,
+  hadElastic,
+  pipElastic,
+  pimElastic,
+  kaonpElastic,
+  kaonmElastic,
+  conv,
+  phot,
+  annihil,
+  nCapture,
+  nKiller,
+  muMinusCaptureAtRest,
+  CoulombScat,
+  hBertiniCaptureAtRest,
+  hFritiofCaptureAtRest,
+  photonNuclear,
+  muonNuclear,
+  electronNuclear,
+  positronNuclear
+};
+
+
 /**
 * Information on true particles
 */
@@ -45,7 +95,30 @@ struct TrueParticle {
   bool is_cosmic; //!< Whether this particle is of cosmic origin
 
   int ID; //!< ID/index of this particle (taken from MCParticle ID)
+
+  G4ProcessID start_process; //!< Start Process according to G4
+  G4ProcessID end_process; //!< End Process according to G4
   
+  bool HasBraggPeak() const {
+    return is_contained
+    // verify particle ID
+    && (
+    abs(pdgid) == 13 ||
+    abs(pdgid) == 2212 || 
+    abs(pdgid) == 211 || 
+    abs(pdgid) == 312)
+    // verify end process
+    && (
+    end_process == CoupledTransportation ||
+    end_process == FastScintillation ||
+    end_process == muMinusCaptureAtRest || 
+    end_process == Decay);
+  };
+
+  bool IsMichelElectron() const {
+    return abs(pdgid) == 11 && (start_process == Decay || start_process == muMinusCaptureAtRest);
+  };
+
   TrueParticle():
     start_momentum(-1, -1, -1),
     end_momentum(-1, -1, -1),

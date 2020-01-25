@@ -30,11 +30,11 @@ void ana::SBNOsc::ROC::BestCuts() const {
 void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent &event, bool file_is_neutrino) {
   for (unsigned i = 0; i < event.reco.size(); i++) {
     const numu::RecoInteraction &reco = event.reco[i];
-    bool is_signal = reco.match.mode == numu::mCC;
-    bool is_bkg = reco.match.mode == numu::mCosmic || reco.match.mode == numu::mIntimeCosmic;
+    bool is_signal = reco.slice.match.mode == numu::mCC;
+    bool is_bkg = reco.slice.match.mode == numu::mCosmic || reco.slice.match.mode == numu::mIntimeCosmic;
     if (!is_signal && !is_bkg) continue; // ignore NC stuff for now
     
-    const numu::RecoTrack &track = event.tracks.at(reco.slice.primary_track_index);
+    const numu::RecoTrack &track = event.tracks.at(reco.primary_track_index);
 
     std::array<bool, ana::SBNOsc::Cuts::nCuts> results = cuts.ProcessRecoCuts(event, i, true);
 

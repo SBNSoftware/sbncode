@@ -134,7 +134,7 @@ namespace SBNOsc {
     SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
 
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
-      std::cout << "Event type: " << Histograms::mode2Str(reco.match.mode) << std::endl;
+      std::cout << "Event type: " << Histograms::mode2Str(reco.slice.match.mode) << std::endl;
       const std::vector<size_t> &tracks = reco.slice.tracks;
       for (size_t ind: tracks) {
         const numu::RecoTrack &track = fRecoEvent->tracks.at(ind);
@@ -144,8 +144,8 @@ namespace SBNOsc {
         for (size_t d_ind: t_particle.daughters) {
           if (fRecoEvent->tracks.count(d_ind)) {
             std::cout << "Daughter track: ";
-            const numu::RecoTrack &d_track = fRecoEvent->tracks.at(ind);
-            const numu::RecoParticle &d_t_particle = reco.slice.particles.at(ind);
+            const numu::RecoTrack &d_track = fRecoEvent->tracks.at(d_ind);
+            const numu::RecoParticle &d_t_particle = reco.slice.particles.at(d_ind);
             std::cout << "length: " << d_track.length << " PID: " << d_track.match.match_pdg << " Chi2 m: " << d_track.chi2_muon << " Chi2 p: " << d_track.chi2_proton <<" n daughter: " << d_t_particle.daughters.size() << std::endl;
           }
           else {

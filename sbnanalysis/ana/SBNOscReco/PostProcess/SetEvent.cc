@@ -32,15 +32,15 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
       continue;
     }
 
-    event.reco[i].slice.primary_track_index = primary_track;
+    event.reco[i].primary_track_index = primary_track;
 
     // re-do truth matching
-    event.reco[i].match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
+    event.reco[i].slice.match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
 
     // if this is an in-time cosmic file, update the cosmic mode
     if (file_type == numu::fIntimeCosmic) {
-      assert(event.reco[i].match.mode == numu::mCosmic || event.reco[i].match.mode == numu::mOther);
-      event.reco[i].match.mode = numu::mIntimeCosmic;
+      assert(event.reco[i].slice.match.mode == numu::mCosmic || event.reco[i].slice.match.mode == numu::mOther);
+      event.reco[i].slice.match.mode = numu::mIntimeCosmic;
     }
 
     i += 1;
@@ -50,7 +50,7 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
 
   // re-do the truth matching one more time with the multi-matches fixed
   for (unsigned i = 0; i < event.reco.size(); i++) {
-    event.reco[i].match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
+    event.reco[i].slice.match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
   }
 }
 

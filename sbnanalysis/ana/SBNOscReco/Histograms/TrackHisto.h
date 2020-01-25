@@ -48,6 +48,7 @@ struct TrackHistos : public HistoList {
   TH1D *is_contained;
 
   TH1D *completion; 
+  TH1D *purity;
  
   TH2D *range_p_diff;
   TH2D *mcs_p_diff;

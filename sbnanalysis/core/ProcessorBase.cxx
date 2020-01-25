@@ -504,12 +504,14 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
           }
           // also get the end point from the trajectory
           interaction.lepton.end = lepton_traj->EndPosition().Vect();
+          interaction.lepton.G4ID = lepton_traj->TrackId();
         }
         else {
           interaction.lepton.contained_length = 0;
           interaction.lepton.length = 0;
           // if we couldn't find a trajectory, set end to start
           interaction.lepton.end = interaction.lepton.start;
+          interaction.lepton.G4ID = -1;
         }
 
         q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
@@ -548,10 +550,12 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 	const simb::MCParticle *traj = Genie2G4MCParticle(particle, mctruth, this_mcparticle_list, this_mcparticle_assns);
 	if (traj != NULL) {
           fsp.length = util::MCParticleLength(*traj);
+          fsp.G4ID = traj->TrackId();
           if (fProviderManager != NULL) {
             fsp.contained_length = util::MCParticleContainedLength(*traj, fActiveVolumes);
           }
           else {
+            fsp.G4ID = -1;
             fsp.contained_length = event::kUnfilled;
           }
         }

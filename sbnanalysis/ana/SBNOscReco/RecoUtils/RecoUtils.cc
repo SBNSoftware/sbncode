@@ -181,6 +181,29 @@ double SBNRecoUtils::CalculateTrackLength(const core::ProviderManager &manager, 
   return length;
 }
 
+double SBNRecoUtils::TrackPurity(const core::ProviderManager &manager, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
+  // get handle to back tracker
+  cheat::BackTracker *bt = manager.GetBackTrackerProvider();
+
+  // get all the hits of the reco track that match the truth track
+  const std::vector<art::Ptr<recob::Hit>> matched_reco_track_hits = bt->TrackIdToHits_Ps(mcparticle_id, reco_track_hits);
+
+  // for each of the hits get the energy coming from the track
+  double matched_reco_energy = 0.;
+  double reco_energy = 0.;
+  for (auto const &matched_reco_track_hit: matched_reco_track_hits) {
+    std::vector<sim::IDE> this_hit_IDEs = bt->HitToAvgSimIDEs(*matched_reco_track_hit);
+    for (auto const &ide: this_hit_IDEs) {
+      reco_energy += ide.energy;
+      if (ide.trackID == mcparticle_id) {
+        matched_reco_energy += ide.energy;
+      }
+    }
+  }
+
+  return (reco_energy > 1e-6) ? matched_reco_energy / reco_energy : 1.; 
+}
+
 double SBNRecoUtils::TrackCompletion(const core::ProviderManager &manager, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits) {
   // get handle to back tracker
   cheat::BackTracker *bt = manager.GetBackTrackerProvider();
