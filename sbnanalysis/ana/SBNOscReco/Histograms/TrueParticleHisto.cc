@@ -9,8 +9,8 @@ namespace ana {
 void TrueParticleHistos::Initialize(const std::string &postfix) {
 #define PARTICLE_HISTO(name, n_bins, lo, hi) name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
 
-  PARTICLE_HISTO(momentum, 100, 0, 5);
-  PARTICLE_HISTO(deposited_energy, 100, 0, 5);
+  PARTICLE_HISTO(momentum, 100, 0, 4);
+  PARTICLE_HISTO(deposited_energy, 100, 0, 2);
   PARTICLE_HISTO(length, 100, 0, 600);
 
 #undef PARTICLE_HISTO

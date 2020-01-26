@@ -196,7 +196,6 @@ void InteractionHistos::FillEvent(const numu::RecoEvent &event) {
     closest_crt_hit_time->Fill(30.);
   }
 
-  std::cout << "Max PE: " << maxpe << std::endl; 
   if (event.in_time_crt_hits.size() == 0) {
     maxpe_crt_intime_hit->Fill(-1);
   }

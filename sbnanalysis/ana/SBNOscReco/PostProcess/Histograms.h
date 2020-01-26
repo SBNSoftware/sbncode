@@ -110,7 +110,7 @@ struct Histograms : public HistoList {
   std::vector<std::array<TrackHistos, Cuts::nCuts>> fPrimaryTracks; //!< Track histograms for priamry tracks in a candidate neutrino interaction
   std::vector<std::vector<std::array<TrackProfiles, Cuts::nCuts>>> fPrimaryTrackProfiles; //!< Profile histograms for primary tracks
   std::array<CosmicHistos, 4> fCosmic;
-  TrueParticleHistos fParticles[nPIDs][2];
+  TrueParticleHistos fParticles[nPIDs][5];
 
   std::array<CRTHistos, Cuts::nCuts> fCRTs;
 

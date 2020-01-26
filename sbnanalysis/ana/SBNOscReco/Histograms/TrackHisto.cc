@@ -17,10 +17,12 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(chi2_kaon_diff, 100, 0, 1000);
   TRACK_HISTO(chi2_pion_diff, 100, 0, 1000);
 
-  TRACK_HISTO(chi2_muon, 100, 0, 100);
-  TRACK_HISTO(chi2_pion, 100, 0, 100);
-  TRACK_HISTO(chi2_kaon, 100, 0, 100);
-  TRACK_HISTO(chi2_proton, 100, 0, 100);
+  TRACK_HISTO(chi2_muon, 1000, 0, 100);
+  TRACK_HISTO(chi2_pion, 1000, 0, 100);
+  TRACK_HISTO(chi2_kaon, 1000, 0, 100);
+  TRACK_HISTO(chi2_proton, 1000, 0, 100);
+
+  TRACK_HISTO(n_daughters, 11, -0.5, 10.5);
 
   TRACK_HISTO(chi2_proton_m_muon, 200, -1000, 1000);
 
@@ -99,10 +101,12 @@ void TrackHistos::Fill(
     chi2_pion_diff->Fill(track.chi2_pion - track.min_chi2);
     chi2_kaon_diff->Fill(track.chi2_kaon - track.min_chi2);
 
-    chi2_muon->Fill(track.chi2_muon/track.pid_n_dof);
-    chi2_kaon->Fill(track.chi2_kaon/track.pid_n_dof);
-    chi2_pion->Fill(track.chi2_pion/track.pid_n_dof);
-    chi2_proton->Fill(track.chi2_proton/track.pid_n_dof);
+    chi2_muon->Fill(track.chi2_muon);
+    chi2_kaon->Fill(track.chi2_kaon);
+    chi2_pion->Fill(track.chi2_pion);
+    chi2_proton->Fill(track.chi2_proton);
+
+    // n_daughters->Fill(particle.daughters.size());
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 

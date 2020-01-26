@@ -30,6 +30,8 @@ struct TrackHistos : public HistoList {
 
   TH1D *chi2_proton_m_muon;
 
+  TH1D *n_daughters;
+
   TH1D *range_p;
   TH1D *mcs_p;
 
