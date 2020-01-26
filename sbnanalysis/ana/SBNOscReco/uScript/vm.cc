@@ -5,6 +5,11 @@
 #include "common.h"
 #include "compile.h"
 
+#ifdef USCRIPT_TIMING
+#include <chrono>
+using namespace std::chrono;
+#endif
+
 uscript::InterpretResult uscript::VM::Interpret(Chunk *chunk) {
   ip = 0;
   SetChunk(chunk);
@@ -35,6 +40,7 @@ void uscript::VM::SetChunk(const Chunk *_chunk) {
 
 void uscript::VM::Reset() {
   stack.clear();
+  ip = 0;
 }
 
 uint8_t uscript::VM::ReadInstruction() {
@@ -63,6 +69,14 @@ static bool valuesEqual(uscript::Value a, uscript::Value b) {
 }
 
 uscript::InterpretResult uscript::VM::Run(Value *ret) {
+#ifdef USCRIPT_TIMING
+#define IMPL_USCRIPT_TIMING \
+  auto stop = high_resolution_clock::now(); \
+  __uscript_global_vmtime.fetch_add(duration_cast<nanoseconds>(stop - start).count());
+#else
+#define IMPL_USCRIPT_TIMING
+#endif
+
 #define BINARY_OP(op) \
   do { \
     if (IS_NUMBER(Peek(0)) && IS_NUMBER(Peek(1))) { \
@@ -77,6 +91,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
     } \
     else { \
       RuntimeError("Operands must be both integers or both numbers."); \
+      IMPL_USCRIPT_TIMING \
       return uscript::INTERPRET_RUNTIME_ERROR; \
     } \
   } while (false)
@@ -95,14 +110,20 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
     } \
     else { \
       RuntimeError("Operands must be both integers or both numbers."); \
+      IMPL_USCRIPT_TIMING \
       return uscript::INTERPRET_RUNTIME_ERROR; \
     } \
   } while (false)
 
-  while (1) {
-
 #define READ_STRING() AS_CSTRING(ReadConstant())
 #define READ_SHORT() (ip += 2, (uint16_t)((chunk->code[ip-2] << 8) | chunk->code[ip-1])) 
+
+#ifdef USCRIPT_TIMING
+  auto start = high_resolution_clock::now();
+#endif
+
+  while (1) {
+
 
 #ifdef DEBUG_TRACE_EXECUTION
     std::cout << "    ";
@@ -121,6 +142,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         const char *name = READ_STRING();
         Value result;
         if (!AccessValue(instance, name, &result)) {
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         Push(result);
@@ -130,11 +152,13 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         Value index = Pop();
         if (!IS_INTEGER(index)) {
           RuntimeError("Cannot index with non-integer.");
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         int ind = AS_INTEGER(index);
         Value callee = Pop();
         if (!IndexValue(callee, ind)) {
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         break;
@@ -142,6 +166,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
       case uscript::OP_CALL: {
         int argCount = ReadInstruction();
         if (!CallValue(Peek(argCount), argCount)) {
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         break;
@@ -163,6 +188,8 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
       }
       case uscript::OP_RETURN: {
         if (ret) *ret = Pop();
+        Reset(); // reset the vm state for next time
+        IMPL_USCRIPT_TIMING
         return uscript::INTERPRET_OK;
       }
       case uscript::OP_PRINT: {
@@ -180,6 +207,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         }
         else {
           RuntimeError("Cannot access length of non-tinstance.");   
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
       }
@@ -202,6 +230,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         }
         else {
           RuntimeError("Cannot access fields of non-tinstance.");   
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
       }
@@ -236,6 +265,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         }
         else {
           RuntimeError("Undefined variable '%s'", name);
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         break;
@@ -244,6 +274,7 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         const char *name = READ_STRING();
         if (!globals.count(name)) {
           RuntimeError("Undefined variable '%s'", name);
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         globals[name] = Peek();
@@ -270,12 +301,14 @@ uscript::InterpretResult uscript::VM::Run(Value *ret) {
         }
         else {
           RuntimeError("Operand must be a number.");
+          IMPL_USCRIPT_TIMING
           return uscript::INTERPRET_RUNTIME_ERROR;
         }
         break;
       }
     }
   }
+#undef IMPL_USCRIPT_TIMING
 #undef READ_STRING
 #undef READ_SHORT
 #undef BINARY_OP

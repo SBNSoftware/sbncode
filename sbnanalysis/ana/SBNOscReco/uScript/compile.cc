@@ -4,8 +4,18 @@
 
 #include "compile.h"
 #include "scanner.h"
+#include "common.h"
+
+#ifdef USCRIPT_TIMING
+#include <chrono>
+using namespace std::chrono;
+#endif
 
 bool uscript::Compiler::DoCompile(const char *_source, Chunk *chunk) {
+#ifdef USCRIPT_TIMING
+  auto start = high_resolution_clock::now();
+#endif
+
   parser.hadError = false;
   source = _source;
   scanner.SetSource(_source);
@@ -22,6 +32,11 @@ bool uscript::Compiler::DoCompile(const char *_source, Chunk *chunk) {
   Consume(uscript::TOKEN_EOF, "Expect end of expression.");
 
   Finish();
+
+#ifdef USCRIPT_TIMING
+  auto stop = high_resolution_clock::now();
+  __uscript_global_compiletime.fetch_add(duration_cast<nanoseconds>(stop - start).count());
+#endif
 
   return !parser.hadError;
 }

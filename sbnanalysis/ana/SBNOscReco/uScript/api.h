@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <functional>
+#include <string>
 
 #include "common.h"
 #include "compile.h"
@@ -12,17 +13,14 @@ namespace uscript {
 
 // convert any random template type into a char
 template<typename T>
-using JustAChar = const char *;
+using JustAString = std::string;
 
 template<typename T>
-using JustACharRef = const char *&;
+using JustAStringRef = const std::string&;
 
-template<typename... TObjs>
-void AddAll(VM &vm, JustACharRef<TObjs> ...names, const TObjs *&...objs); 
-
-void inline SetAll(VM &vm, std::initializer_list<const char *> names) {
-  for (const char *name: names) {
-    vm.AddGlobal(name);
+void inline SetAll(VM &vm, std::initializer_list<std::string> names) {
+  for (const std::string &name: names) {
+    vm.AddGlobal(name.c_str());
   }
 }
 
@@ -38,8 +36,8 @@ template<typename... TObjs>
 void AddAll(VM &vm) {}
 
 template<typename T, typename... TObjs>
-void AddAll(VM &vm, JustACharRef<T> name, JustACharRef<TObjs> ...names, const T *&obj, const TObjs *&...objs) { 
-  vm.AddGlobal(name, obj); 
+void AddAll(VM &vm, JustAStringRef<T> name, JustAStringRef<TObjs> ...names, const T *&obj, const TObjs *&...objs) { 
+  vm.AddGlobal(name.c_str(), obj); 
   AddAll<TObjs...>(vm, names..., objs...);
 }
 
@@ -55,7 +53,7 @@ Chunk compileChunk(const char *source) {
 }
 
 template<typename... TObjs>
-std::function<uscript::Value (const TObjs*...)> compile(JustAChar<TObjs> ...names, const char *source) {
+std::function<uscript::Value (const TObjs*...)> compile(JustAString<TObjs> ...names, const char *source) {
   Chunk chunk = compileChunk<TObjs...>(source);
 
   VM vm;

@@ -55,7 +55,7 @@ public:
   char Advance();
   bool Match(char c);
   void SkipWhitespace();
-  Token String();
+  Token String(char begin);
   Token Number();
   Token Identifier();
   TokenType IdentifierType() const;

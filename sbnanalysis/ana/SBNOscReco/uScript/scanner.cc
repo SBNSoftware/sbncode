@@ -82,7 +82,9 @@ uscript::Token uscript::Scanner::ScanToken() {
     case '>':
       return MakeToken(Match('=') ?
                        TOKEN_GREATER_EQUAL : TOKEN_GREATER);
-    case '"': return String();
+    case '"': 
+    case '\'':
+      return String(c);
   }
 
   return ErrorToken("Unexpected character.");
@@ -113,8 +115,8 @@ uscript::Token uscript::Scanner::MakeToken(uscript::TokenType type) const {
   return token;
 }
 
-uscript::Token uscript::Scanner::String() {
-  while (*current != '"' && !IsAtEnd()) {
+uscript::Token uscript::Scanner::String(char begin) {
+  while (*current != begin && !IsAtEnd()) {
     Advance();
   }
 

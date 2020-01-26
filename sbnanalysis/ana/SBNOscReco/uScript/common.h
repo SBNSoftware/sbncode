@@ -3,8 +3,15 @@
 
 #include <string_view>
 
+// Enable to print out debug information in VM
 // #define DEBUG_TRACE_EXECUTION
+
+// Enable to print out debug information in compiler
 // #define DEBUG_PRINT_CODE
+
+// Enable to print timing information at end of program
+#define USCRIPT_TIMING
+
 
 // Get the name of a type
 // From: https://stackoverflow.com/questions/81870/is-it-possible-to-print-a-variables-type-in-standard-c
@@ -29,5 +36,21 @@ constexpr auto type_name()
     name.remove_suffix(suffix.size());
     return name;
 }  
+
+#ifdef USCRIPT_TIMING
+#include <atomic>
+#include <iostream>
+class uscriptTimer: public std::atomic<unsigned> {
+  std::string predicate;
+public:
+  uscriptTimer(const char *p): predicate(p) {}
+  ~uscriptTimer() {
+    std::cout << predicate << (load()/1.e6) << std::endl;
+  }
+};
+
+extern uscriptTimer __uscript_global_compiletime;
+extern uscriptTimer __uscript_global_vmtime;
+#endif
 
 #endif
