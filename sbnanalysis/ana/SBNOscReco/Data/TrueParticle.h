@@ -29,6 +29,8 @@ enum G4ProcessID {
   hadInelastic,
   pipInelastic,
   pimInelastic,
+  xipInelastic,
+  ximInelastic,
   kaonpInelastic,
   kaonmInelastic,
   sigmapInelastic,
@@ -36,6 +38,7 @@ enum G4ProcessID {
   kaon0LInelastic,
   kaon0SInelastic,
   lambdaInelastic,
+  anti_lambdaInelastic,
   He3Inelastic,
   ionInelastic,
   xi0Inelastic,
@@ -57,13 +60,20 @@ enum G4ProcessID {
   nCapture,
   nKiller,
   muMinusCaptureAtRest,
+  muIoni,
+  eBrem,
   CoulombScat,
   hBertiniCaptureAtRest,
   hFritiofCaptureAtRest,
   photonNuclear,
   muonNuclear,
   electronNuclear,
-  positronNuclear
+  positronNuclear,
+  compt,
+  eIoni,
+  muBrems,
+  hIoni,
+  muPairProd
 };
 
 

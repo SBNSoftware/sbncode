@@ -81,9 +81,12 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS_NAMED(sigma-Inelastic, sigmamInelastic)
   MATCH_PROCESS_NAMED(pi+Inelastic, pipInelastic)
   MATCH_PROCESS_NAMED(pi-Inelastic, pimInelastic)
+  MATCH_PROCESS_NAMED(xi+Inelastic, xipInelastic)
+  MATCH_PROCESS_NAMED(xi-Inelastic, ximInelastic)
   MATCH_PROCESS(kaon0LInelastic)
   MATCH_PROCESS(kaon0SInelastic)
   MATCH_PROCESS(lambdaInelastic)
+  MATCH_PROCESS_NAMED(anti-lambdaInelastic, anti_lambdaInelastic)
   MATCH_PROCESS(He3Inelastic)
   MATCH_PROCESS(ionInelastic)
   MATCH_PROCESS(xi0Inelastic)
@@ -105,6 +108,8 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(nCapture)
   MATCH_PROCESS(nKiller)
   MATCH_PROCESS(muMinusCaptureAtRest)
+  MATCH_PROCESS(muIoni)
+  MATCH_PROCESS(eBrem)
   MATCH_PROCESS(CoulombScat)
   MATCH_PROCESS(hBertiniCaptureAtRest)
   MATCH_PROCESS(hFritiofCaptureAtRest)
@@ -112,6 +117,11 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(muonNuclear)
   MATCH_PROCESS(electronNuclear)
   MATCH_PROCESS(positronNuclear)
+  MATCH_PROCESS(compt)
+  MATCH_PROCESS(eIoni)
+  MATCH_PROCESS(muBrems)
+  MATCH_PROCESS(hIoni)
+  MATCH_PROCESS(muPairProd)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return numu::primary; // unreachable
