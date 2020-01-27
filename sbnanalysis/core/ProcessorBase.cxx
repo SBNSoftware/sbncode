@@ -321,6 +321,9 @@ const simb::MCParticle *Genie2G4MCParticle(
   const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
   const std::vector<const sim::GeneratedParticleInfo *> infos) {
 
+  // only stable final state particles are propogated by G4
+  if (genie_part.StatusCode() != event::FinalStateParticle::kIStStableFinalState) return NULL;
+
   const simb::MCParticle *ret = NULL;
   for (int iparticle = 0; iparticle < g4_mcparticles.size(); iparticle++) {
     if (infos[iparticle]->hasGeneratedParticleIndex() &&
@@ -420,7 +423,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
         // Loop through weight generators, which have a list of weights per truth
         //
         // NOTE: The code allows for multiple different weight generators to produce weights with the same name.
-        //       What will happen is that the same-named weights from differetn producers will be placed in the same
+        //       What will happen is that the same-named weights from different producers will be placed in the same
         //       vector in the "weights" map below. The order in which weights from different producers are combined
         //       should be consistent from event to event so that correlations are preserved between events. This 
         //       is ensured in the current implementation by making sure that the different weight tags in "wghs"
@@ -546,6 +549,8 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 	
 	fsp.length = 0;
 	fsp.contained_length = 0;
+        fsp.G4ID = -1;
+
 	// length information needs G4
 	const simb::MCParticle *traj = Genie2G4MCParticle(particle, mctruth, this_mcparticle_list, this_mcparticle_assns);
 	if (traj != NULL) {
@@ -555,13 +560,22 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
             fsp.contained_length = util::MCParticleContainedLength(*traj, fActiveVolumes);
           }
           else {
-            fsp.G4ID = -1;
             fsp.contained_length = event::kUnfilled;
           }
         }
         interaction.finalstate.push_back(fsp);
       }
       interaction.nfinalstate = interaction.finalstate.size();
+
+      // check that there are no G4 duplicates
+      std::set<int> G4IDs;
+      for (const event::FinalStateParticle &p: interaction.finalstate) {
+        if (p.G4ID != -1) {
+          // std::cout << "Adding ID: " << p.G4ID << " for particle: " << " pdg: " << p.pdg << " mom: " << p.momentum.Mag() << " length: " << p.contained_length << std::endl;
+          assert(!G4IDs.count(p.G4ID));
+          G4IDs.insert(p.G4ID);
+        }
+      }
 
       // GENIE specific
       if (genie_truth_is_valid) {
