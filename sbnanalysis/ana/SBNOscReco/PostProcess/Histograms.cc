@@ -99,10 +99,10 @@ void Histograms::Fill( const numu::RecoEvent &event,
           if (cc_reco) {
             fParticles[pdg_ind][2].Fill(particle); 
           }
-          if (cc_np_reco) {
+          else if (cc_np_reco) {
             fParticles[pdg_ind][3].Fill(particle); 
           }
-          if (cosmic_reco) {
+          else if (cosmic_reco) {
             fParticles[pdg_ind][4].Fill(particle); 
           }
 
@@ -335,7 +335,7 @@ void Histograms::Initialize(
     Merge(fCosmic[i]);
   }
   for (unsigned i = 0; i < Histograms::nPIDs; i++) {
-    for (unsigned j = 0; i < 5; i ++) {
+    for (unsigned j = 0; j < 5; j ++) {
       Merge(fParticles[i][j]);
     }
   }

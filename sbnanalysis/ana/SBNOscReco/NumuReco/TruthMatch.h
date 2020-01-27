@@ -17,7 +17,7 @@ namespace numu {
  *              of the reco.match instance does not affect the algorithm
  *  \return The TruthMatch object for the RecoInteraction reco  
  */
-  TruthMatch InteractionTruthMatch(const std::vector<event::Interaction> &truth,  const std::map<size_t, numu::RecoTrack> &reco_tracks, const numu::RecoInteraction &reco);
+  TruthMatch PrimaryTrackTruthMatch(const std::vector<event::Interaction> &truth,  const std::map<size_t, numu::RecoTrack> &reco_tracks, const numu::RecoInteraction &reco);
 
   /**
  * Corrects a list of reco interaction objects when some are matched to the
@@ -29,6 +29,8 @@ namespace numu {
  *
  */
   void CorrectMultiMatches(RecoEvent &event, std::vector<RecoInteraction> &recos);
+
+  void ApplyPrimaryTrackTruthMatch(RecoEvent &event, const std::vector<event::Interaction> &truth);
 
   InteractionMode GetMode(const event::Interaction &truth);
 }

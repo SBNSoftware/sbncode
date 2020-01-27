@@ -73,7 +73,8 @@ enum G4ProcessID {
   eIoni,
   muBrems,
   hIoni,
-  muPairProd
+  muPairProd,
+  hPairProd
 };
 
 

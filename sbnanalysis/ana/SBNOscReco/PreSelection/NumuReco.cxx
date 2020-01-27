@@ -122,6 +122,7 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(muBrems)
   MATCH_PROCESS(hIoni)
   MATCH_PROCESS(muPairProd)
+  MATCH_PROCESS(hPairProd)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return numu::primary; // unreachable
@@ -1430,9 +1431,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
     this_interaction.nproton = -1;
     this_interaction.nkaon = -1;
 
-    // do initial truth matching
-    this_interaction.slice.match = numu::InteractionTruthMatch(truth, reco_tracks, this_interaction);
-
     // store
     reco.push_back(std::move(this_interaction));
   }
@@ -1440,6 +1438,9 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
   numu::RecoEvent event;
   event.reco = std::move(reco);
   event.tracks = std::move(reco_tracks);
+
+  // do truth matching
+  ApplyPrimaryTrackTruthMatch(event, truth);
 
   // collect spare detector information
   event.in_time_crt_hits = InTimeCRTHits();

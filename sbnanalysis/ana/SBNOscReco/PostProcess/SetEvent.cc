@@ -34,9 +34,6 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
 
     event.reco[i].primary_track_index = primary_track;
 
-    // re-do truth matching
-    event.reco[i].slice.match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
-
     // if this is an in-time cosmic file, update the cosmic mode
     if (file_type == numu::fIntimeCosmic) {
       assert(event.reco[i].slice.match.mode == numu::mCosmic || event.reco[i].slice.match.mode == numu::mOther);
@@ -45,12 +42,8 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
 
     i += 1;
   }
-  // make sure no two vertices match to the same true neutrino interaction
-  numu::CorrectMultiMatches(event, event.reco);
 
-  // re-do the truth matching one more time with the multi-matches fixed
-  for (unsigned i = 0; i < event.reco.size(); i++) {
-    event.reco[i].slice.match = numu::InteractionTruthMatch(core.truth, event.tracks, event.reco[i]);
-  }
+  // re-do truth matching
+  numu::ApplyPrimaryTrackTruthMatch(event, core.truth);
 }
 

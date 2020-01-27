@@ -6,7 +6,17 @@ numu::InteractionMode numu::GetMode(const event::Interaction &truth) {
   else return numu::mNC;
 }
 
-numu::TruthMatch numu::InteractionTruthMatch(const std::vector<event::Interaction> &truth,  const std::map<size_t, numu::RecoTrack> &reco_tracks, const numu::RecoInteraction &reco) {
+void numu::ApplyPrimaryTrackTruthMatch(numu::RecoEvent &event, const std::vector<event::Interaction> &truth) {
+  for (numu::RecoInteraction &reco: event.reco) {
+    reco.slice.match = PrimaryTrackTruthMatch(truth, event.tracks, reco);
+  }
+  CorrectMultiMatches(event, event.reco);
+  for (numu::RecoInteraction &reco: event.reco) {
+    reco.slice.match = PrimaryTrackTruthMatch(truth, event.tracks, reco);
+  }
+}
+
+numu::TruthMatch numu::PrimaryTrackTruthMatch(const std::vector<event::Interaction> &truth,  const std::map<size_t, numu::RecoTrack> &reco_tracks, const numu::RecoInteraction &reco) {
   TruthMatch match;
   // Try to match against truth events
   // Vertices
