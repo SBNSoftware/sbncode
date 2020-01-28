@@ -416,6 +416,9 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
   // set the file type
   _recoEvent.type = fType;
 
+  // do truth matching
+  numu::ApplyPrimaryTrackTruthMatch(_recoEvent, core_truth);
+
   // save the information
   for (unsigned i = 0; i < _recoEvent.reco.size(); i++) {
     const numu::RecoInteraction &vertex = _recoEvent.reco[i];
@@ -1438,9 +1441,6 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
   numu::RecoEvent event;
   event.reco = std::move(reco);
   event.tracks = std::move(reco_tracks);
-
-  // do truth matching
-  ApplyPrimaryTrackTruthMatch(event, truth);
 
   // collect spare detector information
   event.in_time_crt_hits = InTimeCRTHits();
