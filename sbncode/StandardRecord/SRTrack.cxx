@@ -14,5 +14,17 @@ namespace caf
   {
   }
 
+  int SRTrack::Truth::GetPrimaryMatchID() const {
+    if (matches.size() == 0) return -1;
+    return matches[0].G4ID;
+  }
+
+  float SRTrack::Truth::Purity() const {
+    if (matches.size() == 0) return 0.;
+    if (total_deposited_energy < 1e-6) return 1.;
+    return matches[0].energy / total_deposited_energy;
+  }
+  
+
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

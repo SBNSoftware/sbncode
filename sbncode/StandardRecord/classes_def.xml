@@ -12,6 +12,7 @@
   <class name="caf::SRSlice"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
+  <class name="caf::SRParticle" />
 
   <class name="std::vector<caf::SRTrack>" />
   <class name="std::vector<caf::SRShower>" />
