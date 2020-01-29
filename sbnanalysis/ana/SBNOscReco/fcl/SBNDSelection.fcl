@@ -1,10 +1,11 @@
 #include "selectors.fcl"
 
-DoNormalize: true
+# DoNormalize: true
+DoNormalize: false
 GoalPOT: 1.e20
 ExperimentID: 0
 FillAllTracks: true
-HistogramPostfix: SBND
+HistogramPostfix: ""
 
 selection_fiducial_volume_inset: {
   y: 10

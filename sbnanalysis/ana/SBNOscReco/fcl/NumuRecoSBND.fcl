@@ -10,6 +10,8 @@ ProviderConfigFile: "services_sbnd_3drift.fcl"
 # sbnd_beamtime: [0, 1.600] # [us]
 sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
 
+TPCRecoTagSuffixes: ["RE"] 
+
 NumuReco: {
   shakyMCTracks: true
   requireMatched: false
