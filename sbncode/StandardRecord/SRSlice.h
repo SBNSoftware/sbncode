@@ -56,6 +56,7 @@ namespace caf
       bool is_clear_cosmic; //!< Whether pandora marks the slice as a "clear" cosmic
       int nupdg; //!< PDG code of the neutrino candidate associated with this slice 
       float nu_score; //!< Score of how neutrino-like the slice is 
+      Truth truth; //!< Truth information on the slice
       
 
       void setDefault();
