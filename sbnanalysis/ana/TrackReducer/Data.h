@@ -25,7 +25,9 @@ struct TrueParticle {
   float energy; //!< Initial energy of the particle [GeV]
   std::vector<TVector3> trajectory; //!< True trajectory of the particle [cm]
   std::vector<unsigned> daughters; //!< The list of true "daughter" particles to this one. Each entry is the index into the truth list of each daughter
-  std::string process; //!< Process which created this particle
+  bool is_primary; //!< Whether the particle is the "primary" generated particle
+  bool is_michel; //!< Whether the particle is a Michel electron from a muon decay
+  bool is_delta; //!< Whether the particle is a delta ray electron
 };
 
 struct Tracks {
