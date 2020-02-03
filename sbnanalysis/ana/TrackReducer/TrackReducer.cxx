@@ -47,16 +47,10 @@ bool sbnana::TrackReducer::ProcessEvent(const gallery::Event& ev, const std::vec
 
     if (mc_particle.NumberTrajectoryPoints() > 0) {
       for (unsigned i = 0; i < mc_particle.NumberTrajectoryPoints(); i++) {
-        const TVector3 &pos = mc_particle.Position(i).Vect();
-        std::array<float, 3> traj {(float)pos.X(), (float)pos.Y(), (float)pos.Z()};
-        particle.trajectory.push_back(traj);
+        particle.trajectory.push_back(mc_particle.Position(i).Vect());
       }
     }
-    else {
-      const TVector3 &pos = mc_particle.Position().Vect();
-      std::array<float, 3> traj {(float)pos.X(), (float)pos.Y(), (float)pos.Z()};
-      particle.trajectory.push_back(traj);
-    }
+    else particle.trajectory.push_back(mc_particle.Position().Vect());
 
     std::cout << "Particle: " << mc_particle.TrackId() << " PID: " << mc_particle.PdgCode() << " process: " << mc_particle.Process() << " energy: " << mc_particle.E() << std::endl;
     fTracks.truth.push_back(std::move(particle));
@@ -91,7 +85,7 @@ bool sbnana::TrackReducer::ProcessEvent(const gallery::Event& ev, const std::vec
     const recob::Track &rb_track = (*track_handle)[track_id];
     Track track;
     for (unsigned i = 0; i < rb_track.CountValidPoints(); i++) {
-      std::array<float, 3> traj {(float)rb_track.LocationAtPoint(i).X(), (float)rb_track.LocationAtPoint(i).Y(), (float)rb_track.LocationAtPoint(i).Z()};
+      TVector3 traj (rb_track.LocationAtPoint(i).X(), rb_track.LocationAtPoint(i).Y(), rb_track.LocationAtPoint(i).Z());
       track.trajectory.push_back(traj);
     }
     std::vector<art::Ptr<recob::Hit>> hits = tracks_to_hits.at(track_id);
@@ -117,10 +111,10 @@ bool sbnana::TrackReducer::ProcessEvent(const gallery::Event& ev, const std::vec
   for (unsigned shower_id = 0; shower_id < shower_handle->size(); shower_id++) {
     const recob::Shower &rb_shower = (*shower_handle)[shower_id];
     Shower shower;
-    rb_shower.Direction().GetXYZ(shower.direction);
-    rb_shower.DirectionErr().GetXYZ(shower.direction_err);
-    rb_shower.ShowerStart().GetXYZ(shower.start);
-    rb_shower.ShowerStartErr().GetXYZ(shower.start_err);
+    shower.direction = rb_shower.Direction();
+    shower.direction_err = rb_shower.DirectionErr();
+    shower.start = rb_shower.ShowerStart();
+    shower.start_err = rb_shower.ShowerStartErr();
 
     std::vector<art::Ptr<recob::Hit>> hits = showers_to_hits.at(shower_id);
 
