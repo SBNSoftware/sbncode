@@ -44,8 +44,7 @@ namespace SBNOsc {
     fGoalPOT = config->get<double>("GoalPOT", 0.);
     fFillAllTracks = config->get<bool>("FillAllTracks", true);
 
-    fUseCalorimetry = config->get<bool>("UseCalorimetry", true);
-
+    fTrueParticleID = config->get<bool>("TrueParticleID", true);
     fHistogramPostfix = config->get<std::string>("HistogramPostfix", "");
 
     std::vector<std::vector<std::string>> track_selector_strings = config->get<std::vector<std::vector<std::string>>>("TrackSelectors", {{""}});
@@ -60,7 +59,9 @@ namespace SBNOsc {
 
     std::vector<std::string> track_profile_values = config->get<std::vector<std::string>>("TrackProfileValues", {});
     for (const std::string &source: track_profile_values) {
-      fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, unsigned>("track", "particle", "mctype", source.c_str()));
+      // fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction>("track", "particle", "interaction", source.c_str()));
+      fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction, event::Neutrino>
+        ("track", "particle", "interaction", "neutrino", source.c_str()));
     }
 
     std::vector<std::string> track_profile_value_names = config->get<std::vector<std::string>>("TrackProfileValueNames", {});
@@ -131,22 +132,24 @@ namespace SBNOsc {
     std::cout << "Event: " << core_event->metadata.eventID << std::endl;
 
     // set stuff in the event
-    SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fUseCalorimetry);
+    SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fTrueParticleID);
 
     for (const numu::RecoInteraction &reco: fRecoEvent->reco) {
-      std::cout << "Event type: " << Histograms::mode2Str(reco.slice.match.mode) << std::endl;
+      std::cout << "Event type: " << Histograms::mode2Str(reco.slice.truth.mode) << std::endl;
       const std::vector<size_t> &tracks = reco.slice.tracks;
       for (size_t ind: tracks) {
         const numu::RecoTrack &track = fRecoEvent->tracks.at(ind);
         const numu::RecoParticle &t_particle = reco.slice.particles.at(ind);
+        int match_pdg = (track.truth.GetPrimaryMatchID() >= 0) ? fRecoEvent->particles.at(track.truth.GetPrimaryMatchID()).pdgid : -1;
         std::cout << "Reco track: "; 
-        std::cout << "length: " << track.length << " PID: " << track.match.match_pdg << " Chi2 m: " << track.chi2_muon << " Chi2 p: " << track.chi2_proton << " n daughter: " << t_particle.daughters.size() << std::endl;
+        std::cout << "length: " << track.length << " PID: " << match_pdg << " Chi2 m: " << track.chi2_muon << " Chi2 p: " << track.chi2_proton << " n daughter: " << t_particle.daughters.size() << std::endl;
         for (size_t d_ind: t_particle.daughters) {
           if (fRecoEvent->tracks.count(d_ind)) {
             std::cout << "Daughter track: ";
             const numu::RecoTrack &d_track = fRecoEvent->tracks.at(d_ind);
             const numu::RecoParticle &d_t_particle = reco.slice.particles.at(d_ind);
-            std::cout << "length: " << d_track.length << " PID: " << d_track.match.match_pdg << " Chi2 m: " << d_track.chi2_muon << " Chi2 p: " << d_track.chi2_proton <<" n daughter: " << d_t_particle.daughters.size() << std::endl;
+            int d_match_pdg = (d_track.truth.GetPrimaryMatchID() >= 0) ? fRecoEvent->particles.at(d_track.truth.GetPrimaryMatchID()).pdgid : -1;
+            std::cout << "length: " << d_track.length << " PID: " << d_match_pdg << " Chi2 m: " << d_track.chi2_muon << " Chi2 p: " << d_track.chi2_proton <<" n daughter: " << d_t_particle.daughters.size() << std::endl;
           }
           else {
             std::cout << "Shower Daughter\n";

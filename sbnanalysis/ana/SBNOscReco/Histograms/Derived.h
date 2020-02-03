@@ -21,13 +21,13 @@ namespace numu {
   /**
  * Get the completon of a reconstructed track matching to a true track
  *
- * \param truth_index The index of the true particle to match
+ * \param g4id The index of the true particle to match
  * \param event The reconstructed event
  *
  * \return The maximum completion of all reconstructed tracks to the true track. -1 
  *         if there is no matching reconstructed track
  */
-  float trackMatchCompletion(unsigned truth_index, const numu::RecoEvent &event);
+  float trackMatchCompletion(unsigned g4id, const numu::RecoEvent &event);
 }
 
 

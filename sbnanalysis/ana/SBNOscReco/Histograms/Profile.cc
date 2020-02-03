@@ -22,21 +22,20 @@ void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, doub
 
 
 void TrackProfiles::Fill(float val, const numu::RecoTrack &track, const numu::RecoEvent &event) {
+  int mcparticle_id = track.truth.GetPrimaryMatchID();
 
-  if (track.match.has_match) {
-    const numu::TrueParticle &true_particle = event.particles.at(track.match.mcparticle_id);
+  if (mcparticle_id >= 0) {
+    const numu::TrueParticle &true_particle = event.particles.at(mcparticle_id);
 
     range_v_true_mom->Fill(val, true_particle.start_momentum.Mag(), numu::RangeMomentum(track));
     mcs_v_true_mom->Fill(val, true_particle.start_momentum.Mag(), numu::MCSMomentum(track));
 
     range_minus_true->Fill(val, true_particle.start_momentum.Mag(), (numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
     mcs_minus_true->Fill(val, true_particle.start_momentum.Mag(), (numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
-  }
-  if (track.min_chi2 > 0) {
-    bool is_proton_reco = track.chi2_proton < track.chi2_muon;
-    if (track.match.has_match) {
-      bool is_proton_true = abs(track.match.match_pdg) == 2212;
-      bool is_muon_true = abs(track.match.match_pdg) == 13;
+    if (track.min_chi2 > 0) {
+      bool is_proton_reco = track.chi2_proton < track.chi2_muon;
+      bool is_proton_true = abs(true_particle.pdgid) == 2212;
+      bool is_muon_true = abs(true_particle.pdgid) == 13;
       if (is_proton_true || is_muon_true) {
         pid_confusion_tr->Fill(val, is_proton_true, is_proton_reco);
       }

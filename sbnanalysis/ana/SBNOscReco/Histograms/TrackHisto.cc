@@ -110,14 +110,6 @@ void TrackHistos::Fill(
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 
-    bool is_proton_reco = track.chi2_proton < track.chi2_muon;
-    if (track.match.has_match) {
-      bool is_proton_true = abs(track.match.match_pdg) == 2212;
-      bool is_muon_true = abs(track.match.match_pdg) == 13;
-      if (is_proton_true || is_muon_true) {
-        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
-      }
-    }
   }
 	  
   range_p->Fill(numu::RangeMomentum(track)); 
@@ -186,8 +178,8 @@ void TrackHistos::Fill(
   }*/
   
   // check if truth match
-  if (track.match.has_match && track.match.mcparticle_id >= 0) {
-    const numu::TrueParticle &true_particle = true_particles.at(track.match.mcparticle_id);
+  if (track.truth.GetPrimaryMatchID() >= 0) { 
+    const numu::TrueParticle &true_particle = true_particles.at(track.truth.GetPrimaryMatchID());
     range_p_minus_truth->Fill((numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
     mcs_p_minus_truth->Fill((numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
  
@@ -201,13 +193,22 @@ void TrackHistos::Fill(
     range_p_comp->Fill(true_particle.start_momentum.Mag(), numu::RangeMomentum(track));
     mcs_p_comp->Fill(true_particle.start_momentum.Mag(), numu::MCSMomentum(track));
 
-    completion->Fill(track.match.completion);
-    purity->Fill(track.match.purity);
+    completion->Fill(track.truth.matches[0].energy / true_particle.deposited_energy); 
+    purity->Fill(track.truth.Purity());
 
     wall_enter->Fill(true_particle.wall_enter);
     wall_exit->Fill(true_particle.wall_exit);
     true_start_time->Fill(true_particle.start_time);
     true_start_time_zoom->Fill(true_particle.start_time);
+
+    if (track.min_chi2 > 0.) {
+      bool is_proton_reco = track.chi2_proton < track.chi2_muon;
+      bool is_proton_true = abs(true_particle.pdgid) == 2212;
+      bool is_muon_true = abs(true_particle.pdgid) == 13;
+      if (is_proton_true || is_muon_true) {
+        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
+      }
+    }
   }
   else {
     completion->Fill(-0.5);

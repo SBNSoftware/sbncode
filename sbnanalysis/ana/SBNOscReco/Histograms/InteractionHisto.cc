@@ -60,7 +60,9 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
 void InteractionHistos::Fill(const event::Interaction &interaction, unsigned mctruth_id, const numu::RecoEvent &event) {
   double dist = numu::dist2Match(interaction, event.reco);
   dist_to_match->Fill(dist);
-  primary_track_completion->Fill(numu::trackMatchCompletion(mctruth_id, event));
+  if (interaction.neutrino.iscc) {
+    primary_track_completion->Fill(numu::trackMatchCompletion(interaction.lepton.G4ID, event));
+  }
 
   vertex_xy->Fill(interaction.neutrino.position.X(), interaction.neutrino.position.Y());
   vertex_yz->Fill(interaction.neutrino.position.Y(), interaction.neutrino.position.Z());
@@ -94,8 +96,12 @@ void InteractionHistos::Fill(
 
   const numu::RecoTrack &primary_track = event.tracks.at(vertex.primary_track_index);
 
-  dist_to_match->Fill(vertex.slice.match.truth_vertex_distance);
-  primary_track_completion->Fill(primary_track.match.completion);
+  if (vertex.slice.truth.interaction_id >= 0) {
+    dist_to_match->Fill((vertex.position - truth[vertex.slice.truth.interaction_id].neutrino.position).Mag());
+  }
+  else {
+    dist_to_match->Fill(-1);
+  }
 
   vertex_xy->Fill(vertex.position.X(), vertex.position.Y());
   vertex_yz->Fill(vertex.position.Y(), vertex.position.Z());
@@ -109,8 +115,10 @@ void InteractionHistos::Fill(
   if (vertex.slice.flash_match.present) {
     fmatch_score->Fill(vertex.slice.flash_match.score);
     fmatch_time->Fill(vertex.slice.flash_match.time);
-    if (vertex.primary_track_index >= 0 && event.tracks.at(vertex.primary_track_index).match.has_match) {
-      int mcparticle_id = event.tracks.at(vertex.primary_track_index).match.mcparticle_id;
+
+    assert(vertex.primary_track_index >= 0);
+    int mcparticle_id = event.tracks.at(vertex.primary_track_index).truth.GetPrimaryMatchID();
+    if (mcparticle_id >= 0) {
       double true_time = event.particles.at(mcparticle_id).start_time;
       fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
       fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
@@ -127,8 +135,9 @@ void InteractionHistos::Fill(
   }
 
   track_length->Fill(primary_track.length);
-  if (primary_track.match.has_match) {
-    int mcparticle_id = primary_track.match.mcparticle_id;
+  int mcparticle_id = primary_track.truth.GetPrimaryMatchID();
+  if (mcparticle_id >= 0) {
+    primary_track_completion->Fill(primary_track.truth.matches[0].energy / event.particles.at(mcparticle_id).deposited_energy); 
   
     double true_track_momentum = event.particles.at(mcparticle_id).start_momentum.Mag(); 
     track_p->Fill(true_track_momentum);
@@ -140,12 +149,12 @@ void InteractionHistos::Fill(
     true_contained_length->Fill(length);
   }
    
-  if (vertex.slice.match.mctruth_track_id >= 0) {
-    int mctruth_id = vertex.slice.match.mctruth_track_id;
+  if (vertex.slice.truth.interaction_id >= 0) {
+    int interaction_id = vertex.slice.truth.interaction_id; 
 
-    true_track_multiplicity->Fill(truth[mctruth_id].nfinalstate);
-    nuE->Fill(truth[mctruth_id].neutrino.energy);
-    Q2->Fill(truth[mctruth_id].neutrino.Q2);
+    true_track_multiplicity->Fill(truth[interaction_id].nfinalstate);
+    nuE->Fill(truth[interaction_id].neutrino.energy);
+    Q2->Fill(truth[interaction_id].neutrino.Q2);
     // get the distance from the beam center
     /*
     float beam_center_distance = sqrt( (truth[mctruth_id].neutrino.position.X() - _config.beamCenterX) * 

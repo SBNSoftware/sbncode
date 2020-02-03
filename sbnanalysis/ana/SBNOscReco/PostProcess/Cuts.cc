@@ -100,9 +100,8 @@ std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent 
   bool has_reco = false;
   for (unsigned i = 0; i < event.reco.size(); i++) {
     const numu::RecoTrack &primary_track = event.tracks.at(event.reco[i].primary_track_index);
-    if (event.reco[i].slice.match.has_match && 
-	event.reco[i].slice.match.mctruth_track_id == truth_vertex_index && 
-	primary_track.match.is_primary) {
+    if (event.reco[i].slice.truth.interaction_id == truth_vertex_index && 
+        event.reco[i].slice.truth.IsPrimary()) {
       has_reco = true;
       break;
     }
@@ -160,8 +159,9 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   // allow truth-based flash matching or reco based
   bool time_in_spill = false;
-  if (primary_track.match.has_match) {
-    time_in_spill = TimeInSpill(event.particles.at(primary_track.match.mcparticle_id).start_time);
+  int ptrack_id = primary_track.truth.GetPrimaryMatchID();
+  if (ptrack_id >= 0) {
+    time_in_spill = TimeInSpill(event.particles.at(ptrack_id).start_time);
   }
 
   if (fConfig.TruthFlashMatch) cuts["R_flashmatch"] = time_in_spill;

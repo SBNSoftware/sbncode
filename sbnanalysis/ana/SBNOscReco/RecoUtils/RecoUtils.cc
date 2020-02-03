@@ -25,6 +25,40 @@ int SBNRecoUtils::TrueParticleID(const core::ProviderManager &manager, const art
 
 
 
+std::vector<std::pair<int, float>> SBNRecoUtils::AllTrueParticleIDEnergyMatches(const core::ProviderManager &manager, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids) {
+  const cheat::BackTracker *bt_serv = manager.GetBackTrackerProvider();
+  std::map<int, float> trackIDToEDepMap;
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
+    art::Ptr<recob::Hit> hit = *hitIt;
+    std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(hit);
+    for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
+      int id = trackIDs[idIt].trackID;
+      if (rollup_unsaved_ids) id = std::abs(id);
+      trackIDToEDepMap[id] += trackIDs[idIt].energy;
+    }
+  }
+
+  std::vector<std::pair<int, float>> ret;
+  for (auto const &pair: trackIDToEDepMap) {
+    ret.push_back(pair);
+  }
+  return ret;
+}
+
+float SBNRecoUtils::TotalHitEnergy(const core::ProviderManager &manager, const std::vector<art::Ptr<recob::Hit> >& hits) {
+  const cheat::BackTracker *bt_serv = manager.GetBackTrackerProvider();
+  float ret = 0.;
+
+  for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
+    art::Ptr<recob::Hit> hit = *hitIt;
+    std::vector<sim::TrackIDE> trackIDs = bt_serv->HitToTrackIDEs(hit);
+    for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
+      ret += trackIDs[idIt].energy;
+    }
+  }
+  return ret;
+}
+
 int SBNRecoUtils::TrueParticleIDFromTotalTrueEnergy(const core::ProviderManager &manager, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids) {
   const cheat::BackTracker *bt_serv = manager.GetBackTrackerProvider();
   std::map<int,double> trackIDToEDepMap;

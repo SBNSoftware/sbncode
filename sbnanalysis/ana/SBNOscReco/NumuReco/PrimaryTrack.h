@@ -26,6 +26,8 @@ namespace numu {
  */
  int SelectLongestIDdMuon(const std::map<size_t, RecoTrack> &tracks, const RecoSlice &slice);
 
+ int SelectMuon(const std::map<size_t, RecoTrack> &tracks, const RecoSlice &slice);
+
 }
 
 

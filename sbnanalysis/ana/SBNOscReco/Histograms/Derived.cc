@@ -10,12 +10,21 @@ float numu::dist2Match(const event::Interaction &truth, const std::vector<numu::
 
 }
 
-float numu::trackMatchCompletion(unsigned truth_index, const numu::RecoEvent &event) {
-  for (const numu::RecoInteraction &reco: event.reco) {
-    const numu::RecoTrack &primary_track = event.tracks.at(reco.primary_track_index);
-    if (reco.slice.match.mctruth_track_id == truth_index && primary_track.match.is_primary) {
-      return primary_track.match.completion; 
+float numu::trackMatchCompletion(unsigned g4id, const numu::RecoEvent &event) {
+  if (g4id == -1) return -1;
+
+  float completion = -1;
+  float most_matched_energy = 0.; 
+  float this_energy = event.particles.at(g4id).deposited_energy;
+  for (const auto &pair: event.tracks) {
+    const numu::RecoTrack &track = pair.second;
+    if (track.truth.GetPrimaryMatchID() == g4id) {
+      float this_matched_energy = track.truth.matches[0].energy;
+      if (this_matched_energy > most_matched_energy) {
+        completion = this_matched_energy / this_energy;
+        most_matched_energy = this_matched_energy;
+      }
     }
   }
-  return -1;
+  return completion;
 }

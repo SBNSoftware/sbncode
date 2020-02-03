@@ -11,8 +11,8 @@
 #pragma link C++ class numu::TrueParticle+;
 #pragma link C++ class numu::RecoTrack+;
 #pragma link C++ class numu::MCSFitResult+;
-#pragma link C++ class numu::TruthMatch+;
-#pragma link C++ class numu::TrackTruthMatch+;
+#pragma link C++ class numu::SliceTruth+;
+#pragma link C++ class numu::TrackTruth+;
 #pragma link C++ class std::vector<numu::RecoInteraction>+;
 #pragma link C++ class std::vector<numu::CRTHit>+;
 #pragma link C++ class std::map<size_t, numu::RecoParticle>+;

@@ -1,6 +1,116 @@
 #include "TrackAlgo.h"
 #include <numeric>
 
+
+void numu::ApplyTrueParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::RecoTrack> &tracks, const std::map<size_t, numu::TrueParticle> &particles) {
+  const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
+
+  for (size_t id: neutrino.daughters) {
+    if (!tracks.count(id)) continue;
+    // apply the true particle ID
+    numu::RecoTrack &track = tracks.at(id);
+
+    int pdg = -1; // "NULL" value
+    int match_id = track.truth.GetPrimaryMatchID();
+    if (particles.count(match_id)) {
+      pdg = particles.at(match_id).pdgid;
+    }
+
+    track.pdgid = pdg;
+  }
+}
+
+void ApplyMinHadronChi2(numu::RecoTrack &track) {
+  std::vector<std::pair<int, float>> chi2s {{2212, track.chi2_proton}, {321, track.chi2_kaon}, {211, track.chi2_pion}};
+
+  track.pdgid = 
+    std::min_element(chi2s.begin(), chi2s.end(),
+      [](auto const &a, auto const &b) {
+        return a.second < b.second;
+      })->first;
+}
+
+void numu::ApplyParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::RecoTrack> &tracks) {
+  // example algorithm borrowed from Rhiannon Jones
+  const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
+  
+  // first look for a track with length > 100cm that exits 
+  // call this the muon
+  int exiting_muon_candidate = -1;
+  for (size_t id: neutrino.daughters) {
+    if (!tracks.count(id)) continue;
+    const numu::RecoTrack &track = tracks.at(id);
+    if (track.length > 100 && !track.is_contained) {
+      if (exiting_muon_candidate != -1) { // two candidates -- don't apply this ID
+        exiting_muon_candidate = -1;
+        break;
+      }
+      exiting_muon_candidate = id;
+    }
+  }
+
+  if (exiting_muon_candidate != -1) {
+    for (size_t id: neutrino.daughters) {
+      if (!tracks.count(id)) continue;
+      const numu::RecoTrack &track = tracks.at(id);
+      if (id == exiting_muon_candidate) {
+        tracks.at(id).pdgid = 13; // muon
+      }
+      else {
+        ApplyMinHadronChi2(tracks.at(id));
+      }
+    }
+    // Done!
+    return;
+  }
+
+  // otherwise:
+
+  std::vector<std::pair<size_t, float>> muon_candidates;
+  for (size_t id: neutrino.daughters) {
+    if (!tracks.count(id)) continue;
+    const numu::RecoTrack &track = tracks.at(id);
+    bool very_long = true;
+    // get the subleading max length
+    for (size_t id2: neutrino.daughters) {
+      if (!tracks.count(id2)) continue;
+      const numu::RecoTrack &other = tracks.at(id2);
+      if (track.length < other.length * 1.5) {
+        very_long = false;
+        break;
+      }
+    }
+    if (very_long || (track.chi2_muon < 16 && track.chi2_proton > 80)) {
+      std::pair<size_t, float> pair {id, track.chi2_muon};
+      muon_candidates.push_back(pair);
+    }
+  }
+
+  // get the best muon candidate
+  int muon = -1;
+  if (muon_candidates.size() > 0) {
+    muon = std::min_element(muon_candidates.begin(), muon_candidates.end(), 
+      [](const auto &a, const auto &b) {
+        return a.first < b.first;
+      })->first;
+  }
+
+  for (size_t id: neutrino.daughters) {
+    if (!tracks.count(id)) continue;
+    numu::RecoTrack &track = tracks.at(id);
+    if (id == muon) {
+      track.pdgid = 13;
+    }
+    else if (track.chi2_proton < 80.) {
+      track.pdgid = 2212;
+    }
+    else {
+      ApplyMinHadronChi2(track);
+    }
+  }
+  return;
+}
+
 // TODO: make this more sophisticated
 float numu::TrackMomentum(const numu::RecoTrack &track) {
   if (track.is_contained) {

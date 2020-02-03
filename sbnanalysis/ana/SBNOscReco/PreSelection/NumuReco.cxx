@@ -131,7 +131,7 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
 }
 
 void DumpTrueStart(const gallery::Event &ev, int mcparticle_id) {
-  // track.match.mcparticle_id);
+  // track.truth.mcparticle_id);
   const std::vector<simb::MCParticle> &mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
       std::cout << "Track: " << mcparticle_id;
   for (const simb::MCParticle &part: mcparticle_list) {
@@ -355,8 +355,8 @@ void NumuReco::Finalize() {
 
 event::RecoInteraction NumuReco::CoreRecoInteraction(const std::vector<event::Interaction> &truth, const numu::RecoInteraction &vertex, double weight) {
   event::RecoInteraction ret;
-  if (vertex.slice.match.mctruth_vertex_id >= 0) {
-    ret.truth_index = vertex.slice.match.mctruth_vertex_id;
+  if (vertex.slice.truth.interaction_id >= 0) {
+    ret.truth_index = vertex.slice.truth.interaction_id;
   }
   ret.reco_energy = vertex.nu_energy;
   ret.weight = weight;
@@ -417,7 +417,8 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
   _recoEvent.type = fType;
 
   // do truth matching
-  numu::ApplyPrimaryTrackTruthMatch(_recoEvent, core_truth);
+  // numu::ApplyPrimaryTrackTruthMatch(_recoEvent, core_truth);
+  numu::ApplySliceTruthMatch(_recoEvent, core_truth);
 
   // save the information
   for (unsigned i = 0; i < _recoEvent.reco.size(); i++) {
@@ -426,12 +427,12 @@ bool NumuReco::ProcessEvent(const gallery::Event& ev, const std::vector<event::I
     double weight = 1.;
     weight *= _config.constantWeight;
     // TODO: what about cosmics?
-    // if (vertex.slice.match.mctruth_vertex_id >= 0) {
+    // if (vertex.slice.truth.interaction_id >= 0) {
     //   for (auto const &key: _config.uniformWeights) {
-    //     weight *= core_truth[vertex.slice.match.mctruth_vertex_id].weightmap.at(key)[0];
+    //     weight *= core_truth[vertex.slice.truth.interaction_id].weightmap.at(key)[0];
     //  }
     // }
-    if (vertex.slice.match.mode == numu::mCosmic) {
+    if (vertex.slice.truth.mode == numu::mCosmic) {
       weight *= _config.cosmicWeight;
     }
 
@@ -455,7 +456,15 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
   ret.crosses_tpc = false;
   ret.wall_enter = numu::wNone;
   ret.wall_exit = numu::wNone;
+  ret.energy_loss = 0.;
   ret.deposited_energy = 0.;
+
+  // get the hit energy
+  cheat::BackTracker *bt = fProviderManager->GetBackTrackerProvider();
+  const std::vector<const sim::IDE*> &mcparticle_ides = bt->TrackIdToSimIDEs_Ps(particle.TrackId()); 
+  for (auto const &ide: mcparticle_ides) {
+    ret.deposited_energy += ide->energy / 1000. /* MeV -> GeV*/;
+  }
 
   // If the interaction is outside the active volume, then g4 won't generate positions for the particle.
   // So size == 0 => outside FV
@@ -559,7 +568,7 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
 
       // update energy
       if (InActive(this_point) && InActive(pos)) {
-        ret.deposited_energy += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
+        ret.energy_loss += trajectory.Momentum(i-1).E() - trajectory.Momentum(i).E();
       }
       pos = trajectory.Position(i).Vect();
     }
@@ -594,6 +603,20 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
   ret.end_process = GetG4ProcessID(particle.EndProcess());
 
   ret.ID = particle.TrackId();
+
+  // See if this MCParticle matches a genie truth
+  ret.interaction_id = -1;
+
+  // get the service
+  const cheat::ParticleInventory *inventory_service = fProviderManager->GetParticleInventoryProvider();
+
+  art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(particle.TrackId());
+  for (int i = 0; i < _true_neutrinos.size(); i++) {
+    if (truth.get() == _true_neutrinos[i].get()) {
+      ret.interaction_id = i;
+      break;
+    }
+  }
 
   return ret;
 }
@@ -806,7 +829,7 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.end = TVector3(track->End().X(), track->End().Y(), track->End().Z());
 
     // do truth matching
-    this_track.match = MatchTrack2Truth(pfp_track_index);
+    this_track.truth = MatchTrack2Truth(pfp_track_index);
 
     // if configured, apply Cosmic ID to all tracks
     if (_config.CosmicIDAllTracks) {
@@ -906,13 +929,10 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 bool NumuReco::HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
   if (slice.primary_index < 0) return false;
 
-  std::cout << "Checking slice particle: " << slice.primary_index << std::endl;
   for (const auto &part_pair: slice.particles) {
-    std::cout << "ID: " << part_pair.first << "\n";
   }
   const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
   for (size_t pfp_index: neutrino.daughters) {
-    std::cout << "Neutrino daughter ID: " << pfp_index << std::endl;
     const numu::RecoParticle &daughter = slice.particles.at(pfp_index);
     if (tracks.count(daughter.ID)) {
       if (tracks.at(daughter.ID).length > 1e-4) {
@@ -930,53 +950,34 @@ bool NumuReco::SelectSlice(const numu::RecoSlice &slice) {
          abs(slice.particles.at(slice.primary_index).pandora_pid) == 14;
 }
 
-numu::TrackTruthMatch NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
-  // get the service
-  const cheat::ParticleInventory *inventory_service = fProviderManager->GetParticleInventoryProvider();
-
+numu::TrackTruth  NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
   // get its hits
   std::vector<art::Ptr<recob::Hit>> hits = _tpc_tracks_to_hits.at(pfp_track_id);
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
   // int id = SBNRecoUtils::TrueParticleIDFromTotalRecoHits(*fProviderManager, hits, false);
-  int mcp_track_id = SBNRecoUtils::TrueParticleIDFromTotalTrueEnergy(*fProviderManager, hits, true);
+  std::vector<std::pair<int, float>> matches = SBNRecoUtils::AllTrueParticleIDEnergyMatches(*fProviderManager, hits, true);
+  float total_energy = SBNRecoUtils::TotalHitEnergy(*fProviderManager, hits);
 
+  numu::TrackTruth ret;
 
-  int mcparticle_index = -1;
-  for (int i = 0; i < _true_particles.size(); i++) {
-    if (_true_particles[i]->TrackId() == mcp_track_id) {
-      mcparticle_index = i;
-      break;
+  ret.total_deposited_energy = total_energy / 1000. /* MeV -> GeV */;
+
+  // setup the matches
+  for (auto const &pair: matches) {
+    numu::TrackTruth::ParticleMatch match;
+    match.G4ID = pair.first;
+    match.energy = pair.second / 1000. /* MeV -> GeV */;
+    ret.matches.push_back(match);
+  }
+
+  // sort highest energy match to lowest
+  std::sort(ret.matches.begin(), ret.matches.end(), 
+    [](const numu::TrackTruth::ParticleMatch &a, const numu::TrackTruth::ParticleMatch &b) {
+      return a.energy > b.energy;
     }
-  }
+  );
 
-  // number returned to mean "NULL"
-  // no match
-  if (mcparticle_index == -1) return numu::TrackTruthMatch();
-
-  // We got a match! Try to identify it to an origin
-  art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(mcp_track_id);
-  // and calculate the completion
-  double completion = SBNRecoUtils::TrackCompletion(*fProviderManager, mcp_track_id, hits);
-
-  numu::TrackTruthMatch ret;
-  // ret.mctruth = truth.get();
-  ret.has_match = true;
-  ret.mctruth_has_neutrino = truth->NeutrinoSet();
-  ret.mctruth_vertex = ret.mctruth_has_neutrino ? truth->GetNeutrino().Nu().Position().Vect() : TVector3(-999, -999, -999);
-  ret.mctruth_origin = truth->Origin();
-
-  // TODO: fix -- in time cosmics will not have the origin set correctly. Fix and set this to 2.
-  if (ret.mctruth_origin == simb::kUnknown) {
-    ret.mctruth_origin = simb::kCosmicRay; 
-  }
-
-  ret.mctruth_ccnc = ret.mctruth_has_neutrino ? truth->GetNeutrino().CCNC() : -1;
-  ret.mcparticle_id = mcp_track_id;
-  ret.completion = completion;
-  ret.purity = SBNRecoUtils::TrackPurity(*fProviderManager, mcp_track_id, hits);
-  ret.match_pdg = _true_particles[mcparticle_index]->PdgCode(); 
-  ret.is_primary = _true_particles[mcparticle_index]->Process() == "primary"; 
   return ret;
 }
 
@@ -1015,21 +1016,15 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
     // now get information from particles which are tracks
     slice_ret.tracks = RecoSliceTracks(reco_tracks, slice_ret.particles);
 
-    std::cout << "Primary index: " << slice_ret.primary_index << std::endl;
-    std::cout << "Is primary: " << _tpc_particles[slice_ret.primary_index]->IsPrimary() << std::endl;
     if (_tpc_particles_to_flashT0.size() && _tpc_particles_to_flashT0.at(slice_ret.primary_index).size()) {
       const anab::T0 &fmatch = *_tpc_particles_to_flashT0.at(slice_ret.primary_index).at(0);
       slice_ret.flash_match.present = true;
       slice_ret.flash_match.time = fmatch.Time(); 
       slice_ret.flash_match.score = fmatch.TriggerConfidence();
       slice_ret.flash_match.pe = fmatch.TriggerType();
-      std::cout << "Match time: " << slice_ret.flash_match.time << std::endl;
-      std::cout << "Match score: " << slice_ret.flash_match.score << std::endl;
-      std::cout << "Match PE: " << slice_ret.flash_match.pe << std::endl;
     }
     else {
       slice_ret.flash_match.present = false;
-      std::cout << "No match :(\n";
     }
 
     // throw away slices which do not have a primary track candidate
@@ -1053,6 +1048,7 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
 }
 
 void NumuReco::CollectTruthInformation(const gallery::Event &ev) {
+  _true_neutrinos.clear();
   _true_particles.clear();
   _true_particles_to_truth.clear();
   _true_particles_to_generator_info.clear();
@@ -1067,6 +1063,10 @@ void NumuReco::CollectTruthInformation(const gallery::Event &ev) {
     _true_particles_to_truth[mcparticles->at(i).TrackId()] = particles_to_truth.at(i).at(0);
     _true_particles_to_generator_info[mcparticles->at(i).TrackId()] = particles_to_truth.data(i).at(0);
   }
+
+  // Genie MCTruth objects
+  auto const &mctruths = ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
+  art::fill_ptr_vector(_true_neutrinos, mctruths);
 }
 
 void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
@@ -1273,7 +1273,6 @@ numu::CRTMatch NumuReco::CRTMatching(
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, time_range, *_crt_hits, drift_dir); 
     }
     else {
-      std::cout << "Tryin CRT Hit match\n";
       hit_pair = _crt_hit_matchalg->ClosestCRTHit(pandora_track, hits, *_crt_hits);
     }
   }
@@ -1284,7 +1283,6 @@ numu::CRTMatch NumuReco::CRTMatching(
     match.hit_match.distance = distance;
     match.hit = SBND2numuCRTHit(hit_pair.first);
     match.hit_match.time = match.hit.time;
-    std::cout << "Match: " << match.hit.location.X() << std::endl;
   }
   else {
     match.hit_match.present = false;
@@ -1334,10 +1332,11 @@ numu::FlashMatch NumuReco::FlashMatching(
   }
 
   // see if we can do the match
-  if (track.match.has_match) {
-    // DumpTrueStart(ev, track.match.mcparticle_id);
+  int mcparticle_id = track.truth.GetPrimaryMatchID();
+  if (mcparticle_id >= 0) {
+    // DumpTrueStart(ev, track.truth.mcparticle_id);
     // get the correct index
-    int photon_mother_id = GetPhotonMotherID(track.match.mcparticle_id);
+    int photon_mother_id = GetPhotonMotherID(mcparticle_id);
     const std::vector<art::Ptr<recob::OpHit>> hit_matches = fProviderManager->GetPhotonBackTrackerProvider()->TrackIdToOpHits_Ps(photon_mother_id, _op_hit_ptrs);
     if (hit_matches.size() > 0) {
       // average the times weighted by PE

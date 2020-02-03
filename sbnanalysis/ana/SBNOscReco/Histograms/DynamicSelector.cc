@@ -42,7 +42,8 @@ std::vector<numu::TrackSelector> numu::MultiplyTrackSelectors(const std::vector<
   for (unsigned i = 0; i < track_function_strings.size(); i++) {
     track_functions.emplace_back();
     for (unsigned j = 0; j < track_function_strings[i].size(); j++) {
-      track_functions[i].push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, unsigned>("track", "particle", "mctype", track_function_strings[i][j].c_str()));
+      track_functions[i].push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction, event::Neutrino>
+        ("track", "particle", "interaction", "neutrino", track_function_strings[i][j].c_str()));
     }
   }
   std::vector<unsigned> indices (track_functions.size(), 0);
@@ -52,9 +53,9 @@ std::vector<numu::TrackSelector> numu::MultiplyTrackSelectors(const std::vector<
       functions.push_back(track_functions[i][indices[i]]);
     }
     ret.push_back(
-      [functions](const numu::RecoTrack &track, const numu::TrueParticle &part, unsigned mctype) {
+      [functions](const numu::RecoTrack &track, const numu::TrueParticle &part, const numu::RecoInteraction &interaction, const event::Neutrino &neutrino) {
         for (const numu::TrackFunction &function: functions) {
-          uscript::Value ret = function(&track, &part, &mctype);
+          uscript::Value ret = function(&track, &part, &interaction, &neutrino);
           if (!ret) return false;
         }
         return true;

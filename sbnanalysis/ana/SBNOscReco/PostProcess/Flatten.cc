@@ -118,7 +118,7 @@ void ana::SBNOsc::Flatten::FileSetup(TFile *f, TTree *eventTree) {
 
 void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
   unsigned index = WorkerID();
-  ana::SBNOsc::SetEvent(*fRecoEvents[index], *ev, fCuts, fMCTypes[index], true);
+  ana::SBNOsc::SetEvent(*fRecoEvents[index], *ev, fCuts, fMCTypes[index]);
   for (const numu::RecoInteraction &interaction: fRecoEvents[index]->reco) {
     const numu::RecoTrack &primary_track = fRecoEvents[index]->tracks.at(interaction.primary_track_index);
     // set stuff
@@ -135,8 +135,9 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
     track.crt_track_time = primary_track.crt_match.track.time;
     primary_track.start.GetXYZ(track.start);
     primary_track.end.GetXYZ(track.end);
-    if (primary_track.match.has_match) {
-      const numu::TrueParticle &truth = fRecoEvents[index]->particles.at(primary_track.match.mcparticle_id);
+    int ptrack_id = primary_track.truth.GetPrimaryMatchID();
+    if (ptrack_id >= 0) {
+      const numu::TrueParticle &truth = fRecoEvents[index]->particles.at(ptrack_id);
       truth.start_momentum.GetXYZ(track.truth.momentum);
       track.truth.wall_enter = truth.wall_enter;
       track.truth.wall_exit = truth.wall_exit;
@@ -154,10 +155,10 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
   
     // True Neutrino
     numu::flat::TrueNeutrino neutrino;
-    if (interaction.slice.match.has_match) {
-      neutrino.E = ev->truth[interaction.slice.match.mctruth_track_id].neutrino.energy;
-      neutrino.Q2 = ev->truth[interaction.slice.match.mctruth_track_id].neutrino.Q2;
-      ev->truth[interaction.slice.match.mctruth_track_id].neutrino.position.GetXYZ(neutrino.vertex);
+    if (interaction.slice.truth.interaction_id >= 0) {
+      neutrino.E = ev->truth[interaction.slice.truth.interaction_id].neutrino.energy;
+      neutrino.Q2 = ev->truth[interaction.slice.truth.interaction_id].neutrino.Q2;
+      ev->truth[interaction.slice.truth.interaction_id].neutrino.position.GetXYZ(neutrino.vertex);
     }
     else neutrino.E = -1;
 

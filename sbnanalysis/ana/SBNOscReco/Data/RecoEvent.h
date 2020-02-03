@@ -27,7 +27,7 @@ struct RecoSlice {
   std::map<size_t, RecoParticle> particles; //!< Map of particle index to particle information
   std::vector<size_t> tracks; //!< List of track indices contained in this slice
   FlashMatch flash_match; //!< Result of flash matching algorithm on this slice
-  TruthMatch match; //!< Info for mathing to truth
+  SliceTruth truth; //!< Truth information on slice
 };
 
 

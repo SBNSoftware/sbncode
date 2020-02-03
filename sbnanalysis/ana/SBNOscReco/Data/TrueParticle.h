@@ -87,6 +87,7 @@ struct TrueParticle {
   float start_energy; //!< Particle energy for first point inside TPC AV [GeV]
   float end_energy; //!< Particle energy for last point inside TPC AV [GeV]
   float deposited_energy; //!< Total particle energy depositive in TPC AV [GeV]
+  float energy_loss;
   
   TVector3 start; //!< start position of track
   TVector3 end; //!< end position of track
@@ -109,7 +110,13 @@ struct TrueParticle {
 
   G4ProcessID start_process; //!< Start Process according to G4
   G4ProcessID end_process; //!< End Process according to G4
+
+  int interaction_id;
   
+  bool IsPrimary() const {
+    return start_process == primary;
+  }
+
   bool HasBraggPeak() const {
     return is_contained
     // verify particle ID

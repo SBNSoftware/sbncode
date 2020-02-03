@@ -50,7 +50,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
           bool has_reco = false;
           for (auto const &track_pair: event.tracks) {
-            if (track_pair.second.match.mcparticle_id == p.G4ID) {
+            if (track_pair.second.truth.GetPrimaryMatchID() == p.G4ID) {
               has_reco = true;
               break;
             }
@@ -58,9 +58,9 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
           bool cc_reco = false;
           for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.match.mode != numu::mCC) continue; 
+            if (reco.slice.truth.mode != numu::mCC) continue; 
             for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).match.mcparticle_id == p.G4ID) {
+              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
                 cc_reco = true;
                 break;
               }
@@ -70,9 +70,9 @@ void Histograms::Fill( const numu::RecoEvent &event,
           
           bool cc_np_reco = false;
           for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.match.mode != numu::mCCNonPrimary) continue; 
+            if (reco.slice.truth.mode != numu::mCCNonPrimary) continue; 
             for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).match.mcparticle_id == p.G4ID) {
+              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
                 cc_np_reco = true;
                 break;
               }
@@ -82,9 +82,9 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
           bool cosmic_reco = false;
           for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.match.mode != numu::mCosmic) continue; 
+            if (reco.slice.truth.mode != numu::mCosmic) continue; 
             for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).match.mcparticle_id == p.G4ID) {
+              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
                 cosmic_reco = true;
                 break;
               }
@@ -112,16 +112,23 @@ void Histograms::Fill( const numu::RecoEvent &event,
   }
 
   numu::TrueParticle bad;
+  event::Neutrino nubad;
 
   if (fill_all_tracks) {
-    for (const auto &track_pair: event.tracks) {
-      const numu::RecoTrack &track = track_pair.second;
-      const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
+    for (unsigned i = 0; i < event.reco.size(); i++) {
+      const numu::RecoParticle &neutrino = event.reco[i].slice.particles.at(event.reco[i].slice.primary_index);
+      for (unsigned id: neutrino.daughters) { 
+        if (!event.tracks.count(id)) continue;
+    
+        const numu::RecoTrack &track = event.tracks.at(id);
+        const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+        const event::Neutrino &neutrino = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id).neutrino : nubad;
 
-      for (unsigned i = 0; i < fAllTracks.size(); i++) {
-        bool select = selectors[i](track, part, event.type);
-        if (select) {
-          fAllTracks[i].Fill(track, event.particles);
+        for (unsigned j = 0; j < fAllTracks.size(); j++) {
+          bool select = selectors[j](track, part, event.reco[i], neutrino);
+          if (select) {
+            fAllTracks[j].Fill(track, event.particles);
+          }
         }
       }
     }
@@ -134,7 +141,8 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
     if (event.tracks.size() > (unsigned)interaction.primary_track_index) {
       const numu::RecoTrack &track = event.tracks.at(interaction.primary_track_index);
-      const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
+      const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+      const event::Neutrino &neutrino = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id).neutrino : nubad;
 
       for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
         if (cuts[cut_i] && cutmaker.HasCRTHitMatch(track)) {
@@ -143,14 +151,14 @@ void Histograms::Fill( const numu::RecoEvent &event,
       }
 
       for (unsigned j = 0; j < fPrimaryTracks.size(); j++) { 
-        bool select = selectors[j](track, part, event.type);
+        bool select = selectors[j](track, part, event.reco[i], neutrino);
         if (select) {
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
             if (cuts[cut_i]) {
               fPrimaryTracks[j][cut_i].Fill(track, event.particles);
               for (unsigned k = 0; k < xfunctions.size(); k++) {
-                const numu::TrueParticle &part = (track.match.has_match) ? event.particles.at(track.match.mcparticle_id) : bad;
-                uscript::Value x = xfunctions[k](&track, &part, (unsigned*)&event.type);
+                const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+                uscript::Value x = xfunctions[k](&track, &part, &event.reco[i], &neutrino);
                 assert(IS_NUMBER(x));
                 fPrimaryTrackProfiles[j][k][cut_i].Fill(AS_NUMBER(x), 
 							track, event);
@@ -163,7 +171,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
     // fill histos
     for (size_t cut_i=0; cut_i < Cuts::nCuts; cut_i++) {
-      int mode = interaction.slice.match.mode; 
+      int mode = interaction.slice.truth.mode; 
       if (cuts[cut_i]) {
         fInteraction[cut_i+Cuts::nTruthCuts][mode].Fill(event.reco[i], 
 							event, 
@@ -178,7 +186,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
   for (unsigned i = 0; i < core.truth.size(); i++) {
     std::array<bool, Cuts::nTruthCuts> cuts = cutmaker.ProcessTruthCuts(event, core, i); 
     for (int cut_i = 0; cut_i < Cuts::nTruthCuts; cut_i++) {
-      int mode = numu::GetMode(core.truth[i]);
+      int mode = core.truth[i].neutrino.iscc ? numu::mCC : numu::mNC;
       if (cuts[cut_i]) {
         fInteraction[cut_i][mode].Fill(core.truth[i], i, event);
         fInteraction[cut_i][numu::mAll].Fill(core.truth[i], i, event);

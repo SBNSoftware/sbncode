@@ -32,42 +32,50 @@ primary_pdg_selectors: [
 ]
 primary_pdgs: ["all", "mu", "pi", "p"]
 
+reco_mode_selectors: [
+   "return true;",
+   "return interaction.nproton == 0 && interaction.npion == 0; // 0p 0pi"
+   "return interaction.nproton == 1 && interaction.npion == 0; // 1p 0pi"
+   "return interaction.nproton == 2 && interaction.npion == 0; // 2p 0pi"
+   "return interaction.nproton >= 3 && interaction.npion == 0; // >2p 0pi"
+   "return interaction.npion == 1; // np 1pi"
+   "return interaction.npion >= 2; // np >1pi"
+]
+
+reco_modes: ["all", "p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"]
 
 interaction_selectors: [
    "return true;",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 2 // kCosmicRay
-      and mctype == 1;}",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 2 // kCosmicRay
-      and mctype == 2;}",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and !match.mctruth_ccnc and track.match.is_primary; }",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and !match.mctruth_ccnc and !track.match.is_primary; }",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and match.mctruth_ccnc and track.match.is_primary; }",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and match.mctruth_ccnc and !track.match.is_primary; }",
-   "return !track.match.has_match;"
+   "return interaction.slice.truth.mode == 0; // CC"
+   "return interaction.slice.truth.mode == 1; // CC Non Primary"
+   "return interaction.slice.truth.mode == 2; // NC"
+   "return interaction.slice.truth.mode == 3; // CC Non Primary"
+   "return interaction.slice.truth.mode == 4; // Cosmic"
+   "return interaction.slice.truth.mode == 5; // Intime-Cosmic"
+   "return interaction.slice.truth.mode == 6; // Other"
 ] 
 
-interactions: ["All", "Cosmic", "InTime-Cosmic", "CC", "CC-Other", "NC", "NC-Other", "No-Match"]
+interactions: ["All", "CC", "CC-Other", "NC", "NC-Other", "Cosmic", "InTime-Cosmic", "No-Match"]
 
-neutrino_selectors: ["return true;",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and !match.mctruth_ccnc and track.match.is_primary; }",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino
-      and match.mctruth_ccnc and track.match.is_primary; }",
-   "{ var match = track.match;
-      return match.has_match and match.mctruth_origin == 1 // kBeamNeutrino 
-      and !track.match.is_primary; }"
+true_intmode_selectors: [
+  "return true;"
+  "return interaction.slice.truth.interaction_id >= 0 && 
+      (neutrino.genie_intcode == 0 || neutrino.genie_intcode == 1001 || neutrino.genie_intcode == 1002); // QE",
+  "return interaction.slice.truth.interaction_id >= 0 && 
+      (neutrino.genie_intcode == 1 || (neutrino.genie_intcode >= 1003  && neutrino.genie_intcode <= 1090)); // Res",
+  "return interaction.slice.truth.interaction_id >= 0 && 
+      (neutrino.genie_intcode == 2 || neutrino.genie_intcode == 1091 || neutrino.genie_intcode == 1092); // DIS",
+  "return interaction.slice.truth.interaction_id >= 0 && 
+      (neutrino.genie_intcode == 10 || neutrino.genie_intcode == 1100); // MEC"
+]
+
+intmodes: ["all", "QE", "Res", "DIS", "MEC"]
+
+neutrino_selectors: [
+   "return true;",
+   "return interaction.slice.truth.mode == 0; // CC"
+   "return interaction.slice.truth.mode == 2; // NC"
+   "return interaction.slice.truth.mode == 1 || interaction.slice.truth.mode == 3; // Non Primary"
 ]
 neutrinos: ["All", "CC", "NC", "Other"]
 

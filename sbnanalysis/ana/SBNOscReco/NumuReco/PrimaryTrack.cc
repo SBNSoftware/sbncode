@@ -1,5 +1,16 @@
 #include "PrimaryTrack.h"
 
+int numu::SelectMuon(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
+  if (slice.primary_index < 0) return -1;
+
+  const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
+  for (size_t pfp_index: neutrino.daughters) {
+    if (!tracks.count(pfp_index)) continue;
+    if (tracks.at(pfp_index).pdgid == 13) return pfp_index;  
+  }
+  return -1;
+}
+
 int numu::SelectLongestTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
   if (slice.primary_index < 0) return -1;
 

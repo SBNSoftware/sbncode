@@ -78,7 +78,7 @@ private:
   TFile *fOutputFile;
 
   std::string fHistogramPostfix;
-  bool fUseCalorimetry;
+  bool fTrueParticleID;
   int fFileIndex;
   numu::MCType fFileType;
 

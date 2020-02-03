@@ -294,7 +294,7 @@ protected:
  *
  * \return The matchinf information of this track to truth information
  */
-  numu::TrackTruthMatch MatchTrack2Truth(size_t track_id);
+  numu::TrackTruth MatchTrack2Truth(size_t pfp_track_id);
 
   /**
  * Fill up the Optical information containers from the gallery Event
@@ -376,6 +376,7 @@ protected:
   std::vector<std::vector<art::Ptr<anab::T0>>> _tpc_particles_to_flashT0;
 
   // holders for truth information
+  std::vector<art::Ptr<simb::MCTruth>> _true_neutrinos;
   std::vector<art::Ptr<simb::MCParticle>> _true_particles;
   std::map<int, art::Ptr<simb::MCTruth>> _true_particles_to_truth;
   std::map<int, const sim::GeneratedParticleInfo *> _true_particles_to_generator_info;

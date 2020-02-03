@@ -54,7 +54,7 @@ struct RecoTrack {
   TVector3 start; //!< start position of track
   TVector3 end; //!< end position of track
 
-  TrackTruthMatch match; //!< Truth matching information
+  TrackTruth truth; //!< Truth information on track
   
   CRTMatch crt_match; //!< CRTMatch
 
