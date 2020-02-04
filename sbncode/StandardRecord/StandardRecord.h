@@ -10,7 +10,7 @@
 #include "SRHeader.h"
 #include "SRSlice.h"
 #include "SRSliceRecoBranch.h"
-#include "SRParticle.h"
+#include "SRTruthParticle.h"
 
 /// Common Analysis Files
 namespace caf
@@ -34,7 +34,7 @@ namespace caf
     // TODO (from Gray): How do we represent true particles here??
     // The true particles are per-event, I don't see how they fit into
     // a per-slice structure
-    std::vector<SRParticle> particle;
+    std::vector<SRTruthParticle> true_particle;
 
   };
 

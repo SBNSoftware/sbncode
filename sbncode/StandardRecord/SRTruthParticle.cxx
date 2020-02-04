@@ -1,22 +1,22 @@
 ////////////////////////////////////////////////////////////////////////
-// \file    SRParticle.cxx
-// \brief   An SRParticle is a high level true track object.  It knows
-//          true id, direction, length, but does no hit information.
+// \file    SRTruthParticle.cxx
+// \brief   An SRTruthParticle is a high level true track object. It
+//          knows true id, direction, length, but  no hit information.
 ////////////////////////////////////////////////////////////////////////
-#include "SRParticle.h"
+#include "SRTruthParticle.h"
 
 namespace caf
 {
 
-  SRParticle::SRParticle()
+  SRTruthParticle::SRTruthParticle()
   {
   }
 
-  bool SRParticle::IsPrimary() const {
+  bool SRTruthParticle::IsPrimary() const {
     return start_process ==  kPrimary;
   }
 
-  bool SRParticle::HasBraggPeak() const {
+  bool SRTruthParticle::HasBraggPeak() const {
     return \
       // check contained, id, & end process (stopping-only)
       is_contained &&
@@ -28,18 +28,16 @@ namespace caf
 	end_process ==  kmuMinusCaptureAtRest );
   }
 
-  bool SRParticle::IsGenie() const {
+  bool SRTruthParticle::IsGenie() const {
     return gstatus !=  kNotGenie;
   }
 
-  bool SRParticle::IsStable() const {
+  bool SRTruthParticle::IsStable() const {
     return \
        gstatus ==  kNotGenie // non-genie particles are stable
     || gstatus ==  kIStStableFinalState; // stable genie particle
 
   }
-
-  
 
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

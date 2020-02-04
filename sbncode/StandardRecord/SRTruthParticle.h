@@ -1,8 +1,8 @@
 ////////////////////////////////////////////////////////////////////////
-// \file    SRParticle.h
+// \file    SRTruthParticle.h
 ////////////////////////////////////////////////////////////////////////
-#ifndef SRPARTICLE_H
-#define SRPARTICLE_H
+#ifndef SRTRUTHPARTICLE_H
+#define SRTRUTHPARTICLE_H
 
 #include <cstdint>
 #include <TVector3.h>
@@ -16,7 +16,7 @@ namespace caf
 {
   /// Representation of a simb::MCParticle, knows energy, direction, 
   // etc, but no hit information.
-  class SRParticle
+  class SRTruthParticle
     {
     public:
 
@@ -69,12 +69,12 @@ namespace caf
       bool IsStable() const;
 
 
-      SRParticle();
-      ~SRParticle(){  };
+      SRTruthParticle();
+      ~SRTruthParticle(){  };
 
     };
 
 } // end namespace
 
-#endif // SRPARTICLE_H
+#endif // SRTRUTHPARTICLE_H
 //////////////////////////////////////////////////////////////////////////////
