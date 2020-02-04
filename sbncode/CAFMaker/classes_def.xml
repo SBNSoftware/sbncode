@@ -5,6 +5,7 @@ StandardRecord dict, which we don't want. -->
 <lcgdict>
   <enum name="caf::Det_t" />
   <enum name="caf::Wall_t" />
+  <enum name="caf::interaction_mode_" />
   <enum name="caf::genie_status_" />
   <enum name="caf::g4_process_" />
   <enum name="caf::View_t" />

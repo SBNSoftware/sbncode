@@ -27,6 +27,17 @@ namespace caf
     kGENIE            = 1
   };
 
+  /// Enum of possible types of truth-matching a TPC slice
+  enum interaction_mode_ {
+    kCC = 0,           //!< CC neutrino interaction
+    kCCNonPrimary = 1, //!< A non-primary part of a CC neutrino interaction
+    kNC = 2,           //!< NC neutrino interaction
+    kNCNonPrimary = 3, //!< A non-primary part of an NC neutrino interaction
+    kCosmic = 4,       //!< Cosmic activity
+    kIntimeCosmic = 5, //!< Cosmic activity in event triggered by intime-cosmic
+    mOther = 6 //!< Release valve value -- if nothing else really fits
+  };
+
   /// Which genie status?
   enum genie_status_ : int32_t { 
       kIStUndefined                = -1,
