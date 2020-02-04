@@ -59,7 +59,7 @@ namespace ana
 
   struct CompareByID
   {
-    bool operator()(const Cut& a, const Cut& b)
+    bool operator()(const Cut& a, const Cut& b) const
     {
       return a.ID() < b.ID();
     }
