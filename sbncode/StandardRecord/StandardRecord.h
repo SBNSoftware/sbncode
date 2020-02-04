@@ -10,7 +10,6 @@
 #include "SRHeader.h"
 #include "SRSlice.h"
 #include "SRSliceRecoBranch.h"
-#include "SRTruthParticle.h"
 
 /// Common Analysis Files
 namespace caf
@@ -26,15 +25,10 @@ namespace caf
     StandardRecord();
     ~StandardRecord();
 
-    SRHeader         hdr;    ///< Header branch: run, subrun, etc.
+    SRHeader          hdr;    ///< Header branch: run, subrun, etc.
     //    SRSpill          spill;  ///< Beam spill branch: pot, beam current, etc.
-    SRSlice          slc;    ///< Slice branch: nhit, extents, time, etc.
+    SRSlice           slc;    ///< Slice branch: nhit, extents, time, etc.
     SRSliceRecoBranch reco;    ///< Slice reco branch: tracks, showers, etc.
-
-    // TODO (from Gray): How do we represent true particles here??
-    // The true particles are per-event, I don't see how they fit into
-    // a per-slice structure
-    std::vector<SRTruthParticle> true_particle;
 
   };
 

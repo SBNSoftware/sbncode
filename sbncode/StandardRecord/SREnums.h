@@ -11,7 +11,8 @@ namespace caf
     kICARUS      ///< Far Detector
   };
 
-  enum Wall_t {
+  enum Wall_t 
+  {
     kWallNone=0,
     kWallTop=1,
     kWallBottom=2,
@@ -22,24 +23,27 @@ namespace caf
   };
 
   /// Which generator?
-  enum generator_{
+  enum generator_
+  {
     kUnknownGenerator = 0,
     kGENIE            = 1
   };
 
   /// Enum of possible types of truth-matching a TPC slice
-  enum interaction_mode_ {
+  enum interaction_mode_ 
+  {
     kCC = 0,           //!< CC neutrino interaction
     kCCNonPrimary = 1, //!< A non-primary part of a CC neutrino interaction
     kNC = 2,           //!< NC neutrino interaction
     kNCNonPrimary = 3, //!< A non-primary part of an NC neutrino interaction
     kCosmic = 4,       //!< Cosmic activity
     kIntimeCosmic = 5, //!< Cosmic activity in event triggered by intime-cosmic
-    mOther = 6 //!< Release valve value -- if nothing else really fits
+    kOther = 6 //!< Release valve value -- if nothing else really fits
   };
 
   /// Which genie status?
-  enum genie_status_ : int32_t { 
+  enum genie_status_ 
+  { 
       kIStUndefined                = -1,
       kIStInitialState             =  0,
       kIStStableFinalState         =  1,
@@ -56,7 +60,8 @@ namespace caf
   };//genie_status
 
   /// Which G4 process ?
-  enum g4_process_ : int32_t {
+  enum g4_process_ 
+  {
       kPrimary,
       kCoupledTransportation,
       kFastScintillation,
@@ -74,7 +79,7 @@ namespace caf
       kKaonmInelastic,
       kSigmapInelastic,
       kSigmamInelastic,
-      kkaon0LInelastic,
+      kKaon0LInelastic,
       kKaon0SInelastic,
       kLambdaInelastic,
       kAntiLambdaInelastic,
@@ -113,7 +118,8 @@ namespace caf
       kMuBrems,
       kHIoni,
       kMuPairProd,
-      kHPairProd
+      kHPairProd,
+      kUnknownProcess
   };// g4_process_
 
 }

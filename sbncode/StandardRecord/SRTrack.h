@@ -16,17 +16,21 @@ namespace caf
   class SRTrack
     {
     public:
+
+      // Commented some of these structs to build code ok
+      // and in preparation for moving them to their own SRObjects
+
       /// Truth information associated with a reconstructed track
       struct Truth {
         float total_deposited_energy; //!< True total deposited energy associated with this Track [GeV]
 
-        /// Match from a reconstructed track to a true particle 
-        struct ParticleMatch {
-          int G4ID; //!< ID of the particle match, taken from G4
-          float energy; //!< Total energy matching between reco track and true particle [GeV]
-        }; 
+        /* /// Match from a reconstructed track to a true particle  */
+        /* struct ParticleMatch { */
+        /*   int G4ID; //!< ID of the particle match, taken from G4 */
+        /*   float energy; //!< Total energy matching between reco track and true particle [GeV] */
+        /* }; */
 
-        std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched
+        /* std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched */
 
         /// Get the G4ID of the primary (most energy) particle match to this track (returns -1 if no match)
         int GetPrimaryMatchID() const;
@@ -45,22 +49,24 @@ namespace caf
         bool is_bwd; //!< Whether the MCS fit thinks the track is backwards
       };
 
-      struct CRTMatch {
-        struct Track {
-          bool present; //!< Whether a CRT track match exists
-          float time; //!< time of the CRT track [mus -- t=0 is spill time]
-          float angle; //!< Angle of the match between the TPC track and the CRT track [rad]
-        };
- 
-        struct Hit {
-          bool present; //!< Whether a CRT hit match exists
-          float distance; //!< Distance of closest approach between CRT hit and projected TPC track [cm]
-          float time; //!< Time of CRT hit [mus -- t=0 is spill time]
-        };
 
-        Track track; //!< CRT track match
-        Hit   hit;   //!< CRT hit match
-      };
+
+      /* struct CRTMatch { */
+        /* struct Track { */
+        /*   bool present; //!< Whether a CRT track match exists */
+        /*   float time; //!< time of the CRT track [mus -- t=0 is spill time] */
+        /*   float angle; //!< Angle of the match between the TPC track and the CRT track [rad] */
+        /* }; */
+ 
+        /* struct Hit { */
+        /*   bool present; //!< Whether a CRT hit match exists */
+        /*   float distance; //!< Distance of closest approach between CRT hit and projected TPC track [cm] */
+        /*   float time; //!< Time of CRT hit [mus -- t=0 is spill time] */
+        /* }; */
+
+      /*   Track track; //!< CRT track match */
+      /*   Hit   hit;   //!< CRT hit match */
+      /* }; */
 
       SRTrack();
       ~SRTrack(){  };
@@ -86,7 +92,7 @@ namespace caf
       TVector3       start;       ///< Start point of track
       TVector3       end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
-      CRTMatch       crt_match;   ///< Matching to CRT information
+      //      CRTMatch       crt_match;   ///< Matching to CRT information
       std::vector<int> track_daughters; ///< ID's of track daughters of this track
 
     };
