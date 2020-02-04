@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
 // \file    SRParticle.cxx
-// \brief   An SRParticle is a high level track object.  It knows its
-//          direction and length, but does not own its cell hits.
+// \brief   An SRParticle is a high level true track object.  It knows
+//          true id, direction, length, but does no hit information.
 ////////////////////////////////////////////////////////////////////////
 #include "SRParticle.h"
 
@@ -13,30 +13,29 @@ namespace caf
   }
 
   bool SRParticle::IsPrimary() const {
-    return start_process == SRParticle::primary;
+    return start_process ==  kPrimary;
   }
 
   bool SRParticle::HasBraggPeak() const {
     return \
-      // check contained
+      // check contained, id, & end process (stopping-only)
       is_contained &&
-      // check particle ID
-      (abs(pdg) == 13 || abs(pdg) == 2212 || abs(pdg) == 211 || abs(pdg) == 321) &&
-      // check end process (stopping-only)
-      (end_process == SRParticle::CoupledTransportation ||
-       end_process == SRParticle::FastScintillation ||
-       end_process == SRParticle::Decay ||
-       end_process == SRParticle::muMinusCaptureAtRest);
+      ( abs(pdg) == 13 || abs(pdg) == 2212 || 
+	abs(pdg) == 211 || abs(pdg) == 321 ) &&
+      ( end_process ==  kCoupledTransportation ||
+	end_process ==  kFastScintillation ||
+	end_process ==  kDecay ||
+	end_process ==  kmuMinusCaptureAtRest );
   }
 
   bool SRParticle::IsGenie() const {
-    return gstatus != SRParticle::kNotGenie;
+    return gstatus !=  kNotGenie;
   }
 
   bool SRParticle::IsStable() const {
     return \
-       gstatus == SRParticle::kNotGenie // non-genie particles are stable
-    || gstatus == SRParticle::kIStStableFinalState; // stable genie particle
+       gstatus ==  kNotGenie // non-genie particles are stable
+    || gstatus ==  kIStStableFinalState; // stable genie particle
 
   }
 
