@@ -20,6 +20,7 @@
 
 #include "CAFMakerParams.h"
 #include "FillReco.h"
+#include "FillTrue.h"
 #include "Utils.h"
 
 // C/C++ includes
@@ -131,6 +132,10 @@ class CAFMaker : public art::EDProducer {
   trkf::TrajectoryMCSFitter fMCSCalculator; 
   trkf::TrackMomentumCalculator fRangeCalculator;
 
+  // volumes
+  std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
+  std::vector<geo::BoxBoundedGeo> fActiveVolumes;
+
   void InitializeOutfile();
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
@@ -190,15 +195,47 @@ class CAFMaker : public art::EDProducer {
 //.......................................................................
   CAFMaker::CAFMaker(const Parameters& params) 
   : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0) {
-
+    fParams(params()), fIsRealData(false), fFile(0),
+    fMCSCalculator(fParams.MCSConfig),
+    fRangeCalculator(fParams.RangePMinTrackLength())
+  {
   fCafFilename = fParams.CAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
 
   produces<std::vector<caf::StandardRecord>>();
-  produces<art::Assns<caf::StandardRecord, recob::Slice>>();
+  //produces<art::Assns<caf::StandardRecord, recob::Slice>>();
+
+  // setup volume definitions
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+
+  // first the TPC volumes 
+  for (auto const &cryo: geometry->IterateCryostats()) {
+    geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
+                                    tend = geometry->end_TPC(cryo.ID());
+    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+    while (iTPC != tend) {
+      geo::TPCGeo const& TPC = *iTPC;
+      this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+      iTPC++;
+    }
+     fTPCVolumes.push_back(std::move(this_tpc_volumes));
+  }
+
+  // then combine them into active volumes
+  for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
+    double XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+    double YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+    double ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+    double XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+    double YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+    double ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+
+    fActiveVolumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
+  }
+
 }
 
 //......................................................................
@@ -408,6 +445,33 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       new art::Assns<caf::StandardRecord, recob::Slice>);
 
   fTotalEvents += 1;
+
+  // get all of the true particles from G4
+  std::vector<caf::SRTrueParticle> true_particles;
+  art::Handle<std::vector<simb::MCParticle>> mc_particles;
+  GetByLabelStrict(evt, "largeant", mc_particles);
+
+  art::Handle<std::vector<simb::MCTruth>> neutrinos;
+  GetByLabelStrict(evt, "generator", neutrinos);
+
+  if (mc_particles.isValid()) {
+    for (const simb::MCParticle part: *mc_particles) {
+      true_particles.emplace_back();
+
+      ParticleData pdata;
+      pdata.AV = &fActiveVolumes;
+      pdata.TPCVolumes = &fTPCVolumes;
+      art::fill_ptr_vector(pdata.neutrinos, neutrinos);
+
+      art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+      pdata.backtracker = bt_serv.get();
+      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+      pdata.inventory_service = pi_serv.get();
+
+      // TODO: fix weird crashes
+      // FillTrueG4Particle(part, pdata, true_particles.back());
+    }
+  }
 
   // keep track of ID offsets
   unsigned pfp_index_offset = 0;
