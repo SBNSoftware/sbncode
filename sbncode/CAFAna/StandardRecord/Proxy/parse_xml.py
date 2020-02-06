@@ -6,11 +6,11 @@ import sys
 try:
     from pygccxml import *
 except Exception as e:
+    print
     print e
     print
-#    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
-    print "Try 'setup pygccxml v1_9_1a -f NULL -z /cvmfs/nova.opensciencegrid.org/externals -q p2715a'"
-    print "and 'setup castxml v0_00_00_f20180122'"
+    print 'On SL6 try: setup pygccxml v1_9_1  -q p2714b; setup castxml v0_00_00_f20180122'
+    print 'On SL7 try: setup pygccxml v1_9_1a -q p2715a; setup castxml v0_00_00_f20180122'
     print
     sys.exit(1)
 
