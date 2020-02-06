@@ -24,5 +24,9 @@ namespace caf
     charge         = -5;
   }
 
+  //bool SRSlice::Truth::IsPrimary() const {
+  //  return mode != caf::SRSlice::Truth::mCCNonPrimary && mode != caf::SRSlice::Truth::mNCNonPrimary;
+  //}
+
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

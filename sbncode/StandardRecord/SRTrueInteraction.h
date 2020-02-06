@@ -17,7 +17,7 @@ namespace caf
 
     short      pdg;           ///< pdg code
 
-    int        interaction_id; ///< ID of the truth-matched interaction
+    int        ID; ///< ID of the truth-matched interaction
     int        inttype;       ///< Interaction type enum int_type::[...]
 
     bool       iscc;          ///< True if charged-current, false if not
@@ -25,10 +25,6 @@ namespace caf
 
     float      E;             ///< True energy [GeV]
     float      visE;          ///< True interaction deposited energy
-    float      visEinslc;     ///< True deposited energy in slice [GeV]
-    float      visEcosmic;    ///< True slice deposited energy from cosmics
-    float      eff;           ///< Slice efficiency for this interaction
-    float      pur;           ///< Slicer purity for this interaction
     float      time;          ///< interaction time.
     float      genweight;     ///< Weight, if any, assigned by the generator
     float      xsec;          ///< xsec for thrown interaction, in 1/GeV^2, as stored by the GENIE spline
