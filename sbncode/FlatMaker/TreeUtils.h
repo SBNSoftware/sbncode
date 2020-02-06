@@ -39,6 +39,7 @@ namespace
   }
 
   //----------------------------------------------------------------------
+  [[maybe_unused]]
   void branch(TTree* tr, const std::string& name, std::string* target,
               const flat::IBranchPolicy* policy)
   {
