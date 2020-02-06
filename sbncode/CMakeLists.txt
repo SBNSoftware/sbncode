@@ -34,7 +34,7 @@ add_subdirectory(EventWeight)
 add_subdirectory(StandardRecord)
 add_subdirectory(CAFMaker)
 
-#add_subdirectory(OscLib)
-#add_subdirectory(CAFAna)
-#add_subdirectory(FlatMaker)
+add_subdirectory(OscLib)
+add_subdirectory(CAFAna)
+add_subdirectory(FlatMaker)
 
