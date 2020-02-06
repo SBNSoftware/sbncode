@@ -1,8 +1,14 @@
 # for classes_def.xml
 include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
+link_directories(
+ $ENV{ROOTSYS}/lib
+)
 
 set( PACKAGE CAFMaker )
 FILE( GLOB src_files *.cxx )
+
+add_subdirectory(LArReco)
+add_subdirectory(RecoUtils)
 
 art_make_library( LIBRARY_NAME ${PACKAGE}
                   SOURCE ${src_files}
@@ -14,8 +20,6 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
-			    lardataobj_RecoBase
-			    ${LARRECO_LIB}
                             ${MF_MESSAGELOGGER}
                             ${MF_UTILITIES}
                             ${FHICLCPP}
@@ -23,19 +27,13 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
-                )
-
-build_dictionary( CAFMaker
-                  DICTIONARY_LIBRARIES StandardRecord
-                                       StandardRecord_dict
-		                               ${ART_FRAMEWORK_CORE}
-		                               ${ART_FRAMEWORK_PRINCIPAL}
-                                       art_Persistency_Common
-				                       art_Persistency_Provenance
-				                       art_Utilities canvas
-				                       cetlib cetlib_except
-				                       ${MF_MESSAGELOGGER}
-				                       ${MF_UTILITIES}
+			    caf_LArReco	    
+			    caf_RecoUtils
+        larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+	larsim_MCCheater_BackTrackerService_service
+	nusimdata_SimulationBase
+	larsim_MCCheater_ParticleInventoryService_service
                 )
 
 SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
@@ -62,6 +60,21 @@ simple_plugin ( CAFMaker module
                ${ROOT_BASIC_LIB_LIST}
                BASENAME_ONLY
             )
+
+build_dictionary( CAFMaker
+                  DICTIONARY_LIBRARIES 
+				StandardRecord
+				StandardRecord_dict
+				${ART_FRAMEWORK_CORE}
+				${ART_FRAMEWORK_PRINCIPAL}
+				art_Persistency_Common
+				art_Persistency_Provenance
+				art_Utilities canvas
+				cetlib cetlib_except
+				${MF_MESSAGELOGGER}
+				${MF_UTILITIES}
+)
+
 
 install_headers()
 install_fhicl()
