@@ -1,5 +1,13 @@
 #include "CAFMaker.fcl"
 
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_sbnd.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
 
 process_name: CAFmaker
 
@@ -15,6 +23,15 @@ services:
   TimeTracker:  { printSummary: true }
   # #  @table::standard_services
 
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  Geometry:                  @local::sbnd_geo
+  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
 }
 
 # services.IFBeam: {}
@@ -71,3 +88,5 @@ physics:
 physics.producers.mycafmaker: @local::standard_cafmaker
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
+
+#include "3drift_services_sbnd.fcl"

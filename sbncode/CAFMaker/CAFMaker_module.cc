@@ -75,6 +75,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Shower.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -126,6 +127,9 @@ class CAFMaker : public art::EDProducer {
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
+  // algorithms
+  trkf::TrajectoryMCSFitter fMCSCalculator; 
+  trkf::TrackMomentumCalculator fRangeCalculator;
 
   void InitializeOutfile();
 
@@ -412,15 +416,38 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //         pandorawtvCryo01, etc.) Then add them to the same 
   //         vector with the associated CRYO var for the tree
 
+  std::cout << "Got N slices: " << slices->size() << std::endl;
 
   // Get tracks & showers here
   art::FindManyP<recob::PFParticle> fmPFPart = 
     FindManyPStrict<recob::PFParticle>(slices, evt, "pandora");//fParams.PFPartLabel());
 
+  art::Handle<std::vector<recob::PFParticle>> pfparticles;
+  GetByLabelStrict(evt, "pandora", pfparticles);
 
-  // art::FindManyP<recob::Track> partTrks(track_handle, 
-  // 					     evt, 
-  // 					     _config.RecoTrackTag + suffix);// pandoraTrack, pandoraTrackGaus<n>
+  art::FindManyP<anab::T0> fmT0 =
+    FindManyPStrict<anab::T0>(pfparticles, evt, "fmatch");
+
+  art::Handle<std::vector<recob::Track>> tracks;
+  GetByLabelStrict(evt, "pandoraTrack", tracks);
+
+  art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
+    FindManyPStrict<larpandoraobj::PFParticleMetadata>(pfparticles, evt, "pandora");
+
+  art::FindManyP<recob::Track> fmTrack = 
+    FindManyPStrict<recob::Track>(pfparticles, evt, "pandoraTrack");
+
+  art::FindManyP<recob::Shower> fmShower =
+    FindManyPStrict<recob::Shower>(pfparticles, evt, "pandoraShower");
+
+  art::FindManyP<anab::Calorimetry> fmCalo = 
+    FindManyPStrict<anab::Calorimetry>(tracks, evt, "pandoraCalo");
+
+  art::FindManyP<anab::ParticleID> fmPID = 
+    FindManyPStrict<anab::ParticleID>(tracks, evt, "pandoraPid");
+
+  art::FindManyP<recob::Hit> fmHit =
+    FindManyPStrict<recob::Hit>(tracks, evt, "pandoraTrack");
 
   //#######################################################
   // Loop over slices 
@@ -455,10 +482,36 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // rec.hdr.blind = 0;
     // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceId);
 
+    // get the primary particle associated with this slice
+    std::vector<art::Ptr<recob::PFParticle>> slcPFParts = fmPFPart.at(sliceId);
+    size_t iPart;
+    for (iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
+      const recob::PFParticle &thisParticle = *slcPFParts[iPart];
+      if (thisParticle.IsPrimary()) break;
+    }
+    // primary particle and meta-data
+    SliceData sdata;
+    sdata.particle_id_offset = 0;
+    sdata.slice_id_offset = 0;
+    sdata.primary = (iPart == slcPFParts.size()) ? NULL : slcPFParts[iPart].get();
+    sdata.primary_meta = (iPart == slcPFParts.size()) ? NULL : fmPFPMeta.at(slcPFParts[iPart]->Self()).at(0).get();
+    // get the flash match
+    sdata.fmatch = NULL; 
+    if (fmT0.isValid() && sdata.primary != NULL) {
+      std::vector<art::Ptr<anab::T0>> fmatch = fmT0.at(sdata.primary->Self());
+      if (fmatch.size() != 0) {
+        assert(fmatch.size() == 1);
+        sdata.fmatch = fmatch[0].get(); 
+      }
+    }
+
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(slice, rec.slc);
+    FillSliceVars(slice, sdata, rec.slc);
+
+    // select slice
+    if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
 
     //#######################################################
     // Add detector dependent slice info.
@@ -475,26 +528,47 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // This depends on the findMany object created above.
 
     if ( fmPFPart.isValid() ) {
-      std::vector<art::Ptr<recob::PFParticle>> slcPFParts = fmPFPart.at(sliceId);
-
       for ( size_t iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
+        const recob::PFParticle &thisParticle = *slcPFParts[iPart];
 
-	art::FindManyP<recob::Track>       fmTrack = 
-	  FindManyPStrict<recob::Track>(slcPFParts, evt, "pandoraTrack");//fParams.TrackLabel());
+        const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(thisParticle.Self());
+        const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(thisParticle.Self());
 
-	if ( fmTrack.isValid() ) {
-	  std::vector<art::Ptr<recob::Track>> partTrks = fmTrack.at(iPart);
-	  std::sort(partTrks.begin(),partTrks.end(),sortRBTrkLength);
+        if (thisTrack.size())  { // it's a track!
+          assert(thisTrack.size() == 1);
+          assert(thisShower.size() == 0);
+          rec.reco.ntrk ++;
+          rec.reco.trk.push_back(SRTrack()); 
 
-	  rec.reco.ntrk = partTrks.size();
-	  
-	  for ( size_t iTrack = 0; iTrack < partTrks.size(); ++iTrack ) {
+          // setup the data the track will need
+          TrackData tdata;
+
+          // set the ID
+          // use the PFParticle ID for the id so that it is
+          // global across tracks and showers
+          // also include the index offset in the case of multiple
+          // reconstruction being run (as in ICARUS)
+          tdata.particle_index_offset = 0;
+
+          // set the tdata
+          tdata.particleIDs = fmPID.at(thisTrack[0]->ID());
+          tdata.calos = fmCalo.at(thisTrack[0]->ID());
+          tdata.hits = fmHit.at(thisTrack[0]->ID());
+
+          // set the algorithms
+          tdata.mcs_calculator = &fMCSCalculator;
+          tdata.range_calculator = &fRangeCalculator;
+          tdata.geom = lar::providerFrom<geo::Geometry>();
+              
+          FillTrackVars(*thisTrack[0], thisParticle, tdata, rec.reco.trk.back());
 	    
-	    rec.reco.trk.push_back(SRTrack());	    
-	    FillTrackVars((*partTrks[iTrack]), rec.reco.trk.back(),iPart);
-	    
-	  }// end for iTrack
-	} // fmTrack ok
+	} // thisTrack exists
+        else if (thisShower.size()) {
+          assert(thisTrack.size() == 0);
+          assert(thisShower.size() == 1);
+          // TODO: fill shower vars
+        } // thisShower exists
+        else {}
 	
       }// end for pfparts
     } // fmPFPart ok
@@ -544,7 +618,7 @@ void CAFMaker::endJob() {
 
 }
 
-DEFINE_ART_MODULE(CAFMaker)
 
 }  // end namespace caf
+DEFINE_ART_MODULE(caf::CAFMaker)
 ////////////////////////////////////////////////////////////////////////
