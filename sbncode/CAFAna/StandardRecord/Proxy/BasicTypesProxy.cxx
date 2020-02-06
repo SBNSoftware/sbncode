@@ -446,7 +446,7 @@ namespace caf
 
   template class Proxy<std::string>;
 
-  template class Proxy<SRExperiment>;
+  //  template class Proxy<SRExperiment>;
   //  template class Proxy<View_t>;
   //  template class Proxy<generator_>;
   //  template class Proxy<mode_type_>;
