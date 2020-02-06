@@ -18,9 +18,9 @@ except Exception as e:
 # dependency tree.
 fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
-                     'long', 'long unsigned int',
+                     'long', 'unsigned long', 'long unsigned int',
                      'long long int', 'char', 'unsigned char',
-                     'size_t', # 'TVector3',
+                     'size_t', 'TVector3',
                      'std::string']
 
 def type_to_proxy_type(type):
@@ -29,8 +29,7 @@ def type_to_proxy_type(type):
 
 #    if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
 
-#    if type == 'StandardRecord': return 'SRProxy'
-    if type == 'RecoEvent': return 'SRProxy' # compatibility with existing CAFAna code
+    if type == 'StandardRecord': return 'SRProxy'
 
     if type == 'TVector3': return 'TVector3Proxy'
     if type in fundamental_types:
@@ -81,15 +80,15 @@ config = parser.xml_generator_configuration_t(
 #    start_with_declarations='caf::StandardRecord'
     )
 
-print 'Reading from', context+'/sbnanalysis/core/Event.hh'
-decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
+print 'Reading from', context+'/sbncode/StandardRecord/StandardRecord.h'
+decls = parser.parse([context+'/sbncode/StandardRecord/StandardRecord.h'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
-ns = global_namespace.namespace('event')
+ns = global_namespace.namespace('caf')
 
 fundamental_types += [e.name for e in ns.enumerations()]
-fundamental_types += ['Experiment'] # isn't currently within the event:: namespace
+# fundamental_types += ['Experiment'] # isn't currently within the event:: namespace
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
@@ -123,13 +122,13 @@ print '#pragma once'
 print
 print '#include "sbncode/CAFAna/StandardRecord/Proxy/BasicTypesProxy.h"'
 print
-print '#include "sbncode/CAFAna/StandardRecord/SREnums.h"'
+print '#include "sbncode/StandardRecord/SREnums.h"'
 print
 print '#include "TVector3.h"'
 print
 print 'namespace caf'
 print '{'
-print 'typedef short unsigned int Experiment; // special case enum'
+#print 'typedef short unsigned int Experiment; // special case enum'
 print
 
 debug = False
