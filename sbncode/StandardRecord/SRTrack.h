@@ -6,8 +6,6 @@
 
 /* #include "SRVector3D.h" */
 
-#include "SRTrackTruth.h"
-
 #include <TVector3.h>
 #include <vector>
 
@@ -19,15 +17,39 @@ namespace caf
     {
     public:
 
+      // Commented some of these structs to build code ok
+      // and in preparation for moving them to their own SRObjects
+
+      /// Truth information associated with a reconstructed track
+      struct Truth {
+        float total_deposited_energy; //!< True total deposited energy associated with this Track [GeV]
+
+        /* /// Match from a reconstructed track to a true particle  */
+        /* struct ParticleMatch { */
+        /*   int G4ID; //!< ID of the particle match, taken from G4 */
+        /*   float energy; //!< Total energy matching between reco track and true particle [GeV] */
+        /* }; */
+
+        /* std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched */
+
+        /// Get the G4ID of the primary (most energy) particle match to this track (returns -1 if no match)
+        int GetPrimaryMatchID() const;
+
+        /// Get the purity of the energy associated with this track relative to the best-matched particle (0 if no match) 
+        float Purity() const;
+
+      };
+
       /// Information on the result of MCS fitting for momentum
-      class MCSFitResult {
-        public:
+      struct MCSFitResult {
         float fwd_momentum; //!< Momentum result of fitting the track from start -> end [GeV/c]
         float fwd_momentum_err; //!< Error on momentum result of fitting the track from start -> end [GeV/c]
         float bwd_momentum; //!< Momentum result of fitting the track from end -> start [GeV/c]
         float bwd_momentum_err; //!< Error on momentum result of fitting the track from end -> start [GeV/c]
         bool is_bwd; //!< Whether the MCS fit thinks the track is backwards
       };
+
+
 
       /* struct CRTMatch { */
         /* struct Track { */
@@ -50,8 +72,9 @@ namespace caf
       ~SRTrack(){  };
 
       unsigned short npts;         ///< number of points (recob Track.NPoints)
+      //      SRVector3D     start;        ///< Shower start point in detector coordinates. [cm]
       float          len;          ///< track length [cm]
-      SRTrackTruth   truth;        ///< truth information
+      Truth          truth;        ///< truth information
       MCSFitResult   mcs_muon;     ///< MCS fit result using muon particle hypothesis 
       MCSFitResult   mcs_pion;     ///< MCS fit result using pion particle hypothesis 
       MCSFitResult   mcs_kaon;     ///< MCS fit result using kaon particle hypothesis 
@@ -70,7 +93,7 @@ namespace caf
       TVector3       end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
       //      CRTMatch       crt_match;   ///< Matching to CRT information
-      std::vector<int> daughters; ///< ID's of daughters of this track
+      std::vector<int> track_daughters; ///< ID's of track daughters of this track
 
     };
 

@@ -14,9 +14,7 @@ standard_cafmaker:{
     DataTier:             "caf" # Provide a string to override automatic filename
     FileExtension:        ".caf.root"
     GeneratorInput:       "generator"
-    StrictMode:           true    # Abort if any required product is not found, unless the label is empty
-
-    MCSConfig: {}
+    StrictMode:           false    # Abort if any required product is not found, unless the label is empty
 
 }
 

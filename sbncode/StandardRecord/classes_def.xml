@@ -10,25 +10,12 @@
   <class name="caf::SRHeader"       />
   <class name="caf::SRShower" />
   <class name="caf::SRSlice"        />
-  <class name="caf::SRSlice::TruthMatch"        />
-  <class name="caf::SRSlice::FlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
-  <class name="caf::SRTrack::MCSFitResult" />
-  <class name="caf::SRTrackTruth" />
-  <class name="caf::SRTrackTruth::ParticleMatch" />
   <class name="caf::SRTrueParticle" />
   <class name="caf::SRTrueInteraction" />
 
   <class name="std::vector<caf::SRTrack>" />
   <class name="std::vector<caf::SRShower>" />
   <class name="std::vector<caf::SRTrueParticle>" />
-  <class name="std::vector<caf::SRTrackTruth::ParticleMatch>" />
-
-  <enum name="caf::Det_t" />
-  <enum name="caf::Wall_t" />
-  <enum name="caf::generator_" />
-  <enum name="caf::interaction_mode_" />
-  <enum name="caf::genie_status_" />
-  <enum name="caf::g4_process_" />
 </lcgdict>
