@@ -13,19 +13,19 @@ namespace caf
   }
 
   bool SRTrueParticle::IsPrimary() const {
-    return start_process ==  kPrimary;
+    return start_process == kG4primary;
   }
 
   bool SRTrueParticle::HasBraggPeak() const {
     return \
       // check contained, id, & end process (stopping-only)
-      isContained &&
+      contained &&
       ( abs(pdg) == 13 || abs(pdg) == 2212 || 
 	abs(pdg) == 211 || abs(pdg) == 321 ) &&
-      ( end_process ==  kCoupledTransportation ||
-	end_process ==  kFastScintillation ||
-	end_process ==  kDecay ||
-	end_process ==  kMuMinusCaptureAtRest );
+      ( end_process ==  kG4CoupledTransportation ||
+	end_process ==  kG4FastScintillation ||
+	end_process ==  kG4Decay ||
+	end_process ==  kG4muMinusCaptureAtRest );
   }
 
   bool SRTrueParticle::IsGenie() const {
