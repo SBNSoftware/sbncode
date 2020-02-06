@@ -2,8 +2,12 @@
 #define CAF_CAFMAKERPARAMS_H
 
 #include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/OptionalTable.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDAnalyzer.h"
+
+#include "LArReco/TrajectoryMCSFitter.h"
 
 namespace caf
 {
@@ -34,6 +38,35 @@ namespace caf
     Atom<bool> StrictMode        { Name("StrictMode"),
 	Comment("Abort if any required product not found, unless label is empty")
     };
+
+    Atom<bool> CutClearCosmic {
+      Name("CutClearCosmic"),
+      Comment("Cut slices which are marked as a 'clear-cosmic' by pandora"),
+      true
+    };
+
+    Atom<bool> SelectOneSlice {
+      Name("SelectOneSlice"),
+      Comment("Only select one slice per spill (ranked by nu_score) [TODO: implement]."),
+      false
+    };
+
+    Table<trkf::TrajectoryMCSFitter::Config> MCSConfig {
+      Name("MCSConfig"),
+      Comment("Configuration for Multiple-Coulumb-Scattering Momentum fitter"),
+    };
+
+    Atom<float> RangePMinTrackLength {
+      Name("RangePMinTrackLength"),
+      Comment("Minimum length of track for range momentum calculation"),
+      10.
+    };
+
+    fhicl::OptionalSequence<std::string> SliceTagSuffixes {
+      Name("SliceTagSuffixes"),
+      Comment("List of suffixes to add to TPC reco tag names (e.g. cryo0 cryo1)")
+    };
+
 
   };
 }
