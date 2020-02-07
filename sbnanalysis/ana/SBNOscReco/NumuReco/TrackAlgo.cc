@@ -2,13 +2,10 @@
 #include <numeric>
 
 
-void numu::ApplyTrueParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::RecoTrack> &tracks, const std::map<size_t, numu::TrueParticle> &particles) {
-  const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
-
-  for (size_t id: neutrino.daughters) {
-    if (!tracks.count(id)) continue;
+void numu::ApplyTrueParticleID(const numu::RecoInteraction &interaction, std::map<size_t, numu::RecoTrack> &tracks, const std::map<size_t, numu::TrueParticle> &particles) {
+  for (unsigned ID: interaction.PrimaryTracks(tracks)) {
     // apply the true particle ID
-    numu::RecoTrack &track = tracks.at(id);
+    numu::RecoTrack &track = tracks.at(ID);
 
     int pdg = -1; // "NULL" value
     int match_id = track.truth.GetPrimaryMatchID();
@@ -30,34 +27,30 @@ void ApplyMinHadronChi2(numu::RecoTrack &track) {
       })->first;
 }
 
-void numu::ApplyParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::RecoTrack> &tracks) {
+void numu::ApplyParticleID(const numu::RecoInteraction &interaction, std::map<size_t, numu::RecoTrack> &tracks) {
   // example algorithm borrowed from Rhiannon Jones
-  const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
-  
   // first look for a track with length > 100cm that exits 
   // call this the muon
   int exiting_muon_candidate = -1;
-  for (size_t id: neutrino.daughters) {
-    if (!tracks.count(id)) continue;
-    const numu::RecoTrack &track = tracks.at(id);
+  for (unsigned ID: interaction.PrimaryTracks(tracks)) {
+    const numu::RecoTrack &track = tracks.at(ID);
     if (track.length > 100 && !track.is_contained) {
       if (exiting_muon_candidate != -1) { // two candidates -- don't apply this ID
         exiting_muon_candidate = -1;
         break;
       }
-      exiting_muon_candidate = id;
+      exiting_muon_candidate = track.ID;
     }
   }
 
   if (exiting_muon_candidate != -1) {
-    for (size_t id: neutrino.daughters) {
-      if (!tracks.count(id)) continue;
-      const numu::RecoTrack &track = tracks.at(id);
-      if (id == exiting_muon_candidate) {
-        tracks.at(id).pdgid = 13; // muon
+    for (unsigned ID: interaction.PrimaryTracks(tracks)) {
+      numu::RecoTrack &track = tracks.at(ID);
+      if (ID == exiting_muon_candidate) {
+        track.pdgid = 13; // muon
       }
       else {
-        ApplyMinHadronChi2(tracks.at(id));
+        ApplyMinHadronChi2(track);
       }
     }
     // Done!
@@ -67,21 +60,20 @@ void numu::ApplyParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::
   // otherwise:
 
   std::vector<std::pair<size_t, float>> muon_candidates;
-  for (size_t id: neutrino.daughters) {
-    if (!tracks.count(id)) continue;
-    const numu::RecoTrack &track = tracks.at(id);
+  for (unsigned ID: interaction.PrimaryTracks(tracks)) {
+    const numu::RecoTrack &track = tracks.at(ID);
     bool very_long = true;
     // get the subleading max length
-    for (size_t id2: neutrino.daughters) {
-      if (!tracks.count(id2)) continue;
-      const numu::RecoTrack &other = tracks.at(id2);
+    for (unsigned otherID: interaction.PrimaryTracks(tracks)) {
+    const numu::RecoTrack &other = tracks.at(otherID);
+      if (other.ID == track.ID) continue; // same track
       if (track.length < other.length * 1.5) {
         very_long = false;
         break;
       }
     }
     if (very_long || (track.chi2_muon < 16 && track.chi2_proton > 80)) {
-      std::pair<size_t, float> pair {id, track.chi2_muon};
+      std::pair<size_t, float> pair {ID, track.chi2_muon};
       muon_candidates.push_back(pair);
     }
   }
@@ -95,10 +87,9 @@ void numu::ApplyParticleID(const numu::RecoSlice &slice, std::map<size_t, numu::
       })->first;
   }
 
-  for (size_t id: neutrino.daughters) {
-    if (!tracks.count(id)) continue;
-    numu::RecoTrack &track = tracks.at(id);
-    if (id == muon) {
+  for (unsigned ID: interaction.PrimaryTracks(tracks)) {
+    numu::RecoTrack &track = tracks.at(ID);
+    if (ID == muon) {
       track.pdgid = 13;
     }
     else if (track.chi2_proton < 80.) {

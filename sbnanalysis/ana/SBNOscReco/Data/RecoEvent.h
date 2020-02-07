@@ -44,6 +44,8 @@ struct RecoInteraction {
   int npion; //!< Number of pions in final state
   int nproton; //!< Number of protons in final state 
   int nkaon; //!< Number of kaons in final state
+
+  std::vector<size_t> PrimaryTracks(const std::map<size_t, RecoTrack> &tracks) const;
 };
 
 /** Reconstruction Information about Event */

@@ -718,6 +718,9 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
   for (unsigned pfp_track_index = 0; pfp_track_index < _tpc_tracks.size(); pfp_track_index++) {
     const art::Ptr<recob::Track> &track = _tpc_tracks[pfp_track_index];
 
+    // is index same as ID?
+    assert(pfp_track_index == track->ID());
+
     // information to be saved
     numu::RecoTrack this_track;
 
@@ -887,6 +890,9 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
     // assign pandora PDG
     this_particle.pandora_pid = this_pfp.PdgCode();
 
+    // get the parent
+    this_particle.parent = this_pfp.Parent();
+
     // get its daughters in the partcle "flow"
     this_particle.daughters.assign(_tpc_particles_to_daughters[i].begin(), _tpc_particles_to_daughters[i].end());
     // get the metadata
@@ -929,8 +935,6 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 bool NumuReco::HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoSlice &slice) {
   if (slice.primary_index < 0) return false;
 
-  for (const auto &part_pair: slice.particles) {
-  }
   const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
   for (size_t pfp_index: neutrino.daughters) {
     const numu::RecoParticle &daughter = slice.particles.at(pfp_index);
@@ -1419,7 +1423,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
     this_interaction.slice = reco_slices[reco_i];
     this_interaction.position = neutrino.vertices[0];
     // First guess of primary track
-    this_interaction.primary_track_index = numu::SelectLongestTrack(reco_tracks, this_interaction.slice);
+    this_interaction.primary_track_index = numu::SelectLongestTrack(reco_tracks, this_interaction);
     assert(this_interaction.primary_track_index >= 0);
 
     // TODO: get the enrgy

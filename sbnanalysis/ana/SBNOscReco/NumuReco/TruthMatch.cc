@@ -8,6 +8,9 @@ struct MatchSet {
 
 static const bool _verbose_truth_match = true;
 
+// declare heuristics
+MatchSet ApplyNumuCCHeuristic(const numu::RecoEvent &event, const event::Interaction &truth, unsigned truth_i); 
+
 // Method of truth matching:
 //
 // First iterate through the true neutrino interactions and use some heuristics to
@@ -49,10 +52,9 @@ MatchSet FindMatches(const numu::RecoEvent &event, const std::vector<event::Inte
   // matching using heuristics
   std::vector<int> reco_to_truth_h(event.reco.size(), -1);
   // if heuristic is primary
-  std::vector<int> match_is_primary_h(event.reco.size(), false);
+  std::vector<bool> match_is_primary_h(event.reco.size(), false);
 
   // matching using energy
-  std::vector<int> reco_to_truth_e(event.reco.size(), -1);
   std::vector<int> truth_best_energy_matched(truth.size(), 0.);
 
   if (_verbose_truth_match) std::cout << "\n\nNew truth matching!\n";
@@ -64,114 +66,25 @@ MatchSet FindMatches(const numu::RecoEvent &event, const std::vector<event::Inte
 
     if (_verbose_truth_match) std::cout << "Trying heuristic for neutrino interaction: " << truth_i << std::endl;
 
+    MatchSet matches; 
+
     // Hueristic for numu CC
     if (t.neutrino.iscc && abs(t.neutrino.pdg) == 14) {
-      if (_verbose_truth_match) std::cout << "numu CC heuristic matches\n";
-
-      // get the reco candidates -- look for any match to the muon
-      std::vector<int> muon_matches(event.reco.size(), -1);
-      for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
-        const numu::RecoInteraction &reco = event.reco[reco_i];
-        for (size_t ind: reco.slice.tracks) {
-          if (event.tracks.at(ind).truth.GetPrimaryMatchID() == t.lepton.G4ID) {
-            float energy_match_frac = event.tracks.at(ind).truth.matches[0].energy / event.particles.at(t.lepton.G4ID).deposited_energy; 
-              if (_verbose_truth_match) {
-                std::cout << "heuristic check for reco: " << reco_i << ". True muon energy: " << event.particles.at(t.lepton.G4ID).deposited_energy << " deposited: " << event.particles.at(t.lepton.G4ID).energy_loss << " match energy: " << event.tracks.at(ind).truth.matches[0].energy << 
-		    ". True muon start X: " << event.particles.at(t.lepton.G4ID).start.X() << 
-		    ". True muon start Y: " << event.particles.at(t.lepton.G4ID).start.Y() << 
-		    ". True muon start Z: " << event.particles.at(t.lepton.G4ID).start.Z() << 
-		    " match start X: " << event.tracks.at(ind).start.X() <<
-		    " match start Y: " << event.tracks.at(ind).start.Y() <<
-		    " match start Z: " << event.tracks.at(ind).start.Z() <<
-		    " match end X: " << event.tracks.at(ind).end.X() <<
-		    " match end Y: " << event.tracks.at(ind).end.Y() <<
-		    " match end Z: " << event.tracks.at(ind).end.Z() << std::endl;
-              }
-            if (energy_match_frac > 0.05) {
-
-              // muon got split in this reco -- choose the one closer to the start
-              if (muon_matches[reco_i] != -1) {
-                std::cout << "BAD: Two reco tracks matching muon id: " << t.lepton.G4ID << std::endl;
-                const numu::RecoTrack &this_track = event.tracks.at(ind);
-                std::cout << "this track: " << "length: " << this_track.length << " match energy frac: " << (this_track.truth.matches[0].energy / event.particles.at(t.lepton.G4ID).deposited_energy) << " x: " << this_track.start.X() << " y: " << this_track.start.Y() << " z: " << this_track.start.Z() << std::endl; 
-                const numu::RecoTrack &other_track = event.tracks.at(muon_matches[reco_i]);
-                std::cout << "other track: " << "length: " << other_track.length << " match energy frac: " << (other_track.truth.matches[0].energy / event.particles.at(t.lepton.G4ID).deposited_energy) << " x: " << other_track.start.X() << " y: " << other_track.start.Y() << " z: " << other_track.start.Z() << std::endl; 
-
-                float this_distance = std::min((event.particles.at(t.lepton.G4ID).start - this_track.start).Mag(),
-                                               (event.particles.at(t.lepton.G4ID).start - this_track.end).Mag());
-                float other_distance = std::min((event.particles.at(t.lepton.G4ID).start - other_track.start).Mag(),
-                                                (event.particles.at(t.lepton.G4ID).start - other_track.end).Mag());
-                if (this_distance < other_distance) {
-                  muon_matches[reco_i] = ind;
-                }
-              }
-              // not split (yet)
-              else {
-                muon_matches[reco_i] = ind;
-              }
-            }
-            else if (_verbose_truth_match) std::cout << "HEURISTIC: match energy too low\n";
-          }
-        } 
-      }
-
-      unsigned nmatch = 0;
-      for (int match: muon_matches) {
-        if (match != -1) nmatch ++;
-      }
-
-      if (_verbose_truth_match) std::cout << "matches for heuristic: " << nmatch << std::endl;
-
-      // one match -- great! This one is the reco-truth match
-      if (nmatch == 1) {
-        for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
-          if (muon_matches[reco_i] != -1) {
-            assert(reco_to_truth_h[reco_i] == -1);
-            reco_to_truth_h[reco_i] = truth_i;
-            match_is_primary_h[reco_i] = true;
-          }
-        }
-        continue;
-      }
-      // multiple matches -- use tiebreaker
-      //
-      // If there are multiple tracks matching to the muon then
-      // it most likely got split in two. Tiebreak by using the track
-      // with the start point closer to the true vertex. The loser of
-      // the tie-breaker is set as non-primary
-      else if (nmatch > 1) {
-        float distance_match = -1;
-        int best_index = -1;
-        for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
-          int match = muon_matches[reco_i];
-          if (match != -1) {
-            float this_distance = std::min((event.tracks.at(match).start - t.neutrino.position).Mag(),
-                                           (event.tracks.at(match).end   - t.neutrino.position).Mag());
-
-            if (_verbose_truth_match) std::cout << "reco match: " << reco_i << " has distance from truth: " << this_distance << std::endl;
-
-            if (distance_match < 0. || this_distance < distance_match) {
-              distance_match = this_distance; 
-              best_index = reco_i;
-            }
-          }
-        }
-        assert(best_index != -1);
-        if (_verbose_truth_match) std::cout << "best reco match to heuristic is: " << best_index << std::endl;
-        for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
-          int match = muon_matches[reco_i];
-          if (match != -1) {
-            reco_to_truth_h[reco_i] = truth_i;
-            match_is_primary_h[reco_i] = best_index == reco_i;
-          }
-        }
-        continue;
-      }
-      // no-match :(
-      else {}
+      matches = ApplyNumuCCHeuristic(event, t, truth_i);
     }
-
     // TODO: other heuristics???
+    else {}
+
+    // merge heuristics
+    if (matches.reco_to_truth.size() > 0)  {
+      for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
+        if (matches.reco_to_truth[reco_i] != -1) {
+          assert(reco_to_truth_h[reco_i] == -1);
+          reco_to_truth_h[reco_i] = matches.reco_to_truth[reco_i];
+          match_is_primary_h[reco_i] = matches.match_is_primary[reco_i];
+        }
+      }
+    }
   }
 
   // calculate the true primary deposited energy for each true interaction
@@ -314,6 +227,7 @@ numu::SliceTruth MakeSliceTruth(const numu::RecoEvent &event, const std::vector<
     if (_verbose_truth_match) std::cout << "Cosmic"; 
     ret.mode = numu::mCosmic;
   }
+  std::cout << std::endl;
 
   float total_deposited_energy = 0.;
   float matching_neutrino_energy = 0.;
@@ -325,19 +239,29 @@ numu::SliceTruth MakeSliceTruth(const numu::RecoEvent &event, const std::vector<
     float this_matched_energy = 0.;
     for (const numu::TrackTruth::ParticleMatch &pmatch: track.truth.matches) {
       this_matched_energy += pmatch.energy;
-      const numu::TrueParticle &particle = event.particles.at(pmatch.G4ID);
-      if (particle.interaction_id < 0.) {
-        cosmic_energy += pmatch.energy;
-      }
-      else if (particle.interaction_id == interaction_id) {
-        matching_neutrino_energy += pmatch.energy;
+
+      // FIXME: Sometimes particles that have true energy depositions in the detector are
+      //        not saved by G4 (I am not sure why). This seems to not happen for the 
+      //        primary match to a given track, so we can usually assert that the 
+      //        particle matches for the primary match. However, sometimes particles
+      //        with small energy depositions seem to be thrown away. In this case,
+      //        we cannot determine the origin of the energy, so we count it 
+      //        as "unmatched" 
+      if (event.particles.count(pmatch.G4ID)) {
+        const numu::TrueParticle &particle = event.particles.at(pmatch.G4ID);
+        if (particle.interaction_id < 0.) {
+          cosmic_energy += pmatch.energy;
+        }
+        else if (particle.interaction_id == interaction_id) {
+          matching_neutrino_energy += pmatch.energy;
+        }
       }
     }
     unmatched_energy = track.truth.total_deposited_energy - this_matched_energy;
     total_deposited_energy += track.truth.total_deposited_energy;
   }
 
-  if (_verbose_truth_match) std::cout << std::endl << "Cosmic match frac: " << (cosmic_energy/total_deposited_energy) << " Neutrino frac: " << (matching_neutrino_energy/total_deposited_energy) << " Unmatched frac: " << (unmatched_energy/total_deposited_energy) << std::endl;
+  if (_verbose_truth_match) std::cout << "Cosmic match frac: " << (cosmic_energy/total_deposited_energy) << " Neutrino frac: " << (matching_neutrino_energy/total_deposited_energy) << " Unmatched frac: " << (unmatched_energy/total_deposited_energy) << std::endl;
 
   ret.total_deposited_energy = total_deposited_energy;
   ret.neutrino_match_energy = matching_neutrino_energy;
@@ -347,7 +271,7 @@ numu::SliceTruth MakeSliceTruth(const numu::RecoEvent &event, const std::vector<
   // Because an unmatched energy of zero requires different floating
   // point values to cancel to zero, sometimes floating point error
   // can create a small artifical  "unmatched_energy" value (which
-  // can be negative in some cases)
+  // can be negative)
   //
   // To avoid confusion, round very small values of unmatched_energy
   // to 0 
@@ -375,4 +299,132 @@ void numu::ApplySliceTruthMatch(numu::RecoEvent &event, const std::vector<event:
     event.reco[reco_i].slice.truth = MakeSliceTruth(event, truth, reco_i, matches.reco_to_truth[reco_i], matches.match_is_primary[reco_i]); 
   }
 }
+
+
+// heuristics
+MatchSet ApplyNumuCCHeuristic(const numu::RecoEvent &event, const event::Interaction &truth, unsigned truth_i) {
+  // matching using heuristics
+  std::vector<int> reco_to_truth_h(event.reco.size(), -1);
+  // if heuristic is primary
+  std::vector<bool> match_is_primary_h(event.reco.size(), false);
+
+  if (_verbose_truth_match) std::cout << "numu CC heuristic matches\n";
+
+  // get the reco candidates -- look for any match to the muon
+  std::vector<int> muon_matches(event.reco.size(), -1);
+  for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
+    const numu::RecoInteraction &reco = event.reco[reco_i];
+    const numu::RecoParticle &neutrino = reco.slice.particles.at(reco.slice.primary_index);
+    std::cout << "Daughters of reco: (" << reco_i << ") ";
+    for (size_t ind: neutrino.daughters) {
+      std::cout << ind << " ";
+      if (event.tracks.count(ind)) {
+        float dist = (reco.position - event.tracks.at(ind).start).Mag();
+        std::cout << "(" << dist << ") ";
+      }
+    }
+    std::cout << std::endl;
+    for (unsigned ID: event.reco[reco_i].PrimaryTracks(event.tracks)) {
+      const numu::RecoTrack &track = event.tracks.at(ID);
+
+      if (track.truth.GetPrimaryMatchID() == truth.lepton.G4ID) {
+        float energy_match_frac = track.truth.matches[0].energy / event.particles.at(truth.lepton.G4ID).deposited_energy; 
+        if (_verbose_truth_match) {
+          std::cout << "heuristic check for reco: " << reco_i << ". True muon energy: " << event.particles.at(truth.lepton.G4ID).deposited_energy << " deposited: " << event.particles.at(truth.lepton.G4ID).energy_loss << " match energy: " << track.truth.matches[0].energy << 
+	      ". True muon start X: " << event.particles.at(truth.lepton.G4ID).start.X() << 
+	      ". True muon start Y: " << event.particles.at(truth.lepton.G4ID).start.Y() << 
+	      ". True muon start Z: " << event.particles.at(truth.lepton.G4ID).start.Z() << 
+	      " match start X: " << track.start.X() <<
+	      " match start Y: " << track.start.Y() <<
+	      " match start Z: " << track.start.Z() <<
+	      " match end X: " << track.end.X() <<
+	      " match end Y: " << track.end.Y() <<
+	      " match end Z: " << track.end.Z() << 
+              " match length: " << track.length << 
+              " match ID: " << track.ID << std::endl;
+        }
+        if (energy_match_frac > 0.05) {
+
+          // muon got split in this reco -- choose the one closer to the start
+          if (muon_matches[reco_i] != -1) {
+            std::cout << "BAD: Two reco tracks matching muon id: " << truth.lepton.G4ID << std::endl;
+            const numu::RecoTrack &this_track = track;
+            std::cout << "this track: " << "length: " << this_track.length << " match energy frac: " << (this_track.truth.matches[0].energy / event.particles.at(truth.lepton.G4ID).deposited_energy) << " x: " << this_track.start.X() << " y: " << this_track.start.Y() << " z: " << this_track.start.Z() << std::endl; 
+            const numu::RecoTrack &other_track = event.tracks.at(muon_matches[reco_i]);
+            std::cout << "other track: " << "length: " << other_track.length << " match energy frac: " << (other_track.truth.matches[0].energy / event.particles.at(truth.lepton.G4ID).deposited_energy) << " x: " << other_track.start.X() << " y: " << other_track.start.Y() << " z: " << other_track.start.Z() << std::endl; 
+
+            float this_distance = std::min((event.particles.at(truth.lepton.G4ID).start - this_track.start).Mag(),
+                                           (event.particles.at(truth.lepton.G4ID).start - this_track.end).Mag());
+            float other_distance = std::min((event.particles.at(truth.lepton.G4ID).start - other_track.start).Mag(),
+                                            (event.particles.at(truth.lepton.G4ID).start - other_track.end).Mag());
+            if (this_distance < other_distance) {
+              muon_matches[reco_i] = track.ID;
+            }
+          }
+          // not split (yet)
+          else {
+            muon_matches[reco_i] = track.ID;
+          }
+        }
+        else if (_verbose_truth_match) std::cout << "HEURISTIC: match energy too low\n";
+      }
+    } 
+  }
+
+  unsigned nmatch = 0;
+  for (int match: muon_matches) {
+    if (match != -1) nmatch ++;
+  }
+
+  if (_verbose_truth_match) std::cout << "matches for heuristic: " << nmatch << std::endl;
+
+  // one match -- great! This one is the reco-truth match
+  if (nmatch == 1) {
+    for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
+      if (muon_matches[reco_i] != -1) {
+        assert(reco_to_truth_h[reco_i] == -1);
+        reco_to_truth_h[reco_i] = truth_i;
+        match_is_primary_h[reco_i] = true;
+     }
+    }
+  }
+  // multiple matches -- use tiebreaker
+  //
+  // If there are multiple tracks matching to the muon then
+  // it most likely got split in two. Tiebreak by using the track
+  // with the start point closer to the true vertex. The loser of
+  // the tie-breaker is set as non-primary
+  else if (nmatch > 1) {
+    float distance_match = -1;
+    int best_index = -1;
+    for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
+      int match = muon_matches[reco_i];
+      if (match != -1) {
+        float this_distance = std::min((event.tracks.at(match).start - truth.neutrino.position).Mag(),
+                                       (event.tracks.at(match).end   - truth.neutrino.position).Mag());
+
+        if (_verbose_truth_match) std::cout << "reco match: " << reco_i << " has distance from truth: " << this_distance << std::endl;
+
+        if (distance_match < 0. || this_distance < distance_match) {
+          distance_match = this_distance; 
+          best_index = reco_i;
+        }
+      }
+    }
+    assert(best_index != -1);
+    if (_verbose_truth_match) std::cout << "best reco match to heuristic is: " << best_index << std::endl;
+    for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
+      int match = muon_matches[reco_i];
+      if (match != -1) {
+        reco_to_truth_h[reco_i] = truth_i;
+        match_is_primary_h[reco_i] = best_index == reco_i;
+      }
+    }
+  }
+  // no-match :(
+  else {}
+
+  return {match_is_primary_h, reco_to_truth_h};
+}
+
 

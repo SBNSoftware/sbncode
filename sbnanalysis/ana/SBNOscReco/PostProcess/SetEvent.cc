@@ -21,14 +21,14 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
 
     // set particle ID
     if (true_particle_id) {
-      numu::ApplyTrueParticleID(event.reco[i].slice, event.tracks, event.particles);
+      numu::ApplyTrueParticleID(event.reco[i], event.tracks, event.particles);
     }
     else {
-      numu::ApplyParticleID(event.reco[i].slice, event.tracks);
+      numu::ApplyParticleID(event.reco[i], event.tracks);
     }
 
     // set primary track
-    int primary_track = numu::SelectMuon(event.tracks, event.reco[i].slice);
+    int primary_track = numu::SelectMuon(event.tracks, event.reco[i]);
 
     // remove vertices without a good primary track
     if (primary_track < 0) {
@@ -42,11 +42,9 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
     event.reco[i].npion = 0;
     event.reco[i].nkaon = 0;
     event.reco[i].nproton = 0;
-    const numu::RecoParticle &neutrino = event.reco[i].slice.particles.at(event.reco[i].slice.primary_index);
-    for (size_t id: neutrino.daughters) {
-      if (!event.tracks.count(id)) continue;
+    for (unsigned ID: event.reco[i].PrimaryTracks(event.tracks)) {
+      const numu::RecoTrack &track = event.tracks.at(ID);
       // apply the true particle ID
-      numu::RecoTrack &track = event.tracks.at(id);
 
       if (track.pdgid == 211) {
         event.reco[i].npion ++;

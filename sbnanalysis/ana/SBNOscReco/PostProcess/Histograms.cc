@@ -116,11 +116,9 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
   if (fill_all_tracks) {
     for (unsigned i = 0; i < event.reco.size(); i++) {
-      const numu::RecoParticle &neutrino = event.reco[i].slice.particles.at(event.reco[i].slice.primary_index);
-      for (unsigned id: neutrino.daughters) { 
-        if (!event.tracks.count(id)) continue;
+      for (unsigned ID: event.reco[i].PrimaryTracks(event.tracks)) {
+      const numu::RecoTrack &track = event.tracks.at(ID);
     
-        const numu::RecoTrack &track = event.tracks.at(id);
         const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
         const event::Neutrino &neutrino = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id).neutrino : nubad;
 
