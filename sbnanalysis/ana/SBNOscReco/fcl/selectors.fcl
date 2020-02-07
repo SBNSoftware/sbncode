@@ -34,11 +34,11 @@ primary_pdgs: ["all", "mu", "pi", "p"]
 
 reco_mode_selectors: [
    "return true;",
-   "return interaction.nproton == 0 && interaction.npion == 0; // 0p 0pi"
-   "return interaction.nproton == 1 && interaction.npion == 0; // 1p 0pi"
-   "return interaction.nproton == 2 && interaction.npion == 0; // 2p 0pi"
-   "return interaction.nproton >= 3 && interaction.npion == 0; // >2p 0pi"
-   "return interaction.npion == 1; // np 1pi"
+   "return interaction.nproton == 0 && interaction.npion == 0; // 0p 0pi",
+   "return interaction.nproton == 1 && interaction.npion == 0; // 1p 0pi",
+   "return interaction.nproton == 2 && interaction.npion == 0; // 2p 0pi",
+   "return interaction.nproton >= 3 && interaction.npion == 0; // >2p 0pi",
+   "return interaction.npion == 1; // np 1pi",
    "return interaction.npion >= 2; // np >1pi"
 ]
 
@@ -46,19 +46,19 @@ reco_modes: ["all", "p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"]
 
 interaction_selectors: [
    "return true;",
-   "return interaction.slice.truth.mode == 0; // CC"
-   "return interaction.slice.truth.mode == 1; // CC Non Primary"
-   "return interaction.slice.truth.mode == 2; // NC"
-   "return interaction.slice.truth.mode == 3; // CC Non Primary"
-   "return interaction.slice.truth.mode == 4; // Cosmic"
-   "return interaction.slice.truth.mode == 5; // Intime-Cosmic"
+   "return interaction.slice.truth.mode == 0; // CC",
+   "return interaction.slice.truth.mode == 1; // CC Non Primary",
+   "return interaction.slice.truth.mode == 2; // NC",
+   "return interaction.slice.truth.mode == 3; // CC Non Primary",
+   "return interaction.slice.truth.mode == 4; // Cosmic",
+   "return interaction.slice.truth.mode == 5; // Intime-Cosmic",
    "return interaction.slice.truth.mode == 6; // Other"
 ] 
 
 interactions: ["All", "CC", "CC-Other", "NC", "NC-Other", "Cosmic", "InTime-Cosmic", "No-Match"]
 
 true_intmode_selectors: [
-  "return true;"
+  "return true;",
   "return interaction.slice.truth.interaction_id >= 0 && 
       (neutrino.genie_intcode == 0 || neutrino.genie_intcode == 1001 || neutrino.genie_intcode == 1002); // QE",
   "return interaction.slice.truth.interaction_id >= 0 && 
@@ -73,8 +73,8 @@ intmodes: ["all", "QE", "Res", "DIS", "MEC"]
 
 neutrino_selectors: [
    "return true;",
-   "return interaction.slice.truth.mode == 0; // CC"
-   "return interaction.slice.truth.mode == 2; // NC"
+   "return interaction.slice.truth.mode == 0; // CC",
+   "return interaction.slice.truth.mode == 2; // NC",
    "return interaction.slice.truth.mode == 1 || interaction.slice.truth.mode == 3; // Non Primary"
 ]
 neutrinos: ["All", "CC", "NC", "Other"]
