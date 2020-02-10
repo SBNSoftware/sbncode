@@ -89,4 +89,4 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
 
-#include "3drift_services_sbnd.fcl"
+# #include "3drift_services_sbnd.fcl"
