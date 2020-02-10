@@ -180,9 +180,3 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
   return ret;
 }
-
-
-
-
-
-

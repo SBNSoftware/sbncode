@@ -31,6 +31,7 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
 			    caf_RecoUtils
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
+	larcorealg_GeoAlgo
 	larsim_MCCheater_BackTrackerService_service
 	nusimdata_SimulationBase
 	larsim_MCCheater_ParticleInventoryService_service

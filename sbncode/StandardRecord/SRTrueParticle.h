@@ -25,7 +25,7 @@ namespace caf
       float    endE;        //!< Energy at last pt in active TPC volume [GeV]
       float    startT;      //!< Start time of first TPC point [mus -- t=0 is spill time]
       float    endT;        //!< End time last point in the active [mus -- t=0 is spill time]
-      float    length;      //!< Trajectory length in active TPC volume [cm]
+      float    length;      //!< Trajectory length in active TPC volume the particle first enters [cm]
 
       TVector3 startp;      //!< Momentum at first point in the active TPC volume [GeV/c]
       TVector3 endp;        //!< Momentum at last point in the active TPC volume [GeV/c]

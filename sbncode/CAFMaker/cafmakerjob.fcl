@@ -69,10 +69,8 @@ physics:
 #  slicer:               @local::standard_slicemergeviews
 #  cosmictrack:          @local::standard_cosmictrack         #reco
 #  windowtrack:          @local::window_cosmictrack           #reco
-  loader: @local::standard_backtrackerloader
 }
 # filters:{}
-#
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
@@ -80,7 +78,7 @@ physics:
  runprod: [ mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
-  stream1:       [ ]
+  stream1:       [ outpid  ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 
@@ -91,4 +89,4 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
 
-#include "3drift_services_sbnd.fcl"
+# #include "3drift_services_sbnd.fcl"
