@@ -1,14 +1,19 @@
 #include "FillTrue.h"
 
+#include "larcorealg/GeoAlgo/GeoAlgo.h"
+
 // helper function declarations
 caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1);
 caf::g4_process_ GetG4ProcessID(const std::string &name);
+
+float ContainedLength(const TVector3 &v0, const TVector3 &v1,
+                      const std::vector<geoalgo::AABox> &boxes);
 
 namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle, 
                           const ParticleData &pdata,
                           caf::SRTrueParticle &srparticle) {
-    std::vector<const sim::IDE*> particle_ides; //(pdata.backtracker->TrackIdToSimIDEs_Ps(particle.TrackId()));
+    std::vector<const sim::IDE*> particle_ides(pdata.backtracker->TrackIdToSimIDEs_Ps(particle.TrackId()));
 
     srparticle.length = 0.;
     srparticle.crosses_tpc = false;
@@ -66,6 +71,15 @@ namespace caf {
     if (tpc_index < 0) {
       srparticle.cont_tpc = false;
     }
+
+    // setup aa volumes too for length calc
+    // Define the volume used for length calculation to be the cryostat volume in question
+    std::vector<geoalgo::AABox> aa_volumes;
+    if (entry_point >= 0) {
+      const geo::BoxBoundedGeo &v = pdata.AV->at(cryostat_index);
+      aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
+    }
+
     // Get the length and determine if any point leaves the active volume
     //
     // Use every trajectory point if possible
@@ -80,7 +94,7 @@ namespace caf {
         // check if particle has crossed TPC
         if (!srparticle.crosses_tpc) {
           for (unsigned j = 0; j < volumes.size(); j++) {
-            if (volumes[j].ContainsPosition(this_point) && (int)j != tpc_index) {
+            if (volumes[j].ContainsPosition(this_point) && tpc_index >= 0 && j != ((unsigned)tpc_index)) {
               srparticle.crosses_tpc = true;
               break;
             }
@@ -96,7 +110,7 @@ namespace caf {
         }
       
         // update length
-        // srparticle.length += containedLength(this_point, pos, aa_volumes);
+        srparticle.length += ContainedLength(this_point, pos, aa_volumes);
 
         if (!pdata.AV->at(cryostat_index).ContainsPosition(this_point) && pdata.AV->at(cryostat_index).ContainsPosition(pos)) {
           exit_point = i-1;
@@ -108,7 +122,7 @@ namespace caf {
     if (exit_point < 0 && entry_point >= 0) {
       exit_point = particle.NumberTrajectoryPoints() - 1; 
     }
-    if (exit_point < (int) particle.NumberTrajectoryPoints() - 1) {
+    if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
       srparticle.wallout = GetWallCross(pdata.AV->at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect()); 
     }
 
@@ -253,4 +267,112 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
 #undef MATCH_PROCESS_NAMED
   
 }
+
+float ContainedLength(const TVector3 &v0, const TVector3 &v1,
+                       const std::vector<geoalgo::AABox> &boxes) {
+  static const geoalgo::GeoAlgo algo;
+
+  // if points are the same, return 0
+  if ((v0 - v1).Mag() < 1e-6) return 0;
+
+  // construct individual points
+  geoalgo::Point_t p0(v0);
+  geoalgo::Point_t p1(v1);
+
+  // construct line segment
+  geoalgo::LineSegment line(p0, p1);
+
+  double length = 0;
+
+  // total contained length is sum of lengths in all boxes
+  // assuming they are non-overlapping
+  for (auto const &box: boxes) {
+    int n_contained = box.Contain(p0) + box.Contain(p1);
+    // both points contained -- length is total length (also can break out of loop)
+    if (n_contained == 2) {
+      length = (v1 - v0).Mag();
+      break;
+    }
+    // one contained -- have to find intersection point (which must exist)
+    if (n_contained == 1) {
+      auto intersections = algo.Intersection(line, box);
+      // Because of floating point errors, it can sometimes happen
+      // that there is 1 contained point but no "Intersections"
+      // if one of the points is right on the edge
+      if (intersections.size() == 0) {
+        // determine which point is on the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        assert(p0_edge || p1_edge);
+        // contained one is on edge -- can treat both as not contained
+        //
+        // In this case, no length
+        if ((p0_edge && box.Contain(p0)) || (box.Contain(p1) && p1_edge))
+          continue;
+        // un-contaned one is on edge -- treat both as contained
+        else if ((p0_edge && box.Contain(p1)) || (box.Contain(p0) && p1_edge)) {
+	  length = (v1 - v0).Mag();
+	  break;
+        }
+        else {
+          assert(false); // bad
+        }
+      }
+      // floating point errors can also falsely cause 2 intersection points
+      //
+      // in this case, one of the intersections must be very close to the 
+      // "contained" point, so the total contained length will be about
+      // the same as the distance between the two intersection points
+      else if (intersections.size() == 2) {
+        length += (intersections.at(0).ToTLorentzVector().Vect() - intersections.at(1).ToTLorentzVector().Vect()).Mag();
+        continue;
+      }
+      // "Correct"/ideal case -- 1 intersection point
+      else if (intersections.size() == 1) {
+        // get TVector at intersection point
+        TVector3 int_tv(intersections.at(0).ToTLorentzVector().Vect());
+        length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() ); 
+      }
+      else assert(false); // bad
+    }
+    // none contained -- either must have zero or two intersections
+    if (n_contained == 0) {
+      auto intersections = algo.Intersection(line, box);
+      if (!(intersections.size() == 0 || intersections.size() == 2)) {
+        // more floating point error fixes...
+        //
+        // figure out which points are near the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        // and which points are near the intersection
+        TVector3 vint = intersections.at(0).ToTLorentzVector().Vect();
+
+        bool p0_int = (v0 - vint).Mag() < tol;
+        bool p1_int = (v1 - vint).Mag() < tol;
+        // exactly one of them should produce the intersection
+        assert((p0_int && p0_edge) != (p1_int && p1_edge));
+        // void variables when assert-ions are turned off
+        (void) p0_int; (void) p1_int;
+
+        // both close to edge -- full length is contained
+        if (p0_edge && p1_edge) {
+          length += (v0 - v1).Mag();
+        }
+        // otherwise -- one of them is not on an edge, no length is contained
+        else {}
+      }
+      // assert(intersections.size() == 0 || intersections.size() == 2);
+      else if (intersections.size() == 2) {
+        TVector3 start(intersections.at(0).ToTLorentzVector().Vect());
+        TVector3 end(intersections.at(1).ToTLorentzVector().Vect());
+        length += (start - end).Mag();
+      }
+    }
+  }
+
+  return length;
+}
+
 

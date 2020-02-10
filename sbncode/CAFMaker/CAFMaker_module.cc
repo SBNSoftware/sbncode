@@ -469,7 +469,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       pdata.inventory_service = pi_serv.get();
 
       // TODO: fix weird crashes
-      // FillTrueG4Particle(part, pdata, true_particles.back());
+      FillTrueG4Particle(part, pdata, true_particles.back());
     }
   }
 
@@ -537,6 +537,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       StandardRecord rec;
       StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
       fRecTree->SetBranchAddress("rec", &prec);
+
+      // fill up the true particles
+      rec.true_particles = true_particles;
 
       //#######################################################
       // Fill slice header.
