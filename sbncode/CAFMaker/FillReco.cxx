@@ -129,25 +129,28 @@ namespace caf
     // get the particle ID's
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
-    srtrack.pid_ndof = 0;
+    srtrack.chi2pid.pid_ndof = 0;
     for (unsigned i = 0; i < 3; i++) { 
       const anab::ParticleID &particle_id = *tdata.particleIDs[i];
       if (particle_id.PlaneID() && tdata.geom->SignalType(particle_id.PlaneID()) == geo::kCollection) {
-        srtrack.chi2_muon = particle_id.Chi2Muon();
-        srtrack.chi2_pion = particle_id.Chi2Kaon();
-        srtrack.chi2_kaon = particle_id.Chi2Pion();
-        srtrack.chi2_proton = particle_id.Chi2Proton();
-        srtrack.pid_ndof = particle_id.Ndf();
+        srtrack.chi2pid.chi2_muon = particle_id.Chi2Muon();
+        srtrack.chi2pid.chi2_pion = particle_id.Chi2Kaon();
+        srtrack.chi2pid.chi2_kaon = particle_id.Chi2Pion();
+        srtrack.chi2pid.chi2_proton = particle_id.Chi2Proton();
+        srtrack.chi2pid.pid_ndof = particle_id.Ndf();
       }
     }
 
     // bad particle ID -- set chi2 to -1
-    if (srtrack.pid_ndof == 0) {
-      srtrack.chi2_muon = -1;
-      srtrack.chi2_proton = -1;
-      srtrack.chi2_kaon = -1;
-      srtrack.chi2_pion = -1;
+    if (srtrack.chi2pid.pid_ndof == 0) {
+      srtrack.chi2pid.chi2_muon = -1;
+      srtrack.chi2pid.chi2_proton = -1;
+      srtrack.chi2pid.chi2_kaon = -1;
+      srtrack.chi2pid.chi2_pion = -1;
     }
+
+    // TO DO: Fill pdg value from Chi2ParticePID
+    // TO DO: Make a FillTrackChi2PID
 
     // TODO: what to do with calorimetry
     
