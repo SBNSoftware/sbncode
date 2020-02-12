@@ -15,7 +15,8 @@ namespace caf
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
-    return slice.is_clear_cosmic || !cut_clear_cosmic;
+    return (slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
+           && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
   //......................................................................
@@ -32,22 +33,28 @@ namespace caf
 
     assert(sdata.primary != NULL);
     assert(sdata.primary_meta != NULL);
-    
+ 
+    // default values   
+    srslice.nu_score = -1;
+    srslice.is_clear_cosmic = true;
+ 
     // collect the properties
-    auto const &properties = sdata.primary_meta->GetPropertiesMap();
-    if (properties.count("IsClearCosmic")) {
-      assert(!properties.count("IsNeutrino"));
-      srslice.is_clear_cosmic = false;
-    }
-    else {
-      assert(properties.count("IsNeutrino"));
-      srslice.is_clear_cosmic = true;
-    }
-    if (properties.count("NuScore")) {
-      srslice.nu_score = properties.at("NuScore"); 
-    } 
-    else {
-      srslice.nu_score = -1;
+    if (sdata.primary != NULL) {
+      auto const &properties = sdata.primary_meta->GetPropertiesMap();
+      if (properties.count("IsClearCosmic")) {
+        assert(!properties.count("IsNeutrino"));
+        srslice.is_clear_cosmic = false;
+      }
+      else {
+        assert(properties.count("IsNeutrino"));
+        srslice.is_clear_cosmic = true;
+      }
+      if (properties.count("NuScore")) {
+        srslice.nu_score = properties.at("NuScore"); 
+      } 
+      else {
+        srslice.nu_score = -1;
+      }
     }
 
     if (sdata.fmatch != NULL) {
@@ -61,8 +68,10 @@ namespace caf
     }
 
     // get the priamry tracks/showers
-    for (unsigned id: sdata.primary->Daughters()) {
-      srslice.primary.push_back(id + sdata.particle_id_offset);
+    if (sdata.primary != NULL) {
+      for (unsigned id: sdata.primary->Daughters()) {
+        srslice.primary.push_back(id);
+      }
     }
 
   }
