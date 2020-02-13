@@ -27,8 +27,6 @@ namespace caf
 {
 
   struct SliceData {
-    unsigned particle_id_offset;
-    unsigned slice_id_offset;
     const recob::PFParticle *primary;
     const larpandoraobj::PFParticleMetadata *primary_meta;
     const anab::T0 *fmatch;
@@ -42,7 +40,6 @@ namespace caf
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   struct TrackData {
-    unsigned particle_index_offset;
 
     // data products
     std::vector<art::Ptr<anab::ParticleID>> particleIDs;

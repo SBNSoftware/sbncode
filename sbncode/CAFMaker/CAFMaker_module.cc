@@ -473,204 +473,197 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  // keep track of ID offsets
-  unsigned pfp_index_offset = 0;
-  unsigned slice_index_offset = 0;
+  // collect the TPC slices
+  std::vector<std::string> pandora_tag_suffixes;
+  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
+  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
 
+  std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
-  fParams.SliceTagSuffixes(slice_tag_suffixes);
-  if (slice_tag_suffixes.size() == 0) slice_tag_suffixes.push_back("");
-
-  // Loop over TPC reco tags
-  for (const std::string &slice_tag_suffix: slice_tag_suffixes) {
-    std::cout << "Getting slices with label: " << (fParams.ClusterLabel() + slice_tag_suffix) << std::endl;
-
+  for (const std::string &pandora_tag_suffix: pandora_tag_suffixes) {
     // Get a handle on the slices
-    art::Handle<std::vector<recob::Slice>> slices;
-    GetByLabelStrict(evt, fParams.ClusterLabel() + slice_tag_suffix, slices);
-    // TO DO - Create 3 labels (SliceLabel a,b,&c = pandora, 
-    //         pandorawtvCryo01, etc.) Then add them to the same 
-    //         vector with the associated CRYO var for the tree
+    art::Handle<std::vector<recob::Slice>> thisSlices;
+    GetByLabelStrict(evt, fParams.ClusterLabel() + pandora_tag_suffix, thisSlices);
+    art::fill_ptr_vector(slices, thisSlices);
+    for (unsigned i = 0; i < thisSlices->size(); i++) {
+      slice_tag_suffixes.push_back(pandora_tag_suffix);     
+    }
+  }
 
-    std::cout << "Got N slices: " << slices->size() << std::endl;
+  //#######################################################
+  // Loop over slices 
+  //#######################################################
+  for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
+    art::Ptr<recob::Slice> slice = slices[sliceID];
+    const std::string &slice_tag_suffix = slice_tag_suffixes[sliceID];
 
     // Get tracks & showers here
-    art::FindManyP<recob::PFParticle> fmPFPart = 
-      FindManyPStrict<recob::PFParticle>(slices, evt, "pandora" + slice_tag_suffix);//fParams.PFPartLabel());
-
-    art::Handle<std::vector<recob::PFParticle>> pfparticles;
-    GetByLabelStrict(evt, "pandora" + slice_tag_suffix, pfparticles);
+    std::vector<art::Ptr<recob::Slice>> sliceList {slice};
+    art::FindManyP<recob::PFParticle> findManyPFParts =
+       FindManyPStrict<recob::PFParticle>(sliceList, evt,  "pandora" + slice_tag_suffix);
+      
+    std::vector<art::Ptr<recob::PFParticle>> fmPFPart; 
+    if (findManyPFParts.isValid()) {
+      fmPFPart = findManyPFParts.at(0);
+    }
 
     art::FindManyP<anab::T0> fmT0 =
-      FindManyPStrict<anab::T0>(pfparticles, evt, "fmatch" + slice_tag_suffix);
-
-    art::Handle<std::vector<recob::Track>> tracks;
-    GetByLabelStrict(evt, "pandoraTrack" + slice_tag_suffix, tracks);
+      FindManyPStrict<anab::T0>(fmPFPart, evt, "fmatch" + slice_tag_suffix);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
-      FindManyPStrict<larpandoraobj::PFParticleMetadata>(pfparticles, evt, "pandora" + slice_tag_suffix);
+      FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt, "pandora" + slice_tag_suffix);
 
     art::FindManyP<recob::Track> fmTrack = 
-      FindManyPStrict<recob::Track>(pfparticles, evt, "pandoraTrack" + slice_tag_suffix);
+      FindManyPStrict<recob::Track>(fmPFPart, evt, "pandoraTrack" + slice_tag_suffix);
+
+    // make Ptr's to tracks for track -> other object associations 
+    std::vector<art::Ptr<recob::Track>> slcTracks;
+    for (unsigned i = 0; i < fmTrack.size(); i++) {
+      const std::vector<art::Ptr<recob::Track>> &thisTracks = fmTrack.at(i);
+      if (thisTracks.size() == 0) {
+        slcTracks.emplace_back(); // nullptr
+      }
+      else if (thisTracks.size() == 1) {
+        slcTracks.push_back(fmTrack.at(i).at(0));
+      }
+      else assert(false); // bad
+    }
 
     art::FindManyP<recob::Shower> fmShower =
-      FindManyPStrict<recob::Shower>(pfparticles, evt, "pandoraShower" + slice_tag_suffix);
+      FindManyPStrict<recob::Shower>(fmPFPart, evt, "pandoraShower" + slice_tag_suffix);
 
-    art::FindManyP<anab::Calorimetry> fmCalo = 
-      FindManyPStrict<anab::Calorimetry>(tracks, evt, "pandoraCalo" + slice_tag_suffix);
+    art::FindManyP<anab::Calorimetry> fmCalo =
+      FindManyPStrict<anab::Calorimetry>(slcTracks, evt, "pandoraCalo" + slice_tag_suffix);
 
     art::FindManyP<anab::ParticleID> fmPID = 
-      FindManyPStrict<anab::ParticleID>(tracks, evt, "pandoraPid" + slice_tag_suffix);
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt, "pandoraPid" + slice_tag_suffix);
 
-    art::FindManyP<recob::Hit> fmHit =
-      FindManyPStrict<recob::Hit>(tracks, evt, "pandoraTrack" + slice_tag_suffix);
+    art::FindManyP<recob::Hit> fmHit = 
+      FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
+
+    //    if (slice.IsNoise() || slice.NCell() == 0) continue;
+    // Because we don't care about the noise slice and slices with no hits.
+    StandardRecord rec;
+    StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
+    fRecTree->SetBranchAddress("rec", &prec);
+
+    // fill up the true particles
+    rec.true_particles = true_particles;
 
     //#######################################################
-    // Loop over slices 
+    // Fill slice header.
     //#######################################################
+    // Get metadata information for header
+    unsigned int run = evt.run();
+    unsigned int subrun = evt.subRun();
+    //   unsigned int spillNum = evt.id().event();
 
-    for (unsigned int sliceId = 0; sliceId < slices->size(); ++sliceId) {
-      const recob::Slice& slice = (*slices)[sliceId];
+    rec.hdr = SRHeader();
 
-      //    if (slice.IsNoise() || slice.NCell() == 0) continue;
-      // Because we don't care about the noise slice and slices with no hits.
-      StandardRecord rec;
-      StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
-      fRecTree->SetBranchAddress("rec", &prec);
-
-      // fill up the true particles
-      rec.true_particles = true_particles;
-
-      //#######################################################
-      // Fill slice header.
-      //#######################################################
-      // Get metadata information for header
-      unsigned int run = evt.run();
-      unsigned int subrun = evt.subRun();
-      //   unsigned int spillNum = evt.id().event();
-
-      rec.hdr = SRHeader();
-
-      rec.hdr.run = run;
-      rec.hdr.subrun = subrun;
-      rec.hdr.subevt = sliceId + slice_index_offset;
-      rec.hdr.ismc = !fIsRealData;
-      rec.hdr.det = fDet;
-      // rec.hdr.cycle = fCycle;
-      // rec.hdr.batch = fBatch;
-      // rec.hdr.blind = 0;
-      // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceId);
-
-      // get the primary particle associated with this slice
-      std::vector<art::Ptr<recob::PFParticle>> slcPFParts = fmPFPart.at(sliceId);
-      size_t iPart;
-      for (iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
-        const recob::PFParticle &thisParticle = *slcPFParts[iPart];
-        if (thisParticle.IsPrimary()) break;
+    rec.hdr.run = run;
+    rec.hdr.subrun = subrun;
+    rec.hdr.subevt = sliceID;
+    rec.hdr.ismc = !fIsRealData;
+    rec.hdr.det = fDet;
+    // rec.hdr.cycle = fCycle;
+    // rec.hdr.batch = fBatch;
+    // rec.hdr.blind = 0;
+    // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
+    
+    // get the primary particle
+    size_t iPart;
+    for (iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
+      const recob::PFParticle &thisParticle = *fmPFPart[iPart];
+      if (thisParticle.IsPrimary()) break;
+    }
+    // primary particle and meta-data
+    SliceData sdata;
+    sdata.primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
+    sdata.primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+    // get the flash match
+    sdata.fmatch = NULL; 
+    if (fmT0.isValid() && sdata.primary != NULL) {
+      std::vector<art::Ptr<anab::T0>> fmatch = fmT0.at(iPart);
+      if (fmatch.size() != 0) {
+        assert(fmatch.size() == 1);
+        sdata.fmatch = fmatch[0].get(); 
       }
-      // primary particle and meta-data
-      SliceData sdata;
-      sdata.particle_id_offset = pfp_index_offset;
-      sdata.slice_id_offset = slice_index_offset;
-      sdata.primary = (iPart == slcPFParts.size()) ? NULL : slcPFParts[iPart].get();
-      sdata.primary_meta = (iPart == slcPFParts.size()) ? NULL : fmPFPMeta.at(slcPFParts[iPart]->Self()).at(0).get();
-      // get the flash match
-      sdata.fmatch = NULL; 
-      if (fmT0.isValid() && sdata.primary != NULL) {
-        std::vector<art::Ptr<anab::T0>> fmatch = fmT0.at(sdata.primary->Self());
-        if (fmatch.size() != 0) {
-          assert(fmatch.size() == 1);
-          sdata.fmatch = fmatch[0].get(); 
-        }
-      }
+    }
 
-      //#######################################################
-      // Add slice info.
-      //#######################################################
-      FillSliceVars(slice, sdata, rec.slc);
+    //#######################################################
+    // Add slice info.
+    //#######################################################
+    FillSliceVars(*slice, sdata, rec.slc);
+    
+    // select slice
+    if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
+    
+    //#######################################################
+    // Add detector dependent slice info.
+    //#######################################################
+    // if (fDet == kSBND) {
+    //   rec.sel.contain.nplanestofront = rec.slc.firstplane - (plnfirst - 1);
+    //   rec.sel.contain.nplanestoback = (plnlast) - 1 - rec.slc.lastplane;
+    // }
+    
+    //#######################################################
+    // Add reconstructed objects.
+    //#######################################################
+    // Reco objects have assns to the slice PFParticles 
+    // This depends on the findMany object created above.
+    
+    for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
+      const recob::PFParticle &thisParticle = *fmPFPart[iPart];
+      
+      const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(iPart);
+      const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(iPart);
+      
+      if (thisTrack.size())  { // it's a track!
+        assert(thisTrack.size() == 1);
+        assert(thisShower.size() == 0);
+        rec.reco.ntrk ++;
+	rec.reco.trk.push_back(SRTrack()); 
 
-      // select slice
-      if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
-
-      //#######################################################
-      // Add detector dependent slice info.
-      //#######################################################
-      // if (fDet == kSBND) {
-      //   rec.sel.contain.nplanestofront = rec.slc.firstplane - (plnfirst - 1);
-      //   rec.sel.contain.nplanestoback = (plnlast) - 1 - rec.slc.lastplane;
-      // }
-
-      //#######################################################
-      // Add reconstructed objects.
-      //#######################################################
-      // Reco objects have assns to the slice PFParticles 
-      // This depends on the findMany object created above.
-
-      if ( fmPFPart.isValid() ) {
-        for ( size_t iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
-          const recob::PFParticle &thisParticle = *slcPFParts[iPart];
-
-          const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(thisParticle.Self());
-          const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(thisParticle.Self());
-
-          if (thisTrack.size())  { // it's a track!
-            assert(thisTrack.size() == 1);
-            assert(thisShower.size() == 0);
-            rec.reco.ntrk ++;
-	    rec.reco.trk.push_back(SRTrack()); 
-
-            // setup the data the track will need
-            TrackData tdata;
-
-            // set the ID
-            // use the PFParticle ID for the id so that it is
-            // global across tracks and showers
-            // also include the index offset in the case of multiple
-            // reconstruction being run (as in ICARUS)
-            tdata.particle_index_offset = pfp_index_offset;
-
-            // set the tdata
-            tdata.particleIDs = fmPID.at(thisTrack[0]->ID());
-            tdata.calos = fmCalo.at(thisTrack[0]->ID());
-            tdata.hits = fmHit.at(thisTrack[0]->ID());
-
-            // set the algorithms
-            tdata.mcs_calculator = &fMCSCalculator;
-            tdata.range_calculator = &fRangeCalculator;
-            tdata.geom = lar::providerFrom<geo::Geometry>();
-              
-	    FillTrackVars(*thisTrack[0], thisParticle, tdata, rec.reco.trk.back());
+        // setup the data the track will need
+        TrackData tdata;
+      
+        // set the tdata
+        tdata.particleIDs = fmPID.at(iPart);
+        tdata.calos = fmCalo.at(iPart);
+        tdata.hits = fmHit.at(iPart);
+      
+        // set the algorithms
+        tdata.mcs_calculator = &fMCSCalculator;
+        tdata.range_calculator = &fRangeCalculator;
+        tdata.geom = lar::providerFrom<geo::Geometry>();
+      
+        FillTrackVars(*thisTrack[0], thisParticle, tdata, rec.reco.trk.back());
 	    
-	  } // thisTrack exists
-          else if (thisShower.size()) {
-            assert(thisTrack.size() == 0);
-            assert(thisShower.size() == 1);
-            // TODO: fill shower vars
-          } // thisShower exists
-          else {}
-	
-        }// end for pfparts
-      } // fmPFPart ok
+      } // thisTrack exists
+      else if (thisShower.size()) {
+        assert(thisTrack.size() == 0);
+        assert(thisShower.size() == 1);
+        // TODO: fill shower vars
+      } // thisShower exists
+      else {}
+    }// end for pfparts
     
 
 
-      //#######################################################
-      // Fill truth information
-      //#######################################################
+    //#######################################################
+    // Fill truth information
+    //#######################################################
 
-      // // Set mc branch values to default
-      // rec.mc.setDefault();
-      // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
+    // // Set mc branch values to default
+    // rec.mc.setDefault();
+    // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
 
-      fRecTree->Fill();
-      srcol->push_back(rec);
-      //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceId),
-      //                 *srAssn);
-    }  // end loop over slices
-    // update id offsets
-    pfp_index_offset += pfparticles->size();
-    slice_index_offset += slices->size();
-  } // end loop over TPC-reco tags
+    std::cout << "Filling!\n";
+    fRecTree->Fill();
+    srcol->push_back(rec);
+    //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),
+    //                 *srAssn);
+  }  // end loop over slices
 
   evt.put(std::move(srcol));
 }

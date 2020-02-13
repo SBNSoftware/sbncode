@@ -62,8 +62,8 @@ namespace caf
       10.
     };
 
-    fhicl::OptionalSequence<std::string> SliceTagSuffixes {
-      Name("SliceTagSuffixes"),
+    fhicl::OptionalSequence<std::string> PandoraTagSuffixes {
+      Name("PandoraTagSuffixes"),
       Comment("List of suffixes to add to TPC reco tag names (e.g. cryo0 cryo1)")
     };
 

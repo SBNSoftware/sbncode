@@ -26,10 +26,7 @@ namespace caf
                      bool allowEmpty)
   {
 
-    srslice.id           = slice.ID() + sdata.slice_id_offset;
     srslice.charge       = slice.Charge();
-
-    std::cout << "Slice: " << srslice.id << " has primary particle: " << (sdata.primary != NULL) << std::endl;
 
     assert(sdata.primary != NULL);
     assert(sdata.primary_meta != NULL);
@@ -90,11 +87,11 @@ namespace caf
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
 
-    srtrack.ID = particle.Self() + tdata.particle_index_offset;
+    srtrack.ID = particle.Self();
 
     // set the daughters in the particle flow
     for (unsigned id: particle.Daughters()) {
-      srtrack.daughters.push_back(id + tdata.particle_index_offset);
+      srtrack.daughters.push_back(id);
     }
 
     // calculate MCS fits
@@ -130,7 +127,8 @@ namespace caf
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
     srtrack.chi2pid.pid_ndof = 0;
-    for (unsigned i = 0; i < 3; i++) { 
+    assert(tdata.particleIDs.size() == 0 || tdata.particleIDs == 3);
+    for (unsigned i = 0; i < tdata.particleIDs.size(); i++) { 
       const anab::ParticleID &particle_id = *tdata.particleIDs[i];
       if (particle_id.PlaneID() && tdata.geom->SignalType(particle_id.PlaneID()) == geo::kCollection) {
         srtrack.chi2pid.chi2_muon = particle_id.Chi2Muon();
