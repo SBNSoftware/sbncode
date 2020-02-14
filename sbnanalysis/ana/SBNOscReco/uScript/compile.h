@@ -137,7 +137,7 @@ class Compiler {
 public:
   static const char *Intern(const std::string &str) { return Instance().DoIntern(str); }
   static bool HadError() { return Instance().parser.hadError; }
-  static bool Compile(const char *source, Chunk *chunk) { Instance().DoCompile(source, chunk); }
+  static bool Compile(const char *source, Chunk *chunk) { return Instance().DoCompile(source, chunk); }
   
   static TClassInfo *GetClassInfo(const char *classname) {
     return Instance().tclasslist.Add(classname);

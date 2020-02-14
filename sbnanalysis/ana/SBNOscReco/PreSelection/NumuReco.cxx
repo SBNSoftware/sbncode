@@ -50,6 +50,9 @@
 #include "larsim/MCCheater/ParticleInventory.h"
 #include "larsim/MCCheater/PhotonBackTracker.h"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#ifdef CRTTrack_hh_
+#undef CRTTrack_hh_
+#endif
 #include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 #include "sbndcode/CRT/CRTUtils/TPCGeoUtil.h"
 #include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"

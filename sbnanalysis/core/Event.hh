@@ -14,14 +14,22 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <TTree.h>
+//#include <TTree.h>
+
+#ifdef GEN_FLATRECORD_CONTEXT
+namespace event{
+  struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
+  struct Pair{std::string first; std::vector<float> second;};
+}
+#else
 #include <TVector3.h>
-#include "core/Experiment.hh"
+#endif
+
+#include "Experiment.hh"
 
 namespace event {
 
 static const int kUnfilled = -99999;  //!< Value for unfilled variables
-
 
 /**
  * \class Metadata
@@ -54,7 +62,7 @@ class Neutrino {
 public:
   /** Constructor. */
   Neutrino()
-    : isnc(false), iscc(false), pdg(0), initpdg(0), targetPDG(0),
+    : isnc(false), iscc(false), initpdg(0), pdg(0), targetPDG(0),
       genie_intcode(0), bjorkenX(kUnfilled), inelasticityY(kUnfilled),
       Q2(kUnfilled), q0(kUnfilled),
       modq(kUnfilled), q0_lab(kUnfilled), modq_lab(kUnfilled),
@@ -153,7 +161,11 @@ public:
    * This is a map from the weight calculator name to the list of weights
    * for all the sampled universes.
    */
-  std::map<std::string, std::vector<float> > weights;
+#ifndef GEN_FLATRECORD_CONTEXT
+    std::map<std::string, std::vector<float> > weights;
+#else
+    std::vector<Pair> weights;
+#endif
 
   size_t index;  //!< Index in the MCTruth
 };
@@ -171,8 +183,8 @@ public:
       : truth_index(-1), reco_energy(kUnfilled), weight(1) {}
 
   /** Fill in truth information -- other fields set as in default */
-  explicit RecoInteraction(int index)
-      : truth_index(index), reco_energy(kUnfilled), weight(1) {}
+  explicit RecoInteraction(int tindex)
+      : truth_index(tindex), reco_energy(kUnfilled), weight(1) {}
 
   /**
    * Index into the vector of truth interaction objects in the Event

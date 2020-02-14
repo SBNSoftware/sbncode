@@ -87,6 +87,7 @@ struct Histograms : public HistoList {
       case numu::mOther: return "Other";
       case numu::mAll: return "All";
     }
+    return "";
   }
   static const unsigned nHistos = Cuts::nCuts + Cuts::nTruthCuts;
   static const unsigned nModes = 8; //!< number of interaction modes

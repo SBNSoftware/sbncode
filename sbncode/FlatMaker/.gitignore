@@ -1,0 +1,7 @@
+*~
+*_C.d
+*.so
+*.pcm
+*.root
+Flat*.h
+FlatRecord.cxx

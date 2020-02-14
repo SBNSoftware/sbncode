@@ -1,5 +1,6 @@
 #include "TruthMatch.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include <cassert>
 
 struct MatchSet {
   std::vector<bool> match_is_primary;

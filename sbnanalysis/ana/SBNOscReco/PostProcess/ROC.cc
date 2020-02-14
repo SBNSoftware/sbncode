@@ -109,7 +109,7 @@ void ana::SBNOsc::ROC::Primitive::Scale(float scale) {
   n_background *= scale;
 }
 
-float ana::SBNOsc::ROC::NormalizedPrimitive::Normalize(float scale_neutrino, float scale_cosmic) {
+void ana::SBNOsc::ROC::NormalizedPrimitive::Normalize(float scale_neutrino, float scale_cosmic) {
   fNeutrino.Scale(scale_neutrino);
   fCosmic.Scale(scale_cosmic);
 }
