@@ -138,6 +138,8 @@ class CAFMaker : public art::EDProducer {
 
   void InitializeOutfile();
 
+  void InitVolumes(); ///< Initialize volumes from Gemotry service
+
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
   template <class T, class U>
@@ -208,6 +210,11 @@ class CAFMaker : public art::EDProducer {
   //produces<art::Assns<caf::StandardRecord, recob::Slice>>();
 
   // setup volume definitions
+  InitVolumes();
+
+}
+
+void CAFMaker::InitVolumes() {
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // first the TPC volumes 
@@ -235,7 +242,6 @@ class CAFMaker : public art::EDProducer {
 
     fActiveVolumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
   }
-
 }
 
 //......................................................................
