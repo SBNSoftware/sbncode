@@ -14,10 +14,11 @@
   <class name="caf::SRSlice::FlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
-  <class name="caf::SRTrack::MCSFitResult" />
   <class name="caf::SRTrackTruth" />
   <class name="caf::SRTrackTruth::ParticleMatch" />
   <class name="caf::SRTrkChi2PID" />
+  <class name="caf::SRTrkMCS" />
+  <class name="caf::SRTrkRange" />
   <class name="caf::SRTrueParticle" />
   <class name="caf::SRTrueInteraction" />
 

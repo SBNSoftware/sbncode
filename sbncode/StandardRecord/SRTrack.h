@@ -8,6 +8,9 @@
 
 #include "SRTrackTruth.h"
 #include "SRTrkChi2PID.h"
+#include "SRTrkMCS.h"
+#include "SRTrkRange.h"
+
 #include <TVector3.h>
 #include <vector>
 
@@ -31,23 +34,12 @@ namespace caf
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
 
       SRTrkChi2PID   chi2pid;     ///< larana Chi2 Particle PID
+      SRTrkMCS       mcsP;
+      SRTrkRange     rangeP;
 
       SRTrackTruth   truth;        ///< truth information
 
-      // TO DO: Move the following into SRObjects
-
-      float          range_momentum_muon; ///< Momentum from range (muon hypothesis)
-      float          range_momentum_proton; ///< Momentum from range (proton hypothesis)
-      
-      /// Information on the result of MCS fitting for momentum
-      class MCSFitResult {
-        public:
-        float fwd_momentum; //!< Momentum result of fitting the track from start -> end [GeV/c]
-        float fwd_momentum_err; //!< Error on momentum result of fitting the track from start -> end [GeV/c]
-        float bwd_momentum; //!< Momentum result of fitting the track from end -> start [GeV/c]
-        float bwd_momentum_err; //!< Error on momentum result of fitting the track from end -> start [GeV/c]
-        bool is_bwd; //!< Whether the MCS fit thinks the track is backwards
-      };
+      // TO DO: Move the following into SRObjects      
 
       /* struct CRTMatch { */
         /* struct Track { */
@@ -65,10 +57,6 @@ namespace caf
       /*   Track track; //!< CRT track match */
       /*   Hit   hit;   //!< CRT hit match */
       /* }; */
-      MCSFitResult   mcs_muon;     ///< MCS fit result using muon particle hypothesis 
-      MCSFitResult   mcs_pion;     ///< MCS fit result using pion particle hypothesis 
-      MCSFitResult   mcs_kaon;     ///< MCS fit result using kaon particle hypothesis 
-      MCSFitResult   mcs_proton;   ///< MCS fit result using proton particle hypothesis 
 
       //      CRTMatch       crt_match;   ///< Matching to CRT information
       std::vector<int> daughters; ///< ID's of daughters of this track

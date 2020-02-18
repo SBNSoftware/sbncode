@@ -6,7 +6,7 @@
 
 namespace caf
 {
-  /// Representation of the reco momentum and PID a rb::Track, k
+  /// Track PID from dE/dx v. residual range Chi2
   class SRTrkChi2PID
     {
     public:

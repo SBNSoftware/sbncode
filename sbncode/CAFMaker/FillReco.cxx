@@ -96,32 +96,33 @@ namespace caf
 
     // calculate MCS fits
     recob::MCSFitResult mcs_fit_muon= tdata.mcs_calculator->fitMcs(track, 13);
-    srtrack.mcs_muon.fwd_momentum = mcs_fit_muon.fwdMomentum();
-    srtrack.mcs_muon.fwd_momentum_err = mcs_fit_muon.fwdMomUncertainty();
-    srtrack.mcs_muon.bwd_momentum = mcs_fit_muon.bwdMomentum();
-    srtrack.mcs_muon.bwd_momentum_err = mcs_fit_muon.bwdMomUncertainty();
-
     recob::MCSFitResult mcs_fit_proton= tdata.mcs_calculator->fitMcs(track, 2212);
-    srtrack.mcs_proton.fwd_momentum = mcs_fit_proton.fwdMomentum();
-    srtrack.mcs_proton.fwd_momentum_err = mcs_fit_proton.fwdMomUncertainty();
-    srtrack.mcs_proton.bwd_momentum = mcs_fit_proton.bwdMomentum();
-    srtrack.mcs_proton.bwd_momentum_err = mcs_fit_proton.bwdMomUncertainty();
-
     recob::MCSFitResult mcs_fit_pion= tdata.mcs_calculator->fitMcs(track, 211);
-    srtrack.mcs_pion.fwd_momentum = mcs_fit_pion.fwdMomentum();
-    srtrack.mcs_pion.fwd_momentum_err = mcs_fit_pion.fwdMomUncertainty();
-    srtrack.mcs_pion.bwd_momentum = mcs_fit_pion.bwdMomentum();
-    srtrack.mcs_pion.bwd_momentum_err = mcs_fit_pion.bwdMomUncertainty();
-
     recob::MCSFitResult mcs_fit_kaon= tdata.mcs_calculator->fitMcs(track, 321);
-    srtrack.mcs_kaon.fwd_momentum = mcs_fit_kaon.fwdMomentum();
-    srtrack.mcs_kaon.fwd_momentum_err = mcs_fit_kaon.fwdMomUncertainty();
-    srtrack.mcs_kaon.bwd_momentum = mcs_fit_kaon.bwdMomentum();
-    srtrack.mcs_kaon.bwd_momentum_err = mcs_fit_kaon.bwdMomUncertainty();
+
+    srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
+    srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
+    srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
+    srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
+
+    srtrack.mcsP.fwdP_proton     = mcs_fit_proton.fwdMomentum();
+    srtrack.mcsP.fwdP_err_proton = mcs_fit_proton.fwdMomUncertainty();
+    srtrack.mcsP.bwdP_proton     = mcs_fit_proton.bwdMomentum();
+    srtrack.mcsP.bwdP_err_proton = mcs_fit_proton.bwdMomUncertainty();
+
+    srtrack.mcsP.fwdP_pion     = mcs_fit_pion.fwdMomentum();
+    srtrack.mcsP.fwdP_err_pion = mcs_fit_pion.fwdMomUncertainty();
+    srtrack.mcsP.bwdP_pion     = mcs_fit_pion.bwdMomentum();
+    srtrack.mcsP.bwdP_err_pion = mcs_fit_pion.bwdMomUncertainty();
+
+    srtrack.mcsP.fwdP_kaon     = mcs_fit_kaon.fwdMomentum();
+    srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
+    srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
+    srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
 
     // calculate range momentum
-    srtrack.range_momentum_muon = tdata.range_calculator->GetTrackMomentum(track.Length(), 13);
-    srtrack.range_momentum_proton = tdata.range_calculator->GetTrackMomentum(track.Length(), 2212);
+    srtrack.rangeP.p_muon = tdata.range_calculator->GetTrackMomentum(track.Length(), 13);
+    srtrack.rangeP.p_proton = tdata.range_calculator->GetTrackMomentum(track.Length(), 2212);
 
     // get the particle ID's
     //
