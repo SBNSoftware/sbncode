@@ -126,6 +126,7 @@ public:
 
   int pdg;  //!< PDG Code
   float energy;  //!< Energy
+  float kinetic_energy; //!< Kinetic energy [GeV]
   TVector3 momentum;  //!< Three-momentum
   TVector3 start;  //!< Start position in detector coords [cm]
   TVector3 end;  //!< End position in detector coords (may be outside of AV) [cm]

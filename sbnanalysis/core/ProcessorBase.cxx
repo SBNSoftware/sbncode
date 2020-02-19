@@ -489,6 +489,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 	interaction.lepton.pdg = lepton.PdgCode();
 	interaction.lepton.energy = lepton.Momentum(0).Energy();
 	interaction.lepton.momentum = lepton.Momentum(0).Vect();
+        interaction.lepton.kinetic_energy = interaction.lepton.energy - sqrt(interaction.lepton.energy*interaction.lepton.energy - interaction.lepton.momentum.Mag2()); 
 	interaction.lepton.start = lepton.Position(0).Vect();
 	interaction.lepton.status_code = lepton.StatusCode();
 	interaction.lepton.is_primary = (lepton.Process() == "primary");
@@ -543,6 +544,7 @@ void ProcessorBase::BuildEventTree(gallery::Event& ev) {
 	fsp.pdg = particle.PdgCode();
 	fsp.energy = particle.Momentum(0).Energy();
 	fsp.momentum = particle.Momentum(0).Vect();
+        fsp.kinetic_energy = fsp.energy - sqrt(fsp.energy*fsp.energy - fsp.momentum.Mag2()); 
 	fsp.start = particle.Position(0).Vect();
 	fsp.status_code = particle.StatusCode();
 	fsp.is_primary = (particle.Process() == "primary");
