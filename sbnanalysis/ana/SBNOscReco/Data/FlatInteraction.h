@@ -15,7 +15,8 @@ struct TrackTruth {
 
 struct PrimaryTrack {
   float length;
-  float costh;
+  float theta;
+  float phi;
   float range_momentum;
   float mcs_momentum;
   float crt_hit_distance;

@@ -825,7 +825,8 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
     this_track.mcs_kaon.bwd_mcs_momentum = mcs_fit_kaon.bwdMomentum();
     this_track.mcs_kaon.bwd_mcs_momentum_err = mcs_fit_kaon.bwdMomUncertainty();
 
-    this_track.costh = track->StartDirection().Z() / sqrt( track->StartDirection().Mag2() );  
+    this_track.theta = track->Theta();
+    this_track.phi = track->Phi();
 
     // get track topology
     std::array<bool, 4> topology = RecoTrackTopology(track);

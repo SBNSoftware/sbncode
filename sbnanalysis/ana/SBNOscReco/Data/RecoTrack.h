@@ -46,7 +46,8 @@ struct RecoTrack {
   int pdgid; //!< Particle ID that minimizes chi2 
   
   float length; //!< Length of track
-  float costh; //!< cosine of angle to z axis
+  float theta; //!< angle to z axis
+  float phi; //!< angle about z axis
 
   bool crosses_tpc; //!< does it cross a tpc?
   bool is_contained; //!< is it contained in the "containment volume"?
@@ -74,7 +75,8 @@ struct RecoTrack {
     pid_n_dof(-1),
     pdgid(-1),
     length(-1),
-    costh(-999),
+    theta(-999),
+    phi(-999),
     crosses_tpc(false),
     is_contained(false),
     start(-999, -999, -999),

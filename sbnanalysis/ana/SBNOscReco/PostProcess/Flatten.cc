@@ -126,7 +126,8 @@ void ana::SBNOsc::Flatten::ProcessEvent(const event::Event *ev) {
     // Primary Track
     numu::flat::PrimaryTrack track;
     track.length = primary_track.length; 
-    track.costh = primary_track.costh;
+    track.theta = primary_track.theta;
+    track.phi = primary_track.phi;
     track.range_momentum = numu::RangeMomentum(primary_track);
     track.mcs_momentum = numu::MCSMomentum(primary_track);
     track.crt_hit_distance = (primary_track.crt_match.hit_match.present) ? primary_track.crt_match.hit_match.distance : -1;
