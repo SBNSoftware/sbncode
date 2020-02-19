@@ -10,7 +10,7 @@ void numu::ApplyTrueParticleID(const numu::RecoInteraction &interaction, std::ma
     int pdg = -1; // "NULL" value
     int match_id = track.truth.GetPrimaryMatchID();
     if (particles.count(match_id)) {
-      pdg = particles.at(match_id).pdgid;
+      pdg = abs(particles.at(match_id).pdgid); // Reco algorithms only work in terms of absolude PDG codes
     }
 
     track.pdgid = pdg;

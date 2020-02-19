@@ -80,9 +80,19 @@ MatchSet FindMatches(const numu::RecoEvent &event, const std::vector<event::Inte
     if (matches.reco_to_truth.size() > 0)  {
       for (unsigned reco_i = 0; reco_i < event.reco.size(); reco_i++) {
         if (matches.reco_to_truth[reco_i] != -1) {
-          assert(reco_to_truth_h[reco_i] == -1);
-          reco_to_truth_h[reco_i] = matches.reco_to_truth[reco_i];
-          match_is_primary_h[reco_i] = matches.match_is_primary[reco_i];
+          // TODO: fix 
+          // If there are multiple good hueristic matches, take the more energetic one
+          if (reco_to_truth_h[reco_i] != -1) {
+            std::cout << "VERY BAD!!!! Multiple heuristic matches for single reco neutrino candidate.\n";
+            if (truth[matches.reco_to_truth[reco_i]].neutrino.energy > truth[reco_to_truth_h[reco_i]].neutrino.energy) {
+              reco_to_truth_h[reco_i] = matches.reco_to_truth[reco_i];
+              match_is_primary_h[reco_i] = matches.match_is_primary[reco_i];
+            }
+          }
+          else {
+            reco_to_truth_h[reco_i] = matches.reco_to_truth[reco_i];
+            match_is_primary_h[reco_i] = matches.match_is_primary[reco_i];
+          }
         }
       }
     }
