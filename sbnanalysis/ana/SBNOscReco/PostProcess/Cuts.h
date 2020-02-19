@@ -17,7 +17,7 @@ namespace ana {
 
 class Cuts {
 public:
-  static const unsigned nCuts = 11; //!< total number of cuts
+  static const unsigned nCuts = 13; //!< total number of cuts
   static const unsigned nTruthCuts = 6; //!< Total number of truth cuts
   /**
  * Initialize this class.
@@ -121,7 +121,8 @@ public:
   static constexpr std::array<const char *, nTruthCuts> truthCutNames = { "Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"};
   static constexpr std::array<const char *, nCuts> cutNames =
       {"Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch", 
-       "R_crttrack", "R_crthit", "R_crtactive", "R_contained", "R_length"};
+       "R_crttrack", "R_crthit", "R_maxnuscore", "R_nuscore",
+       "R_crtactive", "R_contained", "R_length"};
 
   const std::vector<std::string> &CutOrder() const {
     return fConfig.CutOrder;
@@ -159,6 +160,8 @@ private:
     float FlashMatchScore;
     int PMTTriggerTreshold;
     unsigned PMTNAboveThreshold;
+    bool SelectMaxNuScore;
+    float NuScoreCut;
   };
 
   Config fConfig;

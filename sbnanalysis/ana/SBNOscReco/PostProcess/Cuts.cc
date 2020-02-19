@@ -36,6 +36,9 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.CutOrder = cfg.get<std::vector<std::string>>("CutOrder");
   fConfig.TruthCutOrder = cfg.get<std::vector<std::string>>("TruthCutOrder");
 
+  fConfig.SelectMaxNuScore = cfg.get<bool>("SelectMaxNuScore", false);
+  fConfig.NuScoreCut = cfg.get<float>("NuScoreCut", -2.);
+
   {
     fhicl::ParameterSet dFV = \
      cfg.get<fhicl::ParameterSet>("fiducial_volume_inset");
@@ -174,6 +177,20 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   cuts["R_length"]  = fConfig.TrackLength < 0. || 
                      primary_track.length > fConfig.TrackLength;
+
+  float nu_score = event.reco[reco_vertex_index].slice.particles.at(event.reco[reco_vertex_index].slice.primary_index).p_nu_score;
+  bool is_max_nu_score = true;
+  for (unsigned i = 0; i < event.reco.size(); i++) {
+    float this_nu_score = event.reco[i].slice.particles.at(event.reco[i].slice.primary_index).p_nu_score;
+    if (i != reco_vertex_index && this_nu_score > nu_score) {
+      is_max_nu_score = false;
+      break;
+    } 
+  } 
+
+  cuts["R_maxnuscore"] = !fConfig.SelectMaxNuScore || is_max_nu_score;
+
+  cuts["R_nuscore"] = nu_score > fConfig.NuScoreCut;
 
   cuts["R_contained"] = ( InCosmicContainment(primary_track.start) && 
 			InCosmicContainment(primary_track.end) );
