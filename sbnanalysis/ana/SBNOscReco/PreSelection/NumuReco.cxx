@@ -584,7 +584,7 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
   }
 
   // get the generation mode
-  ret.is_cosmic = _true_particles_to_truth.at(particle.TrackId())->Origin() != simb::kBeamNeutrino;
+  ret.is_cosmic = (_true_neutrinos.size() == 0) || ( _true_particles_to_truth.at(particle.TrackId())->Origin() != simb::kBeamNeutrino);
 
   //double costh = (entry_point >= 0 && particle.Momentum(entry_point).Vect().Mag() > 1e-4) ? particle.Pz(entry_point) / particle.Momentum(entry_point).Vect().Mag(): -999.;
   //double kinetic_energy =  (entry_point >= 0) ? particle.E(entry_point) /* already in GeV*/ - PDGMass(pdgid) / 1000. /* MeV -> GeV */: -999.;
@@ -612,12 +612,14 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
 
   // get the service
   const cheat::ParticleInventory *inventory_service = fProviderManager->GetParticleInventoryProvider();
-
-  art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(particle.TrackId());
-  for (int i = 0; i < _true_neutrinos.size(); i++) {
-    if (truth.get() == _true_neutrinos[i].get()) {
-      ret.interaction_id = i;
-      break;
+  
+  if (_true_neutrinos.size()) {
+    art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(particle.TrackId());
+    for (int i = 0; i < _true_neutrinos.size(); i++) {
+      if (truth.get() == _true_neutrinos[i].get()) {
+        ret.interaction_id = i;
+        break;
+      }
     }
   }
 
@@ -720,9 +722,6 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
   std::map<size_t, numu::RecoTrack> ret;
   for (unsigned pfp_track_index = 0; pfp_track_index < _tpc_tracks.size(); pfp_track_index++) {
     const art::Ptr<recob::Track> &track = _tpc_tracks[pfp_track_index];
-
-    // is index same as ID?
-    assert(pfp_track_index == track->ID());
 
     // information to be saved
     numu::RecoTrack this_track;
@@ -1073,8 +1072,11 @@ void NumuReco::CollectTruthInformation(const gallery::Event &ev) {
   }
 
   // Genie MCTruth objects
-  auto const &mctruths = ev.getValidHandle<std::vector<simb::MCTruth>>(fTruthTag);
-  art::fill_ptr_vector(_true_neutrinos, mctruths);
+  gallery::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+  ev.getByLabel(fTruthTag, mctruth_handle);
+  if (mctruth_handle.isValid()) {
+    art::fill_ptr_vector(_true_neutrinos, mctruth_handle);
+  }
 }
 
 void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
