@@ -583,23 +583,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (thisParticle.IsPrimary()) break;
     }
     // primary particle and meta-data
-    SliceData sdata;
-    sdata.primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
-    sdata.primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+    const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
+    const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    sdata.fmatch = NULL; 
-    if (fmT0.isValid() && sdata.primary != NULL) {
-      std::vector<art::Ptr<anab::T0>> fmatch = fmT0.at(iPart);
-      if (fmatch.size() != 0) {
-        assert(fmatch.size() == 1);
-        sdata.fmatch = fmatch[0].get(); 
+    const anab::T0 *fmatch = NULL;
+    if (fmT0.isValid() && primary != NULL) {
+      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+      if (fmatches.size() != 0) {
+        assert(fmatches.size() == 1);
+        fmatch = fmatches[0].get(); 
       }
     }
 
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(*slice, sdata, rec.slc);
+    FillSliceVars(*slice, primary, rec.slc);
+    FillSliceMetadata(primary_meta, rec.slc);
+    FillSliceFlashMatch(fmatch, rec.slc); 
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
@@ -630,23 +631,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.ntrk ++;
 	rec.reco.trk.push_back(SRTrack()); 
 
-        // setup the data the track will need
-        TrackData tdata;
-      
-        // set the tdata
-        tdata.particleIDs = fmPID.at(iPart);
-        tdata.calos = fmCalo.at(iPart);
-        tdata.hits = fmHit.at(iPart);
-      
-        // set the algorithms
-        tdata.mcs_calculator = &fMCSCalculator;
-        tdata.range_calculator = &fRangeCalculator;
-        tdata.geom = lar::providerFrom<geo::Geometry>();
-      
-        FillTrackVars(*thisTrack[0], thisParticle, tdata, rec.reco.trk.back());
+        // fill all the stuff
+        FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
+        FillTrackMCS(*thisTrack[0], &fMCSCalculator, rec.reco.trk.back());
+        FillTrackRangeP(*thisTrack[0], &fRangeCalculator, rec.reco.trk.back());
+        FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
-      else if (thisShower.size()) {
+      else if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
         // TODO: fill shower vars

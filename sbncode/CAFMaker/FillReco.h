@@ -26,36 +26,48 @@
 namespace caf
 {
 
-  struct SliceData {
-    const recob::PFParticle *primary;
-    const larpandoraobj::PFParticleMetadata *primary_meta;
-    const anab::T0 *fmatch;
-  };
-
   void FillSliceVars(const recob::Slice& slice,
-                     const SliceData sdata,
+                     const recob::PFParticle *primary,
                      caf::SRSlice& srslice,
                      bool allowEmpty = false);
 
+  void FillSliceFlashMatch(const anab::T0 *fmatch,
+                           caf::SRSlice &srslice,
+                           bool allowEmpty = false);
+
+  void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
+                        caf::SRSlice &srslice,
+                        bool allowEmpty = false);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
-
-  struct TrackData {
-
-    // data products
-    std::vector<art::Ptr<anab::ParticleID>> particleIDs;
-    std::vector<art::Ptr<anab::Calorimetry>> calos;
-    std::vector<art::Ptr<recob::Hit>> hits;
-
-    // algorithms
-    const trkf::TrajectoryMCSFitter *mcs_calculator;
-    const trkf::TrackMomentumCalculator *range_calculator;
-    const geo::GeometryCore *geom;
-  };
 
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle& particle,
-                     const TrackData tdata,
                      caf::SRTrack& srtrk,
+                     bool allowEmpty = false);
+
+  void FillTrackMCS(const recob::Track& track,
+                    const trkf::TrajectoryMCSFitter *mcs_calculator,
+                    caf::SRTrack& srtrack,
+                    bool allowEmpty = false);
+
+  void FillTrackRangeP(const recob::Track& track,
+                     const trkf::TrackMomentumCalculator *range_calculator,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty = false);
+
+  void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        const geo::GeometryCore *geom,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
+
+  void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const geo::GeometryCore *geom,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty = false);
+
+  void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 }
 
