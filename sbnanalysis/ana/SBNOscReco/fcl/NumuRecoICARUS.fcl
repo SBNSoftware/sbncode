@@ -8,13 +8,13 @@ ExperimentID: 2
 
 GeneratorProcess: GenGenieCorsika
 
-TPCRecoTagSuffixes: ["Cryo0", "Cryo1"] 
+TPCRecoTagSuffixes: ["RECryo0", "RECryo1"] 
 PFParticleTag: "pandoraGaus"
 RecoSliceTag: "pandoraGaus"
 RecoVertexTag: "pandoraGaus"
 RecoTrackTag: "pandoraTrackGaus"
-CaloTag: "pandoraGausReCalo"
-PIDTag: "pandoraGausRePid"
+CaloTag: "pandoraGausCalo"
+PIDTag: "pandoraGausPid"
 CRTHitTag: "crtsimhit"
 
 NumuReco: {

@@ -2,6 +2,9 @@
 
 #include "calorimetry_icarus.fcl"
 #include "particleid_icarus.fcl"
+#include "cluster_icarus.fcl"
+#include "trackfindermodules_icarus.fcl"
+#include "showerfindermodules_icarus.fcl"
 
 #include "services_icarus_simulation.fcl"
 
@@ -10,10 +13,10 @@ BEGIN_PROLOG
 icarus_flash_match_0: {
   module_type: FlashPredict
   OpHitProducer: "ophit"
-  PandoraProducer: "pandoraGausCryo0"
-  TrackProducer: "pandoraTrackGausCryo0"
-  CaloProducer: "pandoraGausCaloCryo0"
-  SpacePointProducer: "pandoraGausCryo0"
+  PandoraProducer: "pandoraGausRECryo0"
+  TrackProducer: "pandoraTrackGausRECryo0"
+  CaloProducer: "pandoraGausCaloRECryo0"
+  SpacePointProducer: "pandoraGausRECryo0"
   BeamWindowStart: -5. #us
   BeamWindowEnd: 2.0 # us
   ChargeToNPhotonsShower: 1.0
@@ -31,33 +34,55 @@ icarus_flash_match_0: {
 
 icarus_flash_match_1: @local::icarus_flash_match_0
 icarus_flash_match_1.Cryostat: 1
-icarus_flash_match_1.PandoraProducer: pandoraGausCryo1
-icarus_flash_match_1.TrackProducer: pandoraTrackGausCryo1
-icarus_flash_match_1.CaloProducer: pandoraGausCaloCryo1
-icarus_flash_match_1.SpacePointProducer: pandoraGausCryo1
+icarus_flash_match_1.PandoraProducer: pandoraGausRECryo1
+icarus_flash_match_1.TrackProducer: pandoraTrackGausRECryo1
+icarus_flash_match_1.CaloProducer: pandoraGausCaloRECryo1
+icarus_flash_match_1.SpacePointProducer: pandoraGausRECryo1
+
+# re-run pandora with SBND BDT's (for vertex finding and slice score)
+pandoraGausRECryo0: @local::icarus_pandora
+pandoraGausRECryo1: @local::icarus_pandora
+
+pandoraGausRECryo0.HitFinderModuleLabel: "cluster3DCryo0"
+pandoraGausRECryo0.ConfigFile: "PandoraSettings_Master_SBND.xml"
+
+pandoraGausRECryo1.HitFinderModuleLabel: "cluster3DCryo1"
+pandoraGausRECryo1.ConfigFile: "PandoraSettings_Master_SBND.xml"
+
+pandoraTrackGausRECryo0: @local::icarus_pandoraTrackCreation
+pandoraTrackGausRECryo0.PFParticleLabel: pandoraGausRECryo0
+
+pandoraTrackGausRECryo1: @local::icarus_pandoraTrackCreation
+pandoraTrackGausRECryo1.PFParticleLabel: pandoraGausRECryo1
+
+pandoraShowerGausRECryo0: @local::icarus_pandoraShowerCreation
+pandoraShowerGausRECryo0.PFParticleLabel: pandoraGausRECryo0
+
+pandoraShowerGausRECryo1: @local::icarus_pandoraShowerCreation
+pandoraShowerGausRECryo1.PFParticleLabel: pandoraGausRECryo1
 
 # setup calo
-pandoraGausReCaloCryo0: @local::icarus_calomc
-pandoraGausReCaloCryo1: @local::icarus_calomc
+pandoraGausCaloRECryo0: @local::icarus_calomc
+pandoraGausCaloRECryo1: @local::icarus_calomc
 
-pandoraGausReCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0" 
-pandoraGausReCaloCryo0.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
-pandoraGausReCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
-pandoraGausReCaloCryo0.CorrectSCE: "false"
+pandoraGausCaloRECryo0.SpacePointModuleLabel: "pandoraGausRECryo0" 
+pandoraGausCaloRECryo0.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
+pandoraGausCaloRECryo0.TrackModuleLabel: "pandoraTrackGausRECryo0"
+pandoraGausCaloRECryo0.CorrectSCE: "false"
 
-pandoraGausReCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1" 
-pandoraGausReCaloCryo1.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
-pandoraGausReCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
-pandoraGausReCaloCryo1.CorrectSCE: "false"
+pandoraGausCaloRECryo1.SpacePointModuleLabel: "pandoraGausRECryo1" 
+pandoraGausCaloRECryo1.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
+pandoraGausCaloRECryo1.TrackModuleLabel: "pandoraTrackGausRECryo1"
+pandoraGausCaloRECryo1.CorrectSCE: "false"
 
-pandoraGausRePidCryo0: @local::icarus_chi2pid
-pandoraGausRePidCryo1: @local::icarus_chi2pid
+pandoraGausPidRECryo0: @local::icarus_chi2pid
+pandoraGausPidRECryo1: @local::icarus_chi2pid
 
-pandoraGausRePidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
-pandoraGausRePidCryo0.CalorimetryModuleLabel: "pandoraGausReCaloCryo0"
+pandoraGausPidRECryo0.TrackModuleLabel:  "pandoraTrackGausRECryo0"
+pandoraGausPidRECryo0.CalorimetryModuleLabel: "pandoraGausCaloRECryo0"
 
-pandoraGausRePidCryo1.TrackModuleLabel:  "pandoraTrackGausCryo1"
-pandoraGausRePidCryo1.CalorimetryModuleLabel: "pandoraGausReCaloCryo1"
+pandoraGausPidRECryo1.TrackModuleLabel:  "pandoraTrackGausRECryo1"
+pandoraGausPidRECryo1.CalorimetryModuleLabel: "pandoraGausCaloRECryo1"
 
 END_PROLOG
 
@@ -76,17 +101,33 @@ source:
 
 physics: {
   producers: {
-    fmatchCryo0: @local::icarus_flash_match_0
-    fmatchCryo1: @local::icarus_flash_match_1
+    fmatchRECryo0: @local::icarus_flash_match_0
+    fmatchRECryo1: @local::icarus_flash_match_1
 
-    pandoraGausRePidCryo0: @local::pandoraGausRePidCryo0
-    pandoraGausReCaloCryo0: @local::pandoraGausReCaloCryo0
+    pandoraGausRECryo0:@local::pandoraGausRECryo0
+    pandoraGausRECryo1:@local::pandoraGausRECryo1
 
-    pandoraGausRePidCryo1: @local::pandoraGausRePidCryo1
-    pandoraGausReCaloCryo1: @local::pandoraGausReCaloCryo1
+    pandoraTrackGausRECryo0:@local::pandoraTrackGausRECryo0
+    pandoraTrackGausRECryo1:@local::pandoraTrackGausRECryo1
+
+    pandoraShowerGausRECryo0:@local::pandoraShowerGausRECryo0
+    pandoraShowerGausRECryo1:@local::pandoraShowerGausRECryo1
+
+    pandoraGausPidRECryo0: @local::pandoraGausPidRECryo0
+    pandoraGausCaloRECryo0: @local::pandoraGausCaloRECryo0
+
+    pandoraGausPidRECryo1: @local::pandoraGausPidRECryo1
+    pandoraGausCaloRECryo1: @local::pandoraGausCaloRECryo1
   }
 
-  simulate: [pandoraGausReCaloCryo0, pandoraGausReCaloCryo1, pandoraGausRePidCryo0, pandoraGausRePidCryo1, fmatchCryo0, fmatchCryo1]
+  simulate: [  
+    pandoraGausRECryo0, pandoraGausRECryo1,
+    pandoraTrackGausRECryo0, pandoraTrackGausRECryo1,
+    pandoraShowerGausRECryo0, pandoraShowerGausRECryo1,
+    pandoraGausCaloRECryo0, pandoraGausCaloRECryo1, 
+    pandoraGausPidRECryo0, pandoraGausPidRECryo1, 
+    fmatchRECryo0, fmatchRECryo1
+  ]
   stream: [out]
   end_paths: [stream]
 }

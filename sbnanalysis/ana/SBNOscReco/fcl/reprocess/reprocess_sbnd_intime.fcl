@@ -3,10 +3,15 @@
 #include "simulationservices_sbnd.fcl"
 #include "messages_sbnd.fcl"
 #include "rootoutput_sbnd.fcl"
+#include "calorimetry_sbnd.fcl"
+#include "pandoramodules_sbnd.fcl"
+#include "particleid_sbnd.fcl"
 
 sbnd_flash_match: {
   module_type: FlashPredict
   OpHitProducer: "reophit"
+  PandoraProducer: "pandoraRE"
+  SpacePointProducer: "pandoraRE"
   BeamWindowStart: -5. #us
   BeamWindowEnd: 2.0 # us
   ChargeToNPhotonsShower: 1.0
@@ -41,10 +46,17 @@ physics: {
   producers: {
     reopdaq: @local::sbnd_opdetdigitizer
     reophit: @local::sbnd_hit_finder
-    fmatch: @local::sbnd_flash_match
+    fmatchRE: @local::sbnd_flash_match
+
+    # re-run pandora with updated vertexer
+    pandoraRE:             @local::sbnd_pandora
+    pandoraTrackRE:        @local::sbnd_pandoraTrackCreation
+    pandoraShowerRE:       @local::sbnd_pandoraShowerCreation
+    pandoraCaloRE:         @local::sbnd_calomc
+    pandoraPidRE:          @local::sbnd_chi2pid
   }
 
-  simulate: [reopdaq, reophit, fmatch]
+  simulate: [reopdaq, reophit, pandoraRE, pandoraTrackRE, pandoraShowerRE, pandoraCaloRE, pandoraPidRE, fmatchRE]
   stream: [out]
   end_paths: [stream]
 }
@@ -64,8 +76,23 @@ outputs: {
 
 
 physics.producers.reophit.InputModule: reopdaq
-physics.producers.reopdaq.UseLitePhotons: 0
 physics.producers.reopdaq.NThreads: 3
+
+#services.NuRandomService.policy: "autoIncrement"
+#services.NuRandomService.baseSeed: 0
+#services.NuRandomService.checkRange: false
+
+physics.producers.pandoraShowerRE.PFParticleLabel: pandoraRE
+physics.producers.pandoraTrackRE.PFParticleLabel: pandoraRE
+
+physics.producers.pandoraCaloRE.SpacePointModuleLabel: pandoraRE
+physics.producers.pandoraCaloRE.TrackModuleLabel: pandoraTrackRE
+
+physics.producers.pandoraPidRE.CalorimetryModuleLabel: pandoraCaloRE
+physics.producers.pandoraPidRE.TrackModuleLabel: pandoraTrackRE
+physics.producers.pandoraRE.ConfigFile: "PandoraSettings_Master_SBND.xml"
+
+physics.producers.reopdaq.UseLitePhotons: 0
 
 #include "3drift_services_sbnd.fcl"
 

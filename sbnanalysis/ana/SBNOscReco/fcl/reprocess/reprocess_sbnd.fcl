@@ -10,6 +10,8 @@
 sbnd_flash_match: {
   module_type: FlashPredict
   OpHitProducer: "reophit"
+  PandoraProducer: "pandoraRE"
+  SpacePointProducer: "pandoraRE"
   BeamWindowStart: -5. #us
   BeamWindowEnd: 2.0 # us
   ChargeToNPhotonsShower: 1.0
@@ -44,7 +46,7 @@ physics: {
   producers: {
     reopdaq: @local::sbnd_opdetdigitizer
     reophit: @local::sbnd_hit_finder
-    fmatch: @local::sbnd_flash_match
+    fmatchRE: @local::sbnd_flash_match
 
     # re-run pandora with updated vertexer
     pandoraRE:             @local::sbnd_pandora
@@ -54,7 +56,7 @@ physics: {
     pandoraPidRE:          @local::sbnd_chi2pid
   }
 
-  simulate: [reopdaq, reophit, fmatch, pandoraRE, pandoraTrackRE, pandoraShowerRE, pandoraCaloRE, pandoraPidRE]
+  simulate: [reopdaq, reophit, pandoraRE, pandoraTrackRE, pandoraShowerRE, pandoraCaloRE, pandoraPidRE, fmatchRE]
   stream: [out]
   end_paths: [stream]
 }
