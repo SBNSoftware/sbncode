@@ -21,6 +21,8 @@ struct TrueParticleHistos : public HistoList {
   TH1D *momentum;
   TH1D *deposited_energy;
   TH1D *length;
+  TH1D *kinetic_energy;
+  TH1D *frac_deposited;
 
   /**
  *  Intialize the histograms

@@ -2,16 +2,21 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TProfile2D.h"
 
 #include "../NumuReco/TrackAlgo.h"
 
 namespace ana {
   namespace SBNOsc {
 
+static const std::vector<std::string> PIDS {"muon", "proton", "pion", "kaon"};
+
 void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, double max_length) {
 #define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
 #define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); StoreHisto(name)
+#define TRACK_2DPROFILE(name, binx, lo_x, hi_x, biny, lo_y, hi_y) name = new TProfile2D((#name + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); StoreHisto(name);
 
+  TRACK_2DPROFILE(angular_chi2_muon, 32, 0, 3.2, 64, -3.2, 3.2);
   TRACK_HISTO(chi2_muon_diff, 100, 0., 1000.);
   TRACK_HISTO(chi2_proton_diff, 100, 0, 1000);
   TRACK_HISTO(chi2_kaon_diff, 100, 0, 1000);
@@ -84,7 +89,12 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq, 100., 0., 10.);
 
-  TRACK_2DHISTO(pid_confusion_tr, 2, -0.5, 1.5, 2, -0.5, 1.5);
+  TRACK_2DHISTO(pid_confusion_tr, PIDS.size(), 0, PIDS.size(), PIDS.size(), 0, PIDS.size());
+
+  for (unsigned i = 0; i < PIDS.size(); i++) {
+    pid_confusion_tr->GetXaxis()->SetBinLabel(i+1, PIDS[i].c_str());
+    pid_confusion_tr->GetYaxis()->SetBinLabel(i+1, PIDS[i].c_str());
+  } 
 
 #undef TRACK_HISTO
 #undef TRACK_2DHISTO
@@ -105,6 +115,8 @@ void TrackHistos::Fill(
     chi2_kaon->Fill(track.chi2_kaon);
     chi2_pion->Fill(track.chi2_pion);
     chi2_proton->Fill(track.chi2_proton);
+
+    angular_chi2_muon->Fill(track.theta, track.phi, track.chi2_muon);
 
     // n_daughters->Fill(particle.daughters.size());
 
@@ -201,14 +213,40 @@ void TrackHistos::Fill(
     true_start_time->Fill(true_particle.start_time);
     true_start_time_zoom->Fill(true_particle.start_time);
 
-    if (track.min_chi2 > 0.) {
-      bool is_proton_reco = track.chi2_proton < track.chi2_muon;
-      bool is_proton_true = abs(true_particle.pdgid) == 2212;
-      bool is_muon_true = abs(true_particle.pdgid) == 13;
-      if (is_proton_true || is_muon_true) {
-        pid_confusion_tr->Fill(is_proton_true, is_proton_reco);
+    int true_index = -1;
+    if (abs(true_particle.pdgid) == 13) {
+      true_index = 0;
+    }
+    else if (abs(true_particle.pdgid) == 2212) {
+      true_index = 1;
+    }
+    else if (abs(true_particle.pdgid) == 211) {
+      true_index = 2;
+    }
+    else if (abs(true_particle.pdgid) == 321) {
+      true_index = 3;
+    }
+
+    int reco_index = -1;
+    if (abs(track.pdgid) == 13) {
+      reco_index = 0;
+    }
+    else if (abs(track.pdgid) == 2212) {
+      reco_index = 1;
+    }
+    else if (abs(track.pdgid) == 211) {
+      reco_index = 2;
+    }
+    else if (abs(track.pdgid) == 321) {
+      reco_index = 3;
+    }
+    if (reco_index >= 0 && true_index >= 0) {
+      // cut on track length of 10cm
+      if (track.length > 10) {
+        pid_confusion_tr->Fill(PIDS[true_index].c_str(), PIDS[reco_index].c_str(), 1.);
       }
     }
+
   }
   else {
     completion->Fill(-0.5);

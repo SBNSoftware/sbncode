@@ -15,6 +15,8 @@
 
 class TH1D;
 class TH2D;
+class TProfile;
+
 namespace ana {
  namespace SBNOsc {
 
@@ -57,6 +59,10 @@ struct InteractionHistos : public HistoList {
   TH1D *vertex_y;
   TH1D *vertex_z;
   TH2D *light_trigger;
+  TH1D *nu_score;
+  TProfile *nu_score_nu_energy;
+  TProfile *nu_score_muon_length;
+  TH2D *finalstate_tr;
 
   /**
  *  Intialize the histograms

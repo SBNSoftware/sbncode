@@ -13,6 +13,7 @@
 
 #include "../Data/RecoEvent.h"
 #include "../Data/FlatInteraction.h"
+#include "core/Event.hh"
 
 static void repl() {
   numu::RecoEvent event;
@@ -29,10 +30,13 @@ static void repl() {
   numu::flat::FlatInteraction flat;
   flat.ptrack.start[1] = 5.;
 
+  event::Interaction interaction;
+
   uscript::Compiler::Register<numu::TrueParticle>();
   uscript::Compiler::Register<numu::RecoEvent>();
   uscript::Compiler::Register<numu::RecoSlice>();
   uscript::Compiler::Register<numu::flat::FlatInteraction>();
+  uscript::Compiler::Register<event::Interaction>();
 
   char line[1024];
   uscript::VM vm;
@@ -49,6 +53,7 @@ static void repl() {
     vm.AddGlobal("event", &event);
     vm.AddGlobal("slice", &slice);
     vm.AddGlobal("particle", &particle);
+    vm.AddGlobal("interaction", &interaction);
     int global = 5;
     vm.AddGlobal("int", &global);
     uscript::Value v;

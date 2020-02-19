@@ -60,8 +60,8 @@ namespace SBNOsc {
     std::vector<std::string> track_profile_values = config->get<std::vector<std::string>>("TrackProfileValues", {});
     for (const std::string &source: track_profile_values) {
       // fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction>("track", "particle", "interaction", source.c_str()));
-      fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction, event::Neutrino>
-        ("track", "particle", "interaction", "neutrino", source.c_str()));
+      fTrackProfileValues.push_back(uscript::compile<numu::RecoTrack, numu::TrueParticle, numu::RecoInteraction, event::Interaction>
+        ("track", "particle", "interaction", "true_interaction", source.c_str()));
     }
 
     std::vector<std::string> track_profile_value_names = config->get<std::vector<std::string>>("TrackProfileValueNames", {});

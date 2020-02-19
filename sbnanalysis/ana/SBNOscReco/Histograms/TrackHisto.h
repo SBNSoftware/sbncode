@@ -11,6 +11,7 @@
 
 class TH1D;
 class TH2D;
+class TProfile2D;
 
 namespace ana {
  namespace SBNOsc {
@@ -83,6 +84,7 @@ struct TrackHistos : public HistoList {
   TH1D *crt_v_flash_match_time;
 
   TH2D *pid_confusion_tr;
+  TProfile2D *angular_chi2_muon;
 
   /**
  * Initialize this set of histograms

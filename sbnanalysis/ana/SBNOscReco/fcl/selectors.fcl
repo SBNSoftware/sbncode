@@ -32,17 +32,122 @@ primary_pdg_selectors: [
 ]
 primary_pdgs: ["all", "mu", "pi", "p"]
 
-reco_mode_selectors: [
+reco_finalstate_selectors: [
    "return true;",
-   "return interaction.nproton == 0 && interaction.npion == 0; // 0p 0pi",
-   "return interaction.nproton == 1 && interaction.npion == 0; // 1p 0pi",
-   "return interaction.nproton == 2 && interaction.npion == 0; // 2p 0pi",
-   "return interaction.nproton >= 3 && interaction.npion == 0; // >2p 0pi",
+   "return interaction.nproton == 0 and interaction.npion == 0; // 0p 0pi",
+   "return interaction.nproton == 1 and interaction.npion == 0; // 1p 0pi",
+   "return interaction.nproton == 2 and interaction.npion == 0; // 2p 0pi",
+   "return interaction.nproton >= 3 and interaction.npion == 0; // >2p 0pi",
    "return interaction.npion == 1; // np 1pi",
    "return interaction.npion >= 2; // np >1pi"
 ]
 
-reco_modes: ["all", "p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"]
+finalstates: ["all", "p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"]
+
+true_finalstate_selectors: [
+  "return true;",
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_proton == 0 and n_pion == 0;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_proton == 1 and n_pion == 0;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_proton == 2 and n_pion == 0;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_proton > 2 and n_pion == 0;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_pion == 1;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.04; // 40MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_pion > 1;
+   }"
+]
 
 interaction_selectors: [
    "return true;",
@@ -59,15 +164,16 @@ interactions: ["All", "CC", "CC-Other", "NC", "NC-Other", "Cosmic", "InTime-Cosm
 
 true_intmode_selectors: [
   "return true;",
-  "return interaction.slice.truth.interaction_id >= 0 && 
-      (neutrino.genie_intcode == 0 || neutrino.genie_intcode == 1001 || neutrino.genie_intcode == 1002); // QE",
-  "return interaction.slice.truth.interaction_id >= 0 && 
-      (neutrino.genie_intcode == 1 || (neutrino.genie_intcode >= 1003  && neutrino.genie_intcode <= 1090)); // Res",
-  "return interaction.slice.truth.interaction_id >= 0 && 
-      (neutrino.genie_intcode == 2 || neutrino.genie_intcode == 1091 || neutrino.genie_intcode == 1092); // DIS",
-  "return interaction.slice.truth.interaction_id >= 0 && 
-      (neutrino.genie_intcode == 10 || neutrino.genie_intcode == 1100); // MEC"
+  "return interaction.slice.truth.interaction_id >= 0 and 
+      (true_interaction.neutrino.genie_intcode == 0 or true_interaction.neutrino.genie_intcode == 1001 or true_interaction.neutrino.genie_intcode == 1002); // QE",
+  "return interaction.slice.truth.interaction_id >= 0 and 
+      (true_interaction.neutrino.genie_intcode == 1 or (true_interaction.neutrino.genie_intcode >= 1003  and true_interaction.neutrino.genie_intcode <= 1090)); // Res",
+  "return interaction.slice.truth.interaction_id >= 0 and 
+      (true_interaction.neutrino.genie_intcode == 2 or true_interaction.neutrino.genie_intcode == 1091 or true_interaction.neutrino.genie_intcode == 1092); // DIS",
+  "return interaction.slice.truth.interaction_id >= 0 and 
+      (true_interaction.neutrino.genie_intcode == 10 or true_interaction.neutrino.genie_intcode == 1100); // MEC"
 ]
+
 
 intmodes: ["all", "QE", "Res", "DIS", "MEC"]
 
@@ -75,7 +181,7 @@ neutrino_selectors: [
    "return true;",
    "return interaction.slice.truth.mode == 0; // CC",
    "return interaction.slice.truth.mode == 2; // NC",
-   "return interaction.slice.truth.mode == 1 || interaction.slice.truth.mode == 3; // Non Primary"
+   "return interaction.slice.truth.mode == 1 or interaction.slice.truth.mode == 3; // Non Primary"
 ]
 neutrinos: ["All", "CC", "NC", "Other"]
 
@@ -161,7 +267,7 @@ scatters: ["all", "stops", "scatters"]
 
 truth_cut_order: ["Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"]
 cut_order: ["Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch",
-            "R_crttrack", "R_crthit", "R_crtactive", "R_contained", "R_length"]
+            "R_crttrack", "R_crthit", "R_maxnuscore", "R_nuscore", "R_crtactive", "R_contained", "R_length"]
 cut_order_summary: ["Reco", "R_trig", "R_flashtime", "R_flashmatch",
     "R_fid", "R_goodmcs", "R_length","R_contained", 
     "R_crtactive","R_crttrack", "R_crthit"]

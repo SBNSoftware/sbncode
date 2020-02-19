@@ -6,7 +6,6 @@ add_library(sbnanalysis_SBNOscReco_Histograms SHARED Derived.cc CosmicHisto.cc I
 
 target_link_libraries(sbnanalysis_SBNOscReco_Histograms
   sbnanalysis_SBNOscReco_Reco
-  sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo
   sbnanalysis_SBNOscReco_classes
   sbnanalysis_SBNOscReco_RecoUtils

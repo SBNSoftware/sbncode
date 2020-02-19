@@ -9,11 +9,11 @@ add_library(sbnanalysis_SBNOscReco_Flatten SHARED Flatten.cc Cuts.cc SetEvent.cc
 target_link_libraries(sbnanalysis_SBNOscReco_Selection
   sbnanalysis_SBNOscReco_TriggerEmulator
   sbnanalysis_SBNOscReco_Histograms
-  sbnanalysis_SBNOsc_Utilities
   ubana_BasicTool_GeoAlgo
   sbndcode_GeoWrappers
   sbnanalysis_SBNOscReco_classes
   sbnanalysis_SBNOscReco_RecoUtils
+  sbnanalysis_Event
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_Flatten

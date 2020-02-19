@@ -112,18 +112,18 @@ void Histograms::Fill( const numu::RecoEvent &event,
   }
 
   numu::TrueParticle bad;
-  event::Neutrino nubad;
+  event::Interaction nubad;
 
   if (fill_all_tracks) {
     for (unsigned i = 0; i < event.reco.size(); i++) {
       for (unsigned ID: event.reco[i].PrimaryTracks(event.tracks)) {
       const numu::RecoTrack &track = event.tracks.at(ID);
     
-        const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
-        const event::Neutrino &neutrino = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id).neutrino : nubad;
+        const numu::TrueParticle &part = event.particles.count(track.truth.GetPrimaryMatchID()) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+        const event::Interaction &true_interaction = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id) : nubad;
 
         for (unsigned j = 0; j < fAllTracks.size(); j++) {
-          bool select = selectors[j](track, part, event.reco[i], neutrino);
+          bool select = selectors[j](track, part, event.reco[i], true_interaction);
           if (select) {
             fAllTracks[j].Fill(track, event.particles);
           }
@@ -139,8 +139,8 @@ void Histograms::Fill( const numu::RecoEvent &event,
 
     if (event.tracks.size() > (unsigned)interaction.primary_track_index) {
       const numu::RecoTrack &track = event.tracks.at(interaction.primary_track_index);
-      const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
-      const event::Neutrino &neutrino = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id).neutrino : nubad;
+      const numu::TrueParticle &part = event.particles.count(track.truth.GetPrimaryMatchID()) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+      const event::Interaction &true_interaction = (event.reco[i].slice.truth.interaction_id >= 0) ? core.truth.at(event.reco[i].slice.truth.interaction_id) : nubad;
 
       for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
         if (cuts[cut_i] && cutmaker.HasCRTHitMatch(track)) {
@@ -149,14 +149,14 @@ void Histograms::Fill( const numu::RecoEvent &event,
       }
 
       for (unsigned j = 0; j < fPrimaryTracks.size(); j++) { 
-        bool select = selectors[j](track, part, event.reco[i], neutrino);
+        bool select = selectors[j](track, part, event.reco[i], true_interaction);
         if (select) {
           for (unsigned cut_i = 0; cut_i < Cuts::nCuts; cut_i++) {
             if (cuts[cut_i]) {
               fPrimaryTracks[j][cut_i].Fill(track, event.particles);
               for (unsigned k = 0; k < xfunctions.size(); k++) {
-                const numu::TrueParticle &part = (track.truth.GetPrimaryMatchID() >= 0) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
-                uscript::Value x = xfunctions[k](&track, &part, &event.reco[i], &neutrino);
+                const numu::TrueParticle &part = event.particles.count(track.truth.GetPrimaryMatchID()) ? event.particles.at(track.truth.GetPrimaryMatchID()) : bad;
+                uscript::Value x = xfunctions[k](&track, &part, &event.reco[i], &true_interaction);
                 assert(IS_NUMBER(x));
                 fPrimaryTrackProfiles[j][k][cut_i].Fill(AS_NUMBER(x), 
 							track, event);

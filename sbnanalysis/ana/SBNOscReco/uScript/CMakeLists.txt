@@ -13,6 +13,7 @@ add_executable(uscript main.cc)
 target_link_libraries(uscript
   uscript_lib
   sbnanalysis_SBNOscReco_classes
+  sbnanalysis_Event
 )
 
 install(TARGETS uscript_lib DESTINATION lib)

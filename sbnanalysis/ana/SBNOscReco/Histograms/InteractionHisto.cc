@@ -4,14 +4,33 @@
 
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TProfile.h"
 
 namespace ana {
   namespace SBNOsc {
+
+static const std::vector<std::string> FINALSTATE {"p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"};
+
+const char *FinalStateStr(unsigned n_proton, unsigned n_pion) {
+  switch (n_pion) {
+    case 0:
+      switch (n_proton) { 
+        case 0: return FINALSTATE[0].c_str();
+        case 1: return FINALSTATE[1].c_str();
+        case 2: return FINALSTATE[2].c_str();
+        default: return FINALSTATE[3].c_str();
+      }
+    case 1: return FINALSTATE[4].c_str();
+    default: return FINALSTATE[5].c_str();
+  }
+  return NULL; // unreachable
+}
 
 void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGeo &detector_volume, const std::vector<double> &tagger_volume) {
 #define INT_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
 #define INT_HISTO2D(name, n_binsx, xlo, xhi, n_binsy, ylo, yhi) name = new TH2D((#name + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, ylo, yhi); StoreHisto(name)
 #define INT_HISTO2D_BINSY(name, n_binsx, xlo, xhi, n_binsy, binsy) name = new TH2D((#name + postfix).c_str(), #name, n_binsx, xlo, xhi, n_binsy, binsy); StoreHisto(name)
+#define INT_PROFILE(name, n_bins, lo, hi) name = new TProfile((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
 
   INT_HISTO(track_length, 100, 0., 600.);
   INT_HISTO(track_p, 50, 0., 5.);
@@ -39,6 +58,9 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO2D(fmatch_time_true_time_zoom, 100, -5., 5., 100, -5., 5.);
   INT_HISTO(fmatch_time_real_time, 4000, -2, 2);
   INT_HISTO(fmatch_time, 700, -5., 2.);
+  INT_HISTO(nu_score, 50, 0., 1.);
+  INT_PROFILE(nu_score_nu_energy, 50, 0., 5.);
+  INT_PROFILE(nu_score_muon_length, 100, 0., 600.);
 
   // INT_HISTO2D(light_trigger, 20, 0.5, 20.5, 200, 6000, 8000);
 
@@ -53,6 +75,12 @@ void InteractionHistos::Initialize(const std::string &postfix, const geo::BoxBou
   INT_HISTO(vertex_x, 100, detector_volume.MinX(), detector_volume.MaxX());
   INT_HISTO(vertex_y, 100, detector_volume.MinY(), detector_volume.MaxY());
   INT_HISTO(vertex_z, 100, detector_volume.MinZ(), detector_volume.MaxZ());
+
+  INT_HISTO2D(finalstate_tr, FINALSTATE.size(), 0, FINALSTATE.size(), FINALSTATE.size(), 0, FINALSTATE.size());
+  for (unsigned i = 0; i < FINALSTATE.size(); i++) {
+    finalstate_tr->GetXaxis()->SetBinLabel(i+1, FINALSTATE[i].c_str());
+    finalstate_tr->GetYaxis()->SetBinLabel(i+1, FINALSTATE[i].c_str());
+  }
 
 #undef INT_HISTO
 }
@@ -111,6 +139,32 @@ void InteractionHistos::Fill(
   vertex_y->Fill(vertex.position.Y());
   vertex_z->Fill(vertex.position.Z());
 
+  nu_score->Fill(vertex.slice.particles.at(vertex.slice.primary_index).p_nu_score);
+
+  if (vertex.slice.truth.interaction_id >= 0) {
+    nu_score_nu_energy->Fill(truth[vertex.slice.truth.interaction_id].neutrino.energy, vertex.slice.particles.at(vertex.slice.primary_index).p_nu_score);
+  }
+
+  if (vertex.slice.truth.interaction_id >= 0) {
+    const event::Interaction &interaction = truth[vertex.slice.truth.interaction_id];
+    float threshold = 0.04; // 40 MeV
+    unsigned n_proton = 0;
+    unsigned n_pion = 0;
+    for (unsigned i = 0; i < interaction.finalstate.size(); i++) {
+      if (abs(interaction.finalstate[i].pdg) == 2212 && 
+          interaction.finalstate[i].kinetic_energy > threshold &&
+          interaction.finalstate[i].status_code == event::FinalStateParticle::kIStStableFinalState) {
+        n_proton ++;
+      }
+      if (abs(interaction.finalstate[i].pdg) == 211 && 
+          interaction.finalstate[i].kinetic_energy > threshold &&
+          interaction.finalstate[i].status_code == event::FinalStateParticle::kIStStableFinalState) {
+        n_pion ++;
+      }
+    }
+    finalstate_tr->Fill(FinalStateStr(n_proton, n_pion), FinalStateStr(vertex.nproton, vertex.npion), 1.);
+  }
+
 
   if (vertex.slice.flash_match.present) {
     fmatch_score->Fill(vertex.slice.flash_match.score);
@@ -135,6 +189,7 @@ void InteractionHistos::Fill(
   }
 
   track_length->Fill(primary_track.length);
+  nu_score_muon_length->Fill(primary_track.length, vertex.slice.particles.at(vertex.slice.primary_index).p_nu_score); 
   int mcparticle_id = primary_track.truth.GetPrimaryMatchID();
   if (mcparticle_id >= 0) {
     primary_track_completion->Fill(primary_track.truth.matches[0].energy / event.particles.at(mcparticle_id).deposited_energy); 
