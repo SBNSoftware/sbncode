@@ -172,7 +172,7 @@ void InteractionHistos::Fill(
 
     assert(vertex.primary_track_index >= 0);
     int mcparticle_id = event.tracks.at(vertex.primary_track_index).truth.GetPrimaryMatchID();
-    if (mcparticle_id >= 0) {
+    if (event.particles.count(mcparticle_id)) {
       double true_time = event.particles.at(mcparticle_id).start_time;
       fmatch_score_true_time->Fill(vertex.slice.flash_match.score, true_time);
       fmatch_score_true_time_zoom->Fill(vertex.slice.flash_match.score, true_time);
@@ -191,7 +191,7 @@ void InteractionHistos::Fill(
   track_length->Fill(primary_track.length);
   nu_score_muon_length->Fill(primary_track.length, vertex.slice.particles.at(vertex.slice.primary_index).p_nu_score); 
   int mcparticle_id = primary_track.truth.GetPrimaryMatchID();
-  if (mcparticle_id >= 0) {
+  if (event.particles.count(mcparticle_id)) {
     primary_track_completion->Fill(primary_track.truth.matches[0].energy / event.particles.at(mcparticle_id).deposited_energy); 
   
     double true_track_momentum = event.particles.at(mcparticle_id).start_momentum.Mag(); 

@@ -1,4 +1,5 @@
 #include "Derived.h"
+#include <iostream>
 
 float numu::dist2Match(const event::Interaction &truth, const std::vector<numu::RecoInteraction> &candidates) {
   float dist = -1;
@@ -11,7 +12,11 @@ float numu::dist2Match(const event::Interaction &truth, const std::vector<numu::
 }
 
 float numu::trackMatchCompletion(unsigned g4id, const numu::RecoEvent &event) {
-  if (g4id == -1) return -1;
+  if (!event.particles.count(g4id)) return -1;
+  else if (!event.particles.count(g4id)) {
+    std::cout << "BAAAAAAD -- G4ID with no particle match. ID: " << g4id << std::endl;
+    return -1;
+  }
 
   float completion = -1;
   float most_matched_energy = 0.; 

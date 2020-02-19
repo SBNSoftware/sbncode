@@ -190,7 +190,7 @@ void TrackHistos::Fill(
   }*/
   
   // check if truth match
-  if (track.truth.GetPrimaryMatchID() >= 0) { 
+  if (true_particles.count(track.truth.GetPrimaryMatchID())) { 
     const numu::TrueParticle &true_particle = true_particles.at(track.truth.GetPrimaryMatchID());
     range_p_minus_truth->Fill((numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
     mcs_p_minus_truth->Fill((numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());

@@ -122,7 +122,7 @@ MatchSet FindMatches(const numu::RecoEvent &event, const std::vector<event::Inte
     for (size_t trackID: event.reco[reco_i].slice.tracks) {
       const numu::RecoTrack &track = event.tracks.at(trackID);
       int particle_match_id = track.truth.GetPrimaryMatchID();
-      if (particle_match_id >= 0) {
+      if (event.particles.count(particle_match_id)) {
         const numu::TrueParticle &particle = event.particles.at(particle_match_id);
         if (particle.interaction_id >= 0) {
           float matched_deposited_energy = track.truth.matches[0].energy;
@@ -130,6 +130,9 @@ MatchSet FindMatches(const numu::RecoEvent &event, const std::vector<event::Inte
           if (particle.IsPrimary()) primary_matching_energy[particle.interaction_id] += matched_deposited_energy;
         } 
       } 
+      else if (particle_match_id >= 0) {
+        std::cout << "BAD -- non-negative particle match ID without corresponding G4 particle. ID: " << particle_match_id << " matched energy: " << track.truth.matches[0].energy << " total deposited energy: " << track.truth.total_deposited_energy << std::endl;
+      }
       this_total_deposited_energy += track.truth.total_deposited_energy; 
     }
 

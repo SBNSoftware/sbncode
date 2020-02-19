@@ -160,7 +160,7 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
   // allow truth-based flash matching or reco based
   bool time_in_spill = false;
   int ptrack_id = primary_track.truth.GetPrimaryMatchID();
-  if (ptrack_id >= 0) {
+  if (event.particles.count(ptrack_id)) {
     time_in_spill = TimeInSpill(event.particles.at(ptrack_id).start_time);
   }
 

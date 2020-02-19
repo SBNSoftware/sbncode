@@ -1428,7 +1428,7 @@ numu::RecoEvent NumuReco::Reconstruct(const gallery::Event &ev, const std::vecto
     this_interaction.position = neutrino.vertices[0];
     // First guess of primary track
     this_interaction.primary_track_index = numu::SelectLongestTrack(reco_tracks, this_interaction);
-    assert(this_interaction.primary_track_index >= 0);
+    // assert(this_interaction.primary_track_index >= 0);
 
     // TODO: get the enrgy
     this_interaction.nu_energy = -1;

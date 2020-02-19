@@ -24,7 +24,7 @@ void TrackProfiles::Initialize(const std::string &postfix, unsigned nbinsx, doub
 void TrackProfiles::Fill(float val, const numu::RecoTrack &track, const numu::RecoEvent &event) {
   int mcparticle_id = track.truth.GetPrimaryMatchID();
 
-  if (mcparticle_id >= 0) {
+  if (event.particles.count(mcparticle_id)) {
     const numu::TrueParticle &true_particle = event.particles.at(mcparticle_id);
 
     range_v_true_mom->Fill(val, true_particle.start_momentum.Mag(), numu::RangeMomentum(track));
