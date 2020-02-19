@@ -45,3 +45,17 @@ install(TARGETS sbnanalysis_SBNOsc_classes DESTINATION lib)
 
 add_subdirectory(config)
 
+
+# build the pandora viewer
+add_library(sbnanalysis_SBNOsc_PandoraViewer SHARED PandoraViewer.cxx)
+
+target_link_libraries(sbnanalysis_SBNOsc_PandoraViewer
+  sbnanalysis_SBNOsc_Utilities
+  ubana_BasicTool_GeoAlgo
+  sbndcode_CRT
+  sbndcode_CRTProducts
+  sbndcode_CRTUtils
+  sbndcode_CRT_CRTProducts_dict
+)
+
+install(TARGETS sbnanalysis_SBNOsc_PandoraViewer DESTINATION lib)
