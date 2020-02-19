@@ -38,7 +38,6 @@ bool sbnana::TrackReducer::ProcessEvent(const gallery::Event& ev, const std::vec
   for (const simb::MCParticle &mc_particle: mcparticles) {
     TrueParticle particle;
     particle.pid = mc_particle.PdgCode();
-    std::cout << "Process: " << mc_particle.Process() << std::endl;
     particle.is_primary = (mc_particle.Process() == "primary");
     particle.is_michel = abs(mc_particle.PdgCode()) == 11 && (mc_particle.Process() == "Decay" || mc_particle.Process() == "muMinusCaptureAtRest");
     particle.is_delta  = abs(mc_particle.PdgCode()) == 11 && (mc_particle.Process() == "muIoni");
