@@ -5,7 +5,7 @@
 #define SRTRUEPARTICLE_H
 
 #include <cstdint>
-#include <TVector3.h>
+#include "SRVector3D.h"
 
 #include "SREnums.h"
 
@@ -27,10 +27,10 @@ namespace caf
       float    endT;        //!< End time last point in the active [mus -- t=0 is spill time]
       float    length;      //!< Trajectory length in active TPC volume the particle first enters [cm]
 
-      TVector3 startp;      //!< Momentum at first point in the active TPC volume [GeV/c]
-      TVector3 endp;        //!< Momentum at last point in the active TPC volume [GeV/c]
-      TVector3 start;       //!< Start position in the active TPC volume [cm]
-      TVector3 end;         //!< End position in the active TPC volume [cm] 
+      SRVector3D startp;      //!< Momentum at first point in the active TPC volume [GeV/c]
+      SRVector3D endp;        //!< Momentum at last point in the active TPC volume [GeV/c]
+      SRVector3D start;       //!< Start position in the active TPC volume [cm]
+      SRVector3D end;         //!< End position in the active TPC volume [cm] 
 
       Wall_t   wallin;      //!< Wall of cryostat particle enters (wNone if starting in detector)
       Wall_t   wallout;     //!< Wall of cryostat particle exits (wNone if stopping in detector)

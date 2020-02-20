@@ -11,7 +11,7 @@
 #include "SRTrkMCS.h"
 #include "SRTrkRange.h"
 
-#include <TVector3.h>
+#include "SRVector3D.h"
 #include <vector>
 
 namespace caf
@@ -29,8 +29,8 @@ namespace caf
       unsigned short npts;         ///< number of points (recob Track.NPoints)
       float          len;          ///< track length [cm]
       float          costh;       ///< Costh of start direction of track
-      TVector3       start;       ///< Start point of track
-      TVector3       end;         ///< End point of track
+      SRVector3D     start;       ///< Start point of track
+      SRVector3D     end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
 
       SRTrkChi2PID   chi2pid;     ///< larana Chi2 Particle PID

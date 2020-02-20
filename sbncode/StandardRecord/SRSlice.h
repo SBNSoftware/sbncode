@@ -7,7 +7,7 @@
 #define SRSLICE_H
 
 #include "SRTrueInteraction.h"
-#include <TVector3.h>
+#include "SRVector3D.h"
 
 
 namespace caf
@@ -39,7 +39,7 @@ namespace caf
 
       int      id;          ///< number of hits
       float    charge;      ///< Calorimetric energy
-      TVector3 vertex;      ///< Candidate neutrino vertex in local detector coordinates [cm]
+      SRVector3D vertex;      ///< Candidate neutrino vertex in local detector coordinates [cm]
 
       SRTrueInteraction truth; //!< Truth information on the slice      
       TruthMatch tmatch; //!< Matching information between truth and reco objects

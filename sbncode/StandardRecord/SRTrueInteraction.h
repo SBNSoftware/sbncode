@@ -33,8 +33,8 @@ namespace caf
     float      y;             ///< Bjorken y =  (p.q)/(k.p), fractional energy loss of incoming particle [Dimensionless]
     float      w2;            ///< Final state invariant mass squared [GeV^2]
 
-    TVector3   p;             ///< True momentum [GeV]
-    TVector3   vtx;           ///< Vertex position in detector coord. [cm]
+    SRVector3D   p;             ///< True momentum [GeV]
+    SRVector3D   vtx;           ///< Vertex position in detector coord. [cm]
 
     Det_t             det;
 
