@@ -21,23 +21,32 @@ namespace caf
 
   //......................................................................
   void FillSliceVars(const recob::Slice& slice,
-                     const SliceData sdata,
-                     caf::SRSlice& srslice,
+                     const recob::PFParticle *primary /* can be null */,
+                     caf::SRSlice &srslice,
                      bool allowEmpty)
   {
 
     srslice.charge       = slice.Charge();
 
-    assert(sdata.primary != NULL);
-    assert(sdata.primary_meta != NULL);
- 
+    // get the priamry tracks/showers
+    if (primary != NULL) {
+      for (unsigned id: primary->Daughters()) {
+        srslice.primary.push_back(id);
+      }
+    }
+  }
+
+  void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
+                        caf::SRSlice &srslice,
+                        bool allowEmpty)
+  {
     // default values   
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
  
     // collect the properties
-    if (sdata.primary != NULL) {
-      auto const &properties = sdata.primary_meta->GetPropertiesMap();
+    if (primary_meta != NULL) {
+      auto const &properties = primary_meta->GetPropertiesMap();
       if (properties.count("IsClearCosmic")) {
         assert(!properties.count("IsNeutrino"));
         srslice.is_clear_cosmic = false;
@@ -54,51 +63,49 @@ namespace caf
       }
     }
 
-    if (sdata.fmatch != NULL) {
+  }
+
+  void FillSliceFlashMatch(const anab::T0 *fmatch /* can be NULL */,
+                           caf::SRSlice &srslice,
+                           bool allowEmpty)
+  {
+    if (fmatch != NULL) {
       srslice.fmatch.present = true;
-      srslice.fmatch.time = sdata.fmatch->Time();
-      srslice.fmatch.score = sdata.fmatch->TriggerConfidence();
-      srslice.fmatch.pe = sdata.fmatch->TriggerType();
+      srslice.fmatch.time = fmatch->Time();
+      srslice.fmatch.score = fmatch->TriggerConfidence();
+      srslice.fmatch.pe = fmatch->TriggerType();
     }
     else {
       srslice.fmatch.present = false;
     }
-
-    // get the priamry tracks/showers
-    if (sdata.primary != NULL) {
-      for (unsigned id: sdata.primary->Daughters()) {
-        srslice.primary.push_back(id);
-      }
-    }
-
   }
   //......................................................................
 
-  void FillTrackVars(const recob::Track& track,
-                     const recob::PFParticle &particle,
-                     const caf::TrackData tdata,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty)
+  void FillTrackMCS(const recob::Track& track,
+                    const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
+                    caf::SRTrack& srtrack,
+                    bool allowEmpty)
   {
-
-    std::cout << "Track with ID: " << track.ID() << " len: " << track.Length() << std::endl;
-
-    srtrack.npts = track.CountValidPoints();
-    srtrack.len  = track.Length();
-    srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
-
-    srtrack.ID = particle.Self();
-
-    // set the daughters in the particle flow
-    for (unsigned id: particle.Daughters()) {
-      srtrack.daughters.push_back(id);
+    // gather MCS fits
+    recob::MCSFitResult mcs_fit_muon;
+    if (mcs_results[0].size()) {
+      mcs_fit_muon = *mcs_results[0][0];
     }
 
-    // calculate MCS fits
-    recob::MCSFitResult mcs_fit_muon= tdata.mcs_calculator->fitMcs(track, 13);
-    recob::MCSFitResult mcs_fit_proton= tdata.mcs_calculator->fitMcs(track, 2212);
-    recob::MCSFitResult mcs_fit_pion= tdata.mcs_calculator->fitMcs(track, 211);
-    recob::MCSFitResult mcs_fit_kaon= tdata.mcs_calculator->fitMcs(track, 321);
+    recob::MCSFitResult mcs_fit_proton;
+    if (mcs_results[1].size()) {
+      mcs_fit_proton = *mcs_results[1][0];
+    }
+
+    recob::MCSFitResult mcs_fit_pion;
+    if (mcs_results[2].size()) {
+      mcs_fit_pion = *mcs_results[2][0];
+    }
+
+    recob::MCSFitResult mcs_fit_kaon;
+    if (mcs_results[3].size()) {
+      mcs_fit_kaon = *mcs_results[3][0];
+    }
 
     srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
     srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
@@ -119,19 +126,40 @@ namespace caf
     srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
     srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
     srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
+  }
 
+  void FillTrackRangeP(const recob::Track& track,
+                       const std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> &range_results,
+                       caf::SRTrack& srtrack,
+                       bool allowEmpty)
+  {
     // calculate range momentum
-    srtrack.rangeP.p_muon = tdata.range_calculator->GetTrackMomentum(track.Length(), 13);
-    srtrack.rangeP.p_proton = tdata.range_calculator->GetTrackMomentum(track.Length(), 2212);
+    srtrack.rangeP.p_muon = -1;
+    if (range_results[0].size()) {
+      srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
+      assert(track.ID() == range_results[0][0]->trackID);
+    }
 
+    srtrack.rangeP.p_proton = -1;
+    if (range_results[1].size()) {
+      srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
+      assert(track.ID() == range_results[1][0]->trackID);
+    }
+  }
+
+  void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
+                        const geo::GeometryCore *geom,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty)
+  {
     // get the particle ID's
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
     srtrack.chi2pid.pid_ndof = 0;
-    assert(tdata.particleIDs.size() == 0 || tdata.particleIDs == 3);
-    for (unsigned i = 0; i < tdata.particleIDs.size(); i++) { 
-      const anab::ParticleID &particle_id = *tdata.particleIDs[i];
-      if (particle_id.PlaneID() && tdata.geom->SignalType(particle_id.PlaneID()) == geo::kCollection) {
+    assert(particleIDs.size() == 0 || particleIDs == 3);
+    for (unsigned i = 0; i < particleIDs.size(); i++) { 
+      const anab::ParticleID &particle_id = *particleIDs[i];
+      if (particle_id.PlaneID() && geom->SignalType(particle_id.PlaneID()) == geo::kCollection) {
         srtrack.chi2pid.chi2_muon = particle_id.Chi2Muon();
         srtrack.chi2pid.chi2_pion = particle_id.Chi2Kaon();
         srtrack.chi2pid.chi2_kaon = particle_id.Chi2Pion();
@@ -148,17 +176,44 @@ namespace caf
       srtrack.chi2pid.chi2_pion = -1;
     }
 
-    // TO DO: Fill pdg value from Chi2ParticePID
-    // TO DO: Make a FillTrackChi2PID
+  }
 
+  void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const geo::GeometryCore *geom,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty)
+  {
     // TODO: what to do with calorimetry
-    
-    // TODO: crt matching
+  }
 
+  void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty)
+  {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(tdata.hits);    
+    srtrack.truth = MatchTrack2Truth(hits);    
 
-    std::cout << "Track matched to particle: " << srtrack.truth.GetPrimaryMatchID() << std::endl;
+  }
+
+  // TODO: crt matching
+
+  void FillTrackVars(const recob::Track& track,
+                     const recob::PFParticle &particle,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty)
+  {
+
+    srtrack.npts = track.CountValidPoints();
+    srtrack.len  = track.Length();
+    srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
+
+    srtrack.ID = particle.Self();
+
+    // set the daughters in the particle flow
+    for (unsigned id: particle.Daughters()) {
+      srtrack.daughters.push_back(id);
+    }
+
   }
   //......................................................................
 } // end namespace 

@@ -35,6 +35,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 
 #ifdef DARWINBUILD
 #include <libgen.h>
@@ -77,6 +78,8 @@
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbncode/LArRecoProducer/Products/RangeP.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -127,10 +130,6 @@ class CAFMaker : public art::EDProducer {
   TH1D* hEvents;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
-
-  // algorithms
-  trkf::TrajectoryMCSFitter fMCSCalculator; 
-  trkf::TrackMomentumCalculator fRangeCalculator;
 
   // volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
@@ -197,9 +196,7 @@ class CAFMaker : public art::EDProducer {
 //.......................................................................
   CAFMaker::CAFMaker(const Parameters& params) 
   : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0),
-    fMCSCalculator(fParams.MCSConfig),
-    fRangeCalculator(fParams.RangePMinTrackLength())
+    fParams(params()), fIsRealData(false), fFile(0)
   {
   fCafFilename = fParams.CAFFilename();
 
@@ -547,6 +544,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Hit> fmHit = 
       FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
 
+    std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
+    static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
+    for (std::string pid: PIDnames) {
+      art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
+      fmMCSs.emplace_back(slcTracks, evt, tag);
+    } 
+
+    std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
+    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    for (std::string pid: rangePIDnames) {
+      art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
+      fmRanges.emplace_back(slcTracks, evt, tag);
+    }
+
+    // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
+
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
@@ -583,23 +596,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (thisParticle.IsPrimary()) break;
     }
     // primary particle and meta-data
-    SliceData sdata;
-    sdata.primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
-    sdata.primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+    const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
+    const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    sdata.fmatch = NULL; 
-    if (fmT0.isValid() && sdata.primary != NULL) {
-      std::vector<art::Ptr<anab::T0>> fmatch = fmT0.at(iPart);
-      if (fmatch.size() != 0) {
-        assert(fmatch.size() == 1);
-        sdata.fmatch = fmatch[0].get(); 
+    const anab::T0 *fmatch = NULL;
+    if (fmT0.isValid() && primary != NULL) {
+      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+      if (fmatches.size() != 0) {
+        assert(fmatches.size() == 1);
+        fmatch = fmatches[0].get(); 
       }
     }
 
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(*slice, sdata, rec.slc);
+    FillSliceVars(*slice, primary, rec.slc);
+    FillSliceMetadata(primary_meta, rec.slc);
+    FillSliceFlashMatch(fmatch, rec.slc); 
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
@@ -630,23 +644,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.ntrk ++;
 	rec.reco.trk.push_back(SRTrack()); 
 
-        // setup the data the track will need
-        TrackData tdata;
-      
-        // set the tdata
-        tdata.particleIDs = fmPID.at(iPart);
-        tdata.calos = fmCalo.at(iPart);
-        tdata.hits = fmHit.at(iPart);
-      
-        // set the algorithms
-        tdata.mcs_calculator = &fMCSCalculator;
-        tdata.range_calculator = &fRangeCalculator;
-        tdata.geom = lar::providerFrom<geo::Geometry>();
-      
-        FillTrackVars(*thisTrack[0], thisParticle, tdata, rec.reco.trk.back());
+        // collect all the stuff
+        std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
+        for (unsigned index = 0; index < 4; index++) {
+          trajectoryMCS[index] = fmMCSs[index].at(iPart);
+        }
+
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
+        for (unsigned index = 0; index < 2; index++) {
+          rangePs[index] = fmRanges[index].at(iPart);
+        }
+
+        // fill all the stuff
+        FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
+        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
+        FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
-      else if (thisShower.size()) {
+      else if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
         // TODO: fill shower vars
@@ -664,7 +682,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // rec.mc.setDefault();
     // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
 
-    std::cout << "Filling!\n";
     fRecTree->Fill();
     srcol->push_back(rec);
     //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),

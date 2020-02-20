@@ -1,5 +1,5 @@
 
-art_make_library( LIBRARY_NAME caf_LArReco
+art_make_library( LIBRARY_NAME sbn_LArReco
                   SOURCE  TrackMomentumCalculator.cxx TrajectoryMCSFitter.cxx
                   LIBRARIES 
 		    ${ART_FRAMEWORK_CORE}

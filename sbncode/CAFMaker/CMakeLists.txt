@@ -1,13 +1,8 @@
 # for classes_def.xml
 include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
-link_directories(
- $ENV{ROOTSYS}/lib
-)
-
 set( PACKAGE CAFMaker )
 FILE( GLOB src_files *.cxx )
 
-add_subdirectory(LArReco)
 add_subdirectory(RecoUtils)
 
 art_make_library( LIBRARY_NAME ${PACKAGE}
@@ -27,14 +22,16 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
-			    caf_LArReco	    
-			    caf_RecoUtils
+	caf_RecoUtils
+	lardataobj_AnalysisBase
+	lardataobj_RecoBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
 	larcorealg_GeoAlgo
 	larsim_MCCheater_BackTrackerService_service
 	nusimdata_SimulationBase
 	larsim_MCCheater_ParticleInventoryService_service
+	sbncode_LArRecoProducer_Products_dict
                 )
 
 SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
