@@ -31,4 +31,5 @@ add_subdirectory(CAFMaker)
 add_subdirectory(OscLib)
 add_subdirectory(CAFAna)
 add_subdirectory(FlatMaker)
+add_subdirectory(LArRecoProducer)
 
