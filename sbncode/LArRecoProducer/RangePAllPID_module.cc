@@ -19,7 +19,7 @@
 #include "lardata/Utilities/AssociationUtil.h"
 
 #include "LArReco/TrackMomentumCalculator.h"
-#include "RangeP.h"
+#include "Products/RangeP.h"
 
 #include <memory>
 

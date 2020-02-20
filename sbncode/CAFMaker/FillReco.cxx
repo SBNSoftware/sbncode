@@ -137,11 +137,13 @@ namespace caf
     srtrack.rangeP.p_muon = -1;
     if (range_results[0].size()) {
       srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
+      assert(track.ID() == range_results[0][0]->trackID);
     }
 
     srtrack.rangeP.p_proton = -1;
     if (range_results[1].size()) {
       srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
+      assert(track.ID() == range_results[1][0]->trackID);
     }
   }
 

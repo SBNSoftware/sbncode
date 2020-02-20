@@ -3,6 +3,7 @@ link_directories(
 )
 
 add_subdirectory(LArReco)
+add_subdirectory(Products)
 
 simple_plugin(MCSFitAllPID module
 	${ART_FRAMEWORK_CORE}
@@ -21,6 +22,9 @@ simple_plugin(MCSFitAllPID module
 	MF_MessageLogger
 
 	sbn_LArReco	    
+	sbncode_LArRecoProducer_Products_dict
+	lardataobj_RecoBase_AssnsDicts_dict
+	lardataobj_RecoBase_dict	
 )
 
 simple_plugin(RangePAllPID module
@@ -40,6 +44,7 @@ simple_plugin(RangePAllPID module
 	MF_MessageLogger
 
 	sbn_LArReco	    
+	sbncode_LArRecoProducer_Products_dict
 )
 
 install_headers()

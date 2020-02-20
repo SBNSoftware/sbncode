@@ -79,7 +79,7 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
-#include "sbncode/LArRecoProducer/RangeP.h"
+#include "sbncode/LArRecoProducer/Products/RangeP.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -551,6 +551,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       fmMCSs.emplace_back(slcTracks, evt, tag);
     } 
 
+    std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
+    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    for (std::string pid: rangePIDnames) {
+      art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
+      fmRanges.emplace_back(slcTracks, evt, tag);
+    }
+
     // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
 
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
@@ -644,6 +651,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
         std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
+        for (unsigned index = 0; index < 2; index++) {
+          rangePs[index] = fmRanges[index].at(iPart);
+        }
 
         // fill all the stuff
         FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
@@ -672,7 +682,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // rec.mc.setDefault();
     // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
 
-    std::cout << "Filling!\n";
     fRecTree->Fill();
     srcol->push_back(rec);
     //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),

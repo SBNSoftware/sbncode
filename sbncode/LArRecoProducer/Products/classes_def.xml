@@ -1,0 +1,17 @@
+<lcgdict>
+  <class name="sbn::RangeP" />
+  <class name="std::vector<sbn::RangeP>" />
+  <class name="art::Wrapper<sbn::RangeP>" />
+  <class name="art::Wrapper<std::vector<sbn::RangeP>>" />
+
+  <class name="art::Assns<sbn::RangeP, recob::Track, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::RangeP, recob::Track, void>>" />
+
+  <class name="art::Assns<recob::Track, sbn::RangeP, void>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sbn::RangeP, void>>" />
+
+  <class name="art::Assns<recob::Track, recob::MCSFitResult, void>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, recob::MCSFitResult, void>>" />
+  <class name="art::Assns<recob::MCSFitResult, recob::Track, void>" />
+  <class name="art::Wrapper<art::Assns<recob::MCSFitResult, recob::Track, void>>" />
+</lcgdict>

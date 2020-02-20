@@ -31,6 +31,7 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
 	larsim_MCCheater_BackTrackerService_service
 	nusimdata_SimulationBase
 	larsim_MCCheater_ParticleInventoryService_service
+	sbncode_LArRecoProducer_Products_dict
                 )
 
 SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
