@@ -35,6 +35,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 
 #ifdef DARWINBUILD
 #include <libgen.h>
@@ -77,6 +78,8 @@
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbncode/LArRecoProducer/RangeP.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -127,10 +130,6 @@ class CAFMaker : public art::EDProducer {
   TH1D* hEvents;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
-
-  // algorithms
-  trkf::TrajectoryMCSFitter fMCSCalculator; 
-  trkf::TrackMomentumCalculator fRangeCalculator;
 
   // volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
@@ -197,9 +196,7 @@ class CAFMaker : public art::EDProducer {
 //.......................................................................
   CAFMaker::CAFMaker(const Parameters& params) 
   : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0),
-    fMCSCalculator(fParams.MCSConfig),
-    fRangeCalculator(fParams.RangePMinTrackLength())
+    fParams(params()), fIsRealData(false), fFile(0)
   {
   fCafFilename = fParams.CAFFilename();
 
@@ -547,6 +544,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Hit> fmHit = 
       FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
 
+    std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
+    static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
+    for (std::string pid: PIDnames) {
+      art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
+      fmMCSs.emplace_back(slcTracks, evt, tag);
+    } 
+
+    // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
+
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
@@ -631,10 +637,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.ntrk ++;
 	rec.reco.trk.push_back(SRTrack()); 
 
+        // collect all the stuff
+        std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
+        for (unsigned index = 0; index < 4; index++) {
+          trajectoryMCS[index] = fmMCSs[index].at(iPart);
+        }
+
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
+
         // fill all the stuff
         FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
-        FillTrackMCS(*thisTrack[0], &fMCSCalculator, rec.reco.trk.back());
-        FillTrackRangeP(*thisTrack[0], &fRangeCalculator, rec.reco.trk.back());
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
+        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
         FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());

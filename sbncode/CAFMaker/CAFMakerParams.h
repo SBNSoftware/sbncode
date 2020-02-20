@@ -7,8 +7,6 @@
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDAnalyzer.h"
 
-#include "LArReco/TrajectoryMCSFitter.h"
-
 namespace caf
 {
   struct CAFMakerParams
@@ -49,17 +47,6 @@ namespace caf
       Name("SelectOneSlice"),
       Comment("Only select one slice per spill (ranked by nu_score) [TODO: implement]."),
       false
-    };
-
-    Table<trkf::TrajectoryMCSFitter::Config> MCSConfig {
-      Name("MCSConfig"),
-      Comment("Configuration for Multiple-Coulumb-Scattering Momentum fitter"),
-    };
-
-    Atom<float> RangePMinTrackLength {
-      Name("RangePMinTrackLength"),
-      Comment("Minimum length of track for range momentum calculation"),
-      10.
     };
 
     fhicl::OptionalSequence<std::string> PandoraTagSuffixes {

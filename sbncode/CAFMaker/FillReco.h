@@ -2,6 +2,8 @@
 #ifndef CAF_FILLRECO_H
 #define CAF_FILLRECO_H
 
+#include <array>
+
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
 // LArSoft includes
@@ -16,12 +18,12 @@
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
-
-#include "LArReco/TrajectoryMCSFitter.h"
-#include "LArReco/TrackMomentumCalculator.h"
+#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbncode/LArRecoProducer/RangeP.h"
 
 #include "sbncode/StandardRecord/SRSlice.h"
 #include "sbncode/StandardRecord/StandardRecord.h"
+
 
 namespace caf
 {
@@ -47,12 +49,12 @@ namespace caf
                      bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
-                    const trkf::TrajectoryMCSFitter *mcs_calculator,
+                    const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
                     caf::SRTrack& srtrack,
                     bool allowEmpty = false);
 
   void FillTrackRangeP(const recob::Track& track,
-                     const trkf::TrackMomentumCalculator *range_calculator,
+                     const std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> &range_results,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

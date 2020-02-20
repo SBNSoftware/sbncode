@@ -82,15 +82,30 @@ namespace caf
   //......................................................................
 
   void FillTrackMCS(const recob::Track& track,
-                    const trkf::TrajectoryMCSFitter *mcs_calculator,
+                    const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
                     caf::SRTrack& srtrack,
                     bool allowEmpty)
   {
-    // calculate MCS fits
-    recob::MCSFitResult mcs_fit_muon= mcs_calculator->fitMcs(track, 13);
-    recob::MCSFitResult mcs_fit_proton= mcs_calculator->fitMcs(track, 2212);
-    recob::MCSFitResult mcs_fit_pion= mcs_calculator->fitMcs(track, 211);
-    recob::MCSFitResult mcs_fit_kaon= mcs_calculator->fitMcs(track, 321);
+    // gather MCS fits
+    recob::MCSFitResult mcs_fit_muon;
+    if (mcs_results[0].size()) {
+      mcs_fit_muon = *mcs_results[0][0];
+    }
+
+    recob::MCSFitResult mcs_fit_proton;
+    if (mcs_results[1].size()) {
+      mcs_fit_proton = *mcs_results[1][0];
+    }
+
+    recob::MCSFitResult mcs_fit_pion;
+    if (mcs_results[2].size()) {
+      mcs_fit_pion = *mcs_results[2][0];
+    }
+
+    recob::MCSFitResult mcs_fit_kaon;
+    if (mcs_results[3].size()) {
+      mcs_fit_kaon = *mcs_results[3][0];
+    }
 
     srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
     srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
@@ -114,14 +129,20 @@ namespace caf
   }
 
   void FillTrackRangeP(const recob::Track& track,
-                       const trkf::TrackMomentumCalculator *range_calculator,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty)
+                       const std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> &range_results,
+                       caf::SRTrack& srtrack,
+                       bool allowEmpty)
   {
     // calculate range momentum
-    srtrack.rangeP.p_muon = range_calculator->GetTrackMomentum(track.Length(), 13);
-    srtrack.rangeP.p_proton = range_calculator->GetTrackMomentum(track.Length(), 2212);
+    srtrack.rangeP.p_muon = -1;
+    if (range_results[0].size()) {
+      srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
+    }
 
+    srtrack.rangeP.p_proton = -1;
+    if (range_results[1].size()) {
+      srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
+    }
   }
 
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
