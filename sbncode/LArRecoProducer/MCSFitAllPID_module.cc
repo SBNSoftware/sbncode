@@ -48,6 +48,8 @@ private:
   art::InputTag fTrackLabel;
 };
 
+const static std::vector<int> PIDs {13, 211, 321, 2212};
+const static std::vector<std::string> names {"muon", "pion", "kaon", "proton"};
 
 sbn::MCSFitAllPID::MCSFitAllPID(fhicl::ParameterSet const& p)
   : EDProducer{p},
@@ -55,20 +57,21 @@ sbn::MCSFitAllPID::MCSFitAllPID(fhicl::ParameterSet const& p)
     fMCSCalculator(p.get<fhicl::ParameterSet>("MCS")),
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack"))
 {
-  produces<std::vector<recob::MCSFitResult>>();
-  produces<art::Assns<recob::Track, recob::MCSFitResult>>(); 
+  for (unsigned i = 0; i < names.size(); i++) {
+    produces<std::vector<recob::MCSFitResult>>(names[i]);
+    produces<art::Assns<recob::Track, recob::MCSFitResult>>(names[i]); 
+  }
 }
 
 void sbn::MCSFitAllPID::produce(art::Event& e)
 {
-  std::vector<int> PIDs {13, 211, 321, 2212};
-  std::vector<std::string> names {"muon", "pion", "kaon", "proton"};
 
   // Implementation of required member function here.
   art::Handle<std::vector<recob::Track>> track_handle;
   e.getByLabel(fTrackLabel, track_handle);
 
   std::vector<art::Ptr<recob::Track>> tracks;
+  art::fill_ptr_vector(tracks, track_handle);
 
   for (unsigned i = 0; i < PIDs.size(); i++) {
     std::unique_ptr<std::vector<recob::MCSFitResult>> mcscol(new std::vector<recob::MCSFitResult>);
@@ -76,7 +79,7 @@ void sbn::MCSFitAllPID::produce(art::Event& e)
 
     for (const art::Ptr<recob::Track> track: tracks) {
       mcscol->push_back(fMCSCalculator.fitMcs(*track, PIDs[i]));        
-      util::CreateAssn(*this, e, *mcscol, track, *assn);
+      util::CreateAssn(*this, e, *mcscol, track, *assn, names[i]);
     }
 
     e.put(std::move(mcscol), names[i]);

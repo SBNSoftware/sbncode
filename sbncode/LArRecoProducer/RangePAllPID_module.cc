@@ -49,6 +49,8 @@ private:
   art::InputTag fTrackLabel;
 
 };
+const static std::vector<int> PIDs {13, 2212};
+const static std::vector<std::string> names {"muon", "proton"};
 
 
 sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
@@ -56,20 +58,21 @@ sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
     fRangeCalculator(p.get<float>("MinTrackLength", 10.)),
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack"))
 {
-  produces<std::vector<sbn::RangeP>>();
-  produces<art::Assns<recob::Track, sbn::RangeP>>(); 
+  for (unsigned i = 0; i < names.size(); i++) {
+    produces<std::vector<sbn::RangeP>>(names[i]);
+    produces<art::Assns<recob::Track, sbn::RangeP>>(names[i]); 
+  }
 }
 
 void sbn::RangePAllPID::produce(art::Event& e)
 {
-  std::vector<int> PIDs {13, 2212};
-  std::vector<std::string> names {"muon", "proton"};
 
   // Implementation of required member function here.
   art::Handle<std::vector<recob::Track>> track_handle;
   e.getByLabel(fTrackLabel, track_handle);
 
   std::vector<art::Ptr<recob::Track>> tracks;
+  art::fill_ptr_vector(tracks, track_handle);
 
   for (unsigned i = 0; i < PIDs.size(); i++) {
     std::unique_ptr<std::vector<sbn::RangeP>> rangecol(new std::vector<sbn::RangeP>);
@@ -80,7 +83,7 @@ void sbn::RangePAllPID::produce(art::Event& e)
       rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length(), PIDs[i]);
       rangep.trackID = track->ID();
       rangecol->push_back(rangep);
-      util::CreateAssn(*this, e, *rangecol, track, *assn);
+      util::CreateAssn(*this, e, *rangecol, track, *assn, names[i]);
     }
 
     e.put(std::move(rangecol), names[i]);
