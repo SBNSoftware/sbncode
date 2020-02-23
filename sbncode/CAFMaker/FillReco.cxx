@@ -20,6 +20,27 @@ namespace caf
   }
 
   //......................................................................
+  void FillShowerVars(const recob::Shower& shower,
+                     caf::SRShower &srshower,
+                     bool allowEmpty)
+  {
+
+    srshower.dir 	= SRVector3D( shower.Direction() );
+    srshower.start 	= SRVector3D( shower.ShowerStart() );
+
+    srshower.bestplane 	= shower.best_plane();
+    srshower.dEdx 		= shower.dEdx().at(shower.best_plane());
+    srshower.energy 	= shower.Energy().at(shower.best_plane());
+
+    if(shower.has_length()) {
+      srshower.len = shower.Length();
+    }
+    if(shower.has_open_angle()) {
+      srshower.openAngle = shower.OpenAngle();
+    }
+
+}
+  //......................................................................
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary /* can be null */,
                      caf::SRSlice &srslice,

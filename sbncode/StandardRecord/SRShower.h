@@ -4,7 +4,7 @@
 #ifndef SRSHOWER_H
 #define SRSHOWER_H
 
-/* #include "SRVector3D.h" */
+#include "SRVector3D.h"
 
 
 namespace caf
@@ -16,11 +16,18 @@ namespace caf
     public:
       SRShower();
       ~SRShower(){  };
-
-      //      SRVector3D     start;        ///< Shower start point in detector coordinates. [cm]
-      float          len;          ///< shower length [cm]
-
+      int bestplane;     ///< shower best plane
+      float dEdx;        ///< shower calculated dEdx at best plane
+      float energy;      ///< shower calculated energy at best plane
+      float len;         ///< shower length [cm]
+      float openAngle;   ///< shower opening angle [rad]
+      SRVector3D dir;    ///< direction cosines at the start of the shower
+      SRVector3D start;  ///< shower start point in detector coordinates [cm]
     };
+
+  // TO DO:
+  // * find dEdx and energy units
+  // * description of best plane
 
 } // end namespace
 

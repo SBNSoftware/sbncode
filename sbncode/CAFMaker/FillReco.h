@@ -11,6 +11,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -27,6 +28,10 @@
 
 namespace caf
 {
+
+  void FillShowerVars(const recob::Shower& shower,
+            		      caf::SRShower& srshower,
+            		      bool allowEmpty = false);
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,
