@@ -556,14 +556,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
     for (std::string pid: PIDnames) {
       art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
-      fmMCSs.emplace_back(slcTracks, evt, tag);
+      fmMCSs.push_back(FindManyPStrict<recob::MCSFitResult>(slcTracks, evt, tag));
     } 
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
     static const std::vector<std::string> rangePIDnames {"muon", "proton"};
     for (std::string pid: rangePIDnames) {
       art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
-      fmRanges.emplace_back(slcTracks, evt, tag);
+      fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
     // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
