@@ -108,45 +108,41 @@ namespace caf
                     bool allowEmpty)
   {
     // gather MCS fits
-    recob::MCSFitResult mcs_fit_muon;
     if (mcs_results[0].size()) {
-      mcs_fit_muon = *mcs_results[0][0];
+      recob::MCSFitResult mcs_fit_muon = *mcs_results[0][0];
+
+      srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
+      srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
+      srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_proton;
     if (mcs_results[1].size()) {
-      mcs_fit_proton = *mcs_results[1][0];
+      recob::MCSFitResult mcs_fit_proton = *mcs_results[1][0];
+
+      srtrack.mcsP.fwdP_proton     = mcs_fit_proton.fwdMomentum();
+      srtrack.mcsP.fwdP_err_proton = mcs_fit_proton.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_proton     = mcs_fit_proton.bwdMomentum();
+      srtrack.mcsP.bwdP_err_proton = mcs_fit_proton.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_pion;
     if (mcs_results[2].size()) {
-      mcs_fit_pion = *mcs_results[2][0];
+      recob::MCSFitResult mcs_fit_pion = *mcs_results[2][0];
+
+      srtrack.mcsP.fwdP_pion     = mcs_fit_pion.fwdMomentum();
+      srtrack.mcsP.fwdP_err_pion = mcs_fit_pion.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_pion     = mcs_fit_pion.bwdMomentum();
+      srtrack.mcsP.bwdP_err_pion = mcs_fit_pion.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_kaon;
     if (mcs_results[3].size()) {
-      mcs_fit_kaon = *mcs_results[3][0];
+      recob::MCSFitResult mcs_fit_kaon = *mcs_results[3][0];
+
+      srtrack.mcsP.fwdP_kaon     = mcs_fit_kaon.fwdMomentum();
+      srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
+      srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
     }
-
-    srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
-    srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
-    srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_proton     = mcs_fit_proton.fwdMomentum();
-    srtrack.mcsP.fwdP_err_proton = mcs_fit_proton.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_proton     = mcs_fit_proton.bwdMomentum();
-    srtrack.mcsP.bwdP_err_proton = mcs_fit_proton.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_pion     = mcs_fit_pion.fwdMomentum();
-    srtrack.mcsP.fwdP_err_pion = mcs_fit_pion.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_pion     = mcs_fit_pion.bwdMomentum();
-    srtrack.mcsP.bwdP_err_pion = mcs_fit_pion.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_kaon     = mcs_fit_kaon.fwdMomentum();
-    srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
-    srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
   }
 
   void FillTrackRangeP(const recob::Track& track,
@@ -155,13 +151,11 @@ namespace caf
                        bool allowEmpty)
   {
     // calculate range momentum
-    srtrack.rangeP.p_muon = -1;
     if (range_results[0].size()) {
       srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
       assert(track.ID() == range_results[0][0]->trackID);
     }
 
-    srtrack.rangeP.p_proton = -1;
     if (range_results[1].size()) {
       srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
       assert(track.ID() == range_results[1][0]->trackID);

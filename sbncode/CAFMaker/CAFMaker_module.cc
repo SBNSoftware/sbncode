@@ -655,12 +655,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         // collect all the stuff
         std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
         for (unsigned index = 0; index < 4; index++) {
-          trajectoryMCS[index] = fmMCSs[index].at(iPart);
+          if (fmMCSs[index].isValid()) {
+            trajectoryMCS[index] = fmMCSs[index].at(iPart);
+          }
+          else {
+            trajectoryMCS[index] = std::vector<art::Ptr<recob::MCSFitResult>>();
+          }
         }
 
         std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
         for (unsigned index = 0; index < 2; index++) {
-          rangePs[index] = fmRanges[index].at(iPart);
+          if (fmRanges[index].isValid()) {
+            rangePs[index] = fmRanges[index].at(iPart);
+          }
+          else {
+            rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
+          }
         }
 
         // fill all the stuff
