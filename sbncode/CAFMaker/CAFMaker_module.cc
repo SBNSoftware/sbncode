@@ -460,12 +460,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<art::Ptr<simb::MCTruth>> neutrinos;
   art::fill_ptr_vector(neutrinos, neutrino_handle);
 
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
       true_particles.emplace_back();
-
-      art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillTrueG4Particle(part, 
                          fActiveVolumes,
@@ -477,11 +476,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  std::vector<caf::SRTrueInteraction> sr_neutrinos;
+  std::vector<caf::SRTrueInteraction> srneutrinos;
   for (const art::Ptr<simb::MCTruth> neutrino: neutrinos) {
-    sr_neutrinos.emplace_back();
+    srneutrinos.emplace_back();
     // TODO: implement this function
-    FillTrueNeutrino(neutrino, sr_neutrinos.back());
+    FillTrueNeutrino(neutrino, srneutrinos.back());
   }
 
   // collect the TPC slices
@@ -516,6 +515,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::vector<art::Ptr<recob::PFParticle>> fmPFPart; 
     if (findManyPFParts.isValid()) {
       fmPFPart = findManyPFParts.at(0);
+    }
+
+    art::FindManyP<recob::Hit> fmSlcHits =
+      FindManyPStrict<recob::Hit>(sliceList, evt, "pandora" + slice_tag_suffix); 
+    std::vector<art::Ptr<recob::Hit>> slcHits;
+    if (fmSlcHits.isValid()) {
+      slcHits = fmSlcHits.at(0);
     }
 
     art::FindManyP<anab::T0> fmT0 =
@@ -625,6 +631,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
+
+    // Fill truth info after decision on selection is made
+    FillSliceTruth(slcHits, neutrinos, srneutrinos, *pi_serv.get(), rec.slc);
     
     //#######################################################
     // Add detector dependent slice info.
