@@ -33,12 +33,10 @@ namespace caf
   enum interaction_mode_ 
   {
     kCC = 0,           //!< CC neutrino interaction
-    kCCNonPrimary = 1, //!< A non-primary part of a CC neutrino interaction
-    kNC = 2,           //!< NC neutrino interaction
-    kNCNonPrimary = 3, //!< A non-primary part of an NC neutrino interaction
-    kCosmic = 4,       //!< Cosmic activity
-    kIntimeCosmic = 5, //!< Cosmic activity in event triggered by intime-cosmic
-    kOther = 6 //!< Release valve value -- if nothing else really fits
+    kNC = 1,           //!< NC neutrino interaction
+    kCosmic = 2,       //!< Cosmic activity
+    kIntimeCosmic = 3, //!< Cosmic activity in event triggered by intime-cosmic
+    kOther = 4 //!< Release valve value -- if nothing else really fits
   };
 
   /// Which genie status?
