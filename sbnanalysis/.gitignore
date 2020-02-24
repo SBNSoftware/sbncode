@@ -6,4 +6,4 @@ install_manifest.txt
 build
 doc/html
 *.swp
-
+debug
