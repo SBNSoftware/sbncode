@@ -9,7 +9,13 @@ namespace caf
 {
 
   SRShower::SRShower():
-    len(-5.0)
+    bestplane(-5),
+    dEdx(-5.0),
+    energy(-5.0),
+    len(-5.0),
+    openAngle(-5.0),
+    dir(-5.0, -5.0, -5.0),
+    start(-5.0, -5.0, -5.0)
   {
   }
 
