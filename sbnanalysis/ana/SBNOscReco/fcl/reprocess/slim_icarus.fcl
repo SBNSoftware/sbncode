@@ -1,0 +1,46 @@
+#include "services_icarus.fcl"
+
+services:
+{ 
+}
+
+source:
+{
+  module_type:     RootInput
+}
+
+
+physics: {
+  simulate: []
+  stream: [out]
+  end_paths: [stream]
+}
+
+outputs: {
+  out: {
+   module_type: RootOutput
+   fileName:    "%ifb_%tc-%p.root"
+   dataTier:    "simulated"
+   # compressionLevel: 1
+   # fastCloning: false
+    outputCommands: [
+      "keep *",
+      "drop raw::RawDigits_daq0__DetSim",
+      "drop raw::RawDigits_daq1__DetSim",
+      "drop raw::RawDigits_daq2__DetSim",
+      "drop raw::RawDigits_daq3__DetSim",
+      "drop recob::Wires_decon1DroiTPC1__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC2__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC0__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC3__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC1__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC2__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC0__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC3__McRecoGauss",
+      "drop sim::SimPhotonss_opdaq__DetSim",
+      "drop sim::SimPhotonss_largeant__G4"
+    ]
+ }
+}
+
+process_name: Slim
