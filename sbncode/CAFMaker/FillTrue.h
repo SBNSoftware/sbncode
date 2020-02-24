@@ -18,17 +18,16 @@
 
 namespace caf
 {
-  struct ParticleData {
-    const std::vector<geo::BoxBoundedGeo> *AV;
-    const std::vector<std::vector<geo::BoxBoundedGeo>> *TPCVolumes;
-    const cheat::BackTrackerService *backtracker;
-    const cheat::ParticleInventoryService *inventory_service;
-    std::vector<art::Ptr<simb::MCTruth>> neutrinos;
-  };
-
   void FillTrueG4Particle(const simb::MCParticle &mcparticle, 
-                          const ParticleData &pdata,
+			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
+			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+			  const cheat::BackTrackerService &backtracker,
+			  const cheat::ParticleInventoryService &inventory_service,
+			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle); 
+
+  // TODO: implement
+  void FillTrueNeutrino(const art::Ptr<simb::MCTruth> neutrino, caf::SRTrueInteraction &srneutrino);
 
 }
 

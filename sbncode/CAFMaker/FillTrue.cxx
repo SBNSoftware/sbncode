@@ -10,10 +10,18 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
 
 namespace caf {
+  // TODO: implement
+  void FillTrueNeutrino(const art::Ptr<simb::MCTruth> neutrino, caf::SRTrueInteraction &srneutrino) {}
+
   void FillTrueG4Particle(const simb::MCParticle &particle, 
-                          const ParticleData &pdata,
+			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
+			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+			  const cheat::BackTrackerService &backtracker,
+			  const cheat::ParticleInventoryService &inventory_service,
+			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
-    std::vector<const sim::IDE*> particle_ides(pdata.backtracker->TrackIdToSimIDEs_Ps(particle.TrackId()));
+
+    std::vector<const sim::IDE*> particle_ides(backtracker.TrackIdToSimIDEs_Ps(particle.TrackId()));
 
     srparticle.length = 0.;
     srparticle.crosses_tpc = false;
@@ -35,8 +43,8 @@ namespace caf {
     int tpc_index = -1;
 
     for (unsigned j = 0; j < particle.NumberTrajectoryPoints(); j++) {
-      for (unsigned i = 0; i < pdata.AV->size(); i++) {
-        if (pdata.AV->at(i).ContainsPosition(particle.Position(j).Vect())) {
+      for (unsigned i = 0; i < active_volumes.size(); i++) {
+        if (active_volumes.at(i).ContainsPosition(particle.Position(j).Vect())) {
           entry_point = j;
           cryostat_index = i;
           break;
@@ -46,7 +54,7 @@ namespace caf {
     }
     // get the wall
     if (entry_point > 0) {
-      srparticle.wallin = GetWallCross(pdata.AV->at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
+      srparticle.wallin = GetWallCross(active_volumes.at(cryostat_index), particle.Position(entry_point).Vect(), particle.Position(entry_point-1).Vect());
     }
 
     int exit_point = -1;
@@ -54,7 +62,7 @@ namespace caf {
     // now setup the cryostat the particle is in
     std::vector<geo::BoxBoundedGeo> volumes;
     if (entry_point >= 0) {
-      volumes = pdata.TPCVolumes->at(cryostat_index);
+      volumes = tpc_volumes.at(cryostat_index);
       for (unsigned i = 0; i < volumes.size(); i++) {
         if (volumes[i].ContainsPosition(particle.Position(entry_point).Vect())) {
           tpc_index = i;
@@ -76,7 +84,7 @@ namespace caf {
     // Define the volume used for length calculation to be the cryostat volume in question
     std::vector<geoalgo::AABox> aa_volumes;
     if (entry_point >= 0) {
-      const geo::BoxBoundedGeo &v = pdata.AV->at(cryostat_index);
+      const geo::BoxBoundedGeo &v = active_volumes.at(cryostat_index);
       aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
     }
 
@@ -106,13 +114,13 @@ namespace caf {
         }
 
         if (srparticle.contained) {
-          srparticle.contained = pdata.AV->at(cryostat_index).ContainsPosition(this_point);
+          srparticle.contained = active_volumes.at(cryostat_index).ContainsPosition(this_point);
         }
       
         // update length
         srparticle.length += ContainedLength(this_point, pos, aa_volumes);
 
-        if (!pdata.AV->at(cryostat_index).ContainsPosition(this_point) && pdata.AV->at(cryostat_index).ContainsPosition(pos)) {
+        if (!active_volumes.at(cryostat_index).ContainsPosition(this_point) && active_volumes.at(cryostat_index).ContainsPosition(pos)) {
           exit_point = i-1;
         }
 
@@ -123,7 +131,7 @@ namespace caf {
       exit_point = particle.NumberTrajectoryPoints() - 1; 
     }
     if (exit_point >= 0 && ((unsigned)exit_point) < particle.NumberTrajectoryPoints() - 1) {
-      srparticle.wallout = GetWallCross(pdata.AV->at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect()); 
+      srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect()); 
     }
 
     // other truth information
@@ -147,9 +155,9 @@ namespace caf {
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
 
-    art::Ptr<simb::MCTruth> truth = pdata.inventory_service->TrackIdToMCTruth_P(particle.TrackId());
-    for (unsigned i = 0; i < pdata.neutrinos.size(); i++) {
-      if (truth.get() == pdata.neutrinos[i].get()) {
+    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(particle.TrackId());
+    for (unsigned i = 0; i < neutrinos.size(); i++) {
+      if (truth.get() == neutrinos[i].get()) {
         srparticle.interaction_id = i;
         break;
       }

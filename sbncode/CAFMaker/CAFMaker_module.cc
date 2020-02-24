@@ -454,26 +454,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<simb::MCParticle>> mc_particles;
   GetByLabelStrict(evt, "largeant", mc_particles);
 
-  art::Handle<std::vector<simb::MCTruth>> neutrinos;
-  GetByLabelStrict(evt, "generator", neutrinos);
+  art::Handle<std::vector<simb::MCTruth>> neutrino_handle;
+  GetByLabelStrict(evt, "generator", neutrino_handle);
+
+  std::vector<art::Ptr<simb::MCTruth>> neutrinos;
+  art::fill_ptr_vector(neutrinos, neutrino_handle);
 
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
       true_particles.emplace_back();
 
-      ParticleData pdata;
-      pdata.AV = &fActiveVolumes;
-      pdata.TPCVolumes = &fTPCVolumes;
-      art::fill_ptr_vector(pdata.neutrinos, neutrinos);
-
       art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-      pdata.backtracker = bt_serv.get();
       art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-      pdata.inventory_service = pi_serv.get();
 
-      // TODO: fix weird crashes
-      FillTrueG4Particle(part, pdata, true_particles.back());
+      FillTrueG4Particle(part, 
+                         fActiveVolumes,
+                         fTPCVolumes,
+                         *bt_serv.get(),
+                         *pi_serv.get(),
+                         neutrinos,
+                         true_particles.back());
     }
+  }
+
+  std::vector<caf::SRTrueInteraction> sr_neutrinos;
+  for (const art::Ptr<simb::MCTruth> neutrino: neutrinos) {
+    sr_neutrinos.emplace_back();
+    // TODO: implement this function
+    FillTrueNeutrino(neutrino, sr_neutrinos.back());
   }
 
   // collect the TPC slices
