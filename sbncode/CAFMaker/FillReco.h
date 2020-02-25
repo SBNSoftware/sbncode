@@ -5,6 +5,7 @@
 #include <array>
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -21,6 +22,8 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
 
 #include "sbncode/StandardRecord/SRSlice.h"
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -45,6 +48,13 @@ namespace caf
   void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
                         caf::SRSlice &srslice,
                         bool allowEmpty = false);
+
+  void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                      const cheat::ParticleInventoryService &inventory_service,
+                      caf::SRSlice &srslice,
+                      bool allowEmpty = false);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 

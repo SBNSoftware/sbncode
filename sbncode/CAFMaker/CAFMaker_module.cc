@@ -460,12 +460,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<art::Ptr<simb::MCTruth>> neutrinos;
   art::fill_ptr_vector(neutrinos, neutrino_handle);
 
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
       true_particles.emplace_back();
-
-      art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillTrueG4Particle(part, 
                          fActiveVolumes,
@@ -477,11 +476,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  std::vector<caf::SRTrueInteraction> sr_neutrinos;
+  std::vector<caf::SRTrueInteraction> srneutrinos;
   for (const art::Ptr<simb::MCTruth> neutrino: neutrinos) {
-    sr_neutrinos.emplace_back();
+    srneutrinos.emplace_back();
     // TODO: implement this function
-    FillTrueNeutrino(neutrino, sr_neutrinos.back());
+    FillTrueNeutrino(neutrino, srneutrinos.back());
   }
 
   // collect the TPC slices
@@ -516,6 +515,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::vector<art::Ptr<recob::PFParticle>> fmPFPart; 
     if (findManyPFParts.isValid()) {
       fmPFPart = findManyPFParts.at(0);
+    }
+
+    art::FindManyP<recob::Hit> fmSlcHits =
+      FindManyPStrict<recob::Hit>(sliceList, evt, "pandora" + slice_tag_suffix); 
+    std::vector<art::Ptr<recob::Hit>> slcHits;
+    if (fmSlcHits.isValid()) {
+      slcHits = fmSlcHits.at(0);
     }
 
     art::FindManyP<anab::T0> fmT0 =
@@ -556,14 +562,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
     for (std::string pid: PIDnames) {
       art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
-      fmMCSs.emplace_back(slcTracks, evt, tag);
+      fmMCSs.push_back(FindManyPStrict<recob::MCSFitResult>(slcTracks, evt, tag));
     } 
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
     static const std::vector<std::string> rangePIDnames {"muon", "proton"};
     for (std::string pid: rangePIDnames) {
       art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
-      fmRanges.emplace_back(slcTracks, evt, tag);
+      fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
     // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
@@ -625,6 +631,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
+
+    // Fill truth info after decision on selection is made
+    FillSliceTruth(slcHits, neutrinos, srneutrinos, *pi_serv.get(), rec.slc);
     
     //#######################################################
     // Add detector dependent slice info.
@@ -655,12 +664,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         // collect all the stuff
         std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
         for (unsigned index = 0; index < 4; index++) {
-          trajectoryMCS[index] = fmMCSs[index].at(iPart);
+          if (fmMCSs[index].isValid()) {
+            trajectoryMCS[index] = fmMCSs[index].at(iPart);
+          }
+          else {
+            trajectoryMCS[index] = std::vector<art::Ptr<recob::MCSFitResult>>();
+          }
         }
 
         std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
         for (unsigned index = 0; index < 2; index++) {
-          rangePs[index] = fmRanges[index].at(iPart);
+          if (fmRanges[index].isValid()) {
+            rangePs[index] = fmRanges[index].at(iPart);
+          }
+          else {
+            rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
+          }
         }
 
         // fill all the stuff

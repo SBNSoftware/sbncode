@@ -9,6 +9,9 @@
 
 // declare helpers
 caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
+                                   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const cheat::ParticleInventoryService &inventory_service);
 
 namespace caf
 {
@@ -108,45 +111,41 @@ namespace caf
                     bool allowEmpty)
   {
     // gather MCS fits
-    recob::MCSFitResult mcs_fit_muon;
     if (mcs_results[0].size()) {
-      mcs_fit_muon = *mcs_results[0][0];
+      recob::MCSFitResult mcs_fit_muon = *mcs_results[0][0];
+
+      srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
+      srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
+      srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_proton;
     if (mcs_results[1].size()) {
-      mcs_fit_proton = *mcs_results[1][0];
+      recob::MCSFitResult mcs_fit_proton = *mcs_results[1][0];
+
+      srtrack.mcsP.fwdP_proton     = mcs_fit_proton.fwdMomentum();
+      srtrack.mcsP.fwdP_err_proton = mcs_fit_proton.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_proton     = mcs_fit_proton.bwdMomentum();
+      srtrack.mcsP.bwdP_err_proton = mcs_fit_proton.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_pion;
     if (mcs_results[2].size()) {
-      mcs_fit_pion = *mcs_results[2][0];
+      recob::MCSFitResult mcs_fit_pion = *mcs_results[2][0];
+
+      srtrack.mcsP.fwdP_pion     = mcs_fit_pion.fwdMomentum();
+      srtrack.mcsP.fwdP_err_pion = mcs_fit_pion.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_pion     = mcs_fit_pion.bwdMomentum();
+      srtrack.mcsP.bwdP_err_pion = mcs_fit_pion.bwdMomUncertainty();
     }
 
-    recob::MCSFitResult mcs_fit_kaon;
     if (mcs_results[3].size()) {
-      mcs_fit_kaon = *mcs_results[3][0];
+      recob::MCSFitResult mcs_fit_kaon = *mcs_results[3][0];
+
+      srtrack.mcsP.fwdP_kaon     = mcs_fit_kaon.fwdMomentum();
+      srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
+      srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
+      srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
     }
-
-    srtrack.mcsP.fwdP_muon     = mcs_fit_muon.fwdMomentum();
-    srtrack.mcsP.fwdP_err_muon = mcs_fit_muon.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_muon     = mcs_fit_muon.bwdMomentum();
-    srtrack.mcsP.bwdP_err_muon = mcs_fit_muon.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_proton     = mcs_fit_proton.fwdMomentum();
-    srtrack.mcsP.fwdP_err_proton = mcs_fit_proton.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_proton     = mcs_fit_proton.bwdMomentum();
-    srtrack.mcsP.bwdP_err_proton = mcs_fit_proton.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_pion     = mcs_fit_pion.fwdMomentum();
-    srtrack.mcsP.fwdP_err_pion = mcs_fit_pion.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_pion     = mcs_fit_pion.bwdMomentum();
-    srtrack.mcsP.bwdP_err_pion = mcs_fit_pion.bwdMomUncertainty();
-
-    srtrack.mcsP.fwdP_kaon     = mcs_fit_kaon.fwdMomentum();
-    srtrack.mcsP.fwdP_err_kaon = mcs_fit_kaon.fwdMomUncertainty();
-    srtrack.mcsP.bwdP_kaon     = mcs_fit_kaon.bwdMomentum();
-    srtrack.mcsP.bwdP_err_kaon = mcs_fit_kaon.bwdMomUncertainty();
   }
 
   void FillTrackRangeP(const recob::Track& track,
@@ -155,13 +154,11 @@ namespace caf
                        bool allowEmpty)
   {
     // calculate range momentum
-    srtrack.rangeP.p_muon = -1;
     if (range_results[0].size()) {
       srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
       assert(track.ID() == range_results[0][0]->trackID);
     }
 
-    srtrack.rangeP.p_proton = -1;
     if (range_results[1].size()) {
       srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
       assert(track.ID() == range_results[1][0]->trackID);
@@ -207,6 +204,22 @@ namespace caf
     // TODO: what to do with calorimetry
   }
 
+  void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                      const cheat::ParticleInventoryService &inventory_service,
+                      caf::SRSlice &srslice,
+                      bool allowEmpty) 
+  {
+    srslice.tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
+    if (srslice.tmatch.index >= 0) {
+      srslice.truth = srneutrinos[srslice.tmatch.index];
+    }
+
+    std::cout << "Slice matched to index: " << srslice.tmatch.index << " with match frac: " << srslice.tmatch.pur << std::endl;
+
+  }
+
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
@@ -238,6 +251,58 @@ namespace caf
   }
   //......................................................................
 } // end namespace 
+
+caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
+                                   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const cheat::ParticleInventoryService &inventory_service) {
+  caf::SRSlice::TruthMatch ret;
+  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
+
+  // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
+  if (neutrinos.size() == 0) {
+    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+    ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
+    ret.eff = -1; 
+    ret.pur = -1;
+    ret.index = -1;
+    return ret;
+  }
+
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
+
+  std::vector<float> matching_energy(neutrinos.size(), 0.);
+
+  for (auto const &pair: matches) {
+    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(pair.first);
+    for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
+      if (truth == neutrinos[ind]) {
+        matching_energy[ind] += pair.second;
+        break;
+      }
+    }
+  }
+
+  float matching_frac = *std::max_element(matching_energy.begin(), matching_energy.end()) / total_energy;
+  int index = (matching_frac > 0.5) ? std::distance(matching_energy.begin(), std::max_element(matching_energy.begin(), matching_energy.end())) : -1;
+
+  float cosmic_energy = total_energy;
+  for (float E: matching_energy) cosmic_energy -= E;
+
+  ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+  ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
+  ret.index = index;
+  if (index >= 0) {
+    ret.pur = matching_energy[index] / total_energy;
+    // TODO: calculate efficiency 
+    ret.eff = 0.;
+  }
+  else {
+    ret.pur = -1;
+    ret.eff = -1;
+  }
+
+  return ret;
+}
 
 // define helpers
 caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits) {
