@@ -17,6 +17,7 @@
 #include "CAFAna/Prediction/PredictionNoOsc.h"
 #include "CAFAna/Prediction/PredictionScaleComp.h"
 #include "CAFAna/Prediction/PredictionIncDirt.h"
+#include "CAFAna/Prediction/PredictionSBNExtrap.h"
 
 namespace ana
 {
@@ -42,6 +43,8 @@ namespace ana
     if(tag == "PredictionScaleComp") return PredictionScaleComp::LoadFrom(dir);
 
     if(tag == "PredictionIncDirt") return PredictionIncDirt::LoadFrom(dir);
+
+    if(tag == "PredictionSBNExtrap") return PredictionSBNExtrap::LoadFrom(dir);
 
     std::cerr << "Unknown Prediction type '" << tag << "'" << std::endl;
     abort();
