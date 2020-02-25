@@ -23,14 +23,18 @@
 namespace ana
 {
   // Duplicate here because we can't include Vars.h
-  const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy;});
-  //const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy * 1000 * kBLs[sr->experiment] / sr->truth[0].neutrino.baseline;});
-  const Var kTrueE_hack([](const caf::SRProxy* sr){
-            int exp;
-            if (sr->truth[0].neutrino.baseline < 150) exp = 0;
-            else if (sr->truth[0].neutrino.baseline < 500) exp = 1;
-            else exp = 2;
-            return sr->truth[0].neutrino.energy * 1000 * kBLs[exp] / sr->truth[0].neutrino.baseline;});
+  const Var kTrueE([](const caf::SRProxy* sr){return -5;});
+  const Var kTrueE_hack([](const caf::SRProxy* sr){return -5;});
+
+  // const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy;});
+  // //const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy * 1000 * kBLs[sr->experiment] / sr->truth[0].neutrino.baseline;});
+  // const Var kTrueE_hack([](const caf::SRProxy* sr){
+  //           int exp;
+  //           if (sr->truth[0].neutrino.baseline < 150) exp = 0;
+  //           else if (sr->truth[0].neutrino.baseline < 500) exp = 1;
+  //           else exp = 2;
+  //           return sr->truth[0].neutrino.energy * 1000 * kBLs[exp] / sr->truth[0].neutrino.baseline
+  // 	      ;});
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::

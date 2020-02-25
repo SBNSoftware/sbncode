@@ -6,6 +6,13 @@
 
 /* #include "SRVector3D.h" */
 
+#include "SRTrackTruth.h"
+#include "SRTrkChi2PID.h"
+#include "SRTrkMCS.h"
+#include "SRTrkRange.h"
+
+#include "SRVector3D.h"
+#include <vector>
 
 namespace caf
 {
@@ -14,12 +21,46 @@ namespace caf
   class SRTrack
     {
     public:
+
+
       SRTrack();
       ~SRTrack(){  };
 
       unsigned short npts;         ///< number of points (recob Track.NPoints)
-      //      SRVector3D     start;        ///< Shower start point in detector coordinates. [cm]
       float          len;          ///< track length [cm]
+      float          costh;       ///< Costh of start direction of track
+      SRVector3D     start;       ///< Start point of track
+      SRVector3D     end;         ///< End point of track
+      int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
+
+      SRTrkChi2PID   chi2pid;     ///< larana Chi2 Particle PID
+      SRTrkMCS       mcsP;
+      SRTrkRange     rangeP;
+
+      SRTrackTruth   truth;        ///< truth information
+
+      // TO DO: Move the following into SRObjects      
+
+      /* struct CRTMatch { */
+        /* struct Track { */
+        /*   bool present; //!< Whether a CRT track match exists */
+        /*   float time; //!< time of the CRT track [mus -- t=0 is spill time] */
+        /*   float angle; //!< Angle of the match between the TPC track and the CRT track [rad] */
+        /* }; */
+ 
+        /* struct Hit { */
+        /*   bool present; //!< Whether a CRT hit match exists */
+        /*   float distance; //!< Distance of closest approach between CRT hit and projected TPC track [cm] */
+        /*   float time; //!< Time of CRT hit [mus -- t=0 is spill time] */
+        /* }; */
+
+      /*   Track track; //!< CRT track match */
+      /*   Hit   hit;   //!< CRT hit match */
+      /* }; */
+
+      //      CRTMatch       crt_match;   ///< Matching to CRT information
+      std::vector<int> daughters; ///< ID's of daughters of this track
+
 
     };
 

@@ -3,8 +3,6 @@ in StandardRecord because the Wrapper include puts ART dependencies into the
 StandardRecord dict, which we don't want. -->
 
 <lcgdict>
-  <enum name="caf::Det_t" />
-  <enum name="caf::View_t" />
   <class name="std::vector<caf::StandardRecord>" />
   <class name="art::PtrVector<caf::StandardRecord>" />
 

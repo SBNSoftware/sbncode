@@ -25,10 +25,11 @@ namespace caf
     StandardRecord();
     ~StandardRecord();
 
-    SRHeader         hdr;    ///< Header branch: run, subrun, etc.
+    SRHeader          hdr;    ///< Header branch: run, subrun, etc.
     //    SRSpill          spill;  ///< Beam spill branch: pot, beam current, etc.
-    SRSlice          slc;    ///< Slice branch: nhit, extents, time, etc.
+    SRSlice           slc;    ///< Slice branch: nhit, extents, time, etc.
     SRSliceRecoBranch reco;    ///< Slice reco branch: tracks, showers, etc.
+    std::vector<SRTrueParticle> true_particles; ///< List of true particles in the spill
 
   };
 

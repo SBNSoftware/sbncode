@@ -1,0 +1,20 @@
+BEGIN_PROLOG
+flash_match_sbnd: {
+  module_type: FlashPredict
+  OpHitProducer: "reophit"
+  PandoraProducer: "pandora"
+  SpacePointProducer: "pandora"
+  BeamWindowStart: -5. #us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "fmplots_sbnd.root"
+  MakeTree: false
+  SelectNeutrino: true
+  LightWindowStart: -0.01
+  LightWindowEnd: 0.09
+  PEscale: 100.0
+  MinFlashPE: 0.
+  Detector: "SBND"
+}
+END_PROLOG

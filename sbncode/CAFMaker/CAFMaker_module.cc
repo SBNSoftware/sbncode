@@ -20,6 +20,7 @@
 
 #include "CAFMakerParams.h"
 #include "FillReco.h"
+#include "FillTrue.h"
 #include "Utils.h"
 
 // C/C++ includes
@@ -34,6 +35,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <array>
 
 #ifdef DARWINBUILD
 #include <libgen.h>
@@ -75,6 +77,9 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Shower.h"
+#include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbncode/LArRecoProducer/Products/RangeP.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -126,8 +131,13 @@ class CAFMaker : public art::EDProducer {
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
+  // volumes
+  std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
+  std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
   void InitializeOutfile();
+
+  void InitVolumes(); ///< Initialize volumes from Gemotry service
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -186,15 +196,49 @@ class CAFMaker : public art::EDProducer {
 //.......................................................................
   CAFMaker::CAFMaker(const Parameters& params) 
   : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0) {
-
+    fParams(params()), fIsRealData(false), fFile(0)
+  {
   fCafFilename = fParams.CAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
 
   produces<std::vector<caf::StandardRecord>>();
-  produces<art::Assns<caf::StandardRecord, recob::Slice>>();
+  //produces<art::Assns<caf::StandardRecord, recob::Slice>>();
+
+  // setup volume definitions
+  InitVolumes();
+
+}
+
+void CAFMaker::InitVolumes() {
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+
+  // first the TPC volumes 
+  for (auto const &cryo: geometry->IterateCryostats()) {
+    geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
+                                    tend = geometry->end_TPC(cryo.ID());
+    std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+    while (iTPC != tend) {
+      geo::TPCGeo const& TPC = *iTPC;
+      this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+      iTPC++;
+    }
+     fTPCVolumes.push_back(std::move(this_tpc_volumes));
+  }
+
+  // then combine them into active volumes
+  for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
+    double XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+    double YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+    double ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+    double XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+    double YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+    double ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+
+    fActiveVolumes.emplace_back(XMin, XMax, YMin, YMax, ZMin, ZMax);
+  }
 }
 
 //......................................................................
@@ -405,35 +449,139 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fTotalEvents += 1;
 
-  // Get a handle on the slices
-  art::Handle<std::vector<recob::Slice>> slices;
-  GetByLabelStrict(evt, fParams.ClusterLabel(), slices);
-  // TO DO - Create 3 labels (SliceLabel a,b,&c = pandora, 
-  //         pandorawtvCryo01, etc.) Then add them to the same 
-  //         vector with the associated CRYO var for the tree
+  // get all of the true particles from G4
+  std::vector<caf::SRTrueParticle> true_particles;
+  art::Handle<std::vector<simb::MCParticle>> mc_particles;
+  GetByLabelStrict(evt, "largeant", mc_particles);
 
+  art::Handle<std::vector<simb::MCTruth>> neutrino_handle;
+  GetByLabelStrict(evt, "generator", neutrino_handle);
 
-  // Get tracks & showers here
-  art::FindManyP<recob::PFParticle> fmPFPart = 
-    FindManyPStrict<recob::PFParticle>(slices, evt, "pandora");//fParams.PFPartLabel());
+  std::vector<art::Ptr<simb::MCTruth>> neutrinos;
+  art::fill_ptr_vector(neutrinos, neutrino_handle);
 
+  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  if (mc_particles.isValid()) {
+    for (const simb::MCParticle part: *mc_particles) {
+      true_particles.emplace_back();
 
-  // art::FindManyP<recob::Track> partTrks(track_handle, 
-  // 					     evt, 
-  // 					     _config.RecoTrackTag + suffix);// pandoraTrack, pandoraTrackGaus<n>
+      FillTrueG4Particle(part, 
+                         fActiveVolumes,
+                         fTPCVolumes,
+                         *bt_serv.get(),
+                         *pi_serv.get(),
+                         neutrinos,
+                         true_particles.back());
+    }
+  }
+
+  std::vector<caf::SRTrueInteraction> srneutrinos;
+  for (const art::Ptr<simb::MCTruth> neutrino: neutrinos) {
+    srneutrinos.emplace_back();
+    // TODO: implement this function
+    FillTrueNeutrino(neutrino, srneutrinos.back());
+  }
+
+  // collect the TPC slices
+  std::vector<std::string> pandora_tag_suffixes;
+  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
+  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
+
+  std::vector<art::Ptr<recob::Slice>> slices;
+  std::vector<std::string> slice_tag_suffixes;
+  for (const std::string &pandora_tag_suffix: pandora_tag_suffixes) {
+    // Get a handle on the slices
+    art::Handle<std::vector<recob::Slice>> thisSlices;
+    GetByLabelStrict(evt, fParams.ClusterLabel() + pandora_tag_suffix, thisSlices);
+    art::fill_ptr_vector(slices, thisSlices);
+    for (unsigned i = 0; i < thisSlices->size(); i++) {
+      slice_tag_suffixes.push_back(pandora_tag_suffix);     
+    }
+  }
 
   //#######################################################
   // Loop over slices 
   //#######################################################
+  for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
+    art::Ptr<recob::Slice> slice = slices[sliceID];
+    const std::string &slice_tag_suffix = slice_tag_suffixes[sliceID];
 
-  for (unsigned int sliceId = 0; sliceId < slices->size(); ++sliceId) {
-    const recob::Slice& slice = (*slices)[sliceId];
+    // Get tracks & showers here
+    std::vector<art::Ptr<recob::Slice>> sliceList {slice};
+    art::FindManyP<recob::PFParticle> findManyPFParts =
+       FindManyPStrict<recob::PFParticle>(sliceList, evt,  "pandora" + slice_tag_suffix);
+      
+    std::vector<art::Ptr<recob::PFParticle>> fmPFPart; 
+    if (findManyPFParts.isValid()) {
+      fmPFPart = findManyPFParts.at(0);
+    }
+
+    art::FindManyP<recob::Hit> fmSlcHits =
+      FindManyPStrict<recob::Hit>(sliceList, evt, "pandora" + slice_tag_suffix); 
+    std::vector<art::Ptr<recob::Hit>> slcHits;
+    if (fmSlcHits.isValid()) {
+      slcHits = fmSlcHits.at(0);
+    }
+
+    art::FindManyP<anab::T0> fmT0 =
+      FindManyPStrict<anab::T0>(fmPFPart, evt, "fmatch" + slice_tag_suffix);
+
+    art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
+      FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt, "pandora" + slice_tag_suffix);
+
+    art::FindManyP<recob::Track> fmTrack = 
+      FindManyPStrict<recob::Track>(fmPFPart, evt, "pandoraTrack" + slice_tag_suffix);
+
+    // make Ptr's to tracks for track -> other object associations 
+    std::vector<art::Ptr<recob::Track>> slcTracks;
+    for (unsigned i = 0; i < fmTrack.size(); i++) {
+      const std::vector<art::Ptr<recob::Track>> &thisTracks = fmTrack.at(i);
+      if (thisTracks.size() == 0) {
+        slcTracks.emplace_back(); // nullptr
+      }
+      else if (thisTracks.size() == 1) {
+        slcTracks.push_back(fmTrack.at(i).at(0));
+      }
+      else assert(false); // bad
+    }
+
+    art::FindManyP<recob::Shower> fmShower =
+      FindManyPStrict<recob::Shower>(fmPFPart, evt, "pandoraShower" + slice_tag_suffix);
+
+    art::FindManyP<anab::Calorimetry> fmCalo =
+      FindManyPStrict<anab::Calorimetry>(slcTracks, evt, "pandoraCalo" + slice_tag_suffix);
+
+    art::FindManyP<anab::ParticleID> fmPID = 
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt, "pandoraPid" + slice_tag_suffix);
+
+    art::FindManyP<recob::Hit> fmHit = 
+      FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
+
+    std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
+    static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
+    for (std::string pid: PIDnames) {
+      art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
+      fmMCSs.push_back(FindManyPStrict<recob::MCSFitResult>(slcTracks, evt, tag));
+    } 
+
+    std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
+    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    for (std::string pid: rangePIDnames) {
+      art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
+      fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
+    }
+
+    // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
 
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
     StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
     fRecTree->SetBranchAddress("rec", &prec);
+
+    // fill up the true particles
+    rec.true_particles = true_particles;
 
     //#######################################################
     // Fill slice header.
@@ -447,19 +595,46 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     rec.hdr.run = run;
     rec.hdr.subrun = subrun;
-    rec.hdr.subevt = sliceId;
+    rec.hdr.subevt = sliceID;
     rec.hdr.ismc = !fIsRealData;
     rec.hdr.det = fDet;
     // rec.hdr.cycle = fCycle;
     // rec.hdr.batch = fBatch;
     // rec.hdr.blind = 0;
-    // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceId);
+    // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
+    
+    // get the primary particle
+    size_t iPart;
+    for (iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
+      const recob::PFParticle &thisParticle = *fmPFPart[iPart];
+      if (thisParticle.IsPrimary()) break;
+    }
+    // primary particle and meta-data
+    const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
+    const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+    // get the flash match
+    const anab::T0 *fmatch = NULL;
+    if (fmT0.isValid() && primary != NULL) {
+      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+      if (fmatches.size() != 0) {
+        assert(fmatches.size() == 1);
+        fmatch = fmatches[0].get(); 
+      }
+    }
 
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(slice, rec.slc);
+    FillSliceVars(*slice, primary, rec.slc);
+    FillSliceMetadata(primary_meta, rec.slc);
+    FillSliceFlashMatch(fmatch, rec.slc); 
+    
+    // select slice
+    if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
 
+    // Fill truth info after decision on selection is made
+    FillSliceTruth(slcHits, neutrinos, srneutrinos, *pi_serv.get(), rec.slc);
+    
     //#######################################################
     // Add detector dependent slice info.
     //#######################################################
@@ -467,37 +642,62 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //   rec.sel.contain.nplanestofront = rec.slc.firstplane - (plnfirst - 1);
     //   rec.sel.contain.nplanestoback = (plnlast) - 1 - rec.slc.lastplane;
     // }
-
+    
     //#######################################################
     // Add reconstructed objects.
     //#######################################################
     // Reco objects have assns to the slice PFParticles 
     // This depends on the findMany object created above.
+    
+    for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
+      const recob::PFParticle &thisParticle = *fmPFPart[iPart];
+      
+      const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(iPart);
+      const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(iPart);
+      
+      if (thisTrack.size())  { // it's a track!
+        assert(thisTrack.size() == 1);
+        assert(thisShower.size() == 0);
+        rec.reco.ntrk ++;
+	rec.reco.trk.push_back(SRTrack()); 
 
-    if ( fmPFPart.isValid() ) {
-      std::vector<art::Ptr<recob::PFParticle>> slcPFParts = fmPFPart.at(sliceId);
+        // collect all the stuff
+        std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
+        for (unsigned index = 0; index < 4; index++) {
+          if (fmMCSs[index].isValid()) {
+            trajectoryMCS[index] = fmMCSs[index].at(iPart);
+          }
+          else {
+            trajectoryMCS[index] = std::vector<art::Ptr<recob::MCSFitResult>>();
+          }
+        }
 
-      for ( size_t iPart = 0; iPart < slcPFParts.size(); ++iPart ) {
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
+        for (unsigned index = 0; index < 2; index++) {
+          if (fmRanges[index].isValid()) {
+            rangePs[index] = fmRanges[index].at(iPart);
+          }
+          else {
+            rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
+          }
+        }
 
-	art::FindManyP<recob::Track>       fmTrack = 
-	  FindManyPStrict<recob::Track>(slcPFParts, evt, "pandoraTrack");//fParams.TrackLabel());
-
-	if ( fmTrack.isValid() ) {
-	  std::vector<art::Ptr<recob::Track>> partTrks = fmTrack.at(iPart);
-	  std::sort(partTrks.begin(),partTrks.end(),sortRBTrkLength);
-
-	  rec.reco.ntrk = partTrks.size();
-	  
-	  for ( size_t iTrack = 0; iTrack < partTrks.size(); ++iTrack ) {
+        // fill all the stuff
+        FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
+        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
+        FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
 	    
-	    rec.reco.trk.push_back(SRTrack());	    
-	    FillTrackVars((*partTrks[iTrack]), rec.reco.trk.back(),iPart);
-	    
-	  }// end for iTrack
-	} // fmTrack ok
-	
-      }// end for pfparts
-    } // fmPFPart ok
+      } // thisTrack exists
+      else if (thisShower.size()) { // it's a shower!
+        assert(thisTrack.size() == 0);
+        assert(thisShower.size() == 1);
+        // TODO: fill shower vars
+      } // thisShower exists
+      else {}
+    }// end for pfparts
     
 
 
@@ -511,8 +711,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     fRecTree->Fill();
     srcol->push_back(rec);
-    util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceId),
-                     *srAssn);
+    //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),
+    //                 *srAssn);
   }  // end loop over slices
 
   evt.put(std::move(srcol));
@@ -544,7 +744,7 @@ void CAFMaker::endJob() {
 
 }
 
-DEFINE_ART_MODULE(CAFMaker)
 
 }  // end namespace caf
+DEFINE_ART_MODULE(caf::CAFMaker)
 ////////////////////////////////////////////////////////////////////////

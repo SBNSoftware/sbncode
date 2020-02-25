@@ -422,12 +422,12 @@ namespace caf
   }
 
   //----------------------------------------------------------------------
-  // TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
-  //   : x(d, tr, name+".fX", base, offset),
-  //     y(d, tr, name+".fY", base, offset),
-  //     z(d, tr, name+".fZ", base, offset)
-  // {
-  // }
+  TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
+    : x(d, tr, name+".fX", base, offset),
+      y(d, tr, name+".fY", base, offset),
+      z(d, tr, name+".fZ", base, offset)
+  {
+  }
 
 
   // Enumerate all the variants we expect
@@ -446,10 +446,11 @@ namespace caf
 
   template class Proxy<std::string>;
 
-  template class Proxy<SRExperiment>;
-  //  template class Proxy<View_t>;
-  //  template class Proxy<generator_>;
-  //  template class Proxy<mode_type_>;
-  //  template class Proxy<int_type_>;
+  template class Proxy<Det_t>;
+  template class Proxy<Wall_t>;
+  template class Proxy<g4_process_>;
+  template class Proxy<generator_>;
+  template class Proxy<genie_status_>;
+  template class Proxy<interaction_mode_>;
 
 } // namespace
