@@ -46,4 +46,22 @@ namespace ana
     PredictionNoExtrap fPredND, fPredFD;
     Spectrum fDataND;
   };
+
+  class SBNExtrapGenerator: public IPredictionGenerator
+  {
+  public:
+    SBNExtrapGenerator(Loaders& loaders_nd,
+                       const HistAxis& ax,
+                       const Cut& cut,
+                       const Var& wei);
+
+    std::unique_ptr<IPrediction> Generate(Loaders& loaders_fd,
+                                          const SystShifts& shiftMC = kNoShift) const override;
+
+  protected:
+    Loaders& fLoadersND;
+    HistAxis fAxis;
+    Cut fCut;
+    Var fWeight;
+  };
 }
