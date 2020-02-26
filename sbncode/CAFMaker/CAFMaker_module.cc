@@ -686,9 +686,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
-        FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
-        FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
-        FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
+        if (fmPID.isValid()) 
+          FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        if (fmCalo.isValid()) 
+          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        if (fmHit.isValid()) 
+          FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
       else if (thisShower.size()) { // it's a shower!
