@@ -145,6 +145,11 @@ class CAFMaker : public art::EDProducer {
   art::FindManyP<T> FindManyPStrict(const U& from, const art::Event& evt,
                                     const art::InputTag& label) const;
 
+  template <class T, class D, class U>
+  art::FindManyP<T, D> FindManyPDStrict(const U& from,
+                                            const art::Event& evt,
+                                            const art::InputTag& tag) const;
+
   /// \brief Retrieve an object from an association, with error handling
   ///
   /// This can go wrong in two ways: either the FindManyP itself is
@@ -381,6 +386,25 @@ art::FindManyP<T> CAFMaker::FindManyPStrict(const U& from,
 }
 
 //......................................................................
+template <class T, class D, class U>
+art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
+                                            const art::Event& evt,
+                                            const art::InputTag& tag) const {
+  art::FindManyP<T, D> ret(from, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << abi::__cxa_demangle(typeid(from).name(), 0, 0, 0) << "' to '"
+              << abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
 template <class T>
 bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
                                     T& ret) const {
@@ -558,6 +582,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Hit> fmHit = 
       FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
 
+    art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
+      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt, "pandoraTrackCRTHit" + slice_tag_suffix);
+
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
     for (std::string pid: PIDnames) {
@@ -692,6 +719,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         if (fmHit.isValid()) 
           FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
+        if (fmCRTHit.isValid())
+          FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
       else if (thisShower.size()) { // it's a shower!

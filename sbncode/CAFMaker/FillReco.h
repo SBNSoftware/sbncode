@@ -22,6 +22,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -62,6 +63,11 @@ namespace caf
                      const recob::PFParticle& particle,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
+
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
+                       const std::vector<const anab::T0*> &t0match, 
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
