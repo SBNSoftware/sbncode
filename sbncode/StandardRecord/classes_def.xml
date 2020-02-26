@@ -31,6 +31,10 @@
   <class name="std::vector<caf::SRTrueParticle>" />
   <class name="std::vector<caf::SRTrackTruth::ParticleMatch>" />
 
+  <class name="caf::SRCRTHit" />
+  <class name="std::vector<caf::SRCRTHit>" />
+  <class name="caf::SRCRTHitMatch" />
+
   <enum name="caf::Det_t" />
   <enum name="caf::Wall_t" />
   <enum name="caf::generator_" />
