@@ -24,13 +24,11 @@ namespace ana
 {
   // Duplicate here because we can't include Vars.h
   const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy;});
-  //const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy * 1000 * kBLs[sr->experiment] / sr->truth[0].neutrino.baseline;});
-  const Var kTrueE_hack([](const caf::SRProxy* sr){
-            int exp;
-            if (sr->truth[0].neutrino.baseline < 150) exp = 0;
-            else if (sr->truth[0].neutrino.baseline < 500) exp = 1;
-            else exp = 2;
-            return sr->truth[0].neutrino.energy * 1000 * kBLs[exp] / sr->truth[0].neutrino.baseline;});
+
+  // convert m->km
+  const Var kBaseline([](const caf::SRProxy* sr){return sr->truth[0].neutrino.baseline / 1000;});
+
+  const Var kTrueLOverE = kBaseline / kTrueE;
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::
@@ -40,7 +38,7 @@ namespace ana
                        const Cut& cut,
                        const SystShifts& shift,
                        const Var& wei)
-    : ReweightableSpectrum(label, bins, kTrueE_hack),
+    : ReweightableSpectrum(label, bins, kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -48,7 +46,7 @@ namespace ana
 
     DontAddDirectory guard;
 
-    fHist = HistCache::NewTH2D("", bins);
+    fHist = HistCache::NewTH2D("", bins, kTrueLOverEBins);
 
     loader.AddReweightableSpectrum(*this, var, cut, shift, wei);
   }
@@ -59,7 +57,7 @@ namespace ana
                                              const Cut& cut,
                                              const SystShifts& shift,
                                              const Var& wei)
-    : ReweightableSpectrum(axis.GetLabels(), axis.GetBinnings(), kTrueE_hack),
+    : ReweightableSpectrum(axis.GetLabels(), axis.GetBinnings(), kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -78,7 +76,7 @@ namespace ana
 
     DontAddDirectory guard;
 
-    fHist = HistCache::NewTH2D("", bins1D);
+    fHist = HistCache::NewTH2D("", bins1D, kTrueLOverEBins);
 
     Var multiDVar = axis.GetVars()[0];
     if(axis.NDimensions() == 2)
@@ -95,7 +93,7 @@ namespace ana
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const std::string& label,
                                              const Binning& bins)
-    : ReweightableSpectrum(label, bins, kTrueE_hack),
+    : ReweightableSpectrum(label, bins, kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -106,13 +104,13 @@ namespace ana
     fPOT = 0;
     fLivetime = 0;
 
-    fHist = HistCache::NewTH2D("", bins);
+    fHist = HistCache::NewTH2D("", bins, kTrueLOverEBins);
   }
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const std::string& label, double pot, double livetime,
                                              const Binning& bins)
-    : ReweightableSpectrum(label, bins, kTrueE_hack),
+    : ReweightableSpectrum(label, bins, kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -123,7 +121,7 @@ namespace ana
     fPOT = pot;
     fLivetime = livetime;
 
-    fHist = HistCache::NewTH2D("", bins);
+    fHist = HistCache::NewTH2D("", bins, kTrueLOverEBins);
   }
 
   //----------------------------------------------------------------------
@@ -131,7 +129,7 @@ namespace ana
                                              const std::vector<std::string>& labels,
                                              const std::vector<Binning>& bins,
                                              double pot, double livetime)
-    : ReweightableSpectrum(kTrueE_hack, h, labels, bins, pot, livetime),
+    : ReweightableSpectrum(kTrueLOverE, h, labels, bins, pot, livetime),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -143,7 +141,7 @@ namespace ana
                                              const std::vector<std::string>& labels,
                                              const std::vector<Binning>& bins,
                                              double pot, double livetime)
-    : ReweightableSpectrum(kTrueE_hack, std::move(h), labels, bins, pot, livetime),
+    : ReweightableSpectrum(kTrueLOverE, std::move(h), labels, bins, pot, livetime),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -164,7 +162,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(const OscillatableSpectrum& rhs)
-    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE_hack),
+    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -185,7 +183,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   OscillatableSpectrum::OscillatableSpectrum(OscillatableSpectrum&& rhs)
-    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueE_hack),
+    : ReweightableSpectrum(rhs.fLabels, rhs.fBins, kTrueLOverE),
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
@@ -264,13 +262,22 @@ namespace ana
   Spectrum OscillatableSpectrum::Oscillated(osc::IOscCalculator* calc,
                                             int from, int to) const
   {
+    // TODO remove this check in a little while, once no one is using old state
+    // files anymore (comment from Feb 2020).
+    const bool isLoverE = (fHist->GetYaxis()->GetXmax() == 2);
+    static bool once = true;
+    if(once && !isLoverE){
+      once = false;
+      std::cout << "\nWarning: OscillatableSpectrum with legacy non-L/E y-axis detected. Will oscillate correctly for now, but this code will eventually be removed\n" << std::endl;
+    }
+
     TMD5* hash = calc->GetParamsHash();
     if(hash && fCachedHash && *hash == *fCachedHash){
       delete hash;
       return fCachedOsc;
     }
 
-    const OscCurve curve(calc, from, to);
+    const OscCurve curve(calc, from, to, isLoverE);
     TH1D* Ps = curve.ToTH1();
 
     const Spectrum ret = WeightedBy(Ps);

@@ -55,6 +55,11 @@ namespace osc
     }
   };
 
+  inline bool IsNoOscillations(const IOscCalculator* c)
+  {
+    return dynamic_cast<const NoOscillations*>(c) != 0;
+  }
+
   /// General interface to any calculator that lets you set the parameters
   class IOscCalculatorAdjustable : public IOscCalculator
   {

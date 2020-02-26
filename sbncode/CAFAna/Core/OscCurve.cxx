@@ -17,31 +17,43 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  OscCurve::OscCurve(osc::IOscCalculator* calc, int from, int to)
+  OscCurve::OscCurve(osc::IOscCalculator* calc, int from, int to, bool LoverE)
     : fFrom(from), fTo(to)
   {
     DontAddDirectory guard;
 
-    fHist = HistCache::New(";True Energy (GeV);Probability", kTrueEnergyBins);
+    fHist = LoverE ? HistCache::New("True L / E (km / GeV);Probability", kTrueLOverEBins) : HistCache::New(";True Energy (GeV);Probability", kTrueEnergyBins);
 
-    // We have extra knowledge that calculators of this type have a special
-    // mode allowing an intrinsic energy smearing.
+    // We have extra knowledge that calculators of this type have special
+    // modes allowing calculation in L/E and an intrinsic energy smearing.
     OscCalcSterileApprox* approx = DowncastToSterileApprox(calc, true);
 
     if(approx){
       for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
-        const double E = fHist->GetBinCenter(i);
-        const double Elo = fHist->GetXaxis()->GetBinLowEdge(i);
-        const double Ehi = fHist->GetXaxis()->GetBinUpEdge(i);
-        // Use 2% resolution (intended to be << the resolution of any actual
-        // event) or the bin width, whichever is larger
-        fHist->SetBinContent(i, approx->P(from, to,
-                                          std::min(Elo, 0.98*E),
-                                          std::max(Ehi, 1.02*E)));
+        if(LoverE){
+          const double LElo = fHist->GetXaxis()->GetBinLowEdge(i);
+          const double LEhi = fHist->GetXaxis()->GetBinUpEdge(i);
+          fHist->SetBinContent(i, approx->P_LoverE(from, to, LElo, LEhi));
+        }
+        else{
+          const double E = fHist->GetBinCenter(i);
+          const double Elo = fHist->GetXaxis()->GetBinLowEdge(i);
+          const double Ehi = fHist->GetXaxis()->GetBinUpEdge(i);
+          // Use 2% resolution (intended to be << the resolution of any actual
+          // event) or the bin width, whichever is larger
+          fHist->SetBinContent(i, approx->P(from, to,
+                                            std::min(Elo, 0.98*E),
+                                            std::max(Ehi, 1.02*E)));
+        }
         fHist->SetBinError(i, 0);
       }
     }
     else{
+      if(LoverE && !IsNoOscillations(calc)){
+        std::cout << "Trying to use a calculator which is not OscCalcSterileApprox with an L/E axis. Will have to code up additional hacks for this to work" << std::endl;
+        abort();
+      }
+
       for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
         const double E = fHist->GetBinCenter(i);
         fHist->SetBinContent(i, E > 0 ? calc->P(from, to, E) : 0);
