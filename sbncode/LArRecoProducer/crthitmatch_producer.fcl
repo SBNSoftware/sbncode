@@ -1,0 +1,28 @@
+BEGIN_PROLOG
+
+crthitmatch_sbnd: {
+  module_type: CRTHitMatch
+  CRTHitLabel: crtconvhit 
+  TrackLabel: pandoraTrack
+  Alg: {
+    MinTrackLength: 0.
+    TPCTrackLabel: pandoraTrack
+    DistanceLimit: 10000
+    TrackDirectionFrac: 0.5
+  }
+}
+
+crthitmatch_icarus: {
+  module_type: CRTHitMatch
+  CRTHitLabel: crtconvhit 
+  TrackLabel: pandoraTrack
+  Alg: {
+    MinTrackLength: 0.
+    TPCTrackLabel: pandoraTrack
+    DistanceLimit: 10000
+    TrackDirectionFrac: 0.5
+    TSMode: 1
+  }
+}
+
+END_PROLOG
