@@ -52,7 +52,7 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy<T>& p)
-    : fName("copy of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+    : fName("copy of "+p.fName), fLeaf(0), fTree(p.fDir ? 0 : p.fTree),
       fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
@@ -67,7 +67,7 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy&& p)
-    : fName("move of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+    : fName("move of "+p.fName), fLeaf(0), fTree(p.fDir ? 0 : p.fTree),
       fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
@@ -188,6 +188,7 @@ namespace caf
 
       // Leaves are attached to the TTF, must keep it
       fTTF = new TTreeFormula(("TTFProxy-"+fName).c_str(), fName.c_str(), fTree);
+      
       fLeafInfo = fTTF->GetLeafInfo(0); // Can fail (for a regular branch?)
       fLeaf = fTTF->GetLeaf(0);
       fBranch = fLeaf->GetBranch();

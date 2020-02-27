@@ -120,16 +120,16 @@ namespace ana
   {
     assert(!f->IsZombie());
 
-    // Test for flat (has extra trees) or nested cases.
-    TDirectory* dir = f->Get("recTree.rec") ? f : 0;
-    TTree* tr = (TTree*)f->Get("recTree");
-    // TDirectory* dir = f->Get("sbnana.truth") ? f : 0;
-    // TTree* tr = (TTree*)f->Get("sbnana");
-    assert(tr);
 
+    // Test for flat (has extra trees) or nested cases.
+    TDirectory* dir = 0;
+    f->GetObject("recTree", dir);
+    TTree* tr = 0;
+    if(dir) dir->GetObject("rec", tr); else f->GetObject("recTree", tr);
+    assert(tr);
     long n;
-    //    caf::SRProxy sr(dir, tr, dir ? "sbnana" : "events", n, 0);
-    caf::SRProxy sr(dir, tr, dir ? "rec" : "rec", n, 0);
+    caf::SRProxy sr(dir, tr, "rec", n, 0);
+
 
     //    FloatingExceptionOnNaN fpnan;
 
