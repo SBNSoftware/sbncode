@@ -10,6 +10,7 @@
 #include "SRHeader.h"
 #include "SRSlice.h"
 #include "SRSliceRecoBranch.h"
+#include "SRCRTHit.h"
 
 /// Common Analysis Files
 namespace caf
@@ -30,6 +31,7 @@ namespace caf
     SRSlice           slc;    ///< Slice branch: nhit, extents, time, etc.
     SRSliceRecoBranch reco;    ///< Slice reco branch: tracks, showers, etc.
     std::vector<SRTrueParticle> true_particles; ///< List of true particles in the spill
+    std::vector<SRCRTHit> crt_hits; ///!< List of CRT hits in the event
 
   };
 

@@ -14,4 +14,12 @@
   <class name="art::Wrapper<art::Assns<recob::Track, recob::MCSFitResult, void>>" />
   <class name="art::Assns<recob::MCSFitResult, recob::Track, void>" />
   <class name="art::Wrapper<art::Assns<recob::MCSFitResult, recob::Track, void>>" />
+
+  <class name="sbn::crt::CRTHit" />
+  <class name="art::Wrapper<sbn::crt::CRTHit>" />
+  <class name="std::vector<sbn::crt::CRTHit>" />
+  <class name="art::Wrapper<std::vector<sbn::crt::CRTHit>>" />
+
+  <class name="art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0>>" />
 </lcgdict>

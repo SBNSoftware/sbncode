@@ -12,6 +12,8 @@
 #include "flashmatch.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
+#include "crthitconverter_producer.fcl"
+#include "crthitmatch_producer.fcl"
 
 process_name: CAFmaker
 
@@ -76,13 +78,15 @@ physics:
    pandoraTrackMCS: @local::mcs_sbn
    pandoraTrackRange: @local::range_sbn
    fmatch: @local::flash_match_sbnd
+   crtconvhit: @local::crthitconverter_sbnd
+   pandoraTrackCRTHit: @local::crthitmatch_sbnd
 }
 # filters:{}
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ pandoraTrackMCS, pandoraTrackRange, mycafmaker ]
+ runprod: [ crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
   stream1:       [  ]

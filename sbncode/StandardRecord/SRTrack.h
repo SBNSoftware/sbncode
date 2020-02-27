@@ -10,6 +10,7 @@
 #include "SRTrkChi2PID.h"
 #include "SRTrkMCS.h"
 #include "SRTrkRange.h"
+#include "SRCRTHitMatch.h"
 
 #include "SRVector3D.h"
 #include <vector>
@@ -38,6 +39,7 @@ namespace caf
       SRTrkRange     rangeP;
 
       SRTrackTruth   truth;        ///< truth information
+      SRCRTHitMatch  crthit;       ///< CRT Hit match
 
       // TO DO: Move the following into SRObjects      
 
