@@ -237,6 +237,7 @@ for klass in ns.classes():
     print '  ~'+pt+'();'
     print
     print '  void Fill(const '+fq_type(klass)+'& sr);'
+    print '  void OptimizeBaskets(ULong64_t maxMemory, Float_t minComp, Option_t* option);'
     print
     print 'protected:'
 
@@ -320,6 +321,8 @@ for klass in ns.classes():
         print '  y = sr.Y();'
         print '  z = sr.Z();'
         print '}'
+        print
+        print 'void flat::FlatTVector3::OptimizeBaskets(ULong64_t, Float_t, Option_t*){}'
         continue
 
     for tn in basic_mems:
@@ -342,6 +345,18 @@ for klass in ns.classes():
             print '    '+tn.name+'.Fill(x);'
         print '    '+tn.name+'_tree->Fill();';
         print '  }'
+    print '}'
+
+    print
+
+    print 'void flat::'+pt+'::OptimizeBaskets(ULong64_t maxMemory, Float_t minComp, Option_t* option)'
+    print '{'
+    for tn in class_mems:
+        print '  '+tn.name+'.OptimizeBaskets(maxMemory, minComp, option);'
+    for tn in vec_mems:
+        print '  '+tn.name+'_tree->OptimizeBaskets(maxMemory, minComp, option);'
+        if not is_fundamental(tn.type):
+            print '  '+tn.name+'.OptimizeBaskets(maxMemory, minComp, option);'
     print '}'
 
 sys.stderr.write('Wrote FlatRecord.cxx and associated headers\n')
