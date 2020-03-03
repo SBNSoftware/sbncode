@@ -429,6 +429,8 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     // get the match with the most energy
     int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
                                                      [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
+    float matchE = matches.size() ? std::max_element(matches.begin(), matches.end(),
+                                                     [](const auto &a, const auto &b) { return a.second < b.second; })->second : -1;
     art::Ptr<simb::MCParticle> true_particle;
     for (art::Ptr<simb::MCParticle> p: particleList) {
       if (p->TrackId() == match_id) {
@@ -755,7 +757,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
             const art::Ptr<recob::PFParticle> &pfp,
             const art::Ptr<recob::Track> &trk,
             const std::vector<art::Ptr<anab::Calorimetry>> &calos,
-            const std::vector<art::Ptr<anab::ParticleID>> &pid,
+            const std::vector<art::Ptr<anab::ParticleID>> &pids,
             const std::vector<art::Ptr<recob::Cluster>> &clusters,
             const art::FindManyP<recob::Hit> fmClustertoHit,
             const recob::MCSFitResult &muon_mcs,
@@ -862,8 +864,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_sce_start_Y = YZtoPlanecoordinate(reco_st[1], reco_st[2], 2);
     _backtracked_process_is_stopping = (trueParticle->EndProcess() == "Decay" ||
                                         trueParticle->EndProcess() == "CoupledTransportation" ||
-                                        trueParticle->EndProcess() == "FastTransportation" ||
-                                        trueParticle->EndProcess() == "muMinusCaptureAtRest");
+                                        trueParticle->EndProcess() == "FastScintillation" ||
+                                        trueParticle->EndProcess() == "muMinusCaptureAtRest" ||
+                                        trueParticle->EndProcess() == "LArVoxelReadoutScoringProcess");
 
     _backtracked_end_in_tpc = false;
     for (const geo::BoxBoundedGeo &AV: activeVolumes) {
@@ -913,8 +916,49 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   _trk_sce_end_y = _trk_end_y;
   _trk_sce_end_z = _trk_end_z;
 
-  // fill Calorimetry
+  // fill other particle ID
+  for (const art::Ptr<anab::ParticleID> pid: pids) {
+    auto const &plane = pid->PlaneID().Plane;
+    if (plane > 2) continue;
 
+    if (plane == 0) {
+       // TODO: bragg variable??
+      _trk_bragg_p_u = -1;
+      _trk_bragg_mu_u = -1;
+      _trk_bragg_mip_u = -1;
+
+      _trk_pid_chipr_u = pid->Chi2Proton();
+      _trk_pid_chika_u = pid->Chi2Kaon();
+      _trk_pid_chipi_u = pid->Chi2Pion();
+      _trk_pid_chimu_u = pid->Chi2Muon();
+      _trk_pida_u = pid->PIDA();
+    }
+    else if (plane == 1) {
+       // TODO: bragg variable??
+      _trk_bragg_p_v = -1;
+      _trk_bragg_mu_v = -1;
+      _trk_bragg_mip_v = -1;
+
+      _trk_pid_chipr_v = pid->Chi2Proton();
+      _trk_pid_chika_v = pid->Chi2Kaon();
+      _trk_pid_chipi_v = pid->Chi2Pion();
+      _trk_pid_chimu_v = pid->Chi2Muon();
+      _trk_pida_v = pid->PIDA();
+    }
+    else if (plane == 2) {
+       // TODO: bragg variable??
+      _trk_bragg_p_y = -1;
+      _trk_bragg_mu_y = -1;
+      _trk_bragg_mip_y = -1;
+
+      _trk_pid_chipr_y = pid->Chi2Proton();
+      _trk_pid_chika_y = pid->Chi2Kaon();
+      _trk_pid_chipi_y = pid->Chi2Pion();
+      _trk_pid_chimu_y = pid->Chi2Muon();
+    }
+  }
+
+  // fill Calorimetry
   for (const art::Ptr<anab::Calorimetry> calo : calos)
   {
     // TODO: will this work for ICARUS?
