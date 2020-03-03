@@ -150,7 +150,7 @@ namespace ana
         return 2*(e-o + o*log(o/e));
       }
       else{
-        return 2*(e-o);
+        return 2*e;
       }
     }
   }
