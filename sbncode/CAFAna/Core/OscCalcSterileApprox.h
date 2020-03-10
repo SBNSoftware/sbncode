@@ -29,6 +29,8 @@ namespace ana
     // TODO - potentially remove L in the brave new L/E future
     void SetL(double L) {fL = L;}
     double GetL() const {return fL;}
+
+    TMD5* GetParamsHash() const override;
   protected:
     double PFromDelta(int from, int to, double Delta) const;
 
@@ -65,6 +67,8 @@ namespace ana
     virtual void SetTh13  (double th13  ) override {}
     virtual void SetTh23  (double th23  ) override {}
     virtual void SetdCP   (double dCP   ) override {}
+
+    TMD5* GetParamsHash() const override {return calc.GetParamsHash();}
   };
 
   OscCalcSterileApproxAdjustable* DefaultSterileApproxCalc();
