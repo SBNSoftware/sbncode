@@ -34,8 +34,8 @@ namespace caf
 {
 
   void FillShowerVars(const recob::Shower& shower,
-            		      caf::SRShower& srshower,
-            		      bool allowEmpty = false);
+                      caf::SRShower& srshower,
+                      bool allowEmpty = false);
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,

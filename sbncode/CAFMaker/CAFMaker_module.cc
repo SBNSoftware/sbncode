@@ -726,7 +726,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       else if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
-        // TODO: fill shower vars
+        rec.reco.nshw ++;
+        rec.reco.shw.push_back(SRShower());
+        FillShowerVars(*thisShower[0], rec.reco.shw.back());
+
       } // thisShower exists
       else {}
     }// end for pfparts

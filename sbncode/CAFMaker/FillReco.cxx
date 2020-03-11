@@ -24,16 +24,16 @@ namespace caf
 
   //......................................................................
   void FillShowerVars(const recob::Shower& shower,
-                     caf::SRShower &srshower,
-                     bool allowEmpty)
+                      caf::SRShower &srshower,
+                      bool allowEmpty)
   {
 
-    srshower.dir 	= SRVector3D( shower.Direction() );
+    srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start 	= SRVector3D( shower.ShowerStart() );
 
     srshower.bestplane 	= shower.best_plane();
-    srshower.dEdx 		= shower.dEdx().at(shower.best_plane());
-    srshower.energy 	= shower.Energy().at(shower.best_plane());
+    srshower.dEdx 		  = shower.dEdx().at(shower.best_plane());
+    srshower.energy     = shower.Energy().at(shower.best_plane());
 
     if(shower.has_length()) {
       srshower.len = shower.Length();
@@ -52,7 +52,7 @@ namespace caf
 
     srslice.charge       = slice.Charge();
 
-    // get the priamry tracks/showers
+    // get the primary tracks/showers
     if (primary != NULL) {
       for (unsigned id: primary->Daughters()) {
         srslice.primary.push_back(id);
