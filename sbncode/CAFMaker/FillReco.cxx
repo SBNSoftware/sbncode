@@ -31,15 +31,16 @@ namespace caf
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start 	= SRVector3D( shower.ShowerStart() );
 
-    srshower.bestplane 	= shower.best_plane();
-    srshower.dEdx 		  = shower.dEdx().at(shower.best_plane());
-    srshower.energy     = shower.Energy().at(shower.best_plane());
+    srshower.bestplane  = shower.best_plane();
+    srshower.dEdx       = shower.dEdx();
+    srshower.energy     = shower.Energy();
 
     if(shower.has_length()) {
-      srshower.len = shower.Length();
+      srshower.len      = shower.Length();
+      srshower.density  = shower.Energy().at(shower.best_plane()) / shower.Length();
     }
     if(shower.has_open_angle()) {
-      srshower.openAngle = shower.OpenAngle();
+      srshower.open_angle = shower.OpenAngle();
     }
 
 }
