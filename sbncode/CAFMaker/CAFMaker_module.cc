@@ -78,6 +78,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
@@ -525,6 +526,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // list of slice objects
+  std::vector<StandardRecord> recs;
+
   //#######################################################
   // Loop over slices 
   //#######################################################
@@ -583,6 +587,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<anab::ParticleID> fmPID = 
       FindManyPStrict<anab::ParticleID>(slcTracks, evt, "pandoraPid" + slice_tag_suffix);
 
+    art::FindManyP<recob::Vertex> fmVertex =
+      FindManyPStrict<recob::Vertex>(fmPFPart, evt, "pandora" + slice_tag_suffix);
+
     art::FindManyP<recob::Hit> fmHit = 
       FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
 
@@ -608,8 +615,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
-    StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
-    fRecTree->SetBranchAddress("rec", &prec);
 
     // fill up the true particles
     rec.true_particles = true_particles;
@@ -652,6 +657,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         fmatch = fmatches[0].get(); 
       }
     }
+    // get the primary vertex
+    const recob::Vertex *vertex = (iPart == fmPFPart.size() || !fmVertex.at(iPart).size()) ? NULL : fmVertex.at(iPart).at(0).get();
 
     //#######################################################
     // Add slice info.
@@ -659,6 +666,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, rec.slc);
     FillSliceMetadata(primary_meta, rec.slc);
     FillSliceFlashMatch(fmatch, rec.slc); 
+    FillSliceVertex(vertex, rec.slc);
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
@@ -751,11 +759,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // rec.mc.setDefault();
     // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
 
-    fRecTree->Fill();
-    srcol->push_back(rec);
+    recs.push_back(std::move(rec));
     //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),
     //                 *srAssn);
   }  // end loop over slices
+
+  // calculate information that needs information from all of the slices
+  SetNuMuCCPrimary(recs, srneutrinos);
+
+  // save all of the slices
+  for (unsigned i = 0; i < recs.size(); i++) {
+    StandardRecord* prec = &recs[i];  // TTree wants a pointer-to-pointer
+    fRecTree->SetBranchAddress("rec", &prec);
+    fRecTree->Fill();
+    srcol->push_back(recs[i]);
+  }
 
   evt.put(std::move(srcol));
 }

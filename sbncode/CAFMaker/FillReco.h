@@ -15,6 +15,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
@@ -61,6 +62,10 @@ namespace caf
                       caf::SRSlice &srslice,
                       bool allowEmpty = false);
 
+  void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
+
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
@@ -96,6 +101,9 @@ namespace caf
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
+
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos);
 }
 
 #endif

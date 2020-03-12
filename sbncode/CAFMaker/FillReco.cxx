@@ -116,6 +116,17 @@ namespace caf
       srslice.fmatch.present = false;
     }
   }
+  void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (vertex != NULL) {
+      slice.vertex.x = vertex->position().X();
+      slice.vertex.y = vertex->position().Y();
+      slice.vertex.z = vertex->position().Z();
+    }
+  }
+
+
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
@@ -283,6 +294,12 @@ namespace caf
 
   }
   //......................................................................
+  
+  // TODO: implement
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos) {}
+
+
 } // end namespace 
 
 caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
