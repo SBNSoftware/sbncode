@@ -15,6 +15,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
@@ -56,6 +57,10 @@ namespace caf
                       const cheat::ParticleInventoryService &inventory_service,
                       caf::SRSlice &srslice,
                       bool allowEmpty = false);
+
+  void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 

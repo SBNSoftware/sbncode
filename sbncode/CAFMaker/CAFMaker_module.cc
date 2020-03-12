@@ -77,6 +77,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
@@ -579,6 +580,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<anab::ParticleID> fmPID = 
       FindManyPStrict<anab::ParticleID>(slcTracks, evt, "pandoraPid" + slice_tag_suffix);
 
+    art::FindManyP<recob::Vertex> fmVertex =
+      FindManyPStrict<recob::Vertex>(fmPFPart, evt, "pandora" + slice_tag_suffix);
+
     art::FindManyP<recob::Hit> fmHit = 
       FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
 
@@ -648,6 +652,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         fmatch = fmatches[0].get(); 
       }
     }
+    // get the primary vertex
+    const recob::Vertex *vertex = (iPart == fmPFPart.size() || !fmVertex.at(iPart).size()) ? NULL : fmVertex.at(iPart).at(0).get();
 
     //#######################################################
     // Add slice info.
@@ -655,6 +661,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, rec.slc);
     FillSliceMetadata(primary_meta, rec.slc);
     FillSliceFlashMatch(fmatch, rec.slc); 
+    FillSliceVertex(vertex, rec.slc);
     
     // select slice
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
