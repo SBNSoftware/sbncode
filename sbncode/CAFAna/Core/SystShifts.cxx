@@ -8,6 +8,7 @@
 #include "TDirectory.h"
 #include "TH1.h"
 #include "TObjString.h"
+#include "TRandom3.h"
 #include "TString.h"
 
 namespace ana
@@ -32,6 +33,14 @@ namespace ana
     : fID(fgNextID++)
   {
     for(auto it: shifts) if(it.second != 0) fSysts.emplace(it.first, it.second);
+  }
+
+  //----------------------------------------------------------------------
+  SystShifts SystShifts::RandomThrow(const std::vector<const ISyst*>& systs)
+  {
+    SystShifts ret;
+    for(const ISyst* s: systs) ret.SetShift(s, gRandom->Gaus(0, 1));
+    return ret;
   }
 
   //----------------------------------------------------------------------
