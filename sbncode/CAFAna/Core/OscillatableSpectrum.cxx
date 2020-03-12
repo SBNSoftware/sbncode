@@ -271,6 +271,10 @@ namespace ana
       std::cout << "\nWarning: OscillatableSpectrum with legacy non-L/E y-axis detected. Will oscillate correctly for now, but this code will eventually be removed\n" << std::endl;
     }
 
+    // POT = 0 implies empty spectrum and oscillated result will also always be
+    // empty
+    if(fCachedHash && fPOT == 0) return fCachedOsc;
+
     TMD5* hash = calc->GetParamsHash();
     if(hash && fCachedHash && *hash == *fCachedHash){
       delete hash;
@@ -293,6 +297,9 @@ namespace ana
   //----------------------------------------------------------------------
   OscillatableSpectrum& OscillatableSpectrum::operator+=(const OscillatableSpectrum& rhs)
   {
+    // If someone actually needs this we can go in and fix the behaviour
+    assert(fPOT);
+
     if(rhs.fPOT){
       fHist->Add(rhs.fHist, fPOT/rhs.fPOT);
     }
