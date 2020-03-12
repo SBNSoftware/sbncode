@@ -289,6 +289,9 @@ namespace ana
                 bool nubar,
                 const SystShifts& shift) const
   {
+    // Save time by not shifting a spectrum that is all zeros anyway
+    if(s.POT() == 0 && s.Livetime() == 0) return s;
+
     if(nubar) assert(fSplitBySign);
 
     InitFits();

@@ -649,6 +649,7 @@ namespace ana
   //----------------------------------------------------------------------
   void Spectrum::Clear()
   {
+    fPOT = fLivetime = 0;
     if(fHist) fHist->Reset();
     if(fHistSparse) fHistSparse->Reset();
   }
@@ -666,13 +667,16 @@ namespace ana
   {
     // In this case it would be OK to have no POT/livetime
     if(rhs.fHist && rhs.fHist->Integral(0, -1) == 0) return *this;
-    
 
-    if((!fPOT && !fLivetime) || (!rhs.fPOT && !rhs.fLivetime)){
-      std::cout << "Error: can't sum Spectrum with no POT or livetime. "
-                << fPOT << " " << rhs.fPOT
-                << std::endl;
-      abort();
+    // Empty RHS -> do nothing
+    if(rhs.fPOT == 0 && rhs.fLivetime == 0) return *this;
+
+    // Empty LHS -> copy RHS (possibly with sign flip)
+    if(fPOT == 0 && fLivetime == 0){
+      if(rhs.fHist) fHist->Add(rhs.fHist, sign);
+      if(rhs.fHistSparse) fHistSparse->Add(rhs.fHistSparse, sign);
+      fPOT = rhs.fPOT;
+      fLivetime = rhs.fLivetime;
       return *this;
     }
 
