@@ -525,6 +525,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // list of slice objects
+  std::vector<StandardRecord> recs;
+
   //#######################################################
   // Loop over slices 
   //#######################################################
@@ -608,8 +611,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
-    StandardRecord* prec = &rec;  // TTree wants a pointer-to-pointer
-    fRecTree->SetBranchAddress("rec", &prec);
 
     // fill up the true particles
     rec.true_particles = true_particles;
@@ -751,11 +752,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // rec.mc.setDefault();
     // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
 
-    fRecTree->Fill();
-    srcol->push_back(rec);
+    recs.push_back(std::move(rec));
     //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),
     //                 *srAssn);
   }  // end loop over slices
+
+  // calculate information that needs information from all of the slices
+  SetNuMuCCPrimary(recs, srneutrinos);
+
+  // save all of the slices
+  for (unsigned i = 0; i < recs.size(); i++) {
+    StandardRecord* prec = &recs[i];  // TTree wants a pointer-to-pointer
+    fRecTree->SetBranchAddress("rec", &prec);
+    fRecTree->Fill();
+    srcol->push_back(recs[i]);
+  }
 
   evt.put(std::move(srcol));
 }

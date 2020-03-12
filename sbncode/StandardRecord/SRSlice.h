@@ -32,6 +32,7 @@ namespace caf
 	float      eff;           ///< Slice efficiency for this interaction
 	float      pur;           ///< Slicer purity for this interaction
         int        index;         ///< Index of the matched true neutrino interaction (-1 if not matched to neutrino)
+        bool       is_numucc_primary; ///< Whether this is the "primary" reco neutrino slice as defined by the numu CC analysis
       };
 
       SRSlice();

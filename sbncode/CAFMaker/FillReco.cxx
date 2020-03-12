@@ -281,6 +281,12 @@ namespace caf
 
   }
   //......................................................................
+  
+  // TODO: implement
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos) {}
+
+
 } // end namespace 
 
 caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 

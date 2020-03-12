@@ -97,6 +97,9 @@ namespace caf
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
+
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos);
 }
 
 #endif
