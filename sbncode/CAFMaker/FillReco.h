@@ -33,7 +33,11 @@
 namespace caf
 {
 
-  void FillShowerVars(const recob::Shower& shower,
+  void FillEMShowerVars(const recob::Shower& shower,
+                        caf::SRShower& srshower,
+                        bool allowEmpty = false);
+
+  void FillPandoraShowerVars(const recob::Shower& shower,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
