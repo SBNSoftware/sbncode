@@ -575,11 +575,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       else assert(false); // bad
     }
 
-    // art::FindManyP<recob::Shower> fmEMShower =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, whatGoesHere, "emshower" + slice_tag_suffix);
-
-    art::FindManyP<recob::Shower> fmPandoraShower =
-      FindManyPStrict<recob::Shower>(fmPFPart, evt, "pandoraShower" + slice_tag_suffix);
+    art::FindManyP<recob::Shower> fmShower =
+      FindManyPStrict<recob::Shower>(fmPFPart, evt, "tracs" + slice_tag_suffix);
 
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt, "pandoraCalo" + slice_tag_suffix);
@@ -692,8 +689,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
       
       const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(iPart);
-      const std::vector<art::Ptr<recob::Shower>> &thisPandoraShower = fmPandoraShower.at(iPart);
-      // const std::vector<art::Ptr<recob::Shower>> &thisEMShower = fmEMShower.at(iPart);
+      const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(iPart);
       
       if (thisTrack.size())  { // it's a track!
         assert(thisTrack.size() == 1);
@@ -736,14 +732,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
-      else if (thisPandoraShower.size()) { // it's a shower!
+      else if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
-        assert(thisPandoraShower.size() == 1);
+        assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillPandoraShowerVars(*thisPandoraShower[0], rec.reco.shw.back());
-        // Q:pandoraShower sshould be the same size as of EMShower ?
-        // FillEMShowerVars(*thisEMShower[0], rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], rec.reco.shw.back());
 
       } // thisShower exists
       else {}

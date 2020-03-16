@@ -23,20 +23,7 @@ namespace caf
   }
 
   //......................................................................
-  // TO DO: 
-  // * Check what variables actually live in emshower and fill in the right function
-  // * Add FillWhateverShowerVars for the other shower data products (check notes/ask Ed T.)
-  void FillEMShowerVars(const recob::Shower& shower,
-                        caf::SRShower &srshower,
-                        bool allowEmpty)
-  {
-
-    srshower.dEdx       = shower.dEdx();
-    srshower.energy     = shower.Energy();
-  }
-
-
-  void FillPandoraShowerVars(const recob::Shower& shower, 
+  void FillShowerVars(const recob::Shower& shower, 
                             caf::SRShower &srshower,
                             bool allowEmpty)
   {
@@ -45,16 +32,18 @@ namespace caf
     srshower.start  = SRVector3D( shower.ShowerStart() );
 
     srshower.bestplane  = shower.best_plane();
-//    srshower.dEdx       = shower.dEdx();
-//    srshower.energy     = shower.Energy();
+    srshower.dEdx       = shower.dEdx();
+    srshower.energy     = shower.Energy();
 
     if(shower.has_length()) {
       srshower.len      = shower.Length();
-//      srshower.density  = shower.Energy().at(shower.best_plane()) / shower.Length();
+      srshower.density  = shower.Energy().at(shower.best_plane()) / shower.Length();
     }
+
     if(shower.has_open_angle()) {
       srshower.open_angle = shower.OpenAngle();
     }
+
   }
 
   void FillSliceVars(const recob::Slice& slice,
