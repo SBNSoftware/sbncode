@@ -8,6 +8,11 @@
 
 namespace caf
 {
+  /// Truth matching information between a SRTrack and a list of SRTrueParticle objects
+  /// matching is done using the sum of energies on each plane, so energy variables use the sum of energy
+  /// seen by each plane
+  //
+  // TODO: should this be done differently? Use the best plane?
   class SRTrackTruth {
   public:
     float total_deposited_energy; //!< True total deposited energy associated with this Track across all 3 planes [GeV]. NOTE: this energy is a sum of the depoisted energy as seen individually by each plane

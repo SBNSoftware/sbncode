@@ -27,9 +27,9 @@ namespace caf {
     srparticle.crosses_tpc = false;
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
-    srparticle.visE = 0.;
+    srparticle.planeVisE = 0.;
     for (auto const ide: particle_ides) {
-      srparticle.visE += ide->energy / 1000. /* MeV -> GeV*/;
+      srparticle.planeVisE += ide->energy / 1000. /* MeV -> GeV*/;
     }
 
     // if no trajectory points, then assume outside AV
