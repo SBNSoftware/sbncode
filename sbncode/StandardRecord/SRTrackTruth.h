@@ -10,13 +10,13 @@ namespace caf
 {
   class SRTrackTruth {
   public:
-    float total_deposited_energy; //!< True total deposited energy associated with this Track [GeV]
+    float total_deposited_energy; //!< True total deposited energy associated with this Track across all 3 planes [GeV]. NOTE: this energy is a sum of the depoisted energy as seen individually by each plane
   
     /// Match from a reconstructed track to a true particle  */
     class ParticleMatch {
     public:
       int G4ID; //!< ID of the particle match, taken from G4 */
-      float energy; //!< Total energy matching between reco track and true particle [GeV] */
+      float energy; //!< Total energy matching between reco track and true particle across all three planes [GeV]. NOTE: this energy is a sum of the depoisted energy as seen individually by each plane */
     };
 
     std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched */
