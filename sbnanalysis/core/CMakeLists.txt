@@ -86,6 +86,7 @@ target_link_libraries(
   larsim_MCCheater_PhotonBackTracker
   icaruscode_Geometry
   ubcore_Geometry
+  UBooNEGeometryHelper_service
   sbnd_Geometry
   boost_system
   boost_filesystem
