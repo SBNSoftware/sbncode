@@ -56,7 +56,7 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl, bool setup_eve
         std::make_shared<geo::ChannelMapUBooNEAlg>(
           cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
       fGeometryProvider = \
-        lar::standalone::SetupGeometryWithChannelMapping(pset, channelMap);
+        lar::standalone::SetupGeometryWithChannelMapping(pset, *channelMap);
       }
       break;
     case kExpICARUS: {

@@ -3,9 +3,9 @@ cet_find_library( BOOST_DATE_TIME     NAMES boost_date_time     PATHS ENV BOOST_
 
 add_subdirectory(EventWeight)
 add_subdirectory(OscLib)
-add_subdirectory(FlatMaker)
 
 if(BUILD_CAFANA)
   add_subdirectory(CAFAna)
+  add_subdirectory(FlatMaker)
 endif()
 
