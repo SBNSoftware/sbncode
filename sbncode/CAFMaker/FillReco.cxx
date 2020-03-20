@@ -30,19 +30,29 @@ namespace caf
 
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
+    srshower.dEdx     = shower.dEdx();
+    srshower.energy   = shower.Energy();
 
-    srshower.bestplane  = shower.best_plane();
-    srshower.dEdx       = shower.dEdx();
-    srshower.energy     = shower.Energy();
+    // TO DO: work out conversion gap
+    // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
+    // srshower.conversion_gap = (shower.ShowerStart() - vertex.Position()).Mag();
 
-    if(shower.has_length()) {
-      srshower.len      = shower.Length();
-      srshower.density  = shower.Energy().at(shower.best_plane()) / shower.Length();
+    if(shower.best_plane() != -999){
+      srshower.bestplane        = shower.best_plane();
+      srshower.bestplane_dEdx   = shower.dEdx().at(shower.best_plane());
+      srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
     }
 
-    if(shower.has_open_angle()) {
-      srshower.open_angle = shower.OpenAngle();
+    if(shower.Length() > 0) {
+      srshower.len = shower.Length();
+      if(shower.best_plane() != -999){
+        srshower.density = shower.Energy().at(shower.best_plane()) / shower.Length();
+      }
     }
+
+    // if(shower.has_open_angle()) {
+    srshower.open_angle = shower.OpenAngle();
+    // }
 
   }
 
