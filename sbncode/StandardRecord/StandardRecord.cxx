@@ -15,7 +15,8 @@ namespace caf
   hdr(),
   //  spill(),
   slc(),
-  reco()
+  reco(),
+  mc()
   {  }
 
   StandardRecord::~StandardRecord(){

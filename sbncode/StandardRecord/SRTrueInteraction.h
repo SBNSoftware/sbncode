@@ -19,12 +19,19 @@ namespace caf
 
     int        ID; ///< ID of the truth-matched interaction
     int        inttype;       ///< Interaction type enum int_type::[...]
+    int        index;         ///< Index of the matched true neutrino interaction (-1 if not matched to neutrino)
 
     bool       iscc;          ///< True if charged-current, false if not
     bool       isvtxcont;     ///< If true vertex is within TPC
+    bool       is_numucc_primary; ///< Whether this is the "primary" reco neutrino slice as defined by the numu CC analysis
+
+    float      eff;           ///< Slice efficiency for this interaction
+    float      pur;           ///< Slicer purity for this interaction
 
     float      E;             ///< True energy [GeV]
     float      visE;          ///< True interaction deposited energy
+    float      visEinslc;     ///< True deposited energy in slice [GeV]
+    float      visEcosmic;    ///< True slice deposited energy from cosmics
     float      time;          ///< interaction time.
     float      genweight;     ///< Weight, if any, assigned by the generator
     float      xsec;          ///< xsec for thrown interaction, in 1/GeV^2, as stored by the GENIE spline
@@ -35,6 +42,7 @@ namespace caf
 
     SRVector3D   p;             ///< True momentum [GeV]
     SRVector3D   vtx;           ///< Vertex position in detector coord. [cm]
+
 
     Det_t             det;
 

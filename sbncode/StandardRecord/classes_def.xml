@@ -21,6 +21,7 @@
   <class name="caf::SRTrkRange" />
   <class name="caf::SRTrueParticle" />
   <class name="caf::SRTrueInteraction" />
+  <class name="caf::SRTruthBranch" />
   <class name="caf::SRVector3D" />
   <!--<class name="caf::SRLorentzVector" /> -->
 
