@@ -690,8 +690,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
       
-      const std::vector<art::Ptr<recob::Track>> &thisTrack = fmTrack.at(iPart);
-      const std::vector<art::Ptr<recob::Shower>> &thisShower = fmShower.at(iPart);
+      std::vector<art::Ptr<recob::Track>> thisTrack;
+      if (fmTrack.isValid()) {
+        thisTrack = fmTrack.at(iPart);
+      }
+      std::vector<art::Ptr<recob::Shower>> thisShower;
+      if (fmShower.isValid()) {
+        thisShower = fmShower.at(iPart);
+      }
       
       if (thisTrack.size())  { // it's a track!
         assert(thisTrack.size() == 1);
