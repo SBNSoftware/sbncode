@@ -322,7 +322,14 @@ caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>
   std::vector<float> matching_energy(neutrinos.size(), 0.);
 
   for (auto const &pair: matches) {
-    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(pair.first);
+    art::Ptr<simb::MCTruth> truth;
+    try {
+      truth = inventory_service.TrackIdToMCTruth_P(pair.first);
+    }
+    // Ignore track ID's that cannot be looked up
+    catch(...) {
+      continue;
+    }
     for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
       if (truth == neutrinos[ind]) {
         matching_energy[ind] += pair.second;
