@@ -478,10 +478,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // get all of the true particles from G4
   std::vector<caf::SRTrueParticle> true_particles;
   art::Handle<std::vector<simb::MCParticle>> mc_particles;
-  GetByLabelStrict(evt, "largeant", mc_particles);
+  GetByLabelStrict(evt, fParams.G4Label(), mc_particles);
 
   art::Handle<std::vector<simb::MCTruth>> neutrino_handle;
-  GetByLabelStrict(evt, "generator", neutrino_handle);
+  GetByLabelStrict(evt, fParams.GenLabel(), neutrino_handle);
 
   std::vector<art::Ptr<simb::MCTruth>> neutrinos;
   art::fill_ptr_vector(neutrinos, neutrino_handle);
@@ -519,7 +519,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   for (const std::string &pandora_tag_suffix: pandora_tag_suffixes) {
     // Get a handle on the slices
     art::Handle<std::vector<recob::Slice>> thisSlices;
-    GetByLabelStrict(evt, fParams.ClusterLabel() + pandora_tag_suffix, thisSlices);
+    GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
     art::fill_ptr_vector(slices, thisSlices);
     for (unsigned i = 0; i < thisSlices->size(); i++) {
       slice_tag_suffixes.push_back(pandora_tag_suffix);     
@@ -539,7 +539,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // Get tracks & showers here
     std::vector<art::Ptr<recob::Slice>> sliceList {slice};
     art::FindManyP<recob::PFParticle> findManyPFParts =
-       FindManyPStrict<recob::PFParticle>(sliceList, evt,  "pandora" + slice_tag_suffix);
+       FindManyPStrict<recob::PFParticle>(sliceList, evt,  fParams.PFParticleLabel() + slice_tag_suffix);
       
     std::vector<art::Ptr<recob::PFParticle>> fmPFPart; 
     if (findManyPFParts.isValid()) {
@@ -547,63 +547,65 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     art::FindManyP<recob::Hit> fmSlcHits =
-      FindManyPStrict<recob::Hit>(sliceList, evt, "pandora" + slice_tag_suffix); 
+      FindManyPStrict<recob::Hit>(sliceList, evt, fParams.PFParticleLabel() + slice_tag_suffix); 
     std::vector<art::Ptr<recob::Hit>> slcHits;
     if (fmSlcHits.isValid()) {
       slcHits = fmSlcHits.at(0);
     }
 
     art::FindManyP<anab::T0> fmT0 =
-      FindManyPStrict<anab::T0>(fmPFPart, evt, "fmatch" + slice_tag_suffix);
+      FindManyPStrict<anab::T0>(fmPFPart, evt, fParams.FlashMatchLabel() + slice_tag_suffix);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
-      FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt, "pandora" + slice_tag_suffix);
+      FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt, fParams.PFParticleLabel() + slice_tag_suffix);
 
     art::FindManyP<recob::Track> fmTrack = 
-      FindManyPStrict<recob::Track>(fmPFPart, evt, "pandoraTrack" + slice_tag_suffix);
+      FindManyPStrict<recob::Track>(fmPFPart, evt, fParams.RecoTrackLabel() + slice_tag_suffix);
 
     // make Ptr's to tracks for track -> other object associations 
     std::vector<art::Ptr<recob::Track>> slcTracks;
-    for (unsigned i = 0; i < fmTrack.size(); i++) {
-      const std::vector<art::Ptr<recob::Track>> &thisTracks = fmTrack.at(i);
-      if (thisTracks.size() == 0) {
-        slcTracks.emplace_back(); // nullptr
+    if (fmTrack.isValid()) {
+      for (unsigned i = 0; i < fmTrack.size(); i++) {
+        const std::vector<art::Ptr<recob::Track>> &thisTracks = fmTrack.at(i);
+        if (thisTracks.size() == 0) {
+          slcTracks.emplace_back(); // nullptr
+        }
+        else if (thisTracks.size() == 1) {
+          slcTracks.push_back(fmTrack.at(i).at(0));
+        }
+        else assert(false); // bad
       }
-      else if (thisTracks.size() == 1) {
-        slcTracks.push_back(fmTrack.at(i).at(0));
-      }
-      else assert(false); // bad
     }
 
     art::FindManyP<recob::Shower> fmShower =
-      FindManyPStrict<recob::Shower>(fmPFPart, evt, "tracs" + slice_tag_suffix);
+      FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suffix);
 
     art::FindManyP<anab::Calorimetry> fmCalo =
-      FindManyPStrict<anab::Calorimetry>(slcTracks, evt, "pandoraCalo" + slice_tag_suffix);
+      FindManyPStrict<anab::Calorimetry>(slcTracks, evt, fParams.TrackCaloLabel() + slice_tag_suffix);
 
     art::FindManyP<anab::ParticleID> fmPID = 
-      FindManyPStrict<anab::ParticleID>(slcTracks, evt, "pandoraPid" + slice_tag_suffix);
+      FindManyPStrict<anab::ParticleID>(slcTracks, evt, fParams.TrackPidLabel() + slice_tag_suffix);
 
     art::FindManyP<recob::Vertex> fmVertex =
-      FindManyPStrict<recob::Vertex>(fmPFPart, evt, "pandora" + slice_tag_suffix);
+      FindManyPStrict<recob::Vertex>(fmPFPart, evt, fParams.PFParticleLabel() + slice_tag_suffix);
 
     art::FindManyP<recob::Hit> fmHit = 
-      FindManyPStrict<recob::Hit>(slcTracks, evt, "pandoraTrack" + slice_tag_suffix);
+      FindManyPStrict<recob::Hit>(slcTracks, evt, fParams.RecoTrackLabel() + slice_tag_suffix);
 
     art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
-      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt, "pandoraTrackCRTHit" + slice_tag_suffix);
+      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt, fParams.CRTHitMatchLabel() + slice_tag_suffix);
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
     for (std::string pid: PIDnames) {
-      art::InputTag tag("pandoraTrackMCS" + slice_tag_suffix, pid);
+      art::InputTag tag(fParams.TrackMCSLabel() + slice_tag_suffix, pid);
       fmMCSs.push_back(FindManyPStrict<recob::MCSFitResult>(slcTracks, evt, tag));
     } 
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
     static const std::vector<std::string> rangePIDnames {"muon", "proton"};
     for (std::string pid: rangePIDnames) {
-      art::InputTag tag("pandoraTrackRange" + slice_tag_suffix, pid);
+      art::InputTag tag(fParams.TrackRangeLabel() + slice_tag_suffix, pid);
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
