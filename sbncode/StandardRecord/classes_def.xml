@@ -20,6 +20,7 @@
   <class name="caf::SRTrkMCS" />
   <class name="caf::SRTrkRange" />
   <class name="caf::SRTrueParticle" />
+  <class name="caf::SRTruthMatch" />
   <class name="caf::SRTrueInteraction" />
   <class name="caf::SRTruthBranch" />
   <class name="caf::SRVector3D" />

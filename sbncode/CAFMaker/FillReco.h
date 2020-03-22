@@ -51,13 +51,6 @@ namespace caf
                         caf::SRSlice &srslice,
                         bool allowEmpty = false);
 
-  void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
-                      const cheat::ParticleInventoryService &inventory_service,
-                      caf::SRSlice &srslice,
-                      bool allowEmpty = false);
-
   void FillSliceVertex(const recob::Vertex *vertex,
                        caf::SRSlice& slice,
                        bool allowEmpty = false);
@@ -91,10 +84,6 @@ namespace caf
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty = false);
-
-  void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

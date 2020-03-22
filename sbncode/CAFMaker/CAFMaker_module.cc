@@ -9,12 +9,8 @@
 //
 // - Give real fDet values
 // - Add in cycle and batch to params
-// - Fill reco tree a bit more
 // - Move this list some place useful
-// - Add Truth branch
 // - Add reco.CRT branch
-// - Find the right sintaxis for emshower
-// - Check the third shower data product
 // ---------------------------------------
 
 
@@ -81,6 +77,12 @@
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+
+#include "nusimdata/SimulationBase/MCFlux.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "nusimdata/SimulationBase/GTruth.h"
+
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
 
 // StandardRecord
@@ -475,16 +477,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fTotalEvents += 1;
 
+  art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
+  GetByLabelStrict(evt, "generator", mcflux_handle);
+
+  std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
+  art::fill_ptr_vector(mcfluxes, mcflux_handle);
+
+
   // get all of the true particles from G4
   std::vector<caf::SRTrueParticle> true_particles;
   art::Handle<std::vector<simb::MCParticle>> mc_particles;
   GetByLabelStrict(evt, "largeant", mc_particles);
 
-  art::Handle<std::vector<simb::MCTruth>> neutrino_handle;
-  GetByLabelStrict(evt, "generator", neutrino_handle);
+  art::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+  GetByLabelStrict(evt, "generator", mctruth_handle);
 
-  std::vector<art::Ptr<simb::MCTruth>> neutrinos;
-  art::fill_ptr_vector(neutrinos, neutrino_handle);
+  std::vector<art::Ptr<simb::MCTruth>> mctruths;
+  art::fill_ptr_vector(mctruths, mctruth_handle);
 
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
@@ -497,16 +506,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          fTPCVolumes,
                          *bt_serv.get(),
                          *pi_serv.get(),
-                         neutrinos,
+                         mctruths,
                          true_particles.back());
     }
   }
 
   std::vector<caf::SRTrueInteraction> srneutrinos;
-  for (const art::Ptr<simb::MCTruth> neutrino: neutrinos) {
-    srneutrinos.emplace_back();
-    // TODO: implement this function
-    FillTrueNeutrino(neutrino, srneutrinos.back());
+
+  for (size_t i=0; i<mctruths.size(); i++) {
+
+    auto const& mctruth = mctruths.at(i);
+    auto const& mcflux = mcfluxes.at(i);
+
+    srneutrinos.push_back(SRTrueInteraction());
+
+    FillTrueNeutrino(mctruth, mcflux, srneutrinos.back(), i);
+    //    FillTrueNeutrino(neutrino, srneutrinos.back());
   }
 
   // collect the TPC slices
@@ -669,7 +684,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, neutrinos, srneutrinos, *pi_serv.get(), rec.slc);
+    FillSliceTruth(slcHits, mctruths, srneutrinos, *pi_serv.get(), rec.slc);
     
     //#######################################################
     // Add detector dependent slice info.
