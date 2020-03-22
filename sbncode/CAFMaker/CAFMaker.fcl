@@ -10,7 +10,6 @@ standard_cafmaker:{
 #    SliceLabel01:         "pandora"
 
     CAFFilename:          "" # Provide a string to override the automatic filename
-    ClusterInput:         "pandora"    #input module of clustered time slices
     DataTier:             "caf" # Provide a string to override automatic filename
     FileExtension:        ".caf.root"
     GeneratorInput:       "generator"

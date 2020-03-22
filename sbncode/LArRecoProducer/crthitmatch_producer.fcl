@@ -12,17 +12,21 @@ crthitmatch_sbnd: {
   }
 }
 
-crthitmatch_icarus: {
+crthitmatch_icarus_cryo0: {
   module_type: CRTHitMatch
   CRTHitLabel: crtconvhit 
-  TrackLabel: pandoraTrack
+  TrackLabel: pandoraTrackGausCryo0
   Alg: {
     MinTrackLength: 0.
-    TPCTrackLabel: pandoraTrack
+    TPCTrackLabel: pandoraTrackGausCryo0
     DistanceLimit: 10000
     TrackDirectionFrac: 0.5
     TSMode: 1
   }
 }
+
+crthitmatch_icarus_cryo1: @local::crthitmatch_icarus_cryo0
+crthitmatch_icarus_cryo1.TrackLabel: pandoraTrackGausCryo1
+crthitmatch_icarus_cryo1.Alg.TPCTrackLabel: pandoraTrackGausCryo1
 
 END_PROLOG

@@ -269,4 +269,3 @@ namespace caf
                         std::vector<caf::SRTrueInteraction> &srneutrinos) {}
 
 } // end namespace 
-
