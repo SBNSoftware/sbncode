@@ -20,7 +20,7 @@ namespace caf
     {
     public:
 
-      float    visE;        //!< Total energy deposited in active volume [GeV]
+      float    planeVisE;   //!< Sum of energy deposited on each plane in the TPC (generically is =3*(startE-endE)). Helpful for truth matching. [GeV]
       float    startE;      //!< Energy at first pt in active TPC volume [GeV]
       float    endE;        //!< Energy at last pt in active TPC volume [GeV]
       float    startT;      //!< Start time of first TPC point [mus -- t=0 is spill time]

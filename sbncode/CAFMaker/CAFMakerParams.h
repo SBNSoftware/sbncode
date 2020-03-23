@@ -28,7 +28,6 @@ namespace caf
       Comment("Provide a string to override the automatic filename.")
     };
 
-    Atom<string> ClusterLabel    { Name("ClusterInput") };
     Atom<string> DataTier        { Name("DataTier") };
     Atom<string> FileExtension   { Name("FileExtension") };
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
@@ -54,6 +53,71 @@ namespace caf
       Comment("List of suffixes to add to TPC reco tag names (e.g. cryo0 cryo1)")
     };
 
+    Atom<string> G4Label {
+      Name("G4Label"),
+      Comment("Label of G4 module."),
+      "largeant"
+    };
+
+    Atom<string> GenLabel {
+      Name("GenLabel"),
+      Comment("Label of gen module."),
+      "generator"
+    };
+
+    Atom<string> PFParticleLabel {
+      Name("PFParticleLabel"),
+      Comment("Base label of PFParticle producer."),
+      "pandora"
+    };
+
+    Atom<string> FlashMatchLabel {
+      Name("FlashMatchLabel"),
+      Comment("Base label of flash match producer."),
+      "fmatch"
+    };
+
+    Atom<string> RecoTrackLabel {
+      Name("RecoTrackLabel"),
+      Comment("Base label of reco-base track producer."),
+      "pandoraTrack"
+    };
+
+    Atom<string> RecoShowerLabel {
+      Name("RecoShowerLabel"),
+      Comment("Base label of reco-base shower producer."),
+      "tracs"
+    };
+
+    Atom<string> TrackCaloLabel {
+      Name("TrackCaloLabel"),
+      Comment("Base label of track calorimetry producer."),
+      "pandoraCalo"
+    };
+
+    Atom<string> TrackPidLabel {
+      Name("TrackPidLabel"),
+      Comment("Base label of track particle-id producer."),
+      "pandoraPid"
+    };
+
+    Atom<string> CRTHitMatchLabel {
+      Name("CRTHitMatchLabel"),
+      Comment("Base label of track to CRT hit matching producer."),
+      "pandoraTrackCRTHit"
+    };
+
+    Atom<string> TrackMCSLabel {
+      Name("TrackMCSLabel"),
+      Comment("Base label of track MCS momentum calculation producer."),
+      "pandoraTrackMCS"
+    };
+
+    Atom<string> TrackRangeLabel {
+      Name("TrackRangeLabel"),
+      Comment("Base label of track range momentum calculation producer."),
+      "pandoraTrackRange"
+    };
 
   };
 }

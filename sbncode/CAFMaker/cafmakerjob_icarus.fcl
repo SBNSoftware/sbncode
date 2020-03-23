@@ -1,11 +1,11 @@
 #include "CAFMaker.fcl"
 
-#include "services_sbnd.fcl"
-#include "geometry_sbnd.fcl"
+#include "services_icarus.fcl"
+#include "geometry_icarus.fcl"
+
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
-#include "detectorproperties_sbnd.fcl"
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
 
@@ -29,13 +29,13 @@ services:
   TimeTracker:  { printSummary: true }
   # #  @table::standard_services
 
-  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
-  Geometry:                  @local::sbnd_geo
-  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::icarus_geometry_helper
+  Geometry:                  @local::icarus_geo
+  AuxDetGeometry:            @local::icarus_auxdetgeo
   LArPropertiesService:      @local::standard_properties
-  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
-  DetectorPropertiesService: @local::sbnd_detproperties
+  DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
+  DetectorPropertiesService: @local::icarus_basic_services.DetectorPropertiesService 
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
 }
@@ -66,27 +66,29 @@ outputs:
 physics:
 {
  producers:{
-#  dq:                   @local::standard_daqheadersummary    #dq
-#  exposure:             @local::standard_cosmicexposureinfo  #calib
-#  ifdbspillinfo:        @local::standard_ifdbspillinfo       #beam
-#  calhit:               @local::standard_calhit              #calib
-#  slicer:             @local::standard_slicer4d            #reco
-#  slicertd:             @local::standard_td                  #reco
-#  slicer:               @local::standard_slicemergeviews
-#  cosmictrack:          @local::standard_cosmictrack         #reco
-#  windowtrack:          @local::window_cosmictrack           #reco
-   pandoraTrackMCS: @local::mcs_sbn
-   pandoraTrackRange: @local::range_sbn
-   fmatch: @local::flash_match_sbnd
-   crtconvhit: @local::crthitconverter_sbnd
-   pandoraTrackCRTHit: @local::crthitmatch_sbnd
+   pandoraTrackMCSCryo0: @local::mcs_sbn
+   pandoraTrackRangeCryo0: @local::range_sbn
+   pandoraTrackMCSCryo1: @local::mcs_sbn
+   pandoraTrackRangeCryo1: @local::range_sbn
+
+   fmatchCryo0: @local::flash_match_icarus_cryo0
+   fmatchCryo1: @local::flash_match_icarus_cryo1
+   crtconvhit: @local::crthitconverter_icarus
+
+   pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
+   pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
 }
 # filters:{}
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, mycafmaker ]
+ runprod: [ crtconvhit, 
+    pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
+    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,
+    mycafmaker ]
+
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
   stream1:       [  ]
@@ -97,7 +99,19 @@ physics:
 }
 
 physics.producers.mycafmaker: @local::standard_cafmaker
+
+physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
+physics.producers.mycafmaker.PFParticleLabel: "pandoraGaus"
+physics.producers.mycafmaker.RecoShowerLabel: "TRACSStandard"
+physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGaus"
+physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausCalo"
+physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausPid"
+
+physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
+
+physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
+
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
-
-# #include "3drift_services_sbnd.fcl"

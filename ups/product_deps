@@ -1,9 +1,9 @@
 # This @product_deps@ file defines dependencies for this package. 
 
 # The *parent* line must the first non-commented line and defines this product and version
-# The version should be of the form vxx_yy_zz (e.g. v02_02_03)
+# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
 parent sbncode v08_40_00
-defaultqual e17
+defaultqual e19
 
 # These optional lines define the installed directories where headers,
 # libraries, and executables will be found.
@@ -51,8 +51,6 @@ cetbuildtools v7_13_02 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
 qualifier     sbndcode    uboonecode  icaruscode    ubcore  	pygccxml	notes
-e17:debug     e17:debug   e17:debug   e17:debug     e17:debug   p2715a	-nq-
-e17:prof      e17:prof    e17:prof    e17:prof      e17:prof    p2715a	-nq-
 e19:debug     e19:debug   e19:debug   e19:debug     e19:debug   p2715a	-nq-
 e19:prof      e19:prof    e19:prof    e19:prof      e19:prof    p2715a	-nq-
 

@@ -15,6 +15,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
@@ -22,6 +23,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -33,8 +35,8 @@ namespace caf
 {
 
   void FillShowerVars(const recob::Shower& shower,
-            		      caf::SRShower& srshower,
-            		      bool allowEmpty = false);
+                      caf::SRShower& srshower,
+                      bool allowEmpty = false);
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,
@@ -49,12 +51,9 @@ namespace caf
                         caf::SRSlice &srslice,
                         bool allowEmpty = false);
 
-  void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
-                      const cheat::ParticleInventoryService &inventory_service,
-                      caf::SRSlice &srslice,
-                      bool allowEmpty = false);
+  void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
@@ -62,6 +61,11 @@ namespace caf
                      const recob::PFParticle& particle,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
+
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
+                       const std::vector<const anab::T0*> &t0match, 
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
@@ -83,9 +87,8 @@ namespace caf
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
-  void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty = false);
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos);
 }
 
 #endif

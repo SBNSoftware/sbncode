@@ -7,11 +7,6 @@
 #include "FillReco.h"
 #include "RecoUtils/RecoUtils.h"
 
-// declare helpers
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits);
-caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
-                                   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                                   const cheat::ParticleInventoryService &inventory_service);
 
 namespace caf
 {
@@ -23,27 +18,39 @@ namespace caf
   }
 
   //......................................................................
-  void FillShowerVars(const recob::Shower& shower,
-                     caf::SRShower &srshower,
-                     bool allowEmpty)
+  void FillShowerVars(const recob::Shower& shower, 
+                            caf::SRShower &srshower,
+                            bool allowEmpty)
   {
 
-    srshower.dir 	= SRVector3D( shower.Direction() );
-    srshower.start 	= SRVector3D( shower.ShowerStart() );
+    srshower.dir    = SRVector3D( shower.Direction() );
+    srshower.start  = SRVector3D( shower.ShowerStart() );
+    srshower.dEdx     = shower.dEdx();
+    srshower.energy   = shower.Energy();
 
-    srshower.bestplane 	= shower.best_plane();
-    srshower.dEdx 		= shower.dEdx().at(shower.best_plane());
-    srshower.energy 	= shower.Energy().at(shower.best_plane());
+    // TO DO: work out conversion gap
+    // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
+    // srshower.conversion_gap = (shower.ShowerStart() - vertex.Position()).Mag();
 
-    if(shower.has_length()) {
+    if(shower.best_plane() != -999){
+      srshower.bestplane        = shower.best_plane();
+      srshower.bestplane_dEdx   = shower.dEdx().at(shower.best_plane());
+      srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
+    }
+
+    if(shower.Length() > 0) {
       srshower.len = shower.Length();
-    }
-    if(shower.has_open_angle()) {
-      srshower.openAngle = shower.OpenAngle();
+      if(shower.best_plane() != -999){
+        srshower.density = shower.Energy().at(shower.best_plane()) / shower.Length();
+      }
     }
 
-}
-  //......................................................................
+    // if(shower.has_open_angle()) {
+    srshower.open_angle = shower.OpenAngle();
+    // }
+
+  }
+
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary /* can be null */,
                      caf::SRSlice &srslice,
@@ -52,7 +59,7 @@ namespace caf
 
     srslice.charge       = slice.Charge();
 
-    // get the priamry tracks/showers
+    // get the primary tracks/showers
     if (primary != NULL) {
       for (unsigned id: primary->Daughters()) {
         srslice.primary.push_back(id);
@@ -103,7 +110,38 @@ namespace caf
       srslice.fmatch.present = false;
     }
   }
+  void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (vertex != NULL) {
+      slice.vertex.x = vertex->position().X();
+      slice.vertex.y = vertex->position().Y();
+      slice.vertex.z = vertex->position().Z();
+    }
+  }
+
+
   //......................................................................
+
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
+                       const std::vector<const anab::T0*> &t0match, 
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty)
+  {
+    if (hitmatch.size()) {
+      assert(hitmatch.size() == 1);
+      assert(t0match.size() == 1);
+      srtrack.crthit.distance = t0match[0]->fTriggerConfidence; 
+      srtrack.crthit.hit.time = t0match[0]->fTime;
+      srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
+      srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
+      srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
+      srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
+      srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
+      srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
+
+    }
+  }
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
@@ -204,31 +242,6 @@ namespace caf
     // TODO: what to do with calorimetry
   }
 
-  void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
-                      const cheat::ParticleInventoryService &inventory_service,
-                      caf::SRSlice &srslice,
-                      bool allowEmpty) 
-  {
-    srslice.tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
-    if (srslice.tmatch.index >= 0) {
-      srslice.truth = srneutrinos[srslice.tmatch.index];
-    }
-
-    std::cout << "Slice matched to index: " << srslice.tmatch.index << " with match frac: " << srslice.tmatch.pur << std::endl;
-
-  }
-
-  void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty)
-  {
-    // Truth matching
-    srtrack.truth = MatchTrack2Truth(hits);    
-
-  }
-
   // TODO: crt matching
 
   void FillTrackVars(const recob::Track& track,
@@ -250,85 +263,9 @@ namespace caf
 
   }
   //......................................................................
+  
+  // TODO: implement
+  void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
+                        std::vector<caf::SRTrueInteraction> &srneutrinos) {}
+
 } // end namespace 
-
-caf::SRSlice::TruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
-                                   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                                   const cheat::ParticleInventoryService &inventory_service) {
-  caf::SRSlice::TruthMatch ret;
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
-
-  // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
-  if (neutrinos.size() == 0) {
-    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
-    ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
-    ret.eff = -1; 
-    ret.pur = -1;
-    ret.index = -1;
-    return ret;
-  }
-
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
-
-  std::vector<float> matching_energy(neutrinos.size(), 0.);
-
-  for (auto const &pair: matches) {
-    art::Ptr<simb::MCTruth> truth = inventory_service.TrackIdToMCTruth_P(pair.first);
-    for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
-      if (truth == neutrinos[ind]) {
-        matching_energy[ind] += pair.second;
-        break;
-      }
-    }
-  }
-
-  float matching_frac = *std::max_element(matching_energy.begin(), matching_energy.end()) / total_energy;
-  int index = (matching_frac > 0.5) ? std::distance(matching_energy.begin(), std::max_element(matching_energy.begin(), matching_energy.end())) : -1;
-
-  float cosmic_energy = total_energy;
-  for (float E: matching_energy) cosmic_energy -= E;
-
-  ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
-  ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
-  ret.index = index;
-  if (index >= 0) {
-    ret.pur = matching_energy[index] / total_energy;
-    // TODO: calculate efficiency 
-    ret.eff = 0.;
-  }
-  else {
-    ret.pur = -1;
-    ret.eff = -1;
-  }
-
-  return ret;
-}
-
-// define helpers
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits) {
-
-  // this id is the same as the mcparticle ID as long as we got it from geant4
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
-
-  caf::SRTrackTruth ret;
-
-  ret.total_deposited_energy = total_energy / 1000. /* MeV -> GeV */;
-
-  // setup the matches
-  for (auto const &pair: matches) {
-    caf::SRTrackTruth::ParticleMatch match;
-    match.G4ID = pair.first;
-    match.energy = pair.second / 1000. /* MeV -> GeV */;
-    ret.matches.push_back(match);
-  }
-
-  // sort highest energy match to lowest
-  std::sort(ret.matches.begin(), ret.matches.end(), 
-    [](const caf::SRTrackTruth::ParticleMatch &a, const caf::SRTrackTruth::ParticleMatch &b) {
-      return a.energy > b.energy;
-    }
-  );
-
-  return ret;
-}

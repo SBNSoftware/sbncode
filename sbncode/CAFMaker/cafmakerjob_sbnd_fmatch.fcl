@@ -86,7 +86,7 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, mycafmaker ]
+ runprod: [ crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, fmatch, mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
   stream1:       [  ]

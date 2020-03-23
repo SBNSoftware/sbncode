@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+crthitconverter_sbnd: {
+  module_type: CRTHitConverter
+  Experiment: SBND
+  CRTHitLabel: crthit 
+}
+
+crthitconverter_icarus: {
+  module_type: CRTHitConverter
+  Experiment: ICARUS
+  CRTHitLabel: crtsimhit 
+}
+
+END_PROLOG
