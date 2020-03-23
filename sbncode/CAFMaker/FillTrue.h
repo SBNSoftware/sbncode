@@ -29,7 +29,7 @@ namespace caf
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                       const std::vector<caf::SRTrueInteraction> &srneutrinos,
                       const cheat::ParticleInventoryService &inventory_service,
-                      caf::SRSlice &srslice,
+                      caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty = false);
 
   void FillTrueG4Particle(const simb::MCParticle &mcparticle, 

@@ -37,7 +37,7 @@ namespace caf {
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                       const std::vector<caf::SRTrueInteraction> &srneutrinos,
                       const cheat::ParticleInventoryService &inventory_service,
-                      caf::SRSlice &srslice,
+                      caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty)
   {
 
@@ -45,9 +45,23 @@ namespace caf {
     //    srslice.tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
     tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
 
-    if (srslice.tmatch.index >= 0) {
-      srslice.truth = srneutrinos[srslice.tmatch.index];
+    if (tmatch.index >= 0) {
+
+      caf::SRTrueInteraction numatch = srneutrinos[tmatch.index];
+      numatch.visEinslc         = tmatch.visEinslc;
+      numatch.visEcosmic        = tmatch.visEcosmic;
+      numatch.eff               = tmatch.eff;
+      numatch.pur               = tmatch.pur;
+      numatch.is_numucc_primary = tmatch.is_numucc_primary;
+
+      srslice.truth = numatch;
+      srmc.nu.push_back(numatch);
     }
+
+    // if (srslice.tmatch.index >= 0) {
+    //   srslice.truth = srneutrinos[srslice.tmatch.index];
+    //   srmc.nu.push_back(srneutrinos[srslice.tmatch.index]);
+    // }
 
     std::cout << "Slice matched to index: " << srslice.tmatch.index 
 	      << " with match frac: " << srslice.tmatch.pur << std::endl;

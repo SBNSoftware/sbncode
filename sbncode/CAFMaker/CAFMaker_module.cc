@@ -688,7 +688,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, mctruths, srneutrinos, *pi_serv.get(), rec.slc);
+    FillSliceTruth(slcHits, mctruths, srneutrinos, *pi_serv.get(), rec.slc, rec.mc);
     
     //#######################################################
     // Add detector dependent slice info.
