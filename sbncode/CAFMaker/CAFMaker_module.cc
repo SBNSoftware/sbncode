@@ -611,6 +611,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suffix);
 
+    // art::FindManyP<recob::Shower> fmShowerEM =
+    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerEMLabel() + slice_tag_suffix);
+
+    // art::FindManyP<recob::Shower> fmShowerPand =
+    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerPandLabel() + slice_tag_suffix);
+
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt, fParams.TrackCaloLabel() + slice_tag_suffix);
 
@@ -729,6 +735,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
+      // std::vector<art::Ptr<recob::Shower>> thisShowerEM;
+      // if (fmShowerEM.isValid()) {
+      //   thisShower = fmShowerEM.at(iPart);
+      // }
+      // std::vector<art::Ptr<recob::Shower>> thisShowerPand;
+      // if (fmShowerPand.isValid()) {
+      //   thisShower = fmShowerPand.at(iPart);
+      // }
       
       if (thisTrack.size())  { // it's a track!
         assert(thisTrack.size() == 1);
@@ -771,6 +785,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
 	    
       } // thisTrack exists
+      
       else if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
@@ -779,7 +794,29 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], rec.reco.shw.back());
 
       } // thisShower exists
+
       else {}
+        
+      // // placeholding emshowers and padora showers
+      // // these might not be needed at the end
+      // if (thisShowerEM.size()) { // we have a reco em shower
+      //   assert(thisTrack.size() == 0);
+      //   assert(thisShowerEM.size() == 1);
+      //   rec.reco.nshw_em ++;
+      //   rec.reco.shw_em.push_back(SRShower());
+      //   FillShowerVars(*thisShowerEM[0], rec.reco.shw_em.back());
+
+      // } // thisShowerEM exists
+
+      // if (thisShowerPand.size()) { // we have a reco pandora shower
+      //   assert(thisTrack.size() == 0);
+      //   assert(thisShowerPand.size() == 1);
+      //   rec.reco.nshw_pandora ++;
+      //   rec.reco.shw_pandora.push_back(SRShower());
+      //   FillShowerVars(*thisShowerPand[0], rec.reco.shw_pandora.back());
+
+      // } // thisShowerPand exists
+
     }// end for pfparts
     
 
