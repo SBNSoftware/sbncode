@@ -1,7 +1,7 @@
 BEGIN_PROLOG
 flash_match_sbnd: {
   module_type: FlashPredict
-  OpHitProducer: "reophit"
+  OpHitProducer: "ophit"
   PandoraProducer: "pandora"
   SpacePointProducer: "pandora"
   BeamWindowStart: -5. #us
