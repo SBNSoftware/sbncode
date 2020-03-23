@@ -87,6 +87,7 @@ physics:
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
     pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,
+    fmatchCryo0, fmatchCryo1,
     mycafmaker ]
 
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
