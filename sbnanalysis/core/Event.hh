@@ -184,6 +184,9 @@ public:
   float reco_energy;  //!< Reconstructed neutrino energy [GeV]
   float weight;  //!< Selection-defined event weight
   size_t index;  //!< Index in the reco vector
+  float hadronic_energy; //!< Total (smeared) hadronic kinetic energy [GeV]
+  float lepton_energy; //!< (smeared) lepton kinetic energy 
+  float lepton_costh;  //!< lepton angle to beam (theta)
 };
 
 

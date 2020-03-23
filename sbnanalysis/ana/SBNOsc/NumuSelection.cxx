@@ -324,12 +324,18 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
     NuMuInteraction intInfo = interactionInfo(ev, mctruth, calculator);
 
     // double visible_energy = visibleEnergyProposalMCParticles(_rand, mctruth, mctracks, calculator);
-    double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
+    // double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
+    std::pair<double, double> energy_pair = visibleEnergySplit(_rand, mctruth, mctracks, calculator);
 
     event::RecoInteraction reco_interaction(i);
     // apply energy scale shift
-    visible_energy *= _config.constantEnergyScale;
-    reco_interaction.reco_energy = visible_energy;
+    energy_pair.first *= _config.constantEnergyScale;
+    energy_pair.second *= _config.constantEnergyScale;
+
+    reco_interaction.hadronic_energy = energy_pair.first;
+    reco_interaction.lepton_energy = energy_pair.second;
+    reco_interaction.lepton_costh = mctracks[calculator.lepton_index].Start().Momentum().CosTheta(); 
+    reco_interaction.reco_energy = reco_interaction.hadronic_energy + reco_interaction.lepton_energy;
 
     // Build the weight of this event
     double weight = 1.;
@@ -392,8 +398,8 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
       if (selection[select_i]) {
         _root_histos[select_i].h_numu_trueE->Fill(interaction.neutrino.energy);
         _root_histos[select_i].h_numu_ccqe->Fill(ECCQE(interaction.lepton.momentum, interaction.lepton.energy));
-        _root_histos[select_i].h_numu_visibleE->Fill(visible_energy);
-        _root_histos[select_i].h_numu_true_v_visibleE->Fill(visible_energy - interaction.neutrino.energy);
+        _root_histos[select_i].h_numu_visibleE->Fill(reco_interaction.reco_energy);
+        _root_histos[select_i].h_numu_true_v_visibleE->Fill(reco_interaction.reco_energy - interaction.neutrino.energy);
         _root_histos[select_i].h_numu_t_length->Fill(intInfo.t_length);
         _root_histos[select_i].h_numu_contained_L->Fill(intInfo.t_contained_length);
         _root_histos[select_i].h_numu_t_is_muon->Fill(abs(intInfo.t_pdgid) == 13);

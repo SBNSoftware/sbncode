@@ -326,6 +326,64 @@ double visibleEnergyProposal(TRandom &rand, const simb::MCTruth &mctruth, const 
   return total;
 }
 
+std::pair<double, double> visibleEnergySplit(TRandom &rand, 
+    const simb::MCTruth &mctruth, 
+    const std::vector<sim::MCTrack> &mctrack_list, 
+    const VisibleEnergyCalculator &calculator) {
+
+  double visible_E = 0;
+
+  // primary leptron track
+  const sim::MCTrack *lepton_track = NULL;
+  bool lepton_track_exists = false;
+
+  // total up visible energy from tracks...
+  double track_visible_energy = 0.;
+  for (unsigned ind = 0; ind < mctrack_list.size(); ind++) {
+    auto const &mct = mctrack_list[ind];
+    // ignore particles not from nu vertex, non primary particles, and uncharged particles
+    if (!isFromNuVertex(mctruth, mct) || abs(PDGCharge(mct.PdgCode())) < 1e-4 || mct.Process() != "primary")
+       continue;
+    // account for primary lepton later
+    if ((abs(mct.PdgCode()) == 13 || abs(mct.PdgCode()) == 11) && calculator.lepton_index == ind) {
+      continue;
+    }
+    // account for primary pion later
+    if ((abs(mct.PdgCode()) == 211) && calculator.lepton_index == ind) {
+      continue;
+    }
+
+    double mass = PDGMass(mct.PdgCode());
+    double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
+    if (this_visible_energy > calculator.track_threshold) {
+      track_visible_energy += this_visible_energy;
+    }
+  }
+
+  // do energy smearing
+  if (calculator.track_energy_distortion > 1e-4) {
+    track_visible_energy = rand.Gaus(track_visible_energy, track_visible_energy*calculator.track_energy_distortion);
+    // clamp to 0
+    track_visible_energy = std::max(track_visible_energy, 0.);
+  }
+
+  double hadronic_visible_E = track_visible_energy;
+
+  double leptonic_visible_E = 0.;
+
+  // ...and primary lepton energy (for CC events)
+  // only add in extra here if identified "lepton" is actually a lepton
+  if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 13 || abs(mctrack_list[calculator.lepton_index].PdgCode()) == 11)) {
+    leptonic_visible_E = smearLeptonEnergy(rand, mctrack_list[calculator.lepton_index], calculator);
+  }
+  else if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 211)) {
+    const sim::MCTrack &mct = mctrack_list[calculator.lepton_index];
+    double pion_visible_energy =  (mct.Start().E() -PDGMass(mct.PdgCode())) / 1000. /* MeV to GeV */;
+    leptonic_visible_E = std::max(rand.Gaus(track_visible_energy, track_visible_energy*calculator.track_energy_distortion), 0.);
+  }
+
+  return {hadronic_visible_E, leptonic_visible_E};
+}
 
 double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 
     const VisibleEnergyCalculator &calculator, bool include_showers) {
