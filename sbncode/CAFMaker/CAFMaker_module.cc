@@ -520,10 +520,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     auto const& mctruth = mctruths.at(i);
     auto const& mcflux = mcfluxes.at(i);
 
+    std::vector<caf::SRTrueParticle> srprimaries;
+
+    if (mctruth->NeutrinoSet()){
+      for (int ipart=0; ipart<mctruth->NParticles(); ipart++) {
+	const simb::MCParticle& particle = mctruth->GetParticle(ipart);
+	if (particle.Process() != "primary") 
+	  continue;
+	srprimaries.push_back(SRTrueParticle());
+	// Not working yet 	
+	// FillTrueG4Particle(particle, fActiveVolumes, fTPCVolumes,
+	// 		   *bt_serv.get(), *pi_serv.get(), mctruths,
+	// 		   srprimaries.back());
+      }
+    }
+    
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, srneutrinos.back(), i);
-    //    FillTrueNeutrino(neutrino, srneutrinos.back());
+    FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
   }
 
   // collect the TPC slices

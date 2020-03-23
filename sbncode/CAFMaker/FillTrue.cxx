@@ -58,19 +58,15 @@ namespace caf {
       srmc.nu.push_back(numatch);
     }
 
-    // if (srslice.tmatch.index >= 0) {
-    //   srslice.truth = srneutrinos[srslice.tmatch.index];
-    //   srmc.nu.push_back(srneutrinos[srslice.tmatch.index]);
-    // }
-
-    std::cout << "Slice matched to index: " << srslice.tmatch.index 
-	      << " with match frac: " << srslice.tmatch.pur << std::endl;
+    std::cout << "Slice matched to index: " << tmatch.index 
+	      << " with match frac: " << tmatch.pur << std::endl;
 
   }//FillSliceTruth
 
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const art::Ptr<simb::MCFlux>  mcflux,
+			std::vector<caf::SRTrueParticle> srprimaries,
 			caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
@@ -97,6 +93,9 @@ namespace caf {
       q_labframe = nu.Nu().EndMomentum() - lepton.Momentum(0);
       srneutrino.q0_lab = q_labframe.E();
       srneutrino.modq_lab = q_labframe.P();
+
+      srneutrino.prim = srprimaries;
+
     }
 
   }
