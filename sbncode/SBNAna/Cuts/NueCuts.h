@@ -7,7 +7,4 @@ namespace ana
 {
 	extern const Cut kNueBasic;
 
-	extern const Cut kIsNueCC;
-	extern const Cut kIsNueNC;
-
 }
