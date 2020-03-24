@@ -42,7 +42,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -61,7 +61,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     Binning bins1D = fBins[0];
     if(fBins.size() > 1){
@@ -97,7 +97,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -114,7 +114,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -133,7 +133,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
   }
 
   //----------------------------------------------------------------------
@@ -145,7 +145,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
   }
 
   //----------------------------------------------------------------------
