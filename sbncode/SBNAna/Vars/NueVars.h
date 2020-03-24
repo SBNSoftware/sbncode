@@ -9,7 +9,7 @@ namespace ana
 	extern const Var kRecoShower_BestEnergy;
 	extern const Var kRecoShower_Density;
 	extern const Var kRecoShower_Energy;
-	extern const Var kRecoShower_Len;
+	extern const Var kRecoShower_Length;
 	extern const Var kRecoShower_OpenAngle;
 
 } // namespace
