@@ -11,7 +11,7 @@ namespace ana
                         {       //Find the most muon-like track			  
 			  if( sr->reco.ntrk <= 0 ) return -5.0;
 
-                          double best_idx   = -5.0;
+                          double best_idx   = 0;
                           //double best_score = -5.0;
                           double best_len   = -5.0;			  
 			  for( unsigned int trkIdx = 0; trkIdx < sr->reco.ntrk; trkIdx++ ){
