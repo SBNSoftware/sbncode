@@ -102,7 +102,9 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
 physics.producers.mycafmaker.PFParticleLabel: "pandoraGaus"
-physics.producers.mycafmaker.RecoShowerLabel: "TRACSStandard"
+physics.producers.mycafmaker.RecoShowerLabel:     "TRACSStandard"
+# physics.producers.mycafmaker.RecoShowerEMLabel:   "emshower"
+# physics.producers.mycafmaker.RecoShowerPandLabel: "pandoraShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGaus"
 physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausCalo"
 physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausPid"

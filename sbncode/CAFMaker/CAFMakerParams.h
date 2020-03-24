@@ -89,6 +89,18 @@ namespace caf
       "tracs"
     };
 
+    // Atom<string> RecoShowerEMLabel {
+    //   Name("RecoShowerEMLabel"),
+    //   Comment("Base label of reco-base em shower producer."),
+    //   "emshower"
+    // };
+
+    // Atom<string> RecoShowerPandLabel {
+    //   Name("RecoShowerPandLabel"),
+    //   Comment("Base label of reco-base pandora shower producer."),
+    //   "pandoraShower"
+    // };
+
     Atom<string> TrackCaloLabel {
       Name("TrackCaloLabel"),
       Comment("Base label of track calorimetry producer."),
