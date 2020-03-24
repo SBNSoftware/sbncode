@@ -17,6 +17,13 @@ namespace ana
 			  return energy;
 			});
 
+  // Placeholder. Need better definition which needs better caf filling.
+  const Var kRecoShower_ConversionGap(
+			[](const caf::SRProxy *sr)
+			{
+			  return 2.0;
+			});
+
   const Var kRecoShower_Density(
 			[](const caf::SRProxy *sr)
 			{

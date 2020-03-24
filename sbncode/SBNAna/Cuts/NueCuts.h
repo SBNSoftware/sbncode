@@ -5,6 +5,8 @@
 
 namespace ana
 {
-	extern const Cut kNueBasic;
-
+	extern const Cut kRecoShower;
+	extern const Cut kNueBasicCut;
+	
+	const Cut kNueCut = kRecoShower && kNueBasicCut && (kRecoShower_ConversionGap < 2.1);	
 }
