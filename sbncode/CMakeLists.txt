@@ -32,4 +32,5 @@ add_subdirectory(OscLib)
 add_subdirectory(CAFAna)
 add_subdirectory(FlatMaker)
 add_subdirectory(LArRecoProducer)
+add_subdirectory(SBNAna)
 
