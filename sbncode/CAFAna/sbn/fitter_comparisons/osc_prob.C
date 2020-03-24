@@ -9,7 +9,7 @@
 using namespace ana;
 
 #include "TCanvas.h"
-#include "TH1.h"
+#include "TH2.h"
 #include "TPad.h"
 
 const Cut kOneNu([](const caf::SRProxy* sr){return sr->truth.size() == 1;});
@@ -33,9 +33,16 @@ void osc_prob()
   calc.SetSinSq2ThetaMuMu(1e-2);
   calc.SetSinSq2ThetaMuE(0);
 
+  s.ToTH2(1e20)->Draw("col");
+  gPad->Print("osc_prob_2d.png");
+  new TCanvas;
+  s_reco.ToTH2(1e20)->Draw("col");
+  gPad->Print("osc_prob_2d_reco.png");
+
   Ratio r(s.Oscillated(&calc, 14, 14), s.Unoscillated());
   Ratio r_reco(s_reco.Oscillated(&calc, 14, 14), s_reco.Unoscillated());
 
+  new TCanvas;
   TH1* h = r.ToTH1();
   h->GetYaxis()->SetRangeUser(.99, 1);
   h->GetYaxis()->SetTitle("Ratio to unoscillated");
