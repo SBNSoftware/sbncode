@@ -1,4 +1,4 @@
-#include "CAFAna/Cuts/NumuCuts.h"
+#include "SBNAna/Cuts/TruthCuts.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
