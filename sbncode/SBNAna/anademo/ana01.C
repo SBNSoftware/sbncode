@@ -15,8 +15,7 @@ void ana01()
 {
   // Environment variables and wildcards work as arguments to
   // SpectrumLoader. As do SAM datasets.
-  const std::string fname = "/sbnd/app/users/psihas/ExampleFiles/CAFs/prodgenie_bnb_nu_cosmic_sbnd_20191128_reco.caf.root";
-
+  const std::string fname = "larout.caf.root";
   // Source of events
   SpectrumLoader loader(fname);
 
