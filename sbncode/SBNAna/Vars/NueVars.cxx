@@ -21,7 +21,14 @@ namespace ana
   const Var kRecoShower_ConversionGap(
 			[](const caf::SRProxy *sr)
 			{
-			  return 2.0;
+				double gap = -5.0;
+				if ( sr->reco.nshw ){
+					double x = sr->slc.vertex.x - sr->reco.shw[0].start.x;
+					double y = sr->slc.vertex.y - sr->reco.shw[0].start.y;
+					double z = sr->slc.vertex.z - sr->reco.shw[0].start.z;
+					gap  = sqrt(x*x + y*y + z*z);	
+				}
+			  return gap;
 			});
 
   const Var kRecoShower_Density(
@@ -64,5 +71,35 @@ namespace ana
 			  return openangle;
 			});
 
+
+    const Var kRecoShower_StartX(
+			[](const caf::SRProxy *sr)
+			{
+			  double vtx = -5.0;
+			  if ( sr->reco.nshw ){
+			    vtx = sr->reco.shw[0].start.x;
+			  }
+			  return vtx;
+			});
+
+    const Var kRecoShower_StartY(
+			[](const caf::SRProxy *sr)
+			{
+			  double vtx = -5.0;
+			  if ( sr->reco.nshw ){
+			    vtx = sr->reco.shw[0].start.y;
+			  }
+			  return vtx;
+			});
+
+    const Var kRecoShower_StartZ(
+			[](const caf::SRProxy *sr)
+			{
+			  double vtx = -5.0;
+			  if ( sr->reco.nshw ){
+			    vtx = sr->reco.shw[0].start.z;
+			  }
+			  return vtx;
+			});
 
 }
