@@ -44,6 +44,9 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
+#include "larcorealg/GeoAlgo/GeoAlgo.h"
+
+
 
 // #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
@@ -73,6 +76,8 @@ void True2RecoMappingXYZ(float t, float x, float y, float z, float out[3]);
 float YZtoPlanecoordinate(const float y, const float z, const int plane);
 float distance3d(const float& x1, const float& y1, const float& z1,
                   const float& x2, const float& y2, const float& z2);
+float ContainedLength(const TVector3 &v0, const TVector3 &v1,
+                      const std::vector<geoalgo::AABox> &boxes);
 
 class CalorimetryAnalysis : public art::EDAnalyzer
 {
@@ -115,8 +120,10 @@ private:
 
   // function that given a track and its calo info fills NTuple variables
   void FillCalorimetry(art::Event const &e,
+            const std::vector<art::Ptr<recob::Hit>> &allHits,
             const art::Ptr<recob::PFParticle> &pfp,
             const art::Ptr<recob::Track> &trk,
+            const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints,
             const std::vector<art::Ptr<anab::Calorimetry>> &calos,
             const std::vector<art::Ptr<anab::ParticleID>> &pid,
             const std::vector<art::Ptr<recob::Cluster>> &clusters,
@@ -128,7 +135,8 @@ private:
             const bool fShrFit,
             const std::vector<std::pair<int, float>> &particleMatches,
             const art::Ptr<simb::MCParticle> &trueParticle,
-            const std::vector<const sim::IDE*> &trueParticleIDEs,
+            const std::array<std::vector<const sim::IDE*>,3> &trueParticleIDEs,
+            const std::array<std::vector<const sim::IDE*>,3> &allIDEs,
             const std::vector<geo::BoxBoundedGeo> &activeVolumes);
 
 
@@ -158,9 +166,18 @@ private:
   // backtracking information
   int _backtracked_pdg;            // PDG code of backtracked particle
   float _backtracked_e;            // energy of backtracked particle
+  float _backtracked_deposited_e_u;            // energy of backtracked particle
+  float _backtracked_deposited_e_v;            // energy of backtracked particle
+  float _backtracked_deposited_e_y;            // energy of backtracked particle
   float _backtracked_purity;       // purity of backtracking
   float _backtracked_completeness; // completeness of backtracking
   float _backtracked_overlay_purity; // purity of overlay
+  float _backtracked_q_u;
+  float _backtracked_q_v;
+  float _backtracked_q_y;
+  float _backtracked_qtotal_u;
+  float _backtracked_qtotal_v;
+  float _backtracked_qtotal_y;
 
   float _backtracked_px;
   float _backtracked_py;
@@ -180,12 +197,18 @@ private:
   float _backtracked_sce_start_V;
   float _backtracked_sce_start_Y;
 
+  float _backtracked_length;
+  float _backtracked_length_start_to_end;
+
   bool _backtracked_process_is_stopping;
   bool _backtracked_end_in_tpc;
 
   uint _generation;    // generation, 1 is primary
   uint _shr_daughters; // number of shower daughters
   uint _trk_daughters; // number of track daughters
+  uint _daughters;
+
+  int _bestplane;
 
   // track information
   int _nplanehits_U;
@@ -253,6 +276,20 @@ private:
 
   int _longest; // longest track in slice?
 
+  std::vector<float> _allhit_charge_u;
+  std::vector<float> _allhit_charge_v;
+  std::vector<float> _allhit_charge_y;
+  std::vector<float> _backtracked_allhit_charge_u;
+  std::vector<float> _backtracked_allhit_charge_v;
+  std::vector<float> _backtracked_allhit_charge_y;
+
+  std::vector<float> _trkhit_charge_u;
+  std::vector<float> _trkhit_charge_v;
+  std::vector<float> _trkhit_charge_y;
+  std::vector<float> _backtracked_trkhit_charge_u;
+  std::vector<float> _backtracked_trkhit_charge_v;
+  std::vector<float> _backtracked_trkhit_charge_y;
+
   // dedx vector
   std::vector<float> _dqdx_u;
   std::vector<float> _dqdx_v;
@@ -269,6 +306,10 @@ private:
   std::vector<float> _pitch_u;
   std::vector<float> _pitch_v;
   std::vector<float> _pitch_y;
+
+  std::vector<float> _sx;
+  std::vector<float> _sy;
+  std::vector<float> _sz;
 
   std::vector<float> _x_u;
   std::vector<float> _x_v;
@@ -370,6 +411,11 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   //larpandora.CollectPFParticles(e, "pandora", pfparticles);
   //larpandora.BuildPFParticleMap(pfparticles, particleMap);
 
+  // recob Hits
+  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>("gaushit");
+  std::vector<art::Ptr<recob::Hit>> hitList;
+  art::fill_ptr_vector(hitList, hitHandle);
+
   // true particles
   art::ValidHandle<std::vector<simb::MCParticle>> particleHandle = e.getValidHandle<std::vector<simb::MCParticle>>("largeant");
   std::vector<art::Ptr<simb::MCParticle>> particleList;
@@ -380,6 +426,8 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   art::fill_ptr_vector(PFParticleList, pfparticles);
 
   art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTRKproducer); 
+
+  art::FindManyP<recob::SpacePoint> fmSpacePoint(PFParticleList, e, fPFPproducer);
 
   art::FindManyP<recob::Track> fmTracks(pfparticles, e, fTRKproducer);
   art::FindManyP<recob::Cluster> fmClusters(pfparticles, e, fPFPproducer);
@@ -407,6 +455,19 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     if (thisTrack.size() != 1)
       continue;
 
+    unsigned parent_ind = pfp.Parent();
+    std::cout << "Parent ind: " << parent_ind << std::endl;
+    if (parent_ind == recob::PFParticle::kPFParticlePrimary || parent_ind >= PFParticleList.size()) {
+      std::cout << "Parent doesn't exist.\n";
+      continue;
+    }
+    // check if parent is the primary
+    const recob::PFParticle &parent = *PFParticleList.at(pfp.Parent());
+    if (!parent.IsPrimary()) {
+      std::cout << "Parent not primary\n";
+      continue;
+    }
+
     const recob::Track &track = *thisTrack.at(0);
 
     // get all the data
@@ -415,6 +476,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     const std::vector<art::Ptr<recob::Cluster>> &clusters = fmClusters.at(pfp.Self());
 
     // track data
+    const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints = fmSpacePoint.at(pfp.Self());
     const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.at(track.ID());
     const std::vector<art::Ptr<anab::ParticleID>> &pid = fmPID.at(track.ID());
     const recob::MCSFitResult &muon_mcs = *fmMuonMCS.at(track.ID()).at(0);
@@ -445,12 +507,32 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     //
     // ignore tracks with no match
     if (!true_particle) continue;
+    // only take particle that matches to true instigator
+    if (true_particle->Process() != "primary") continue;
+
+
+    std::cout << "Track: " << track.ID() << " len: " << track.Length() << " matched to particle: " << true_particle->TrackId() << " frac: " << (matchE/trueTrackE) << std::endl;
 
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-    std::vector<const sim::IDE*> particle_ides(bt_serv->TrackIdToSimIDEs_Ps(true_particle->TrackId()));
+    std::array<std::vector<const sim::IDE*>, 3> particle_ides;
+    for (unsigned plane = 0; plane < 3; plane++) {
+      particle_ides[plane] = bt_serv->TrackIdToSimIDEs_Ps(true_particle->TrackId(), (geo::View_t)plane);
+    }
+
+    std::array<std::vector<const sim::IDE*>, 3> allIDEs;
+    for (unsigned i = 0; i < particleList.size(); i++) {
+      int G4ID = particleList[i]->TrackId();
+      for (unsigned plane = 0; plane < 3; plane++) {
+        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, (geo::View_t)plane);
+        allIDEs[plane].insert(allIDEs[plane].end(), this_ides.begin(), this_ides.end());
+      }
+    }
+
     FillCalorimetry(e,
+          hitList,
           p_pfp,
 	  thisTrack.at(0),
+          spacepoints,
           calo,
           pid,
           clusters,
@@ -463,6 +545,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
           matches,
           true_particle,
           particle_ides,          
+          allIDEs,
           fActiveVolumes);
 
   }// for all PFParticles
@@ -473,12 +556,25 @@ void CalorimetryAnalysis::fillDefault()
   // backtracking information
   _backtracked_pdg = std::numeric_limits<int>::lowest();            // PDG code of backtracked particle
   _backtracked_e = std::numeric_limits<float>::lowest();            // energy of backtracked particle
+  _backtracked_deposited_e_u = std::numeric_limits<float>::lowest();            // energy of backtracked particle
+  _backtracked_deposited_e_v = std::numeric_limits<float>::lowest();            // energy of backtracked particle
+  _backtracked_deposited_e_y = std::numeric_limits<float>::lowest();            // energy of backtracked particle
+  _backtracked_q_u = std::numeric_limits<float>::lowest();
+  _backtracked_q_v = std::numeric_limits<float>::lowest();
+  _backtracked_q_y = std::numeric_limits<float>::lowest();
+  _backtracked_qtotal_u = std::numeric_limits<float>::lowest();
+  _backtracked_qtotal_v = std::numeric_limits<float>::lowest();
+  _backtracked_qtotal_y = std::numeric_limits<float>::lowest();
   _backtracked_purity = std::numeric_limits<float>::lowest();       // purity of backtracking
   _backtracked_completeness = std::numeric_limits<float>::lowest(); // completeness of backtracking
   _backtracked_overlay_purity = std::numeric_limits<float>::lowest(); // purity of overlay
   _backtracked_process_is_stopping = false;
   _backtracked_end_in_tpc = false;
 
+  _bestplane = 0.;
+
+  _backtracked_length = std::numeric_limits<float>::lowest();
+  _backtracked_length_start_to_end = std::numeric_limits<float>::lowest();
   _backtracked_px = std::numeric_limits<float>::lowest();
   _backtracked_py = std::numeric_limits<float>::lowest();
   _backtracked_pz = std::numeric_limits<float>::lowest();
@@ -500,6 +596,7 @@ void CalorimetryAnalysis::fillDefault()
   _generation = std::numeric_limits<uint>::lowest();
   _shr_daughters = std::numeric_limits<uint>::lowest();
   _trk_daughters = std::numeric_limits<uint>::lowest();
+  _daughters = std::numeric_limits<uint>::lowest();
 
   // track information
   _nplanehits_U = std::numeric_limits<int>::lowest();
@@ -566,6 +663,20 @@ void CalorimetryAnalysis::fillDefault()
   _trk_energy_proton = std::numeric_limits<float>::lowest();
   _trk_energy_muon = std::numeric_limits<float>::lowest();
 
+  _trkhit_charge_u.clear();
+  _trkhit_charge_v.clear();
+  _trkhit_charge_y.clear();
+  _backtracked_trkhit_charge_u.clear();
+  _backtracked_trkhit_charge_v.clear();
+  _backtracked_trkhit_charge_y.clear();
+
+  _allhit_charge_u.clear();
+  _allhit_charge_v.clear();
+  _allhit_charge_y.clear();
+  _backtracked_allhit_charge_u.clear();
+  _backtracked_allhit_charge_v.clear();
+  _backtracked_allhit_charge_y.clear();
+
   // dedx vector
   _dqdx_u.clear();
   _dqdx_v.clear();
@@ -582,6 +693,10 @@ void CalorimetryAnalysis::fillDefault()
   _pitch_u.clear();
   _pitch_v.clear();
   _pitch_y.clear();
+
+  _sx.clear();
+  _sy.clear();
+  _sz.clear();
 
   _x_u.clear();
   _x_v.clear();
@@ -616,9 +731,41 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   // backtracking information
   _calo_tree->Branch("backtracked_pdg", &_backtracked_pdg, "backtracked_pdg/I");            // PDG code of backtracked particle
   _calo_tree->Branch("backtracked_e", &_backtracked_e, "backtracked_e/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_deposited_e_u", &_backtracked_deposited_e_u, "backtracked_deposited_e_u/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_deposited_e_v", &_backtracked_deposited_e_v, "backtracked_deposited_e_v/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_deposited_e_y", &_backtracked_deposited_e_y, "backtracked_deposited_e_y/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_q_u", &_backtracked_q_u, "backtracked_q_u/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_q_v", &_backtracked_q_v, "backtracked_q_v/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_q_y", &_backtracked_q_y, "backtracked_q_y/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_qtotal_u", &_backtracked_qtotal_u, "backtracked_qtotal_u/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_qtotal_v", &_backtracked_qtotal_v, "backtracked_qtotal_v/F");            // energy of backtracked particle
+  _calo_tree->Branch("backtracked_qtotal_y", &_backtracked_qtotal_y, "backtracked_qtotal_y/F");            // energy of backtracked particle
+
+  _calo_tree->Branch("backtracked_px", &_backtracked_px, "backtracked_px/F");
+  _calo_tree->Branch("backtracked_py", &_backtracked_py, "backtracked_py/F");
+  _calo_tree->Branch("backtracked_pz", &_backtracked_pz, "backtracked_pz/F");
+
+  _calo_tree->Branch("backtracked_length", &_backtracked_length,"backtracked_length/F");
+  _calo_tree->Branch("backtracked_length_start_to_end", &_backtracked_length_start_to_end, "backtracked_length_start_to_end/F");
+
+  _calo_tree->Branch("bestplane", &_bestplane, "bestplane/I");
   _calo_tree->Branch("backtracked_purity", &_backtracked_purity, "backtracked_purity/F");       // purity of backtracking
   _calo_tree->Branch("backtracked_completeness", &_backtracked_completeness, "backtracked_completeness/F"); // completeness of backtracking
   _calo_tree->Branch("backtracked_overlay_purity", &_backtracked_overlay_purity, "backtracked_overlay_purity/F"); // purity of overlay
+
+  _calo_tree->Branch("allhit_charge_u", "std::vector<float>", &_allhit_charge_u);
+  _calo_tree->Branch("allhit_charge_v", "std::vector<float>", &_allhit_charge_v);
+  _calo_tree->Branch("allhit_charge_y", "std::vector<float>", &_allhit_charge_y);
+  _calo_tree->Branch("backtracked_allhit_charge_u", "std::vector<float>", &_backtracked_allhit_charge_u);
+  _calo_tree->Branch("backtracked_allhit_charge_v", "std::vector<float>", &_backtracked_allhit_charge_v);
+  _calo_tree->Branch("backtracked_allhit_charge_y", "std::vector<float>", &_backtracked_allhit_charge_y);
+
+  _calo_tree->Branch("trkhit_charge_u", "std::vector<float>", &_trkhit_charge_u);
+  _calo_tree->Branch("trkhit_charge_v", "std::vector<float>", &_trkhit_charge_v);
+  _calo_tree->Branch("trkhit_charge_y", "std::vector<float>", &_trkhit_charge_y);
+  _calo_tree->Branch("backtracked_trkhit_charge_u", "std::vector<float>", &_backtracked_trkhit_charge_u);
+  _calo_tree->Branch("backtracked_trkhit_charge_v", "std::vector<float>", &_backtracked_trkhit_charge_v);
+  _calo_tree->Branch("backtracked_trkhit_charge_y", "std::vector<float>", &_backtracked_trkhit_charge_y);
 
   _calo_tree->Branch("backtracked_start_x", &_backtracked_start_x, "backtracked_start_x/F");
   _calo_tree->Branch("backtracked_start_y", &_backtracked_start_y, "backtracked_start_y/F");
@@ -639,6 +786,7 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
 
   _calo_tree->Branch("generation", &_generation, "generation/i");
   _calo_tree->Branch("trk_daughters", &_trk_daughters, "trk_daughters/i");
+  _calo_tree->Branch("daughters", &_daughters, "daughters/i");
   _calo_tree->Branch("shr_daughters", &_shr_daughters, "shr_daughters/i");
 
   // track information
@@ -723,6 +871,10 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("pitch_v", "std::vector<float>", &_pitch_v);
   _calo_tree->Branch("pitch_y", "std::vector<float>", &_pitch_y);
 
+  _calo_tree->Branch("sx", "std::vector<float>", & _sx); 
+  _calo_tree->Branch("sy", "std::vector<float>", & _sy); 
+  _calo_tree->Branch("sz", "std::vector<float>", & _sz); 
+
   _calo_tree->Branch("x_u", "std::vector<float>", &_x_u);
   _calo_tree->Branch("x_v", "std::vector<float>", &_x_v);
   _calo_tree->Branch("x_y", "std::vector<float>", &_x_y);
@@ -754,8 +906,10 @@ void CalorimetryAnalysis::resetTTree(TTree *_tree)
 
 
 void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
+            const std::vector<art::Ptr<recob::Hit>> &allHits,
             const art::Ptr<recob::PFParticle> &pfp,
             const art::Ptr<recob::Track> &trk,
+            const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints,
             const std::vector<art::Ptr<anab::Calorimetry>> &calos,
             const std::vector<art::Ptr<anab::ParticleID>> &pids,
             const std::vector<art::Ptr<recob::Cluster>> &clusters,
@@ -767,11 +921,14 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
             const bool fShrFit,
             const std::vector<std::pair<int, float>> &particleMatches,
             const art::Ptr<simb::MCParticle> &trueParticle,
-            const std::vector<const sim::IDE*> &trueParticleIDEs,
+            const std::array<std::vector<const sim::IDE*>,3> &trueParticleIDEs,
+            const std::array<std::vector<const sim::IDE*>,3> &allIDEs,
             const std::vector<geo::BoxBoundedGeo> &activeVolumes)
             //const std::vector<searchingfornues::BtPart> btparts_v,
             //const std::unique_ptr<art::FindManyP<simb::MCParticle, anab::BackTrackerHitMatchingData>> &assocMCPart)
 {
+
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
   // TODO: variables to set
   _generation = -1;
@@ -780,8 +937,46 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   _trk_score = -1;
   _longest = -1;
 
+  _daughters = pfp->NumDaughters();
 
-  std::vector<art::Ptr<recob::Hit>> allHits;
+  for (unsigned sp_i = 0; sp_i < spacepoints.size(); sp_i++) {
+    _sx.push_back(spacepoints[sp_i]->XYZ()[0]);
+    _sy.push_back(spacepoints[sp_i]->XYZ()[1]);
+    _sz.push_back(spacepoints[sp_i]->XYZ()[2]);
+  }
+
+  _nplanehits_U = 0;
+  _nplanehits_V = 0;
+  _nplanehits_Y = 0;
+
+  for (const auto &hit: allHits) {
+    // in SBND, plane and View are the same
+    if (hit->View() == 0) {
+      _allhit_charge_u.push_back(hit->Integral());
+      std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+      _backtracked_allhit_charge_u.push_back(0);
+      for (auto const &ide: ides) {
+        _backtracked_allhit_charge_u.back() += ide.numElectrons;
+      }
+    }
+    else if (hit->View() == 1) {
+      _allhit_charge_v.push_back(hit->Integral());
+      std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+      _backtracked_allhit_charge_v.push_back(0);
+      for (auto const &ide: ides) {
+        _backtracked_allhit_charge_v.back() += ide.numElectrons;
+      }
+    }
+    else if (hit->View() == 2) {
+      _allhit_charge_y.push_back(hit->Integral());
+      std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+      _backtracked_allhit_charge_y.push_back(0);
+      for (auto const &ide: ides) {
+        _backtracked_allhit_charge_y.back() += ide.numElectrons;
+      }
+    }
+
+  }
 
   for (unsigned cluster_i = 0; cluster_i < clusters.size(); cluster_i++) 
   {
@@ -790,28 +985,47 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     const std::vector<art::Ptr<recob::Hit>> &cluster_hits = fmClustertoHit.at(cluster_i);
     unsigned nhits = cluster_hits.size();
 
-    _nplanehits_U = 0;
-    _nplanehits_V = 0;
-    _nplanehits_Y = 0;
-
     // TODO: does this work in ICARUS???
     if (clus->Plane().Plane == 0)
     {
       _nplanehits_U = nhits;
+      for (const auto &hit : cluster_hits) {
+        _trkhit_charge_u.push_back(hit->Integral());
+        std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+        _backtracked_trkhit_charge_u.push_back(0.);
+        for (auto const &ide: ides) {
+          _backtracked_trkhit_charge_u.back() += ide.numElectrons;
+        }
+      }
     }
-        else if (clus->Plane().Plane == 1)
+    else if (clus->Plane().Plane == 1)
     {
       _nplanehits_V = nhits;
+      for (const auto &hit : cluster_hits) {
+        _trkhit_charge_v.push_back(hit->Integral());
+        std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+        _backtracked_trkhit_charge_v.push_back(0.);
+        for (auto const &ide: ides) {
+          _backtracked_trkhit_charge_v.back() += ide.numElectrons;
+        }
+      }
     }
-        else if (clus->Plane().Plane == 2)
+    else if (clus->Plane().Plane == 2)
     {
       _nplanehits_Y = nhits;
-    }
-    for (const auto &hit : cluster_hits)
-    {
-      allHits.push_back(hit);
+      for (const auto &hit : cluster_hits) {
+        _trkhit_charge_y.push_back(hit->Integral());
+        std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(*hit);
+        _backtracked_trkhit_charge_y.push_back(0.);
+        for (auto const &ide: ides) {
+          _backtracked_trkhit_charge_y.back() += ide.numElectrons;
+        }
+      }
     }
   } // for all clusters associated to PFP
+
+  std::vector<int> plane_hits {_nplanehits_U, _nplanehits_V, _nplanehits_Y};
+  _bestplane = std::distance(plane_hits.begin(), std::max(plane_hits.begin(), plane_hits.end())); 
 
   // store Backtracking
   if (!fData)
@@ -828,12 +1042,48 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_purity = matchE / trueTrackE;
 
     float trueParticleE = 0.;
-    for (auto ide: trueParticleIDEs) trueParticleE += ide->energy;
+    _backtracked_q_u = 0.;
+    _backtracked_q_v = 0.;
+    _backtracked_q_y = 0.;
+    _backtracked_qtotal_u = 0.;
+    _backtracked_qtotal_v = 0.;
+    _backtracked_qtotal_y = 0.;
+    _backtracked_deposited_e_u = 0.;
+    _backtracked_deposited_e_v = 0.;
+    _backtracked_deposited_e_y = 0.;
+
+    for (auto ide: trueParticleIDEs[0]) {
+      trueParticleE += ide->energy;
+      _backtracked_q_u += ide->numElectrons;
+      _backtracked_deposited_e_u += ide->energy;
+    }
+
+    for (auto ide: trueParticleIDEs[1]) {
+      trueParticleE += ide->energy;
+      _backtracked_q_v += ide->numElectrons;
+      _backtracked_deposited_e_v += ide->energy;
+    }
+
+    for (auto ide: trueParticleIDEs[2]) {
+      trueParticleE += ide->energy;
+      _backtracked_q_y += ide->numElectrons;
+      _backtracked_deposited_e_y += ide->energy;
+    }
+
+    for (auto ide: allIDEs[0]) {
+      _backtracked_qtotal_u += ide->numElectrons;
+    }
+    for (auto ide: allIDEs[1]) {
+      _backtracked_qtotal_v += ide->numElectrons;
+    }
+    for (auto ide: allIDEs[2]) {
+      _backtracked_qtotal_y += ide->numElectrons;
+    }
+
     _backtracked_completeness = matchE / trueParticleE;
 
     // TODO: set overlay purity
     
-
     _backtracked_px = trueParticle->Momentum().Px();
     _backtracked_py = trueParticle->Momentum().Py();
     _backtracked_pz = trueParticle->Momentum().Pz();
@@ -868,11 +1118,22 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
                                         trueParticle->EndProcess() == "muMinusCaptureAtRest" ||
                                         trueParticle->EndProcess() == "LArVoxelReadoutScoringProcess");
 
+    std::cout << "PID: " << _backtracked_pdg << " Process: " << trueParticle->EndProcess() << " is stopping: " << _backtracked_process_is_stopping << std::endl;
+
+    std::vector<geoalgo::AABox> aa_volumes;
     _backtracked_end_in_tpc = false;
     for (const geo::BoxBoundedGeo &AV: activeVolumes) {
       if (AV.ContainsPosition(trueParticle->Position().Vect()) && AV.ContainsPosition(trueParticle->EndPosition().Vect())) {
         _backtracked_end_in_tpc = true;
+        aa_volumes.emplace_back(AV.MinX(), AV.MinY(), AV.MinZ(), AV.MaxX(), AV.MaxY(), AV.MaxZ());
+        break;
       }
+    }
+
+    _backtracked_length_start_to_end = (trueParticle->Position().Vect() - trueParticle->EndPosition().Vect()).Mag();
+    _backtracked_length = 0.;
+    for (unsigned i = 1; i < trueParticle->NumberTrajectoryPoints(); i++) {
+      _backtracked_length += ContainedLength(trueParticle->Position(i-1).Vect(), trueParticle->Position(i).Vect(), aa_volumes);
     }
   }
 
@@ -1095,6 +1356,114 @@ void True2RecoMappingXYZ(float t,float x, float y, float z, float out[3]) {
                 (z1-z2)*(z1-z2));
 
   }
+
+float ContainedLength(const TVector3 &v0, const TVector3 &v1,
+                       const std::vector<geoalgo::AABox> &boxes) {
+  static const geoalgo::GeoAlgo algo;
+
+  // if points are the same, return 0
+  if ((v0 - v1).Mag() < 1e-6) return 0;
+
+  // construct individual points
+  geoalgo::Point_t p0(v0);
+  geoalgo::Point_t p1(v1);
+
+  // construct line segment
+  geoalgo::LineSegment line(p0, p1);
+
+  double length = 0;
+
+  // total contained length is sum of lengths in all boxes
+  // assuming they are non-overlapping
+  for (auto const &box: boxes) {
+    int n_contained = box.Contain(p0) + box.Contain(p1);
+    // both points contained -- length is total length (also can break out of loop)
+    if (n_contained == 2) {
+      length = (v1 - v0).Mag();
+      break;
+    }
+    // one contained -- have to find intersection point (which must exist)
+    if (n_contained == 1) {
+      auto intersections = algo.Intersection(line, box);
+      // Because of floating point errors, it can sometimes happen
+      // that there is 1 contained point but no "Intersections"
+      // if one of the points is right on the edge
+      if (intersections.size() == 0) {
+        // determine which point is on the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        assert(p0_edge || p1_edge);
+        // contained one is on edge -- can treat both as not contained
+        //
+        // In this case, no length
+        if ((p0_edge && box.Contain(p0)) || (box.Contain(p1) && p1_edge))
+          continue;
+        // un-contaned one is on edge -- treat both as contained
+        else if ((p0_edge && box.Contain(p1)) || (box.Contain(p0) && p1_edge)) {
+	  length = (v1 - v0).Mag();
+	  break;
+        }
+        else {
+          assert(false); // bad
+        }
+      }
+      // floating point errors can also falsely cause 2 intersection points
+      //
+      // in this case, one of the intersections must be very close to the 
+      // "contained" point, so the total contained length will be about
+      // the same as the distance between the two intersection points
+      else if (intersections.size() == 2) {
+        length += (intersections.at(0).ToTLorentzVector().Vect() - intersections.at(1).ToTLorentzVector().Vect()).Mag();
+        continue;
+      }
+      // "Correct"/ideal case -- 1 intersection point
+      else if (intersections.size() == 1) {
+        // get TVector at intersection point
+        TVector3 int_tv(intersections.at(0).ToTLorentzVector().Vect());
+        length += ( box.Contain(p0) ? (v0 - int_tv).Mag() : (v1 - int_tv).Mag() ); 
+      }
+      else assert(false); // bad
+    }
+    // none contained -- either must have zero or two intersections
+    if (n_contained == 0) {
+      auto intersections = algo.Intersection(line, box);
+      if (!(intersections.size() == 0 || intersections.size() == 2)) {
+        // more floating point error fixes...
+        //
+        // figure out which points are near the edge
+        double tol = 1e-5;
+        bool p0_edge = algo.SqDist(p0, box) < tol;
+        bool p1_edge = algo.SqDist(p1, box) < tol;
+        // and which points are near the intersection
+        TVector3 vint = intersections.at(0).ToTLorentzVector().Vect();
+
+        bool p0_int = (v0 - vint).Mag() < tol;
+        bool p1_int = (v1 - vint).Mag() < tol;
+        // exactly one of them should produce the intersection
+        assert((p0_int && p0_edge) != (p1_int && p1_edge));
+        // void variables when assert-ions are turned off
+        (void) p0_int; (void) p1_int;
+
+        // both close to edge -- full length is contained
+        if (p0_edge && p1_edge) {
+          length += (v0 - v1).Mag();
+        }
+        // otherwise -- one of them is not on an edge, no length is contained
+        else {}
+      }
+      // assert(intersections.size() == 0 || intersections.size() == 2);
+      else if (intersections.size() == 2) {
+        TVector3 start(intersections.at(0).ToTLorentzVector().Vect());
+        TVector3 end(intersections.at(1).ToTLorentzVector().Vect());
+        length += (start - end).Mag();
+      }
+    }
+  }
+
+  return length;
+}//ContainedLength
+
 } // namespace analysis
 
 DEFINE_ART_MODULE(analysis::CalorimetryAnalysis)
