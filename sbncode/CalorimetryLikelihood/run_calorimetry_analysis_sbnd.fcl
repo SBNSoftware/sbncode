@@ -6,15 +6,19 @@
 #include "detectorproperties_sbnd.fcl"
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
+#include "simulationservices_sbnd.fcl"
 
 #include "flashmatch.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
+#include "calorimetry_sbnd.fcl"
+
 
 process_name: CaloAna
 
 services:
 {
+  @table::sbnd_detsim_services
   TimeTracker: {}
   RandomNumberGenerator: {} #ART native random number generator
   TFileService: { 
@@ -31,6 +35,7 @@ services:
   DetectorPropertiesService: @local::sbnd_detproperties
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+
 }
 
 # services.IFBeam: {}
@@ -62,6 +67,7 @@ physics:
   producers:{
     pandoraTrackMCS: @local::mcs_sbn
     pandoraTrackRange: @local::range_sbn
+    pandoraCaloRE:         @local::sbnd_calomc
   }
 
   analyzers:
@@ -75,10 +81,15 @@ physics:
     }
   }
 
+  #runprod: [ pandoraCaloRE, pandoraTrackMCS, pandoraTrackRange, caloana]
   runprod: [ pandoraTrackMCS, pandoraTrackRange, caloana]
   stream1:       [ ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 }
+
+physics.producers.pandoraCaloRE.SpacePointModuleLabel: pandora
+physics.producers.pandoraCaloRE.TrackModuleLabel: pandoraTrack
+
 
 #include "3drift_services_sbnd.fcl"
