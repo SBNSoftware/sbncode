@@ -79,6 +79,10 @@ namespace caf
       for (unsigned id: primary->Daughters()) {
         srslice.primary.push_back(id);
       }
+      srslice.self = primary->Self();
+    }
+    else {
+      srslice.self = -1;
     }
   }
 
@@ -95,11 +99,11 @@ namespace caf
       auto const &properties = primary_meta->GetPropertiesMap();
       if (properties.count("IsClearCosmic")) {
         assert(!properties.count("IsNeutrino"));
-        srslice.is_clear_cosmic = false;
+        srslice.is_clear_cosmic = true;
       }
       else {
         assert(properties.count("IsNeutrino"));
-        srslice.is_clear_cosmic = true;
+        srslice.is_clear_cosmic = false;
       }
       if (properties.count("NuScore")) {
         srslice.nu_score = properties.at("NuScore"); 
@@ -323,6 +327,8 @@ namespace caf
     for (unsigned id: particle.Daughters()) {
       srtrack.daughters.push_back(id);
     }
+
+    srtrack.parent = particle.Parent();
 
   }
   //......................................................................

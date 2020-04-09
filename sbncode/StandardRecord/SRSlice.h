@@ -54,6 +54,8 @@ namespace caf
       bool is_clear_cosmic; //!< Whether pandora marks the slice as a "clear" cosmic
       float nu_score; //!< Score of how neutrino-like the slice is 
       std::vector<size_t> primary; //!< ID's of primary tracks and showers in slice
+      int                 self;    //!< ID of the particle representing this slice
+
 
 
     };
