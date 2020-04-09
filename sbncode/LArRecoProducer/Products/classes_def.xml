@@ -32,4 +32,11 @@
 
   <class name="art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0>" />
   <class name="art::Wrapper<art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0>>" />
+  <class name="art::Assns<recob::Track, sbn::crt::CRTHit, void>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sbn::crt::CRTHit, void>>" />
+
+  <class name="art::Assns<sbn::crt::CRTHit, recob::Track, anab::T0>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::Track, anab::T0>>" />
+  <class name="art::Assns<sbn::crt::CRTHit, recob::Track, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::Track, void>>" />
 </lcgdict>
