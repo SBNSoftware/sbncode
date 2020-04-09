@@ -42,6 +42,7 @@
   <class name="caf::SRCRTHitMatch" />
 
   <enum name="caf::Det_t" />
+  <enum name="caf::MCType_t" />
   <enum name="caf::Wall_t" />
   <enum name="caf::generator_" />
   <enum name="caf::interaction_mode_" />

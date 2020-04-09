@@ -62,8 +62,20 @@ namespace caf
 
     Atom<string> GenLabel {
       Name("GenLabel"),
-      Comment("Label of gen module."),
+      Comment("Label of neutrino gen module."),
       "generator"
+    };
+
+    Atom<string> CosmicGenLabel {
+      Name("CosmicGenLabel"),
+      Comment("Label of cosmic gen module."),
+      "cosmgen"
+    };
+
+    Atom<string> ParticleGunGenLabel {
+      Name("ParticleGunGenLabel"),
+      Comment("Label of particle gun gen module."),
+      "particlegun"
     };
 
     Atom<string> PFParticleLabel {

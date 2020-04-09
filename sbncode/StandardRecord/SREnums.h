@@ -22,6 +22,16 @@ namespace caf
     kWallBack=6
   };
 
+  /// Which type of MC?
+  enum MCType_t
+  {
+    kMCUnknown=0,
+    kMCParticleGun=1,
+    kMCNeutrino=2,
+    kMCCosmic=3,
+    kMCOverlay=4
+  };
+
   /// Which generator?
   enum generator_
   {

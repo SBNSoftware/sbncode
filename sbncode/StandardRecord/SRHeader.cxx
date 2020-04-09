@@ -19,6 +19,10 @@ namespace caf
   evt(0),
   subevt(0),
   ismc(false),
+  fno(0),
+  ngenevt(0),
+  pot(0.),
+  mctype(caf::kMCUnknown),
   det(std::numeric_limits<Det_t>::signaling_NaN())
   // blind(false),
   {  }

@@ -56,6 +56,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/System/TriggerNamesService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -85,7 +86,12 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
+#include "fhiclcpp/ParameterSetRegistry.h"
+
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+
+#include "canvas/Persistency/Provenance/ProcessConfiguration.h"
+#include "larcoreobj/SummaryData/POTSummary.h"
 
 // StandardRecord
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -122,7 +128,9 @@ class CAFMaker : public art::EDProducer {
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
+  int fFileNumber;
   double fTotalPOT;
+  double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
   // int fCycle;
@@ -257,6 +265,8 @@ CAFMaker::~CAFMaker() {}
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
+  fFileNumber ++;
+
   if (!fFile) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
@@ -287,6 +297,17 @@ void CAFMaker::beginRun(art::Run& r) {
 
 //......................................................................
 void CAFMaker::beginSubRun(art::SubRun& sr) {
+  // get the POT
+  // get POT information
+  art::Handle<sumdata::POTSummary> pot_handle;
+  sr.getByLabel("generator", pot_handle);
+
+  if (pot_handle.isValid()) {
+    fSubRunPOT = pot_handle->totgoodpot;
+    fTotalPOT += fSubRunPOT;
+  }
+  std::cout << "POT: " << fSubRunPOT << std::endl;
+
 
 }
 
@@ -310,7 +331,9 @@ void CAFMaker::InitializeOutfile() {
   StandardRecord* rec = 0;
   fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
+  fFileNumber = -1;
   fTotalPOT = 0;
+  fSubRunPOT = 0;
   fTotalSinglePOT = 0;
   fTotalEvents = 0;
   // fCycle = -5;
@@ -479,6 +502,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fTotalEvents += 1;
 
+  // get all the truth's
+  art::Handle<std::vector<simb::MCTruth>> mctruth_handle;
+  GetByLabelStrict(evt, fParams.GenLabel(), mctruth_handle);
+
+  std::vector<art::Ptr<simb::MCTruth>> mctruths;
+  art::fill_ptr_vector(mctruths, mctruth_handle);
+
+  art::Handle<std::vector<simb::MCTruth>> cosmic_mctruth_handle;
+  evt.getByLabel(fParams.CosmicGenLabel(), cosmic_mctruth_handle);
+
+  art::Handle<std::vector<simb::MCTruth>> pgun_mctruth_handle;
+  evt.getByLabel(fParams.ParticleGunGenLabel(), pgun_mctruth_handle);
+
+  // use the MCTruth to determine the simulation type
+  caf::MCType_t mctype = caf::kMCUnknown;
+  if (mctruth_handle.isValid() && cosmic_mctruth_handle.isValid()) {
+    mctype = caf::kMCOverlay;
+  }
+  else if (mctruth_handle.isValid()) {
+    mctype = caf::kMCNeutrino;
+  }
+  else if (cosmic_mctruth_handle.isValid()) {
+    mctype = caf::kMCCosmic;
+  }
+  else if (pgun_mctruth_handle.isValid()) {
+    mctype = caf::kMCParticleGun;
+  }
+
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, "generator", mcflux_handle);
 
@@ -512,12 +563,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<caf::SRTrueParticle> true_particles;
   art::Handle<std::vector<simb::MCParticle>> mc_particles;
   GetByLabelStrict(evt, fParams.G4Label(), mc_particles);
-
-  art::Handle<std::vector<simb::MCTruth>> mctruth_handle;
-  GetByLabelStrict(evt, fParams.GenLabel(), mctruth_handle);
-
-  std::vector<art::Ptr<simb::MCTruth>> mctruths;
-  art::fill_ptr_vector(mctruths, mctruth_handle);
 
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
@@ -713,6 +758,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.subevt = sliceID;
     rec.hdr.ismc = !fIsRealData;
     rec.hdr.det = fDet;
+
+    rec.hdr.fno = fFileNumber;
+    rec.hdr.pot = fSubRunPOT;
+    rec.hdr.ngenevt = n_gen_evt;
+    rec.hdr.mctype = mctype;
+
     // rec.hdr.cycle = fCycle;
     // rec.hdr.batch = fBatch;
     // rec.hdr.blind = 0;
