@@ -88,7 +88,6 @@ void sbn::PMTFlashTriggerMaker::produce(art::Event& e)
   // don't apply offset in constructor in case time gets overwritten on input file open
   if (fOffsetTriggerTime) {
     float offset = lar::providerFrom<detinfo::DetectorClocksService>()->TriggerTime();
-    std::cout << "OFFSET: " << offset << std::endl;
     window.first += offset;
     window.second += offset;
   }
