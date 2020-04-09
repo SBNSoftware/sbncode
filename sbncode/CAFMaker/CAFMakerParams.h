@@ -150,6 +150,12 @@ namespace caf
       "crtconvhit"
     };
     
+    Atom<string> FlashTrigLabel {
+      Name("FlashTrigLabel"),
+      Comment("Label of bool of passing flash trigger."),
+      "flashtrigfilter"
+    };
+
     Atom<bool> CRTHitUseTS0 {
       Name("CRTHitUseTS0"),
       Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
