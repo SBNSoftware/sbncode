@@ -90,6 +90,10 @@ namespace caf
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos);
+  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs, 
+                           const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                           unsigned truth_ind);
+
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
