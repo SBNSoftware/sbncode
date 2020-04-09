@@ -132,6 +132,17 @@ namespace caf
       "pandoraTrackRange"
     };
 
+    Atom<string> CRTHitLabel {
+      Name("CRTHitLabel"),
+      Comment("Label of sbn CRT hits."),
+      "crtconvhit"
+    };
+    
+    Atom<bool> CRTHitUseTS0 {
+      Name("CRTHitUseTS0"),
+      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
+    };
+
     fhicl::Sequence<float, 3u> CalorimetryConstants {
       Name("CalorimetryConstants"),
       Comment("Constants to convert ADC*tick charge measurement to electrons."

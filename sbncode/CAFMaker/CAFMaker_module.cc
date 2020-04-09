@@ -540,6 +540,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
   }
 
+  std::vector<caf::SRCRTHit> srcrthits;
+
+  // Fill various detector information associated with the event
+  //
+  // Get all of the CRT hits
+  art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
+  GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
+  // fill into event
+  if (crthits_handle.isValid()) {
+    const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
+    for (unsigned i = 0; i < crthits.size(); i++) {
+      srcrthits.emplace_back();
+      FillCRTHit(crthits[i], fParams.CRTHitUseTS0(), srcrthits.back());
+    }
+  }
+
   // collect the TPC slices
   std::vector<std::string> pandora_tag_suffixes;
   fParams.PandoraTagSuffixes(pandora_tag_suffixes);

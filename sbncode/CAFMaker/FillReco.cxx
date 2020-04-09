@@ -17,6 +17,21 @@ namespace caf
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
+  void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  bool use_ts0,
+                  caf::SRCRTHit &srhit,
+                  bool allowEmpty) {
+    srhit.time = (use_ts0 ? hit.ts0_ns : hit.ts1_ns) / 1000.;
+
+    srhit.position.x = hit.x_pos;
+    srhit.position.y = hit.y_pos;
+    srhit.position.z = hit.z_pos;
+    
+    srhit.position_err.x = hit.x_err;
+    srhit.position_err.y = hit.y_err;
+    srhit.position_err.z = hit.z_err;
+  }
+
   //......................................................................
   void FillShowerVars(const recob::Shower& shower, 
                             caf::SRShower &srshower,

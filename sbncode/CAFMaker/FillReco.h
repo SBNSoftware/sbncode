@@ -90,6 +90,10 @@ namespace caf
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos);
+  void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  bool use_ts0,
+                  caf::SRCRTHit &srhit,
+                  bool allowEmpty = false);
 }
 
 #endif
