@@ -36,6 +36,8 @@ namespace caf
     std::vector<SRTrueParticle> true_particles; ///< List of true particles in the spill
     std::vector<SRCRTHit> crt_hits; ///!< List of CRT hits in the event
 
+    bool pass_flashtrig;     ///< Whether this Record passed the Flash Trigger requirement
+
   };
 
 } // end namespace
