@@ -4,5 +4,6 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbncode/LArRecoProducer/Products/FlashTriggerPrimitive.hh"
 #include <vector>
 #include <utility>
