@@ -285,12 +285,12 @@ namespace caf
     }
 
     // Set the plane with the most hits
-    int bestplane = -1;
+    caf::Plane_t bestplane = caf::kUnknown;
     int best_nhit = -1000;
     for (unsigned i = 0; i < 3; i++) {
       if (srtrack.calo[i].nhit > best_nhit) {
         best_nhit = srtrack.calo[i].nhit;
-        bestplane = i;
+        bestplane = (caf::Plane_t)i;
       }
     }
     srtrack.bestplane = bestplane;

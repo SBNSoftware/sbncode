@@ -11,6 +11,14 @@ namespace caf
     kICARUS      ///< Far Detector
   };
 
+  enum Plane_t 
+  {
+    kUnknown=-1,
+    k1stInduction=0,
+    k2ndInduction=1,
+    kCollection=2
+  };
+
   enum Wall_t 
   {
     kWallNone=0,

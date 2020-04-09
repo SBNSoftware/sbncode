@@ -41,6 +41,7 @@
   <class name="std::vector<caf::SRCRTHit>" />
   <class name="caf::SRCRTHitMatch" />
 
+  <enum name="caf::Plane_t" />
   <enum name="caf::Det_t" />
   <enum name="caf::MCType_t" />
   <enum name="caf::Wall_t" />
