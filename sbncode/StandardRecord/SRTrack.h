@@ -11,6 +11,7 @@
 #include "SRTrkMCS.h"
 #include "SRTrkRange.h"
 #include "SRCRTHitMatch.h"
+#include "SRTrackCalo.h"
 
 #include "SRVector3D.h"
 #include <vector>
@@ -30,11 +31,15 @@ namespace caf
       unsigned short npts;         ///< number of points (recob Track.NPoints)
       float          len;          ///< track length [cm]
       float          costh;       ///< Costh of start direction of track
+      float          phi;         ///< Angle of the start direction of the track in the x-y plane
       SRVector3D     start;       ///< Start point of track
       SRVector3D     end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
 
-      SRTrkChi2PID   chi2pid;     ///< larana Chi2 Particle PID
+      std::vector<SRTrkChi2PID> chi2pid; ///< 3-item list of larana Chi2 Particle PID on each plane ordered (1st ind., 2nd ind., coll)
+      std::vector<SRTrackCalo> calo; ///< 3-item list of Calorimetry information on each plane ordered (1st ind., 2nd ind., coll)
+      int            bestplane;   ///< Plane index with the most hits. -1 if no calorimetry
+
       SRTrkMCS       mcsP;
       SRTrkRange     rangeP;
 

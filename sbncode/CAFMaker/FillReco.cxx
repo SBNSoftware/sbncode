@@ -211,35 +211,74 @@ namespace caf
     // get the particle ID's
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
-    srtrack.chi2pid.pid_ndof = 0;
     assert(particleIDs.size() == 0 || particleIDs == 3);
+    if (particleIDs.size() > 0) {
+      srtrack.chi2pid.emplace_back();
+      srtrack.chi2pid.emplace_back();
+      srtrack.chi2pid.emplace_back();
+    }
+
     for (unsigned i = 0; i < particleIDs.size(); i++) { 
       const anab::ParticleID &particle_id = *particleIDs[i];
-      if (particle_id.PlaneID() && geom->SignalType(particle_id.PlaneID()) == geo::kCollection) {
-        srtrack.chi2pid.chi2_muon = particle_id.Chi2Muon();
-        srtrack.chi2pid.chi2_pion = particle_id.Chi2Kaon();
-        srtrack.chi2pid.chi2_kaon = particle_id.Chi2Pion();
-        srtrack.chi2pid.chi2_proton = particle_id.Chi2Proton();
-        srtrack.chi2pid.pid_ndof = particle_id.Ndf();
+      if (particle_id.PlaneID()) {
+        unsigned plane_id  = particle_id.PlaneID().deepestIndex();
+        assert(plane_id < 3);
+        srtrack.chi2pid[plane_id].chi2_muon = particle_id.Chi2Muon();
+        srtrack.chi2pid[plane_id].chi2_pion = particle_id.Chi2Kaon();
+        srtrack.chi2pid[plane_id].chi2_kaon = particle_id.Chi2Pion();
+        srtrack.chi2pid[plane_id].chi2_proton = particle_id.Chi2Proton();
+        srtrack.chi2pid[plane_id].pid_ndof = particle_id.Ndf();
       }
     }
-
-    // bad particle ID -- set chi2 to -1
-    if (srtrack.chi2pid.pid_ndof == 0) {
-      srtrack.chi2pid.chi2_muon = -1;
-      srtrack.chi2pid.chi2_proton = -1;
-      srtrack.chi2pid.chi2_kaon = -1;
-      srtrack.chi2pid.chi2_pion = -1;
-    }
-
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
+                     const std::array<float, 3> &calo_constants,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
-    // TODO: what to do with calorimetry
+    // count up the kinetic energy on each plane --
+    // ignore any charge with a deposition > 1000 MeV/cm
+    // TODO: ignore first and last hit???
+    assert(calos.size() == 0 || calos == 3);
+    if (calos.size() > 0) {
+      srtrack.calo.emplace_back();
+      srtrack.calo.emplace_back();
+      srtrack.calo.emplace_back();
+    }
+
+    for (unsigned i = 0; i < calos.size(); i++) { 
+      const anab::Calorimetry &calo = *calos[i];
+      if (calo.PlaneID()) {
+        unsigned plane_id = calo.PlaneID().deepestIndex();
+        assert(plane_id < 3);
+        const std::vector<float> &dqdx = calo.dQdx();
+        const std::vector<float> &dedx = calo.dEdx();
+        const std::vector<float> &pitch = calo.TrkPitchVec();
+        srtrack.calo[plane_id].charge = 0.;
+        srtrack.calo[plane_id].ke = 0.;
+        srtrack.calo[plane_id].nhit = 0;
+        for (unsigned i = 0; i < dedx.size(); i++) {
+          if (dedx[i] > 1000.) continue;
+
+          srtrack.calo[plane_id].nhit ++;
+          srtrack.calo[plane_id].charge += dqdx[i] * pitch[i] / calo_constants[plane_id]; /* convert ADC*tick to electrons */
+          srtrack.calo[plane_id].ke += dedx[i] * pitch[i];
+        }
+      }
+    }
+
+    // Set the plane with the most hits
+    int bestplane = -1;
+    int best_nhit = -1000;
+    for (unsigned i = 0; i < 3; i++) {
+      if (srtrack.calo[i].nhit > best_nhit) {
+        best_nhit = srtrack.calo[i].nhit;
+        bestplane = i;
+      }
+    }
+    srtrack.bestplane = bestplane;
   }
 
   // TODO: crt matching
@@ -253,6 +292,15 @@ namespace caf
     srtrack.npts = track.CountValidPoints();
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
+    srtrack.phi = track.StartDirection().Phi();
+
+    srtrack.start.x = track.Start().X();
+    srtrack.start.y = track.Start().Y();
+    srtrack.start.z = track.Start().Z();
+
+    srtrack.end.x = track.End().X();
+    srtrack.end.y = track.End().Y();
+    srtrack.end.z = track.End().Z();
 
     srtrack.ID = particle.Self();
 

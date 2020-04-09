@@ -3,6 +3,7 @@
 
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/OptionalTable.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalSequence.h"
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -129,6 +130,13 @@ namespace caf
       Name("TrackRangeLabel"),
       Comment("Base label of track range momentum calculation producer."),
       "pandoraTrackRange"
+    };
+
+    fhicl::Sequence<float, 3u> CalorimetryConstants {
+      Name("CalorimetryConstants"),
+      Comment("Constants to convert ADC*tick charge measurement to electrons."
+              "Ordered 1st Induction, 2nd Induction, Collection."
+              "In units of ADC*tick / electrons")
     };
 
   };

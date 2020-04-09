@@ -16,6 +16,7 @@
   <class name="caf::SRTrack" />
   <class name="caf::SRTrackTruth" />
   <class name="caf::SRTrackTruth::ParticleMatch" />
+  <class name="caf::SRTrackCalo" />
   <class name="caf::SRTrkChi2PID" />
   <class name="caf::SRTrkMCS" />
   <class name="caf::SRTrkRange" />
@@ -26,6 +27,8 @@
   <class name="caf::SRVector3D" />
   <!--<class name="caf::SRLorentzVector" /> -->
 
+  <class name="std::vector<caf::SRTrackCalo>" />
+  <class name="std::vector<caf::SRTrkChi2PID>" />
   <class name="std::vector<caf::SRTrack>" />
   <class name="std::vector<caf::SRVector3D>" />
   <!--<class name="std::vector<caf::SRLorentzVector>" /> -->

@@ -84,6 +84,7 @@ namespace caf
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
+                     const std::array<float, 3> &calo_constants,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

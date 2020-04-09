@@ -777,8 +777,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
         if (fmPID.isValid()) 
           FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
-        if (fmCalo.isValid()) 
-          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        if (fmCalo.isValid())
+          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
         if (fmHit.isValid()) 
           FillTrackTruth(fmHit.at(iPart), rec.reco.trk.back());
         if (fmCRTHit.isValid())
