@@ -15,6 +15,7 @@
 #include "crthitconverter_producer.fcl"
 #include "crthitmatch_producer.fcl"
 #include "calorimetry_icarus.fcl"
+#include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
 
@@ -78,13 +79,16 @@ physics:
 
    pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
    pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
+   flashtrig: @local::pmtflashtrigmaker_icarus
 }
-# filters:{}
+  filters:{
+    flashtrigfilter: @local::pmtflashtrigfilter_icarus
+  }
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ crtconvhit, 
+ runprod: [ flashtrig, flashtrigfilter, crtconvhit, 
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
     pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,

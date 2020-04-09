@@ -485,6 +485,28 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   art::fill_ptr_vector(mcfluxes, mcflux_handle);
 
+  // try to find the result of the Flash trigger if it was run
+  bool pass_flash_trig = false;
+  art::Handle<bool> flashtrig_handle;
+  GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
+
+  if (flashtrig_handle.isValid()) {
+    pass_flash_trig = *flashtrig_handle;
+  }
+
+  // get the number of events generated in the gen stage
+  unsigned n_gen_evt = 0;
+  for (const art::ProcessConfiguration &process: evt.processHistory()) {
+    fhicl::ParameterSet gen_config; 
+    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
+    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type")) {
+      int max_events = gen_config.get<int>("source.maxEvents");
+      std::string module_type = gen_config.get<std::string>("source.module_type");
+      if (module_type == "EmptyEvent") {
+        n_gen_evt += max_events;
+      }
+    }
+  }
 
   // get all of the true particles from G4
   std::vector<caf::SRTrueParticle> true_particles;
@@ -667,6 +689,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
     StandardRecord rec;
+
+    // set the metadata
+
+    // trigger result
+    rec.pass_flashtrig = pass_flash_trig;
 
     // fill up the true particles
     rec.true_particles = true_particles;

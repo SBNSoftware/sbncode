@@ -16,6 +16,7 @@
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "crthitmatch_producer.fcl"
+#include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
 
@@ -77,21 +78,24 @@ physics:
 #  slicer:               @local::standard_slicemergeviews
 #  cosmictrack:          @local::standard_cosmictrack         #reco
 #  windowtrack:          @local::window_cosmictrack           #reco
+   flashtrig: @local::pmtflashtrigmaker_sbnd
    pandoraTrackMCS: @local::mcs_sbn
    pandoraTrackRange: @local::range_sbn
    fmatch: @local::flash_match_sbnd
    crtconvhit: @local::crthitconverter_sbnd
    pandoraTrackCRTHit: @local::crthitmatch_sbnd
 }
-# filters:{}
+  filters:{
+    flashtrigfilter: @local::pmtflashtrigfilter_sbnd
+  }
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, mycafmaker ]
+ runprod: [ flashtrig, flashtrigfilter, crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraTrackCRTHit, mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
-  stream1:       [  ]
+  stream1:       [ ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 
