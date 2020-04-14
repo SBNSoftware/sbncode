@@ -3,6 +3,9 @@
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "RecoUtils/RecoUtils.h"
 
+#include <functional>
+#include <algorithm> 
+
 // helper function declarations
 caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume, 
 			  const TVector3 p0, 
@@ -19,6 +22,11 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
 
+bool FRFillNumuCC(const simb::MCTruth &mctruth, 
+                  const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                  const std::vector<geo::BoxBoundedGeo> &volumes, 
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco);
 
 namespace caf {
 
@@ -254,6 +262,24 @@ namespace caf {
     }
   } //FillTrueG4Particle
 
+  void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
+                    const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                    const std::vector<geo::BoxBoundedGeo> &volumes,
+                    TRandom &rand,
+                    std::vector<caf::SRFakeReco> &srfakereco) {
+    // iterate and fill
+    for (const art::Ptr<simb::MCTruth> mctruth: mctruths) {
+      bool do_fill = false;
+      caf::SRFakeReco this_fakereco;
+      do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, rand, this_fakereco);
+      
+      // TODO: others?
+      // if (!do_fill) ...
+
+      if (do_fill) srfakereco.push_back(this_fakereco);
+    }
+  }
+
 } // end namespace
 
 
@@ -261,7 +287,192 @@ namespace caf {
 
 // helper function definitions
 
+bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
+                    float distance=5.0) {
+  TVector3 nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0).Vect();
+  TVector3 trkStart = track.Start().Position().Vect();
+  return (trkStart - nuVtx).Mag() < distance;
+}
 
+// define global static const PDGTable to be used by helper functions
+static const TDatabasePDG *PDGTable(new TDatabasePDG);
+
+// returns particle mass in MeV
+double PDGMass(int pdg) {
+  // regular particle
+  if (pdg < 1000000000) {
+    TParticlePDG* ple = PDGTable->GetParticle(pdg);
+    if (ple == NULL) return -1;
+    return ple->Mass() * 1000.0;
+  }
+  // ion
+  else {
+    int p = (pdg % 10000000) / 10000;
+    int n = (pdg % 10000) / 10 - p;
+    return (PDGTable->GetParticle(2212)->Mass() * p +
+            PDGTable->GetParticle(2112)->Mass() * n) * 1000.0;
+  }
+}
+
+
+bool FRFillNumuCC(const simb::MCTruth &mctruth, 
+                  const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                  const std::vector<geo::BoxBoundedGeo> &volumes, 
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco) {
+  // Configuration -- TODO: make configurable?
+
+  // Fiducial Volume
+  float xmin = 10.;
+  float xmax = 10.;
+  float ymin = 10.;
+  float ymax = 10.;
+  float zmin = 10.;
+  float zmax = 100.;
+
+  // energy smearing
+  float hadron_smearing = 0.05; 
+  float lepton_contained_smearing = 0.02; 
+  std::function<float (float)> lepton_exiting_smearing = [](float length) {
+    float A = 0.102;
+    float B = 0.000612;
+    return -A * TMath::Log(B * length);
+  };
+
+  // visible energy threshold
+  float hadronic_energy_threshold = 0.021; // GeV
+
+  // length cut
+  float contained_length_cut = 50.; // cm
+  float exiting_length_cut = 100.; // cm
+
+  // first check if neutrino exists
+  if (!mctruth.NeutrinoSet()) return false;
+
+  // then check if fiducial
+  int cryo_index = -1;
+  for (unsigned i = 0; i < volumes.size(); i++) {
+    const geo::BoxBoundedGeo &vol = volumes[i];
+    geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
+    if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+      cryo_index = i;
+      break;
+    }
+  }
+
+  if (cryo_index == -1) return false;
+
+  std::vector<geoalgo::AABox> aa_volumes;
+  const geo::BoxBoundedGeo &v = volumes.at(cryo_index);
+  aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
+
+  // look for CC lepton or a \pi^+/- which can "fake" a numu CC interaction
+
+  int lepton_ind = -1;
+  // CC lepton
+  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+    for (int i = 0; i < (int)mctracks.size(); i++) {
+      if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 13 && mctracks[i]->Process() == "primary") {
+        if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
+          lepton_ind = i;
+        }
+      }
+    }
+  }
+  // NC pion
+  else if (mctruth.GetNeutrino().CCNC() == 1) {
+    for (int i = 0; i < (int)mctracks.size(); i++) {
+      if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 211 && mctracks[i]->Process() == "primary") {
+        if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
+          lepton_ind = i;
+        }
+      }
+    }
+  }
+
+  // no matching track -- no fake reco
+  if (lepton_ind == -1) return false;
+
+  // Now set the "lepton"
+  caf::SRFakeRecoParticle fake_lepton;
+  
+  fake_lepton.pid = 13;
+  fake_lepton.contained = false;  
+  for (const geo::BoxBoundedGeo &vol: volumes) {
+    if (vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect())) {
+      fake_lepton.contained = true;
+    }
+  }
+  fake_lepton.len = ContainedLength(mctracks[lepton_ind]->Start().Position().Vect(), mctracks[lepton_ind]->Start().Position().Vect(), aa_volumes);
+  fake_lepton.costh = mctracks[lepton_ind]->Start().Position().Vect().CosTheta();
+
+  // apply length cut
+  if (fake_lepton.contained && fake_lepton.len < contained_length_cut) return false;
+  if (!fake_lepton.contained && fake_lepton.len < exiting_length_cut) return false;
+
+  // smear the lepton energy
+  float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);
+  float ke = (mctracks[lepton_ind]->Start().E() - PDGMass(mctracks[lepton_ind]->PdgCode())) / 1000. /* MeV -> GeV*/;
+  fake_lepton.ke = rand.Gaus(ke, smearing * ke);
+  fake_lepton.ke = std::max(fake_lepton.ke, 0.f);
+
+  // get the hadronic state
+  std::vector<caf::SRFakeRecoParticle> hadrons;
+  
+  for (int i = 0; i < (int)mctracks.size(); i++) {
+    if (isFromNuVertex(mctruth, *mctracks[i]) // from this interaction
+     && (abs(mctracks[i]->PdgCode()) == 211 || abs(mctracks[i]->PdgCode()) == 321 || abs(mctracks[i]->PdgCode()) == 2212) // hadronic
+     && mctracks[i]->Process() == "primary" // primary
+     && i != lepton_ind // not the fake lepton
+    ) {
+      caf::SRFakeRecoParticle hadron; 
+      hadron.pid = abs(mctracks[i]->PdgCode());
+      hadron.contained = false;
+      for (const geo::BoxBoundedGeo &vol: volumes) {
+        if (vol.ContainsPosition(mctracks[i]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[i]->Start().Position().Vect())) {
+          hadron.contained = true;
+        }
+      }
+      hadron.len = ContainedLength(mctracks[i]->Start().Position().Vect(), mctracks[i]->Start().Position().Vect(), aa_volumes);
+      hadron.costh = mctracks[i]->Start().Position().Vect().CosTheta();
+
+      float ke = (mctracks[i]->Start().E() - PDGMass(mctracks[i]->PdgCode())) / 1000. /* MeV -> GeV*/;
+      if (ke < hadronic_energy_threshold) continue;
+
+      hadron.ke = rand.Gaus(ke, hadron_smearing * ke);
+      hadron.ke = std::max(hadron.ke, 0.f);
+
+      hadrons.push_back(hadron);
+    }
+  }
+
+  // total up the energy to get the reco neutrino energy
+  fakereco.nuE = fake_lepton.ke;   
+  for (const caf::SRFakeRecoParticle &had: hadrons) fakereco.nuE += had.ke;
+  fakereco.nuE += PDGMass(13) / 1000.; // MeV -.> GeV
+
+  // save the particles
+  fakereco.lepton = fake_lepton;
+  fakereco.hadrons = hadrons;
+
+  // other info
+  TVector3 vertex = mctruth.GetNeutrino().Nu().Position().Vect();
+  fakereco.vtx.x = vertex.X(); 
+  fakereco.vtx.y = vertex.Y(); 
+  fakereco.vtx.z = vertex.Z(); 
+
+  // signal 
+  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+    fakereco.wgt = 0.8;
+  }
+  // bkg
+  else {
+    fakereco.wgt = 1.;
+  }
+  fakereco.nhad = fakereco.hadrons.size();
+
+  return true;
+}
 
 caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());

@@ -4,6 +4,9 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 
+#include "TRandom.h"
+#include "TDatabasePDG.h"
+
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -16,7 +19,9 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "lardataobj/MCBase/MCTrack.h"
 
+#include "sbncode/StandardRecord/SRFakeReco.h"
 #include "sbncode/StandardRecord/SRTrueParticle.h"
 #include "sbncode/StandardRecord/SRTruthMatch.h"
 #include "sbncode/StandardRecord/StandardRecord.h"
@@ -49,6 +54,12 @@ namespace caf
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
+
+  void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
+                    const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                    const std::vector<geo::BoxBoundedGeo> &volumes,
+                    TRandom &rand,
+                    std::vector<caf::SRFakeReco> &srfakereco);
 
 }
 

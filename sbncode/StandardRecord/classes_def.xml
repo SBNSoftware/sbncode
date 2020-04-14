@@ -25,8 +25,12 @@
   <class name="caf::SRTrueInteraction" />
   <class name="caf::SRTruthBranch" />
   <class name="caf::SRVector3D" />
+  <class name="caf::SRFakeReco" />
+  <class name="caf::SRFakeRecoParticle" />
   <!--<class name="caf::SRLorentzVector" /> -->
 
+  <class name="std::vector<caf::SRFakeReco>" />
+  <class name="std::vector<caf::SRFakeRecoParticle>" />
   <class name="std::vector<caf::SRTrackCalo>" />
   <class name="std::vector<caf::SRTrkChi2PID>" />
   <class name="std::vector<caf::SRTrack>" />

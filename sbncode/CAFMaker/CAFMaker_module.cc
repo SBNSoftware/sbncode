@@ -47,6 +47,7 @@
 #include "TH1D.h"
 #include "TTree.h"
 #include "TTimeStamp.h"
+#include "TRandomGen.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -57,6 +58,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/System/TriggerNamesService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -149,6 +151,9 @@ class CAFMaker : public art::EDProducer {
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
+  // random number generator for fake reco
+  TRandom *fFakeRecoTRandom;
+
   void InitializeOutfile();
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
@@ -227,6 +232,9 @@ class CAFMaker : public art::EDProducer {
 
   // setup volume definitions
   InitVolumes();
+
+  // setup random number generator
+  fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
 
 }
 
@@ -605,13 +613,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srneutrinos.push_back(SRTrueInteraction());
 
     FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
+
   }
 
-  std::vector<caf::SRCRTHit> srcrthits;
+  // get the MCReco for the fake-reco
+  art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
+  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  std::vector<art::Ptr<sim::MCTrack>> mctracks;
+  art::fill_ptr_vector(mctracks, mctrack_handle);
+
+  std::vector<caf::SRFakeReco> srfakereco;
+  FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
 
   // Fill various detector information associated with the event
   //
   // Get all of the CRT hits
+  std::vector<caf::SRCRTHit> srcrthits;
+
   art::Handle<std::vector<sbn::crt::CRTHit>> crthits_handle;
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
@@ -742,6 +760,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // fill up the true particles
     rec.true_particles = true_particles;
+
+    rec.fake_reco = srfakereco;
 
     //#######################################################
     // Fill slice header.

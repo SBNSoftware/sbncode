@@ -59,6 +59,7 @@ simple_plugin ( CAFMaker module
                ${ROOT_BASIC_LIB_LIST}
 		art_root_io_RootDB
 		hep_concurrency
+		nurandom_RandomUtils_NuRandomService_service
                BASENAME_ONLY
             )
 

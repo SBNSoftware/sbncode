@@ -12,6 +12,7 @@
 #include "SRSlice.h"
 #include "SRSliceRecoBranch.h"
 #include "SRTruthBranch.h"
+#include "SRFakeReco.h"
 
 /// Common Analysis Files
 namespace caf
@@ -33,6 +34,7 @@ namespace caf
     SRSliceRecoBranch reco;   ///< Slice reco branch: tracks, showers, etc.
     SRTruthBranch     mc;     ///< Slice truth branch for matching interaction
 
+    std::vector<SRFakeReco> fake_reco; ///< List of fake-reconstructed slices
     std::vector<SRTrueParticle> true_particles; ///< List of true particles in the spill
     std::vector<SRCRTHit> crt_hits; ///!< List of CRT hits in the event
 
