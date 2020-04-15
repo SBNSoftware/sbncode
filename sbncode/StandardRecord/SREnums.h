@@ -134,7 +134,8 @@ namespace caf
     kG4muBrems,
     kG4hIoni,
     kG4muPairProd,
-    kG4hPairProd
+    kG4hPairProd,
+    kG4LArVoxelReadoutScoringProcess
   };// g4_process_
 
 }

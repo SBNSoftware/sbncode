@@ -367,6 +367,7 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(hIoni)
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
+  MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4primary; // unreachable
