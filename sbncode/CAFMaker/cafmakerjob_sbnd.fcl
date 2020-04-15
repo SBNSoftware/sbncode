@@ -41,6 +41,9 @@ services:
   DetectorPropertiesService: @local::sbnd_detproperties
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+  NuRandomService: {
+    policy: perEvent
+  }
 }
 
 # services.IFBeam: {}

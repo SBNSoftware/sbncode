@@ -40,6 +40,9 @@ services:
   DetectorPropertiesService: @local::icarus_basic_services.DetectorPropertiesService 
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+  NuRandomService: {
+    policy: perEvent
+  }
 }
 
 # services.IFBeam: {}
