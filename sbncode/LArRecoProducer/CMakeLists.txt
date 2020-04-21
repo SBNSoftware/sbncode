@@ -72,6 +72,7 @@ simple_plugin(MCSFitAllPID module
 	sbncode_LArRecoProducer_Products_dict
 	lardataobj_RecoBase_AssnsDicts_dict
 	lardataobj_RecoBase_dict	
+	lardataobj_RecoBase
 )
 
 simple_plugin(RangePAllPID module
@@ -111,6 +112,8 @@ simple_plugin(CRTHitConverter module
 	MF_MessageLogger
 
 	sbncode_LArRecoProducer_Products_dict
+	lardataobj_RecoBase_AssnsDicts_dict
+	lardataobj_RecoBase_dict	
 	sbndcode_CRT_CRTProducts_dict
 	icaruscode_CRTProducts	
 )
@@ -131,6 +134,7 @@ simple_plugin(CRTHitMatch module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
+	lardataobj_RecoBase
 	sbncode_LArRecoProducer_Products_dict
 	sbndcode_CRT_CRTProducts_dict
 	sbndcode_CRTUtils

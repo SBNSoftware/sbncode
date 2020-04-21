@@ -54,6 +54,7 @@ private:
   art::InputTag fTrackLabel;
   int fTSMode;
   float fTimeCorrection;
+  float fMinTrackLength;
 
 };
 
@@ -84,7 +85,8 @@ sbn::CRTHitMatch::CRTHitMatch(fhicl::ParameterSet const& p)
     fCRTHitLabel(p.get<std::string>("CRTHitLabel", "crthit")),
     fTrackLabel(p.get<std::string>("TrackLabel", "pandoraTrack")),
     fTSMode(p.get<int>("Alg.TSMode", 1)),
-    fTimeCorrection(p.get<float>("Alg.TimeCorrection", 0.))
+    fTimeCorrection(p.get<float>("Alg.TimeCorrection", 0.)),
+    fMinTrackLength(p.get<float>("MinTrackLength", 10.))
 {
   produces< art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0> >();
 }
@@ -115,6 +117,8 @@ void sbn::CRTHitMatch::produce(art::Event& e)
   }
 
   for (unsigned i = 0; i < tracks.size(); i++) {
+    if (fMinTrackLength > 0. && tracks[i]->Length() < fMinTrackLength) continue;
+
     std::pair<sbnd::crt::CRTHit, double> hit_pair = fMatchAlg.ClosestCRTHit(*tracks[i], sbnd_crthits, e);
     if (hit_pair.second >= 0) {
       // TODO: fix hacky BS

@@ -46,6 +46,7 @@ private:
 
   trkf::TrajectoryMCSFitter fMCSCalculator;
   art::InputTag fTrackLabel;
+  float fMinTrackLength;
 };
 
 const static std::vector<int> PIDs {13, 211, 321, 2212};
@@ -55,7 +56,8 @@ sbn::MCSFitAllPID::MCSFitAllPID(fhicl::ParameterSet const& p)
   : EDProducer{p},
     // fMCSCalculator(p.get<fhicl::Table<trkf::TrajectoryMCSFitter::Config>>("MCS")),
     fMCSCalculator(p.get<fhicl::ParameterSet>("MCS")),
-    fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack"))
+    fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack")),
+    fMinTrackLength(p.get<float>("MinTrackLength", 10.))
 {
   for (unsigned i = 0; i < names.size(); i++) {
     produces<std::vector<recob::MCSFitResult>>(names[i]);
@@ -78,6 +80,8 @@ void sbn::MCSFitAllPID::produce(art::Event& e)
     std::unique_ptr<art::Assns<recob::Track, recob::MCSFitResult>> assn(new art::Assns<recob::Track, recob::MCSFitResult>);
 
     for (const art::Ptr<recob::Track> track: tracks) {
+      if (fMinTrackLength > 0. && track->Length() < fMinTrackLength) continue;
+
       mcscol->push_back(fMCSCalculator.fitMcs(*track, PIDs[i]));        
       util::CreateAssn(*this, e, *mcscol, track, *assn, names[i]);
     }
