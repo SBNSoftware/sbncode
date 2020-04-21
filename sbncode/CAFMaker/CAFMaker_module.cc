@@ -515,7 +515,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.GenLabel(), mctruth_handle);
 
   std::vector<art::Ptr<simb::MCTruth>> mctruths;
-  art::fill_ptr_vector(mctruths, mctruth_handle);
+  if (mctruth_handle.isValid()) {
+    art::fill_ptr_vector(mctruths, mctruth_handle);
+  }
 
   art::Handle<std::vector<simb::MCTruth>> cosmic_mctruth_handle;
   evt.getByLabel(fParams.CosmicGenLabel(), cosmic_mctruth_handle);
@@ -542,7 +544,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, "generator", mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
-  art::fill_ptr_vector(mcfluxes, mcflux_handle);
+  if (mcflux_handle.isValid()) {
+    art::fill_ptr_vector(mcfluxes, mcflux_handle);
+  }
 
   // try to find the result of the Flash trigger if it was run
   bool pass_flash_trig = false;
@@ -620,7 +624,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
   GetByLabelStrict(evt, "mcreco", mctrack_handle);
   std::vector<art::Ptr<sim::MCTrack>> mctracks;
-  art::fill_ptr_vector(mctracks, mctrack_handle);
+  if (mctrack_handle.isValid()) {
+    art::fill_ptr_vector(mctracks, mctrack_handle);
+  }
 
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
@@ -652,9 +658,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // Get a handle on the slices
     art::Handle<std::vector<recob::Slice>> thisSlices;
     GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
-    art::fill_ptr_vector(slices, thisSlices);
-    for (unsigned i = 0; i < thisSlices->size(); i++) {
-      slice_tag_suffixes.push_back(pandora_tag_suffix);     
+    if (thisSlices.isValid()) {
+      art::fill_ptr_vector(slices, thisSlices);
+      for (unsigned i = 0; i < thisSlices->size(); i++) {
+        slice_tag_suffixes.push_back(pandora_tag_suffix);     
+      }
     }
   }
 
