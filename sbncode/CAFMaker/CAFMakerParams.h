@@ -161,6 +161,12 @@ namespace caf
       Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
     };
 
+    Atom<string> SimChannelLabel {
+      Name("SimChannelLabel"),
+      Comment("Label of input sim::SimChannel objects."),
+      "largeant"
+    };
+
     fhicl::Sequence<float, 3u> CalorimetryConstants {
       Name("CalorimetryConstants"),
       Comment("Constants to convert ADC*tick charge measurement to electrons."

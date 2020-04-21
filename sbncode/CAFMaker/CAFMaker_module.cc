@@ -540,6 +540,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     mctype = caf::kMCParticleGun;
   }
 
+  // prepare map of track ID's to energy depositions
+  art::Handle<std::vector<sim::SimChannel>> simchannel_handle;
+  GetByLabelStrict(evt, fParams.SimChannelLabel(), simchannel_handle);
+
+  std::vector<art::Ptr<sim::SimChannel>> simchannels;
+  if (simchannel_handle.isValid()) {
+    art::fill_ptr_vector(simchannels, simchannel_handle);
+  }
+
+  std::map<int, std::vector<const sim::IDE*>> id_to_ide_map = PrepSimChannels(simchannels);
+
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, "generator", mcflux_handle);
 
@@ -585,6 +596,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FillTrueG4Particle(part, 
                          fActiveVolumes,
                          fTPCVolumes,
+                         id_to_ide_map,
                          *bt_serv.get(),
                          *pi_serv.get(),
                          mctruths,

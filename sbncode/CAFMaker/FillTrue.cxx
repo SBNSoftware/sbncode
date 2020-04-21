@@ -114,12 +114,14 @@ namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle, 
 			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
 			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+                          const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
 			  const cheat::BackTrackerService &backtracker,
 			  const cheat::ParticleInventoryService &inventory_service,
 			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
-    std::vector<const sim::IDE*> particle_ides(backtracker.TrackIdToSimIDEs_Ps(particle.TrackId()));
+    std::vector<const sim::IDE*> empty;
+    const std::vector<const sim::IDE*> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
 
     srparticle.length = 0.;
     srparticle.crosses_tpc = false;
@@ -278,6 +280,19 @@ namespace caf {
 
       if (do_fill) srfakereco.push_back(this_fakereco);
     }
+  }
+
+  std::map<int, std::vector<const sim::IDE*>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels) {
+    std::map<int, std::vector<const sim::IDE*>> ret;
+    for (const art::Ptr<sim::SimChannel> sc : simchannels) {
+      for (const auto &item : sc->TDCIDEMap()) {
+        for (const sim::IDE &ide: item.second) {
+          // indexing initializes empty vector
+          ret[abs(ide.trackID)].push_back(&ide);
+        }
+      }
+    }
+    return ret;
   }
 
 } // end namespace

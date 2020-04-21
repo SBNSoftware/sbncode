@@ -40,6 +40,7 @@ namespace caf
   void FillTrueG4Particle(const simb::MCParticle &mcparticle, 
 			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
 			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+                          const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
 			  const cheat::BackTrackerService &backtracker,
 			  const cheat::ParticleInventoryService &inventory_service,
 			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -60,6 +61,8 @@ namespace caf
                     const std::vector<geo::BoxBoundedGeo> &volumes,
                     TRandom &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
+
+  std::map<int, std::vector<const sim::IDE*>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels);
 
 }
 
