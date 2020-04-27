@@ -16,6 +16,7 @@ namespace ana
                           double best_len   = -5.0;			  
 			  for( unsigned int trkIdx = 0; trkIdx < sr->reco.ntrk; trkIdx++ ){
 			    auto &trk = sr->reco.trk[trkIdx];
+			    if( (int)trk.chi2pid.size() < 1 ) return -5.0;
 			    
 			    //Find longest trk w/Chi2 for muon < Chi2 for pion
 			    bool isMuonLike = trk.chi2pid[2].chi2_pion > trk.chi2pid[2].chi2_muon;
