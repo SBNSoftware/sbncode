@@ -8,6 +8,8 @@
 
 #include "gallery/Event.h"
 
+#include "larcorealg/Geometry/AuxDetChannelMapAlg.h"
+
 namespace geo {
   class GeometryCore;
   class AuxDetGeometryCore;

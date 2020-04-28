@@ -1,7 +1,7 @@
 #!/bin/env python
 
 # Welcome banner
-print '** Common Analysis Format Executor -- SBN edition **'
+print('** Common Analysis Format Executor -- SBN edition **')
 
 import os, sys
 import argparse
@@ -123,15 +123,15 @@ if __name__ == '__main__':
 
     if opts['stride']:
         if opts['stride'] <= 0:
-            print 'Illegal value for --stride:', opts['stride']
+            print('Illegal value for --stride:', opts['stride'])
             sys.exit(1)
         os.environ['CAFANA_STRIDE'] = str(opts['stride'])
     if opts['offset']:
         if not opts['stride']:
-            print 'Cannot specify --offset without --stride'
+            print('Cannot specify --offset without --stride')
         if opts['offset'] < 0 or opts['offset'] >= opts['stride']:
-            print 'Illegal value for --offset:', opts['offset']
-            print 'With --stride', opts['stride'], 'legal values are 0 to', opts['stride']-1
+            print('Illegal value for --offset:', opts['offset'])
+            print('With --stride', opts['stride'], 'legal values are 0 to', opts['stride']-1)
             sys.exit(1)
         os.environ['CAFANA_OFFSET'] = str(opts['offset'])
 
@@ -156,6 +156,6 @@ if __name__ == '__main__':
 
 
     # Show the user what we're doing in case we got it wrong
-    print exe, ' '.join(rootargs)
+    print(exe, ' '.join(rootargs))
     # Replace the whole process
     os.execvp(exe, [exe]+rootargs)

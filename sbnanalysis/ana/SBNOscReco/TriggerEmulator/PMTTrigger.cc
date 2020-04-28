@@ -10,7 +10,7 @@ std::vector<numu::FlashTriggerPrimitive> numu::TriggerPrimitives(const std::vect
   opdet::sbndPDMapAlg mapalg;
   for (const raw::OpDetWaveform &wvf: waveforms) {
     // check if this is a PMT
-    bool is_pmt = (!is_sbnd) || mapalg.pdType(wvf.ChannelNumber(), "pmt");
+    bool is_pmt = (!is_sbnd) || mapalg.isPDType(wvf.ChannelNumber(), "pmt");
 
     if (!is_pmt) continue;
 

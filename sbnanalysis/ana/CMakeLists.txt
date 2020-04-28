@@ -24,6 +24,7 @@ include_directories( $ENV{MESSAGEFACILITY_INC} )
 include_directories( $ENV{BOOST_INC} ) 
 include_directories( $ENV{LARSIM_INC} )
 include_directories( $ENV{LARRECO_INC} )
+include_directories( $ENV{ART_ROOT_IO_INC} )
 
 link_directories(
   $ENV{MESSAGEFACILITY_LIB}
@@ -51,6 +52,7 @@ link_directories(
   $ENV{LARCORE_LIB}
   $ENV{LARRECO_LIB}
   $ENV{BOOST_LIB}
+  $ENV{ART_ROOT_IO_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 

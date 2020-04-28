@@ -43,15 +43,15 @@ namespace opdet{
 	for(unsigned int i=0;i<wvf.size();i++){
 	  wvfHist->SetBinContent(i,wvf[i]);
 	}
-	subtractBaseline(wvfHist, map.pdName(fChNumber), rms);
-	if((map.pdName(fChNumber)=="pmt") || (map.pdName(fChNumber)== "barepmt")){
+	subtractBaseline(wvfHist, map.pdType(fChNumber), rms);
+	if((map.pdType(fChNumber)=="pmt") || (map.pdType(fChNumber)== "barepmt")){
 	}else{
 	  if(fUseDenoising==1) denoise(wvfHist);    
 	}
         int i=1;
-        while(findPeak(wvfHist,timebin,Area,rms,amplitude,map.pdName(fChNumber))){
+        while(findPeak(wvfHist,timebin,Area,rms,amplitude,map.pdType(fChNumber))){
           time = wvf.TimeStamp() + (double)timebin/fSampling;
-	  if(map.pdName(fChNumber)=="pmt" || map.pdName(fChNumber) == "barepmt"){
+	  if(map.pdType(fChNumber)=="pmt" || map.pdType(fChNumber) == "barepmt"){
 	    phelec=Area/fArea1pePMT;
         //    std::cout << 0 << " " << time << " " << Area << " " << phelec << std::endl;
 	  }else{
