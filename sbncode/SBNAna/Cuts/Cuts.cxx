@@ -17,8 +17,8 @@ std::map<std::string,double> avnd =
 	{"xmin",1.5},
 	{"xmax", 175.},
 	{"ymin", -175.},
-	{"zmin", 30.},
 	{"ymax", 175.},
+	{"zmin", 30.},
 	{"zmax", 450.}
 };
 
