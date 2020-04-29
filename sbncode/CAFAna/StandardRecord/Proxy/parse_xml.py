@@ -20,7 +20,7 @@ fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
                      'long', 'long unsigned int',
                      'long long int', 'char', 'unsigned char',
-                     'size_t', # 'TVector3',
+                     'size_t',
                      'std::string']
 
 def type_to_proxy_type(type):
@@ -254,8 +254,6 @@ print('#include <vector>')
 print()
 print('#include "RtypesCore.h"')
 print()
-print('class TVector3;')
-print()
 print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
@@ -275,9 +273,6 @@ template<class T, class U> void CheckEquals(const VectorProxy<T>& x,
 template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
                                                    const T* y);
-
-// class TVector3Proxy;
-// void CheckEquals(const TVector3Proxy& x, const TVector3& y);
 ''')
 print('} // namespace')
 
@@ -354,13 +349,6 @@ template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
 {
   for(unsigned int i = 0; i < N; ++i) CheckEquals(x[i], y[i]);
 }
-
-// void CheckEquals(const TVector3Proxy& x, const TVector3& y)
-// {
-//   CheckEquals(x.x, y.X());
-//   CheckEquals(x.y, y.Y());
-//   CheckEquals(x.z, y.Z());
-// }
 ''')
 print()
 print('} // namespace')
@@ -374,8 +362,6 @@ print()
 print('#include <vector>')
 print()
 print('#include "RtypesCore.h"')
-print()
-print('class TVector3;')
 print()
 print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
@@ -396,9 +382,6 @@ template<class T, class U> void CopyRecord(const std::vector<U>& from,
 template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CopyRecord(const T* from,
                                                   ArrayProxy<T, N>& to);
-
-// class TVector3Proxy;
-// void CopyRecord(const TVector3& from, TVector3Proxy& to);
 ''')
 print('} // namespace')
 
@@ -449,13 +432,6 @@ template<class T, unsigned int N> void CopyRecord(const T* from,
 {
   for(unsigned int i = 0; i < N; ++i) CopyRecord(from[i], to[i]);
 }
-
-// void CopyRecord(const TVector3& from, TVector3Proxy& to)
-// {
-//   to.x = from.X();
-//   to.y = from.Y();
-//   to.z = from.Z();
-// }
 ''')
 
 
