@@ -231,10 +231,12 @@ namespace caf
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
     assert(particleIDs.size() == 0 || particleIDs == 3);
+    srtrack.nchi2pid = 0;
     if (particleIDs.size() > 0) {
       srtrack.chi2pid.emplace_back();
       srtrack.chi2pid.emplace_back();
       srtrack.chi2pid.emplace_back();
+      srtrack.nchi2pid = 3;
     }
 
     for (unsigned i = 0; i < particleIDs.size(); i++) { 
@@ -261,10 +263,12 @@ namespace caf
     // ignore any charge with a deposition > 1000 MeV/cm
     // TODO: ignore first and last hit???
     assert(calos.size() == 0 || calos == 3);
+    srtrack.ncalo = 0;
     if (calos.size() > 0) {
       srtrack.calo.emplace_back();
       srtrack.calo.emplace_back();
       srtrack.calo.emplace_back();
+      srtrack.ncalo = 3;
     }
 
     for (unsigned i = 0; i < calos.size(); i++) { 
