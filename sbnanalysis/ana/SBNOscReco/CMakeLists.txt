@@ -9,6 +9,9 @@ include_directories($ENV{LARCOREALG_INC})
 include_directories($ENV{LARSIM_INC})
 include_directories($ENV{NUG4_INC})
 
+set(CMAKE_INSTALL_LIBDIR lib)
+set(CMAKE_CURRENT_LIST_DIR cmake)
+
 # build sub-dirs
 add_subdirectory(Data)
 add_subdirectory(NumuReco)
@@ -24,3 +27,4 @@ add_subdirectory(TriggerEmulator)
 add_subdirectory(uScript)
 add_subdirectory(fcl)
 add_subdirectory(files)
+add_subdirectory(xgboost)
