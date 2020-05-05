@@ -129,6 +129,7 @@ protected:
 
     std::string RecoSliceTag;
     std::string RecoTrackTag; //!< art tag for reconstructed tracks
+    std::string RecoShowerTag;
     std::string RecoVertexTag; //!< art tag for reconstructed vertices
     std::vector<std::string> TPCRecoTagSuffixes;
     std::string CaloTag;
@@ -197,7 +198,7 @@ protected:
  * \param slice The neutrino slice gathered from pandora information
  * \return Boolean which is true if the slice is a neutrino interaction
  */
-  bool SelectSlice(const numu::RecoSlice &slice);
+  bool SelectSlice(const numu::RecoSlice &slice, const std::map<size_t, numu::RecoTrack> &tracks);
 
   /**
  * Gathers a map of track ID's to RecoTrack objects. This ID may not be the same as
@@ -366,9 +367,11 @@ protected:
   std::vector<art::Ptr<recob::PFParticle>> _tpc_tracks_to_particles;
   std::vector<unsigned> _tpc_tracks_to_particle_index;
   std::map<unsigned, unsigned> _tpc_particles_to_track_index;
+  std::map<unsigned, unsigned> _tpc_particles_to_shower_index;
   std::vector<std::vector<art::Ptr<anab::Calorimetry>>> _tpc_tracks_to_calo;
   std::vector<std::vector<art::Ptr<anab::ParticleID>>> _tpc_tracks_to_pid;
   std::vector<std::vector<art::Ptr<recob::Hit>>> _tpc_tracks_to_hits;
+  std::vector<std::vector<art::Ptr<recob::Hit>>>  _tpc_slices_to_hits;
   std::vector<std::vector<art::Ptr<anab::T0>>> _tpc_particles_to_T0;
   std::vector<std::vector<art::Ptr<recob::Vertex>>> _tpc_particles_to_vertex;
   std::vector<std::vector<unsigned>> _tpc_particles_to_daughters;

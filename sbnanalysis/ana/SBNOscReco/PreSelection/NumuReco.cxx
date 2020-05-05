@@ -20,6 +20,7 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/Shower.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -63,6 +64,54 @@ namespace ana {
   namespace SBNOsc {
 
 const static TVector3 InvalidTVector3 = TVector3(-999, -999, -999);
+
+numu::CaloEnergy TrackCalo2Energy(const std::vector<art::Ptr<anab::Calorimetry>> &calos, const std::vector<art::Ptr<recob::Hit>> &hits, const geo::GeometryCore *geo) {
+  numu::CaloEnergy ret;
+
+  std::map<geo::View_t, unsigned> nhits;
+  for (const art::Ptr<recob::Hit> &h: hits) {
+    if (!nhits.count(h->View())) {
+      nhits[h->View()] = 1;
+    }
+    else {
+      nhits[h->View()] ++;
+    }
+  }
+
+  geo::View_t best = std::max_element(nhits.begin(), nhits.end(), [](auto const &lhs, auto const &rhs) { return lhs.second < lhs.first; })->first;
+
+  ret.best_plane = -1;
+  ret.best_nhit = -1;
+  ret.coll_plane = -1;
+  ret.coll_nhit = -1;
+  for (const art::Ptr<anab::Calorimetry> &c: calos) {
+    if (!c->PlaneID()) continue;
+    if (geo->View(c->PlaneID()) == best) {
+      ret.best_plane = c->KineticEnergy();
+      ret.best_nhit = nhits.at(geo->View(c->PlaneID()));
+    } 
+    if (geo->SignalType(c->PlaneID()) == geo::kCollection) {
+      ret.coll_plane = c->KineticEnergy();
+      ret.coll_nhit = nhits.at(geo->View(c->PlaneID()));
+    }
+  }
+  return ret;
+}
+
+numu::CaloEnergy Shower2Energy(const recob::Shower &shower, const std::vector<art::Ptr<recob::Hit>> &hits) {
+  numu::CaloEnergy ret;
+
+  ret.best_plane = shower.Energy()[shower.best_plane()];
+  ret.coll_plane = shower.Energy()[2];  
+  ret.best_nhit = 0;
+  ret.coll_nhit = 0;
+
+  for (const art::Ptr<recob::Hit> &h: hits) {
+    if (h->View() == 2) ret.coll_nhit ++;
+    if (h->View() == shower.best_plane()) ret.best_nhit ++;
+  }
+  return ret;
+}
 
 numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
 #define MATCH_PROCESS(name) if (process_name == #name) {return numu::name;}
@@ -126,6 +175,8 @@ numu::G4ProcessID GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(hIoni)
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
+  MATCH_PROCESS(hBrems)
+  MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return numu::primary; // unreachable
@@ -293,6 +344,7 @@ void NumuReco::Initialize(fhicl::ParameterSet* config) {
 
     // get tag names
     _config.RecoTrackTag = config->get<std::string>("RecoTrackTag", "pandoraTrack");
+    _config.RecoShowerTag = config->get<std::string>("RecoShowerTag", "pandoraShower");
     _config.RecoSliceTag = config->get<std::string>("RecoSliceTag", "pandora");
     _config.RecoVertexTag = config->get<std::string>("RecoVertexTag", "pandora");
     _config.PFParticleTag = config->get<std::string>("PFParticleTag", "pandora");
@@ -607,6 +659,11 @@ numu::TrueParticle NumuReco::MCParticleInfo(const simb::MCParticle &particle) {
 
   ret.ID = particle.TrackId();
 
+  // set the daughters
+  for (unsigned i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
+    ret.daughters.push_back(particle.Daughter(i_d));
+  }
+
   // See if this MCParticle matches a genie truth
   ret.interaction_id = -1;
 
@@ -734,6 +791,9 @@ std::map<size_t, numu::RecoTrack> NumuReco::RecoTrackInfo() {
 
     // get the associated PID and Calo
     assert(_tpc_tracks_to_pid.at(pfp_track_index).size() == 3); //one per plane
+
+    // track calorimetric energy
+    this_track.calo_energy = TrackCalo2Energy(_tpc_tracks_to_calo.at(pfp_track_index), _tpc_tracks_to_hits.at(pfp_track_index), fProviderManager->GetGeometryProvider());
     
     // sum up all the pid scores weighted by n dof
     double chi2_proton = 0.;
@@ -898,8 +958,19 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
 
     // get its daughters in the partcle "flow"
     this_particle.daughters.assign(_tpc_particles_to_daughters[i].begin(), _tpc_particles_to_daughters[i].end());
+
+    this_particle.n_trk_daughters = 0;
+    this_particle.n_shr_daughters = 0;
+
+    // get how many tracks and showers there are
+    for (unsigned id: this_particle.daughters) {
+      if (_tpc_particles_to_shower_index.count(id)) this_particle.n_shr_daughters++;
+      else if (_tpc_particles_to_track_index.count(id)) this_particle.n_trk_daughters++;
+    }
+
     // get the metadata
     const larpandoraobj::PFParticleMetadata& this_metadata = *_tpc_particles_to_metadata.at(i);
+
     // and the properties dict
     auto const &properties = this_metadata.GetPropertiesMap();
     // get the reco vertices
@@ -917,6 +988,7 @@ std::vector<numu::RecoParticle> NumuReco::RecoParticleInfo() {
     }
     if (properties.count("NuScore")) {
       this_particle.p_nu_score = properties.at("NuScore");
+      std::cout << "NUSCORE: " << this_particle.p_nu_score << std::endl;
     }
     else {
       this_particle.p_nu_score = -1;
@@ -951,10 +1023,40 @@ bool NumuReco::HasPrimaryTrack(const std::map<size_t, numu::RecoTrack> &tracks, 
   return false;
 }
 
-bool NumuReco::SelectSlice(const numu::RecoSlice &slice) {
-  return slice.primary_index >= 0 && 
+bool NumuReco::SelectSlice(const numu::RecoSlice &slice, const std::map<size_t, numu::RecoTrack> &tracks) {
+  bool is_pandora_neutrino = slice.primary_index >= 0 && 
          slice.particles.at(slice.primary_index).p_is_neutrino && 
          abs(slice.particles.at(slice.primary_index).pandora_pid) == 14;
+
+  bool is_cosmic_muon = false;
+  if (slice.primary_index >= 0) {
+    const numu::RecoParticle &neutrino = slice.particles.at(slice.primary_index);
+    for (size_t pfp_index: neutrino.daughters) {
+      const numu::RecoParticle &daughter = slice.particles.at(pfp_index);
+      if (tracks.count(daughter.ID)) {
+        if (tracks.at(daughter.ID).length > 1e-4) {
+          const numu::RecoTrack &track = tracks.at(daughter.ID);
+          if (track.truth.matches.size() > 0 && _true_particles_to_truth.count(track.truth.matches[0].G4ID)) {
+            const simb::MCTruth &truth = *_true_particles_to_truth.at(track.truth.matches[0].G4ID);
+            if (truth.Origin() != simb::kBeamNeutrino) {
+              for (unsigned i = 0; i < _true_particles.size(); i++) {
+                if (_true_particles[i]->TrackId() == track.truth.matches[0].G4ID) {
+                  is_cosmic_muon = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+      if (is_cosmic_muon) break; 
+    }
+  }
+
+  std::cout << "Selecting slice: Is pandora neutrino: " << is_pandora_neutrino << " is cosmic muon: " << is_cosmic_muon << std::endl;
+
+  return is_pandora_neutrino || is_cosmic_muon;
+
 }
 
 numu::TrackTruth  NumuReco::MatchTrack2Truth(size_t pfp_track_id) {
@@ -1018,7 +1120,7 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
       }
     } 
     // throw away bad slices
-    if (!SelectSlice(slice_ret)) continue;
+    if (!SelectSlice(slice_ret, reco_tracks)) continue;
     
     // now get information from particles which are tracks
     slice_ret.tracks = RecoSliceTracks(reco_tracks, slice_ret.particles);
@@ -1046,6 +1148,35 @@ std::vector<numu::RecoSlice> NumuReco::RecoSliceInfo(
           ApplyCosmicID(reco_tracks.at(daughter.ID));
         }
       }
+    }
+
+   // total up track energy
+    slice_ret.calo_energy.best_plane = 0.;
+    slice_ret.calo_energy.coll_plane = 0.;
+    slice_ret.calo_energy.best_nhit = 0.;
+    slice_ret.calo_energy.coll_nhit = 0.;
+    for (size_t ind: slice_ret.tracks) {
+      const numu::RecoTrack &track = reco_tracks.at(ind); 
+      slice_ret.calo_energy.best_plane += track.calo_energy.best_plane;
+      slice_ret.calo_energy.coll_plane += track.calo_energy.coll_plane;
+      slice_ret.calo_energy.best_nhit += track.calo_energy.best_nhit;
+      slice_ret.calo_energy.coll_nhit += track.calo_energy.coll_nhit;
+    }
+
+    // get the unmatched charge
+    for (unsigned ind = 0; ind < 3; ind++) {
+      slice_ret.unmatched_charge[ind] = 0.;
+    }
+    std::set<art::Ptr<recob::Hit>> hits_set(_tpc_slices_to_hits.at(i).begin(), _tpc_slices_to_hits.at(i).end());
+    for (size_t ind: slice_ret.tracks) {
+      unsigned track_id = _tpc_particles_to_track_index.at(ind);
+      const std::vector<art::Ptr<recob::Hit>> &track_hits = _tpc_tracks_to_hits.at(track_id);
+      for (const art::Ptr<recob::Hit> h: track_hits) {
+        hits_set.erase(hits_set.find(h));
+      }
+    }
+    for (const art::Ptr<recob::Hit> h: hits_set) {
+      slice_ret.unmatched_charge[(size_t)h->View()] += h->Integral();
     }
 
     ret.push_back(std::move(slice_ret));
@@ -1089,9 +1220,11 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
   _tpc_tracks_to_particles.clear();
   _tpc_tracks_to_particle_index.clear();
   _tpc_particles_to_track_index.clear();
+  _tpc_particles_to_shower_index.clear();
   _tpc_tracks_to_calo.clear();
   _tpc_tracks_to_pid.clear();
   _tpc_tracks_to_hits.clear();
+  _tpc_slices_to_hits.clear();
   _tpc_particles_to_T0.clear();
   _tpc_particles_to_vertex.clear();
   _tpc_particles_to_daughters.clear();
@@ -1116,6 +1249,9 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
     // get the tracks
     const auto &track_handle = ev.getValidHandle<std::vector<recob::Track>>(_config.RecoTrackTag + suffix);
     art::fill_ptr_vector(_tpc_tracks, track_handle);
+
+    // get the showers
+    const auto &shower_handle = ev.getValidHandle<std::vector<recob::Shower>>(_config.RecoShowerTag + suffix);
 
     // slice to particle
     art::FindManyP<recob::PFParticle> slice_to_particle(slice_handle, ev, _config.PFParticleTag + suffix); 
@@ -1142,6 +1278,13 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
       assert(_tpc_particles[_tpc_tracks_to_particle_index[iset]] == _tpc_tracks_to_particles[iset]);
     }
 
+    // particle to shower index
+    art::FindManyP<recob::PFParticle> shower_to_particle(shower_handle, ev, _config.RecoShowerTag + suffix);
+    for (unsigned i = 0; i < shower_handle->size(); i++) {
+      unsigned iset = i + i0;
+      _tpc_particles_to_shower_index[particle_id_offset + shower_to_particle.at(i).at(0)->Self()] = iset;
+    }
+
     // track to Calo
     art::FindManyP<anab::Calorimetry> track_to_calo(track_handle, ev, _config.CaloTag + suffix);
     for (unsigned i = 0; i < track_handle->size(); i++) {
@@ -1158,6 +1301,12 @@ void NumuReco::CollectTPCInformation(const gallery::Event &ev) {
     art::FindManyP<recob::Hit> track_to_hits(track_handle, ev, _config.RecoTrackTag + suffix);
     for (unsigned i = 0; i < track_handle->size(); i++) {
       _tpc_tracks_to_hits.push_back(track_to_hits.at(i));
+    }
+
+    // slice to hits
+    art::FindManyP<recob::Hit> slice_to_hits(slice_handle, ev, _config.RecoSliceTag + suffix);
+    for (unsigned i = 0; i < slice_handle->size(); i++) {
+      _tpc_slices_to_hits.push_back(slice_to_hits.at(i));
     }
 
     // particle to T0 
