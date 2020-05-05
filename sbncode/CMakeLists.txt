@@ -23,7 +23,7 @@ add_subdirectory(EventWeight)
 #add_subdirectory(LArSoftConfigurations)
 #add_subdirectory(Utilities)
 
-#add_subdirectory(NuMuSelection)
+add_subdirectory(NuMuSelection)
 
 add_subdirectory(StandardRecord)
 add_subdirectory(CAFMaker)
