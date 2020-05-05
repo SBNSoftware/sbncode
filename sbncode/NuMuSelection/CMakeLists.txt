@@ -86,6 +86,8 @@ simple_plugin( NuMuEfficiencyStudy module
 	larcorealg_GeoAlgo
 )
 
+add_subdirectory(CalorimetryAnalysis)
+
 install_headers()
 install_fhicl()
 install_source()
