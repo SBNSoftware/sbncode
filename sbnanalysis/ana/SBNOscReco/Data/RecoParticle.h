@@ -18,6 +18,8 @@ struct RecoParticle {
   size_t ID; //!< ID of particle
   int pandora_pid; //!< Particle ID from pandora
   size_t parent;
+  unsigned n_trk_daughters;
+  unsigned n_shr_daughters;
 };
 }
 #endif

@@ -7,6 +7,7 @@
 
 #include "ana/SBNOscReco/Data/CRTMatch.h"
 #include "ana/SBNOscReco/Data/TruthMatch.h"
+#include "ana/SBNOscReco/Data/CaloEnergy.h"
 
 namespace numu {
 
@@ -63,6 +64,10 @@ struct RecoTrack {
   
   float stopping_chisq_start; //!< Chi2 fraction of stopping vs. not-stopping hypothesis to track start points
   float stopping_chisq_finish; //!< Chi2 fraction of stopping vs. not-stopping hypotheis to track end point.
+  float proton_muon_score; // Score between 0 (proton-like) and 1 (muon-like)
+
+  CaloEnergy calo_energy;
+  CaloEnergy calE_plus_daughters;
   
   RecoTrack():
     range_momentum_muon(-1),

@@ -13,13 +13,15 @@ FUTURE_ROOT_GENERATE_DICTIONARY(SBNOscReco_dict
   ${RELATIVE_CURRENT_SOURCE_DIR}/DetInfo.h 
   ${RELATIVE_CURRENT_SOURCE_DIR}/MCType.h
   ${RELATIVE_CURRENT_SOURCE_DIR}/FlatInteraction.h
+  ${RELATIVE_CURRENT_SOURCE_DIR}/PIDData.h
+  ${RELATIVE_CURRENT_SOURCE_DIR}/CaloEnergy.h
   LINKDEF linkdef.h)
 #include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 #REFLEX_GENERATE_DICTIONARY(SBNOscReco_dict classes.h
 #  SELECTION classes_def.xml)
   
 add_library(sbnanalysis_SBNOscReco_classes SHARED SBNOscReco_dict.cxx RecoEvent.cc)
-set_target_properties(sbnanalysis_SBNOscReco_classes PROPERTIES PUBLIC_HEADER "CRTMatch.h;FlashMatch.h;Mode.h;RecoEvent.h;RecoParticle.h;RecoTrack.h;TruthMatch.h;DetInfo.h;MCType.h;TrueParticle.h;FlatInteraction.h;")
+set_target_properties(sbnanalysis_SBNOscReco_classes PROPERTIES PUBLIC_HEADER "CRTMatch.h;FlashMatch.h;Mode.h;RecoEvent.h;RecoParticle.h;RecoTrack.h;TruthMatch.h;DetInfo.h;MCType.h;TrueParticle.h;PIDData.h;CaloEnergy.h;FlatInteraction.h;")
 add_custom_command(TARGET sbnanalysis_SBNOscReco_classes POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   libSBNOscReco_dict_rdict.pcm ${CMAKE_INSTALL_PREFIX}/lib)

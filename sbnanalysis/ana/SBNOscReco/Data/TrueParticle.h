@@ -74,7 +74,9 @@ enum G4ProcessID {
   muBrems,
   hIoni,
   muPairProd,
-  hPairProd
+  hPairProd,
+  hBrems,
+  LArVoxelReadoutScoringProcess
 };
 
 
@@ -110,6 +112,8 @@ struct TrueParticle {
 
   G4ProcessID start_process; //!< Start Process according to G4
   G4ProcessID end_process; //!< End Process according to G4
+
+  std::vector<size_t> daughters;
 
   int interaction_id;
   

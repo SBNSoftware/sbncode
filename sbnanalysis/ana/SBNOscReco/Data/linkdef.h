@@ -13,6 +13,8 @@
 #pragma link C++ class numu::MCSFitResult+;
 #pragma link C++ class numu::SliceTruth+;
 #pragma link C++ class numu::TrackTruth+;
+#pragma link C++ class std::vector<numu::TrackTruth::ParticleMatch>+;
+#pragma link C++ class numu::TrackTruth::ParticleMatch+;
 #pragma link C++ class std::vector<numu::RecoInteraction>+;
 #pragma link C++ class std::vector<numu::CRTHit>+;
 #pragma link C++ class std::map<size_t, numu::RecoParticle>+;
@@ -25,6 +27,9 @@
 #pragma link C++ class std::optional<numu::CRTMatch>+;
 #pragma link C++ class std::optional<numu::FlashMatch>+;
 #pragma link C++ class numu::CRTHit;
+#pragma link C++ class numu::CaloEnergy;
+
+#pragma link C++ class numu::flat::PIDData;
 
 #pragma link C++ class numu::flat::FlatInteraction;
 #pragma link C++ class numu::flat::PrimaryTrack;

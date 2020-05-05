@@ -13,6 +13,7 @@
 #include "ana/SBNOscReco/Data/DetInfo.h"
 #include "ana/SBNOscReco/Data/MCType.h"
 #include "ana/SBNOscReco/Data/FlashMatch.h"
+#include "ana/SBNOscReco/Data/CaloEnergy.h"
 
 namespace numu {
 
@@ -28,6 +29,10 @@ struct RecoSlice {
   std::vector<size_t> tracks; //!< List of track indices contained in this slice
   FlashMatch flash_match; //!< Result of flash matching algorithm on this slice
   SliceTruth truth; //!< Truth information on slice
+
+  bool has_primary_shower;
+  CaloEnergy calo_energy;
+  std::array<float, 3> unmatched_charge;
 };
 
 
