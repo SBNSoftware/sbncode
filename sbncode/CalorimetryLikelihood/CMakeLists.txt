@@ -25,6 +25,7 @@ simple_plugin( CalorimetryAnalysis module
         nusimdata_SimulationBase
         larsim_MCCheater_ParticleInventoryService_service
         sbncode_LArRecoProducer_Products_dict
+	larcorealg_GeoAlgo
 )
 install_headers()
 install_fhicl()
