@@ -9,7 +9,7 @@
 namespace ana {
   namespace SBNOsc {
 
-static const std::vector<std::string> FINALSTATE {"p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"};
+static const std::vector<std::string> FINALSTATE {"p0 #pi0", "p1 #pi0", "p2 #pi0", "p3+ #pi0", "pn #pi1", "pn #pi2+"};
 
 const char *FinalStateStr(unsigned n_proton, unsigned n_pion) {
   switch (n_pion) {
@@ -147,7 +147,7 @@ void InteractionHistos::Fill(
 
   if (vertex.slice.truth.interaction_id >= 0) {
     const event::Interaction &interaction = truth[vertex.slice.truth.interaction_id];
-    float threshold = 0.04; // 40 MeV
+    float threshold = 0.1; // 100 MeV
     unsigned n_proton = 0;
     unsigned n_pion = 0;
     for (unsigned i = 0; i < interaction.finalstate.size(); i++) {
@@ -194,19 +194,15 @@ void InteractionHistos::Fill(
   if (event.particles.count(mcparticle_id)) {
     primary_track_completion->Fill(primary_track.truth.matches[0].energy / event.particles.at(mcparticle_id).deposited_energy); 
   
-    double true_track_momentum = event.particles.at(mcparticle_id).start_momentum.Mag(); 
-    track_p->Fill(true_track_momentum);
-
     int crosses_tpc_val = event.particles.at(mcparticle_id).crosses_tpc;
     crosses_tpc->Fill(crosses_tpc_val);
-
-    double length = event.particles.at(mcparticle_id).length;
-    true_contained_length->Fill(length);
   }
    
   if (vertex.slice.truth.interaction_id >= 0) {
     int interaction_id = vertex.slice.truth.interaction_id; 
 
+    track_p->Fill(truth[interaction_id].lepton.momentum.Mag());
+    true_contained_length->Fill(truth[interaction_id].lepton.contained_length);
     true_track_multiplicity->Fill(truth[interaction_id].nfinalstate);
     nuE->Fill(truth[interaction_id].neutrino.energy);
     Q2->Fill(truth[interaction_id].neutrino.Q2);

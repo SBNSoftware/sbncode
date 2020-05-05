@@ -31,83 +31,90 @@ void Histograms::Fill( const numu::RecoEvent &event,
       fCosmic[3].Fill(event.particles);
     }
   }
-  // Fill the particle histos (only with CC events)
-  for (const event::Interaction &truth: core.truth) {
-    if (truth.neutrino.iscc) {
-      for (const event::FinalStateParticle &p: truth.finalstate) {
-        if (event.particles.count(p.G4ID)) {
-          const numu::TrueParticle &particle = event.particles.at(p.G4ID);
-
-          bool is_primary = particle.start_process == numu::primary;
-          if (!is_primary) continue;
-
-          int pdg_ind = -1;
-          if (abs(particle.pdgid) == 13) pdg_ind = 0;
-          else if (abs(particle.pdgid) == 211) pdg_ind = 1;
-          else if (abs(particle.pdgid) == 2212) pdg_ind = 2;
-          else if (abs(particle.pdgid) == 321) pdg_ind = 3;
-          else continue;
-
-          bool has_reco = false;
-          for (auto const &track_pair: event.tracks) {
-            if (track_pair.second.truth.GetPrimaryMatchID() == p.G4ID) {
-              has_reco = true;
-              break;
-            }
+  for (auto const &pair: event.particles) {
+    bool select = false;
+    // Fill the particle histos (only with Fid CC events)
+    for (const event::Interaction &truth: core.truth) {
+      if (truth.neutrino.iscc && cutmaker.InFV(truth.neutrino.position)) {
+        for (const event::FinalStateParticle &p: truth.finalstate) {
+          if (event.particles.count(p.G4ID)) {
+            select = true;
           }
-
-          bool cc_reco = false;
-          for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.truth.mode != numu::mCC) continue; 
-            for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
-                cc_reco = true;
-                break;
-              }
-            }
-            if (cc_reco) break;
-          }
-          
-          bool cc_np_reco = false;
-          for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.truth.mode != numu::mCCNonPrimary) continue; 
-            for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
-                cc_np_reco = true;
-                break;
-              }
-            }
-            if (cc_np_reco) break;
-          }
-
-          bool cosmic_reco = false;
-          for (const numu::RecoInteraction &reco: event.reco) {
-            if (reco.slice.truth.mode != numu::mCosmic) continue; 
-            for (size_t ind: reco.slice.tracks) {
-              if (event.tracks.at(ind).truth.GetPrimaryMatchID() == p.G4ID) {
-                cosmic_reco = true;
-                break;
-              }
-            }
-            if (cosmic_reco) break;
-          }
-
-          fParticles[pdg_ind][0].Fill(particle); 
-          if (has_reco) {
-            fParticles[pdg_ind][1].Fill(particle); 
-          }
-          if (cc_reco) {
-            fParticles[pdg_ind][2].Fill(particle); 
-          }
-          else if (cc_np_reco) {
-            fParticles[pdg_ind][3].Fill(particle); 
-          }
-          else if (cosmic_reco) {
-            fParticles[pdg_ind][4].Fill(particle); 
-          }
-
         }
       }
+    }
+
+    if (!select) continue;
+
+    size_t G4ID = pair.first;
+    const numu::TrueParticle &particle = pair.second;
+
+    bool is_primary = particle.start_process == numu::primary;
+    if (!is_primary) continue;
+    
+    int pdg_ind = -1;
+    if (abs(particle.pdgid) == 13) pdg_ind = 0;
+    else if (abs(particle.pdgid) == 211) pdg_ind = 1;
+    else if (abs(particle.pdgid) == 2212) pdg_ind = 2;
+    else if (abs(particle.pdgid) == 321) pdg_ind = 3;
+    else continue;
+    
+    bool has_reco = false;
+    for (auto const &track_pair: event.tracks) {
+      if (track_pair.second.truth.GetPrimaryMatchID() == G4ID) {
+        has_reco = true;
+        break;
+      }
+    }
+    
+    bool cc_reco = false;
+    for (const numu::RecoInteraction &reco: event.reco) {
+      if (reco.slice.truth.mode != numu::mCC) continue; 
+      for (size_t ind: reco.slice.tracks) {
+        if (event.tracks.at(ind).truth.GetPrimaryMatchID() == G4ID) {
+          cc_reco = true;
+          break;
+        }
+      }
+      if (cc_reco) break;
+    }
+          
+    bool cc_np_reco = false;
+    for (const numu::RecoInteraction &reco: event.reco) {
+      if (reco.slice.truth.mode != numu::mCCNonPrimary) continue; 
+      for (size_t ind: reco.slice.tracks) {
+        if (event.tracks.at(ind).truth.GetPrimaryMatchID() == G4ID) {
+          cc_np_reco = true;
+          break;
+        }
+      }
+      if (cc_np_reco) break;
+    }
+
+    bool cosmic_reco = false;
+    for (const numu::RecoInteraction &reco: event.reco) {
+      if (reco.slice.truth.mode != numu::mCosmic) continue; 
+      for (size_t ind: reco.slice.tracks) {
+        if (event.tracks.at(ind).truth.GetPrimaryMatchID() == G4ID) {
+          cosmic_reco = true;
+          break;
+        }
+      }
+      if (cosmic_reco) break;
+    }
+
+    fParticles[pdg_ind][0].Fill(particle); 
+    if (has_reco) {
+      fParticles[pdg_ind][1].Fill(particle); 
+    }
+    if (cc_reco) {
+      fParticles[pdg_ind][2].Fill(particle); 
+    }
+    else if (cc_np_reco) {
+      fParticles[pdg_ind][3].Fill(particle); 
+    }
+    else if (cosmic_reco) {
+      fParticles[pdg_ind][4].Fill(particle); 
     }
   }
 
@@ -208,13 +215,14 @@ void Histograms::Initialize(
 
   std::cout << "Limits: " << tagger_volume[0] << " " << tagger_volume[3] << " " << tagger_volume[1] << " " << tagger_volume[4] << " " << tagger_volume[2] << " " << tagger_volume[5] << std::endl;
 
-  // make new directory for histograms
-  TDirectory *d_top = gDirectory->mkdir("histograms");
+  TDirectory *d_top = gDirectory; 
 
   if (prefix.size() != 0) {
     d_top = d_top->mkdir(prefix.c_str());
     d_top->cd();
   }
+  // make new directory for histograms
+  d_top = d_top->mkdir("histograms");
 
   d_top->mkdir("cosmic");
 
@@ -249,27 +257,27 @@ void Histograms::Initialize(
 
     d_top->mkdir(all.c_str());
     d_top->cd(all.c_str());
-    fParticles[i][0].Initialize("");
+    fParticles[i][0].Initialize("", detector);
     d_top->cd();
 
     d_top->mkdir(has_reco.c_str());
     d_top->cd(has_reco.c_str());
-    fParticles[i][1].Initialize("");
+    fParticles[i][1].Initialize("", detector);
     d_top->cd();
 
     d_top->mkdir(cc_reco.c_str());
     d_top->cd(cc_reco.c_str());
-    fParticles[i][2].Initialize("");
+    fParticles[i][2].Initialize("", detector);
     d_top->cd();
 
     d_top->mkdir(cc_np_reco.c_str());
     d_top->cd(cc_np_reco.c_str());
-    fParticles[i][3].Initialize("");
+    fParticles[i][3].Initialize("", detector);
     d_top->cd();
 
     d_top->mkdir(cosmic_reco.c_str());
     d_top->cd(cosmic_reco.c_str());
-    fParticles[i][4].Initialize("");
+    fParticles[i][4].Initialize("", detector);
     d_top->cd();
   }
 

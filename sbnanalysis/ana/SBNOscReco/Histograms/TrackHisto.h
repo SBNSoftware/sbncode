@@ -12,6 +12,7 @@
 class TH1D;
 class TH2D;
 class TProfile2D;
+class TProfile;
 
 namespace ana {
  namespace SBNOsc {
@@ -52,6 +53,9 @@ struct TrackHistos : public HistoList {
 
   TH1D *completion; 
   TH1D *purity;
+
+  TProfile *completion_x; 
+  TProfile *purity_x;
  
   TH2D *range_p_diff;
   TH2D *mcs_p_diff;
@@ -84,7 +88,16 @@ struct TrackHistos : public HistoList {
   TH1D *crt_v_flash_match_time;
 
   TH2D *pid_confusion_tr;
+  TH1D *theta;
+  TProfile2D *angular_chi2_proton;
   TProfile2D *angular_chi2_muon;
+  TProfile2D *angular_pm_score;
+  TProfile *chi2_muon_p;
+  TProfile *chi2_proton_p;
+  TProfile *pm_score_p;
+
+  TH2D *collE_minus_truth_length;
+  TH2D *bestplaneE_minus_truth_length;
 
   /**
  * Initialize this set of histograms

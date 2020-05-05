@@ -4,6 +4,7 @@
 #include <string>
 
 #include "../Data/TrueParticle.h"
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
 
 #include "HistoList.h"
 
@@ -23,12 +24,17 @@ struct TrueParticleHistos : public HistoList {
   TH1D *length;
   TH1D *kinetic_energy;
   TH1D *frac_deposited;
+  TH1D *theta;
+
+  TH1D *vertex_x;
+  TH1D *vertex_y;
+  TH1D *vertex_z;
 
   /**
  *  Intialize the histograms
  *  \param prefix A prefix to be added to each histogram name
  */
-  void Initialize(const std::string &prefix);
+  void Initialize(const std::string &prefix, const geo::BoxBoundedGeo &detector_volume);
  
   /**
  * Fill the histograms with all cosmic muons in a single event

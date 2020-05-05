@@ -15,8 +15,17 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
 #define TRACK_HISTO(name, n_bins, lo, hi)    name = new TH1D((#name + postfix).c_str(), #name, n_bins, lo, hi); StoreHisto(name)
 #define TRACK_2DHISTO(name, binx, lo_x, hi_x, biny, lo_y, hi_y)  name = new TH2D((#name + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); StoreHisto(name)
 #define TRACK_2DPROFILE(name, binx, lo_x, hi_x, biny, lo_y, hi_y) name = new TProfile2D((#name + postfix).c_str(), #name, binx, lo_x, hi_x, biny, lo_y, hi_y); StoreHisto(name);
+#define TRACK_PROFILE(name, binx, lo_x, hi_x) name = new TProfile((#name + postfix).c_str(), #name, binx, lo_x, hi_x); StoreHisto(name);
 
+  TRACK_HISTO(theta, 32, 0., 3.2);
   TRACK_2DPROFILE(angular_chi2_muon, 32, 0, 3.2, 64, -3.2, 3.2);
+  TRACK_2DPROFILE(angular_chi2_proton, 32, 0, 3.2, 64, -3.2, 3.2);
+  TRACK_2DPROFILE(angular_pm_score, 32, 0, 3.2, 64, -3.2, 3.2);
+
+  TRACK_PROFILE(chi2_muon_p, 50, 0, 5);
+  TRACK_PROFILE(chi2_proton_p, 50, 0, 5);
+  TRACK_PROFILE(pm_score_p, 50,0, 5);
+
   TRACK_HISTO(chi2_muon_diff, 100, 0., 1000.);
   TRACK_HISTO(chi2_proton_diff, 100, 0, 1000);
   TRACK_HISTO(chi2_kaon_diff, 100, 0, 1000);
@@ -40,6 +49,9 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_2DHISTO(range_p_minus_truth_length, 60, 0., 600., 50, -1., 1);
   TRACK_2DHISTO(mcs_p_minus_truth_length, 60, 0., 600., 50, -1., 1.);
   TRACK_2DHISTO(lengh_munus_truth_length, 60, 0., 600., 50, -1., 1);
+
+  TRACK_2DHISTO(collE_minus_truth_length, 60, 0., 600., 50, -1., 1);
+  TRACK_2DHISTO(bestplaneE_minus_truth_length, 60, 0., 600., 50, -1., 1);
 
   TRACK_HISTO(length, 100, 0., 600.);
 
@@ -85,6 +97,9 @@ void TrackHistos::Initialize(const std::string &postfix, const geo::BoxBoundedGe
   TRACK_HISTO(completion, 200, -1, 1);
   TRACK_HISTO(purity, 200, -1, 1);
 
+  TRACK_PROFILE(completion_x, 100, detector_volume.MinX(), detector_volume.MaxX());
+  TRACK_PROFILE(purity_x, 100, detector_volume.MinX(), detector_volume.MaxX());
+
   TRACK_HISTO(stopping_chisq_start, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq_finish, 100, 0., 10.);
   TRACK_HISTO(stopping_chisq, 100., 0., 10.);
@@ -104,6 +119,7 @@ void TrackHistos::Fill(
     const numu::RecoTrack &track, 
     const std::map<size_t, numu::TrueParticle> &true_particles) {
 
+
   // Primary track histos
   if (track.min_chi2 > 0) {
     chi2_proton_diff->Fill(track.chi2_proton - track.min_chi2);
@@ -117,17 +133,27 @@ void TrackHistos::Fill(
     chi2_proton->Fill(track.chi2_proton);
 
     angular_chi2_muon->Fill(track.theta, track.phi, track.chi2_muon);
+    angular_chi2_proton->Fill(track.theta, track.phi, track.chi2_muon);
 
     // n_daughters->Fill(particle.daughters.size());
 
     chi2_proton_m_muon->Fill(track.chi2_proton - track.chi2_muon);
 
+    if (true_particles.count(track.truth.GetPrimaryMatchID())) { 
+      const numu::TrueParticle &true_particle = true_particles.at(track.truth.GetPrimaryMatchID());
+      chi2_muon_p->Fill(true_particle.start_momentum.Mag(), track.chi2_muon);
+      chi2_proton_p->Fill(true_particle.start_momentum.Mag(), track.chi2_proton);
+    }
+
   }
+
+  angular_pm_score->Fill(track.theta, track.phi, track.proton_muon_score);
 	  
   range_p->Fill(numu::RangeMomentum(track)); 
   mcs_p->Fill(numu::MCSMomentum(track));
   
   length->Fill(track.length);
+  theta->Fill(track.theta);
 
   reco_momentum->Fill(numu::TrackMomentum(track));
   is_contained->Fill(track.is_contained);
@@ -192,6 +218,8 @@ void TrackHistos::Fill(
   // check if truth match
   if (true_particles.count(track.truth.GetPrimaryMatchID())) { 
     const numu::TrueParticle &true_particle = true_particles.at(track.truth.GetPrimaryMatchID());
+    pm_score_p->Fill(true_particle.start_momentum.Mag(), track.proton_muon_score); 
+
     range_p_minus_truth->Fill((numu::RangeMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
     mcs_p_minus_truth->Fill((numu::MCSMomentum(track) - true_particle.start_momentum.Mag()) / true_particle.start_momentum.Mag());
  
@@ -206,7 +234,10 @@ void TrackHistos::Fill(
     mcs_p_comp->Fill(true_particle.start_momentum.Mag(), numu::MCSMomentum(track));
 
     completion->Fill(track.truth.matches[0].energy / true_particle.deposited_energy); 
-    purity->Fill(track.truth.Purity());
+    purity->Fill(numu::TrackPurity(track, true_particles));
+
+    completion_x->Fill(track.start.X(), track.truth.matches[0].energy / true_particle.deposited_energy); 
+    purity_x->Fill(track.start.X(), numu::TrackPurity(track, true_particles));
 
     wall_enter->Fill(true_particle.wall_enter);
     wall_exit->Fill(true_particle.wall_exit);
