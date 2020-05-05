@@ -20,7 +20,9 @@
   <class name="caf::SRTrkMCS" />
   <class name="caf::SRTrkRange" />
   <class name="caf::SRTrueParticle" />
+  <class name="caf::SRTruthMatch" />
   <class name="caf::SRTrueInteraction" />
+  <class name="caf::SRTruthBranch" />
   <class name="caf::SRVector3D" />
   <!--<class name="caf::SRLorentzVector" /> -->
 
@@ -28,8 +30,13 @@
   <class name="std::vector<caf::SRVector3D>" />
   <!--<class name="std::vector<caf::SRLorentzVector>" /> -->
   <class name="std::vector<caf::SRShower>" />
+  <class name="std::vector<caf::SRTrueInteraction>" />
   <class name="std::vector<caf::SRTrueParticle>" />
   <class name="std::vector<caf::SRTrackTruth::ParticleMatch>" />
+
+  <class name="caf::SRCRTHit" />
+  <class name="std::vector<caf::SRCRTHit>" />
+  <class name="caf::SRCRTHitMatch" />
 
   <enum name="caf::Det_t" />
   <enum name="caf::Wall_t" />
