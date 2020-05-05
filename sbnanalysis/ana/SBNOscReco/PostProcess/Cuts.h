@@ -10,6 +10,7 @@
 
 #include "../Data/RecoEvent.h"
 #include "core/Event.hh"
+#include "../NumuReco/XGBoostPID.h"
 
 namespace ana {
  namespace SBNOsc {
@@ -118,6 +119,10 @@ public:
   
   bool PassFlashTrigger(const numu::RecoEvent &event) const;
 
+  float PredictTrack(const numu::RecoTrack &track) const;
+
+  float ProtonMuonScore() const { return fConfig.ProtonMuonScore; }
+
   static constexpr std::array<const char *, nTruthCuts> truthCutNames = { "Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"};
   static constexpr std::array<const char *, nCuts> cutNames =
       {"Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch", 
@@ -165,6 +170,7 @@ private:
   };
 
   Config fConfig;
+  XGBoostPID fXGBPID;
 
 };
 

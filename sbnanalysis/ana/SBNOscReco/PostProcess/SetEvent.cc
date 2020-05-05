@@ -17,6 +17,9 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
       else {
         track.is_contained = false;
       }
+
+      // apply score
+      track.proton_muon_score = cuts.PredictTrack(track);
     }
 
     // set particle ID
@@ -24,7 +27,8 @@ void ana::SBNOsc::SetEvent(numu::RecoEvent &event, const event::Event &core, con
       numu::ApplyTrueParticleID(event.reco[i], event.tracks, event.particles);
     }
     else {
-      numu::ApplyParticleID(event.reco[i], event.tracks);
+      numu::ApplyScoredParticleID(event.reco[i], event.tracks, cuts.ProtonMuonScore());
+      // numu::ApplyParticleID(event.reco[i], event.tracks);
     }
 
     // set primary track

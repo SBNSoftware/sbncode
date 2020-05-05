@@ -84,6 +84,15 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
     }
   }
 
+  if (cfg.has_key("XGBoostPIDModel")) {
+    std::string model_file = cfg.get<std::string>("XGBoostPIDModel");
+    fXGBPID.SetModelFile(model_file.c_str());
+  }
+  fConfig.ProtonMuonScore = cfg.get<float>("ProtonMuonScore", 0.5);
+
+  fConfig.RequireIdentCCMuon = cfg.get<bool>("RequireIdentCCMuon", true);
+  fConfig.RequireRecoCCMuon = cfg.get<bool>("RequireRecoCCMuon", true);
+
 }
 
 std::array<bool, Cuts::nTruthCuts> Cuts::ProcessTruthCuts(const numu::RecoEvent &event, const event::Event &core, unsigned truth_vertex_index, bool SequentialCuts) const {
@@ -274,6 +283,27 @@ bool Cuts::InCosmicContainment(const TVector3 &v) const {
   return false;
 }
 
+float Cuts::PredictTrack(const numu::RecoTrack &track) const {
+  if (!fXGBPID.Ready()) return 1.;
+
+  float chi2_proton = (track.chi2_proton > 0) ? track.chi2_proton : NAN;
+  float chi2_muon = (track.chi2_muon > 0) ? track.chi2_muon : NAN;
+  float chi2_diff = (track.chi2_muon > 0 && track.chi2_proton > 0) ? track.chi2_proton - track.chi2_muon : NAN;
+  float crt_hit_distance = (track.crt_match.hit_match.present) ? track.crt_match.hit_match.distance : NAN;
+
+  std::map<std::string, float> data;
+
+  data["theta"] = track.theta;
+  data["phi"] = track.phi;
+  data["length"] = track.length;
+  data["contained"] = track.is_contained;
+  data["chi2_proton"] = chi2_proton;
+  data["chi2_muon"] = chi2_muon;
+  data["chi2_diff"] = chi2_diff;
+  data["crt_hit_distance"] = crt_hit_distance;
+
+  return fXGBPID.PredictOne(data);
+}
 
 /*
 bool Cuts::SelectReco(std::array<bool, Cuts::nCuts> &cuts) {
