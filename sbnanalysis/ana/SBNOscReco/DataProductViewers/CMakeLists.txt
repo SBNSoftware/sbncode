@@ -8,13 +8,16 @@ add_library(sbnanalysis_SBNOscReco_OpSimHitPrinter SHARED OpSimHitPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_AuxDetSimChannelPrinter SHARED AuxDetSimChannelPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_SimPhotonPrinter SHARED SimPhotonPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter SHARED OpDetBacktrackerPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_MCNeutrinoAngle SHARED MCNeutrinoAngle.cc)
 add_library(sbnanalysis_SBNOscReco_MCParticleTreePrinter SHARED MCParticleTreePrinter.cc)
 add_library(sbnanalysis_SBNOscReco_PandoraIDPrinter SHARED PandoraIDPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_PandoraMetadataPrinter SHARED PandoraMetadataPrinter.cc)
 add_library(sbnanalysis_SBNOscReco_CaloPrinter SHARED CaloPrinter.cc)
+add_library(sbnanalysis_SBNOscReco_WirePrinter SHARED WirePrinter.cc)
 add_library(sbnanalysis_SBNOscReco_CosmicArrivalTimes SHARED CosmicArrivalTimes.cc)
 add_library(sbnanalysis_SBNOscReco_CRTSimHitViewer SHARED CRTSimHitViewer.cc)
 add_library(sbnanalysis_SBNOscReco_CRTHitTiming SHARED CRTHitTiming.cc)
+add_library(sbnanalysis_SBNOscReco_RNSPrinter SHARED RNSPrinter.cc)
 
 # Add in ROOT dictionary
 target_link_libraries(sbnanalysis_SBNOscReco_GetFV
@@ -60,6 +63,12 @@ target_link_libraries(sbnanalysis_SBNOscReco_MCParticleTreePrinter
   ubana_BasicTool_GeoAlgo
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_MCNeutrinoAngle
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+
 target_link_libraries(sbnanalysis_SBNOscReco_PandoraIDPrinter
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOscReco_classes
@@ -73,6 +82,11 @@ target_link_libraries(sbnanalysis_SBNOscReco_PandoraMetadataPrinter
 )
 
 target_link_libraries(sbnanalysis_SBNOscReco_CaloPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+)
+target_link_libraries(sbnanalysis_SBNOscReco_WirePrinter
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOscReco_classes
   ubana_BasicTool_GeoAlgo
@@ -99,6 +113,14 @@ target_link_libraries(sbnanalysis_SBNOscReco_CRTHitTiming
   sbndcode_CRTProducts
 )
 
+target_link_libraries(sbnanalysis_SBNOscReco_RNSPrinter
+  sbnanalysis_SBNOsc_Utilities
+  sbnanalysis_SBNOscReco_classes
+  ubana_BasicTool_GeoAlgo
+  icaruscode_CRTProducts
+  sbndcode_CRTProducts
+)
+
 # Install all libraries to the main "lib" directory
 install(TARGETS sbnanalysis_SBNOscReco_GetFV DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetWaveformMaker DESTINATION lib)
@@ -107,10 +129,13 @@ install(TARGETS sbnanalysis_SBNOscReco_AuxDetSimChannelPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_SimPhotonPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_OpDetBacktrackerPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_MCParticleTreePrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_MCNeutrinoAngle DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_PandoraIDPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_PandoraMetadataPrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CaloPrinter DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_WirePrinter DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CosmicArrivalTimes DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CRTSimHitViewer DESTINATION lib)
 install(TARGETS sbnanalysis_SBNOscReco_CRTHitTiming DESTINATION lib)
+install(TARGETS sbnanalysis_SBNOscReco_RNSPrinter DESTINATION lib)
 

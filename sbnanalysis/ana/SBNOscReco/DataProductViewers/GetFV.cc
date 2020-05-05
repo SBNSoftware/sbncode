@@ -23,6 +23,8 @@
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 
 #include "core/ProviderManager.hh"
 
@@ -45,14 +47,20 @@ public:
    */
   void Initialize(fhicl::ParameterSet* config=NULL) {
     _managerSBND = new core::ProviderManager(kExpSBND);
-    _managerUBOONE = new core::ProviderManager(kExpMicroBooNE);
-    _managerICARUS = new core::ProviderManager(kExpICARUS);
+    _managerUBOONE = NULL;//new core::ProviderManager(kExpMicroBooNE);
+    _managerICARUS = NULL;//new core::ProviderManager(kExpICARUS);
 
     {
     // print out SBND
     int cryo_i = 0;
     int tpc_i = 0;
     std::cout << std::endl << "SBND" << std::endl;
+    std::cout << "DRIFT V: " << _managerSBND->GetDetectorPropertiesProvider()->DriftVelocity() << std::endl;
+    std::cout << "E lifetime: " << _managerSBND->GetDetectorPropertiesProvider()->ElectronLifetime() << std::endl;
+    std::cout << "Density: " << _managerSBND->GetDetectorPropertiesProvider()->Density() << std::endl;
+    std::cout << "EField: " <<  _managerSBND->GetDetectorPropertiesProvider()->Efield() << std::endl;
+    std::cout << "Sampling Rate: " <<  _managerSBND->GetDetectorPropertiesProvider()->SamplingRate() << std::endl;
+    std::cout << "TPC tick period: " << _managerSBND->GetDetectorClocksProvider()->TPCClock().TickPeriod() << std::endl;
     for (auto const &cryo: _managerSBND->GetGeometryProvider()->IterateCryostats()) { 
       cryo_i ++;
       geo::GeometryCore::TPC_iterator iTPC = _managerSBND->GetGeometryProvider()->begin_TPC(cryo.ID()),
@@ -70,6 +78,21 @@ public:
         std::cout << "    }, " << std::endl;
         tpc_i ++;
         iTPC ++;
+
+        for (auto const &plane: TPC.IteratePlanes()) {
+          std::cout << "TPC: " << iTPC << " plane: " << plane.ID() << " view: " << plane.View() << " pitch: " << plane.WirePitch() << " sinphi: "<< plane.SinPhiZ() <<  " cosphi: " << plane.CosPhiZ() << std::endl;
+
+          double pi = 3.14159265358979323846;
+          std::cout << "Angle to vert: " <<  _managerSBND->GetGeometryProvider()->WireAngleToVertical( _managerSBND->GetGeometryProvider()->View(plane.ID()), plane.ID()) - 0.5*pi << std::endl;
+
+          for (auto const &wire: plane.IterateWires()) {
+            TVector3 dir = wire.GetEnd() - wire.GetStart();
+            dir = dir.Unit();
+            std::cout << "Wire direction x: " << dir.X() << " y: " << dir.Y() << " z: " << dir.Z() << std::endl;
+            std::cout << "Wire Length: " << wire.Length() << std::endl;
+            break;
+          }
+        }
       }
       tpc_i = 0;
     }
