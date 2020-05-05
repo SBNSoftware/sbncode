@@ -16,6 +16,7 @@
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "larsim/EventWeight/Base/MCEventWeight.h"
+#include "larcoreobj/SummaryData/POTSummary.h"
 
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/ParameterSetID.h"

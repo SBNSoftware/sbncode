@@ -99,6 +99,7 @@ unsigned PostProcessorBase::WorkerID() {
     if (this_id == fThreadIDs[index]) return index;
   }
   assert(false);
+  return 0;
 }
 
 void PostProcessorBase::Run(std::vector<std::string> inputFiles) {
