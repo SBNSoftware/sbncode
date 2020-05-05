@@ -1,57 +1,91 @@
-add_subdirectory(DataTypes)
-add_subdirectory(fcl)
+simple_plugin( MuPVertexStudy module
+                            ${ART_FRAMEWORK_CORE}
+                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_FRAMEWORK_PRINCIPAL}
+                            art_Persistency_Common
+                            art_Utilities canvas
+                            ${MF_MESSAGELOGGER}
+                            ${MF_UTILITIES}
+                            ${FHICLCPP}
+                            cetlib cetlib_except
+                            ${ROOT_EVE_LIB_LIST}
+                            ${ROOT_X3d}
+                            ${ROOT_BASIC_LIB_LIST}
+	art_root_io_tfile_support
+	art_root_io
+	art_root_io_dict
+        caf_RecoUtils
+        lardataobj_AnalysisBase
+        lardataobj_RecoBase
+        larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+        larcorealg_GeoAlgo
+        larsim_MCCheater_BackTrackerService_service
+        nusimdata_SimulationBase
+        larsim_MCCheater_ParticleInventoryService_service
+        sbncode_LArRecoProducer_Products_dict
+	larcorealg_GeoAlgo
+)
+simple_plugin( MuonS2NStudy module
+                            ${ART_FRAMEWORK_CORE}
+                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_FRAMEWORK_PRINCIPAL}
+                            art_Persistency_Common
+                            art_Utilities canvas
+                            ${MF_MESSAGELOGGER}
+                            ${MF_UTILITIES}
+                            ${FHICLCPP}
+                            cetlib cetlib_except
+                            ${ROOT_EVE_LIB_LIST}
+                            ${ROOT_X3d}
+                            ${ROOT_BASIC_LIB_LIST}
+	art_root_io_tfile_support
+	art_root_io
+	art_root_io_dict
+        caf_RecoUtils
+        lardataobj_AnalysisBase
+        lardataobj_RecoBase
+        larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+        larcorealg_GeoAlgo
+        larsim_MCCheater_BackTrackerService_service
+        nusimdata_SimulationBase
+        larsim_MCCheater_ParticleInventoryService_service
+        sbncode_LArRecoProducer_Products_dict
+	larcorealg_GeoAlgo
+)
+simple_plugin( NuMuEfficiencyStudy module
+                            ${ART_FRAMEWORK_CORE}
+                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_FRAMEWORK_PRINCIPAL}
+                            art_Persistency_Common
+                            art_Utilities canvas
+                            ${MF_MESSAGELOGGER}
+                            ${MF_UTILITIES}
+                            ${FHICLCPP}
+                            cetlib cetlib_except
+                            ${ROOT_EVE_LIB_LIST}
+                            ${ROOT_X3d}
+                            ${ROOT_BASIC_LIB_LIST}
+	art_root_io_tfile_support
+	art_root_io
+	art_root_io_dict
+        caf_RecoUtils
+        lardataobj_AnalysisBase
+        lardataobj_RecoBase
+        larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+        larcorealg_GeoAlgo
+        larsim_MCCheater_BackTrackerService_service
+        nusimdata_SimulationBase
+        larsim_MCCheater_ParticleInventoryService_service
+        sbncode_LArRecoProducer_Products_dict
+	larcorealg_GeoAlgo
+)
 
-include_directories($ENV{UBCORE_LIB})
-
-art_make(
-          MODULE_LIBRARIES 
-                           ubana_BasicTool_GeoAlgo
-			   larcorealg_Geometry
-                           larcore_Geometry_Geometry_service
-                           nutools_ParticleNavigation lardataobj_Simulation
-                           #larsim_MCCheater_BackTracker_service
-                           lardata_Utilities
-                           larevt_Filters
-                           lardataobj_RawData
-                           lardataobj_RecoBase
-                           lardata_ArtDataHelper
-                           lardata_RecoObjects larreco_Deprecated
-                           lardataobj_RecoBase
-                           lardata_RecoObjects larreco_Deprecated
-                           lardataobj_AnalysisBase
-                           lardata_Utilities
-                           larpandora_LArPandoraInterface
-                           larreco_Calorimetry
-                           larreco_RecoAlg
-                           larreco_RecoAlg_ClusterRecoUtil
-                           larreco_ClusterFinder
-                           nutools_RandomUtils_NuRandomService_service
-                           nusimdata_SimulationBase
-                           ${LARRECO_LIB}
-                           ${LARDATA_LIB}
-                           ${ART_FRAMEWORK_CORE}
-                           ${ART_FRAMEWORK_PRINCIPAL}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_FRAMEWORK_SERVICES_BASIC}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR}
-                           art_Persistency_Common canvas
-                           art_Persistency_Provenance canvas
-                           art_Utilities canvas
-                           ${MF_MESSAGELOGGER}
-                           ${MF_UTILITIES}
-                           ${FHICLCPP}
-                           cetlib cetlib_except
-                           ${CLHEP}
-                           ${ROOT_GEOM}
-                           ${ROOT_XMLIO}
-                           ${ROOT_GDML}
-                           ${ROOT_BASIC_LIB_LIST}
-                           ${ROOT_SPECTRUM}
-                           ${ROOT_ROOFIT}
-                           ${ROOT_ROOFITCORE}
-        )
 install_headers()
 install_fhicl()
 install_source()
