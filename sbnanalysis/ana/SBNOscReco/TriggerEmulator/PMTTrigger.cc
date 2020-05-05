@@ -76,8 +76,8 @@ bool numu::HasTrigger(const std::vector<numu::FlashTriggerPrimitive> &primitives
   }
 
   for (auto const &pair: above_threshold) {
-    for (unsigned ch: pair.second) std::cout << ch << " ";
-    std::cout << std::endl;
+    // for (unsigned ch: pair.second) std::cout << ch << " ";
+    // std::cout << std::endl;
     if (pair.second.size() >= n_above_threshold) {
       return true;
     }
