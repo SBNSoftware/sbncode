@@ -1,6 +1,27 @@
 #include "TrackAlgo.h"
 #include <numeric>
 
+float numu::TrackPurity(const numu::RecoTrack &track, const std::map<size_t, numu::TrueParticle> &particles) {
+  if (track.truth.matches.size() == 0) return 0.;
+  int match_id = track.truth.matches[0].G4ID;
+  if (!particles.count(match_id)) {
+    return track.truth.matches[0].energy / track.truth.total_deposited_energy;
+  }
+  const numu::TrueParticle &pmatch = particles.at(match_id);
+
+  float matchE = track.truth.matches[0].energy;
+  for (size_t daughter: pmatch.daughters) {
+    if (!particles.count(daughter) || particles.at(daughter).start_process == numu::muIoni) {
+      for (unsigned i = 0; i < track.truth.matches.size(); i++) {
+        if (track.truth.matches[i].G4ID == daughter) {
+          matchE += track.truth.matches[i].energy;
+          break;
+        }
+      }
+    }
+  }
+  return matchE / track.truth.total_deposited_energy;
+} 
 
 void numu::ApplyTrueParticleID(const numu::RecoInteraction &interaction, std::map<size_t, numu::RecoTrack> &tracks, const std::map<size_t, numu::TrueParticle> &particles) {
   for (unsigned ID: interaction.PrimaryTracks(tracks)) {
@@ -25,6 +46,31 @@ void ApplyMinHadronChi2(numu::RecoTrack &track) {
       [](auto const &a, auto const &b) {
         return a.second < b.second;
       })->first;
+}
+
+void numu::ApplyScoredParticleID(const numu::RecoInteraction &interaction, std::map<size_t, numu::RecoTrack> &tracks, float cut) {
+  // get the muon candidates
+  std::vector<int> muon_candidates;
+  std::vector<float> candidate_lengths;
+
+  for (unsigned ID: interaction.PrimaryTracks(tracks)) {
+    numu::RecoTrack &track = tracks.at(ID);
+    if (track.proton_muon_score > cut) {
+      muon_candidates.push_back(ID);
+      candidate_lengths.push_back(track.length);
+    }
+    else { // it's a proton
+      track.pdgid = 2212;
+    }
+  }
+
+  int muonID = muon_candidates.size() > 0 ? muon_candidates[std::distance(candidate_lengths.begin(), std::max_element(candidate_lengths.begin(), candidate_lengths.end()))] : -1;
+
+  for (int ID: muon_candidates) {
+    if (ID == muonID) tracks.at(ID).pdgid = 13;
+    else tracks.at(ID).pdgid = 211;
+  }
+
 }
 
 void numu::ApplyParticleID(const numu::RecoInteraction &interaction, std::map<size_t, numu::RecoTrack> &tracks) {

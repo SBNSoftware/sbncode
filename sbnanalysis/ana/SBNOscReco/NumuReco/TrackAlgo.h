@@ -12,9 +12,11 @@ namespace numu {
   float TrackMomentum(const numu::RecoTrack &track);
   float RangeMomentum(const numu::RecoTrack &track);
   float MCSMomentum(const numu::RecoTrack &track);
-  void ApplyParticleID(const std::map<size_t, numu::RecoTrack> &tracks, const numu::RecoInteraction &reco); 
   void ApplyTrueParticleID(const RecoInteraction &interaction, std::map<size_t, RecoTrack> &tracks, const std::map<size_t, TrueParticle> &particles);
   void ApplyParticleID(const RecoInteraction &interaction, std::map<size_t, RecoTrack> &tracks);
+  void ApplyScoredParticleID(const RecoInteraction &interaction, std::map<size_t, RecoTrack> &tracks, float cut);
+
+  float TrackPurity(const numu::RecoTrack &track, const std::map<size_t, numu::TrueParticle> &particles); 
 }
 
 #endif
