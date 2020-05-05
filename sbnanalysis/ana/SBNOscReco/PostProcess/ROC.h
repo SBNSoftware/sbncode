@@ -21,7 +21,7 @@ namespace ana {
     /** Fill the class with a reconstructed event 
    * \param event The RecoEvent information
    */
-    void Fill(const Cuts &cuts, const numu::RecoEvent &event, bool file_is_neutrino);
+    void Fill(const Cuts &cuts, const numu::RecoEvent &event, const event::Event &core, bool file_is_neutrino);
     /** Write the ROC plots to disk */
     void Write() const;
     /** Get the optimal cut values by S/sqrt(S+B) 

@@ -140,7 +140,7 @@ void Histograms::Fill( const numu::RecoEvent &event,
   }
 
   for (unsigned i = 0; i < event.reco.size(); i++) {
-    std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, i);
+    std::array<bool, Cuts::nCuts> cuts = cutmaker.ProcessRecoCuts(event, core, i);
     const numu::RecoInteraction &interaction = event.reco[i];
 
 

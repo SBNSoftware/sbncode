@@ -20,6 +20,10 @@ class Cuts {
 public:
   static const unsigned nCuts = 13; //!< total number of cuts
   static const unsigned nTruthCuts = 6; //!< Total number of truth cuts
+
+  bool IdentCCMuon(const numu::RecoEvent &event, const event::Event &core, unsigned reco_vertex_index) const;
+  bool RecoCCMuon(const numu::RecoEvent &event, const event::Event &core, unsigned reco_vertex_index) const;
+
   /**
  * Initialize this class.
  * \param cfg fhicl configuration for the class
@@ -35,6 +39,7 @@ public:
  * \return A list of bool's of whether the reco event passes each cut
  */
   std::array<bool, nCuts> ProcessRecoCuts(const numu::RecoEvent &event, 
+                                          const event::Event &core,
 					  unsigned reco_vertex_index, 
 					  bool fSequentialCuts = true) const;
 
@@ -145,6 +150,7 @@ private:
 
   struct Config {
     bool UseTrueVertex;
+    bool RequireTrueVertex;
     double trackMatchCompletionCut;
     float TruthCompletion;
     float TruthMatchDist;
@@ -167,6 +173,10 @@ private:
     unsigned PMTNAboveThreshold;
     bool SelectMaxNuScore;
     float NuScoreCut;
+    float ProtonMuonScore;
+
+    bool RequireIdentCCMuon;
+    bool RequireRecoCCMuon;
   };
 
   Config fConfig;

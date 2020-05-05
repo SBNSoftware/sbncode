@@ -81,14 +81,16 @@ namespace SBNOsc {
     fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
 
     if (fDoNormalize) {
+      fOutputFile->cd();
       fCosmicHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, "Cosmic", fTrackSelectorNames, track_profile_value_names, track_profile_xranges);
     }
+    fOutputFile->cd();
     fHistograms.Initialize(fProviderManager->GetGeometryProvider(), *fCRTGeo, fCuts, fHistogramPostfix,  fTrackSelectorNames, track_profile_value_names, track_profile_xranges); 
   }
 
   void Selection::FileSetup(TFile *f, TTree *eventTree) {
     eventTree->SetBranchAddress("reco_event", &fRecoEvent);
-    fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
+    // fCuts.Initialize(fCutConfig, fProviderManager->GetGeometryProvider());
     TParameter<int> *file_type = (TParameter<int> *)f->Get("MCType");
     fFileType = (numu::MCType) file_type->GetVal();
 
@@ -134,7 +136,7 @@ namespace SBNOsc {
     // set stuff in the event
     SetEvent(*fRecoEvent, *core_event, fCuts, fFileType, fTrueParticleID);
 
-    fROC.Fill(fCuts, *fRecoEvent, fFileType == numu::fIntimeCosmic);
+    fROC.Fill(fCuts, *fRecoEvent, *core_event, fFileType == numu::fIntimeCosmic);
     fHistsToFill->Fill(*fRecoEvent, *core_event, fCuts, fTrackSelectors, fTrackProfileValues, fFillAllTracks);
 
     if (fDoNormalize) {

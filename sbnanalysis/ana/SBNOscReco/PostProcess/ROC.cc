@@ -27,7 +27,7 @@ void ana::SBNOsc::ROC::BestCuts() const {
   }
 }
 
-void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent &event, bool file_is_neutrino) {
+void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent &event, const event::Event &core, bool file_is_neutrino) {
   for (unsigned i = 0; i < event.reco.size(); i++) {
     const numu::RecoInteraction &reco = event.reco[i];
     bool is_signal = reco.slice.truth.mode == numu::mCC;
@@ -36,7 +36,7 @@ void ana::SBNOsc::ROC::Fill(const ana::SBNOsc::Cuts &cuts, const numu::RecoEvent
     
     const numu::RecoTrack &track = event.tracks.at(reco.primary_track_index);
 
-    std::array<bool, ana::SBNOsc::Cuts::nCuts> results = cuts.ProcessRecoCuts(event, i, true);
+    std::array<bool, ana::SBNOsc::Cuts::nCuts> results = cuts.ProcessRecoCuts(event, core, i, true);
 
     // only apply to events that already pass flash matching
     if (results[5] /* flashmatch */) {

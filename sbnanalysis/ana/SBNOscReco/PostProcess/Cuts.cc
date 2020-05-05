@@ -12,6 +12,7 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.fiducial_volumes.clear();
 
   fConfig.UseTrueVertex = cfg.get<bool>("UseTrueVertex", false);
+  fConfig.RequireTrueVertex = cfg.get<bool>("RequireTrueVertex", false);
   fConfig.trackMatchCompletionCut = cfg.get<double>("trackMatchCompletionCut", -1);
   fConfig.active_volumes = SBNRecoUtils::ActiveVolumes(geometry); 
   fConfig.TruthCompletion = cfg.get<float>("TruthCompletion", 0.5);
@@ -23,7 +24,7 @@ void Cuts::Initialize(const fhicl::ParameterSet &cfg, const geo::GeometryCore *g
   fConfig.CRTHitDist = cfg.get<float>("CRTHitDist", 35.);
   fConfig.CRTHitTimeRange = cfg.get<std::array<float, 2>>("CRTHitTimeRange", {-0.2, 2.0});
   fConfig.CRTActivityTimeRange = cfg.get<std::array<float, 2>>("CRTActivityTimeRange", {-0.2, 2.0});
-  fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", 0.4);
+  fConfig.CRTTrackAngle = cfg.get<float>("CRTTrackAngle", -1.);
 
   fConfig.TruthFlashMatch = cfg.get<bool>("TruthFlashMatch", false);
   fConfig.FlashMatchScore = cfg.get<float>("FlashMatchScore", 10.);
@@ -133,11 +134,59 @@ bool Cuts::PassFlashTrigger(const numu::RecoEvent &event) const {
   return numu::HasTrigger(event.flash_trigger_primitives, fConfig.PMTTriggerTreshold, fConfig.PMTNAboveThreshold);
 }
 
+bool Cuts::IdentCCMuon(const numu::RecoEvent &event, const event::Event &core, unsigned reco_vertex_index) const {
+  // check if we match to a CC interaction
+  bool iscc = event.reco[reco_vertex_index].slice.truth.interaction_id >= 0 &&
+         core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].neutrino.iscc;
+  if (!iscc) return false;
+
+  // now grab the muon
+  int muon_id = core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].lepton.G4ID;
+  if (!event.particles.count(muon_id)) return false;
+  const numu::TrueParticle &muon = event.particles.at(muon_id);
+  for (auto const &track_pair: event.tracks) {
+    const numu::RecoTrack &track = track_pair.second;
+    if (track.truth.matches.size() > 0 && track.truth.matches[0].G4ID == muon_id) {
+      if (track.truth.matches[0].energy / muon.deposited_energy > 0.5) {
+        return true;
+      }
+    } 
+  }
+  return false;
+}
+
+bool Cuts::RecoCCMuon(const numu::RecoEvent &event, const event::Event &core, unsigned reco_vertex_index) const {
+  // check if we match to a CC interaction
+  bool iscc = event.reco[reco_vertex_index].slice.truth.interaction_id >= 0 &&
+         core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].neutrino.iscc;
+  if (!iscc) return false;
+
+  // now grab the muon
+  int muon_id = core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].lepton.G4ID;
+  if (!event.particles.count(muon_id)) return false;
+  const numu::TrueParticle &muon = event.particles.at(muon_id);
+  for (auto const &particle_pair: event.reco[reco_vertex_index].slice.particles) {
+    if (!event.tracks.count(particle_pair.second.ID)) continue;
+
+    const numu::RecoTrack &track = event.tracks.at(particle_pair.second.ID);
+    if (track.truth.matches.size() > 0 && track.truth.matches[0].G4ID == muon_id) {
+      if (track.truth.matches[0].energy / muon.deposited_energy > 0.5) {
+        return true;
+      }
+    } 
+  }
+  return false;
+}
+
 std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event, 
+                                                    const event::Event &core,
 						    unsigned reco_vertex_index, 
 						    bool fSequentialCuts) const {
   std::map<std::string, bool> cuts;
   cuts["Reco"] = true;
+
+  cuts["R_goodreco"] = (!fConfig.RequireIdentCCMuon || IdentCCMuon(event, core, reco_vertex_index)) &&
+                       (!fConfig.RequireRecoCCMuon  || RecoCCMuon(event, core, reco_vertex_index));
 
   cuts["R_trig"] = PassFlashTrigger(event);
 
@@ -153,10 +202,17 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
   // require fiducial
   if (fConfig.UseTrueVertex) {
-    cuts["R_fid"] = false; // TODO: implement
+    cuts["R_fid"] = event.reco[reco_vertex_index].slice.truth.interaction_id >= 0 &&
+                      InFV(core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].neutrino.position);
   }
   else {
     cuts["R_fid"] = InFV(event.reco[reco_vertex_index].position);
+  }
+
+  if (fConfig.RequireTrueVertex) {
+    cuts["R_fid"] = cuts["R_fid"] && 
+	    event.reco[reco_vertex_index].slice.truth.interaction_id >= 0 &&
+	    InFV(core.truth[event.reco[reco_vertex_index].slice.truth.interaction_id].neutrino.position);
   }
 
   const numu::RecoTrack &primary_track = event.tracks.at(event.reco[reco_vertex_index].primary_track_index);
@@ -224,8 +280,8 @@ std::array<bool, Cuts::nCuts> Cuts::ProcessRecoCuts(const numu::RecoEvent &event
 
 bool Cuts::HasCRTTrackMatch(const numu::RecoTrack &track) const {
   return track.crt_match.track.present && 
-         (fConfig.CRTTrackAngle < 0. || 
-	  track.crt_match.track.angle < fConfig.CRTTrackAngle);
+         fConfig.CRTTrackAngle >= 0. &&
+	  track.crt_match.track.angle < fConfig.CRTTrackAngle;
 }
 
 bool Cuts::HasCRTHitMatch(const numu::RecoTrack &track) const {
