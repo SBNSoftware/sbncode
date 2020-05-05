@@ -8,6 +8,7 @@ INSTALL(
     sbnd_overlay_v08_36_00.list
     sbnd_test_files.list
     icarus_test_files.list
+    icarus_overlay_v08_32_01_test.list
   DESTINATION
     ${CMAKE_INSTALL_PREFIX}/files
 )
