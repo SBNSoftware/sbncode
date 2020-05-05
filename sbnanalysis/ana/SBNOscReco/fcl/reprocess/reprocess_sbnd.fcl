@@ -84,6 +84,7 @@ physics.producers.reopdaq.NThreads: 3
 
 physics.producers.pandoraShowerRE.PFParticleLabel: pandoraRE
 physics.producers.pandoraTrackRE.PFParticleLabel: pandoraRE
+physics.producers.pandoraTrackRE.UseAllParticles: true
 
 physics.producers.pandoraCaloRE.SpacePointModuleLabel: pandoraRE
 physics.producers.pandoraCaloRE.TrackModuleLabel: pandoraTrackRE

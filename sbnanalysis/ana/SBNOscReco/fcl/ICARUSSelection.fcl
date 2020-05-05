@@ -1,12 +1,12 @@
 #include "selectors.fcl"
 
-DoNormalize: true
+DoNormalize: false
 GoalPOT: 1.e20
 ExperimentID: 2
-UseCalorimetry: true
-HistogramPostfix: ICARUS
+HistogramPostfix: ""
 
 FillAllTracks: true
+TrueParticleID: false
 
 selection_fiducial_volume_inset: {
   y: 10
@@ -52,23 +52,32 @@ Cuts: {
    PMTTriggerTreshold: 7875
    PMTNAboveThreshold: 4
    CRTActivityPEThreshold: 0
-   FlashMatchScore: 4
+   FlashMatchScore: 8
    CutOrder: @local::cut_order
    #TruthCutOrder: @local::truth_cut_order
    #               truth_cut_order: ["Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"]
    TruthCutOrder: ["Truth", "T_trig", "T_fid", "T_reco", "T_vqual", "T_tqual"]
+   SelectMaxNuScore: true
+   NuScoreCut: 0.5
+   XGBoostPIDModel: "/sbnd/app/users/gputnam/sbndcode/srcs/sbncode/sbnanalysis/ana/SBNOscReco/pid_model.xgb"
 }
 
 TrackSelectors: [
   @local::interaction_selectors,
   @local::pdg_selectors,
-  @local::true_contained_selectors
+  @local::true_contained_selectors,
+  @local::scatter_selectors
+#  @local::true_finalstate_selectors,
+#  @local::reco_finalstate_selectors
 ]
 
 TrackSelectorNames: [
   @local::interactions,
   @local::pdgs,
-  @local::contained
+  @local::contained,
+  @local::scatters
+#  @local::finalstates,
+#  @local::finalstates
 ]
 
 #TrackProfileValues: ["track.length"]

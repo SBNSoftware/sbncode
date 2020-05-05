@@ -1,34 +1,33 @@
+highE_selectors: [
+  "return true;",
+  "return particle.start_momentum.fX *particle.start_momentum.fX + particle.start_momentum.fY * particle.start_momentum.fY + particle.start_momentum.fZ * particle.start_momentum.fZ > 0.5;",
+  "return true_interaction.neutrino.energy > 1.0;"
+]
+
+highE: ["all", "highP", "highE"]
+
 pdg_selectors: [
    "return true;",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 11 or match.match_pdg == -11); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 13 or match.match_pdg == -13); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 211 or match.match_pdg == -211); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 321 or match.match_pdg == -321); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 2212 or match.match_pdg == -2212); }",
-   "{ var match = track.match;
-      var pdg = match.match_pdg;
-      return match.has_match and 
+   "return length track.truth.matches > 0 and (particle.pdgid == 11 or particle.pdgid == -11);",
+   "
+    return length track.truth.matches > 0 and (particle.pdgid == 13 or particle.pdgid == -13);",
+   "return length track.truth.matches > 0 and (particle.pdgid == 211 or particle.pdgid == -211);",
+   "return length track.truth.matches > 0 and (particle.pdgid == 321 or particle.pdgid == -321);",
+   "return length track.truth.matches > 0 and (particle.pdgid == 2212 or particle.pdgid == -2212);",
+   "{ var pdg = particle.pdgid;
+      return length track.truth.matches > 0 and 
         (pdg == 2224 or pdg == -2224 or pdg == 2214 or pdg == -2214 or pdg == 1114 or pdg == -1114 or pdg == 3222 or pdg == -3222 or pdg == 3112 or pdg == -3112 
-         or pdg > 1000000000); }",
-   "{ var match = track.match;
-      return !match.has_match or match.match_pdg == 22 or match.match_pdg == 2112 or match.match_pdg == -2212; }"
+         or pdg > 1000000000);}",
+   "return !(length track.truth.matches > 0) or particle.pdgid == 22 or particle.pdgid == 2112 or particle.pdgid == -2212;"
 ]
 
 pdgs: ["all", "e", "mu", "pi", "k", "p", "nucl", "none"]
 
 primary_pdg_selectors: [
    "return true;",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 13 or match.match_pdg == -13); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 211 or match.match_pdg == -211); }",
-   "{ var match = track.match;
-    return match.has_match and (match.match_pdg == 2212 or match.match_pdg == -2212); }"
+   "return length track.truth.matches > 0 and (particle.pdgid == 13 or particle.pdgid == -13);",
+   "return length track.truth.matches > 0 and (particle.pdgid == 211 or particle.pdgid == -211);",
+   "return length track.truth.matches > 0 and (particle.pdgid == 2212 or particle.pdgid == -2212);"
 ]
 primary_pdgs: ["all", "mu", "pi", "p"]
 
@@ -36,22 +35,24 @@ reco_finalstate_selectors: [
    "return true;",
    "return interaction.nproton == 0 and interaction.npion == 0; // 0p 0pi",
    "return interaction.nproton == 1 and interaction.npion == 0; // 1p 0pi",
-   "return interaction.nproton == 2 and interaction.npion == 0; // 2p 0pi",
-   "return interaction.nproton >= 3 and interaction.npion == 0; // >2p 0pi",
+   "return interaction.nproton >= 2 and interaction.npion == 0; // >1p 0pi",
+   "return interaction.npion >= 1; // np >0pi",
    "return interaction.npion == 1; // np 1pi",
-   "return interaction.npion >= 2; // np >1pi"
+   "return interaction.npion >= 2; // np >1pi",
+   "return interaction.npion == 0; // np 0pi"
+
 ]
 
-finalstates: ["all", "p0pi0", "p1pi0", "p2pi0", "p3+pi0", "pnpi1", "pnpi2+"]
+finalstates: ["all", "p0pi0", "p1pi0", "p2+pi0", "pnpi1+", "pnpi1", "pnpi2+", "pnpi0"]
 
 true_finalstate_selectors: [
   "return true;",
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -66,9 +67,9 @@ true_finalstate_selectors: [
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -83,9 +84,9 @@ true_finalstate_selectors: [
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -94,15 +95,15 @@ true_finalstate_selectors: [
          }
        }
      } 
-     return n_proton == 2 and n_pion == 0;
+     return n_proton > 1 and n_pion == 0;
    }",
 
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -111,15 +112,15 @@ true_finalstate_selectors: [
          }
        }
      } 
-     return n_proton > 2 and n_pion == 0;
+     return n_pion > 0;
    }",
 
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -134,9 +135,9 @@ true_finalstate_selectors: [
   "{ 
      var n_proton = 0;
      var n_pion = 0;
-     var threshold = 0.04; // 40MeV
+     var threshold = 0.10; // 100MeV
      for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
-       if (true_interaction.finalstate[i].kinetic_energy > threshold) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
          if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
            n_proton = n_proton + 1;
          }
@@ -146,6 +147,23 @@ true_finalstate_selectors: [
        }
      } 
      return n_pion > 1;
+   }",
+
+  "{ 
+     var n_proton = 0;
+     var n_pion = 0;
+     var threshold = 0.10; // 100MeV
+     for (var i = 0; i < length true_interaction.finalstate; i = i + 1) {
+       if (true_interaction.finalstate[i].kinetic_energy > threshold and true_interaction.finalstate[i].status_code == 1) {
+         if (true_interaction.finalstate[i].pdg == 2212 or true_interaction.finalstate[i].pdg == -2212) {
+           n_proton = n_proton + 1;
+         }
+         if (true_interaction.finalstate[i].pdg == 211 or true_interaction.finalstate[i].pdg == -211) {
+           n_pion = n_pion + 1;
+         }
+       }
+     } 
+     return n_pion == 0;
    }"
 ]
 
@@ -187,41 +205,41 @@ neutrinos: ["All", "CC", "NC", "Other"]
 
 wall_selectors_enter: [
   "return true;",
-  "return track.match.has_match and particle.wall_enter == 0",
-  "return track.match.has_match and particle.wall_enter == 1",
-  "return track.match.has_match and particle.wall_enter == 2",
-  "return track.match.has_match and particle.wall_enter == 3",
-  "return track.match.has_match and particle.wall_enter == 4",
-  "return track.match.has_match and particle.wall_enter == 5",
-  "return track.match.has_match and particle.wall_enter == 6"
+  "return length track.truth.matches > 0 and particle.wall_enter == 0",
+  "return length track.truth.matches > 0 and particle.wall_enter == 1",
+  "return length track.truth.matches > 0 and particle.wall_enter == 2",
+  "return length track.truth.matches > 0 and particle.wall_enter == 3",
+  "return length track.truth.matches > 0 and particle.wall_enter == 4",
+  "return length track.truth.matches > 0 and particle.wall_enter == 5",
+  "return length track.truth.matches > 0 and particle.wall_enter == 6"
 ]
 wall_selectors_exit: [
   "return true;",
-  "return track.match.has_match and particle.wall_exit == 0",
-  "return track.match.has_match and particle.wall_exit == 1",
-  "return track.match.has_match and particle.wall_exit == 2",
-  "return track.match.has_match and particle.wall_exit == 3",
-  "return track.match.has_match and particle.wall_exit == 4",
-  "return track.match.has_match and particle.wall_exit == 5",
-  "return track.match.has_match and particle.wall_exit == 6"
+  "return length track.truth.matches > 0 and particle.wall_exit == 0",
+  "return length track.truth.matches > 0 and particle.wall_exit == 1",
+  "return length track.truth.matches > 0 and particle.wall_exit == 2",
+  "return length track.truth.matches > 0 and particle.wall_exit == 3",
+  "return length track.truth.matches > 0 and particle.wall_exit == 4",
+  "return length track.truth.matches > 0 and particle.wall_exit == 5",
+  "return length track.truth.matches > 0 and particle.wall_exit == 6"
 ]
 
 wall_selectors_either: [
   "return true;",
-  "return track.match.has_match and (particle.wall_exit == 0 and particle.wall_enter == 0);",
-  "return track.match.has_match and (particle.wall_exit == 1 or particle.wall_enter == 1);",
-  "return track.match.has_match and (particle.wall_exit == 2 or particle.wall_enter == 2);",
-  "return track.match.has_match and (particle.wall_exit == 3 or particle.wall_enter == 3);",
-  "return track.match.has_match and (particle.wall_exit == 4 or particle.wall_enter == 4);",
-  "return track.match.has_match and (particle.wall_exit == 5 or particle.wall_enter == 5);",
-  "return track.match.has_match and (particle.wall_exit == 6 or particle.wall_enter == 6);"
+  "return length track.truth.matches > 0 and (particle.wall_exit == 0 and particle.wall_enter == 0);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 1 or particle.wall_enter == 1);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 2 or particle.wall_enter == 2);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 3 or particle.wall_enter == 3);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 4 or particle.wall_enter == 4);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 5 or particle.wall_enter == 5);",
+  "return length track.truth.matches > 0 and (particle.wall_exit == 6 or particle.wall_enter == 6);"
 ]
 walls: ["all", "no-wall", "top", "bottom", "left", "right", "front", "back"]
 
 true_contained_selectors: [
   "return true;",
-  "return track.match.has_match and !particle.is_contained;",
-  "return track.match.has_match and  particle.is_contained;"
+  "return length track.truth.matches > 0 and !particle.is_contained;",
+  "return length track.truth.matches > 0 and  particle.is_contained;"
 ]
 
 reco_contained_selectors: [
@@ -234,44 +252,44 @@ contained: ["all", "exiting", "contained"]
 
 timing_selectors: [
   "return true;",
-  "return track.match.has_match and (particle.start_time < 0. or particle.start_time > 1.6);",
-  "return track.match.has_match and (particle.start_time >= 0. and particle.start_time <= 1.6);"
+  "return length track.truth.matches > 0 and (particle.start_time < 0. or particle.start_time > 1.6);",
+  "return length track.truth.matches > 0 and (particle.start_time >= 0. and particle.start_time <= 1.6);"
 ]
 timings: ["all", "outtime", "intime"]
 
 good_reco_selectors: [
   "return true;",
-  "return track.match.has_match and track.match.completion > 0.8;",
-  "return track.match.has_match and track.match.purity > 0.8;",
-  "return track.match.has_match and track.match.completion > 0.8 and track.match.purity > 0.8;"
+  "return length track.truth.matches > 0 and track.match.completion > 0.8;",
+  "return length track.truth.matches > 0 and track.match.purity > 0.8;",
+  "return length track.truth.matches > 0 and track.match.completion > 0.8 and track.match.purity > 0.8;"
 ]
 
 good_reco: ["all", "complete", "pure", "complete_pure"]
 
 scatter_selectors: [
   "return true;",
-  "return track.match.has_match and (
+  "return length track.truth.matches > 0 and (
       particle.end_process == 3 // Decay
    or particle.end_process == 1 // CoupledTransportation
-   or particle.end_process == 2 // FastTransportation
+   or particle.end_process == 2 // FastScintillation
    or particle.end_process == 34 // muMinusCaptureAtRest 
    );",
-  "return track.match.has_match and !(
+  "return length track.truth.matches > 0 and !(
       particle.end_process == 3 // Decay
    or particle.end_process == 1 // CoupledTransportation
-   or particle.end_process == 2 // FastTransportation
+   or particle.end_process == 2 // FastScintillation
    or particle.end_process == 34 // muMinusCaptureAtRest 
    );"
 ]
 scatters: ["all", "stops", "scatters"]
 
 truth_cut_order: ["Truth", "T_fid", "T_trig", "T_vqual", "T_tqual", "T_reco"]
-cut_order: ["Reco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch",
+cut_order: ["Reco", "R_goodreco", "R_trig", "R_flashtime", "R_fid", "R_goodmcs", "R_flashmatch",
             "R_crttrack", "R_crthit", "R_maxnuscore", "R_nuscore", "R_crtactive", "R_contained", "R_length"]
-cut_order_summary: ["Reco", "R_trig", "R_flashtime", "R_flashmatch",
+cut_order_summary: ["Reco", "R_goodreco", "R_trig", "R_flashtime", "R_flashmatch",
     "R_fid", "R_goodmcs", "R_length","R_contained", 
     "R_crtactive","R_crttrack", "R_crthit"]
-cut_order_summary_separate_contained: ["Reco", "R_trig", "R_flashtime", "R_flashmatch",
+cut_order_summary_separate_contained: ["Reco", "R_goodreco", "R_trig", "R_flashtime", "R_flashmatch",
     "R_fid", "R_goodmcs", "R_length", 
     "R_crttrack", "R_crthit",
     "R_crtactive","R_contained"]

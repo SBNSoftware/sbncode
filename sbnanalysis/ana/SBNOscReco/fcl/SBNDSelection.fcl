@@ -7,6 +7,8 @@ ExperimentID: 0
 FillAllTracks: true
 HistogramPostfix: ""
 
+TrueParticleID: false
+
 selection_fiducial_volume_inset: {
   y: 10
   x: 10
@@ -50,18 +52,32 @@ Cuts: {
    CutOrder: @local::cut_order
    TruthCutOrder: ["Truth", "T_trig", "T_fid", "T_reco", "T_vqual", "T_tqual"]
    #TruthCutOrder: @local::truth_cut_order
+   SelectMaxNuScore: true
+   NuScoreCut: 0.5
+   XGBoostPIDModel: "/sbnd/app/users/gputnam/sbndcode/srcs/sbncode/sbnanalysis/ana/SBNOscReco/pid_model.xgb"
+   RequireTrueVertex: true
+   RequireIdentCCMuon: true
+   RequireRecoCCMuon: false
 }
 
 TrackSelectors: [
-  @local::interaction_selectors,
-  @local::pdg_selectors,
-  @local::true_contained_selectors
+#  @local::interaction_selectors,
+  @local::pdg_selectors
+#  @local::true_contained_selectors,
+#  @local::scatter_selectors
+#  @local::true_finalstate_selectors,
+#  @local::reco_finalstate_selectors
+#   @local::highE_selectors
 ]
 
 TrackSelectorNames: [
-  @local::interactions,
-  @local::pdgs,
-  @local::contained
+#  @local::interactions,
+  @local::pdgs
+#  @local::contained,
+#  @local::scatters
+#  @local::finalstates,
+#  @local::finalstates
+#  @local::highE
 ]
 
 #TrackProfileValues: ["track.length"]
