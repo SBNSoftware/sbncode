@@ -172,6 +172,7 @@ private:
   art::InputTag fT0producer;
   art::InputTag fHitFilterproducer;
   art::InputTag fAreaHitproducer;
+  bool fAllTrueEnergyDeposits;
 
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
@@ -440,6 +441,7 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
   fT0producer  = p.get< art::InputTag > ("T0producer", "" );
   fAreaHitproducer = p.get<art::InputTag> ("AreaHitproducer", "areahit");
+  fAllTrueEnergyDeposits = p.get<bool>("AllTrueEnergyDeposits", true);
   fHitFilterproducer = p.get<art::InputTag>("HitFilterproducer", "filtgoodhit"); 
 
   fBacktrack = p.get<bool>("Backtrack", true);
@@ -625,7 +627,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     for (const art::Ptr<sim::SimChannel> sc: simchannelList) {
       for (const auto &pair: sc->TDCIDEMap()) {
         for (const sim::IDE &ide: pair.second) {
-          if (ide.trackID == true_particle->TrackId()) {
+          if (ide.trackID == true_particle->TrackId() || fAllTrueEnergyDeposits) {
             particle_ide_map[geometry->View(sc->Channel())][sc->Channel()].push_back(&ide);
           }
         }
@@ -721,7 +723,6 @@ void CalorimetryAnalysis::fillDefault()
   _generation = std::numeric_limits<uint>::lowest();
   _shr_daughters = std::numeric_limits<uint>::lowest();
   _trk_daughters = std::numeric_limits<uint>::lowest();
-  _n_pfp = std::numeric_limits<uint>::lowest();
   _daughters = std::numeric_limits<uint>::lowest();
 
   // track information
