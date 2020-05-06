@@ -36,6 +36,8 @@ const int NSpectra = 3; // SBND/UB/Icarus
 
 const int NUnivs = 1000;
 
+const int kNumComponents = 100; // arbitrary
+
 void TextHelper(double x, double y, const char* txt, int col, bool horiz)
 {
   TLatex* ltx = new TLatex(horiz ? y : x, horiz ? x : y, txt);
@@ -267,7 +269,7 @@ void diag_flux_systs(bool force_rebuild = false)
 
   TFile* fout = new TFile("flux_shifts.root", "RECREATE");
 
-  for(int i = 0; i < 30/*arbitrary*/; ++i){
+  for(int i = 0; i < kNumComponents; ++i){
     hevecs_vec[i]->GetYaxis()->SetRangeUser(-.2, +.2);
     hevecs_vec[i]->SetTitle(TString::Format("Eigenvector %d - #sqrt{eigenvalue}\
  = %g;;Fractional error", i, sqrt(evals[i])).Data());
