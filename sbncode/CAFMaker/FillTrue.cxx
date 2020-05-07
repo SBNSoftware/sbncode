@@ -418,12 +418,13 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
       fake_lepton.contained = true;
     }
   }
-  fake_lepton.len = ContainedLength(mctracks[lepton_ind]->Start().Position().Vect(), mctracks[lepton_ind]->Start().Position().Vect(), aa_volumes);
+  fake_lepton.len = ContainedLength(mctracks[lepton_ind]->Start().Position().Vect(), mctracks[lepton_ind]->End().Position().Vect(), aa_volumes);
   fake_lepton.costh = mctracks[lepton_ind]->Start().Position().Vect().CosTheta();
 
   // apply length cut
   if (fake_lepton.contained && fake_lepton.len < contained_length_cut) return false;
   if (!fake_lepton.contained && fake_lepton.len < exiting_length_cut) return false;
+
 
   // smear the lepton energy
   float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);

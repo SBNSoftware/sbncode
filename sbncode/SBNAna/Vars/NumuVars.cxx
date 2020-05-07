@@ -19,7 +19,7 @@ namespace ana
 			    if( (int)trk.chi2pid.size() < 1 ) return -5.0;
 			    
 			    //Find longest trk w/Chi2 for muon < Chi2 for pion
-			    bool isMuonLike = trk.chi2pid[2].chi2_pion > trk.chi2pid[2].chi2_muon;
+			    bool isMuonLike = trk.nchi2pid > 0 && trk.chi2pid[2].chi2_pion > trk.chi2pid[2].chi2_muon;
 			    if( isMuonLike && trk.len > best_len ){ //Chi2 muon < Chi2 pion
 			      // best_score = score;
 			      best_len = trk.len;
@@ -36,8 +36,10 @@ namespace ana
 			{
 			  double len = -5.0;
 			  if ( sr->reco.ntrk > 0 ){
-			    unsigned int muIdx = (unsigned int)kPrimMuonIdx(sr);
-			    len = sr->reco.trk[muIdx].len;
+			    int muIdx = (int)kPrimMuonIdx(sr);
+                            if (muIdx >= 0) { 
+  			      len = sr->reco.trk[muIdx].len;
+                            }
 			  }
 			  return len;
 			});

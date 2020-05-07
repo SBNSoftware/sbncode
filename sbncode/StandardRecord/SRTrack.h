@@ -37,7 +37,9 @@ namespace caf
       SRVector3D     end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
 
+      int            nchi2pid;
       std::vector<SRTrkChi2PID> chi2pid; ///< 3-item list of larana Chi2 Particle PID on each plane ordered (1st ind., 2nd ind., coll)
+      int            ncalo;
       std::vector<SRTrackCalo> calo; ///< 3-item list of Calorimetry information on each plane ordered (1st ind., 2nd ind., coll)
       Plane_t            bestplane;   ///< Plane index with the most hits. -1 if no calorimetry
 
