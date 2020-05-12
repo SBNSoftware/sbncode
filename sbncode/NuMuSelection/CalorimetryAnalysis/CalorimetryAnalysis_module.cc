@@ -93,6 +93,9 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
               std::vector<float> &width_u,
               std::vector<float> &width_v,
               std::vector<float> &width_y,
+              std::vector<float> &time_u,
+              std::vector<float> &time_v,
+              std::vector<float> &time_y,
               bool use_integral=true);
 
 class CalorimetryAnalysis : public art::EDAnalyzer
@@ -325,6 +328,9 @@ private:
   std::vector<float> _allhit_width_u;
   std::vector<float> _allhit_width_v;
   std::vector<float> _allhit_width_y;
+  std::vector<float> _allhit_time_u;
+  std::vector<float> _allhit_time_v;
+  std::vector<float> _allhit_time_y;
 
   std::vector<float> _trkhit_charge_u;
   std::vector<float> _trkhit_charge_v;
@@ -338,6 +344,9 @@ private:
   std::vector<float> _trkhit_width_u;
   std::vector<float> _trkhit_width_v;
   std::vector<float> _trkhit_width_y;
+  std::vector<float> _trkhit_time_u;
+  std::vector<float> _trkhit_time_v;
+  std::vector<float> _trkhit_time_y;
 
   std::vector<float> _calohit_charge_u;
   std::vector<float> _calohit_charge_v;
@@ -351,6 +360,9 @@ private:
   std::vector<float> _calohit_width_u;
   std::vector<float> _calohit_width_v;
   std::vector<float> _calohit_width_y;
+  std::vector<float> _calohit_time_u;
+  std::vector<float> _calohit_time_v;
+  std::vector<float> _calohit_time_y;
 
   std::vector<float> _sumhit_charge_u;
   std::vector<float> _sumhit_charge_v;
@@ -364,6 +376,9 @@ private:
   std::vector<float> _sumhit_width_u;
   std::vector<float> _sumhit_width_v;
   std::vector<float> _sumhit_width_y;
+  std::vector<float> _sumhit_time_u;
+  std::vector<float> _sumhit_time_v;
+  std::vector<float> _sumhit_time_y;
 
   std::vector<float> _areahit_charge_u;
   std::vector<float> _areahit_charge_v;
@@ -377,6 +392,9 @@ private:
   std::vector<float> _areahit_width_u;
   std::vector<float> _areahit_width_v;
   std::vector<float> _areahit_width_y;
+  std::vector<float> _areahit_time_u;
+  std::vector<float> _areahit_time_v;
+  std::vector<float> _areahit_time_y;
 
   // dedx vector
   std::vector<float> _dqdx_u;
@@ -628,7 +646,8 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
       for (const auto &pair: sc->TDCIDEMap()) {
         for (const sim::IDE &ide: pair.second) {
           if (ide.trackID == true_particle->TrackId() || fAllTrueEnergyDeposits) {
-            particle_ide_map[geometry->View(sc->Channel())][sc->Channel()].push_back(&ide);
+            unsigned plane_id = geometry->ChannelToWire(sc->Channel()).at(0).Plane;
+            particle_ide_map[plane_id][sc->Channel()].push_back(&ide);
           }
         }
       }
@@ -638,7 +657,9 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     for (unsigned i = 0; i < particleList.size(); i++) {
       int G4ID = particleList[i]->TrackId();
       for (unsigned plane = 0; plane < 3; plane++) {
-        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, (geo::View_t)plane);
+        // build the plane ID
+        geo::PlaneID plane_id(0, 0, plane);
+        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, geometry->View(plane_id));
         allIDEs[plane].insert(allIDEs[plane].end(), this_ides.begin(), this_ides.end());
       }
     }
@@ -804,6 +825,9 @@ void CalorimetryAnalysis::fillDefault()
   _trkhit_width_u.clear();
   _trkhit_width_v.clear();
   _trkhit_width_y.clear();
+  _trkhit_time_u.clear();
+  _trkhit_time_v.clear();
+  _trkhit_time_y.clear();
 
   _areahit_charge_u.clear();
   _areahit_charge_v.clear();
@@ -817,6 +841,9 @@ void CalorimetryAnalysis::fillDefault()
   _areahit_width_u.clear();
   _areahit_width_v.clear();
   _areahit_width_y.clear();
+  _areahit_time_u.clear();
+  _areahit_time_v.clear();
+  _areahit_time_y.clear();
 
   _allhit_charge_u.clear();
   _allhit_charge_v.clear();
@@ -830,6 +857,9 @@ void CalorimetryAnalysis::fillDefault()
   _allhit_width_u.clear();
   _allhit_width_v.clear();
   _allhit_width_y.clear();
+  _allhit_time_u.clear();
+  _allhit_time_v.clear();
+  _allhit_time_y.clear();
 
   _calohit_charge_u.clear();
   _calohit_charge_v.clear();
@@ -843,6 +873,9 @@ void CalorimetryAnalysis::fillDefault()
   _calohit_width_u.clear();
   _calohit_width_v.clear();
   _calohit_width_y.clear();
+  _calohit_time_u.clear();
+  _calohit_time_v.clear();
+  _calohit_time_y.clear();
 
   _sumhit_charge_u.clear();
   _sumhit_charge_v.clear();
@@ -856,6 +889,9 @@ void CalorimetryAnalysis::fillDefault()
   _sumhit_width_u.clear();
   _sumhit_width_v.clear();
   _sumhit_width_y.clear();
+  _sumhit_time_u.clear();
+  _sumhit_time_v.clear();
+  _sumhit_time_y.clear();
 
   // dedx vector
   _dqdx_u.clear();
@@ -960,6 +996,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("areahit_width_u", "std::vector<float>", &_areahit_width_u);
   _calo_tree->Branch("areahit_width_v", "std::vector<float>", &_areahit_width_v);
   _calo_tree->Branch("areahit_width_y", "std::vector<float>", &_areahit_width_y);
+  _calo_tree->Branch("areahit_time_u", "std::vector<float>", &_areahit_time_u);
+  _calo_tree->Branch("areahit_time_v", "std::vector<float>", &_areahit_time_v);
+  _calo_tree->Branch("areahit_time_y", "std::vector<float>", &_areahit_time_y);
 
   _calo_tree->Branch("allhit_charge_u", "std::vector<float>", &_allhit_charge_u);
   _calo_tree->Branch("allhit_charge_v", "std::vector<float>", &_allhit_charge_v);
@@ -973,6 +1012,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("allhit_width_u", "std::vector<float>", &_allhit_width_u);
   _calo_tree->Branch("allhit_width_v", "std::vector<float>", &_allhit_width_v);
   _calo_tree->Branch("allhit_width_y", "std::vector<float>", &_allhit_width_y);
+  _calo_tree->Branch("allhit_time_u", "std::vector<float>", &_allhit_time_u);
+  _calo_tree->Branch("allhit_time_v", "std::vector<float>", &_allhit_time_v);
+  _calo_tree->Branch("allhit_time_y", "std::vector<float>", &_allhit_time_y);
 
   _calo_tree->Branch("trkhit_charge_u", "std::vector<float>", &_trkhit_charge_u);
   _calo_tree->Branch("trkhit_charge_v", "std::vector<float>", &_trkhit_charge_v);
@@ -986,6 +1028,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("trkhit_width_u", "std::vector<float>", &_trkhit_width_u);
   _calo_tree->Branch("trkhit_width_v", "std::vector<float>", &_trkhit_width_v);
   _calo_tree->Branch("trkhit_width_y", "std::vector<float>", &_trkhit_width_y);
+  _calo_tree->Branch("trkhit_time_u", "std::vector<float>", &_trkhit_time_u);
+  _calo_tree->Branch("trkhit_time_v", "std::vector<float>", &_trkhit_time_v);
+  _calo_tree->Branch("trkhit_time_y", "std::vector<float>", &_trkhit_time_y);
 
   _calo_tree->Branch("calohit_charge_u", "std::vector<float>", &_calohit_charge_u);
   _calo_tree->Branch("calohit_charge_v", "std::vector<float>", &_calohit_charge_v);
@@ -999,6 +1044,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("calohit_width_u", "std::vector<float>", &_calohit_width_u);
   _calo_tree->Branch("calohit_width_v", "std::vector<float>", &_calohit_width_v);
   _calo_tree->Branch("calohit_width_y", "std::vector<float>", &_calohit_width_y);
+  _calo_tree->Branch("calohit_time_u", "std::vector<float>", &_calohit_time_u);
+  _calo_tree->Branch("calohit_time_v", "std::vector<float>", &_calohit_time_v);
+  _calo_tree->Branch("calohit_time_y", "std::vector<float>", &_calohit_time_y);
 
   _calo_tree->Branch("sumhit_charge_u", "std::vector<float>", &_sumhit_charge_u);
   _calo_tree->Branch("sumhit_charge_v", "std::vector<float>", &_sumhit_charge_v);
@@ -1012,6 +1060,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("sumhit_width_u", "std::vector<float>", &_sumhit_width_u);
   _calo_tree->Branch("sumhit_width_v", "std::vector<float>", &_sumhit_width_v);
   _calo_tree->Branch("sumhit_width_y", "std::vector<float>", &_sumhit_width_y);
+  _calo_tree->Branch("sumhit_time_u", "std::vector<float>", &_sumhit_time_u);
+  _calo_tree->Branch("sumhit_time_v", "std::vector<float>", &_sumhit_time_v);
+  _calo_tree->Branch("sumhit_time_y", "std::vector<float>", &_sumhit_time_y);
 
   _calo_tree->Branch("backtracked_start_x", &_backtracked_start_x, "backtracked_start_x/F");
   _calo_tree->Branch("backtracked_start_y", &_backtracked_start_y, "backtracked_start_y/F");
@@ -1175,6 +1226,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 {
 
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // TODO: variables to set
   _generation = -1;
@@ -1192,20 +1244,21 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   }
 
   for (const auto &wire: allWires) {
+    unsigned plane_id = geometry->ChannelToWire(wire->Channel()).at(0).Plane;
 
-    if (wire->View() == 0) {
+    if (plane_id == 0) {
       _integrated_charge_u.push_back(0);
       for (auto const &range: wire->SignalROI().get_ranges()) {
         for (float val: range) _integrated_charge_u.back() += val;
       }
     }
-    else if (wire->View() == 1) {
+    else if (plane_id == 1) {
       _integrated_charge_v.push_back(0);
       for (auto const &range: wire->SignalROI().get_ranges()) {
         for (float val: range) _integrated_charge_v.back() += val;
       }
     }
-    else if (wire->View() == 2) {
+    else if (plane_id == 2) {
       _integrated_charge_y.push_back(0);
       for (auto const &range: wire->SignalROI().get_ranges()) {
         for (float val: range) _integrated_charge_y.back() += val;
@@ -1225,7 +1278,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _allhit_multiplicity_y,
     _allhit_width_u,
     _allhit_width_v,
-    _allhit_width_y
+    _allhit_width_y,
+    _allhit_time_u,
+    _allhit_time_v,
+    _allhit_time_y
   );
 
   FillHits(areaHits, 
@@ -1240,7 +1296,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _areahit_multiplicity_y,
     _areahit_width_u,
     _areahit_width_v,
-    _areahit_width_y
+    _areahit_width_y,
+    _areahit_time_u,
+    _areahit_time_v,
+    _areahit_time_y
   );
 
   FillHits(trkHits, 
@@ -1255,7 +1314,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _trkhit_multiplicity_y,
     _trkhit_width_u,
     _trkhit_width_v,
-    _trkhit_width_y
+    _trkhit_width_y,
+    _trkhit_time_u,
+    _trkhit_time_v,
+    _trkhit_time_y
   );
     
   FillHits(caloHits, 
@@ -1270,7 +1332,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _calohit_multiplicity_y,
     _calohit_width_u,
     _calohit_width_v,
-    _calohit_width_y
+    _calohit_width_y,
+    _calohit_time_u,
+    _calohit_time_v,
+    _calohit_time_y
   );
 
   FillHits(caloHits, 
@@ -1286,6 +1351,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _sumhit_width_u,
     _sumhit_width_v,
     _sumhit_width_y,
+    _sumhit_time_u,
+    _sumhit_time_v,
+    _sumhit_time_y,
     false);
 
   // store Backtracking
@@ -1628,7 +1696,13 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
               std::vector<float> &width_u,
               std::vector<float> &width_v,
               std::vector<float> &width_y,
+              std::vector<float> &time_u,
+              std::vector<float> &time_v,
+              std::vector<float> &time_y,
               bool use_integral) {
+
+  detinfo::DetectorClocks const* dclock
+          = lar::providerFrom<detinfo::DetectorClocksService>();
 
   struct HitInfo {
     float charge;
@@ -1636,7 +1710,9 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
     float width;
     int start;
     int end;
-    HitInfo(): charge(0), multiplicity(0), width(0), start(0), end(0) {}
+    float time;
+    int nhit;
+    HitInfo(): charge(0), multiplicity(0), width(0), start(0), end(0), time(0.), nhit(0) {}
   };
 
   std::map<unsigned, HitInfo> hit_map_u;
@@ -1644,7 +1720,7 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
   std::map<unsigned, HitInfo> hit_map_y;
 
   for (const art::Ptr<recob::Hit> hit: hits) {
-    if (hit->View() == 0) {
+    if (hit->WireID().Plane == 0) {
       // if using summed ADC method to count charge, don't double-count hits in the same snippet
       if (!use_integral && hit_map_u[hit->Channel()].start == hit->StartTick() && hit_map_u[hit->Channel()].end == hit->EndTick()) {
         continue;
@@ -1654,8 +1730,10 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_u[hit->Channel()].width = std::max(hit_map_u[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_u[hit->Channel()].start = hit->StartTick();
       hit_map_u[hit->Channel()].end = hit->EndTick();
+      hit_map_u[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_u[hit->Channel()].time * hit_map_u[hit->Channel()].nhit) / (hit_map_u[hit->Channel()].nhit + 1);
+      hit_map_u[hit->Channel()].nhit ++;
     }
-    else if (hit->View() == 1) {
+    else if (hit->WireID().Plane == 1) {
       // if using summed ADC method to count charge, don't double-count hits in the same snippet
       if (!use_integral && hit_map_v[hit->Channel()].start == hit->StartTick() && hit_map_v[hit->Channel()].end == hit->EndTick()) {
         continue;
@@ -1665,6 +1743,8 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_v[hit->Channel()].width = std::max(hit_map_v[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_v[hit->Channel()].start = hit->StartTick();
       hit_map_v[hit->Channel()].end = hit->EndTick();
+      hit_map_v[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_v[hit->Channel()].time * hit_map_v[hit->Channel()].nhit) / (hit_map_v[hit->Channel()].nhit + 1);
+      hit_map_v[hit->Channel()].nhit ++;
     }
     else {
       // if using summed ADC method to count charge, don't double-count hits in the same snippet
@@ -1676,6 +1756,8 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_y[hit->Channel()].width = std::max(hit_map_y[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_y[hit->Channel()].start = hit->StartTick();
       hit_map_y[hit->Channel()].end = hit->EndTick();
+      hit_map_y[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_y[hit->Channel()].time * hit_map_y[hit->Channel()].nhit) / (hit_map_y[hit->Channel()].nhit + 1);
+      hit_map_y[hit->Channel()].nhit ++;
     }
   }
 
@@ -1684,18 +1766,21 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
     charge_u.push_back(pair.second.charge);
     multiplicity_u.push_back(pair.second.multiplicity);
     width_u.push_back(pair.second.width);
+    time_u.push_back(pair.second.time);
   }
   for (auto const &pair: hit_map_v) {
     channel_v.push_back(pair.first);
     charge_v.push_back(pair.second.charge);
     multiplicity_v.push_back(pair.second.multiplicity);
     width_v.push_back(pair.second.width);
+    time_v.push_back(pair.second.time);
   }
   for (auto const &pair: hit_map_y) {
     channel_y.push_back(pair.first);
     charge_y.push_back(pair.second.charge);
     multiplicity_y.push_back(pair.second.multiplicity);
     width_y.push_back(pair.second.width);
+    time_y.push_back(pair.second.time);
   }
 
 }
