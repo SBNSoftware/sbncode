@@ -1,0 +1,7 @@
+BEGIN_PROLOG
+
+trackhitfilter_sbnd: {
+  module_type: TrackHitFilter
+}
+
+END_PROLOG

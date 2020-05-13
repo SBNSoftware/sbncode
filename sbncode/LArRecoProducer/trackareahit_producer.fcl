@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+trackareahit_sbnd: {
+  module_type: TrackAreaHit
+  WireLabel: caldata
+  SignalShapingWindow: 25 # [TDC ticks]
+}
+
+END_PROLOG
