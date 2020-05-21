@@ -16,13 +16,30 @@
 #include <vector>
 //#include <TTree.h>
 
-#ifdef GEN_FLATRECORD_CONTEXT
+#include "TVector3.h"
+
 namespace event{
-  struct TVector3{TVector3(){}TVector3(double,double,double){}float x; float y; float z;};
-  struct Pair{std::string first; std::vector<float> second;};
+  // This helps us hide the rest of TVector3's fields from gen_proxy
+  struct SRVector3D{
+    SRVector3D(){}
+    SRVector3D(double x, double y, double z) : fX(x), fY(y), fZ(z) {}
+    SRVector3D(const TVector3& v) : fX(v.X()), fY(v.Y()), fZ(v.Z()) {}
+    float fX, fY, fZ;
+  };
+
+  // And this one is for avoiding the map in the systs
+  struct SRPair{
+    SRPair(const std::string& f, const std::vector<float>& s) : first(f), second(s) {}
+    std::string first; std::vector<float> second;
+  };
+  struct SRMap{
+    SRMap(const std::map<std::string, std::vector<float>>& m){for(auto it: m) weights.emplace_back(it.first, it.second);}
+    std::vector<SRPair> weights;
+  };
 }
-#else
-#include <TVector3.h>
+
+#ifdef GEN_FLATRECORD_CONTEXT
+#define TVector3 SRVector3D
 #endif
 
 #include "Experiment.hh"
@@ -163,7 +180,7 @@ public:
 #ifndef GEN_FLATRECORD_CONTEXT
     std::map<std::string, std::vector<float> > weights;
 #else
-    std::vector<Pair> weights;
+    SRMap weights;
 #endif
 
   size_t index;  //!< Index in the MCTruth
