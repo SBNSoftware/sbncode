@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace caf{class SRProxy;}
+#include "StandardRecord/Proxy/FwdDeclare.h"
 
 namespace ana
 {

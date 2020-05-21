@@ -33,8 +33,8 @@ namespace event{
     std::string first; std::vector<float> second;
   };
   struct SRMap{
-    SRMap(const std::map<std::string, std::vector<float>>& m){for(auto it: m) weights.emplace_back(it.first, it.second);}
-    std::vector<SRPair> weights;
+    SRMap(const std::map<std::string, std::vector<float>>& m){for(auto it: m) vec.emplace_back(it.first, it.second);}
+    std::vector<SRPair> vec;
   };
 }
 

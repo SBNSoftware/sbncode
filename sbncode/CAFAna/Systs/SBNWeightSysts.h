@@ -6,12 +6,6 @@
 #include <vector>
 #include <unordered_map>
 
-namespace caf
-{
-  class PairProxy;
-  template<class T> class VectorProxy;
-}
-
 namespace ana
 {
   class UniverseWeight
@@ -22,7 +16,7 @@ namespace ana
 
     double operator()(const caf::SRProxy* sr) const;
   protected:
-    int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws, int isyst) const;
+    int GetIdx(const event::SRMapProxy& ws, int isyst) const;
 
     std::vector<std::string> fNames;
     int fUnivIdx;
@@ -55,7 +49,7 @@ namespace ana
   protected:
     mutable int fIdx;
 
-    int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const;
+    int GetIdx(const event::SRMapProxy& ws) const;
 
 
     struct Univs

@@ -9,7 +9,9 @@
 
 #include "CAFAna/Core/Binning.h"
 
-namespace caf{class SRProxy; class SRSpill; class SRSpillTruthBranch;}
+#include "StandardRecord/Proxy/FwdDeclare.h"
+
+namespace caf{class SRSpill; class SRSpillTruthBranch;}
 
 namespace ana
 {
