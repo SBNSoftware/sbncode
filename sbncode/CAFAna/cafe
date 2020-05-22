@@ -154,7 +154,6 @@ if __name__ == '__main__':
         if script != ' ': rootargs.append(script)
         rootargs += args
 
-
     # Show the user what we're doing in case we got it wrong
     print(exe, ' '.join(rootargs))
     # Replace the whole process
