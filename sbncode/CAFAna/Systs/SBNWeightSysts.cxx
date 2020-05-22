@@ -31,7 +31,7 @@ namespace ana
     // This hack improves throughput vastly
     if(fUnivIdx == 0){
       for(unsigned int i = 0; i < fNames.size(); ++i){
-        for(const auto& b: ws.vec[GetIdx(ws, i)].second) (void)((float)b);
+        for(const auto& b: ws[GetIdx(ws, i)].second) (void)((float)b);
       }
     }
 
@@ -41,23 +41,23 @@ namespace ana
       // TODO: might want to "wrap around" differently in different systs to
       // avoid unwanted correlations between systs with the same number of
       // universes.
-      const unsigned int unividx = fUnivIdx % ws.vec[GetIdx(ws, i)].second.size();
+      const unsigned int unividx = fUnivIdx % ws[GetIdx(ws, i)].second.size();
 
-      w *= ws.vec[GetIdx(ws, i)].second[unividx];
+      w *= ws[GetIdx(ws, i)].second[unividx];
     }
 
     return w;
   }
 
   // --------------------------------------------------------------------------
-  int UniverseWeight::GetIdx(const event::SRMapProxy& ws,
+  int UniverseWeight::GetIdx(const caf::Proxy<std::vector<event::SRPair>>& ws,
                              int isyst) const
   {
     if(fSystIdxs.empty()){
       for(const std::string& name: fNames){
         bool any = false;
-        for(unsigned int i = 0; i < ws.vec.size(); ++i){
-          if(std::string(ws.vec[i].first) == name){
+        for(unsigned int i = 0; i < ws.size(); ++i){
+          if(std::string(ws[i].first) == name){
             fSystIdxs.push_back(i);
             any = true;
             break;
@@ -92,24 +92,24 @@ namespace ana
     const int i = GetIdx(ws);
     const Univs u = GetUnivs(x);
 
-    const double y0 = ws.vec[i].second[u.i0];
-    const double y1 = ws.vec[i].second[u.i1];
+    const double y0 = ws[i].second[u.i0];
+    const double y1 = ws[i].second[u.i1];
 
     weight *= u.w0*y0 + u.w1*y1;
   }
 
   // --------------------------------------------------------------------------
-  int SBNWeightSyst::GetIdx(const event::SRMapProxy& ws) const
+  int SBNWeightSyst::GetIdx(const caf::Proxy<std::vector<event::SRPair>>& ws) const
   {
     if(fIdx == -1){
-      for(unsigned int i = 0; i < ws.vec.size(); ++i){
-        if(std::string(ws.vec[i].first) == ShortName()) fIdx = i;
+      for(unsigned int i = 0; i < ws.size(); ++i){
+        if(std::string(ws[i].first) == ShortName()) fIdx = i;
       }
 
       if(fIdx == -1){
         std::cout << "SBNWeightSyst: '" << ShortName() << "' not found in record" << std::endl;
         std::cout << "Available:";
-        for(auto& it: ws.vec) std::cout << " " << std::string(it.first);
+        for(auto& it: ws) std::cout << " " << std::string(it.first);
         std::cout << std::endl;
         abort();
       }

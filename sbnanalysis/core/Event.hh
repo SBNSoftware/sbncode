@@ -26,16 +26,6 @@ namespace event{
     SRVector3D(const TVector3& v) : fX(v.X()), fY(v.Y()), fZ(v.Z()) {}
     float fX, fY, fZ;
   };
-
-  // And this one is for avoiding the map in the systs
-  struct SRPair{
-    SRPair(const std::string& f, const std::vector<float>& s) : first(f), second(s) {}
-    std::string first; std::vector<float> second;
-  };
-  struct SRMap{
-    SRMap(const std::map<std::string, std::vector<float>>& m){for(auto it: m) vec.emplace_back(it.first, it.second);}
-    std::vector<SRPair> vec;
-  };
 }
 
 #ifdef GEN_FLATRECORD_CONTEXT
@@ -164,6 +154,7 @@ public:
  * \class Interaction
  * \brief All truth information associated with one neutrino interaction
  */
+#ifndef GEN_FLATRECORD_CONTEXT
 class Interaction {
 public:
   Neutrino neutrino;  //!< The neutrino
@@ -177,15 +168,42 @@ public:
    * This is a map from the weight calculator name to the list of weights
    * for all the sampled universes.
    */
-#ifndef GEN_FLATRECORD_CONTEXT
-    std::map<std::string, std::vector<float> > weights;
-#else
-    SRMap weights;
-#endif
+  std::map<std::string, std::vector<float> > weights;
 
   size_t index;  //!< Index in the MCTruth
 };
+#endif
 
+// This allows SRProxy to work around the map in the systs
+struct SRPair{
+  SRPair(const std::pair<std::string, std::vector<float>>& p) : first(p.first), second(p.second) {}
+  std::string first;
+  std::vector<float> second;
+};
+
+class SRInteraction
+{
+public:
+  SRInteraction(){}
+#ifndef GEN_FLATRECORD_CONTEXT
+  SRInteraction(const Interaction& i)
+    : neutrino(i.neutrino),
+      lepton(i.lepton),
+      finalstate(i.finalstate),
+      nfinalstate(i.nfinalstate),
+      weights(i.weights.begin(), i.weights.end()),
+      index(i.index)
+  {
+  }
+#endif
+
+  Neutrino neutrino;
+  FinalStateParticle lepton;
+  std::vector<FinalStateParticle> finalstate;
+  size_t nfinalstate;
+  std::vector<SRPair> weights;
+  size_t index;
+};
 
 /**
  * \class RecoInteraction
@@ -224,13 +242,17 @@ public:
  */
 class RecoEvent {
 public:
-  Interaction* GetTruth() {
+  auto GetTruth() {
     return truth.empty() ? NULL : &truth.at(0);
   }
 
   Metadata metadata;  //!< Event metadata
   RecoInteraction reco; //!< Reconstructed interaction
+#ifndef GEN_FLATRECORD_CONTEXT
   std::vector<Interaction> truth; //!< Associated truth interaction
+#else
+  std::vector<SRInteraction> truth;
+#endif
   Experiment experiment;  //!< Experiment identifier
 };
 
@@ -246,7 +268,11 @@ class Event {
 public:
   Metadata metadata;  //!< Event metadata
   size_t ntruth;  //!< Size of truth
+#ifndef GEN_FLATRECORD_CONTEXT
   std::vector<Interaction> truth; //!< All truth interactions
+#else
+  std::vector<SRInteraction> truth;
+#endif
   size_t nreco;  //!< Size of reco
   std::vector<RecoInteraction> reco; //!< Reconstructed interactions
   Experiment experiment;  //!< Experiment identifier

@@ -16,7 +16,7 @@ namespace ana
 
     double operator()(const caf::SRProxy* sr) const;
   protected:
-    int GetIdx(const event::SRMapProxy& ws, int isyst) const;
+    int GetIdx(const caf::Proxy<std::vector<event::SRPair>>& ws, int isyst) const;
 
     std::vector<std::string> fNames;
     int fUnivIdx;
@@ -49,7 +49,7 @@ namespace ana
   protected:
     mutable int fIdx;
 
-    int GetIdx(const event::SRMapProxy& ws) const;
+    int GetIdx(const caf::Proxy<std::vector<event::SRPair>>& ws) const;
 
 
     struct Univs
