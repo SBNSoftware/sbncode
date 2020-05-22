@@ -42,6 +42,7 @@ ubcore           v08_46_00
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
 castxml          v0_00_00_f20180122 - only_for_build
+srproxy          v00.03
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -50,9 +51,9 @@ cetbuildtools v7_13_02 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
 
-qualifier     sbndcode    uboonecode  icaruscode    ubcore     pygccxml notes
-e19:debug     e19:debug   e19:debug   e19:debug     e19:debug  p372    -nq-
-e19:prof      e19:prof    e19:prof    e19:prof      e19:prof   p372    -nq-
+qualifier     sbndcode    uboonecode  icaruscode    ubcore     pygccxml srproxy notes
+e19:debug     e19:debug   e19:debug   e19:debug     e19:debug  p372     py3     -nq-
+e19:prof      e19:prof    e19:prof    e19:prof      e19:prof   p372     py3     -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
