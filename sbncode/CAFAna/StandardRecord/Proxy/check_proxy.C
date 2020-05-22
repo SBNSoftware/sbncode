@@ -7,7 +7,6 @@
 
 #include "StandardRecord/StandardRecord.h"
 #include "StandardRecord/Proxy/SRProxy.h"
-#include "StandardRecord/Proxy/CheckEquals.h"
 
 void check_proxy(std::string fname, int N = -1)
 {
@@ -37,7 +36,7 @@ void check_proxy(std::string fname, int N = -1)
 
     recTree2->LoadTree(i);
 
-    CheckEquals(srProxy, *sr);
+    srProxy.CheckEquals(*sr);
   }
 }
 

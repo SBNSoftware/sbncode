@@ -8,7 +8,7 @@
 #include "CAFAna/Core/Utilities.h"
 #include "CAFAna/Core/WildcardSource.h"
 
-#include "StandardRecord/Proxy/BasicTypesProxy.h"
+#include "StandardRecord/Proxy/SRProxy.h"
 
 #include "ifdh.h"
 
