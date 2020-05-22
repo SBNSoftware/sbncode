@@ -1,0 +1,49 @@
+#include "crttrackmatchingalg_sbnd.fcl"
+#include "crtt0matchingalg_sbnd.fcl"
+#include "cosmicidmodules_sbnd.fcl"
+
+OutputFile: "output_numureco.root"
+
+ExperimentID: 0
+ProviderConfigFile: "services_sbnd_3drift.fcl"
+
+# sbnd_beamtime: [0, 1.600] # [us]
+sbnd_beamtime: [-0.4, 2.0] # 0.4us padding
+
+NumuReco: {
+  shakyMCTracks: true
+  requireMatched: false
+  requireContained: false
+
+  PMTTriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold)
+
+  # CRTHitDist: 35
+
+  trackMatchContainmentCut: 0.5
+  flashMatchTimeDifference: 1000
+
+  CRTT0MatchAlg:  @local::standard_crtt0matchingalg
+  CRTTrackMatchAlg: @local::standard_crttrackmatchingalg
+
+  containment_volume_inset: {
+    x: 0
+    y: 0
+    zfront: 0
+    zback: 0
+  }
+
+
+  StoppingParticleCosmicIdAlg: @local::sbnd_stoppingparticlecosmicidalg
+  ApaCrossCosmicIdAlg: {
+    DistanceLimit:  1.1 #2.# Max distance between track end and APA for successful match[cm]
+    MaxApaDistance: 5. #10. # Distance from Apa to not try to shift track [cm]
+    BeamTimeLimits: {
+      BeamTimeMin: -0.4
+      BeamTimeMax: 2.0 
+    }
+  }
+}
+
+NumuReco.TSMode: 1
+NumuReco.CRTT0MatchAlg.TSMode: 1
+

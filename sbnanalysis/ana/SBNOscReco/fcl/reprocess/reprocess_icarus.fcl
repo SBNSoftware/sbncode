@@ -1,0 +1,122 @@
+#include "services_icarus.fcl"
+
+#include "calorimetry_icarus.fcl"
+#include "particleid_icarus.fcl"
+
+#include "services_icarus_simulation.fcl"
+
+BEGIN_PROLOG
+
+icarus_flash_match_0: {
+  module_type: FlashPredict
+  OpHitProducer: "ophit"
+  PandoraProducer: "pandoraGausCryo0"
+  TrackProducer: "pandoraTrackGausCryo0"
+  CaloProducer: "pandoraGausCaloCryo0"
+  SpacePointProducer: "pandoraGausCryo0"
+  BeamWindowStart: -5. #us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "fmplots_icarus.root"
+  MakeTree: false
+  SelectNeutrino: true
+  LightWindowStart: -0.01
+  LightWindowEnd: 0.09
+  PEscale: 1.0
+  MinFlashPE: 0.
+  Detector: "ICARUS"
+  Cryostat: 0
+}
+
+icarus_flash_match_1: @local::icarus_flash_match_0
+icarus_flash_match_1.Cryostat: 1
+icarus_flash_match_1.PandoraProducer: pandoraGausCryo1
+icarus_flash_match_1.TrackProducer: pandoraTrackGausCryo1
+icarus_flash_match_1.CaloProducer: pandoraGausCaloCryo1
+icarus_flash_match_1.SpacePointProducer: pandoraGausCryo1
+
+# setup calo
+pandoraGausReCaloCryo0: @local::icarus_calomc
+pandoraGausReCaloCryo1: @local::icarus_calomc
+
+pandoraGausReCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0" 
+pandoraGausReCaloCryo0.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
+pandoraGausReCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
+pandoraGausReCaloCryo0.CorrectSCE: "false"
+
+pandoraGausReCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1" 
+pandoraGausReCaloCryo1.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
+pandoraGausReCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
+pandoraGausReCaloCryo1.CorrectSCE: "false"
+
+pandoraGausRePidCryo0: @local::icarus_chi2pid
+pandoraGausRePidCryo1: @local::icarus_chi2pid
+
+pandoraGausRePidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
+pandoraGausRePidCryo0.CalorimetryModuleLabel: "pandoraGausReCaloCryo0"
+
+pandoraGausRePidCryo1.TrackModuleLabel:  "pandoraTrackGausCryo1"
+pandoraGausRePidCryo1.CalorimetryModuleLabel: "pandoraGausReCaloCryo1"
+
+END_PROLOG
+
+services:
+{ 
+  @table::icarus_basic_services
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services
+}
+
+source:
+{
+  module_type:     RootInput
+}
+
+
+physics: {
+  producers: {
+    fmatchCryo0: @local::icarus_flash_match_0
+    fmatchCryo1: @local::icarus_flash_match_1
+
+    pandoraGausRePidCryo0: @local::pandoraGausRePidCryo0
+    pandoraGausReCaloCryo0: @local::pandoraGausReCaloCryo0
+
+    pandoraGausRePidCryo1: @local::pandoraGausRePidCryo1
+    pandoraGausReCaloCryo1: @local::pandoraGausReCaloCryo1
+  }
+
+  simulate: [pandoraGausReCaloCryo0, pandoraGausReCaloCryo1, pandoraGausRePidCryo0, pandoraGausRePidCryo1, fmatchCryo0, fmatchCryo1]
+  stream: [out]
+  end_paths: [stream]
+}
+
+outputs: {
+  out: {
+   module_type: RootOutput
+   fileName:    "%ifb_%tc-%p.root"
+   dataTier:    "simulated"
+   compressionLevel: 1
+    outputCommands: [
+      "keep *",
+      "drop raw::RawDigits_daq0__DetSim",
+      "drop raw::RawDigits_daq1__DetSim",
+      "drop raw::RawDigits_daq2__DetSim",
+      "drop raw::RawDigits_daq3__DetSim",
+      "drop recob::Wires_decon1DroiTPC1__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC2__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC0__McRecoGauss",
+      "drop recob::Wires_decon1DroiTPC3__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC1__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC2__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC0__McRecoGauss",
+      "drop raw::RawDigits_rawDigitFilterTPC3__McRecoGauss",
+      "drop sim::SimPhotonss_opdaq__DetSim"
+    ]
+   # fastCloning: false
+ }
+}
+
+services.SpaceChargeService: @local::icarus_spacecharge
+
+process_name: ReOp

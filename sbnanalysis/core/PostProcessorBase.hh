@@ -9,15 +9,21 @@
  * Author: G. Putnam <gputnam@uchicago.edu>, 2018/10/08
  */
 
+#include <thread>
 #include <string>
 #include <vector>
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
+#include "SubRun.hh"
+#include "ProviderManager.hh"
+#include "FileMeta.hh"
 
 class TBranch;
 class TFile;
 class TTree;
+template<typename Param>
+class TParameter;
 
 namespace event {
   class Event;
@@ -54,7 +60,7 @@ public:
    *
    * \param config A configuration, as a JSON filename.
    */
-  void Initialize(char* config=NULL);
+  void Initialize(char* config=NULL, const std::string &output_fname="", unsigned n_workers=1);
 
 protected:
   /**
@@ -64,9 +70,14 @@ protected:
    */
   virtual void ProcessEvent(const event::Event *event) = 0;
 
+  virtual void ProcessSubRun(const SubRun *subrun) {}
+
+  virtual void ProcessFileMeta(const FileMeta *filemeta) {}
+
   /**
    * Setup anything needed per file
    *
+   * \param f the TFile being opened
    * \param eventTree the TTree associated with the sbncode event.
    * Use this TTree to set branch addresses for everything other than
    * the sbncode event.
@@ -74,7 +85,7 @@ protected:
    * Files are guaranteed to be processed in the order they are specified on
    * the command line for sbn-postprocess
    */
-  virtual void FileSetup(TTree *eventTree) {}
+  virtual void FileSetup(TFile *f, TTree *eventTree) {}
 
   /**
    * Any cleanup needed per file
@@ -90,11 +101,27 @@ protected:
    */
   virtual void Initialize(fhicl::ParameterSet* config=NULL) = 0;
 
+  /**
+ * Perform user-level initialization per-thread. Only 
+ * called when multiple workers are specified on the
+ * command line.
+ */
+  virtual void InitializeThread() {}
+
   /** Perform user-level finalization. Called after all events have been processed. */
   virtual void Finalize() {}
 
-  event::Event* fEvent;
-  TTree* fEventTree;
+  ProviderManager* fProviderManager;  //!< Interface for provider access
+  int fConfigExperimentID;
+
+  unsigned NWorkers() { return fNWorkers; }
+  unsigned WorkerID();
+
+private:
+  void ProcessFile(const std::string &fname);
+
+  unsigned fNWorkers;
+  std::vector<std::thread::id> fThreadIDs;
 };
 
 }  // namespace core

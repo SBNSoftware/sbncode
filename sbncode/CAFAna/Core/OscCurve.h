@@ -14,7 +14,7 @@ namespace ana
   class OscCurve
   {
   public:
-    OscCurve(osc::IOscCalculator* calc, int from, int to);
+    OscCurve(osc::IOscCalculator* calc, int from, int to, bool LoverE);
     OscCurve(TH1* h);
     virtual ~OscCurve();
 

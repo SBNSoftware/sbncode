@@ -20,11 +20,13 @@ include_directories($ENV{LARDATAOBJ_INC})
 include_directories($ENV{NUSIMDATA_INC})
 include_directories($ENV{FHICLCPP_INC})
 include_directories($ENV{LARSIM_INC})
+include_directories($ENV{LARDATA_INC})
 include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
 include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
 include_directories($ENV{NUG4_INC})
+include_directories($ENV{ART_ROOT_IO_INC})
 
 link_directories(
   $ENV{BOOST_LIB}
@@ -42,12 +44,20 @@ link_directories(
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
   $ENV{ICARUSCODE_LIB}
+  $ENV{ART_ROOT_IO_LIB}
   $ENV{NUG4_LIB}
 )
 
-ROOT_GENERATE_DICTIONARY(sbn_eventdict Event.hh SubRun.hh LINKDEF linkdef.h)
+file(RELATIVE_PATH RELATIVE_CURRENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+
+FUTURE_ROOT_GENERATE_DICTIONARY(sbn_eventdict 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/Event.hh 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/SubRun.hh 
+  ${RELATIVE_CURRENT_SOURCE_DIR}/FileMeta.hh 
+  LINKDEF linkdef.h)
 
 add_library(sbnanalysis_Event SHARED sbn_eventdict.cxx)
+set_target_properties(sbnanalysis_Event PROPERTIES PUBLIC_HEADER "Event.hh;SubRun.hh;FileMeta.hh")
 target_link_libraries(
   sbnanalysis_Event
   ${ROOT_LIBRARIES}
@@ -73,8 +83,10 @@ target_link_libraries(
   lardataalg_DetectorInfo
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
+  larsim_MCCheater_PhotonBackTracker
   icaruscode_Geometry
   ubcore_Geometry
+  UBooNEGeometryHelper_service
   sbnd_Geometry
   boost_system
   boost_filesystem
@@ -95,6 +107,7 @@ target_link_libraries(
   larsim_EventWeight_Base
   larsim_EventWeight_Base_dict
   ${ROOT_LIBRARIES}
+  art_root_io_RootDB
 )
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/lib)
@@ -106,6 +119,10 @@ file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
 add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
+INSTALL(FILES fcl/gallery_services_icarus.fcl  fcl/gallery_services_sbnd.fcl  fcl/gallery_services_uboone.fcl  fcl/services_icarus_3drift.fcl  fcl/services_sbnd_3drift.fcl
+  DESTINATION
+  ${CMAKE_INSTALL_PREFIX}/fcl
+)
 
 add_executable(sbn sbn.cxx)
 target_link_libraries(
@@ -131,7 +148,7 @@ target_link_libraries(
   ${ROOT_LIBRARIES}
 )
 
-install(TARGETS sbnanalysis_Event DESTINATION lib)
+install(TARGETS sbnanalysis_Event DESTINATION lib PUBLIC_HEADER DESTINATION ${SBN_INC_DIR}/${RELATIVE_CURRENT_SOURCE_DIR} COMPONENT DATA)
 install(TARGETS sbnanalysis_Processor DESTINATION lib)
 install(TARGETS sbnanalysis_ProviderManager DESTINATION lib)
 install(TARGETS sbn DESTINATION bin)

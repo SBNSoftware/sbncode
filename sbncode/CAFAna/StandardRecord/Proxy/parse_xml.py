@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import sys
 
 try:
     from pygccxml import *
 except Exception as e:
-    print
-    print e
-    print
-    print 'On SL6 try: setup pygccxml v1_9_1  -q p2714b; setup castxml v0_00_00_f20180122'
-    print 'On SL7 try: setup pygccxml v1_9_1a -q p2715a; setup castxml v0_00_00_f20180122'
-    print
+    print()
+    print(e)
+    print()
+    print('On SL6 try: setup pygccxml v1_9_1  -q p2714b; setup castxml v0_00_00_f20180122')
+    print('On SL7 try: setup pygccxml v1_9_1a -q p2715a; setup castxml v0_00_00_f20180122')
+    print()
     sys.exit(1)
 
 # Types that we can assume are already defined, so don't form part of our
@@ -56,7 +58,7 @@ def base_class(klass):
 
 
 if len(sys.argv) < 1 or len(sys.argv) > 3:
-    print 'Usage: parse_xml.py [/path/to/header/outputs/] [/path/to/cxx/outputs/]'
+    print('Usage: parse_xml.py [/path/to/header/outputs/] [/path/to/cxx/outputs/]')
     sys.exit(1)
 
 headerDir = os.getcwd()
@@ -80,7 +82,7 @@ config = parser.xml_generator_configuration_t(
 #    start_with_declarations='caf::StandardRecord'
     )
 
-print 'Reading from', context+'/sbncode/StandardRecord/StandardRecord.h'
+print('Reading from', context+'/sbncode/StandardRecord/StandardRecord.h')
 decls = parser.parse([context+'/sbncode/StandardRecord/StandardRecord.h'],
                      config)
 
@@ -114,22 +116,21 @@ std::string Join(const std::string& a, const std::string& b)
 
 # From this point on everything we print goes to SRProxy.h. Remember to send
 # messages for the user to stderr.
-sys.stdout = file(headerDir+'/SRProxy.h', 'w')
+sys.stdout = open(headerDir+'/SRProxy.h', 'w')
 
-print disclaimer
-print
-print '#pragma once'
-print
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/BasicTypesProxy.h"'
-print
-print '#include "sbncode/StandardRecord/SREnums.h"'
-print
-print '#include "TVector3.h"'
-print
-print 'namespace caf'
-print '{'
-#print 'typedef short unsigned int Experiment; // special case enum'
-print
+print(disclaimer)
+print()
+print('#pragma once')
+print()
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/BasicTypesProxy.h"')
+print()
+print('#include "sbncode/StandardRecord/SREnums.h"')
+print()
+print('#include "TVector3.h"')
+print()
+print('namespace caf')
+print('{')
+print()
 
 debug = False
 
@@ -157,25 +158,25 @@ def write_srproxy_h(klass):
     base = base_class(klass)
     if base: base = type_to_proxy_type(base.name)
 
-    print '/// Proxy for \\ref', klass.name
+    print('/// Proxy for \\ref', klass.name)
     if base:
-        print 'class', pt+': public', base
+        print('class', pt+': public', base)
     else:
-        print 'class', pt
+        print('class', pt)
 
-    print '{'
-    print 'public:'
-    print '  '+pt+'(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset);'
-    print '  '+pt+'(const '+pt+'&) = delete;'
-    print '  '+pt+'(const '+pt+'&&) = delete;'
+    print('{')
+    print('public:')
+    print('  '+pt+'(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset);')
+    print('  '+pt+'(const '+pt+'&) = delete;')
+    print('  '+pt+'(const '+pt+'&&) = delete;')
 
-    print
+    print()
     # Only accept direct members
     for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
-        print '  '+type_to_proxy_type(str(v.decl_type)), v.name+';'
+        print('  '+type_to_proxy_type(str(v.decl_type)), v.name+';')
 
-    print '};';
-    print
+    print('};');
+    print()
 
     if debug: sys.stderr.write('Wrote '+pt+'\n')
 
@@ -209,26 +210,26 @@ while True:
         sys.stderr.write('Unable to meet all dependencies\n')
         sys.exit(1)
 
-print '} // end namespace'
+print('} // end namespace')
 
 
 
 # And now we're writing to SRProxy.cxx
-sys.stdout = file(cxxDir+'/SRProxy.cxx', 'w')
-print disclaimer
-print
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
-print
+sys.stdout = open(cxxDir+'/SRProxy.cxx', 'w')
+print(disclaimer)
+print()
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"')
+print()
 #print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h" // for CheckAgainst'
-print
-print 'namespace caf{'
-print joinFunc
+print()
+print('namespace caf{')
+print(joinFunc)
 
 # No need to specifically order the functions in the cxx file
 for klass in ns.classes():
     pt = type_to_proxy_type(klass.name)
     # Constructor
-    print pt+'::'+pt+'(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)'
+    print(pt+'::'+pt+'(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)')
     # Initializer list
     inits = []
     if base_class(klass): inits += [type_to_proxy_type(base_class(klass).name)+'(d, tr, name, base, offset)']
@@ -237,32 +238,32 @@ for klass in ns.classes():
         inits += [v.name + '(d, tr, Join(name, "'+v.name+'"), base, offset)']
 
     if len(inits) > 0:
-        print '  : '+',\n    '.join(inits)
-    print '{\n}\n'
+        print('  : '+',\n    '.join(inits))
+    print('{\n}\n')
 
-print '} // namespace'
+print('} // namespace')
 
 
 # Now the CheckEquals() functions
-sys.stdout = file(headerDir+'/CheckEquals.h', 'w')
-print disclaimer
-print
-print '#pragma once'
-print
-print '#include <vector>'
-print
-print '#include "RtypesCore.h"'
-print
-print 'class TVector3;'
-print
-print 'namespace caf{'
+sys.stdout = open(headerDir+'/CheckEquals.h', 'w')
+print(disclaimer)
+print()
+print('#pragma once')
+print()
+print('#include <vector>')
+print()
+print('#include "RtypesCore.h"')
+print()
+print('class TVector3;')
+print()
+print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
-    print 'class '+klass.name+';'
-    print 'class '+pt+';'
-    print 'void CheckEquals(const '+pt+'& srProxy, const '+klass.name+'& sr);'
-    print
-print '''
+    print('class '+klass.name+';')
+    print('class '+pt+';')
+    print('void CheckEquals(const '+pt+'& srProxy, const '+klass.name+'& sr);')
+    print()
+print('''
 template<class T> class Proxy;
 template<class T> void CheckEquals(const Proxy<T>& x, const T& y);
 void CheckEquals(const Proxy<ULong64_t>& x, const size_t& y);
@@ -277,38 +278,38 @@ template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
 
 // class TVector3Proxy;
 // void CheckEquals(const TVector3Proxy& x, const TVector3& y);
-'''
-print '} // namespace'
+''')
+print('} // namespace')
 
 
-sys.stdout = file(cxxDir+'/CheckEquals.cxx', 'w')
-print disclaimer
-print
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/CheckEquals.h"'
-print
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
+sys.stdout = open(cxxDir+'/CheckEquals.cxx', 'w')
+print(disclaimer)
+print()
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/CheckEquals.h"')
+print()
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"')
 #print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
-print
-print '#include <type_traits>'
-print
-print 'namespace caf{'
+print()
+print('#include <type_traits>')
+print()
+print('namespace caf{')
 
 # Pull this out as a function since we want to recurse into base classes
 def check_equals_body(klass):
     # Only accept direct members
     for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
-        print '  CheckEquals(srProxy.'+v.name+', sr.'+v.name+');'
+        print('  CheckEquals(srProxy.'+v.name+', sr.'+v.name+');')
     if base_class(klass):
         check_equals_body(base_class(klass))
 
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
-    print 'void CheckEquals(const '+pt+'& srProxy, const '+klass.name+'& sr)'
-    print '{'
+    print('void CheckEquals(const '+pt+'& srProxy, const '+klass.name+'& sr)')
+    print('{')
     check_equals_body(klass)
-    print '}\n'
+    print('}\n')
 
-print '''
+print('''
 template<class T>
 typename std::enable_if<!std::is_floating_point<T>::value, bool>::type
 AreEqual(T x, T y)
@@ -360,30 +361,30 @@ template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
 //   CheckEquals(x.y, y.Y());
 //   CheckEquals(x.z, y.Z());
 // }
-'''
-print
-print '} // namespace'
+''')
+print()
+print('} // namespace')
 
 # And CopyRecord() functions
-sys.stdout = file(headerDir+'/CopyRecord.h', 'w')
-print disclaimer
-print
-print '#pragma once'
-print
-print '#include <vector>'
-print
-print '#include "RtypesCore.h"'
-print
-print 'class TVector3;'
-print
-print 'namespace caf{'
+sys.stdout = open(headerDir+'/CopyRecord.h', 'w')
+print(disclaimer)
+print()
+print('#pragma once')
+print()
+print('#include <vector>')
+print()
+print('#include "RtypesCore.h"')
+print()
+print('class TVector3;')
+print()
+print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
-    print 'class '+klass.name+';'
-    print 'class '+pt+';'
-    print 'void CopyRecord(const '+klass.name+"& from, "+pt+'& to);'
-    print
-print '''
+    print('class '+klass.name+';')
+    print('class '+pt+';')
+    print('void CopyRecord(const '+klass.name+"& from, "+pt+'& to);')
+    print()
+print('''
 template<class T> class Proxy;
 template<class T> void CopyRecord(const T& from, Proxy<T>& to);
 void CopyRecord(const size_t& from, Proxy<ULong64_t>& to);
@@ -398,34 +399,34 @@ template<class T, unsigned int N> void CopyRecord(const T* from,
 
 // class TVector3Proxy;
 // void CopyRecord(const TVector3& from, TVector3Proxy& to);
-'''
-print '} // namespace'
+''')
+print('} // namespace')
 
 
-sys.stdout = file(cxxDir+'/CopyRecord.cxx', 'w')
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/CopyRecord.h"'
-print
-print '#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"'
+sys.stdout = open(cxxDir+'/CopyRecord.cxx', 'w')
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/CopyRecord.h"')
+print()
+print('#include "sbncode/CAFAna/StandardRecord/Proxy/SRProxy.h"')
 #print '#include "sbncode/CAFAna/StandardRecord/StandardRecord.h"'
-print disclaimer
-print 'namespace caf{'
+print(disclaimer)
+print('namespace caf{')
 
 # Pull this out as a function since we want to recurse into base classes
 def copy_body(klass):
     # Only accept direct members
     for v in [v for v in klass.variables() if v.parent == klass]: # klass.variables():
-        print '  CopyRecord(from.'+v.name+', to.'+v.name+');'
+        print('  CopyRecord(from.'+v.name+', to.'+v.name+');')
     if base_class(klass):
         copy_body(base_class(klass))
 
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
-    print 'void CopyRecord(const '+klass.name+"& from, "+pt+'& to)'
-    print '{'
+    print('void CopyRecord(const '+klass.name+"& from, "+pt+'& to)')
+    print('{')
     copy_body(klass)
-    print '}\n'
+    print('}\n')
 
-print '''
+print('''
 template<class T> void CopyRecord(const T& from, Proxy<T>& to)
 {
   to = from;
@@ -455,9 +456,9 @@ template<class T, unsigned int N> void CopyRecord(const T* from,
 //   to.y = from.Y();
 //   to.z = from.Z();
 // }
-'''
+''')
 
 
-print '} // namespace'
+print('} // namespace')
 
 sys.stderr.write('Wrote SRProxy.cxx, SRProxy.h, CheckEquals.cxx, CheckEquals.h, CopyRecord.cxx, CopyRecord.h\n')
