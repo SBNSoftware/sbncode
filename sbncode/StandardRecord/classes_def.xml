@@ -10,12 +10,12 @@
   <class name="caf::SRHeader"       />
   <class name="caf::SRShower" />
   <class name="caf::SRSlice"        />
-  <class name="caf::SRSlice::TruthMatch"        />
-  <class name="caf::SRSlice::FlashMatch"        />
+  <class name="caf::TruthMatch"        />
+  <class name="caf::FlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
   <class name="caf::SRTrackTruth" />
-  <class name="caf::SRTrackTruth::ParticleMatch" />
+  <class name="caf::ParticleMatch" />
   <class name="caf::SRTrackCalo" />
   <class name="caf::SRTrkChi2PID" />
   <class name="caf::SRTrkMCS" />
@@ -39,7 +39,7 @@
   <class name="std::vector<caf::SRShower>" />
   <class name="std::vector<caf::SRTrueInteraction>" />
   <class name="std::vector<caf::SRTrueParticle>" />
-  <class name="std::vector<caf::SRTrackTruth::ParticleMatch>" />
+  <class name="std::vector<caf::ParticleMatch>" />
 
   <class name="caf::SRCRTHit" />
   <class name="std::vector<caf::SRCRTHit>" />

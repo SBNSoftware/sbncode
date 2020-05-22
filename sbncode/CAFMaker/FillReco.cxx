@@ -381,7 +381,7 @@ namespace caf
                           (start.z - vertex.z) * (start.z - vertex.z));
 
         if (track.parent == slice.self && dist < 10.) {
-          for (const caf::SRTrackTruth::ParticleMatch &pmatch: track.truth.matches) {
+          for (const caf::ParticleMatch &pmatch: track.truth.matches) {
             total_energy += pmatch.energy;
             for (unsigned i_part = 0; i_part < recs[0].true_particles.size(); i_part++) {
               const caf::SRTrueParticle &particle = recs[0].true_particles[i_part];
@@ -429,7 +429,7 @@ namespace caf
                             (start.z - vertex.z) * (start.z - vertex.z));
 
           if (track.parent == slice.self && dist < 10. && track.truth.matches.size()) {
-            const caf::SRTrackTruth::ParticleMatch &pmatch = track.truth.matches[0];
+            const caf::ParticleMatch &pmatch = track.truth.matches[0];
             if (pmatch.energy / muon.planeVisE > 0.05 && pmatch.G4ID == muon.G4ID) {
                caf::SRVector3D start = track.start;
                caf::SRVector3D end = track.end;

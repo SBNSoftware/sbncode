@@ -724,7 +724,7 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
   // setup the matches
   for (auto const &pair: matches) {
-    caf::SRTrackTruth::ParticleMatch match;
+    caf::ParticleMatch match;
     match.G4ID = pair.first;
     match.energy = pair.second / 1000. /* MeV -> GeV */;
     ret.matches.push_back(match);
@@ -732,7 +732,7 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
   // sort highest energy match to lowest
   std::sort(ret.matches.begin(), ret.matches.end(),
-	    [](const caf::SRTrackTruth::ParticleMatch &a, const caf::SRTrackTruth::ParticleMatch &b) {
+	    [](const caf::ParticleMatch &a, const caf::ParticleMatch &b) {
 	      return a.energy > b.energy;
 	    }
 	    );
