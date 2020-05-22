@@ -1,1 +1,1 @@
-namespace caf{using SRProxy = caf::Proxy<event::Event>;}
+namespace caf{using SRProxy = caf::Proxy<event::RecoEvent>;}
