@@ -37,6 +37,8 @@ source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
 setup sbndcode ${LAR_VERSION} -q ${LAR_QUAL}
 source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
 setup icaruscode ${LAR_VERSION} -q ${LAR_QUAL}
+# sbncode dependencies are installed here for now
+export PRODUCTS=$PRODUCTS:/cvmfs/sbnd.opensciencegrid.org/products/externals/
 EOF
 
 source ./setup_sbncode-${LAR_VERSION}.sh
