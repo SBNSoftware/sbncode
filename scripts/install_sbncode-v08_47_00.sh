@@ -37,6 +37,10 @@ source /cvmfs/sbnd.opensciencegrid.org/products/sbnd/setup_sbnd.sh
 setup sbndcode ${LAR_VERSION} -q ${LAR_QUAL}
 source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
 setup icaruscode ${LAR_VERSION} -q ${LAR_QUAL}
+# The current ups versions of these tools are much more modern than what's in
+# the base OS
+setup gdb
+setup valgrid
 EOF
 
 source ./setup_sbncode-${LAR_VERSION}.sh
