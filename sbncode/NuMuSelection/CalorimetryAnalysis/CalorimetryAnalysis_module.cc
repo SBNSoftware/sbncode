@@ -608,8 +608,9 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     const sbn::RangeP &muon_range = *fmMuonRange.at(track.ID()).at(0);
     const sbn::RangeP &proton_range = *fmProtonRange.at(track.ID()).at(0);
 
+    std::vector<art::Ptr<recob::Hit>> emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.at(track.ID());
-    const std::vector<art::Ptr<recob::Hit>> &areaHits = fmareaHits.at(track.ID());
+    const std::vector<art::Ptr<recob::Hit>> &areaHits = fmareaHits.isValid() ?  fmareaHits.at(track.ID()) : emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &caloHits = fmcaloHits.at(track.ID());
     
     // Get the true matching MC particle
