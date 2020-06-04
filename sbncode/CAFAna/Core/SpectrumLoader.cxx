@@ -190,6 +190,8 @@ namespace ana
       // work from. Copying the whole StandardRecord is pretty expensive, so
       // modify it in place and revert it afterwards.
 
+      caf::SRProxySystController::BeginTransaction();
+
       bool shifted = false;
 
       double systWeight = 1;
@@ -260,7 +262,7 @@ namespace ana
        
       // Return StandardRecord to its unshifted form ready for the next
       // histogram.
-      caf::SRProxySystController::ResetSysts();
+      caf::SRProxySystController::Rollback();
     } // end for shiftdef
   }
 
