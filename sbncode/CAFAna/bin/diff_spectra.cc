@@ -7,9 +7,16 @@
 #include "TH1.h"
 #include "TObject.h"
 #include "TObjString.h"
+#include "TPad.h"
 #include "TTree.h"
 #include "TVectorD.h"
 #include "TVector3.h"
+
+// Set by command-line switch
+bool gEnablePdf = true;
+
+// Has the output pdf been started?
+bool gPdfStarted = false;
 
 // ----------------------------------------------------------------------------
 std::string ConcatPath(const std::string& a, const std::string& b)
@@ -31,9 +38,9 @@ bool operator==(const TVectorD& a, const TVectorD& b)
 
 bool operator==(const TH1& a, const TH1& b)
 {
-  if(a.GetNbinsX() != b.GetNbinsX()) return false;
+  if(a.GetNcells() != b.GetNcells()) return false;
   // TODO - test bin edges
-  for(int i = 0; i < a.GetNbinsX(); ++i)
+  for(int i = 0; i <= a.GetNcells(); ++i)
     if(a.GetBinContent(i) != b.GetBinContent(i))
       return false;
 
@@ -58,6 +65,30 @@ std::ostream& operator<<(std::ostream& os, const TObject& a)
 }
 
 // ----------------------------------------------------------------------------
+void Plots(const TH1& a, const TH1& b, const std::string& key)
+{
+  TH1* ac = (TH1*)a.Clone();
+  TH1* bc = (TH1*)b.Clone();
+
+  ac->SetLineColor(kRed);
+  bc->SetLineColor(kBlue);
+
+  if(ac->Integral() < bc->Integral()) std::swap(ac, bc);
+
+  ac->SetTitle(key.c_str());
+
+  ac->Draw("hist");
+  bc->Draw("hist same");
+
+  if(!gPdfStarted){
+    gPdfStarted = true;
+    gPad->Print("diff.pdf[");
+  }
+
+  gPad->Print("diff.pdf");
+}
+
+// ----------------------------------------------------------------------------
 int gNChecked = 0;
 template<class T> bool Compare(const T& a, const T& b, const std::string& key)
 {
@@ -67,6 +98,11 @@ template<class T> bool Compare(const T& a, const T& b, const std::string& key)
   }
 
   std::cout << "\n'" << key << "' differs: " << a << " vs " << b << std::endl;
+
+  if constexpr(std::is_same_v<T, TH1>)
+    if(gEnablePdf)
+      Plots(a, b, key);
+
   return false;
 }
 
@@ -152,7 +188,8 @@ bool CheckDirectory(TDirectory* a, TDirectory* b, std::string path = "")
 // ----------------------------------------------------------------------------
 void usage()
 {
-  std::cout << "Usage: diff_spectra input1.root input2.root" << std::endl;
+  std::cout << "Usage: diff_spectra [-np] input1.root input2.root" << std::endl;
+  std::cout << "  -np Disable plotting functionality" << std::endl;
 
   exit(2);
 }
@@ -160,7 +197,15 @@ void usage()
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-  if(argc != 3) usage();
+  if(argc != 3 && argc != 4) usage();
+  if(argc == 4 && argv[1] != std::string("-np")) usage();
+
+  if(argc == 4){
+    // Must have been -np
+    gEnablePdf = false;
+    // Shift to maintain filenames as [1] and [2]
+    ++argv;
+  }
 
   const std::string fnameA = argv[1];
   const std::string fnameB = argv[2];
@@ -173,6 +218,8 @@ int main(int argc, char** argv)
     return 0;
   }
   else{
+    if(gPdfStarted) gPad->Print("diff.pdf]");
+
     std::cout << "\nFiles do not match" << std::endl;
     return 1;
   }
