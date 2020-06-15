@@ -53,7 +53,6 @@ cet_report_compiler_flags()
 find_ups_product(cetbuildtools v05_14_00)
 find_ups_product(sbndcode v06_67_00)
 find_ups_product(uboonecode v06_67_00)
-find_ups_product(icaruscode v06_67_00)
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

@@ -23,7 +23,6 @@ include_directories($ENV{LARSIM_INC})
 include_directories($ENV{LARDATA_INC})
 include_directories($ENV{SBNDCODE_INC})
 include_directories($ENV{UBCORE_INC})
-include_directories($ENV{ICARUSCODE_INC})
 include_directories($ENV{MESSAGEFACILITY_INC})
 include_directories($ENV{NUG4_INC})
 include_directories($ENV{ART_ROOT_IO_INC})
@@ -43,7 +42,6 @@ link_directories(
   $ENV{LARSIM_LIB}
   $ENV{SBNDCODE_LIB}
   $ENV{UBCORE_LIB}
-  $ENV{ICARUSCODE_LIB}
   $ENV{ART_ROOT_IO_LIB}
   $ENV{NUG4_LIB}
 )
@@ -84,7 +82,6 @@ target_link_libraries(
   larsim_MCCheater_ParticleInventory
   larsim_MCCheater_BackTracker
   larsim_MCCheater_PhotonBackTracker
-  icaruscode_Geometry
   ubcore_Geometry
   UBooNEGeometryHelper_service
   sbnd_Geometry
@@ -119,7 +116,7 @@ file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/fcl)
 add_custom_command(TARGET sbnanalysis_ProviderManager POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
   ${CMAKE_CURRENT_SOURCE_DIR}/fcl ${CMAKE_INSTALL_PREFIX}/fcl)
-INSTALL(FILES fcl/gallery_services_icarus.fcl  fcl/gallery_services_sbnd.fcl  fcl/gallery_services_uboone.fcl  fcl/services_icarus_3drift.fcl  fcl/services_sbnd_3drift.fcl
+INSTALL(FILES  fcl/gallery_services_sbnd.fcl  fcl/gallery_services_uboone.fcl  fcl/services_sbnd_3drift.fcl
   DESTINATION
   ${CMAKE_INSTALL_PREFIX}/fcl
 )
