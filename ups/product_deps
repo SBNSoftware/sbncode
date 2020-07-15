@@ -34,9 +34,7 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-sbndcode         v08_57_00
 uboonecode       v08_57_00
-icaruscode       v08_57_00
 
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
@@ -49,9 +47,9 @@ cetbuildtools v7_15_01 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
 
-qualifier     sbndcode    uboonecode  icaruscode    pygccxml notes
-e19:debug     e19:debug   e19:debug   e19:debug     p372    -nq-
-e19:prof      e19:prof    e19:prof    e19:prof      p372    -nq-
+qualifier     uboonecode  pygccxml notes
+e19:debug     e19:debug   p372    -nq-
+e19:prof      e19:prof    p372    -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
