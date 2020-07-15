@@ -34,8 +34,8 @@
 #include "LArReco/TrajectoryMCSFitter.h"
 #include "LArReco/TrackMomentumCalculator.h"
 
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
-#include "sbndcode/CRT/CRTProducts/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 
 #include "sbndcode/CRT/CRTUtils/CRTT0MatchAlg.h"
 #include "sbndcode/CRT/CRTUtils/CRTTrackMatchAlg.h"
@@ -174,7 +174,7 @@ protected:
   /**
  *
  */
-  numu::CRTHit SBND2numuCRTHit(const sbnd::crt::CRTHit &hit);
+  numu::CRTHit SBND2numuCRTHit(const sbn::crt::CRTHit &hit);
 
   /**
  * Returns whether the povided time is inside the configured beam spill.
@@ -346,10 +346,10 @@ protected:
   opdet::opHitFinderSBND *_op_hit_maker; //!< Optical hit maker
 
   // holders for CRT information
-  const std::vector<sbnd::crt::CRTTrack> *_crt_tracks;
-  std::vector<sbnd::crt::CRTTrack> _crt_tracks_local;
-  std::vector<sbnd::crt::CRTHit> _crt_hits_local; 
-  const std::vector<sbnd::crt::CRTHit> *_crt_hits; 
+  const std::vector<sbn::crt::CRTTrack> *_crt_tracks;
+  std::vector<sbn::crt::CRTTrack> _crt_tracks_local;
+  std::vector<sbn::crt::CRTHit> _crt_hits_local; 
+  const std::vector<sbn::crt::CRTHit> *_crt_hits; 
   bool _has_crt_hits;
   bool _has_crt_tracks;
 

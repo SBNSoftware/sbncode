@@ -28,7 +28,7 @@ void ana::SBNOsc::CRTHistos::Fill(const numu::CRTHit &hit) {
 }
 
 
-void ana::SBNOsc::CRTHistos::Fill(const sbnd::crt::CRTHit &hit) {
+void ana::SBNOsc::CRTHistos::Fill(const sbn::crt::CRTHit &hit) {
   crt_hits_xy->Fill(hit.x_pos, hit.y_pos);  
   crt_hits_xz->Fill(hit.x_pos, hit.z_pos);  
   crt_hits_yz->Fill(hit.y_pos, hit.z_pos);  

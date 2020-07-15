@@ -10,7 +10,7 @@
 ///////////////////////////////////////////////
 
 // sbndcode
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbndcode/CRT/CRTUtils/CRTT0MatchAlg.h"
 
 // framework
@@ -76,7 +76,7 @@ namespace ana{
     void reconfigure(const core::ProviderManager &manager, const Config& config);
 
     // Returns true if matched to CRTHit outside beam time
-    bool CrtHitCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTHit> crtHits); 
+    bool CrtHitCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits); 
 
     // Getter for matching algorithm
     sbnd::CRTT0MatchAlg T0Alg() const {return t0Alg;}

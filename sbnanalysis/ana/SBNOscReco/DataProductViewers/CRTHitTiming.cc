@@ -18,11 +18,11 @@
 
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
-#include "sbndcode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/SBND/CRT/CRTData.hh"
 #include "fhiclcpp/ParameterSet.h"
 
 #include "larcorealg/Geometry/AuxDetGeo.h"
@@ -95,8 +95,8 @@ public:
       const std::vector<simb::MCParticle> &mc_particles = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
 
     if (fIsICARUS) {
-      auto const &crt_hits_handle = ev.getValidHandle<std::vector<icarus::crt::CRTHit>>(fCRTHitTag);;
-      const std::vector<icarus::crt::CRTHit> &crt_hits = *crt_hits_handle;
+      auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbn::crt::CRTHit>>(fCRTHitTag);;
+      const std::vector<sbn::crt::CRTHit> &crt_hits = *crt_hits_handle;
       const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
       art::FindManyP<icarus::crt::CRTData, void> hits_to_data(crt_hits_handle, ev, fCRTHitTag);
 
@@ -111,7 +111,7 @@ public:
 
       // Now for each CRT hit, try to figure out the IDE(s) that made it
       for (unsigned i = 0; i < crt_hits.size(); i++) {
-        const icarus::crt::CRTHit &hit = crt_hits[i];
+        const sbn::crt::CRTHit &hit = crt_hits[i];
         std::vector<art::Ptr<icarus::crt::CRTData>> datas = hits_to_data.at(i);
         assert(datas.size() == 1 || datas.size() == 2);
         bool has_coincedence = datas.size() == 2;
@@ -190,14 +190,14 @@ public:
       // fOutputFile->cd();
     }
     else {
-      auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTHit>>(fCRTHitTag);;
-      const std::vector<sbnd::crt::CRTHit> &crt_hits = *crt_hits_handle;
+      auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbn::crt::CRTHit>>(fCRTHitTag);;
+      const std::vector<sbn::crt::CRTHit> &crt_hits = *crt_hits_handle;
       const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
       art::FindManyP<sbnd::crt::CRTData, void> hits_to_data(crt_hits_handle, ev, fCRTHitTag);
       auto const &crt_data_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTData>>("crt");
       for (unsigned i = 0; i < crt_hits.size(); i++) {
         int track_id = -1;
-        const sbnd::crt::CRTHit &hit = crt_hits[i];
+        const sbn::crt::CRTHit &hit = crt_hits[i];
         std::vector<art::Ptr<sbnd::crt::CRTData>> datas = hits_to_data.at(i);
         art::FindManyP<sim::AuxDetIDE, void> sims(datas, ev, "crt");
         bool has_muon = false;
