@@ -587,7 +587,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     fillDefault();
 
     // grab associated tracks
-    const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(pfp.Self());
+    const std::vector<art::Ptr<recob::Track>> thisTrack = fmTracks.at(p_pfp.key());
     if (thisTrack.size() != 1)
       continue;
 
@@ -598,8 +598,15 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
       continue;
     }
     // check if parent is the primary
-    const recob::PFParticle &parent = *PFParticleList.at(pfp.Parent());
-    if (!parent.IsPrimary()) {
+    const recob::PFParticle *p_parent = NULL;
+    for (unsigned i_p = 0; i_p < PFParticleList.size(); i_p++) {
+      if (PFParticleList[i_p]->Self() == pfp.Parent()) {
+        p_parent = &*PFParticleList[i_p];
+        break;
+      }
+    }
+
+    if (p_parent == NULL || !p_parent->IsPrimary()) {
       std::cout << "Parent not primary\n";
       continue;
     }
@@ -609,17 +616,28 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     // get all the data
 
     // track data
-    const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints = fmSpacePoint.at(pfp.Self());
-    const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.at(track.ID());
-    const std::vector<art::Ptr<anab::ParticleID>> &pid = fmPID.at(track.ID());
-    const recob::MCSFitResult &muon_mcs = *fmMuonMCS.at(track.ID()).at(0);
-    const sbn::RangeP &muon_range = *fmMuonRange.at(track.ID()).at(0);
-    const sbn::RangeP &proton_range = *fmProtonRange.at(track.ID()).at(0);
+    std::vector<art::Ptr<recob::SpacePoint>> emptySPVector;
+    const std::vector<art::Ptr<recob::SpacePoint>> &spacepoints = fmSpacePoint.isValid() ? fmSpacePoint.at(p_pfp.key()) : emptySPVector;
+
+    std::vector<art::Ptr<anab::Calorimetry>> emptyCaloVector;
+    const std::vector<art::Ptr<anab::Calorimetry>> &calo = fmCalo.isValid() ? fmCalo.at(track.ID()) : emptyCaloVector;
+
+    std::vector<art::Ptr<anab::ParticleID>> emptyPIDVector;
+    const std::vector<art::Ptr<anab::ParticleID>> &pid = fmPID.isValid() ? fmPID.at(track.ID()) : emptyPIDVector;
+
+    recob::MCSFitResult muon_mcs;
+    if (fmMuonMCS.isValid()) muon_mcs = *fmMuonMCS.at(track.ID()).at(0);
+
+    sbn::RangeP muon_range;
+    if (fmMuonRange.isValid()) muon_range = *fmMuonRange.at(track.ID()).at(0);
+
+    sbn::RangeP proton_range; 
+    if (fmProtonRange.isValid()) proton_range = *fmProtonRange.at(track.ID()).at(0);
 
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
-    const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.at(track.ID());
+    const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(track.ID()) : emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &areaHits = fmareaHits.isValid() ?  fmareaHits.at(track.ID()) : emptyHitVector;
-    const std::vector<art::Ptr<recob::Hit>> &caloHits = fmcaloHits.at(track.ID());
+    const std::vector<art::Ptr<recob::Hit>> &caloHits = fmcaloHits.isValid() ? fmcaloHits.at(track.ID()) : emptyHitVector;
     
     // Get the true matching MC particle
     std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(trkHits, true);
