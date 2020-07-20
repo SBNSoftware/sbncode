@@ -185,8 +185,6 @@ private:
 
   bool fShrFit; // use shower track-fitter info?
 
-  std::vector<float> fADCtoE; // vector of ADC to # of e- conversion [to be taken from production reco2 fhicl files]
-
   bool fGetCaloID; // get the index of the calorimetry object manually. Needs to be true unless object produced by Pandora hierarchy
   // (This is at least what I foudn empirically)
 
@@ -477,8 +475,6 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   fBacktrack = p.get<bool>("Backtrack", true);
   fShrFit    = p.get<bool>("ShrFit"   , false);
   fGetCaloID = p.get<bool>("GetCaloID", false);
-
-  fADCtoE = p.get<std::vector<float>>("ADCtoE");
 
   art::ServiceHandle<art::TFileService> tfs;
 
