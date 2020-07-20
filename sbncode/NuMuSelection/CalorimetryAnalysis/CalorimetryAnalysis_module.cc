@@ -175,6 +175,8 @@ private:
   art::InputTag fT0producer;
   art::InputTag fHitFilterproducer;
   art::InputTag fAreaHitproducer;
+  std::string fMCSproducer;
+  std::string fRangeproducer;
   bool fAllTrueEnergyDeposits;
 
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
@@ -223,6 +225,10 @@ private:
   float _backtracked_py;
   float _backtracked_pz;
 
+  float _backtracked_end_x;
+  float _backtracked_end_y;
+  float _backtracked_end_z;
+
   float _backtracked_start_x;
   float _backtracked_start_y;
   float _backtracked_start_z;
@@ -260,6 +266,10 @@ private:
   float _trk_dir_z;
 
   float _trk_len;
+
+  float _trk_calo_range_u;
+  float _trk_calo_range_v;
+  float _trk_calo_range_y;
 
   float _trk_start_x;
   float _trk_start_y;
@@ -457,6 +467,8 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fPIDproducer  = p.get< art::InputTag > ("PIDproducer" );
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
+  fMCSproducer = p.get<std::string>("MCSproducer", "pandoraTrackMCS");
+  fRangeproducer = p.get<std::string>("Rangeproducer", "pandoraTrackRange");
   fT0producer  = p.get< art::InputTag > ("T0producer", "" );
   fAreaHitproducer = p.get<art::InputTag> ("AreaHitproducer", "areahit");
   fAllTrueEnergyDeposits = p.get<bool>("AllTrueEnergyDeposits", true);
@@ -565,9 +577,9 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   art::FindManyP<anab::Calorimetry> fmCalo(tracks, e, fCALOproducer);
   art::FindManyP<anab::ParticleID> fmPID(tracks, e, fPIDproducer);
 
-  art::InputTag mcs_muon  {"pandoraTrackMCS", "muon"};
-  art::InputTag range_muon {"pandoraTrackRange", "muon"};
-  art::InputTag range_proton {"pandoraTrackRange", "proton"};
+  art::InputTag mcs_muon  {fMCSproducer, "muon"};
+  art::InputTag range_muon {fRangeproducer, "muon"};
+  art::InputTag range_proton {fRangeproducer, "proton"};
 
   art::FindManyP<recob::MCSFitResult> fmMuonMCS(tracks, e, mcs_muon);
   art::FindManyP<sbn::RangeP> fmMuonRange(tracks, e, range_muon);
@@ -728,6 +740,10 @@ void CalorimetryAnalysis::fillDefault()
   _backtracked_py = std::numeric_limits<float>::lowest();
   _backtracked_pz = std::numeric_limits<float>::lowest();
 
+  _backtracked_end_x = std::numeric_limits<float>::lowest();
+  _backtracked_end_y = std::numeric_limits<float>::lowest();
+  _backtracked_end_z = std::numeric_limits<float>::lowest();
+
   _backtracked_start_x = std::numeric_limits<float>::lowest();
   _backtracked_start_y = std::numeric_limits<float>::lowest();
   _backtracked_start_z = std::numeric_limits<float>::lowest();
@@ -753,6 +769,10 @@ void CalorimetryAnalysis::fillDefault()
   _trk_theta = std::numeric_limits<float>::lowest();
   _trk_phi = std::numeric_limits<float>::lowest();
   _trk_len = std::numeric_limits<float>::lowest();
+
+  _trk_calo_range_u = std::numeric_limits<float>::lowest();
+  _trk_calo_range_v = std::numeric_limits<float>::lowest();
+  _trk_calo_range_y = std::numeric_limits<float>::lowest();
 
   _trk_dir_x = std::numeric_limits<float>::lowest();
   _trk_dir_y = std::numeric_limits<float>::lowest();
@@ -1065,6 +1085,10 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("sumhit_time_v", "std::vector<float>", &_sumhit_time_v);
   _calo_tree->Branch("sumhit_time_y", "std::vector<float>", &_sumhit_time_y);
 
+  _calo_tree->Branch("backtracked_end_x", &_backtracked_end_x, "backtracked_end_x/F");
+  _calo_tree->Branch("backtracked_end_y", &_backtracked_end_y, "backtracked_end_y/F");
+  _calo_tree->Branch("backtracked_end_z", &_backtracked_end_z, "backtracked_end_z/F");
+
   _calo_tree->Branch("backtracked_start_x", &_backtracked_start_x, "backtracked_start_x/F");
   _calo_tree->Branch("backtracked_start_y", &_backtracked_start_y, "backtracked_start_y/F");
   _calo_tree->Branch("backtracked_start_z", &_backtracked_start_z, "backtracked_start_z/F");
@@ -1094,6 +1118,10 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("trk_theta", &_trk_theta, "trk_theta/F");
   _calo_tree->Branch("trk_phi", &_trk_phi, "trk_phi/F");
   _calo_tree->Branch("trk_len", &_trk_len, "trk_len/F");
+
+  _calo_tree->Branch("trk_calo_range_u", &_trk_calo_range_u, "trk_calo_range_u/F");
+  _calo_tree->Branch("trk_calo_range_v", &_trk_calo_range_v, "trk_calo_range_v/F");
+  _calo_tree->Branch("trk_calo_range_y", &_trk_calo_range_y, "trk_calo_range_y/F");
 
   _calo_tree->Branch("trk_dir_x", &_trk_dir_x, "trk_dir_x/F");
   _calo_tree->Branch("trk_dir_y", &_trk_dir_y, "trk_dir_y/F");
@@ -1436,6 +1464,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_py = trueParticle->Momentum().Py();
     _backtracked_pz = trueParticle->Momentum().Pz();
 
+    _backtracked_end_x = trueParticle->EndPosition().X();
+    _backtracked_end_y = trueParticle->EndPosition().Y();
+    _backtracked_end_z = trueParticle->EndPosition().Z();
+
     _backtracked_start_x = trueParticle->Position().X();
     _backtracked_start_y = trueParticle->Position().Y();
     _backtracked_start_z = trueParticle->Position().Z();
@@ -1580,6 +1612,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 
     if (plane == 0)
     {
+      _trk_calo_range_u = calo->Range();
       _dqdx_u = calo->dQdx();
       _rr_u = calo->ResidualRange();
       _pitch_u = calo->TrkPitchVec();
@@ -1601,6 +1634,8 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     }
     else if (plane == 1)
     {
+      _trk_calo_range_v = calo->Range();
+
       _dqdx_v = calo->dQdx();
       _rr_v = calo->ResidualRange();
       _pitch_v = calo->TrkPitchVec();
@@ -1622,6 +1657,8 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     }
     else if (plane == 2) //collection
     {
+      _trk_calo_range_y = calo->Range();
+
       _dqdx_y = calo->dQdx();
       _rr_y = calo->ResidualRange();
       _pitch_y = calo->TrkPitchVec();
