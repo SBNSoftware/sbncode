@@ -81,8 +81,8 @@ config = parser.xml_generator_configuration_t(
 #    start_with_declarations='caf::StandardRecord'
     )
 
-print('Reading from', context+'/sbnanalysis/core/Event.hh')
-decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
+print('Reading from', context+'/sbncode/DataTypes/Event.hh')
+decls = parser.parse([context+'/sbncode/DataTypes/Event.hh'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)

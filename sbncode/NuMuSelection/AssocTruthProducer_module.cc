@@ -19,19 +19,13 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
-
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Utilities/InputTag.h"
-
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
-
-#include "larcore/Geometry/Geometry.h"
-
-#include <memory>
 
 #include "DataTypes/AssocTruthInfo.h"
 
@@ -43,8 +37,6 @@ namespace numuselection {
 class numuselection::AssocTruthProducer : public art::EDProducer {
 public:
   explicit AssocTruthProducer(fhicl::ParameterSet const & p);
-  // The compiler-generated destructor is fine for non-base
-  // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
   AssocTruthProducer(AssocTruthProducer const &) = delete;
@@ -71,17 +63,16 @@ numuselection::AssocTruthProducer::AssocTruthProducer(fhicl::ParameterSet const 
   // Call appropriate produces<>() functions here.
   produces<std::vector<numuselection::AssocTruthInfo>>(); 
   produces<art::Assns<numuselection::AssocTruthInfo, simb::MCTruth>>();
-
-  // get hook to geometry
-  art::ServiceHandle<geo::Geometry> geo;
 }
 
 void numuselection::AssocTruthProducer::produce(art::Event & e)
 {
   // make the vector of truth info
   auto truth_info = std::make_unique<std::vector<numuselection::AssocTruthInfo>>();
+
   // and the associations
   auto assns = std::make_unique<art::Assns<numuselection::AssocTruthInfo, simb::MCTruth>>();
+
   // ptr maker
   art::PtrMaker<numuselection::AssocTruthInfo> makeTruthPtr(e, *this);
 
@@ -117,3 +108,4 @@ void numuselection::AssocTruthProducer::produce(art::Event & e)
 }
 
 DEFINE_ART_MODULE(numuselection::AssocTruthProducer)
+

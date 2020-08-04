@@ -1,5 +1,5 @@
 add_custom_command(# Rebuild if Event.hh or the script itself change
-                   DEPENDS $ENV{SBNCODE_DIR}/sbnanalysis/core/Event.hh
+                   DEPENDS $ENV{SBNCODE_DIR}/sbncode/DataTypes/Event.hh
                            ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
                    OUTPUT FlatRecord.cxx
                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py

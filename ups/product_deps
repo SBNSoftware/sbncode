@@ -30,14 +30,11 @@ gdmldir product_dir
 fcldir  product_dir
 fwdir   product_dir scripts
 
-# With "product  version" table below, we now define dependencies
+# With "product version" table below, we now define dependencies
 # Add the dependent product and version
 
 product          version
-sbndcode         v08_47_00
-uboonecode       v08_47_00
-icaruscode       v08_47_00
-ubcore           v08_46_00
+larsoft          v08_47_00
 
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
@@ -50,9 +47,9 @@ cetbuildtools v7_13_02 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
 
-qualifier     sbndcode    uboonecode  icaruscode    ubcore     pygccxml notes
-e19:debug     e19:debug   e19:debug   e19:debug     e19:debug  p372    -nq-
-e19:prof      e19:prof    e19:prof    e19:prof      e19:prof   p372    -nq-
+qualifier  larsoft    pygccxml  notes
+e19:debug  e19:debug  p372      -nq-
+e19:prof   e19:prof   p372      -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin

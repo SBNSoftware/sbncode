@@ -1,5 +1,5 @@
 add_custom_command(# Rebuild if Event.hh or the script itself change
-                   DEPENDS ../../../../sbnanalysis/core/Event.hh
+                   DEPENDS ../../../DataTypes/Event.hh
                            parse_xml.py
                    OUTPUT SRProxy.cxx SRProxy.h
                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/parse_xml.py

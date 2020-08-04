@@ -1,4 +1,4 @@
-#include "sbnanalysis/core/Event.hh"
+#include "sbncode/DataTypes/Event.hh"
 
 #include "sbncode/FlatMaker/FlatRecoEvent.h"
 
