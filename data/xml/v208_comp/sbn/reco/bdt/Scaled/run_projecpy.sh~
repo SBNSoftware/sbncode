@@ -1,0 +1,8 @@
+#!/bin/bash
+for d in */ ; do
+   cd $d 
+   bash check_projectpy.sh
+   cd ../
+   sleep 1800
+
+done

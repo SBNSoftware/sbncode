@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+  <!-- Production Project -->
+  <!DOCTYPE project [
+  <!ENTITY release "v08_03_00">
+  <!ENTITY file_type "mc">
+  <!ENTITY run_type "physics">
+  <!ENTITY name "nue_osc_nomec">
+  <!ENTITY tag "uboone">
+]>
+
+<project name="&name;">
+    
+  <!-- Project size -->
+  <numevents>100000</numevents>
+  
+  <!-- Operating System -->
+  <os>SL6</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/persistent/users/dbarker/sensitivity/tarfiles/sbncode_sbnanalysis_v08_12_00.tar</local>
+  </larsoft>
+  
+  <!-- Project stages -->
+  <stage name="gen">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/gen/genie/prodgenie_bnb_nu_osc_sbn_uboone_nomec.fcl</fcl>
+    <outdir>/pnfs/sbnd/scratch/users/dbarker/sensitivity/&release;/&name;/&tag;/gen</outdir>
+    <workdir>/pnfs/sbnd/scratch/users/dbarker/sensitivity/&release;/work/&name;/&tag;/gen</workdir>
+    <numjobs>100</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_gen</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <jobsub>--expected-lifetime=1h</jobsub> 
+    <memory>3000</memory>
+  </stage>
+
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+  
+</project>
+
+
+
+

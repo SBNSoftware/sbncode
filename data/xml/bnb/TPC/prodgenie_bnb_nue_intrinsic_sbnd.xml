@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+  <!-- Production Project -->
+  <!DOCTYPE project [
+  <!ENTITY release "v08_30_00">
+  <!ENTITY file_type "mc">
+  <!ENTITY run_type "physics">
+  <!ENTITY name "intrinsic_nue">
+  <!ENTITY tag "sbnd">
+]>
+
+<project name="&name;">
+    
+  <!-- Project size -->
+  <numevents>855300</numevents>
+  
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  <jobsub>--append_condor_requirements='(TARGET.has_avx==true)'</jobsub>
+  <blacklist>UChicago</blacklist>
+
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/resilient/users/dbarker/sbntar/sbncode_sbnanalysis_v08_30_00.tar</local>
+  </larsoft>
+  
+  <!-- Project stages -->
+  <stage name="gen">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode-v08_03_00_01/srcs/sbncode/fcl/gen/genie/prodgenie_bnb_intrinsic_nue_sbn_sbnd.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/gen</outdir>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/gen</workdir>
+    <numjobs>10000</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_gen</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+  </stage>
+
+  <stage name="g4">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/g4/standard_g4_sbn_sbnd.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/g4/</outdir>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/g4</workdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <numjobs>491</numjobs>
+    <datatier>simulated</datatier>
+    <defname>&name;_&tag;_g4</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <memory>5000</memory>
+    <disk>10 GB</disk>
+    <schema>root</schema>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_makeup_g4_sbnd.list</inputlist> 
+    <jobsub>--expected-lifetime=210m</jobsub>
+  </stage>
+
+  <stage name="reweightB">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/g4/rerun_eventweight_sbnB.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reweightB/makeup</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reweightB</workdir>
+    <numjobs>1018</numjobs>
+    <datatier>simulated</datatier>
+    <defname>&name;_&tag;_reweight</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_makeup_reweight_sbnd.list</inputlist> 
+    <memory>5700</memory>
+    <disk>10 GB</disk>
+    <schema>root</schema>
+    <jobsub>--expected-lifetime=210m</jobsub>
+
+  </stage>
+
+
+  <stage name="detsimreco">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/recodetsim/standard_reco_detsim_sbnd_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco</workdir>
+    <numjobs>10000</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_sbnd_reweight.list</inputlist> 
+    <memory>1300</memory>
+    <disk>10 GB</disk>
+    <schema>root</schema>
+    <jobsub>--expected-lifetime=60m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_makeup">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/recodetsim/standard_reco_detsim_sbnd_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_makeuo/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_makeup</workdir>
+    <numjobs>30</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_sbnd_reco_makeup.list</inputlist> 
+    <memory>1900</memory>
+    <disk>15 GB</disk>
+    <jobsub>--expected-lifetime=120m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_full">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/reco/standard_reco_tracs_sbnd_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_full/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_full</workdir>
+    <numjobs>8561</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_sbnd_reco_full.list</inputlist> 
+    <memory>1900</memory>
+    <disk>15 GB</disk>
+    <jobsub>--expected-lifetime=20m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_full_makeup">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/reco/standard_reco_tracs_sbnd_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_full_makeup/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_full_makeup</workdir>
+    <numjobs>9</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_sbnd_reco_full_makeup.list</inputlist> 
+    <memory>2500</memory>
+    <disk>30 GB</disk>
+    <jobsub>--expected-lifetime=3h</jobsub>
+  </stage>
+
+  <stage name="detsimreco_trackfull">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/reco/standard_reco_tracs_sbnd_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_trackfull/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_trackfull</workdir>
+    <numjobs>8553</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_sbnd_reco_full_total.list</inputlist> 
+    <memory>1900</memory>
+    <disk>15 GB</disk>
+    <jobsub>--expected-lifetime=90m</jobsub>
+  </stage>
+
+
+
+
+  
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+  
+</project>
+
+
+
+

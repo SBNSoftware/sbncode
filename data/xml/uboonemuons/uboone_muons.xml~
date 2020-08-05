@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+  <!-- Production Project -->
+  <!DOCTYPE project [
+  <!ENTITY release "v08_30_00">
+  <!ENTITY file_type "mc">
+  <!ENTITY run_type "physics">
+  <!ENTITY name "muons">
+  <!ENTITY tag "uboone">
+]>
+
+<project name="&name;">
+    
+  <!-- Project size -->
+  <numevents>500</numevents>
+  <numjobs>10</numjobs>
+  
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC</resource>
+
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/resilient/users/dbarker/sbntar/sbncode_sbnanalysis_v08_30_00.tar</local>
+  </larsoft>
+  
+  <!-- Project stages -->
+  <stage name="reco">
+    <fcl>/sbnd/data/users/dbarker/sbn/selection/uboonemuons/prod_mu_reco.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco</outdir>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco</workdir>
+    <numjobs>10</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_reco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <maxfluxfilemb>0</maxfluxfilemb>
+    <memory>5000</memory>
+    <disk>10 GB</disk>
+    <schema>root</schema>
+    <jobsub>--expected-lifetime=600m</jobsub>
+
+  </stage>
+  
+  
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+  
+</project>
+
+
+
+

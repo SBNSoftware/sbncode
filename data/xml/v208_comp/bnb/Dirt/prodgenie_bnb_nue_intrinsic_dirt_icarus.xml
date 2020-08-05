@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+  <!-- Production Project -->
+  <!DOCTYPE project [
+  <!ENTITY release "v08_03_00">
+  <!ENTITY file_type "mc">
+  <!ENTITY run_type "physics">
+  <!ENTITY name "intrinsic_nue_dirt">
+  <!ENTITY tag "icarus">
+]>
+
+<project name="&name;">
+    
+  <!-- Project size -->
+  <numevents>100</numevents>
+
+   <!-- Operating System -->
+  <os>SL6</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+  
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/persistent/users/dbarker/sensitivity/tarfiles/sbncode_v08_03_00_01.tar</local>
+  </larsoft>
+  
+  <!-- Project stages -->
+  <stage name="gen">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode-v08_03_00_01/srcs/sbncode/fcl/gen/genie/prodgenie_bnb_intrinsic_nue_dirt_sbn_icarus.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/gen</outdir>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/gen</workdir>
+    <numjobs>1</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_gen</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode-v08_03_00_01/srcs/sbncode/sbnutil/initsource.sh</initsource>
+  </stage>
+
+  <stage name="g4">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode-v08_03_00_01/srcs/sbncode/fcl/g4/standard_g4_sbn_icarus.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/g4</outdir>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/g4</workdir>
+    <numjobs>1</numjobs>
+    <datatier>simulated</datatier>
+    <defname>&name;_&tag;_g4</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode-v08_03_00_01/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <memory>7000</memory>
+    <disk>40 GB</disk>
+    <schema>root</schema>
+    <jobsub>--expected-lifetime=4h</jobsub>
+
+  </stage>
+  
+  
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+  
+</project>
+
+
+
+

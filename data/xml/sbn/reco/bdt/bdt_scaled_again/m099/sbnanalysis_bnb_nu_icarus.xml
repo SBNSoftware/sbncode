@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!ENTITY release "v08_30_00">
+<!ENTITY file_type "mc">
+<!ENTITY run_type "physics">
+<!ENTITY name "nu_Proposal_BTDm099_Scaled">
+<!ENTITY tag "icarus">
+]>
+
+<project name="&name;">
+
+  <!-- Project size -->
+  <numevents>923000</numevents>
+  
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+  <jobsub>--append_condor_requirements='(TARGET.has_avx==true)'</jobsub>
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC</resource>
+  
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/resilient/users/dbarker/sbntar/sbncode_sbnanalysis_v08_30_00.tar</local>
+  </larsoft>
+
+  <!-- Project stages -->
+  <stage name="sbn">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis/ana/SBNOsc/config/Reco/BDT/Scaled/NueConfigModernIcarus_BTDm099.fcl</fcl> 
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/sbnoutput/&name;/&tag;</outdir> 
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/nu_icarus_reco_trackfull_final.list</inputlist> 
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/showers/SBND/sensitivity/&release;/sbnoutput/work/&name;/&tag;</workdir>
+    <numjobs>40</numjobs>
+    <maxfilesperjob>10</maxfilesperjob>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <!-- absolutely cheat the system. Haters gonna hate  -->
+    <exe>run_sbn_grid_SBNOsc_NueSelectionReco</exe>
+    <memory>800</memory>
+       <jobsub>--expected-lifetime=450m </jobsub>
+    <disk>80GB</disk>
+    
+  </stage>
+
+  <!-- file type -->
+  <filetype>&file_type;</filetype>
+
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+
+</project>

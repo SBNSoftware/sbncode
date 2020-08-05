@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!ENTITY release "v08_12_00">
+<!ENTITY file_type "mc">
+<!ENTITY run_type "physics">
+<!ENTITY name "nue_intrinsic_modern">
+<!ENTITY tag "uboone">
+]>
+
+<project name="&name;">
+
+  <!-- Project size -->
+  <numevents>1000000</numevents>
+  <maxfilesperjob>100</maxfilesperjob>
+
+  <!-- Operating System -->
+  <os>SL6</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+  <jobsub>--append_condor_requirements='(TARGET.has_avx==true)'</jobsub>
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/persistent/users/dbarker/sensitivity/tarfiles/sbncode_sbnanalysis_v08_30_00.tar</local>
+  </larsoft>
+
+  <!-- Project stages -->
+  <stage name="sbn">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis/ana/SBNOsc/config/NueConfigModernUboone_Int.fcl</fcl> 
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/sbnoutput/&name;/&tag;</outdir> 
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/intrinsic_nue_uboone_reweight.list</inputlist> 
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/showers/SBND/sensitivity/&release;/sbnoutput/work/&name;/&tag;</workdir>
+    <numjobs>100</numjobs>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <!-- absolutely cheat the system. Haters gonna hate  -->
+    <exe>run_sbn_grid_SBNOsc_NueSelection</exe>
+    <disk>5GB</disk>
+    <jobsub>--expected-lifetime=60m</jobsub>
+    <memory>800</memory>
+    <schema>root</schema>
+  </stage>
+
+  <!-- file type -->
+  <filetype>&file_type;</filetype>
+
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+
+</project>

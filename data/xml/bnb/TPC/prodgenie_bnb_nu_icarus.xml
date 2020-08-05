@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+  <!-- Production Project -->
+  <!DOCTYPE project [
+  <!ENTITY release "v08_30_00">
+  <!ENTITY file_type "mc">
+  <!ENTITY run_type "physics">
+  <!ENTITY name "nu">
+  <!ENTITY tag "icarus">
+]>
+
+<project name="&name;">
+    
+  <!-- Project size -->
+  <numevents>923400</numevents>
+  
+  <!-- Operating System -->
+  <os>SL7</os>
+
+  <role>Analysis</role>  
+  <group>sbnd</group>
+
+
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  <jobsub>--append_condor_requirements='(TARGET.has_avx==true)'</jobsub>
+  <blacklist>UChicago</blacklist>
+
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/resilient/users/dbarker/sbntar/sbncode_sbnanalysis_v08_30_00.tar</local>
+  </larsoft>
+  
+  <stage name="detsimreco">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/recodetsim/standard_reco_detsim_icarus_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco</workdir>
+    <numjobs>5050</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/numu_icarus.list</inputlist> 
+    <memory>2000</memory>
+    <disk>10 GB</disk>
+    <schema>root</schema>
+    <jobsub>--expected-lifetime=950m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_makeup">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/recodetsim/standard_reco_detsim_icarus_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_makeup/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_makeup</workdir>
+    <numjobs>1660</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/nu_icarus_reco_makeup.list</inputlist> 
+    <memory>2500</memory>
+    <disk>15 GB</disk>
+    <jobsub>--expected-lifetime=1200m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_full">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/reco/standard_reco_tracs_icarus_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_full/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_full</workdir>
+    <numjobs>4635</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/nu_icarus_reco_full.list</inputlist> 
+    <memory>1900</memory>
+    <disk>15 GB</disk>
+    <jobsub>--expected-lifetime=40m</jobsub>
+  </stage>
+
+  <stage name="detsimreco_trackfull">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/fcl/reco/standard_reco_tracs_icarus_sbn.fcl</fcl>
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/&name;/&tag;/reco_trackfull/</outdir>
+    <maxfilesperjob>1</maxfilesperjob>
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/work/&name;/&tag;/reco_trackfull</workdir>
+    <numjobs>4617</numjobs>
+    <datatier>generated</datatier>
+    <defname>&name;_&tag;_detsimreco</defname>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/nu_icarus_reco_full_total.list</inputlist> 
+    <memory>1900</memory>
+    <disk>20 GB</disk>
+    <jobsub>--expected-lifetime=90m</jobsub>
+  </stage>
+
+
+
+
+  
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+  
+</project>
+
+
+
+

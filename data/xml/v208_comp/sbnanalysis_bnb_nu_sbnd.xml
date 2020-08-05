@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<!-- Production Project -->
+
+<!DOCTYPE project [
+<!ENTITY release "v208_comp">
+<!ENTITY file_type "mc">
+<!ENTITY run_type "physics">
+<!ENTITY name "v212">
+<!ENTITY tag "sbnd">
+]>
+
+<project name="&name;">
+
+  <!-- Project size -->
+  <numevents>1000000</numevents>
+  
+  <!-- Operating System -->
+  <os>SL6</os>
+  
+  <role>Analysis</role>  
+  <group>sbnd</group>
+  <jobsub>--append_condor_requirements='(TARGET.has_avx==true)'</jobsub>
+  <!-- Batch resources -->
+  <resource>DEDICATED,OPPORTUNISTIC,OFFSITE</resource>
+  
+  <!-- Larsoft information -->
+  <larsoft>
+    <tag>&release;</tag>
+    <qual>e17:prof</qual>
+    <local>/pnfs/sbnd/persistent/users/dbarker/sensitivity/tarfiles/sbncode_sbnanalysis_v208.tar</local>
+  </larsoft>
+  
+  <!-- Project stages -->
+  <stage name="sbn">
+    <fcl>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnanalysis/ana/SBNOsc/config/NueConfigTest.fcl</fcl> 
+    <outdir>/pnfs/sbnd/persistent/users/dbarker/sensitivity/&release;/sbnoutput/&name;/&tag;</outdir> 
+    <inputlist>/sbnd/data/users/dbarker/sbn/production/lists/numu_sbnd.list</inputlist> 
+    <workdir>/pnfs/sbnd/persistent/users/dbarker/showers/SBND/sensitivity/&release;/sbnoutput/work/&name;/&tag;</workdir>
+    <numjobs>5959</numjobs>
+    <initsource>/sbnd/app/users/dbarker/larsoft_sbncode/sbncode/srcs/sbncode/sbnutil/initsource.sh</initsource>
+    <!-- absolutely cheat the system. Haters gonna hate  -->
+    <exe>run_sbn_grid_SBNOsc_NueSelection</exe>
+    <jobsub>--expected-lifetime=30m</jobsub>
+    <memory>1000</memory>
+    <disk>50GB</disk>
+    <schema>root</schema>
+  </stage>
+  
+  <!-- file type -->
+  <filetype>&file_type;</filetype>
+  
+  <!-- run type -->
+  <runtype>&run_type;</runtype>
+
+</project>

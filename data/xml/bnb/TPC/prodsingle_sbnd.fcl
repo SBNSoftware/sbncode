@@ -1,0 +1,113 @@
+#
+# File:    prodsingle_sbnd.fcl
+# Purpose: Produce single muon events including full SBND detector simulation
+# Version: 1.2
+# 
+# This configuration runs event generation, simulation of propagation through
+# matter and readout simulation.
+# 
+# Input: no input file required
+# 
+# Dependencies:
+# - uses the bundle of SBND simulation services
+#
+# Changes:
+# 20160601 (petrillo@fnal.gov) [v1.1]
+#   - added inline documentation
+#   - moved service configuration from services.user (deprecated) to services
+#   - changed Timing module (deprecated) with TimeTracker
+#   - added MemoryTracker module
+#   - tuned message facility configuration
+#
+# 20161223 (petrillo@fnal.gov) [v1.2]
+#   - changed the default generation parametrs (in singles_sbnd.fcl)
+#   - adopted shared root output configuration
+#
+#
+
+#
+# services
+#
+
+#include "simulationservices_sbnd.fcl"
+#include "messages_sbnd.fcl"
+
+#
+# modules
+#
+
+#include "singles_sbnd.fcl"
+#include "largeantmodules_sbnd.fcl"
+#include "detsimmodules_sbnd.fcl"
+#include "rootoutput_sbnd.fcl"
+
+
+
+process_name: SingleGen
+
+services:
+{
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "hists_prodsingle_sbnd_%p-%tc.root" }
+                @table::sbnd_simulation_services # load simulation services in bulk
+}
+
+# since this is a configuration typically run as interactive test,
+# we set up message configuration accordingly:
+services.message: @local::sbnd_message_services_interactive # from messages_sbnd.fcl
+
+
+# Start each new event with an empty event.
+source:
+{
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:      10          # Number of events to create
+  firstRun:        1          # Run number to use for this file
+  firstEvent:      1          # number of first event in the file
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+  producers:
+  {
+    rns:       { module_type: "RandomNumberSaver" }
+    generator: @local::sbnd_singlep
+    largeant:  @local::sbnd_largeant
+    daq:       @local::sbnd_simwire
+  }
+
+  #define the producer and filter modules for this path, order matters, 
+  simulate:  [ rns, generator, largeant, daq ] 
+
+  #define the output stream, there could be more than one if using filters 
+  stream1:   [ out1 ]
+
+  #ie analyzers and output streams.  these all run simultaneously
+  end_paths: [stream1]  
+}
+
+# block to define where the output goes.  if you defined a filter in the physics
+# block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+# entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+  out1:
+  {
+              @table::sbnd_rootoutput # inherit shared settings
+    fileName: "prodsingle_sbnd_%p-%tc.root" # default file name, can override from command line with -o or --output
+  }
+}
+
+#
+# at the end of the configuration, we can override single parameters to reflect our needs:
+#
+physics.producers.generator.Theta0XZ: [ 10 ]
+physics.producers.generator.PDG: [ 111 ]
+physics.producers.generator.P0: [ 1 ]
+physics.producers.generator.Z0: [ -20 ]
