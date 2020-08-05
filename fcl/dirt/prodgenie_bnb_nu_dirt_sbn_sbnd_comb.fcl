@@ -1,0 +1,161 @@
+#
+# File:    prodgenie_sbnd.fcl
+# Purpose: Produce GENIE events in the SBND detector with spill structure
+# Version: 1.1
+# 
+# This configuration runs event generation only
+# 
+# Input: no input file required
+# 
+# Dependencies:
+# - uses the bundle of SBND simulation services
+#
+#
+
+#
+# services
+#
+
+#include "simulationservices_sbnd.fcl"
+#include "messages_sbnd.fcl"
+
+#
+# modules
+#
+
+#include "genie_sbnd.fcl"
+#include "largeantmodules_sbnd.fcl"
+#include "mcreco.fcl"
+#include "rootoutput_sbnd.fcl"
+#include "particleinventoryservice.fcl"
+#include "photonfilter.fcl"
+
+
+process_name: GenieGen
+
+services:
+{
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "hists_prodgenie_sbnd_%p-%tc.root" }
+  IFDH:         {} # required by GENIEGen
+                @table::sbnd_simulation_services # load simulation services in bulk
+                @table::sbnd_g4_services
+
+  FileCatalogMetadata: @local::sbnd_file_catalog_mc
+  ParticleInventoryService: @local::standard_particleinventoryservice
+
+}
+
+# since this is a configuration typically run as interactive test,
+# we set up message configuration accordingly:
+services.message: @local::sbnd_message_services_interactive # from messages_sbnd.fcl
+
+
+# Start each new event with an empty event.
+source:
+{
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:      10          # Number of events to create
+  firstRun:        1          # Run number to use for this file
+  firstEvent:      1          # number of first event in the file
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ filters:
+     {
+        PhotonFilter:   @local::photonfilter
+        }
+
+
+
+  producers:
+  {
+    rns:       { module_type: "RandomNumberSaver" }
+    generator: @local::sbnd_genie_simple
+    largeant: @local::sbnd_largeant
+    mcreco:   @local::standard_mcreco
+
+  }
+
+
+  #define the producer and filter modules for this path, order matters, 
+  simulate:  [ rns, generator, largeant, mcreco, PhotonFilter ] 
+
+  #define the output stream, there could be more than one if using filters 
+  stream1:   [ out1 ]
+
+ trigger_paths: [simulate] 
+
+
+  #ie analyzers and output streams.  these all run simultaneously
+  end_paths: [stream1]  
+}
+
+# block to define where the output goes.  if you defined a filter in the physics
+# block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+# entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "prodgenie_sbnd_%p-%tc.root" # default file name, can override from command line with -o or --output
+    dataTier:    "simulated"
+    SelectEvents: ["simulate"]
+
+  }
+}
+
+# only keep MCParticles that cross the cryostat;
+# this is relevant in extensive cosmic ray generators (like Corsika)
+physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat", "volTaggerTopHigh", "volTaggerTopLow", "volTaggerSideLeft", "volTaggerSideRight", "volTaggerFaceFront", "volTaggerFaceBack", "volTaggerBot"] 
+
+
+outputs.out1.fileName: "prodgenie_bnb_nu_osc_dirt_sbn_sbnd_%tc_gen.root"
+
+physics.producers.generator: {
+     @table::physics.producers.generator
+     @table::sbnd_flux_bnb_nu_Ev1
+     EventsPerSpill: 0
+     TopVolume: "volWorld"
+     FluxUpstreamZ: -18 #Start the flux rays at 18m upstream of the TPC frontface.  Chosen as this is the distance a muon of 8 GeV (max flux sim. energy) can travel
+}
+
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxType:       "simple_flux"
+
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+
+#services.UBEventWeight: @local::microboone_eventweight_service 
+#physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+physics.producers.largeant.KeepParticlesInVolumes: [ "volWorld" ]
+
+
+physics.producers.largeant.KeepEMShowerDaughters: false
+
+physics.filters.PhotonFilter.ActiveVolume: [
+{
+      xmin: -199.15
+      ymin: -200.
+      zmin: 0.0
+      xmax: 199.15
+      ymax: 200.
+      zmax: 500.
+      }
+]

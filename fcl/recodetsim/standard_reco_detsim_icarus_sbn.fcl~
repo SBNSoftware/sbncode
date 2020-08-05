@@ -1,0 +1,116 @@
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_ICARUS.fcl" 
+#include "reco_base.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+process_name: Reco
+
+services:{
+    @table::icarus_basic_services
+    @table::icarus_wirecalibration_services
+    @table::icarus_backtracking_services 
+    @table::icarus_detsim_services
+}
+
+services.SpaceChargeService: @local::icarus_spacecharge  
+
+physics.producers.daq:       @local::icarus_simwire
+physics.producers.daq.ProcessAllTPCs: true
+
+
+physics.producers.cluster3d:                      @local::icarus_cluster3d
+physics.producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
+
+physics.producers.linecluster: @local::sbn_linecluster
+physics.producers.linecluster.HitProducerLabel: "gaushitsel"
+
+physics.producers.pandora:           @local::sbn_pandora
+physics.producers.pandoraUboonetune: @local::sbn_pandora
+physics.producers.pandoraUboonetune.ConfigFile: "PandoraSettings_Master_ICARUS_SBNTune.xml"
+physics.producers.pandora.ConfigFile: "PandoraSettings_Master_ICARUS.xml"
+physics.producers.pandora.HitFinderModuleLabel: "cluster3d"
+physics.producers.pandoraUboonetune.HitFinderModuleLabel: "cluster3d"
+
+physics.producers.pandoraTrack:            @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune:  @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune.PFParticleLabel: pandoraUboonetune
+
+physics.producers.TrackCalo:           @local::sbn_calo
+physics.producers.TrackCaloUboonetune: @local::sbn_calo
+physics.producers.TrackCaloUboonetune.TrackModuleLabel:      "pandoraTrackUboonetune"
+physics.producers.TrackCaloUboonetune.SpacePointModuleLabel: "pandoraUboonetune" 
+
+physics.producers.TrackCaloUboonetune.CaloAlg: @local::icarus_calorimetryalgmc
+physics.producers.TrackCalo.CaloAlg: @local::icarus_calorimetryalgmc
+
+
+physics.producers.TrackPid:           @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune: @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune.TrackModuleLabel:       "pandoraTrackUboonetune"
+physics.producers.TrackPidUboonetune.CalorimetryModuleLabel: "TrackCaloUboonetune"
+
+physics.producers.tracs:           @local::sbn_tracs_shower
+physics.producers.tracsUboonetune: @local::sbn_tracs_shower
+physics.producers.tracsUboonetune.PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[0].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[1].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[2].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[3].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[5].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[6].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[7].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[8].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[9].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[10].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[11].PFParticleModuleLabel: "pandoraUboonetune"
+
+
+physics.producers.tracs.ShowerFinderTools[4].CalorimetryAlg: @local::icarus_calorimetryalgmc
+physics.producers.tracs.ShowerFinderTools[6].CalorimetryAlg: @local::icarus_calorimetryalgmc
+
+physics.producers.tracs.ShowerFinderTools[2].Gradients: [0.00155644,0.00173915,0.00153631]
+physics.producers.tracs.ShowerFinderTools[2].Intercepts: [5.92931, -2.13307, 5.19711]
+
+physics.producers.tracsUboonetune.ShowerFinderTools[4].CalorimetryAlg: @local::icarus_calorimetryalgmc
+physics.producers.tracsUboonetune.ShowerFinderTools[6].CalorimetryAlg: @local::icarus_calorimetryalgmc
+
+physics.producers.tracsUboonetune.ShowerFinderTools[2].Gradients: [0.00155644,0.00173915,0.00153631]
+physics.producers.tracsUboonetune.ShowerFinderTools[2].Intercepts: [5.92931, -2.13307, 5.19711]
+
+
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+icarus_reco_producers.decon1droi.module_type: "icaruscode/TPC/SignalProcessing/RecoWire/Decon1DROI"
+
+
+
+physics.reco: [ rns
+                ,daq
+                ,@sequence::icarus_reco_signalprocessinggaus
+                ,linecluster
+                ,cluster3d
+                ,pandora, pandoraTrack
+                ,pandoraUboonetune, pandoraTrackUboonetune
+                ,TrackCalo, TrackPid
+                ,TrackCaloUboonetune, TrackPidUboonetune
+                ,tracs
+                ,tracsUboonetune
+                ]
+
+outputs.out1.fileName: "%ifb_%tc_reco.root"
+
+outputs.out1.outputCommands: [
+    "keep *",
+    "drop raw::RawDigits_daq_*_*",
+    "drop *_caldata_*_*",
+    "drop *_decon1droi_*_*",
+    "drop *_gaushit_*_*",
+    "drop *_linecluster_*_*",
+    "drop *_gaushitsel_*_*",
+    "drop *_rawdigitfilter_*_*"
+]
+
+

@@ -13,12 +13,20 @@ NueSelection: {
   Detector: "SBND" 
   Verbose: false
   IncludeCosmics: true
-  IncludeDirt: true
+  IncludeDirt: false
   ReadoutWindowSize: 4096
-  UseAllCosmics: true
+
+  UseAllCosmics: false
+  IgnoreNeutrinoDepsInCosmic: false
   DontUseSimChannels: true
   DirtOnly: true
   ApplyGENIEVersionWeight: true
   UseGenieHists: true
+
+  FillHistograms: false  
+
+    ApplyCosmicInSpillWindowCut: true
+
+
 }
 

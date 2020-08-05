@@ -12,15 +12,16 @@ NueSelection: {
   UniformWeights: ["bnbcorrection_FluxHist"]
   GlobalWeight: 1.21 #// Scale up all event to account for r=110m (now) -> 100m (then) 
   ApplyKMECCut: true  
-  Verbose: true
+  Verbose: false
   POTWeight: 1
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt: false
-  NuMuOnly:    false
+  NuMuOnly:    true
   FillHistograms: true
   ApplyGENIEVersionWeight: true
   DontUseSimChannels: false
   UseGenieHists: true
+
 }
 

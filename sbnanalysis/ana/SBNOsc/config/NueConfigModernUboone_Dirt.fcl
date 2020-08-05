@@ -1,0 +1,24 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
+MCWeightTags: @local::eventweight_tags
+MCTruthTags: ["generator"]
+
+NueSelection: {
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
+  active_volumes: @local::MicroBooNE_active_volumes 
+  @table::standard_selection
+  UniformWeights: @local::standard_UniformWeights
+  ApplyKMECCut: false
+  Detector: "SBND"
+  Verbose: false
+  IncludeDirt:           true
+  GlobalTimeOffset: 3125
+  ReadoutWindowSize: 9600
+  UseAllCosmics: false
+  DontUseSimChannels: false
+  DirtOnly: true
+  ApplyGENIEVersionWeight: false
+  UseGenieHists: false
+}
+

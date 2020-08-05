@@ -168,7 +168,7 @@ class RecoInteraction {
 public:
   /** Default Constructor */
   RecoInteraction()
-      : truth_index(-1), reco_energy(kUnfilled), weight(1) {}
+    : truth_index(-1), reco_energy(kUnfilled), weight(1), wasCosmic(false), wasDirt(false) {}
 
   /** Fill in truth information -- other fields set as in default */
   explicit RecoInteraction(int index)

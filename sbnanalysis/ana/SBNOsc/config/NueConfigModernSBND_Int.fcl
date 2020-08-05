@@ -21,6 +21,8 @@ NueSelection: {
   ApplyGENIEVersionWeight: false
   DontUseSimChannels: false
   UseGenieHists: false
+
+  FillHistograms: true  
   #MCTruths: [ "generator" ]
 }
 

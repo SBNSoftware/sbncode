@@ -1,0 +1,160 @@
+#include "reco_base.fcl"
+#include "largeantmodules_microboone.fcl"
+#include "detsimmodules_microboone.fcl"
+#include "ZeroingOutBadChannels.fcl"             
+#include "wcls.fcl" 
+#include "swtrigger_microboone.fcl" 
+#include "time_memory_tracker_microboone.fcl"
+#include "triggersim_microboone.fcl"
+#include "services_microboone.fcl"
+#include "reco_uboone_data_mcc9_8_driver_common.fcl"  
+
+
+process_name: Reco 
+
+services:
+{
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "detsim_hist.root" }
+  TimeTracker:             @local::microboone_time_tracker
+  MemoryTracker:           @local::microboone_memory_tracker
+  RandomNumberGenerator: {} #ART native random number generator
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::microboone_detsim_services
+    @table::microboone_services_reco
+    @table::microboone_g4_services
+}
+
+physics.producers.daq:  @local::microboone_simwire
+
+physics.producers.TrackCaloUboonetune.CalorimetryAlg: @local::microboone_calorimetryalgmc
+physics.producers.TrackCalo.CalorimetryAlg: @local::microboone_calorimetryalgmc
+
+physics.producers.tracs.ShowerFinderTools[5].CalorimetryAlg: @local::microboone_calorimetryalgmc
+
+physics.producers.tracs.ShowerFinderTools[2].Gradients: [0.0022508,0.00921793,0.0080699]
+physics.producers.tracs.ShowerFinderTools[2].Intercepts: [152.079, 45.6023, 5.06902]
+
+physics.producers.linecluster: @local::sbn_linecluster
+
+physics.producers.pandora:           @local::sbn_pandora
+physics.producers.pandoraUboonetune: @local::sbn_pandora
+physics.producers.pandoraUboonetune.ConfigFile: "PandoraSettings_Master_SBN.xml"
+physics.producers.pandora.HitFinderModuleLabel:            "linecluster"
+physics.producers.pandoraUboonetune.HitFinderModuleLabel:  "linecluster"
+physics.producers.pandora.ConfigFile: "PandoraSettings_Master_Standard.xml"
+
+physics.producers.pandoraTrack:            @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune:  @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune.PFParticleLabel: pandoraUboonetune
+
+physics.producers.TrackCalo:           @local::sbn_calo
+physics.producers.TrackCaloUboonetune: @local::sbn_calo
+physics.producers.TrackCaloUboonetune.TrackModuleLabel:      "pandoraTrackUboonetune"
+physics.producers.TrackCaloUboonetune.SpacePointModuleLabel: "pandoraUboonetune" 
+
+physics.producers.TrackPid:           @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune: @local::sbn_chi2pid
+physics.producers.TrackPidUboonetune.TrackModuleLabel:       "pandoraTrackUboonetune"
+physics.producers.TrackPidUboonetune.CalorimetryModuleLabel: "TrackCaloUboonetune"
+
+physics.producers.tracs:           @local::sbn_tracs_shower
+physics.producers.tracsUboonetune: @local::sbn_tracs_shower
+physics.producers.tracsUboonetune.PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[0].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[1].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[2].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[3].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[4].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[5].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[6].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[7].PFParticleModuleLabel: "pandoraUboonetune"
+
+
+physics.producers.tracs.ShowerFinderTools[4].CalorimetryAlg: @local::microboone_calorimetryalgmc
+physics.producers.tracs.ShowerFinderTools[6].CalorimetryAlg: @local::microboone_calorimetryalgmc
+
+physics.producers.tracsUboonetune.ShowerFinderTools[4].CalorimetryAlg: @local::microboone_calorimetryalgmc
+physics.producers.tracsUboonetune.ShowerFinderTools[6].CalorimetryAlg: @local::microboone_calorimetryalgmc
+
+physics.producers.tracs.ShowerFinderTools[2].Gradients: [0.0022508,0.00921793,0.0080699]
+physics.producers.tracs.ShowerFinderTools[2].Intercepts: [152.079, 45.6023, 5.06902]
+
+physics.producers.tracsUboonetune.ShowerFinderTools[2].Gradients: [0.0022508,0.00921793,0.0080699]
+physics.producers.tracsUboonetune.ShowerFinderTools[2].Intercepts: [152.079, 45.6023, 5.06902]
+
+services.SpaceCharge.RepresentationType:               Voxelized
+services.SpaceCharge.InputFilename:                        "SpaceCharge/dispOutput_MicroBooNE_E273.root"
+services.DetectorClocksService.InheritClockConfig: false
+
+
+services.SpaceCharge.EnableSimSpatialSCE: false
+services.SpaceCharge.EnableSimEfieldSCE: false
+services.DetectorClocksService.InheritClockConfig: false
+
+physics.producers.ionization: {
+    module_type: "larsim/ElectronDrift/ShiftEdepSCE"
+    EDepTag:     "largeantnew:TPCActive"
+    MakeAnaTree: false
+}
+
+physics.producers.largeantnew: @local::microboone_largeant
+physics.producers.largeantnew.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
+
+physics.producers.daq:  @local::microboone_simwire
+physics.producers.daq.DriftEModuleLabel: "largeantnew"
+
+physics.producers.triggersim:          @local::ubtrigger_dark_bnb
+physics.producers.driftWC:             @local::wcls.driftsim
+
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+services.LArG4Parameters.InitialSimEnergyDepositSize: 100000
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+physics.filters:
+ {
+ }
+
+physics.analyzers:
+ {
+ }
+
+physics.reco: [ rns
+                ,largeantnew
+                ,ionization
+                ,daq
+                ,driftWC
+                ,@sequence::microboone_reco_data_signalprocessing
+                ,linecluster
+                ,pandora, pandoraTrack
+                ,pandoraUboonetune, pandoraTrackUboonetune
+                ,TrackCalo, TrackPid
+                ,TrackCaloUboonetune, TrackPidUboonetune
+                ,tracs
+                ,tracsUboonetune
+                ]
+
+
+
+physics.trigger_paths: [ reco ]
+
+outputs.out1.fileName: "uboone_%ifb_%tc_reco.root"
+
+outputs.out1.outputCommands: [
+    "keep *",
+    "drop *_daq_*_*",
+    "drop *_butcher_*_*",
+    "drop *_nfspl1_*_*",
+    "drop *_driftWC_*_*"
+]
+
+
+services.DetectorPropertiesService.NumberTimeSamples: 9600
+services.DetectorPropertiesService.ReadOutWindowSize: 9600
+services.DetectorClocksService.InheritClockConfig:    false
+services.DetectorClocksService.TriggerOffsetTPC:      -1600
+

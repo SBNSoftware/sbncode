@@ -1,0 +1,114 @@
+#include "detsimmodules_sbnd.fcl"
+#include "crtsimmodules_sbnd.fcl"
+#include "simulationservices_sbnd.fcl"
+#include "reco_base.fcl"
+#include "standard_reco_sbnd_basic.fcl"
+
+process_name: RecoTracks
+
+services:
+{
+  @table::sbnd_detsim_services
+  FileCatalogMetadata: @local::sbnd_file_catalog_mc
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  AuxDetGeometry: { @table::sbnd_geo_source }
+  TFileService:              { fileName: @local::sbnd_tfileoutput.fileName }
+  message:                   @local::sbnd_message_services_prod # from messages_sbnd.fcl
+  FileCatalogMetadata:       @local::sbnd_file_catalog_mc       # from sam_sbnd.fcl
+                             @table::sbnd_services              # from services_sbnd.fcl
+                             @table::sbnd_random_services       # from services_sbnd.fcl; required by fuzzyCluster
+  LArFFT:                    @local::sbnd_larfft
+  SignalShapingServiceSBND: @local::sbnd_signalshapingservice  # from signalservices_sbnd.fcl
+
+  #Legacy code in EMSHOWER uses the backtracker to be removed after the SBN Workshop March 2018 
+  BackTrackerService:  @local::standard_backtrackerservice 
+  ParticleInventoryService: @local::standard_particleinventoryservice
+
+}
+
+physics.producers.daq:       @local::sbnd_simwire
+
+physics.producers.TrackCaloUboonetune.CalorimetryAlg: @local::sbnd_calorimetryalgmc
+physics.producers.TrackCalo.CalorimetryAlg: @local::sbnd_calorimetryalgmc
+
+physics.producers.linecluster: @local::sbn_linecluster
+physics.producers.linecluster.HitFinderModuleLabel:              "gaushit"
+
+physics.producers.pandora:           @local::sbn_pandora
+physics.producers.pandoraUboonetune: @local::sbn_pandora
+physics.producers.pandoraUboonetune.ConfigFile: "PandoraSettings_Master_SBN.xml"
+physics.producers.pandora.HitFinderModuleLabel:            "linecluster"
+physics.producers.pandoraUboonetune.HitFinderModuleLabel:  "linecluster"
+physics.producers.pandora.ConfigFile: "PandoraSettings_Master_Standard.xml"
+
+physics.producers.pandoraTrack:            @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune:  @local::sbn_pandoraTrackCreation
+physics.producers.pandoraTrackUboonetune.PFParticleLabel: "pandoraUboonetune"
+
+physics.producers.TrackRedoCaloUboonetune.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.TrackRedoCalo.CaloAlg: @local::sbnd_calorimetryalgmc
+
+physics.producers.TrackRedoCalo:           @local::sbn_calo
+physics.producers.TrackRedoCaloUboonetune: @local::sbn_calo
+physics.producers.TrackRedoCaloUboonetune.TrackRedoModuleLabel:      "pandoraTrackUboonetune"
+physics.producers.TrackRedoCaloUboonetune.SpacePointModuleLabel: "pandoraUboonetune" 
+
+physics.producers.TrackRedoPid:           @local::sbn_chi2pid
+physics.producers.TrackRedoPidUboonetune: @local::sbn_chi2pid
+physics.producers.TrackRedoPidUboonetune.TrackRedoModuleLabel:       "pandoraTrackUboonetune"
+physics.producers.TrackRedoPidUboonetune.CalorimetryModuleLabel: "TrackRedoCaloUboonetune"
+
+physics.producers.TrackRedoCaloUboonetune.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.TrackRedoCalo.CaloAlg: @local::sbnd_calorimetryalgmc
+
+
+physics.producers.tracs:           @local::sbn_tracs_shower
+physics.producers.tracsUboonetuneRetune: @local::sbn_tracs_shower
+physics.producers.tracsUboonetuneRetune.PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[0].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[1].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[2].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[3].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[4].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[5].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[6].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[7].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[8].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[9].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[10].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[11].PFParticleModuleLabel: "pandoraUboonetune"
+
+physics.producers.tracs.ShowerFinderTools[4].CalorimetryAlg: @local::sbnd_calorimetryalgmc
+physics.producers.tracs.ShowerFinderTools[6].CalorimetryAlg: @local::sbnd_calorimetryalgmc
+
+physics.producers.tracs.ShowerFinderTools[2].Gradients: [0.00155644,0.00173915,0.00153631]
+physics.producers.tracs.ShowerFinderTools[2].Intercepts: [5.92931, -2.13307, 5.19711]
+
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[4].CalorimetryAlg: @local::sbnd_calorimetryalgmc
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[6].CalorimetryAlg: @local::sbnd_calorimetryalgmc
+
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[2].Gradients: [0.00155644,0.00173915,0.00153631]
+physics.producers.tracsUboonetuneRetune.ShowerFinderTools[2].Intercepts: [5.92931, -2.13307, 5.19711]
+
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+
+physics.reco: [ rns
+                ,TrackRedoCalo
+                ,TrackRedoCaloUboonetune
+                ,TrackRedoPid
+                ,TrackRedoPidUboonetune
+                #,tracsUboonetuneRetune
+                ]
+
+outputs.out1.fileName: "%ifb_%tc_reco.root"
+
+
+outputs.out1.outputCommands: [
+    "keep *",
+    "drop raw::RawDigits_daq_*_*",
+    "drop *_caldata_*_*"
+]

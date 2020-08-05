@@ -10,3 +10,7 @@ export FHICL_FILE_PATH=.:$MRB_INSTALL/sbncode/sbnanalysis/build/fcl:$FHICL_FILE_
 function run_sbn_grid_SBNOsc_NueSelection() {
     sbn-grid -m SBNOsc_NueSelection $@
 }
+function run_sbn_grid_SBNOsc_NueSelectionReco() {
+    sbn-grid -m SBNOsc_NueSelectionReco $@
+}
+

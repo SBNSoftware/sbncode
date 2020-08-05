@@ -1,0 +1,165 @@
+#include "seedservice.fcl"
+#include "singles.fcl"
+#include "larproperties.fcl"
+#include "magfield_larsoft.fcl"
+
+#include "largeantmodules.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "genie_icarus_bnb.fcl"
+#include "mcreco.fcl"
+#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "particleinventoryservice.fcl"
+#include "photonfilter.fcl"
+
+process_name: GenGenie
+
+services:
+{
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "single_hist_uboone.root" }
+  TimeTracker:  {}
+  MemoryTracker:     { ignoreTotal: 1 } # default is one
+  RandomNumberGenerator: {} #ART native random number generator
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::icarus_gen_services
+  @table::icarus_g4_dark_services
+  ParticleInventoryService: @local::standard_particleinventoryservice
+
+  IFDH:         {}
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ filters:
+     {
+        PhotonFilter:   @local::photonfilter
+        }
+
+
+ producers:
+ {
+   generator: @local::icarus_genie_BNB # from `genie_icarus_bnb.fcl`
+
+   largeant: @local::icarus_largeant
+   ionization: {
+                 module_type: "larsim/ElectronDrift/ShiftEdepSCE"
+                 EDepTag:     "largeant:TPCActive"
+                 MakeAnaTree: false
+               }
+
+   mcreco: @local::standard_mcreco
+
+   rns:       { module_type: "RandomNumberSaver" }
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+ simulate: [ rns, generator, largeant, mcreco, PhotonFilter]
+
+ #define the output stream, there could be more than one if using filters 
+ stream1:  [ out1 ]
+
+ #trigger_paths is a keyword and contains the paths that modify the art::event, 
+ #ie filters and producers
+ trigger_paths: [simulate ] 
+
+ #end_paths is a keyword and contains the paths that do not modify the art::Event, 
+ #ie analyzers and output streams.  these all run simultaneously
+ end_paths:     [stream1]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "single_crygen_icarus.root"
+   dataTier:    "simulated"
+   compressionLevel: 1
+   fastCloning: false
+   SelectEvents: [simulate]
+ }
+}
+
+# turn on the SimEnergyDeposit output
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}
+
+outputs.out1.fileName: "prodgenie_bnb_nu_sbn_icarus_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.TopVolume: "volWorld"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/mastbaum/flux/icarus/zarko-expires20171031/"
+physics.producers.generator.FluxFiles: [ "converted_beammc_icarus_*.root" ]
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+physics.producers.largeant.KeepParticlesInVolumes: [ "volWorld" ]
+
+physics.producers.largeant.KeepEMShowerDaughters: false
+
+
+services.LArG4Parameters.EnabledPhysics:[ "Em", "SynchrotronAndGN", "Ion", "Hadron",
+                                "Decay", "HadronElastic", "Stopping"
+                                          ]
+physics.filters.PhotonFilter.ActiveVolume: [
+    {
+      xmin: -364.49
+      ymin: -173.41
+      zmin: -909.950652
+      xmax: -67.94
+      ymax: 143.41
+      zmax: 879.950652
+    },
+    {
+      xmin: 67.94
+      ymin: -173.41
+      zmin: -909.950652
+      xmax: 364.49
+      ymax: 143.41
+      zmax: 879.950652
+    }
+]
+
+services.message.destinations.STDCOUT.threshold: "ERROR"

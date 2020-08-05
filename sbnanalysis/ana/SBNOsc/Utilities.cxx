@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "TDatabasePDG.h"
-#include "TRandom.h"
+#include "TRandom3.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
@@ -173,7 +173,7 @@ double containedLength(const TVector3 &v0, const TVector3 &v1,
 }
 
 
-double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 
+double visibleEnergy(TRandom3& rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 
 		     const VisibleEnergyCalculator &calculator, bool include_showers) {
   double visible_E = 0;
 
@@ -238,7 +238,7 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
 }
 
 //Function returns the Hadronic visibleEnergy[0], shower visibleEnergy[1] and the neutrino lepton energy visibleEnerg[2]  energy at the vertex 
-    std::vector<double> FlavourEnergyDeposition(TRandom& rand, const simb::MCTruth &mctruth, std::map<int,const simb::MCParticle*>& mcparticles,std::map<int,double>& mcvisibleparticles, std::vector<geoalgo::AABox>& Volumes, const VisibleEnergyCalculator &calculator){
+    std::vector<double> FlavourEnergyDeposition(TRandom3& rand, const simb::MCTruth &mctruth, std::map<int,const simb::MCParticle*>& mcparticles,std::map<int,double>& mcvisibleparticles, std::vector<geoalgo::AABox>& Volumes, const VisibleEnergyCalculator &calculator){
 
       std::vector<int> used_particles;
 
@@ -531,7 +531,7 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
   
   // return visibleEnergy;
 
-    double smearLeptonEnergy(TRandom& rand, const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
+    double smearLeptonEnergy(TRandom3& rand, const sim::MCTrack &mct, const VisibleEnergyCalculator &calculator) {
       // setup distortion
       
       double smearing_percentage;
@@ -551,10 +551,10 @@ double visibleEnergy(TRandom& rand, const simb::MCTruth &mctruth, const std::vec
     }
     
     
-double smearLeptonEnergy(TRandom& rand, const simb::MCParticle* &lepton, const VisibleEnergyCalculator &calculator){
+double smearLeptonEnergy(TRandom3& rand, const simb::MCParticle* &lepton, const VisibleEnergyCalculator &calculator){
   
   //Like proposal but not sure why.
-  rand.SetSeed(0);
+  //  rand.SetSeed(0);
 
   
   if(lepton->PdgCode() == 13){
@@ -588,7 +588,7 @@ double smearLeptonEnergy(TRandom& rand, const simb::MCParticle* &lepton, const V
   }
 }
 
-double smearLeptonEnergy(TRandom& rand, double& LeptonE, int& PdgCode,  const VisibleEnergyCalculator &calculator){
+double smearLeptonEnergy(TRandom3& rand, double& LeptonE, int& PdgCode,  const VisibleEnergyCalculator &calculator){
 
   //Like proposal but not sure why.
   rand.SetSeed(0);
@@ -676,12 +676,41 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   return TMath::Abs((trkStart - nuVtx).Mag()) < distance;
 }
 
-bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle* &particle, float distance){
+    bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle* &particle, float distance){
   
-  TLorentzVector nuVtx     = mc.GetNeutrino().Nu().Trajectory().Position(0);
-  TLorentzVector partstart = particle->Position();
-  return TMath::Abs((partstart - nuVtx).Mag()) < distance;
-}
+      TLorentzVector nuVtx     = mc.GetNeutrino().Nu().Trajectory().Position(0);
+      TLorentzVector partstart = particle->Position();
+      return TMath::Abs((partstart - nuVtx).Mag()) < distance;
+    }
+    
+
+    bool isFromNuVertex(std::vector<simb::MCTruth>& mcs,std::map<int, const simb::MCParticle*>& mcparticles, int particle_id, float distance){
+      
+      //Find the mother
+      int track_id =  particle_id;
+      if(mcparticles.find(track_id) == mcparticles.end()){ return false;}
+      //Find the initial  mother 
+      int mother_id = track_id;
+      while(mother_id != 0){
+      	if(mcparticles.find(mother_id) != mcparticles.end()){
+      	  track_id = mother_id;
+      	  mother_id = mcparticles[mother_id]->Mother();
+      	}
+      	else{
+      	  mother_id = track_id;
+      	  break;
+      	}
+      }
+      
+      //Check it is the same origin 
+      // for(auto const mc: mcs){
+      //      	bool isNuVertex = isFromNuVertex(mc,mcparticles[track_id]); 
+      //      	if(isNuVertex){return true;}
+      //      }
+      return false;
+    }
+  
+
 
     // bool isChargedPrimary(const simb::MCTruth& mc, std::map<int, const simb::MCParticle*>& mcparticles, int particle_id){
       

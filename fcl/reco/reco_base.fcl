@@ -1,3 +1,4 @@
+#include "hitfindermodules.fcl"
 #include "clustermodules.fcl"
 #include "calorimetry.fcl"  
 #include "particleid.fcl" 
@@ -21,36 +22,36 @@ sbn_linecluster:                               @local::standard_linecluster
 sbn_linecluster.ClusterCrawlerAlg:             @local::sbn_clustercrawleralg
 
 ########## Pandora ############
+
 sbn_basicpandora:
 {
-    module_type:                                 "StandardPandora"
-    GeantModuleLabel:                            "largeant"
-    HitFinderModuleLabel:                        "linecluster"
-    EnableMCParticles:                           false
-    EnableProduction:                            true
-    EnableLineGaps:                              true
-    UseGlobalCoordinates:                        true
-    UseHitWidths:                                false
-    ShouldRunAllHitsCosmicReco:                  false
-    ShouldRunStitching:                          false
-    ShouldRunCosmicHitRemoval:                   false
-    ShouldRunSlicing:                            false
-    ShouldRunNeutrinoRecoOption:                 false
-    ShouldRunCosmicRecoOption:                   false
-    ShouldPerformSliceId:                        false
-    PrintOverallRecoStatus:                      false
+    module_type:                                                    "StandardPandora"
+    GeantModuleLabel:                                               "largeant"
+    HitFinderModuleLabel:                                           "linecluster"
+    EnableMCParticles:                                              false
+    EnableProduction:                                               true
+    EnableLineGaps:                                                 true
+    UseGlobalCoordinates:                                           true
+    UseHitWidths:                                                   false
+    ShouldRunAllHitsCosmicReco:                                     false
+    ShouldRunStitching:                                             false
+    ShouldRunCosmicHitRemoval:                                      false
+    ShouldRunSlicing:                                               false
+    ShouldRunNeutrinoRecoOption:                                    false
+    ShouldRunCosmicRecoOption:                                      false
+    ShouldPerformSliceId:                                           false
+    PrintOverallRecoStatus:                                         false
 }
 
-sbn_pandora:                                  @local::sbn_basicpandora
-sbn_pandora.ConfigFile:                       "PandoraSettings_Master.xml" #This needs to be overwritten
-sbn_pandora.ShouldRunAllHitsCosmicReco:       true
-sbn_pandora.ShouldRunStitching:               true
-sbn_pandora.ShouldRunCosmicHitRemoval:        true
-sbn_pandora.ShouldRunSlicing:                 true
-sbn_pandora.ShouldRunNeutrinoRecoOption:      true
-sbn_pandora.ShouldRunCosmicRecoOption:        true
-sbn_pandora.ShouldPerformSliceId:             true
-sbn_pandora.EnableProduction:                 true   
+sbn_pandora:                                                       @local::sbn_basicpandora
+sbn_pandora.ConfigFile:                                            "PandoraSettings_Master_Standard.xml"
+sbn_pandora.ShouldRunAllHitsCosmicReco:                            true
+sbn_pandora.ShouldRunStitching:                                    true
+sbn_pandora.ShouldRunCosmicHitRemoval:                             true
+sbn_pandora.ShouldRunSlicing:                                      true
+sbn_pandora.ShouldRunNeutrinoRecoOption:                           true
+sbn_pandora.ShouldRunCosmicRecoOption:                             true
+sbn_pandora.ShouldPerformSliceId:                                  true
 
 
 ########### Pandora Track and Shower Creation #########
@@ -90,7 +91,7 @@ sbn_chi2pid:
 
 sbn_tracs_shower:  @local::standard_tracs_shower
 
-ShowerStartPositionFinder:     @local::showerstartposition
+ShowerStartPositionFinder:     @local::showerpfpvertexstartposition
 ShowerDirectionFinder:         @local::showerpcadirection
 ShowerEnergyFinder:            @local::showerlinearenergy
 ShowerdEdxFinder:              @local::showerstandardcalodedx
@@ -108,25 +109,74 @@ ShowerSlidingStandardCalodEdx: @local::showerslidingstandardcalodedx
 ShowerStartPositionCheater: @local::showerstartpositioncheater
 ShowerDirectionCheater: @local::showerdirectioncheater
 ShowerTrackFinderCheater: @local::showertrackfindercheater
-ShowerStartPositionFinder:     @local::showerstartposition
-ShowerDirectionFinder:         @local::showerpcadirection
-ShowerEnergyFinder:            @local::showerlinearenergy
-ShowerdEdxFinder:              @local::showerstandardcalodedx
+ShowerdEdxCutter: @local::showerbayeslikelihooddedxcutting
+ShowerResidualTrackHitFinder: @local::showerresidualtrackhitfinder
+ShowerLengthTool: @local::showerlength90percentile
+ShowerEigenTool: @local::showerpcaeigenvaluelength
+ShowerPCAPropergationStartPosition: @local::showerpcapropergationstartposition
+ShowerDirectionTopologyDecision: @local::showerdirectiontopologydecision
 
-ShowerSlidingStandardCalodEdx.CalorimetryAlg:  @local::sbnd_calorimetryalgmc
-ShowerSlidingStandardCalodEdx.dEdxTrackLength:3
-ShowerSlidingStandardCalodEdx.TrajDirection: false
-ShowerSlidingStandardCalodEdx.CutStartPosition: false
 
-                                   
-ShowerdEdxFinder.CalorimetryAlg:  @local::sbn_calorimetryalgmc
+ShowerResidualTrackHitFinder.UseShowerDirection: false
+ShowerResidualTrackHitFinder.ForwardHitsOnly: true
+ShowerResidualTrackHitFinder.ChargeWeighted: false
+ShowerResidualTrackHitFinder.MaxResidualDiff: 0.04682737882313664
+ShowerResidualTrackHitFinder.StartFitSize: 19
+ShowerResidualTrackHitFinder.NMissPoints: 0
+ShowerResidualTrackHitFinder.TrackMaxAdjacentSPDistance: 2.7819601901030944
+ShowerResidualTrackHitFinder.MaxAverageResidual:1.0
+ShowerResidualTrackHitFinder.MakeTrackSeed: true
+ShowerResidualTrackHitFinder.StartDistanceCut: 0
+ShowerResidualTrackHitFinder.DistanceCut: 999
+
+ShowerdEdxCutter.PriorFname: "dEdx_plots.root"
+ShowerdEdxFinder.CalorimetryAlg:  @local::standard_calorimetryalgmc
+
+ShowerdEdxFinder.dEdxTrackLength: 6.034881797855389
+
+ShowerPandoraSlidingFitTrackFinder.SlidingFitHalfWindow: 6
+
+ShowerSlidingStandardCalodEdx.CalorimetryAlg:  @local::standard_calorimetryalgmc
+ShowerSlidingStandardCalodEdx.dEdxTrackLength: 5.139028033453886
+ShowerSlidingStandardCalodEdx.MinAngleToWire: 0.26
+ShowerSlidingStandardCalodEdx.CutStartPosition: true
+ShowerSlidingStandardCalodEdx.MinDistCutOff: 0
+ShowerSlidingStandardCalodEdx.MaxDist: 2.1176896937087157
+
+ShowerdEdxCutter.ProbDiff: 0
+ShowerdEdxCutter.ProbDiffSeed: 0.005192360559014423
+ShowerdEdxCutter.nSkipHits: 4
+ShowerdEdxCutter.NumSeedHits: 7
+ShowerdEdxCutter.DefineBestPlane: true
+
+ShowerDirectionTopologyDecision.AngleCut:0.36631875069722314
+ShowerSmartTrackTrajectoryPointDirection.AngleCut: 3.14
 
 sbn_tracs_shower.ShowerFinderTools: [ @local::ShowerStartPositionFinder 
-                                       ,@local::ShowerDirectionFinder
-                                       ,@local::ShowerEnergyFinder
-                                       ,@local::Shower3DTrackHitFinder
-                                       ,@local::ShowerdEdxFinder
-                                       ]
+                                      ,@local::ShowerDirectionFinder
+                                      ,@local::ShowerEnergyFinder
+                                      ,@local::ShowerResidualTrackHitFinder
+                                      ,@local::ShowerdEdxFinder
+                                      ,@local::ShowerPandoraSlidingFitTrackFinder
+                                      ,@local::ShowerSlidingStandardCalodEdx
+                                      ,@local::ShowerdEdxCutter
+                                      ,@local::ShowerEigenTool
+                                      ,@local::ShowerPandoraSlidingFitTrackFinder
+                                      ,@local::ShowerSmartTrackTrajectoryPointDirection
+                                      ,@local::ShowerDirectionTopologyDecision
+
+
+]
+
+sbn_tracs_shower.ShowerFinderTools[9].CreateTrack: false
+sbn_tracs_shower.ShowerFinderTools[9].SlidingFitHalfWindow:19
+sbn_tracs_shower.ShowerFinderTools[9].InitialTrackOutputLabel: "SmartDirectionTrack"
+sbn_tracs_shower.ShowerFinderTools[10].InitialTrackInputLabel: "SmartDirectionTrack"
+sbn_tracs_shower.ShowerFinderTools[10].ShowerDirectionOutputLabel: "ShowerDirectionSmart"
+sbn_tracs_shower.ShowerFinderTools[11].FirstDirectionInputLabel: "ShowerDirectionSmart"
+sbn_tracs_shower.ShowerFinderTools[11].SecondDirectionInputLabel: "ShowerDirection"
+sbn_tracs_shower.ShowerFinderTools[11].ShowerDirectionOutputLabel: "ShowerDirection"
+
 
 
 END_PROLOG

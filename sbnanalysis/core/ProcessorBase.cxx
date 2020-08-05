@@ -27,6 +27,9 @@
 #include "ProcessorBase.hh"
 #include "ProviderManager.hh"
 
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "lardataobj/Simulation/GeneratedParticleInfo.h"
+
 namespace core {
 
 ProcessorBase::ProcessorBase()
@@ -64,6 +67,25 @@ void ProcessorBase::Initialize(char* config) {
 void ProcessorBase::Setup(char* config) {
   fhicl::ParameterSet* cfg = LoadConfig(config);
   Setup(cfg);
+}
+
+
+void ProcessorBase::SetupServices(gallery::Event& ev) {
+  if (fProviderManager != NULL) {
+    // reset the channels of the back tracker
+    if (fProviderManager->GetBackTrackerProvider() != NULL) {
+      fProviderManager->GetBackTrackerProvider()->ClearEvent();
+      fProviderManager->GetBackTrackerProvider()->PrepSimChannels(ev);
+    }
+
+    // reset information in particle inventory
+    if (fProviderManager->GetParticleInventoryProvider() != NULL) {
+      fProviderManager->GetParticleInventoryProvider()->ClearEvent();
+      fProviderManager->GetParticleInventoryProvider()->PrepParticleList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepMCTruthList(ev);
+      fProviderManager->GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+    }
+  }
 }
 
 
@@ -131,7 +153,9 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
 
   // Set up the provider manager for known experiments
   std::vector<Experiment> exps = ProviderManager::GetValidExperiments();
+
   if (std::find(exps.begin(), exps.end(), fExperimentID) != exps.end()) {
+    std::cout << "fProviderConfig: " << fProviderConfig << std::endl;
     fProviderManager = new ProviderManager(fExperimentID, fProviderConfig);
 
     // setup the volumes for keeping track of length
@@ -179,6 +203,9 @@ void ProcessorBase::Setup(fhicl::ParameterSet* config) {
   // save the experiment ID
   fExperimentParameter = new TParameter<int>("experiment", fExperimentID);
   fExperimentParameter->Write();
+
+  fTFileName = " ";
+
 }
 
 
@@ -198,7 +225,7 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     std::pair<int, int> id = { runid, subrunid };
 
     // Add subrun if not in cache
-    if (fSubRunCache.find(id) == fSubRunCache.end()) {
+    if (fSubRunCache.find(id) == fSubRunCache.end() || fTFileName != ev.getTFile()->GetName()) {
       TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
       float pot = potLeaf ? potLeaf->GetValue() : -1;
       TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
@@ -206,11 +233,30 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totspills");
       int spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
       TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
-
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
+      if(!potLeaf){
+	potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenGenie.obj.totpot");
+	pot = potLeaf ? potLeaf->GetValue() : -1;
+      }
+
+      if(!goodpotLeaf){
+	 goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenGenie.obj.totgoodpot");
+	 goodpot = goodpotLeaf ? goodpotLeaf->GetValue() : -1;
+      }
+      if(!spillsLeaf){
+	spillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenGenie.obj.totspills");
+	spills = spillsLeaf ? spillsLeaf->GetValue() : -1;
+      }
+      if(!goodspillsLeaf){
+	goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenGenie.obj.goodspills");
+	goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
+      }
+    
       *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
       fSubRunTree->Fill();
+
+      
 
       fSubRunCache.insert(id);
 
@@ -219,6 +265,8 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
                 << std::endl;
     }
   }
+  //Save current file name 
+  fTFileName = ev.getTFile()->GetName();
 }
 
 

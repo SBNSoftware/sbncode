@@ -3,6 +3,9 @@
 #include "larproperties.fcl"
 #include "detectorproperties_microboone.fcl"
 #include "microboone_opdetmap.fcl"
+#include "particleinventoryservice.fcl"
+#include "backtrackerservice.fcl"
+
 
 services: {
   message:                   @local::microboone_message_services_interactive
@@ -11,5 +14,7 @@ services: {
   DetectorClocksService:     @local::microboone_services.DetectorClocksService
   DetectorPropertiesService: @local::microboone_detproperties
   ExptGeoHelperInterface:    @local::microboone_geometry_helper
+  BackTrackerService:        @local::standard_backtrackerservice
+  ParticleInventoryService:  @local::standard_particleinventoryservice
 }
 

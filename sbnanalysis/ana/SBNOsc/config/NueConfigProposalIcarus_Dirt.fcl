@@ -1,0 +1,32 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Icarus.root"
+MCWeightTags: @local::eventweight_tags
+MCTruthTags: ["generator"]
+
+NueSelection: {
+  fiducial_volumes: @local::ICARUS_fiducial_volumes 
+  active_volumes: @local::ICARUS_active_volumes 
+  @table::standard_selection
+  UniformWeights: @local::standard_UniformWeights
+  ApplyKMECCut: true 
+  Detector: "SBND" 
+  Verbose: false
+  IncludeCosmics: false
+  IncludeDirt: true
+  ReadoutWindowSize: 4096
+
+  UseAllCosmics: false
+  IgnoreNeutrinoDepsInCosmic: false
+  DontUseSimChannels: false
+  DirtOnly: true
+  ApplyGENIEVersionWeight: true
+  UseGenieHists: true
+
+  FillHistograms: false  
+
+    ApplyCosmicInSpillWindowCut: false
+
+
+}
+

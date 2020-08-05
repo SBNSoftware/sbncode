@@ -1,0 +1,23 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
+#MCWeightTags: ["fluxeventweight", "genieeventweight"]
+#MCWeightTags: ["genieeventweight" ]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+ExperimentID: 1
+ProviderConfigFile: "gallery_services_uboone.fcl"
+
+NueSelectionReco: {
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes
+  active_volumes: @local::MicroBooNE_active_volumes
+  @table::actual_reco_selection
+  Verbose: false
+  NuMuOnly:    false
+  FillHistograms: false
+    
+#     TrackPIDTag: "TrackPidUboonetune"    
+#   CalorimetryTag: "TrackCaloUboonetune" 
+
+    XOffset: -130
+}
+

@@ -211,7 +211,7 @@ protected:
 
   Config _config; //!< The config
 
-  TRandom rand;
+  TRandom3 rand;
 
   std::vector<NuMuInteraction> *_interactionInfo; //!< Branch holder
 

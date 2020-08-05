@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+standard_energycharge_Para: {
+ module_type: "sbndcode/ShowerReco/EnergyCharge"
+ LArGeantModuleLabel:      "largeant"
+ HitsModuleLabel: "gaushit"
+ TrackModuleLabel: "pmalgtrackmaker"
+
+}
+END_PROLOG
+

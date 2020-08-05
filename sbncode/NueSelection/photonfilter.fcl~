@@ -1,0 +1,6 @@
+photonfilter: 
+{
+    module_type:         "photonfilter"
+    GenieGenModuleLabel: "generator"
+}
+

@@ -1,0 +1,27 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
+MCWeightTags: ["genieeventweight" ] 
+MCTruthTags: ["generator"]
+
+NueSelection: {
+  fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
+  active_volumes: @local::SBND_Proposal_active_volumes 
+  @table::standard_selection
+  UniformWeights: @local::standard_UniformWeights
+  ApplyKMECCut: false
+  Verbose: false
+  Detector: "SBND"
+  IncludeCosmics:        false
+  IncludeDirt:           true
+  ReadoutWindowSize: 3000
+  UseAllCosmics: false
+  IgnoreNeutrinoDepsInCosmic: false
+  DontUseSimChannels: false
+  DirtOnly: true
+  ApplyGENIEVersionWeight: false
+  UseGenieHists: false
+
+  FillHistograms: true  
+}
+

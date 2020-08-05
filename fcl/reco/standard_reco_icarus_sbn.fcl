@@ -3,13 +3,17 @@
 
 process_name: Reco 
 
-sbn_calorimetryalgmc.CalAreaConstants: [5.029e-3, 5.088e-3, 5.183e-3]
+physics.producers.tracs.ShowerFinderTools[2].CalAreaConstants: [5.029e-3, 5.088e-3, 5.183e-3]
+
+physics.producers.tracs.ShowerFinderTools[2].Gradients: [0.00155644,0.00173915,5.19711]
+physics.producers.tracs.ShowerFinderTools[2].Intercepts: [5.92931, -2.13307, 5.19711]
+
 
 physics.producers.linecluster: @local::sbn_linecluster
 
 physics.producers.pandora:           @local::sbn_basicpandora
 physics.producers.pandoraUboonetune: @local::sbn_basicpandora
-physics.producers.ConfigFile: "PandoraSettings_Master.xml"
+physics.producers.pandoraUboonetune.ConfigFile: "PandoraSettings_Master_SBND.xml"
 
 physics.producers.pandoraTrack:            @local::sbn_pandoraTrackCreation
 physics.producers.pandoraTrackUboonetune:  @local::sbn_pandoraTrackCreation
@@ -32,7 +36,10 @@ physics.producers.tracsUboonetune.ShowerFinderTools[0].PFParticleModuleLabel: "p
 physics.producers.tracsUboonetune.ShowerFinderTools[1].PFParticleModuleLabel: "pandoraUboonetune"
 physics.producers.tracsUboonetune.ShowerFinderTools[2].PFParticleModuleLabel: "pandoraUboonetune"
 physics.producers.tracsUboonetune.ShowerFinderTools[3].PFParticleModuleLabel: "pandoraUboonetune"
-physics.producers.tracsUboonetune.ShowerFinderTools[4].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[5].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[6].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[7].PFParticleModuleLabel: "pandoraUboonetune"
+physics.producers.tracsUboonetune.ShowerFinderTools[8].PFParticleModuleLabel: "pandoraUboonetune"
 
 physics.producers.rns: {
     module_type: "RandomNumberSaver"
@@ -43,11 +50,11 @@ physics.reco: [ rns
                 ,caldata 
                 ,gaushit
                 ,linecluster
-                ,pandora, pandoraTrack
+#                ,pandora, pandoraTrack
                 ,pandoraUboonetune, pandoraTrackUboonetune
-                ,TrackCalo, TrackPid
+#                ,TrackCalo, TrackPid
                 ,TrackCaloUboonetune, TrackPidUboonetune
-                ,tracs
+#                ,tracs
                 ,tracsUboonetune
                 ]
 

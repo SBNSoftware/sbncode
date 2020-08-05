@@ -13,12 +13,14 @@ NueSelection: {
   Verbose: false
   Detector: "SBND"
   IncludeCosmics:        true
-  IncludeDirt:           true
+  IncludeDirt:           false
   ReadoutWindowSize: 3000
   UseAllCosmics: false
   DontUseSimChannels: true
   DirtOnly: true
   ApplyGENIEVersionWeight: false
   UseGenieHists: false
+
+  FillHistograms: true  
 }
 

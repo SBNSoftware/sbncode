@@ -1,0 +1,64 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Icarus.root"
+#MCWeightTags: ["fluxeventweight", "genieeventweight"]
+#MCWeightTags: ["genieeventweight" ]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+ExperimentID: 2
+ProviderConfigFile: "gallery_services_icarus.fcl"
+
+NueSelectionReco: {
+  fiducial_volumes: @local::ICARUS_fiducial_volumes 
+  active_volumes: @local::ICARUS_active_volumes 
+  @table::actual_reco_selection
+
+    Verbose: false
+    NuMuOnly:    false
+    FillHistograms: false
+
+    SetupMVA: true
+    ApplyMVACut: true
+    MVACut: -0.96
+    MVAMethod: "BDTGCrossValScaled"
+    Weightfile: "TMVACrossValidation_BDTGCrossValScaled.weights.xml"
+    
+    ApplyFVCut: true
+    ApplyOneShowerEnergyCut: false
+    ApplyShowerResidualCut: false
+    ApplyConversionGapCut:  false
+    ApplydEdxCut: false 
+    ApplyLengthCut: false
+    ApplyOpeningAngleCut: false
+    ApplyShowerEnergyCut: true
+    ApplyShowerDensityGradientCut: false
+    ApplyShowerTrackLengthCut: false
+    ApplyShowerTrackWidthCut: false 
+    ApplyMaxTrackLengthCut: false 
+    ApplyMaxTrackPIDACut: false 
+    ApplyMaxTrackLengthPIDACut: false 
+    ApplyMVACut: true 
+    ApplyNeutrinoPdgCodeCut: false 
+    ApplyNumneutrinosCut: false 
+
+    SecondaryShowerEnergyCut: 0
+    ShowerResidualEnergyCut: 10
+    ResiudalCut: 0.025
+    NumShowersCut: 1
+    dEdxCut: 2.5
+    ConversionGapCut: 2.1
+    LengthCut: 37.5
+    OpeningAngleCut: 0.315
+    ShowerEnergyCut: 100
+    ShowerDensityGradientCut: 0.07
+    ShowerDensityPowerCut: 1.49
+    ShowerTrackLengthCut: 3.1
+    ShowerTrackWidthCut: 0.35
+    MaxTrackLengthCut: 38
+    MaxTrackPIDACut: 9.5625
+    MaxTrackLengthPIDACut: 7.75
+    NeutrinoPdgCodeCut: 12
+    NumneutrinosCut: 1
+
+    HitTag: "cluster3d"
+ShowerEnergyCut: 100}
+

@@ -1,0 +1,45 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
+#MCWeightTags: ["fluxeventweight", "genieeventweight"]
+#MCWeightTags: ["genieeventweight" ]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+ExperimentID: 0
+ProviderConfigFile: "gallery_services_sbnd.fcl"
+
+NueSelectionReco: {
+  fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
+  active_volumes: @local::SBND_Proposal_active_volumes 
+  @table::actual_reco_selection
+  Verbose: false
+  NuMuOnly:    false
+  FillHistograms: false
+
+    SetupMVA: true
+    ApplyMVACut: true
+    MVACut: -0.9
+    MVAMethod: "BDTGCrossVal"
+    Weightfile: "TMVACrossValidation_BDTGCrossVal.weights.xml"
+
+
+    
+    ApplyFVCut: true
+    ApplyOneShowerEnergyCut: false
+    ApplyShowerResidualCut: false
+    ApplyConversionGapCut:  false
+    ApplydEdxCut: false 
+    ApplyLengthCut: false
+    ApplyOpeningAngleCut: false
+    ApplyShowerEnergyCut: true
+    ApplyShowerDensityGradientCut: false
+    ApplyShowerTrackLengthCut: false
+    ApplyShowerTrackWidthCut: false 
+    ApplyMaxTrackLengthCut: false 
+    ApplyMaxTrackPIDACut: false 
+    ApplyMaxTrackLengthPIDACut: false 
+    ApplyMVACut: true 
+    ApplyNeutrinoPdgCodeCut: false 
+    ApplyNumneutrinosCut: false 
+
+ShowerEnergyCut: 100}
+

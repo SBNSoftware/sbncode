@@ -26,7 +26,7 @@ physics.producers.rns: {
 
 
 #services.UBEventWeight: @local::microboone_eventweight_service 
-physics.simulate: [rns, @sequence::physics.simulate,fluxeventweightA, fluxeventweightMinibooneA, genieeventweightA ]
+physics.simulate: [rns, @sequence::physics.simulate]
 physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 
 physics.producers.largeant.KeepEMShowerDaughters: false

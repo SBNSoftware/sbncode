@@ -22,7 +22,7 @@ NueSelection: {
   FillModeHistograms: true
   FillIntTypeHistograms: true
   ApplyAVCut:  false
-  DontUseSimChannels: true
+  DontUseSimChannels: false
   UseGenieHists: true  
   ApplyGENIEVersionWeight: true
 }

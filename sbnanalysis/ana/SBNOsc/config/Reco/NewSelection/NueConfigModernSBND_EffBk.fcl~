@@ -1,0 +1,58 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_SBND.root"
+#MCWeightTags: ["fluxeventweight", "genieeventweight"]
+#MCWeightTags: ["genieeventweight" ]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+ExperimentID: 0
+ProviderConfigFile: "gallery_services_sbnd.fcl"
+
+NueSelectionReco: {
+  fiducial_volumes: @local::SBND_Proposal_fiducial_volumes 
+  active_volumes: @local::SBND_Proposal_active_volumes 
+  @table::actual_reco_selection
+  Verbose: false
+  NuMuOnly:    false
+  FillHistograms: false
+    
+    ApplyFVCut: true
+    ApplyOneShowerEnergyCut: false
+    ApplyShowerResidualCut: true
+    ApplyConversionGapCut:  true
+    ApplydEdxCut: true 
+    ApplyLengthCut: false
+    ApplyOpeningAngleCut: false
+    ApplyShowerEnergyCut: true
+    ApplyShowerDensityGradientCut: false
+    ApplyShowerTrackLengthCut: false
+    ApplyShowerTrackWidthCut: false 
+    ApplyMaxTrackLengthCut: false 
+    ApplyMaxTrackPIDACut: false 
+    ApplyMaxTrackLengthPIDACut: true
+    ApplyMVACut: false 
+    ApplyNeutrinoPdgCodeCut: false 
+    ApplyNumneutrinosCut: false 
+
+    SecondaryShowerEnergyCut: 0
+    ShowerResidualEnergyCut: 10
+    ResiudalCut: 0.025
+    NumShowersCut: 1
+    dEdxCut: 2.5
+    ConversionGapCut: 2.1
+    LengthCut: 37.5
+    OpeningAngleCut: 0.315
+    ShowerEnergyCut: 225
+    ShowerDensityGradientCut: 0.07
+    ShowerDensityPowerCut: 1.49
+    ShowerTrackLengthCut: 3.1
+    ShowerTrackWidthCut: 0.35
+    MaxTrackLengthCut: 38
+    MaxTrackPIDACut: 9.5625
+    MaxTrackLengthPIDACut: 7.75
+    MVACut: 0
+    NeutrinoPdgCodeCut: 12
+    NumneutrinosCut: 1
+
+
+}
+

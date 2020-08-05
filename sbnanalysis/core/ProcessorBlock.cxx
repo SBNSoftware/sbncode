@@ -31,6 +31,7 @@ void ProcessorBlock::ProcessFiles(std::vector<std::string> filenames) {
 
       ProcessorBase* p = it.first;
       p->BuildEventTree(ev);
+      p->SetupServices(ev);
 
       bool accept = p->ProcessEvent(ev, p->fEvent->truth, *p->fReco);
 

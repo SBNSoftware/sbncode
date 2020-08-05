@@ -8,7 +8,7 @@ SBND_fiducial_volumes: [
       xmin: -190.9
       ymin: -185
       zmin: 15.
-      xmax: 5.6
+      xmax: -5.6
       ymax: 185
       zmax: 415.
     },
@@ -144,24 +144,24 @@ ICARUS_active_volumes: [
 
 reco_selection: {
 
-      minLengthExitingTrack:           30     
-      trackVisibleEnergyThreshold:     0.1
-      showerVisibleEnergyThreshold:    210
-      showerEnergyDistortion:          0.089            
-      trackEnergyDistortion:           0.1
+      minLengthExitingTrack:           46     
+      trackVisibleEnergyThreshold:     0.09
+      showerVisibleEnergyThreshold:    140
+      showerEnergyDistortion:          0.157
+      trackEnergyDistortion:           0.13
       leptonEnergyDistortionContained: 0.15
-      nueEfficency:                    1                 
-      vtxEnergyCut:                    0
+      nueEfficency:                    0.8                 
+      vtxEnergyCut:                    0.239
       photonConvLenghCut:              2.1
       dEdxPhotonCut:                   0.24                 
       GlobalWeight:                    1
       POTWeight:                       1 #weighting done outside. 
-      photonVisibleEnergyThreshold:    210
+      photonVisibleEnergyThreshold:    225
       CosmicWeight:                    0.05
       CosmicGlobalWeight:              1
       CosmicVolumeRadius:              15 #cm
-      ElectronWeight: 0.251279
-      PhotonWeight: 1.15
+      ElectronWeight: 0.326395
+      PhotonWeight: 1.20
 
       GlobalTimeOffset:  0    #Offset In the spill time in the simulation (in ns) 
       SpillTime:         1600 #Time a spill last for in ns.
@@ -199,6 +199,103 @@ reco_selection: {
       FillIntTypeHistograms: false
       UseGenieHists: false
 }
+
+
+actual_reco_selection: {
+
+GlobalWeight: 1
+    POTWeight: 1
+    ElectronWeight: 1
+    PhotonWeight: 1
+    GlobalTimeOffset: 0
+    SpillTime: 1600
+    ReadoutWindowSize: 3000
+    NSegments: 10
+    TrackEnergyCorrection: 1.1641
+    ShowerEnergyCorrection: 1.145
+    NutrinoEnergyCorrection: 1.1949
+    EnergyConversion: [0.00155644,0.00173915,0.00153631]
+
+    SetupMVA: false
+    Weightfile: ""
+    MVAMethod: ""
+    MVAValuesNames: ["dEdxMVA",
+                     "CoversionGapMVA",
+                     "MaxTrackLenghMVA",
+                     "MaxTrackPIDAMVA",
+                     "ShowerEnergyMVA",
+                     "ShowerLengthEMVA",
+                     "ShowerDensityOpeningAngleMVA",
+                     "NumberOfNeutrinosMVA",
+                     "ShowerResidualNumShowersMVA",
+                     "ShowerDensityPWMVA",
+                    "ShowerDensityGradNewMVA",
+                     "NuetrinoPdGMVA",
+                     "ShowerTrackWidthMVA",
+                     "ShowerTrackLengthMVA"]
+
+    GeneratorTag: "generator"
+    PandoraTag: "pandoraUboonetune"
+    HitTag: "linecluster"
+    ShowerTag: "tracsUboonetuneRetune"
+    FluxTag: "generator" 
+    TrackTag: "pandoraTrackUboonetune"
+    TrackPIDTag: "TrackRedoPidUboonetune"
+    CalorimetryTag: "TrackRedoCaloUboonetune"
+
+    ApplyFVCut: true
+    ApplyOneShowerEnergyCut: true
+    ApplyShowerResidualCut: false
+    ApplyConversionGapCut:  true
+    ApplydEdxCut: true 
+    ApplyLengthCut: false
+    ApplyOpeningAngleCut: false
+    ApplyShowerEnergyCut: false
+    ApplyShowerDensityGradientCut: false
+
+    ApplyShowerTrackLengthCut: false
+    ApplyShowerTrackWidthCut: false 
+    ApplyMaxTrackLengthCut: false 
+    ApplyMaxTrackPIDACut: false 
+    ApplyMaxTrackLengthPIDACu: false 
+    ApplyMVACut: false 
+    ApplyNeutrinoPdgCodeCut: false 
+    ApplyNumneutrinosCut: false 
+
+    SecondaryShowerEnergyCut: 0
+    ShowerResidualEnergyCut: 10
+    ResiudalCut: 0.025
+    NumShowersCut: 1
+    dEdxCut: 2.5
+    ConversionGapCut: 2.1
+    LengthCut: -1
+    OpeningAngleCut: -1
+    ShowerEnergyCut: 225
+    ShowerDensityGradientCut: -1
+    ShowerDensityPowerCut: -1 
+    ShowerTrackLengthCut: 40 
+    ShowerTrackWidthCut: -1
+    MaxTrackLengthCut: -1
+    MaxTrackPIDACut: -1
+    MaxTrackLengthPIDACut: -1
+    MVACut: -1
+    NeutrinoPdgCodeCut: 11
+    NumneutrinosCut: 1
+    XOffset: 0
+
+    IntrinsicOnly: false
+    NuMuOnly:      false 
+    OscOnly:       false   
+    
+    Verbose:               false 
+
+    FillHistograms: false
+    FillModeHistograms: false
+    FillIntTypeHistograms: false
+    UseGenieHists: false
+}
+
+
 
 standard_selection: {
 

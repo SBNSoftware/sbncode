@@ -1,0 +1,137 @@
+#include "services_microboone.fcl"
+#include "genie_microboone_default+MEC.fcl"
+#include "services_microboone.fcl"
+#include "largeantmodules_microboone.fcl"
+#include "mcreco.fcl"
+#include "time_memory_tracker_microboone.fcl"
+#include "particleinventoryservice.fcl"
+#include "photonfilter.fcl"
+
+process_name: GenieGen
+
+services:
+{
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "genie_hist.root" }
+  TimeTracker:             @local::microboone_time_tracker
+  MemoryTracker:           @local::microboone_memory_tracker
+  RandomNumberGenerator: {} #ART native random number generator
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::microboone_simulation_dark_services
+  @table::microboone_gen_services
+  ParticleInventoryService: @local::standard_particleinventoryservice
+
+  IFDH:         {}
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:   10          # Number of events to create
+  firstRun:    1           # Run number to use for this file
+  firstEvent:  1           # number of first event in the file
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ filters:
+     {
+        PhotonFilter:   @local::photonfilter
+        }
+
+
+ producers:
+ {
+
+        largeant: @local::microboone_largeant
+        mcreco:   @local::standard_mcreco
+        
+        generator: @local::microboone_genie_uniform_flux_cc
+        rns:       { module_type: "RandomNumberSaver" }
+        }
+
+ fpath: [PhotonFilter]
+
+  #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+ simulate: [ rns, generator, largeant, mcreco, PhotonFilter ]
+ 
+ #define the output stream, there could be more than one if using filters 
+ stream1:  [ out1 ]
+
+ #trigger_paths is a keyword and contains the paths that modify the art::event, 
+ #ie filters and producers
+ trigger_paths: [simulate] 
+
+ #end_paths is a keyword and contains the paths that do not modify the art::Event, 
+ #ie analyzers and output streams.  these all run simultaneously
+ end_paths:     [stream1]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "genie_gen.root" #default file name, can override from command line with -o or --output
+   dataTier:    "generated"
+   compressionLevel: 1
+   SelectEvents: ["simulate"]
+
+ }
+}
+
+services.TimeTracker: {}
+services.MemoryTracker: {}
+services.RandomNumberGenerator: {}
+services.FileCatalogMetadata: @local::art_file_catalog_mc
+
+physics.producers.rns: {
+    module_type: "RandomNumberSaver"
+    }
+
+physics.producers.largeant.KeepParticlesInVolumes: [ "volWorld" ]
+
+physics.producers.largeant.KeepEMShowerDaughters: false
+
+#physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122, 000010020,1000010030,1000020030,1000020040]
+
+services.SpaceCharge.EnableSimSpatialSCE: false
+services.SpaceCharge.EnableSimEfieldSCE: false
+services.DetectorClocksService.InheritClockConfig: false
+
+outputs.out1.fileName: "prodgenie_bnb_nu_dirt_sbn_osc_uboone_%tc_gen.root"
+
+services.IFDH: {}
+physics.producers.generator: @local::microboone_genie_simple
+physics.producers.generator.FluxCopyMethod: "IFDH"
+physics.producers.generator.EventsPerSpill: 0
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/uboone/bnb_gsimple_fluxes_02.05.2018_463/"
+
+physics.producers.generator.GlobalTimeOffset: 3125.
+physics.producers.generator.RandomTimeOffset: 1600.
+physics.producers.generator.TopVolume: "volWorld"
+physics.producers.generator.BeamName: "booster"
+
+physics.filters.PhotonFilter.ActiveVolume: [
+    {
+      xmin: -1.55
+      ymin: -115.53
+      zmin: 0.1
+      xmax: 254.8
+      ymax: 117.47
+      zmax: 1036.9
+    }
+]

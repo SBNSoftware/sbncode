@@ -18,10 +18,12 @@ NueSelection: {
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt: false 
-  IntrinsicOnly: false
+  IntrinsicOnly: true
   ApplyGENIEVersionWeight: false
   DontUseSimChannels: false
   UseGenieHists: false
+
+    FillHistograms: true
   #MCTruths: [ "generator" ]
 }
 

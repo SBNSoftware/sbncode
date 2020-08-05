@@ -2,6 +2,9 @@
 #include "geometry_icarus.fcl"
 #include "larproperties.fcl"
 #include "detectorproperties_icarus.fcl"
+#include "particleinventoryservice.fcl"
+#include "backtrackerservice.fcl"
+
 
 services: {
   message:                   @local::icarus_message_services_interactive
@@ -9,5 +12,8 @@ services: {
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
   DetectorPropertiesService: @local::icarus_detproperties
+  BackTrackerService:        @local::standard_backtrackerservice
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+
 }
 

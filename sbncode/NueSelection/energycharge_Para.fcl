@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+standard_energycharge_Para: {
+ module_type: "sbncode/NueSelection/EnergyCharge"
+ LArGeantModuleLabel:      "largeant"
+ HitsModuleLabel: "gaushit"
+ TrackModuleLabel: "pmalgtrackmaker"
+
+}
+END_PROLOG
+

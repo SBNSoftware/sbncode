@@ -16,10 +16,12 @@ NueSelection: {
   Detector: "SBND"
   IncludeCosmics: false
   IncludeDirt:    false 
-  OscOnly:       false  
+  OscOnly:       true
   ApplyGENIEVersionWeight: true
   DontUseSimChannels: false
   UseGenieHists: true
+
+  FillHistograms: true  
   #MCTruths: [ "generator" ]
 }
 

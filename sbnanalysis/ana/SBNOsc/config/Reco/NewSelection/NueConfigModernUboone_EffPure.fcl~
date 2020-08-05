@@ -1,0 +1,59 @@
+#include "NueConfig.fcl"    
+
+OutputFile: "output_SBNOsc_NueSelection_Proposal_Uboone.root"
+#MCWeightTags: ["fluxeventweight", "genieeventweight"]
+#MCWeightTags: ["genieeventweight" ]
+MCWeightTags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]   
+ExperimentID: 1
+ProviderConfigFile: "gallery_services_uboone.fcl"
+
+NueSelectionReco: {
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes
+  active_volumes: @local::MicroBooNE_active_volumes
+  @table::actual_reco_selection
+  Verbose: false
+  NuMuOnly:    false
+  FillHistograms: false
+
+    ApplyFVCut: true
+    ApplyOneShowerEnergyCut: false
+    ApplyShowerResidualCut: true
+    ApplyConversionGapCut:  true
+    ApplydEdxCut: true 
+    ApplyLengthCut: false
+    ApplyOpeningAngleCut: false
+    ApplyShowerEnergyCut: true
+    ApplyShowerDensityGradientCut: false
+    ApplyShowerTrackLengthCut: false
+    ApplyShowerTrackWidthCut: false 
+    ApplyMaxTrackLengthCut: false 
+    ApplyMaxTrackPIDACut: false 
+    ApplyMaxTrackLengthPIDACut: true 
+    ApplyMVACut: false 
+    ApplyNeutrinoPdgCodeCut: false 
+    ApplyNumneutrinosCut: false 
+
+    SecondaryShowerEnergyCut: 0
+    ShowerResidualEnergyCut: 23.75
+    ResiudalCut: 2.109
+    NumShowersCut: 1
+    dEdxCut: 2.5
+    ConversionGapCut: 3.5
+    LengthCut: 49.5
+    OpeningAngleCut: 0.405
+    ShowerEnergyCut: 345
+    ShowerDensityGradientCut: 0.99
+    ShowerDensityPowerCut: 1.63
+    ShowerTrackLengthCut: 9.8
+    ShowerTrackWidthCut: 4.55
+    MaxTrackLengthCut: 54
+    MaxTrackPIDACut: 9.9375
+    MaxTrackLengthPIDACut: 37.25
+    MVACut: 0
+    NeutrinoPdgCodeCut: 12
+    NumneutrinosCut: 1
+
+    
+    XOffset: -130
+}
+
