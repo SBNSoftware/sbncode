@@ -1,14 +1,22 @@
+#include "services_microboone.fcl"
 #include "mcreco.fcl"
-#include "standard_g4_icarus.fcl"
-#include "eventweight_sbn.fcl"
+#include "standard_g4_icarus_mappedphotonlibrary.fcl"
 
 process_name: G4
 
 outputs.out1.fileName: "%ifb_%tc_g4.root"
 
 physics.producers.mcreco: @local::standard_mcreco
-physics.producers.fluxeventweight: @local::sbn_flux_eventweight
-physics.producers.genieeventweight: @local::sbn_genie_eventweight
 physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
-physics.simulate: [ @sequence::physics.simulate, mcreco, fluxeventweight, genieeventweight ]
+physics.simulate: [ @sequence::physics.simulate, mcreco]
 
+# disable the "FastOptical" physics
+services.LArG4Parameters.EnabledPhysics: [
+         "Em",
+         "SynchrotronAndGN",
+         "Ion",
+         "Hadron",
+         "Decay",
+         "HadronElastic",
+         "Stopping"
+]

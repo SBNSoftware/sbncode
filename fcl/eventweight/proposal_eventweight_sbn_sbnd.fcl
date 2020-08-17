@@ -1,10 +1,12 @@
+#include "eventweight_proposal_sbn_A.fcl"
+#include "eventweight_proposal_sbn_B.fcl"
 #include "standard_g4_sbnd.fcl"
-##include "eventweight_proposal_sbn_A.fcl"
-##include "eventweight_proposal_sbn_B.fcl"
 
 process_name: G4
 
 outputs.out1.fileName: "%ifb_%tc_g4.root"
+
+services.UBEventWeight: {}
 
 physics.producers.fluxeventweightA: @local::sbn_flux_eventweight_A
 physics.producers.genieeventweightA: @local::sbn_genie_eventweight_A

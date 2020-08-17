@@ -1,0 +1,50 @@
+#include "services_microboone.fcl"
+#include "seedservice_microboone.fcl"
+#include "microboone_eventweight_service.fcl"
+#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie3_sbn_B.fcl"
+
+process_name: EventWeightA
+
+services: {
+  TimeTracker: {}
+  MemoryTracker: {}
+  RandomNumberGenerator: {}
+  FileCatalogMetadata: @local::art_file_catalog_mc
+  NuRandomService: @local::microboone_seedservice
+  UBEventWeight: @local::microboone_eventweight_service
+}
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+  producers: {
+    fluxeventweightA: @local::sbn_flux_eventweight_A
+    fluxeventweightMinibooneA: @local::sbn_flux_eventweight_miniboone_A
+    genieeventweightA: @local::sbn_genie_eventweight_A
+
+    fluxeventweightB: @local::sbn_flux_eventweight_B
+    fluxeventweightMinibooneB: @local::sbn_flux_eventweight_miniboone_B
+    genieeventweightB: @local::sbn_genie_eventweight_B
+
+     rns: {
+       module_type: "RandomNumberSaver"
+     }
+  }
+  simulate: [rns, fluxeventweightA, fluxeventweightMinibooneA, genieeventweightA]
+  stream1: [ out1 ]
+  trigger_paths: [ simulate ]
+  end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+      module_type: RootOutput
+      fileName: "%ifb_%tc_eventweightA.root"
+      compressionLevel: 1
+      dataTier: "simulated"
+ }
+}
+

@@ -1,0 +1,34 @@
+#include "services_microboone.fcl"
+#include "eventweight_sbn.fcl"
+
+services: {
+  RandomNumberGenerator: {}
+  NuRandomService: @local::microboone_seedservice
+  UBEventWeight: {}
+}
+
+physics: {
+ producers: {
+   bnbcorrection: @local::sbn_bnbcorrection_eventweight
+   rns: {
+     module_type: "RandomNumberSaver"
+   }
+ }
+ 
+ simulate: [ rns, bnbcorrection]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_bnbcorrection.root"
+   dataTier: "detector-simulated"
+   compressionLevel: 1
+ }
+}
+
+process_name: BNBCorrect
+

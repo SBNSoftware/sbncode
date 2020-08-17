@@ -1,12 +1,11 @@
-#include "simulation_genie_icarus_simple.fcl"
+#include "simulation_genie_icarus_bnb.fcl"
 
 process_name: GenieGen
 
-outputs.out1.fileName: "prodgenie_bnb_nu_sbn_icarus_%tc_gen.root"
-
-services.IFDH: {}
+outputs.rootoutput.fileName: "prodgenie_bnb_nu_sbn_icarus_%tc_gen.root"
 
 services.NuRandomService.policy: random
+services.IFDH: {}
 
 physics.producers.generator.FluxCopyMethod: "IFDH"
 physics.producers.generator.EventsPerSpill: 0
@@ -14,5 +13,4 @@ physics.producers.generator.TopVolume: "volDetEnclosure"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/mastbaum/flux/icarus/zarko-expires20171031/"
 physics.producers.generator.FluxFiles: [ "converted_beammc_icarus_*.root" ]
-physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
-
+physics.producers.generator.EventGeneratorList: @erase

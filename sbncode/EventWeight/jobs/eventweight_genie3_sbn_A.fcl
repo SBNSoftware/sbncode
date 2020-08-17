@@ -1,0 +1,928 @@
+BEGIN_PROLOG
+
+##########################################################
+## BNB beam-related, from MicroBooNE implementation of
+## MiniBooNE flux model.
+##
+## References:
+##
+##   * MicroBooNE DocDB 7866 (J. Zennamo)
+##   * MicroBooNE DocDB 8058 (J. Zennamo)
+##
+## Maintainer: J. Zennamo (jzennamo@uchicago.edu)
+##
+##########################################################
+
+n_universes_A: 100
+n_universes_A_slow: 1
+n_universes_A_maybe_slow: 1
+
+sbn_flux_eventweight_base_A: {
+  horncurrent_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_horn175ka_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_horn173ka_rgen610.6_flux.root"
+    parameter_list: ["horncurrent"]
+    random_seed: 1000
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  pioninexsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
+    parameter_list: ["pioninexsec"]
+    random_seed: 1001
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  nucleontotxsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleontotxsec"]
+    random_seed: 1002
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  nucleonqexsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleonqexse"]
+    random_seed: 1003
+    scale_factor_pos:0.333 #From MiniBooNE
+    scale_factor_neg:0.573 #From MiniBooNE
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  nucleoninexsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
+    parameter_list: ["nucleoninexsec"]
+    random_seed: 1004
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  pionqexsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
+    parameter_list: ["pionqexsec"]
+    random_seed: 1005
+    scale_factor_pos:0.292 #From MiniBooNE
+    scale_factor_neg:0.585 #From MiniBooNE
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  piontotxsec_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
+    parameter_list: ["piontotxsec"]
+    random_seed: 1006
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  expskin_base: {
+    type: FluxUnisim
+    CentralValue_hist_file:"beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file:"beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    NegativeSystematicVariation_hist_file:"beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    parameter_list: ["expskin"]
+    random_seed: 1007
+    scale_factor_pos:1
+    scale_factor_neg:1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+    use_MiniBooNE_random_numbers: false
+  }
+
+  bnbcorrection_base: {
+    type: FluxHist
+    ### To Flux without K+ Constraint
+    #cv_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/gsimple_uboone_flux.root"
+    #rw_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_02.28.2014_470_rwhist/redecay_uboone_flux.root"
+    ### To Flux with K+ Constraint
+    cv_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_09.7.2017_470_rwhist/bnb_oldflux_volAVTPC.root"
+    rw_hist_file: "uboonebeam/bnb_gsimple/bnb_gsimple_fluxes_09.7.2017_470_rwhist/bnb_newflux_volAVTPC.root"
+    random_seed: 1008
+    mode: reweight
+    number_of_multisims: 1
+  }
+
+  piplus_base: {
+    type: PrimaryHadronSWCentralSplineVariation
+    random_seed: 1009
+    parameter_list: ["piplus"]
+    parameter_sigma: 1
+    mode: multisim
+    scale_factor: 1
+    number_of_multisims: @local::n_universes_A
+    PrimaryHadronGeantCode: 211 # geant code for particle production on Be
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+  }
+
+  piminus_base: {
+    type: PrimaryHadronSWCentralSplineVariation
+    random_seed: 1010
+    parameter_list: ["piminus"]
+    parameter_sigma: 1
+    mode: multisim
+    scale_factor: 1
+    number_of_multisims: @local::n_universes_A
+    PrimaryHadronGeantCode: -211 # geant code for particle production on Be
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+  }
+
+  kplus_base: {
+    type: PrimaryHadronFeynmanScaling
+    random_seed: 1011
+    parameter_sigma: 1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+    PrimaryHadronGeantCode: 321 # geant code for particle production on Be
+    ### Uncertainties without SciBooNE Contraint
+    #parameter_list: ["kplusOld"]
+    #scale_factor: 2
+    #ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_KPlus_withoutSciBooNE.root"
+    ### Uncertainties with SciBooNE Constraint
+    parameter_list: ["kplus"]
+    scale_factor: 1
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+  }
+
+  ### Uncertainties without SciBooNE Contraint
+  kplusOld_base: {
+    type: PrimaryHadronFeynmanScaling
+    random_seed: 1014
+    parameter_sigma: 1
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+    PrimaryHadronGeantCode: 321 # geant code for particle production on Be
+    parameter_list: ["kplusOld"]
+    scale_factor: 2
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE_KPlus_withoutSciBooNE.root"
+  }
+
+  kzero_base: {
+    type: PrimaryHadronSanfordWang
+    random_seed: 1012
+    parameter_list: ["kzero"]
+    parameter_sigma: 1
+    mode: multisim
+    scale_factor: 1
+    number_of_multisims: @local::n_universes_A
+    ExternalData:"beamData/ExternalData/BNBExternalData_uBooNE.root"
+  }
+
+  kminus_base: {
+    type: PrimaryHadronNormalization
+    random_seed: 1013
+    parameter_list: ["kminus"]
+    parameter_sigma: 1
+    mode: multisim
+    scale_factor: 1
+    number_of_multisims: @local::n_universes_A
+    PrimaryHadronGeantCode: -321 # geant code for particle production on Be
+    use_MiniBooNE_random_numbers: false
+  }
+}
+
+sbn_flux_eventweight_miniboone_A: {
+  module_type: "EventWeight"
+
+  # Throw exception if weight outside limits
+  min_weight: 0
+  # EventWeight tech note suggests 30 for max weight
+  max_weight: 30
+
+  genie_module_label: generator
+
+  weight_functions_beam: [
+    bnbcorrection,
+    # MiniBooNE config
+    horncurrent, expskin,
+    piplus, piminus, kplus, kplusOld,
+    kzero, kminus,
+    pioninexsec, pionqexsec,
+    piontotxsec, nucleontotxsec,
+    nucleonqexsec, nucleoninexsec
+  ]
+
+  horncurrent: {
+    @table::sbn_flux_eventweight_base_A.horncurrent_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  pioninexsec: {
+    @table::sbn_flux_eventweight_base_A.pioninexsec_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  nucleontotxsec: {
+    @table::sbn_flux_eventweight_base_A.nucleontotxsec_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  nucleonqexsec: {
+    @table::sbn_flux_eventweight_base_A.nucleontotxsec_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  nucleoninexsec: {
+    @table::sbn_flux_eventweight_base_A.nucleoninexsec_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  pionqexsec: {
+    @table::sbn_flux_eventweight_base_A.pionqexsec_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  piontotxsec: {
+    @table::sbn_flux_eventweight_base_A.piontotxsec_base
+   use_MiniBooNE_random_numbers: true
+   weight_calculator: "MiniBooNE"
+  }
+
+  expskin: {
+    @table::sbn_flux_eventweight_base_A.expskin_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  bnbcorrection: {
+    @table::sbn_flux_eventweight_base_A.bnbcorrection_base
+  }
+
+  piplus: {
+    @table::sbn_flux_eventweight_base_A.piplus_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  piminus: {
+    @table::sbn_flux_eventweight_base_A.piminus_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  kplus: {
+    @table::sbn_flux_eventweight_base_A.kplus_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  kplusOld: {
+    @table::sbn_flux_eventweight_base_A.kplusOld_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+
+  kzero: {
+    @table::sbn_flux_eventweight_base_A.kzero_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+    PrimaryHadronGeantCode: [130] # MiniBooNE only reweighted GEANT CODE = 10
+  }
+
+  kminus: {
+    @table::sbn_flux_eventweight_base_A.kminus_base
+    use_MiniBooNE_random_numbers: true
+    weight_calculator: "MiniBooNE"
+  }
+}
+
+sbn_flux_eventweight_miniboone_A.weight_functions: [
+  @sequence::sbn_flux_eventweight_miniboone_A.weight_functions_beam
+]
+
+sbn_flux_eventweight_A: {
+  module_type: "EventWeight"
+
+  # Throw exception if weight outside limits
+  min_weight: 0
+  # EventWeight tech note suggests 30 for max weight
+  max_weight: 30
+
+  genie_module_label: generator
+
+  weight_functions_beam: [
+    bnbcorrection,
+    # non - MiniBooNE  config
+    horncurrent, expskin,
+    piplus, piminus, kplus, kzero, kminus,
+    pioninexsec, pionqexsec, piontotxsec,
+    nucleontotxsec, nucleonqexsec, nucleoninexsec
+  ]
+
+  horncurrent: {
+    @table::sbn_flux_eventweight_base_A.horncurrent_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  pioninexsec: {
+    @table::sbn_flux_eventweight_base_A.pioninexsec_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  nucleontotxsec: {
+    @table::sbn_flux_eventweight_base_A.nucleontotxsec_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  nucleonqexsec: {
+    @table::sbn_flux_eventweight_base_A.nucleonqexsec_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  nucleoninexsec: {
+    @table::sbn_flux_eventweight_base_A.nucleoninexsec_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  pionqexsec: {
+    @table::sbn_flux_eventweight_base_A.pionqexsec_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  piontotxsec: {
+    @table::sbn_flux_eventweight_base_A.piontotxsec_base
+   use_MiniBooNE_random_numbers: false
+   weight_calculator: "MicroBooNE"
+  }
+
+  expskin: {
+    @table::sbn_flux_eventweight_base_A.expskin_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  bnbcorrection: {
+    @table::sbn_flux_eventweight_base_A.bnbcorrection_base
+  }
+
+  piplus: {
+    @table::sbn_flux_eventweight_base_A.piplus_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  piminus: {
+    @table::sbn_flux_eventweight_base_A.piminus_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  kplus: {
+    @table::sbn_flux_eventweight_base_A.kplus_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+  }
+
+  kzero: {
+    @table::sbn_flux_eventweight_base_A.kzero_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MicroBooNE"
+    PrimaryHadronGeantCode: [130, 310, 311] # MiniBooNE only reweighted GEANT CODE = 10
+  }
+
+  kminus: {
+    @table::sbn_flux_eventweight_base_A.kminus_base
+    use_MiniBooNE_random_numbers: false
+    weight_calculator: "MiniBooNE"
+  }
+}
+
+sbn_flux_eventweight_A.weight_functions: [
+  @sequence::sbn_flux_eventweight_A.weight_functions_beam
+]
+
+##########################################################
+## GENIE-related
+##
+## One function is defined for each GENIE parameter.
+##
+## If *pm1sigma* is specifed:
+##
+##     Two weights will be evaluated for each parameter,
+##     one with +1 sigma the other with -1 sigma, it
+##     doesn't matter what you write in parameter_sigma
+##     and number _of_multisims if pm1sigma is specifed
+##
+## Defining one function for each parameter means that
+## the reweighting procedure is done separately for each
+## parameter. We can define one function with more
+## parameters in parameter_list and in this case the
+## reweight will be done simultaneously for all the
+## parameters specified.
+##
+## A list of available parameters is in GenieWeightCalc.cxx
+##
+## References:
+##
+##   * E.g. MicroBooNE DocDB 5464 (M. Del Tutto, A. Furmanski)
+##
+##########################################################
+
+
+sbn_genie_eventweight_A: {
+  module_type: "EventWeight"
+
+  # Throw exception if weight outside limits
+  min_weight: 0
+  max_weight: 100
+
+  genie_module_label: generator
+
+  weight_functions_genie: [
+    # proposal weights
+    genie_qema,
+    genie_ncresAxial, genie_ccresAxial,
+    genie_NC,
+    genie_NonResRvp1pi, genie_NonResRvbarp1pi,
+    genie_NonResRvp2pi, genie_NonResRvbarp2pi,
+    # alternate weights for non-resonant backgrounds
+    # so that we can weight CC and NC differently
+    genie_NonResRvp1piAlt, genie_NonResRvbarp1piAlt,
+    genie_NonResRvp2piAlt, genie_NonResRvbarp2piAlt,
+
+    # cocktail of weights from Andy
+    # genie_qevec, 
+    genie_ncelAxial,
+    genie_ncelEta, genie_ccresVector,
+    genie_ncresVector,
+    genie_cohMA, genie_cohR0,
+    genie_ResDecayGamma,
+    genie_DISAth, genie_DISBth, genie_DISCv1u, genie_DISCv2u,
+    # genie_AGKYxF, genie_AGKYpT,
+    # genie_FormZone,
+    genie_IntraNukeNmfp, genie_IntraNukeNcex,
+    genie_IntraNukeNinel, genie_IntraNukeNabs, genie_IntraNukeNpi,
+    genie_IntraNukePImfp, genie_IntraNukePIcex,
+    genie_IntraNukePIinel, genie_IntraNukePIabs, genie_IntraNukePIpi
+  ]
+
+  genie_qema: {
+    type: Genie
+    random_seed: 15
+    parameter_list: ["QEMA"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_qevec: {
+    type: Genie
+    random_seed: 16
+    parameter_list: ["QEVec", "QEVec", "QEVec", "QEVec", "QEVec", "QEVec" ]
+    parameter_sigma: [ -3, -2, -1, +1, +2, +3 ]
+    mode: fixed
+    number_of_multisims: @local::n_universes_A_slow
+  }
+
+  genie_ncelAxial: {
+    type: Genie
+    random_seed: 17
+    parameter_list: ["NCELaxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ncelEta: {
+    type: Genie
+    random_seed: 18
+    parameter_list: ["NCELeta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+
+  genie_ccresAxial: {
+    type: Genie
+    random_seed: 19
+    parameter_list: ["CCResAxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ccresVector: {
+    type: Genie
+    random_seed: 20
+    parameter_list: ["CCResVector"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ncresAxial: {
+    type: Genie
+    random_seed: 21
+    parameter_list: ["NCResAxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ncresVector: {
+    type: Genie
+    random_seed: 22
+    parameter_list: ["NCResVector"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_cohMA: {
+    type: Genie
+    random_seed: 23
+    parameter_list: ["CohMA"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_cohR0: {
+    type: Genie
+    random_seed: 24
+    parameter_list: ["CohR0"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvp1pi: {
+    type: Genie
+    random_seed: 25
+    parameter_list: ["NonResRvp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvbarp1pi: {
+    type: Genie
+    random_seed: 26
+    parameter_list: ["NonResRvbarp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvp2pi: {
+    type: Genie
+    random_seed: 27
+    parameter_list: ["NonResRvp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvbarp2pi: {
+    type: Genie
+    random_seed: 28
+    parameter_list: ["NonResRvbarp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvp1piAlt: {
+    type: Genie
+    random_seed: 54
+    parameter_list: ["NonResRvp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvbarp1piAlt: {
+    type: Genie
+    random_seed: 55
+    parameter_list: ["NonResRvbarp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvp2piAlt: {
+    type: Genie
+    random_seed: 56
+    parameter_list: ["NonResRvp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NonResRvbarp2piAlt: {
+    type: Genie
+    random_seed: 57
+    parameter_list: ["NonResRvbarp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ResDecayGamma: {
+    type: Genie
+    random_seed: 29
+    parameter_list: ["ResDecayGamma"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ResDecayEta: {
+    type: Genie
+   random_seed: 30
+    parameter_list: ["ResDecayEta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_ResDecayTheta: {
+    type: Genie
+    random_seed: 31
+    parameter_list: ["ResDecayTheta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_NC: {
+    type: Genie
+    random_seed: 32
+    parameter_list: ["NC"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_DISAth: {
+    type: Genie
+    random_seed: 33
+    parameter_list: ["DISAth"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_DISBth: {
+    type: Genie
+    random_seed: 34
+    parameter_list: ["DISBth"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_DISCv1u: {
+    type: Genie
+    random_seed: 35
+    parameter_list: ["DISCv1u"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_DISCv2u: {
+    type: Genie
+    random_seed: 36
+    parameter_list: ["DISCv2u"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_AGKYxF: {
+    type: Genie
+    random_seed: 37
+    parameter_list: ["AGKYxF", "AGKYxF", "AGKYxF", "AGKYxF", "AGKYxF", "AGKYxF"]
+    parameter_sigma: [ -3, -2, -1, 1, 2, 3 ]
+    mode: fixed
+    number_of_multisims: @local::n_universes_A_maybe_slow
+  }
+
+  genie_AGKYpT: {
+    type: Genie
+    random_seed: 38
+    parameter_list: ["AGKYpT", "AGKYpT", "AGKYpT", "AGKYpT", "AGKYpT", "AGKYpT"]
+    parameter_sigma: [ -3, -2, -1, 1, 2, 3 ]
+    mode: fixed
+    number_of_multisims: @local::n_universes_A_maybe_slow
+  }
+
+  genie_FormZone: {
+    type: Genie
+    random_seed: 39
+    parameter_list: ["FormZone", "FormZone", "FormZone", "FormZone", "FormZone", "FormZone"]
+    parameter_sigma: [ -3, -2, -1, 1, 2, 3 ]
+    mode: fixed
+    number_of_multisims: @local::n_universes_A_maybe_slow
+  }
+
+  ## genie_FermiGasModelKf: {
+  ##   type: Genie
+  ##   random_seed: 40
+  ##   parameter_list: ["FermiGasModelKf"]
+  ##   parameter_sigma: [ 1 ]
+  ##   mode: multisim
+  ##   number_of_multisims: @local::n_universes_A_maybe_slow
+  ## }
+
+  ## genie_FermiGasModelSf: {
+  ##   type: Genie
+  ##   random_seed: 41
+  ##   parameter_list: ["FermiGasModelSf"]
+  ##   parameter_sigma: [ 1 ]
+  ##   mode: multisim
+  ##   number_of_multisims: @local::n_universes_A_maybe_slow
+  ## }
+
+  genie_IntraNukeNmfp: {
+    type: Genie
+    random_seed: 42
+    parameter_list: ["IntraNukeNmfp"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukeNcex: {
+    type: Genie
+    random_seed: 43
+    parameter_list: ["IntraNukeNcex"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukeNel: {
+    type: Genie
+    random_seed: 44
+    parameter_list: ["IntraNukeNel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukeNinel: {
+    type: Genie
+    random_seed: 45
+    parameter_list: ["IntraNukeNinel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukeNabs: {
+    type: Genie
+    random_seed: 46
+    parameter_list: ["IntraNukeNabs"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukeNpi: {
+    type: Genie
+    random_seed: 47
+    parameter_list: ["IntraNukeNpi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePImfp: {
+    type: Genie
+    random_seed: 48
+    parameter_list: ["IntraNukePImfp"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePIcex: {
+    type: Genie
+    random_seed: 49
+    parameter_list: ["IntraNukePIcex"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePIel: {
+    type: Genie
+    random_seed: 50
+    parameter_list: ["IntraNukePIel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePIinel: {
+    type: Genie
+    random_seed: 51
+    parameter_list: ["IntraNukePIinel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePIabs: {
+    type: Genie
+    random_seed: 52
+    parameter_list: ["IntraNukePIabs"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  genie_IntraNukePIpi: {
+    type: Genie
+    random_seed: 53
+    parameter_list: ["IntraNukePIpi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+
+  # Single function to reweight all GENIE parameters at once
+  genie_all: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+      "QEMA", "NCELaxial", "NCELeta", "CCResAxial", "CCResVector",
+      "NCResAxial", "NCResVector",
+      "NonResRvp1pi", "NonResRvbarp1pi", "NonResRvp2pi", "NonResRvbarp2pi",
+      "NC",
+      "DISAth", "DISBth", "DISCv1u", "DISCv2u",
+      "FormZone",
+      "IntraNukeNmfp", "IntraNukeNcex",
+      "IntraNukeNinel",
+      "IntraNukeNabs", "IntraNukeNpi",
+      "IntraNukePImfp", "IntraNukePIcex",
+      "IntraNukePIinel", "IntraNukePIabs", "IntraNukePIpi"
+    ]
+    parameter_sigma: [
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1
+    ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_A
+  }
+}
+
+sbn_genie_eventweight_A.weight_functions: [
+  @sequence::sbn_genie_eventweight_A.weight_functions_genie
+]
+
+## sbn_genie_eventweight_A.weight_functions: [ "genie_all" ]
+
+
+END_PROLOG

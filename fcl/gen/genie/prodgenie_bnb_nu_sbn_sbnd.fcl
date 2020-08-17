@@ -11,5 +11,5 @@ physics.producers.generator.TopVolume: "volCryostat"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/sbnd/zarko_new_June2019"
 physics.producers.generator.FluxFiles: [ "converted_beammc_sbnd_v1*.root" ]
-physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
+physics.producers.generator.EventGeneratorList: @erase
 

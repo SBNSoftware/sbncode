@@ -1,11 +1,6 @@
 #include "standard_g4_uboone.fcl"
-#include "eventweight_sbn.fcl"
 
 process_name: G4
 
 outputs.out1.fileName: "%ifb_%tc_g4.root"
-
-physics.producers.fluxeventweight: @local::sbn_flux_eventweight
-physics.producers.genieeventweight: @local::sbn_genie_eventweight
-physics.simulate: [ @sequence::physics.simulate, fluxeventweight, genieeventweight ]
 
