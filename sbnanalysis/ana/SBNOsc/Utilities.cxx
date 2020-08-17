@@ -326,7 +326,7 @@ double visibleEnergyProposal(TRandom &rand, const simb::MCTruth &mctruth, const 
   return total;
 }
 
-std::pair<double, double> visibleEnergySplit(TRandom &rand, 
+EnergyInfo visibleEnergySplit(TRandom &rand, 
     const simb::MCTruth &mctruth, 
     const std::vector<sim::MCTrack> &mctrack_list, 
     const VisibleEnergyCalculator &calculator) {
@@ -336,6 +336,9 @@ std::pair<double, double> visibleEnergySplit(TRandom &rand,
   // primary leptron track
   const sim::MCTrack *lepton_track = NULL;
   bool lepton_track_exists = false;
+
+  int npion = 0;
+  int nproton = 0;
 
   // total up visible energy from tracks...
   double track_visible_energy = 0.;
@@ -353,10 +356,15 @@ std::pair<double, double> visibleEnergySplit(TRandom &rand,
       continue;
     }
 
+
     double mass = PDGMass(mct.PdgCode());
     double this_visible_energy = (mct.Start().E() - mass) / 1000. /* MeV to GeV */;
     if (this_visible_energy > calculator.track_threshold) {
       track_visible_energy += this_visible_energy;
+
+      // count up final-state pion/protons
+      if (abs(mct.PdgCode()) == 211) npion ++;
+      if (abs(mct.PdgCode()) == 2212) nproton ++;
     }
   }
 
@@ -378,11 +386,11 @@ std::pair<double, double> visibleEnergySplit(TRandom &rand,
   }
   else if (calculator.lepton_index >= 0 && (abs(mctrack_list[calculator.lepton_index].PdgCode()) == 211)) {
     const sim::MCTrack &mct = mctrack_list[calculator.lepton_index];
-    double pion_visible_energy =  (mct.Start().E() -PDGMass(mct.PdgCode())) / 1000. /* MeV to GeV */;
+    double pion_visible_energy =  (mct.Start().E()) / 1000. /* MeV to GeV */;
     leptonic_visible_E = std::max(rand.Gaus(track_visible_energy, track_visible_energy*calculator.track_energy_distortion), 0.);
   }
 
-  return {hadronic_visible_E, leptonic_visible_E};
+  return {hadronic_visible_E, leptonic_visible_E, nproton, npion};
 }
 
 double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 

@@ -7,6 +7,8 @@
 #include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 #include "sbndcode/Geometry/ChannelMapSBNDAlg.h"
 #include "ubcore/Geometry/ChannelMapUBooNEAlg.h"
+#include "larcorealg/Geometry/ChannelMapStandardAlg.h"
+#include "larcorealg/Geometry/ChannelMapAlg.h"
 #include "larcorealg/Geometry/StandaloneBasicSetup.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
@@ -50,11 +52,14 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
         cfg.get<fhicl::ParameterSet>("services.Geometry");
       // For MicroBooNE, we also need to initialize the channel map with the
       // optical detector channel mapping
-      std::shared_ptr<geo::ChannelMapUBooNEAlg> channelMap = \
-        std::make_shared<geo::ChannelMapUBooNEAlg>(
-          cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
+      std::unique_ptr<geo::ChannelMapUBooNEAlg> channelMapUB = \
+          std::make_unique<geo::ChannelMapUBooNEAlg>(
+      cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
+
+      std::unique_ptr<geo::ChannelMapAlg> channelMap(std::move(channelMapUB)); 
+
       fGeometryProvider = \
-        lar::standalone::SetupGeometryWithChannelMapping(pset, channelMap);
+        lar::standalone::SetupGeometryWithChannelMapping(pset, std::move(channelMap));
       }
       break;
     case kExpICARUS: {

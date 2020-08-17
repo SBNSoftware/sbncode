@@ -325,15 +325,17 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
 
     // double visible_energy = visibleEnergyProposalMCParticles(_rand, mctruth, mctracks, calculator);
     // double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
-    std::pair<double, double> energy_pair = visibleEnergySplit(_rand, mctruth, mctracks, calculator);
+    EnergyInfo einfo = visibleEnergySplit(_rand, mctruth, mctracks, calculator);
 
     event::RecoInteraction reco_interaction(i);
     // apply energy scale shift
-    energy_pair.first *= _config.constantEnergyScale;
-    energy_pair.second *= _config.constantEnergyScale;
+    einfo.leptonic_energy *= _config.constantEnergyScale;
+    einfo.hadronic_energy *= _config.constantEnergyScale;
 
-    reco_interaction.hadronic_energy = energy_pair.first;
-    reco_interaction.lepton_energy = energy_pair.second;
+    reco_interaction.hadronic_energy = einfo.hadronic_energy;
+    reco_interaction.lepton_energy = einfo.leptonic_energy;
+    reco_interaction.npion = einfo.npion;
+    reco_interaction.nproton = einfo.nproton;
     reco_interaction.lepton_costh = mctracks[calculator.lepton_index].Start().Momentum().CosTheta(); 
     reco_interaction.reco_energy = reco_interaction.hadronic_energy + reco_interaction.lepton_energy;
 

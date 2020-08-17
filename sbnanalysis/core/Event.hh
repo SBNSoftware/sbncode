@@ -187,6 +187,8 @@ public:
   float hadronic_energy; //!< Total (smeared) hadronic kinetic energy [GeV]
   float lepton_energy; //!< (smeared) lepton kinetic energy 
   float lepton_costh;  //!< lepton angle to beam (theta)
+  int nproton; //!< number of protons above threshold
+  int npion; //!< number of pions above threshold
 };
 
 

@@ -181,7 +181,14 @@ struct VisibleEnergyCalculator {
 double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list,  
     const VisibleEnergyCalculator &calculator=VisibleEnergyCalculator(), bool include_showers=true);
 
-std::pair<double, double> visibleEnergySplit(TRandom &rand, 
+struct EnergyInfo {
+  double hadronic_energy;
+  double leptonic_energy;
+  int nproton;
+  int npion;
+};
+
+EnergyInfo visibleEnergySplit(TRandom &rand, 
     const simb::MCTruth &mctruth, 
     const std::vector<sim::MCTrack> &mctrack_list, 
     const VisibleEnergyCalculator &calculator);
