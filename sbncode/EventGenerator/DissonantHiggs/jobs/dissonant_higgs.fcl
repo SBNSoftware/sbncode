@@ -1,0 +1,58 @@
+BEGIN_PROLOG
+
+empty_kaon: {
+  tool_type: EmptyKaonGen
+}
+
+numi_kaon: {
+  tool_type: NuMiKaonGen
+  SearchPath: "/pnfs/sbn/persistent/users/gputnam/numiflux/"
+  FluxFiles: ["*.root"]
+  TreeName: "dk2nuTree"
+  MetaTreeName: "dkmetaTree"
+}
+
+kaon2higgs: {
+  tool_type: Kaon2HiggsFlux
+
+  // uBooNE config
+  Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
+                                                0.0000462540012621546684,       0.99829162468141475,            -0.0584279894529063024,
+                                                -0.38947144863934974,           0.0538324139386641073,          0.91946400794392302 ]
+  BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
+
+}
+
+mono_energy_flux: {
+  tool_type: MonoEnergyHiggsFlux
+  E: 300 # MeV
+  M: 250 # MeV/c^2
+
+  X: 0 # cm
+  Y: 0
+  Z: -10000
+
+  Xdir: 0 # unit-vector
+  Ydir: 0
+  Zdir: 1
+}
+
+ray_trace_box: {
+  tool_type: RayTraceBox
+  Volume: volDetEnclosure
+}
+
+decay_force_muon: {
+  tool_type: HiggsDecayForceMuon
+  ReferenceRayLength: -1
+}
+
+dissonant_higgs: {
+  module_type: DissonantHiggsTFile
+  KaonGen: @local::numi_kaon
+  Flux: @local::kaon2higgs
+  RayTrace: @local::ray_trace_box
+  Decay: @local::decay_force_muon
+}
+
+END_PROLOG

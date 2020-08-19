@@ -1,0 +1,36 @@
+#include "dissonant_higgs.fcl"
+# service configuration
+#
+#include "services_icarus.fcl"
+
+
+process_name: AnaTree
+
+services:
+{
+  @table::icarus_basic_services
+  TFileService: { fileName: "dissonant_higgs_icarus.root" }
+}
+
+source: {
+  module_type: EmptyEvent
+}
+
+physics:
+{
+  producers:{}
+  filters:  {} 
+  analyzers:{
+    
+    disshiggs: @local::dissonant_higgs
+    
+  } # analyzers
+ 
+  ana:  [ disshiggs ]
+ 
+  trigger_paths: [] 
+  end_paths:     [ ana ] 
+  
+} # physics
+
+services.NuRandomService.policy: "random"
