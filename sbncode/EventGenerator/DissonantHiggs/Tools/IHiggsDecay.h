@@ -15,6 +15,7 @@
 #include "art/Framework/Principal/Event.h"
 
 #include "../Products/HiggsFlux.h"
+#include "../Products/HiggsDecay.h"
 
 #include "IHiggsStage.h"
 
@@ -39,7 +40,7 @@ public:
      */
     virtual ~IHiggsDecay() noexcept = default;
 
-    virtual bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, simb::MCTruth &truth, float &weight) = 0;
+    virtual bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, simb::MCTruth &truth, double &weight) = 0;
 };
 
 } // namespace ldm

@@ -30,6 +30,8 @@
 #include "TVector3.h"
 #include "TTree.h"
 #include "TFile.h"
+#include "TTreeReader.h"
+#include "TTreeReaderValue.h"
 
 // std includes
 #include <string>
@@ -57,7 +59,7 @@ public:
      */
     ~NuMiKaonGen();
 
-    float GetPOT() override;
+    double GetPOT() override;
     simb::MCFlux GetNext() override;
 
     void configure(const fhicl::ParameterSet&) override;
@@ -65,17 +67,16 @@ public:
     const bsim::Dk2Nu *GetNextEntry();
     std::vector<std::string> LoadFluxFiles();
     simb::MCFlux MakeMCFlux(const bsim::Dk2Nu &dk2nu);
-    float LoadPOT();
+    double LoadPOT();
 
     // no weights
-    float ConstantWeight() override { return 1.; }
-    float MaxWeight() override { return 1.; }
+    float MaxWeight() override { return -1.; }
 
 private:
   // config
   std::string fSearchPath;
   std::vector<std::string> fSearchPatterns;
-  int fMaxFluxFileMB;
+  unsigned long fMaxFluxFileMB;
   std::string fFluxCopyMethod;
 
   std::string fTreeName;
@@ -92,13 +93,12 @@ private:
 
   // ROOT Holders
   TTree *fFluxTree;
-  TTree *fMetaTree;
   TFile *fFluxFile;
   bsim::Dk2Nu *fDk2Nu;
 
   // count POT
-  float fAccumulatedPOT;
-  float fThisFilePOT;
+  double fAccumulatedPOT;
+  double fThisFilePOT;
   
 };
 
@@ -116,7 +116,6 @@ NuMiKaonGen::NuMiKaonGen(fhicl::ParameterSet const &pset):
   fEntryStart = 0;
   fNewFile = true;
   fFluxTree = NULL;
-  fMetaTree = NULL;
   fFluxFile = NULL;
   fDk2Nu = new bsim::Dk2Nu;
 
@@ -136,7 +135,7 @@ void NuMiKaonGen::configure(fhicl::ParameterSet const &pset)
 {
   fSearchPath = pset.get<std::string>("SearchPath");
   fSearchPatterns = pset.get<std::vector<std::string>>("FluxFiles");
-  fMaxFluxFileMB = pset.get<int>("MaxFluxFileMB", 2 * 1024);
+  fMaxFluxFileMB = pset.get<unsigned long>("MaxFluxFileMB", 2 * 1024);
   fFluxCopyMethod = pset.get<std::string>("FluxCopyMethod", "IFDH");
   fTreeName = pset.get<std::string>("TreeName");
   fMetaTreeName = pset.get<std::string>("MetaTreeName");
@@ -164,9 +163,9 @@ std::vector<std::string> NuMiKaonGen::LoadFluxFiles() {
 
   // now copy up to the provided limit
   std::vector<std::pair<std::string, long>> selected;
-  int totalBytes = 0;
+  unsigned long totalBytes = 0;
   unsigned ind = 0;
-  while (totalBytes < fMaxFluxFileMB * 1024 * 1024 && ind < allFiles.size()) {
+  while (totalBytes < (fMaxFluxFileMB * 1024 * 1024) && ind < allFiles.size()) {
     selected.push_back(allFiles[order[ind]]);
     totalBytes += allFiles[order[ind]].second;
     ind ++;
@@ -183,22 +182,22 @@ std::vector<std::string> NuMiKaonGen::LoadFluxFiles() {
   return files;
 }
 
-float NuMiKaonGen::LoadPOT() {
-  fMetaTree = (TTree*)fFluxFile->Get(fMetaTreeName.c_str());
-  float total_pot = 0.;
-  float pot;
-  fMetaTree->SetBranchAddress("pots", &pot);
-  for (unsigned i = 0; i < fMetaTree->GetEntries(); i++) {
-    fMetaTree->GetEntry(i);
-    total_pot += pot;
+double NuMiKaonGen::LoadPOT() {
+  TTreeReader metaReader(fMetaTreeName.c_str(), fFluxFile);
+  TTreeReaderValue<double> pot(metaReader, "pots");
+  
+  double total_pot = 0.;
+
+  while (metaReader.Next()) {
+    total_pot += *pot;
   }
 
   return total_pot;
 }
 
     
-float NuMiKaonGen::GetPOT() {
-  float ret = fAccumulatedPOT;
+double NuMiKaonGen::GetPOT() {
+  double ret = fAccumulatedPOT;
   fAccumulatedPOT = 0.;
   return ret;
 }
@@ -206,6 +205,12 @@ float NuMiKaonGen::GetPOT() {
 const bsim::Dk2Nu *NuMiKaonGen::GetNextEntry() {
   // new file -- set the start entry 
   if (fNewFile) {
+    if (fFileIndex >= fFluxFiles.size()) {
+      throw cet::exception("FluxReader Out of Files", 
+                           "At file index (" + std::to_string(fFileIndex) + ") of available files (" + std::to_string(fFluxFiles.size()) + ").");
+    }
+
+    std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
     if (fFluxFile) delete fFluxFile;
     fFluxFile = new TFile(fFluxFiles[fFileIndex].c_str());
     fFluxTree = (TTree*)fFluxFile->Get(fTreeName.c_str());
@@ -217,6 +222,7 @@ const bsim::Dk2Nu *NuMiKaonGen::GetNextEntry() {
 
     // load the POT in this file
     fThisFilePOT = LoadPOT();
+    fNewFile = false;
   }
   else {
     fEntry = (fEntry + 1) % fFluxTree->GetEntries();

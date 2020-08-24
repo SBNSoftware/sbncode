@@ -37,7 +37,7 @@ public:
     virtual ~IKaonGen() noexcept = default;
 
     virtual simb::MCFlux GetNext() = 0;
-    virtual float GetPOT() = 0;
+    virtual double GetPOT() = 0;
 
 };
 

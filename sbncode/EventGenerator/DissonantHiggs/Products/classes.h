@@ -1,4 +1,5 @@
 #include "canvas/Persistency/Common/Assns.h"
+#include "sbncode/EventGenerator/DissonantHiggs/Products/DissonantHiggs.h"
 #include "sbncode/EventGenerator/DissonantHiggs/Products/HiggsDecay.h"
 #include "sbncode/EventGenerator/DissonantHiggs/Products/HiggsFlux.h"
 #include "sbncode/EventGenerator/DissonantHiggs/Products/KaonParent.h"

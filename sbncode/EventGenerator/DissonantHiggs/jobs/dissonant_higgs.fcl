@@ -14,19 +14,26 @@ numi_kaon: {
 
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux
+  M: 0.25 # GeV/c^2
+  MixingAngle: 0.0001
 
   // uBooNE config
   Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
                                                 0.0000462540012621546684,       0.99829162468141475,            -0.0584279894529063024,
                                                 -0.38947144863934974,           0.0538324139386641073,          0.91946400794392302 ]
-  BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
+  // uBooNE pos.
+  // BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
+
+  // ICARUS?
+  BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
 
 }
 
 mono_energy_flux: {
   tool_type: MonoEnergyHiggsFlux
-  E: 300 # MeV
-  M: 250 # MeV/c^2
+  E: 0.3 # GeV
+  M: 0.25 # GeV/c^2
+  MixingAngle: 0.0001
 
   X: 0 # cm
   Y: 0
@@ -42,8 +49,13 @@ ray_trace_box: {
   Volume: volDetEnclosure
 }
 
-decay_force_muon: {
-  tool_type: HiggsDecayForceMuon
+rethrow_ray_trace_box: {
+  tool_type: ReThrowRayTraceBox
+  Volume: volDetEnclosure
+}
+
+decay_higgs: {
+  tool_type: HiggsMakeDecay
   ReferenceRayLength: -1
 }
 
@@ -51,8 +63,8 @@ dissonant_higgs: {
   module_type: DissonantHiggsTFile
   KaonGen: @local::numi_kaon
   Flux: @local::kaon2higgs
-  RayTrace: @local::ray_trace_box
-  Decay: @local::decay_force_muon
+  RayTrace: @local::rethrow_ray_trace_box
+  Decay: @local::decay_higgs
 }
 
 END_PROLOG

@@ -17,6 +17,9 @@
 // Algorithm includes
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "CLHEP/Random/JamesRandom.h"
+#include "CLHEP/Random/RandFlat.h"
+
+#include "TVector3.h"
 
 #include <utility>
 #include <string>
@@ -52,7 +55,16 @@ public:
     virtual void configure(const fhicl::ParameterSet&) = 0;
 
     virtual float MaxWeight() = 0;
-    virtual float ConstantWeight() = 0;
+
+    // useful helper function
+    TVector3 RandomUnitVector() {
+      // In order to pick a random point on a sphere -- pick a random value of _costh_, __not__ theta
+      // b.c. d\Omega = d\phi dcos\theta, i.e. d\Omega != d\phi d\theta
+      float costheta = CLHEP::RandFlat::shoot(fEngine, -1, 1);
+      float sintheta = sqrt(1. - costheta * costheta);
+      float phi = CLHEP::RandFlat::shoot(fEngine, 0, 2*M_PI);
+      return TVector3(sintheta * cos(phi), sintheta * sin(phi), costheta);
+    }
 
 protected:
     CLHEP::HepRandomEngine* fEngine;

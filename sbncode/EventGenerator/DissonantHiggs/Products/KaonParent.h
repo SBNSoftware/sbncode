@@ -13,7 +13,7 @@ public:
   TLorentzVector mom;
   int kaon_pdg;
   int pion_pdg;
-  float weight;
+  double weight;
 };
 
 bool MakeKaonParent(const simb::MCFlux &flux, KaonParent &ret);

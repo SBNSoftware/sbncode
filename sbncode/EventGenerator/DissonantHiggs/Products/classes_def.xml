@@ -1,4 +1,9 @@
 <lcgdict>
+  <class name="evgen::ldm::DissonantHiggs" />
+  <class name="std::vector<evgen::ldm::DissonantHiggs>" />
+  <class name="art::Wrapper<evgen::ldm::DissonantHiggs>" />
+  <class name="art::Wrapper<std::vector<evgen::ldm::DissonantHiggs>>" />
+
   <class name="evgen::ldm::HiggsDecay" />
   <class name="std::vector<evgen::ldm::HiggsDecay>" />
   <class name="art::Wrapper<evgen::ldm::HiggsDecay>" />

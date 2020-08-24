@@ -9,6 +9,7 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_DissonantHiggs_Products
           LIBRARIES
                         ${ROOT_BASIC_LIB_LIST}
 			nusimdata_SimulationBase
+			DissonantHiggsPDATA
         )
 
 build_dictionary(sbncode_EventGenerator_DissonantHiggs_Products 

@@ -37,7 +37,7 @@ public:
      */
     virtual ~IHiggsFlux() noexcept = default;
 
-    virtual bool MakeFlux(const simb::MCFlux &flux, HiggsFlux &higgs, float &weight) = 0;
+    virtual bool MakeFlux(const simb::MCFlux &flux, HiggsFlux &higgs, double &weight) = 0;
 
 };
 

@@ -48,18 +48,18 @@ public:
      */
     ~MonoEnergyHiggsFlux();
 
-    bool MakeFlux(const simb::MCFlux &flux, HiggsFlux &higgs, float &weight) override;
+    bool MakeFlux(const simb::MCFlux &flux, HiggsFlux &higgs, double &weight) override;
     void configure(const fhicl::ParameterSet&) override;
 
     // no weights
-    float ConstantWeight() override { return 1.; }
-    float MaxWeight() override { return 1.; }
+    float MaxWeight() override { return -1.; }
 
 private:
   TVector3 fStart; //!< Start of Higgs ray in detector coordinates [cm]
   TVector3 fDir; //!< Direction of Higgs ray (unit vector)
   float fE; //!< Energy of Higgs [GeV]
   float fM; //!< Mass of Higgs [GeV]
+  double fMixingAngle;
   float fStartTime; //!< Start time of Higgs in detector time [us]
 };
 
@@ -83,16 +83,19 @@ void MonoEnergyHiggsFlux::configure(fhicl::ParameterSet const &pset)
 
   fE = pset.get<float>("E");
   fM = pset.get<float>("M");
+  fMixingAngle = pset.get<float>("MixingAngle");
   fStartTime = pset.get<float>("T", 0.);
 
 }
 
-bool MonoEnergyHiggsFlux::MakeFlux(const simb::MCFlux &flux/*ignored*/, HiggsFlux &higgs, float &weight) {
+bool MonoEnergyHiggsFlux::MakeFlux(const simb::MCFlux &flux/*ignored*/, HiggsFlux &higgs, double &weight) {
   (void) flux;
   higgs.pos = TLorentzVector(fStart, fStartTime);
   // set the momentum
   TVector3 p = fDir * sqrt(fE*fE - fM * fM);
   higgs.mom = TLorentzVector(p, fE);
+  higgs.mixing = fMixingAngle;
+  higgs.mass = fM;
 
   weight = 1.;
   return true;

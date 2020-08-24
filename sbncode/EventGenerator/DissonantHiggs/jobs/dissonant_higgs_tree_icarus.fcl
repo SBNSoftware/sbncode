@@ -10,6 +10,7 @@ services:
 {
   @table::icarus_basic_services
   TFileService: { fileName: "dissonant_higgs_icarus.root" }
+  IFDH: {}
 }
 
 source: {

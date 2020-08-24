@@ -59,11 +59,10 @@ public:
     void configure(const fhicl::ParameterSet&) override;
 
     // no POT
-    float GetPOT() override { return 0.; }
+    double GetPOT() override { return 0.; }
 
     // no weights
-    float ConstantWeight() override  { return 1.; }
-    float MaxWeight() override  { return 1.; }
+    float MaxWeight() override  { return -1.; }
 };
 
 EmptyKaonGen::EmptyKaonGen(fhicl::ParameterSet const &pset):

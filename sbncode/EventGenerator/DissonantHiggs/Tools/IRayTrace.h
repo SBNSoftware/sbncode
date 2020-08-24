@@ -21,6 +21,7 @@
 
 // cpp includes
 #include <vector>
+#include <array>
 
 #include "../Products/HiggsFlux.h"
 
@@ -40,7 +41,7 @@ public:
      */
     virtual ~IRayTrace() noexcept = default;
 
-    virtual bool IntersectDetector(const HiggsFlux &higgs, std::vector<TVector3> &intersect, float &weight) = 0;
+    virtual bool IntersectDetector(HiggsFlux &higgs, std::array<TVector3, 2> &intersect, double &weight) = 0;
 };
 
 } // namespace ldm

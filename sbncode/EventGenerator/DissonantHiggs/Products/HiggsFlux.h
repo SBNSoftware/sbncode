@@ -8,7 +8,15 @@ namespace ldm {
 class HiggsFlux {
 public:
   TLorentzVector pos;
+  TLorentzVector kmom;
   TLorentzVector mom;
+  TLorentzVector mom_beamcoord;
+  float mixing;
+  float mass;
+
+  double decay_width;
+  double mean_lifetime;
+  double mean_distance;
 };
 }
 }

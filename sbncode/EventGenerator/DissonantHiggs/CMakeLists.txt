@@ -1,5 +1,6 @@
 find_ups_product(ifdhc)
 find_ups_product(dk2nudata)
+link_directories( $ENV{ROOTSYS}/lib )
 link_directories( $ENV{DK2NUDATA_LIB} )
 
 add_subdirectory(Tools)
@@ -28,6 +29,14 @@ simple_plugin( DissonantHiggsTFile module
 			nurandom_RandomUtils_NuRandomService_service
 			sbncode_EventGenerator_DissonantHiggs_Products_dict
 )
+
+art_make_library( LIBRARY_NAME DissonantHiggsPDATA
+		SOURCE ParticleData.cxx
+		LIBRARIES
+                        ${ROOT_BASIC_LIB_LIST}
+			EG
+)
+			
 
 install_headers()
 install_fhicl()
