@@ -329,6 +329,7 @@ double visibleEnergyProposal(TRandom &rand, const simb::MCTruth &mctruth, const 
 EnergyInfo visibleEnergySplit(TRandom &rand, 
     const simb::MCTruth &mctruth, 
     const std::vector<sim::MCTrack> &mctrack_list, 
+    const std::vector<simb::MCParticle> &mcparticle_list,
     const VisibleEnergyCalculator &calculator) {
 
   double visible_E = 0;
@@ -339,6 +340,7 @@ EnergyInfo visibleEnergySplit(TRandom &rand,
 
   int npion = 0;
   int nproton = 0;
+  int npi0 = 0;
 
   // total up visible energy from tracks...
   double track_visible_energy = 0.;
@@ -368,6 +370,14 @@ EnergyInfo visibleEnergySplit(TRandom &rand,
     }
   }
 
+  // get the # of pi0's
+  for (unsigned ind = 0; ind < mctrack_list.size(); ind++) {
+    if (isFromNuVertex(mctruth, mcparticle_list[ind]) &&  mcparticle_list[ind].Process() == "primary" &&
+         mcparticle_list[ind].PdgCode() == 111) {
+      npi0 ++;
+    }
+  }
+
   // do energy smearing
   if (calculator.track_energy_distortion > 1e-4) {
     track_visible_energy = rand.Gaus(track_visible_energy, track_visible_energy*calculator.track_energy_distortion);
@@ -390,7 +400,7 @@ EnergyInfo visibleEnergySplit(TRandom &rand,
     leptonic_visible_E = std::max(rand.Gaus(track_visible_energy, track_visible_energy*calculator.track_energy_distortion), 0.);
   }
 
-  return {hadronic_visible_E, leptonic_visible_E, nproton, npion};
+  return {hadronic_visible_E, leptonic_visible_E, nproton, npion, npi0};
 }
 
 double visibleEnergy(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const std::vector<sim::MCShower> &mcshower_list, 

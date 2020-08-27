@@ -248,6 +248,10 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
   auto const& mcshowers = \
     *ev.getValidHandle<std::vector<sim::MCShower> >(fMCShowerTag);
 
+  // particles
+  auto const& mcparticles = \
+    *ev.getValidHandle<std::vector<simb::MCParticle> >(fMCParticleTag);
+
   // update total count of interactions
   _cut_counts->SetPoint(0, 0, _cut_counts->GetY()[0] + mctruths.size());
 
@@ -325,7 +329,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
 
     // double visible_energy = visibleEnergyProposalMCParticles(_rand, mctruth, mctracks, calculator);
     // double visible_energy = visibleEnergyProposal(_rand, mctruth, mctracks, calculator);
-    EnergyInfo einfo = visibleEnergySplit(_rand, mctruth, mctracks, calculator);
+    EnergyInfo einfo = visibleEnergySplit(_rand, mctruth, mctracks, mcparticles, calculator);
 
     event::RecoInteraction reco_interaction(i);
     // apply energy scale shift
@@ -336,6 +340,7 @@ bool NumuSelection::ProcessEvent(const gallery::Event& ev, const std::vector<eve
     reco_interaction.lepton_energy = einfo.leptonic_energy;
     reco_interaction.npion = einfo.npion;
     reco_interaction.nproton = einfo.nproton;
+    reco_interaction.npi0 = einfo.npi0;
     reco_interaction.lepton_costh = mctracks[calculator.lepton_index].Start().Momentum().CosTheta(); 
     reco_interaction.reco_energy = reco_interaction.hadronic_energy + reco_interaction.lepton_energy;
 

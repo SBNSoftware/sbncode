@@ -189,6 +189,7 @@ public:
   float lepton_costh;  //!< lepton angle to beam (theta)
   int nproton; //!< number of protons above threshold
   int npion; //!< number of pions above threshold
+  int npi0;
 };
 
 

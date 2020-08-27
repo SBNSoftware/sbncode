@@ -2,7 +2,7 @@ BEGIN_PROLOG
 // standard configurations to be used in proposal sensitivity
 
 # eventweight_tags: ["fluxeventweight", "genieeventweight"]
-eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB", "fluxeventweightMinibooneA", "fluxeventweightMinibooneB"]
+eventweight_tags: ["fluxeventweightA", "genieeventweightA", "genieeventweightB", "fluxeventweightB"]
 # eventweight_tags: ["fluxeventweightA"]
 # eventweight_tags: []
 

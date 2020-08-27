@@ -186,11 +186,13 @@ struct EnergyInfo {
   double leptonic_energy;
   int nproton;
   int npion;
+  int npi0;
 };
 
 EnergyInfo visibleEnergySplit(TRandom &rand, 
     const simb::MCTruth &mctruth, 
     const std::vector<sim::MCTrack> &mctrack_list, 
+    const std::vector<simb::MCParticle> &mcparticle_list,
     const VisibleEnergyCalculator &calculator);
 
 double visibleEnergyProposal(TRandom &rand, const simb::MCTruth &mctruth, const std::vector<sim::MCTrack> &mctrack_list, const VisibleEnergyCalculator &calculator);
