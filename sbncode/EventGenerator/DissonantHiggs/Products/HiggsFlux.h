@@ -7,16 +7,16 @@ namespace evgen {
 namespace ldm {
 class HiggsFlux {
 public:
+  TLorentzVector pos_beamcoord;
   TLorentzVector pos;
+  TLorentzVector kmom_beamcoord;
   TLorentzVector kmom;
   TLorentzVector mom;
   TLorentzVector mom_beamcoord;
   float mixing;
   float mass;
+  int kaon_pdg;
 
-  double decay_width;
-  double mean_lifetime;
-  double mean_distance;
 };
 }
 }

@@ -97,6 +97,16 @@ bool MonoEnergyHiggsFlux::MakeFlux(const simb::MCFlux &flux/*ignored*/, HiggsFlu
   higgs.mixing = fMixingAngle;
   higgs.mass = fM;
 
+  // no kaon here
+  higgs.kmom = TLorentzVector(0, 0, 0, 0);
+  higgs.kaon_pdg = -1;
+
+  // beam is same as detector coord
+  higgs.pos_beamcoord = higgs.pos;
+  higgs.mom_beamcoord = higgs.mom;
+  higgs.kmom_beamcoord = higgs.kmom;
+
+
   weight = 1.;
   return true;
 }

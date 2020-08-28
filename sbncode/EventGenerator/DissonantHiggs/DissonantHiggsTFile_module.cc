@@ -25,7 +25,6 @@
 #include "CLHEP/Random/JamesRandom.h"
 #include "CLHEP/Random/RandFlat.h"
 
-#include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
@@ -182,25 +181,22 @@ void evgen::ldm::DissonantHiggsTFile::analyze(const art::Event& e)
     duration = t2 - t1;
     fNTime[2] += duration.count();
 
-    // if (!success) {
-    //   simb::MCTruth truth;
-    //   *fHiggs = evgen::ldm::BuildDecay(higgs, kaonp, truth, 
-    //		intersection, 0., 0., 0., 0.);
-    //   fTree->Fill();
-    // }
-
+    if (!success) {
+      evgen::ldm::HiggsDecay decay;
+      *fHiggs = evgen::ldm::BuildHiggs(higgs, decay, intersection, 0., 0., 0., 0.);
+      fTree->Fill();
+    }
 
     if (!success) continue;
       
     std::cout << "Ray weight: " << ray_weight << std::endl;
 
-    simb::MCTruth truth;
     evgen::ldm::HiggsDecay decay;
     double decay_weight;
 
     fNCalls[3] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fDecayTool->Decay(higgs, intersection[0], intersection[1], decay, truth, decay_weight) && Deweight(decay_weight, fDecayTool->MaxWeight()); 
+    success = fDecayTool->Decay(higgs, intersection[0], intersection[1], decay, decay_weight) && Deweight(decay_weight, fDecayTool->MaxWeight()); 
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[3] += duration.count();
@@ -209,7 +205,7 @@ void evgen::ldm::DissonantHiggsTFile::analyze(const art::Event& e)
 
     std::cout << "Decay weight: " << decay_weight << std::endl;
 
-    *fHiggs = evgen::ldm::BuildHiggs(higgs, kaonp, decay, truth, 
+    *fHiggs = evgen::ldm::BuildHiggs(higgs, decay, 
       intersection,
       flux_weight,
       ray_weight,

@@ -74,8 +74,15 @@ RayTraceBox::~RayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void RayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
-  fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
+  if (pset.has_key("Box")) {
+    std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
+    // xmin, xmax, ymin, ymax, zmin, zmax
+    fBox = geo::BoxBoundedGeo(box_config[0], box_config[1], box_config[2], box_config[3], box_config[4], box_config[5]);
+  }
+  else {
+    const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+    fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
+  }
 
   std::cout << "Detector Box." << std::endl;
   std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;

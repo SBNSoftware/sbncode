@@ -4,8 +4,6 @@
 #include "TLorentzVector.h"
 #include "HiggsDecay.h"
 #include "HiggsFlux.h"
-#include "KaonParent.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
 #include <array>
 
 namespace evgen {
@@ -13,9 +11,9 @@ namespace ldm {
 class DissonantHiggs {
 public:
   TLorentzVector kaon_dmom;
-  TLorentzVector kaon_dpos;
+  TLorentzVector kaon_dmom_beamcoord;
+  TLorentzVector kaon_dpos_beamcoord;
   int kaon_pdg;
-  double kaon_wgt;
   TLorentzVector higgs_mom_beamcoord;
   TLorentzVector higgs_mom;
   TLorentzVector higgs_start;
@@ -23,9 +21,9 @@ public:
   TVector3 higgs_exit;
   TLorentzVector decay_pos;
   TLorentzVector daughterA_mom;
-  float daughterA_pdgid;
+  int daughterA_pdg;
   TLorentzVector daughterB_mom;
-  float daughterB_pdgid;
+  int daughterB_pdg;
   double pot;
   double flux_weight;
   double ray_weight;
@@ -39,7 +37,7 @@ public:
   double mean_distance;
 };
 
-DissonantHiggs BuildHiggs(const HiggsFlux &flux, const KaonParent &kaon, const HiggsDecay &decay, const simb::MCTruth &mct, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot);
+DissonantHiggs BuildHiggs(const HiggsFlux &flux, const HiggsDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot);
 
 } // end namespace ldm
 

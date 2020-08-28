@@ -77,8 +77,15 @@ ReThrowRayTraceBox::~ReThrowRayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
-  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
-  fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
+  if (pset.has_key("Box")) {
+    std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
+    // xmin, xmax, ymin, ymax, zmin, zmax
+    fBox = geo::BoxBoundedGeo(box_config[0], box_config[1], box_config[2], box_config[3], box_config[4], box_config[5]);
+  }
+  else {
+    const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+    fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
+  }
 
   fNThrows = pset.get<unsigned>("NThrows", 100000);
 
@@ -116,13 +123,30 @@ bool ReThrowRayTraceBox::IntersectDetector(HiggsFlux &flux, std::array<TVector3,
   for (; i <= fNThrows; i++) {
     higgs_mom = ThrowHiggsMomentum(flux);
     box_intersections = fBox.GetIntersections(flux.pos.Vect(), higgs_mom.Vect().Unit());
-    if (box_intersections.size() == 2) {
-      break;
+
+    // Does this ray intersect the box?
+    if (box_intersections.size() != 2) {
+      continue;
     }
+
+    TVector3 A = box_intersections[0];
+
+    // if the ray points the wrong way, it doesn't intersect
+    if (higgs_mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
+      std::cout << "RAYTRACE: Higgs points wrong way" << std::endl;
+      std::cout << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
+      std::cout << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
+      std::cout << "P: " << higgs_mom.Vect().Unit().X() << " " << higgs_mom.Vect().Unit().Y() << " " << higgs_mom.Vect().Unit().Z() << std::endl;
+      continue;
+    }
+
+    // if we're here, we have a valid ray
+    break;
+
   }
 
   // did we get a hit?
-  if (box_intersections.size() != 2) return false;
+  if (i > fNThrows) return false;
 
   TVector3 A = box_intersections[0];
   TVector3 B = box_intersections[1];
@@ -135,15 +159,6 @@ bool ReThrowRayTraceBox::IntersectDetector(HiggsFlux &flux, std::array<TVector3,
         "Intersection B At: " + std::to_string(B.X()) + ", " + std::to_string(B.Y()) + ", " + std::to_string(B.Z()) + ").\n"
     );
   } 
-
-  // if the ray points the wrong way, it doesn't intersect
-  if (flux.mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
-    std::cout << "RAYTRACE: Higgs points wrong way" << std::endl;
-    std::cout << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
-    std::cout << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
-    std::cout << "P: " << flux.mom.Vect().Unit().X() << " " << flux.mom.Vect().Unit().Y() << " " << flux.mom.Vect().Unit().Z() << std::endl;
-    return false;
-  }
 
   // set things
   weight = 1. / i;

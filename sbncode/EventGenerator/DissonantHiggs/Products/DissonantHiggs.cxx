@@ -1,22 +1,21 @@
 #include "DissonantHiggs.h"
 
-evgen::ldm::DissonantHiggs evgen::ldm::BuildHiggs(const HiggsFlux &flux, const KaonParent &kaon, const HiggsDecay &decay, const simb::MCTruth &mct, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot) {
+evgen::ldm::DissonantHiggs evgen::ldm::BuildHiggs(const HiggsFlux &flux, const HiggsDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot) {
   DissonantHiggs ret;
-  ret.kaon_dmom = kaon.mom;
-  ret.kaon_dpos = kaon.pos;
-  ret.kaon_pdg = kaon.kaon_pdg;
-  ret.kaon_wgt = kaon.weight;
+  ret.kaon_dmom = flux.kmom;
+  ret.kaon_dmom_beamcoord = flux.kmom_beamcoord;
+  ret.kaon_pdg = flux.kaon_pdg;
+  ret.kaon_dpos_beamcoord = flux.pos_beamcoord;
+
   ret.higgs_mom = flux.mom;
   ret.higgs_start = flux.pos;
   ret.higgs_mom_beamcoord = flux.mom_beamcoord;
 
-  if (mct.NParticles() > 0) {
-    ret.decay_pos = mct.GetParticle(0).Position();
-    ret.daughterA_mom = mct.GetParticle(0).Momentum();
-    ret.daughterA_pdgid = mct.GetParticle(0).PdgCode();
-    ret.daughterB_mom = mct.GetParticle(1).Momentum();
-    ret.daughterB_pdgid = mct.GetParticle(1).PdgCode();
-  }
+  ret.decay_pos = decay.pos;
+  ret.daughterA_mom = decay.daughterA_mom;
+  ret.daughterA_pdg = decay.daughterA_pdg;
+  ret.daughterB_mom = decay.daughterB_mom;
+  ret.daughterB_pdg = decay.daughterB_pdg;
 
   ret.pot = pot;
   ret.flux_weight = flux_weight;

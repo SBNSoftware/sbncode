@@ -20,7 +20,6 @@
 #include "IHiggsStage.h"
 
 // Algorithm includes
-#include "nusimdata/SimulationBase/MCTruth.h"
 
 #include <utility>
 
@@ -40,7 +39,7 @@ public:
      */
     virtual ~IHiggsDecay() noexcept = default;
 
-    virtual bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, simb::MCTruth &truth, double &weight) = 0;
+    virtual bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, double &weight) = 0;
 };
 
 } // namespace ldm

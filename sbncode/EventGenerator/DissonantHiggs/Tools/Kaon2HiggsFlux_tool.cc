@@ -69,6 +69,7 @@ private:
   float fM; //!< Mass of Higgs [GeV]
   float fMixingAngle; //!< Mixing angle of dark higgs
   std::string fSpillTimeConfig;
+  bool fKDAROnly;
 
   // derived stuff
   evgb::EvtTimeShiftI *fTimeShiftMethod;
@@ -136,8 +137,8 @@ static const double tquark_mass = 172.76; // GeV
 static const double higgs_vev = 246.22; // GeV
 
 // CKM matrix
-static const double abs_VtsVtd_squared = 1.1983693e-7;
-static const double rel_VtsVtd_squared = 1.0125469e-7;
+static const double abs_VtsVtd_squared = 1.0185e-07;
+static const double rel_VtsVtd_squared = 1.0185e-07;
 
 static const double hbar = 6.582119569e-25; // GeV*s
 
@@ -161,7 +162,7 @@ double KaonPlusBranchingRatio(double higs_mass, double mixing) {
 }
 
 double KaonLongBranchingRatio(double higs_mass, double mixing) {
-  double M_KL = (1. / 2.) * (3. / (16. * M_PI * M_PI * higgs_vev * higgs_vev * higgs_vev)) * (kplus_mass * kplus_mass) * (tquark_mass * tquark_mass) * mixing;
+  double M_KL = (1. / 2.) * (3. / (16. * M_PI * M_PI * higgs_vev * higgs_vev * higgs_vev)) * (klong_mass * klong_mass) * (tquark_mass * tquark_mass) * mixing;
   double M_KL2 = M_KL * M_KL * rel_VtsVtd_squared;
 
   double klong_width = (2 * higgs_momentum(klong_mass, pzero_mass, higs_mass) / klong_mass) * M_KL2 / (16 * M_PI * klong_mass);
@@ -179,6 +180,8 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
   fM = pset.get<float>("M");
   fMixingAngle = pset.get<float>("MixingAngle");
   fSpillTimeConfig = pset.get<std::string>("SpillTimeConfig", ""); 
+
+  fKDAROnly = pset.get<bool>("KDAROnly", false);
 
   // rotation matrix
   std::vector<double> rotation = pset.get<std::vector<double>>("Beam2DetectorRotation");
@@ -206,6 +209,9 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
 
   fKPBR = KaonPlusBranchingRatio(fM, fMixingAngle);
   fKLBR = KaonLongBranchingRatio(fM, fMixingAngle);
+
+  std::cout << "K+ branching ratio: " << fKPBR << std::endl;
+  std::cout << "K0 branching ratio: " << fKLBR << std::endl;
 }
 
 bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &higgs, double &weight) {
@@ -214,11 +220,18 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
   bool success = evgen::ldm::MakeKaonParent(flux, kaon);
   if (!success) return false;
 
+  // select on the kaon
+  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false;
+  if (fKDAROnly) std::cout << "FOUND KDAR\n";
+
   float toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
 
   TLorentzVector Beam4(fBeamOrigin, toff);
   // get position in detector frame
-  higgs.pos = kaon.pos.Transform(fBeam2Det) + Beam4;
+  higgs.pos_beamcoord = kaon.pos;
+  higgs.pos = kaon.pos;
+  higgs.pos.Transform(fBeam2Det);
+  higgs.pos += Beam4;
 
   // get the momentum direction in the kaon parent rest frame
   float kaon_mass = kaon.mom.M();  
@@ -233,20 +246,20 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
 
   // boost to lab frame
   TLorentzVector mom;
-  mom.SetVectM(kaon_frame_momentum, fM);
+  mom.SetVectM(kaon_frame_momentum, higs_mass);
   mom.Boost(kaon.mom.BoostVector());
 
   higgs.mom_beamcoord = mom;
-
   // rotate to detector frame
-  mom *= fBeam2Det;
-
   higgs.mom = mom;
+  higgs.mom.Transform(fBeam2Det);
 
+  higgs.kmom_beamcoord = kaon.mom;
   // also save the kaon momentum in the detector frame
-  higgs.kmom = kaon.mom.Transform(fBeam2Det);
+  higgs.kmom = kaon.mom;
+  higgs.kmom.Transform(fBeam2Det);
 
-  // The weight is the importance weight times the kaon weight 
+  // The weight is the importance weight times the branching-ratio weight 
   weight = kaon.weight;
   if (kaon.kaon_pdg == 130 /* KLong */) {
     weight = weight * fKLBR;
@@ -258,6 +271,8 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
   // set the mixing
   higgs.mixing = fMixingAngle;
   higgs.mass = fM;
+
+  higgs.kaon_pdg = kaon.kaon_pdg;
 
   return true;
 }

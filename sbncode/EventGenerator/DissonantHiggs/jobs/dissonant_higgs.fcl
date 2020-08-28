@@ -10,12 +10,14 @@ numi_kaon: {
   FluxFiles: ["*.root"]
   TreeName: "dk2nuTree"
   MetaTreeName: "dkmetaTree"
+  MaxFluxFileMB: 8192 # 8GB
 }
 
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux
   M: 0.25 # GeV/c^2
   MixingAngle: 0.0001
+  KDAROnly: true
 
   // uBooNE config
   Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
@@ -46,12 +48,14 @@ mono_energy_flux: {
 
 ray_trace_box: {
   tool_type: RayTraceBox
-  Volume: volDetEnclosure
+  # Volume: volCryostat
+  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
 }
 
 rethrow_ray_trace_box: {
   tool_type: ReThrowRayTraceBox
-  Volume: volDetEnclosure
+  # Volume: volCryostat
+  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
 }
 
 decay_higgs: {
@@ -63,7 +67,7 @@ dissonant_higgs: {
   module_type: DissonantHiggsTFile
   KaonGen: @local::numi_kaon
   Flux: @local::kaon2higgs
-  RayTrace: @local::rethrow_ray_trace_box
+  RayTrace: @local::ray_trace_box
   Decay: @local::decay_higgs
 }
 

@@ -23,7 +23,6 @@
 #include "CLHEP/Random/JamesRandom.h"
 #include "CLHEP/Random/RandFlat.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
 
 // std includes
 #include <string>
@@ -56,8 +55,8 @@ public:
 
     void configure(fhicl::ParameterSet const &pset) override;
 
-    bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, simb::MCTruth &truth, double &weight) override;
-    int RandDaughter(double elec_width, double muon_width, double pion_width);
+    bool Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, double &weight) override;
+    int RandDaughter(double elec_width, double muon_width, double piplus_width, double pizero_width);
 
     // returns the max weight of configured
     float MaxWeight() override { 
@@ -91,7 +90,8 @@ double forcedecay_weight(float mean, float a, float b) {
 // constants
 static const double elec_mass = 0.000511; // GeV
 static const double muon_mass = 0.105658; // GeV
-static const double pion_mass = 0.139570; // GeV
+static const double piplus_mass = 0.139570; // GeV
+static const double pizero_mass = 0.134977; // GeV
 static const double higgs_vev = 246.22; // GeV
 static const double hbar = 6.582119569e-16; // GeV*ns
 static const double c_cm_per_ns = 29.9792; // cm / ns
@@ -112,14 +112,22 @@ double MuonPartialWidth(double higs_mass, double mixing) {
   return LeptonPartialWidth(muon_mass, higs_mass, mixing);
 }
 
-double PionPartialWidth(double higs_mass, double mixing) {
+double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
   if (pion_mass * 2 >= higs_mass) return 0.;
 
   double form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
 
-  double width = (mixing * mixing * 3 * form_factor * form_factor / (32 * M_PI * higgs_vev * higgs_vev * higs_mass)) * pow(1- 4. * pion_mass * pion_mass / (higs_mass * higs_mass), 3. / 2.);
+  double width = (mixing * mixing * 3 * form_factor * form_factor / (32 * M_PI * higgs_vev * higgs_vev * higs_mass)) * pow(1- 4. * pion_mass * pion_mass / (higs_mass * higs_mass), 1. / 2.);
 
   return width;
+}
+
+double PiPlusPartialWidth(double higs_mass, double mixing) {
+  return PionPartialWidth(piplus_mass, higs_mass, mixing);
+}
+
+double PiZeroPartialWidth(double higs_mass, double mixing) {
+  return PionPartialWidth(pizero_mass, higs_mass, mixing);
 }
 
 HiggsMakeDecay::HiggsMakeDecay(fhicl::ParameterSet const &pset):
@@ -148,10 +156,11 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
     // Get each partial width
     double width_elec = ElectronPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
     double width_muon = MuonPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
-    double width_pion = PionPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
+    double width_piplus = PiPlusPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
+    double width_pizero = PiZeroPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
 
     // total lifetime
-    double lifetime_ns = hbar / (width_elec + width_muon + width_pion);
+    double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
 
     // multiply by gamma*v to get the length
     float gamma_v = sqrt(fReferenceHiggsMaxEnergy * fReferenceHiggsMaxEnergy - fReferenceHiggsMass * fReferenceHiggsMass) * c_cm_per_ns / fReferenceHiggsMass;
@@ -165,8 +174,8 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   }
 }
 
-int HiggsMakeDecay::RandDaughter(double elec_width, double muon_width, double pion_width) {
-  double total_width = elec_width + muon_width + pion_width;
+int HiggsMakeDecay::RandDaughter(double elec_width, double muon_width, double piplus_width, double pizero_width) {
+  double total_width = elec_width + muon_width + piplus_width + pizero_width;
 
   double flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
 
@@ -176,23 +185,27 @@ int HiggsMakeDecay::RandDaughter(double elec_width, double muon_width, double pi
   else if (flat_rand < (elec_width + muon_width) / total_width) {
     return 13;
   }
-  else {
+  else if (flat_rand < (elec_width + muon_width + piplus_width) / total_width) {
     return 211;
+  }
+  else {
+    return 111;
   }
 
   // unreachable
   return -1;
 }
 
-bool HiggsMakeDecay::Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, simb::MCTruth &truth, double &weight) {
+bool HiggsMakeDecay::Decay(const HiggsFlux &flux, const TVector3 &in, const TVector3 &out, HiggsDecay &decay, double &weight) {
 
   // Get each partial width
   double width_elec = ElectronPartialWidth(flux.mass, flux.mixing);
   double width_muon = MuonPartialWidth(flux.mass, flux.mixing);
-  double width_pion = PionPartialWidth(flux.mass, flux.mixing);
+  double width_piplus = PiPlusPartialWidth(flux.mass, flux.mixing);
+  double width_pizero = PiZeroPartialWidth(flux.mass, flux.mixing);
 
   // total lifetime
-  double lifetime_ns = hbar / (width_elec + width_muon + width_pion);
+  double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
 
   // multiply by gamma*v to get the length
   float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * c_cm_per_ns;
@@ -220,7 +233,7 @@ bool HiggsMakeDecay::Decay(const HiggsFlux &flux, const TVector3 &in, const TVec
   TLorentzVector decay_pos(decay_pos3, decay_time);
 
   // get the decay type
-  int daughter_pdg = RandDaughter(width_elec, width_muon, width_pion);
+  int daughter_pdg = RandDaughter(width_elec, width_muon, width_piplus, width_pizero);
 
   double daughter_mass = evgen::ldm::PDATA->GetParticle(daughter_pdg)->Mass();
 
@@ -240,34 +253,23 @@ bool HiggsMakeDecay::Decay(const HiggsFlux &flux, const TVector3 &in, const TVec
   p4A.Boost(flux.mom.BoostVector());
   p4B.Boost(flux.mom.BoostVector());
 
-  // make the two MC particles
-  simb::MCParticle A(
-    0, // track ID
-    daughter_pdg, // track pdg
-    "primary", // process
-    -1, // mother is not available
-    daughter_mass); 
-
-  // add the start point
-  A.AddTrajectoryPoint(decay_pos, p4A);
-
-  simb::MCParticle B(
-    0, // track ID
-    -daughter_pdg, // track pdg
-    "primary", // process
-    -1, // mother is not available
-    daughter_mass); 
-
-  // add the start point
-  B.AddTrajectoryPoint(decay_pos, p4B);
-
-  truth.Add(A);
-  truth.Add(B);
-
   // save the decay info
-  decay.decay_width = width_elec + width_muon + width_pion; 
+  decay.decay_width = width_elec + width_muon + width_piplus + width_pizero; 
   decay.mean_lifetime = lifetime_ns;
   decay.mean_distance = mean_dist; 
+
+  decay.pos = decay_pos;
+  decay.daughterA_mom = p4A;
+  decay.daughterA_pdg = daughter_pdg;
+  decay.daughterB_mom = p4B;
+  // daughter B is anti-particle 
+  if (daughter_pdg == 111) { // pi0 is its own anti-particle
+    decay.daughterB_pdg = daughter_pdg;
+  }
+  else {
+    decay.daughterB_pdg = -daughter_pdg;
+  }
+  decay.daughter_mass = daughter_mass;
 
   return true;
 }
