@@ -34,27 +34,28 @@ int main(int argc, char** argv)
 
   TFile* fin = TFile::Open(inname.c_str());
 
-  TTree* tr = (TTree*)fin->Get("sbnreco");
+  TTree* tr = (TTree*)fin->Get("recTree");
   if(!tr){
-    std::cout << "Couldn't find tree 'sbnreco' in " << inname << std::endl;
+    std::cout << "Couldn't find tree 'recTree' in " << inname << std::endl;
     return 1;
   }
 
   caf::StandardRecord* event = 0;
-  tr->SetBranchAddress("reco_events", &event);
+  tr->SetBranchAddress("rec", &event);
 
   TFile fout(outname.c_str(), "RECREATE");
 
   // First, copy the POT information over
-  ((TTree*)fin->Get("sbnsubrun"))->CloneTree()->Write("sbnsubrun");
+  //  ((TTree*)fin->Get("sbnsubrun"))->CloneTree()->Write("sbnsubrun");
 
-  TTree* trout = new TTree("sbnana", "sbnana");
+  fout.mkdir("recTree")->cd();
+  TTree* trout = new TTree("rec", "rec");
   // On NOvA, had trouble with memory usage (because several trees are open at
   // once?). Setting the maximum buffer usage (per tree) to 3MB (10x less than
   // default) fixed it. But it doesn't seem necessary for now on SBN.
   //  trout->SetAutoFlush(-3*1000*1000);
 
-  flat::FlatRecord* rec = new flat::FlatRecord("sbnana.", trout, 0);//policy);
+  flat::FlatRecord* rec = new flat::FlatRecord("rec.", trout, 0);//policy);
 
   //  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
   for(int i = 0; i < tr->GetEntries(); ++i){
