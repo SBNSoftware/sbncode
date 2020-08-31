@@ -1,0 +1,102 @@
+#include "simulationservices_icarus.fcl"
+#include "services_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_icarus.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "simulationservices_icarus.fcl"
+
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "particleid.fcl"
+#include "trackareahiticarus_producer.fcl"
+#include "trackhitfiltericarus_module.fcl"
+#include "calorimetry_test_producer.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  # @table::icarus_detsim_services
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { 
+    fileName: "alorimetryout.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
+  BackTrackerService:  @local::standard_backtrackerservice
+  ParticleInventoryService: @local::standard_particleinventoryservice
+  @table::icarus_basic_services
+  @table::icarus_backtracking_services
+}
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+  pandoraTrackMCS: @local::mcs_sbn
+  pandoraTrackRange: @local::range_sbn
+  areahitCalo:       @local::icarus_calomc
+  areahitPid:        @local::icarus_chi2pid
+  areahit25: @local::trackareahit_sbnd
+  filthit: @local::trackhitfilter_sbnd
+  filtgoodhit: @local::trackhitfilter_sbnd
+  }
+
+  analyzers:
+  {
+    alorimetryana: {
+      module_type: CalorimetryAnalysis
+      CALOproducer: "calorimetry"
+      PIDproducer:  "particleid"
+      TRKproducer:  "pandoraTrackGausCryo0"
+      PFPproducer: "pandoraGausCryo0"
+      ADCtoE: [] 
+    }
+  }
+
+#  runprod: [ filtgoodhit, pandoraTrackMCS, pandoraTrackRange, areahit25, alorimetryana]
+   runprod: [  filtgoodhit,  pandoraTrackMCS, pandoraTrackRange,  alorimetryana]
+  stream1:       [ ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+
+
+physics.producers.filthit.PassBadHits: true
+
+physics.producers.pandoraTrackMCS.TrackLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackRange.TrackLabel: pandoraTrackGausCryo0
+
+physics.producers.filthit.PassBadHits: true
+physics.producers.areahitCalo.TrackModuleLabel: pandoraTrackGausCryo0
+physics.producers.areahitCalo.CaloAlg.CalAreaConstants: [0.0194, 0.0178, 0.0198]
+
