@@ -216,6 +216,14 @@ private:
   std::vector<unsigned> _backtracked_c_v;
   std::vector<unsigned> _backtracked_c_y;
 
+  std::vector<float> _backtracked_x;
+  std::vector<float> _backtracked_y;
+  std::vector<float> _backtracked_z;
+
+  std::vector<float> _backtracked_dirx;
+  std::vector<float> _backtracked_diry;
+  std::vector<float> _backtracked_dirz;
+
   float _backtracked_theta;
   float _backtracked_phi;
 
@@ -744,6 +752,14 @@ void CalorimetryAnalysis::fillDefault()
   _backtracked_c_v.clear();
   _backtracked_c_y.clear();
 
+  _backtracked_x.clear();
+  _backtracked_y.clear();
+  _backtracked_z.clear();
+
+  _backtracked_dirx.clear();
+  _backtracked_diry.clear();
+  _backtracked_dirz.clear();
+
   _backtracked_length = std::numeric_limits<float>::lowest();
   _backtracked_length_start_to_end = std::numeric_limits<float>::lowest();
 
@@ -1000,6 +1016,14 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("backtracked_c_u", "std::vector<unsigned>", &_backtracked_c_u);
   _calo_tree->Branch("backtracked_c_v", "std::vector<unsigned>", &_backtracked_c_v);
   _calo_tree->Branch("backtracked_c_y", "std::vector<unsigned>", &_backtracked_c_y);
+
+  _calo_tree->Branch("backtracked_x", "std::vector<float>", &_backtracked_x);
+  _calo_tree->Branch("backtracked_y", "std::vector<float>", &_backtracked_y);
+  _calo_tree->Branch("backtracked_z", "std::vector<float>", &_backtracked_z);
+
+  _calo_tree->Branch("backtracked_dirx", "std::vector<float>", &_backtracked_dirx);
+  _calo_tree->Branch("backtracked_diry", "std::vector<float>", &_backtracked_diry);
+  _calo_tree->Branch("backtracked_dirz", "std::vector<float>", &_backtracked_dirz);
 
   _calo_tree->Branch("backtracked_theta", &_backtracked_theta, "backtracked_theta/F");
   _calo_tree->Branch("backtracked_phi", &_backtracked_phi, "backtracked_phi/F");
@@ -1490,6 +1514,17 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_start_U = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 0);
     _backtracked_start_V = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 1);
     _backtracked_start_Y = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 2);
+
+    // save the trajectory
+    for (unsigned i_traj = 0; i_traj < trueParticle->NumberTrajectoryPoints(); i_traj++) {
+      _backtracked_x.push_back(trueParticle->Vx(i_traj));
+      _backtracked_y.push_back(trueParticle->Vy(i_traj));
+      _backtracked_z.push_back(trueParticle->Vz(i_traj));
+
+     _backtracked_dirx.push_back(trueParticle->Px(i_traj) / trueParticle->P(i_traj));
+     _backtracked_diry.push_back(trueParticle->Py(i_traj) / trueParticle->P(i_traj));
+     _backtracked_dirz.push_back(trueParticle->Pz(i_traj) / trueParticle->P(i_traj));
+    }
 
     // TODO: implement spacecharge
     float reco_st[3] = {_backtracked_start_x, _backtracked_start_y, _backtracked_start_z};
