@@ -17,7 +17,7 @@ kaon2higgs: {
   tool_type: Kaon2HiggsFlux
   M: 0.25 # GeV/c^2
   MixingAngle: 0.0001
-  KDAROnly: true
+  KDAROnly: false
 
   // uBooNE config
   Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
@@ -28,6 +28,9 @@ kaon2higgs: {
 
   // ICARUS?
   BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
+
+  // timing config
+  SpillTimeConfig: "evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 
 }
 
@@ -67,7 +70,7 @@ dissonant_higgs: {
   module_type: DissonantHiggsTFile
   KaonGen: @local::numi_kaon
   Flux: @local::kaon2higgs
-  RayTrace: @local::ray_trace_box
+  RayTrace: @local::rethrow_ray_trace_box
   Decay: @local::decay_higgs
 }
 

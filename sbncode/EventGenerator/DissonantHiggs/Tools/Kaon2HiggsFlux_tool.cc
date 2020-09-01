@@ -86,23 +86,6 @@ Kaon2HiggsFlux::Kaon2HiggsFlux(fhicl::ParameterSet const &pset):
 {
     this->configure(pset);
 
-  // get random seed for stuff
-  unsigned seed = art::ServiceHandle<rndm::NuRandomService>()->getSeed();
-
-  // use the time-shifting tools from GENIE
-  fTimeShiftMethod = NULL;
-  if (fSpillTimeConfig != "") {
-    fTimeShiftMethod = evgb::EvtTimeShiftFactory::Instance().GetEvtTimeShift(fSpillTimeConfig);
-    if ( fTimeShiftMethod ) {
-      if ( ! fTimeShiftMethod->IsRandomGeneratorSeeded() ) {
-        fTimeShiftMethod->GetRandomGenerator()->SetSeed(seed);
-      }
-      fTimeShiftMethod->PrintConfig();
-    } 
-    else {
-      evgb::EvtTimeShiftFactory::Instance().Print();
-    }
-  }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -141,6 +124,7 @@ static const double abs_VtsVtd_squared = 1.0185e-07;
 static const double rel_VtsVtd_squared = 1.0185e-07;
 
 static const double hbar = 6.582119569e-25; // GeV*s
+static const double c_cm_per_ns = 29.9792; // cm / ns
 
 // compute branching ratios
 double KaonPlusBranchingRatio(double higs_mass, double mixing) {
@@ -210,8 +194,34 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
   fKPBR = KaonPlusBranchingRatio(fM, fMixingAngle);
   fKLBR = KaonLongBranchingRatio(fM, fMixingAngle);
 
+  // get random seed for stuff
+  unsigned seed = art::ServiceHandle<rndm::NuRandomService>()->getSeed();
+
+  // use the time-shifting tools from GENIE
+  fTimeShiftMethod = NULL;
+  if (fSpillTimeConfig != "") {
+    fTimeShiftMethod = evgb::EvtTimeShiftFactory::Instance().GetEvtTimeShift(fSpillTimeConfig);
+    if ( fTimeShiftMethod ) {
+      if ( ! fTimeShiftMethod->IsRandomGeneratorSeeded() ) {
+        fTimeShiftMethod->GetRandomGenerator()->SetSeed(seed);
+      }
+      fTimeShiftMethod->PrintConfig();
+    } 
+    else {
+      evgb::EvtTimeShiftFactory::Instance().Print();
+    }
+  }
+
   std::cout << "K+ branching ratio: " << fKPBR << std::endl;
   std::cout << "K0 branching ratio: " << fKLBR << std::endl;
+
+  std::cout << "Neutrino TIF: " << (fBeamOrigin.Mag()/c_cm_per_ns) << std::endl;
+
+  if (fTimeShiftMethod) {
+    std::cout << "Timing Config:\n";
+    fTimeShiftMethod->PrintConfig();
+    std::cout << std::endl;
+  }
 }
 
 bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &higgs, double &weight) {
@@ -225,6 +235,10 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
   if (fKDAROnly) std::cout << "FOUND KDAR\n";
 
   float toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
+
+  // subtract out the delay of neutrinos reaching the beam
+  float neutrino_tif = fBeamOrigin.Mag()/c_cm_per_ns;
+  toff -= neutrino_tif;
 
   TLorentzVector Beam4(fBeamOrigin, toff);
   // get position in detector frame
@@ -243,6 +257,7 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
 
   // isotropic decay
   TVector3 kaon_frame_momentum = RandomUnitVector() * higgs_momentum(kaon_mass, pion_mass, higs_mass);
+  std::cout << "Rest frame higgs P: " <<  higgs_momentum(kaon_mass, pion_mass, higs_mass) << std::endl;
 
   // boost to lab frame
   TLorentzVector mom;

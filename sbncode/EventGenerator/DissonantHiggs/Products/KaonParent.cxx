@@ -41,7 +41,7 @@ bool evgen::ldm::MakeKaonParent(const simb::MCFlux &flux, evgen::ldm::KaonParent
       br = 0.6339 /* 5 */ + 0.0559 /* 6 */ + 0.0330 /* 7 */;
       break;
     case -321:
-      br = 0.6355 /* 8 */ + 0.0559 /* 9 */ + 0.0330 /* 10 */;
+      br = 0.6339 /* 8 */ + 0.0559 /* 9 */ + 0.0330 /* 10 */;
       break;
     case 130:
       br = 0.2020 /* 1 */ + 0.2020 /* 2 */ + 0.1348 /* 3 */ + 0.1348 /* 4 */;

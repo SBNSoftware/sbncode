@@ -181,11 +181,11 @@ void evgen::ldm::DissonantHiggsTFile::analyze(const art::Event& e)
     duration = t2 - t1;
     fNTime[2] += duration.count();
 
-    if (!success) {
-      evgen::ldm::HiggsDecay decay;
-      *fHiggs = evgen::ldm::BuildHiggs(higgs, decay, intersection, 0., 0., 0., 0.);
-      fTree->Fill();
-    }
+    // if (!success) {
+    //   evgen::ldm::HiggsDecay decay;
+    //  *fHiggs = evgen::ldm::BuildHiggs(higgs, decay, intersection, 0., 0., 0., 0.);
+    //  fTree->Fill();
+    // }
 
     if (!success) continue;
       

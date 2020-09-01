@@ -87,7 +87,7 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
     fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
   }
 
-  fNThrows = pset.get<unsigned>("NThrows", 100000);
+  fNThrows = pset.get<unsigned>("NThrows", 10000);
 
   std::cout << "Detector Box." << std::endl;
   std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
@@ -105,7 +105,7 @@ TLorentzVector ReThrowRayTraceBox::ThrowHiggsMomentum(const HiggsFlux &flux) {
   // Move the higgs momentum back to the kaon rest frame
   TLorentzVector higgs_mom = flux.mom;
   higgs_mom.Boost(-flux.kmom.BoostVector());
-  
+
   higgs_mom = TLorentzVector(higgs_mom.P() * dir, higgs_mom.E());
 
   // boost back
@@ -117,12 +117,12 @@ TLorentzVector ReThrowRayTraceBox::ThrowHiggsMomentum(const HiggsFlux &flux) {
     
 bool ReThrowRayTraceBox::IntersectDetector(HiggsFlux &flux, std::array<TVector3, 2> &intersection, double &weight) {
   // try out the higgs direction a bunch of times
-  unsigned i = 1;
-  std::vector<TVector3> box_intersections;
-  TLorentzVector higgs_mom;
-  for (; i <= fNThrows; i++) {
-    higgs_mom = ThrowHiggsMomentum(flux);
-    box_intersections = fBox.GetIntersections(flux.pos.Vect(), higgs_mom.Vect().Unit());
+  std::vector<std::vector<TVector3>> allIntersections;
+  std::vector<TLorentzVector> allHMom;
+
+  for (unsigned i = 0; i <= fNThrows; i++) {
+    TLorentzVector higgs_mom = ThrowHiggsMomentum(flux);
+    std::vector<TVector3> box_intersections = fBox.GetIntersections(flux.pos.Vect(), higgs_mom.Vect().Unit());
 
     // Does this ray intersect the box?
     if (box_intersections.size() != 2) {
@@ -141,12 +141,17 @@ bool ReThrowRayTraceBox::IntersectDetector(HiggsFlux &flux, std::array<TVector3,
     }
 
     // if we're here, we have a valid ray
-    break;
-
+    allIntersections.push_back(box_intersections);
+    allHMom.push_back(higgs_mom);
   }
 
   // did we get a hit?
-  if (i > fNThrows) return false;
+  if (allIntersections.size() == 0) return false;
+
+  unsigned ind = CLHEP::RandFlat::shootInt(fEngine, 0, allIntersections.size()-1); // inclusive?
+
+  TLorentzVector higgs_mom = allHMom[ind];
+  std::vector<TVector3> box_intersections = allIntersections[ind];
 
   TVector3 A = box_intersections[0];
   TVector3 B = box_intersections[1];
@@ -161,7 +166,7 @@ bool ReThrowRayTraceBox::IntersectDetector(HiggsFlux &flux, std::array<TVector3,
   } 
 
   // set things
-  weight = 1. / i;
+  weight = (double)allIntersections.size() / fNThrows;
   flux.mom = higgs_mom;
 
   if ((flux.pos.Vect() - A).Mag() < (flux.pos.Vect() - B).Mag()) {
