@@ -48,6 +48,8 @@
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 
 // #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
@@ -207,9 +209,46 @@ private:
   std::vector<float> _backtracked_pc_q_v;
   std::vector<float> _backtracked_pc_q_y;
 
+  std::vector<float> _backtracked_pc_e_u;
+  std::vector<float> _backtracked_pc_e_v;
+  std::vector<float> _backtracked_pc_e_y;
+
   std::vector<unsigned> _backtracked_c_u;
   std::vector<unsigned> _backtracked_c_v;
   std::vector<unsigned> _backtracked_c_y;
+
+  std::vector<int>   _backtracked_nloc_c_u;
+  std::vector<float> _backtracked_locx_c_u;
+  std::vector<float> _backtracked_locy_c_u;
+  std::vector<float> _backtracked_locz_c_u;
+  std::vector<float> _backtracked_dirx_c_u;
+  std::vector<float> _backtracked_diry_c_u;
+  std::vector<float> _backtracked_dirz_c_u;
+  std::vector<float> _backtracked_de_c_u;
+  std::vector<float> _backtracked_pitch_c_u;
+  std::vector<float> _backtracked_scepitch_c_u;
+
+  std::vector<int>   _backtracked_nloc_c_v;
+  std::vector<float> _backtracked_locx_c_v;
+  std::vector<float> _backtracked_locy_c_v;
+  std::vector<float> _backtracked_locz_c_v;
+  std::vector<float> _backtracked_dirx_c_v;
+  std::vector<float> _backtracked_diry_c_v;
+  std::vector<float> _backtracked_dirz_c_v;
+  std::vector<float> _backtracked_de_c_v;
+  std::vector<float> _backtracked_pitch_c_v;
+  std::vector<float> _backtracked_scepitch_c_v;
+
+  std::vector<int>   _backtracked_nloc_c_y;
+  std::vector<float> _backtracked_locx_c_y;
+  std::vector<float> _backtracked_locy_c_y;
+  std::vector<float> _backtracked_locz_c_y;
+  std::vector<float> _backtracked_dirx_c_y;
+  std::vector<float> _backtracked_diry_c_y;
+  std::vector<float> _backtracked_dirz_c_y;
+  std::vector<float> _backtracked_de_c_y;
+  std::vector<float> _backtracked_pitch_c_y;
+  std::vector<float> _backtracked_scepitch_c_y;
 
   std::vector<float> _backtracked_x;
   std::vector<float> _backtracked_y;
@@ -415,6 +454,10 @@ private:
   std::vector<float> _dedx_u;
   std::vector<float> _dedx_v;
   std::vector<float> _dedx_y;
+
+  std::vector<unsigned> _dedx_channel_u;
+  std::vector<unsigned> _dedx_channel_v;
+  std::vector<unsigned> _dedx_channel_y;
 
   std::vector<float> _rr_u;
   std::vector<float> _rr_v;
@@ -741,9 +784,46 @@ void CalorimetryAnalysis::fillDefault()
   _backtracked_pc_q_v.clear();
   _backtracked_pc_q_y.clear();
 
+  _backtracked_pc_e_u.clear();
+  _backtracked_pc_e_v.clear();
+  _backtracked_pc_e_y.clear();
+
   _backtracked_c_u.clear();
   _backtracked_c_v.clear();
   _backtracked_c_y.clear();
+
+  _backtracked_nloc_c_u.clear();
+  _backtracked_locx_c_u.clear();
+  _backtracked_locy_c_u.clear();
+  _backtracked_locz_c_u.clear();
+  _backtracked_dirx_c_u.clear();
+  _backtracked_diry_c_u.clear();
+  _backtracked_dirz_c_u.clear();
+  _backtracked_de_c_u.clear();
+  _backtracked_pitch_c_u.clear();
+  _backtracked_scepitch_c_u.clear();
+
+  _backtracked_nloc_c_v.clear();
+  _backtracked_locx_c_v.clear();
+  _backtracked_locy_c_v.clear();
+  _backtracked_locz_c_v.clear();
+  _backtracked_dirx_c_v.clear();
+  _backtracked_diry_c_v.clear();
+  _backtracked_dirz_c_v.clear();
+  _backtracked_de_c_v.clear();
+  _backtracked_pitch_c_v.clear();
+  _backtracked_scepitch_c_v.clear();
+
+  _backtracked_nloc_c_y.clear();
+  _backtracked_locx_c_y.clear();
+  _backtracked_locy_c_y.clear();
+  _backtracked_locz_c_y.clear();
+  _backtracked_dirx_c_y.clear();
+  _backtracked_diry_c_y.clear();
+  _backtracked_dirz_c_y.clear();
+  _backtracked_de_c_y.clear();
+  _backtracked_pitch_c_y.clear();
+  _backtracked_scepitch_c_y.clear();
 
   _backtracked_x.clear();
   _backtracked_y.clear();
@@ -946,6 +1026,10 @@ void CalorimetryAnalysis::fillDefault()
   _dedx_v.clear();
   _dedx_y.clear();
 
+  _dedx_channel_u.clear();
+  _dedx_channel_v.clear();
+  _dedx_channel_y.clear();
+
   _rr_u.clear();
   _rr_v.clear();
   _rr_y.clear();
@@ -1006,9 +1090,46 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("backtracked_pc_q_v", "std::vector<float>", &_backtracked_pc_q_v);
   _calo_tree->Branch("backtracked_pc_q_y", "std::vector<float>", &_backtracked_pc_q_y);
 
+  _calo_tree->Branch("backtracked_pc_e_u", "std::vector<float>", &_backtracked_pc_e_u);
+  _calo_tree->Branch("backtracked_pc_e_v", "std::vector<float>", &_backtracked_pc_e_v);
+  _calo_tree->Branch("backtracked_pc_e_y", "std::vector<float>", &_backtracked_pc_e_y);
+
   _calo_tree->Branch("backtracked_c_u", "std::vector<unsigned>", &_backtracked_c_u);
   _calo_tree->Branch("backtracked_c_v", "std::vector<unsigned>", &_backtracked_c_v);
   _calo_tree->Branch("backtracked_c_y", "std::vector<unsigned>", &_backtracked_c_y);
+
+  _calo_tree->Branch("backtracked_nloc_c_u", "std::vector<int>", &_backtracked_nloc_c_u);
+  _calo_tree->Branch("backtracked_locx_c_u", "std::vector<float>", &_backtracked_locx_c_u);
+  _calo_tree->Branch("backtracked_locy_c_u", "std::vector<float>", &_backtracked_locy_c_u);
+  _calo_tree->Branch("backtracked_locz_c_u", "std::vector<float>", &_backtracked_locz_c_u);
+  _calo_tree->Branch("backtracked_dirx_c_u", "std::vector<float>", &_backtracked_dirx_c_u);
+  _calo_tree->Branch("backtracked_diry_c_u", "std::vector<float>", &_backtracked_diry_c_u);
+  _calo_tree->Branch("backtracked_dirz_c_u", "std::vector<float>", &_backtracked_dirz_c_u);
+  _calo_tree->Branch("backtracked_de_c_u", "std::vector<float>", &_backtracked_de_c_u);
+  _calo_tree->Branch("backtracked_pitch_c_u", "std::vector<float>", &_backtracked_pitch_c_u);
+  _calo_tree->Branch("backtracked_scepitch_c_u", "std::vector<float>", &_backtracked_scepitch_c_u);
+
+  _calo_tree->Branch("backtracked_nloc_c_v", "std::vector<int>", &_backtracked_nloc_c_v);
+  _calo_tree->Branch("backtracked_locx_c_v", "std::vector<float>", &_backtracked_locx_c_v);
+  _calo_tree->Branch("backtracked_locy_c_v", "std::vector<float>", &_backtracked_locy_c_v);
+  _calo_tree->Branch("backtracked_locz_c_v", "std::vector<float>", &_backtracked_locz_c_v);
+  _calo_tree->Branch("backtracked_dirx_c_v", "std::vector<float>", &_backtracked_dirx_c_v);
+  _calo_tree->Branch("backtracked_diry_c_v", "std::vector<float>", &_backtracked_diry_c_v);
+  _calo_tree->Branch("backtracked_dirz_c_v", "std::vector<float>", &_backtracked_dirz_c_v);
+  _calo_tree->Branch("backtracked_de_c_v", "std::vector<float>", &_backtracked_de_c_v);
+  _calo_tree->Branch("backtracked_pitch_c_v", "std::vector<float>", &_backtracked_pitch_c_v);
+  _calo_tree->Branch("backtracked_scepitch_c_v", "std::vector<float>", &_backtracked_scepitch_c_v);
+
+  _calo_tree->Branch("backtracked_nloc_c_y", "std::vector<int>", &_backtracked_nloc_c_y);
+  _calo_tree->Branch("backtracked_locx_c_y", "std::vector<float>", &_backtracked_locx_c_y);
+  _calo_tree->Branch("backtracked_locy_c_y", "std::vector<float>", &_backtracked_locy_c_y);
+  _calo_tree->Branch("backtracked_locz_c_y", "std::vector<float>", &_backtracked_locz_c_y);
+  _calo_tree->Branch("backtracked_dirx_c_y", "std::vector<float>", &_backtracked_dirx_c_y);
+  _calo_tree->Branch("backtracked_diry_c_y", "std::vector<float>", &_backtracked_diry_c_y);
+  _calo_tree->Branch("backtracked_dirz_c_y", "std::vector<float>", &_backtracked_dirz_c_y);
+  _calo_tree->Branch("backtracked_de_c_y", "std::vector<float>", &_backtracked_de_c_y);
+  _calo_tree->Branch("backtracked_pitch_c_y", "std::vector<float>", &_backtracked_pitch_c_y);
+  _calo_tree->Branch("backtracked_scepitch_c_y", "std::vector<float>", &_backtracked_scepitch_c_y);
 
   _calo_tree->Branch("backtracked_x", "std::vector<float>", &_backtracked_x);
   _calo_tree->Branch("backtracked_y", "std::vector<float>", &_backtracked_y);
@@ -1218,6 +1339,10 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("dedx_v", "std::vector<float>", &_dedx_v);
   _calo_tree->Branch("dedx_y", "std::vector<float>", &_dedx_y);
 
+  _calo_tree->Branch("dedx_channel_u", "std::vector<unsigned>", &_dedx_channel_u);
+  _calo_tree->Branch("dedx_channel_v", "std::vector<unsigned>", &_dedx_channel_v);
+  _calo_tree->Branch("dedx_channel_y", "std::vector<unsigned>", &_dedx_channel_y);
+
   _calo_tree->Branch("rr_u", "std::vector<float>", &_rr_u);
   _calo_tree->Branch("rr_v", "std::vector<float>", &_rr_v);
   _calo_tree->Branch("rr_y", "std::vector<float>", &_rr_y);
@@ -1259,6 +1384,80 @@ void CalorimetryAnalysis::resetTTree(TTree *_tree)
 {
 }
 
+std::vector<unsigned> FinddEdxHits(const anab::Calorimetry &calo, const std::vector<art::Ptr<recob::Hit>> &hits) {
+  std::vector<unsigned> ret;
+
+  // NOTE: TpIndices are __actually__ the art::Ptr keys of the Hit's
+  // Don't ask me why
+  for (size_t ind: calo.TpIndices()) {
+    bool found = false;
+    for (const art::Ptr<recob::Hit> &hit: hits) {
+      if (hit.key() == ind) {
+        ret.push_back(hit->Channel());
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      throw cet::exception("dEdx w/out Hit!");
+    }
+  }
+  return ret;
+}
+
+float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector3 location, TVector3 direction, const spacecharge::SpaceCharge *SCEService=NULL) {
+  float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+
+  // apply space charge change to dir
+  if (SCEService) {
+    geo::Point_t location_p(location);
+    geo::Vector_t offset_v = SCEService->GetPosOffsets(location_p);
+    TVector3 offset = TVector3(offset_v.X(), offset_v.Y(), offset_v.Z());
+    // fix the x-sign
+    if (location.X() < 0.) offset.SetX(-offset.X());
+
+    // location a ~wire's distance along the track 
+    TVector3 location_dx = location + geo->WirePitch(plane) * direction;
+
+    // Apply space charge to the offset location
+    geo::Point_t location_dx_p(location_dx);
+    geo::Vector_t offset_dx_v = SCEService->GetPosOffsets(location_dx_p);
+    TVector3 offset_dx(offset_dx_v.X(), offset_dx_v.Y(), offset_dx_v.Z());
+    // fix the x-sign
+    if (location_dx.X() < 0.) offset_dx.SetX(-offset_dx.X());
+
+    // this is the actual direction
+    direction = (offset_dx + location_dx - offset - location).Unit();
+  }
+
+  // get the pitch
+  float cosgamma = abs(cos(angletovert) * direction.Z() + sin(angletovert) * direction.Y());
+  float pitch = geo->WirePitch(plane) / cosgamma;
+
+  // map pitch back onto particle trajectory
+  if (SCEService) {
+    geo::Point_t location_p(location);
+    geo::Vector_t offset_v = SCEService->GetPosOffsets(location_p);
+    TVector3 offset(offset_v.X(), offset_v.Y(), offset_v.Z());
+    // fix the x-sign
+    if (location.X() < 0.) offset.SetX(-offset.X());
+
+    TVector3 location_sce = location + offset;
+
+    TVector3 location_sce_dx = location_sce + direction * pitch;
+
+    // map this back onto the particle trajectory
+    geo::Point_t location_sce_dx_p(location_sce_dx);
+    geo::Vector_t back_v = SCEService->GetCalPosOffsets(location_sce_dx_p, plane.TPC);
+    TVector3 back(back_v.X(), back_v.Y(), back_v.Z());
+    TVector3 location_dx = location_sce_dx + back;
+
+    pitch = (location - location_dx).Mag();
+  }
+
+  return pitch;
+}
+
 
 void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
             const std::vector<art::Ptr<recob::Wire>> &allWires,
@@ -1286,6 +1485,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+  const spacecharge::SpaceCharge *spacecharge = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   // TODO: variables to set
   _generation = -1;
@@ -1443,33 +1643,39 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     for (auto const &ide_pair: particle_ide_map[0]) {
       _backtracked_c_u.push_back(ide_pair.first);
       _backtracked_pc_q_u.push_back(0);
+      _backtracked_pc_e_u.push_back(0);
       for (const sim::IDE *ide: ide_pair.second) {
         trueParticleE += ide->energy;
         _backtracked_q_u += ide->numElectrons;
         _backtracked_deposited_e_u += ide->energy;
         _backtracked_pc_q_u.back() += ide->numElectrons;
+        _backtracked_pc_e_u.back() += ide->energy;
       }
     }
 
     for (auto const &ide_pair: particle_ide_map[1]) {
       _backtracked_c_v.push_back(ide_pair.first);
       _backtracked_pc_q_v.push_back(0);
+      _backtracked_pc_e_v.push_back(0);
       for (const sim::IDE *ide: ide_pair.second) {
         trueParticleE += ide->energy;
         _backtracked_q_v += ide->numElectrons;
         _backtracked_deposited_e_v += ide->energy;
         _backtracked_pc_q_v.back() += ide->numElectrons;
+        _backtracked_pc_e_v.back() += ide->energy;
       }
     }
 
     for (auto const &ide_pair: particle_ide_map[2]) {
       _backtracked_c_y.push_back(ide_pair.first);
       _backtracked_pc_q_y.push_back(0);
+      _backtracked_pc_e_y.push_back(0);
       for (const sim::IDE *ide: ide_pair.second) {
         trueParticleE += ide->energy;
         _backtracked_q_y += ide->numElectrons;
         _backtracked_deposited_e_y += ide->energy;
         _backtracked_pc_q_y.back() += ide->numElectrons;
+        _backtracked_pc_e_y.back() += ide->energy;
       }
     }
 
@@ -1516,6 +1722,160 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
      _backtracked_dirx.push_back(trueParticle->Px(i_traj) / trueParticle->P(i_traj));
      _backtracked_diry.push_back(trueParticle->Py(i_traj) / trueParticle->P(i_traj));
      _backtracked_dirz.push_back(trueParticle->Pz(i_traj) / trueParticle->P(i_traj));
+    }
+
+    // also map between wires and the trajectory
+    //
+    // First setup all the traj containers
+    _backtracked_nloc_c_u.insert(_backtracked_nloc_c_u.end(), _backtracked_c_u.size(), 0);
+    _backtracked_locx_c_u.insert(_backtracked_locx_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_locy_c_u.insert(_backtracked_locy_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_locz_c_u.insert(_backtracked_locz_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_dirx_c_u.insert(_backtracked_dirx_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_diry_c_u.insert(_backtracked_diry_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_dirz_c_u.insert(_backtracked_dirz_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_de_c_u.insert(_backtracked_de_c_u.end(),   _backtracked_c_u.size(), 0.);
+    _backtracked_pitch_c_u.insert(_backtracked_pitch_c_u.end(), _backtracked_c_u.size(), 0.);
+    _backtracked_scepitch_c_u.insert(_backtracked_scepitch_c_u.end(), _backtracked_c_u.size(), 0.);
+
+    _backtracked_nloc_c_v.insert(_backtracked_nloc_c_v.end(), _backtracked_c_v.size(), 0);
+    _backtracked_locx_c_v.insert(_backtracked_locx_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_locy_c_v.insert(_backtracked_locy_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_locz_c_v.insert(_backtracked_locz_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_dirx_c_v.insert(_backtracked_dirx_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_diry_c_v.insert(_backtracked_diry_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_dirz_c_v.insert(_backtracked_dirz_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_de_c_v.insert(_backtracked_de_c_v.end(),   _backtracked_c_v.size(), 0.);
+    _backtracked_pitch_c_v.insert(_backtracked_pitch_c_v.end(), _backtracked_c_v.size(), 0.);
+    _backtracked_scepitch_c_v.insert(_backtracked_scepitch_c_v.end(), _backtracked_c_v.size(), 0.);
+
+    _backtracked_nloc_c_y.insert(_backtracked_nloc_c_y.end(), _backtracked_c_y.size(), 0);
+    _backtracked_locx_c_y.insert(_backtracked_locx_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_locy_c_y.insert(_backtracked_locy_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_locz_c_y.insert(_backtracked_locz_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_dirx_c_y.insert(_backtracked_dirx_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_diry_c_y.insert(_backtracked_diry_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_dirz_c_y.insert(_backtracked_dirz_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_de_c_y.insert(_backtracked_de_c_y.end(),   _backtracked_c_y.size(), 0.);
+    _backtracked_pitch_c_y.insert(_backtracked_pitch_c_y.end(), _backtracked_c_y.size(), 0.);
+    _backtracked_scepitch_c_y.insert(_backtracked_scepitch_c_y.end(), _backtracked_c_y.size(), 0.);
+
+    for (geo::TPCID tpc: geometry->IterateTPCIDs()) {
+      for (geo::PlaneID planeID: geometry->IteratePlaneIDs(tpc)) {
+        auto const &plane = planeID.Plane;
+        if (plane > 2) continue; // protect against bad plane ID
+
+        int lastWire = -1000000;
+        int last_traj = 0;
+        for (unsigned i_traj = 0; i_traj < trueParticle->NumberTrajectoryPoints()-1; i_traj++) {
+          TVector3 thispoint = trueParticle->Position(i_traj).Vect();
+          TVector3 nextpoint = trueParticle->Position(i_traj+1).Vect();
+          double thiswirecoord = geometry->WireCoordinate(thispoint.Y(), thispoint.Z(), planeID);
+          double nextwirecoord = geometry->WireCoordinate(nextpoint.Y(), nextpoint.Z(), planeID);
+          int wireStart = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(thiswirecoord) : std::ceil(thiswirecoord));
+          int wireEnd   = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(nextwirecoord) : std::ceil(nextwirecoord));
+          // if we're not crossing a wire continue
+          if (wireStart == wireEnd) continue;
+
+          // check the validity of the range of wires
+          if (!(wireStart >= 0 && wireStart < (int)geometry->Plane(planeID).Nwires())) continue;
+          if (!(wireEnd >= 0 && wireEnd <= (int)geometry->Plane(planeID).Nwires())) continue;
+
+          // if this wire is the same as the last skip it
+          if (wireStart == lastWire) {
+            if (wireStart < wireEnd) wireStart ++;
+            else wireStart --;
+          }
+          // again continue if this wouldn't cross a new wire
+          if (wireStart == wireEnd) continue;
+
+          // load the trajectory information at this point
+          double locX = trueParticle->Position(i_traj).X();
+          double locY = trueParticle->Position(i_traj).Y();
+          double locZ = trueParticle->Position(i_traj).Z();
+          double dirX = trueParticle->Momentum(i_traj).Vect().Unit().X();
+          double dirY = trueParticle->Momentum(i_traj).Vect().Unit().Y();
+          double dirZ = trueParticle->Momentum(i_traj).Vect().Unit().Z();
+          double deltaE = (trueParticle->Momentum(last_traj).E() - trueParticle->Momentum(i_traj+1).E()) / abs(wireEnd - wireStart); // average dE over wires
+
+          double pitch = calcPitch(geometry, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit());
+          double pitchSCE = calcPitch(geometry, planeID, trueParticle->Position(i_traj).Vect(), trueParticle->Momentum(i_traj).Vect().Unit(), spacecharge);
+
+          // save
+          int incl = wireStart < wireEnd ? 1: -1;
+          for (int wire = wireStart; wire != wireEnd; wire += incl) {
+            lastWire = wire;
+            unsigned channel = geometry->PlaneWireToChannel(planeID.Plane, wire, planeID.TPC, planeID.Cryostat);
+
+            if (plane == 0) {
+              int index = -1;
+              for (unsigned i_test = 0; i_test < _backtracked_c_u.size(); i_test++) {
+                if (_backtracked_c_u[i_test] == channel) {
+                  index = i_test;
+                  break;
+                }
+              }
+              if (index < 0) continue;
+
+              _backtracked_nloc_c_u[index] ++;
+              _backtracked_locx_c_u[index] = locX;
+              _backtracked_locy_c_u[index] = locY;
+              _backtracked_locz_c_u[index] = locZ;
+              _backtracked_dirx_c_u[index] = dirX;
+              _backtracked_diry_c_u[index] = dirY;
+              _backtracked_dirz_c_u[index] = dirZ;
+              _backtracked_de_c_u[index] = deltaE;
+              _backtracked_pitch_c_u[index] = pitch;
+              _backtracked_scepitch_c_u[index] = pitchSCE;
+            }
+            else if (plane == 1) {
+              int index = -1;
+              for (unsigned i_test = 0; i_test < _backtracked_c_v.size(); i_test++) {
+                if (_backtracked_c_v[i_test] == channel) {
+                  index = i_test;
+                  break;
+                }
+              }
+              if (index < 0) continue;
+
+              _backtracked_nloc_c_v[index] ++;
+              _backtracked_locx_c_v[index] = locX;
+              _backtracked_locy_c_v[index] = locY;
+              _backtracked_locz_c_v[index] = locZ;
+              _backtracked_dirx_c_v[index] = dirX;
+              _backtracked_diry_c_v[index] = dirY;
+              _backtracked_dirz_c_v[index] = dirZ;
+              _backtracked_de_c_v[index] = deltaE;
+              _backtracked_pitch_c_v[index] = pitch;
+              _backtracked_scepitch_c_v[index] = pitchSCE;
+            }
+            else if (plane == 2) {
+              int index = -1;
+              for (unsigned i_test = 0; i_test < _backtracked_c_y.size(); i_test++) {
+                if (_backtracked_c_y[i_test] == channel) {
+                  index = i_test;
+                  break;
+                }
+              }
+              if (index < 0) continue;
+
+              _backtracked_nloc_c_y[index] ++;
+              _backtracked_locx_c_y[index] = locX;
+              _backtracked_locy_c_y[index] = locY;
+              _backtracked_locz_c_y[index] = locZ;
+              _backtracked_dirx_c_y[index] = dirX;
+              _backtracked_diry_c_y[index] = dirY;
+              _backtracked_dirz_c_y[index] = dirZ;
+              _backtracked_de_c_y[index] = deltaE;
+              _backtracked_pitch_c_y[index] = pitch;
+              _backtracked_scepitch_c_y[index] = pitchSCE;
+            }
+
+            
+          }
+          last_traj = i_traj;
+        }
+      }
     }
 
     // TODO: implement spacecharge
@@ -1671,6 +2031,8 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_u = calo->dEdx();
+      _dedx_channel_u = FinddEdxHits(*calo, allHits);
+
     }
     else if (plane == 1)
     {
@@ -1693,6 +2055,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_v = calo->dEdx();
+      _dedx_channel_v = FinddEdxHits(*calo, allHits);
     }
     else if (plane == 2) //collection
     {
@@ -1715,6 +2078,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_y = calo->dEdx();
+      _dedx_channel_y = FinddEdxHits(*calo, allHits);
     }
   }
 
