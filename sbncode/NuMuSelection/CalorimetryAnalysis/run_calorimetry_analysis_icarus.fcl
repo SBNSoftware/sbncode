@@ -13,8 +13,8 @@
 #include "rangeproducer.fcl"
 #include "calorimetry_icarus.fcl"
 #include "particleid.fcl"
-#include "trackareahiticarus_producer.fcl"
-#include "trackhitfiltericarus_module.fcl"
+#include "trackareahit_producer.fcl"
+#include "trackhitfilter_module.fcl"
 #include "calorimetry_test_producer.fcl"
 
 process_name: CaloAna
@@ -66,9 +66,9 @@ physics:
   pandoraTrackRange: @local::range_sbn
   areahitCalo:       @local::icarus_calomc
   areahitPid:        @local::icarus_chi2pid
-  areahit25: @local::trackareahit_sbnd
-  filthit: @local::trackhitfilter_sbnd
-  filtgoodhit: @local::trackhitfilter_sbnd
+  areahit25: @local::trackareahit_icarus
+  filthit: @local::trackhitfilter_icarus
+  filtgoodhit: @local::trackhitfilter_icarus
   }
 
   analyzers:
