@@ -469,7 +469,7 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   : art::EDAnalyzer{p}
 
 {
-  fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandora");
+  fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraTrackGausCryo0");
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fPIDproducer  = p.get< art::InputTag > ("PIDproducer" );
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
@@ -541,12 +541,13 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   //larpandora.BuildPFParticleMap(pfparticles, particleMap);
 
   // recob Hits
-  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>("gaushit");
+  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>("gaushitTPC0");
   std::vector<art::Ptr<recob::Hit>> hitList;
   art::fill_ptr_vector(hitList, hitHandle);
-  // recob Wires
+  // recob Wires:w
+
   art::Handle<std::vector<recob::Wire>> wireHandle;
-  e.getByLabel("caldata", wireHandle);
+  e.getByLabel("decon1DroiTPC0", wireHandle);
 
   std::vector<art::Ptr<recob::Wire>> wireList;
   if (wireHandle.isValid()) {
