@@ -84,6 +84,8 @@ physics:
       PIDproducer:  "pandoraPid"
       TRKproducer:  "pandoraTrack"
       AreaHitproducer: "areahit25"
+      HitProducer: "gaushit"
+      WireProducer: "caldata"
       ADCtoE: [] 
     }
   }
