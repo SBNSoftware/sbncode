@@ -157,7 +157,6 @@ private:
             const sbn::RangeP &muon_range,
             const sbn::RangeP &proton_range,
             const bool fData,
-            const bool fShrFit,
             const std::vector<std::pair<int, float>> &particleMatches,
             const art::Ptr<simb::MCParticle> &trueParticle,
             const std::array<std::map<unsigned, std::vector<const sim::IDE*>>, 3> particle_ide_map,
@@ -175,18 +174,14 @@ private:
   art::InputTag fT0producer;
   art::InputTag fHitFilterproducer;
   art::InputTag fAreaHitproducer;
+  art::InputTag fHitProducer;
+  art::InputTag fWireProducer;
   std::string fMCSproducer;
   std::string fRangeproducer;
   bool fAllTrueEnergyDeposits;
 
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
-  bool fBacktrack; // do the backtracking needed for this module?
-
-  bool fShrFit; // use shower track-fitter info?
-
-  bool fGetCaloID; // get the index of the calorimetry object manually. Needs to be true unless object produced by Pandora hierarchy
-  // (This is at least what I foudn empirically)
 
   TTree* _calo_tree;
 
@@ -479,10 +474,8 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   fAreaHitproducer = p.get<art::InputTag> ("AreaHitproducer", "areahit");
   fAllTrueEnergyDeposits = p.get<bool>("AllTrueEnergyDeposits", true);
   fHitFilterproducer = p.get<art::InputTag>("HitFilterproducer", "filtgoodhit"); 
-
-  fBacktrack = p.get<bool>("Backtrack", true);
-  fShrFit    = p.get<bool>("ShrFit"   , false);
-  fGetCaloID = p.get<bool>("GetCaloID", false);
+  fHitProducer = p.get<art::InputTag>("HitProducer", "gaushitTPC0");
+  fWireProducer = p.get<art::InputTag>("WireProducer", "decon1DroiTPC0");
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -541,13 +534,13 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   //larpandora.BuildPFParticleMap(pfparticles, particleMap);
 
   // recob Hits
-  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>("gaushitTPC0");
+  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(fHitProducer);
   std::vector<art::Ptr<recob::Hit>> hitList;
   art::fill_ptr_vector(hitList, hitHandle);
   // recob Wires:w
 
   art::Handle<std::vector<recob::Wire>> wireHandle;
-  e.getByLabel("decon1DroiTPC0", wireHandle);
+  e.getByLabel(fWireProducer, wireHandle);
 
   std::vector<art::Ptr<recob::Wire>> wireList;
   if (wireHandle.isValid()) {
@@ -714,7 +707,6 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
           muon_mcs,
           muon_range,
           proton_range,
-          false,
           false,
           matches,
           true_particle,
@@ -1283,7 +1275,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
             const sbn::RangeP &muon_range,
             const sbn::RangeP &proton_range,
             const bool fData,
-            const bool fShrFit,
             const std::vector<std::pair<int, float>> &particleMatches,
             const art::Ptr<simb::MCParticle> &trueParticle,
             const std::array<std::map<unsigned, std::vector<const sim::IDE*>>, 3> particle_ide_map,
@@ -1679,7 +1670,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
         _dir_z_u.push_back(_dir_u[2]);
       }
       // TODO: ShrFit???
-      // if (fShrFit) { _dedx_u = searchingfornues::GetdEdxfromdQdx(_dqdx_u, _x_u, _y_u, _z_u, 2.1, fADCtoE[plane]); }
       _dedx_u = calo->dEdx();
     }
     else if (plane == 1)
@@ -1702,7 +1692,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
         _dir_z_v.push_back(_dir_v[2]);
       }
       // TODO: ShrFit???
-      // if (fShrFit) { _dedx_v = searchingfornues::GetdEdxfromdQdx(_dqdx_v, _x_v, _y_v, _z_v, 2.1, fADCtoE[plane]); }
       _dedx_v = calo->dEdx();
     }
     else if (plane == 2) //collection
@@ -1725,7 +1714,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
         _dir_z_y.push_back(_dir_y[2]);
       }
       // TODO: ShrFit???
-      // if (fShrFit) { _dedx_y = searchingfornues::GetdEdxfromdQdx(_dqdx_y, _x_y, _y_y, _z_y, 2.1, fADCtoE[plane]); }
       _dedx_y = calo->dEdx();
     }
   }
