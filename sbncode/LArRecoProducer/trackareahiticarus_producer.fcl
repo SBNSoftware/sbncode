@@ -1,9 +1,0 @@
-BEGIN_PROLOG
-
-trackareahit_sbnd: {
-  module_type: TrackAreaHitICARUS
-  WireLabel: decon1DroiTPC0
-  SignalShapingWindow: 25 # [TDC ticks]
-}
-
-END_PROLOG
