@@ -1,0 +1,78 @@
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_sbnd.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "simulationservices_sbnd.fcl"
+
+#include "dthetakink_producer.fcl"
+
+process_name: DThetaKink
+
+services:
+{
+  # @table::sbnd_detsim_services
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { 
+    fileName: "kinks.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  Geometry:                  @local::sbnd_geo
+  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+    pandoraDThetaKink: @local::dthetakink_sbnd
+  }
+
+  analyzers:
+  {
+    kinkana: {
+      module_type: DThetaKinkTree
+      ParticleTags: ["pandora"]
+      KinkTags: ["pandoraDThetaKink"]
+    }
+  }
+
+  runprod: [pandoraDThetaKink, kinkana]
+  stream1:       [ ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+
+physics.producers.pandoraDThetaKink.HitGroupDistance: 3
+physics.producers.pandoraDThetaKink.FollowDaughters: true

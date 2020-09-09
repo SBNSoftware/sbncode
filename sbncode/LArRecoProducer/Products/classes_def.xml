@@ -1,4 +1,12 @@
 <lcgdict>
+  <class name="sbn::DThetaKink" />
+  <class name="std::vector<sbn::DThetaKink>" />
+  <class name="art::Wrapper<sbn::DThetaKink>" />
+  <class name="art::Wrapper<std::vector<sbn::DThetaKink>>" />
+
+  <class name="art::Assns<sbn::DThetaKink, recob::PFParticle, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::DThetaKink, recob::PFParticle, void>>" />
+
   <class name="sbn::RangeP" />
   <class name="std::vector<sbn::RangeP>" />
   <class name="art::Wrapper<sbn::RangeP>" />
