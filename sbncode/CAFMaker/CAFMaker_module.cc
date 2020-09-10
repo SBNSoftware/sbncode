@@ -16,7 +16,6 @@
 // ---------------------------------------
 
 
-
 #include "CAFMakerParams.h"
 #include "FillReco.h"
 #include "FillTrue.h"
@@ -559,27 +558,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mcfluxes, mcflux_handle);
   }
 
-  // try to find the result of the Flash trigger if it was run
-  bool pass_flash_trig = false;
-  art::Handle<bool> flashtrig_handle;
-  GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
-
-  if (flashtrig_handle.isValid()) {
-    pass_flash_trig = *flashtrig_handle;
-  }
-
-  // get the number of events generated in the gen stage
-  unsigned n_gen_evt = 0;
-  for (const art::ProcessConfiguration &process: evt.processHistory()) {
-    fhicl::ParameterSet gen_config; 
-    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type")) {
-      int max_events = gen_config.get<int>("source.maxEvents");
-      std::string module_type = gen_config.get<std::string>("source.module_type");
-      if (module_type == "EmptyEvent") {
-        n_gen_evt += max_events;
-      }
-    }
+  // get the MCReco for the fake-reco
+  art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
+  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  std::vector<art::Ptr<sim::MCTrack>> mctracks;
+  if (mctrack_handle.isValid()) {
+    art::fill_ptr_vector(mctracks, mctrack_handle);
   }
 
   // get all of the true particles from G4
@@ -589,21 +573,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
-  if (mc_particles.isValid()) {
-    for (const simb::MCParticle part: *mc_particles) {
-      true_particles.emplace_back();
 
-      FillTrueG4Particle(part, 
-                         fActiveVolumes,
-                         fTPCVolumes,
-                         id_to_ide_map,
-                         *bt_serv.get(),
-                         *pi_serv.get(),
-                         mctruths,
-                         true_particles.back());
-    }
-  }
-
+  //#######################################################
+  // Fill truths & fake reco
+  //#######################################################
+ 
+  caf::SRTruthBranch                  srtruthbranch;
   std::vector<caf::SRTrueInteraction> srneutrinos;
 
   for (size_t i=0; i<mctruths.size(); i++) {
@@ -619,10 +594,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	if (particle.Process() != "primary") 
 	  continue;
 	srprimaries.push_back(SRTrueParticle());
-	// Not working yet 	
-	// FillTrueG4Particle(particle, fActiveVolumes, fTPCVolumes,
-	// 		   *bt_serv.get(), *pi_serv.get(), mctruths,
-	// 		   srprimaries.back());
       }
     }
     
@@ -630,18 +601,62 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
 
+    srtruthbranch.nu = srneutrinos;
+    srtruthbranch.nnu = srneutrinos.size();
+
   }
 
-  // get the MCReco for the fake-reco
-  art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
-  GetByLabelStrict(evt, "mcreco", mctrack_handle);
-  std::vector<art::Ptr<sim::MCTrack>> mctracks;
-  if (mctrack_handle.isValid()) {
-    art::fill_ptr_vector(mctracks, mctrack_handle);
+  if (mc_particles.isValid()) {
+    for (const simb::MCParticle part: *mc_particles) {
+      true_particles.emplace_back();
+
+      FillTrueG4Particle(part, 
+                         fActiveVolumes,
+                         fTPCVolumes,
+                         id_to_ide_map,
+                         *bt_serv.get(),
+                         *pi_serv.get(),
+                         mctruths,
+                         true_particles.back());
+    }
   }
+
+
+  // get the number of events generated in the gen stage
+  unsigned n_gen_evt = 0;
+  for (const art::ProcessConfiguration &process: evt.processHistory()) {
+    fhicl::ParameterSet gen_config; 
+    bool success = evt.getProcessParameterSet(process.processName(), gen_config);
+    if ( success && gen_config.has_key("source") && 
+	 gen_config.has_key("source.maxEvents") && 
+	 gen_config.has_key("source.module_type") ) {
+      int max_events = gen_config.get<int>("source.maxEvents");
+      std::string module_type = gen_config.get<std::string>("source.module_type");
+      if (module_type == "EmptyEvent") {
+        n_gen_evt += max_events;
+      }
+    }
+  }
+
 
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+
+
+
+  //#######################################################
+  // Fill detector & reco
+  //#######################################################
+
+  // try to find the result of the Flash trigger if it was run
+  bool pass_flash_trig = false;
+  art::Handle<bool> flashtrig_handle;
+  GetByLabelStrict(evt, fParams.FlashTrigLabel(), flashtrig_handle);
+
+  if (flashtrig_handle.isValid()) {
+    pass_flash_trig = *flashtrig_handle;
+  }
+
 
   // Fill various detector information associated with the event
   //
