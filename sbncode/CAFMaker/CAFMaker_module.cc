@@ -984,16 +984,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
 
-  art::Handle<sumdata::POTSummary> pot;
-  
-  // NOTE: The POT that comes out of IFDBSpillInfo has an implied
-  // factor of 1E12 that is being left off.
-  float subrunpot = pot->totgoodpot;
-  //if (fIsRealData) subrunpot *= 1e12;
-  fTotalPOT += subrunpot;
-  mf::LogInfo("CAFMaker")
-    << "POT in subrun " << sr.subRun() << " = " << pot->totgoodpot;
-
 }
 
 //......................................................................
