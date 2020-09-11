@@ -1,0 +1,15 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_Modern_Uboone12.root"
+
+MCWeightTags: ["fluxeventweightA"]
+ExperimentID: 1
+
+NumuSelection: {
+  fiducial_volumes: @local::MicroBooNE_fiducial_volumes 
+  active_volumes: @local::MicroBooNE_active_volumes 
+  @table::standard_cuts
+  uniformWeights: @local::standard_uniformWeights
+  fakeDataMode: 2
+}
+

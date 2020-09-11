@@ -1,0 +1,14 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_Modern_SBND13.root"
+ExperimentID: 0
+
+NumuSelection: {
+  fiducial_volumes: @local::SBND_fiducial_volumes_no_cathode
+  active_volumes: @local::SBND_active_volumes 
+  @table::standard_cuts
+  # uniformWeights: @local::standard_uniformWeights
+  uniformWeights: []
+  fakeDataMode: 3
+}
+
