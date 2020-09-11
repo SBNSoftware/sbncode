@@ -183,7 +183,7 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
     std::pair<int, int> id = { runid, subrunid };
 
     // Add subrun if not in cache
-    if (fSubRunCache.find(id) == fSubRunCache.end()) {
+    // if (fSubRunCache.find(id) == fSubRunCache.end()) {
       TLeaf* potLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totpot");
       float pot = potLeaf ? potLeaf->GetValue() : -1;
       TLeaf* goodpotLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.totgoodpot");
@@ -193,14 +193,16 @@ void ProcessorBase::UpdateSubRuns(gallery::Event& ev) {
       TLeaf* goodspillsLeaf = srtree->GetLeaf("sumdata::POTSummary_generator__GenieGen.obj.goodspills");
       int goodspills = goodspillsLeaf ? goodspillsLeaf->GetValue() : -1;
 
-      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
-      fSubRunTree->Fill();
 
-      fSubRunCache.insert(id);
+      // fSubRunCache.insert(id);
 
+    if (pot != fSubRun->totpot && goodpot != fSubRun->totgoodpot) {
       std::cout << "Subrun " << runid << "/" << subrunid << " added "
                 << "(good POT = " << goodpot << ")"
                 << std::endl;
+    // }
+      *fSubRun = { runid, subrunid, pot, goodpot, spills, goodspills };
+      fSubRunTree->Fill();
     }
   }
 }

@@ -28,7 +28,7 @@ add_custom_command(TARGET sbnanalysis_SBNOsc_classes POST_BUILD
 # Define library linking
 target_link_libraries(sbnanalysis_SBNOsc_NueSelection sbnanalysis_SBNOsc_Utilities)
 target_link_libraries(sbnanalysis_SBNOsc_NumuSelection
-  sbnanalysis_util_FakeDataSmearing 
+  sbnanalysis_util_FakeDataSmearing
   sbnanalysis_SBNOsc_Utilities
   sbnanalysis_SBNOsc_classes
   ubana_BasicTool_GeoAlgo
