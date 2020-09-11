@@ -63,6 +63,7 @@ private:
   std::vector<std::string> fPFParticleTags;
   std::vector<std::string> fKinkTags;
   float fAngleCut;
+  bool fOnlyPrimary;
 
   // output
   TTree *_tree;
@@ -90,6 +91,10 @@ private:
   std::vector<float> fScatterPY;
   std::vector<float> fScatterPT;
 
+  int fTruePDG;
+  float fTrueE;
+  float fTrueP;
+
   int fEvt;
   int fNo;
 };
@@ -99,7 +104,8 @@ sbn::DThetaKinkTree::DThetaKinkTree(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},  // ,
     fPFParticleTags(p.get<std::vector<std::string>>("ParticleTags")),
     fKinkTags(p.get<std::vector<std::string>>("KinkTags")),
-    fAngleCut(p.get<float>("AngleCut", 5.))
+    fAngleCut(p.get<float>("AngleCut", 5.)),
+    fOnlyPrimary(p.get<bool>("OnlyPrimary", true))
   // More initializers here.
 {
   art::ServiceHandle<art::TFileService> tfs;
@@ -125,6 +131,10 @@ sbn::DThetaKinkTree::DThetaKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("scatter_pv", &fScatterPV);
   _tree->Branch("scatter_py", &fScatterPY);
   _tree->Branch("scatter_pt", &fScatterPT);
+
+  _tree->Branch("true_pdg", &fTruePDG, "true_pdg/i");
+  _tree->Branch("true_p", &fTrueP, "true_pdg/F");
+  _tree->Branch("true_e", &fTrueE, "true_pdg/F");
 
   _tree->Branch("evt", &fEvt, "evt/i");
   _tree->Branch("no", &fNo, "no/i");
@@ -153,6 +163,10 @@ void sbn::DThetaKinkTree::Clear() {
   fScatterPY.clear();
   fScatterPT.clear();
 
+  fTruePDG = 0;
+  fTrueE = 0;
+  fTrueP = 0;
+
   fEvt = 0;
   fNo = 0;
 }
@@ -166,6 +180,11 @@ void sbn::DThetaKinkTree::FillTruth(const recob::PFParticle &particle, const sim
   (void) particle;
 
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+
+  // save simple stuff
+  fTruePDG = trueParticle.PdgCode();
+  fTrueE = trueParticle.Momentum().E();
+  fTrueP = trueParticle.Momentum().P();
 
   // save the particle trajectory
   for (unsigned i_traj = 0; i_traj < trueParticle.NumberTrajectoryPoints(); i_traj ++) {
@@ -214,6 +233,26 @@ void sbn::DThetaKinkTree::FillKinks(const recob::PFParticle &particle, const std
       fDThetaY.push_back(kink);
     }
   }
+
+  // sort the kinks by ascending generation and then hit order
+  std::sort(fDThetaU.begin(), fDThetaU.end(),
+     [](auto const &lhs, auto const &rhs) {
+       if (lhs.generation != rhs.generation) return lhs.generation < rhs.generation;
+       return lhs.hitOrder < rhs.hitOrder;
+  });
+
+  std::sort(fDThetaV.begin(), fDThetaV.end(),
+     [](auto const &lhs, auto const &rhs) {
+       if (lhs.generation != rhs.generation) return lhs.generation < rhs.generation;
+       return lhs.hitOrder < rhs.hitOrder;
+  });
+
+  std::sort(fDThetaY.begin(), fDThetaY.end(),
+     [](auto const &lhs, auto const &rhs) {
+       if (lhs.generation != rhs.generation) return lhs.generation < rhs.generation;
+       return lhs.hitOrder < rhs.hitOrder;
+  });
+
 }
 
 void sbn::DThetaKinkTree::analyze(art::Event const& evt)
@@ -280,6 +319,8 @@ void sbn::DThetaKinkTree::analyze(art::Event const& evt)
 
     // ignore cases with no match
     if (!matched_particle) continue;
+
+    if (fOnlyPrimary && matched_particle->Process() != "primary") continue;
 
     // fill stuff
     Clear();

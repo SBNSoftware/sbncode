@@ -9,12 +9,14 @@ namespace sbn {
       geo::WireID wire;
       float hit_time_cm;
       float hit_wire_cm;
+      float trunc_pca;
       float pca;
       float vec;
 
       bool complete;
       unsigned branch;
       unsigned generation;
+      unsigned hitOrder;
 
       int hitID;
       int hitIDLo;

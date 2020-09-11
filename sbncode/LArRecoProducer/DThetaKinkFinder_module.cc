@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "larcore/Geometry/Geometry.h"
@@ -59,6 +60,7 @@ private:
   art::InputTag fPFParticleLabel;
   bool fFollowDaughters;
   float fHitGroupDistance;
+  float fTruncateSigma;
   bool fSaveAllKinks;
   bool fOnlyPrimary;
 
@@ -66,11 +68,9 @@ private:
 };
 
 // static helper functions
-void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHits, std::array<const std::vector<art::Ptr<recob::Hit>>*, 3> &hits, const art::Ptr<recob::PFParticle> &pfp) {
-  for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-    for (const art::Ptr<recob::Hit> &h: *hits[i_plane]) {
-      pfpToHits[pfp.key()][i_plane].push_back(h.key());
-    }
+void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHits, const std::vector<art::Ptr<recob::Hit>> &hits, unsigned plane, const art::Ptr<recob::PFParticle> &pfp) {
+  for (const art::Ptr<recob::Hit> &h: hits) {
+    pfpToHits[pfp.key()][plane].push_back(h.key());
   }
 }
 
@@ -106,6 +106,41 @@ std::array<float, 2> HitVector(const recob::Hit &A, const recob::Hit &B, const g
 float HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
   std::array<float, 2> vec = HitVector(A, B, geo, dprop);
   return sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
+}
+
+std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
+                                                 const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
+                                                 const geo::GeometryCore *geo,
+                                                 const detinfo::DetectorProperties *dprop) {
+  std::vector<art::Ptr<recob::Hit>> retlo;
+  std::vector<art::Ptr<recob::Hit>> rethi;
+
+  // pull in smaller ones
+  for (int j = ihit-1; j >= 0; j--) {
+    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
+      break;
+    }
+    retlo.push_back(hits[j]);
+  }
+  // complete if the distance to the last hit is at least half the circle
+  bool lo_complete = false;
+  if (retlo.size()) {
+    lo_complete = HitDistance(*retlo.back(), *hits[ihit], geo, dprop) > distance/2.;
+  }
+
+  // pull in larger ones
+  for (unsigned j = ihit+1; j < hits.size(); j++) {
+    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
+      break;
+    }
+    rethi.push_back(hits[j]);
+  }
+  bool hi_complete = false;
+  if (rethi.size()) {
+    hi_complete = HitDistance(*rethi.back(), *hits[ihit], geo, dprop) > distance/2.;
+  }
+
+  return {retlo, rethi, lo_complete && hi_complete};
 }
 
 float HitVecAngle(const std::vector<art::Ptr<recob::Hit>> &hitslo, const std::vector<art::Ptr<recob::Hit>> &hitshi, const art::Ptr<recob::Hit> &center,
@@ -161,8 +196,7 @@ std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, co
   // std::array<float, 2> eigenVM {scatter[0][1], eigenM - scatter[0][0]};
 
   // make sure the sign is right
-  if ((sum[0] < 0. && ret[0] > 0.) ||
-      (sum[0] > 0. && ret[0] < 0.) ) {
+  if (sum[0] * ret[0] + sum[1] * ret[1] < 0.) {
     ret[0] = -ret[0];
     ret[1] = -ret[1];
   }
@@ -171,13 +205,99 @@ std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, co
 
 }
 
+std::array<float, 2> HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
+               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+
+  std::array<float, 2> sum {};
+  for (const art::Ptr<recob::Hit> &h: hits) {
+    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
+    sum[0] += vec[0];
+    sum[1] += vec[1];
+  }
+  sum[0] = sum[0] / hits.size();
+  sum[1] = sum[1] / hits.size();
+
+  std::array<std::array<float, 2>, 2> scatter {};
+  for (const art::Ptr<recob::Hit> &h: hits) {
+    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
+    vec[0] -= sum[0];
+    vec[1] -= sum[1];
+
+    scatter[0][0] += vec[0] * vec[0];
+    scatter[0][1] += vec[0] * vec[1];
+    scatter[1][0] += vec[1] * vec[0];
+    scatter[1][1] += vec[1] * vec[1];
+  }
+
+  // first get the eigenvalues of the matrix
+  float trace = scatter[0][0] + scatter[1][1];
+  float det = scatter[0][0] * scatter[1][1] - scatter[0][1] * scatter[1][0];
+
+  float eigenP = (1. / 2.) * (trace + sqrt(trace*trace - 4 * det));
+  float eigenM = (1. / 2.) * (trace - sqrt(trace*trace - 4 * det));
+
+  return {eigenP, eigenM};
+}
+
+std::vector<art::Ptr<recob::Hit>> TruncateHitsPCA(const std::vector<art::Ptr<recob::Hit>> &allHits, 
+                                        const std::vector<art::Ptr<recob::Hit>> &nearbyHits, const art::Ptr<recob::Hit> &center,
+                                        const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop, 
+                                        float hitDistance, float truncSigma) {
+
+  std::array<float, 2> cvec = HitVector(*center, geo, dprop);
+  std::cout << "Checking nearby hits to hit: " << center.key() << " at: " << cvec[0] << " " << cvec[1] << std::endl;
+
+  // get the initial PCA eigen-system
+  std::array<float, 2> PCA = HitPCAVec(nearbyHits, center, geo, dprop);
+  std::array<float, 2> MCA = {PCA[1], -PCA[0]}; // orthogonal to PCA
+  std::array<float, 2> eigen = HitPCAEigen(nearbyHits, center, geo, dprop);
+  float eigenHi = eigen[0];
+  float eigenLo = eigen[1];
+
+  std::vector<art::Ptr<recob::Hit>> prunedNearbyHits;
+
+  std::cout << "PCA: " << PCA[0] << " " << PCA[1] << std::endl;
+  std::cout << "MCA: " << MCA[0] << " " << MCA[1] << std::endl;
+  std::cout << "Eigen: " << eigenHi << " " << eigenLo << " " << (eigenLo/eigenHi) << std::endl;
+
+  // now prune the hits if they are too anomalous
+  for (unsigned i_hit = 0; i_hit < nearbyHits.size(); i_hit++) {
+    std::array<float, 2> cvec = HitVector(*nearbyHits[i_hit], geo, dprop);
+    std::cout << "Nearby hit: " << nearbyHits[i_hit].key() << " at: " << cvec[0] << " " << cvec[1] << std::endl;
+
+    auto [hitslo, hitshi, complete] = GetNearestHits(allHits, i_hit, hitDistance, geo, dprop);
+    // get the mean component along the PCA and MCA
+    float mca_comp = 0.;
+    float pca_comp = 0.;
+    for (art::Ptr<recob::Hit> hit: hitslo) {
+      std::array<float, 2> thisVec = HitVector(*hit, *nearbyHits[i_hit], geo, dprop);
+      pca_comp += (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]) * (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]);
+      mca_comp += (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]) * (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]);
+    }
+    for (art::Ptr<recob::Hit> hit: hitshi) {
+      std::array<float, 2> thisVec = HitVector(*hit, *nearbyHits[i_hit], geo, dprop);
+      pca_comp += (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]) * (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]);
+      mca_comp += (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]) * (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]);
+    }
+
+    std::cout << "Ratio: " << pca_comp << " " << mca_comp << " " << (mca_comp / pca_comp) << std::endl; 
+
+    // anomalous hits
+    if (pca_comp < 1.e-4) continue;
+    if (truncSigma * eigenLo / eigenHi < mca_comp / pca_comp) continue;
+
+    prunedNearbyHits.push_back(nearbyHits[i_hit]);
+  } 
+
+  return prunedNearbyHits;
+}
+
 float HitPCAAngle(const std::vector<art::Ptr<recob::Hit>> &hitslo, const std::vector<art::Ptr<recob::Hit>> &hitshi, const art::Ptr<recob::Hit> &center,
                const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
   if (hitslo.size() <= 1 || hitshi.size() <= 1) return -100.;
 
   // get the PCA up the "lo" and "hi" hits
   std::array<float, 2> loPCA = HitPCAVec(hitslo, center, geo, dprop);
-  // invert the lo-sign
   std::array<float, 2> hiPCA = HitPCAVec(hitshi, center, geo, dprop);
 
   // and then the angle between them
@@ -185,37 +305,20 @@ float HitPCAAngle(const std::vector<art::Ptr<recob::Hit>> &hitslo, const std::ve
 
 }
         
-std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
-                                                 const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
-                                                 const geo::GeometryCore *geo,
-                                                 const detinfo::DetectorProperties *dprop) {
-  std::vector<art::Ptr<recob::Hit>> retlo;
-  std::vector<art::Ptr<recob::Hit>> rethi;
 
-  bool lo_complete = false;
-  // pull in smaller ones
-  for (int j = ihit-1; j >= 0; j--) {
-    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
-      lo_complete = true;
-      break;
-    }
-    retlo.push_back(hits[j]);
-  }
+float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
+  float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
 
-  bool hi_complete = false;
-  // pull in larger ones
-  for (unsigned j = ihit+1; j < hits.size(); j++) {
-    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
-      hi_complete = true;
-      break;
-    }
-    rethi.push_back(hits[j]);
-  }
+  float vert_time_coord = vert.position().X();
+  float hit_time_coord = dprop->ConvertTicksToX(hit.PeakTime(), hit.WireID());
 
-  return {retlo, rethi, lo_complete && hi_complete};
+  return sqrt((vert_wire_coord - hit_wire_coord) * (vert_wire_coord - hit_wire_coord) +
+    (vert_time_coord - hit_time_coord) * (vert_time_coord - hit_time_coord));
 }
 
 std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::vector<art::Ptr<recob::Hit>>, 3> &hits, 
+                                                          const recob::Vertex &start,
                                                           const geo::GeometryCore *geo, 
                                                           const detinfo::DetectorProperties *dprop) {
   // convert data to linked-list
@@ -228,14 +331,22 @@ std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::
   std::array<std::vector<art::Ptr<recob::Hit>>, 3> ret {};
   for (unsigned i = 0; i < 3; i++) {
     if (planar[i].size()) {
-      ret[i].push_back(planar[i].front());
-      planar[i].pop_front();
+
+      // find the zeroth hit
+      std::list<art::Ptr<recob::Hit>>::iterator firstHit = std::min_element(planar[i].begin(), planar[i].end(),
+          [start, geo, dprop](auto const &lhs, auto const &rhs) {
+            return Vert2HitDistance(*lhs, start, geo, dprop) < Vert2HitDistance(*rhs, start, geo, dprop);
+      });
+      ret[i].push_back(*firstHit);
+      planar[i].erase(firstHit);
+
       while (planar[i].size()) {
         const recob::Hit &lastHit = *ret[i].back();
         std::list<art::Ptr<recob::Hit>>::iterator closest = std::min_element(planar[i].begin(), planar[i].end(),
           [lastHit, geo, dprop](auto const &lhs, auto const &rhs) { 
             return HitDistance(*lhs, lastHit, geo, dprop) < HitDistance(*rhs, lastHit, geo, dprop);
           });
+
         ret[i].push_back(*closest);
         planar[i].erase(closest);
       }
@@ -292,6 +403,7 @@ sbn::DThetaKinkFinder::DThetaKinkFinder(fhicl::ParameterSet const& p)
     fPFParticleLabel(p.get<std::string>("PFParticleLabel", "pandora")),
     fFollowDaughters(p.get<bool>("FollowDaughters", true)),
     fHitGroupDistance(p.get<float>("HitGroupDistance")),
+    fTruncateSigma(p.get<float>("TruncateSigma")),
     fSaveAllKinks(p.get<bool>("fSaveAllKinks", true)),
     fOnlyPrimary(p.get<bool>("OnlyPrimary", true))
 {
@@ -326,49 +438,53 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
   }
 
   art::FindManyP<recob::Cluster> pfparticleClusters(pfparticles, evt, fPFParticleLabel);
-  // art::FindManyP<recob::Vertex> pfparticleVertices(pfparticles, evt, fPFParticleLabel);
+  art::FindManyP<recob::Vertex> pfparticleVertices(pfparticles, evt, fPFParticleLabel);
 
   // iterate over each particle
   for (unsigned i_part = 0; i_part < pfparticles.size(); i_part++) {
     std::cout << "New particle! " << i_part << std::endl;
     art::Ptr<recob::PFParticle> thisPFP = pfparticles[i_part];
 
+    std::cout << "Child of: " << thisPFP->Parent() << std::endl;
+
     // ignore non-primary or child of primary
     if (fOnlyPrimary &&
         thisPFP->Parent() != recob::PFParticle::kPFParticlePrimary &&
         id_to_pfp.at(thisPFP->Parent())->Parent() != recob::PFParticle::kPFParticlePrimary) {
-      std::cout << "Child of: " << thisPFP->Parent() << std::endl;
       continue;
     }
 
+    // keep track of the map between this PFParticle and all the hits
+    std::map<unsigned, std::array<std::vector<unsigned>, 3>> pfpToHits;
+    std::map<unsigned, std::array<std::vector<art::Ptr<recob::Hit>>,3>> allHits;
+      
     const std::vector<art::Ptr<recob::Cluster>> &thisCluster = pfparticleClusters.at(i_part);
     art::FindManyP<recob::Hit> clusterHits(thisCluster, evt, fPFParticleLabel);
 
     // ignore PFP's w/out hits
-    if (thisCluster.size() != 3) {
+    if (!thisCluster.size()) {
       std::cout << "No clusters :/\n";
       continue;
     }
 
-    // get the hits by-plane
-    std::array<const std::vector<art::Ptr<recob::Hit>>*, 3> thisHits {&clusterHits.at(0), &clusterHits.at(1), &clusterHits.at(2)};
+    const std::vector<art::Ptr<recob::Vertex>> &pfpVerts = pfparticleVertices.at(i_part);
 
-    if (!thisHits[0]->size() && !thisHits[1]->size() && !thisHits[2]->size()) {
-      std::cout << "No hits :/\n";
+    // ignore PFP's w/out vertex
+    if (!pfpVerts.size()) {
+      std::cout << "No vertex :/\n";
       continue;
     }
 
+    // grab the vertex
+    const recob::Vertex &pfpVert = *pfpVerts.at(0);
+
     std::cout << "Valid!\n";
 
-    // keep track of the map between this PFParticle and all the hits
-    std::map<unsigned, std::array<std::vector<unsigned>, 3>> pfpToHits;
-
-    std::map<unsigned, std::array<std::vector<art::Ptr<recob::Hit>>,3>> allHits;
-    // save the hits we have so far
-    SaveHits(pfpToHits, thisHits, thisPFP);
-    allHits[thisPFP->Self()][0] = *thisHits[0];
-    allHits[thisPFP->Self()][1] = *thisHits[1];
-    allHits[thisPFP->Self()][2] = *thisHits[2];
+    for (unsigned i_clus = 0; i_clus < thisCluster.size(); i_clus++) {
+      allHits[thisPFP->Self()][thisCluster[i_clus]->Plane().Plane].insert(allHits[thisPFP->Self()][thisCluster[i_clus]->Plane().Plane].begin(),
+          clusterHits.at(i_clus).begin(), clusterHits.at(i_clus).end());
+      SaveHits(pfpToHits, clusterHits.at(i_clus), thisCluster[i_clus]->Plane().Plane, thisPFP);
+    }
 
     // also get the hits from each daughter PFP (and so on) if configured
     if (fFollowDaughters) {
@@ -383,7 +499,7 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
         daughter_stack_info dsi {d, thisPFP->Self()};
         d_pfps.push(dsi);
       }
-
+        
       // DFS
       while (!d_pfps.empty()) {
         daughter_stack_info daughter_info = d_pfps.top();
@@ -397,6 +513,13 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
         // determine whether to branch
         if (DoBranch(d_pfp, id_to_pfp)) {
           // branching -- make a new entry in the allHits-map with this particle
+          //
+          // First clone the hits we already have
+          allHits[d_pfp->Self()][0] = allHits[hit_key][0];
+          allHits[d_pfp->Self()][1] = allHits[hit_key][1];
+          allHits[d_pfp->Self()][2] = allHits[hit_key][2];
+
+          // and re-direct this hits to the new location
           hit_key = d_pfp->Self();
         }
 
@@ -410,17 +533,14 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
         const std::vector<art::Ptr<recob::Cluster>> &d_cluster = pfparticleClusters.at(d_pfp.key());
 
         // ignore PFP's w/out hits
-        if (d_cluster.size() != 3) continue;
+        if (!d_cluster.size()) continue;
 
         art::FindManyP<recob::Hit> d_cluster_hits(d_cluster, evt, fPFParticleLabel);
-        std::array<const std::vector<art::Ptr<recob::Hit>>*, 3> d_hits {&d_cluster_hits.at(0), &d_cluster_hits.at(1), &d_cluster_hits.at(2)};
-
-        if (!d_hits[0]->size() && !d_hits[1]->size() && !d_hits[2]->size()) continue;
-        
-        SaveHits(pfpToHits, d_hits, d_pfp);
-        allHits[hit_key][0].insert(allHits[hit_key][0].end(), d_hits[0]->begin(), d_hits[0]->end());
-        allHits[hit_key][1].insert(allHits[hit_key][1].end(), d_hits[1]->begin(), d_hits[1]->end());
-        allHits[hit_key][2].insert(allHits[hit_key][2].end(), d_hits[2]->begin(), d_hits[2]->end());
+        for (unsigned i_clus = 0; i_clus < d_cluster.size(); i_clus++) {
+          allHits[hit_key][d_cluster[i_clus]->Plane().Plane].insert(allHits[hit_key][d_cluster[i_clus]->Plane().Plane].begin(),
+            d_cluster_hits.at(i_clus).begin(), d_cluster_hits.at(i_clus).end());
+          SaveHits(pfpToHits, d_cluster_hits.at(i_clus), d_cluster[i_clus]->Plane().Plane, d_pfp);
+        }
       }
     }
 
@@ -431,13 +551,12 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
     // iterate through each branch
     for (auto const &pair: allHits) {
       unsigned branch_id = pair.first;
-      std::cout << "Processing branch: " << branch_id << std::endl;
       const std::array<std::vector<art::Ptr<recob::Hit>>, 3> &branchHits = pair.second;
 
       // Now, for each hit, we'll consider the PCA angle and the vec angle
       //
       // First, order this hits
-      std::array<std::vector<art::Ptr<recob::Hit>>, 3> sortedHits = SortHits(branchHits, geo, dprop);
+      std::array<std::vector<art::Ptr<recob::Hit>>, 3> sortedHits = SortHits(branchHits, pfpVert, geo, dprop);
 
       // iterate through all the Hits
       for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
@@ -449,16 +568,23 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
           float pca_angle = HitPCAAngle(hitslo, hitshi, sortedHits[i_plane][i_hit], geo, dprop);
           float vec_angle = HitVecAngle(hitslo, hitshi, sortedHits[i_plane][i_hit], geo, dprop);
 
+          // also try the PCA after truncating stuff
+          std::vector<art::Ptr<recob::Hit>> trunc_lo = TruncateHitsPCA(sortedHits[i_plane], hitslo, sortedHits[i_plane][i_hit], geo, dprop, fHitGroupDistance/2., fTruncateSigma);
+          std::vector<art::Ptr<recob::Hit>> trunc_hi = TruncateHitsPCA(sortedHits[i_plane], hitshi, sortedHits[i_plane][i_hit], geo, dprop, fHitGroupDistance/2., fTruncateSigma);
+          float truncated_pca_angle = HitPCAAngle(trunc_lo, trunc_hi, sortedHits[i_plane][i_hit], geo, dprop);
+
           // and save
           sbn::DThetaKink thisKink;
           thisKink.wire = sortedHits[i_plane][i_hit]->WireID();
           thisKink.pca = pca_angle;
+          thisKink.trunc_pca = truncated_pca_angle;
           thisKink.vec = vec_angle;
           std::array<float, 2> hv = HitVector(*sortedHits[i_plane][i_hit], geo, dprop);
           thisKink.hit_wire_cm = hv[0];
           thisKink.hit_time_cm = hv[1];
           thisKink.complete = complete;
           thisKink.hitID = sortedHits[i_plane][i_hit].key();
+          thisKink.hitOrder = i_hit;
 
           if (hitshi.size()) thisKink.hitIDHi = hitshi.back().key();
           else thisKink.hitIDHi = -1;
@@ -482,9 +608,7 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
 
     // select the kinks
     for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-      std::cout << "N kinks: " << planeKinks[i_plane].size() << " on plane: " << i_plane << std::endl;
       std::vector<sbn::DThetaKink> selected = SelectKinks(planeKinks[i_plane]);
-      std::cout << "N selected kinks: " << selected.size() << " on plane: " << i_plane << std::endl;
       for (const sbn::DThetaKink &k: selected) {
         outKinks->push_back(k);
         art::Ptr<sbn::DThetaKink> thisKinkPtr = kinkPtrMaker(outKinks->size()-1);

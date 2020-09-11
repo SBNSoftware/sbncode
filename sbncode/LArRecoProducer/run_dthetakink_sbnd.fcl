@@ -74,5 +74,7 @@ physics:
   end_paths:     [ stream1 ]
 }
 
-physics.producers.pandoraDThetaKink.HitGroupDistance: 3
+physics.producers.pandoraDThetaKink.TruncateSigma: 3
+physics.producers.pandoraDThetaKink.HitGroupDistance: 4.5
+physics.producers.pandoraDThetaKink.OnlyPrimary: false
 physics.producers.pandoraDThetaKink.FollowDaughters: true
