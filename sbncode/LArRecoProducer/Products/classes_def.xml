@@ -1,11 +1,22 @@
 <lcgdict>
-  <class name="sbn::DThetaKink" />
-  <class name="std::vector<sbn::DThetaKink>" />
-  <class name="art::Wrapper<sbn::DThetaKink>" />
-  <class name="art::Wrapper<std::vector<sbn::DThetaKink>>" />
+  <class name="sbn::PCAngle" />
+  <class name="std::vector<sbn::PCAngle>" />
 
-  <class name="art::Assns<sbn::DThetaKink, recob::PFParticle, void>" />
-  <class name="art::Wrapper<art::Assns<sbn::DThetaKink, recob::PFParticle, void>>" />
+  <class name="sbn::PCAnglePlane" />
+  <class name="std::vector<sbn::PCAnglePlane>" />
+  <class name="art::Wrapper<sbn::PCAnglePlane>" />
+  <class name="art::Wrapper<std::vector<sbn::PCAnglePlane>>" />
+
+  <class name="art::Assns<sbn::PCAnglePlane, recob::PFParticle, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::PCAnglePlane, recob::PFParticle, void>>" />
+
+  <class name="sbn::PCAngleKink" />
+  <class name="std::vector<sbn::PCAngleKink>" />
+  <class name="art::Wrapper<sbn::PCAngleKink>" />
+  <class name="art::Wrapper<std::vector<sbn::PCAngleKink>>" />
+
+  <class name="art::Assns<sbn::PCAngleKink, recob::PFParticle, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::PCAngleKink, recob::PFParticle, void>>" />
 
   <class name="sbn::RangeP" />
   <class name="std::vector<sbn::RangeP>" />

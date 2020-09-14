@@ -1,9 +1,0 @@
-BEGIN_PROLOG
-dthetakink_sbnd: {
-  module_type: DThetaKinkFinder
-  PFParticleLabel: pandora
-  FollowDaughters: false
-  HitGroupDistance: 6 # cm / 20 wires
-  SaveAllKinks: true
-}
-END_PROLOG

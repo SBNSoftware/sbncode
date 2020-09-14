@@ -8,9 +8,9 @@
 #include "mccheatermodules.fcl"
 #include "simulationservices_sbnd.fcl"
 
-#include "dthetakink_producer.fcl"
+#include "pcangle_producer.fcl"
 
-process_name: DThetaKink
+process_name: PCAngle
 
 services:
 {
@@ -56,25 +56,27 @@ outputs:
 physics:
 {
   producers:{
-    pandoraDThetaKink: @local::dthetakink_sbnd
+    pandoraPCAngle: @local::pcangle_sbnd
+    pandoraPCAngleKink: @local::pcanglekink_sbnd
   }
 
   analyzers:
   {
     kinkana: {
-      module_type: DThetaKinkTree
+      module_type: PCAngleKinkTree
       ParticleTags: ["pandora"]
-      KinkTags: ["pandoraDThetaKink"]
+      AngleTags: ["pandoraPCAngle"]
+      KinkTags: ["pandoraPCAngleKink"]
     }
   }
 
-  runprod: [pandoraDThetaKink, kinkana]
+  runprod: [pandoraPCAngle, pandoraPCAngleKink, kinkana]
   stream1:       [ ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 }
 
-physics.producers.pandoraDThetaKink.TruncateSigma: 3
-physics.producers.pandoraDThetaKink.HitGroupDistance: 4.5
-physics.producers.pandoraDThetaKink.OnlyPrimary: false
-physics.producers.pandoraDThetaKink.FollowDaughters: true
+physics.producers.pandoraPCAngle.HitGroupDistance: 4.5 # [cm] == 15 wires
+physics.producers.pandoraPCAngle.OnlyPrimary: false
+physics.producers.pandoraPCAngle.FollowDaughters: true
+physics.producers.pandoraPCAngleKink.AngleLabel: pandoraPCAngle

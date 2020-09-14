@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       DThetaKinkFinder
+// Class:       PCAnglePlaneMakerFinder
 // Plugin Type: producer (art v3_02_06)
-// File:        DThetaKinkFinder_module.cc
+// File:        PCAnglePlaneMaker_module.cc
 //
 // Generated at Wed Feb 19 17:38:21 2020 by Gray Putnam using cetskelgen
 // from cetlib version v3_07_02.
@@ -32,24 +32,32 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 
-#include "Products/DThetaKink.h"
+#include "Products/PCAnglePlane.h"
 
 namespace sbn {
-  class DThetaKinkFinder;
+  class PCAnglePlaneMaker;
+
+  // struct for organizing each angle info
+  struct PCAngleInfo {
+    sbn::PCAngle angle;
+    unsigned generation;
+    unsigned branch;
+    unsigned hit_ind;
+  };
 }
 
 
-class sbn::DThetaKinkFinder : public art::EDProducer {
+class sbn::PCAnglePlaneMaker : public art::EDProducer {
 public:
-  explicit DThetaKinkFinder(fhicl::ParameterSet const& p);
+  explicit PCAnglePlaneMaker(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  DThetaKinkFinder(DThetaKinkFinder const&) = delete;
-  DThetaKinkFinder(DThetaKinkFinder&&) = delete;
-  DThetaKinkFinder& operator=(DThetaKinkFinder const&) = delete;
-  DThetaKinkFinder& operator=(DThetaKinkFinder&&) = delete;
+  PCAnglePlaneMaker(PCAnglePlaneMaker const&) = delete;
+  PCAnglePlaneMaker(PCAnglePlaneMaker&&) = delete;
+  PCAnglePlaneMaker& operator=(PCAnglePlaneMaker const&) = delete;
+  PCAnglePlaneMaker& operator=(PCAnglePlaneMaker&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -60,12 +68,10 @@ private:
   art::InputTag fPFParticleLabel;
   bool fFollowDaughters;
   float fHitGroupDistance;
-  float fTruncateSigma;
-  bool fSaveAllKinks;
   bool fOnlyPrimary;
 
-
 };
+
 
 // static helper functions
 void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHits, const std::vector<art::Ptr<recob::Hit>> &hits, unsigned plane, const art::Ptr<recob::PFParticle> &pfp) {
@@ -115,52 +121,33 @@ std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>,
   std::vector<art::Ptr<recob::Hit>> retlo;
   std::vector<art::Ptr<recob::Hit>> rethi;
 
+  bool lo_complete = false;
   // pull in smaller ones
   for (int j = ihit-1; j >= 0; j--) {
     if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
+      lo_complete = true;
       break;
     }
     retlo.push_back(hits[j]);
   }
-  // complete if the distance to the last hit is at least half the circle
-  bool lo_complete = false;
-  if (retlo.size()) {
-    lo_complete = HitDistance(*retlo.back(), *hits[ihit], geo, dprop) > distance/2.;
-  }
 
+  bool hi_complete = false;
   // pull in larger ones
   for (unsigned j = ihit+1; j < hits.size(); j++) {
     if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
+      hi_complete = true;
       break;
     }
     rethi.push_back(hits[j]);
-  }
-  bool hi_complete = false;
-  if (rethi.size()) {
-    hi_complete = HitDistance(*rethi.back(), *hits[ihit], geo, dprop) > distance/2.;
   }
 
   return {retlo, rethi, lo_complete && hi_complete};
 }
 
-float HitVecAngle(const std::vector<art::Ptr<recob::Hit>> &hitslo, const std::vector<art::Ptr<recob::Hit>> &hitshi, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-  if (hitslo.size() == 0 || hitshi.size() == 0) return -100.;
-
-  // get the furthest hit in both directions
-  const art::Ptr<recob::Hit> &hlo = hitslo.back();  
-  const art::Ptr<recob::Hit> &hhi = hitshi.back();  
-
-  // get the vec to each
-  std::array<float, 2> veclo = HitVector(*hlo, *center, geo, dprop);
-  std::array<float, 2> vechi = HitVector(*hhi, *center, geo, dprop);
-
-  return VecAngle(veclo, vechi);
-
-}
-
 std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
                const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+
+  if (hits.size() < 2) return {-100., -100.};
 
   std::array<float, 2> sum {};
   for (const art::Ptr<recob::Hit> &h: hits) {
@@ -239,73 +226,6 @@ std::array<float, 2> HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, 
   return {eigenP, eigenM};
 }
 
-std::vector<art::Ptr<recob::Hit>> TruncateHitsPCA(const std::vector<art::Ptr<recob::Hit>> &allHits, 
-                                        const std::vector<art::Ptr<recob::Hit>> &nearbyHits, const art::Ptr<recob::Hit> &center,
-                                        const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop, 
-                                        float hitDistance, float truncSigma) {
-
-  std::array<float, 2> cvec = HitVector(*center, geo, dprop);
-  std::cout << "Checking nearby hits to hit: " << center.key() << " at: " << cvec[0] << " " << cvec[1] << std::endl;
-
-  // get the initial PCA eigen-system
-  std::array<float, 2> PCA = HitPCAVec(nearbyHits, center, geo, dprop);
-  std::array<float, 2> MCA = {PCA[1], -PCA[0]}; // orthogonal to PCA
-  std::array<float, 2> eigen = HitPCAEigen(nearbyHits, center, geo, dprop);
-  float eigenHi = eigen[0];
-  float eigenLo = eigen[1];
-
-  std::vector<art::Ptr<recob::Hit>> prunedNearbyHits;
-
-  std::cout << "PCA: " << PCA[0] << " " << PCA[1] << std::endl;
-  std::cout << "MCA: " << MCA[0] << " " << MCA[1] << std::endl;
-  std::cout << "Eigen: " << eigenHi << " " << eigenLo << " " << (eigenLo/eigenHi) << std::endl;
-
-  // now prune the hits if they are too anomalous
-  for (unsigned i_hit = 0; i_hit < nearbyHits.size(); i_hit++) {
-    std::array<float, 2> cvec = HitVector(*nearbyHits[i_hit], geo, dprop);
-    std::cout << "Nearby hit: " << nearbyHits[i_hit].key() << " at: " << cvec[0] << " " << cvec[1] << std::endl;
-
-    auto [hitslo, hitshi, complete] = GetNearestHits(allHits, i_hit, hitDistance, geo, dprop);
-    // get the mean component along the PCA and MCA
-    float mca_comp = 0.;
-    float pca_comp = 0.;
-    for (art::Ptr<recob::Hit> hit: hitslo) {
-      std::array<float, 2> thisVec = HitVector(*hit, *nearbyHits[i_hit], geo, dprop);
-      pca_comp += (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]) * (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]);
-      mca_comp += (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]) * (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]);
-    }
-    for (art::Ptr<recob::Hit> hit: hitshi) {
-      std::array<float, 2> thisVec = HitVector(*hit, *nearbyHits[i_hit], geo, dprop);
-      pca_comp += (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]) * (thisVec[0] * PCA[0] + thisVec[1] * PCA[1]);
-      mca_comp += (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]) * (thisVec[0] * MCA[0] + thisVec[1] * MCA[1]);
-    }
-
-    std::cout << "Ratio: " << pca_comp << " " << mca_comp << " " << (mca_comp / pca_comp) << std::endl; 
-
-    // anomalous hits
-    if (pca_comp < 1.e-4) continue;
-    if (truncSigma * eigenLo / eigenHi < mca_comp / pca_comp) continue;
-
-    prunedNearbyHits.push_back(nearbyHits[i_hit]);
-  } 
-
-  return prunedNearbyHits;
-}
-
-float HitPCAAngle(const std::vector<art::Ptr<recob::Hit>> &hitslo, const std::vector<art::Ptr<recob::Hit>> &hitshi, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-  if (hitslo.size() <= 1 || hitshi.size() <= 1) return -100.;
-
-  // get the PCA up the "lo" and "hi" hits
-  std::array<float, 2> loPCA = HitPCAVec(hitslo, center, geo, dprop);
-  std::array<float, 2> hiPCA = HitPCAVec(hitshi, center, geo, dprop);
-
-  // and then the angle between them
-  return VecAngle(loPCA, hiPCA);
-
-}
-        
-
 float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
   float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
   float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
@@ -367,57 +287,67 @@ bool DoBranch(art::Ptr<recob::PFParticle> particle, const std::map<unsigned, art
   return true;
 }
 
-// remove duplicates induced by degenerate-branching
-std::vector<sbn::DThetaKink> SelectKinks(std::vector<sbn::DThetaKink> &kinks) {
+// remove duplicates induced by degenerate-branching and organize by branch ID
+std::map<unsigned, std::vector<sbn::PCAngleInfo>> RemoveDupes(std::vector<sbn::PCAngleInfo> &angles) {
   // We will eliminate duplicates by converting to a set and then back to a vector
   //
   // Define a struct to implement the comparator
-  struct kink_compare {
-    bool operator() (const sbn::DThetaKink &lhs, const sbn::DThetaKink &rhs) const {
+  struct angle_compare {
+    bool operator() (const sbn::PCAngleInfo &lhs, const sbn::PCAngleInfo &rhs) const {
       // unique ID is hitID, hitIDLo, hitIDHi
-      if (lhs.hitID != rhs.hitID) return lhs.hitID < rhs.hitID;
-      if (lhs.hitIDLo != rhs.hitIDLo) return lhs.hitIDLo < rhs.hitIDLo;
-      if (lhs.hitIDHi != rhs.hitIDHi) return lhs.hitIDHi < rhs.hitIDHi;
+      if (lhs.angle.hitID != rhs.angle.hitID) return lhs.angle.hitID < rhs.angle.hitID;
+      if (lhs.angle.hitIDLo != rhs.angle.hitIDLo) return lhs.angle.hitIDLo < rhs.angle.hitIDLo;
+      if (lhs.angle.hitIDHi != rhs.angle.hitIDHi) return lhs.angle.hitIDHi < rhs.angle.hitIDHi;
       // equal
       return false;
     }
   };
 
-  // Given the choice, we want to keep kinks with a smaller generation. 
+  // Given the choice, we want to keep angles with a smaller generation. 
   //
   // So first sort the input by generation (lo -> hi). So smaller generations
   // get inserted into the set first
-  std::sort(kinks.begin(), kinks.end(),
+  std::sort(angles.begin(), angles.end(),
      [](auto const &lhs, auto const &rhs) {return lhs.generation < rhs.generation;});
 
   // make the set to unique-ify the input
-  std::set<sbn::DThetaKink, kink_compare> unique(kinks.begin(), kinks.end());
+  std::set<sbn::PCAngleInfo, angle_compare> unique(angles.begin(), angles.end());
 
-  std::vector<sbn::DThetaKink> ret(unique.begin(), unique.end());
+  // organize into output
+  std::map<unsigned, std::vector<sbn::PCAngleInfo>> ret;
+  for (const sbn::PCAngleInfo &angle: unique) {
+    ret[angle.branch].push_back(angle);
+  }
+
+  // sort each ret by the hit order
+  for (auto &pair: ret) {
+    std::sort(pair.second.begin(), pair.second.end(),
+      [](auto const &lhs, auto const &rhs) {
+        return lhs.hit_ind < rhs.hit_ind;
+   });
+  }
 
   return ret;
 }
 
-sbn::DThetaKinkFinder::DThetaKinkFinder(fhicl::ParameterSet const& p)
+sbn::PCAnglePlaneMaker::PCAnglePlaneMaker(fhicl::ParameterSet const& p)
   : EDProducer{p},
     fPFParticleLabel(p.get<std::string>("PFParticleLabel", "pandora")),
     fFollowDaughters(p.get<bool>("FollowDaughters", true)),
     fHitGroupDistance(p.get<float>("HitGroupDistance")),
-    fTruncateSigma(p.get<float>("TruncateSigma")),
-    fSaveAllKinks(p.get<bool>("fSaveAllKinks", true)),
     fOnlyPrimary(p.get<bool>("OnlyPrimary", true))
 {
-  produces<std::vector<sbn::DThetaKink>>();
-  produces<art::Assns<recob::PFParticle, sbn::DThetaKink>>();
+  produces<std::vector<sbn::PCAnglePlane>>();
+  produces<art::Assns<recob::PFParticle, sbn::PCAnglePlane>>();
 }
 
-void sbn::DThetaKinkFinder::produce(art::Event& evt)
+void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
 {
   // output stuff
-  std::unique_ptr<std::vector<sbn::DThetaKink>> outKinks(new std::vector<sbn::DThetaKink>);
-  std::unique_ptr<art::Assns<recob::PFParticle, sbn::DThetaKink>> assn(new art::Assns<recob::PFParticle, sbn::DThetaKink>);
+  std::unique_ptr<std::vector<sbn::PCAnglePlane>> outAngles(new std::vector<sbn::PCAnglePlane>);
+  std::unique_ptr<art::Assns<recob::PFParticle, sbn::PCAnglePlane>> assn(new art::Assns<recob::PFParticle, sbn::PCAnglePlane>);
 
-  art::PtrMaker<sbn::DThetaKink> kinkPtrMaker {evt};
+  art::PtrMaker<sbn::PCAnglePlane> anglePtrMaker {evt};
 
   // collect services
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
@@ -545,7 +475,7 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
     }
 
 
-    std::array<std::vector<sbn::DThetaKink>, 3> planeKinks;
+    std::array<std::vector<sbn::PCAngleInfo>, 3> planeAngles;
     // Now we have all the hits we need!
     //
     // iterate through each branch
@@ -564,63 +494,103 @@ void sbn::DThetaKinkFinder::produce(art::Event& evt)
           // get nearby hits
           auto [hitslo, hitshi, complete] = GetNearestHits(sortedHits[i_plane], i_hit, fHitGroupDistance, geo, dprop);
 
-          // Calculate the two angles
-          float pca_angle = HitPCAAngle(hitslo, hitshi, sortedHits[i_plane][i_hit], geo, dprop);
-          float vec_angle = HitVecAngle(hitslo, hitshi, sortedHits[i_plane][i_hit], geo, dprop);
+          //std::cout << "Plane: " << i_plane << " Branch: " << branch_id << " hit: " << i_hit << " " << sortedHits[i_plane][i_hit].key();
+          //if (hitslo.size()) std::cout << " lo: " << hitslo.back().key();
+          //else std::cout << " lo: none";
+          //if (hitshi.size()) std::cout << " hi: " << hitshi.back().key();
+          //else std::cout << " hi: none";
+          //std::cout << std::endl;
 
-          // also try the PCA after truncating stuff
-          std::vector<art::Ptr<recob::Hit>> trunc_lo = TruncateHitsPCA(sortedHits[i_plane], hitslo, sortedHits[i_plane][i_hit], geo, dprop, fHitGroupDistance/2., fTruncateSigma);
-          std::vector<art::Ptr<recob::Hit>> trunc_hi = TruncateHitsPCA(sortedHits[i_plane], hitshi, sortedHits[i_plane][i_hit], geo, dprop, fHitGroupDistance/2., fTruncateSigma);
-          float truncated_pca_angle = HitPCAAngle(trunc_lo, trunc_hi, sortedHits[i_plane][i_hit], geo, dprop);
+          // invalid -- continue
+          // if (hithi.size() < 2 || hitslo.size() < 2) continue;
+
+          // Get the PCA dirs
+          std::array<float, 2> pca_vec_lo = HitPCAVec(hitslo, sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> pca_vec_hi = HitPCAVec(hitshi, sortedHits[i_plane][i_hit], geo, dprop);
+          float angle = -100.;
+          // check if valid vecs
+          if (pca_vec_lo[0] > -99. && pca_vec_lo[1] > -99. && pca_vec_hi[0] > -99. && pca_vec_hi[1] > -99.) {
+            // get angle between the two vecs and flip
+            angle = M_PI - VecAngle(pca_vec_lo, pca_vec_hi);
+          }
+
+          std::array<float, 2> hv = HitVector(*sortedHits[i_plane][i_hit], geo, dprop);
 
           // and save
-          sbn::DThetaKink thisKink;
-          thisKink.wire = sortedHits[i_plane][i_hit]->WireID();
-          thisKink.pca = pca_angle;
-          thisKink.trunc_pca = truncated_pca_angle;
-          thisKink.vec = vec_angle;
-          std::array<float, 2> hv = HitVector(*sortedHits[i_plane][i_hit], geo, dprop);
-          thisKink.hit_wire_cm = hv[0];
-          thisKink.hit_time_cm = hv[1];
-          thisKink.complete = complete;
-          thisKink.hitID = sortedHits[i_plane][i_hit].key();
-          thisKink.hitOrder = i_hit;
+          sbn::PCAngleInfo thisAngle;
+          thisAngle.angle.wire = sortedHits[i_plane][i_hit]->WireID();
+          thisAngle.angle.angle = angle;
+          thisAngle.angle.lo_vector = pca_vec_lo;
+          thisAngle.angle.hi_vector = pca_vec_hi;
+          thisAngle.angle.hit_wire_cm = hv[0];
+          thisAngle.angle.hit_time_cm = hv[1];
+          thisAngle.angle.complete = complete;
+          thisAngle.angle.hitID = sortedHits[i_plane][i_hit].key();
 
-          if (hitshi.size()) thisKink.hitIDHi = hitshi.back().key();
-          else thisKink.hitIDHi = -1;
-          if (hitslo.size()) thisKink.hitIDLo = hitslo.back().key();
-          else thisKink.hitIDHi = -1;
+          if (hitshi.size()) thisAngle.angle.dist_to_hi = HitDistance(*hitshi.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
+          else thisAngle.angle.dist_to_hi = -100.;
+          if (hitslo.size()) thisAngle.angle.dist_to_lo = HitDistance(*hitslo.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
+          else thisAngle.angle.dist_to_lo = -100.;
 
-          thisKink.branch = branch_id;
+          if (hitshi.size()) thisAngle.angle.hitIDHi = hitshi.back().key();
+          else thisAngle.angle.hitIDHi = -1;
+          if (hitslo.size()) thisAngle.angle.hitIDLo = hitslo.back().key();
+          else thisAngle.angle.hitIDLo = -1;
+
+          thisAngle.branch = branch_id;
+          thisAngle.hit_ind = i_hit;
 
           // get the generation
-          thisKink.generation = 0;
+          thisAngle.generation = 0;
           art::Ptr<recob::PFParticle> check = id_to_pfp.at(branch_id);
           while (check->Self() != thisPFP->Self()) {
-            thisKink.generation ++;
+            thisAngle.generation ++;
             check = id_to_pfp.at(check->Parent());
           }
 
-          planeKinks[i_plane].push_back(thisKink);
+          planeAngles[i_plane].push_back(thisAngle);
         } 
       }
     }
 
-    // select the kinks
+    // Save the angles on each plane
     for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-      std::vector<sbn::DThetaKink> selected = SelectKinks(planeKinks[i_plane]);
-      for (const sbn::DThetaKink &k: selected) {
-        outKinks->push_back(k);
-        art::Ptr<sbn::DThetaKink> thisKinkPtr = kinkPtrMaker(outKinks->size()-1);
-        assn->addSingle(thisPFP, thisKinkPtr);
+      std::map<unsigned, std::vector<sbn::PCAngleInfo>> selected = RemoveDupes(planeAngles[i_plane]);
+
+      sbn::PCAnglePlane thisPlane;
+      geo::PlaneID planeID(0, 0, i_plane); // TPC and cryo are arbitrary
+      thisPlane.plane = planeID;
+      for (auto const &pair: selected) {
+        thisPlane.branchIDs.push_back(pair.first);
+
+        // look up the hierarchy
+        thisPlane.branchHierarchy.emplace_back();
+        art::Ptr<recob::PFParticle> check = id_to_pfp.at(pair.first);
+        thisPlane.branchHierarchy.back().push_back(check->Self());
+        while (check->Self() != thisPFP->Self()) {
+          check = id_to_pfp.at(check->Parent());
+          thisPlane.branchHierarchy.back().push_back(check->Self());
+        }
+
+        if (pair.second.size()) thisPlane.generations.push_back(pair.second.front().generation);
+        else thisPlane.generations.push_back(-1);
+
+        if (pair.second.size()) thisPlane.plane = pair.second.front().angle.wire;
+
+        thisPlane.angles.emplace_back();
+        for (const sbn::PCAngleInfo &a: pair.second) thisPlane.angles.back().push_back(a.angle);
       }
+      thisPlane.nBranches = thisPlane.angles.size();
+      outAngles->push_back(thisPlane);
+      art::Ptr<sbn::PCAnglePlane> thisAnglePtr = anglePtrMaker(outAngles->size()-1);
+      assn->addSingle(thisPFP, thisAnglePtr);
     }
 
   }
 
-  evt.put(std::move(outKinks));
+  evt.put(std::move(outAngles));
   evt.put(std::move(assn));
 
 }
 
-DEFINE_ART_MODULE(sbn::DThetaKinkFinder)
+DEFINE_ART_MODULE(sbn::PCAnglePlaneMaker)

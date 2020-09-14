@@ -5,6 +5,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
-#include "sbncode/LArRecoProducer/Products/DThetaKink.h"
+#include "sbncode/LArRecoProducer/Products/PCAnglePlane.h"
+#include "sbncode/LArRecoProducer/Products/PCAngleKink.h"
 #include <vector>
 #include <utility>
