@@ -35,6 +35,9 @@
 #include "Products/PCAnglePlane.h"
 #include "Products/PCAngleKink.h"
 
+#include "TFitter.h"
+#include "TMinuit.h"
+
 namespace sbn {
   class PCAngleKinkFinder;
 }
@@ -55,17 +58,37 @@ public:
   // Required functions.
   void produce(art::Event& e) override;
 
+  struct FitResult {
+    float chi2;
+    float angle;
+    float pitch;
+  };
+
 private:
+  // config
   std::string fPFParticleLabel;
   std::string fAngleLabel;
   float fHitThreshold;
   float fMinDist;
   bool fAllowIncomplete;
+  float fPCARadius;
+  float fFitResolution;
+
+
+  // private helpers
+  FitResult Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch_lo, float est_pitch_hi);
+
 };
 
+// TODO: FIX
+// TMinuit sux, so we have to define the data as a static global variable
+// private data
+static std::vector<float> fFitDataX;
+static std::vector<float> fFitDataY;
+static unsigned fFitCenter;
 
 // static helper functions
-sbn::PCAngleKink BuildKink(const sbn::PCAngle &max, const sbn::PCAngle &lo, const sbn::PCAngle &hi, float est_angle) {
+sbn::PCAngleKink BuildKink(const sbn::PCAngle &max, const sbn::PCAngle &lo, const sbn::PCAngle &hi, const sbn::PCAngleKinkFinder::FitResult &fit, float est_angle) {
   sbn::PCAngleKink kink;
   kink.maxWire = max.wire;
   
@@ -86,6 +109,11 @@ sbn::PCAngleKink BuildKink(const sbn::PCAngle &max, const sbn::PCAngle &lo, cons
   
   kink.vec_lo_at_halfmax_hi = hi.lo_vector;
   kink.vec_hi_at_halfmax_hi = hi.hi_vector;
+
+  kink.fit_chi2 = fit.chi2;
+  kink.fit_angle = fit.angle;
+  kink.fit_pitch = fit.pitch;
+
   return kink;
 }
 
@@ -117,12 +145,19 @@ std::tuple<std::vector<sbn::PCAngle>, unsigned> FlattenBranch(const sbn::PCAngle
       // Check if this hit is replicated in the following branch
       bool found_hit = false;
       if (i_branch_hierarchy > 0) {
+        int i_check_branch_hierarchy = i_branch_hierarchy - 1;
+        unsigned chk_branch = plane.branchIDs.size();
         int check_hitID = plane.angles[this_branch][i].hitID;
-        unsigned chk_branch = std::distance(plane.branchIDs.begin(), std::find(plane.branchIDs.begin(), plane.branchIDs.end(), plane.branchHierarchy[i_branch][i_branch_hierarchy-1]));
-        for (unsigned j = 0; j < plane.angles[chk_branch].size(); j++) {
-          if (plane.angles[chk_branch][j].hitID == check_hitID) {
-            found_hit = true;
-            break;
+        while (i_check_branch_hierarchy >= 0 && chk_branch == plane.branchIDs.size()) {
+          chk_branch = std::distance(plane.branchIDs.begin(), std::find(plane.branchIDs.begin(), plane.branchIDs.end(), plane.branchHierarchy[i_branch][i_check_branch_hierarchy]));
+          i_check_branch_hierarchy --;
+        }
+        if (chk_branch < plane.branchIDs.size()) {
+          for (unsigned j = 0; j < plane.angles[chk_branch].size(); j++) {
+            if (plane.angles[chk_branch][j].hitID == check_hitID) {
+              found_hit = true;
+              break;
+            }
           }
         }
       }
@@ -243,10 +278,112 @@ sbn::PCAngleKinkFinder::PCAngleKinkFinder(fhicl::ParameterSet const& p)
     fAngleLabel(p.get<std::string>("AngleLabel")),
     fHitThreshold(p.get<float>("HitThreshold")),
     fMinDist(p.get<float>("MinDist")),
-    fAllowIncomplete(p.get<bool>("AllowIncomplete"))
+    fAllowIncomplete(p.get<bool>("AllowIncomplete")),
+    fPCARadius(p.get<float>("PCARadius")),
+    fFitResolution(p.get<float>("FitResolution", 0.05))
 {
   produces<std::vector<sbn::PCAngleKink>>();
   produces<art::Assns<recob::PFParticle, sbn::PCAngleKink>>();
+
+}
+
+double ExpectedCosAngle(double dist_to_center, double radius, double mean_distance_A, double mean_distance_B, double angle) {
+  if (dist_to_center >= radius) return 1.;
+
+  double theta = angle;
+  double A = dist_to_center;
+  double B = radius - dist_to_center;
+  // double R = radius;
+  double lA = mean_distance_A;
+  double lB = mean_distance_B;
+
+  double M01 = (B*(B + lB)*(3*A*(A + lA)*lB + (B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta))*sin(theta))/(12.*lB*(B*lA + A*lB));
+  double M00 = (A*(A + lA)*lB*(2*B*lA*(2*A + lA) + A*(A - lA)*lB) + B*(B + lB)*cos(theta)*(6*A*lA*(A + lA)*lB + lA*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta)))/(12.*lA*lB*(B*lA + A*lB));
+  double M11 = (B*(B + lB)*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*sin(theta)*sin(theta))/(12.*lB*(B*lA + A*lB));
+
+  //double M01 = (B*(B + l)*(-6*A*(A + l)*(A + B - 2*R)*sin(theta) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(2*theta)))/(24.*l*R*R);
+  //double M00 = (A*(A + l)*(3*A*(A + B)*(A + l) - 6*A*(A + l)*R + 2*(2*A + l)*R*R) + B*(B + l)*cos(theta)*(-6*A*(A + l)*(A + B - 2*R) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*cos(theta)))/(12.*l*R*R);
+  //double M11 = (B*(B + l)*(3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(theta)*sin(theta))/(12.*l*R*R);
+
+  double trace = M00 + M11;
+  double det = M00 * M11 - M01 * M01;
+  double eigen = 0.5 * (trace + sqrt(trace * trace - 4 *det));
+  double vecA = M01;
+  double vecB = eigen - M00;
+
+  return vecA / sqrt(vecA * vecA + vecB * vecB);
+}
+
+void FitLikelihood(int &npar, double *g, double &result, double *par, int flag) {
+  double angle = par[0];
+  double res = par[1];
+  double radius = par[2];
+  double mean_distance_lo = par[3];
+  double mean_distance_hi = par[4];
+
+  double chi2 = 0.;
+  float mean_distance_A;
+  float mean_distance_B;
+  for (unsigned i = 0; i < fFitDataX.size(); i++) {
+    if (i < fFitCenter) {
+      mean_distance_A = mean_distance_lo;
+      mean_distance_B = mean_distance_hi;
+    }
+    else {
+      mean_distance_A = mean_distance_hi;
+      mean_distance_B = mean_distance_lo;
+    }
+
+    double expectation = acos(ExpectedCosAngle(fFitDataX[i], radius, mean_distance_A, mean_distance_B, angle));
+    chi2 += (expectation - fFitDataY[i]) * (expectation - fFitDataY[i]) / (fFitDataY[i] * fFitDataY[i] * res * res);
+  }
+
+  result = chi2 / fFitDataX.size();
+}
+
+sbn::PCAngleKinkFinder::FitResult sbn::PCAngleKinkFinder::Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch_lo, float est_pitch_hi) {
+  // setup the fitdata
+  fFitDataX.clear();
+  fFitDataY.clear();
+  for (unsigned i = lo; i <= hi; i++) {
+    fFitDataX.push_back( sqrt((angles[i].hit_time_cm - angles[center].hit_time_cm) * (angles[i].hit_time_cm - angles[center].hit_time_cm) +
+      (angles[i].hit_wire_cm - angles[center].hit_wire_cm) * (angles[i].hit_wire_cm - angles[center].hit_wire_cm)) );
+    fFitDataY.push_back(angles[i].angle);
+  }
+  fFitCenter = center;
+
+  // setup the fitter
+  TFitter fitter(5); // 5 param
+  fitter.SetFCN(&FitLikelihood);
+  fitter.SetParameter(0, "angle", est_angle, 0.1, 0, M_PI);
+  fitter.SetParameter(1, "resolution", fFitResolution, 0., fFitResolution, fFitResolution);
+  fitter.SetParameter(2, "radius", fPCARadius, 0., fPCARadius, fPCARadius);
+  fitter.SetParameter(3, "pitch_lo", est_pitch_lo, 0., est_pitch_lo, est_pitch_lo);
+  fitter.SetParameter(4, "pitch_hi", est_pitch_hi, 0., est_pitch_hi, est_pitch_hi);
+  fitter.GetMinuit()->FixParameter(1);
+  fitter.GetMinuit()->FixParameter(2);
+  fitter.GetMinuit()->FixParameter(3);
+  fitter.GetMinuit()->FixParameter(4);
+
+  fitter.ExecuteCommand("MIGRAD", 0, 0);
+
+  sbn::PCAngleKinkFinder::FitResult ret;
+
+  ret.angle = fitter.GetParameter(0);
+
+  double chi2;
+  double edm;
+  double errdef;
+  int nvpar;
+  int nparx;
+
+  fitter.GetStats(chi2, edm, errdef, nvpar, nparx);
+  std::cout << "Fit chi2: " << chi2 << std::endl;
+  std::cout << "Fit angle: " << ret.angle << std::endl;
+
+  ret.chi2 = chi2;
+
+  return ret;
 }
 
 void sbn::PCAngleKinkFinder::produce(art::Event& evt)
@@ -304,24 +441,33 @@ void sbn::PCAngleKinkFinder::produce(art::Event& evt)
             if (hi_hit_ind >= 0 && lo_hit_ind >= 0) {
               std::cout << "NEW KINK: Particle: " << thisPFP->Self() << " Branch Ind: " << i_branch << " Plane: " << angle->plane.Plane << std::endl;
               std::cout << "EST HEIGHT: " << height << " IND LO: " << lo_hit_ind << " IND HI: " << hi_hit_ind << std::endl;
-              std::cout << "Branch start: " << branch_start << " hit start: " << hit_start_ind << " hit end: " << i_hit << std::endl;
-              for (unsigned i = lo_hit_ind; i <= (unsigned)hi_hit_ind; i++) {
-                std::cout << "At: " << branchAngles[i].hit_wire_cm << " Angle: " << branchAngles[i].angle << std::endl;
-              }
-
-              std::cout << "BRANCH:\n";
-              for (unsigned i = 0; i < branchAngles.size(); i++) {
-                std::cout << i << " At: " << branchAngles[i].hit_wire_cm << " Angle: " << branchAngles[i].angle << std::endl;
-              }
 
               // build out the kink information
               int max_ind = FindMaxIndex(branchAngles, lo_hit_ind, hi_hit_ind);
+
+              // estimate the track pitch -- distance between successive hits
+              float dist_lo_sum = 0.;
+              for (int i = lo_hit_ind; i < max_ind; i++) {
+                dist_lo_sum += sqrt((branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) * (branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) +
+                    (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm) * (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm)); 
+              }
+              float pitch_lo = dist_lo_sum / (max_ind - lo_hit_ind);
+
+              float dist_hi_sum = 0.;
+              for (int i = max_ind; i < hi_hit_ind; i++) {
+                dist_hi_sum += sqrt((branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) * (branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) +
+                    (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm) * (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm)); 
+              }
+              float pitch_hi = dist_hi_sum / (hi_hit_ind - max_ind);
+              std::cout << "Pitch lo: " << pitch_lo << " Pitch hi: " << pitch_hi << std::endl;
+
+              sbn::PCAngleKinkFinder::FitResult fit = Fit(branchAngles, lo_hit_ind, hi_hit_ind, max_ind, height, pitch_lo, pitch_hi);
 
               const sbn::PCAngle &max = branchAngles[max_ind];
               const sbn::PCAngle &lo = branchAngles[lo_hit_ind];
               const sbn::PCAngle &hi = branchAngles[hi_hit_ind];
 
-              sbn::PCAngleKink kink = BuildKink(max, lo, hi, height);
+              sbn::PCAngleKink kink = BuildKink(max, lo, hi, fit, height);
               thisKinks.push_back(kink);
               // update the hit index to the end of this hit
               i_hit = hi_hit_ind;

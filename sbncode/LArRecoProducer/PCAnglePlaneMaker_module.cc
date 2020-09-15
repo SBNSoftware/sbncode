@@ -114,6 +114,47 @@ float HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryC
   return sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
 }
 
+/*
+std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
+                                                 const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
+                                                 const geo::GeometryCore *geo,
+                                                 const detinfo::DetectorProperties *dprop) {
+
+  std::vector<art::Ptr<recob::Hit>> retlo;
+  std::vector<art::Ptr<recob::Hit>> rethi;
+
+
+  std::vector<art::Ptr<recob::Hit>> nearby;
+  // pull in all the hits
+  for (unsigned i = 0; i < hits.size(); i++) {
+    if (HitDistance(*hits[i], *hits[ihit], geo, dprop) < distance) {
+      nearby.push_back(hits[i]);
+    }
+  } 
+
+  art::Ptr<recob::Hit> center = hits[ihit];
+  // run a PCA to find their general direction
+  std::array<float, 2> dir = HitPCAVec(nearby, center, geo, dprop);
+
+  // order the hits according to this direction
+  std::sort(nearby.begin(), nearby.end(),
+    [center, geo, dprop](auto const &lhs, auto const &rhs) {
+    std::array<float, 2> lhs_vec = HitVector(*lhs, *center, geo, dprop);
+    std::array<float, 2> rhs_vec = HitVector(*rhs, *center, geo, dprop);
+    float proj_lhs = dir[0] * lhs_vec[0] + dir[1] + lhs_vec[1];
+    float proj_rhs = dir[0] * rhs_vec[0] + dir[1] + rhs_vec[1];
+    return proj_lhs < proj_rhs;
+  });
+
+  // everything up to the center hit is "lo"
+  bool found_center = false;
+  for (unsigned i = 0; i < nearby.size(); i++) {
+    
+  }
+
+  return {retlo, rethi, true}; 
+}*/
+
 std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
                                                  const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
                                                  const geo::GeometryCore *geo,

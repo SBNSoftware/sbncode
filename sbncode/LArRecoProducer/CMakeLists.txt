@@ -197,6 +197,7 @@ simple_plugin(PCAngleKinkFinder module
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
+	Minuit
 
 	sbncode_LArRecoProducer_Products_dict
 	lardataobj_AnalysisBase

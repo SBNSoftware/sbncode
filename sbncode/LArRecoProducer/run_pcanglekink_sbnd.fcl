@@ -80,3 +80,4 @@ physics.producers.pandoraPCAngle.HitGroupDistance: 4.5 # [cm] == 15 wires
 physics.producers.pandoraPCAngle.OnlyPrimary: false
 physics.producers.pandoraPCAngle.FollowDaughters: true
 physics.producers.pandoraPCAngleKink.AngleLabel: pandoraPCAngle
+physics.producers.pandoraPCAngleKink.PCARadius: 4.5

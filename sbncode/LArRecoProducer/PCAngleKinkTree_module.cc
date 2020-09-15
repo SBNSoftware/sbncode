@@ -53,6 +53,13 @@ public:
   // Required functions.
   void analyze(art::Event const& e) override;
 
+  // keep track of file index
+  void respondToOpenInputFile(const art::FileBlock& fb) {
+    (void) fb;
+    fIFile += 1;
+  }
+
+
 private:
   // helpers
   void Clear();
@@ -60,6 +67,13 @@ private:
   void FillAngles(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAnglePlane>> &angles);
   void FillMeta(const art::Event &evt, unsigned i_part);
   void FillKinks(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAngleKink>> &kinks);
+  void MatchKinks();
+  void MatchPlaneKinks(unsigned Plane, 
+      std::vector<int> &scatter_match_plane,
+      std::vector<float> &scatter_dist_plane,
+      const std::vector<float> &scatterW,
+      const std::vector<float> &reco_kinkT, 
+      const std::vector<float> &reco_kinkW);
 
   // config
   std::vector<std::string> fPFParticleTags;
@@ -102,6 +116,19 @@ private:
   std::vector<float> fScatterPY;
   std::vector<float> fScatterPT;
 
+  std::vector<float> fScatterMag;
+  std::vector<float> fScatterMagU;
+  std::vector<float> fScatterMagV;
+  std::vector<float> fScatterMagY;
+
+  // matching
+  std::vector<int> fScatterMatchU;
+  std::vector<float> fScatterMatchDistU;
+  std::vector<int> fScatterMatchV;
+  std::vector<float> fScatterMatchDistV;
+  std::vector<int> fScatterMatchY;
+  std::vector<float> fScatterMatchDistY;
+
   // hit stuff
   std::vector<float> fKinkTimeMaxU;
   std::vector<float> fKinkWireMaxU;
@@ -112,6 +139,9 @@ private:
   std::vector<float> fKinkEstAngleU;
   std::vector<float> fKinkMaxAngleU;
   std::vector<float> fKinkLoHiAngleU;
+  std::vector<float> fKinkFitAngleU;
+  std::vector<float> fKinkFitPitchU;
+  std::vector<float> fKinkFitChi2U;
 
   std::vector<float> fKinkTimeMaxV;
   std::vector<float> fKinkWireMaxV;
@@ -122,6 +152,9 @@ private:
   std::vector<float> fKinkEstAngleV;
   std::vector<float> fKinkMaxAngleV;
   std::vector<float> fKinkLoHiAngleV;
+  std::vector<float> fKinkFitAngleV;
+  std::vector<float> fKinkFitPitchV;
+  std::vector<float> fKinkFitChi2V;
 
   std::vector<float> fKinkTimeMaxY;
   std::vector<float> fKinkWireMaxY;
@@ -132,12 +165,16 @@ private:
   std::vector<float> fKinkEstAngleY;
   std::vector<float> fKinkMaxAngleY;
   std::vector<float> fKinkLoHiAngleY;
+  std::vector<float> fKinkFitAngleY;
+  std::vector<float> fKinkFitPitchY;
+  std::vector<float> fKinkFitChi2Y;
 
   int fTruePDG;
   float fTrueE;
   float fTrueP;
 
   int fIEvt;
+  int fIFile;
   int fEvt;
   int fNo;
 };
@@ -160,6 +197,7 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   // More initializers here.
 {
   fIEvt = 0;
+  fIFile = 0;
   art::ServiceHandle<art::TFileService> tfs;
 
   _tree = tfs->make<TTree>("PCAngleKinkAnalyzer", "kink_tree");
@@ -185,6 +223,9 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("kink_est_angle_u", &fKinkEstAngleU);
   _tree->Branch("kink_max_angle_u", &fKinkMaxAngleU);
   _tree->Branch("kink_lohi_angle_u", &fKinkLoHiAngleU);
+  _tree->Branch("kink_fit_angle_u", &fKinkFitAngleU);
+  _tree->Branch("kink_fit_pitch_u", &fKinkFitPitchU);
+  _tree->Branch("kink_fit_chi2_u", &fKinkFitChi2U);
 
   _tree->Branch("kink_time_max_v", &fKinkTimeMaxV);
   _tree->Branch("kink_wire_max_v", &fKinkWireMaxV);
@@ -195,6 +236,9 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("kink_est_angle_v", &fKinkEstAngleV);
   _tree->Branch("kink_max_angle_v", &fKinkMaxAngleV);
   _tree->Branch("kink_lohi_angle_v", &fKinkLoHiAngleV);
+  _tree->Branch("kink_fit_angle_v", &fKinkFitAngleV);
+  _tree->Branch("kink_fit_pitch_v", &fKinkFitPitchV);
+  _tree->Branch("kink_fit_chi2_v", &fKinkFitChi2V);
 
   _tree->Branch("kink_time_max_y", &fKinkTimeMaxY);
   _tree->Branch("kink_wire_max_y", &fKinkWireMaxY);
@@ -205,6 +249,9 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("kink_est_angle_y", &fKinkEstAngleY);
   _tree->Branch("kink_max_angle_y", &fKinkMaxAngleY);
   _tree->Branch("kink_lohi_angle_y", &fKinkLoHiAngleY);
+  _tree->Branch("kink_fit_angle_y", &fKinkFitAngleY);
+  _tree->Branch("kink_fit_pitch_y", &fKinkFitPitchY);
+  _tree->Branch("kink_fit_chi2_y", &fKinkFitChi2Y);
   
   _tree->Branch("traj_x", &fTrajX);
   _tree->Branch("traj_y", &fTrajY);
@@ -222,10 +269,23 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("scatter_py", &fScatterPY);
   _tree->Branch("scatter_pt", &fScatterPT);
 
+  _tree->Branch("scatter_mag", &fScatterMag);
+  _tree->Branch("scatter_mag_u", &fScatterMagU);
+  _tree->Branch("scatter_mag_v", &fScatterMagV);
+  _tree->Branch("scatter_mag_y", &fScatterMagY);
+
+  _tree->Branch("scatter_match_u", &fScatterMatchU);
+  _tree->Branch("scatter_match_dist_u", &fScatterMatchDistU);
+  _tree->Branch("scatter_match_v", &fScatterMatchV);
+  _tree->Branch("scatter_match_dist_v", &fScatterMatchDistV);
+  _tree->Branch("scatter_match_y", &fScatterMatchY);
+  _tree->Branch("scatter_match_dist_y", &fScatterMatchDistY);
+
   _tree->Branch("true_pdg", &fTruePDG, "true_pdg/i");
   _tree->Branch("true_p", &fTrueP, "true_pdg/F");
   _tree->Branch("true_e", &fTrueE, "true_pdg/F");
 
+  _tree->Branch("ifile", &fIFile, "ifile/i");
   _tree->Branch("ievt", &fIEvt, "ievt/i");
   _tree->Branch("evt", &fEvt, "evt/i");
   _tree->Branch("no", &fNo, "no/i");
@@ -253,6 +313,9 @@ void sbn::PCAngleKinkTree::Clear() {
   fKinkEstAngleU.clear();
   fKinkMaxAngleU.clear();
   fKinkLoHiAngleU.clear();
+  fKinkFitAngleU.clear();
+  fKinkFitPitchU.clear();
+  fKinkFitChi2U.clear();
 
   fKinkTimeMaxV.clear();
   fKinkWireMaxV.clear();
@@ -263,6 +326,9 @@ void sbn::PCAngleKinkTree::Clear() {
   fKinkEstAngleV.clear();
   fKinkMaxAngleV.clear();
   fKinkLoHiAngleV.clear();
+  fKinkFitAngleV.clear();
+  fKinkFitPitchV.clear();
+  fKinkFitChi2V.clear();
 
   fKinkTimeMaxY.clear();
   fKinkWireMaxY.clear();
@@ -273,6 +339,9 @@ void sbn::PCAngleKinkTree::Clear() {
   fKinkEstAngleY.clear();
   fKinkMaxAngleY.clear();
   fKinkLoHiAngleY.clear();
+  fKinkFitAngleY.clear();
+  fKinkFitPitchY.clear();
+  fKinkFitChi2Y.clear();
 
   fTrajX.clear();
   fTrajY.clear();
@@ -286,6 +355,18 @@ void sbn::PCAngleKinkTree::Clear() {
   fScatterX.clear();
   fScatterY.clear();
   fScatterZ.clear();
+
+  fScatterMag.clear();
+  fScatterMagU.clear();
+  fScatterMagV.clear();
+  fScatterMagY.clear();
+
+  fScatterMatchU.clear();
+  fScatterMatchDistU.clear();
+  fScatterMatchV.clear();
+  fScatterMatchDistV.clear();
+  fScatterMatchY.clear();
+  fScatterMatchDistY.clear();
 
   fScatterPU.clear();
   fScatterPV.clear();
@@ -331,9 +412,15 @@ void sbn::PCAngleKinkTree::FillTruth(const recob::PFParticle &particle, const si
 
     // also find any elastic scatters
     if (i_traj > 1) {
+      // make sure contained in a TPC
+      double posarr[3];
+      pos.Vect().GetXYZ(posarr);
+      geo::TPCID tpc = geo->FindTPCAtPosition(posarr);
+      if (tpc.TPC == geo::TPCID::InvalidID) continue;
+
       // angle in degree
-      float angle = trueParticle.Momentum(i_traj).Vect().Angle(trueParticle.Momentum(i_traj-1).Vect()) * 180. / M_PI;
-      if (angle > fAngleCut) {
+      float angle = trueParticle.Momentum(i_traj).Vect().Angle(trueParticle.Momentum(i_traj-1).Vect());
+      if (angle*(180. / M_PI) > fAngleCut) {
 	fScatterX.push_back(pos.X());
 	fScatterY.push_back(pos.Y());
 	fScatterZ.push_back(pos.Z());
@@ -342,9 +429,26 @@ void sbn::PCAngleKinkTree::FillTruth(const recob::PFParticle &particle, const si
 	fScatterPV.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 1, 0, 0) * geo->WirePitch());
 	fScatterPY.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 2, 0, 0) * geo->WirePitch());
 	fScatterPT.push_back(pos.X());
+
+        fScatterMag.push_back(angle);
+
+        // project the angle onto each wire-plane
+        double scatter_wireplane[3];
+        for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
+          geo::PlaneID plane(tpc, i_plane);
+          double wire_angle_tovert = geo->WireAngleToVertical(geo->View(plane), plane);
+          TVector3 v0(trueParticle.Momentum(i_traj-1).Px(), 
+            cos(wire_angle_tovert) * trueParticle.Momentum(i_traj-1).Pz() + sin(wire_angle_tovert) * trueParticle.Momentum(i_traj-1).Py(), 0.);
+          TVector3 v1(trueParticle.Momentum(i_traj).Px(), 
+            cos(wire_angle_tovert) * trueParticle.Momentum(i_traj).Pz() + sin(wire_angle_tovert) * trueParticle.Momentum(i_traj).Py(), 0.);
+          if (v0.Mag() < 1e-6 || v1.Mag() < 1e-6) scatter_wireplane[i_plane] = 0.;
+          else scatter_wireplane[i_plane] = v1.Unit().Angle(v0.Unit());
+        }
+        fScatterMagU.push_back(scatter_wireplane[0]);
+        fScatterMagV.push_back(scatter_wireplane[1]);
+        fScatterMagY.push_back(scatter_wireplane[2]);
       }
     }
-
   }
 }
 
@@ -362,6 +466,9 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkEstAngleU.push_back(kink.est_angle);
       fKinkMaxAngleU.push_back(kink.max_angle);
       fKinkLoHiAngleU.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkFitAngleU.push_back(kink.fit_angle);
+      fKinkFitPitchU.push_back(kink.fit_pitch);
+      fKinkFitChi2U.push_back(kink.fit_chi2);
     }
     else if (plane_no == 1) {
       fKinkTimeMaxV.push_back(kink.position_max[0]);
@@ -373,6 +480,9 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkEstAngleV.push_back(kink.est_angle);
       fKinkMaxAngleV.push_back(kink.max_angle);
       fKinkLoHiAngleV.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkFitAngleV.push_back(kink.fit_angle);
+      fKinkFitPitchV.push_back(kink.fit_pitch);
+      fKinkFitChi2V.push_back(kink.fit_chi2);
     }
     else if (plane_no == 2) {
       fKinkTimeMaxY.push_back(kink.position_max[0]);
@@ -384,6 +494,9 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkEstAngleY.push_back(kink.est_angle);
       fKinkMaxAngleY.push_back(kink.max_angle);
       fKinkLoHiAngleY.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkFitAngleY.push_back(kink.fit_angle);
+      fKinkFitPitchY.push_back(kink.fit_pitch);
+      fKinkFitChi2Y.push_back(kink.fit_chi2);
     }
   }
 }
@@ -419,6 +532,37 @@ void sbn::PCAngleKinkTree::FillAngles(const recob::PFParticle &particle, const s
       }
     }
   }
+}
+
+// static helper
+void sbn::PCAngleKinkTree::MatchPlaneKinks(unsigned Plane, 
+    std::vector<int> &scatter_match_plane,
+    std::vector<float> &scatter_dist_plane,
+    const std::vector<float> &scatterW,
+    const std::vector<float> &reco_kinkT, 
+    const std::vector<float> &reco_kinkW) {
+
+  for (unsigned i = 0; i < scatterW.size(); i++) {
+    TVector3 true_scatter(fScatterPT[i], scatterW[i], 0.);
+    float min_dist = 100000000.;
+    int min_ind = -1;
+    for (unsigned j = 0; j < reco_kinkT.size(); j++) {
+      TVector3 reco_kink(reco_kinkT[j], reco_kinkW[j], 0.);
+      if ((true_scatter - reco_kink).Mag() < min_dist) {
+        min_dist = (true_scatter - reco_kink).Mag();
+        min_ind = j;
+      }
+    }
+    scatter_match_plane.push_back(min_ind);
+    scatter_dist_plane.push_back(min_dist);
+  }
+}
+
+// iterate over all the kinks on each plane and find the closest spatial match
+void sbn::PCAngleKinkTree::MatchKinks() {
+  MatchPlaneKinks(0, fScatterMatchU, fScatterMatchDistU, fScatterPU, fKinkTimeMaxU, fKinkWireMaxU);
+  MatchPlaneKinks(1, fScatterMatchV, fScatterMatchDistV, fScatterPV, fKinkTimeMaxV, fKinkWireMaxV);
+  MatchPlaneKinks(2, fScatterMatchY, fScatterMatchDistY, fScatterPY, fKinkTimeMaxY, fKinkWireMaxY);
 }
 
 void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
@@ -498,6 +642,7 @@ void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
     FillTruth(particle, *matched_particle);
     FillAngles(particle, angle);
     FillKinks(particle, kinks);
+    MatchKinks();
     FillMeta(evt, i_part);
     _tree->Fill();
   }
