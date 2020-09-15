@@ -62,9 +62,10 @@ namespace caf {
       numatch.pur               = tmatch.pur;
       numatch.is_numucc_primary = tmatch.is_numucc_primary;
 
+
       //      srslice.truth = numatch;
-      srmc.nu.push_back(numatch);
-      ++srmc.nnu;
+      // srmc.nu.push_back(numatch);
+      // ++srmc.nnu;
     }
 
     std::cout << "Slice matched to index: " << tmatch.index 
