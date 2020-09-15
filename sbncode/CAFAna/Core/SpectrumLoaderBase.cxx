@@ -273,6 +273,10 @@ namespace ana
     TFile* f = fFileSource->GetNextFile();
     if(!f) return 0; // out of files
 
+    TH1* hPOT = (TH1*)f->Get("TotalPOT");
+    assert(hPOT);
+    fPOT += hPOT->Integral(0, -1);
+    /*
     TTree* trPot = new TTree();
     if (f->GetListOfKeys()->Contains("sbnsubrun"))
       trPot = (TTree*)f->Get("sbnsubrun");
@@ -287,7 +291,7 @@ namespace ana
 
       fPOT += pot;
     }
-
+    */
     return f;
   }
 
