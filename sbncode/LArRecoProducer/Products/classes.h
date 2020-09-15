@@ -5,5 +5,6 @@
 #include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
 #include "sbncode/LArRecoProducer/Products/FlashTriggerPrimitive.hh"
+#include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
 #include <vector>
 #include <utility>
