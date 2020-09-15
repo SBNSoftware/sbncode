@@ -35,6 +35,8 @@ namespace caf
 {
 
   void FillShowerVars(const recob::Shower& shower,
+                      const recob::PFParticle &particle,
+                      const recob::Vertex* vertex,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
@@ -62,8 +64,8 @@ namespace caf
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
-                       const std::vector<const anab::T0*> &t0match, 
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<const anab::T0*> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -90,7 +92,7 @@ namespace caf
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos);
-  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs, 
+  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs,
                            const std::vector<caf::SRTrueInteraction> &srneutrinos,
                            unsigned truth_ind);
 
