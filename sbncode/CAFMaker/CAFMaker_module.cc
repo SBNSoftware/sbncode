@@ -601,7 +601,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
 
-    srtruthbranch.nu = srneutrinos;
+    srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
 
   }
@@ -694,7 +694,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // list of slice objects
+  caf::SRSlice recslc;
   std::vector<StandardRecord> recs;
+  StandardRecord rec;
+
 
   //#######################################################
   // Loop over slices 
@@ -786,43 +789,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
-    StandardRecord rec;
 
-    // set the metadata
-
-    // trigger result
-    rec.pass_flashtrig = pass_flash_trig;
-
-    // fill up the true particles
-    rec.true_particles = true_particles;
-
-    rec.fake_reco = srfakereco;
-
-    //#######################################################
-    // Fill slice header.
-    //#######################################################
-    // Get metadata information for header
-    unsigned int run = evt.run();
-    unsigned int subrun = evt.subRun();
-    //   unsigned int spillNum = evt.id().event();
-
-    rec.hdr = SRHeader();
-
-    rec.hdr.run = run;
-    rec.hdr.subrun = subrun;
-    rec.hdr.subevt = sliceID;
-    rec.hdr.ismc = !fIsRealData;
-    rec.hdr.det = fDet;
-
-    rec.hdr.fno = fFileNumber;
-    rec.hdr.pot = fSubRunPOT;
-    rec.hdr.ngenevt = n_gen_evt;
-    rec.hdr.mctype = mctype;
-
-    // rec.hdr.cycle = fCycle;
-    // rec.hdr.batch = fBatch;
-    // rec.hdr.blind = 0;
-    // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
     
     // get the primary particle
     size_t iPart;
@@ -848,16 +815,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(*slice, primary, rec.slc);
-    FillSliceMetadata(primary_meta, rec.slc);
-    FillSliceFlashMatch(fmatch, rec.slc); 
-    FillSliceVertex(vertex, rec.slc);
+    FillSliceVars(*slice, primary, recslc);
+    FillSliceMetadata(primary_meta, recslc);
+    FillSliceFlashMatch(fmatch, recslc); 
+    FillSliceVertex(vertex, recslc);
     
     // select slice
-    if (!SelectSlice(rec.slc, fParams.CutClearCosmic())) continue;
+    if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, mctruths, srneutrinos, *pi_serv.get(), rec.slc, rec.mc);
+    FillSliceTruth(slcHits, mctruths, srneutrinos, *pi_serv.get(), recslc, rec.mc);
     
     //#######################################################
     // Add detector dependent slice info.
@@ -977,12 +944,43 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // // Set mc branch values to default
     // rec.mc.setDefault();
     // if (fParams.EnableBlindness()) BlindThisRecord(&rec);
-
-    recs.push_back(std::move(rec));
     //util::CreateAssn(*this, evt, *srcol, art::Ptr<recob::Slice>(slices, sliceID),
     //                 *srAssn);
+
+    rec.slc[sliceID] = recslc;
+
   }  // end loop over slices
 
+  //#######################################################
+  //  Fill rec Tree 
+  //#######################################################  
+  rec.mc             = srtruthbranch;
+  rec.true_particles = true_particles;
+  rec.fake_reco      = srfakereco;
+  rec.pass_flashtrig = pass_flash_trig;  // trigger result 
+  
+  // Get metadata information for header
+  unsigned int run = evt.run();
+  unsigned int subrun = evt.subRun();
+  //   unsigned int spillNum = evt.id().event();
+  
+  rec.hdr = SRHeader();
+  
+  rec.hdr.run     = run;
+  rec.hdr.subrun  = subrun;
+  // rec.hdr.subevt = sliceID;
+  rec.hdr.ismc    = !fIsRealData;
+  rec.hdr.det     = fDet;
+  rec.hdr.fno     = fFileNumber;
+  rec.hdr.pot     = fSubRunPOT;
+  rec.hdr.ngenevt = n_gen_evt;
+  rec.hdr.mctype  = mctype;
+  // rec.hdr.cycle = fCycle;
+  // rec.hdr.batch = fBatch;
+  // rec.hdr.blind = 0;
+  // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);  
+  
+  recs.push_back(std::move(rec));
   // calculate information that needs information from all of the slices
   SetNuMuCCPrimary(recs, srneutrinos);
 
