@@ -79,6 +79,28 @@ namespace caf
     }
   }
 
+  void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
+                      caf::SRShower& srshower)
+  {
+    for (auto const& res: residuals) {
+      srshower.selVars.showerResiduals.push_back(*res);
+    }
+  }
+
+  void FillShowerTrackFit(const sbn::ShowerTrackFit& trackFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.trackLength = trackFit.mTrackLength;
+    srshower.selVars.trackWidth  = trackFit.mTrackWidth;
+  }
+
+  void FillShowerDensityFit(const sbn::ShowerDensityFit& densityFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.densityGradient      = densityFit.mDensityGrad;
+    srshower.selVars.densityGradientPower = densityFit.mDensityPow;
+  }
+
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary /* can be null */,
                      caf::SRSlice &srslice,

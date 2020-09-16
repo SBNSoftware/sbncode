@@ -5,7 +5,7 @@
 #define SRSHOWER_H
 
 #include "SRVector3D.h"
-
+#include "SRShowerSelection.h"
 
 namespace caf
 {
@@ -31,6 +31,8 @@ namespace caf
       int            ID;          ///< ID of this shower (taken from the pandora particle "ID" of this PFP)
       std::vector<int> daughters; ///< ID's of daughters of this track
       int parent;                 ///< ID of parent particle of this track
+
+      SRShowerSelection selVars;
     };
 
 } // end namespace

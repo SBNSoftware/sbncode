@@ -102,6 +102,12 @@ namespace caf
       "tracs"
     };
 
+    Atom<string> RecoShowerSelectionLabel {
+      Name("RecoShowerSelectionLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "sbnShowerSelectionVars"
+    };
+
     // Atom<string> RecoShowerEMLabel {
     //   Name("RecoShowerEMLabel"),
     //   Comment("Base label of reco-base em shower producer."),

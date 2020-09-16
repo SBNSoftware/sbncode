@@ -730,6 +730,39 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
 
+    art::FindManyP<recob::Shower> fmShower =
+      FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
+
+    // make Ptr's to showers for shower -> other object associations
+    std::vector<art::Ptr<recob::Shower>> slcShowers;
+    if (fmShower.isValid()) {
+      for (unsigned i = 0; i < fmShower.size(); i++) {
+        const std::vector<art::Ptr<recob::Shower>> &thisShowers = fmShower.at(i);
+        if (thisShowers.size() == 0) {
+          slcShowers.emplace_back(); // nullptr
+        }
+        else if (thisShowers.size() == 1) {
+          slcShowers.push_back(fmShower.at(i).at(0));
+        }
+        else assert(false); // bad
+      }
+    }
+
+    art::FindManyP<float> fmShowerResiduals =
+      FindManyPStrict<float>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::ShowerTrackFit> fmShowerTrackFit =
+      FindManyPStrict<sbn::ShowerTrackFit>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::ShowerDensityFit> fmShowerDensityFit =
+      FindManyPStrict<sbn::ShowerDensityFit>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
+
+    // art::FindManyP<recob::Shower> fmShowerEM =
+    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerEMLabel() + slice_tag_suff);
+
+    // art::FindManyP<recob::Shower> fmShowerPand =
+    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerPandLabel() + slice_tag_suff);
+
     art::FindManyP<recob::Track> fmTrack =
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
@@ -748,16 +781,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         else assert(false); // bad
       }
     }
-
-    art::FindManyP<recob::Shower> fmShower =
-      FindManyPStrict<recob::Shower>(fmPFPart, evt,
-             fParams.RecoShowerLabel() + slice_tag_suff);
-
-    // art::FindManyP<recob::Shower> fmShowerEM =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerEMLabel() + slice_tag_suff);
-
-    // art::FindManyP<recob::Shower> fmShowerPand =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerPandLabel() + slice_tag_suff);
 
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
@@ -924,6 +947,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], thisParticle, vertex,  rec.reco.shw.back());
+        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1)
+          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
+        if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1)
+          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
+        if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1)
+          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
 
       } // thisShower exists
 
