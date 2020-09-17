@@ -63,9 +63,11 @@ public:
 private:
   // helpers
   void Clear();
-  void FillTruth(const recob::PFParticle &particle, const simb::MCParticle &trueParticle);
+  void FillTruth(const simb::MCParticle &trueParticle, const std::vector<art::Ptr<simb::MCParticle>> &allParticles);
+  void FillTrueScatter(TLorentzVector pos, TLorentzVector mom0, TLorentzVector mom1, bool elastic);
   void FillAngles(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAnglePlane>> &angles);
-  void FillMeta(const art::Event &evt, unsigned i_part);
+  void FillParticle(const recob::PFParticle &particle);
+  void FillMeta(const art::Event &evt);
   void FillKinks(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAngleKink>> &kinks);
   void MatchKinks();
   void MatchPlaneKinks(unsigned Plane, 
@@ -80,7 +82,7 @@ private:
   std::vector<std::string> fAngleTags;
   std::vector<std::string> fKinkTags;
   float fAngleCut;
-  bool fOnlyPrimary;
+  bool fRequireReco;
 
   // output
   TTree *_tree;
@@ -111,6 +113,15 @@ private:
   std::vector<float> fScatterY;
   std::vector<float> fScatterZ;
 
+  std::vector<float> fScatterM1X;
+  std::vector<float> fScatterM1Y;
+  std::vector<float> fScatterM1Z;
+  std::vector<float> fScatterM1P;
+  std::vector<float> fScatterM0X;
+  std::vector<float> fScatterM0Y;
+  std::vector<float> fScatterM0Z;
+  std::vector<float> fScatterM0P;
+
   std::vector<float> fScatterPU;
   std::vector<float> fScatterPV;
   std::vector<float> fScatterPY;
@@ -120,6 +131,8 @@ private:
   std::vector<float> fScatterMagU;
   std::vector<float> fScatterMagV;
   std::vector<float> fScatterMagY;
+
+  std::vector<bool> fScatterIsElastic;
 
   // matching
   std::vector<int> fScatterMatchU;
@@ -172,11 +185,14 @@ private:
   int fTruePDG;
   float fTrueE;
   float fTrueP;
+  float fTrueEndE;
+  float fTrueEndP;
+  bool fTrueEndScatter;
 
   int fIEvt;
   int fIFile;
   int fEvt;
-  int fNo;
+  int fPFPID;
 };
 
 // static helper functions
@@ -193,7 +209,7 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
     fAngleTags(p.get<std::vector<std::string>>("AngleTags")),
     fKinkTags(p.get<std::vector<std::string>>("KinkTags")),
     fAngleCut(p.get<float>("AngleCut", 5.)),
-    fOnlyPrimary(p.get<bool>("OnlyPrimary", true))
+    fRequireReco(p.get<bool>("RequireReco", false))
   // More initializers here.
 {
   fIEvt = 0;
@@ -261,6 +277,15 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("traj_py", &fTrajPY);
   _tree->Branch("traj_pt", &fTrajPT);
 
+  _tree->Branch("scatter_mom1_x", &fScatterM1X);
+  _tree->Branch("scatter_mom1_y", &fScatterM1Y);
+  _tree->Branch("scatter_mom1_z", &fScatterM1Z);
+  _tree->Branch("scatter_mom1_p", &fScatterM1P);
+  _tree->Branch("scatter_mom0_x", &fScatterM0X);
+  _tree->Branch("scatter_mom0_y", &fScatterM0Y);
+  _tree->Branch("scatter_mom0_z", &fScatterM0Z);
+  _tree->Branch("scatter_mom0_p", &fScatterM0P);
+
   _tree->Branch("scatter_x", &fScatterX);
   _tree->Branch("scatter_y", &fScatterY);
   _tree->Branch("scatter_z", &fScatterZ);
@@ -274,6 +299,8 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("scatter_mag_v", &fScatterMagV);
   _tree->Branch("scatter_mag_y", &fScatterMagY);
 
+  _tree->Branch("scatter_is_elastic", &fScatterIsElastic);
+
   _tree->Branch("scatter_match_u", &fScatterMatchU);
   _tree->Branch("scatter_match_dist_u", &fScatterMatchDistU);
   _tree->Branch("scatter_match_v", &fScatterMatchV);
@@ -282,13 +309,16 @@ sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   _tree->Branch("scatter_match_dist_y", &fScatterMatchDistY);
 
   _tree->Branch("true_pdg", &fTruePDG, "true_pdg/i");
-  _tree->Branch("true_p", &fTrueP, "true_pdg/F");
-  _tree->Branch("true_e", &fTrueE, "true_pdg/F");
+  _tree->Branch("true_p", &fTrueP, "true_p/F");
+  _tree->Branch("true_e", &fTrueE, "true_e/F");
+  _tree->Branch("true_end_p", &fTrueEndP, "true_end_p/F");
+  _tree->Branch("true_end_e", &fTrueEndE, "true_end_e/F");
+  _tree->Branch("true_end_scatter", &fTrueEndScatter, "true_end_scatter/O");
 
   _tree->Branch("ifile", &fIFile, "ifile/i");
   _tree->Branch("ievt", &fIEvt, "ievt/i");
   _tree->Branch("evt", &fEvt, "evt/i");
-  _tree->Branch("no", &fNo, "no/i");
+  _tree->Branch("pfpid", &fPFPID, "pfpid/i");
 }
 
 void sbn::PCAngleKinkTree::Clear() {
@@ -352,6 +382,15 @@ void sbn::PCAngleKinkTree::Clear() {
   fTrajPY.clear();
   fTrajPT.clear();
 
+  fScatterM1X.clear();
+  fScatterM1Y.clear();
+  fScatterM1Z.clear();
+  fScatterM1P.clear();
+  fScatterM0X.clear();
+  fScatterM0Y.clear();
+  fScatterM0Z.clear();
+  fScatterM0P.clear();
+
   fScatterX.clear();
   fScatterY.clear();
   fScatterZ.clear();
@@ -360,6 +399,8 @@ void sbn::PCAngleKinkTree::Clear() {
   fScatterMagU.clear();
   fScatterMagV.clear();
   fScatterMagY.clear();
+
+  fScatterIsElastic.clear();
 
   fScatterMatchU.clear();
   fScatterMatchDistU.clear();
@@ -376,20 +417,80 @@ void sbn::PCAngleKinkTree::Clear() {
   fTruePDG = 0;
   fTrueE = 0;
   fTrueP = 0;
+  fTrueEndE = 0;
+  fTrueEndP = 0;
 
   fEvt = 0;
-  fNo = 0;
+
+  fPFPID = -1;
+  fTrueEndScatter = false;
 }
 
-void sbn::PCAngleKinkTree::FillMeta(const art::Event &evt, unsigned i_part) {
-  fNo = i_part;
+void sbn::PCAngleKinkTree::FillMeta(const art::Event &evt) {
   fEvt = evt.event();
   fIEvt += 1;
 }
 
-void sbn::PCAngleKinkTree::FillTruth(const recob::PFParticle &particle, const simb::MCParticle &trueParticle) {
-  (void) particle;
+void sbn::PCAngleKinkTree::FillTrueScatter(TLorentzVector pos, TLorentzVector mom0, TLorentzVector mom1, bool elastic) {
+  const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
 
+  // make sure contained in a TPC
+  double posarr[3];
+  pos.Vect().GetXYZ(posarr);
+  geo::TPCID tpc = geo->FindTPCAtPosition(posarr);
+  if (tpc.TPC == geo::TPCID::InvalidID) return;
+
+  // angle in degree
+  float angle = mom1.Vect().Angle(mom0.Vect());
+  if (!elastic)  {
+    std::cout << "Parent momentum: " << mom0.Px() << " " << mom0.Py() << " " << mom0.Pz() << std::endl;
+    std::cout << "Child momentum: " << mom1.Px() << " " << mom1.Py() << " " << mom1.Pz() << std::endl;
+    std::cout << "angle: " << angle << std::endl;
+  }
+
+  if (angle*(180. / M_PI) < fAngleCut) return;
+
+  fScatterM1X.push_back(mom1.Px());
+  fScatterM1Y.push_back(mom1.Py());
+  fScatterM1Z.push_back(mom1.Pz());
+  fScatterM1P.push_back(mom1.P());
+  
+  fScatterM0X.push_back(mom0.Px());
+  fScatterM0Y.push_back(mom0.Py());
+  fScatterM0Z.push_back(mom0.Pz());
+  fScatterM0P.push_back(mom0.P());
+  
+  fScatterX.push_back(pos.X());
+  fScatterY.push_back(pos.Y());
+  fScatterZ.push_back(pos.Z());
+  
+  fScatterPU.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 0, 0, 0) * geo->WirePitch());
+  fScatterPV.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 1, 0, 0) * geo->WirePitch());
+  fScatterPY.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 2, 0, 0) * geo->WirePitch());
+  fScatterPT.push_back(pos.X());
+  
+  fScatterMag.push_back(angle);
+  
+  // project the angle onto each wire-plane
+  double scatter_wireplane[3];
+  for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
+    geo::PlaneID plane(tpc, i_plane);
+    double wire_angle_tovert = geo->WireAngleToVertical(geo->View(plane), plane);
+    TVector3 v0(mom0.Px(), 
+      sin(wire_angle_tovert) * mom0.Pz() + cos(wire_angle_tovert) * mom0.Py(), 0.);
+    TVector3 v1(mom1.Px(), 
+      sin(wire_angle_tovert) * mom1.Pz() + cos(wire_angle_tovert) * mom1.Py(), 0.);
+    if (v0.Mag() < 1e-6 || v1.Mag() < 1e-6) scatter_wireplane[i_plane] = 0.;
+    else scatter_wireplane[i_plane] = v1.Unit().Angle(v0.Unit());
+  }
+  fScatterMagU.push_back(scatter_wireplane[0]);
+  fScatterMagV.push_back(scatter_wireplane[1]);
+  fScatterMagY.push_back(scatter_wireplane[2]);
+
+  fScatterIsElastic.push_back(elastic);
+}
+
+void sbn::PCAngleKinkTree::FillTruth(const simb::MCParticle &trueParticle, const std::vector<art::Ptr<simb::MCParticle>> &allParticles) {
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
 
   // save simple stuff
@@ -397,9 +498,20 @@ void sbn::PCAngleKinkTree::FillTruth(const recob::PFParticle &particle, const si
   fTrueE = trueParticle.Momentum().E();
   fTrueP = trueParticle.Momentum().P();
 
+  fTrueEndP = trueParticle.EndMomentum().P();
+  fTrueEndE = trueParticle.EndMomentum().E();
+
+  bool scatters = !(trueParticle.EndProcess() == "Decay" ||
+                                        trueParticle.EndProcess() == "CoupledTransportation" ||
+                                        trueParticle.EndProcess() == "FastScintillation" ||
+                                        trueParticle.EndProcess() == "muMinusCaptureAtRest" ||
+                                        trueParticle.EndProcess() == "LArVoxelReadoutScoringProcess");
+  fTrueEndScatter = scatters;
+
   // save the particle trajectory
   for (unsigned i_traj = 0; i_traj < trueParticle.NumberTrajectoryPoints(); i_traj ++) {
     TLorentzVector pos = trueParticle.Position(i_traj);
+    TLorentzVector mom = trueParticle.Momentum(i_traj);
 
     fTrajX.push_back(pos.X());
     fTrajY.push_back(pos.Y());
@@ -412,44 +524,33 @@ void sbn::PCAngleKinkTree::FillTruth(const recob::PFParticle &particle, const si
 
     // also find any elastic scatters
     if (i_traj > 1) {
-      // make sure contained in a TPC
-      double posarr[3];
-      pos.Vect().GetXYZ(posarr);
-      geo::TPCID tpc = geo->FindTPCAtPosition(posarr);
-      if (tpc.TPC == geo::TPCID::InvalidID) continue;
-
-      // angle in degree
-      float angle = trueParticle.Momentum(i_traj).Vect().Angle(trueParticle.Momentum(i_traj-1).Vect());
-      if (angle*(180. / M_PI) > fAngleCut) {
-	fScatterX.push_back(pos.X());
-	fScatterY.push_back(pos.Y());
-	fScatterZ.push_back(pos.Z());
-	
-	fScatterPU.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 0, 0, 0) * geo->WirePitch());
-	fScatterPV.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 1, 0, 0) * geo->WirePitch());
-	fScatterPY.push_back(geo->WireCoordinate(pos.Y(), pos.Z(), 2, 0, 0) * geo->WirePitch());
-	fScatterPT.push_back(pos.X());
-
-        fScatterMag.push_back(angle);
-
-        // project the angle onto each wire-plane
-        double scatter_wireplane[3];
-        for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-          geo::PlaneID plane(tpc, i_plane);
-          double wire_angle_tovert = geo->WireAngleToVertical(geo->View(plane), plane);
-          TVector3 v0(trueParticle.Momentum(i_traj-1).Px(), 
-            cos(wire_angle_tovert) * trueParticle.Momentum(i_traj-1).Pz() + sin(wire_angle_tovert) * trueParticle.Momentum(i_traj-1).Py(), 0.);
-          TVector3 v1(trueParticle.Momentum(i_traj).Px(), 
-            cos(wire_angle_tovert) * trueParticle.Momentum(i_traj).Pz() + sin(wire_angle_tovert) * trueParticle.Momentum(i_traj).Py(), 0.);
-          if (v0.Mag() < 1e-6 || v1.Mag() < 1e-6) scatter_wireplane[i_plane] = 0.;
-          else scatter_wireplane[i_plane] = v1.Unit().Angle(v0.Unit());
-        }
-        fScatterMagU.push_back(scatter_wireplane[0]);
-        fScatterMagV.push_back(scatter_wireplane[1]);
-        fScatterMagY.push_back(scatter_wireplane[2]);
-      }
+      FillTrueScatter(trueParticle.Position(i_traj), trueParticle.Momentum(i_traj-1), trueParticle.Momentum(i_traj), true);
     }
   }
+
+  // also save inelastic scatters at the end of the track
+  if (scatters && trueParticle.NumberTrajectoryPoints() > 1) {
+    for (int i_daughter = 0; i_daughter < trueParticle.NumberDaughters(); i_daughter++) {
+      int daughterID = trueParticle.Daughter(i_daughter);
+      int daughter_ind = -1;
+      for (unsigned i = 0; i < allParticles.size(); i++) {
+        if (allParticles[i]->TrackId() == daughterID) {
+          daughter_ind = i;
+          break;
+        }
+      }
+
+      if (daughter_ind >= 0) {
+        const simb::MCParticle &daughter = *allParticles[daughter_ind];
+        int pdg = abs(daughter.PdgCode());
+        if (pdg == 211 || pdg == 2112) { // daughter tracks
+          FillTrueScatter(trueParticle.EndPosition(), trueParticle.Momentum(trueParticle.NumberTrajectoryPoints() - 2), daughter.Momentum(), false);
+        }
+      }
+
+    }
+  }
+
 }
 
 void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAngleKink>> &kinks) {
@@ -499,6 +600,10 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkFitChi2Y.push_back(kink.fit_chi2);
     }
   }
+}
+
+void sbn::PCAngleKinkTree::FillParticle(const recob::PFParticle &particle) {
+  fPFPID = particle.Self();
 }
 
 void sbn::PCAngleKinkTree::FillAngles(const recob::PFParticle &particle, const std::vector<art::Ptr<sbn::PCAnglePlane>> &angles) {
@@ -567,6 +672,8 @@ void sbn::PCAngleKinkTree::MatchKinks() {
 
 void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
 {
+  art::ServiceHandle<cheat::BackTrackerService> bt;
+
   // input data
   std::vector<std::vector<art::Ptr<recob::PFParticle>>> particleList;
   std::vector<art::FindManyP<sbn::PCAnglePlane>> particleAngleList;
@@ -612,38 +719,70 @@ void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
   std::vector<art::Ptr<simb::MCParticle>> trueParticles;
   art::fill_ptr_vector(trueParticles, trueParticleHandle);
 
-  // process
-  for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
-    const recob::PFParticle &particle = *particles[i_part];
-    const std::vector<art::Ptr<sbn::PCAnglePlane>> &angle = particleAngles[i_part];
-    const std::vector<art::Ptr<sbn::PCAngleKink>> &kinks = particleKinks[i_part];
-    const std::vector<art::Ptr<recob::Hit>> &hits = particleHits[i_part];
+  std::vector<unsigned> primary;
+  // get the primary particles
+  for (unsigned i_mcpart = 0; i_mcpart < trueParticles.size(); i_mcpart++) {
+    if (trueParticles[i_mcpart]->Process() == "primary") {
+      primary.push_back(i_mcpart);
+    }
+  }
 
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
-    int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
-                                                     [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
-    // float matchE = matches.size() ? std::max_element(matches.begin(), matches.end(),
-    //                                                  [](const auto &a, const auto &b) { return a.second < b.second; })->second : -1;
-    art::Ptr<simb::MCParticle> matched_particle;
-    for (art::Ptr<simb::MCParticle> p: trueParticles) {
-      if (p->TrackId() == match_id) {
-        matched_particle = p;
+  // process true
+  for (unsigned i_mcpart: primary) {
+    const art::Ptr<simb::MCParticle> &truep = trueParticles[i_mcpart];
+
+    // setup
+    Clear();
+    FillMeta(evt);
+
+    // Fill truth stuff
+    FillTruth(*truep, trueParticles);
+
+    // look up the deposited energy of the true particle
+    // get all the IDE's of the truth track
+    const std::vector<const sim::IDE*> mcparticle_ides = bt->TrackIdToSimIDEs_Ps(truep->TrackId());
+    // sum it up
+    float mcparticle_energy = 0.;
+    for (auto const &ide: mcparticle_ides) {
+      mcparticle_energy += ide->energy;
+    }
+
+    // process
+    // Fid Reco match
+    int i_reco_match = -1;
+    for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
+      const std::vector<art::Ptr<recob::Hit>> &hits = particleHits[i_part];
+
+      std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
+      int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
+                                                       [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
+      float matchE = matches.size() ? std::max_element(matches.begin(), matches.end(),
+                                                       [](const auto &a, const auto &b) { return a.second < b.second; })->second : -1;
+      float totalE = std::accumulate(matches.begin(), matches.end(), 0.,
+                                     [](auto const &a, auto const &b) { return a + b.second;});
+
+      if (match_id == truep->TrackId() && matchE / mcparticle_energy > 0.5 && matchE / totalE > 0.5) {
+        i_reco_match = i_part;
         break;
       }
     }
 
-    // ignore cases with no match
-    if (!matched_particle) continue;
+    // fill reco stuff if we found a reco PFParticle
+    if (i_reco_match >= 0) {
+      const recob::PFParticle &particle = *particles[i_reco_match];
+      const std::vector<art::Ptr<sbn::PCAnglePlane>> &angle = particleAngles[i_reco_match];
+      const std::vector<art::Ptr<sbn::PCAngleKink>> &kinks = particleKinks[i_reco_match];
+      // fill stuff
+      FillParticle(particle);
+      FillAngles(particle, angle);
+      FillKinks(particle, kinks);
+      MatchKinks();
+    }
 
-    if (fOnlyPrimary && matched_particle->Process() != "primary") continue;
+    // skip this if we needed a reco match
+    if (i_reco_match < 0 && fRequireReco) continue;
 
-    // fill stuff
-    Clear();
-    FillTruth(particle, *matched_particle);
-    FillAngles(particle, angle);
-    FillKinks(particle, kinks);
-    MatchKinks();
-    FillMeta(evt, i_part);
+    // Save the entry in the TTree
     _tree->Fill();
   }
 }

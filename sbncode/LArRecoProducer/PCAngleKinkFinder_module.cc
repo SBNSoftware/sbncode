@@ -76,7 +76,7 @@ private:
 
 
   // private helpers
-  FitResult Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch_lo, float est_pitch_hi);
+  FitResult Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch);
 
 };
 
@@ -287,23 +287,22 @@ sbn::PCAngleKinkFinder::PCAngleKinkFinder(fhicl::ParameterSet const& p)
 
 }
 
-double ExpectedCosAngle(double dist_to_center, double radius, double mean_distance_A, double mean_distance_B, double angle) {
+double ExpectedCosAngle(double dist_to_center, double radius, double mean_distance, double angle) {
   if (dist_to_center >= radius) return 1.;
 
   double theta = angle;
   double A = dist_to_center;
   double B = radius - dist_to_center;
-  // double R = radius;
-  double lA = mean_distance_A;
-  double lB = mean_distance_B;
+  double R = radius;
+  double l = mean_distance;
 
-  double M01 = (B*(B + lB)*(3*A*(A + lA)*lB + (B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta))*sin(theta))/(12.*lB*(B*lA + A*lB));
-  double M00 = (A*(A + lA)*lB*(2*B*lA*(2*A + lA) + A*(A - lA)*lB) + B*(B + lB)*cos(theta)*(6*A*lA*(A + lA)*lB + lA*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta)))/(12.*lA*lB*(B*lA + A*lB));
-  double M11 = (B*(B + lB)*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*sin(theta)*sin(theta))/(12.*lB*(B*lA + A*lB));
+  // double M01 = (B*(B + lB)*(3*A*(A + lA)*lB + (B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta))*sin(theta))/(12.*lB*(B*lA + A*lB));
+  //double M00 = (A*(A + lA)*lB*(2*B*lA*(2*A + lA) + A*(A - lA)*lB) + B*(B + lB)*cos(theta)*(6*A*lA*(A + lA)*lB + lA*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*cos(theta)))/(12.*lA*lB*(B*lA + A*lB));
+  //double M11 = (B*(B + lB)*(B*B*lA + B*(4*A - lA)*lB + 2*A*lB*lB)*sin(theta)*sin(theta))/(12.*lB*(B*lA + A*lB));
 
-  //double M01 = (B*(B + l)*(-6*A*(A + l)*(A + B - 2*R)*sin(theta) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(2*theta)))/(24.*l*R*R);
-  //double M00 = (A*(A + l)*(3*A*(A + B)*(A + l) - 6*A*(A + l)*R + 2*(2*A + l)*R*R) + B*(B + l)*cos(theta)*(-6*A*(A + l)*(A + B - 2*R) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*cos(theta)))/(12.*l*R*R);
-  //double M11 = (B*(B + l)*(3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(theta)*sin(theta))/(12.*l*R*R);
+  double M01 = (B*(B + l)*(-6*A*(A + l)*(A + B - 2*R)*sin(theta) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(2*theta)))/(24.*l*R*R);
+  double M00 = (A*(A + l)*(3*A*(A + B)*(A + l) - 6*A*(A + l)*R + 2*(2*A + l)*R*R) + B*(B + l)*cos(theta)*(-6*A*(A + l)*(A + B - 2*R) + (3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*cos(theta)))/(12.*l*R*R);
+  double M11 = (B*(B + l)*(3*B*(A + B)*(B + l) - 6*B*(B + l)*R + 2*(2*B + l)*R*R)*sin(theta)*sin(theta))/(12.*l*R*R);
 
   double trace = M00 + M11;
   double det = M00 * M11 - M01 * M01;
@@ -318,30 +317,18 @@ void FitLikelihood(int &npar, double *g, double &result, double *par, int flag) 
   double angle = par[0];
   double res = par[1];
   double radius = par[2];
-  double mean_distance_lo = par[3];
-  double mean_distance_hi = par[4];
+  double mean_distance = par[3];
 
   double chi2 = 0.;
-  float mean_distance_A;
-  float mean_distance_B;
   for (unsigned i = 0; i < fFitDataX.size(); i++) {
-    if (i < fFitCenter) {
-      mean_distance_A = mean_distance_lo;
-      mean_distance_B = mean_distance_hi;
-    }
-    else {
-      mean_distance_A = mean_distance_hi;
-      mean_distance_B = mean_distance_lo;
-    }
-
-    double expectation = acos(ExpectedCosAngle(fFitDataX[i], radius, mean_distance_A, mean_distance_B, angle));
+    double expectation = acos(ExpectedCosAngle(fFitDataX[i], radius, mean_distance, angle));
     chi2 += (expectation - fFitDataY[i]) * (expectation - fFitDataY[i]) / (fFitDataY[i] * fFitDataY[i] * res * res);
   }
 
   result = chi2 / fFitDataX.size();
 }
 
-sbn::PCAngleKinkFinder::FitResult sbn::PCAngleKinkFinder::Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch_lo, float est_pitch_hi) {
+sbn::PCAngleKinkFinder::FitResult sbn::PCAngleKinkFinder::Fit(const std::vector<sbn::PCAngle> &angles, unsigned lo, unsigned hi, unsigned center, float est_angle, float est_pitch) {
   // setup the fitdata
   fFitDataX.clear();
   fFitDataY.clear();
@@ -358,18 +345,17 @@ sbn::PCAngleKinkFinder::FitResult sbn::PCAngleKinkFinder::Fit(const std::vector<
   fitter.SetParameter(0, "angle", est_angle, 0.1, 0, M_PI);
   fitter.SetParameter(1, "resolution", fFitResolution, 0., fFitResolution, fFitResolution);
   fitter.SetParameter(2, "radius", fPCARadius, 0., fPCARadius, fPCARadius);
-  fitter.SetParameter(3, "pitch_lo", est_pitch_lo, 0., est_pitch_lo, est_pitch_lo);
-  fitter.SetParameter(4, "pitch_hi", est_pitch_hi, 0., est_pitch_hi, est_pitch_hi);
+  fitter.SetParameter(3, "pitch", est_pitch, 0., est_pitch, est_pitch);
   fitter.GetMinuit()->FixParameter(1);
   fitter.GetMinuit()->FixParameter(2);
   fitter.GetMinuit()->FixParameter(3);
-  fitter.GetMinuit()->FixParameter(4);
 
   fitter.ExecuteCommand("MIGRAD", 0, 0);
 
   sbn::PCAngleKinkFinder::FitResult ret;
 
   ret.angle = fitter.GetParameter(0);
+  ret.pitch = fitter.GetParameter(3);
 
   double chi2;
   double edm;
@@ -451,17 +437,18 @@ void sbn::PCAngleKinkFinder::produce(art::Event& evt)
                 dist_lo_sum += sqrt((branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) * (branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) +
                     (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm) * (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm)); 
               }
-              float pitch_lo = dist_lo_sum / (max_ind - lo_hit_ind);
+              // float pitch_lo = dist_lo_sum / (max_ind - lo_hit_ind);
 
               float dist_hi_sum = 0.;
               for (int i = max_ind; i < hi_hit_ind; i++) {
                 dist_hi_sum += sqrt((branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) * (branchAngles[i].hit_time_cm - branchAngles[i+1].hit_time_cm) +
                     (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm) * (branchAngles[i].hit_wire_cm - branchAngles[i+1].hit_wire_cm)); 
               }
-              float pitch_hi = dist_hi_sum / (hi_hit_ind - max_ind);
-              std::cout << "Pitch lo: " << pitch_lo << " Pitch hi: " << pitch_hi << std::endl;
+              // float pitch_hi = dist_hi_sum / (hi_hit_ind - max_ind);
+              float pitch = (dist_lo_sum + dist_hi_sum) / (hi_hit_ind - lo_hit_ind);
 
-              sbn::PCAngleKinkFinder::FitResult fit = Fit(branchAngles, lo_hit_ind, hi_hit_ind, max_ind, height, pitch_lo, pitch_hi);
+
+              sbn::PCAngleKinkFinder::FitResult fit = Fit(branchAngles, lo_hit_ind, hi_hit_ind, max_ind, height, pitch);
 
               const sbn::PCAngle &max = branchAngles[max_ind];
               const sbn::PCAngle &lo = branchAngles[lo_hit_ind];
