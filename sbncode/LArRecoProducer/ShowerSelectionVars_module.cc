@@ -90,7 +90,7 @@ sbn::ShowerSelectionVars::ShowerSelectionVars(fhicl::ParameterSet const& p)
   , fRemoveStartFin(p.get<bool>("RemoveStartFin"))
 {
   if (fNSegments==0)
-    throw cet::exception("ShowerSelectectionVars") << "Number of Segements must be non-zero" << std::endl;
+    throw cet::exception("ShowerSelectionVars") << "Number of Segements must be non-zero" << std::endl;
 
   produces<std::vector<float> >();
   produces<std::vector<sbn::ShowerTrackFit> >();
@@ -123,7 +123,7 @@ void sbn::ShowerSelectionVars::produce(art::Event& e)
     throw cet::exception("ShowerSelectionVars") << "Slice-PFP association is somehow not valid. Stopping";
     return;
   }
-  art::FindManyP<recob::Shower> fmPFPShower(pfpHandle, e, fPandoraLabel);
+  art::FindManyP<recob::Shower> fmPFPShower(pfpHandle, e, fShowerLabel);
   if(!fmPFPShower.isValid()){
     throw cet::exception("ShowerSelectionVars") << "PFP-Shower association is somehow not valid. Stopping";
     return;
@@ -292,7 +292,8 @@ sbn::ShowerDensityFit sbn::ShowerSelectionVars::DensityFitter(const recob::Showe
     graph->SetPoint(graph->GetN(),LengthToSegment,SegmentDensity/totalHits);
   }
 
-  if(graph->GetN() < 3 ){return -999;}
+  if(graph->GetN() < 3 )
+    return sbn::ShowerDensityFit();
 
   TF1 *fit = new TF1("fit", "[0]/x^[1]");
   fit->SetParLimits(1,1,2);

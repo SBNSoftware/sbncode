@@ -2,7 +2,6 @@
 #define sbncode_Showerselectionvars_H
 
 namespace sbn {
-
   class ShowerDensityFit {
     public:
 
@@ -27,7 +26,6 @@ namespace sbn {
       double mTrackWidth;
       unsigned int mNumHits;
   }; // end sbnd::ShowerTrackFit
-
 }
 
 #endif
