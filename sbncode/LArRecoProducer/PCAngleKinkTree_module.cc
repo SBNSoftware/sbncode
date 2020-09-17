@@ -31,7 +31,7 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-
+#include "PCA.h"
 
 namespace sbn {
   class PCAngleKinkTree;
@@ -194,14 +194,6 @@ private:
   int fEvt;
   int fPFPID;
 };
-
-// static helper functions
-float VecAngle(std::array<float, 2> A, std::array<float, 2> B) {
-  float costh = (A[0] * B[0] + A[1] * B[1]) \
-    / (sqrt(A[0]*A[0] + A[1] * A[1]) * sqrt(B[0]*B[0] + B[1] * B[1]));
-
-  return acos(costh);
-}
 
 sbn::PCAngleKinkTree::PCAngleKinkTree(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},  // ,
@@ -566,7 +558,7 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkWireHiU.push_back(kink.position_hi[1]);
       fKinkEstAngleU.push_back(kink.est_angle);
       fKinkMaxAngleU.push_back(kink.max_angle);
-      fKinkLoHiAngleU.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkLoHiAngleU.push_back(M_PI - sbnpca::VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
       fKinkFitAngleU.push_back(kink.fit_angle);
       fKinkFitPitchU.push_back(kink.fit_pitch);
       fKinkFitChi2U.push_back(kink.fit_chi2);
@@ -580,7 +572,7 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkWireHiV.push_back(kink.position_hi[1]);
       fKinkEstAngleV.push_back(kink.est_angle);
       fKinkMaxAngleV.push_back(kink.max_angle);
-      fKinkLoHiAngleV.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkLoHiAngleV.push_back(M_PI - sbnpca::VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
       fKinkFitAngleV.push_back(kink.fit_angle);
       fKinkFitPitchV.push_back(kink.fit_pitch);
       fKinkFitChi2V.push_back(kink.fit_chi2);
@@ -594,7 +586,7 @@ void sbn::PCAngleKinkTree::FillKinks(const recob::PFParticle &particle, const st
       fKinkWireHiY.push_back(kink.position_hi[1]);
       fKinkEstAngleY.push_back(kink.est_angle);
       fKinkMaxAngleY.push_back(kink.max_angle);
-      fKinkLoHiAngleY.push_back(M_PI - VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
+      fKinkLoHiAngleY.push_back(M_PI - sbnpca::VecAngle(kink.vec_lo_at_halfmax_lo, kink.vec_hi_at_halfmax_hi));
       fKinkFitAngleY.push_back(kink.fit_angle);
       fKinkFitPitchY.push_back(kink.fit_pitch);
       fKinkFitChi2Y.push_back(kink.fit_chi2);

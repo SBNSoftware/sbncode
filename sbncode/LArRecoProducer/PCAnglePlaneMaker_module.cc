@@ -33,6 +33,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 
 #include "Products/PCAnglePlane.h"
+#include "PCA.h"
 
 namespace sbn {
   class PCAnglePlaneMaker;
@@ -80,152 +81,6 @@ void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHit
   }
 }
 
-float VecAngle(std::array<float, 2> A, std::array<float, 2> B) {
-  float costh = (A[0] * B[0] + A[1] * B[1]) \
-    / (sqrt(A[0]*A[0] + A[1] * A[1]) * sqrt(B[0]*B[0] + B[1] * B[1]));
-
-  return acos(costh);
-}
-
-std::array<float, 2> HitVector(const recob::Hit &A, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-  // get the wire distance between A and B
-  float wire_distance = A.WireID().Wire;
-  // convert to cm
-  float wire_distance_cm = wire_distance * geo->WirePitch();
-
-  // and the time difference
-  float time_distance = A.PeakTime();
-  // convert to cm
-  float time_distance_cm = dprop->ConvertTicksToX(time_distance, A.WireID());
-
-  return {wire_distance_cm, time_distance_cm};
-}
-
-std::array<float, 2> HitVector(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-  // get each individual vec
-  std::array<float, 2> vecA = HitVector(A, geo, dprop);
-  std::array<float, 2> vecB = HitVector(B, geo, dprop);
-
-  return {vecA[0] - vecB[0], vecA[1] - vecB[1]};
-}
-
-float HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-  std::array<float, 2> vec = HitVector(A, B, geo, dprop);
-  return sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
-}
-
-std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
-                                                 const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
-                                                 const geo::GeometryCore *geo,
-                                                 const detinfo::DetectorProperties *dprop) {
-  std::vector<art::Ptr<recob::Hit>> retlo;
-  std::vector<art::Ptr<recob::Hit>> rethi;
-
-  bool lo_complete = false;
-  // pull in smaller ones
-  for (int j = ihit-1; j >= 0; j--) {
-    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
-      lo_complete = true;
-      break;
-    }
-    retlo.push_back(hits[j]);
-  }
-
-  bool hi_complete = false;
-  // pull in larger ones
-  for (unsigned j = ihit+1; j < hits.size(); j++) {
-    if (HitDistance(*hits[j], *hits[ihit], geo, dprop) > distance) {
-      hi_complete = true;
-      break;
-    }
-    rethi.push_back(hits[j]);
-  }
-
-  return {retlo, rethi, lo_complete && hi_complete};
-}
-
-std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-
-  if (hits.size() < 2) return {-100., -100.};
-
-  std::array<float, 2> sum {};
-  for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    sum[0] += vec[0];
-    sum[1] += vec[1];
-  }
-  sum[0] = sum[0] / hits.size();
-  sum[1] = sum[1] / hits.size();
-
-  std::array<std::array<float, 2>, 2> scatter {};
-  for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    vec[0] -= sum[0];
-    vec[1] -= sum[1];
-
-    scatter[0][0] += vec[0] * vec[0];
-    scatter[0][1] += vec[0] * vec[1];
-    scatter[1][0] += vec[1] * vec[0];
-    scatter[1][1] += vec[1] * vec[1];
-  }
-
-  // first get the eigenvalues of the matrix
-  float trace = scatter[0][0] + scatter[1][1];
-  float det = scatter[0][0] * scatter[1][1] - scatter[0][1] * scatter[1][0];
-
-  // this is always the max-eigenvalue
-  float eigenP = (1. / 2.) * (trace + sqrt(trace*trace - 4 * det));
-  // float eigenM = (1. / 2.) * (trace - sqrt(trace*trace - 4 * det));
-
-  // and then the eigenvectors
-  std::array<float, 2> ret {scatter[0][1], eigenP - scatter[0][0]};
-  // std::array<float, 2> eigenVM {scatter[0][1], eigenM - scatter[0][0]};
-
-  // make sure the sign is right
-  if (sum[0] * ret[0] + sum[1] * ret[1] < 0.) {
-    ret[0] = -ret[0];
-    ret[1] = -ret[1];
-  }
-
-  return ret;
-
-}
-
-std::array<float, 2> HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
-
-  std::array<float, 2> sum {};
-  for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    sum[0] += vec[0];
-    sum[1] += vec[1];
-  }
-  sum[0] = sum[0] / hits.size();
-  sum[1] = sum[1] / hits.size();
-
-  std::array<std::array<float, 2>, 2> scatter {};
-  for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    vec[0] -= sum[0];
-    vec[1] -= sum[1];
-
-    scatter[0][0] += vec[0] * vec[0];
-    scatter[0][1] += vec[0] * vec[1];
-    scatter[1][0] += vec[1] * vec[0];
-    scatter[1][1] += vec[1] * vec[1];
-  }
-
-  // first get the eigenvalues of the matrix
-  float trace = scatter[0][0] + scatter[1][1];
-  float det = scatter[0][0] * scatter[1][1] - scatter[0][1] * scatter[1][0];
-
-  float eigenP = (1. / 2.) * (trace + sqrt(trace*trace - 4 * det));
-  float eigenM = (1. / 2.) * (trace - sqrt(trace*trace - 4 * det));
-
-  return {eigenP, eigenM};
-}
-
 float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
   float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
   float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
@@ -264,7 +119,7 @@ std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::
         const recob::Hit &lastHit = *ret[i].back();
         std::list<art::Ptr<recob::Hit>>::iterator closest = std::min_element(planar[i].begin(), planar[i].end(),
           [lastHit, geo, dprop](auto const &lhs, auto const &rhs) { 
-            return HitDistance(*lhs, lastHit, geo, dprop) < HitDistance(*rhs, lastHit, geo, dprop);
+            return sbnpca::HitDistance(*lhs, lastHit, geo, dprop) < sbnpca::HitDistance(*rhs, lastHit, geo, dprop);
           });
 
         ret[i].push_back(*closest);
@@ -492,7 +347,7 @@ void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
       for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
         for (unsigned i_hit = 0; i_hit < sortedHits[i_plane].size(); i_hit++) {
           // get nearby hits
-          auto [hitslo, hitshi, complete] = GetNearestHits(sortedHits[i_plane], i_hit, fHitGroupDistance, geo, dprop);
+          auto [hitslo, hitshi, complete] = sbnpca::GetNearestHits(sortedHits[i_plane], i_hit, fHitGroupDistance, geo, dprop);
 
           //std::cout << "Plane: " << i_plane << " Branch: " << branch_id << " hit: " << i_hit << " " << sortedHits[i_plane][i_hit].key();
           //if (hitslo.size()) std::cout << " lo: " << hitslo.back().key();
@@ -505,16 +360,16 @@ void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
           // if (hithi.size() < 2 || hitslo.size() < 2) continue;
 
           // Get the PCA dirs
-          std::array<float, 2> pca_vec_lo = HitPCAVec(hitslo, sortedHits[i_plane][i_hit], geo, dprop);
-          std::array<float, 2> pca_vec_hi = HitPCAVec(hitshi, sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> pca_vec_lo = sbnpca::HitPCAVec(hitslo, sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> pca_vec_hi = sbnpca::HitPCAVec(hitshi, sortedHits[i_plane][i_hit], geo, dprop);
           float angle = -100.;
           // check if valid vecs
           if (pca_vec_lo[0] > -99. && pca_vec_lo[1] > -99. && pca_vec_hi[0] > -99. && pca_vec_hi[1] > -99.) {
             // get angle between the two vecs and flip
-            angle = M_PI - VecAngle(pca_vec_lo, pca_vec_hi);
+            angle = M_PI - sbnpca::VecAngle(pca_vec_lo, pca_vec_hi);
           }
 
-          std::array<float, 2> hv = HitVector(*sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> hv = sbnpca::HitVector(*sortedHits[i_plane][i_hit], geo, dprop);
 
           // and save
           sbn::PCAngleInfo thisAngle;
@@ -527,9 +382,9 @@ void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
           thisAngle.angle.complete = complete;
           thisAngle.angle.hitID = sortedHits[i_plane][i_hit].key();
 
-          if (hitshi.size()) thisAngle.angle.dist_to_hi = HitDistance(*hitshi.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
+          if (hitshi.size()) thisAngle.angle.dist_to_hi = sbnpca::HitDistance(*hitshi.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
           else thisAngle.angle.dist_to_hi = -100.;
-          if (hitslo.size()) thisAngle.angle.dist_to_lo = HitDistance(*hitslo.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
+          if (hitslo.size()) thisAngle.angle.dist_to_lo = sbnpca::HitDistance(*hitslo.back(), *sortedHits[i_plane][i_hit], geo, dprop); 
           else thisAngle.angle.dist_to_lo = -100.;
 
           if (hitshi.size()) thisAngle.angle.hitIDHi = hitshi.back().key();
