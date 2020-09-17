@@ -115,6 +115,7 @@ namespace caf
         srslice.primary.push_back(id);
       }
       srslice.self = primary->Self();
+      srslice.nu_pdg = primary->PdgCode();
     }
     else {
       srslice.self = -1;
@@ -284,6 +285,8 @@ namespace caf
         srtrack.chi2pid[plane_id].chi2_kaon = particle_id.Chi2Pion();
         srtrack.chi2pid[plane_id].chi2_proton = particle_id.Chi2Proton();
         srtrack.chi2pid[plane_id].pid_ndof = particle_id.Ndf();
+
+        srtrack.chi2pid[plane_id].pida = particle_id.PIDA();
       }
     }
   }

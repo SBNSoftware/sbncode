@@ -52,6 +52,7 @@ namespace caf
       FlashMatch fmatch; //!< Optical flash-match for this slice of TPC charge
 
       bool is_clear_cosmic; //!< Whether pandora marks the slice as a "clear" cosmic
+      int nu_pdg; //!< PDG assigned to the PFParticle Neutrino
       float nu_score; //!< Score of how neutrino-like the slice is 
       std::vector<size_t> primary; //!< ID's of primary tracks and showers in slice
       int                 self;    //!< ID of the particle representing this slice
