@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 // \file    FillReco.cxx
-// \brief   Fill reco SR branches 
+// \brief   Fill reco SR branches
 // \author  $Author: psihas@fnal.gov
 //////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ namespace caf
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
-    return (slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
+    return (!slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
@@ -26,16 +26,18 @@ namespace caf
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
     srhit.position.z = hit.z_pos;
-    
+
     srhit.position_err.x = hit.x_err;
     srhit.position_err.y = hit.y_err;
     srhit.position_err.z = hit.z_err;
   }
 
   //......................................................................
-  void FillShowerVars(const recob::Shower& shower, 
-                            caf::SRShower &srshower,
-                            bool allowEmpty)
+  void FillShowerVars(const recob::Shower& shower,
+                      const recob::PFParticle &particle,
+                      const recob::Vertex* vertex,
+                      caf::SRShower &srshower,
+                      bool allowEmpty)
   {
 
     srshower.dir    = SRVector3D( shower.Direction() );
@@ -53,17 +55,50 @@ namespace caf
       srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
     }
 
-    if(shower.Length() > 0) {
+    if(shower.has_open_angle())
+      srshower.open_angle = shower.OpenAngle();
+    if(shower.has_length())
       srshower.len = shower.Length();
-      if(shower.best_plane() != -999){
-        srshower.density = shower.Energy().at(shower.best_plane()) / shower.Length();
-      }
+
+    if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
+        srshower.density = srshower.bestplane_energy / srshower.len;
+
+    // Fill in hierarchy info
+    srshower.ID = particle.Self();
+    for (unsigned id: particle.Daughters()) {
+      srshower.daughters.push_back(id);
     }
+    srshower.parent = particle.Parent();
 
-    // if(shower.has_open_angle()) {
-    srshower.open_angle = shower.OpenAngle();
-    // }
+    if (vertex && shower.ShowerStart().Z()>-990) {
+      // Need to do some rearranging to make consistent types
+      const geo::Point_t vertexPos(vertex->position());
+      const TVector3 vertexTVec3{vertexPos.X(), vertexPos.Y(), vertexPos.Z()};
 
+      srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
+    }
+  }
+
+  void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
+                      caf::SRShower& srshower)
+  {
+    for (auto const& res: residuals) {
+      srshower.selVars.showerResiduals.push_back(*res);
+    }
+  }
+
+  void FillShowerTrackFit(const sbn::ShowerTrackFit& trackFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.trackLength = trackFit.mTrackLength;
+    srshower.selVars.trackWidth  = trackFit.mTrackWidth;
+  }
+
+  void FillShowerDensityFit(const sbn::ShowerDensityFit& densityFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.densityGradient      = densityFit.mDensityGrad;
+    srshower.selVars.densityGradientPower = densityFit.mDensityPow;
   }
 
   void FillSliceVars(const recob::Slice& slice,
@@ -80,6 +115,7 @@ namespace caf
         srslice.primary.push_back(id);
       }
       srslice.self = primary->Self();
+      srslice.nu_pdg = primary->PdgCode();
     }
     else {
       srslice.self = -1;
@@ -90,10 +126,10 @@ namespace caf
                         caf::SRSlice &srslice,
                         bool allowEmpty)
   {
-    // default values   
+    // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
- 
+
     // collect the properties
     if (primary_meta != NULL) {
       auto const &properties = primary_meta->GetPropertiesMap();
@@ -106,8 +142,8 @@ namespace caf
         srslice.is_clear_cosmic = false;
       }
       if (properties.count("NuScore")) {
-        srslice.nu_score = properties.at("NuScore"); 
-      } 
+        srslice.nu_score = properties.at("NuScore");
+      }
       else {
         srslice.nu_score = -1;
       }
@@ -142,15 +178,15 @@ namespace caf
 
   //......................................................................
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
-                       const std::vector<const anab::T0*> &t0match, 
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<const anab::T0*> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
     if (hitmatch.size()) {
       assert(hitmatch.size() == 1);
       assert(t0match.size() == 1);
-      srtrack.crthit.distance = t0match[0]->fTriggerConfidence; 
+      srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.hit.time = t0match[0]->fTime;
       srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
       srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
@@ -212,12 +248,12 @@ namespace caf
   {
     // calculate range momentum
     if (range_results[0].size()) {
-      srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
+      srtrack.rangeP.p_muon = range_results[0][0]->range_p;
       assert(track.ID() == range_results[0][0]->trackID);
     }
 
     if (range_results[1].size()) {
-      srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
+      srtrack.rangeP.p_proton = range_results[1][0]->range_p;
       assert(track.ID() == range_results[1][0]->trackID);
     }
   }
@@ -239,7 +275,7 @@ namespace caf
       srtrack.nchi2pid = 3;
     }
 
-    for (unsigned i = 0; i < particleIDs.size(); i++) { 
+    for (unsigned i = 0; i < particleIDs.size(); i++) {
       const anab::ParticleID &particle_id = *particleIDs[i];
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().deepestIndex();
@@ -249,6 +285,8 @@ namespace caf
         srtrack.chi2pid[plane_id].chi2_kaon = particle_id.Chi2Pion();
         srtrack.chi2pid[plane_id].chi2_proton = particle_id.Chi2Proton();
         srtrack.chi2pid[plane_id].pid_ndof = particle_id.Ndf();
+
+        srtrack.chi2pid[plane_id].pida = particle_id.PIDA();
       }
     }
   }
@@ -271,7 +309,7 @@ namespace caf
       srtrack.ncalo = 3;
     }
 
-    for (unsigned i = 0; i < calos.size(); i++) { 
+    for (unsigned i = 0; i < calos.size(); i++) {
       const anab::Calorimetry &calo = *calos[i];
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().deepestIndex();
@@ -336,7 +374,7 @@ namespace caf
 
   }
   //......................................................................
-  
+
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos) {
   //   // set is_primary to true by default
@@ -349,7 +387,7 @@ namespace caf
   //   }
   }
 
-  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs, 
+  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs,
                            const std::vector<caf::SRTrueInteraction> &srneutrinos,
                            unsigned truth_ind) {
 
@@ -360,8 +398,8 @@ namespace caf
   //     }
   //   }
 
-  //   // first -- remove any cases where most of the slice 
-  //   // matches to non-primary particles of the neutrino 
+  //   // first -- remove any cases where most of the slice
+  //   // matches to non-primary particles of the neutrino
   //   unsigned ind = 0;
   //   std::vector<float> matching_primary_energy;
   //   while (ind < matches_truth.size()) {
@@ -392,7 +430,7 @@ namespace caf
   //               break;
   //             }
   //           }
-  //         }  
+  //         }
   //       }
   //     }
   //     if (primary_energy / total_energy < 0.5) {
@@ -410,7 +448,7 @@ namespace caf
 
   //   // If this is a numu CC interaction, break
   //   // tie by matching the muon
-  //   // Whoever has a track matching closer to the 
+  //   // Whoever has a track matching closer to the
   //   // start of the muon wins
   //   if (abs(srneutrinos[truth_ind].pdg == 14) && srneutrinos[truth_ind].iscc) {
   //     const caf::SRTrueParticle &muon = srneutrinos[truth_ind].prim[0];
@@ -442,7 +480,7 @@ namespace caf
   //              float this_dist = std::min(start_dist, end_dist);
   //              if (closest_dist < 0. || this_dist < closest_dist) {
   //                closest_dist = this_dist;
-  //                best_index = ind; 
+  //                best_index = ind;
   //              }
   //           }
   //         }
@@ -462,7 +500,7 @@ namespace caf
   //   }
 
   //   // Otherwise, take the most energetic one
-  //   unsigned best_index = std::distance(matching_primary_energy.begin(), 
+  //   unsigned best_index = std::distance(matching_primary_energy.begin(),
   //                                       std::max_element(matching_primary_energy.begin(), matching_primary_energy.end()));
 
   //   for (unsigned i = 0; i < matches_truth.size(); i++) {
@@ -473,4 +511,4 @@ namespace caf
   }
 
 
-} // end namespace 
+} // end namespace

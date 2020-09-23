@@ -21,6 +21,8 @@ namespace caf
       float          chi2_kaon;   ///< dE/dx v. residual range Chi2 (kaon hypothesis)
       float          chi2_proton; ///< dE/dx v. residual range Chi2 (proton hypothesis)
 
+      float          pida;        ///< PIDA
+
       void setDefault();
     };
 
