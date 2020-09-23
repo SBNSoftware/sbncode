@@ -2,10 +2,17 @@
 #define __sbnanalysis_core_ProviderManager__
 
 #include <string>
+#include <memory>
+#include <vector>
 #include "core/Experiment.hh"
+
+#include "gallery/Event.h"
+
+#include "larcorealg/Geometry/AuxDetChannelMapAlg.h"
 
 namespace geo {
   class GeometryCore;
+  class AuxDetGeometryCore;
 }
 
 namespace detinfo {
@@ -21,6 +28,7 @@ namespace fhicl {
 namespace cheat {
   class BackTracker;
   class ParticleInventory;
+  class PhotonBackTracker;
 }
 
 namespace core {
@@ -41,30 +49,40 @@ namespace core {
  */
 class ProviderManager {
 public:
-  ProviderManager(Experiment det, std::string fcl="");
+  ProviderManager(Experiment det, std::string fcl="", bool setup_event_services=true);
 
-  const geo::GeometryCore* GetGeometryProvider() {
+  void SetupServices(gallery::Event &ev);
+
+  const geo::GeometryCore* GetGeometryProvider() const {
     return fGeometryProvider.get();
   }
 
-  const detinfo::LArPropertiesStandard* GetLArPropertiesProvider() {
+  const geo::AuxDetGeometryCore* GetAuxDetGeometryProvider() const {
+    return fAuxDetGeometryProvider.get();
+  }
+
+  const detinfo::LArPropertiesStandard* GetLArPropertiesProvider() const {
     return fLArPropertiesProvider.get();
   }
 
-  const detinfo::DetectorClocksStandard* GetDetectorClocksProvider() {
+  const detinfo::DetectorClocksStandard* GetDetectorClocksProvider() const {
     return fDetectorClocksProvider.get();
   }
 
-  const detinfo::DetectorPropertiesStandard* GetDetectorPropertiesProvider() {
+  const detinfo::DetectorPropertiesStandard* GetDetectorPropertiesProvider() const {
     return fDetectorPropertiesProvider.get();
   }
 
-  const cheat::BackTracker* GetBackTrackerProvider() {
+  cheat::BackTracker* GetBackTrackerProvider() const {
     return fBackTrackerProvider.get();
   }
 
-  const cheat::ParticleInventory* GetParticleInventoryProvider() {
+  cheat::ParticleInventory* GetParticleInventoryProvider() const {
     return fParticleInventoryProvider.get();
+  }
+
+  cheat::PhotonBackTracker* GetPhotonBackTrackerProvider() const {
+    return fPhotonBackTrackerProvider.get();
   }
 
   static std::vector<Experiment> GetValidExperiments();
@@ -72,11 +90,13 @@ public:
 private:
   fhicl::ParameterSet* config;
   std::unique_ptr<geo::GeometryCore> fGeometryProvider;
+  std::unique_ptr<geo::AuxDetGeometryCore> fAuxDetGeometryProvider;
   std::unique_ptr<detinfo::LArPropertiesStandard> fLArPropertiesProvider;
   std::unique_ptr<detinfo::DetectorClocksStandard> fDetectorClocksProvider;
   std::unique_ptr<detinfo::DetectorPropertiesStandard> fDetectorPropertiesProvider;
   std::unique_ptr<cheat::BackTracker> fBackTrackerProvider;
   std::unique_ptr<cheat::ParticleInventory> fParticleInventoryProvider;
+  std::unique_ptr<cheat::PhotonBackTracker> fPhotonBackTrackerProvider;
 };
 
 }  // namespace core

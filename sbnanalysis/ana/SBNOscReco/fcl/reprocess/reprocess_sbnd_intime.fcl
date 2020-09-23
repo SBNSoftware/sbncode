@@ -1,0 +1,72 @@
+#include "opdetdigitizer_sbnd.fcl"
+#include "ophitfinder_sbnd.fcl"
+#include "simulationservices_sbnd.fcl"
+#include "messages_sbnd.fcl"
+#include "rootoutput_sbnd.fcl"
+
+sbnd_flash_match: {
+  module_type: FlashPredict
+  OpHitProducer: "reophit"
+  BeamWindowStart: -5. #us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "fmplots_sbnd.root"
+  MakeTree: false
+  SelectNeutrino: true
+  LightWindowStart: -0.01
+  LightWindowEnd: 0.09
+  PEscale: 100.0
+  MinFlashPE: 0.
+  Detector: "SBND"
+}
+
+services:
+{ 
+  TFileService: { fileName: @local::sbnd_tfileoutput.fileName }
+  @table::sbnd_detsim_services
+  FileCatalogMetadata: @local::sbnd_file_catalog_mc 
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  AuxDetGeometry: { @table::sbnd_geo_source }
+}
+
+
+source:
+{
+  module_type:     RootInput
+}
+
+
+physics: {
+  producers: {
+    reopdaq: @local::sbnd_opdetdigitizer
+    reophit: @local::sbnd_hit_finder
+    fmatch: @local::sbnd_flash_match
+  }
+
+  simulate: [reopdaq, reophit, fmatch]
+  stream: [out]
+  end_paths: [stream]
+}
+
+outputs: {
+  out: {
+    @table::sbnd_rootoutput # inherit shared settings
+    dataTier:    "simulated"
+   compressionLevel: 1
+    outputCommands: [
+      "keep *",
+      "drop raw::RawDigits_daq__DetSim",
+      "drop recob::Wires_caldata__Reco"
+    ]
+  }
+}
+
+
+physics.producers.reophit.InputModule: reopdaq
+physics.producers.reopdaq.UseLitePhotons: 0
+physics.producers.reopdaq.NThreads: 3
+
+#include "3drift_services_sbnd.fcl"
+
+process_name: ReOp

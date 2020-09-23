@@ -5,8 +5,8 @@
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Prediction/PredictionSBNExtrap.h"
+#include "CAFAna/Prediction/PredictionInterp.h"
 #include "CAFAna/Analysis/Calcs.h"
-#include "StandardRecord/StandardRecord.h"
 #include "CAFAna/Analysis/FitAxis.h"
 
 #include "CAFAna/Core/OscCalcSterileApprox.h"
@@ -18,6 +18,9 @@
 #include "CAFAna/Experiment/CountingExperiment.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 
+#include "CAFAna/Systs/SBNWeightSysts.h"
+#include "CAFAna/Systs/SBNFluxSysts.h"
+
 #include "TCanvas.h"
 #include "TH1.h"
 #include "TH2.h"
@@ -26,7 +29,7 @@
 using namespace ana;
 
 // State file
-const char* basicFname = "cafe_state_extrap.root";
+const char* basicFname = "cafe_state_extrap_syst.root";
 
 const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
@@ -34,28 +37,33 @@ const double icarusPOT = kPOTnominal;
 void nus_extrap(const char* stateFname = basicFname)
 {
   if (TFile(stateFname).IsZombie()){
-    std:: cout << "Run make_state_extrap.C first!" << std::endl;
+    std::cout << "Run make_state_extrap.C first!" << std::endl;
     return;
   }
 
+  std::vector<const ISyst*> systs = GetSBNWeightSysts();
+  for(const ISyst* s: GetSBNFluxHadronSysts(30)) systs.push_back(s);
+//  systs.resize(10);
+
   std::cout << "Loading state from " << stateFname << std::endl; 
   TFile fin(stateFname);
-  PredictionSBNExtrap& pred = *ana::LoadFrom<PredictionSBNExtrap>(fin.GetDirectory("pred")).release();
-
-  PredictionNoExtrap& predND = *ana::LoadFrom<PredictionNoExtrap>(fin.GetDirectory("predND")).release();
+  IPrediction* pred = ana::LoadFrom<IPrediction>(fin.GetDirectory("pred_syst")).release();
+  IPrediction* predND = ana::LoadFrom<IPrediction>(fin.GetDirectory("predND_syst")).release();
 
   // Calculator
   OscCalcSterileApproxAdjustable* calc = DefaultSterileApproxCalc();
+  // TODO - why is this necessary?
+  ((PredictionInterp*)pred)->SetOscSeed(calc);
 
   // To make a fit we need to have a "data" spectrum to compare to our MC
   // Prediction object
   calc->SetL(kBaselineIcarus);
-  const Spectrum data = pred.Predict(calc).FakeData(icarusPOT);
-  SingleSampleExperiment expt(&pred, data);
+  const Spectrum data = pred->Predict(calc).FakeData(icarusPOT);
+  SingleSampleExperiment expt(pred, data);
 
   calc->SetL(kBaselineSBND);
-  const Spectrum dataND = predND.Predict(calc).FakeData(sbndPOT);
-  CountingExperiment exptCount(&predND, dataND);
+  const Spectrum dataND = predND->Predict(calc).FakeData(sbndPOT);
+  CountingExperiment exptCount(predND, dataND);
 
   MultiExperimentSBN multiExpt({&expt, &exptCount}, {kICARUS, kSBND});
 
@@ -63,29 +71,53 @@ void nus_extrap(const char* stateFname = basicFname)
   const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
   const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 2e-2, 1e2, true);
 
+  const FitAxis kAxSinSq2ThetaMuMuCoarse(&kFitSinSq2ThetaMuMu, 8/*40*/, 1e-3, 1, true);
+  const FitAxis kAxDmSqCoarse(&kFitDmSqSterile, 8/*40*/, 2e-2, 1e2, true);
+
   TCanvas* c1 = new TCanvas("c1");
   c1->SetLeftMargin(0.12);
   c1->SetBottomMargin(0.15);
 
   // A Surface evaluates the experiment's chisq across a grid
   Surface surf(&expt, calc,
-               kAxSinSq2ThetaMuMu,
-               kAxDmSq);
+               kAxSinSq2ThetaMuMuCoarse,
+               kAxDmSqCoarse,
+               {}, systs);
+
+  Surface surfStat(&expt, calc,
+                   kAxSinSq2ThetaMuMu,
+                   kAxDmSq);
 
   calc->SetL(kBaselineSBND);
   Surface surfCount(&exptCount, calc,
-                    kAxSinSq2ThetaMuMu,
-                    kAxDmSq);
+                    kAxSinSq2ThetaMuMuCoarse,
+                    kAxDmSqCoarse,
+                    {}, systs);
+
+  Surface surfCountStat(&exptCount, calc,
+                        kAxSinSq2ThetaMuMu,
+                        kAxDmSq);
 
   Surface surfJoint(&multiExpt, calc,
-                    kAxSinSq2ThetaMuMu,
-                    kAxDmSq);
+                    kAxSinSq2ThetaMuMuCoarse,
+                    kAxDmSqCoarse,
+                    {}, systs);
 
-  TH2* crit3sig = Gaussian3Sigma1D1Sided(surf);
+  Surface surfJointStat(&multiExpt, calc,
+                        kAxSinSq2ThetaMuMu,
+                        kAxDmSq);
 
-  surfJoint.DrawContour(crit3sig, kSolid, kRed);
-  surf.DrawContour(crit3sig, kSolid, kGreen+2);
-  surfCount.DrawContour(crit3sig, kSolid, kBlue);
+  TH2* crit3sig = Gaussian3Sigma1D1Sided(surfStat);
+  TH2* crit3sigCoarse = Gaussian3Sigma1D1Sided(surf);
+
+  surfJointStat.DrawContour(crit3sig, 7, kRed);
+  surfJoint.DrawContour(crit3sigCoarse, kSolid, kRed);
+
+  surfStat.DrawContour(crit3sig, 7, kGreen+2);
+  surf.DrawContour(crit3sigCoarse, kSolid, kGreen+2);
+
+  surfCountStat.DrawContour(crit3sig, 7, kBlue);
+  surfCount.DrawContour(crit3sigCoarse, kSolid, kBlue);
 
   TH1F* hDummy1 = new TH1F("","",1,0,1);
   TH1F* hDummy2 = new TH1F("","",1,0,1);

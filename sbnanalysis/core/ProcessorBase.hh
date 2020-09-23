@@ -14,6 +14,7 @@
 #include "gallery/Event.h"
 #include "Loader.hh"
 #include "Event.hh"
+#include "FileMeta.hh"
 
 class TBranch;
 class TFile;
@@ -156,12 +157,16 @@ protected:
   */
   void BuildEventTree(gallery::Event& ev);
 
+  void SetupServices(gallery::Event& ev);
+
   /**
    * Update subrun list to include subruns for this event's file.
    *
    * \param ev The current gallery event
    */
   void UpdateSubRuns(gallery::Event& ev);
+
+  void UpdateFileMeta(gallery::Event& ev);
 
   unsigned long fEventIndex;  //!< An incrementing index
   Experiment fExperimentID;  //!< Experiment identifier
@@ -178,6 +183,8 @@ protected:
   event::RecoEvent* fRecoEvent;  //!< The standard output reco event data structure
   TTree* fSubRunTree;  //!< Subrun output tree
   SubRun* fSubRun;  //!< Standard output subrun structure
+  TTree* fFileMetaTree; //!< File metadata output tree
+  FileMeta *fFileMeta; //!< standard output file metadata structure
   TParameter<int>* fExperimentParameter; //!< Saves value of experiment enum
   std::set<std::pair<int, int> > fSubRunCache;  //!< Cache stored subruns
   art::InputTag fTruthTag;  //!< art tag for MCTruth information
@@ -186,6 +193,7 @@ protected:
   art::InputTag fMCTrackTag; //!< art tag for MCTrack
   art::InputTag fMCShowerTag; //!< art tag for MCShower
   art::InputTag fMCParticleTag; //!< art tag for MCParticle
+  std::string fGeneratorProcess; //!< process_name of process used to run genie. Used to extract subrun/POT information
 };
 
 }  // namespace core

@@ -34,6 +34,11 @@ namespace ana
     return Var(UniverseWeight(std::vector<std::string>(1, syst), univIdx));
   }
 
+  Var GetUniverseWeight(const std::vector<std::string>& systs, int univIdx)
+  {
+    return Var(UniverseWeight(systs, univIdx));
+  }
+
   Var GetUniverseWeight(const std::vector<const ISyst*> systs, int univIdx)
   {
     return Var(UniverseWeight(systs, univIdx));

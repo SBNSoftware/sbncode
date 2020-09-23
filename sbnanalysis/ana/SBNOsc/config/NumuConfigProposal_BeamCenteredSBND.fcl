@@ -1,0 +1,15 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_Proposal_BeamCentered_SBND.root"
+MCWeightTags: @local::eventweight_tags 
+
+NumuSelection: {
+  fiducial_volumes: @local::SBND_Proposal_fiducial_volumes_no_cathode
+  active_volumes: @local::SBND_Proposal_active_volumes_beam_centered
+  @table::standard_cuts_noMEC
+  # uniformWeights: @local::standard_uniformWeights
+  uniformWeights: []
+  constantWeight: 1.21 // Scale up all event to account for r=110m (now) -> 100m (then) 
+  # verbose: true
+}
+
