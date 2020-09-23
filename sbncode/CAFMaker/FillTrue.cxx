@@ -63,7 +63,7 @@ namespace caf {
       numatch.is_numucc_primary = tmatch.is_numucc_primary;
 
 
-      //      srslice.truth = numatch;
+      srslice.tmatch = tmatch;
       // srmc.nu.push_back(numatch);
       // ++srmc.nnu;
     }
