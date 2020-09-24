@@ -993,7 +993,9 @@ void CAFMaker::endJob() {
     std::cerr << "No events processed in this file. Aborting rather than "
                  "produce an empty CAF."
               << std::endl;
-    abort();
+    // n.b. changed abort() to return so that eny exceptions thrown during startup
+    // still get printed to the user by art
+    return;
   }
 
   // Make sure the recTree is in the file before filling other items 

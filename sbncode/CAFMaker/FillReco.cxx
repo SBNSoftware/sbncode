@@ -13,7 +13,7 @@ namespace caf
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
-    return (slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
+    return (!slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 

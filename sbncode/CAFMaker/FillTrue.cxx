@@ -309,11 +309,9 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   return (trkStart - nuVtx).Mag() < distance;
 }
 
-// define global static const PDGTable to be used by helper functions
-static const TDatabasePDG *PDGTable(new TDatabasePDG);
-
 // returns particle mass in MeV
 double PDGMass(int pdg) {
+  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
   // regular particle
   if (pdg < 1000000000) {
     TParticlePDG* ple = PDGTable->GetParticle(pdg);
