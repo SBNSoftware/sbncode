@@ -15,8 +15,8 @@ numi_kaon: {
 
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux
-  M: 0.25 # GeV/c^2
-  MixingAngle: 0.0001
+  M: 0.24 # GeV/c^2
+  MixingAngle: 1e-5
   KDAROnly: false
 
   // uBooNE config
@@ -37,8 +37,8 @@ kaon2higgs: {
 mono_energy_flux: {
   tool_type: MonoEnergyHiggsFlux
   E: 0.3 # GeV
-  M: 0.25 # GeV/c^2
-  MixingAngle: 0.0001
+  M: 0.24 # GeV/c^2
+  MixingAngle: 1e-5
 
   X: 0 # cm
   Y: 0
@@ -63,11 +63,24 @@ rethrow_ray_trace_box: {
 
 decay_higgs: {
   tool_type: HiggsMakeDecay
-  ReferenceRayLength: -1
+  ReferenceRayLength: 2100 # 21m
+  ReferenceHiggsMass: 0.24 # GeV
+  ReferenceHiggsMixing: 1e-5
+  ReferenceRayDistance: 10400 # 104m
+  ReferenceHiggsMaxEnergy: 0.37 # GeV
 }
 
 dissonant_higgs: {
   module_type: DissonantHiggsTFile
+  KaonGen: @local::numi_kaon
+  Flux: @local::kaon2higgs
+  RayTrace: @local::rethrow_ray_trace_box
+  Decay: @local::decay_higgs
+}
+
+dissonant_higgs_gen: {
+  module_type: DissonantHiggsGen
+  Deweight: true
   KaonGen: @local::numi_kaon
   Flux: @local::kaon2higgs
   RayTrace: @local::rethrow_ray_trace_box

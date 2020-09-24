@@ -55,7 +55,11 @@ public:
     TLorentzVector ThrowHiggsMomentum(const HiggsFlux &flux);
 
     // always thrown at least once
-    float MaxWeight() override { return 1.; }
+    //
+    // TODO: make configurable. 
+    float MaxWeight() override { 
+      return 0.005; // estimate from profile of ICARUS @ NuMi target 
+    }
 
 private:
   geo::BoxBoundedGeo fBox;
