@@ -90,7 +90,7 @@ namespace ana
     for(int x = 1; x < xax.nbins+1; ++x){
       for(int y = 1; y < yax.nbins+1; ++y){
         const double chi = fHist->GetBinContent(x, y);
-        if(chi < minchi){
+        if(chi < minchi && !isnan(chi) && !isinf(chi)){
           minchi = chi;
           minx = x;
           miny = y;

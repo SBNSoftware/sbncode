@@ -7,6 +7,7 @@
 #define SRSLICE_H
 
 #include "SRTrueInteraction.h"
+#include "SRTruthMatch.h"
 #include "SRVector3D.h"
 
 
@@ -44,7 +45,7 @@ namespace caf
       SRVector3D vertex;      ///< Candidate neutrino vertex in local detector coordinates [cm]
 
       SRTrueInteraction truth; //!< Truth information on the slice      
-      TruthMatch tmatch; //!< Matching information between truth and reco objects
+      SRTruthMatch tmatch; //!< Matching information between truth and reco objects
 
       void setDefault();
 
@@ -52,6 +53,7 @@ namespace caf
       FlashMatch fmatch; //!< Optical flash-match for this slice of TPC charge
 
       bool is_clear_cosmic; //!< Whether pandora marks the slice as a "clear" cosmic
+      int nu_pdg; //!< PDG assigned to the PFParticle Neutrino
       float nu_score; //!< Score of how neutrino-like the slice is 
       std::vector<size_t> primary; //!< ID's of primary tracks and showers in slice
       int                 self;    //!< ID of the particle representing this slice

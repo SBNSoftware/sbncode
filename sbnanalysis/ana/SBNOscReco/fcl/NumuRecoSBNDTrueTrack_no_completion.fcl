@@ -1,0 +1,44 @@
+OutputFile: "output_numureco_true_track_no_completion.root"
+
+ExperimentID: 0
+
+NumuRecoSelection: {
+  shakyMCTracks: true
+  requireMatched: false
+  requireContained: false
+  primaryTrackMethod: 1
+
+  // trackMatchContainmentCut: 0.5
+
+  containment_volumes: [
+    {
+      xmin: -195.9
+      ymin: -190
+      zmin: 10.
+      xmax: 195.9
+      ymax: 190
+      zmax: 490.
+     }
+   ]
+
+  fiducial_volumes: [
+    {
+      xmin: -190.9
+      ymin: -185
+      zmin: 15.
+      xmax: 190.9
+      ymax: 185
+      // zmax: 415.
+      zmax: 485.
+    }
+    //{
+    //  xmin: 10.9
+    //  ymin: -185
+    //  zmin: 15.
+    //  xmax: 190.9
+    //  ymax: 185
+      // zmax: 415.
+    //  zmax: 485.
+    //}
+   ]
+}

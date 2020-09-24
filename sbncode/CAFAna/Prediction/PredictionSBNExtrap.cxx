@@ -116,4 +116,20 @@ namespace ana
       *ana::LoadFrom<PredictionNoExtrap>(dir->GetDirectory("predFD")).release(),
       *ana::LoadFrom<Spectrum>(dir->GetDirectory("dataND")).release()));
   }
+
+  //----------------------------------------------------------------------
+  SBNExtrapGenerator::SBNExtrapGenerator(Loaders& loaders_nd,
+                                         const HistAxis& ax,
+                                         const Cut& cut,
+                                         const Var& wei)
+    : fLoadersND(loaders_nd), fAxis(ax), fCut(cut), fWeight(wei)
+  {
+  }
+
+  //----------------------------------------------------------------------
+  std::unique_ptr<IPrediction> SBNExtrapGenerator::Generate(Loaders& loaders_fd,
+                                                            const SystShifts& shiftMC) const
+  {
+    return std::unique_ptr<IPrediction>(new PredictionSBNExtrap(fLoadersND, loaders_fd, fAxis, fCut, shiftMC, fWeight));
+  }
 }

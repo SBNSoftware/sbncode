@@ -17,13 +17,13 @@ namespace ana{
 
   const Cut kHasFlashMatch([](const caf::SRProxy* sr)
 			{ 
-			  return ( sr->slc.fmatch.present );
+			  return ( sr->slc[0].fmatch.present );
 			});
 
   const Cut kFlashMatchScore([](const caf::SRProxy* sr)
 			{ 
-			  return ( sr->slc.fmatch.time > 0 && 
-				   sr->slc.fmatch.score > 6   );
+			  return ( sr->slc[0].fmatch.time > 0 && 
+				   sr->slc[0].fmatch.score > 6   );
 			});
 
   const Cut kFlashMatchNumuCut = kHasFlashMatch  && kFlashMatchScore;

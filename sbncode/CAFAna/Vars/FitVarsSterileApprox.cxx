@@ -13,7 +13,7 @@ namespace ana
   // --------------------------------------------------------------------------
   void FitDmSqSterile::SetValue(osc::IOscCalculatorAdjustable* osc, double val) const
   {
-    DowncastToSterileApprox(osc)->SetDmsq(val);
+    DowncastToSterileApprox(osc)->SetDmsq(Clamp(val));
   }
 
   // --------------------------------------------------------------------------
@@ -25,7 +25,7 @@ namespace ana
   // --------------------------------------------------------------------------
   void FitSinSq2ThetaMuMu::SetValue(osc::IOscCalculatorAdjustable* osc, double val) const
   {
-    DowncastToSterileApprox(osc)->SetSinSq2ThetaMuMu(val);
+    DowncastToSterileApprox(osc)->SetSinSq2ThetaMuMu(Clamp(val));
   }
 
   // --------------------------------------------------------------------------
@@ -37,6 +37,6 @@ namespace ana
   // --------------------------------------------------------------------------
   void FitSinSq2ThetaMuE::SetValue(osc::IOscCalculatorAdjustable* osc, double val) const
   {
-    DowncastToSterileApprox(osc)->SetSinSq2ThetaMuE(val);
+    DowncastToSterileApprox(osc)->SetSinSq2ThetaMuE(Clamp(val));
   }
 }

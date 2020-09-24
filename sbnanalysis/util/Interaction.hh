@@ -54,17 +54,6 @@ double MCParticleContainedLength(const simb::MCParticle &particle, const std::ve
  */
 double MCParticleLength(const simb::MCParticle &particle);
 
-/**
- * Match an MCParticle to a list of MCParticle's using the track_id
- *
- * \param track_id The MCParticle::TrackId() of the particle to be
- * matched
- * \param mcparticle_list The lsit to be matched against
- * \return A pointer to the matched MCParticle. Returns NULL if no such
- * match is found
- */
-const simb::MCParticle* MatchMCParticleID(int track_id, const std::vector<simb::MCParticle> &mcparticle_list);
-
 }  // namespace util
 
 #endif  // __sbnanalysis_util_Interaction__

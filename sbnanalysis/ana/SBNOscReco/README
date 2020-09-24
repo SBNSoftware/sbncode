@@ -1,0 +1,95 @@
+This directory implements a reconstruction-based event selection for
+inclusive identidication on numu CC interactions in SBND/ICARUS for use
+by a study of numu disappearance in SBN.
+
+The directory structure is as follows:
+
+PreSelection: Gathers infomation for a bunch of modules on reconstructed
+              objects. Organizes interactions/slices from Pandora, runs
+              calorimetry and momentum calculatiosn on all TPC tracks,
+              runs cosmic ID on all tracks. Runs as a sbn module -- 
+              takes art ROOT files as input and makes a normal ROOT
+              output file. In each event, makes a single numu::RecoEvent
+              object, as documented in the Data/ directory.
+
+PostProcess: Runs selections and produces histograms/plots for the
+             analysis. Tuns as a sbn-postprocess module. Takes as input
+             normal ROOT files (coming from the PreSelection) and
+             produces a normal ROOT file with plots (no TTree).
+
+Histograms: Classes encapsulating ROOT histograms generated in both the
+            pre-selectionstage and in the post-processing stage.
+
+CosmicIDAlgs: Algorithms for identification of cosmic muons. Originally
+              implemented by Tom Brooks for SBND. Ported by me into
+              sbncode.
+
+Data: Contains all the data produced by the PreSelection module. The
+      entrypoint is the RecoEvent class. All units of the data are
+      GeV/cm/us. Any deviation from this is a bug.
+
+DataProductViewers: Small modules for printing information associated
+                    with LArSoft data products. Each is run as an
+                    individual sbn module.
+
+LArReco: Modules copied from larreco for use by the PreSelection.
+
+OpHitFinder: A copy of the SBND optical hit finder for use by the
+             Preselection.
+
+RecoUtils: A copy of the sbndcode RecoUtils directory ported to sbncode
+           for use by the preselection.
+
+fcl: Configuration files
+
+grid: Scripts for running on the grid
+
+plots: Python scripts for making plots out of the histograms produced by
+       the PostProcess module.
+
+RUNNING THE CODE:
+
+PreSelection:
+
+	sbn -m SBNOscReco_NumuReco -c fcl/NumuRecoSBND.fcl <input files>
+
+Where <input files> are a set of art ROOT files that have been run
+through the full SBND/ICARUS reconstruction chain. It is possible to
+specify the <input files> as a filelist using some file the ends in
+".list".
+
+To run in ICARUS, use the fcl: NumuRecoICARUS.fcl.
+
+Post Process:
+	sbn-postprocess -m SBNOscReco_Selection -c fcl/SBNDSelection.fcl <input files>
+
+Where <input files> are a set of normal ROOT files that have been
+produced by the SBNOscReco_NumuReco pre-selection moudle.
+
+To run in ICARUS, use the fcl: ICARUSSelection.fcl.
+
+On the grid:
+
+First copy the build/ directory into your localproducts area. Then tar
+up the local products area. On the grid, run a scipt that untars and
+runs the setup_sbnanalysis.sh script, and make sure that the
+SBN_ANALYSIS_DIR path set in that script is changed correctly. In terms
+of commands:
+
+cp -r path/to/sbncode/sbnalysis/build path/to/localproducts/sbncode/sbnanalysis
+tar -zcvf path/to/tars/sbncode.tar.gz path/to/localproducts/*
+
+
+Make sure you change the first line of setup_sbnanalysis.sh from (e.g.):
+
+export SBN_ANALYSIS_DIR=/sbnd/app/users/gputnam/sbndcode/srcs/sbncode/sbnanalysis/build # Absolute path
+
+to:
+
+export SBN_ANALYSIS_DIR=./sbncode/sbnanalysis # Relative path as on grid
+
+And in the grid script, source this file. Note that all configuration
+files and filelists needed by the analysis are copied into the
+sbnanalysis build/ directory in the build/fcl and build/files
+directories respectively. The the submit_combined.sh script in the
+grid/ directory for an example of how to run the analysis on the grid.

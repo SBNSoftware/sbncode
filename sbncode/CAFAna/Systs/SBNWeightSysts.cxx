@@ -55,13 +55,20 @@ namespace ana
   {
     if(fSystIdxs.empty()){
       for(const std::string& name: fNames){
+        bool any = false;
         for(unsigned int i = 0; i < ws.size(); ++i){
           if(ws[i].first == name){
             fSystIdxs.push_back(i);
+            any = true;
             break;
           }
         }
-      }
+        if(!any){
+          std::cout << "UniverseWeight: Failed to find syst "
+                    << name << " in file" << std::endl;
+          abort();
+        }
+      } // end for name
     }
 
     return fSystIdxs[isyst];
