@@ -9,12 +9,11 @@ namespace ana
 
   /// \brief Is this a Neutral %Current event?
   ///
-  /// We use uniform-initializer syntax to concisely pass the list of necessary
-  /// branches. In this case the selection function is simple enough that we
-  /// can include it inline as a lambda function.
+  /// In this case the selection function is simple enough that we can include
+  /// it inline as a lambda function.
   const Cut kIsNC([](const caf::SRProxy* sr)
                   {
-                    return !sr->truth[0].neutrino.iscc;
+                    return sr->mc.nu[0].iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -29,8 +28,9 @@ namespace ana
     bool operator()(const caf::SRProxy* sr) const
     {
 
-      return sr->truth[0].neutrino.iscc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig
-             && abs(sr->truth[0].neutrino.pdg) == fPdg;
+      return sr->mc.nu[0].iscc &&
+        abs(sr->mc.nu[0].initpdg) == fPdgOrig &&
+        abs(sr->mc.nu[0].pdg) == fPdg;
     }
   protected:
     int fPdg, fPdgOrig;
@@ -46,7 +46,7 @@ namespace ana
 
     bool operator()(const caf::SRProxy* sr) const
     {
-      return sr->truth[0].neutrino.isnc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig;
+      return sr->mc.nu[0].isnc && abs(sr->mc.nu[0].initpdg) == fPdgOrig;
     }
   protected:
     int fPdgOrig;
@@ -78,6 +78,6 @@ namespace ana
   /// Is this truly an antineutrino?
   const Cut kIsAntiNu([](const caf::SRProxy* sr)
                       {
-                        return sr->truth[0].neutrino.pdg < 0;
+                        return sr->mc.nu[0].pdg < 0;
                       });
 }

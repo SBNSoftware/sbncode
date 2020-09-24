@@ -65,11 +65,11 @@ void load_cafana_libs()
       "CAFAnaCore",
       "SBNAnaVars",
       "SBNAnaCuts",
-      // "CAFAnaSysts",
-      // "CAFAnaExtrap",
-      // "CAFAnaPrediction",
-      // "CAFAnaExperiment",
-      // "CAFAnaAnalysis",
+      "CAFAnaSysts",
+      "CAFAnaExtrap",
+      "CAFAnaPrediction",
+      "CAFAnaExperiment",
+      "CAFAnaAnalysis",
     };
 
   // Actually load the libraries

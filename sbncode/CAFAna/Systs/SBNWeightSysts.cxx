@@ -1,3 +1,6 @@
+// None of this exists in the CAFs at present
+#if 0
+
 #include "CAFAna/Systs/SBNWeightSysts.h"
 
 #include "CAFAna/Systs/UniverseOracle.h"
@@ -191,3 +194,5 @@ namespace ana
     return ret;
   }
 }
+
+#endif
