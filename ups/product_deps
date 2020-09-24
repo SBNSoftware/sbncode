@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v08_47_00
+parent sbncode v08_57_00
 defaultqual e19
 
 # These optional lines define the installed directories where headers,
@@ -34,10 +34,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-sbndcode         v08_47_00
-uboonecode       v08_47_00
-icaruscode       v08_47_00
-ubcore           v08_46_00
+sbndcode         v08_57_00
+uboonecode       v08_57_00
+icaruscode       v08_57_00
+ubcore           v08_56_00
 
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
