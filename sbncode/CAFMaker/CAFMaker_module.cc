@@ -919,7 +919,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], thisParticle, rec.reco.trk.back());
+        FillTrackVars(*thisTrack[0], thisParticle, primary, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
         if (fmPID.isValid())
@@ -946,7 +946,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex,  rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, rec.reco.shw.back());
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1)
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1)

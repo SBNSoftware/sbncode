@@ -38,6 +38,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
+                      const recob::PFParticle *primary,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
@@ -71,6 +72,7 @@ namespace caf
 
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle& particle,
+                     const recob::PFParticle *primary,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 

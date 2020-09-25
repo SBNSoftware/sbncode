@@ -36,6 +36,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
+                      const recob::PFParticle *primary,
                       caf::SRShower &srshower,
                       bool allowEmpty)
   {
@@ -65,10 +66,12 @@ namespace caf
 
     // Fill in hierarchy info
     srshower.ID = particle.Self();
+    srshower.slcID = (primary) ? primary->Self() : -1;
     for (unsigned id: particle.Daughters()) {
       srshower.daughters.push_back(id);
     }
     srshower.parent = particle.Parent();
+    srshower.parent_is_primary = primary && particle.Parent() == primary->Self();
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
@@ -346,6 +349,7 @@ namespace caf
 
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle &particle,
+                     const recob::PFParticle *primary,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -364,6 +368,7 @@ namespace caf
     srtrack.end.z = track.End().Z();
 
     srtrack.ID = particle.Self();
+    srtrack.slcID = (primary) ? primary->Self() : -1;
 
     // set the daughters in the particle flow
     for (unsigned id: particle.Daughters()) {
@@ -371,6 +376,7 @@ namespace caf
     }
 
     srtrack.parent = particle.Parent();
+    srtrack.parent_is_primary = primary && particle.Parent() == primary->Self();
 
   }
   //......................................................................
