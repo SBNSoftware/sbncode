@@ -581,31 +581,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTruthBranch                  srtruthbranch;
   std::vector<caf::SRTrueInteraction> srneutrinos;
 
-  for (size_t i=0; i<mctruths.size(); i++) {
-
-    auto const& mctruth = mctruths.at(i);
-    auto const& mcflux = mcfluxes.at(i);
-
-    std::vector<caf::SRTrueParticle> srprimaries;
-
-    if (mctruth->NeutrinoSet()){
-      for (int ipart=0; ipart<mctruth->NParticles(); ipart++) {
-        const simb::MCParticle& particle = mctruth->GetParticle(ipart);
-        if (particle.Process() != "primary")
-          continue;
-        srprimaries.push_back(SRTrueParticle());
-      }
-    }
-
-    srneutrinos.push_back(SRTrueInteraction());
-
-    FillTrueNeutrino(mctruth, mcflux, srprimaries, srneutrinos.back(), i);
-
-    srtruthbranch.nu  = srneutrinos;
-    srtruthbranch.nnu = srneutrinos.size();
-
-  }
-
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
       true_particles.emplace_back();
@@ -621,6 +596,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  for (size_t i=0; i<mctruths.size(); i++) {
+
+    auto const& mctruth = mctruths.at(i);
+    auto const& mcflux = mcfluxes.at(i);
+
+    srneutrinos.push_back(SRTrueInteraction());
+
+    FillTrueNeutrino(mctruth, mcflux, true_particles, srneutrinos.back(), i);
+
+    srtruthbranch.nu  = srneutrinos;
+    srtruthbranch.nnu = srneutrinos.size();
+
+  }
 
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;

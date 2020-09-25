@@ -16,8 +16,9 @@ caf::g4_process_ GetG4ProcessID(const std::string &name);
 caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-					  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-					  const cheat::ParticleInventoryService &inventory_service);
+				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
+			 	   const cheat::ParticleInventoryService &inventory_service);
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
@@ -49,24 +50,19 @@ namespace caf {
                       bool allowEmpty)
   {
 
-    caf::SRTruthMatch tmatch;
-    //    srslice.tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
-    tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service);
 
     if (tmatch.index >= 0) {
-
       caf::SRTrueInteraction numatch = srneutrinos[tmatch.index];
       numatch.visEinslc         = tmatch.visEinslc;
       numatch.visEcosmic        = tmatch.visEcosmic;
       numatch.eff               = tmatch.eff;
       numatch.pur               = tmatch.pur;
       numatch.is_numucc_primary = tmatch.is_numucc_primary;
-
-
-      srslice.tmatch = tmatch;
-      // srmc.nu.push_back(numatch);
-      // ++srmc.nnu;
+      srslice.truth = numatch;
     }
+
+    srslice.tmatch = tmatch;
 
     std::cout << "Slice matched to index: " << tmatch.index 
 	      << " with match frac: " << tmatch.pur << std::endl;
@@ -76,10 +72,22 @@ namespace caf {
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const art::Ptr<simb::MCFlux>  mcflux,
-			std::vector<caf::SRTrueParticle> srprimaries,
+			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
+
+    srneutrino.visE = 0.;
+    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+      // save the G4 particles that came from this interaction
+      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
+        srneutrino.prim.push_back(srparticles[i_part]);
+      }
+      // total up the deposited energy
+      if (srparticles[i_part].interaction_id == (int)i) {
+        srneutrino.visE += srparticles[i_part].planeVisE;
+      }
+    }
 
     if (mctruth->NeutrinoSet()) {
       // Neutrino
@@ -104,9 +112,21 @@ namespace caf {
       srneutrino.q0_lab = q_labframe.E();
       srneutrino.modq_lab = q_labframe.P();
 
-      srneutrino.prim = srprimaries;
+      // make sure the lepton comes first in the list of prim
+      for (unsigned i_part = 0; i_part < srneutrino.prim.size(); i_part++) {
+        if (srneutrino.prim[i_part].pdg == lepton.PdgCode()) {
+          // swap them
+          caf::SRTrueParticle temp = srneutrino.prim[0];
+          srneutrino.prim[0] = srneutrino.prim[i_part];
+          srneutrino.prim[i_part] = temp;
+          break;
+        }
+      }
 
     }
+
+    // total up the visible energy
+    
 
   }
 
@@ -741,6 +761,7 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 //------------------------------------------------
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
 				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
 				   const cheat::ParticleInventoryService &inventory_service) {
   caf::SRTruthMatch ret;
   float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
@@ -777,11 +798,14 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   for (float E: matching_energy) cosmic_energy -= E;
   ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
   ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
+
+  // clamp floating-point errors
+  if (ret.visEcosmic < 1e-5) ret.visEcosmic = 0.;
+
   ret.index = index;
   if (index >= 0) {
     ret.pur = matching_energy[index] / total_energy;
-    // TODO: calculate efficiency 
-    ret.eff = 0.;
+    ret.eff = (matching_energy[index] / 1000.) / srneutrinos[index].visE;
   }
   else {
     ret.pur = -1;
