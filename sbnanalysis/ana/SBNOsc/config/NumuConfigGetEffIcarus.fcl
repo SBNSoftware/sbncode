@@ -1,0 +1,13 @@
+#include "NumuConfig.fcl"
+
+OutputFile: "output_SBNOsc_NumuSelection_GetEff_Icarus.root"
+
+MCWeightTags: @local::eventweight_tags
+
+NumuSelection: {
+  fiducial_volumes: @local::ICARUS_fiducial_volumes 
+  active_volumes: @local::ICARUS_active_volumes 
+  @table::get_eff_cuts
+  uniformWeights: @local::standard_uniformWeights
+}
+

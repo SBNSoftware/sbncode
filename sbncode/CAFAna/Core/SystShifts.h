@@ -21,6 +21,7 @@ namespace ana
     SystShifts(const std::map<const ISyst*, double>& shifts);
 
     static SystShifts Nominal(){return SystShifts();}
+    static SystShifts RandomThrow(const std::vector<const ISyst*>& systs);
 
     bool IsNominal() const {return fSysts.empty();}
 

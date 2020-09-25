@@ -91,18 +91,8 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  double OscCalcSterileApprox::P(int from, int to, double Elo, double Ehi)
+  double OscCalcSterileApprox::PFromDelta(int from, int to, double Delta) const
   {
-    if(Ehi <= 0) return 0;
-
-    if(fDmsq == 0) return (from == to || to == 0) ? 1 : 0;
-
-    Elo = std::max(0., Elo);
-
-    assert(fL != 0);
-    const double Delta = AvgSinSq(1.267*fDmsq*fL, Elo, Ehi);
-    assert(!isnan(Delta));
-
     if(abs(from) == 14 && abs(to) == 14){
       return 1-fSinSq2ThetaMuMu*Delta;
     }
@@ -133,6 +123,42 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
+  double OscCalcSterileApprox::P(int from, int to, double Elo, double Ehi)
+  {
+    if(Ehi <= 0) return 0;
+
+    if(fDmsq == 0) return (from == to || to == 0) ? 1 : 0;
+
+    Elo = std::max(0., Elo);
+
+    assert(fL != 0);
+    const double Delta = AvgSinSq(1.267*fDmsq*fL, Elo, Ehi);
+    assert(!isnan(Delta));
+
+    return PFromDelta(from, to, Delta);
+  }
+
+  // --------------------------------------------------------------------------
+  double OscCalcSterileApprox::P_LoverE(int from, int to,
+                                        double LElo, double LEhi)
+  {
+    if(fDmsq == 0) return (from == to || to == 0) ? 1 : 0;
+
+    LElo = std::max(0., LElo);
+
+    LElo *= 1.267*fDmsq;
+    LEhi *= 1.267*fDmsq;
+
+    if(LElo == LEhi) return PFromDelta(from, to, util::sqr(sin(LElo)));
+
+    // Average value of sin^2 over the range
+    const double Delta = (.25*(sin(2*LElo) - sin(2*LEhi)) + .5*(LEhi - LElo))/(LEhi-LElo);
+    assert(!isnan(Delta));
+
+    return PFromDelta(from, to, Delta);
+  }
+
+  // --------------------------------------------------------------------------
   OscCalcSterileApprox* OscCalcSterileApprox::Copy() const
   {
     OscCalcSterileApprox* ret = new OscCalcSterileApprox;
@@ -142,6 +168,19 @@ namespace ana
     ret->fSinSq2ThetaMuE = fSinSq2ThetaMuE;
     ret->fL = fL;
 
+    return ret;
+  }
+
+  //---------------------------------------------------------------------------
+  TMD5* OscCalcSterileApprox::GetParamsHash() const
+  {
+    TMD5* ret = new TMD5;
+    const std::string txt = "SterileApprox";
+    ret->Update((unsigned char*)txt.c_str(), txt.size());
+    const int kNumParams = 4;
+    double buf[kNumParams] = {fDmsq, fSinSq2ThetaMuMu, fSinSq2ThetaMuE, fL};
+    ret->Update((unsigned char*)buf, sizeof(double)*kNumParams);
+    ret->Final();
     return ret;
   }
 

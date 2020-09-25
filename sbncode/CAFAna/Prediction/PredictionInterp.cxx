@@ -224,7 +224,6 @@ namespace ana
   //----------------------------------------------------------------------
   void PredictionInterp::InitFits() const
   {
-
     // No systs
     if(fPreds.empty()){
       if(fBinning.POT() > 0 || fBinning.Livetime() > 0) return;
@@ -254,7 +253,6 @@ namespace ana
   void PredictionInterp::SetOscSeed(osc::IOscCalculator* oscSeed){
     fOscOrigin = oscSeed->Copy();
     for(auto& it: fPreds) it.second.fits.clear();
-    InitFits();
   }
 
   //----------------------------------------------------------------------
@@ -291,7 +289,12 @@ namespace ana
                 bool nubar,
                 const SystShifts& shift) const
   {
+    // Save time by not shifting a spectrum that is all zeros anyway
+    if(s.POT() == 0 && s.Livetime() == 0) return s;
+
     if(nubar) assert(fSplitBySign);
+
+    InitFits();
 
     // TODO histogram operations could be too slow
     TH1D* h = s.ToTH1(s.POT());
@@ -551,8 +554,6 @@ namespace ana
   //----------------------------------------------------------------------
   void PredictionInterp::SaveTo(TDirectory* dir) const
   {
-    InitFits();
-
     TDirectory* tmp = gDirectory;
 
     dir->cd();
@@ -648,6 +649,8 @@ namespace ana
   //----------------------------------------------------------------------
   void PredictionInterp::MinimizeMemory()
   {
+    InitFits();
+
     std::set<IPrediction*> todel;
     for(auto& it: fPreds){
       std::vector<IPrediction*>& preds = it.second.preds;
@@ -764,14 +767,30 @@ namespace ana
 				    Current::Current_t curr,
 				    Sign::Sign_t sign) const
   {
+    const bool save = !savePattern.empty();
+    const bool multiFile = savePattern.find("%s") != std::string::npos;
+
+    if(save && !multiFile){
+      new TCanvas;
+      gPad->Print((savePattern+"[").c_str());
+    }
+
     for(auto& it: fPreds){
       DebugPlot(it.first, calc, flav, curr, sign);
 
-      if(!savePattern.empty()){
-	assert(savePattern.find("%s") != std::string::npos);
-	gPad->Print(TString::Format(savePattern.c_str(), it.second.systName.c_str()).Data());
+      if(save){
+        if(multiFile){
+          gPad->Print(TString::Format(savePattern.c_str(), it.second.systName.c_str()).Data());
+        }
+        else{
+          gPad->Print(savePattern.c_str());
+        }
       }
     } // end for it
+
+    if(save && !multiFile){
+      gPad->Print((savePattern+"]").c_str());
+    }
   }
 
   //----------------------------------------------------------------------
@@ -816,17 +835,31 @@ namespace ana
                                         Current::Current_t curr,
                                         Sign::Sign_t sign) const
   {
-    InitFits();
+    const bool save = !savePattern.empty();
+    const bool multiFile = savePattern.find("%s") != std::string::npos;
+
+    if(save && !multiFile){
+      new TCanvas;
+      gPad->Print((savePattern+"[").c_str());
+    }
 
     for(auto it: fPreds){
       new TCanvas;
       DebugPlotColz(it.first, calc, flav, curr, sign);
 
-      if(!savePattern.empty()){
-	assert(savePattern.find("%s") != std::string::npos);
-	gPad->Print(TString::Format(savePattern.c_str(), it.second.systName.c_str()).Data());
+      if(save){
+        if(multiFile){
+          gPad->Print(TString::Format(savePattern.c_str(), it.second.systName.c_str()).Data());
+        }
+        else{
+          gPad->Print(savePattern.c_str());
+        }
       }
     } // end for it
+
+    if(save && !multiFile){
+      gPad->Print((savePattern+"]").c_str());
+    }
   }
 
 } // namespace

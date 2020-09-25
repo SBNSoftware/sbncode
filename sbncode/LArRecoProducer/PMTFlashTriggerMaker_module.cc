@@ -111,7 +111,7 @@ std::vector<sbn::FlashTriggerPrimitive> sbn::TriggerPrimitives(const std::vector
   opdet::sbndPDMapAlg mapalg;
   for (const raw::OpDetWaveform &wvf: waveforms) {
     // check if this is a PMT
-    bool is_pmt = (!is_sbnd) || mapalg.pdType(wvf.ChannelNumber(), "pmt");
+    bool is_pmt = (!is_sbnd) || (mapalg.pdType(wvf.ChannelNumber()) == "pmt");
 
     if (!is_pmt) continue;
 

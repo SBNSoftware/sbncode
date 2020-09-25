@@ -80,8 +80,8 @@ namespace ana
                    Current::Current_t curr = Current::kBoth,
                    Sign::Sign_t sign = Sign::kBoth) const;
 
-    // If \a savePattern is not empty, print each pad. Must contain a "%s" to
-    // contain the name of the systematic.
+    // If \a savePattern is not empty, print each pad. If it contains "%s" then
+    // multiple files will be written, one per systematic.
     void DebugPlots(osc::IOscCalculator* calc,
 		    const std::string& savePattern = "",
 		    Flavors::Flavors_t flav = Flavors::kAll,

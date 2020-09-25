@@ -17,7 +17,14 @@ include_directories( $ENV{LARDATAALG_INC} )
 include_directories( $ENV{ICARUSCODE_INC} )
 include_directories( $ENV{SBNDCODE_INC} )
 include_directories( $ENV{FHICLCPP_INC} )
+include_directories( $ENV{LARCORE_INC} )
+include_directories( $ENV{LARDATA_INC} )
+include_directories( $ENV{ART_INC} )
 include_directories( $ENV{MESSAGEFACILITY_INC} )
+include_directories( $ENV{BOOST_INC} ) 
+include_directories( $ENV{LARSIM_INC} )
+include_directories( $ENV{LARRECO_INC} )
+include_directories( $ENV{ART_ROOT_IO_INC} )
 
 link_directories(
   $ENV{MESSAGEFACILITY_LIB}
@@ -40,9 +47,16 @@ link_directories(
   $ENV{FHICLCPP_LIB}
   $ENV{UBCORE_LIB}
   $ENV{LARSIM_LIB}
+  $ENV{ART_LIB}
+  $ENV{LARDATA_LIB}
+  $ENV{LARCORE_LIB}
+  $ENV{LARRECO_LIB}
+  $ENV{BOOST_LIB}
+  $ENV{ART_ROOT_IO_LIB}
   ${CMAKE_INSTALL_DIR}/lib
 )
 
 add_subdirectory(ExampleAnalysis)
 add_subdirectory(SBNOsc)
-
+add_subdirectory(SBNOscReco)
+add_subdirectory(TrackReducer)

@@ -132,21 +132,27 @@ namespace ana
     // event gives a chisq from this one bin of 182.
     const double minexp = 1e-40; // Don't let expectation go lower than this
 
-    double chi = 0;
-
     assert(o >= 0);
     if(e < minexp){
       if(!o) return 0;
       e = minexp;
     }
 
-    if(o)
+    if(o*1000 > e){
       // This strange form is for numerical stability when e~o
-      chi += 2*o*((e-o)/o + log1p((o-e)/e));
-    else
-      chi += 2*(e-o);
-
-    return chi;
+      return 2*o*((e-o)/o + log1p((o-e)/e));
+    }
+    else{
+      // But log1p doesn't like arguments near -1 (observation much smaller
+      // than expectation), and it's better to use the usual formula in that
+      // case.
+      if(o){
+        return 2*(e-o + o*log(o/e));
+      }
+      else{
+        return 2*e;
+      }
+    }
   }
 
   //----------------------------------------------------------------------
@@ -534,16 +540,7 @@ namespace ana
   //----------------------------------------------------------------------
   std::string FindCAFAnaDir()
   {
-    const char* pub = getenv("SRT_PUBLIC_CONTEXT");
-    const char* priv = getenv("SRT_PRIVATE_CONTEXT");
-
-    if(priv && priv != std::string(".")){
-      const std::string ret = std::string(priv)+"/CAFAna/";
-      struct stat junk;
-      if(stat(ret.c_str(), &junk) == 0) return ret;
-    }
-    assert(pub);
-    return std::string(pub)+"/CAFAna/";
+    return std::string(getenv("MRB_SOURCE"))+"/sbncode/sbncode/CAFAna";
   }
 
   //----------------------------------------------------------------------

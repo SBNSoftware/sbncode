@@ -62,15 +62,6 @@ double ContainedLength(const TVector3 &v0, const TVector3 &v1,
   return length;
 }
 
-const simb::MCParticle* MatchMCParticleID(int track_id, const std::vector<simb::MCParticle> &mcparticle_list) {
-  for (int i = 0; i < mcparticle_list.size(); i++) {
-    if (track_id == mcparticle_list[i].TrackId()) {
-      return &mcparticle_list[i];
-    }
-  }
-  return NULL;
-}
-
 double MCParticleLength(const simb::MCParticle &particle) {
   double length = 0;
   TVector3 last = particle.Position().Vect();
@@ -117,7 +108,6 @@ double MCParticleContainedLength(const simb::MCParticle &particle, const std::ve
 
   return contained_length;
 }
-
 
 
 }  // namespace util
