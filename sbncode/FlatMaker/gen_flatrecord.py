@@ -16,6 +16,10 @@ except Exception as e:
     print()
     sys.exit(1)
 
+# Don't spam pygccxml deprecation warnings
+import warnings
+warnings.simplefilter(action = 'once', category = DeprecationWarning)
+
 # Types that ROOT will understand (with a little nudging in some cases)
 fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
