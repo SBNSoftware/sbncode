@@ -42,6 +42,7 @@ void nus_extrap(const char* stateFname = basicFname)
   }
 
   std::vector<const ISyst*> systs = GetSBNWeightSysts();
+
   // Make sure all hadronization systs exist
   for(const ISyst* s: GetSBNFluxHadronSysts(30));
   // But only use the first 10 of them

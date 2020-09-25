@@ -62,9 +62,10 @@ namespace caf {
       numatch.pur               = tmatch.pur;
       numatch.is_numucc_primary = tmatch.is_numucc_primary;
 
-      //      srslice.truth = numatch;
-      srmc.nu.push_back(numatch);
-      ++srmc.nnu;
+
+      srslice.tmatch = tmatch;
+      // srmc.nu.push_back(numatch);
+      // ++srmc.nnu;
     }
 
     std::cout << "Slice matched to index: " << tmatch.index 
@@ -309,11 +310,9 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   return (trkStart - nuVtx).Mag() < distance;
 }
 
-// define global static const PDGTable to be used by helper functions
-static const TDatabasePDG *PDGTable(new TDatabasePDG);
-
 // returns particle mass in MeV
 double PDGMass(int pdg) {
+  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
   // regular particle
   if (pdg < 1000000000) {
     TParticlePDG* ple = PDGTable->GetParticle(pdg);

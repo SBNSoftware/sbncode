@@ -69,6 +69,11 @@ int main(int argc, char** argv)
 
     rec->Fill(*event);
     trout->Fill();
+
+    // This causes us to have much larger baskets, which seems like it should
+    // be more efficient for semi-random access of systs, but doesn't seem to
+    // help much in practice. It appears the limit is capped at 256e6.
+    if(i == 1000) rec->OptimizeBaskets(1000*1000*1000, 1.1, ""/*"d"*/);
   }
   //  prog.Done();
 

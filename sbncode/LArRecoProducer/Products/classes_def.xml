@@ -39,4 +39,32 @@
   <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::Track, anab::T0>>" />
   <class name="art::Assns<sbn::crt::CRTHit, recob::Track, void>" />
   <class name="art::Wrapper<art::Assns<sbn::crt::CRTHit, recob::Track, void>>" />
+
+  <class name="sbn::ShowerDensityFit" />
+  <class name="std::vector<sbn::ShowerDensityFit>" />
+  <class name="art::Wrapper<sbn::ShowerDensityFit>" />
+  <class name="art::Wrapper<std::vector<sbn::ShowerDensityFit>>" />
+
+  <class name="art::Assns<recob::Shower, sbn::ShowerDensityFit, void>" />
+  <class name="art::Wrapper<art::Assns<recob::Shower, sbn::ShowerDensityFit, void>>" />
+
+  <class name="art::Assns<sbn::ShowerDensityFit, recob::Shower, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::ShowerDensityFit, recob::Shower, void>>" />
+
+  <class name="sbn::ShowerTrackFit" />
+  <class name="std::vector<sbn::ShowerTrackFit>" />
+  <class name="art::Wrapper<sbn::ShowerTrackFit>" />
+  <class name="art::Wrapper<std::vector<sbn::ShowerTrackFit>>" />
+
+  <class name="art::Assns<recob::Shower, sbn::ShowerTrackFit, void>" />
+  <class name="art::Wrapper<art::Assns<recob::Shower, sbn::ShowerTrackFit, void>>" />
+
+  <class name="art::Assns<sbn::ShowerTrackFit, recob::Shower, void>" />
+  <class name="art::Wrapper<art::Assns<sbn::ShowerTrackFit, recob::Shower, void>>" />
+
+  <class name="art::Assns<float,recob::Shower,void>" />
+  <class name="art::Assns<recob::Shower,float,void>" />
+  <class name="art::Wrapper<art::Assns<float,recob::Shower,void>>" />
+  <class name="art::Wrapper<art::Assns<recob::Shower,float,void>>" />
+
 </lcgdict>

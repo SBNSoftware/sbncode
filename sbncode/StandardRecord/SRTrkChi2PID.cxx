@@ -16,7 +16,8 @@ namespace caf
     chi2_muon(std::numeric_limits<double>::signaling_NaN()),
     chi2_pion(std::numeric_limits<double>::signaling_NaN()),
     chi2_kaon(std::numeric_limits<double>::signaling_NaN()),
-    chi2_proton(std::numeric_limits<double>::signaling_NaN())
+    chi2_proton(std::numeric_limits<double>::signaling_NaN()),
+    pida(std::numeric_limits<double>::signaling_NaN())
   {  }
 
   SRTrkChi2PID::~SRTrkChi2PID(){  }
@@ -29,6 +30,7 @@ namespace caf
     chi2_pion     = -5.0;
     chi2_kaon     = -5.0;
     chi2_proton   = -5.0;
+    pida          = -5;
   }
 
 } // end namespace caf

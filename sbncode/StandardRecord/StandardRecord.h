@@ -30,13 +30,13 @@ namespace caf
 
     SRHeader          hdr;    ///< Header branch: run, subrun, etc.
     //    SRSpill          spill;  ///< Beam spill branch: pot, beam current, etc.
-    SRSlice           slc;    ///< Slice branch: nhit, extents, time, etc.
     SRSliceRecoBranch reco;   ///< Slice reco branch: tracks, showers, etc.
-    SRTruthBranch     mc;     ///< Slice truth branch for matching interaction
+    SRTruthBranch     mc;     ///< Truth branch for all interactions
 
-    std::vector<SRFakeReco> fake_reco; ///< List of fake-reconstructed slices
-    std::vector<SRTrueParticle> true_particles; ///< List of true particles in the spill
-    std::vector<SRCRTHit> crt_hits; ///!< List of CRT hits in the event
+    std::vector<SRSlice>        slc;    ///< Slice branch.
+    std::vector<SRFakeReco>     fake_reco; ///< List of fake-reco slices
+    std::vector<SRTrueParticle> true_particles; ///< True particles in spill
+    std::vector<SRCRTHit>       crt_hits; ///!< CRT hits in event
 
     bool pass_flashtrig;     ///< Whether this Record passed the Flash Trigger requirement
 

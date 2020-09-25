@@ -22,9 +22,10 @@ namespace ana
 			{
 				double gap = -5.0;
 				if ( sr->reco.nshw ){
-					double x = sr->slc.vertex.x - sr->reco.shw[0].start.x;
-					double y = sr->slc.vertex.y - sr->reco.shw[0].start.y;
-					double z = sr->slc.vertex.z - sr->reco.shw[0].start.z;
+				  // Changed to slc 0 for now, probably need to come from elsewhere.
+					double x = sr->slc[0].vertex.x - sr->reco.shw[0].start.x;
+					double y = sr->slc[0].vertex.y - sr->reco.shw[0].start.y;
+					double z = sr->slc[0].vertex.z - sr->reco.shw[0].start.z;
 					gap  = sqrt(x*x + y*y + z*z);	
 				}
 			  return gap;

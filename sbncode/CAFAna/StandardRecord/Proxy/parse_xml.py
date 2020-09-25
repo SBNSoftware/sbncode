@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import sys
 
@@ -128,7 +130,6 @@ print('#include "TVector3.h"')
 print()
 print('namespace caf')
 print('{')
-#print 'typedef short unsigned int Experiment; // special case enum'
 print()
 
 debug = False
