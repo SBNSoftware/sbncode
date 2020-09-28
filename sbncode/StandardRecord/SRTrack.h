@@ -71,6 +71,9 @@ namespace caf
       //      CRTMatch       crt_match;   ///< Matching to CRT information
       std::vector<int> daughters; ///< ID's of daughters of this track
       int parent;                 ///< ID of parent particle of this track
+      bool parent_is_primary;
+
+      int slcID;
 
 
     };

@@ -33,6 +33,11 @@ namespace caf
       int parent;                 ///< ID of parent particle of this track
 
       SRShowerSelection selVars;
+
+      bool parent_is_primary;
+      
+      int slcID;
+
     };
 
 } // end namespace
