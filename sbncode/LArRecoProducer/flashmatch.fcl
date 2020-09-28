@@ -1,0 +1,50 @@
+BEGIN_PROLOG
+flash_match_sbnd: {
+  module_type: FlashPredict
+  OpHitProducer: "ophit"
+  PandoraProducer: "pandora"
+  SpacePointProducer: "pandora"
+  BeamWindowStart: -5. #us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "fmplots_sbnd.root"
+  MakeTree: false
+  SelectNeutrino: true
+  LightWindowStart: -0.01
+  LightWindowEnd: 0.09
+  PEscale: 100.0
+  MinFlashPE: 0.
+  Detector: "SBND"
+}
+
+flash_match_icarus_cryo0: {
+  module_type: FlashPredict
+  OpHitProducer: "ophit"
+  PandoraProducer: "pandoraGausCryo0"
+  TrackProducer: "pandoraTrackGausCryo0"
+  CaloProducer: "pandoraGausCaloCryo0"
+  SpacePointProducer: "pandoraGausCryo0"
+  BeamWindowStart: -5. #us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "fmplots_icarus.root"
+  MakeTree: false
+  SelectNeutrino: true
+  LightWindowStart: -0.01
+  LightWindowEnd: 0.09
+  PEscale: 1.0
+  MinFlashPE: 0.
+  Detector: "ICARUS"
+  Cryostat: 0
+}
+
+flash_match_icarus_cryo1: @local::flash_match_icarus_cryo0
+icarus_flash_match_cryo1.Cryostat: 1
+icarus_flash_match_cryo1.PandoraProducer: pandoraGausCryo1
+icarus_flash_match_cryo1.TrackProducer: pandoraTrackGausCryo1
+icarus_flash_match_cryo1.CaloProducer: pandoraGausCaloCryo1
+icarus_flash_match_cryo1.SpacePointProducer: pandoraGausCryo1
+
+END_PROLOG

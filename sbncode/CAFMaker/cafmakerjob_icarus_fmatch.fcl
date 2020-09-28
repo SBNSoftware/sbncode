@@ -1,0 +1,4 @@
+#include "cafmakerjob_icarus.fcl"
+
+physics.runprod: [fmatchCryo0, fmatchCryo1, @sequence::physics.runprod] 
+

@@ -1,0 +1,8 @@
+BEGIN_PROLOG
+mcs_sbn: {
+  module_type: MCSFitAllPID
+  MCS: {}
+  TrackLabel: pandoraTrack
+}
+
+END_PROLOG
