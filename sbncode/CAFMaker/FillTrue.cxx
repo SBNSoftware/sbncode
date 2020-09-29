@@ -258,6 +258,11 @@ namespace caf {
     // other truth information
     srparticle.pdg = particle.PdgCode();
 
+    srparticle.gen = particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T(): -9999;
+    srparticle.genp = particle.NumberTrajectoryPoints() ? particle.Momentum().Vect(): TVector3(-9999, -9999, -9999);
+    srparticle.genE = particle.NumberTrajectoryPoints() ? particle.Momentum().E(): -9999;
+
     srparticle.start = (entry_point >= 0) ? particle.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
     srparticle.startT = (entry_point >= 0) ? particle.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
     srparticle.end = (exit_point >= 0) ? particle.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
