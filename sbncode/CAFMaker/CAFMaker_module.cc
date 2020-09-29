@@ -272,8 +272,6 @@ CAFMaker::~CAFMaker() {}
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
-  fFileNumber ++;
-
   if (!fFile) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
@@ -288,6 +286,9 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 
     InitializeOutfile();
   }
+
+  fFileNumber ++;
+
 }
 
 //......................................................................
@@ -995,12 +996,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Get metadata information for header
   unsigned int run = evt.run();
   unsigned int subrun = evt.subRun();
+  unsigned int evtID = evt.event();
   //   unsigned int spillNum = evt.id().event();
 
   rec.hdr = SRHeader();
 
   rec.hdr.run     = run;
   rec.hdr.subrun  = subrun;
+  rec.hdr.evt     = evtID;
   // rec.hdr.subevt = sliceID;
   rec.hdr.ismc    = !fIsRealData;
   rec.hdr.det     = fDet;
