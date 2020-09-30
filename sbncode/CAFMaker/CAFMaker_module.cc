@@ -58,6 +58,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -572,8 +573,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::Handle<std::vector<simb::MCParticle>> mc_particles;
   GetByLabelStrict(evt, fParams.G4Label(), mc_particles);
 
+  // collect services
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
 
   //#######################################################
   // Fill truths & fake reco
@@ -844,7 +847,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // Fill truth info after decision on selection is made
     FillSliceTruth(slcHits, mctruths, srneutrinos,
-       *pi_serv.get(), recslc, rec.mc);
+       *pi_serv.get(), clock_data, recslc, rec.mc);
 
     //#######################################################
     // Add detector dependent slice info.
@@ -921,7 +924,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       fParams.CalorimetryConstants(),
       rec.reco.trk.back());
         if (fmHit.isValid())
-          FillTrackTruth(fmHit.at(iPart),
+          FillTrackTruth(fmHit.at(iPart), clock_data,
        rec.reco.trk.back());
         if (fmCRTHit.isValid())
           FillTrackCRTHit(fmCRTHit.at(iPart),

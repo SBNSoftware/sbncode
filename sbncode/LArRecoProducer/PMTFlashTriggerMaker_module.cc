@@ -24,7 +24,7 @@
 #include <iostream>
 #include <vector>
 
-#include "sbndcode/OpDetSim/sbndPDMapAlg.h"
+#include "sbndcode/OpDetSim/sbndPDMapAlg.hh"
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -79,6 +79,8 @@ sbn::PMTFlashTriggerMaker::PMTFlashTriggerMaker(fhicl::ParameterSet const& p)
 
 void sbn::PMTFlashTriggerMaker::produce(art::Event& e)
 {
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+
   std::unique_ptr<std::vector<sbn::FlashTriggerPrimitive>> trigs(new std::vector<sbn::FlashTriggerPrimitive>);
 
   art::Handle<std::vector<raw::OpDetWaveform>> waveform_handle;
@@ -87,14 +89,14 @@ void sbn::PMTFlashTriggerMaker::produce(art::Event& e)
   std::pair<double, double> window = fTriggerWindow;
   // don't apply offset in constructor in case time gets overwritten on input file open
   if (fOffsetTriggerTime) {
-    float offset = lar::providerFrom<detinfo::DetectorClocksService>()->TriggerTime();
+    float offset = clock_data.TriggerTime();
     window.first += offset;
     window.second += offset;
   }
 
   if (waveform_handle.isValid()) {
     const std::vector<raw::OpDetWaveform> &waveforms = *waveform_handle;
-    double tick_period = lar::providerFrom<detinfo::DetectorClocksService>()->OpticalClock().TickPeriod();
+    double tick_period = clock_data.OpticalClock().TickPeriod();
     bool is_sbnd = fExperiment == "SBND";
 
    *trigs = TriggerPrimitives(waveforms, tick_period, window, fTriggerThreshold, is_sbnd);
