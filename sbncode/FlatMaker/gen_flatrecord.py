@@ -16,6 +16,13 @@ except Exception as e:
     print()
     sys.exit(1)
 
+# TEMPORARY: pygccxml uses "time.clock", which is deprecated.
+# We don't have control over this dependency, and all the deprecation
+# warnings make it imposssible to see any compiling erros. So for now, 
+# inhibit those warning messages
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 # Types that ROOT will understand (with a little nudging in some cases)
 fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',

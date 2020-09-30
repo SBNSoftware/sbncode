@@ -16,6 +16,14 @@ except Exception as e:
     print()
     sys.exit(1)
 
+# TEMPORARY: pygccxml uses "time.clock", which is deprecated.
+# We don't have control over this dependency, and all the deprecation
+# warnings make it imposssible to see any compiling erros. So for now, 
+# inhibit those warning messages
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
+
 # Types that we can assume are already defined, so don't form part of our
 # dependency tree.
 fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
