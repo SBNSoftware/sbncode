@@ -18,6 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -212,6 +215,7 @@ void numu::MuPVertexStudy::FillReco(unsigned i, const simb::MCParticle &muon, co
 
 void numu::MuPVertexStudy::analyze(art::Event const& ev)
 {
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(ev);
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
 
   const std::vector<simb::MCParticle> &mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
@@ -258,8 +262,8 @@ void numu::MuPVertexStudy::analyze(art::Event const& ev)
       hits.insert(hits.end(), this_hits.begin(), this_hits.end());
     }
 
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits);
-    float totalE = CAFRecoUtils::TotalHitEnergy(hits);
+    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, hits);
+    float totalE = CAFRecoUtils::TotalHitEnergy(clock_data, hits);
 
     float muon_completion = Completion(*muon, muonE, matches, mcparticle_list);
     float proton_completion = Completion(*proton, protonE, matches, mcparticle_list);

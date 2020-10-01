@@ -7,16 +7,22 @@
 #include <dlfcn.h>
 #include <core/PostProcessorBase.hh>
 #include <core/Loader.hh>
+#include "TROOT.h"
 
 int main(int argc, char* argv[]) {
   // Parse command line arguments
   char *post_processor = NULL;
   char *config_name = NULL; // optional
+  std::string output_fname = "";
 
   int c;
   unsigned procindex = 0;
-  while ((c=getopt(argc, argv, "m:c:")) != -1) {
+  unsigned n_workers = 1;
+  while ((c=getopt(argc, argv, "m:c:o:w:")) != -1) {
     switch (c) {
+      case 'w':
+        n_workers = std::stoi(std::string(optarg));
+        break;
       case 'm':
         if (post_processor != NULL) {
           fprintf(stderr, "Only specify one post-processor.\n");
@@ -31,8 +37,11 @@ int main(int argc, char* argv[]) {
         }
         config_name = optarg;
         break;
+      case 'o':
+        output_fname = optarg; 
+        break;
       case '?':
-        if (optopt == 'c' || optopt == 'm')
+        if (optopt == 'c' || optopt == 'm' || optopt == 'o')
           fprintf(stderr, "Option -%c requires an argument.\n", optopt);
         else if (isprint(optopt))
           fprintf(stderr, "Unknown option `-%c'.\n", optopt);
@@ -73,12 +82,17 @@ int main(int argc, char* argv[]) {
   assert(!filenames.empty());
   assert(post_processor != NULL);
 
+  // enable multiple threads if needed
+  if (n_workers > 1) {
+    ROOT::EnableThreadSafety();
+  }
+
   // Setup
   std::cout << "Configuring... " << std::endl;
   core::export_table_postprocess *exp = core::LoadPostProcessor(post_processor);
   core::PostProcessorBase *proc = exp->create();
-  proc->Initialize(config_name);
-
+  proc->Initialize(config_name, output_fname, n_workers);
+  
   // Run
   std::cout << "Running... " << std::endl;
   proc->Run(filenames);

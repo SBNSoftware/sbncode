@@ -19,6 +19,10 @@
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/AnalysisBase/T0.h"
 
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+
 
 #include "sbndcode/CRT/CRTUtils/CRTT0MatchAlg.h"
 
@@ -54,6 +58,7 @@ private:
   art::InputTag fTrackLabel;
   int fTSMode;
   float fTimeCorrection;
+  float fMinTrackLength;
 
 };
 
@@ -84,7 +89,8 @@ sbn::CRTHitMatch::CRTHitMatch(fhicl::ParameterSet const& p)
     fCRTHitLabel(p.get<std::string>("CRTHitLabel", "crthit")),
     fTrackLabel(p.get<std::string>("TrackLabel", "pandoraTrack")),
     fTSMode(p.get<int>("Alg.TSMode", 1)),
-    fTimeCorrection(p.get<float>("Alg.TimeCorrection", 0.))
+    fTimeCorrection(p.get<float>("Alg.TimeCorrection", 0.)),
+    fMinTrackLength(p.get<float>("MinTrackLength", 10.))
 {
   produces< art::Assns<recob::Track, sbn::crt::CRTHit, anab::T0> >();
 }
@@ -114,8 +120,14 @@ void sbn::CRTHitMatch::produce(art::Event& e)
      sbnd_crthits.push_back(SBN2SBNDCrtHit(*hit));
   }
 
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  auto const det_prop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+
   for (unsigned i = 0; i < tracks.size(); i++) {
-    std::pair<sbnd::crt::CRTHit, double> hit_pair = fMatchAlg.ClosestCRTHit(*tracks[i], sbnd_crthits, e);
+    if (fMinTrackLength > 0. && tracks[i]->Length() < fMinTrackLength) continue;
+
+    std::pair<sbnd::crt::CRTHit, double> hit_pair = fMatchAlg.ClosestCRTHit(det_prop, *tracks[i], sbnd_crthits, e);
     if (hit_pair.second >= 0) {
       // TODO: fix hacky BS
       // figure out which hit was matched

@@ -9,7 +9,7 @@ float sbnpca::VecAngle(std::array<float, 2> A, std::array<float, 2> B) {
   return acos(costh);
 }
 
-std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   // get the wire distance between A and B
   float wire_distance = A.WireID().Wire;
   // convert to cm
@@ -18,12 +18,12 @@ std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const geo::GeometryC
   // and the time difference
   float time_distance = A.PeakTime();
   // convert to cm
-  float time_distance_cm = dprop->ConvertTicksToX(time_distance, A.WireID());
+  float time_distance_cm = dprop.ConvertTicksToX(time_distance, A.WireID());
 
   return {wire_distance_cm, time_distance_cm};
 }
 
-std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   // get each individual vec
   std::array<float, 2> vecA = HitVector(A, geo, dprop);
   std::array<float, 2> vecB = HitVector(B, geo, dprop);
@@ -31,7 +31,7 @@ std::array<float, 2> sbnpca::HitVector(const recob::Hit &A, const recob::Hit &B,
   return {vecA[0] - vecB[0], vecA[1] - vecB[1]};
 }
 
-float sbnpca::HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+float sbnpca::HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   std::array<float, 2> vec = HitVector(A, B, geo, dprop);
   return sqrt(vec[0]*vec[0] + vec[1]*vec[1]);
 }
@@ -39,7 +39,7 @@ float sbnpca::HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::G
 std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> sbnpca::GetNearestHits(
                                                  const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
                                                  const geo::GeometryCore *geo,
-                                                 const detinfo::DetectorProperties *dprop) {
+                                                 const detinfo::DetectorPropertiesData &dprop) {
   std::vector<art::Ptr<recob::Hit>> retlo;
   std::vector<art::Ptr<recob::Hit>> rethi;
 
@@ -67,7 +67,7 @@ std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>,
 }
 
 std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
 
   if (hits.size() < 2) return {-100., -100.};
 
@@ -115,7 +115,7 @@ std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &
 }
 
 std::array<float, 2> sbnpca::HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-               const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
 
   std::array<float, 2> sum {};
   for (const art::Ptr<recob::Hit> &h: hits) {

@@ -193,10 +193,9 @@ void sbn::TrackAreaHit::produce(art::Event& e)
   art::fill_ptr_vector(wires, wire_handle);
 
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
-  detinfo::DetectorProperties const* dprop
-          = lar::providerFrom<detinfo::DetectorPropertiesService>();
-  detinfo::DetectorClocks const* dclock
-          = lar::providerFrom<detinfo::DetectorClocksService>();
+  auto const dclock = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, dclock);
 
   for (unsigned i = 0; i < tracks.size(); i++) {
     const recob::Track &track = *tracks[i];
@@ -272,7 +271,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
 	TVector3 dir(dir_v.X(), dir_v.Y(), dir_v.Z());
 	
 	// Get time from X [ticks]
-	float time = dprop->ConvertXToTicks(x, planeID);
+	float time = dprop.ConvertXToTicks(x, planeID);
 
 	// get the geometric time window [ticks]
 	//
@@ -288,7 +287,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         proj_length = std::min(proj_length, abs(track.Length() * dir.X()));
 
         // convert the length to a window in ticks
-	double window = (proj_length / dprop->DriftVelocity()) / dclock->TPCClock().TickPeriod();
+	double window = (proj_length / dprop.DriftVelocity()) / dclock.TPCClock().TickPeriod();
 	
 	// add in the window from signal shaping [ticks]
 	window += fSignalShapingWindow;

@@ -9,9 +9,11 @@ namespace caf
 {
   
   SRSliceRecoBranch::SRSliceRecoBranch() :
-    ntrk(-1),
-    //    nvtx(-1),
-    nshw(-1)
+    ntrk(0),
+    //    nvtx(0),
+    nshw(0)
+    // nshw_em(0),
+    // nshw_pandora(0)
   {  
   }
   
@@ -25,6 +27,8 @@ namespace caf
     //    nvtx   = vtx.size();
     ntrk   = trk.size();
     nshw   = shw.size();
+    // nshw_em = shw_em.size();
+    // nshw_pandora = shw_pandora.size();
 
   }
  

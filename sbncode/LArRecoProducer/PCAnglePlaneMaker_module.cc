@@ -81,12 +81,12 @@ void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHit
   }
 }
 
-float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop) {
+float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
   float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
 
   float vert_time_coord = vert.position().X();
-  float hit_time_coord = dprop->ConvertTicksToX(hit.PeakTime(), hit.WireID());
+  float hit_time_coord = dprop.ConvertTicksToX(hit.PeakTime(), hit.WireID());
 
   return sqrt((vert_wire_coord - hit_wire_coord) * (vert_wire_coord - hit_wire_coord) +
     (vert_time_coord - hit_time_coord) * (vert_time_coord - hit_time_coord));
@@ -95,7 +95,7 @@ float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const g
 std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::vector<art::Ptr<recob::Hit>>, 3> &hits, 
                                                           const recob::Vertex &start,
                                                           const geo::GeometryCore *geo, 
-                                                          const detinfo::DetectorProperties *dprop) {
+                                                          const detinfo::DetectorPropertiesData &dprop) {
   // convert data to linked-list
   std::array<std::list<art::Ptr<recob::Hit>>, 3> planar {};
   for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
@@ -206,8 +206,10 @@ void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
 
   // collect services
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
-  detinfo::DetectorProperties const* dprop
-          = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
+
 
   // get the PFParticle's and the associated data
   art::Handle<std::vector<recob::PFParticle>> pfparticle_handle;

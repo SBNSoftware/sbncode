@@ -18,6 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -226,6 +229,8 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
   art::ServiceHandle<cheat::ParticleInventoryService> inventory_service;
 
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(ev);
+
   art::ValidHandle<std::vector<simb::MCTruth>> mctruth_handle = ev.getValidHandle<std::vector<simb::MCTruth>>("generator");
   const std::vector<simb::MCTruth> &mctruth_list = *mctruth_handle;
   std::vector<art::Ptr<simb::MCTruth>> mctruth_ptrs;
@@ -294,7 +299,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
     art::FindManyP<recob::Hit> fmHits(tracks.at(i_part), ev, "pandoraTrack");
     const std::vector<art::Ptr<recob::Hit>> &this_hits = fmHits.at(0);
 
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(this_hits);
+    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, this_hits);
 
     // sort by matching energy
     std::sort(matches.begin(), matches.end(), 
@@ -319,7 +324,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
     std::vector<float> matchingE(numuVisE.size(), 0.);
     float totalE = 0.;
 
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(slice_hits.at(i_slice));
+    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, slice_hits.at(i_slice));
     for (unsigned i_match = 0; i_match < matches.size(); i_match++) {
       totalE += matches[i_match].second / 1000.;
     }

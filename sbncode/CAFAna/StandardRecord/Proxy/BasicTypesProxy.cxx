@@ -453,5 +453,7 @@ namespace caf
   template class Proxy<generator_>;
   template class Proxy<genie_status_>;
   template class Proxy<interaction_mode_>;
+  template class Proxy<MCType_t>;
+  template class Proxy<Plane_t>;
 
 } // namespace

@@ -11,6 +11,14 @@ namespace caf
     kICARUS      ///< Far Detector
   };
 
+  enum Plane_t 
+  {
+    kUnknown=-1,
+    k1stInduction=0,
+    k2ndInduction=1,
+    kCollection=2
+  };
+
   enum Wall_t 
   {
     kWallNone=0,
@@ -20,6 +28,16 @@ namespace caf
     kWallRight=4,
     kWallFront=5,
     kWallBack=6
+  };
+
+  /// Which type of MC?
+  enum MCType_t
+  {
+    kMCUnknown=0,
+    kMCParticleGun=1,
+    kMCNeutrino=2,
+    kMCCosmic=3,
+    kMCOverlay=4
   };
 
   /// Which generator?
@@ -116,7 +134,8 @@ namespace caf
     kG4muBrems,
     kG4hIoni,
     kG4muPairProd,
-    kG4hPairProd
+    kG4hPairProd,
+    kG4LArVoxelReadoutScoringProcess
   };// g4_process_
 
 }

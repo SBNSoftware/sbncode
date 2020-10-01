@@ -14,7 +14,6 @@ namespace caf
   StandardRecord::StandardRecord():
   hdr(),
   //  spill(),
-  slc(),
   reco(),
   mc()
   {  }

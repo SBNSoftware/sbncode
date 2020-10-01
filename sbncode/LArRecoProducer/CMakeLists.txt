@@ -9,12 +9,22 @@ art_make_library(
 	LIBRARY_NAME sbn_LArReco_PCA
 	SOURCE PCA.cc
 	LIBRARIES
+	sbncode_LArRecoProducer_Products_dict
+	lardataobj_RecoBase_AssnsDicts_dict
+	lardataobj_RecoBase_dict	
+	sbndcode_OpDetSim
+)
+
+simple_plugin(PMTFlashTriggerFilter module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
 	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
 	${ART_FRAMEWORK_PRINCIPAL}
 	art_Persistency_Common
 	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
@@ -24,6 +34,31 @@ art_make_library(
 	lardataobj_RecoBase_AssnsDicts_dict
 	lardataobj_RecoBase_dict	
         larcorealg_Geometry
+	sbn_LArReco	    
+)
+
+
+simple_plugin(PMTFlashTriggerMaker module
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
+	${ROOT_EVE_LIB_LIST}
+	${ROOT_X3d}
+	${ROOT_BASIC_LIB_LIST}
+	MF_MessageLogger
+
+	sbn_LArReco	    
+	sbncode_LArRecoProducer_Products_dict
+	lardataobj_RecoBase_AssnsDicts_dict
+	lardataobj_RecoBase_dict	
+	sbndcode_OpDetSim
 )
 
 simple_plugin(MCSFitAllPID module
@@ -46,6 +81,7 @@ simple_plugin(MCSFitAllPID module
 	sbncode_LArRecoProducer_Products_dict
 	lardataobj_RecoBase_AssnsDicts_dict
 	lardataobj_RecoBase_dict	
+	lardataobj_RecoBase
 )
 
 simple_plugin(RangePAllPID module
@@ -89,6 +125,9 @@ simple_plugin(TrackAreaHit module
 
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
+	lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
+	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
+	lardataalg_DetectorInfo
 )
 
 simple_plugin(TrackHitFilter module
@@ -137,6 +176,26 @@ simple_plugin(TrackHitDumper module
 	larcore_Geometry_Geometry_service
 )
 
+simple_plugin(ShowerSelectionVars module
+  ${ART_FRAMEWORK_CORE}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  art_Persistency_Common
+  art_Utilities canvas
+  ${MF_MESSAGELOGGER}
+  ${MF_UTILITIES}
+  ${FHICLCPP}
+  cetlib cetlib_except
+  ${ROOT_EVE_LIB_LIST}
+  ${ROOT_X3d}
+  ${ROOT_BASIC_LIB_LIST}
+  MF_MessageLogger
+
+  sbn_LArReco
+  sbncode_LArRecoProducer_Products_dict
+)
+
 
 simple_plugin(CRTHitConverter module
 	${ART_FRAMEWORK_CORE}
@@ -155,6 +214,8 @@ simple_plugin(CRTHitConverter module
 	MF_MessageLogger
 
 	sbncode_LArRecoProducer_Products_dict
+	lardataobj_RecoBase_AssnsDicts_dict
+	lardataobj_RecoBase_dict	
 	sbndcode_CRT_CRTProducts_dict
 	icaruscode_CRTProducts	
 )
@@ -175,6 +236,7 @@ simple_plugin(CRTHitMatch module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
+	lardataobj_RecoBase
 	sbncode_LArRecoProducer_Products_dict
 	sbndcode_CRT_CRTProducts_dict
 	sbndcode_CRTUtils

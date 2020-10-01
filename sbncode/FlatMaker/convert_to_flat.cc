@@ -43,16 +43,19 @@ int main(int argc, char** argv)
   caf::StandardRecord* event = 0;
   tr->SetBranchAddress("reco_events", &event);
 
-  TFile fout(outname.c_str(), "RECREATE");
+  // LZ4 is the fastest format to decompress. I get 3x faster loading with
+  // thiscompared to the default, and the files are only slightly larger.
+  TFile fout(outname.c_str(), "RECREATE", "",
+             ROOT::CompressionSettings(ROOT::kLZ4, 1));
 
   // First, copy the POT information over
   ((TTree*)fin->Get("sbnsubrun"))->CloneTree()->Write("sbnsubrun");
 
   TTree* trout = new TTree("sbnana", "sbnana");
-  // Have trouble with memory usage (because several trees are open at
-  // once?). Set the maximum buffer usage (per tree) to 3MB (10x less than
-  // default)
-  trout->SetAutoFlush(-3*1000*1000);
+  // On NOvA, had trouble with memory usage (because several trees are open at
+  // once?). Setting the maximum buffer usage (per tree) to 3MB (10x less than
+  // default) fixed it. But it doesn't seem necessary for now on SBN.
+  //  trout->SetAutoFlush(-3*1000*1000);
 
   flat::FlatRecord* rec = new flat::FlatRecord("sbnana.", trout, 0);//policy);
 
@@ -66,6 +69,11 @@ int main(int argc, char** argv)
 
     rec->Fill(*event);
     trout->Fill();
+
+    // This causes us to have much larger baskets, which seems like it should
+    // be more efficient for semi-random access of systs, but doesn't seem to
+    // help much in practice. It appears the limit is capped at 256e6.
+    if(i == 1000) rec->OptimizeBaskets(1000*1000*1000, 1.1, ""/*"d"*/);
   }
   //  prog.Done();
 

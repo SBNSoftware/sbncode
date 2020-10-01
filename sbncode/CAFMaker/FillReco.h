@@ -23,6 +23,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
 #include "sbncode/LArRecoProducer/Products/CRTHit.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -35,8 +36,20 @@ namespace caf
 {
 
   void FillShowerVars(const recob::Shower& shower,
+                      const recob::PFParticle &particle,
+                      const recob::Vertex* vertex,
+                      const recob::PFParticle *primary,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
+
+  void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
+                      caf::SRShower& srshower);
+
+  void FillShowerTrackFit(const sbn::ShowerTrackFit& trackFit,
+                      caf::SRShower& srshower);
+
+  void FillShowerDensityFit(const sbn::ShowerDensityFit& densityFit,
+                      caf::SRShower& srshower);
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,
@@ -59,11 +72,12 @@ namespace caf
 
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle& particle,
+                     const recob::PFParticle *primary,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
-                       const std::vector<const anab::T0*> &t0match, 
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<const anab::T0*> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -84,11 +98,20 @@ namespace caf
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
+                     const std::array<float, 3> &calo_constants,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos);
+  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs,
+                           const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                           unsigned truth_ind);
+
+  void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  bool use_ts0,
+                  caf::SRCRTHit &srhit,
+                  bool allowEmpty = false);
 }
 
 #endif

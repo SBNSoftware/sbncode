@@ -16,8 +16,10 @@ namespace ana
                         Loaders& loadersFD,
                         const HistAxis& axis,
                         const Cut& cut,
-                        const SystShifts& shift = kNoShift,
-                        const Var& wei = kUnweighted);
+                        const SystShifts& shift_mc = kNoShift,
+                        const Var& wei_mc = kUnweighted,
+                        const SystShifts& shift_data = kNoShift,
+                        const Var& wei_data = kUnweighted);
     virtual ~PredictionSBNExtrap();
 
     virtual Spectrum Predict(osc::IOscCalculator* calc) const override;
@@ -45,5 +47,27 @@ namespace ana
 
     PredictionNoExtrap fPredND, fPredFD;
     Spectrum fDataND;
+  };
+
+  class SBNExtrapGenerator: public IPredictionGenerator
+  {
+  public:
+    SBNExtrapGenerator(Loaders& loaders_nd,
+                       const HistAxis& ax,
+                       const Cut& cut,
+                       const Var& wei_mc,
+                       const SystShifts& shift_data = kNoShift,
+                       const Var& wei_data = kUnweighted);
+
+    std::unique_ptr<IPrediction> Generate(Loaders& loaders_fd,
+                                          const SystShifts& shiftMC = kNoShift) const override;
+
+  protected:
+    Loaders& fLoadersND;
+    HistAxis fAxis;
+    Cut fCut;
+    Var fWeightMC;
+    SystShifts fShiftData;
+    Var fWeightData;
   };
 }

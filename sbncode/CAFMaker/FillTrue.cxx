@@ -3,6 +3,9 @@
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "RecoUtils/RecoUtils.h"
 
+#include <functional>
+#include <algorithm> 
+
 // helper function declarations
 caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume, 
 			  const TVector3 p0, 
@@ -10,24 +13,32 @@ caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
 
 caf::g4_process_ GetG4ProcessID(const std::string &name);
 
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-					  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-					  const cheat::ParticleInventoryService &inventory_service);
+				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
+			 	   const cheat::ParticleInventoryService &inventory_service,
+                                   const detinfo::DetectorClocksData &clockData);
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
 
+bool FRFillNumuCC(const simb::MCTruth &mctruth, 
+                  const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                  const std::vector<geo::BoxBoundedGeo> &volumes, 
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco);
 
 namespace caf {
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty)
   {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(hits);
+    srtrack.truth = MatchTrack2Truth(clockData, hits);
 
   }//FillTrackTruth
 
@@ -37,26 +48,24 @@ namespace caf {
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                       const std::vector<caf::SRTrueInteraction> &srneutrinos,
                       const cheat::ParticleInventoryService &inventory_service,
+                      const detinfo::DetectorClocksData &clockData,
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty)
   {
 
-    caf::SRTruthMatch tmatch;
-    //    srslice.tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
-    tmatch = MatchSlice2Truth(hits, neutrinos, inventory_service);
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
 
     if (tmatch.index >= 0) {
-
       caf::SRTrueInteraction numatch = srneutrinos[tmatch.index];
       numatch.visEinslc         = tmatch.visEinslc;
       numatch.visEcosmic        = tmatch.visEcosmic;
       numatch.eff               = tmatch.eff;
       numatch.pur               = tmatch.pur;
       numatch.is_numucc_primary = tmatch.is_numucc_primary;
-
       srslice.truth = numatch;
-      srmc.nu.push_back(numatch);
     }
+
+    srslice.tmatch = tmatch;
 
     std::cout << "Slice matched to index: " << tmatch.index 
 	      << " with match frac: " << tmatch.pur << std::endl;
@@ -66,10 +75,22 @@ namespace caf {
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const art::Ptr<simb::MCFlux>  mcflux,
-			std::vector<caf::SRTrueParticle> srprimaries,
+			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
+
+    srneutrino.visE = 0.;
+    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+      // save the G4 particles that came from this interaction
+      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
+        srneutrino.prim.push_back(srparticles[i_part]);
+      }
+      // total up the deposited energy
+      if (srparticles[i_part].interaction_id == (int)i) {
+        srneutrino.visE += srparticles[i_part].planeVisE;
+      }
+    }
 
     if (mctruth->NeutrinoSet()) {
       // Neutrino
@@ -94,9 +115,21 @@ namespace caf {
       srneutrino.q0_lab = q_labframe.E();
       srneutrino.modq_lab = q_labframe.P();
 
-      srneutrino.prim = srprimaries;
+      // make sure the lepton comes first in the list of prim
+      for (unsigned i_part = 0; i_part < srneutrino.prim.size(); i_part++) {
+        if (srneutrino.prim[i_part].pdg == lepton.PdgCode()) {
+          // swap them
+          caf::SRTrueParticle temp = srneutrino.prim[0];
+          srneutrino.prim[0] = srneutrino.prim[i_part];
+          srneutrino.prim[i_part] = temp;
+          break;
+        }
+      }
 
     }
+
+    // total up the visible energy
+    
 
   }
 
@@ -105,12 +138,14 @@ namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle, 
 			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
 			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+                          const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
 			  const cheat::BackTrackerService &backtracker,
 			  const cheat::ParticleInventoryService &inventory_service,
 			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
-    std::vector<const sim::IDE*> particle_ides(backtracker.TrackIdToSimIDEs_Ps(particle.TrackId()));
+    std::vector<const sim::IDE*> empty;
+    const std::vector<const sim::IDE*> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
 
     srparticle.length = 0.;
     srparticle.crosses_tpc = false;
@@ -226,6 +261,11 @@ namespace caf {
     // other truth information
     srparticle.pdg = particle.PdgCode();
 
+    srparticle.gen = particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T(): -9999;
+    srparticle.genp = particle.NumberTrajectoryPoints() ? particle.Momentum().Vect(): TVector3(-9999, -9999, -9999);
+    srparticle.genE = particle.NumberTrajectoryPoints() ? particle.Momentum().E(): -9999;
+
     srparticle.start = (entry_point >= 0) ? particle.Position(entry_point).Vect(): TVector3(-9999, -9999, -9999);
     srparticle.startT = (entry_point >= 0) ? particle.Position(entry_point).T() / 1000. /* ns-> us*/: -9999;
     srparticle.end = (exit_point >= 0) ? particle.Position(exit_point).Vect(): TVector3(-9999, -9999, -9999);
@@ -253,6 +293,37 @@ namespace caf {
     }
   } //FillTrueG4Particle
 
+  void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
+                    const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                    const std::vector<geo::BoxBoundedGeo> &volumes,
+                    TRandom &rand,
+                    std::vector<caf::SRFakeReco> &srfakereco) {
+    // iterate and fill
+    for (const art::Ptr<simb::MCTruth> mctruth: mctruths) {
+      bool do_fill = false;
+      caf::SRFakeReco this_fakereco;
+      do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, rand, this_fakereco);
+      
+      // TODO: others?
+      // if (!do_fill) ...
+
+      if (do_fill) srfakereco.push_back(this_fakereco);
+    }
+  }
+
+  std::map<int, std::vector<const sim::IDE*>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels) {
+    std::map<int, std::vector<const sim::IDE*>> ret;
+    for (const art::Ptr<sim::SimChannel> sc : simchannels) {
+      for (const auto &item : sc->TDCIDEMap()) {
+        for (const sim::IDE &ide: item.second) {
+          // indexing initializes empty vector
+          ret[abs(ide.trackID)].push_back(&ide);
+        }
+      }
+    }
+    return ret;
+  }
+
 } // end namespace
 
 
@@ -260,7 +331,191 @@ namespace caf {
 
 // helper function definitions
 
+bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
+                    float distance=5.0) {
+  TVector3 nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0).Vect();
+  TVector3 trkStart = track.Start().Position().Vect();
+  return (trkStart - nuVtx).Mag() < distance;
+}
 
+// returns particle mass in MeV
+double PDGMass(int pdg) {
+  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
+  // regular particle
+  if (pdg < 1000000000) {
+    TParticlePDG* ple = PDGTable->GetParticle(pdg);
+    if (ple == NULL) return -1;
+    return ple->Mass() * 1000.0;
+  }
+  // ion
+  else {
+    int p = (pdg % 10000000) / 10000;
+    int n = (pdg % 10000) / 10 - p;
+    return (PDGTable->GetParticle(2212)->Mass() * p +
+            PDGTable->GetParticle(2112)->Mass() * n) * 1000.0;
+  }
+}
+
+
+bool FRFillNumuCC(const simb::MCTruth &mctruth, 
+                  const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
+                  const std::vector<geo::BoxBoundedGeo> &volumes, 
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco) {
+  // Configuration -- TODO: make configurable?
+
+  // Fiducial Volume
+  float xmin = 10.;
+  float xmax = 10.;
+  float ymin = 10.;
+  float ymax = 10.;
+  float zmin = 10.;
+  float zmax = 100.;
+
+  // energy smearing
+  float hadron_smearing = 0.05; 
+  float lepton_contained_smearing = 0.02; 
+  std::function<float (float)> lepton_exiting_smearing = [](float length) {
+    float A = 0.102;
+    float B = 0.000612;
+    return -A * TMath::Log(B * length);
+  };
+
+  // visible energy threshold
+  float hadronic_energy_threshold = 0.021; // GeV
+
+  // length cut
+  float contained_length_cut = 50.; // cm
+  float exiting_length_cut = 100.; // cm
+
+  // first check if neutrino exists
+  if (!mctruth.NeutrinoSet()) return false;
+
+  // then check if fiducial
+  int cryo_index = -1;
+  for (unsigned i = 0; i < volumes.size(); i++) {
+    const geo::BoxBoundedGeo &vol = volumes[i];
+    geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
+    if (FV.ContainsPosition(mctruth.GetNeutrino().Nu().Position().Vect())) {
+      cryo_index = i;
+      break;
+    }
+  }
+
+  if (cryo_index == -1) return false;
+
+  std::vector<geoalgo::AABox> aa_volumes;
+  const geo::BoxBoundedGeo &v = volumes.at(cryo_index);
+  aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
+
+  // look for CC lepton or a \pi^+/- which can "fake" a numu CC interaction
+
+  int lepton_ind = -1;
+  // CC lepton
+  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+    for (int i = 0; i < (int)mctracks.size(); i++) {
+      if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 13 && mctracks[i]->Process() == "primary") {
+        if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
+          lepton_ind = i;
+        }
+      }
+    }
+  }
+  // NC pion
+  else if (mctruth.GetNeutrino().CCNC() == 1) {
+    for (int i = 0; i < (int)mctracks.size(); i++) {
+      if (isFromNuVertex(mctruth, *mctracks[i]) && abs(mctracks[i]->PdgCode()) == 211 && mctracks[i]->Process() == "primary") {
+        if (lepton_ind == -1 || mctracks[lepton_ind]->Start().E() < mctracks[i]->Start().E()) {
+          lepton_ind = i;
+        }
+      }
+    }
+  }
+
+  // no matching track -- no fake reco
+  if (lepton_ind == -1) return false;
+
+  // Now set the "lepton"
+  caf::SRFakeRecoParticle fake_lepton;
+  
+  fake_lepton.pid = 13;
+  fake_lepton.contained = false;  
+  for (const geo::BoxBoundedGeo &vol: volumes) {
+    if (vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[lepton_ind]->Start().Position().Vect())) {
+      fake_lepton.contained = true;
+    }
+  }
+  fake_lepton.len = ContainedLength(mctracks[lepton_ind]->Start().Position().Vect(), mctracks[lepton_ind]->End().Position().Vect(), aa_volumes);
+  fake_lepton.costh = mctracks[lepton_ind]->Start().Position().Vect().CosTheta();
+
+  // apply length cut
+  if (fake_lepton.contained && fake_lepton.len < contained_length_cut) return false;
+  if (!fake_lepton.contained && fake_lepton.len < exiting_length_cut) return false;
+
+
+  // smear the lepton energy
+  float smearing = fake_lepton.contained ? lepton_contained_smearing : lepton_exiting_smearing(fake_lepton.len);
+  float ke = (mctracks[lepton_ind]->Start().E() - PDGMass(mctracks[lepton_ind]->PdgCode())) / 1000. /* MeV -> GeV*/;
+  fake_lepton.ke = rand.Gaus(ke, smearing * ke);
+  fake_lepton.ke = std::max(fake_lepton.ke, 0.f);
+
+  // get the hadronic state
+  std::vector<caf::SRFakeRecoParticle> hadrons;
+  
+  for (int i = 0; i < (int)mctracks.size(); i++) {
+    if (isFromNuVertex(mctruth, *mctracks[i]) // from this interaction
+     && (abs(mctracks[i]->PdgCode()) == 211 || abs(mctracks[i]->PdgCode()) == 321 || abs(mctracks[i]->PdgCode()) == 2212) // hadronic
+     && mctracks[i]->Process() == "primary" // primary
+     && i != lepton_ind // not the fake lepton
+    ) {
+      caf::SRFakeRecoParticle hadron; 
+      hadron.pid = abs(mctracks[i]->PdgCode());
+      hadron.contained = false;
+      for (const geo::BoxBoundedGeo &vol: volumes) {
+        if (vol.ContainsPosition(mctracks[i]->Start().Position().Vect()) && vol.ContainsPosition(mctracks[i]->Start().Position().Vect())) {
+          hadron.contained = true;
+        }
+      }
+      hadron.len = ContainedLength(mctracks[i]->Start().Position().Vect(), mctracks[i]->Start().Position().Vect(), aa_volumes);
+      hadron.costh = mctracks[i]->Start().Position().Vect().CosTheta();
+
+      float ke = (mctracks[i]->Start().E() - PDGMass(mctracks[i]->PdgCode())) / 1000. /* MeV -> GeV*/;
+      if (ke < hadronic_energy_threshold) continue;
+
+      hadron.ke = rand.Gaus(ke, hadron_smearing * ke);
+      hadron.ke = std::max(hadron.ke, 0.f);
+
+      hadrons.push_back(hadron);
+    }
+  }
+
+  // total up the energy to get the reco neutrino energy
+  fakereco.nuE = fake_lepton.ke;   
+  for (const caf::SRFakeRecoParticle &had: hadrons) fakereco.nuE += had.ke;
+  fakereco.nuE += PDGMass(13) / 1000.; // MeV -.> GeV
+
+  // save the particles
+  fakereco.lepton = fake_lepton;
+  fakereco.hadrons = hadrons;
+
+  // other info
+  TVector3 vertex = mctruth.GetNeutrino().Nu().Position().Vect();
+  fakereco.vtx.x = vertex.X(); 
+  fakereco.vtx.y = vertex.Y(); 
+  fakereco.vtx.z = vertex.Z(); 
+
+  // signal 
+  if (abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+    fakereco.wgt = 0.8;
+  }
+  // bkg
+  else {
+    fakereco.wgt = 1.;
+  }
+  fakereco.nhad = fakereco.hadrons.size();
+
+  return true;
+}
 
 caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
@@ -366,6 +621,7 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(hIoni)
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
+  MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4primary; // unreachable
@@ -483,11 +739,11 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 }//ContainedLength
 
 //------------------------------------------------
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits) {
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits) {
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
 
   caf::SRTrackTruth ret;
 
@@ -513,9 +769,11 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 //------------------------------------------------
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
 				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-				   const cheat::ParticleInventoryService &inventory_service) {
+                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
+				   const cheat::ParticleInventoryService &inventory_service,
+                                   const detinfo::DetectorClocksData &clockData) {
   caf::SRTruthMatch ret;
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
   if (neutrinos.size() == 0) {
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
@@ -525,7 +783,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.index = -1;
     return ret;
   }
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   std::vector<float> matching_energy(neutrinos.size(), 0.);
   for (auto const &pair: matches) {
     art::Ptr<simb::MCTruth> truth;
@@ -549,11 +807,14 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   for (float E: matching_energy) cosmic_energy -= E;
   ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
   ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
+
+  // clamp floating-point errors
+  if (ret.visEcosmic < 1e-5) ret.visEcosmic = 0.;
+
   ret.index = index;
   if (index >= 0) {
     ret.pur = matching_energy[index] / total_energy;
-    // TODO: calculate efficiency 
-    ret.eff = 0.;
+    ret.eff = (matching_energy[index] / 1000.) / srneutrinos[index].visE;
   }
   else {
     ret.pur = -1;

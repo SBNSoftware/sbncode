@@ -15,22 +15,22 @@ namespace sbnpca {
 
   float VecAngle(std::array<float, 2> A, std::array<float, 2> B);
 
-  std::array<float, 2> HitVector(const recob::Hit &A, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop);
+  std::array<float, 2> HitVector(const recob::Hit &A, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
   
-  std::array<float, 2> HitVector(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop);
+  std::array<float, 2> HitVector(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 
-  float HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop);
+  float HitDistance(const recob::Hit &A, const recob::Hit &B, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 
   std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>, bool> GetNearestHits(
       const std::vector<art::Ptr<recob::Hit>> &hits, int ihit, float distance,
       const geo::GeometryCore *geo,
-      const detinfo::DetectorProperties *dprop);
+      const detinfo::DetectorPropertiesData &dprop);
 
   std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-     const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop);
+     const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 
   std::array<float, 2> HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-      const geo::GeometryCore *geo, const detinfo::DetectorProperties *dprop);
+      const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 }
 
 #endif

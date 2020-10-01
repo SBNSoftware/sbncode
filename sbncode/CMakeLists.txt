@@ -20,6 +20,7 @@ find_ups_product( clhep )
 find_ups_product( larcorealg )
 
 add_subdirectory(EventWeight)
+
 #add_subdirectory(LArSoftConfigurations)
 #add_subdirectory(Utilities)
 
@@ -29,7 +30,7 @@ add_subdirectory(StandardRecord)
 add_subdirectory(CAFMaker)
 
 add_subdirectory(OscLib)
-#add_subdirectory(CAFAna)
-#add_subdirectory(FlatMaker)
+add_subdirectory(CAFAna)
+# add_subdirectory(FlatMaker)
 add_subdirectory(LArRecoProducer)
-
+add_subdirectory(SBNAna)

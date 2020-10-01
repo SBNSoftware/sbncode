@@ -16,6 +16,7 @@
   <class name="caf::SRTrack" />
   <class name="caf::SRTrackTruth" />
   <class name="caf::SRTrackTruth::ParticleMatch" />
+  <class name="caf::SRTrackCalo" />
   <class name="caf::SRTrkChi2PID" />
   <class name="caf::SRTrkMCS" />
   <class name="caf::SRTrkRange" />
@@ -24,8 +25,14 @@
   <class name="caf::SRTrueInteraction" />
   <class name="caf::SRTruthBranch" />
   <class name="caf::SRVector3D" />
+  <class name="caf::SRFakeReco" />
+  <class name="caf::SRFakeRecoParticle" />
   <!--<class name="caf::SRLorentzVector" /> -->
 
+  <class name="std::vector<caf::SRFakeReco>" />
+  <class name="std::vector<caf::SRFakeRecoParticle>" />
+  <class name="std::vector<caf::SRTrackCalo>" />
+  <class name="std::vector<caf::SRTrkChi2PID>" />
   <class name="std::vector<caf::SRTrack>" />
   <class name="std::vector<caf::SRVector3D>" />
   <!--<class name="std::vector<caf::SRLorentzVector>" /> -->
@@ -38,7 +45,9 @@
   <class name="std::vector<caf::SRCRTHit>" />
   <class name="caf::SRCRTHitMatch" />
 
+  <enum name="caf::Plane_t" />
   <enum name="caf::Det_t" />
+  <enum name="caf::MCType_t" />
   <enum name="caf::Wall_t" />
   <enum name="caf::generator_" />
   <enum name="caf::interaction_mode_" />

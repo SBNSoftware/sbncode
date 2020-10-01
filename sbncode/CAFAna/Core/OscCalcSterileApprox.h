@@ -11,6 +11,8 @@ namespace ana
     virtual double P(int from, int to, double E) override;
     double P(int from, int to, double Elo, double Ehi);
 
+    double P_LoverE(int from, int to, double LElo, double LEhi);
+
     virtual OscCalcSterileApprox* Copy() const override;
 
     void SetDmsq(double d) {fDmsq = d;}
@@ -24,9 +26,14 @@ namespace ana
 
     double GetSinSq2ThetaEE() const; ///< calculated from the others
 
+    // TODO - potentially remove L in the brave new L/E future
     void SetL(double L) {fL = L;}
     double GetL() const {return fL;}
+
+    TMD5* GetParamsHash() const override;
   protected:
+    double PFromDelta(int from, int to, double Delta) const;
+
     double fDmsq;
     double fSinSq2ThetaMuMu;
     double fSinSq2ThetaMuE;
@@ -60,6 +67,8 @@ namespace ana
     virtual void SetTh13  (double th13  ) override {}
     virtual void SetTh23  (double th23  ) override {}
     virtual void SetdCP   (double dCP   ) override {}
+
+    TMD5* GetParamsHash() const override {return calc.GetParamsHash();}
   };
 
   OscCalcSterileApproxAdjustable* DefaultSterileApproxCalc();

@@ -47,18 +47,6 @@ namespace ana
   }
 
   //---------------------------------------------------------------------
-  TH2D* HistCache::NewTH2D(const std::string& title, const Binning& bins)
-  {
-    return NewTH2D(title, bins, kTrueEnergyBins);
-  }
-
-  //---------------------------------------------------------------------
-  TH2D* HistCache::NewTH2D(const std::string& title, const TAxis* bins)
-  {
-    return NewTH2D(title, Binning::FromTAxis(bins));
-  }
-
-  //---------------------------------------------------------------------
   TH2D* HistCache::NewTH2D(const std::string& title, const Binning& xbins, const Binning& ybins)
   {
     ++fgOut;

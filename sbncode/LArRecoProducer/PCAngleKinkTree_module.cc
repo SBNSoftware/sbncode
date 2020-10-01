@@ -30,6 +30,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 #include "PCA.h"
 
@@ -664,7 +665,9 @@ void sbn::PCAngleKinkTree::MatchKinks() {
 
 void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
 {
+  // service data
   art::ServiceHandle<cheat::BackTrackerService> bt;
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
 
   // input data
   std::vector<std::vector<art::Ptr<recob::PFParticle>>> particleList;
@@ -745,7 +748,7 @@ void sbn::PCAngleKinkTree::analyze(art::Event const& evt)
     for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
       const std::vector<art::Ptr<recob::Hit>> &hits = particleHits[i_part];
 
-      std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
+      std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, hits, true);
       int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
                                                        [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
       float matchE = matches.size() ? std::max_element(matches.begin(), matches.end(),

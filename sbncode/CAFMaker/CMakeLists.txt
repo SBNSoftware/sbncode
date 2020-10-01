@@ -32,6 +32,7 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
 	nusimdata_SimulationBase
 	larsim_MCCheater_ParticleInventoryService_service
 	sbncode_LArRecoProducer_Products_dict
+	art_Framework_Services_System_TriggerNamesService_service
                 )
 
 SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
@@ -56,6 +57,9 @@ simple_plugin ( CAFMaker module
                ${FHICLCPP}
                cetlib cetlib_except
                ${ROOT_BASIC_LIB_LIST}
+		art_root_io_RootDB
+		hep_concurrency
+		nurandom_RandomUtils_NuRandomService_service
                BASENAME_ONLY
             )
 

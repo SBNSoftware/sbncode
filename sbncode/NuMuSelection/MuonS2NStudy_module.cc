@@ -18,6 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -103,6 +106,7 @@ void numu::MuonS2NStudy::analyze(art::Event const& ev)
 {
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(ev);
 
   // Get the Signal Amplitude
   const std::vector<simb::MCParticle> &mcparticle_list = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
@@ -141,7 +145,7 @@ void numu::MuonS2NStudy::analyze(art::Event const& ev)
   // if (muon->Momentum()->CosTheta() < fMuonCosThetaCut) return;
 
   // get the true matched hits
-  std::vector<art::Ptr<recob::Hit>> muon_hits = backtracker->TrackIdToHits_Ps(muon->TrackId(), hits);
+  std::vector<art::Ptr<recob::Hit>> muon_hits = backtracker->TrackIdToHits_Ps(clock_data, muon->TrackId(), hits);
 
   // Only consider the hit with the highest amplitude on each channel
   // (in case of accidental delta rays or split hits)

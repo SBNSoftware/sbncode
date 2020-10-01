@@ -4,10 +4,12 @@
 #include "ubcore/Geometry/UBooNEGeometryHelper.h"
 #include "larcorealg/Geometry/StandaloneGeometrySetup.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/AuxDetChannelMapAlg.h"
 #include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 #include "sbndcode/Geometry/ChannelMapSBNDAlg.h"
 #include "ubcore/Geometry/ChannelMapUBooNEAlg.h"
 #include "larcorealg/Geometry/StandaloneBasicSetup.h"
+#include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandardTestHelpers.h"
@@ -15,6 +17,7 @@
 #include "lardataalg/DetectorInfo/LArPropertiesStandardTestHelpers.h"
 #include "lardataalg/DetectorInfo/LArPropertiesStandard.h"
 #include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/PhotonBackTracker.h"
 #include "larsim/MCCheater/ParticleInventory.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib/filepath_maker.h"
@@ -24,7 +27,7 @@
 
 namespace core {
 
-ProviderManager::ProviderManager(Experiment det, std::string fcl) {
+ProviderManager::ProviderManager(Experiment det, std::string fcl, bool setup_event_services) {
   // Configuration look up policy: allow absolute paths, and search in the
   // $FHICL_FILE_PATH for non-absolute paths.
   const char* fhicl_file_path = getenv("FHICL_FILE_PATH");
@@ -50,11 +53,11 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
         cfg.get<fhicl::ParameterSet>("services.Geometry");
       // For MicroBooNE, we also need to initialize the channel map with the
       // optical detector channel mapping
-      std::shared_ptr<geo::ChannelMapUBooNEAlg> channelMap = \
-        std::make_shared<geo::ChannelMapUBooNEAlg>(
+      std::unique_ptr<geo::ChannelMapAlg> channelMap = \
+        std::make_unique<geo::ChannelMapUBooNEAlg>(
           cfg.get<fhicl::ParameterSet>("services.ExptGeoHelperInterface"), pset);
       fGeometryProvider = \
-        lar::standalone::SetupGeometryWithChannelMapping(pset, channelMap);
+        lar::standalone::SetupGeometryWithChannelMapping(pset, std::move(channelMap));
       }
       break;
     case kExpICARUS: {
@@ -70,9 +73,35 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
       assert(false);
       break;
   }
+  config = new fhicl::ParameterSet(cfg);
+
+  // AuxDetGeometry
+  fAuxDetGeometryProvider = std::make_unique<geo::AuxDetGeometryCore>(cfg.get<fhicl::ParameterSet>("services.AuxDetGeometry"));
+
+  // find the GDML and load it
+  std::string relPath              = config->get<std::string>("services.AuxDetGeometry.RelativePath",     ""   );
+  const std::string GDMLFileName   = config->get<std::string>("services.AuxDetGeometry.GDML"                   );
+
+  cet::search_path sp("FW_SEARCH_PATH");
+
+  std::string GDMLFilePathHint = relPath + GDMLFileName;
+  std::string GDMLFilePath;
+  if( !sp.find_file(GDMLFilePathHint, GDMLFilePath) ) {
+    throw cet::exception("StaticLoadGeometry")
+      << "Can't find geometry file '" << GDMLFilePathHint << std::endl;
+  }
+
+  std::string ROOTFilePathHint = relPath + GDMLFileName;
+  std::string ROOTFilePath;
+  if( !sp.find_file(ROOTFilePathHint, ROOTFilePath) ) {
+    throw cet::exception("StaticLoadGeometry")
+      << "Can't find geometry file '" << ROOTFilePathHint
+      << "' (for geometry)!\n";
+  }
+  fAuxDetGeometryProvider->LoadGeometryFile(GDMLFilePath, ROOTFilePath);
 
   // LArProperties
- fLArPropertiesProvider = \
+  fLArPropertiesProvider = \
     testing::setupProvider<detinfo::LArPropertiesStandard>(
       cfg.get<fhicl::ParameterSet>("services.LArPropertiesService"));
 
@@ -91,22 +120,73 @@ ProviderManager::ProviderManager(Experiment det, std::string fcl) {
         static_cast<const detinfo::DetectorClocks*>(fDetectorClocksProvider.get())
       });
 
+  fParticleInventoryProvider = NULL;
+  fBackTrackerProvider = NULL;
+  fPhotonBackTrackerProvider = NULL;
+  if (!setup_event_services) {
+    return;
+  }
+
   // ParticleInventory
-  fParticleInventoryProvider = \
-    testing::setupProvider<cheat::ParticleInventory>(
-      cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
+  if (cfg.has_key("services.ParticleInventoryService")) {
+    fParticleInventoryProvider = testing::setupProvider<cheat::ParticleInventory>(
+       cfg.get<fhicl::ParameterSet>("services.ParticleInventoryService"));
+  }
+  else {
+    std::cerr << "Warning: Particle inventory service is missing from fhicl config (" << fcl << ")." \
+      << " Setting ParticleInventoryService to NULL" << std::endl;
+  }
 
   // BackTracker
-  fBackTrackerProvider = \
-    testing::setupProvider<cheat::BackTracker>(
-      cfg.get<fhicl::ParameterSet>("services.BackTrackerService"),
-      fParticleInventoryProvider.get(), fGeometryProvider.get(),
-      fDetectorClocksProvider.get());
+  if (cfg.has_key("services.BackTrackerService")) {
+    fBackTrackerProvider = \
+      testing::setupProvider<cheat::BackTracker>(
+        cfg.get<fhicl::ParameterSet>("services.BackTrackerService"),
+        fParticleInventoryProvider.get(), fGeometryProvider.get(),
+        fDetectorClocksProvider.get());
+  }
+  else {
+    std::cerr << "Warning: BackTracker service is missing from fhicl config (" << fcl << ")." \
+      << " Setting BackTrackerService to NULL" << std::endl;
+  }
 
-  config = new fhicl::ParameterSet(cfg);
+  // Photon BackTracker
+  if (cfg.has_key("services.PhotonBackTrackerService")) {
+    fPhotonBackTrackerProvider = \
+      testing::setupProvider<cheat::PhotonBackTracker>(
+        cfg.get<fhicl::ParameterSet>("services.PhotonBackTrackerService"),
+        fParticleInventoryProvider.get(), fGeometryProvider.get());
+  }
+  else {
+    std::cerr << "Warning: PhotonBackTracker service is missing from fhicl config (" << fcl <<")." \
+     << " Setting PhotonBackTrackerService to NULL" << std::endl;
+  }
 
   std::cout << "ProviderManager: Loaded configuration for: "
             << fGeometryProvider.get()->DetectorName() << std::endl;
+}
+
+void ProviderManager::SetupServices(gallery::Event &ev) {
+  // reset the channels of the back tracker
+  if (GetBackTrackerProvider() != NULL) {
+    GetBackTrackerProvider()->ClearEvent();
+    GetBackTrackerProvider()->PrepSimChannels(ev);
+  }
+
+  // reset information in particle inventory
+  if (GetParticleInventoryProvider() != NULL) {
+    GetParticleInventoryProvider()->ClearEvent();
+    GetParticleInventoryProvider()->PrepParticleList(ev);
+    GetParticleInventoryProvider()->PrepMCTruthList(ev);
+    GetParticleInventoryProvider()->PrepTrackIdToMCTruthIndex(ev);
+  }
+
+  // reset information in the photon back tracker
+  if (GetPhotonBackTrackerProvider() != NULL) {
+    GetPhotonBackTrackerProvider()->ClearEvent();
+    GetPhotonBackTrackerProvider()->PrepOpDetBTRs(ev);
+    // GetPhotonBackTrackerProvider()->PrepOpFlashToOpHits(ev);
+  }
 }
 
 

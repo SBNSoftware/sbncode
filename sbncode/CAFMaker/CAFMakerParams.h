@@ -3,6 +3,7 @@
 
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/OptionalTable.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalSequence.h"
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -39,7 +40,7 @@ namespace caf
     Atom<bool> CutClearCosmic {
       Name("CutClearCosmic"),
       Comment("Cut slices which are marked as a 'clear-cosmic' by pandora"),
-      true
+      false
     };
 
     Atom<bool> SelectOneSlice {
@@ -61,8 +62,20 @@ namespace caf
 
     Atom<string> GenLabel {
       Name("GenLabel"),
-      Comment("Label of gen module."),
+      Comment("Label of neutrino gen module."),
       "generator"
+    };
+
+    Atom<string> CosmicGenLabel {
+      Name("CosmicGenLabel"),
+      Comment("Label of cosmic gen module."),
+      "cosmgen"
+    };
+
+    Atom<string> ParticleGunGenLabel {
+      Name("ParticleGunGenLabel"),
+      Comment("Label of particle gun gen module."),
+      "particlegun"
     };
 
     Atom<string> PFParticleLabel {
@@ -86,8 +99,26 @@ namespace caf
     Atom<string> RecoShowerLabel {
       Name("RecoShowerLabel"),
       Comment("Base label of reco-base shower producer."),
-      "tracs"
+      "pandoraShower"
     };
+
+    Atom<string> RecoShowerSelectionLabel {
+      Name("RecoShowerSelectionLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "pandoraShowerSelectionVars"
+    };
+
+    // Atom<string> RecoShowerEMLabel {
+    //   Name("RecoShowerEMLabel"),
+    //   Comment("Base label of reco-base em shower producer."),
+    //   "emshower"
+    // };
+
+    // Atom<string> RecoShowerPandLabel {
+    //   Name("RecoShowerPandLabel"),
+    //   Comment("Base label of reco-base pandora shower producer."),
+    //   "pandoraShower"
+    // };
 
     Atom<string> TrackCaloLabel {
       Name("TrackCaloLabel"),
@@ -117,6 +148,36 @@ namespace caf
       Name("TrackRangeLabel"),
       Comment("Base label of track range momentum calculation producer."),
       "pandoraTrackRange"
+    };
+
+    Atom<string> CRTHitLabel {
+      Name("CRTHitLabel"),
+      Comment("Label of sbn CRT hits."),
+      "crtconvhit"
+    };
+    
+    Atom<string> FlashTrigLabel {
+      Name("FlashTrigLabel"),
+      Comment("Label of bool of passing flash trigger."),
+      "flashtrigfilter"
+    };
+
+    Atom<bool> CRTHitUseTS0 {
+      Name("CRTHitUseTS0"),
+      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
+    };
+
+    Atom<string> SimChannelLabel {
+      Name("SimChannelLabel"),
+      Comment("Label of input sim::SimChannel objects."),
+      "largeant"
+    };
+
+    fhicl::Sequence<float, 3u> CalorimetryConstants {
+      Name("CalorimetryConstants"),
+      Comment("Constants to convert ADC*tick charge measurement to electrons."
+              "Ordered 1st Induction, 2nd Induction, Collection."
+              "In units of ADC*tick / electrons")
     };
 
   };

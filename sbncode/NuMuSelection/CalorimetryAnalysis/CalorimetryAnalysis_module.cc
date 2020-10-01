@@ -50,7 +50,9 @@
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
-
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
@@ -82,7 +84,8 @@ float distance3d(const float& x1, const float& y1, const float& z1,
                   const float& x2, const float& y2, const float& z2);
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
-void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
+void FillHits(const detinfo::DetectorClocksData &clockData,
+              const std::vector<art::Ptr<recob::Hit>> &hits,
               std::vector<float> &charge_u,
               std::vector<float> &charge_v,
               std::vector<float> &charge_y,
@@ -626,6 +629,9 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   art::FindManyP<sbn::RangeP> fmMuonRange(tracks, e, range_muon);
   art::FindManyP<sbn::RangeP> fmProtonRange(tracks, e, range_proton);
 
+  // service data
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+
   for (art::Ptr<recob::PFParticle> p_pfp: PFParticleList) {
     const recob::PFParticle &pfp = *p_pfp;
 
@@ -685,7 +691,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     const std::vector<art::Ptr<recob::Hit>> &caloHits = fmcaloHits.isValid() ? fmcaloHits.at(track.ID()) : emptyHitVector;
     
     // Get the true matching MC particle
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(trkHits, true);
+    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
     // get the match with the most energy
     int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
                                                      [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
@@ -1486,6 +1492,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
   const spacecharge::SpaceCharge *spacecharge = lar::providerFrom<spacecharge::SpaceChargeService>();
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
 
   // TODO: variables to set
   _generation = -1;
@@ -1525,7 +1532,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     }
   }
 
-  FillHits(allHits, 
+  FillHits(clock_data, allHits, 
     _allhit_charge_u,
     _allhit_charge_v,
     _allhit_charge_y,
@@ -1543,7 +1550,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _allhit_time_y
   );
 
-  FillHits(areaHits, 
+  FillHits(clock_data, areaHits, 
     _areahit_charge_u,
     _areahit_charge_v,
     _areahit_charge_y,
@@ -1561,7 +1568,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _areahit_time_y
   );
 
-  FillHits(trkHits, 
+  FillHits(clock_data, trkHits, 
     _trkhit_charge_u,
     _trkhit_charge_v,
     _trkhit_charge_y,
@@ -1579,7 +1586,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _trkhit_time_y
   );
     
-  FillHits(caloHits, 
+  FillHits(clock_data, caloHits, 
     _calohit_charge_u,
     _calohit_charge_v,
     _calohit_charge_y,
@@ -1597,7 +1604,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _calohit_time_y
   );
 
-  FillHits(caloHits, 
+  FillHits(clock_data, caloHits, 
     _sumhit_charge_u,
     _sumhit_charge_v,
     _sumhit_charge_y,
@@ -2123,7 +2130,8 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     }
   }
 
-void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
+void FillHits(const detinfo::DetectorClocksData &dclock,
+              const std::vector<art::Ptr<recob::Hit>> &hits,
               std::vector<float> &charge_u,
               std::vector<float> &charge_v,
               std::vector<float> &charge_y,
@@ -2140,9 +2148,6 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
               std::vector<float> &time_v,
               std::vector<float> &time_y,
               bool use_integral) {
-
-  detinfo::DetectorClocks const* dclock
-          = lar::providerFrom<detinfo::DetectorClocksService>();
 
   struct HitInfo {
     float charge;
@@ -2170,7 +2175,7 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_u[hit->Channel()].width = std::max(hit_map_u[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_u[hit->Channel()].start = hit->StartTick();
       hit_map_u[hit->Channel()].end = hit->EndTick();
-      hit_map_u[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_u[hit->Channel()].time * hit_map_u[hit->Channel()].nhit) / (hit_map_u[hit->Channel()].nhit + 1);
+      hit_map_u[hit->Channel()].time = ( dclock.TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_u[hit->Channel()].time * hit_map_u[hit->Channel()].nhit) / (hit_map_u[hit->Channel()].nhit + 1);
       hit_map_u[hit->Channel()].nhit ++;
     }
     else if (hit->WireID().Plane == 1) {
@@ -2183,7 +2188,7 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_v[hit->Channel()].width = std::max(hit_map_v[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_v[hit->Channel()].start = hit->StartTick();
       hit_map_v[hit->Channel()].end = hit->EndTick();
-      hit_map_v[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_v[hit->Channel()].time * hit_map_v[hit->Channel()].nhit) / (hit_map_v[hit->Channel()].nhit + 1);
+      hit_map_v[hit->Channel()].time = ( dclock.TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_v[hit->Channel()].time * hit_map_v[hit->Channel()].nhit) / (hit_map_v[hit->Channel()].nhit + 1);
       hit_map_v[hit->Channel()].nhit ++;
     }
     else {
@@ -2196,7 +2201,7 @@ void FillHits(const std::vector<art::Ptr<recob::Hit>> &hits,
       hit_map_y[hit->Channel()].width = std::max(hit_map_y[hit->Channel()].width, (float) (hit->EndTick() - hit->StartTick()));
       hit_map_y[hit->Channel()].start = hit->StartTick();
       hit_map_y[hit->Channel()].end = hit->EndTick();
-      hit_map_y[hit->Channel()].time = ( dclock->TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_y[hit->Channel()].time * hit_map_y[hit->Channel()].nhit) / (hit_map_y[hit->Channel()].nhit + 1);
+      hit_map_y[hit->Channel()].time = ( dclock.TPCClock().TickPeriod() * (hit->StartTick() + hit->EndTick()) / 2. + hit_map_y[hit->Channel()].time * hit_map_y[hit->Channel()].nhit) / (hit_map_y[hit->Channel()].nhit + 1);
       hit_map_y[hit->Channel()].nhit ++;
     }
   }

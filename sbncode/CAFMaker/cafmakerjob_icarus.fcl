@@ -14,6 +14,9 @@
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "crthitmatch_producer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "pmtflashtrigger_producer.fcl"
+#include "mcreco.fcl"
 
 process_name: CAFmaker
 
@@ -30,14 +33,17 @@ services:
   # #  @table::standard_services
 
   AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::icarus_geometry_helper
-  Geometry:                  @local::icarus_geo
-  AuxDetGeometry:            @local::icarus_auxdetgeo
+  ExpGeoHelperInterface:    @local::icarus_single_induction_geometry_helper 
+  Geometry:                  @local::icarus_single_induction_nooverburden_geometry 
+  # AuxDetGeometry:            @local::icarus_auxdetgeo
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
   DetectorPropertiesService: @local::icarus_basic_services.DetectorPropertiesService 
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+  NuRandomService: {
+    policy: perEvent
+  }
 }
 
 # services.IFBeam: {}
@@ -77,13 +83,18 @@ physics:
 
    pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
    pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
+   flashtrig: @local::pmtflashtrigmaker_icarus
+
+   mcreco: @local::standard_mcreco
 }
-# filters:{}
+  filters:{
+    flashtrigfilter: @local::pmtflashtrigfilter_icarus
+  }
   analyzers:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ crtconvhit, 
+ runprod: [ flashtrig, flashtrigfilter, crtconvhit, 
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
     pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,
@@ -99,10 +110,13 @@ physics:
 }
 
 physics.producers.mycafmaker: @local::standard_cafmaker
+physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalgmc.CalAreaConstants
 
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
 physics.producers.mycafmaker.PFParticleLabel: "pandoraGaus"
-physics.producers.mycafmaker.RecoShowerLabel: "TRACSStandard"
+physics.producers.mycafmaker.RecoShowerLabel:     "SBNShowerGaus"
+# physics.producers.mycafmaker.RecoShowerEMLabel:   "emshower"
+# physics.producers.mycafmaker.RecoShowerPandLabel: "pandoraShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGaus"
 physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausCalo"
 physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausPid"
