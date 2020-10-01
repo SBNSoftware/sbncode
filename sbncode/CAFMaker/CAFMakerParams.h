@@ -40,7 +40,7 @@ namespace caf
     Atom<bool> CutClearCosmic {
       Name("CutClearCosmic"),
       Comment("Cut slices which are marked as a 'clear-cosmic' by pandora"),
-      true
+      false
     };
 
     Atom<bool> SelectOneSlice {
