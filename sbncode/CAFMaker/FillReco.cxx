@@ -71,7 +71,8 @@ namespace caf
       srshower.daughters.push_back(id);
     }
     srshower.parent = particle.Parent();
-    srshower.parent_is_primary = primary && particle.Parent() == primary->Self();
+    srshower.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+      || (primary && particle.Parent() == primary->Self());
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
@@ -376,7 +377,8 @@ namespace caf
     }
 
     srtrack.parent = particle.Parent();
-    srtrack.parent_is_primary = primary && particle.Parent() == primary->Self();
+    srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+      || (primary && particle.Parent() == primary->Self());
 
   }
   //......................................................................
