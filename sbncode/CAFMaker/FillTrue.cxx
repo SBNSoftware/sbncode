@@ -13,12 +13,13 @@ caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
 
 caf::g4_process_ GetG4ProcessID(const std::string &name);
 
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
 				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                                    const std::vector<caf::SRTrueInteraction> &srneutrinos,
-			 	   const cheat::ParticleInventoryService &inventory_service);
+			 	   const cheat::ParticleInventoryService &inventory_service,
+                                   const detinfo::DetectorClocksData &clockData);
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                       const std::vector<geoalgo::AABox> &boxes);
@@ -32,11 +33,12 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 namespace caf {
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty)
   {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(hits);
+    srtrack.truth = MatchTrack2Truth(clockData, hits);
 
   }//FillTrackTruth
 
@@ -46,11 +48,12 @@ namespace caf {
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                       const std::vector<caf::SRTrueInteraction> &srneutrinos,
                       const cheat::ParticleInventoryService &inventory_service,
+                      const detinfo::DetectorClocksData &clockData,
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty)
   {
 
-    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service);
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
 
     if (tmatch.index >= 0) {
       caf::SRTrueInteraction numatch = srneutrinos[tmatch.index];
@@ -736,11 +739,11 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 }//ContainedLength
 
 //------------------------------------------------
-caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits) {
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits) {
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
 
   caf::SRTrackTruth ret;
 
@@ -767,9 +770,10 @@ caf::SRTrackTruth MatchTrack2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits, 
 				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                                    const std::vector<caf::SRTrueInteraction> &srneutrinos,
-				   const cheat::ParticleInventoryService &inventory_service) {
+				   const cheat::ParticleInventoryService &inventory_service,
+                                   const detinfo::DetectorClocksData &clockData) {
   caf::SRTruthMatch ret;
-  float total_energy = CAFRecoUtils::TotalHitEnergy(hits);
+  float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
   if (neutrinos.size() == 0) {
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
@@ -779,7 +783,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.index = -1;
     return ret;
   }
-  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(hits, true);
+  std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   std::vector<float> matching_energy(neutrinos.size(), 0.);
   for (auto const &pair: matches) {
     art::Ptr<simb::MCTruth> truth;
