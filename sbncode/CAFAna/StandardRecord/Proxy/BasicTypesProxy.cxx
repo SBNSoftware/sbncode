@@ -52,7 +52,7 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy<T>& p)
-    : fName("copy of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+    : fName("copy of "+p.fName), fLeaf(0), fTree(p.fDir ? 0 : p.fTree),
       fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
@@ -67,7 +67,7 @@ namespace caf
 
   //----------------------------------------------------------------------
   template<class T> Proxy<T>::Proxy(const Proxy&& p)
-    : fName("move of "+p.fName), fLeaf(0), fTree(0),//p.fTree),
+    : fName("move of "+p.fName), fLeaf(0), fTree(p.fDir ? 0 : p.fTree),
       fDir(p.fDir), fBase(p.fBase), fOffset(p.fOffset),
       fLeafInfo(0), fBranch(0), fTTF(0), fSubIdx(-1),
       fSystOverrideValue(p.fSystOverrideValue),
@@ -188,6 +188,7 @@ namespace caf
 
       // Leaves are attached to the TTF, must keep it
       fTTF = new TTreeFormula(("TTFProxy-"+fName).c_str(), fName.c_str(), fTree);
+      
       fLeafInfo = fTTF->GetLeafInfo(0); // Can fail (for a regular branch?)
       fLeaf = fTTF->GetLeaf(0);
       fBranch = fLeaf->GetBranch();
@@ -422,12 +423,12 @@ namespace caf
   }
 
   //----------------------------------------------------------------------
-  // TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
-  //   : x(d, tr, name+".fX", base, offset),
-  //     y(d, tr, name+".fY", base, offset),
-  //     z(d, tr, name+".fZ", base, offset)
-  // {
-  // }
+  TVector3Proxy::TVector3Proxy(TDirectory* d, TTree* tr, const std::string& name, const long& base, int offset)
+    : x(d, tr, name+".fX", base, offset),
+      y(d, tr, name+".fY", base, offset),
+      z(d, tr, name+".fZ", base, offset)
+  {
+  }
 
 
   // Enumerate all the variants we expect
@@ -446,10 +447,13 @@ namespace caf
 
   template class Proxy<std::string>;
 
-  //  template class Proxy<SRExperiment>;
-  //  template class Proxy<View_t>;
-  //  template class Proxy<generator_>;
-  //  template class Proxy<mode_type_>;
-  //  template class Proxy<int_type_>;
+  template class Proxy<Det_t>;
+  template class Proxy<Wall_t>;
+  template class Proxy<g4_process_>;
+  template class Proxy<generator_>;
+  template class Proxy<genie_status_>;
+  template class Proxy<interaction_mode_>;
+  template class Proxy<MCType_t>;
+  template class Proxy<Plane_t>;
 
 } // namespace

@@ -23,10 +23,11 @@
 namespace ana
 {
   // Duplicate here because we can't include Vars.h
-  const Var kTrueE([](const caf::SRProxy* sr){return sr->truth[0].neutrino.energy;});
+
+  const Var kTrueE([](const caf::SRProxy* sr){return sr->mc.nu[0].E;});
 
   // convert m->km
-  const Var kBaseline([](const caf::SRProxy* sr){return sr->truth[0].neutrino.baseline / 1000;});
+  const Var kBaseline([](const caf::SRProxy* sr){return sr->mc.nu[0].baseline;});
 
   const Var kTrueLOverE = kBaseline / kTrueE;
 
