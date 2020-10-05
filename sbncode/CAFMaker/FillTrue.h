@@ -49,7 +49,7 @@ namespace caf
 
   // TODO: implement
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
-			const art::Ptr<simb::MCFlux> mcflux, 
+			const simb::MCFlux &mcflux, 
 			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i);
 

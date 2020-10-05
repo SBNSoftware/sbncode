@@ -600,10 +600,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // holder for invalid MCFlux
+  simb::MCFlux badflux; // default constructor gives nonsense values
+
   for (size_t i=0; i<mctruths.size(); i++) {
 
     auto const& mctruth = mctruths.at(i);
-    auto const& mcflux = mcfluxes.at(i);
+    const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
     srneutrinos.push_back(SRTrueInteraction());
 

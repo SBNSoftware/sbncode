@@ -74,7 +74,7 @@ namespace caf {
 
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
-			const art::Ptr<simb::MCFlux>  mcflux,
+			const simb::MCFlux &mcflux,
 			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i) {
 
@@ -98,7 +98,7 @@ namespace caf {
       srneutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       srneutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       srneutrino.pdg = nu.Nu().PdgCode();
-      srneutrino.initpdg = mcflux->fntype;
+      srneutrino.initpdg = mcflux.fntype;
       srneutrino.targetPDG = nu.Target();
       srneutrino.genie_intcode = nu.Mode();
       srneutrino.bjorkenX = nu.X();
