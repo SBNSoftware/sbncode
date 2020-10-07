@@ -1,6 +1,6 @@
 #include "KaonParent.h"
 #include <cassert>
-#include "../ParticleData.h"
+#include "TDatabasePDG.h"
 
 bool evgen::ldm::MakeKaonParent(const simb::MCFlux &flux, evgen::ldm::KaonParent &ret) {
   // set the particle codes
@@ -58,7 +58,7 @@ bool evgen::ldm::MakeKaonParent(const simb::MCFlux &flux, evgen::ldm::KaonParent
   ret.pos.SetVect(pos3);
   ret.pos.SetT(time);
 
-  ret.mom.SetVectM(TVector3(flux.fpdpx, flux.fpdpy, flux.fpdpz), evgen::ldm::PDATA->GetParticle(ret.kaon_pdg)->Mass()); 
+  ret.mom.SetVectM(TVector3(flux.fpdpx, flux.fpdpy, flux.fpdpz), TDatabasePDG::Instance()->GetParticle(ret.kaon_pdg)->Mass()); 
 
   ret.weight = flux.fnimpwt / br;
 

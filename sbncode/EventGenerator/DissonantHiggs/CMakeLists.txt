@@ -55,14 +55,6 @@ simple_plugin( DissonantHiggsGen module
 )
 
 
-art_make_library( LIBRARY_NAME DissonantHiggsPDATA
-		SOURCE ParticleData.cxx
-		LIBRARIES
-                        ${ROOT_BASIC_LIB_LIST}
-			EG
-)
-			
-
 install_headers()
 install_fhicl()
 install_source()

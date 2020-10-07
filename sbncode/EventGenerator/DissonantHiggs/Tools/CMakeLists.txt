@@ -81,7 +81,6 @@ simple_plugin( Kaon2HiggsFlux tool
 			sbncode_EventGenerator_DissonantHiggs_Products
 			nugen_EventGeneratorBase_GENIE
 			nurandom_RandomUtils_NuRandomService_service
-			DissonantHiggsPDATA
 )
 
 simple_plugin( ReThrowRayTraceBox tool
@@ -139,7 +138,6 @@ simple_plugin( HiggsMakeDecay tool
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
-			DissonantHiggsPDATA
 )
 
 install_headers()

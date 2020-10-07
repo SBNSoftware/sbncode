@@ -31,7 +31,7 @@
 #include <utility>
 
 // constants
-#include "../ParticleData.h"
+#include "TDatabasePDG.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
@@ -235,7 +235,7 @@ bool HiggsMakeDecay::Decay(const HiggsFlux &flux, const TVector3 &in, const TVec
   // get the decay type
   int daughter_pdg = RandDaughter(width_elec, width_muon, width_piplus, width_pizero);
 
-  double daughter_mass = evgen::ldm::PDATA->GetParticle(daughter_pdg)->Mass();
+  double daughter_mass = TDatabasePDG::Instance()->GetParticle(daughter_pdg)->Mass();
 
   // daughter mom+energy in the parent rest-frame
   float daughterE_HRF = flux.mass / 2.;

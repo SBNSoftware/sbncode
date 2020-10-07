@@ -31,7 +31,7 @@
 #include <iostream>
 #include <memory>
 
-#include "../ParticleData.h"
+#include "TDatabasePDG.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
@@ -250,7 +250,7 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::HiggsFlux &h
   // get the momentum direction in the kaon parent rest frame
   float kaon_mass = kaon.mom.M();  
   float higs_mass = fM;
-  float pion_mass = evgen::ldm::PDATA->GetParticle(kaon.pion_pdg)->Mass();
+  float pion_mass = TDatabasePDG::Instance()->GetParticle(kaon.pion_pdg)->Mass();
 
   // ignore if we can't make this higgs
   if (kaon_mass - pion_mass < higs_mass) return false;
