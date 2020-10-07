@@ -34,7 +34,7 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-
+larsoft          v09_05_00
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
 castxml          v0_00_00_f20180122 - only_for_build
@@ -46,7 +46,7 @@ cetbuildtools v7_15_01 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes". 
 
-qualifier     uboonecode  pygccxml notes
+qualifier     larsoft     pygccxml notes
 e19:debug     e19:debug   p372    -nq-
 e19:prof      e19:prof    p372    -nq-
 
