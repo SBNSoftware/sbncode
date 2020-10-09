@@ -18,7 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "Products/ShowerSelectionVars.h"
+#include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Slice.h"
