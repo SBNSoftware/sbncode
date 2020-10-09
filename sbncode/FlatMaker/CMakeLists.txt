@@ -1,5 +1,5 @@
 add_custom_command(# Rebuild if Event.hh or the script itself change
-                   DEPENDS $ENV{SBNCODE_DIR}/sbnanalysis/core/Event.hh
+                   DEPENDS $ENV{SBNCODE_DIR}/sbncode/StandardRecord/*.h
                            ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
                    OUTPUT FlatRecord.cxx
                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
@@ -11,7 +11,8 @@ add_custom_command(# Rebuild if Event.hh or the script itself change
 
 art_make_library(LIBRARY_NAME FlatMaker
                  SOURCE       FlatRecord.cxx
-                 LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER} CAFAnaCore)
+                 LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER} # CAFAnaCore
+                 )
 
 art_make_exec(NAME convert_to_flat
               SOURCE convert_to_flat.cc

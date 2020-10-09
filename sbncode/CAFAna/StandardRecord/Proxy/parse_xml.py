@@ -1,26 +1,36 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import sys
 
 try:
     from pygccxml import *
 except Exception as e:
+    print()
     print(e)
     print()
-#    print "Try 'setup pygccxml v1_9_1 -q p2714b'"
-    print("Try 'setup pygccxml v1_9_1a -f NULL -z /cvmfs/nova.opensciencegrid.org/externals -q p2715a'")
-    print("and 'setup castxml v0_00_00_f20180122'")
+    print('On SL6 try: setup pygccxml v1_9_1  -q p2714b; setup castxml v0_00_00_f20180122')
+    print('On SL7 try: setup pygccxml v1_9_1a -q p2715a; setup castxml v0_00_00_f20180122')
     print()
     sys.exit(1)
+
+# TEMPORARY: pygccxml uses "time.clock", which is deprecated.
+# We don't have control over this dependency, and all the deprecation
+# warnings make it imposssible to see any compiling erros. So for now, 
+# inhibit those warning messages
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 
 # Types that we can assume are already defined, so don't form part of our
 # dependency tree.
 fundamental_types = ['int', 'float', 'double', 'bool', 'unsigned int',
                      'short', 'short int', 'short unsigned int',
-                     'long', 'long unsigned int',
+                     'long', 'unsigned long', 'long unsigned int',
                      'long long int', 'char', 'unsigned char',
-                     'size_t', # 'TVector3',
+                     'size_t',
                      'std::string']
 
 def type_to_proxy_type(type):
@@ -29,8 +39,7 @@ def type_to_proxy_type(type):
 
 #    if type[:5] == 'caf::': return type_to_proxy_type(type[5:])
 
-#    if type == 'StandardRecord': return 'SRProxy'
-    if type == 'RecoEvent': return 'SRProxy' # compatibility with existing CAFAna code
+    if type == 'StandardRecord': return 'SRProxy'
 
     if type == 'TVector3': return 'TVector3Proxy'
     if type in fundamental_types:
@@ -81,15 +90,15 @@ config = parser.xml_generator_configuration_t(
 #    start_with_declarations='caf::StandardRecord'
     )
 
-print('Reading from', context+'/sbnanalysis/core/Event.hh')
-decls = parser.parse([context+'/sbnanalysis/core/Event.hh'],
+print('Reading from', context+'/sbncode/StandardRecord/StandardRecord.h')
+decls = parser.parse([context+'/sbncode/StandardRecord/StandardRecord.h'],
                      config)
 
 global_namespace = declarations.get_global_namespace(decls)
-ns = global_namespace.namespace('event')
+ns = global_namespace.namespace('caf')
 
 fundamental_types += [e.name for e in ns.enumerations()]
-fundamental_types += ['Experiment'] # isn't currently within the event:: namespace
+# fundamental_types += ['Experiment'] # isn't currently within the event:: namespace
 
 # Keep track of which classes we've written out so far, for purposes of
 # dependency tracking.
@@ -123,13 +132,12 @@ print('#pragma once')
 print()
 print('#include "sbncode/CAFAna/StandardRecord/Proxy/BasicTypesProxy.h"')
 print()
-print('#include "sbncode/CAFAna/StandardRecord/SREnums.h"')
+print('#include "sbncode/StandardRecord/SREnums.h"')
 print()
 print('#include "TVector3.h"')
 print()
 print('namespace caf')
 print('{')
-print('typedef short unsigned int Experiment; // special case enum')
 print()
 
 debug = False
@@ -254,8 +262,6 @@ print('#include <vector>')
 print()
 print('#include "RtypesCore.h"')
 print()
-print('class TVector3;')
-print()
 print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
     pt = type_to_proxy_type(klass.name)
@@ -275,9 +281,6 @@ template<class T, class U> void CheckEquals(const VectorProxy<T>& x,
 template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
                                                    const T* y);
-
-// class TVector3Proxy;
-// void CheckEquals(const TVector3Proxy& x, const TVector3& y);
 ''')
 print('} // namespace')
 
@@ -354,13 +357,6 @@ template<class T, unsigned int N> void CheckEquals(const ArrayProxy<T, N>& x,
 {
   for(unsigned int i = 0; i < N; ++i) CheckEquals(x[i], y[i]);
 }
-
-// void CheckEquals(const TVector3Proxy& x, const TVector3& y)
-// {
-//   CheckEquals(x.x, y.X());
-//   CheckEquals(x.y, y.Y());
-//   CheckEquals(x.z, y.Z());
-// }
 ''')
 print()
 print('} // namespace')
@@ -374,8 +370,6 @@ print()
 print('#include <vector>')
 print()
 print('#include "RtypesCore.h"')
-print()
-print('class TVector3;')
 print()
 print('namespace caf{')
 for klass in []: # HACK - was ns.classes():
@@ -396,9 +390,6 @@ template<class T, class U> void CopyRecord(const std::vector<U>& from,
 template<class T, unsigned int N> class ArrayProxy;
 template<class T, unsigned int N> void CopyRecord(const T* from,
                                                   ArrayProxy<T, N>& to);
-
-// class TVector3Proxy;
-// void CopyRecord(const TVector3& from, TVector3Proxy& to);
 ''')
 print('} // namespace')
 
@@ -449,13 +440,6 @@ template<class T, unsigned int N> void CopyRecord(const T* from,
 {
   for(unsigned int i = 0; i < N; ++i) CopyRecord(from[i], to[i]);
 }
-
-// void CopyRecord(const TVector3& from, TVector3Proxy& to)
-// {
-//   to.x = from.X();
-//   to.y = from.Y();
-//   to.z = from.Z();
-// }
 ''')
 
 

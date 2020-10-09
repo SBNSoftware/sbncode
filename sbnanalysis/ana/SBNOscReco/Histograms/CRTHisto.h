@@ -5,7 +5,7 @@
 #include <map>
 
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 
 #include "../Data/RecoEvent.h"
 #include "HistoList.h"
@@ -35,7 +35,7 @@ struct CRTHistos : public HistoList {
  */
   void Fill(const numu::CRTHit &hit);
 
-  void Fill(const sbnd::crt::CRTHit &hit);
+  void Fill(const sbn::crt::CRTHit &hit);
   void Get(TFile &f, const std::string &postfix);
 
 public:

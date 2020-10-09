@@ -1,0 +1,19 @@
+<!-- Definitions required for saving CAF objects into the ART stream. Can't go
+in StandardRecord because the Wrapper include puts ART dependencies into the
+StandardRecord dict, which we don't want. -->
+
+<lcgdict>
+  <class name="std::vector<caf::StandardRecord>" />
+  <class name="art::PtrVector<caf::StandardRecord>" />
+
+  <class name="art::Wrapper<std::vector<caf::StandardRecord> >" />
+
+  <class name="art::Wrapper<caf::StandardRecord >" />
+  <class name="art::Wrapper<art::PtrVector<caf::StandardRecord> >" />
+
+  <class name="art::Assns<caf::StandardRecord,recob::Slice,void>" />
+  <class name="art::Assns<recob::Slice,caf::StandardRecord,void>" />
+  <class name="art::Wrapper<art::Assns<caf::StandardRecord,recob::Slice,void> >" />
+  <class name="art::Wrapper<art::Assns<recob::Slice,caf::StandardRecord,void> >" />
+
+</lcgdict>

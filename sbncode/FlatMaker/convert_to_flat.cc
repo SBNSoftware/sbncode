@@ -1,8 +1,8 @@
-#include "sbnanalysis/core/Event.hh"
+#include "sbncode/StandardRecord/StandardRecord.h"
 
-#include "sbncode/FlatMaker/FlatRecoEvent.h"
+#include "sbncode/FlatMaker/FlatRecord.h"
 
-#include "sbncode/CAFAna/Core/Progress.h"
+//#include "sbncode/CAFAna/Core/Progress.h"
 
 #include "TFile.h"
 #include "TSystem.h"
@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 {
   // Have to do it here since we didn't figure out how to statically link it
   // yet
-  gSystem->Load("libsbnanalysis_Event.so");
+  //  gSystem->Load("libsbnanalysis_Event.so");
 
   if(argc != 3){
     std::cout << "Usage: convert_to_flat input.events.root output.flat.root"
@@ -26,11 +26,11 @@ int main(int argc, char** argv)
   const std::string outname = argv[2];
 
   //Find out if "proposal" appears in input string
-  int is_proposal_flag = 0;
-  if (inname.find("Proposal") || inname.find("proposal")) {
-    is_proposal_flag = 1;
-    std::cout << "Setting proposal flag to 1: SBND baseline will be adjusted" << std::endl;
-  }
+  // int is_proposal_flag = 0;
+  // if (inname.find("Proposal") || inname.find("proposal")) {
+  //   is_proposal_flag = 1;
+  //   std::cout << "Setting proposal flag to 1: SBND baseline will be adjusted" << std::endl;
+  // }
 
   TFile* fin = TFile::Open(inname.c_str());
 
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  event::RecoEvent* event = 0;
+  caf::StandardRecord* event = 0;
   tr->SetBranchAddress("reco_events", &event);
 
   // LZ4 is the fastest format to decompress. I get 3x faster loading with
@@ -57,20 +57,25 @@ int main(int argc, char** argv)
   // default) fixed it. But it doesn't seem necessary for now on SBN.
   //  trout->SetAutoFlush(-3*1000*1000);
 
-  flat::FlatRecoEvent* rec = new flat::FlatRecoEvent("sbnana.", trout, 0);//policy);
+  flat::FlatRecord* rec = new flat::FlatRecord("sbnana.", trout, 0);//policy);
 
-  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
+  //  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
   for(int i = 0; i < tr->GetEntries(); ++i){
-    prog.SetProgress(double(i)/tr->GetEntries());
+    //    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
-    float bl = event->truth[0].neutrino.baseline;
-    if (bl < 150. && is_proposal_flag) event->truth[0].neutrino.baseline = bl - 10;
+    //    float bl = event->truth[0].neutrino.baseline;
+    //    if (bl < 150. && is_proposal_flag) event->truth[0].neutrino.baseline = bl - 10;
 
     rec->Fill(*event);
     trout->Fill();
+
+    // This causes us to have much larger baskets, which seems like it should
+    // be more efficient for semi-random access of systs, but doesn't seem to
+    // help much in practice. It appears the limit is capped at 256e6.
+    if(i == 1000) rec->OptimizeBaskets(1000*1000*1000, 1.1, ""/*"d"*/);
   }
-  prog.Done();
+  //  prog.Done();
 
   trout->Write();
   delete rec;
