@@ -58,7 +58,6 @@ namespace flashmatch {
       auto const& bbox = DetectorSpecs::GetME().ActiveVolume(_tpc, _cryo);
       _vol_xmax = bbox.Max()[0];
       _vol_xmin = bbox.Min()[0];
-      std::cout << "--------------------------------------------------------- _vol_xmax " << _vol_xmax << ", _vol_xmin " << _vol_xmin << std::endl;
     }
 
   }
@@ -242,6 +241,7 @@ namespace flashmatch {
       _var_trk[pt_index].y = _raw_trk[pt_index].y;
       _var_trk[pt_index].z = _raw_trk[pt_index].z;
       _var_trk[pt_index].q = _raw_trk[pt_index].q;
+      if (_raw_trk[pt_index].q > 1e20) std::cout << "[QLLMatch::ChargeHypothesis] n_original_photons " << _raw_trk[pt_index].q << std::endl;
     }
     //auto end = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(end - start);
@@ -249,6 +249,10 @@ namespace flashmatch {
 
 
     //start = high_resolution_clock::now();
+    // for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
+    //   double n_original_photons = pt.q;
+    //   if (n_original_photons > 1e20) std::cout << "n_original_photons " << n_original_photons << std::endl;
+    // }
     FillEstimate(_var_trk, _hypothesis);
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);

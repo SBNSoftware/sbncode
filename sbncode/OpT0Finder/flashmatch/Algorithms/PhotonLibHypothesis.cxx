@@ -75,14 +75,11 @@ namespace flashmatch {
 
     for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
 
-      // std::cout << "ipt " << ipt << std::endl;
+      /// Get the 3D point in space from where photons should be propagated
       auto const& pt = trk[ipt];
 
-      double q = pt.q;
-
-      // xyz[0] = pt.x;
-      // xyz[1] = pt.y;
-      // xyz[2] = pt.z;
+      // Get the number of photons produced in such point
+      double n_original_photons = pt.q;
 
       // std::map<size_t, int> temp;
       // geo::Point_t const temp_xyz = {-100, 100, 200};
@@ -95,20 +92,20 @@ namespace flashmatch {
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
 
       std::map<size_t, int> direct_photons;
-      _opfast_scintillation->detectedDirectHits(direct_photons, q, xyz);
+      _opfast_scintillation->detectedDirectHits(direct_photons, n_original_photons, xyz);
 
       std::map<size_t, int> reflected_photons;
-      _opfast_scintillation->detectedReflecHits(reflected_photons, q, xyz);
+      _opfast_scintillation->detectedReflecHits(reflected_photons, n_original_photons, xyz);
 
       //
-      // Direct light
+      // Fill Estimate with Direct light
       //
       for (auto it = direct_photons.begin(); it != direct_photons.end(); ++it) {
 
         const size_t op_det = it->first;
         const int n_photons = it->second;
 
-        q = n_photons * _global_qe / _qe_v[op_det];
+        double q = n_photons * _global_qe / _qe_v[op_det];
 
         // Coated PMTs don't see direct photons
         if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
@@ -122,22 +119,17 @@ namespace flashmatch {
         } else {
           flash.pe_v[op_det] = 0;
         }
-
-        if (flash.pe_v[op_det] > 480000000) {
-          std::cout << "---> op_det " << op_det << " x, y, z: " << pt.x << ", " << pt.y << ", " << pt.z << std::endl;
-        }
-
       }
 
       //
-      // Reflected light
+      // Fill Estimate with Reflected light
       //
       for (auto it = reflected_photons.begin(); it != reflected_photons.end(); ++it) {
 
         const size_t op_det = it->first;
         const int n_photons = it->second;
 
-        q = n_photons * _global_qe_refl / _qe_v[op_det];
+        double q = n_photons * _global_qe_refl / _qe_v[op_det];
 
         if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
           flash.pe_v[op_det] += q;

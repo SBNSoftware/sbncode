@@ -110,14 +110,12 @@ namespace flashmatch{
         if (z_min < global_z_min) global_z_min = z_min;
         if (z_max > global_z_max) global_z_max = z_max;
 
-        std::cout << "cryo " << cryo << ", tpc " << tpc << " - x_min " << x_min << ", x_max " << x_max << std::endl;
         auto pair = std::pair<int,int>(tpc, cryo);
         _bbox_map[pair] = geoalgo::AABox(x_min, y_min, z_min, x_max, y_max, z_max);
       }
 
       _bbox = geoalgo::AABox(global_x_min, global_y_min, global_z_min,
                              global_x_max, global_y_max, global_z_max);
-      std::cout << "GLOBAL x_min " << global_x_min << ", x_max " << global_x_max << std::endl;
     }
 
     // art::ServiceHandle<phot::PhotonVisibilityService const> pvs;
