@@ -2,7 +2,7 @@ set( ROOTLIB -L$ENV{ROOTSYS}/lib -lCore  -lRIO -lNet -lHist -lGraf -lGraf3d -lGp
 link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} ${ROOTLIB} )
 art_make(
     LIB_LIBRARIES
-        sbndcode_OpT0Finder_flashmatch_GeoAlgo
+        sbncode_OpT0Finder_flashmatch_GeoAlgo
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
         lardataalg_DetectorInfo

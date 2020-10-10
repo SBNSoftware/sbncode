@@ -22,8 +22,8 @@
 #include "flashmatch/Base/BaseFlashFilter.h"
 #include "flashmatch/Base/FlashFilterFactory.h"
 #else
-#include "sbndcode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/FlashFilterFactory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FlashFilterFactory.h"
 #endif
 
 namespace flashmatch {

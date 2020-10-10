@@ -24,10 +24,10 @@
 #include "flashmatch/Base/FMWKInterface.h"
 #include "flashmatch/Base/OpT0FinderException.h"
 #else
-#include "sbndcode/OpT0Finder/flashmatch/Base/BaseProhibitAlgo.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/FlashProhibitFactory.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/BaseProhibitAlgo.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FlashProhibitFactory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
 #endif
 
 #include <cmath>

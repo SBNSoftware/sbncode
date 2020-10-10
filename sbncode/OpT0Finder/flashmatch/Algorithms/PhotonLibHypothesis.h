@@ -25,10 +25,10 @@
 #include "flashmatch/Base/BaseFlashFilter.h"
 #include "flashmatch/Base/FlashHypothesisFactory.h"
 #else
-#include "sbndcode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/FlashHypothesisFactory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FlashHypothesisFactory.h"
 #include "larsim/LegacyLArG4/OpFastScintillation.hh"
 #endif
 

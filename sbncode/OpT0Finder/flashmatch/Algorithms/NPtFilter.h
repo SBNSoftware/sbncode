@@ -14,8 +14,8 @@
 #ifndef OPT0FINDER_NPTFILTER_H
 #define OPT0FINDER_NPTFILTER_H
 
-#include "sbndcode/OpT0Finder/flashmatch/Base/BaseTPCFilter.h"
-#include "sbndcode/OpT0Finder/flashmatch/Base/TPCFilterFactory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/BaseTPCFilter.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/TPCFilterFactory.h"
 
 namespace flashmatch {
   /**
