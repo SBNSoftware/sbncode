@@ -8,7 +8,8 @@ namespace flashmatch {
 
   static QLLMatchFactory __global_QLLMatchFactory__;
 
-  QLLMatch *QLLMatch::_me = nullptr;
+  // QLLMatch *QLLMatch::_me = nullptr;
+  QLLMatch *__qll_global__ = nullptr; // A global pointer to be used for MINUIT
 
   void MIN_vtx_qll(Int_t &, Double_t *, Double_t &, Double_t *, Int_t);
 
@@ -17,7 +18,8 @@ namespace flashmatch {
   { _current_llhd = _current_chi2 = -1.0; }
 
   QLLMatch::QLLMatch()
-  { throw OpT0FinderException("Use QLLMatch::GetME() to obtain singleton pointer!"); }
+  // { throw OpT0FinderException("Use QLLMatch::GetME() to obtain singleton pointer!"); }
+  { throw OpT0FinderException("Use the other ctor"); }
 
   void QLLMatch::_Configure_(const Config_t &pset) {
     _record = pset.get<bool>("RecordHistory");
@@ -64,6 +66,8 @@ namespace flashmatch {
 
   FlashMatch_t QLLMatch::Match(const QCluster_t &pt_v, const Flash_t &flash) {
 
+    _construct_hypo_time = 0;
+
     //
     // Prepare TPC
     //
@@ -94,6 +98,7 @@ namespace flashmatch {
 	return res_onepmt;
     }
     */
+    std::cout << "Time spent construction hypoteses: " << _construct_hypo_time << " ns." << std::endl;
     return res;
   }
 
@@ -225,7 +230,7 @@ namespace flashmatch {
   }
 
   const Flash_t &QLLMatch::ChargeHypothesis(const double xoffset) {
-    //auto start = high_resolution_clock::now();
+    auto start = high_resolution_clock::now();
     if (_hypothesis.pe_v.empty()) _hypothesis.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
     if (_hypothesis.pe_v.size() != DetectorSpecs::GetME().NOpDets()) {
       throw OpT0FinderException("Hypothesis vector length != PMT count");
@@ -254,6 +259,9 @@ namespace flashmatch {
     //   if (n_original_photons > 1e20) std::cout << "n_original_photons " << n_original_photons << std::endl;
     // }
     FillEstimate(_var_trk, _hypothesis);
+    // std::cout << "hypo pe: ";
+    // for (auto &v : _hypothesis.pe_v) std::cout << v << " ";
+    //   std::cout << std::endl;;
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration ChargeHypothesis 2 = " << duration.count() << "us" << std::endl;
@@ -265,8 +273,9 @@ namespace flashmatch {
 				    0.0);
       for (auto &v : _hypothesis.pe_v) v /= qsum;
     }
-    //end = high_resolution_clock::now();
-    //duration = duration_cast<microseconds>(end - start);
+    auto end = high_resolution_clock::now();
+    auto duration = duration_cast<nanoseconds>(end - start);
+    _construct_hypo_time += duration.count();
     //std::cout << "Duration ChargeHypothesis 3 = " << duration.count() << "us" << std::endl;
 
     return _hypothesis;
@@ -367,25 +376,30 @@ namespace flashmatch {
     //std::cout << "minuit Xval?? : " << *Xval << std::endl;
 
     //auto start = high_resolution_clock::now();
-    auto const &hypothesis = QLLMatch::GetME()->ChargeHypothesis(*Xval);
+    // auto const &hypothesis = QLLMatch::GetME()->ChargeHypothesis(*Xval);
+    auto const &hypothesis = __qll_global__->ChargeHypothesis(*Xval);
     //auto end = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration ChargeHypothesis = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    auto const &measurement = QLLMatch::GetME()->Measurement();
+    // auto const &measurement = QLLMatch::GetME()->Measurement();
+    auto const &measurement = __qll_global__->Measurement();
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration Measurement = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    Fval = QLLMatch::GetME()->QLL(hypothesis, measurement);
+    // Fval = QLLMatch::GetME()->QLL(hypothesis, measurement);
+    Fval = __qll_global__->QLL(hypothesis, measurement);
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration QLL = " << duration.count() << "us" << std::endl;
 
-    QLLMatch::GetME()->Record(Xval[0]);
-    QLLMatch::GetME()->OneStep();
+    // QLLMatch::GetME()->Record(Xval[0]);
+    __qll_global__->Record(Xval[0]);
+    // QLLMatch::GetME()->OneStep();
+    __qll_global__->OneStep();
 
     return;
   }
@@ -453,11 +467,13 @@ namespace flashmatch {
     double arglist[4], Fmin, Fedm, Errdef;
     ierrflag = npari = nparx = istat = 0;
 
-    assert(this == QLLMatch::GetME());
+    // assert(this == QLLMatch::GetME());
 
     _minuit_ptr->SetPrintLevel(-1);
     arglist[0] = 2.0;  // set strategy level
     _minuit_ptr->mnexcm("SET STR", arglist, 1, ierrflag);
+
+    __qll_global__ = this;
 
     _minuit_ptr->SetFCN(MIN_vtx_qll);
 

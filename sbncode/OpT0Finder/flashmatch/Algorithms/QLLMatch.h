@@ -52,29 +52,33 @@ namespace flashmatch {
 
     enum QLLMode_t { kChi2, kLLHD, kSimpleLLHD };
 
-  private:
-    /// Valid ctor hidden (singleton)
-    QLLMatch(const std::string);
+  // private:
+  //   /// Valid ctor hidden (singleton)
+  //   QLLMatch(const std::string);
 
   public:
 
-    /// Default ctor throws exception (singleton)
+    // / Default ctor throws exception (singleton)
+    /// Default ctor (throws exception, use alternative)
     QLLMatch();
+
+    /// Valid ctor
+    QLLMatch(const std::string);
 
     /// Default destructor
     ~QLLMatch(){}
 
     /// Singleton shared instance getter
-    static QLLMatch* GetME(std::string name="")
-    {
-      if(!_me) _me = new QLLMatch(name);
-      else if(!name.empty() && name != _me->AlgorithmName()) {
-	std::cerr << "QLLMatch instance must be uniquely named. Requested: "
-		  << name << " vs. Existing: " << _me->AlgorithmName() << std::endl;
-	throw std::exception();
-      }
-      return _me;
-    }
+    // static QLLMatch* GetME(std::string name="")
+    // {
+    //   if(!_me) _me = new QLLMatch(name);
+    //   else if(!name.empty() && name != _me->AlgorithmName()) {
+    //     std::cerr << "QLLMatch instance must be uniquely named. Requested: "
+    //               << name << " vs. Existing: " << _me->AlgorithmName() << std::endl;
+    //     throw std::exception();
+    //   }
+    //   return _me;
+    // }
 
     /// Core function: execute matching
     FlashMatch_t Match(const QCluster_t&, const Flash_t&);
@@ -164,6 +168,8 @@ namespace flashmatch {
     int _tpc; ///< The TPC number to use
     int _cryo; ///< The Cryostat number to use
 
+    float _construct_hypo_time; ///< Keeps track of the total time spent constructing hypotheses
+
   };
 
   /**
@@ -176,7 +182,8 @@ namespace flashmatch {
     /// dtor
     ~QLLMatchFactory() {}
     /// creation method
-    BaseFlashMatch* create(const std::string instance_name) { return QLLMatch::GetME(instance_name); }
+    // BaseFlashMatch* create(const std::string instance_name) { return QLLMatch::GetME(instance_name); }
+    BaseFlashMatch* create(const std::string instance_name) { return new QLLMatch(instance_name); }
   };
 
 }

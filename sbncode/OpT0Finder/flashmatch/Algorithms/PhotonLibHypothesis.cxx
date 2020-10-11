@@ -70,7 +70,6 @@ namespace flashmatch {
 
     // static double xyz[3] = {0.};
 
-
     // size_t n_pmt = DetectorSpecs::GetME().NOpDets();
 
     for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
