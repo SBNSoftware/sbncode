@@ -60,6 +60,8 @@ namespace flashmatch {
 
     FlashMatch_t Match(const QCluster_t&, const Flash_t&);
 
+    void SetTPCCryo(int tpc, int cryo) {};
+
   protected:
 
     void _Configure_(const Config_t &pset);

@@ -110,7 +110,7 @@ namespace flashmatch {
     const std::vector<double>& HistoryChi2() const { return _minimizer_record_chi2_v; }
     const std::vector<double>& HistoryX()    const { return _minimizer_record_x_v;    }
 
-    // void SetTPCCryo(int tpc, int cryo) {_tpc = tpc; _cryo = cryo;}
+    void SetTPCCryo(int tpc, int cryo);
 
   protected:
 

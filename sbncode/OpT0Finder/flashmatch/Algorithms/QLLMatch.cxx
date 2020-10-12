@@ -64,6 +64,16 @@ namespace flashmatch {
 
   }
 
+  void QLLMatch::SetTPCCryo(int tpc, int cryo) {
+    _tpc = tpc;
+    _cryo = cryo;
+
+    auto const& bbox = DetectorSpecs::GetME().ActiveVolume(_tpc, _cryo);
+    _vol_xmax = bbox.Max()[0];
+    _vol_xmin = bbox.Min()[0];
+  }
+
+
   FlashMatch_t QLLMatch::Match(const QCluster_t &pt_v, const Flash_t &flash) {
 
     _construct_hypo_time = 0;

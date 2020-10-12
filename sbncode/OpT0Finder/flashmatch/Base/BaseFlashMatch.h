@@ -61,7 +61,7 @@ namespace flashmatch {
     void FillEstimate(const QCluster_t&, Flash_t&) const;
 
     /// Sets the TPC and Cryo numbers
-    void SetTPCCryo(int tpc, int cryo) {_tpc = tpc; _cryo = cryo;}
+    virtual void SetTPCCryo(int tpc, int cryo) = 0;
 
   private:
 
