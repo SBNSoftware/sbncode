@@ -167,9 +167,6 @@ namespace flashmatch {
     double _vol_xmax, _vol_xmin;
     std::vector<double> _xpos_v, _ypos_v, _zpos_v;
 
-    // int _tpc = 0; ///< The TPC number to use
-    // int _cryo = 0; ///< The Cryostat number to use
-
     float _construct_hypo_time; ///< Keeps track of the total time spent constructing hypotheses
 
   };

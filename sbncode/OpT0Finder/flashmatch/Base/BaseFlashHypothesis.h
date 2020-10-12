@@ -48,7 +48,7 @@ namespace flashmatch {
 
   protected:
 
-    std::vector<int> _channel_mask;
+    std::vector<int> _channel_mask; ///< The list of channels to use
     std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
 
   };
