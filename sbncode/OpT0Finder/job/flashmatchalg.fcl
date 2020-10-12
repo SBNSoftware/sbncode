@@ -21,6 +21,7 @@ FlashMatchManager: {
 # Algorithms
 #
 QLLMatch: {
+  Verbosity: 1   # 3
   RecordHistory: false
   NormalizeHypothesis: false
   QLLMode: 1 # 0 for Chi2, 1 for LLHD

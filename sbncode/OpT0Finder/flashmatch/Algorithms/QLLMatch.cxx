@@ -27,6 +27,8 @@ namespace flashmatch {
     _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 0.0);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
 
+    this->set_verbosity((msg::Level_t)(pset.get<unsigned int>("Verbosity")));
+
     _penalty_threshold_v = pset.get<std::vector<double> >("PEPenaltyThreshold");
     _penalty_value_v = pset.get<std::vector<double> >("PEPenaltyValue");
 
@@ -103,7 +105,7 @@ namespace flashmatch {
 	return res_onepmt;
     }
     */
-    std::cout << "Time spent construction hypoteses: " << _construct_hypo_time << " ns." << std::endl;
+    FLASH_INFO() << "Time spent construction hypotheses: " << _construct_hypo_time << " ns." << std::endl;
     return res;
   }
 
