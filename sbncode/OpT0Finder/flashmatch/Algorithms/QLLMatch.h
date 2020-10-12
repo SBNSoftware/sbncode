@@ -59,11 +59,7 @@ namespace flashmatch {
   public:
 
     /// Default ctor throws exception (singleton)
-    /// Default ctor (throws exception, use alternative)
     QLLMatch();
-
-    /// Valid ctor
-    // QLLMatch(const std::string);
 
     /// Default destructor
     ~QLLMatch(){}
@@ -182,7 +178,6 @@ namespace flashmatch {
     ~QLLMatchFactory() {}
     /// creation method
     BaseFlashMatch* create(const std::string instance_name) { return QLLMatch::GetME(instance_name); }
-    // BaseFlashMatch* create(const std::string instance_name) { return new QLLMatch(instance_name); }
   };
 
 }
