@@ -28,7 +28,7 @@ namespace flashmatch {
     _global_qe = pset.get<double>("GlobalQE");
     _global_qe_refl = pset.get<double>("GlobalQERefl", 0);
     _use_semi_analytical = pset.get<bool>("UseSemiAnalytical", 0);
-    _uncoated_pmt_list = pset.get<std::vector<int>>("UncoatedPMTList"); // FIXME This should be provided by the geometry service, eventually
+    // _uncoated_pmt_list = pset.get<std::vector<int>>("UncoatedPMTList"); // FIXME This should be provided by the geometry service, eventually
 
     _qe_v.clear();
     _qe_v = pset.get<std::vector<double> >("CCVCorrection",_qe_v);

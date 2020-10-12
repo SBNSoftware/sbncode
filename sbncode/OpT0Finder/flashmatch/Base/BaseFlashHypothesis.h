@@ -40,11 +40,16 @@ namespace flashmatch {
     /// Method to simply fill provided reference of flashmatch::Flash_t
     virtual void FillEstimate(const QCluster_t&, Flash_t&) const = 0;
 
+    /// Sets the channels to use
     void SetChannelMask(std::vector<int> ch_mask) { _channel_mask = ch_mask; }
+
+    /// Sets the channels sensitive to visible light
+    void SetUncoatedPMTs(std::vector<int> ch_uncoated) { _uncoated_pmt_list = ch_uncoated; }
 
   protected:
 
     std::vector<int> _channel_mask;
+    std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
 
   };
 }

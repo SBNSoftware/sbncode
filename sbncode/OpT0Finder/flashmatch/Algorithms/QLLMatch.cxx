@@ -40,8 +40,8 @@ namespace flashmatch {
     _onepmt_pesum_threshold = pset.get<double>("OnePMTPESumThreshold");
     _onepmt_pefrac_threshold = pset.get<double>("OnePMTPEFracThreshold");
 
-    _tpc = pset.get<double>("TPCNumber", -1);
-    _cryo = pset.get<double>("CryoNumber", -1);
+    // _tpc = pset.get<double>("TPCNumber", -1);
+    // _cryo = pset.get<double>("CryoNumber", -1);
 
     _xpos_v.resize(DetectorSpecs::GetME().NOpDets(),0.);
     _ypos_v.resize(DetectorSpecs::GetME().NOpDets(),0.);

@@ -87,14 +87,14 @@ namespace flashmatch {
     const Flash_t& Measurement() const;
 
     double QLL(const flashmatch::Flash_t&,
-	       const flashmatch::Flash_t&);
+               const flashmatch::Flash_t&);
 
     void Record(const double x)
     {
       if(_record) {
-	_minimizer_record_chi2_v.push_back(_current_chi2);
-	_minimizer_record_llhd_v.push_back(_current_llhd);
-	_minimizer_record_x_v.push_back(x);
+        _minimizer_record_chi2_v.push_back(_current_chi2);
+        _minimizer_record_llhd_v.push_back(_current_llhd);
+        _minimizer_record_x_v.push_back(x);
       }
     }
 
@@ -109,6 +109,8 @@ namespace flashmatch {
     const std::vector<double>& HistoryLLHD() const { return _minimizer_record_llhd_v; }
     const std::vector<double>& HistoryChi2() const { return _minimizer_record_chi2_v; }
     const std::vector<double>& HistoryX()    const { return _minimizer_record_x_v;    }
+
+    // void SetTPCCryo(int tpc, int cryo) {_tpc = tpc; _cryo = cryo;}
 
   protected:
 
@@ -165,8 +167,8 @@ namespace flashmatch {
     double _vol_xmax, _vol_xmin;
     std::vector<double> _xpos_v, _ypos_v, _zpos_v;
 
-    int _tpc; ///< The TPC number to use
-    int _cryo; ///< The Cryostat number to use
+    // int _tpc = 0; ///< The TPC number to use
+    // int _cryo = 0; ///< The Cryostat number to use
 
     float _construct_hypo_time; ///< Keeps track of the total time spent constructing hypotheses
 

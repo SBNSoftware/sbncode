@@ -96,6 +96,12 @@ namespace flashmatch {
     /// Sets the op channels to be used for matching
     void SetChannelMask(std::vector<int>);
 
+    /// Sets the TPC and Cryo numbers
+    void SetTPCCryo(int tpc, int _cryo);
+
+    /// Sets the channels sensitive to visible light
+    void SetUncoatedPMTs(std::vector<int> ch_uncoated);
+
   private:
 
     void AddCustomAlgo(BaseAlgorithm* alg);
@@ -128,7 +134,11 @@ namespace flashmatch {
     /// Full result container indexed by [tpc][flash]
     std::vector<std::vector<flashmatch::FlashMatch_t> > _res_tpc_flash_v;
     /// Full result container indexed by [flash][tpc]
-    std::vector<std::vector<flashmatch::FlashMatch_t> > _res_flash_tpc_v;    
+    std::vector<std::vector<flashmatch::FlashMatch_t> > _res_flash_tpc_v;
+    /// TPC number where to perform the matching
+    int _tpc = 0;
+    /// Cryo number where to perform the matching
+    int _cryo = 0;
   };
 }
 

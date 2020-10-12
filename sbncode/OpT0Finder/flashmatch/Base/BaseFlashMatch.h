@@ -54,11 +54,14 @@ namespace flashmatch {
      */
     virtual FlashMatch_t Match(const QCluster_t&, const Flash_t&) = 0;
 
-    /// Method to call flash hypothesis 
+    /// Method to call flash hypothesis
     Flash_t GetEstimate(const QCluster_t&) const;
 
     /// Method to simply fill provided reference of flashmatch::Flash_t
     void FillEstimate(const QCluster_t&, Flash_t&) const;
+
+    /// Sets the TPC and Cryo numbers
+    void SetTPCCryo(int tpc, int cryo) {_tpc = tpc; _cryo = cryo;}
 
   private:
 
@@ -66,9 +69,14 @@ namespace flashmatch {
 
     flashmatch::BaseFlashHypothesis* _flash_hypothesis;
 
+  protected:
+
+    int _tpc = 0; ///< The TPC number to use
+    int _cryo = 0; ///< The Cryostat number to use
+
   };
 }
 
 #endif
-/** @} */ // end of doxygen group 
+/** @} */ // end of doxygen group
 

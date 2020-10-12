@@ -386,6 +386,22 @@ namespace flashmatch {
     _alg_flash_hypothesis->SetChannelMask(ch_mask);
   }
 
+  void FlashMatchManager::SetTPCCryo(int tpc, int cryo) {
+    _tpc = tpc;
+    _cryo = cryo;
+
+    if (_alg_flash_match) {
+      _alg_flash_match->SetTPCCryo(_tpc, _cryo);
+    }
+  }
+
+  void FlashMatchManager::SetUncoatedPMTs(std::vector<int> ch_uncoated) {
+    if (_alg_flash_hypothesis) {
+      _alg_flash_hypothesis->SetUncoatedPMTs(ch_uncoated);
+    }
+  }
+
+
 }
 
 #endif

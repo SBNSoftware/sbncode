@@ -69,7 +69,7 @@ namespace flashmatch {
     double _sigma_qe;              ///< Sigma for Gaussian centered on Global QE
     std::vector<double> _qe_v;     ///< PMT-wise relative QE
     bool _use_semi_analytical;     ///< If the semi-analytical approach should be used
-    std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
+    // std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
     larg4::OpFastScintillation* _opfast_scintillation; ///< For SBND semi-analytical
   };
 
