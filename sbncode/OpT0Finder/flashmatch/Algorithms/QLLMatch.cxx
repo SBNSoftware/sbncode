@@ -8,8 +8,8 @@ namespace flashmatch {
 
   static QLLMatchFactory __global_QLLMatchFactory__;
 
-  // QLLMatch *QLLMatch::_me = nullptr;
-  QLLMatch *__qll_global__ = nullptr; // A global pointer to be used for MINUIT
+  QLLMatch *QLLMatch::_me = nullptr;
+  // QLLMatch *__qll_global__ = nullptr; // A global pointer to be used for MINUIT
 
   void MIN_vtx_qll(Int_t &, Double_t *, Double_t &, Double_t *, Int_t);
 
@@ -18,8 +18,8 @@ namespace flashmatch {
   { _current_llhd = _current_chi2 = -1.0; }
 
   QLLMatch::QLLMatch()
-  // { throw OpT0FinderException("Use QLLMatch::GetME() to obtain singleton pointer!"); }
-  { throw OpT0FinderException("Use the other ctor"); }
+  { throw OpT0FinderException("Use QLLMatch::GetME() to obtain singleton pointer!"); }
+  // { throw OpT0FinderException("Use the other ctor"); }
 
   void QLLMatch::_Configure_(const Config_t &pset) {
     _record = pset.get<bool>("RecordHistory");
@@ -383,30 +383,30 @@ namespace flashmatch {
     //std::cout << "minuit Xval?? : " << *Xval << std::endl;
 
     //auto start = high_resolution_clock::now();
-    // auto const &hypothesis = QLLMatch::GetME()->ChargeHypothesis(*Xval);
-    auto const &hypothesis = __qll_global__->ChargeHypothesis(*Xval);
+    auto const &hypothesis = QLLMatch::GetME()->ChargeHypothesis(*Xval);
+    // auto const &hypothesis = __qll_global__->ChargeHypothesis(*Xval);
     //auto end = high_resolution_clock::now();
     //auto duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration ChargeHypothesis = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    // auto const &measurement = QLLMatch::GetME()->Measurement();
-    auto const &measurement = __qll_global__->Measurement();
+    auto const &measurement = QLLMatch::GetME()->Measurement();
+    // auto const &measurement = __qll_global__->Measurement();
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration Measurement = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    // Fval = QLLMatch::GetME()->QLL(hypothesis, measurement);
-    Fval = __qll_global__->QLL(hypothesis, measurement);
+    Fval = QLLMatch::GetME()->QLL(hypothesis, measurement);
+    // Fval = __qll_global__->QLL(hypothesis, measurement);
     //end = high_resolution_clock::now();
     //duration = duration_cast<microseconds>(end - start);
     //std::cout << "Duration QLL = " << duration.count() << "us" << std::endl;
 
-    // QLLMatch::GetME()->Record(Xval[0]);
-    __qll_global__->Record(Xval[0]);
-    // QLLMatch::GetME()->OneStep();
-    __qll_global__->OneStep();
+    QLLMatch::GetME()->Record(Xval[0]);
+    // __qll_global__->Record(Xval[0]);
+    QLLMatch::GetME()->OneStep();
+    // __qll_global__->OneStep();
 
     return;
   }
@@ -474,13 +474,13 @@ namespace flashmatch {
     double arglist[4], Fmin, Fedm, Errdef;
     ierrflag = npari = nparx = istat = 0;
 
-    // assert(this == QLLMatch::GetME());
+    assert(this == QLLMatch::GetME());
 
     _minuit_ptr->SetPrintLevel(-1);
     arglist[0] = 2.0;  // set strategy level
     _minuit_ptr->mnexcm("SET STR", arglist, 1, ierrflag);
 
-    __qll_global__ = this;
+    // __qll_global__ = this;
 
     _minuit_ptr->SetFCN(MIN_vtx_qll);
 
