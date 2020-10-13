@@ -57,7 +57,6 @@ public:
 private:
 
   art::InputTag fTrackLabel;
-  art::InputTag fHitLabel;
   bool fPassBadHits;
 
 };
@@ -65,7 +64,6 @@ private:
 sbn::TrackHitFilter::TrackHitFilter(fhicl::ParameterSet const& p)
   : EDProducer{p},
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack")),
-    fHitLabel(p.get<art::InputTag>("HitLabel", "gaushit")),
     fPassBadHits(p.get<bool>("PassBadHits", false))
 {
   produces<std::vector<recob::Hit>>();
@@ -97,8 +95,6 @@ void sbn::TrackHitFilter::produce(art::Event& e)
     // get the input hits
     const std::vector<art::Ptr<recob::Hit>> &trkHits = fmHits.at(i);
     const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmHits.data(i);
-
-    // art::FindManyP<recob::Wire> hitWires(trkHits, e, fHitLabel);
 
     for (unsigned i_hit = 0; i_hit < trkHits.size(); i_hit++) {
       const recob::Hit &hit = *trkHits[i_hit];
