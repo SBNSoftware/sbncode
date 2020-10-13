@@ -101,6 +101,9 @@ void FillHits(const detinfo::DetectorClocksData &clockData,
               std::vector<float> &time_u,
               std::vector<float> &time_v,
               std::vector<float> &time_y,
+              std::vector<unsigned> &nhit_u,
+              std::vector<unsigned> &nhit_v,
+              std::vector<unsigned> &nhit_y,
               bool use_integral=true);
 
 class CalorimetryAnalysis : public art::EDAnalyzer
@@ -179,7 +182,7 @@ private:
   art::InputTag fT0producer;
   art::InputTag fHitFilterproducer;
   art::InputTag fAreaHitproducer;
-  art::InputTag fHitProducer;
+  std::vector<art::InputTag> fHitProducers;
   art::InputTag fWireProducer;
   std::string fMCSproducer;
   std::string fRangeproducer;
@@ -384,6 +387,9 @@ private:
   std::vector<float> _allhit_time_u;
   std::vector<float> _allhit_time_v;
   std::vector<float> _allhit_time_y;
+  std::vector<unsigned> _allhit_nhit_u;
+  std::vector<unsigned> _allhit_nhit_v;
+  std::vector<unsigned> _allhit_nhit_y;
 
   std::vector<float> _trkhit_charge_u;
   std::vector<float> _trkhit_charge_v;
@@ -400,6 +406,9 @@ private:
   std::vector<float> _trkhit_time_u;
   std::vector<float> _trkhit_time_v;
   std::vector<float> _trkhit_time_y;
+  std::vector<unsigned> _trkhit_nhit_u;
+  std::vector<unsigned> _trkhit_nhit_v;
+  std::vector<unsigned> _trkhit_nhit_y;
 
   std::vector<float> _calohit_charge_u;
   std::vector<float> _calohit_charge_v;
@@ -416,6 +425,9 @@ private:
   std::vector<float> _calohit_time_u;
   std::vector<float> _calohit_time_v;
   std::vector<float> _calohit_time_y;
+  std::vector<unsigned> _calohit_nhit_u;
+  std::vector<unsigned> _calohit_nhit_v;
+  std::vector<unsigned> _calohit_nhit_y;
 
   std::vector<float> _sumhit_charge_u;
   std::vector<float> _sumhit_charge_v;
@@ -432,6 +444,9 @@ private:
   std::vector<float> _sumhit_time_u;
   std::vector<float> _sumhit_time_v;
   std::vector<float> _sumhit_time_y;
+  std::vector<unsigned> _sumhit_nhit_u;
+  std::vector<unsigned> _sumhit_nhit_v;
+  std::vector<unsigned> _sumhit_nhit_y;
 
   std::vector<float> _areahit_charge_u;
   std::vector<float> _areahit_charge_v;
@@ -448,6 +463,9 @@ private:
   std::vector<float> _areahit_time_u;
   std::vector<float> _areahit_time_v;
   std::vector<float> _areahit_time_y;
+  std::vector<unsigned> _areahit_nhit_u;
+  std::vector<unsigned> _areahit_nhit_v;
+  std::vector<unsigned> _areahit_nhit_y;
 
   // dedx vector
   std::vector<float> _dqdx_u;
@@ -520,7 +538,7 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   fAreaHitproducer = p.get<art::InputTag> ("AreaHitproducer", "areahit");
   fAllTrueEnergyDeposits = p.get<bool>("AllTrueEnergyDeposits", true);
   fHitFilterproducer = p.get<art::InputTag>("HitFilterproducer", "filtgoodhit"); 
-  fHitProducer = p.get<art::InputTag>("HitProducer", "gaushitTPC0");
+  fHitProducers = p.get<std::vector<art::InputTag>>("HitProducers");
   fWireProducer = p.get<art::InputTag>("WireProducer", "decon1DroiTPC0");
 
   art::ServiceHandle<art::TFileService> tfs;
@@ -580,9 +598,11 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   //larpandora.BuildPFParticleMap(pfparticles, particleMap);
 
   // recob Hits
-  art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(fHitProducer);
   std::vector<art::Ptr<recob::Hit>> hitList;
-  art::fill_ptr_vector(hitList, hitHandle);
+  for (const art::InputTag &t: fHitProducers) {
+    art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(t);
+    art::fill_ptr_vector(hitList, hitHandle);
+  }
   // recob Wires:w
 
   art::Handle<std::vector<recob::Wire>> wireHandle;
@@ -677,13 +697,13 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     const std::vector<art::Ptr<anab::ParticleID>> &pid = fmPID.isValid() ? fmPID.at(track.ID()) : emptyPIDVector;
 
     recob::MCSFitResult muon_mcs;
-    if (fmMuonMCS.isValid()) muon_mcs = *fmMuonMCS.at(track.ID()).at(0);
+    if (fmMuonMCS.isValid() && fmMuonMCS.at(track.ID()).size()) muon_mcs = *fmMuonMCS.at(track.ID()).at(0);
 
     sbn::RangeP muon_range;
-    if (fmMuonRange.isValid()) muon_range = *fmMuonRange.at(track.ID()).at(0);
+    if (fmMuonRange.isValid() && fmMuonRange.at(track.ID()).size()) muon_range = *fmMuonRange.at(track.ID()).at(0);
 
     sbn::RangeP proton_range; 
-    if (fmProtonRange.isValid()) proton_range = *fmProtonRange.at(track.ID()).at(0);
+    if (fmProtonRange.isValid() && fmProtonRange.at(track.ID()).size()) proton_range = *fmProtonRange.at(track.ID()).at(0);
 
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(track.ID()) : emptyHitVector;
@@ -958,6 +978,9 @@ void CalorimetryAnalysis::fillDefault()
   _trkhit_time_u.clear();
   _trkhit_time_v.clear();
   _trkhit_time_y.clear();
+  _trkhit_nhit_u.clear();
+  _trkhit_nhit_v.clear();
+  _trkhit_nhit_y.clear();
 
   _areahit_charge_u.clear();
   _areahit_charge_v.clear();
@@ -974,6 +997,9 @@ void CalorimetryAnalysis::fillDefault()
   _areahit_time_u.clear();
   _areahit_time_v.clear();
   _areahit_time_y.clear();
+  _areahit_nhit_u.clear();
+  _areahit_nhit_v.clear();
+  _areahit_nhit_y.clear();
 
   _allhit_charge_u.clear();
   _allhit_charge_v.clear();
@@ -990,6 +1016,9 @@ void CalorimetryAnalysis::fillDefault()
   _allhit_time_u.clear();
   _allhit_time_v.clear();
   _allhit_time_y.clear();
+  _allhit_nhit_u.clear();
+  _allhit_nhit_v.clear();
+  _allhit_nhit_y.clear();
 
   _calohit_charge_u.clear();
   _calohit_charge_v.clear();
@@ -1006,6 +1035,9 @@ void CalorimetryAnalysis::fillDefault()
   _calohit_time_u.clear();
   _calohit_time_v.clear();
   _calohit_time_y.clear();
+  _calohit_nhit_u.clear();
+  _calohit_nhit_v.clear();
+  _calohit_nhit_y.clear();
 
   _sumhit_charge_u.clear();
   _sumhit_charge_v.clear();
@@ -1022,6 +1054,9 @@ void CalorimetryAnalysis::fillDefault()
   _sumhit_time_u.clear();
   _sumhit_time_v.clear();
   _sumhit_time_y.clear();
+  _sumhit_nhit_u.clear();
+  _sumhit_nhit_v.clear();
+  _sumhit_nhit_y.clear();
 
   // dedx vector
   _dqdx_u.clear();
@@ -1178,6 +1213,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("areahit_time_u", "std::vector<float>", &_areahit_time_u);
   _calo_tree->Branch("areahit_time_v", "std::vector<float>", &_areahit_time_v);
   _calo_tree->Branch("areahit_time_y", "std::vector<float>", &_areahit_time_y);
+  _calo_tree->Branch("areahit_nhit_u", "std::vector<unsigned>", &_areahit_nhit_u);
+  _calo_tree->Branch("areahit_nhit_v", "std::vector<unsigned>", &_areahit_nhit_v);
+  _calo_tree->Branch("areahit_nhit_y", "std::vector<unsigned>", &_areahit_nhit_y);
 
   _calo_tree->Branch("allhit_charge_u", "std::vector<float>", &_allhit_charge_u);
   _calo_tree->Branch("allhit_charge_v", "std::vector<float>", &_allhit_charge_v);
@@ -1194,6 +1232,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("allhit_time_u", "std::vector<float>", &_allhit_time_u);
   _calo_tree->Branch("allhit_time_v", "std::vector<float>", &_allhit_time_v);
   _calo_tree->Branch("allhit_time_y", "std::vector<float>", &_allhit_time_y);
+  _calo_tree->Branch("allhit_nhit_u", "std::vector<unsigned>", &_allhit_nhit_u);
+  _calo_tree->Branch("allhit_nhit_v", "std::vector<unsigned>", &_allhit_nhit_v);
+  _calo_tree->Branch("allhit_nhit_y", "std::vector<unsigned>", &_allhit_nhit_y);
 
   _calo_tree->Branch("trkhit_charge_u", "std::vector<float>", &_trkhit_charge_u);
   _calo_tree->Branch("trkhit_charge_v", "std::vector<float>", &_trkhit_charge_v);
@@ -1210,6 +1251,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("trkhit_time_u", "std::vector<float>", &_trkhit_time_u);
   _calo_tree->Branch("trkhit_time_v", "std::vector<float>", &_trkhit_time_v);
   _calo_tree->Branch("trkhit_time_y", "std::vector<float>", &_trkhit_time_y);
+  _calo_tree->Branch("trkhit_nhit_u", "std::vector<unsigned>", &_trkhit_nhit_u);
+  _calo_tree->Branch("trkhit_nhit_v", "std::vector<unsigned>", &_trkhit_nhit_v);
+  _calo_tree->Branch("trkhit_nhit_y", "std::vector<unsigned>", &_trkhit_nhit_y);
 
   _calo_tree->Branch("calohit_charge_u", "std::vector<float>", &_calohit_charge_u);
   _calo_tree->Branch("calohit_charge_v", "std::vector<float>", &_calohit_charge_v);
@@ -1226,6 +1270,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("calohit_time_u", "std::vector<float>", &_calohit_time_u);
   _calo_tree->Branch("calohit_time_v", "std::vector<float>", &_calohit_time_v);
   _calo_tree->Branch("calohit_time_y", "std::vector<float>", &_calohit_time_y);
+  _calo_tree->Branch("calohit_nhit_u", "std::vector<unsigned>", &_calohit_nhit_u);
+  _calo_tree->Branch("calohit_nhit_v", "std::vector<unsigned>", &_calohit_nhit_v);
+  _calo_tree->Branch("calohit_nhit_y", "std::vector<unsigned>", &_calohit_nhit_y);
 
   _calo_tree->Branch("sumhit_charge_u", "std::vector<float>", &_sumhit_charge_u);
   _calo_tree->Branch("sumhit_charge_v", "std::vector<float>", &_sumhit_charge_v);
@@ -1242,6 +1289,9 @@ void CalorimetryAnalysis::setBranches(TTree *_tree)
   _calo_tree->Branch("sumhit_time_u", "std::vector<float>", &_sumhit_time_u);
   _calo_tree->Branch("sumhit_time_v", "std::vector<float>", &_sumhit_time_v);
   _calo_tree->Branch("sumhit_time_y", "std::vector<float>", &_sumhit_time_y);
+  _calo_tree->Branch("sumhit_nhit_u", "std::vector<unsigned>", &_sumhit_nhit_u);
+  _calo_tree->Branch("sumhit_nhit_v", "std::vector<unsigned>", &_sumhit_nhit_v);
+  _calo_tree->Branch("sumhit_nhit_y", "std::vector<unsigned>", &_sumhit_nhit_y);
 
   _calo_tree->Branch("backtracked_end_x", &_backtracked_end_x, "backtracked_end_x/F");
   _calo_tree->Branch("backtracked_end_y", &_backtracked_end_y, "backtracked_end_y/F");
@@ -1547,7 +1597,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _allhit_width_y,
     _allhit_time_u,
     _allhit_time_v,
-    _allhit_time_y
+    _allhit_time_y,
+    _allhit_nhit_u,
+    _allhit_nhit_v,
+    _allhit_nhit_y
   );
 
   FillHits(clock_data, areaHits, 
@@ -1565,7 +1618,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _areahit_width_y,
     _areahit_time_u,
     _areahit_time_v,
-    _areahit_time_y
+    _areahit_time_y,
+    _areahit_nhit_u,
+    _areahit_nhit_v,
+    _areahit_nhit_y
   );
 
   FillHits(clock_data, trkHits, 
@@ -1583,7 +1639,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _trkhit_width_y,
     _trkhit_time_u,
     _trkhit_time_v,
-    _trkhit_time_y
+    _trkhit_time_y,
+    _trkhit_nhit_u,
+    _trkhit_nhit_v,
+    _trkhit_nhit_y
   );
     
   FillHits(clock_data, caloHits, 
@@ -1601,7 +1660,10 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _calohit_width_y,
     _calohit_time_u,
     _calohit_time_v,
-    _calohit_time_y
+    _calohit_time_y,
+    _calohit_nhit_u,
+    _calohit_nhit_v,
+    _calohit_nhit_y
   );
 
   FillHits(clock_data, caloHits, 
@@ -1620,6 +1682,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _sumhit_time_u,
     _sumhit_time_v,
     _sumhit_time_y,
+    _sumhit_nhit_u,
+    _sumhit_nhit_v,
+    _sumhit_nhit_y,
     false);
 
   // store Backtracking
@@ -2038,7 +2103,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_u = calo->dEdx();
-      _dedx_channel_u = FinddEdxHits(*calo, allHits);
+      _dedx_channel_u = FinddEdxHits(*calo, trkHits);
 
     }
     else if (plane == 1)
@@ -2062,7 +2127,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_v = calo->dEdx();
-      _dedx_channel_v = FinddEdxHits(*calo, allHits);
+      _dedx_channel_v = FinddEdxHits(*calo, trkHits);
     }
     else if (plane == 2) //collection
     {
@@ -2085,7 +2150,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       }
       // TODO: ShrFit???
       _dedx_y = calo->dEdx();
-      _dedx_channel_y = FinddEdxHits(*calo, allHits);
+      _dedx_channel_y = FinddEdxHits(*calo, trkHits);
     }
   }
 
@@ -2147,6 +2212,9 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
               std::vector<float> &time_u,
               std::vector<float> &time_v,
               std::vector<float> &time_y,
+              std::vector<unsigned> &nhit_u,
+              std::vector<unsigned> &nhit_v,
+              std::vector<unsigned> &nhit_y,
               bool use_integral) {
 
   struct HitInfo {
@@ -2212,6 +2280,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
     multiplicity_u.push_back(pair.second.multiplicity);
     width_u.push_back(pair.second.width);
     time_u.push_back(pair.second.time);
+    nhit_u.push_back(pair.second.nhit);
   }
   for (auto const &pair: hit_map_v) {
     channel_v.push_back(pair.first);
@@ -2219,6 +2288,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
     multiplicity_v.push_back(pair.second.multiplicity);
     width_v.push_back(pair.second.width);
     time_v.push_back(pair.second.time);
+    nhit_v.push_back(pair.second.nhit);
   }
   for (auto const &pair: hit_map_y) {
     channel_y.push_back(pair.first);
@@ -2226,6 +2296,7 @@ void FillHits(const detinfo::DetectorClocksData &dclock,
     multiplicity_y.push_back(pair.second.multiplicity);
     width_y.push_back(pair.second.width);
     time_y.push_back(pair.second.time);
+    nhit_y.push_back(pair.second.nhit);
   }
 
 }
