@@ -27,7 +27,7 @@ namespace flashmatch {
     _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 0.0);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
 
-    // this->set_verbosity((msg::Level_t)(pset.get<unsigned int>("Verbosity")));
+    this->set_verbosity((msg::Level_t)(pset.get<unsigned int>("Verbosity", 3)));
 
     _penalty_threshold_v = pset.get<std::vector<double> >("PEPenaltyThreshold");
     _penalty_value_v = pset.get<std::vector<double> >("PEPenaltyValue");
