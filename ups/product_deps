@@ -38,6 +38,7 @@ larsoft          v09_06_00
 sbnobj           v09_06_00
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
+castxml          v0_00_00_f20180122 - only_for_build
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
