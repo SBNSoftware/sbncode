@@ -141,13 +141,19 @@ namespace flashmatch {
     size_t n_pmt = DetectorSpecs::GetME().NOpDets();
 
     art::ServiceHandle<phot::PhotonVisibilityService const> vis;
+
     for ( size_t ipmt = 0; ipmt < n_pmt; ++ipmt) {
 
       if (std::find(_channel_mask.begin(), _channel_mask.end(), ipmt) == _channel_mask.end()) {
         continue;
       }
 
-      for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
+      bool is_uncoated = false;
+      if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), ipmt) != _uncoated_pmt_list.end()) {
+        is_uncoated = true;
+      }
+
+      for (size_t ipt = 0; ipt < trk.size(); ++ipt) {
         auto const& pt = trk[ipt];
 
         double q = pt.q;
@@ -156,18 +162,26 @@ namespace flashmatch {
         xyz[1] = pt.y;
         xyz[2] = pt.z;
 
+        double q_direct = 0, q_refl = 0;
+
         // Direct light
-        q *= vis->GetVisibility(xyz, ipmt) * _global_qe / _qe_v[ipmt];
-        flash.pe_v[ipmt] += q;
+        if (is_uncoated) {
+          q_direct = 0;
+        } else {
+          q_direct = q * vis->GetVisibility(xyz, ipmt) * _global_qe / _qe_v[ipmt];
+        }
         // std::cout << "PMT : " << ipmt << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 
         // Reflected light
-        q *= vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl / _qe_v[ipmt];
-        flash.pe_v[ipmt] += q;
+        q_refl = q * vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl / _qe_v[ipmt];
+
+        flash.pe_v[ipmt] += q_direct;
+        flash.pe_v[ipmt] += q_refl;
       }
     }
     return;
   }
+
 
   //
   // Standalone
