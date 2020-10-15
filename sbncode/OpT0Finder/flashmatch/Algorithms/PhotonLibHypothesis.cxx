@@ -16,8 +16,9 @@ namespace flashmatch {
   static PhotonLibHypothesisFactory __global_PhotonLibHypothesisFactory__;
 
   PhotonLibHypothesis::PhotonLibHypothesis(const std::string name)
-    : BaseFlashHypothesis(name),
-    _opfast_scintillation(new larg4::OpFastScintillation())
+    : BaseFlashHypothesis(name)
+    , _opfast_scintillation(new larg4::OpFastScintillation())
+    , _vis(art::ServiceHandle<phot::PhotonVisibilityService const>().get())
   {}
 
   void PhotonLibHypothesis::_Configure_(const Config_t &pset)
@@ -140,10 +141,9 @@ namespace flashmatch {
 
     size_t n_pmt = DetectorSpecs::GetME().NOpDets();
 
-    art::ServiceHandle<phot::PhotonVisibilityService const> vis;
-
     for ( size_t ipmt = 0; ipmt < n_pmt; ++ipmt) {
 
+      // auto start = high_resolution_clock::now();
       if (std::find(_channel_mask.begin(), _channel_mask.end(), ipmt) == _channel_mask.end()) {
         continue;
       }
@@ -168,12 +168,12 @@ namespace flashmatch {
         if (is_uncoated) {
           q_direct = 0;
         } else {
-          q_direct = q * vis->GetVisibility(xyz, ipmt) * _global_qe / _qe_v[ipmt];
+          q_direct = q * _vis->GetVisibility(xyz, ipmt) * _global_qe / _qe_v[ipmt];
         }
         // std::cout << "PMT : " << ipmt << " [x,y,z] -> [q] : [" << pt.x << ", " << pt.y << ", " << pt.z << "] -> [" << q << "]" << std::endl;
 
         // Reflected light
-        q_refl = q * vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl / _qe_v[ipmt];
+        q_refl = q * _vis->GetVisibility(xyz, ipmt, true) * _global_qe_refl / _qe_v[ipmt];
 
         flash.pe_v[ipmt] += q_direct;
         flash.pe_v[ipmt] += q_refl;

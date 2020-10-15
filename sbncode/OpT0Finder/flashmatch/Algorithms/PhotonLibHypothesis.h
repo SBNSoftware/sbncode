@@ -71,6 +71,7 @@ namespace flashmatch {
     bool _use_semi_analytical;     ///< If the semi-analytical approach should be used
     #if USING_LARSOFT == 1
     larg4::OpFastScintillation* _opfast_scintillation; ///< For SBND semi-analytical
+    phot::PhotonVisibilityService const* const _vis;
     #endif
   };
 
