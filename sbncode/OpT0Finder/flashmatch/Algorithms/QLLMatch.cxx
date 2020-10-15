@@ -105,7 +105,7 @@ namespace flashmatch {
 	return res_onepmt;
     }
     */
-    FLASH_INFO() << "Time spent construction hypotheses: " << _construct_hypo_time << " ns." << std::endl;
+    FLASH_INFO() << "Time spent constructing hypotheses: " << _construct_hypo_time << " ns." << std::endl;
     return res;
   }
 
