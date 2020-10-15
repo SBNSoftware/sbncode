@@ -143,7 +143,6 @@ namespace flashmatch {
 
     for ( size_t ipmt = 0; ipmt < n_pmt; ++ipmt) {
 
-      // auto start = high_resolution_clock::now();
       if (std::find(_channel_mask.begin(), _channel_mask.end(), ipmt) == _channel_mask.end()) {
         continue;
       }
