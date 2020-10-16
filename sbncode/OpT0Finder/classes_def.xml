@@ -1,7 +1,0 @@
-<lcgdict>
-    <class name="art::Assns<anab::T0,recob::Slice,void>"/>
-    <class name="art::Wrapper<art::Assns<anab::T0,recob::Slice,void> >"/>
-
-    <class name="art::Assns<recob::Slice,anab::T0,void>"/>
-    <class name="art::Wrapper<art::Assns<recob::Slice,anab::T0,void> >"/>
-</lcgdict>

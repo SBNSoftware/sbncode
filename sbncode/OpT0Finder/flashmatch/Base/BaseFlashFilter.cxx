@@ -1,6 +1,0 @@
-#ifndef OPT0FINDER_BASEFLASHFILTER_CXX
-#define OPT0FINDER_BASEFLASHFILTER_CXX
-
-#include "BaseFlashFilter.h"
-
-#endif
