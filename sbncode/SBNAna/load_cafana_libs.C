@@ -63,13 +63,13 @@ void load_cafana_libs()
       "StandardRecordProxy",
       // "StandardRecord_dict",
       "CAFAnaCore",
-      "CAFAnaVars",
-      "CAFAnaCuts",
-      "CAFAnaSysts",
-      "CAFAnaExtrap",
-      "CAFAnaPrediction",
-      "CAFAnaExperiment",
-      "CAFAnaAnalysis",
+      "SBNAnaVars",
+      "SBNAnaCuts",
+      // "CAFAnaSysts",
+      // "CAFAnaExtrap",
+      // "CAFAnaPrediction",
+      // "CAFAnaExperiment",
+      // "CAFAnaAnalysis",
     };
 
   // Actually load the libraries

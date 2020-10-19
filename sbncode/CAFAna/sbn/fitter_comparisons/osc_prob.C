@@ -9,6 +9,7 @@
 using namespace ana;
 
 #include "TCanvas.h"
+#include "TFile.h"
 #include "TH2.h"
 #include "TPad.h"
 
@@ -50,6 +51,8 @@ void osc_prob()
 
   gPad->Print("osc_prob.png");
   gPad->Print("osc_prob.pdf");
+  TFile* fout = new TFile("osc_prob.root", "RECREATE");
+  h->Write("osc_prob");
 
   new TCanvas;
   h = r_reco.ToTH1();
@@ -59,4 +62,6 @@ void osc_prob()
 
   gPad->Print("osc_prob_reco.png");
   gPad->Print("osc_prob_reco.pdf");
+
+  h->Write("osc_prob_reco");
 }

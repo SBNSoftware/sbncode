@@ -1,0 +1,30 @@
+BEGIN_PROLOG
+
+#include "flashmatch_sbnd.fcl"
+
+flash_match_sbnd: @local::sbnd_simple_flashmatch
+flash_match_sbnd.MakeTree: false
+flash_match_sbnd.BeamWindowStart: -5. # us
+flash_match_sbnd.BeamWindowEnd: 2 # us
+
+flash_match_icarus_cryo0: @local::flash_match_sbnd
+flash_match_icarus_cryo0.MakeTree: false
+flash_match_icarus_cryo0.BeamWindowStart: -5. # us
+flash_match_icarus_cryo0.BeamWindowEnd: 2 # us
+flash_match_icarus_cryo0.InputFileName: "FlashMatch/fm_metrics_icarus.root"
+flash_match_icarus_cryo0.Detector: "ICARUS"
+flash_match_icarus_cryo0.PandoraProducer: pandoraGausCryo0
+flash_match_icarus_cryo0.TrackProducer: pandoraTrackGausCryo0
+flash_match_icarus_cryo0.CaloProducer: pandoraGausCaloCryo0
+flash_match_icarus_cryo0.SpacePointProducer: pandoraGausCryo0
+flash_match_icarus_cryo0.Cryostat: 0
+
+
+flash_match_icarus_cryo1: @local::flash_match_icarus_cryo0
+flash_match_icarus_cryo1.Cryostat: 1
+flash_match_icarus_cryo1.PandoraProducer: pandoraGausCryo1
+flash_match_icarus_cryo1.TrackProducer: pandoraTrackGausCryo1
+flash_match_icarus_cryo1.CaloProducer: pandoraGausCaloCryo1
+flash_match_icarus_cryo1.SpacePointProducer: pandoraGausCryo1
+
+END_PROLOG

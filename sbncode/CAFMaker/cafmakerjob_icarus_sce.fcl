@@ -1,0 +1,126 @@
+#include "CAFMaker.fcl"
+
+#include "services_icarus.fcl"
+#include "geometry_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+
+#include "flashmatch.fcl"
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "crthitconverter_producer.fcl"
+#include "crthitmatch_producer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "pmtflashtrigger_producer.fcl"
+#include "mcreco.fcl"
+
+process_name: CAFmaker
+
+services:
+{
+  # Load the service that manages root files for histograms.
+#  scheduler:    {wantTracer : false wantSummary : false}
+  TimeTracker: {}
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { fileName: "fullchain_production_hist_prod5.root" closeFileFast: false }
+#  scheduler:    { wantTracer: false wantSummary: true }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  # #  @table::standard_services
+
+  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
+  ExpGeoHelperInterface:    @local::icarus_single_induction_geometry_helper 
+  Geometry:                  @local::icarus_single_induction_nooverburden_geometry 
+  # AuxDetGeometry:            @local::icarus_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
+  DetectorPropertiesService: @local::icarus_basic_services.DetectorPropertiesService 
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+  NuRandomService: {
+    policy: perEvent
+  }
+}
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "pid_r%r_s%s.root"
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ producers:{
+   pandoraTrackMCSCryo0: @local::mcs_sbn
+   pandoraTrackRangeCryo0: @local::range_sbn
+   pandoraTrackMCSCryo1: @local::mcs_sbn
+   pandoraTrackRangeCryo1: @local::range_sbn
+
+   fmatchCryo0: @local::flash_match_icarus_cryo0
+   fmatchCryo1: @local::flash_match_icarus_cryo1
+   crtconvhit: @local::crthitconverter_icarus
+
+   pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
+   pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
+   flashtrig: @local::pmtflashtrigmaker_icarus
+
+   mcreco: @local::standard_mcreco
+}
+  filters:{
+    flashtrigfilter: @local::pmtflashtrigfilter_icarus
+  }
+  analyzers:
+  {
+#    metadata: @local::standard_metadata            #prod
+  }
+ runprod: [ flashtrig, flashtrigfilter, crtconvhit, 
+    pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
+    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,
+    mycafmaker ]
+
+# makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
+# stream1: [metadata]
+  stream1:       [  ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+
+
+}
+
+physics.producers.mycafmaker: @local::standard_cafmaker
+physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalgmc.CalAreaConstants
+
+physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
+physics.producers.mycafmaker.PFParticleLabel: "pandoraGausSCE"
+physics.producers.mycafmaker.RecoShowerLabel: "SBNShowerGausSCE"
+physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGausSCE"
+physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausSCECalo"
+physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausSCEPid"
+
+physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
+
+physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausSCECryo1

@@ -37,13 +37,16 @@ const double icarusPOT = kPOTnominal;
 void nus_extrap(const char* stateFname = basicFname)
 {
   if (TFile(stateFname).IsZombie()){
-    std::cout << "Run make_state_extrap.C first!" << std::endl;
+    std::cout << "Run make_state_extrap_syst.C first!" << std::endl;
     return;
   }
 
   std::vector<const ISyst*> systs = GetSBNWeightSysts();
-  for(const ISyst* s: GetSBNFluxHadronSysts(30)) systs.push_back(s);
-//  systs.resize(10);
+
+  // Make sure all hadronization systs exist
+  for(const ISyst* s: GetSBNFluxHadronSysts(30));
+  // But only use the first 10 of them
+  for(const ISyst* s: GetSBNFluxHadronSysts(10)) systs.push_back(s);
 
   std::cout << "Loading state from " << stateFname << std::endl; 
   TFile fin(stateFname);
@@ -71,14 +74,13 @@ void nus_extrap(const char* stateFname = basicFname)
   const FitAxis kAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 40, 1e-3, 1, true);
   const FitAxis kAxDmSq(&kFitDmSqSterile, 40, 2e-2, 1e2, true);
 
-  const FitAxis kAxSinSq2ThetaMuMuCoarse(&kFitSinSq2ThetaMuMu, 8/*40*/, 1e-3, 1, true);
-  const FitAxis kAxDmSqCoarse(&kFitDmSqSterile, 8/*40*/, 2e-2, 1e2, true);
+  const FitAxis kAxSinSq2ThetaMuMuCoarse(&kFitSinSq2ThetaMuMu, 10, 1e-3, 1, true);
+  const FitAxis kAxDmSqCoarse(&kFitDmSqSterile, 10, 2e-2, 1e2, true);
 
   TCanvas* c1 = new TCanvas("c1");
   c1->SetLeftMargin(0.12);
   c1->SetBottomMargin(0.15);
 
-  // A Surface evaluates the experiment's chisq across a grid
   Surface surf(&expt, calc,
                kAxSinSq2ThetaMuMuCoarse,
                kAxDmSqCoarse,
@@ -127,14 +129,12 @@ void nus_extrap(const char* stateFname = basicFname)
   hDummy2->SetLineColor(kBlue);
   hDummy3->SetLineColor(kGreen+2);
 
-  TLegend* leg = new TLegend(0.16, 0.16, 0.6/*0.4*/, .4);
+  TLegend* leg = new TLegend(0.16, 0.16, 0.6, 0.4);
   leg->SetFillStyle(0);
   leg->SetHeader("3#sigma C.L.","C");
   leg->AddEntry(hDummy2, "SBND counting only", "l");
   leg->AddEntry(hDummy3, "Icarus/SBND ratio only", "l");
   leg->AddEntry(hDummy1, "Combined fit", "l");
-  //  leg->SetLineColor(10);
-  //  leg->SetFillColor(10);
   leg->Draw();
 
   gPad->Print("nus_extrap.pdf");
