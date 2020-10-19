@@ -11,7 +11,6 @@
 
 #include "calorimetry_sbnd.fcl"
 
-#include "flashmatch.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
@@ -86,7 +85,6 @@ physics:
    pandoraTrackMCS: @local::mcs_sbn
    pandoraTrackRange: @local::range_sbn
    pandoraShowerSelectionVars: @local::showerSelectionVars_sbn
-   fmatch: @local::flash_match_sbnd
    crtconvhit: @local::crthitconverter_sbnd
    pandoraTrackCRTHit: @local::crthitmatch_sbnd
 }
@@ -97,8 +95,8 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter, crtconvhit, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
-            pandoraTrackCRTHit, mycafmaker ]
+ runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
+            mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
   stream1:       [ ]
@@ -110,7 +108,4 @@ physics:
 
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
-#services.Geometry.ForceUseFCLOnly: true
-#services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
-
-# #include "3drift_services_sbnd.fcl"
+physics.producers.mycafmaker.CosmicGenLabel: "corsika"
