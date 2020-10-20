@@ -26,11 +26,11 @@ int main(int argc, char** argv)
   const std::string outname = argv[2];
 
   //Find out if "proposal" appears in input string
-  // int is_proposal_flag = 0;
-  // if (inname.find("Proposal") || inname.find("proposal")) {
-  //   is_proposal_flag = 1;
-  //   std::cout << "Setting proposal flag to 1: SBND baseline will be adjusted" << std::endl;
-  // }
+  bool is_proposal_flag = false;
+  if (inname.find("Proposal") || inname.find("proposal")) {
+    is_proposal_flag = true;
+    std::cout << "Setting proposal flag to true: SBND baseline will be adjusted" << std::endl;
+  }
 
   TFile* fin = TFile::Open(inname.c_str());
 
@@ -64,8 +64,10 @@ int main(int argc, char** argv)
     //    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
-    //    float bl = event->truth[0].neutrino.baseline;
-    //    if (bl < 150. && is_proposal_flag) event->truth[0].neutrino.baseline = bl - 10;
+    if(is_proposal_flag && !event->truth.empty()){
+      const float bl = event->truth[0].neutrino.baseline;
+      if(bl < 150) event->truth[0].neutrino.baseline -= 10;
+    }
 
     rec->Fill(*event);
     trout->Fill();
