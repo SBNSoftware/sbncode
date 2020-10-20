@@ -1,8 +1,8 @@
-# This @product_deps@ file defines dependencies for this package. 
+# This @product_deps@ file defines dependencies for this package.
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_06_00
+parent sbncode v09_07_00
 defaultqual e19
 
 # These optional lines define the installed directories where headers,
@@ -20,8 +20,8 @@ defaultqual e19
 # fcldir  product_dir  fcl
 # libdir  fq_dir       lib
 # bindir  fq_dir       bin
-# gdmldir -  
-# fwdir   -  
+# gdmldir -
+# fwdir   -
 #
 incdir  product_dir  include
 libdir  fq_dir       lib
@@ -34,18 +34,18 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product          version
-larsoft          v09_06_00
-sbnobj           v09_06_00
+larsoft          v09_07_00
+sbnobj           v09_07_00
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
 castxml          v0_00_00_f20180122 - only_for_build
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v7_15_01 - only_for_build
+cetbuildtools v7_17_01 - only_for_build
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
-# Make the table by adding columns before "notes". 
+# Make the table by adding columns before "notes".
 
 qualifier     larsoft     sbnobj     pygccxml notes
 e19:debug     e19:debug   e19:debug   p372    -nq-
