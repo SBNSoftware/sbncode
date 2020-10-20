@@ -7,6 +7,9 @@ pmtflashtrigmaker_sbnd: {
   TriggerEnd: 2 # us -- TODO: tune amount after beam spill
   TriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold) [use a higher threshold when applying the trigger]
   OffsetTriggerTime: false
+  PDMapAlg: {
+    tool_type: sbndPDMapAlg
+  }
 }
 
 pmtflashtrigmaker_icarus: {

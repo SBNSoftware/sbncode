@@ -99,7 +99,7 @@ namespace caf
     Atom<string> RecoShowerLabel {
       Name("RecoShowerLabel"),
       Comment("Base label of reco-base shower producer."),
-      "pandoraShower"
+      "pandoraShowerSBN"
     };
 
     Atom<string> RecoShowerSelectionLabel {
