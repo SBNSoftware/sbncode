@@ -23,7 +23,7 @@ add_subdirectory(EventWeight)
 add_subdirectory(OpDet)
 
 add_subdirectory(StandardRecord)
-#add_subdirectory(CAFMaker)
+add_subdirectory(CAFMaker)
 
 add_subdirectory(OscLib)
 add_subdirectory(CAFAna)
