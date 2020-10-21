@@ -14,5 +14,6 @@ art_make_library( LIBRARY_NAME caf_RecoUtils
 		    ${FHICLCPP}
                     cetlib cetlib_except
 		    larsim_MCCheater_BackTrackerService_service
-		    larsim_MCCheater_ParticleInventoryService_service	
+		    larsim_MCCheater_ParticleInventoryService_service
+                    larcorealg_Geometry
                 )
