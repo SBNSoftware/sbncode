@@ -5,12 +5,6 @@
 
 namespace ana
 {
-  // Make sure all three versions get generated
-  template class GenericCut<caf::SRProxy>;
-  template class GenericCut<caf::SRSpill>;
-  template class GenericCut<caf::SRSpillTruthBranch>;
-
-
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>::
   GenericCut(const std::function<CutFunc_t>& func,
@@ -196,6 +190,10 @@ namespace ana
   template<class T> GenericCut<T> operator<=(const GenericVar<T>& a, const GenericVar<T>& b){return !(b > a);}
   template<class T> GenericCut<T> operator!=(const GenericVar<T>& a, const GenericVar<T>& b){return !(b == a);}
 
+  // Make sure all three versions get generated
+  template class GenericCut<caf::SRProxy>;
+  template class GenericCut<caf::SRSpill>;
+  template class GenericCut<caf::SRSpillTruthBranch>;
 
   // explicitly instantiate the templates for the types we know we have
   template Cut operator>(const Var&, double);
