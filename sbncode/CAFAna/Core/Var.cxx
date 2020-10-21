@@ -15,6 +15,12 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
+  template<class T> int GenericVar<T>::MaxID()
+  {
+    return fgNextID-1;
+  }
+
+  //----------------------------------------------------------------------
   /// Helper for \ref Var2D
   template<class T> class Var2DFunc
   {
@@ -262,6 +268,8 @@ namespace ana
   template class GenericVar<caf::SRProxy>;
   template class GenericVar<caf::SRSpill>;
   template class GenericVar<caf::SRSpillTruthBranch>;
+
+  template<class T> int GenericVar<T>::fgNextID = 0;
 
   template Var operator*(const Var&, const Var&);
   template Var operator/(const Var&, const Var&);

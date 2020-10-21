@@ -16,6 +16,12 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
+  template<class T> int GenericCut<T>::MaxID()
+  {
+    return fgNextID-1;
+  }
+
+  //----------------------------------------------------------------------
   std::function<ExposureFunc_t>
   CombineExposures(const std::function<ExposureFunc_t>& a,
                    const std::function<ExposureFunc_t>& b)
@@ -194,6 +200,8 @@ namespace ana
   template class GenericCut<caf::SRProxy>;
   template class GenericCut<caf::SRSpill>;
   template class GenericCut<caf::SRSpillTruthBranch>;
+
+  template<class T> int GenericCut<T>::fgNextID = 0;
 
   // explicitly instantiate the templates for the types we know we have
   template Cut operator>(const Var&, double);

@@ -56,7 +56,8 @@ namespace ana
     /// Cuts with the same definition will have the same ID
     int ID() const {return fID;}
 
-    static int MaxID() {return fgNextID-1;}
+    static int MaxID();
+
   protected:
     friend std::function<ExposureFunc_t> CombineExposures(const std::function<ExposureFunc_t>& a, const std::function<ExposureFunc_t>& b);
 
@@ -80,11 +81,7 @@ namespace ana
     int fID;
     /// The next ID that hasn't yet been assigned
     static int fgNextID;
-    
   };
-
-  //initialize here rather than in cxx files
-  template<class T> int GenericCut<T>::fgNextID = 0;
 
   /// \brief Representation of a cut (selection) to be applied to a \ref
   /// caf::StandardRecord object

@@ -43,7 +43,7 @@ namespace ana
     /// Vars with the same definition will have the same ID
     int ID() const {return fID;}
 
-    static int MaxID() {return fgNextID-1;}
+    static int MaxID();
   protected:
     // Give this guy access to the constructor that sets ID
     friend GenericVar<T> operator*<>(const GenericVar<T>& a, const GenericVar<T>& b);
@@ -62,9 +62,6 @@ namespace ana
     /// The next ID that hasn't yet been assigned
     static int fgNextID;
   };
-
-  //initialize here rather than in cxx files
-  template<class T> int GenericVar<T>::fgNextID = 0;
 
   /// \brief Representation of a variable to be retrieved from a \ref
   /// caf::StandardRecord object
