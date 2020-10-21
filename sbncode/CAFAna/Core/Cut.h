@@ -80,7 +80,11 @@ namespace ana
     int fID;
     /// The next ID that hasn't yet been assigned
     static int fgNextID;
+    
   };
+
+  //initialize here rather than in cxx files
+  template<class T> int GenericCut<T>::fgNextID = 0;
 
   /// \brief Representation of a cut (selection) to be applied to a \ref
   /// caf::StandardRecord object

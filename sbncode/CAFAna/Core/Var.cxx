@@ -12,8 +12,6 @@ namespace ana
   template class GenericVar<caf::SRSpill>;
   template class GenericVar<caf::SRSpillTruthBranch>;
 
-  template<class T> int GenericVar<T>::fgNextID = 0;
-
   //----------------------------------------------------------------------
   template<class T> GenericVar<T>::
   GenericVar(const std::function<VarFunc_t>& fun)

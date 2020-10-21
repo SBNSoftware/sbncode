@@ -63,6 +63,9 @@ namespace ana
     static int fgNextID;
   };
 
+  //initialize here rather than in cxx files
+  template<class T> int GenericVar<T>::fgNextID = 0;
+
   /// \brief Representation of a variable to be retrieved from a \ref
   /// caf::StandardRecord object
   ///

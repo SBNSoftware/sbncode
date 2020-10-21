@@ -25,7 +25,7 @@ namespace ana
 {
   // Apparently the existence of fSpillDefs isn't enough and I need to spell
   // this out to make sure the function bodies are generated.
-  template class SpectrumLoaderBase::IDMap<SystShifts, SpectrumLoaderBase::IDMap<Cut, SpectrumLoaderBase::IDMap<Var, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::VarOrMultiVar, SpectrumLoaderBase::SpectList>>>>;
+  template struct SpectrumLoaderBase::IDMap<SystShifts, SpectrumLoaderBase::IDMap<Cut, SpectrumLoaderBase::IDMap<Var, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::VarOrMultiVar, SpectrumLoaderBase::SpectList>>>>;
 
   //----------------------------------------------------------------------
   void SpectrumLoaderBase::SpectList::Erase(Spectrum* s)

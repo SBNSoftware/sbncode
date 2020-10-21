@@ -10,7 +10,6 @@ namespace ana
   template class GenericCut<caf::SRSpill>;
   template class GenericCut<caf::SRSpillTruthBranch>;
 
-  template<class T> int GenericCut<T>::fgNextID = 0;
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>::
