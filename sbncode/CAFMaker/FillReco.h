@@ -25,6 +25,7 @@
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
 #include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
 #include "sbncode/LArRecoProducer/Products/CRTHit.hh"
+#include "sbncode/LArRecoProducer/Products/MergedTrackInfo.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -80,6 +81,11 @@ namespace caf
                        const std::vector<const anab::T0*> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
+
+  void FillTrackSplit(const std::vector<art::Ptr<sbn::MergedTrackInfo>> &merged,
+                      const recob::Track &track,
+                      caf::SRTrack &srtrack,
+                      bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
