@@ -116,10 +116,10 @@ def fq_type(klass):
 
 
 def branch_cmd(name, treeName = 'tr'):
-    return 'branch('+treeName+', prefix+"'+name+'", &'+name+', policy);'
+    return 'flatmaker::branch('+treeName+', prefix+"'+name+'", &'+name+', policy);'
 
 def branch_cmd_no_policy(name, treeName = 'tr'):
-    return 'branch('+treeName+', prefix+"'+name+'", &'+name+', 0);'
+    return 'flatmaker::branch('+treeName+', prefix+"'+name+'", &'+name+', 0);'
 
 
 
@@ -287,7 +287,7 @@ for klass in ns.classes():
     inits = [tn.name+'(prefix+"'+tn.name+'.", tr, policy)' for tn in class_mems]
 
     for tn in vec_mems:
-        inits += [tn.name+'_tree(make_tree(prefix+"'+tn.name+'", "'+tn.name+'", tr))']
+        inits += [tn.name+'_tree(flatmaker::make_tree(prefix+"'+tn.name+'", "'+tn.name+'", tr))']
 
         if is_fundamental(tn.type):
             inits += [tn.name+'(0)']
