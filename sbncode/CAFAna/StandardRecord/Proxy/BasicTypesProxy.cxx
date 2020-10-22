@@ -312,6 +312,14 @@ namespace caf
   }
 
   //----------------------------------------------------------------------
+  template<> Proxy<bool>& Proxy<bool>::operator*=(bool x)
+  {
+    fSystOverrideValue = bool(GetValue() && x);
+    SetShifted();
+    return *this;
+  }
+
+  //----------------------------------------------------------------------
   template<> Proxy<std::string>& Proxy<std::string>::operator*=(std::string x)
   {
     std::cout << "BasicTypesProxy.cxx: Multiplying strings makes no sense..." << std::endl;
