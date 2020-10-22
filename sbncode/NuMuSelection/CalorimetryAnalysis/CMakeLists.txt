@@ -26,6 +26,8 @@ simple_plugin( CalorimetryAnalysis module
         larsim_MCCheater_ParticleInventoryService_service
         sbncode_LArRecoProducer_Products_dict
 	larcorealg_GeoAlgo
+	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
+	lardataalg_DetectorInfo
 )
 
 
