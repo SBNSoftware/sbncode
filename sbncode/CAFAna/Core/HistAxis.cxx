@@ -4,11 +4,6 @@
 
 namespace ana
 {
-  // explicitly instantiate the template for the types we know we have
-  template class GenericHistAxis<Var>;
-  template class GenericHistAxis<SpillVar>;
-  template class GenericHistAxis<SpillTruthVar>;
-
   //----------------------------------------------------------------------
   template<class T> GenericHistAxis<T>::
   GenericHistAxis(const std::string& label,
@@ -86,4 +81,9 @@ namespace ana
       abort();
     }
   }
+
+  // explicitly instantiate the template for the types we know we have
+  template class GenericHistAxis<Var>;
+  template class GenericHistAxis<SpillVar>;
+  template class GenericHistAxis<SpillTruthVar>;
 }

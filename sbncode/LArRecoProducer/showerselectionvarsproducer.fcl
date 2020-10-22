@@ -2,7 +2,7 @@ BEGIN_PROLOG
 showerSelectionVars_sbn: {
   module_type: ShowerSelectionVars
   PandoraLabel: pandora
-  ShowerLabel: pandoraShower
+  ShowerLabel: pandoraShowerSBN
   NSegments: 10
   RemoveStartFin: true
 }

@@ -43,7 +43,7 @@ namespace ana
     /// Vars with the same definition will have the same ID
     int ID() const {return fID;}
 
-    static int MaxID() {return fgNextID-1;}
+    static int MaxID();
   protected:
     // Give this guy access to the constructor that sets ID
     friend GenericVar<T> operator*<>(const GenericVar<T>& a, const GenericVar<T>& b);
