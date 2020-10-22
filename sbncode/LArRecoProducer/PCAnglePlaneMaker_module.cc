@@ -81,17 +81,6 @@ void SaveHits(std::map<unsigned, std::array<std::vector<unsigned>, 3>> &pfpToHit
   }
 }
 
-float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
-  float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
-
-  float vert_time_coord = vert.position().X();
-  float hit_time_coord = dprop.ConvertTicksToX(hit.PeakTime(), hit.WireID());
-
-  return sqrt((vert_wire_coord - hit_wire_coord) * (vert_wire_coord - hit_wire_coord) +
-    (vert_time_coord - hit_time_coord) * (vert_time_coord - hit_time_coord));
-}
-
 std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::vector<art::Ptr<recob::Hit>>, 3> &hits, 
                                                           const recob::Vertex &start,
                                                           const geo::GeometryCore *geo, 
@@ -110,7 +99,7 @@ std::array<std::vector<art::Ptr<recob::Hit>>, 3> SortHits(const std::array<std::
       // find the zeroth hit
       std::list<art::Ptr<recob::Hit>>::iterator firstHit = std::min_element(planar[i].begin(), planar[i].end(),
           [start, geo, dprop](auto const &lhs, auto const &rhs) {
-            return Vert2HitDistance(*lhs, start, geo, dprop) < Vert2HitDistance(*rhs, start, geo, dprop);
+            return sbnpca::Vert2HitDistance(*lhs, start, geo, dprop) < sbnpca::Vert2HitDistance(*rhs, start, geo, dprop);
       });
       ret[i].push_back(*firstHit);
       planar[i].erase(firstHit);
@@ -362,8 +351,8 @@ void sbn::PCAnglePlaneMaker::produce(art::Event& evt)
           // if (hithi.size() < 2 || hitslo.size() < 2) continue;
 
           // Get the PCA dirs
-          std::array<float, 2> pca_vec_lo = sbnpca::HitPCAVec(hitslo, sortedHits[i_plane][i_hit], geo, dprop);
-          std::array<float, 2> pca_vec_hi = sbnpca::HitPCAVec(hitshi, sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> pca_vec_lo = sbnpca::HitPCAVec(hitslo, *sortedHits[i_plane][i_hit], geo, dprop);
+          std::array<float, 2> pca_vec_hi = sbnpca::HitPCAVec(hitshi, *sortedHits[i_plane][i_hit], geo, dprop);
           float angle = -100.;
           // check if valid vecs
           if (pca_vec_lo[0] > -99. && pca_vec_lo[1] > -99. && pca_vec_hi[0] > -99. && pca_vec_hi[1] > -99.) {

@@ -1,4 +1,16 @@
 <lcgdict>
+  <class name="sbn::MergedTrackInfo" />
+  <class name="std::vector<sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<std::vector<sbn::MergedTrackInfo>>" />
+
+  <class name="art::Assns<recob::PFParticle, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, sbn::MergedTrackInfo>>" />
+  <class name="art::Assns<recob::Track, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sbn::MergedTrackInfo>>" />
+  <class name="art::Assns<recob::PFParticle, recob::Track, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, recob::Track, sbn::MergedTrackInfo>>" />
+
   <class name="sbn::PCAngle" />
   <class name="std::vector<sbn::PCAngle>" />
 

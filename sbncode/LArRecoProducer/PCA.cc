@@ -66,25 +66,39 @@ std::tuple<std::vector<art::Ptr<recob::Hit>>, std::vector<art::Ptr<recob::Hit>>,
   return {retlo, rethi, lo_complete && hi_complete};
 }
 
-std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
+std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const recob::Hit &center,
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+
+  return HitPCAVec(hits, HitVector(center, geo, dprop), geo, dprop);
+}
+
+std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const recob::Vertex &center,
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+
+  if (hits.size() == 0) return {-100., -100.};
+
+  return HitPCAVec(hits, Vert2HitCoord(center, hits[0]->WireID(), geo, dprop), geo, dprop);
+}
+
+std::array<float, 2> sbnpca::HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, std::array<float, 2> center,
                const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
 
   if (hits.size() < 2) return {-100., -100.};
 
   std::array<float, 2> sum {};
   for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    sum[0] += vec[0];
-    sum[1] += vec[1];
+    std::array<float, 2> vec = HitVector(*h, geo, dprop);
+    sum[0] += vec[0] - center[0];
+    sum[1] += vec[1] - center[1];
   }
   sum[0] = sum[0] / hits.size();
   sum[1] = sum[1] / hits.size();
 
   std::array<std::array<float, 2>, 2> scatter {};
   for (const art::Ptr<recob::Hit> &h: hits) {
-    std::array<float, 2> vec = HitVector(*h, *center, geo, dprop);
-    vec[0] -= sum[0];
-    vec[1] -= sum[1];
+    std::array<float, 2> vec = HitVector(*h, geo, dprop);
+    vec[0] -= sum[0] - center[0];
+    vec[1] -= sum[1] - center[1];
 
     scatter[0][0] += vec[0] * vec[0];
     scatter[0][1] += vec[0] * vec[1];
@@ -146,6 +160,26 @@ std::array<float, 2> sbnpca::HitPCAEigen(const std::vector<art::Ptr<recob::Hit>>
   float eigenM = (1. / 2.) * (trace - sqrt(trace*trace - 4 * det));
 
   return {eigenP, eigenM};
+}
+
+std::array<float, 2> sbnpca::Vert2HitCoord(const recob::Vertex &vert, const geo::PlaneID &planeID, 
+    const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+
+  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), planeID) * geo->WirePitch();
+  float vert_time_coord = vert.position().X();
+
+  return {vert_wire_coord, vert_time_coord};
+}
+
+float sbnpca::Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
+  float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
+
+  float vert_time_coord = vert.position().X();
+  float hit_time_coord = dprop.ConvertTicksToX(hit.PeakTime(), hit.WireID());
+
+  return sqrt((vert_wire_coord - hit_wire_coord) * (vert_wire_coord - hit_wire_coord) +
+    (vert_time_coord - hit_time_coord) * (vert_time_coord - hit_time_coord));
 }
 
 

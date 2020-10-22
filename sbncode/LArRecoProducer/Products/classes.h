@@ -10,5 +10,6 @@
 #include "sbncode/LArRecoProducer/Products/PCAngleKink.h"
 #include "sbncode/LArRecoProducer/Products/FlashTriggerPrimitive.hh"
 #include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
+#include "sbncode/LArRecoProducer/Products/MergedTrackInfo.hh"
 #include <vector>
 #include <utility>

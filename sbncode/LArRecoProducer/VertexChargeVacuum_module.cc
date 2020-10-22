@@ -85,8 +85,9 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
   // collect services
   const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
-  detinfo::DetectorProperties const* dprop
-          = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
 
   // get the PFParticle's and the associated data
   art::Handle<std::vector<recob::PFParticle>> pfparticle_handle;

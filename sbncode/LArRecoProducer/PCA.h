@@ -26,11 +26,20 @@ namespace sbnpca {
       const geo::GeometryCore *geo,
       const detinfo::DetectorPropertiesData &dprop);
 
-  std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
-     const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
+  std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const recob::Hit &center,
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
+
+  std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, const recob::Vertex &center,
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
+
+  std::array<float, 2> HitPCAVec(const std::vector<art::Ptr<recob::Hit>> &hits, std::array<float, 2> center,
+               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 
   std::array<float, 2> HitPCAEigen(const std::vector<art::Ptr<recob::Hit>> &hits, const art::Ptr<recob::Hit> &center,
       const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
+
+  float Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
+  std::array<float, 2> Vert2HitCoord(const recob::Vertex &vert, const geo::PlaneID &planeID, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop);
 }
 
 #endif
