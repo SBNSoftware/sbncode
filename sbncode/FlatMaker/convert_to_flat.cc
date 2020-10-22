@@ -64,9 +64,9 @@ int main(int argc, char** argv)
     //    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
-    if(is_proposal_flag && !event->truth.empty()){
-      const float bl = event->truth[0].neutrino.baseline;
-      if(bl < 150) event->truth[0].neutrino.baseline -= 10;
+    if(is_proposal_flag && !event->mc.nu.empty()){
+      const float bl = event->mc.nu[0].baseline;
+      if(bl < 150) event->mc.nu[0].baseline -= 10;
     }
 
     rec->Fill(*event);

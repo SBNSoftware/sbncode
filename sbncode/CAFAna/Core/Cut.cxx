@@ -5,13 +5,6 @@
 
 namespace ana
 {
-  // Make sure all three versions get generated
-  template class GenericCut<caf::SRProxy>;
-  template class GenericCut<caf::SRSpill>;
-  template class GenericCut<caf::SRSpillTruthBranch>;
-
-  template<class T> int GenericCut<T>::fgNextID = 0;
-
   //----------------------------------------------------------------------
   template<class T> GenericCut<T>::
   GenericCut(const std::function<CutFunc_t>& func,
@@ -20,6 +13,12 @@ namespace ana
     : fFunc(func), fLiveFunc(liveFunc), fPOTFunc(potFunc),
       fID(fgNextID++)
   {
+  }
+
+  //----------------------------------------------------------------------
+  template<class T> int GenericCut<T>::MaxID()
+  {
+    return fgNextID-1;
   }
 
   //----------------------------------------------------------------------
@@ -197,6 +196,12 @@ namespace ana
   template<class T> GenericCut<T> operator<=(const GenericVar<T>& a, const GenericVar<T>& b){return !(b > a);}
   template<class T> GenericCut<T> operator!=(const GenericVar<T>& a, const GenericVar<T>& b){return !(b == a);}
 
+  // Make sure all three versions get generated
+  template class GenericCut<caf::SRProxy>;
+  template class GenericCut<caf::SRSpill>;
+  template class GenericCut<caf::SRSpillTruthBranch>;
+
+  template<class T> int GenericCut<T>::fgNextID = 0;
 
   // explicitly instantiate the templates for the types we know we have
   template Cut operator>(const Var&, double);

@@ -13,7 +13,7 @@ add_custom_command(# Rebuild if Event.hh or the script itself change
 include_directories(../..)
 
 # This is a very picky error buried inside template instantiations
-add_definitions(-Wno-int-in-bool-context)
+#add_definitions(-Wno-int-in-bool-context)
 
 art_make_library(LIBRARY_NAME StandardRecordProxy
                  SOURCE       SRProxy.cxx SRProxy.h BasicTypesProxy.cxx

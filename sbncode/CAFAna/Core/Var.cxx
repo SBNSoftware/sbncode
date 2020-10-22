@@ -7,18 +7,17 @@
 
 namespace ana
 {
-  // explicitly instantiate the template for the types we know we have
-  template class GenericVar<caf::SRProxy>;
-  template class GenericVar<caf::SRSpill>;
-  template class GenericVar<caf::SRSpillTruthBranch>;
-
-  template<class T> int GenericVar<T>::fgNextID = 0;
-
   //----------------------------------------------------------------------
   template<class T> GenericVar<T>::
   GenericVar(const std::function<VarFunc_t>& fun)
     : fFunc(fun), fID(fgNextID++)
   {
+  }
+
+  //----------------------------------------------------------------------
+  template<class T> int GenericVar<T>::MaxID()
+  {
+    return fgNextID-1;
   }
 
   //----------------------------------------------------------------------
@@ -265,8 +264,13 @@ namespace ana
     }
   }
 
-
   // explicitly instantiate the templates for the types we know we have
+  template class GenericVar<caf::SRProxy>;
+  template class GenericVar<caf::SRSpill>;
+  template class GenericVar<caf::SRSpillTruthBranch>;
+
+  template<class T> int GenericVar<T>::fgNextID = 0;
+
   template Var operator*(const Var&, const Var&);
   template Var operator/(const Var&, const Var&);
   template Var operator+(const Var&, const Var&);
