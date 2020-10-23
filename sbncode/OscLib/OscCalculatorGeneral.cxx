@@ -8,7 +8,7 @@
 
 #include <boost/serialization/array_wrapper.hpp>
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+//#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #pragma GCC diagnostic pop

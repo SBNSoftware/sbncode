@@ -56,7 +56,8 @@ namespace ana
     /// Cuts with the same definition will have the same ID
     int ID() const {return fID;}
 
-    static int MaxID() {return fgNextID-1;}
+    static int MaxID();
+
   protected:
     friend std::function<ExposureFunc_t> CombineExposures(const std::function<ExposureFunc_t>& a, const std::function<ExposureFunc_t>& b);
 
