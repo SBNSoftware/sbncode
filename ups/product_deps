@@ -33,9 +33,10 @@ fwdir   product_dir scripts
 # With "product  version" table below, we now define dependencies
 # Add the dependent product and version
 
-product          version
-larsoft          v09_07_00
-sbnobj           v09_07_00
+product             version
+larsoft             v09_07_00
+sbnobj              v09_07_00
+sbndaq_artdaq_core  v0_07_00_of0
 # For CAFAna/StandardRecord/Proxy and FlatMaker
 pygccxml         v1_9_1b
 castxml          v0_00_00_f20180122 - only_for_build
@@ -47,11 +48,11 @@ cetbuildtools v7_17_01 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     pygccxml notes
-e19:debug     e19:debug   e19:debug   p372    -nq-
-e19:prof      e19:prof    e19:prof    p372    -nq-
-c7:debug      c7:debug    c7:debug   p372    -nq-
-c7:prof       c7:prof     c7:prof    p372    -nq-
+qualifier     larsoft     sbnobj     sbndaq_artdaq_core  pygccxml notes
+e19:debug     e19:debug   e19:debug  e19:debug		 p372    -nq-
+e19:prof      e19:prof    e19:prof   e19:prof		 p372    -nq-
+c7:debug      c7:debug    c7:debug   c7:debug		 p372    -nq-
+c7:prof       c7:prof     c7:prof    c7:prof		 p372    -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
