@@ -1,0 +1,93 @@
+
+BEGIN_PROLOG
+
+flashmatch_config : {
+#
+# Manager configuration
+#
+FlashMatchManager: {
+  Verbosity: 3
+  AllowReuseFlash: true
+  StoreFullResult: false
+  FlashFilterAlgo: ""
+  TPCFilterAlgo:   "NPtFilter"
+  ProhibitAlgo:    "" # "TimeCompatMatch"
+  HypothesisAlgo:  "PhotonLibHypothesis"
+  MatchAlgo:       "QLLMatch"
+  CustomAlgo:      ["LightPath"] #,"MCQCluster"] # Keep lightpath, though it's not used now
+}
+
+#
+# Algorithms
+#
+QLLMatch: {
+  Verbosity: 3
+  RecordHistory: false
+  NormalizeHypothesis: false
+  QLLMode: 1 # 0 for Chi2, 1 for LLHD
+  PEPenaltyThreshold: []
+  PEPenaltyValue: []
+  XPenaltyThreshold: 30
+  ZPenaltyThreshold: 30
+  OnePMTScoreThreshold:  0.00001
+  OnePMTXDiffThreshold:  35.
+  OnePMTPESumThreshold:  500
+  OnePMTPEFracThreshold: 0.3
+}
+
+QWeightPoint: {
+    XStepSize: 5
+    ZDiffMax:  50.0
+}
+
+CommonAmps: {
+    ScoreThreshold: 0.8
+    QFracThreshold: 0.5
+    XStepSize:      5.0
+}
+
+TimeCompatMatch: {
+    FrameDriftTime: 2300.4
+    TimeBuffer: 100
+    Verbosity: 0 #3
+}
+
+MaxNPEWindow: {
+    TimeUpperBound:  8.0
+    TimeLowerBound: -0.1
+    NPEThreshold:   10.0
+}
+
+NPtFilter: {
+    MinNumPoint: 1
+}
+
+PhotonLibHypothesis:
+{
+  GlobalQE: 0.03
+  GlobalQERefl: 0.03
+  UseSemiAnalytical: true
+  ChannelMask: []
+  CCVCorrection: []
+}
+
+ChargeAnalytical:
+{}
+
+MCQCluster: {
+    UseMCdEdX:    false
+    UseXShift:    true
+    OpROStart:    -2400000
+    OpROEnd:      2400000
+    Extension:    10
+    DefaultTriggerTime: 4046.5312
+}
+
+LightPath: {
+    SegmentSize: 0.5
+    LightYield:  40000
+    MIPdEdx:     2.07
+}
+
+}
+END_PROLOG
