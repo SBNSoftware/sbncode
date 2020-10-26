@@ -99,6 +99,7 @@ namespace caf {
       srneutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       srneutrino.pdg = nu.Nu().PdgCode();
       srneutrino.initpdg = mcflux.fntype;
+      srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
       srneutrino.targetPDG = nu.Target();
       srneutrino.genie_intcode = nu.Mode();
       srneutrino.bjorkenX = nu.X();
