@@ -1,5 +1,7 @@
+FILE(GLOB SR_DEPENDENCIES $ENV{SBNCODE_DIR}/sbncode/StandardRecord/*.h)
+
 add_custom_command(# Rebuild if Event.hh or the script itself change
-                   DEPENDS $ENV{SBNCODE_DIR}/sbncode/StandardRecord/*.h
+                   DEPENDS ${SR_DEPENDENCIES}
                            ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
                    OUTPUT FlatRecord.cxx
                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
