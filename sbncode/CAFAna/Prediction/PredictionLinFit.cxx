@@ -45,9 +45,6 @@ namespace ana
   {
     fNom = predGen.Generate(loaders, SystShifts::Nominal()).release();
 
-    abort(); // None of this is implemented for CAFs yet
-
-    /*
     // We really want to apply a weight - but PredictionGenerator is set up to
     // take a SystShifts, so...
     class DummyUnivWeightSyst: public ISyst
@@ -74,7 +71,6 @@ namespace ana
       const SystShifts s2(new DummyUnivWeightSyst(systs, univIdx), 1);
       fUnivs.emplace_back(s1, predGen.Generate(loaders, s2).release());
     }
-    */
   }
 
   // --------------------------------------------------------------------------
