@@ -300,8 +300,7 @@ namespace ana
     TH1D* h = s.ToTH1(s.POT());
 
     const unsigned int N = h->GetNbinsX()+2;
-    double corr[N];
-    for(unsigned int i = 0; i < N; ++i) corr[i] = 1;
+    std::vector<double> corr(N,1.0);
 
     for(auto& it: fPreds){
       const ISyst* syst = it.first;
@@ -692,8 +691,8 @@ namespace ana
     std::unique_ptr<TH1> nom(fPredNom->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
     const int nbins = nom->GetNbinsX();
 
-    TGraph* curves[nbins];
-    TGraph* points[nbins];
+    std::vector<TGraph*> curves(nbins);
+    std::vector<TGraph*> points(nbins);
 
     for(int i = 0; i <= 80; ++i){
       const double x = .1*i-4;
@@ -724,8 +723,7 @@ namespace ana
 
     for(unsigned int shiftIdx = 0; shiftIdx < it->second.shifts.size(); ++shiftIdx){
       if(!it->second.preds[shiftIdx]) continue; // Probably MinimizeMemory()
-      std::unique_ptr<TH1> h;
-      h = std::move(std::unique_ptr<TH1>(it->second.preds[shiftIdx]->PredictComponent(calc, flav, curr, sign).ToTH1(18e20)));
+      std::unique_ptr<TH1> h(it->second.preds[shiftIdx]->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
 
       for(int bin = 0; bin < nbins; ++bin){
         const double ratio = h->GetBinContent(bin+1)/hnom->GetBinContent(bin+1);
