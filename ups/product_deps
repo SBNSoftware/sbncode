@@ -38,7 +38,7 @@ larsoft             v09_09_01
 sbnobj              v09_09_00
 sbndaq_artdaq_core  v0_07_01_of0
 # For CAFAna
-srproxy          v00.11
+srproxy          v00.14
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
