@@ -4,7 +4,7 @@
 #include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include <cassert>
 #include <iostream>
@@ -14,10 +14,18 @@
 
 #include "CAFAna/Core/OscCalcSterileApprox.h"
 
+namespace
+{
+  inline bool IsNoOscillations(const osc::IOscCalc* c)
+  {
+    return dynamic_cast<const osc::NoOscillations*>(c) != 0;
+  }
+}
+
 namespace ana
 {
   //----------------------------------------------------------------------
-  OscCurve::OscCurve(osc::IOscCalculator* calc, int from, int to, bool LoverE)
+  OscCurve::OscCurve(osc::IOscCalc* calc, int from, int to, bool LoverE)
     : fFrom(from), fTo(to)
   {
     DontAddDirectory guard;

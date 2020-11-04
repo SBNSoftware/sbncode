@@ -10,7 +10,11 @@
 
 class TGraph;
 
-namespace osc{class IOscCalculatorAdjustable;}
+namespace osc
+{
+  template<class T> class _IOscCalcAdjustable;
+  typedef _IOscCalcAdjustable<double> IOscCalcAdjustable;
+}
 
 namespace ana
 {
@@ -65,14 +69,14 @@ namespace ana
     /// \param      systSeedPts If non-empty, try fit starting at each of these
     /// \param      verb If quiet, no printout
     /// \return     -2x the log-likelihood of the best-fit point
-    double Fit(osc::IOscCalculatorAdjustable* seed,
+    double Fit(osc::IOscCalcAdjustable* seed,
                SystShifts& bestSysts = junkShifts,
                const std::map<const IFitVar*, std::vector<double>>& seedPts = {},
                const std::vector<SystShifts>& systSeedPts = {},
                Verbosity verb = kVerbose) const;
 
     /// Variant with no seedPts
-    double Fit(osc::IOscCalculatorAdjustable* seed,
+    double Fit(osc::IOscCalcAdjustable* seed,
                SystShifts& systSeed,
                Verbosity verb) const
     {
@@ -80,7 +84,7 @@ namespace ana
     }
 
     /// Variant with no seedPts and no systematics result returned
-    double Fit(osc::IOscCalculatorAdjustable* seed,
+    double Fit(osc::IOscCalcAdjustable* seed,
                Verbosity verb) const
     {
       return Fit(seed, junkShifts, {}, {}, verb);
@@ -151,12 +155,12 @@ namespace ana
 
     /// Helper for \ref FitHelper
     std::unique_ptr<ROOT::Math::Minimizer>
-    FitHelperSeeded(osc::IOscCalculatorAdjustable* seed,
+    FitHelperSeeded(osc::IOscCalcAdjustable* seed,
                     SystShifts& systSeed,
                     Verbosity verb) const;
 
     /// Helper for \ref Fit
-    double FitHelper(osc::IOscCalculatorAdjustable* seed,
+    double FitHelper(osc::IOscCalcAdjustable* seed,
                      SystShifts& bestSysts,
                      const std::map<const IFitVar*, std::vector<double>>& seedPts,
                      std::vector<SystShifts> systSeedPts,
@@ -169,7 +173,7 @@ namespace ana
     std::vector<const IFitVar*> fVars;
     std::vector<const ISyst*> fSysts;
     Precision fPrec = kNormal;
-    mutable osc::IOscCalculatorAdjustable* fCalc;
+    mutable osc::IOscCalcAdjustable* fCalc;
     mutable SystShifts fShifts;
 
     mutable int fNEval = 0;
@@ -223,7 +227,7 @@ namespace ana
   ///
   /// \return The best fit delta chisq as a function of \a a
   TH1* Profile(const IExperiment* expt,
-	       osc::IOscCalculatorAdjustable* calc,
+	       osc::IOscCalcAdjustable* calc,
                const IFitVar* v,
 	       int nbinsx, double minx, double maxx,
 	       double minchi = -1,
@@ -236,7 +240,7 @@ namespace ana
 
   /// Forward to \ref Profile but sqrt the result for a crude significance
   TH1* SqrtProfile(const IExperiment* expt,
-                   osc::IOscCalculatorAdjustable* calc,
+                   osc::IOscCalcAdjustable* calc,
                    const IFitVar* v,
                    int nbinsx, double minx, double maxx,
                    double minchi = -1,
@@ -249,20 +253,20 @@ namespace ana
 
   /// \f$\chi^2\f$ scan in one variable, holding all others constant
   TH1* Slice(const IExperiment* expt,
-             osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+             osc::IOscCalcAdjustable* calc, const IFitVar* v,
              int nbinsx, double minx, double maxx,
              double minchi = -1);
 
   /// Forward to \ref Slice but sqrt the result for a crude significance
   TH1* SqrtSlice(const IExperiment* expt,
-                 osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+                 osc::IOscCalcAdjustable* calc, const IFitVar* v,
                  int nbinsx, double minx, double maxx, double minchi = -1);
 
   /// \brief Find the minimum in one variable as a function of another
   ///
   /// \param transpose plot \a scanVar on the y axis
   TGraph* FindValley(const IExperiment* expt,
-		     osc::IOscCalculatorAdjustable* calc,
+		     osc::IOscCalcAdjustable* calc,
 		     const IFitVar& scanVar,
 		     const IFitVar& fitVar,
 		     int nbinsx, double xmin, double xmax,

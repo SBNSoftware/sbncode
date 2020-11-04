@@ -16,7 +16,7 @@ namespace ana
     SolarConstraints(const double dmsq,  const double errorDmsq,
 		     const double ss2th, const double errorSs2th);
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
     virtual void SaveTo(TDirectory* dir) const override;

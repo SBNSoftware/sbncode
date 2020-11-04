@@ -49,7 +49,7 @@ namespace ana
 
     virtual ~SingleSampleExperiment();
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
     virtual void SaveTo(TDirectory* dir) const override;
@@ -72,7 +72,7 @@ namespace ana
 		     double ymin=0, double ymax=-1);
 
   protected:
-    TH1D* PredHistIncCosmics(osc::IOscCalculator* calc,
+    TH1D* PredHistIncCosmics(osc::IOscCalc* calc,
                              const SystShifts& syst) const;
 
     const IPrediction* fMC;

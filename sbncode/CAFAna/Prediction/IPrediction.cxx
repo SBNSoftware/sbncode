@@ -2,7 +2,7 @@
 
 #include "CAFAna/Core/LoadFromFile.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include <cassert>
 #include <iostream>
@@ -59,7 +59,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum IPrediction::PredictSyst(osc::IOscCalculator* calc,
+  Spectrum IPrediction::PredictSyst(osc::IOscCalc* calc,
                                     const SystShifts& syst) const
   {
     assert(syst.IsNominal() && "This Prediction doesn't support PredictSyst(). Did you just mean Predict()?");
@@ -69,7 +69,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum IPrediction::PredictComponentSyst(osc::IOscCalculator* calc,
+  Spectrum IPrediction::PredictComponentSyst(osc::IOscCalc* calc,
                                              const SystShifts& syst,
                                              Flavors::Flavors_t flav,
                                              Current::Current_t curr,

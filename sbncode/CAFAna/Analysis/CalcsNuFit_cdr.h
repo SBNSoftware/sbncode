@@ -6,8 +6,6 @@
 
 #include "TRandom3.h"
 
-namespace ana{class IOscCalculatorAdjustable;}
-
 namespace ana
 {
   // http://www.nu-fit.org/?q=node/139
@@ -39,24 +37,24 @@ namespace ana
 
 
   // hie = +/-1
-  osc::IOscCalculatorAdjustable* NuFitOscCalcCDR(int hie);
+  osc::IOscCalcAdjustable* NuFitOscCalcCDR(int hie);
 
-  osc::IOscCalculatorAdjustable* NuFitOscCalcCDRPlusOneSigma(int hie);
+  osc::IOscCalcAdjustable* NuFitOscCalcCDRPlusOneSigma(int hie);
 
   // Add in a throw for toys
-  osc::IOscCalculatorAdjustable* ThrownNuFitOscCalcCDR(int hie);
+  osc::IOscCalcAdjustable* ThrownNuFitOscCalcCDR(int hie);
 
   class NuFitPenalizerCDR: public IExperiment
   {
   public:
-    double ChiSq(osc::IOscCalculatorAdjustable* calc,
+    double ChiSq(osc::IOscCalcAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
   };
 
   class Penalizer_GlbLikeCDR: public IExperiment
   {
   public:
-    Penalizer_GlbLikeCDR(osc::IOscCalculatorAdjustable* cvcalc, int hietrue, bool weakOnly=false);
+    Penalizer_GlbLikeCDR(osc::IOscCalcAdjustable* cvcalc, int hietrue, bool weakOnly=false);
 
     double Dmsq21CV() const {return fDmsq21;}
     double Th12CV() const {return fTh12;}
@@ -64,7 +62,7 @@ namespace ana
     double Th23CV() const {return fTh23;}
     double Th13CV() const {return fTh13;}
 
-    double ChiSq(osc::IOscCalculatorAdjustable* calc,
+    double ChiSq(osc::IOscCalcAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
 
   protected:

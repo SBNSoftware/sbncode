@@ -7,8 +7,6 @@
 
 #include "TRandom3.h"
 
-namespace ana{class IOscCalculatorAdjustable;}
-
 namespace ana
 {
   // http://www.nu-fit.org/?q=node/177
@@ -44,12 +42,12 @@ namespace ana
   const double kEarthDensity = 2.848;  // g/cm^3
 
   // hie = +/-1
-  osc::IOscCalculatorAdjustable* NuFitOscCalc(int hie);
+  osc::IOscCalcAdjustable* NuFitOscCalc(int hie);
 
-  osc::IOscCalculatorAdjustable* NuFitOscCalcPlusOneSigma(int hie);
+  osc::IOscCalcAdjustable* NuFitOscCalcPlusOneSigma(int hie);
 
   // Add in a throw for toys
-  osc::IOscCalculatorAdjustable* ThrownNuFitOscCalc(int hie, std::vector<const IFitVar*> oscVars);
+  osc::IOscCalcAdjustable* ThrownNuFitOscCalc(int hie, std::vector<const IFitVar*> oscVars);
 
   bool HasVar(std::vector<const IFitVar*> oscVars, std::string name);
 
@@ -57,14 +55,14 @@ namespace ana
   class NuFitPenalizer: public IExperiment
   {
   public:
-    double ChiSq(osc::IOscCalculatorAdjustable* calc,
+    double ChiSq(osc::IOscCalcAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
   };
 
   class Penalizer_GlbLike: public IExperiment
   {
   public:
-    Penalizer_GlbLike(osc::IOscCalculatorAdjustable* cvcalc, int hietrue, bool weakOnly=false);
+    Penalizer_GlbLike(osc::IOscCalcAdjustable* cvcalc, int hietrue, bool weakOnly=false);
 
     double Dmsq21CV() const {return fDmsq21;}
     double Th12CV() const {return fTh12;}
@@ -80,7 +78,7 @@ namespace ana
     double Th13Err() const {return fTh13Err;}
     double RhoErr() const {return fRhoErr;}
 
-    double ChiSq(osc::IOscCalculatorAdjustable* calc,
+    double ChiSq(osc::IOscCalcAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
 
   protected:

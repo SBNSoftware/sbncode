@@ -13,7 +13,7 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  double ReactorExperiment::ChiSq(osc::IOscCalculatorAdjustable* osc,
+  double ReactorExperiment::ChiSq(osc::IOscCalcAdjustable* osc,
                                   const SystShifts& /*syst*/) const
   {
     return util::sqr((kFitSinSq2Theta13.GetValue(osc)-fBestFit)/fSigma);

@@ -65,7 +65,7 @@ void Legend(const std::string& title)
   leg->Draw();
 }
 
-void PlotFluxShiftEffects(osc::IOscCalculator* osc,
+void PlotFluxShiftEffects(osc::IOscCalc* osc,
                           IPrediction& predNDFHC, IPrediction& predNDRHC,
                           IPrediction& predFDNumuFHC, IPrediction& predFDNueFHC,
                           IPrediction& predFDNumuRHC, IPrediction& predFDNueRHC)
@@ -130,7 +130,7 @@ void joint_fit_flux(bool reload = false)
 
   Loaders dummyLoaders; // PredictionGenerator insists on this
 
-  osc::IOscCalculatorAdjustable* inputOsc = DefaultOscCalc();
+  osc::IOscCalcAdjustable* inputOsc = DefaultOscCalc();
   inputOsc->SetdCP(1.5*TMath::Pi());
 
   if(reload || TFile(stateFname).IsZombie()){
@@ -327,7 +327,7 @@ void joint_fit_flux(bool reload = false)
   // Set up the fit
   Fitter fit(&expt, oscFitVars, systFitVars);
   // Where will we start our search?
-  osc::IOscCalculatorAdjustable* oscSeed = DefaultOscCalc();
+  osc::IOscCalcAdjustable* oscSeed = DefaultOscCalc();
   SystShifts systSeed = SystShifts::Nominal();
   // Do the fit - updates the "seed" variables with the best fit point
   fit.Fit(oscSeed, systSeed);

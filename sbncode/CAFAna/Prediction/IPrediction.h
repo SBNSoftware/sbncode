@@ -4,8 +4,6 @@
 
 #include "CAFAna/Core/OscillatableSpectrum.h"
 
-namespace osc{class IOscCalculator;}
-
 class TDirectory;
 
 namespace ana
@@ -62,15 +60,15 @@ namespace ana
   public:
     virtual ~IPrediction(){}
     virtual Spectrum PredictUnoscillated() const;
-    virtual Spectrum Predict(osc::IOscCalculator* calc) const = 0;
-    virtual Spectrum PredictSyst(osc::IOscCalculator* calc,
+    virtual Spectrum Predict(osc::IOscCalc* calc) const = 0;
+    virtual Spectrum PredictSyst(osc::IOscCalc* calc,
                                  const SystShifts& syst) const;
 
-    virtual Spectrum PredictComponent(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponent(osc::IOscCalc* calc,
                                       Flavors::Flavors_t flav,
                                       Current::Current_t curr,
                                       Sign::Sign_t sign) const = 0;
-    virtual Spectrum PredictComponentSyst(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponentSyst(osc::IOscCalc* calc,
                                           const SystShifts& syst,
                                           Flavors::Flavors_t flav,
                                           Current::Current_t curr,

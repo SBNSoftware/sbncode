@@ -26,12 +26,12 @@ namespace ana
     static std::unique_ptr<PredictionNoOsc> LoadFrom(TDirectory* dir);
     virtual void SaveTo(TDirectory* dir) const override;
 
-    virtual Spectrum Predict(osc::IOscCalculator* /*calc*/) const override
+    virtual Spectrum Predict(osc::IOscCalc* /*calc*/) const override
     {
       return fSpectrum;
     }
 
-    virtual Spectrum PredictComponent(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponent(osc::IOscCalc* calc,
                                       Flavors::Flavors_t flav,
                                       Current::Current_t curr,
                                       Sign::Sign_t sign) const override;

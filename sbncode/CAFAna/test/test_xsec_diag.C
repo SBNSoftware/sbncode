@@ -158,7 +158,7 @@ void test_xsec_diag(bool reload = false)
   std::cout << "Done loading state" << std::endl;
 
   // Make matching FD Asimov fake data, plus some oscillations
-  osc::IOscCalculatorAdjustable* inputOsc = DefaultOscCalc();
+  osc::IOscCalcAdjustable* inputOsc = DefaultOscCalc();
   inputOsc->SetdCP(1.5*TMath::Pi());
 
   // What systematic parameters will we shift in the fake data?

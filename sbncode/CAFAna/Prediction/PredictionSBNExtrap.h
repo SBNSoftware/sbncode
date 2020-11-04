@@ -22,9 +22,9 @@ namespace ana
                         const Var& wei_data = kUnweighted);
     virtual ~PredictionSBNExtrap();
 
-    virtual Spectrum Predict(osc::IOscCalculator* calc) const override;
+    virtual Spectrum Predict(osc::IOscCalc* calc) const override;
 
-    virtual Spectrum PredictComponent(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponent(osc::IOscCalc* calc,
                                       Flavors::Flavors_t flav,
                                       Current::Current_t curr,
                                       Sign::Sign_t sign) const override;

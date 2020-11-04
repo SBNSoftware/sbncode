@@ -8,7 +8,7 @@ namespace ana
 {
   //----------------------------------------------------------------------
   double IConstrainedFitVar::Penalty(double val,
-                                     osc::IOscCalculatorAdjustable*) const
+                                     osc::IOscCalcAdjustable*) const
   {
     const double lo = LowLimit();
     const double hi = HighLimit();

@@ -7,7 +7,7 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  double GaussianConstraint::ChiSq(osc::IOscCalculatorAdjustable* osc,
+  double GaussianConstraint::ChiSq(osc::IOscCalcAdjustable* osc,
 				   const SystShifts& /*syst*/) const
   {
     return util::sqr((fVar->GetValue(osc)-fMean)/fSigma);

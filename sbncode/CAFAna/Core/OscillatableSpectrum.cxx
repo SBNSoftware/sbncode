@@ -10,7 +10,7 @@
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TDirectory.h"
 #include "TH2.h"
@@ -258,7 +258,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum OscillatableSpectrum::Oscillated(osc::IOscCalculator* calc,
+  Spectrum OscillatableSpectrum::Oscillated(osc::IOscCalc* calc,
                                             int from, int to) const
   {
     // TODO remove this check in a little while, once no one is using old state

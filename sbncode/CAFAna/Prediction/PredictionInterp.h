@@ -38,7 +38,7 @@ namespace ana
     ///                fits can't be split out reasonably. For RHC it's
     ///                important not to conflate them.
     PredictionInterp(std::vector<const ISyst*> systs,
-                     osc::IOscCalculator* osc,
+                     osc::IOscCalc* osc,
                      const IPredictionGenerator& predGen,
                      Loaders& loaders,
                      const SystShifts& shiftMC = kNoShift,
@@ -48,15 +48,15 @@ namespace ana
 
 
 
-    virtual Spectrum Predict(osc::IOscCalculator* calc) const override;
-    virtual Spectrum PredictSyst(osc::IOscCalculator* calc,
+    virtual Spectrum Predict(osc::IOscCalc* calc) const override;
+    virtual Spectrum PredictSyst(osc::IOscCalc* calc,
                                  const SystShifts& shift) const override;
 
-    virtual Spectrum PredictComponent(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponent(osc::IOscCalc* calc,
                                       Flavors::Flavors_t flav,
                                       Current::Current_t curr,
                                       Sign::Sign_t sign) const override;
-    virtual Spectrum PredictComponentSyst(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponentSyst(osc::IOscCalc* calc,
                                           const SystShifts& shift,
                                           Flavors::Flavors_t flav,
                                           Current::Current_t curr,
@@ -70,28 +70,28 @@ namespace ana
     void MinimizeMemory();
 
     void DebugPlot(const ISyst* syst,
-                   osc::IOscCalculator* calc,
+                   osc::IOscCalc* calc,
                    Flavors::Flavors_t flav = Flavors::kAll,
                    Current::Current_t curr = Current::kBoth,
                    Sign::Sign_t sign = Sign::kBoth) const;
 
     // If \a savePattern is not empty, print each pad. If it contains "%s" then
     // multiple files will be written, one per systematic.
-    void DebugPlots(osc::IOscCalculator* calc,
+    void DebugPlots(osc::IOscCalc* calc,
 		    const std::string& savePattern = "",
 		    Flavors::Flavors_t flav = Flavors::kAll,
 		    Current::Current_t curr = Current::kBoth,
 		    Sign::Sign_t sign = Sign::kBoth) const;
 
-    void SetOscSeed(osc::IOscCalculator* oscSeed);
+    void SetOscSeed(osc::IOscCalc* oscSeed);
 
     void DebugPlotColz(const ISyst* syst,
-                       osc::IOscCalculator* calc,
+                       osc::IOscCalc* calc,
                        Flavors::Flavors_t flav = Flavors::kAll,
                        Current::Current_t curr = Current::kBoth,
                        Sign::Sign_t sign = Sign::kBoth) const;
 
-    void DebugPlotsColz(osc::IOscCalculator* calc,
+    void DebugPlotsColz(osc::IOscCalc* calc,
                         const std::string& savePattern = "",
                         Flavors::Flavors_t flav = Flavors::kAll,
                         Current::Current_t curr = Current::kBoth,
@@ -135,7 +135,7 @@ namespace ana
                            const SystShifts& shift) const;
 
     /// Helper for PredictComponentSyst
-    Spectrum ShiftedComponent(osc::IOscCalculator* calc,
+    Spectrum ShiftedComponent(osc::IOscCalc* calc,
                               const TMD5* hash,
                               const SystShifts& shift,
                               Flavors::Flavors_t flav,
@@ -165,7 +165,7 @@ namespace ana
     mutable std::unordered_map<const ISyst*, ShiftedPreds> fPreds;
 
     /// The oscillation values we assume when evaluating the coefficients
-    osc::IOscCalculator* fOscOrigin;
+    osc::IOscCalc* fOscOrigin;
 
     mutable Spectrum fBinning; ///< Dummy spectrum to provide binning
 
@@ -194,6 +194,19 @@ namespace ana
     void InitFitsHelper(ShiftedPreds& sp,
                         std::vector<std::vector<std::vector<Coeffs>>>& fits,
                         Sign::Sign_t sign) const;
+<<<<<<< HEAD
+=======
+
+     /// Helper for \ref Derivative
+    void ComponentDerivative(osc::IOscCalc* calc,
+                             Flavors::Flavors_t flav,
+                             Current::Current_t curr,
+                             Sign::Sign_t sign,
+                             CoeffsType type,
+                             const SystShifts& shift,
+                             double pot,
+                             std::unordered_map<const ISyst*, std::vector<double>>& dp) const;
+>>>>>>> Pick up OscLib as an external product rather than duplicating it here.
   };
 
 }

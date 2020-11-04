@@ -63,7 +63,7 @@ void Legend(const std::string& title)
 void StackPlot(const PredictionScaleComp& pred,
                const std::string& title,
                double pot,
-               osc::IOscCalculator* calc = 0)
+               osc::IOscCalc* calc = 0)
 {
   std::map<EVALORCategory, Color_t> cols;
   cols[nu_ccqe_1] = kRed;
@@ -127,7 +127,7 @@ void StackPlot(const PredictionScaleComp& pred,
   leg->Draw();
 }
 
-void PlotXSecShiftEffects(osc::IOscCalculator* osc,
+void PlotXSecShiftEffects(osc::IOscCalc* osc,
                           IPrediction& predNDFHC, IPrediction& predNDRHC,
                           IPrediction& predFDNumuFHC, IPrediction& predFDNueFHC,
                           IPrediction& predFDNumuRHC, IPrediction& predFDNueRHC)
@@ -297,7 +297,7 @@ void joint_fit(bool reload = false)
   std::cout << "Done loading state" << std::endl;
 
   // Make matching FD Asimov fake data, plus some oscillations
-  osc::IOscCalculatorAdjustable* inputOsc = DefaultOscCalc();
+  osc::IOscCalcAdjustable* inputOsc = DefaultOscCalc();
   inputOsc->SetdCP(1.5*TMath::Pi());
 
   new TCanvas;
@@ -373,7 +373,7 @@ void joint_fit(bool reload = false)
   // Set up the fit
   Fitter fit(&expt, oscFitVars, systFitVars);
   // Where will we start our search?
-  osc::IOscCalculatorAdjustable* oscSeed = DefaultOscCalc();
+  osc::IOscCalcAdjustable* oscSeed = DefaultOscCalc();
   SystShifts systSeed = SystShifts::Nominal();
   // Do the fit - updates the "seed" variables with the best fit point
   fit.Fit(oscSeed, systSeed);

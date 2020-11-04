@@ -6,7 +6,7 @@
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "CAFAna/Prediction/PredictionInterp.h"
 #include "CAFAna/Analysis/Calcs.h"
-#include "OscLib/OscCalculatorSterile.h"
+#include "OscLib/OscCalcSterile.h"
 #include "StandardRecord/StandardRecord.h"
 #include "CAFAna/Vars/FitVarsSterile.h"
 #include "CAFAna/Analysis/FitAxis.h"
@@ -129,7 +129,7 @@ void nus(const char* stateFname = basicFname, int nmock = 0, bool useSysts = tru
     const FitAxis kCoarseAxSinSq2ThetaMuMu(&kFitSinSq2ThetaMuMu, 20, 1e-3, 1, true);
     const FitAxis kCoarseAxDmSq(&kFitDmSqSterile, 20, 2e-2, 100, true);
 
-    osc::IOscCalculatorAdjustable* c = DefaultSterileApproxCalc();
+    osc::IOscCalcAdjustable* c = DefaultSterileApproxCalc();
     c->SetL(kBaselineSBND); 
     SingleSampleExperiment e1(&pred_nd_numu, pred_nd_numu.Predict(c).MockData(sbndPOT));
 

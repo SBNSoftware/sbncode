@@ -5,7 +5,7 @@
 
 #include "CAFAna/Analysis/ExpInfo.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TDirectory.h"
 #include "TObjString.h"
@@ -35,7 +35,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionSBNExtrap::Predict(osc::IOscCalculator* calc) const
+  Spectrum PredictionSBNExtrap::Predict(osc::IOscCalc* calc) const
   {
     return PredictComponent(calc,
                             Flavors::kAll,
@@ -44,14 +44,14 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionSBNExtrap::PredictComponent(osc::IOscCalculator* calc,
+  Spectrum PredictionSBNExtrap::PredictComponent(osc::IOscCalc* calc,
                                                  Flavors::Flavors_t flav,
                                                  Current::Current_t curr,
                                                  Sign::Sign_t sign) const
   {
-    ((osc::IOscCalculatorAdjustable*)calc)->SetL(kBaselineSBND);
+    ((osc::IOscCalcAdjustable*)calc)->SetL(kBaselineSBND);
     const Ratio r = fDataND / fPredND.Predict(calc);
-    ((osc::IOscCalculatorAdjustable*)calc)->SetL(kBaselineIcarus);
+    ((osc::IOscCalcAdjustable*)calc)->SetL(kBaselineIcarus);
     return r * fPredFD.PredictComponent(calc, flav, curr, sign);
   }
 

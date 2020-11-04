@@ -1,10 +1,10 @@
 #pragma once
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 namespace ana
 {
-  class OscCalcSterileApprox: public osc::IOscCalculator
+  class OscCalcSterileApprox: public osc::IOscCalc
   {
   public:
     // if flavAfter == 0, give the active fraction
@@ -40,7 +40,7 @@ namespace ana
     double fL;
   };
 
-  class OscCalcSterileApproxAdjustable: public osc::IOscCalculatorAdjustable
+  class OscCalcSterileApproxAdjustable: public osc::IOscCalcAdjustable
   {
   public:
     OscCalcSterileApprox calc;
@@ -61,18 +61,18 @@ namespace ana
 
     virtual void SetL     (double L     ) override {calc.SetL(L);}
     virtual void SetRho   (double rho   ) override {}
-    virtual void SetDmsq21(double dmsq21) override {}
-    virtual void SetDmsq32(double dmsq32) override {}
-    virtual void SetTh12  (double th12  ) override {}
-    virtual void SetTh13  (double th13  ) override {}
-    virtual void SetTh23  (double th23  ) override {}
-    virtual void SetdCP   (double dCP   ) override {}
+    virtual void SetDmsq21(const double& dmsq21) override {}
+    virtual void SetDmsq32(const double& dmsq32) override {}
+    virtual void SetTh12  (const double& th12  ) override {}
+    virtual void SetTh13  (const double& th13  ) override {}
+    virtual void SetTh23  (const double& th23  ) override {}
+    virtual void SetdCP   (const double& dCP   ) override {}
 
     TMD5* GetParamsHash() const override {return calc.GetParamsHash();}
   };
 
   OscCalcSterileApproxAdjustable* DefaultSterileApproxCalc();
 
-  const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalculator* calc, bool allowFail = false);
-  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalculator* calc, bool allowFail = false);
+  const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalc* calc, bool allowFail = false);
+  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalc* calc, bool allowFail = false);
 }

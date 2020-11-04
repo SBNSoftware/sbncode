@@ -13,7 +13,7 @@
 #include "CAFAna/Systs/SBNWeightSysts.h"
 #include "CAFAna/Systs/SBNFluxSysts.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TFile.h"
 

@@ -17,8 +17,6 @@ class TGraph;
 class TH2;
 class TH2F;
 
-namespace osc{class IOscCalculatorAdjustable;}
-
 namespace ana
 {
   class IExperiment;
@@ -45,7 +43,7 @@ namespace ana
     /// \param systSeedPts Try all of these systematic combinations as seeds
     /// \param parallel Use all the cores on this machine? Be careful...
     Surface(const IExperiment* expt,
-            osc::IOscCalculatorAdjustable* calc,
+            osc::IOscCalcAdjustable* calc,
             const IFitVar* xvar, int nbinsx, double xmin, double xmax,
             const IFitVar* yvar, int nbinsy, double ymin, double ymax,
             const std::vector<const IFitVar*>& profVars = {},
@@ -66,7 +64,7 @@ namespace ana
     /// \param systSeedPts Try all of these systematic combinations as seeds
     /// \param parallel Use all the cores on this machine? Be careful...
     Surface(const IExperiment* expt,
-            osc::IOscCalculatorAdjustable* calc,
+            osc::IOscCalcAdjustable* calc,
             const FitAxis& xax,
             const FitAxis& yax,
             const std::vector<const IFitVar*>& profVars = {},
@@ -115,7 +113,7 @@ namespace ana
 
     void FillSurface(const std::string& progTitle,
                      const IExperiment* expt,
-                     osc::IOscCalculatorAdjustable* calc,
+                     osc::IOscCalcAdjustable* calc,
                      const FitAxis& xax, const FitAxis& yax,
                      const std::vector<const IFitVar*>& profVars,
                      const std::vector<const ISyst*>& profSysts,
@@ -123,7 +121,7 @@ namespace ana
                      const std::vector<SystShifts>& systSeedPts);
 
     void FillSurfacePoint(const IExperiment* expt,
-                          osc::IOscCalculatorAdjustable* calc,
+                          osc::IOscCalcAdjustable* calc,
                           const FitAxis& xax, double x,
                           const FitAxis& yax, double y,
                           const std::vector<const IFitVar*>& profVars,

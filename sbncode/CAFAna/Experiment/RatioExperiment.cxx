@@ -16,7 +16,7 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  double RatioExperiment::ChiSq(osc::IOscCalculatorAdjustable* osc,
+  double RatioExperiment::ChiSq(osc::IOscCalcAdjustable* osc,
                                 const SystShifts& syst) const
   {
     osc->SetL(kBaselineSBND);

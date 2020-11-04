@@ -10,7 +10,7 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  double MultiExperiment::ChiSq(osc::IOscCalculatorAdjustable* osc,
+  double MultiExperiment::ChiSq(osc::IOscCalcAdjustable* osc,
                                 const SystShifts& syst) const
   {
     double ret = 0;

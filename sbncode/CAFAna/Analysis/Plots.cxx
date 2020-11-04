@@ -1,5 +1,4 @@
 #include "CAFAna/Analysis/Plots.h"
-//#include "CAFAna/Systs/NueSystsSecondAna.h"
 
 #include "CAFAna/Analysis/Style.h"
 #include "CAFAna/Prediction/IPrediction.h"
@@ -94,7 +93,7 @@ namespace ana
   //----------------------------------------------------------------------
   TH1* DataMCComparisonComponents(const Spectrum& data,
                                   const IPrediction* mc,
-                                  osc::IOscCalculator* calc)
+                                  osc::IOscCalc* calc)
   {
     TH1* ret = 0;
 
@@ -145,7 +144,7 @@ namespace ana
   }
 
   TH1* GetMCSystTotal(const IPrediction* mc,
-		      osc::IOscCalculator* calc,
+		      osc::IOscCalc* calc,
 		      const SystShifts& shift,
 		      std::string hist_name,
 		      double pot,
@@ -157,7 +156,7 @@ namespace ana
   }
   
   TH1* GetMCTotal(const IPrediction* mc,
-		  osc::IOscCalculator* calc,
+		  osc::IOscCalc* calc,
 		  std::string hist_name,
 		  double pot,
 		  bool force1D)
@@ -166,7 +165,7 @@ namespace ana
   }
 
   std::vector<TH1*> GetMCComponents(const IPrediction* mc,
-				    osc::IOscCalculator* calc,
+				    osc::IOscCalc* calc,
 				    std::string hist_name,
 				    double pot,
 				    bool force1D)
@@ -175,7 +174,7 @@ namespace ana
   }
 
   std::vector<TH1*> GetMCSystComponents(const IPrediction* mc,
-					osc::IOscCalculator* calc,
+					osc::IOscCalc* calc,
 					const SystShifts& shift,
 					std::string hist_name,
 					double pot,
@@ -277,7 +276,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   std::vector<TH1*> GetMCTotalForSystShifts(const IPrediction* mc,
-					    osc::IOscCalculator* calc,
+					    osc::IOscCalc* calc,
 					    const ISyst* syst, 
 					    std::string hist_base_name,
 					    double pot,
@@ -299,7 +298,7 @@ namespace ana
   //----------------------------------------------------------------------
   void DataMCRatio(const Spectrum& data,
                    const IPrediction* mc,
-                   osc::IOscCalculator* calc,
+                   osc::IOscCalc* calc,
                    double miny, double maxy)
   {
     DataMCRatio(data, mc->Predict(calc), miny, maxy);
@@ -328,7 +327,7 @@ namespace ana
   //----------------------------------------------------------------------
   void DataMCAreaNormalizedRatio(const Spectrum& data,
                                  const IPrediction* mc,
-                                 osc::IOscCalculator* calc,
+                                 osc::IOscCalc* calc,
                                  double miny, double maxy)
   {
     DataMCAreaNormalizedRatio(data, mc->Predict(calc), miny, maxy);
@@ -377,7 +376,7 @@ namespace ana
   //----------------------------------------------------------------------
   void PlotWithSystErrorBand(IPrediction* pred,
                              const std::vector<const ISyst*>& systs,
-                             osc::IOscCalculator* calc,
+                             osc::IOscCalc* calc,
                              double pot,
                              int col, int errCol, float headroom,
 			     bool newaxis)
