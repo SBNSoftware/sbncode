@@ -23,11 +23,9 @@
 namespace ana
 {
   // Duplicate here because we can't include Vars.h
-  const Var kTrueE = SIMPLEVAR(mc.nu[0].E); // return sr->truth[0].neutrino.energy;});
+  const Var kTrueE([](const caf::SRProxy* sr){return sr->mc.nu[0].E;});
 
-  // convert m->km
-  //const Var kBaseline = SIMPLEVAR(mc.nu[0].baseline); // return sr->truth[0].neutrino.energy;});
-  const Var kBaseline([](const caf::SRProxy* sr){return 1;}); // return sr->truth[0].neutrino.baseline / 1000;});
+  const Var kBaseline([](const caf::SRProxy* sr){return sr->mc.nu[0].baseline;});
 
   const Var kTrueLOverE = kBaseline / kTrueE;
 
@@ -43,7 +41,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -62,7 +60,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     Binning bins1D = fBins[0];
     if(fBins.size() > 1){
@@ -98,7 +96,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -115,7 +113,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
 
     DontAddDirectory guard;
 
@@ -134,7 +132,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
   }
 
   //----------------------------------------------------------------------
@@ -146,7 +144,7 @@ namespace ana
       fCachedOsc(0, {}, {}, 0, 0),
       fCachedHash(0)
   {
-    fTrueLabel = "True Energy (GeV)";
+    fTrueLabel = "True baseline / True energy (km / GeV)";
   }
 
   //----------------------------------------------------------------------
@@ -272,6 +270,10 @@ namespace ana
       std::cout << "\nWarning: OscillatableSpectrum with legacy non-L/E y-axis detected. Will oscillate correctly for now, but this code will eventually be removed\n" << std::endl;
     }
 
+    // POT = 0 implies empty spectrum and oscillated result will also always be
+    // empty
+    if(fCachedHash && fPOT == 0) return fCachedOsc;
+
     TMD5* hash = calc->GetParamsHash();
     if(hash && fCachedHash && *hash == *fCachedHash){
       delete hash;
@@ -294,6 +296,9 @@ namespace ana
   //----------------------------------------------------------------------
   OscillatableSpectrum& OscillatableSpectrum::operator+=(const OscillatableSpectrum& rhs)
   {
+    // If someone actually needs this we can go in and fix the behaviour
+    assert(fPOT);
+
     if(rhs.fPOT){
       fHist->Add(rhs.fHist, fPOT/rhs.fPOT);
     }

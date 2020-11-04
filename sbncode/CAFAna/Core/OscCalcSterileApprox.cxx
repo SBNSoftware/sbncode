@@ -172,6 +172,19 @@ namespace ana
   }
 
   //---------------------------------------------------------------------------
+  TMD5* OscCalcSterileApprox::GetParamsHash() const
+  {
+    TMD5* ret = new TMD5;
+    const std::string txt = "SterileApprox";
+    ret->Update((unsigned char*)txt.c_str(), txt.size());
+    const int kNumParams = 4;
+    double buf[kNumParams] = {fDmsq, fSinSq2ThetaMuMu, fSinSq2ThetaMuE, fL};
+    ret->Update((unsigned char*)buf, sizeof(double)*kNumParams);
+    ret->Final();
+    return ret;
+  }
+
+  //---------------------------------------------------------------------------
   OscCalcSterileApproxAdjustable* DefaultSterileApproxCalc()
   {
     auto ret = new OscCalcSterileApproxAdjustable;

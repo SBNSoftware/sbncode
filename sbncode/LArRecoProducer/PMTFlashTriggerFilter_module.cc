@@ -18,7 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include <memory>
-#include "sbncode/LArRecoProducer/Products/FlashTriggerPrimitive.hh"
+#include "sbnobj/Common/Reco/FlashTriggerPrimitive.hh"
 
 #include <memory>
 #include <iostream>
@@ -26,7 +26,6 @@
 
 namespace sbn {
   class PMTFlashTriggerFilter;
-  bool HasTrigger(const std::vector<FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold);
 }
 
 
@@ -51,6 +50,8 @@ private:
   unsigned fNPMTAboveThreshold;
   int fPMTTriggerThreshold;
   bool fStoreDataProduct;
+
+  bool HasTrigger(const std::vector<FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold);
 };
 
 
@@ -73,7 +74,7 @@ bool sbn::PMTFlashTriggerFilter::filter(art::Event& e)
 
   bool ret = false;
   if (flashtrig_handle.isValid()) {
-    ret = sbn::HasTrigger(*flashtrig_handle, fPMTTriggerThreshold, fNPMTAboveThreshold);
+    ret = HasTrigger(*flashtrig_handle, fPMTTriggerThreshold, fNPMTAboveThreshold);
   }
 
   if (fStoreDataProduct) {
@@ -85,7 +86,7 @@ bool sbn::PMTFlashTriggerFilter::filter(art::Event& e)
   return ret;
 }
 
-bool sbn::HasTrigger(const std::vector<sbn::FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold) {
+bool sbn::PMTFlashTriggerFilter::HasTrigger(const std::vector<sbn::FlashTriggerPrimitive> &primitives, int threshold, unsigned n_above_threshold) {
   if (n_above_threshold == 0) return true;
 
   std::map<int, std::vector<unsigned>> above_threshold;

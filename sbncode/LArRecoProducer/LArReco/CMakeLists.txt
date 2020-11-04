@@ -14,6 +14,6 @@ art_make_library( LIBRARY_NAME sbn_LArReco
 		    ${FHICLCPP}
                     cetlib cetlib_except
 		    lardataobj_RecoBase
-		    Minuit
-		    Minuit2
+		    ${ROOT_MINUIT}
+		    ${ROOT_MINUIT2}
                 )

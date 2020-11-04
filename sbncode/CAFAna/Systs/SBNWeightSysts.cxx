@@ -1,4 +1,6 @@
 // None of this exists in the CAFs at present
+#pragma message "WARNING: SBNWeightSysts temporarily disabled"
+
 #if 0
 
 #include "CAFAna/Systs/SBNWeightSysts.h"
@@ -28,8 +30,8 @@ namespace ana
   // --------------------------------------------------------------------------
   double UniverseWeight::operator()(const caf::SRProxy* sr) const
   {
-    if(sr->truth.empty()) return 1;
-    const auto& ws = sr->truth[0].weights;
+    if(sr->mc.nu.empty()) return 1;
+    const auto& ws = sr->mc.nu[0].weights;
 
     // This hack improves throughput vastly
     if(fUnivIdx == 0){
@@ -88,9 +90,9 @@ namespace ana
   // --------------------------------------------------------------------------
   void SBNWeightSyst::Shift(double x, caf::SRProxy* sr, double& weight) const
   {
-    if(sr->truth.empty()) return;
+    if(sr->mc.nu.empty()) return;
 
-    const auto& ws = sr->truth[0].weights;
+    const auto& ws = sr->mc.nu[0].weights;
 
     const int i = GetIdx(ws);
     const Univs u = GetUnivs(x);

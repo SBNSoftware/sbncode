@@ -37,11 +37,11 @@
 
 namespace CAFRecoUtils{
 
-  std::vector<std::pair<int, float>> AllTrueParticleIDEnergyMatches(const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1);
-  float TotalHitEnergy(const std::vector<art::Ptr<recob::Hit> >& hits);
+  std::vector<std::pair<int, float>> AllTrueParticleIDEnergyMatches(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit> >& hits, bool rollup_unsaved_ids=1);
+  float TotalHitEnergy(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit> >& hits);
 
-  float TrackPurity(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
-  float TrackCompletion(int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
+  float TrackPurity(const detinfo::DetectorClocksData &clockData, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
+  float TrackCompletion(const detinfo::DetectorClocksData &clockData, int mcparticle_id, const std::vector<art::Ptr<recob::Hit>> &reco_track_hits);
 
 }
 #endif

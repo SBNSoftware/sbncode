@@ -40,7 +40,7 @@ namespace caf
     Atom<bool> CutClearCosmic {
       Name("CutClearCosmic"),
       Comment("Cut slices which are marked as a 'clear-cosmic' by pandora"),
-      true
+      false
     };
 
     Atom<bool> SelectOneSlice {
@@ -99,7 +99,13 @@ namespace caf
     Atom<string> RecoShowerLabel {
       Name("RecoShowerLabel"),
       Comment("Base label of reco-base shower producer."),
-      "tracs"
+      "pandoraShowerSBN"
+    };
+
+    Atom<string> RecoShowerSelectionLabel {
+      Name("RecoShowerSelectionLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "pandoraShowerSelectionVars"
     };
 
     // Atom<string> RecoShowerEMLabel {

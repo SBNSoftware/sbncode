@@ -18,12 +18,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "Products/CRTHit.hh"
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
-#ifdef CRTHit_hh_
-#undef CRTHit_hh_
-#endif
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+//#include "Products/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit_Legacy.hh"
 
 #include <memory>
 

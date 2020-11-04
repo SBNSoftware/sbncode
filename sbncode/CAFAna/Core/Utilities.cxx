@@ -16,6 +16,7 @@
 #include "TVector3.h"
 #include "TVectorD.h"
 
+#include <vector>
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -150,7 +151,7 @@ namespace ana
         return 2*(e-o + o*log(o/e));
       }
       else{
-        return 2*(e-o);
+        return 2*e;
       }
     }
   }
@@ -725,8 +726,12 @@ namespace ana
   //----------------------------------------------------------------------
   TF1* FitToFourier::Fit() const
   {
-    double s[fNOsc] = {0};
-    double c[fNOsc] = {0};
+    //double s[fNOsc] = {0};
+    //double c[fNOsc] = {0};
+
+    std::vector<double> s(fNOsc, 0.0);
+    std::vector<double> c(fNOsc, 0.0);
+
     int nBins = 0;
     for(int i = 1; i <= fHist->GetNbinsX(); ++i){
       const double x = M_PI * fHist->GetXaxis()->GetBinCenter(i);

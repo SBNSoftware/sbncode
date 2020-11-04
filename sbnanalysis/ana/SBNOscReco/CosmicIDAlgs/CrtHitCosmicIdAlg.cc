@@ -30,7 +30,7 @@ void CrtHitCosmicIdAlg::reconfigure(const core::ProviderManager &manager, const 
 
 
 // Returns true if matched to CRTHit outside beam time
-bool CrtHitCosmicIdAlg::CrtHitCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTHit> crtHits) {
+bool CrtHitCosmicIdAlg::CrtHitCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTHit> crtHits) {
 
   // Get the closest matched time from CRT hits
   double crtHitTime = t0Alg.T0FromCRTHits(track, hits, crtHits);

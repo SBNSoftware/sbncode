@@ -1,7 +1,6 @@
 #pragma once
 
-// None of this exists in the CAFs at present
-#if 0
+#if 0 // temporarily disabled. None of this exists in the CAFs at present
 
 #include "CAFAna/Core/ISyst.h"
 #include "CAFAna/Core/Var.h"

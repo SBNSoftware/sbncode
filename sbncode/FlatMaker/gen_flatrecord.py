@@ -141,7 +141,8 @@ config = parser.xml_generator_configuration_t(
     xml_generator_path=generator_path,
     xml_generator=generator_name,
     include_paths=path,
-    cflags='-std=c++1z -DGEN_FLATRECORD_CONTEXT -Wno-unknown-warning-option'#,
+    # This _Float16 definition is a hack for clang (c7) builds. TODO revisit
+    cflags='-std=c++1z -DGEN_FLATRECORD_CONTEXT -D_Float16=short -Wno-unknown-warning-option'#,
 #    start_with_declarations='caf::StandardRecord'
     )
 

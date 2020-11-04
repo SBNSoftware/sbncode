@@ -13,7 +13,7 @@ namespace ana
   /// it inline as a lambda function.
   const Cut kIsNC([](const caf::SRProxy* sr)
                   {
-                    return sr->mc.nu[0].iscc;
+                    return !sr->mc.nu[0].iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -27,7 +27,6 @@ namespace ana
 
     bool operator()(const caf::SRProxy* sr) const
     {
-
       return sr->mc.nu[0].iscc &&
         abs(sr->mc.nu[0].initpdg) == fPdgOrig &&
         abs(sr->mc.nu[0].pdg) == fPdg;

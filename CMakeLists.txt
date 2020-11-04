@@ -14,7 +14,8 @@
 
 
 # use cmake 2.8 or later
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.12)
+#cmake_minimum_required (VERSION 3.12...3.14 FATAL_ERROR)
 
 project(sbncode)
 
@@ -44,16 +45,17 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   WERROR
   NO_UNDEFINED
   ALLOW_DEPRECATIONS
-  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs
+  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs -I $ENV{CLANG_FQ_DIR}/include/c++/v1
 )
 
 cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
 find_ups_product(cetbuildtools v05_14_00)
-find_ups_product(sbndcode v06_67_00)
-find_ups_product(uboonecode v06_67_00)
-find_ups_product(icaruscode v06_67_00)
+find_ups_product(larsoft v09_00_00)
+find_ups_product(artdaq_core v3_06_01)
+#find_ups_product(sbndcode v06_67_00)
+#find_ups_product(uboonecode v06_67_00)
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
@@ -66,4 +68,3 @@ add_subdirectory(fcl)
 
 # packaging utility
 include(UseCPack)
-

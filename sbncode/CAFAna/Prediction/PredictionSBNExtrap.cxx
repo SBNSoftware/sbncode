@@ -14,17 +14,18 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  // TODO need data and MC shifts/weights?
   PredictionSBNExtrap::PredictionSBNExtrap(Loaders& loadersND,
                                            Loaders& loadersFD,
                                            const HistAxis& axis,
                                            const Cut& cut,
-                                           const SystShifts& shift,
-                                           const Var& wei)
-    : fPredND(loadersND, axis, cut, shift, wei),
-      fPredFD(loadersFD, axis, cut, shift, wei),
+                                           const SystShifts& shift_mc,
+                                           const Var& wei_mc,
+                                           const SystShifts& shift_data,
+                                           const Var& wei_data)
+    : fPredND(loadersND, axis, cut, shift_mc, wei_mc),
+      fPredFD(loadersFD, axis, cut, shift_mc, wei_mc),
       // TODO how on earth do fake ND oscillations get in here?
-      fDataND(loadersND.GetLoader(Loaders::kData), axis, cut, shift, wei)
+      fDataND(loadersND.GetLoader(Loaders::kData), axis, cut, shift_data, wei_data)
   {
   }
 
@@ -48,8 +49,6 @@ namespace ana
                                                  Current::Current_t curr,
                                                  Sign::Sign_t sign) const
   {
-    // TODO think hard about what ratios exactly we want to take
-    // TODO the ND POT never comes into this :(
     ((osc::IOscCalculatorAdjustable*)calc)->SetL(kBaselineSBND);
     const Ratio r = fDataND / fPredND.Predict(calc);
     ((osc::IOscCalculatorAdjustable*)calc)->SetL(kBaselineIcarus);
@@ -121,8 +120,11 @@ namespace ana
   SBNExtrapGenerator::SBNExtrapGenerator(Loaders& loaders_nd,
                                          const HistAxis& ax,
                                          const Cut& cut,
-                                         const Var& wei)
-    : fLoadersND(loaders_nd), fAxis(ax), fCut(cut), fWeight(wei)
+                                         const Var& wei_mc,
+                                         const SystShifts& shift_data,
+                                         const Var& wei_data)
+    : fLoadersND(loaders_nd), fAxis(ax), fCut(cut), fWeightMC(wei_mc),
+      fShiftData(shift_data), fWeightData(wei_data)
   {
   }
 
@@ -130,6 +132,7 @@ namespace ana
   std::unique_ptr<IPrediction> SBNExtrapGenerator::Generate(Loaders& loaders_fd,
                                                             const SystShifts& shiftMC) const
   {
-    return std::unique_ptr<IPrediction>(new PredictionSBNExtrap(fLoadersND, loaders_fd, fAxis, fCut, shiftMC, fWeight));
+    // No data shifts or weights
+    return std::unique_ptr<IPrediction>(new PredictionSBNExtrap(fLoadersND, loaders_fd, fAxis, fCut, shiftMC, fWeightMC, fShiftData, fWeightData));
   }
 }

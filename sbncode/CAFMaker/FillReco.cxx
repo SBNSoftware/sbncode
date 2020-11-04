@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////
 // \file    FillReco.cxx
-// \brief   Fill reco SR branches 
+// \brief   Fill reco SR branches
 // \author  $Author: psihas@fnal.gov
 //////////////////////////////////////////////////////////////////////
 
@@ -13,7 +13,7 @@ namespace caf
 
   //......................................................................
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic) {
-    return (slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
+    return (!slice.is_clear_cosmic || !cut_clear_cosmic) // No clear cosmics
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
@@ -26,16 +26,19 @@ namespace caf
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
     srhit.position.z = hit.z_pos;
-    
+
     srhit.position_err.x = hit.x_err;
     srhit.position_err.y = hit.y_err;
     srhit.position_err.z = hit.z_err;
   }
 
   //......................................................................
-  void FillShowerVars(const recob::Shower& shower, 
-                            caf::SRShower &srshower,
-                            bool allowEmpty)
+  void FillShowerVars(const recob::Shower& shower,
+                      const recob::PFParticle &particle,
+                      const recob::Vertex* vertex,
+                      const recob::PFParticle *primary,
+                      caf::SRShower &srshower,
+                      bool allowEmpty)
   {
 
     srshower.dir    = SRVector3D( shower.Direction() );
@@ -53,17 +56,53 @@ namespace caf
       srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
     }
 
-    if(shower.Length() > 0) {
+    if(shower.has_open_angle())
+      srshower.open_angle = shower.OpenAngle();
+    if(shower.has_length())
       srshower.len = shower.Length();
-      if(shower.best_plane() != -999){
-        srshower.density = shower.Energy().at(shower.best_plane()) / shower.Length();
-      }
+
+    if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
+        srshower.density = srshower.bestplane_energy / srshower.len;
+
+    // Fill in hierarchy info
+    srshower.ID = particle.Self();
+    srshower.slcID = (primary) ? primary->Self() : -1;
+    for (unsigned id: particle.Daughters()) {
+      srshower.daughters.push_back(id);
     }
+    srshower.parent = particle.Parent();
+    srshower.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+      || (primary && particle.Parent() == primary->Self());
 
-    // if(shower.has_open_angle()) {
-    srshower.open_angle = shower.OpenAngle();
-    // }
+    if (vertex && shower.ShowerStart().Z()>-990) {
+      // Need to do some rearranging to make consistent types
+      const geo::Point_t vertexPos(vertex->position());
+      const TVector3 vertexTVec3{vertexPos.X(), vertexPos.Y(), vertexPos.Z()};
 
+      srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
+    }
+  }
+
+  void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
+                      caf::SRShower& srshower)
+  {
+    for (auto const& res: residuals) {
+      srshower.selVars.showerResiduals.push_back(*res);
+    }
+  }
+
+  void FillShowerTrackFit(const sbn::ShowerTrackFit& trackFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.trackLength = trackFit.mTrackLength;
+    srshower.selVars.trackWidth  = trackFit.mTrackWidth;
+  }
+
+  void FillShowerDensityFit(const sbn::ShowerDensityFit& densityFit,
+                      caf::SRShower& srshower)
+  {
+    srshower.selVars.densityGradient      = densityFit.mDensityGrad;
+    srshower.selVars.densityGradientPower = densityFit.mDensityPow;
   }
 
   void FillSliceVars(const recob::Slice& slice,
@@ -80,6 +119,7 @@ namespace caf
         srslice.primary.push_back(id);
       }
       srslice.self = primary->Self();
+      srslice.nu_pdg = primary->PdgCode();
     }
     else {
       srslice.self = -1;
@@ -90,10 +130,10 @@ namespace caf
                         caf::SRSlice &srslice,
                         bool allowEmpty)
   {
-    // default values   
+    // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
- 
+
     // collect the properties
     if (primary_meta != NULL) {
       auto const &properties = primary_meta->GetPropertiesMap();
@@ -106,8 +146,8 @@ namespace caf
         srslice.is_clear_cosmic = false;
       }
       if (properties.count("NuScore")) {
-        srslice.nu_score = properties.at("NuScore"); 
-      } 
+        srslice.nu_score = properties.at("NuScore");
+      }
       else {
         srslice.nu_score = -1;
       }
@@ -142,15 +182,15 @@ namespace caf
 
   //......................................................................
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch, 
-                       const std::vector<const anab::T0*> &t0match, 
+  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       const std::vector<const anab::T0*> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
     if (hitmatch.size()) {
       assert(hitmatch.size() == 1);
       assert(t0match.size() == 1);
-      srtrack.crthit.distance = t0match[0]->fTriggerConfidence; 
+      srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.hit.time = t0match[0]->fTime;
       srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
       srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
@@ -212,12 +252,12 @@ namespace caf
   {
     // calculate range momentum
     if (range_results[0].size()) {
-      srtrack.rangeP.p_muon = range_results[0][0]->range_p; 
+      srtrack.rangeP.p_muon = range_results[0][0]->range_p;
       assert(track.ID() == range_results[0][0]->trackID);
     }
 
     if (range_results[1].size()) {
-      srtrack.rangeP.p_proton = range_results[1][0]->range_p; 
+      srtrack.rangeP.p_proton = range_results[1][0]->range_p;
       assert(track.ID() == range_results[1][0]->trackID);
     }
   }
@@ -230,7 +270,7 @@ namespace caf
     // get the particle ID's
     //
     // iterate over the planes -- use the conduction plane to get the particle ID
-    assert(particleIDs.size() == 0 || particleIDs == 3);
+    //    assert(particleIDs.size() == 0 || particleIDs == 3);
     srtrack.nchi2pid = 0;
     if (particleIDs.size() > 0) {
       srtrack.chi2pid.emplace_back();
@@ -239,7 +279,7 @@ namespace caf
       srtrack.nchi2pid = 3;
     }
 
-    for (unsigned i = 0; i < particleIDs.size(); i++) { 
+    for (unsigned i = 0; i < particleIDs.size(); i++) {
       const anab::ParticleID &particle_id = *particleIDs[i];
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().deepestIndex();
@@ -249,6 +289,8 @@ namespace caf
         srtrack.chi2pid[plane_id].chi2_kaon = particle_id.Chi2Pion();
         srtrack.chi2pid[plane_id].chi2_proton = particle_id.Chi2Proton();
         srtrack.chi2pid[plane_id].pid_ndof = particle_id.Ndf();
+
+        srtrack.chi2pid[plane_id].pida = particle_id.PIDA();
       }
     }
   }
@@ -262,7 +304,7 @@ namespace caf
     // count up the kinetic energy on each plane --
     // ignore any charge with a deposition > 1000 MeV/cm
     // TODO: ignore first and last hit???
-    assert(calos.size() == 0 || calos == 3);
+    //    assert(calos.size() == 0 || calos == 3);
     srtrack.ncalo = 0;
     if (calos.size() > 0) {
       srtrack.calo.emplace_back();
@@ -271,7 +313,7 @@ namespace caf
       srtrack.ncalo = 3;
     }
 
-    for (unsigned i = 0; i < calos.size(); i++) { 
+    for (unsigned i = 0; i < calos.size(); i++) {
       const anab::Calorimetry &calo = *calos[i];
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().deepestIndex();
@@ -308,6 +350,7 @@ namespace caf
 
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle &particle,
+                     const recob::PFParticle *primary,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -326,6 +369,7 @@ namespace caf
     srtrack.end.z = track.End().Z();
 
     srtrack.ID = particle.Self();
+    srtrack.slcID = (primary) ? primary->Self() : -1;
 
     // set the daughters in the particle flow
     for (unsigned id: particle.Daughters()) {
@@ -333,144 +377,146 @@ namespace caf
     }
 
     srtrack.parent = particle.Parent();
+    srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+      || (primary && particle.Parent() == primary->Self());
 
   }
   //......................................................................
-  
+
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
                         std::vector<caf::SRTrueInteraction> &srneutrinos) {
-    // set is_primary to true by default
-    for (caf::StandardRecord &rec: recs) {
-      rec.slc.tmatch.is_numucc_primary = true;
-    }
+  //   // set is_primary to true by default
+  //   for (caf::StandardRecord &rec: recs) {
+  //     rec.slc.tmatch.is_numucc_primary = true;
+  //   }
 
-    for (unsigned i = 0; i < srneutrinos.size(); i++) {
-      ApplyNumuCCMatching(recs, srneutrinos, i);
-    }
+  //   for (unsigned i = 0; i < srneutrinos.size(); i++) {
+  //     ApplyNumuCCMatching(recs, srneutrinos, i);
+  //   }
   }
 
-  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs, 
+  void ApplyNumuCCMatching(std::vector<caf::StandardRecord> &recs,
                            const std::vector<caf::SRTrueInteraction> &srneutrinos,
                            unsigned truth_ind) {
 
-    std::vector<unsigned> matches_truth;
-    for (unsigned i = 0; i < recs.size(); i++) {
-      if (recs[i].slc.tmatch.index == (int)truth_ind) {
-        matches_truth.push_back(i);
-      }
-    }
+  //   std::vector<unsigned> matches_truth;
+  //   for (unsigned i = 0; i < recs.size(); i++) {
+  //     if (recs[i].slc.tmatch.index == (int)truth_ind) {
+  //       matches_truth.push_back(i);
+  //     }
+  //   }
 
-    // first -- remove any cases where most of the slice 
-    // matches to non-primary particles of the neutrino 
-    unsigned ind = 0;
-    std::vector<float> matching_primary_energy;
-    while (ind < matches_truth.size()) {
-      const caf::SRSliceRecoBranch &reco = recs[matches_truth[ind]].reco;
-      const caf::SRSlice &slice = recs[matches_truth[ind]].slc;
+  //   // first -- remove any cases where most of the slice
+  //   // matches to non-primary particles of the neutrino
+  //   unsigned ind = 0;
+  //   std::vector<float> matching_primary_energy;
+  //   while (ind < matches_truth.size()) {
+  //     const caf::SRSliceRecoBranch &reco = recs[matches_truth[ind]].reco;
+  //     const caf::SRSlice &slice = recs[matches_truth[ind]].slc;
 
-      caf::SRVector3D vertex = slice.vertex;
+  //     caf::SRVector3D vertex = slice.vertex;
 
-      float primary_energy = 0.;
-      float total_energy = 0.;
+  //     float primary_energy = 0.;
+  //     float total_energy = 0.;
 
-      // check the primary tracks of the slice
-      for (const caf::SRTrack &track: reco.trk) {
-        caf::SRVector3D start = track.start;
-        float dist = sqrt((start.x - vertex.x) * (start.x - vertex.x) +
-                          (start.y - vertex.y) * (start.y - vertex.y) +
-                          (start.z - vertex.z) * (start.z - vertex.z));
+  //     // check the primary tracks of the slice
+  //     for (const caf::SRTrack &track: reco.trk) {
+  //       caf::SRVector3D start = track.start;
+  //       float dist = sqrt((start.x - vertex.x) * (start.x - vertex.x) +
+  //                         (start.y - vertex.y) * (start.y - vertex.y) +
+  //                         (start.z - vertex.z) * (start.z - vertex.z));
 
-        if (track.parent == slice.self && dist < 10.) {
-          for (const caf::ParticleMatch &pmatch: track.truth.matches) {
-            total_energy += pmatch.energy;
-            for (unsigned i_part = 0; i_part < recs[0].true_particles.size(); i_part++) {
-              const caf::SRTrueParticle &particle = recs[0].true_particles[i_part];
-              if (particle.G4ID == pmatch.G4ID) {
-                if (particle.start_process == caf::kG4primary) {
-                  primary_energy += pmatch.energy;
-                }
-                break;
-              }
-            }
-          }  
-        }
-      }
-      if (primary_energy / total_energy < 0.5) {
-        recs[matches_truth[ind]].slc.tmatch.is_numucc_primary = false;
-        matches_truth.erase(matches_truth.begin()+ind);
-      }
-      else {
-        matching_primary_energy.push_back(primary_energy);
-        ind ++;
-      }
-    }
+  //       if (track.parent == slice.self && dist < 10.) {
+  //         for (const caf::SRTrackTruth::ParticleMatch &pmatch: track.truth.matches) {
+  //           total_energy += pmatch.energy;
+  //           for (unsigned i_part = 0; i_part < recs[0].true_particles.size(); i_part++) {
+  //             const caf::SRTrueParticle &particle = recs[0].true_particles[i_part];
+  //             if (particle.G4ID == pmatch.G4ID) {
+  //               if (particle.start_process == caf::kG4primary) {
+  //                 primary_energy += pmatch.energy;
+  //               }
+  //               break;
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     if (primary_energy / total_energy < 0.5) {
+  //       recs[matches_truth[ind]].slc.tmatch.is_numucc_primary = false;
+  //       matches_truth.erase(matches_truth.begin()+ind);
+  //     }
+  //     else {
+  //       matching_primary_energy.push_back(primary_energy);
+  //       ind ++;
+  //     }
+  //   }
 
-    // less than two matches! All good
-    if (matches_truth.size() < 2) return;
+  //   // less than two matches! All good
+  //   if (matches_truth.size() < 2) return;
 
-    // If this is a numu CC interaction, break
-    // tie by matching the muon
-    // Whoever has a track matching closer to the 
-    // start of the muon wins
-    if (abs(srneutrinos[truth_ind].pdg == 14) && srneutrinos[truth_ind].iscc) {
-      const caf::SRTrueParticle &muon = srneutrinos[truth_ind].prim[0];
-      float closest_dist = -1;
-      int best_index = -1;
-      for (unsigned ind = 0; ind < matches_truth.size(); ind++) {
-        const caf::SRSliceRecoBranch &reco = recs[matches_truth[ind]].reco;
-        const caf::SRSlice &slice = recs[matches_truth[ind]].slc;
+  //   // If this is a numu CC interaction, break
+  //   // tie by matching the muon
+  //   // Whoever has a track matching closer to the
+  //   // start of the muon wins
+  //   if (abs(srneutrinos[truth_ind].pdg == 14) && srneutrinos[truth_ind].iscc) {
+  //     const caf::SRTrueParticle &muon = srneutrinos[truth_ind].prim[0];
+  //     float closest_dist = -1;
+  //     int best_index = -1;
+  //     for (unsigned ind = 0; ind < matches_truth.size(); ind++) {
+  //       const caf::SRSliceRecoBranch &reco = recs[matches_truth[ind]].reco;
+  //       const caf::SRSlice &slice = recs[matches_truth[ind]].slc;
 
-        caf::SRVector3D vertex = slice.vertex;
+  //       caf::SRVector3D vertex = slice.vertex;
 
-        for (const caf::SRTrack &track: reco.trk) {
-          caf::SRVector3D start = track.start;
-          float dist = sqrt((start.x - vertex.x) * (start.x - vertex.x) +
-                            (start.y - vertex.y) * (start.y - vertex.y) +
-                            (start.z - vertex.z) * (start.z - vertex.z));
+  //       for (const caf::SRTrack &track: reco.trk) {
+  //         caf::SRVector3D start = track.start;
+  //         float dist = sqrt((start.x - vertex.x) * (start.x - vertex.x) +
+  //                           (start.y - vertex.y) * (start.y - vertex.y) +
+  //                           (start.z - vertex.z) * (start.z - vertex.z));
 
-          if (track.parent == slice.self && dist < 10. && track.truth.matches.size()) {
-            const caf::ParticleMatch &pmatch = track.truth.matches[0];
-            if (pmatch.energy / muon.planeVisE > 0.05 && pmatch.G4ID == muon.G4ID) {
-               caf::SRVector3D start = track.start;
-               caf::SRVector3D end = track.end;
-               float start_dist = sqrt((start.x - muon.start.x) * (start.x - muon.start.x) +
-                                       (start.y - muon.start.y) * (start.y - muon.start.y) +
-                                       (start.z - muon.start.z) * (start.z - muon.start.z));
-               float end_dist = sqrt((end.x - muon.start.x) * (end.x - muon.start.x) +
-                                     (end.y - muon.start.y) * (end.y - muon.start.y) +
-                                     (end.z - muon.start.z) * (end.z - muon.start.z));
-               float this_dist = std::min(start_dist, end_dist);
-               if (closest_dist < 0. || this_dist < closest_dist) {
-                 closest_dist = this_dist;
-                 best_index = ind; 
-               }
-            }
-          }
-        }
-      }
+  //         if (track.parent == slice.self && dist < 10. && track.truth.matches.size()) {
+  //           const caf::SRTrackTruth::ParticleMatch &pmatch = track.truth.matches[0];
+  //           if (pmatch.energy / muon.planeVisE > 0.05 && pmatch.G4ID == muon.G4ID) {
+  //              caf::SRVector3D start = track.start;
+  //              caf::SRVector3D end = track.end;
+  //              float start_dist = sqrt((start.x - muon.start.x) * (start.x - muon.start.x) +
+  //                                      (start.y - muon.start.y) * (start.y - muon.start.y) +
+  //                                      (start.z - muon.start.z) * (start.z - muon.start.z));
+  //              float end_dist = sqrt((end.x - muon.start.x) * (end.x - muon.start.x) +
+  //                                    (end.y - muon.start.y) * (end.y - muon.start.y) +
+  //                                    (end.z - muon.start.z) * (end.z - muon.start.z));
+  //              float this_dist = std::min(start_dist, end_dist);
+  //              if (closest_dist < 0. || this_dist < closest_dist) {
+  //                closest_dist = this_dist;
+  //                best_index = ind;
+  //              }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      // found a match!
-      if (best_index >= 0) {
-        for (unsigned i = 0; i < matches_truth.size(); i++) {
-          if ((int)i == best_index) recs[matches_truth[i]].slc.tmatch.is_numucc_primary = true;
-          else                 recs[matches_truth[i]].slc.tmatch.is_numucc_primary = false;
-        }
-        return;
-      }
-      // no match :( fallback on non numu-CC matching
-      else {}
-    }
+  //     // found a match!
+  //     if (best_index >= 0) {
+  //       for (unsigned i = 0; i < matches_truth.size(); i++) {
+  //         if ((int)i == best_index) recs[matches_truth[i]].slc.tmatch.is_numucc_primary = true;
+  //         else                 recs[matches_truth[i]].slc.tmatch.is_numucc_primary = false;
+  //       }
+  //       return;
+  //     }
+  //     // no match :( fallback on non numu-CC matching
+  //     else {}
+  //   }
 
-    // Otherwise, take the most energetic one
-    unsigned best_index = std::distance(matching_primary_energy.begin(), 
-                                        std::max_element(matching_primary_energy.begin(), matching_primary_energy.end()));
+  //   // Otherwise, take the most energetic one
+  //   unsigned best_index = std::distance(matching_primary_energy.begin(),
+  //                                       std::max_element(matching_primary_energy.begin(), matching_primary_energy.end()));
 
-    for (unsigned i = 0; i < matches_truth.size(); i++) {
-      if (i == best_index) recs[matches_truth[i]].slc.tmatch.is_numucc_primary = true;
-      else                 recs[matches_truth[i]].slc.tmatch.is_numucc_primary = false;
-    }
+  //   for (unsigned i = 0; i < matches_truth.size(); i++) {
+  //     if (i == best_index) recs[matches_truth[i]].slc.tmatch.is_numucc_primary = true;
+  //     else                 recs[matches_truth[i]].slc.tmatch.is_numucc_primary = false;
+  //   }
     return;
   }
 
 
-} // end namespace 
+} // end namespace

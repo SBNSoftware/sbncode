@@ -34,6 +34,7 @@ namespace caf
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                       const std::vector<caf::SRTrueInteraction> &srneutrinos,
                       const cheat::ParticleInventoryService &inventory_service,
+                      const detinfo::DetectorClocksData &clockData,
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty = false);
 
@@ -48,11 +49,12 @@ namespace caf
 
   // TODO: implement
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
-			const art::Ptr<simb::MCFlux> mcflux, 
-			std::vector<caf::SRTrueParticle> srprimaries,
+			const simb::MCFlux &mcflux, 
+			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
 

@@ -33,9 +33,9 @@ services:
   # #  @table::standard_services
 
   AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::icarus_geometry_helper
-  Geometry:                  @local::icarus_geo
-  AuxDetGeometry:            @local::icarus_auxdetgeo
+  ExpGeoHelperInterface:    @local::icarus_single_induction_geometry_helper 
+  Geometry:                  @local::icarus_single_induction_nooverburden_geometry 
+  # AuxDetGeometry:            @local::icarus_auxdetgeo
   LArPropertiesService:      @local::standard_properties
   DetectorClocksService:     @local::icarus_basic_services.DetectorClocksService
   DetectorPropertiesService: @local::icarus_basic_services.DetectorPropertiesService 

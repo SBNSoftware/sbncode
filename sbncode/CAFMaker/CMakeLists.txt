@@ -31,7 +31,9 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
 	larsim_MCCheater_BackTrackerService_service
 	nusimdata_SimulationBase
 	larsim_MCCheater_ParticleInventoryService_service
-	sbncode_LArRecoProducer_Products_dict
+	sbnobj_Common_CRT
+	sbnobj_Common_Reco
+	sbnobj_Common_Analysis
 	art_Framework_Services_System_TriggerNamesService_service
                 )
 

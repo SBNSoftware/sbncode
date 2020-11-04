@@ -26,11 +26,11 @@ int main(int argc, char** argv)
   const std::string outname = argv[2];
 
   //Find out if "proposal" appears in input string
-  // int is_proposal_flag = 0;
-  // if (inname.find("Proposal") || inname.find("proposal")) {
-  //   is_proposal_flag = 1;
-  //   std::cout << "Setting proposal flag to 1: SBND baseline will be adjusted" << std::endl;
-  // }
+  bool is_proposal_flag = false;
+  if (inname.find("Proposal") || inname.find("proposal")) {
+    is_proposal_flag = true;
+    std::cout << "Setting proposal flag to true: SBND baseline will be adjusted" << std::endl;
+  }
 
   TFile* fin = TFile::Open(inname.c_str());
 
@@ -43,7 +43,10 @@ int main(int argc, char** argv)
   caf::StandardRecord* event = 0;
   tr->SetBranchAddress("rec", &event);
 
-  TFile fout(outname.c_str(), "RECREATE");
+  // LZ4 is the fastest format to decompress. I get 3x faster loading with
+  // thiscompared to the default, and the files are only slightly larger.
+  TFile fout(outname.c_str(), "RECREATE", "",
+             ROOT::CompressionSettings(ROOT::kLZ4, 1));
 
   // First, copy the POT information over
   //  ((TTree*)fin->Get("sbnsubrun"))->CloneTree()->Write("sbnsubrun");
@@ -62,8 +65,10 @@ int main(int argc, char** argv)
     //    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
-    //    float bl = event->truth[0].neutrino.baseline;
-    //    if (bl < 150. && is_proposal_flag) event->truth[0].neutrino.baseline = bl - 10;
+    if(is_proposal_flag && !event->mc.nu.empty()){
+      const float bl = event->mc.nu[0].baseline;
+      if(bl < 150) event->mc.nu[0].baseline -= 10;
+    }
 
     rec->Fill(*event);
     trout->Fill();
