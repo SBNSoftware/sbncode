@@ -1,3 +1,7 @@
+#pragma message "WARNING: PredictionLinFit temporarily disabled"
+
+#if 0
+
 #include "CAFAna/Prediction/PredictionLinFit.h"
 
 #include "CAFAna/Core/HistCache.h"
@@ -539,3 +543,5 @@ namespace ana
   }
 
 }
+
+#endif

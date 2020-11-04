@@ -1,5 +1,7 @@
 #pragma once
 
+#if 0 // temporarily disabled
+
 #include "CAFAna/Core/ISyst.h"
 #include "CAFAna/Core/Var.h"
 
@@ -73,3 +75,5 @@ namespace ana
   const std::vector<const ISyst*>& GetSBNFluxWeightSysts();
   const std::vector<const ISyst*>& GetSBNWeightSysts(); // genie+flux
 }
+
+#endif
