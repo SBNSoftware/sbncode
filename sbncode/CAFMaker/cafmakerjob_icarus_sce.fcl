@@ -1,6 +1,6 @@
 #include "CAFMaker.fcl"
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "geometry_icarus.fcl"
 
 #include "larproperties.fcl"

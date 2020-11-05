@@ -22,6 +22,7 @@ art_make( MODULE_LIBRARIES
 	MF_MessageLogger
 
 	sbn_LArReco	    
+	sbnobj_Common_CRT
 	sbnobj_Common_Reco
 	lardataobj_RecoBase_AssnsDicts_dict
 	lardataobj_RecoBase_dict	
