@@ -14,7 +14,8 @@
 namespace caf
 {
   /// A matching of TPC slice charge to Optical flash light
-  struct FlashMatch {
+  class FlashMatch {
+  public:
     bool present;
     float score;
     float time;
@@ -22,7 +23,8 @@ namespace caf
   };
 
   /// Matching between this SRSlice and the corresponding SRTrueInteraction
-  struct TruthMatch {
+  class TruthMatch {
+  public:
     float      visEinslc;     ///< True deposited energy in slice [GeV]
     float      visEcosmic;    ///< True slice deposited energy from cosmics
     float      eff;           ///< Slice efficiency for this interaction
