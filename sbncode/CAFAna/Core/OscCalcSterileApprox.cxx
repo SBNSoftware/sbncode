@@ -87,7 +87,7 @@ namespace ana
   // --------------------------------------------------------------------------
   double OscCalcSterileApprox::P(int from, int to, double E)
   {
-    return P(from, to, E, E);
+    return P_range(from, to, E, E);
   }
 
   // --------------------------------------------------------------------------
@@ -123,7 +123,7 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  double OscCalcSterileApprox::P(int from, int to, double Elo, double Ehi)
+  double OscCalcSterileApprox::P_range(int from, int to, double Elo, double Ehi)
   {
     if(Ehi <= 0) return 0;
 

@@ -9,7 +9,7 @@ namespace ana
   public:
     // if flavAfter == 0, give the active fraction
     virtual double P(int from, int to, double E) override;
-    double P(int from, int to, double Elo, double Ehi);
+    double P_range(int from, int to, double Elo, double Ehi);
 
     double P_LoverE(int from, int to, double LElo, double LEhi);
 

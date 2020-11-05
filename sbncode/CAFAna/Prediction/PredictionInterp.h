@@ -194,19 +194,6 @@ namespace ana
     void InitFitsHelper(ShiftedPreds& sp,
                         std::vector<std::vector<std::vector<Coeffs>>>& fits,
                         Sign::Sign_t sign) const;
-<<<<<<< HEAD
-=======
-
-     /// Helper for \ref Derivative
-    void ComponentDerivative(osc::IOscCalc* calc,
-                             Flavors::Flavors_t flav,
-                             Current::Current_t curr,
-                             Sign::Sign_t sign,
-                             CoeffsType type,
-                             const SystShifts& shift,
-                             double pot,
-                             std::unordered_map<const ISyst*, std::vector<double>>& dp) const;
->>>>>>> Pick up OscLib as an external product rather than duplicating it here.
   };
 
 }
