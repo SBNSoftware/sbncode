@@ -18,8 +18,11 @@ pmtflashtrigmaker_icarus: {
   Experiment: ICARUS
   TriggerStart: 0 # us 
   TriggerEnd: 2 # us 
-  OffsetTriggerTime: true # ICARUS pmt t0 is the G4 start time -- offset it to the trigger time
   TriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold) [use a higher threshold when applying the trigger]
+  OffsetTriggerTime: true # ICARUS pmt t0 is the G4 start time -- offset it to the trigger time
+  PDMapAlg: {
+    tool_type: PDMapAlgSimple
+  }
 }
 
 pmtflashtrigfilter_sbnd: {
