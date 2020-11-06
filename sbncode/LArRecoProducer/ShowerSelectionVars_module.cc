@@ -66,7 +66,7 @@ private:
   sbn::ShowerTrackFit TrackFinder(const recob::Shower& shower, const recob::Track& track,
       const std::vector<art::Ptr<recob::SpacePoint> >& sps) const ;
 
-  std::vector<float> ResidualFinder(const recob::Shower& primaryShower, const std::vector<recob::Shower>& sliceShowers) const;
+  std::vector<float> ResidualFinder(const art::Ptr<recob::Shower>& primaryShower, const std::vector<art::Ptr<recob::Shower>>& sliceShowers) const;
 
   double SpacePointPerpendicular(const recob::SpacePoint& sp,
       TVector3 const& vertex, TVector3 const& direction) const;
@@ -155,7 +155,7 @@ void sbn::ShowerSelectionVars::produce(art::Event& e)
     pfpMap[pfp->Self()] = pfp;
   }
 
-  std::map<recob::Shower, std::vector<float> > showerResidualMap;
+  std::map<art::Ptr<recob::Shower>, std::vector<float> > showerResidualMap;
 
   // Calculate the residuals: Want to calculate the residuals from each primary
   // shower to every other primary shower in the same slice
@@ -176,11 +176,11 @@ void sbn::ShowerSelectionVars::produce(art::Event& e)
     if (pfpNeutrino.isNull())
       continue;
 
-    std::vector<recob::Shower> primaryShowers;
+    std::vector<art::Ptr<recob::Shower>> primaryShowers;
     for (auto const& daughterID: pfpNeutrino->Daughters()) {
       const auto& pfp(pfpMap[daughterID]);
       if (pfp->PdgCode()==11) {
-        primaryShowers.push_back(*fmPFPShower.at(pfp.key()).front());
+        primaryShowers.push_back(fmPFPShower.at(pfp.key()).front());
       } // if showers
     } // end daughterId: pfpNeutrino->Daughters
 
@@ -205,7 +205,7 @@ void sbn::ShowerSelectionVars::produce(art::Event& e)
 
   for (auto const& shower: showers){
 
-    for (auto const res: showerResidualMap[*shower]) {
+    for (auto const res: showerResidualMap[shower]) {
       residualCol->push_back(res);
       util::CreateAssn(*this, e, *residualCol, shower, *residualAssns);
     }
@@ -332,19 +332,19 @@ sbn::ShowerTrackFit sbn::ShowerSelectionVars::TrackFinder(const recob::Shower& s
   return sbn::ShowerTrackFit(trackLen, trackWidth, numSPs);
 }
 
-std::vector<float> sbn::ShowerSelectionVars::ResidualFinder(const recob::Shower& primaryShower, const std::vector<recob::Shower>& sliceShowers) const {
+std::vector<float> sbn::ShowerSelectionVars::ResidualFinder(const art::Ptr<recob::Shower>& primaryShower, const std::vector<art::Ptr<recob::Shower>>& sliceShowers) const {
 
   std::vector<float> residuals;
 
-  const TVector3 primaryVtx(primaryShower.ShowerStart());
-  const TVector3 showerDir(primaryShower.Direction());
+  const TVector3 primaryVtx(primaryShower->ShowerStart());
+  const TVector3 showerDir(primaryShower->Direction());
 
   for (auto const& shower: sliceShowers) {
 
-    if ((primaryVtx - shower.ShowerStart()).Mag() < std::numeric_limits<float>::epsilon())
+    if ((primaryVtx - shower->ShowerStart()).Mag() < std::numeric_limits<float>::epsilon())
       continue;
 
-    const TVector3 showerDisplacement(primaryVtx - shower.ShowerStart());
+    const TVector3 showerDisplacement(primaryVtx - shower->ShowerStart());
 
     const double projection(showerDir.Dot(showerDisplacement));
     const double perpendicualr((showerDisplacement - projection*showerDir).Mag());
