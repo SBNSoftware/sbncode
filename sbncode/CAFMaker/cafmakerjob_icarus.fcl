@@ -9,14 +9,14 @@
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
 
-#include "flashmatch.fcl"
+#include "calorimetry_icarus.fcl"
+
+#include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "crthitmatch_producer.fcl"
-#include "calorimetry_icarus.fcl"
 #include "pmtflashtrigger_producer.fcl"
-#include "mcreco.fcl"
 
 process_name: CAFmaker
 
@@ -72,18 +72,14 @@ outputs:
 physics:
 {
  producers:{
+   flashtrig: @local::pmtflashtrigmaker_icarus
    pandoraTrackMCSCryo0: @local::mcs_sbn
-   pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackMCSCryo1: @local::mcs_sbn
+   pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
-
-   fmatchCryo0: @local::flash_match_icarus_cryo0
-   fmatchCryo1: @local::flash_match_icarus_cryo1
    crtconvhit: @local::crthitconverter_icarus
-
    pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
    pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
-   flashtrig: @local::pmtflashtrigmaker_icarus
 
    mcreco: @local::standard_mcreco
 }
