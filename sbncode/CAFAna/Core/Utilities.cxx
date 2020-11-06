@@ -176,28 +176,6 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  double LogLikelihoodDerivative(double e, double o, double dedx)
-  {
-    double ret = 2*dedx;
-    if(o) ret -= 2*o*dedx / e;
-    return ret;
-  }
-
-  //----------------------------------------------------------------------
-  double LogLikelihoodDerivative(const TH1D* eh, const TH1D* oh,
-                                 const std::vector<double>& dedx)
-  {
-    const double* ea = eh->GetArray();
-    const double* oa = oh->GetArray();
-
-    double ret = 0;
-    for(unsigned int i = 0; i < dedx.size(); ++i){
-      ret += LogLikelihoodDerivative(ea[i], oa[i], dedx[i]);
-    }
-    return ret;
-  }
-
-  //----------------------------------------------------------------------
   double Chi2CovMx(const TVectorD* e, const TVectorD* o, const TMatrixD* covmxinv)
   {
     assert (e->GetNrows() == o->GetNrows());
