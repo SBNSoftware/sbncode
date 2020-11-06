@@ -94,7 +94,7 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter, crtconvhit, 
+ runprod: [ flashtrig, flashtrigfilter,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
     mycafmaker ]
