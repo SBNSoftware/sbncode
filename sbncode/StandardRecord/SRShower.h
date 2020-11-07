@@ -6,6 +6,7 @@
 
 #include "SRVector3D.h"
 #include "SRShowerSelection.h"
+#include "SRTrackTruth.h"
 
 namespace caf
 {
@@ -33,9 +34,10 @@ namespace caf
       int parent;                 ///< ID of parent particle of this track
 
       SRShowerSelection selVars;
+      SRTrackTruth   truth;        ///< truth information TODO: make seperate showe info class
 
       bool parent_is_primary;
-      
+
       int slcID;
 
     };

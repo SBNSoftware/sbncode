@@ -42,6 +42,17 @@ namespace caf {
 
   }//FillTrackTruth
 
+  void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const detinfo::DetectorClocksData &clockData,
+          caf::SRShower& srshower,
+          bool allowEmpty)
+  {
+    // Truth matching
+    srshower.truth = MatchTrack2Truth(clockData, hits);
+
+  }//FillShowerTruth
+
+
   //------------------------------------------------
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,

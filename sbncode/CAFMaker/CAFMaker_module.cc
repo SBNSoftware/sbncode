@@ -789,9 +789,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Hit> fmHit =
+    art::FindManyP<recob::Hit> fmTrackHit =
       FindManyPStrict<recob::Hit>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::Hit> fmShowerHit =
+      FindManyPStrict<recob::Hit>(slcShowers, evt,
+          fParams.RecoShowerLabel() + slice_tag_suff);
 
     art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
       FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt,
@@ -926,8 +930,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       lar::providerFrom<geo::Geometry>(),
       fParams.CalorimetryConstants(),
       rec.reco.trk.back());
-        if (fmHit.isValid())
-          FillTrackTruth(fmHit.at(iPart), clock_data,
+        if (fmTrack.isValid())
+          FillTrackTruth(fmTrackHit.at(iPart), clock_data,
        rec.reco.trk.back());
         if (fmCRTHit.isValid())
           FillTrackCRTHit(fmCRTHit.at(iPart),
@@ -948,6 +952,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1)
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
+        if (fmShowerHit.isValid())
+          FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
 
       } // thisShower exists
 
