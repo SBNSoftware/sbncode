@@ -42,6 +42,8 @@ namespace caf {
 
   }//FillTrackTruth
 
+  // TODO: write trith matching for shower. Currently uses track truth matching
+  // N.B. this will only work if showers are rolled up
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const detinfo::DetectorClocksData &clockData,
           caf::SRShower& srshower,

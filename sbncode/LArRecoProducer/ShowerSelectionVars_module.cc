@@ -345,11 +345,14 @@ std::vector<float> sbn::ShowerSelectionVars::ResidualFinder(const art::Ptr<recob
 
   for (auto const& shower: sliceShowers) {
 
+    // Do not match shower to self
     if ((primaryVtx - shower->ShowerStart()).Mag() < std::numeric_limits<float>::epsilon())
       continue;
-
-    if (shower->ShowerStart().Z() < -500)
+    // Check the vertex of the second shower is set
+    if (shower->ShowerStart().Z() < -500) {
+      residuals.push_back(-999);
       continue;
+    }
 
     const TVector3 showerDisplacement(primaryVtx - shower->ShowerStart());
 

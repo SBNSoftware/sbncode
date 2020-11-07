@@ -946,7 +946,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], thisParticle, vertex, primary, rec.reco.shw.back());
-        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1)
+        // We may have many residuals per shower depending on how many showers ar in the slice
+        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0)
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1)
           FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
