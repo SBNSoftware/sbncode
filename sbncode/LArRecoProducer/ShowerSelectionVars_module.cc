@@ -339,17 +339,24 @@ std::vector<float> sbn::ShowerSelectionVars::ResidualFinder(const art::Ptr<recob
   const TVector3 primaryVtx(primaryShower->ShowerStart());
   const TVector3 showerDir(primaryShower->Direction());
 
+  // Check the vtx and direction are set
+  if (primaryVtx.Z() < -500 || showerDir.Z() < -500)
+    return residuals;
+
   for (auto const& shower: sliceShowers) {
 
     if ((primaryVtx - shower->ShowerStart()).Mag() < std::numeric_limits<float>::epsilon())
       continue;
 
+    if (shower->ShowerStart().Z() < -500)
+      continue;
+
     const TVector3 showerDisplacement(primaryVtx - shower->ShowerStart());
 
     const double projection(showerDir.Dot(showerDisplacement));
-    const double perpendicualr((showerDisplacement - projection*showerDir).Mag());
+    const double perpendicular((showerDisplacement - projection*showerDir).Mag());
 
-    residuals.push_back(perpendicualr);
+    residuals.push_back(perpendicular);
   }
 
   return residuals;
