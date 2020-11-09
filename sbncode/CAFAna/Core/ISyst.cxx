@@ -42,23 +42,4 @@ namespace ana
       return util::sqr((x-mean)/rad)-1;
     }
   }
-
-  //----------------------------------------------------------------------
-  double ISyst::PenaltyDerivative(double x) const
-  {
-    if(fApplyPenalty){
-      // Regular quadratic penalty term
-      return 2*x;
-    }
-    else{
-      // Otherwise, no penalty within range, but still apply one outside
-      if(x >= Min() && x <= Max()) return 0;
-
-      // Try to direct fit back towards centre of the space. Engineer penalty
-      // to be zero at the limits.
-      const double mean = (Min()+Max())/2;
-      const double rad = (Max()-Min())/2;
-      return 2*(x-mean)/rad;
-    }
-  }
 }

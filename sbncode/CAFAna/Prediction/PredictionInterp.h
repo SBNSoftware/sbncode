@@ -62,11 +62,6 @@ namespace ana
                                           Current::Current_t curr,
                                           Sign::Sign_t sign) const override;
 
-    virtual void Derivative(osc::IOscCalculator* calc,
-                            const SystShifts& shift,
-                            double pot,
-                            std::unordered_map<const ISyst*, std::vector<double>>& dp) const override;
-
     virtual void SaveTo(TDirectory* dir) const override;
     static std::unique_ptr<PredictionInterp> LoadFrom(TDirectory* dir);
 
@@ -199,16 +194,6 @@ namespace ana
     void InitFitsHelper(ShiftedPreds& sp,
                         std::vector<std::vector<std::vector<Coeffs>>>& fits,
                         Sign::Sign_t sign) const;
-
-     /// Helper for \ref Derivative
-    void ComponentDerivative(osc::IOscCalculator* calc,
-                             Flavors::Flavors_t flav,
-                             Current::Current_t curr,
-                             Sign::Sign_t sign,
-                             CoeffsType type,
-                             const SystShifts& shift,
-                             double pot,
-                             std::unordered_map<const ISyst*, std::vector<double>>& dp) const;
   };
 
 }
