@@ -108,19 +108,23 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalgmc.CalAreaConstants
 
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
-physics.producers.mycafmaker.PFParticleLabel: "pandoraGaus"
-physics.producers.mycafmaker.RecoShowerLabel:     "SBNShowerGaus"
+physics.producers.mycafmaker.PFParticleLabel:   "pandoraGaus"
+physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGaus"
 # physics.producers.mycafmaker.RecoShowerEMLabel:   "emshower"
 # physics.producers.mycafmaker.RecoShowerPandLabel: "pandoraShowerGaus"
-physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGaus"
-physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausCalo"
-physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausPid"
+physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGaus"
+physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausCalo"
+physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausPid"
+physics.producers.mycafmaker.FlashMatchLabel:   "pandoraICARUS"
+physics.producers.mycafmaker.CRTHitLabel:       "crthit"
+physics.producers.mycafmaker.CRTHitMatchLabel:  "crthit"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
+
 
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"

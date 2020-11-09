@@ -108,11 +108,14 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalgmc.CalAreaConstants
 
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
-physics.producers.mycafmaker.PFParticleLabel: "pandoraGausSCE"
-physics.producers.mycafmaker.RecoShowerLabel: "SBNShowerGausSCE"
-physics.producers.mycafmaker.RecoTrackLabel: "pandoraTrackGausSCE"
-physics.producers.mycafmaker.TrackCaloLabel: "pandoraGausSCECalo"
-physics.producers.mycafmaker.TrackPidLabel:  "pandoraGausSCEPid"
+physics.producers.mycafmaker.PFParticleLabel:   "pandoraGausSCE"
+physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGausSCE"
+physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGausSCE"
+physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausSCECalo"
+physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausSCEPid"
+physics.producers.mycafmaker.FlashMatchLabel:   "pandoraICARUS"
+physics.producers.mycafmaker.CRTHitLabel:       "crthit"
+physics.producers.mycafmaker.CRTHitMatchLabel:  "crthit"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
