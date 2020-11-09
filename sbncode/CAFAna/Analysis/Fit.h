@@ -30,7 +30,7 @@ namespace ana
   namespace{SystShifts junkShifts;}
 
   /// Perform MINUIT fits in one or two dimensions
-  class Fitter: public ROOT::Math::IGradientFunctionMultiDim
+  class Fitter: public ROOT::Math::IBaseFunctionMultiDim
   {
   public:
     enum Verbosity{kQuiet, kVerbose};
@@ -133,23 +133,12 @@ namespace ana
     // Part of the fitter interface
     virtual unsigned int NDim() const override {return fVars.size()+fSysts.size();}
 
-    virtual void Gradient(const double* x, double* grad) const override;
-
-    virtual double DoDerivative(const double* x, unsigned int icoord) const override
-    {
-      std::cout << "Fitter::DoDerivative() not implemented" << std::endl;
-      abort();
-    }
-
     Fitter* Clone() const override
     {
       std::cout << "Fitter::Clone() not implemented" << std::endl;
       abort();
     }
 
-
-    // TODO unused
-    bool CheckGradient() const{return (fPrec & Fitter::kAlgoMask) != kFast;}
   protected:
     struct SeedPt
     {
@@ -176,18 +165,12 @@ namespace ana
     /// Updates mutable fCalc and fShifts
     void DecodePars(const double* pars) const;
 
-    /// Intended to be called only once (from constructor) to initialize
-    /// fSupportsDerivatives
-    bool SupportsDerivatives() const;
-
     const IExperiment* fExpt;
     std::vector<const IFitVar*> fVars;
     std::vector<const ISyst*> fSysts;
     Precision fPrec = kNormal;
     mutable osc::IOscCalculatorAdjustable* fCalc;
     mutable SystShifts fShifts;
-
-    bool fSupportsDerivatives;
 
     mutable int fNEval = 0;
     mutable int fNEvalGrad = 0;
