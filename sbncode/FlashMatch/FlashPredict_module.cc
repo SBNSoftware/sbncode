@@ -6,7 +6,7 @@
 // Created: February-2020  Iker Loïc de Icaza Astiz (icaza@fnal.gov)
 //
 ////////////////////////////////////////////////////////////////////////
-#include "sbndcode/FlashMatch/FlashPredict.hh"
+#include "sbncode/FlashMatch/FlashPredict.hh"
 
 
 FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
@@ -39,6 +39,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fCryostat                 = p.get<int>("Cryostat", 0); //set =0 ot =1 for ICARUS to match reco chain selection
   fPEscale                  = p.get<double>("PEscale", 1.0);
   fTermThreshold            = p.get<double>("ThresholdTerm", 30.);
+
+  fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
 
   if (fDetector == "SBND" && fCryostat == 1) {
     throw cet::exception("FlashPredictSBND") << "SBND has only one cryostat. \n"
@@ -269,9 +271,9 @@ void FlashPredict::produce(art::Event & e)
   for(auto const& oph : OpHitSubset) {
     double PMTxyz[3];
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
-    if (fDetector == "SBND" && pdMap.isPDType(oph.OpChannel(), "pmt_uncoated"))
+    if (fDetector == "SBND" && fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated"))
       ophittime2->Fill(oph.PeakTime(), fPEscale * oph.PE());
-    if (fDetector == "SBND" && !pdMap.isPDType(oph.OpChannel(), "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
+    if (fDetector == "SBND" && !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
     if (!geo_cryo.ContainsPosition(PMTxyz)) continue;   // use only PMTs in the specified cryostat for ICARUS
     //    std::cout << "op hit " << j << " channel " << oph.OpChannel() << " time " << oph.PeakTime() << " pe " << fPEscale*oph.PE() << std::endl;
 
@@ -317,6 +319,7 @@ void FlashPredict::produce(art::Event & e)
          (abs(pfp.PdgCode()) != 16)) continue;
 
     for (size_t t=0; t<nMaxTPCs; t++) qClusterInTPC[t].clear();
+    std::vector<flashmatch::QCluster_t> qClusterInTPC(fNTPC);
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
     std::vector<recob::PFParticle> pfp_v;
@@ -401,9 +404,7 @@ void FlashPredict::produce(art::Event & e)
       double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
       _charge_q = 0;
       // TODO: use accumulators instead of this for loop
-      for (size_t i=0; i<qClusterInTPC[itpc].size(); ++i) {
-        flashana::QCluster_t this_cl = qClusterInTPC[itpc];
-        flashana::QPoint_t qp = this_cl[i];
+      for (auto& qp : qClusterInTPC[itpc]) {
         xave += 0.001 * qp.q * qp.x;
         yave += 0.001 * qp.q * qp.y;
         zave += 0.001 * qp.q * qp.z;
@@ -519,7 +520,7 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
   // through channels in the current fCryostat
   for(auto const& oph : OpHitSubset) {
     std::string op_type = "pmt"; // the label ICARUS has
-    if (fDetector == "SBND") op_type = pdMap.pdType(oph.OpChannel());
+    if (fDetector == "SBND") op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     // check cryostat and tpc
     if (!isPDInCryoTPC(PMTxyz[0], fCryostat, itpc, fDetector)) continue;
@@ -581,10 +582,10 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
 }
 
 
-::flashana::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)
+::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)
 {
   // prepare container to store flash
-  ::flashana::Flash_t flash;
+  ::flashmatch::Flash_t flash;
   flash.time = opflash.Time();
   // geometry service
   const art::ServiceHandle<geo::Geometry> geometry;
@@ -634,7 +635,7 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     throw cet::exception("FlashNeutrinoId") << "Number of channels in beam flash doesn't match the number of OpDets!" << std::endl;
   return flash;
 
-}// ::flashana::Flash_t FlashPredict::GetFlashPESpectrum
+}// ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum
 
 
 void FlashPredict::CollectDownstreamPFParticles(

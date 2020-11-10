@@ -1,5 +1,5 @@
-#ifndef SBND_FLASHMATCH_FLASHPREDICT_HH
-#define SBND_FLASHMATCH_FLASHPREDICT_HH
+#ifndef SBN_FLASHMATCH_FLASHPREDICT_HH
+#define SBN_FLASHMATCH_FLASHPREDICT_HH
 
 // save diagnostic state
 #pragma GCC diagnostic push
@@ -13,6 +13,8 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Utilities/make_tool.h"
+
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -48,8 +50,8 @@
 // #include "TGraph.h"
 #include "TH1.h"
 
-#include "sbndcode/OpDetSim/OpT0FinderTypes.h"
-#include "sbndcode/OpDetSim/sbndPDMapAlg.hh"
+#include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
+#include "sbncode/OpDet/PDMapAlg.h"
 
 // turn the warnings back on
 #pragma GCC diagnostic pop
@@ -79,7 +81,7 @@ public:
 
 private:
   // Declare member data here.
-  //  ::flashana::FlashMatchManager m_flashMatchManager; ///< The flash match manager
+  //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
   std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer, fInputFilename, fCaloProducer, fTrackProducer;
@@ -96,10 +98,9 @@ private:
   std::vector<double> fPMTChannelCorrection;
   // geometry service
   static const size_t nMaxTPCs = 2; // ICARUS has 4 TPCs, however they need to be run independently
-  std::array<flashana::QCluster_t, nMaxTPCs> qClusterInTPC;
 
   void computeFlashMetrics(size_t idtpc, std::vector<recob::OpHit> const& OpHitSubset);
-  ::flashana::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
+  ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap &pfParticleMap,
                                     const art::Ptr<recob::PFParticle> &particle,
                                     lar_pandora::PFParticleVector &downstreamPFParticles) const;
@@ -115,7 +116,7 @@ private:
 
   int icountPE = 0;
   const art::ServiceHandle<geo::Geometry> geometry;
-  opdet::sbndPDMapAlg pdMap; // SBND opdets map
+  std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
@@ -140,4 +141,4 @@ private:
 };
 
 
-#endif //SBND_FLASHMATCH_FLASHPREDICT_HH
+#endif //SBN_FLASHMATCH_FLASHPREDICT_HH
