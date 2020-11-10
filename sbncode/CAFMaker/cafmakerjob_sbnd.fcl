@@ -2,6 +2,7 @@
 
 #include "services_sbnd.fcl"
 #include "geometry_sbnd.fcl"
+
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"

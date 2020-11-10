@@ -796,10 +796,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Hit> fmShowerHit =
       FindManyPStrict<recob::Hit>(slcShowers, evt,
           fParams.RecoShowerLabel() + slice_tag_suff);
+    
+    // art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
+    //   FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt,
+    //            fParams.CRTHitMatchLabel() + slice_tag_suff);
 
     art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
       FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt,
-               fParams.CRTHitMatchLabel() + slice_tag_suff);
+               fParams.CRTHitMatchLabel());
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
@@ -1001,10 +1005,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   //  Fill rec Tree
   //#######################################################
-  rec.mc             = srtruthbranch;
-  rec.true_particles = true_particles;
-  rec.fake_reco      = srfakereco;
-  rec.pass_flashtrig = pass_flash_trig;  // trigger result
+  rec.mc              = srtruthbranch;
+  rec.true_particles  = true_particles;
+  rec.fake_reco       = srfakereco;
+  rec.pass_flashtrig  = pass_flash_trig;  // trigger result
+  rec.crt_hits        = srcrthits;
 
   // Get metadata information for header
   unsigned int run = evt.run();

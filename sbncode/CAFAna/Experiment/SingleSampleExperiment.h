@@ -52,10 +52,6 @@ namespace ana
     virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
-    virtual void Derivative(osc::IOscCalculator* calc,
-                            const SystShifts& shift,
-                            std::unordered_map<const ISyst*, double>& dch) const override;
-
     virtual void SaveTo(TDirectory* dir) const override;
     static std::unique_ptr<SingleSampleExperiment> LoadFrom(TDirectory* dir);
 

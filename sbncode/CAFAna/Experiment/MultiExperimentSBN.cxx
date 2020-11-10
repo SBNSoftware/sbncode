@@ -50,62 +50,6 @@ namespace ana
 
   //----------------------------------------------------------------------
   void MultiExperimentSBN::
-  Derivative(osc::IOscCalculator* calc,
-             const SystShifts& shift,
-             std::unordered_map<const ISyst*, double>& dchi) const
-  {
-    // Each one should sum into the total so far
-    for(unsigned int n = 0; n < fExpts.size(); ++n){
-      if(fSystCorrelations[n].empty()){
-        // If there are no adjustments needed it's easy
-        fExpts[n]->Derivative(calc, shift, dchi);
-        if(dchi.empty()) return;
-        continue;
-      }
-
-      auto dchiLocal = dchi;
-      for(auto& it: dchiLocal) it.second = 0;
-      SystShifts localShifts = shift;
-      std::unordered_map<const ISyst*, const ISyst*> reverseMap;
-      for(auto it: fSystCorrelations[n]){
-        // We're mapping prim -> sec
-        const ISyst* prim = it.first;
-        const ISyst* sec = it.second;
-        if(dchi.count(prim)){
-          dchiLocal.erase(dchiLocal.find(prim));
-          if(sec){
-            dchiLocal.emplace(sec, 0);
-            reverseMap[sec] = prim;
-          }
-        }
-        if(sec) localShifts.SetShift(sec, shift.GetShift(prim));
-        // We've either translated or discarded prim, so drop it here.
-        localShifts.SetShift(prim, 0);
-      }
-
-      fExpts[n]->Derivative(calc, localShifts, dchiLocal);
-
-      // One of the components doesn't support derivatives, don't bother asking
-      // the rest.
-      if(dchiLocal.empty()){
-        dchi.clear();
-        return;
-      }
-
-      // And translate back
-      for(auto it: dchiLocal){
-        if(reverseMap.count(it.first) > 0){
-          dchi[reverseMap[it.first]] += it.second;
-        }
-        else{
-          dchi[it.first] += it.second;
-        }
-      }
-    }
-  }
-
-  //----------------------------------------------------------------------
-  void MultiExperimentSBN::
   SetSystCorrelations(int idx,
                       const std::vector<std::pair<const ISyst*, const ISyst*>>& corrs)
   {
