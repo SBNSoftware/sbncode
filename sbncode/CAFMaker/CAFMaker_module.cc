@@ -622,9 +622,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   for (const art::ProcessConfiguration &process: evt.processHistory()) {
     fhicl::ParameterSet gen_config;
     bool success = evt.getProcessParameterSet(process.processName(), gen_config);
-    if ( success && gen_config.has_key("source") &&
-   gen_config.has_key("source.maxEvents") &&
-   gen_config.has_key("source.module_type") ) {
+    if (success && gen_config.has_key("source") && gen_config.has_key("source.maxEvents") && gen_config.has_key("source.module_type") ) {
       int max_events = gen_config.get<int>("source.maxEvents");
       std::string module_type = gen_config.get<std::string>("source.module_type");
       if (module_type == "EmptyEvent") {
@@ -633,10 +631,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
-
 
   //#######################################################
   // Fill detector & reco
@@ -650,7 +646,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (flashtrig_handle.isValid()) {
     pass_flash_trig = *flashtrig_handle;
   }
-
 
   // Fill various detector information associated with the event
   //
@@ -675,7 +670,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
-  for (const std::string &pandora_tag_suffix: pandora_tag_suffixes) {
+  std::vector<unsigned> slice_tag_indices;
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
     // Get a handle on the slices
     art::Handle<std::vector<recob::Slice>> thisSlices;
     GetByLabelStrict(evt, fParams.PFParticleLabel() + pandora_tag_suffix, thisSlices);
@@ -683,21 +680,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       art::fill_ptr_vector(slices, thisSlices);
       for (unsigned i = 0; i < thisSlices->size(); i++) {
         slice_tag_suffixes.push_back(pandora_tag_suffix);
+        slice_tag_indices.push_back(i_tag);
       }
     }
   }
 
-  // list of slice objects
-  caf::SRSlice recslc;
-  std::vector<StandardRecord> recs;
+  // The Standard Record
+  // Branch entry definition -- contains list of slices, CRT information, and truth information
   StandardRecord rec;
 
   //#######################################################
   // Loop over slices
   //#######################################################
   for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
+    // Holder for information on this slice
+    caf::SRSlice recslc;
+
     art::Ptr<recob::Slice> slice = slices[sliceID];
     const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
+    unsigned producer = slice_tag_indices[sliceID];
 
     // Get tracks & showers here
     std::vector<art::Ptr<recob::Slice>> sliceList {slice};
@@ -815,8 +816,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
-    // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
-
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
 
@@ -844,7 +843,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     // Add slice info.
     //#######################################################
-    FillSliceVars(*slice, primary, recslc);
+    FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
     FillSliceFlashMatch(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
@@ -869,7 +868,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     // Reco objects have assns to the slice PFParticles
     // This depends on the findMany object created above.
-
     for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
 
@@ -918,26 +916,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], thisParticle, primary, rec.reco.trk.back());
+        FillTrackVars(*thisTrack[0], thisParticle, primary, producer, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
-        if (fmPID.isValid())
-          FillTrackChi2PID(fmPID.at(iPart),
-         lar::providerFrom<geo::Geometry>(),
-         rec.reco.trk.back());
-        if (fmCalo.isValid())
-          FillTrackCalo(fmCalo.at(iPart),
-      lar::providerFrom<geo::Geometry>(),
-      fParams.CalorimetryConstants(),
-      rec.reco.trk.back());
-        if (fmHit.isValid())
-          FillTrackTruth(fmHit.at(iPart), clock_data,
-       rec.reco.trk.back());
-        if (fmCRTHit.isValid())
-          FillTrackCRTHit(fmCRTHit.at(iPart),
-        fmCRTHit.data(iPart),
-        rec.reco.trk.back());
-
+        if (fmPID.isValid()) {
+           FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        }
+        if (fmCalo.isValid()) {
+          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
+        }
+        if (fmHit.isValid()) {
+          FillTrackTruth(fmHit.at(iPart), clock_data, rec.reco.trk.back());
+        }
+        if (fmCRTHit.isValid()) {
+          FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
+        }
       } // thisTrack exists
 
       else if (thisShower.size()) { // it's a shower!
@@ -945,13 +938,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, rec.reco.shw.back());
-        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1)
+        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, producer, rec.reco.shw.back());
+        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
-        if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1)
+        }
+        if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
           FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
-        if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1)
+        }
+        if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
+        }
 
       } // thisShower exists
 
@@ -1027,18 +1023,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
 
-  recs.push_back(std::move(rec));
   // calculate information that needs information from all of the slices
-  SetNuMuCCPrimary(recs, srneutrinos);
+  // SetNuMuCCPrimary(recs, srneutrinos);
 
-  // save all of the slices
-  for (unsigned i = 0; i < recs.size(); i++) {
-    StandardRecord* prec = &recs[i];  // TTree wants a pointer-to-pointer
-    fRecTree->SetBranchAddress("rec", &prec);
-    fRecTree->Fill();
-    srcol->push_back(recs[i]);
-  }
-
+  // Save the standard-record
+  StandardRecord* prec = &rec;
+  fRecTree->SetBranchAddress("rec", &prec);
+  fRecTree->Fill();
+  srcol->push_back(rec);
   evt.put(std::move(srcol));
 }
 

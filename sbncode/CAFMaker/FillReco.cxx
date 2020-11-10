@@ -41,10 +41,12 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      unsigned producer,
                       caf::SRShower &srshower,
                       bool allowEmpty)
   {
 
+    srshower.producer = producer;
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
     srshower.dEdx     = shower.dEdx();
@@ -111,10 +113,12 @@ namespace caf
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary /* can be null */,
+                     unsigned producer,
                      caf::SRSlice &srslice,
                      bool allowEmpty)
   {
 
+    srslice.producer = producer;
     srslice.charge       = slice.Charge();
 
     // get the primary tracks/showers
@@ -355,10 +359,12 @@ namespace caf
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle &particle,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
 
+    srtrack.producer = producer;
     srtrack.npts = track.CountValidPoints();
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
