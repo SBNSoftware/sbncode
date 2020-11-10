@@ -31,6 +31,8 @@ namespace caf
     srhit.position_err.y = hit.y_err;
     srhit.position_err.z = hit.z_err;
 
+    srhit.pe = hit.peshit;
+
     // std::cout << "x:" << srhit.position.x 
     //           << ", y:" << srhit.position.y 
     //           << ", z:" << srhit.position.z << std::endl;
