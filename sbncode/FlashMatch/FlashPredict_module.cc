@@ -34,7 +34,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fUseUncoatedPMT           = p.get<bool>("UseUncoatedPMT", false);
   fLightWindowStart         = p.get<double>("LightWindowStart", -0.010);  // in us w.r.t. flash time
   fLightWindowEnd           = p.get<double>("LightWindowEnd", 0.090);  // in us w.r.t flash time
-  fDetector                 = p.get<std::string>("Detector", "SBND");
   fDriftDistance            = p.get<double>("DriftDistance", 200.);
   fCryostat                 = p.get<int>("Cryostat", 0); //set =0 ot =1 for ICARUS to match reco chain selection
   fPEscale                  = p.get<double>("PEscale", 1.0);
@@ -42,6 +41,14 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
 
+  fDetector = geometry->DetectorName();
+  if(fDetector.find("sbnd") != std::string::npos) fDetector = "SBND";
+  else if (fDetector.find("icarus") != std::string::npos) fDetector = "ICARUS";
+  else {
+      throw cet::exception("FlashPredict") << "Detector: " << fDetector
+                                           << ", not supported. Stopping.\n";
+  }
+  fNTPC = geometry->NTPC();
   if (fDetector == "SBND" && fCryostat == 1) {
     throw cet::exception("FlashPredictSBND") << "SBND has only one cryostat. \n"
                                              << "Check Detector and Cryostat parameter." << std::endl;
@@ -194,6 +201,16 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   //
   infile->Close();
 
+  event_counter = 0;
+  fill_counter = 0;
+  bookkeeping = 0;
+
+  nopfpneutrino_counter = 0;
+  nullophittime_counter = 0;
+  nonvalidophit_counter = 0;
+  no_ophit_counter = 0;
+  no_charge_counter = 0;
+  multiple_fill_counter = 0;
   // Call appropriate produces<>() functions here.
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
@@ -214,12 +231,8 @@ void FlashPredict::produce(art::Event & e)
   _flash_unpe    = -9999.;
   _flash_r       = -9999.;
   _score         = -9999.;
+  event_counter++;
 
-  size_t nTPCs(geometry->NTPC());
-  if (nTPCs > nMaxTPCs) {
-    mf::LogWarning("FlashPredict") << "nTPC can't be larger than 2, resizing.";
-    nTPCs = 2;
-  }
   geo::CryostatGeo geo_cryo = geometry->Cryostat(fCryostat);
 
   // grab PFParticles in event
@@ -244,8 +257,10 @@ void FlashPredict::produce(art::Event & e)
   art::Handle<std::vector<recob::OpHit> > ophit_h;
   e.getByLabel(fOpHitProducer, ophit_h);
   if(!ophit_h.isValid()) {
-    mf::LogWarning("FlashPredict") << "No optical hits from producer module "
-                                   << fOpHitProducer;
+    mf::LogError("FlashPredict") << "No optical hits from producer module "
+                                 << fOpHitProducer;
+    nonvalidophit_counter++;
+    updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
     return;
@@ -283,6 +298,12 @@ void FlashPredict::produce(art::Event & e)
   }
 
   if (ophittime->GetEntries() <= 0 || ophittime->Integral() < fMinFlashPE) {
+    mf::LogWarning("FlashPredict") << "\nOpHitTime has no entries: " << ophittime->GetEntries()
+                                   << "\nor the integral: " << ophittime->Integral()
+                                   << " is less than " << fMinFlashPE
+                                   << "\nSkipping...";
+    nullophittime_counter++;
+    updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
     return;
@@ -295,30 +316,61 @@ void FlashPredict::produce(art::Event & e)
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
 
   // only use optical hits around the flash time
-  OpHitSubset.erase(std::remove_if(OpHitSubset.begin(), OpHitSubset.end(),
-                                   [lowedge, highedge](const recob::OpHit& oph)-> bool
-                                     { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
-                    OpHitSubset.end());
+  OpHitSubset.erase(
+    std::remove_if(OpHitSubset.begin(), OpHitSubset.end(),
+                   [lowedge, highedge](const recob::OpHit& oph)-> bool
+                     { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
+    OpHitSubset.end());
 
-  // check if the TPC has OpHits
-  bool lightInTPC[nMaxTPCs] = {false};
-  for (size_t t=0; t<nMaxTPCs; t++){
+  // check if the drift volumes have OpHits
+  std::array<bool, fDriftVolumes> lightInTPC = {false};
+  for (size_t t=0; t<fDriftVolumes; t++){
+    // TODO: lambda function should use a geometry service or a pdMap function
     auto it = std::find_if (OpHitSubset.begin(), OpHitSubset.end(),
                             [t, this](const recob::OpHit& oph)-> bool
                               { return isPDInCryoTPC(oph.OpChannel(), fCryostat, t, fDetector); });
     lightInTPC[t] = (it != OpHitSubset.end());
   }
+  if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
+    mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
+    no_ophit_counter++;
+    updateBookKeeping();
+    e.put(std::move(T0_v));
+    e.put(std::move(pfp_t0_assn_v));
+    return;
+  }
 
+  // TODO: nice to this check in a single block
+  bool pfpneutrino = false;
+  for (size_t p=0; p<pfp_h->size(); p++) {
+    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
+    if ((pfpPDGC == 12) ||
+        (pfpPDGC == 14) ||
+        (pfpPDGC == 16)) {
+      pfpneutrino = true;
+      break;
+    }
+  }
+  if (!pfpneutrino) {
+    mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
+    nopfpneutrino_counter++;
+    updateBookKeeping();
+    e.put(std::move(T0_v));
+    e.put(std::move(pfp_t0_assn_v));
+    return;
+  }
+
+  unsigned filled_tree = 0;
+  std::vector<bool> qInTPC(fNTPC, false);
   // Loop over pandora pfp particles
   for (unsigned int p=0; p<pfp_h->size(); p++) {
     auto const& pfp = pfp_h->at(p);
-    if (pfp.IsPrimary() == false) continue;
-    if ( fSelectNeutrino &&
-         (abs(pfp.PdgCode()) != 12) &&
-         (abs(pfp.PdgCode()) != 14) &&
-         (abs(pfp.PdgCode()) != 16)) continue;
-
-    for (size_t t=0; t<nMaxTPCs; t++) qClusterInTPC[t].clear();
+    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
+    if (!pfp.IsPrimary()) continue;
+    if (fSelectNeutrino &&
+        (pfpPDGC != 12) &&
+        (pfpPDGC != 14) &&
+        (pfpPDGC != 16) ) continue;
     std::vector<flashmatch::QCluster_t> qClusterInTPC(fNTPC);
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
@@ -370,37 +422,44 @@ void FlashPredict::produce(art::Event & e)
       // necessary to query the wire position every time.
       // There's just two different X wire positions on any given
       // cryostat for the collection wires.
-      for (size_t sp=0; sp<spacepoint_ptr_v.size(); sp++) {
-        auto SP = spacepoint_ptr_v[sp];
+      for (auto& SP : spacepoint_ptr_v) {
         auto const& spkey = SP.key();
         const std::vector< art::Ptr<recob::Hit> > this_hit_ptr_v = spacepoint_hit_assn_v.at( spkey );
-        for (size_t h=0; h<this_hit_ptr_v.size(); h++) {
-          auto hit = this_hit_ptr_v.at( h );
+        for (auto& hit : this_hit_ptr_v) {
           // Only use hits from the collection plane
           geo::WireID wid = hit->WireID();
           if (geometry->SignalType(wid) != geo::kCollection) continue;
           // Add the charged point to the vector
           const auto &position(SP->XYZ());
           const auto tpcindex = wid.TPC;
+
+          // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
           // throw the charge coming from another TPC
-          if (!isChargeInCryoTPC(position[0], fCryostat, tpcindex, fDetector)) continue;
+          // if (!isChargeInCryoTPC(position[0], fCryostat, tpcindex, fDetector)) continue;
+
           const auto charge(hit->Integral());
           double Wxyz[3];
           geometry->WireIDToWireGeo(wid).GetCenter(Wxyz);
-          // xpos is the distance from the wire planes.
-          double xpos = std::abs(position[0] - Wxyz[0]);
-          qClusterInTPC[tpcindex].emplace_back(xpos, position[1], position[2],
-                                               charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
-                                                         ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower));
+          double wires_distance_X = std::abs(position[0] - Wxyz[0]);
+          qClusterInTPC[tpcindex].emplace_back(
+            wires_distance_X, position[1], position[2],
+            charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
+                      ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower));
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
 
-    double mscore[nMaxTPCs] = {0.};
+    std::vector<double> mscore(fNTPC, 0.);
     // double charge[nMaxTPCs] = {0.}; // TODO: Use this
-    for (size_t itpc=0; itpc<nTPCs; ++itpc) {
-      if (!lightInTPC[itpc]) continue;
+    for (size_t itpc=0; itpc<fNTPC; ++itpc) {
+
+      // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
+      // if (!lightInTPC[itpc]) {
+      //   // mf::LogDebug("FlashPredict") << "No LIGHT in the " << itpc << " TPC, continue.";
+      //   continue;
+      // }
+
       double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
       _charge_q = 0;
       // TODO: use accumulators instead of this for loop
@@ -412,9 +471,11 @@ void FlashPredict::produce(art::Event & e)
         _charge_q += qp.q;
       }
       if (norm <= 0) {
-        // mf::LogWarning("FlashPredict") << "No charge in the TPC, continue.";
+        qInTPC[itpc] = false;
+        mf::LogDebug("FlashPredict") << "No CHARGE in the " << itpc << " TPC, continue.";
         continue;
       }
+      qInTPC[itpc] = true;
       _charge_x = xave / norm;
       _charge_y = yave / norm;
       _charge_z = zave / norm;
@@ -478,26 +539,47 @@ void FlashPredict::produce(art::Event & e)
       //      _score/=icount;
       if (_flash_pe > 0 ) { // TODO: is this really the best condition?
         mscore[itpc] = _score;
-        if (fMakeTree) _flashmatch_nuslice_tree->Fill();
+        if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
+        fill_counter++;
+        filled_tree++;
+        if(filled_tree > 1) {
+          multiple_fill_counter++;
+          mf::LogWarning("FlashPredict") << "Event has produced " << filled_tree << " scores";
+        }
+        if (!pfpneutrino) {
+          mf::LogError("FlashPredict") << "No pfpneutrino on event, but filling!.";
+        }
       }
     }  // end loop over TPCs
 
-    double this_score = 0.0; int icount = 0; // double totc = 0; //TODO: Use this
-    for (size_t itpc=0; itpc<nTPCs; ++itpc) {
+
+    double this_score = 0.; double score_count = 0.; // double totc = 0; //TODO: Use this
+    for (size_t itpc=0; itpc<fNTPC; ++itpc) {
       this_score += mscore[itpc];
       // totc += charge[itpc];
-      if (mscore[itpc] > 0) icount++;
+      if (mscore[itpc] > 0) score_count++;
     }
-    if (icount > 0) {
-      this_score /= (icount * 1.0);
+    if (score_count > 0) {
+      this_score /= score_count;
 
       // create t0 and pfp-t0 association here
       T0_v->push_back(anab::T0(_flash_time, icountPE, p, 0, this_score));
-      //    util::CreateAssn(*this, e, *T0_v, pfp_h[p], *pfp_t0_assn_v);
-      //    util::CreateAssn(*this, e, *T0_v, pfp, *pfp_t0_assn_v);
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // over all PFparticles
+
+  if(filled_tree == 0 &&
+     std::none_of(qInTPC.begin(), qInTPC.end(),
+                  [](bool v){return v;})){
+    mf::LogWarning("FlashPredict") << "No charge associated to pfpneutrino. Skipping...";
+    no_charge_counter++;
+    updateBookKeeping();
+    e.put(std::move(T0_v));
+    e.put(std::move(pfp_t0_assn_v));
+    return;
+  }
+
+  updateBookKeeping();
 
   e.put(std::move(T0_v));
   e.put(std::move(pfp_t0_assn_v));
@@ -523,7 +605,10 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     if (fDetector == "SBND") op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     // check cryostat and tpc
-    if (!isPDInCryoTPC(PMTxyz[0], fCryostat, itpc, fDetector)) continue;
+
+    // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
+    // if (!isPDInCryoTPC(PMTxyz[0], fCryostat, itpc, fDetector)) continue;
+
     // only use PMTs for SBND
     if (op_type == "pmt_coated" || op_type == "pmt") {
       // Add up the position, weighting with PEs
@@ -761,6 +846,41 @@ bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::stri
   return false;
 }
 
+void FlashPredict::printBookKeeping(std::string stream="info")
+{
+  std::ostringstream message;
+  message
+    // << "Bookkeeping\n"
+    << "event_counter:        \t  " << event_counter << "\n"
+    << "nopfpneutrino_counter:\t -" << nopfpneutrino_counter << "\n"
+    << "nullophittime_counter:\t -" << nullophittime_counter << "\n"
+    << "nonvalidophit_counter:\t -" << nonvalidophit_counter << "\n"
+    << "no_ophit_counter:     \t -" << no_ophit_counter << "\n"
+    << "no_charge_counter:    \t -" << no_charge_counter << "\n"
+    << "multiple_fill_counter:\t +" << multiple_fill_counter << "\n"
+    << "fill_counter:\t" << fill_counter << "\n"
+    << "bookkeeping:\t" << bookkeeping << "\n";
+  if(stream == "debug")
+    mf::LogDebug("FlashPredict") << message.str();
+  else if(stream == "info")
+    mf::LogInfo("FlashPredict") << message.str();
+  else if(stream == "warning")
+    mf::LogWarning("FlashPredict") << message.str();
+  else
+    mf::LogVerbatim("FlashPredict") << message.str();
+}
+
+void FlashPredict::updateBookKeeping()
+{
+  bookkeeping = event_counter
+    - nopfpneutrino_counter - nullophittime_counter
+    - nonvalidophit_counter - no_ophit_counter
+    - no_charge_counter
+    + multiple_fill_counter;
+
+  if(fill_counter != bookkeeping) printBookKeeping("warning");
+}
+
 void FlashPredict::beginJob()
 {
   // Implementation of optional member function here.
@@ -772,7 +892,7 @@ void FlashPredict::beginJob()
 
 void FlashPredict::endJob()
 {
-  // Implementation of optional member function here.
+  printBookKeeping("warning");
 }
 
 DEFINE_ART_MODULE(FlashPredict)

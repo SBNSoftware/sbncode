@@ -64,6 +64,7 @@
 class FlashPredict;
 class FlashPredict : public art::EDProducer {
 
+
 public:
   explicit FlashPredict(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -79,6 +80,7 @@ public:
   void beginJob() override;
   void endJob() override;
 
+
 private:
   // Declare member data here.
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
@@ -92,12 +94,13 @@ private:
   double fPEscale;
   double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
+  size_t fNTPC;
+  size_t fTPCPerDriftVolume;
+  static const size_t fDriftVolumes = 2;
   int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   bool fNoAvailableMetrics, fMakeTree, fSelectNeutrino, fUseUncoatedPMT, fUseCalo;
   double fTermThreshold;
   std::vector<double> fPMTChannelCorrection;
-  // geometry service
-  static const size_t nMaxTPCs = 2; // ICARUS has 4 TPCs, however they need to be run independently
 
   void computeFlashMetrics(size_t idtpc, std::vector<recob::OpHit> const& OpHitSubset);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
@@ -113,6 +116,8 @@ private:
   bool isPDInCryoTPC(double pd_x, int icryo, size_t itpc, std::string detector);
   bool isPDInCryoTPC(int pdChannel, int icryo, size_t itpc, std::string detector);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::string detector);
+  void printBookKeeping(std::string stream);
+  void updateBookKeeping();
 
   int icountPE = 0;
   const art::ServiceHandle<geo::Geometry> geometry;
@@ -137,6 +142,12 @@ private:
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
   int n_bins;
+
+  // bookkeeping
+  int event_counter, fill_counter, bookkeeping;
+  unsigned nopfpneutrino_counter, nullophittime_counter,
+    nonvalidophit_counter, no_ophit_counter, no_charge_counter;
+  unsigned multiple_fill_counter;
 
 };
 
