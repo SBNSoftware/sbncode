@@ -125,12 +125,12 @@ private:
 
   // Tree variables
   std::vector<double> _pe_reco_v, _pe_hypo_v;
-  Double_t _charge_x, _charge_y, _charge_z, _charge_q;
-  Double_t _flash_x, _flash_y, _flash_z, _flash_r, _flash_pe, _flash_unpe;
+  double _charge_x, _charge_y, _charge_z, _charge_q;
+  double _flash_x, _flash_y, _flash_z, _flash_r, _flash_pe, _flash_unpe;
   // TODO: why not charge_time?
-  Double_t _flash_time;
-  Double_t _score;
-  Int_t _evt, _run, _sub;
+  double _flash_time;
+  double _score;
+  int _evt, _run, _sub;
 
   std::map<size_t, size_t> _pfpmap;
 
