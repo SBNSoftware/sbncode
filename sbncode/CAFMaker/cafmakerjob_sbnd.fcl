@@ -111,3 +111,4 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 physics.producers.mycafmaker.CRTHitLabel: "crthit"
+physics.producers.mycafmaker.CRTHitUseTS0: false
