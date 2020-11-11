@@ -162,20 +162,20 @@ namespace ana
   //----------------------------------------------------------------------
   Var Scaled(const Var& v, double s)
   {
-    return Var([v, s](const caf::SRProxy* sr){return s*v(sr);});
+    return Var([v, s](const caf::SRSliceProxy* sr){return s*v(sr);});
   }
 
   //----------------------------------------------------------------------
   Var Constant(double c)
   {
-    return Var([c](const caf::SRProxy*){return c;});
+    return Var([c](const caf::SRSliceProxy*){return c;});
   }
 
   //--------------------------------------------------------------------
 
   Var Sqrt(const Var& v)
   {
-    return Var([v](const caf::SRProxy* sr){return sqrt(v(sr));});
+    return Var([v](const caf::SRSliceProxy* sr){return sqrt(v(sr));});
   }
 
   //----------------------------------------------------------------------
@@ -266,6 +266,7 @@ namespace ana
 
   // explicitly instantiate the templates for the types we know we have
   template class GenericVar<caf::SRProxy>;
+  template class GenericVar<caf::SRSliceProxy>;
   template class GenericVar<caf::SRSpill>;
   template class GenericVar<caf::SRSpillTruthBranch>;
 

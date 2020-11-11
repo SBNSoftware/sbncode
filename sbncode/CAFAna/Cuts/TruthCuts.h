@@ -11,9 +11,9 @@ namespace ana
   ///
   /// In this case the selection function is simple enough that we can include
   /// it inline as a lambda function.
-  const Cut kIsNC([](const caf::SRProxy* sr)
+  const Cut kIsNC([](const caf::SRSliceProxy* slc)
                   {
-                    return !sr->mc.nu[0].iscc;
+                    return !slc->truth.iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -25,11 +25,11 @@ namespace ana
     {
     }
 
-    bool operator()(const caf::SRProxy* sr) const
+    bool operator()(const caf::SRSliceProxy* slc) const
     {
-      return sr->mc.nu[0].iscc &&
-        abs(sr->mc.nu[0].initpdg) == fPdgOrig &&
-        abs(sr->mc.nu[0].pdg) == fPdg;
+      return slc->truth.iscc &&
+        abs(slc->truth.initpdg) == fPdgOrig &&
+        abs(slc->truth.pdg) == fPdg;
     }
   protected:
     int fPdg, fPdgOrig;
@@ -43,9 +43,9 @@ namespace ana
     {
     }
 
-    bool operator()(const caf::SRProxy* sr) const
+    bool operator()(const caf::SRSliceProxy* slc) const
     {
-      return sr->mc.nu[0].isnc && abs(sr->mc.nu[0].initpdg) == fPdgOrig;
+      return slc->truth.isnc && abs(slc->truth.initpdg) == fPdgOrig;
     }
   protected:
     int fPdgOrig;
@@ -75,8 +75,8 @@ namespace ana
   const Cut kIsNCFromNue(NCFlavOrig(12));
 
   /// Is this truly an antineutrino?
-  const Cut kIsAntiNu([](const caf::SRProxy* sr)
+  const Cut kIsAntiNu([](const caf::SRSliceProxy* slc)
                       {
-                        return sr->mc.nu[0].pdg < 0;
+                        return slc->truth.pdg < 0;
                       });
 }

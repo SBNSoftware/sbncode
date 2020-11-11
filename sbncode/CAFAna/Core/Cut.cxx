@@ -70,7 +70,7 @@ namespace ana
   }
 
   // Make sure all versions get generated
-  template Cut operator&&<caf::SRProxy>(const Cut& a, const Cut& b);
+  template Cut operator&&<caf::SRSliceProxy>(const Cut& a, const Cut& b);
   template SpillCut operator&&<caf::SRSpill>(const SpillCut& a, const SpillCut& b);
   template SpillTruthCut operator&&<caf::SRSpillTruthBranch>(const SpillTruthCut& a, const SpillTruthCut& b);
 
@@ -96,7 +96,7 @@ namespace ana
   }
 
   // Make sure all versions get generated
-  template Cut operator||<caf::SRProxy>(const Cut& a, const Cut& b);
+  template Cut operator||<caf::SRSliceProxy>(const Cut& a, const Cut& b);
   template SpillCut operator||<caf::SRSpill>(const SpillCut& a, const SpillCut& b);
   template SpillTruthCut operator||<caf::SRSpillTruthBranch>(const SpillTruthCut& a, const SpillTruthCut& b);
 
@@ -116,7 +116,7 @@ namespace ana
   }
 
   // Make sure all versions get generated
-  template Cut operator!<caf::SRProxy>(const Cut& a);
+  template Cut operator!<caf::SRSliceProxy>(const Cut& a);
   template SpillCut operator!<caf::SRSpill>(const SpillCut& a);
   template SpillTruthCut operator!<caf::SRSpillTruthBranch>(const SpillTruthCut& a);
 
@@ -198,6 +198,7 @@ namespace ana
 
   // Make sure all three versions get generated
   template class GenericCut<caf::SRProxy>;
+  template class GenericCut<caf::SRSliceProxy>;
   template class GenericCut<caf::SRSpill>;
   template class GenericCut<caf::SRSpillTruthBranch>;
 

@@ -139,7 +139,7 @@ namespace ana
     for(n = 0; n < Nentries; ++n){
       if(!dir) tr->LoadTree(n); // nested mode
 
-      HandleRecord(&sr);
+      for(caf::SRSliceProxy& slc: sr.slc) HandleRecord(&slc);
 
       if(prog) prog->SetProgress(double(n)/Nentries);
     } // end for n
@@ -152,7 +152,7 @@ namespace ana
   public:
     CutVarCache() : fVals(U::MaxID()+1), fValsSet(U::MaxID()+1, false) {}
 
-    inline T Get(const U& var, const caf::SRProxy* sr)
+    inline T Get(const U& var, const caf::SRSliceProxy* slc)
     {
       const unsigned int id = var.ID();
 
@@ -160,7 +160,7 @@ namespace ana
         return fVals[id];
       }
       else{
-        const T val = var(sr);
+        const T val = var(slc);
         fVals[id] = val;
         fValsSet[id] = true;
         return val;
@@ -174,7 +174,7 @@ namespace ana
   };
 
   //----------------------------------------------------------------------
-  void SpectrumLoader::HandleRecord(caf::SRProxy* sr)
+  void SpectrumLoader::HandleRecord(caf::SRSliceProxy* slc)
   {
     // Some shifts only adjust the weight, so they're effectively nominal, but
     // aren't grouped with the other nominal histograms. Keep track of the
@@ -197,7 +197,7 @@ namespace ana
       double systWeight = 1;
       // Can special-case nominal to not pay cost of Shift()
       if(!shift.IsNominal()){
-        shift.Shift(sr, systWeight);
+        shift.Shift(slc, systWeight);
         // If there were only weighting systs applied then the cached nominal
         // values are still valid.
         shifted = caf::SRProxySystController::AnyShifted();
@@ -206,21 +206,21 @@ namespace ana
       for(auto& cutdef: shiftdef.second){
         const Cut& cut = cutdef.first;
 
-        const bool pass = shifted ? cut(sr) : nomCutCache.Get(cut, sr);
+        const bool pass = shifted ? cut(slc) : nomCutCache.Get(cut, slc);
         // Cut failed, skip all the histograms that depended on it
         if(!pass) continue;
 
         for(auto& weidef: cutdef.second){
           const Var& weivar = weidef.first;
 
-          double wei = shifted ? weivar(sr) : nomWeiCache.Get(weivar, sr);
+          double wei = shifted ? weivar(slc) : nomWeiCache.Get(weivar, slc);
 
           wei *= systWeight;
           if(wei == 0) continue;
 
           for(auto& vardef: weidef.second){
             if(vardef.first.IsMulti()){
-              for(double val: vardef.first.GetMultiVar()(sr)){
+              for(double val: vardef.first.GetMultiVar()(slc)){
                 for(Spectrum* s: vardef.second.spects)
                   s->Fill(val, wei);
               }
@@ -229,7 +229,7 @@ namespace ana
 
             const Var& var = vardef.first.GetVar();
 
-            const double val = shifted ? var(sr) : nomVarCache.Get(var, sr);
+            const double val = shifted ? var(slc) : nomVarCache.Get(var, slc);
 
             if(std::isnan(val) || std::isinf(val)){
               std::cerr << "Warning: Bad value: " << val
@@ -243,7 +243,7 @@ namespace ana
             for(Spectrum* s: vardef.second.spects) s->Fill(val, wei);
 
             for(ReweightableSpectrum* rw: vardef.second.rwSpects){
-              const double yval = rw->ReweightVar()(sr);
+              const double yval = rw->ReweightVar()(slc);
 
               if(std::isnan(yval) || std::isinf(yval)){
                 std::cerr << "Warning: Bad value: " << yval

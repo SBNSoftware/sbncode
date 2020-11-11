@@ -45,7 +45,7 @@ namespace ana
 
     virtual void HandleFile(TFile* f, Progress* prog = 0);
 
-    virtual void HandleRecord(caf::SRProxy* sr);
+    virtual void HandleRecord(caf::SRSliceProxy* slc);
 
     /// Save results of AccumulateExposures into the individual spectra
     virtual void StoreExposures();
