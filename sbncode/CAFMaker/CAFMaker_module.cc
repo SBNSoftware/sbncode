@@ -790,9 +790,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
              fParams.PFParticleLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Hit> fmHit =
+    art::FindManyP<recob::Hit> fmTrackHit =
       FindManyPStrict<recob::Hit>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::Hit> fmShowerHit =
+      FindManyPStrict<recob::Hit>(slcShowers, evt,
+          fParams.RecoShowerLabel() + slice_tag_suff);
 
     art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
       FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt,
@@ -915,14 +919,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackVars(*thisTrack[0], thisParticle, primary, producer, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
+
         if (fmPID.isValid()) {
            FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
         }
-        if (fmHit.isValid()) {
-          FillTrackTruth(fmHit.at(iPart), clock_data, rec.reco.trk.back());
+        if (fmTrackHit.isValid()) {
+          FillTrackTruth(fmTrackHit.at(iPart), clock_data, rec.reco.trk.back());
         }
         if (fmCRTHit.isValid()) {
           FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
@@ -935,7 +940,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], thisParticle, vertex, primary, producer, rec.reco.shw.back());
-        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() == 1) {
+        // We may have many residuals per shower depending on how many showers ar in the slice
+        if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         }
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
@@ -944,7 +950,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
         }
-
+        if (fmShowerHit.isValid()) {
+          FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
+        }
       } // thisShower exists
 
       else {}

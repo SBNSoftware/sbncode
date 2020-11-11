@@ -58,6 +58,11 @@ namespace caf
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
 
+  void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const detinfo::DetectorClocksData &clockData,
+		      caf::SRShower& srshower,
+		      bool allowEmpty = false);
+
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
