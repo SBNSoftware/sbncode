@@ -11,7 +11,8 @@ art_make_library( LIBRARY_NAME ${PACKAGE}
                             StandardRecord
                             ${ART_FRAMEWORK_CORE}
 			    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-			    ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+			    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+			    ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -47,7 +48,7 @@ cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 simple_plugin ( CAFMaker module
                 CAFMaker
                StandardRecord
- 		            ${IFDH_SERVICE}
+	       ${IFDH_SERVICE}
                ${ART_FRAMEWORK_CORE}
                ${ART_FRAMEWORK_PRINCIPAL}
                ${ART_FRAMEWORK_SERVICES_REGISTRY}

@@ -29,6 +29,7 @@ namespace caf
       SRTrack();
       ~SRTrack(){  };
 
+      unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
       unsigned short npts;         ///< number of points (recob Track.NPoints)
       float          len;          ///< track length [cm]
       float          costh;       ///< Costh of start direction of track

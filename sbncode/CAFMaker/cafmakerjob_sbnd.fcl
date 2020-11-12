@@ -2,6 +2,7 @@
 
 #include "services_sbnd.fcl"
 #include "geometry_sbnd.fcl"
+
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -76,17 +77,17 @@ physics:
 #  exposure:             @local::standard_cosmicexposureinfo  #calib
 #  ifdbspillinfo:        @local::standard_ifdbspillinfo       #beam
 #  calhit:               @local::standard_calhit              #calib
-#  slicer:             @local::standard_slicer4d            #reco
+#  slicer: 		 @local::standard_slicer4d            #reco
 #  slicertd:             @local::standard_td                  #reco
 #  slicer:               @local::standard_slicemergeviews
 #  cosmictrack:          @local::standard_cosmictrack         #reco
 #  windowtrack:          @local::window_cosmictrack           #reco
    flashtrig: @local::pmtflashtrigmaker_sbnd
-   pandoraTrackMCS: @local::mcs_sbn
-   pandoraTrackRange: @local::range_sbn
-   pandoraShowerSelectionVars: @local::showerSelectionVars_sbn
-   crtconvhit: @local::crthitconverter_sbnd
-   pandoraTrackCRTHit: @local::crthitmatch_sbnd
+   pandoraTrackMCS:		@local::mcs_sbn
+   pandoraTrackRange:		@local::range_sbn
+   pandoraShowerSelectionVars: 	@local::showerSelectionVars_sbn
+   crtconvhit: 		       	@local::crthitconverter_sbnd
+   pandoraTrackCRTHit: 	       	@local::crthitmatch_sbnd
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -109,3 +110,5 @@ physics:
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
+physics.producers.mycafmaker.CRTHitLabel: "crthit"
+physics.producers.mycafmaker.CRTHitUseTS0: false

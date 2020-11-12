@@ -31,10 +31,6 @@ namespace ana
     virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
-    virtual void Derivative(osc::IOscCalculator* calc,
-                            const SystShifts& shift,
-                            std::unordered_map<const ISyst*, double>& dchi) const override;
-
     /// For the subexperiment \a idx, set up a mapping between systematics
     ///
     /// Each element in the vector is a pair from a "primary" systematic to a

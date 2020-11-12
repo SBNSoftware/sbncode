@@ -21,7 +21,7 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
-    srhit.time = (use_ts0 ? hit.ts0_ns : hit.ts1_ns) / 1000.;
+    srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -30,6 +30,12 @@ namespace caf
     srhit.position_err.x = hit.x_err;
     srhit.position_err.y = hit.y_err;
     srhit.position_err.z = hit.z_err;
+
+    srhit.pe = hit.peshit;
+
+    // std::cout << "x:" << srhit.position.x 
+    //           << ", y:" << srhit.position.y 
+    //           << ", z:" << srhit.position.z << std::endl;
   }
 
   //......................................................................
@@ -37,10 +43,12 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      unsigned producer,
                       caf::SRShower &srshower,
                       bool allowEmpty)
   {
 
+    srshower.producer = producer;
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
     srshower.dEdx     = shower.dEdx();
@@ -107,10 +115,12 @@ namespace caf
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary /* can be null */,
+                     unsigned producer,
                      caf::SRSlice &srslice,
                      bool allowEmpty)
   {
 
+    srslice.producer = producer;
     srslice.charge       = slice.Charge();
 
     // get the primary tracks/showers
@@ -351,10 +361,12 @@ namespace caf
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle &particle,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
 
+    srtrack.producer = producer;
     srtrack.npts = track.CountValidPoints();
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());

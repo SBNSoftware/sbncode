@@ -1,6 +1,6 @@
-BEGIN_PROLOG
-
 #include "flashmatch_sbnd.fcl"
+
+BEGIN_PROLOG
 
 flash_match_sbnd: @local::sbnd_simple_flashmatch
 flash_match_sbnd.MakeTree: false

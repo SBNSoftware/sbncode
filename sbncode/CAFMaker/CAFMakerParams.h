@@ -153,7 +153,7 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crtconvhit"
+      "crthit"
     };
     
     Atom<string> FlashTrigLabel {
