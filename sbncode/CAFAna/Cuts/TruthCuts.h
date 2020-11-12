@@ -6,6 +6,10 @@
 
 namespace ana
 {
+  const Cut kHasMatchedNu([](const caf::SRSliceProxy* slc)
+                          {
+                            return slc->truth.index >= 0;
+                          });
 
   /// \brief Is this a Neutral %Current event?
   ///
@@ -27,7 +31,8 @@ namespace ana
 
     bool operator()(const caf::SRSliceProxy* slc) const
     {
-      return slc->truth.iscc &&
+      return kHasMatchedNu(slc) &&
+        slc->truth.iscc &&
         abs(slc->truth.initpdg) == fPdgOrig &&
         abs(slc->truth.pdg) == fPdg;
     }
@@ -45,7 +50,7 @@ namespace ana
 
     bool operator()(const caf::SRSliceProxy* slc) const
     {
-      return slc->truth.isnc && abs(slc->truth.initpdg) == fPdgOrig;
+      return kHasMatchedNu(slc) && slc->truth.isnc && abs(slc->truth.initpdg) == fPdgOrig;
     }
   protected:
     int fPdgOrig;
@@ -77,6 +82,6 @@ namespace ana
   /// Is this truly an antineutrino?
   const Cut kIsAntiNu([](const caf::SRSliceProxy* slc)
                       {
-                        return slc->truth.pdg < 0;
+                        return kHasMatchedNu(slc) && slc->truth.pdg < 0;
                       });
 }
