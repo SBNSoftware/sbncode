@@ -242,6 +242,14 @@ void FlashPredict::produce(art::Event & e)
   // auto const& calo_h = e.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
   // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h, e, fCaloProducer);
 
+  if (!pfpNeutrinoOnEvent(pfp_h)) {
+    mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
+    bk.nopfpneutrino_++;
+    updateBookKeeping();
+    e.put(std::move(T0_v));
+    e.put(std::move(pfp_t0_assn_v));
+    return;
+  }
 
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit> > ophit_h;
@@ -324,26 +332,6 @@ void FlashPredict::produce(art::Event & e)
   if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
     mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
     bk.no_ophit_++;
-    updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
-    return;
-  }
-
-  // TODO: nice to this check in a single block
-  bool pfpneutrino = false;
-  for (size_t p=0; p<pfp_h->size(); p++) {
-    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
-    if ((pfpPDGC == 12) ||
-        (pfpPDGC == 14) ||
-        (pfpPDGC == 16)) {
-      pfpneutrino = true;
-      break;
-    }
-  }
-  if (!pfpneutrino) {
-    mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
-    bk.nopfpneutrino_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -535,9 +523,6 @@ void FlashPredict::produce(art::Event & e)
         if(filled_tree > 1) {
           bk.multiple_fill_++;
           mf::LogWarning("FlashPredict") << "Event has produced " << filled_tree << " scores";
-        }
-        if (!pfpneutrino) {
-          mf::LogError("FlashPredict") << "No pfpneutrino on event, but filling!.";
         }
       }
     }  // end loop over TPCs
@@ -760,6 +745,20 @@ void FlashPredict::AddDaughters(
   return;
 } // void FlashPredict::AddDaughters
 
+
+bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h)
+{
+  for (size_t p=0; p<pfp_h->size(); p++) {
+    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
+    if ((pfpPDGC == 12) ||
+        (pfpPDGC == 14) ||
+        (pfpPDGC == 16)) {
+     return true;
+      break;
+    }
+  }
+  return false;
+}
 
 // TODO: no hardcoding
 // TODO: collapse with the next
