@@ -143,12 +143,13 @@ private:
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
   int n_bins;
 
-  // bookkeeping
-  int event_counter, fill_counter, bookkeeping;
-  unsigned nopfpneutrino_counter, nullophittime_counter,
-    nonvalidophit_counter, no_ophit_counter, no_charge_counter;
-  unsigned multiple_fill_counter;
-
+  struct BookKeeping {
+    int event_, fill_, bookkeeping_;
+    unsigned nopfpneutrino_, nullophittime_,
+      nonvalidophit_, no_ophit_, no_charge_;
+    unsigned multiple_fill_;
+  };
+  BookKeeping bk;
 };
 
 

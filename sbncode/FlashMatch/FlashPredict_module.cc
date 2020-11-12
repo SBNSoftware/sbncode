@@ -201,16 +201,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   //
   infile->Close();
 
-  event_counter = 0;
-  fill_counter = 0;
-  bookkeeping = 0;
-
-  nopfpneutrino_counter = 0;
-  nullophittime_counter = 0;
-  nonvalidophit_counter = 0;
-  no_ophit_counter = 0;
-  no_charge_counter = 0;
-  multiple_fill_counter = 0;
   // Call appropriate produces<>() functions here.
 
   // Call appropriate consumes<>() for any products to be retrieved by this module.
@@ -231,9 +221,9 @@ void FlashPredict::produce(art::Event & e)
   _flash_unpe    = -9999.;
   _flash_r       = -9999.;
   _score         = -9999.;
-  event_counter++;
+  bk.event_++;
 
-  geo::CryostatGeo geo_cryo = geometry->Cryostat(fCryostat);
+  geo::CryostatGeo geoCryo = geometry->Cryostat(fCryostat);
 
   // grab PFParticles in event
   auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle> >(fPandoraProducer);
@@ -259,7 +249,7 @@ void FlashPredict::produce(art::Event & e)
   if(!ophit_h.isValid()) {
     mf::LogError("FlashPredict") << "No optical hits from producer module "
                                  << fOpHitProducer;
-    nonvalidophit_counter++;
+    bk.nonvalidophit_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -289,7 +279,7 @@ void FlashPredict::produce(art::Event & e)
     if (fDetector == "SBND" && fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated"))
       ophittime2->Fill(oph.PeakTime(), fPEscale * oph.PE());
     if (fDetector == "SBND" && !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
-    if (!geo_cryo.ContainsPosition(PMTxyz)) continue;   // use only PMTs in the specified cryostat for ICARUS
+    if (!geoCryo.ContainsPosition(PMTxyz)) continue;   // use only PMTs in the specified cryostat for ICARUS
     //    std::cout << "op hit " << j << " channel " << oph.OpChannel() << " time " << oph.PeakTime() << " pe " << fPEscale*oph.PE() << std::endl;
 
     ophittime->Fill(oph.PeakTime(), fPEscale * oph.PE());
@@ -302,7 +292,7 @@ void FlashPredict::produce(art::Event & e)
                                    << "\nor the integral: " << ophittime->Integral()
                                    << " is less than " << fMinFlashPE
                                    << "\nSkipping...";
-    nullophittime_counter++;
+    bk.nullophittime_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -333,7 +323,7 @@ void FlashPredict::produce(art::Event & e)
   }
   if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
     mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
-    no_ophit_counter++;
+    bk.no_ophit_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -353,7 +343,7 @@ void FlashPredict::produce(art::Event & e)
   }
   if (!pfpneutrino) {
     mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
-    nopfpneutrino_counter++;
+    bk.nopfpneutrino_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -540,10 +530,10 @@ void FlashPredict::produce(art::Event & e)
       if (_flash_pe > 0 ) { // TODO: is this really the best condition?
         mscore[itpc] = _score;
         if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
-        fill_counter++;
+        bk.fill_++;
         filled_tree++;
         if(filled_tree > 1) {
-          multiple_fill_counter++;
+          bk.multiple_fill_++;
           mf::LogWarning("FlashPredict") << "Event has produced " << filled_tree << " scores";
         }
         if (!pfpneutrino) {
@@ -572,7 +562,7 @@ void FlashPredict::produce(art::Event & e)
      std::none_of(qInTPC.begin(), qInTPC.end(),
                   [](bool v){return v;})){
     mf::LogWarning("FlashPredict") << "No charge associated to pfpneutrino. Skipping...";
-    no_charge_counter++;
+    bk.no_charge_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -850,16 +840,18 @@ void FlashPredict::printBookKeeping(std::string stream="info")
 {
   std::ostringstream message;
   message
-    // << "Bookkeeping\n"
-    << "event_counter:        \t  " << event_counter << "\n"
-    << "nopfpneutrino_counter:\t -" << nopfpneutrino_counter << "\n"
-    << "nullophittime_counter:\t -" << nullophittime_counter << "\n"
-    << "nonvalidophit_counter:\t -" << nonvalidophit_counter << "\n"
-    << "no_ophit_counter:     \t -" << no_ophit_counter << "\n"
-    << "no_charge_counter:    \t -" << no_charge_counter << "\n"
-    << "multiple_fill_counter:\t +" << multiple_fill_counter << "\n"
-    << "fill_counter:\t" << fill_counter << "\n"
-    << "bookkeeping:\t" << bookkeeping << "\n";
+    << "Book Keeping\n"
+    << "events:       \t  " << bk.event_ << "\n"
+    << "nopfpneutrino:\t -" << bk.nopfpneutrino_ << "\n"
+    << "nullophittime:\t -" << bk.nullophittime_ << "\n"
+    << "nonvalidophit:\t -" << bk.nonvalidophit_ << "\n"
+    << "no_ophit:     \t -" << bk.no_ophit_ << "\n"
+    << "no_charge:    \t -" << bk.no_charge_ << "\n"
+    << "multiple_fill:\t +" << bk.multiple_fill_ << "\n"
+    << "-----------------------------------\n"
+    << "bookkeeping:  \t  " << bk.bookkeeping_ << "\n"
+    << "fill:         \t  " << bk.fill_ << "\n";
+
   if(stream == "debug")
     mf::LogDebug("FlashPredict") << message.str();
   else if(stream == "info")
@@ -872,21 +864,18 @@ void FlashPredict::printBookKeeping(std::string stream="info")
 
 void FlashPredict::updateBookKeeping()
 {
-  bookkeeping = event_counter
-    - nopfpneutrino_counter - nullophittime_counter
-    - nonvalidophit_counter - no_ophit_counter
-    - no_charge_counter
-    + multiple_fill_counter;
+  bk.bookkeeping_ = bk.event_
+    - bk.nopfpneutrino_ - bk.nullophittime_
+    - bk.nonvalidophit_ - bk.no_ophit_
+    - bk.no_charge_
+    + bk.multiple_fill_;
 
-  if(fill_counter != bookkeeping) printBookKeeping("warning");
+  if(bk.fill_ != bk.bookkeeping_) printBookKeeping("warning");
 }
 
 void FlashPredict::beginJob()
 {
-  // Implementation of optional member function here.
-
-
-
+  bk = BookKeeping();
 
 }
 
