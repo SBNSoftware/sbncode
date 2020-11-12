@@ -48,12 +48,14 @@ namespace ana
   class SBNWeightSyst: public ISyst
   {
   public:
-    SBNWeightSyst(const std::string& name);
+    SBNWeightSyst(const std::string& name, const Cut& cut = kNoCut);
 
     void Shift(double x, caf::SRProxy* sr, double& weight) const override;
 
   protected:
     mutable int fIdx;
+
+    Cut fCut;
 
     int GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const;
 

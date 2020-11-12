@@ -76,8 +76,8 @@ namespace ana
 
 
   // --------------------------------------------------------------------------
-  SBNWeightSyst::SBNWeightSyst(const std::string& name)
-    : ISyst(name, name), fIdx(-1)
+  SBNWeightSyst::SBNWeightSyst(const std::string& name, const Cut& cut)
+    : ISyst(name, name), fIdx(-1), fCut(cut)
   {
     assert(UniverseOracle::Instance().SystExists(name));
   }
@@ -85,7 +85,12 @@ namespace ana
   // --------------------------------------------------------------------------
   void SBNWeightSyst::Shift(double x, caf::SRProxy* sr, double& weight) const
   {
+<<<<<<< HEAD
     if(sr->truth.empty()) return;
+=======
+    if(sr->mc.nu.empty()) return;
+    if(!fCut(sr)) return;
+>>>>>>> a8cf6c1... Add special-casing for NonRes...[Alt] syst parameters.
 
     const auto& ws = sr->truth[0].weights;
 
@@ -154,9 +159,23 @@ namespace ana
       const UniverseOracle& uo = UniverseOracle::Instance();
       ret.reserve(uo.Systs().size());
       for(const std::string& name: uo.Systs()){
-        if(name.find("Alt") != std::string::npos) continue; // these seem to be duplicates
         if(name.find("genie") == std::string::npos) continue;
-        ret.push_back(new SBNWeightSyst(name));
+
+        if(name.find("NonRes") == 0){
+          // These NonRes parameters need special handling. There are two
+          // copies, supposed to apply to CC and NC respectively, but instead
+          // the weights are filled for all events.
+          if(name.find("Alt") == std::string::npos){
+            ret.push_back(new SBNWeightSyst(name, kIsNC));
+          }
+          else{
+            ret.push_back(new SBNWeightSyst(name, kIsCC));
+          }
+        }
+        else{
+          // Regular case
+          ret.push_back(new SBNWeightSyst(name));
+        }
       }
     }
     return ret;
