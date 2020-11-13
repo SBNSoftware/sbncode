@@ -114,6 +114,8 @@ private:
                     const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h,
                     std::vector<art::Ptr<recob::PFParticle> > &pfp_v);
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
+  void copyOpHitsInWindow(std::vector<recob::OpHit>& opHitSubset,
+                          art::Handle<std::vector<recob::OpHit>>& ophit_h);
   bool isPDInCryoTPC(double pd_x, int icryo, size_t itpc, std::string detector);
   bool isPDInCryoTPC(int pdChannel, int icryo, size_t itpc, std::string detector);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::string detector);

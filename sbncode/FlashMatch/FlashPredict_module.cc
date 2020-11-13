@@ -263,25 +263,14 @@ void FlashPredict::produce(art::Event & e)
     e.put(std::move(pfp_t0_assn_v));
     return;
   }
-  std::vector<recob::OpHit> const& OpHitCollection(*ophit_h);
-  std::vector<recob::OpHit> OpHitSubset(OpHitCollection.size());
 
-  // copy ophits that are inside the time window and with PEs
-  auto it = std::copy_if(OpHitCollection.begin(), OpHitCollection.end(), OpHitSubset.begin(),
-                         [this](const recob::OpHit& oph)-> bool
-                           { return ((oph.PeakTime() > fBeamWindowStart) &&
-                                     (oph.PeakTime() < fBeamWindowEnd)   &&
-                                     (oph.PE() > 0)); });
-  OpHitSubset.resize(std::distance(OpHitSubset.begin(), it));
-  // TODO: release OpHitCollection memory now
-
-  _pfpmap.clear();
-  for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
+  std::vector<recob::OpHit> opHits(ophit_h->size());
+  copyOpHitsInWindow(opHits, ophit_h);
 
   // get flash time
   ophittime->Reset();
   ophittime2->Reset();
-  for(auto const& oph : OpHitSubset) {
+  for(auto const& oph : opHits) {
     double PMTxyz[3];
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     if (fDetector == "SBND" && fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated"))
@@ -314,20 +303,20 @@ void FlashPredict::produce(art::Event & e)
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
 
   // only use optical hits around the flash time
-  OpHitSubset.erase(
-    std::remove_if(OpHitSubset.begin(), OpHitSubset.end(),
+  opHits.erase(
+    std::remove_if(opHits.begin(), opHits.end(),
                    [lowedge, highedge](const recob::OpHit& oph)-> bool
-                     { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
-    OpHitSubset.end());
+                   { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
+    opHits.end());
 
   // check if the drift volumes have OpHits
   std::array<bool, fDriftVolumes> lightInTPC = {false};
   for (size_t t=0; t<fDriftVolumes; t++){
     // TODO: lambda function should use a geometry service or a pdMap function
-    auto it = std::find_if (OpHitSubset.begin(), OpHitSubset.end(),
-                            [t, this](const recob::OpHit& oph)-> bool
-                              { return isPDInCryoTPC(oph.OpChannel(), fCryostat, t, fDetector); });
-    lightInTPC[t] = (it != OpHitSubset.end());
+    auto it = std::find_if(opHits.begin(), opHits.end(),
+                           [t, this](const recob::OpHit& oph)-> bool
+                           { return isPDInCryoTPC(oph.OpChannel(), fCryostat, t, fDetector); });
+    lightInTPC[t] = (it != opHits.end());
   }
   if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
     mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
@@ -337,6 +326,9 @@ void FlashPredict::produce(art::Event & e)
     e.put(std::move(pfp_t0_assn_v));
     return;
   }
+
+  _pfpmap.clear();
+  for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
 
   unsigned filled_tree = 0;
   std::vector<bool> qInTPC(fNTPC, false);
@@ -459,7 +451,7 @@ void FlashPredict::produce(art::Event & e)
       _charge_z = zave / norm;
       // charge[itpc] = _charge_q; //TODO: Use this
 
-      computeFlashMetrics(itpc, OpHitSubset);
+      computeFlashMetrics(itpc, opHits);
 
       // calculate match score here, put association on the event
       double slice = _charge_x;
@@ -561,7 +553,8 @@ void FlashPredict::produce(art::Event & e)
 
 }// end of producer module
 
-void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> const& OpHitSubset)
+
+void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> const& opHits)
 {
   // store PMT photon counts in the tree as well
   double PMTxyz[3];
@@ -575,7 +568,7 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
   double sum_D =  0;
   // TODO: change this next loop, such that it only loops
   // through channels in the current fCryostat
-  for(auto const& oph : OpHitSubset) {
+  for(auto const& oph : opHits) {
     std::string op_type = "pmt"; // the label ICARUS has
     if (fDetector == "SBND") op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
@@ -632,7 +625,7 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
   else {
     mf::LogWarning("FlashPredict") << "Really odd that I landed here, this shouldn't had happen.\n"
                                    << "pnorm:\t" << pnorm << "\n"
-                                   << "OpHitSubset.size():\t" << OpHitSubset.size() << "\n";
+                                   << "opHits.size():\t" << opHits.size() << "\n";
     _flash_y = 0;
     _flash_z = 0;
     _flash_r = 0;
@@ -759,6 +752,19 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
   }
   return false;
 }
+
+void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
+                                      art::Handle<std::vector<recob::OpHit>>& ophit_h)
+{
+  // copy ophits that are inside the time window and with PEs
+  auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
+                         [this](const recob::OpHit& oph)-> bool
+                         {return ((oph.PeakTime() > fBeamWindowStart) &&
+                                  (oph.PeakTime() < fBeamWindowEnd)   &&
+                                  (oph.PE() > 0)); });
+  opHits.resize(std::distance(opHits.begin(), it));
+}
+
 
 // TODO: no hardcoding
 // TODO: collapse with the next
