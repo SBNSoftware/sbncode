@@ -333,7 +333,7 @@ void FlashPredict::produce(art::Event & e)
   unsigned filled_tree = 0;
   std::vector<bool> qInTPC(fNTPC, false);
   // Loop over pandora pfp particles
-  for (unsigned int p=0; p<pfp_h->size(); p++) {
+  for (size_t p=0; p<pfp_h->size(); p++) {
     auto const& pfp = pfp_h->at(p);
     unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
     if (!pfp.IsPrimary()) continue;
@@ -349,11 +349,9 @@ void FlashPredict::produce(art::Event & e)
     AddDaughters(pfp_ptr, pfp_h, pfp_ptr_v);
 
     //  loop over all mothers and daughters, fill qCluster
-    for (size_t i=0; i<pfp_ptr_v.size(); i++) {
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
-      auto key = pfp_ptr_v.at(i).key();
-      recob::PFParticle pfp = *pfp_ptr_v.at(i);
-      pfp_v.push_back(pfp);
+    for (auto& pfp_md: pfp_ptr_v) {
+      auto key = pfp_md.key();
+      pfp_v.push_back(*pfp_md);
 
       /*
         if ( fUseCalo && lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)) {
@@ -454,9 +452,7 @@ void FlashPredict::produce(art::Event & e)
       computeFlashMetrics(itpc, opHits);
 
       // calculate match score here, put association on the event
-      double slice = _charge_x;
       _score = 0.; int icount = 0;
-      double term;
       std::ostringstream thresholdMessage;
       thresholdMessage << std::left << std::setw(12) << std::setfill(' ');
       thresholdMessage << "pfp.PdgCode:\t" << pfp.PdgCode() << "\n"
@@ -474,33 +470,30 @@ void FlashPredict::produce(art::Event & e)
                        << "_charge_q:  \t" << std::setw(8) << _charge_q  << "\n"
                        << "_flash_r:   \t" << std::setw(8) << _flash_r   << "\n"
                        << "_flash_time: \t" << std::setw(8) << _flash_time << "\n" << std::endl;
-      int isl = int(n_bins * (slice / fDriftDistance));
+      int isl = int(n_bins * (_charge_x / fDriftDistance));
       if (dy_spreads[isl] > 0) {
-        term = std::abs(std::abs(_flash_y - _charge_y) - dy_means[isl]) / dy_spreads[isl];
         if (term > fTermThreshold) std::cout << "\nBig term Y:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
+        double term = std::abs(std::abs(_flash_y - _charge_y) - dy_means[isl]) / dy_spreads[isl];
         _score += term;
       }
       icount++;
-      isl = int(n_bins * (slice / fDriftDistance));
       if (dz_spreads[isl] > 0) {
-        term = std::abs(std::abs(_flash_z - _charge_z) - dz_means[isl]) / dz_spreads[isl];
+        double term = std::abs(std::abs(_flash_z - _charge_z) - dz_means[isl]) / dz_spreads[isl];
         if (term > fTermThreshold) std::cout << "\nBig term Z:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
         _score += term;
       }
       icount++;
-      isl = int(n_bins * (slice / fDriftDistance));
       if (rr_spreads[isl] > 0 && _flash_r > 0) {
-        term = std::abs(_flash_r - rr_means[isl]) / rr_spreads[isl];
+        double term = std::abs(_flash_r - rr_means[isl]) / rr_spreads[isl];
         if (term > fTermThreshold) std::cout << "\nBig term R:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
         _score += term;
       }
       icount++;
       if (fDetector == "SBND" && fUseUncoatedPMT) {
-        isl = int(n_bins * (slice / fDriftDistance));
         double myratio = 100.0 * _flash_unpe;
         if (pe_spreads[isl] > 0 && _flash_pe > 0) {
           myratio /= _flash_pe;
-          term = std::abs(myratio - pe_means[isl]) / pe_spreads[isl];
+          double term = std::abs(myratio - pe_means[isl]) / pe_spreads[isl];
           if (term > fTermThreshold) std::cout << "\nBig term RATIO:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
           _score += term;
           icount++;
@@ -616,7 +609,7 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     sum_Bz = _flash_z;
     _flash_r = sqrt((sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D + sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
     _flash_unpe = unpe_tot * fPEscale;
-    icountPE = (unsigned int)(std::round(_flash_pe));
+    icountPE = std::round(_flash_pe);
     //   std::cout << "itpc:\t" << itpc << "\n";
     //   std::cout << "_flash_pe:\t" << _flash_pe << "\n";
     //   std::cout << "_flash_y:\t" << _flash_y << "\n";

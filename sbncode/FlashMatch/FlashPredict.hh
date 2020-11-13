@@ -86,21 +86,6 @@ private:
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
-  std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer, fInputFilename, fCaloProducer, fTrackProducer;
-  double fBeamWindowEnd, fBeamWindowStart;
-  double fLightWindowEnd, fLightWindowStart;
-  double fMinFlashPE;
-  double fDriftDistance;
-  double fPEscale;
-  double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
-  std::string fDetector; // SBND or ICARUS
-  size_t fNTPC;
-  size_t fTPCPerDriftVolume;
-  static const size_t fDriftVolumes = 2;
-  int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
-  bool fNoAvailableMetrics, fMakeTree, fSelectNeutrino, fUseUncoatedPMT, fUseCalo;
-  double fTermThreshold;
-  std::vector<double> fPMTChannelCorrection;
 
   void computeFlashMetrics(size_t idtpc, std::vector<recob::OpHit> const& OpHitSubset);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
@@ -122,7 +107,26 @@ private:
   void printBookKeeping(std::string stream);
   void updateBookKeeping();
 
-  int icountPE = 0;
+  std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
+    fCaloProducer, fTrackProducer;
+  double fBeamWindowEnd, fBeamWindowStart;
+  double fLightWindowEnd, fLightWindowStart;
+  double fMinFlashPE;
+  double fDriftDistance;
+  double fPEscale;
+  double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  std::string fDetector; // SBND or ICARUS
+  size_t fNTPC;
+  size_t fTPCPerDriftVolume;
+  static const size_t fDriftVolumes = 2;
+  int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
+  std::string fInputFilename;
+
+  bool fNoAvailableMetrics, fMakeTree, fSelectNeutrino, fUseUncoatedPMT, fUseCalo;
+  double fTermThreshold;
+  // std::vector<double> fPMTChannelCorrection;
+
+  unsigned icountPE = 0;
   const art::ServiceHandle<geo::Geometry> geometry;
   std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
 
