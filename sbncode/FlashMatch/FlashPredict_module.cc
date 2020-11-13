@@ -452,40 +452,25 @@ void FlashPredict::produce(art::Event & e)
       computeFlashMetrics(itpc, opHits);
 
       // calculate match score here, put association on the event
-      _score = 0.; int icount = 0;
-      std::ostringstream thresholdMessage;
-      thresholdMessage << std::left << std::setw(12) << std::setfill(' ');
-      thresholdMessage << "pfp.PdgCode:\t" << pfp.PdgCode() << "\n"
-                       << "_run:       \t" << _run << "\n"
-                       << "_sub:       \t" << _sub << "\n"
-                       << "_evt:       \t" << _evt << "\n"
-                       << "itpc:       \t" << itpc << "\n"
-                       << "_flash_y:   \t" << std::setw(8) << _flash_y   << ",\t"
-                       << "_charge_y:  \t" << std::setw(8) << _charge_y  << "\n"
-                       << "_flash_z:   \t" << std::setw(8) << _flash_z   << ",\t"
-                       << "_charge_z:  \t" << std::setw(8) << _charge_z  << "\n"
-                       << "_flash_x:   \t" << std::setw(8) << _flash_x   << ",\t"
-                       << "_charge_x:  \t" << std::setw(8) << _charge_x  << "\n"
-                       << "_flash_pe:  \t" << std::setw(8) << _flash_pe  << ",\t"
-                       << "_charge_q:  \t" << std::setw(8) << _charge_q  << "\n"
-                       << "_flash_r:   \t" << std::setw(8) << _flash_r   << "\n"
-                       << "_flash_time: \t" << std::setw(8) << _flash_time << "\n" << std::endl;
+      _score = 0.;
+      int icount = 0;
       int isl = int(n_bins * (_charge_x / fDriftDistance));
+
       if (dy_spreads[isl] > 0) {
-        if (term > fTermThreshold) std::cout << "\nBig term Y:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
         double term = std::abs(std::abs(_flash_y - _charge_y) - dy_means[isl]) / dy_spreads[isl];
+        if (term > fTermThreshold) printMetrics("Y", pfp.PdgCode(), itpc, term);
         _score += term;
       }
       icount++;
       if (dz_spreads[isl] > 0) {
         double term = std::abs(std::abs(_flash_z - _charge_z) - dz_means[isl]) / dz_spreads[isl];
-        if (term > fTermThreshold) std::cout << "\nBig term Z:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
+        if (term > fTermThreshold) printMetrics("Z", pfp.PdgCode(), itpc, term);
         _score += term;
       }
       icount++;
       if (rr_spreads[isl] > 0 && _flash_r > 0) {
         double term = std::abs(_flash_r - rr_means[isl]) / rr_spreads[isl];
-        if (term > fTermThreshold) std::cout << "\nBig term R:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
+        if (term > fTermThreshold) printMetrics("R", pfp.PdgCode(), itpc, term);
         _score += term;
       }
       icount++;
@@ -494,7 +479,7 @@ void FlashPredict::produce(art::Event & e)
         if (pe_spreads[isl] > 0 && _flash_pe > 0) {
           myratio /= _flash_pe;
           double term = std::abs(myratio - pe_means[isl]) / pe_spreads[isl];
-          if (term > fTermThreshold) std::cout << "\nBig term RATIO:\t" << term << ",\tisl:\t" << isl << "\n" << thresholdMessage.str();
+          if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), itpc, term);
           _score += term;
           icount++;
         }
@@ -869,6 +854,33 @@ void FlashPredict::updateBookKeeping()
     + bk.multiple_fill_;
 
   if(bk.fill_ != bk.bookkeeping_) printBookKeeping("warning");
+}
+
+
+void FlashPredict::printMetrics(std::string metric, int pdgc,
+                                int itpc, double term)
+{
+  int isl = int(n_bins * (_charge_x / fDriftDistance));
+  std::ostringstream thresholdMessage;
+  thresholdMessage << std::left << std::setw(12) << std::setfill(' ');
+  thresholdMessage << "pfp.PdgCode:\t" << pdgc << "\n"
+                   << "_run:       \t" << _run << "\n"
+                   << "_sub:       \t" << _sub << "\n"
+                   << "_evt:       \t" << _evt << "\n"
+                   << "itpc:       \t" << itpc << "\n"
+                   << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
+                   << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
+                   << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
+                   << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
+                   << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
+                   << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
+                   << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
+                   << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
+                   << "_flash_r:   \t" << std::setw(8) << _flash_r    << "\n"
+                   << "_flash_time:\t" << std::setw(8) << _flash_time << std::endl;
+  mf::LogWarning("FlashPredict") << "\nBig term " << metric << ":\t" << term
+                                 << ",\tisl:\t" << isl << "\n"
+                                 << thresholdMessage.str();
 }
 
 void FlashPredict::beginJob()

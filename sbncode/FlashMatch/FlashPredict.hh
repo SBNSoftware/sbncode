@@ -106,6 +106,7 @@ private:
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::string detector);
   void printBookKeeping(std::string stream);
   void updateBookKeeping();
+  void printMetrics(std::string metric, int pdgc, int itpc, double term);
 
   std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
     fCaloProducer, fTrackProducer;
