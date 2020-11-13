@@ -123,11 +123,6 @@ namespace ana
   **/
   double LogLikelihood(double exp, double obs);
 
-  double LogLikelihoodDerivative(double e, double o, double dedx);
-
-  double LogLikelihoodDerivative(const TH1D* eh, const TH1D* oh,
-                                 const std::vector<double>& dedx);
-
   /**  \brief Chi-squared calculation using a covariance matrix.
 
        \param exp   Expected bin counts

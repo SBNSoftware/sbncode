@@ -39,6 +39,7 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
@@ -53,6 +54,7 @@ namespace caf
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRSlice& srslice,
                      bool allowEmpty = false);
 
@@ -73,6 +75,7 @@ namespace caf
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle& particle,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 

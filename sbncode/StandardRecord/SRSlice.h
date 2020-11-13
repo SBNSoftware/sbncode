@@ -41,7 +41,7 @@ namespace caf
       SRSlice();
       virtual ~SRSlice();
 
-      int      id;          ///< number of hits
+      unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
       float    charge;      ///< Calorimetric energy
       SRVector3D vertex;      ///< Candidate neutrino vertex in local detector coordinates [cm]
 

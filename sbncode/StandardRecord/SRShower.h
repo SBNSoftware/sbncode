@@ -6,6 +6,7 @@
 
 #include "SRVector3D.h"
 #include "SRShowerSelection.h"
+#include "SRTrackTruth.h"
 
 namespace caf
 {
@@ -29,14 +30,16 @@ namespace caf
       SRVector3D start;             ///< shower start point in detector coordinates [cm]
 
       int            ID;          ///< ID of this shower (taken from the pandora particle "ID" of this PFP)
-      std::vector<int> daughters; ///< ID's of daughters of this track
-      int parent;                 ///< ID of parent particle of this track
+      std::vector<int> daughters; ///< ID's of daughters of this shower
+      int parent;                 ///< ID of parent particle of this shower
 
       SRShowerSelection selVars;
+      SRTrackTruth   truth;        ///< truth information TODO: make seperate showe info class
 
       bool parent_is_primary;
       
-      int slcID;
+      int slcID;            ///< ID of the slice that this shower is in
+      unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
 
     };
 
