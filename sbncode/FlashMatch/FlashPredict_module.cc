@@ -243,7 +243,8 @@ void FlashPredict::produce(art::Event & e)
   // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h, e, fCaloProducer);
 
   if (!pfpNeutrinoOnEvent(pfp_h)) {
-    mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
+    // mf::LogWarning("FlashPredict") << "No pfp neutrino on event. Skipping...";
+    mf::LogInfo("FlashPredict") << "No pfp neutrino on event. Skipping...";
     bk.nopfpneutrino_++;
     updateBookKeeping();
     e.put(std::move(T0_v));
@@ -331,7 +332,8 @@ void FlashPredict::produce(art::Event & e)
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
 
   unsigned filled_tree = 0;
-  std::vector<bool> qInTPC(fNTPC, false);
+  // std::vector<bool> qInTPC(fNTPC, false);
+  bool qInTPC = false;
   // Loop over pandora pfp particles
   for (size_t p=0; p<pfp_h->size(); p++) {
     auto const& pfp = pfp_h->at(p);
@@ -341,7 +343,8 @@ void FlashPredict::produce(art::Event & e)
         (pfpPDGC != 12) &&
         (pfpPDGC != 14) &&
         (pfpPDGC != 16) ) continue;
-    std::vector<flashmatch::QCluster_t> qClusterInTPC(fNTPC);
+    // std::vector<flashmatch::QCluster_t> qClusterInTPC(fNTPC);
+    flashmatch::QCluster_t qClusters;
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
     std::vector<recob::PFParticle> pfp_v;
@@ -399,7 +402,7 @@ void FlashPredict::produce(art::Event & e)
           if (geometry->SignalType(wid) != geo::kCollection) continue;
           // Add the charged point to the vector
           const auto &position(SP->XYZ());
-          const auto tpcindex = wid.TPC;
+          // const auto tpcindex = wid.TPC;
 
           // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
           // throw the charge coming from another TPC
@@ -409,19 +412,20 @@ void FlashPredict::produce(art::Event & e)
           double Wxyz[3];
           geometry->WireIDToWireGeo(wid).GetCenter(Wxyz);
           double wires_distance_X = std::abs(position[0] - Wxyz[0]);
-          qClusterInTPC[tpcindex].emplace_back(
-            wires_distance_X, position[1], position[2],
-            charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
-                      ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower));
+          // qClusterInTPC[tpcindex].emplace_back(
+          qClusters.emplace_back(wires_distance_X, position[1], position[2],
+                                 charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
+                                           ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower));
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
 
-    std::vector<double> mscore(fNTPC, 0.);
+    // std::vector<double> mscore(fNTPC, 0.);
+    double mscore = 0.;
     // double charge[nMaxTPCs] = {0.}; // TODO: Use this
-    for (size_t itpc=0; itpc<fNTPC; ++itpc) {
-
+    // for (size_t itpc=0; itpc<fNTPC; ++itpc) {
+    int itpc = 9;
       // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
       // if (!lightInTPC[itpc]) {
       //   // mf::LogDebug("FlashPredict") << "No LIGHT in the " << itpc << " TPC, continue.";
@@ -431,7 +435,8 @@ void FlashPredict::produce(art::Event & e)
       double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
       _charge_q = 0;
       // TODO: use accumulators instead of this for loop
-      for (auto& qp : qClusterInTPC[itpc]) {
+      // for (auto& qp : qClusterInTPC[itpc]) {
+      for (auto& qp : qClusters) {
         xave += 0.001 * qp.q * qp.x;
         yave += 0.001 * qp.q * qp.y;
         zave += 0.001 * qp.q * qp.z;
@@ -439,11 +444,13 @@ void FlashPredict::produce(art::Event & e)
         _charge_q += qp.q;
       }
       if (norm <= 0) {
-        qInTPC[itpc] = false;
-        mf::LogDebug("FlashPredict") << "No CHARGE in the " << itpc << " TPC, continue.";
+        // qInTPC[itpc] = false;
+        qInTPC = false;
+        // mf::LogDebug("FlashPredict") << "No CHARGE in the " << itpc << " TPC, continue.";
         continue;
       }
-      qInTPC[itpc] = true;
+      // qInTPC[itpc] = true;
+      qInTPC = true;
       _charge_x = xave / norm;
       _charge_y = yave / norm;
       _charge_z = zave / norm;
@@ -486,24 +493,27 @@ void FlashPredict::produce(art::Event & e)
       }
       //      _score/=icount;
       if (_flash_pe > 0 ) { // TODO: is this really the best condition?
-        mscore[itpc] = _score;
+        // mscore[itpc] = _score;
+        mscore = _score;
         if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
         bk.fill_++;
         filled_tree++;
         if(filled_tree > 1) {
           bk.multiple_fill_++;
-          mf::LogWarning("FlashPredict") << "Event has produced " << filled_tree << " scores";
+          // mf::LogWarning("FlashPredict") << "Event has produced " << filled_tree << " scores";
+          mf::LogInfo("FlashPredict") << "Event has produced " << filled_tree << " scores";
         }
       }
-    }  // end loop over TPCs
+    // }  // end loop over TPCs
 
 
     double this_score = 0.; double score_count = 0.; // double totc = 0; //TODO: Use this
-    for (size_t itpc=0; itpc<fNTPC; ++itpc) {
-      this_score += mscore[itpc];
+    // for (size_t itpc=0; itpc<fNTPC; ++itpc) {
+      this_score += mscore;
       // totc += charge[itpc];
-      if (mscore[itpc] > 0) score_count++;
-    }
+      // if (mscore[itpc] > 0) score_count++;
+      if (mscore > 0) score_count++;
+    // }
     if (score_count > 0) {
       this_score /= score_count;
 
@@ -513,9 +523,10 @@ void FlashPredict::produce(art::Event & e)
     }
   } // over all PFparticles
 
-  if(filled_tree == 0 &&
-     std::none_of(qInTPC.begin(), qInTPC.end(),
-                  [](bool v){return v;})){
+  // if(filled_tree == 0 &&
+     // std::none_of(qInTPC.begin(), qInTPC.end(),
+     //              [](bool v){return v;})){
+  if(filled_tree == 0 && !qInTPC){
     mf::LogWarning("FlashPredict") << "No charge associated to pfpneutrino. Skipping...";
     bk.no_charge_++;
     updateBookKeeping();
