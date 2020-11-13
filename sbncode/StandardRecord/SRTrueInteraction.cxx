@@ -24,8 +24,6 @@ namespace caf
     isvtxcont(std::numeric_limits<bool>::signaling_NaN()),
     is_numucc_primary(std::numeric_limits<bool>::signaling_NaN()),
 
-    eff(std::numeric_limits<float>::signaling_NaN()),
-    pur(std::numeric_limits<float>::signaling_NaN()),
     E(std::numeric_limits<float>::signaling_NaN()),
     visE(std::numeric_limits<float>::signaling_NaN()),
     visEinslc(std::numeric_limits<float>::signaling_NaN()),

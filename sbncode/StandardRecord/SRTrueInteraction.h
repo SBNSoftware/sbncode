@@ -30,9 +30,6 @@ namespace caf
     bool    isvtxcont;         //!< If true vertex is within TPC
     bool    is_numucc_primary; //!< Whether this is the "primary" reco neutrino slice as defined by the numu CC analysis
 
-    float      eff;           ///< Slice efficiency for this interaction
-    float      pur;           ///< Slicer purity for this interaction
-
     float      E;             ///< True energy [GeV]
     float      visE;          ///< True interaction deposited energy
     float      visEinslc;     ///< True deposited energy in slice [GeV]
@@ -54,8 +51,6 @@ namespace caf
     SRVector3D        momentum;        //!< Neutrino three-momentum
     SRVector3D        position;        //!< Neutrino interaction position
     SRVector3D        parentDecayVtx;  //!< Parent hadron/muon decay vertex
-
-    SRTruthMatch      tmatch;
 
     Det_t             det;
 
