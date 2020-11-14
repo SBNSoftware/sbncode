@@ -52,6 +52,7 @@ if 'TERM' in os.environ:
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
 
+detector = "experiment"
 # # Print help
 # def help():
 
@@ -73,7 +74,6 @@ sys.argv = myargv
 
 
 def generator(nuslice_tree, rootfile, pset):
-    detector = pset.Detector.lower()
     n_bins = pset.n_bins
     drift_distance = pset.DriftDistance
     bin_width = drift_distance/n_bins
@@ -237,7 +237,7 @@ def generator(nuslice_tree, rootfile, pset):
     if hfile:
         hfile.Close()
     hfile = TFile(metrics_filename, 'RECREATE',
-                  'Simple flash matching metrics for ' + pset.Detector)
+                  'Simple flash matching metrics for ' + detector.upper())
     dy_hist.Write()
     dy_prof.Write()
     dy_h1.Write()
@@ -340,10 +340,11 @@ def main():
     if not rootfile.IsOpen() or rootfile.IsZombie():
         print('Failed to open %s' % args.file)
         return 1
-
+    global detector
     if args.sbnd:
         fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
+        detector = "sbnd"
         dir = rootfile.Get(args.file+":/fmatch")
         nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
         # nuslice_tree.Print()
@@ -351,6 +352,7 @@ def main():
         fcl_params = fhicl.make_pset('flashmatch_icarus.fcl')
         # TODO: add option to use cryo 0 and cryo 1
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
+        detector = "icarus"
         dir = rootfile.Get(args.file+":/fmatchCryo0")
         nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
         # nuslice_tree.Print()
