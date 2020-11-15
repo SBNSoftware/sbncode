@@ -482,10 +482,9 @@ void FlashPredict::produce(art::Event & e)
       }
       icount++;
       if (fDetector == "SBND" && fUseUncoatedPMT) {
-        double myratio = 100.0 * _flash_unpe;
         if (pe_spreads[isl] > 0 && _flash_pe > 0) {
-          myratio /= _flash_pe;
-          double term = std::abs(myratio - pe_means[isl]) / pe_spreads[isl];
+          double uncoated_coated_ratio = 4. * _flash_unpe / _flash_pe;
+          double term = std::abs(uncoated_coated_ratio - pe_means[isl]) / pe_spreads[isl];
           if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), itpc, term);
           _score += term;
           icount++;

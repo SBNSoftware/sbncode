@@ -169,7 +169,7 @@ def generator(nuslice_tree, rootfile, pset):
         slice = e.charge_x
 
         if detector == "sbnd":
-            uncoated_coated_ratio = 100.*e.flash_unpe/e.flash_pe # percentage
+            uncoated_coated_ratio = 4*e.flash_unpe/e.flash_pe
 
         dy_hist.Fill(slice, e.flash_y - e.charge_y)
         dy_prof.Fill(slice, e.flash_y - e.charge_y)
