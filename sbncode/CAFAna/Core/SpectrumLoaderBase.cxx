@@ -168,10 +168,6 @@ namespace ana
     if(str.find(' ') == std::string::npos){
       WildcardSource* ret = new WildcardSource(str, stride, offset);
       if(ret->NFiles() > 0) return ret;
-      else {
-	std::cout << "Warning: " << str << " does not exist!" << std::endl;
-	abort();
-      }
       delete ret;
     }
 
