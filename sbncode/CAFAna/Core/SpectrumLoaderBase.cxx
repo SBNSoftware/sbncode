@@ -172,17 +172,24 @@ namespace ana
     }
 
     // Maybe this the name of a SAM project?
-    ifdh_ns::ifdh i;
-    const std::string info = i.dumpProject(i.findProject(str, "nova"));
-    // findProject always gives back an address just by gluing bits
-    // together. But dumpProject will give an empty result for a nonexistent
-    // project.
-    if(!info.empty()){
-      if(stride > 1)
-        std::cout << "Warning: --stride has no effect on SAM projects"
-                  << std::endl;
-
-      return new SAMProjectSource(str);
+    {
+      IFDHSilent silent; // the usual case is for this to fail
+      ifdh_ns::ifdh i;
+      // findProject always gives back an address just by gluing bits together.
+      // (a tad annoying, because it _does_ go and look for the project, and
+      // even would print its 'didn't-find-this-project' error out to stderr if
+      // not for the IFDHSilent, but without scraping its stderr there's no way
+      // to know whether the project is there or not -- you still get the URL.)
+      // however, the WebAPI call looking for the /status will return a 404 if
+      // the project doesn't exist.  (suggested by Robert I. in
+      // INC000000925362)
+      try{
+        ifdh_util_ns::WebAPI webapi(i.findProject(str, Experiment()) +  "/status");
+        return new SAMProjectSource(str);
+      }
+      catch(ifdh_util_ns::WebAPIException &e){
+        ;
+      }
     }
 
     // Maybe this is a SAM dataset or query?
@@ -302,4 +309,3 @@ namespace ana
   template struct SpectrumLoaderBase::IDMap<SystShifts, SpectrumLoaderBase::IDMap<Cut, SpectrumLoaderBase::IDMap<Var, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::VarOrMultiVar, SpectrumLoaderBase::SpectList>>>>;
 
 } // namespace
-
