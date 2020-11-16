@@ -408,23 +408,22 @@ void FlashPredict::produce(art::Event & e)
       // cryostat for the collection wires.
       for (auto& SP : spacepoint_ptr_v) {
         auto const& spkey = SP.key();
-        const std::vector< art::Ptr<recob::Hit> > this_hit_ptr_v = spacepoint_hit_assn_v.at( spkey );
+        const auto& this_hit_ptr_v = spacepoint_hit_assn_v.at(spkey);
         for (auto& hit : this_hit_ptr_v) {
           // Only use hits from the collection plane
           geo::WireID wid = hit->WireID();
           if (geometry->SignalType(wid) != geo::kCollection) continue;
           // Add the charged point to the vector
-          const auto &position(SP->XYZ());
           // const auto tpcindex = wid.TPC;
+          const auto& position(SP->XYZ());
 
           // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
           // throw the charge coming from another TPC
           // if (!isChargeInCryoTPC(position[0], fCryostat, tpcindex, fDetector)) continue;
 
           const auto charge(hit->Integral());
-          double Wxyz[3];
-          geometry->WireIDToWireGeo(wid).GetCenter(Wxyz);
-          double wires_distance_X = std::abs(position[0] - Wxyz[0]);
+          auto wXYZ = geometry->WireIDToWireGeo(wid).GetCenter();
+          double wires_distance_X = std::abs(position[0] - wXYZ.X());
           // qClusterInTPC[tpcindex].emplace_back(
           qClusters.emplace_back(wires_distance_X, position[1], position[2],
                                  charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
@@ -558,7 +557,6 @@ void FlashPredict::produce(art::Event & e)
 void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> const& opHits)
 {
   // store PMT photon counts in the tree as well
-  double PMTxyz[3];
   double unpe_tot = 0;
   double pnorm = 0;
   double sum =    0;
@@ -571,8 +569,9 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
   // through channels in the current fCryostat
   for(auto const& oph : opHits) {
     std::string op_type = "pmt"; // the label ICARUS has
-    geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     // check cryostat and tpc
+    auto opDet = geometry->OpDetGeoFromOpChannel(oph.OpChannel());
+    auto opDetXYZ = opDet.GetCenter();
 
     // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
     // if (!isPDInCryoTPC(PMTxyz[0], fCryostat, itpc, fDetector)) continue;
@@ -581,20 +580,21 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     // only use PMTs for SBND
     if (op_type == "pmt_coated" || op_type == "pmt") {
       // Add up the position, weighting with PEs
-      _flash_x = PMTxyz[0];
+      double ophPE2 = oph.PE() * oph.PE();
+      _flash_x = opDetXYZ.X();
       sum     += 1.0;
       pnorm   += oph.PE();
-      sumy    += oph.PE() * PMTxyz[1];
-      sumz    += oph.PE() * PMTxyz[2];
-      sum_By  += PMTxyz[1];
-      sum_Bz  += PMTxyz[2];
-      sum_Ay  += oph.PE() * PMTxyz[1] * oph.PE() * PMTxyz[1];
-      sum_Az  += oph.PE() * PMTxyz[2] * oph.PE() * PMTxyz[2];
-      sum_D   += oph.PE() * oph.PE();
-      sum_Cy  += oph.PE() * oph.PE() * PMTxyz[1];
-      sum_Cz  += oph.PE() * oph.PE() * PMTxyz[2];
+      sumy    += oph.PE() * opDetXYZ.Y();
+      sumz    += oph.PE() * opDetXYZ.Z();
+      sum_By  += opDetXYZ.Y();
+      sum_Bz  += opDetXYZ.Z();
+      sum_Ay  += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
+      sum_Az  += ophPE2 * opDetXYZ.Z() *opDetXYZ.Z();
+      sum_D   += ophPE2;
+      sum_Cy  += ophPE2 * opDetXYZ.Y();
+      sum_Cz  += ophPE2 * opDetXYZ.Z();
     }
-    else if ( op_type == "pmt_uncoated") {
+    else if (op_type == "pmt_uncoated") {
       unpe_tot += oph.PE();
     }
     else if ( (op_type == "arapuca_vuv" || op_type == "arapuca_vis") ) {
@@ -615,7 +615,8 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     _flash_z = sum_Cz / sum_D;
     sum_By = _flash_y;
     sum_Bz = _flash_z;
-    _flash_r = sqrt((sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D + sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
+    _flash_r = sqrt((sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D +
+                     sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
     _flash_unpe = unpe_tot * fPEscale;
     icountPE = std::round(_flash_pe);
     //   std::cout << "itpc:\t" << itpc << "\n";
@@ -624,9 +625,10 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
     //   std::cout << "_flash_z:\t" << _flash_z << "\n";
   }
   else {
-    mf::LogWarning("FlashPredict") << "Really odd that I landed here, this shouldn't had happen.\n"
-                                   << "pnorm:\t" << pnorm << "\n"
-                                   << "opHits.size():\t" << opHits.size() << "\n";
+    mf::LogError("FlashPredict")
+      << "Really odd that I landed here, this shouldn't had happen.\n"
+      << "pnorm:\t" << pnorm << "\n"
+      << "opHits.size():\t" << opHits.size() << "\n";
     _flash_y = 0;
     _flash_z = 0;
     _flash_r = 0;
