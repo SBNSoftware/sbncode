@@ -9,8 +9,8 @@
 
   <class name="caf::SRHeader"       />
   <class name="caf::SRShower" />
+  <class name="caf::SRShowerSelection" />
   <class name="caf::SRSlice"        />
-  <class name="caf::TruthMatch"        />
   <class name="caf::FlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
@@ -37,6 +37,7 @@
   <class name="std::vector<caf::SRVector3D>" />
   <!--<class name="std::vector<caf::SRLorentzVector>" /> -->
   <class name="std::vector<caf::SRShower>" />
+  <class name="std::vector<caf::SRShowerSelection>" />
   <class name="std::vector<caf::SRTrueInteraction>" />
   <class name="std::vector<caf::SRTrueParticle>" />
   <class name="std::vector<caf::ParticleMatch>" />
