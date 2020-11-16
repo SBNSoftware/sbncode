@@ -25,12 +25,14 @@ namespace caf
   /// Matching between this SRSlice and the corresponding SRTrueInteraction
   class TruthMatch {
   public:
-    float      visEinslc;     ///< True deposited energy in slice [GeV]
-    float      visEcosmic;    ///< True slice deposited energy from cosmics
-    float      eff;           ///< Slice efficiency for this interaction
-    float      pur;           ///< Slicer purity for this interaction
-    int        index;         ///< Index of the matched true neutrino interaction (-1 if not matched to neutrino)
-    bool       is_numucc_primary; ///< Whether this is the "primary" reco neutrino slice as defined by the numu CC analysis
+    float      visEinslc;         ///< True deposited energy in slice [GeV]
+    float      visEcosmic;        ///< True slice deposited energy from cosmics
+    float      eff;               ///< Slice efficiency for this interaction
+    float      pur;               ///< Slicer purity for this interaction
+    int        index;             ///< Index of the matched true neutrino interaction 
+                                  ///< (-1 if not matched to neutrino)
+    bool       is_numucc_primary; ///< Whether this is the "primary" reco neutrino slice 
+                                  ///< as defined by the numu CC analysis
   };
 
   /// An  SRSlice contains overarching information for a slice.
@@ -41,16 +43,17 @@ namespace caf
       SRSlice();
       virtual ~SRSlice();
 
-      unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
+      unsigned producer;    ///< Index of the producer that produced this object. 
+                            ///< In ICARUS, this is the same as the cryostat.
       float    charge;      ///< Calorimetric energy
-      SRVector3D vertex;      ///< Candidate neutrino vertex in local detector coordinates [cm]
+      SRVector3D vertex;    ///< Candidate neutrino vertex in local detector coordinates [cm]
 
       SRTrueInteraction truth; //!< Truth information on the slice      
       SRTruthMatch tmatch; //!< Matching information between truth and reco objects
 
-      void setDefault();
+      SRFlashMatch fmatch_a; //!< Optical flash-match for this slice of TPC charge
+      SRFlashMatch fmatch_b; //!< Optical flash-match for this slice of TPC charge
 
-      // To Do: Make SRFlashMatch and add here
       FlashMatch fmatch; //!< Optical flash-match for this slice of TPC charge
 
       bool is_clear_cosmic; //!< Whether pandora marks the slice as a "clear" cosmic
@@ -59,7 +62,7 @@ namespace caf
       std::vector<size_t> primary; //!< ID's of primary tracks and showers in slice
       int                 self;    //!< ID of the particle representing this slice
 
-
+      void setDefault();
 
     };
 } // end namespace
