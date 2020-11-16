@@ -932,6 +932,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTHit.isValid()) {
           FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
         }
+
+	// Duplicate track reco info in the srslice
+        recslc.reco.ntrk ++;
+        recslc.reco.trk.push_back(SRTrack());
+	recslc.reco.trk.back() = rec.reco.trk.back();	
       } // thisTrack exists
 
       else if (thisShower.size()) { // it's a shower!
@@ -953,6 +958,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmShowerHit.isValid()) {
           FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
         }
+
+	// Duplicate track reco info in the srslice
+        recslc.reco.nshw ++;
+        recslc.reco.shw.push_back(SRShower());
+	recslc.reco.shw.back() = rec.reco.shw.back();	
+
       } // thisShower exists
 
       else {}

@@ -7,6 +7,7 @@
 #define SRSLICE_H
 
 #include "SRFlashMatch.h"
+#include "SRSliceRecoBranch.h"
 #include "SRTrueInteraction.h"
 #include "SRTruthMatch.h"
 #include "SRVector3D.h"
@@ -62,6 +63,8 @@ namespace caf
       float nu_score; //!< Score of how neutrino-like the slice is 
       std::vector<size_t> primary; //!< ID's of primary tracks and showers in slice
       int                 self;    //!< ID of the particle representing this slice
+
+      SRSliceRecoBranch   reco; //!< TPC reco information for the slice      
 
       void setDefault();
 
