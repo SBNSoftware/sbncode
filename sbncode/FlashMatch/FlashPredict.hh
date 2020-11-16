@@ -122,6 +122,7 @@ private:
   size_t fTPCPerDriftVolume;
   static const size_t fDriftVolumes = 2;
   int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
+  std::unique_ptr<geo::CryostatGeo> fGeoCryo;
   std::string fInputFilename;
 
   bool fNoAvailableMetrics, fMakeTree, fSelectNeutrino, fUseUncoatedPMT, fUseCalo;

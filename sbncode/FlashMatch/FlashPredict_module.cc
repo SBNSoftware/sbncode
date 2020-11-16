@@ -40,6 +40,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fTermThreshold            = p.get<double>("ThresholdTerm", 30.);
 
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
+  fGeoCryo = std::make_unique<geo::CryostatGeo>(geometry->Cryostat(fCryostat));
 
   fDetector = geometry->DetectorName();
   if(fDetector.find("sbnd") != std::string::npos) {
@@ -237,8 +238,6 @@ void FlashPredict::produce(art::Event & e)
   _score         = -9999.;
   bk.event_++;
 
-  geo::CryostatGeo geoCryo = geometry->Cryostat(fCryostat);
-
   // grab PFParticles in event
   auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle> >(fPandoraProducer);
 
@@ -290,8 +289,8 @@ void FlashPredict::produce(art::Event & e)
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     if (fSBND && fPDMapAlgPtr->isPDType(ch, "pmt_uncoated"))
       ophittime2->Fill(oph.PeakTime(), fPEscale * oph.PE());
-    if (!geoCryo.ContainsPosition(PMTxyz)) continue;   // use only PMTs in the specified cryostat for ICARUS
     if (fSBND && !fPDMapAlgPtr->isPDType(ch, "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
+    if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
     //    std::cout << "op hit " << j << " channel " << oph.OpChannel() << " time " << oph.PeakTime() << " pe " << fPEscale*oph.PE() << std::endl;
 
     ophittime->Fill(oph.PeakTime(), fPEscale * oph.PE());
