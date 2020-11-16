@@ -535,6 +535,7 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
   double sum_By = 0; double sum_Bz = 0;
   double sum_Cy = 0; double sum_Cz = 0;
   double sum_D =  0;
+  double maxPE = -9999;
   // TODO: change this next loop, such that it only loops
   // through channels in the current fCryostat
   for(auto const& oph : opHits) {
@@ -549,7 +550,10 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
     if (op_type == "pmt_coated" || op_type == "pmt") {
       // Add up the position, weighting with PEs
       double ophPE2 = oph.PE() * oph.PE();
-      _flash_x = opDetXYZ.X();
+      if (oph.PE()>maxPE){
+        _flash_x = opDetXYZ.X();
+        maxPE = oph.PE();
+      }
       sum     += 1.0;
       pnorm   += oph.PE();
       sumy    += oph.PE() * opDetXYZ.Y();
