@@ -990,11 +990,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   //  Fill rec Tree
   //#######################################################
+  rec.nslc            = rec.slc.size();
   rec.mc              = srtruthbranch;
   rec.true_particles  = true_particles;
+  rec.ntrue_particles = true_particles.size();
   rec.fake_reco       = srfakereco;
+  rec.nfake_reco      = srfakereco.size();
   rec.pass_flashtrig  = pass_flash_trig;  // trigger result
   rec.crt_hits        = srcrthits;
+  rec.ncrt_hits       = srcrthits.size();
 
   // Get metadata information for header
   unsigned int run = evt.run();

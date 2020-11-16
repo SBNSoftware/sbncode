@@ -33,10 +33,15 @@ namespace caf
     SRSliceRecoBranch reco;   ///< Slice reco branch: tracks, showers, etc.
     SRTruthBranch     mc;     ///< Truth branch for all interactions
 
+    int                        nslc;    ///< Number of slices in list
     std::vector<SRSlice>        slc;    ///< Slice branch.
+    int                        nfake_reco; ///< Number of Fake-Reco's in list
     std::vector<SRFakeReco>     fake_reco; ///< List of fake-reco slices
+    int                        ntrue_particles; ///< Number of true particles in list
     std::vector<SRTrueParticle> true_particles; ///< True particles in spill
+    int                        ncrt_hits; ///!< Number of CRT hits in event
     std::vector<SRCRTHit>       crt_hits; ///!< CRT hits in event
+
 
     bool pass_flashtrig;     ///< Whether this Record passed the Flash Trigger requirement
 

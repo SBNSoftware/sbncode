@@ -765,6 +765,11 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 	    }
 	    );
 
+  if (ret.matches.size()) {
+    ret.bestmatch = ret.matches.at(0);
+  }
+  ret.nmatches = ret.matches.size();
+
   return ret;
 }//MatchTrack2Truth
 //------------------------------------------------
