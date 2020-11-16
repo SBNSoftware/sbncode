@@ -52,10 +52,10 @@
 // turn the warnings back on
 #pragma GCC diagnostic pop
 
-
-#include <memory>
-#include <string>
 #include <algorithm>
+#include <memory>
+#include <set>
+#include <string>
 
 class FlashPredict;
 class FlashPredict : public art::EDProducer {
@@ -83,7 +83,8 @@ private:
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
 
-  void computeFlashMetrics(size_t idtpc, std::vector<recob::OpHit> const& OpHitSubset);
+  void computeFlashMetrics(std::set<unsigned> tpcWithHits,
+                           std::vector<recob::OpHit> const& OpHits);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap &pfParticleMap,
                                     const art::Ptr<recob::PFParticle> &particle,
@@ -101,12 +102,15 @@ private:
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
   void copyOpHitsInWindow(std::vector<recob::OpHit>& opHitSubset,
                           art::Handle<std::vector<recob::OpHit>>& ophit_h);
+  bool isPDRelevant(int pdChannel,
+                    std::set<unsigned>& tpcWithHits);
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
   void printBookKeeping(std::string stream);
   void updateBookKeeping();
-  void printMetrics(std::string metric, int pdgc, int itpc, double term);
+  void printMetrics(std::string metric, int pdgc,
+                    std::set<unsigned> tpcWithHits, double term);
 
   std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
     fCaloProducer, fTrackProducer;
@@ -122,6 +126,7 @@ private:
   size_t fTPCPerDriftVolume;
   static const size_t fDriftVolumes = 2;
   int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
+  // geo::CryostatID fCryostat;  // TODO: use this type instead
   std::unique_ptr<geo::CryostatGeo> fGeoCryo;
   std::string fInputFilename;
 
