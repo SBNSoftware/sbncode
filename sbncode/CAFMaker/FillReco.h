@@ -58,10 +58,6 @@ namespace caf
                      caf::SRSlice& srslice,
                      bool allowEmpty = false);
 
-  void FillSliceFlashMatch(const anab::T0 *fmatch,
-                           caf::SRSlice &srslice,
-                           bool allowEmpty = false);
-
   void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
                         caf::SRSlice &srslice,
                         bool allowEmpty = false);

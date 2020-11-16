@@ -11,14 +11,13 @@
 // - Add in cycle and batch to params
 // - Move this list some place useful
 // - Add reco.CRT branch
-// - Find the right sintaxis for emshower
-// - Check the third shower data product
 // ---------------------------------------
 
 
 #include "CAFMakerParams.h"
-#include "FillReco.h"
+#include "FillFlashMatch.h"
 #include "FillTrue.h"
+#include "FillReco.h"
 #include "Utils.h"
 
 // C/C++ includes
@@ -846,6 +845,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
     FillSliceFlashMatch(fmatch, recslc);
+    FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
 
     // select slice

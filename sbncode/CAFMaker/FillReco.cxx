@@ -165,20 +165,7 @@ namespace caf
 
   }
 
-  void FillSliceFlashMatch(const anab::T0 *fmatch /* can be NULL */,
-                           caf::SRSlice &srslice,
-                           bool allowEmpty)
-  {
-    if (fmatch != NULL) {
-      srslice.fmatch.present = true;
-      srslice.fmatch.time = fmatch->Time();
-      srslice.fmatch.score = fmatch->TriggerConfidence();
-      srslice.fmatch.pe = fmatch->TriggerType();
-    }
-    else {
-      srslice.fmatch.present = false;
-    }
-  }
+
   void FillSliceVertex(const recob::Vertex *vertex,
                        caf::SRSlice& slice,
                        bool allowEmpty) {
