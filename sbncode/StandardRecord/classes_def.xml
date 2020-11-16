@@ -10,6 +10,7 @@
   <class name="caf::SRHeader"       />
   <class name="caf::SRShower" />
   <class name="caf::SRSlice"        />
+  <class name="caf::TruthMatch"        />
   <class name="caf::FlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
