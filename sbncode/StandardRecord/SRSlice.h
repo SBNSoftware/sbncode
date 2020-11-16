@@ -6,6 +6,7 @@
 #ifndef SRSLICE_H
 #define SRSLICE_H
 
+#include "SRFlashMatch.h"
 #include "SRTrueInteraction.h"
 #include "SRTruthMatch.h"
 #include "SRVector3D.h"
