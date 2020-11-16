@@ -48,6 +48,21 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
+  IFDHSilent::IFDHSilent()
+  {
+    const char* s = getenv("IFDH_SILENT");
+    fSet = (s && s == std::string("0"));
+    if(!fSet) setenv("IFDH_SILENT", "1", 1);
+    if(s) std::cout << "IFDH_SILENT=" << s << std::endl;
+  }
+
+  //----------------------------------------------------------------------
+  IFDHSilent::~IFDHSilent()
+  {
+    if(!fSet) unsetenv("IFDH_SILENT");
+  }
+
+  //----------------------------------------------------------------------
   FloatingExceptionOnNaN::FloatingExceptionOnNaN(bool enable)
   {
     // Don't want any pending FPEs to trigger when we flip exceptions
@@ -70,6 +85,19 @@ namespace ana
   FloatingExceptionOnNaN::~FloatingExceptionOnNaN()
   {
     fesetexceptflag(&fBackup, FE_INVALID);
+  }
+
+  //----------------------------------------------------------------------
+  std::string Experiment()
+  {
+    const char* ret = getenv("EXPERIMENT");
+
+    if(!ret){
+      std::cout << "\nERROR: Environment variable $EXPERIMENT not set.\nThis is required for various ifdh/sam functionality.\nYou should probably setup sbndcode or icaruscode, though manually exporting the variable also seems to work." << std::endl;
+      exit(1);
+    }
+
+    return ret;
   }
 
   //----------------------------------------------------------------------

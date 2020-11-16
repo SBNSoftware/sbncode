@@ -7,16 +7,16 @@
 
 namespace caf
 {
-  int SRTrackTruth::GetPrimaryMatchID() const {
-    if (matches.size() == 0) return -1;
-    return matches[0].G4ID;
-  }
 
-  float SRTrackTruth::Purity() const {
-    if (matches.size() == 0) return 0.;
-    if (total_deposited_energy < 1e-6) return 1.;
-    return matches[0].energy / total_deposited_energy;
-  }
+SRTrackTruth::SRTrackTruth():
+  total_deposited_energy(-1.),
+  nmatches(0)
+{}
+
+ParticleMatch::ParticleMatch():
+  G4ID(-1.),
+  energy(-1.)
+{}
 
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

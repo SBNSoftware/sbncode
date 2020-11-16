@@ -1,5 +1,7 @@
 #include "CAFAna/Core/SAMProjectSource.h"
 
+#include "CAFAna/Core/Utilities.h"
+
 #include "ifdh.h"
 
 #include <unistd.h>
@@ -41,9 +43,9 @@ namespace ana
 
     fIFDH->set_debug("0"); // shut up
 
-    fProjectURL = fIFDH->findProject(proj, "nova");
+    fProjectURL = fIFDH->findProject(proj, Experiment());
 
-    fProcessID = fIFDH->establishProcess(fProjectURL, "CAFAna", "v0.9", getenv("HOSTNAME"), getenv("USER"), "nova", "", fileLimit);
+    fProcessID = fIFDH->establishProcess(fProjectURL, "CAFAna", "v0.9", getenv("HOSTNAME"), getenv("USER"), Experiment(), "", fileLimit);
   }
 
   //----------------------------------------------------------------------
