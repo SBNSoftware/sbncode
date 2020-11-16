@@ -101,9 +101,9 @@ private:
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
   void copyOpHitsInWindow(std::vector<recob::OpHit>& opHitSubset,
                           art::Handle<std::vector<recob::OpHit>>& ophit_h);
-  bool isPDInCryoTPC(double pd_x, int icryo, size_t itpc, std::string detector);
-  bool isPDInCryoTPC(int pdChannel, int icryo, size_t itpc, std::string detector);
-  bool isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::string detector);
+  bool isPDInCryoTPC(double pd_x, size_t itpc);
+  bool isPDInCryoTPC(int pdChannel, size_t itpc);
+  bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
   void printBookKeeping(std::string stream);
   void updateBookKeeping();
   void printMetrics(std::string metric, int pdgc, int itpc, double term);
@@ -117,6 +117,7 @@ private:
   double fPEscale;
   double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
+  bool fSBND, fICARUS;
   size_t fNTPC;
   size_t fTPCPerDriftVolume;
   static const size_t fDriftVolumes = 2;

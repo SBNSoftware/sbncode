@@ -42,20 +42,33 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
 
   fDetector = geometry->DetectorName();
-  if(fDetector.find("sbnd") != std::string::npos) fDetector = "SBND";
-  else if (fDetector.find("icarus") != std::string::npos) fDetector = "ICARUS";
+  if(fDetector.find("sbnd") != std::string::npos) {
+    fDetector = "SBND";
+    fSBND = true;
+    fICARUS = false;
+  }
+  else if (fDetector.find("icarus") != std::string::npos) {
+    fDetector = "ICARUS";
+    fSBND = false;
+    fICARUS = true;
+  }
   else {
-      throw cet::exception("FlashPredict") << "Detector: " << fDetector
-                                           << ", not supported. Stopping.\n";
+      throw cet::exception("FlashPredict")
+        << "Detector: " << fDetector
+        << ", not supported. Stopping.\n";
   }
   fNTPC = geometry->NTPC();
-  if (fDetector == "SBND" && fCryostat == 1) {
-    throw cet::exception("FlashPredictSBND") << "SBND has only one cryostat. \n"
-                                             << "Check Detector and Cryostat parameter." << std::endl;
+
+  // TODO no point on having fCryostat as parameter, user whatever comes from geometry
+  if (fSBND && fCryostat == 1) {
+    throw cet::exception("FlashPredict")
+      << "SBND has only one cryostat. \n"
+      << "Check Detector and Cryostat parameter." << std::endl;
   }
-  else if (fDetector == "ICARUS" && fCryostat > 1) {
-    throw cet::exception("FlashPredictICARUS") << "ICARUS has only two cryostats. \n"
-                                               << "Check Detector and Cryostat parameter." << std::endl;
+  else if (fICARUS && fCryostat > 1) {
+    throw cet::exception("FlashPredict")
+      << "ICARUS has only two cryostats. \n"
+      << "Check Detector and Cryostat parameter." << std::endl;
   }
 
   art::ServiceHandle<art::TFileService> tfs;
@@ -96,8 +109,9 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
   TFile *infile = new TFile(fname.c_str(), "READ");
   if(!infile->IsOpen()) {
-    throw cet::exception("FlashPredictSBND") << "Could not find the light-charge match root file '"
-                                             << fname << "'!\n";
+    throw cet::exception("FlashPredict")
+      << "Could not find the light-charge match root file '"
+      << fname << "'!\n";
   }
   //
   TH1 *temphisto = (TH1*)infile->Get("dy_h1");
@@ -169,7 +183,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     }
   }
   //
-  if (fDetector == "SBND" ) {
+  if (fSBND) {
     temphisto = (TH1*)infile->Get("pe_h1");
     n_bins = temphisto->GetNbinsX();
     if (n_bins <= 0 || fNoAvailableMetrics) {
@@ -193,7 +207,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       }
     }
   }
-  else if (fDetector == "ICARUS" ) {
+  else if (fICARUS ) {
     n_bins = 1;
     pe_means.push_back(0);
     pe_spreads.push_back(0.001);
@@ -274,10 +288,10 @@ void FlashPredict::produce(art::Event & e)
   for(auto const& oph : opHits) {
     double PMTxyz[3];
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
-    if (fDetector == "SBND" && fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated"))
+    if (fSBND && fPDMapAlgPtr->isPDType(ch, "pmt_uncoated"))
       ophittime2->Fill(oph.PeakTime(), fPEscale * oph.PE());
-    if (fDetector == "SBND" && !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
     if (!geoCryo.ContainsPosition(PMTxyz)) continue;   // use only PMTs in the specified cryostat for ICARUS
+    if (fSBND && !fPDMapAlgPtr->isPDType(ch, "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
     //    std::cout << "op hit " << j << " channel " << oph.OpChannel() << " time " << oph.PeakTime() << " pe " << fPEscale*oph.PE() << std::endl;
 
     ophittime->Fill(oph.PeakTime(), fPEscale * oph.PE());
@@ -481,7 +495,7 @@ void FlashPredict::produce(art::Event & e)
         _score += term;
         icount++;
       }
-      if (fDetector == "SBND" && fUseUncoatedPMT) {
+      if (fSBND && fUseUncoatedPMT) {
         if (pe_spreads[isl] > 0 && _flash_pe > 0) {
           double uncoated_coated_ratio = 4. * _flash_unpe / _flash_pe;
           double term = scoreTerm(uncoated_coated_ratio, pe_means[isl], pe_spreads[isl]);
@@ -558,12 +572,12 @@ void FlashPredict::computeFlashMetrics(size_t itpc, std::vector<recob::OpHit> co
   // through channels in the current fCryostat
   for(auto const& oph : opHits) {
     std::string op_type = "pmt"; // the label ICARUS has
-    if (fDetector == "SBND") op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
     geometry->OpDetGeoFromOpChannel(oph.OpChannel()).GetCenter(PMTxyz);
     // check cryostat and tpc
 
     // TODO BUG!: SBND has 2 TPC, ICARUS 4 per cryo, the next functions breaks ICARUS
     // if (!isPDInCryoTPC(PMTxyz[0], fCryostat, itpc, fDetector)) continue;
+    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
 
     // only use PMTs for SBND
     if (op_type == "pmt_coated" || op_type == "pmt") {
@@ -771,58 +785,53 @@ void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
 
 // TODO: no hardcoding
 // TODO: collapse with the next
-bool FlashPredict::isPDInCryoTPC(double pd_x, int icryo, size_t itpc, std::string detector)
+bool FlashPredict::isPDInCryoTPC(double pd_x, size_t itpc)
 {
   // check whether this optical detector views the light inside this tpc.
   std::ostringstream lostPDMessage;
-  lostPDMessage << "\nThere's an " << detector << "photo detector that belongs nowhere. \n"
-                << "icryo: " << icryo << "\n"
+  lostPDMessage << "\nThere's a " << fDetector << " photo detector that belongs nowhere. \n"
+                << "icryo: " << fCryostat << "\n"
                 << "itpc:  " << itpc <<  "\n"
                 << "pd_x:  " << pd_x <<  std::endl;
-
-  if (detector == "ICARUS") {
-    if (icryo == 0) {
-      if (itpc == 0 && -400 < pd_x && pd_x < -300 ) return true;
-      else if (itpc == 1 && -100 < pd_x && pd_x < 0) return true;
-      // else {std::cout << lostPDMessage.str(); return false;}
+  if (fICARUS) {
+    if (fCryostat == 0) {
+      if (itpc == 0 && -400. < pd_x && pd_x < -300. ) return true;
+      else if (itpc == 1 && -100. < pd_x && pd_x < 0.) return true;
+      else {std::cout << lostPDMessage.str(); return false;}
     }
-    else if (icryo == 1) {
-      if (itpc == 0 && 0 < pd_x && pd_x < 100) return true;
-      else if (itpc == 1 && 300 < pd_x && pd_x < 400) return true;
-      // else {std::cout << lostPDMessage.str(); return false;}
+    else if (fCryostat == 1) {
+      if (itpc == 0 && 0. < pd_x && pd_x < 100.) return true;
+      else if (itpc == 1 && 300. < pd_x && pd_x < 400.) return true;
+      else {std::cout << lostPDMessage.str(); return false;}
     }
   }
-  else if (detector == "SBND") {
-    if ((itpc == 0 && -213. < pd_x && pd_x < 0) || (itpc == 1 && 0 < pd_x && pd_x < 213) ) return true;
-    //    else {std::cout << lostPDMessage.str(); return false;}
-    else {
-      return false;
-    }
+  else if (fSBND) {
+    if (itpc == 0 && -213. < pd_x && pd_x < 0.) return true;
+    else if (itpc == 1 && 0. < pd_x && pd_x < 213.) return true;
+    else {std::cout << lostPDMessage.str(); return false;}
   }
   return false;
 }
 
-bool FlashPredict::isPDInCryoTPC(int pdChannel, int icryo, size_t itpc, std::string detector)
+bool FlashPredict::isPDInCryoTPC(int pdChannel, size_t itpc)
 {
   // check whether this optical detector views the light inside this tpc.
-  double dummy[3];
-  geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter(dummy);
-  double pd_x = dummy[0];
-  return isPDInCryoTPC(pd_x, icryo, itpc, detector);
+  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  return isPDInCryoTPC(p.X(), itpc);
 }
 
 // TODO: no hardcoding
 // TODO: collapse with the previous
 // TODO: figure out what to do with the charge that falls into the crevices
-bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::string detector)
+bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc)
 {
   std::ostringstream lostChargeMessage;
-  lostChargeMessage << "\nThere's " << detector << " charge that belongs nowhere. \n"
-                    << "icryo: " << icryo << "\n"
+  lostChargeMessage << "\nThere's " << fDetector << " charge that belongs nowhere. \n"
+                    << "icryo: " << fCryostat << "\n"
                     << "itpc: "  << itpc << "\n"
                     << "qp_x: " << qp_x << std::endl;
 
-  if (detector == "ICARUS") {
+  if (fICARUS) {
     if (icryo == 0) {
       if (itpc == 0 && -368.49 <= qp_x && qp_x <= -220.29 ) return true;
       else if (itpc == 1 && -220.14 <= qp_x && qp_x <= -71.94) return true;
@@ -834,7 +843,7 @@ bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc, std::stri
       // else {std::cout << lostChargeMessage.str(); return false;}
     }
   }
-  else if (detector == "SBND") {
+  else if (fSBND) {
     if ((itpc == 0 && qp_x < 0) || (itpc == 1 && qp_x > 0) ) return true;
     else {
       return false;
