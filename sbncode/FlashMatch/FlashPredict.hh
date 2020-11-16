@@ -94,6 +94,10 @@ private:
   void AddDaughters(const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h,
                     std::vector<art::Ptr<recob::PFParticle> > &pfp_v);
+  double scoreTerm(double m, double n,
+                   double mean, double spread);
+  double scoreTerm(double m,
+                   double mean, double spread);
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
   void copyOpHitsInWindow(std::vector<recob::OpHit>& opHitSubset,
                           art::Handle<std::vector<recob::OpHit>>& ophit_h);

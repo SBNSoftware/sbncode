@@ -464,27 +464,27 @@ void FlashPredict::produce(art::Event & e)
       int isl = int(n_bins * (_charge_x / fDriftDistance));
 
       if (dy_spreads[isl] > 0) {
-        double term = std::abs(std::abs(_flash_y - _charge_y) - dy_means[isl]) / dy_spreads[isl];
+        double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
         if (term > fTermThreshold) printMetrics("Y", pfp.PdgCode(), itpc, term);
         _score += term;
+        icount++;
       }
-      icount++;
       if (dz_spreads[isl] > 0) {
-        double term = std::abs(std::abs(_flash_z - _charge_z) - dz_means[isl]) / dz_spreads[isl];
+        double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
         if (term > fTermThreshold) printMetrics("Z", pfp.PdgCode(), itpc, term);
         _score += term;
+        icount++;
       }
-      icount++;
       if (rr_spreads[isl] > 0 && _flash_r > 0) {
-        double term = std::abs(_flash_r - rr_means[isl]) / rr_spreads[isl];
+        double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
         if (term > fTermThreshold) printMetrics("R", pfp.PdgCode(), itpc, term);
         _score += term;
+        icount++;
       }
-      icount++;
       if (fDetector == "SBND" && fUseUncoatedPMT) {
         if (pe_spreads[isl] > 0 && _flash_pe > 0) {
           double uncoated_coated_ratio = 4. * _flash_unpe / _flash_pe;
-          double term = std::abs(uncoated_coated_ratio - pe_means[isl]) / pe_spreads[isl];
+          double term = scoreTerm(uncoated_coated_ratio, pe_means[isl], pe_spreads[isl]);
           if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), itpc, term);
           _score += term;
           icount++;
@@ -725,6 +725,21 @@ void FlashPredict::AddDaughters(
   } // for all daughters
   return;
 } // void FlashPredict::AddDaughters
+
+
+inline
+double FlashPredict::scoreTerm(double m, double n,
+                               double mean, double spread)
+{
+  return std::abs(std::abs(m - n) - mean) / spread;
+}
+
+inline
+double FlashPredict::scoreTerm(double m,
+                               double mean, double spread)
+{
+  return std::abs(m - mean) / spread;
+}
 
 
 bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h)
