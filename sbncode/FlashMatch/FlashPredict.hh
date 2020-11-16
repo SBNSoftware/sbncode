@@ -119,6 +119,7 @@ private:
   double fMinFlashPE;
   double fDriftDistance;
   double fPEscale;
+  unsigned fVUVToVIS;
   double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
@@ -146,7 +147,8 @@ private:
   // Tree variables
   std::vector<double> _pe_reco_v, _pe_hypo_v;
   double _charge_x, _charge_y, _charge_z, _charge_q;
-  double _flash_x, _flash_y, _flash_z, _flash_r, _flash_pe, _flash_unpe;
+  double _flash_x, _flash_y, _flash_z,
+    _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?
   double _flash_time;
   double _score;

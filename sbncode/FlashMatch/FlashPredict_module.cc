@@ -35,6 +35,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fLightWindowStart         = p.get<double>("LightWindowStart", -0.010);  // in us w.r.t. flash time
   fLightWindowEnd           = p.get<double>("LightWindowEnd", 0.090);  // in us w.r.t flash time
   fDriftDistance            = p.get<double>("DriftDistance", 200.);
+  fVUVToVIS                 = p.get<unsigned>("VUVToVIS", 4);
   fCryostat                 = p.get<int>("Cryostat", 0); //set =0 ot =1 for ICARUS to match reco chain selection
   fPEscale                  = p.get<double>("PEscale", 1.0);
   fTermThreshold            = p.get<double>("ThresholdTerm", 30.);
@@ -92,6 +93,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     _flashmatch_nuslice_tree->Branch("flash_r", &_flash_r, "flash_r/D");
     _flashmatch_nuslice_tree->Branch("flash_pe", &_flash_pe, "flash_pe/D");
     _flashmatch_nuslice_tree->Branch("flash_unpe", &_flash_unpe, "flash_unpe/D");
+    _flashmatch_nuslice_tree->Branch("flash_ratio", &_flash_ratio, "flash_ratio/D");
     // TODO: add charge_time?
     _flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
     _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
@@ -236,6 +238,7 @@ void FlashPredict::produce(art::Event & e)
   _flash_pe      = -9999.;
   _flash_unpe    = -9999.;
   _flash_r       = -9999.;
+  _flash_ratio   = -9999.;
   _score         = -9999.;
   bk.event_++;
 
@@ -478,9 +481,8 @@ void FlashPredict::produce(art::Event & e)
         icount++;
       }
       if (fSBND && fUseUncoatedPMT) {
-        if (pe_spreads[isl] > 0 && _flash_pe > 0) {
-          double uncoated_coated_ratio = 4. * _flash_unpe / _flash_pe;
-          double term = scoreTerm(uncoated_coated_ratio, pe_means[isl], pe_spreads[isl]);
+        if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
+          double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
           if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), tpcWithHits, term);
           _score += term;
           icount++;
@@ -561,7 +563,7 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
       sum_By  += opDetXYZ.Y();
       sum_Bz  += opDetXYZ.Z();
       sum_Ay  += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
-      sum_Az  += ophPE2 * opDetXYZ.Z() *opDetXYZ.Z();
+      sum_Az  += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
       sum_D   += ophPE2;
       sum_Cy  += ophPE2 * opDetXYZ.Y();
       sum_Cz  += ophPE2 * opDetXYZ.Z();
@@ -587,9 +589,11 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
     _flash_z = sum_Cz / sum_D;
     sum_By = _flash_y;
     sum_Bz = _flash_z;
-    _flash_r = sqrt((sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D +
-                     sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
+    _flash_r = std::sqrt(
+      (sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D +
+       sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
     _flash_unpe = unpe_tot * fPEscale;
+    _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
     icountPE = std::round(_flash_pe);
     //   std::cout << "itpc:\t" << itpc << "\n";
     //   std::cout << "_flash_pe:\t" << _flash_pe << "\n";
@@ -606,6 +610,7 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
     _flash_r = 0;
     _flash_pe = 0;
     _flash_unpe = 0;
+    _flash_ratio = 0;
   }
 }
 
@@ -900,24 +905,28 @@ void FlashPredict::printMetrics(std::string metric, int pdgc,
   for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
   std::ostringstream thresholdMessage;
   thresholdMessage << std::left << std::setw(12) << std::setfill(' ');
-  thresholdMessage << "pfp.PdgCode:\t" << pdgc << "\n"
-                   << "_run:       \t" << _run << "\n"
-                   << "_sub:       \t" << _sub << "\n"
-                   << "_evt:       \t" << _evt << "\n"
-                   << "tpc:        \t" << tpcs << "\n"
-                   << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
-                   << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
-                   << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
-                   << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
-                   << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
-                   << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
-                   << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
-                   << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
-                   << "_flash_r:   \t" << std::setw(8) << _flash_r    << "\n"
-                   << "_flash_time:\t" << std::setw(8) << _flash_time << std::endl;
-  mf::LogWarning("FlashPredict") << "\nBig term " << metric << ":\t" << term
-                                 << ",\tisl:\t" << isl << "\n"
-                                 << thresholdMessage.str();
+  thresholdMessage
+    << "pfp.PdgCode:\t" << pdgc << "\n"
+    << "_run:       \t" << _run << "\n"
+    << "_sub:       \t" << _sub << "\n"
+    << "_evt:       \t" << _evt << "\n"
+    << "tpc:        \t" << tpcs << "\n"
+    << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
+    << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
+    << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
+    << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
+    << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
+    << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
+    << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
+    << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
+    << "_flash_unpe:\t" << std::setw(8) << _flash_unpe << ",\t"
+    << "_flash_r:   \t" << std::setw(8) << _flash_r    << "\n"
+    << "_flash_ratio\t" << std::setw(8) << _flash_ratio<< "\n"
+    << "_flash_time:\t" << std::setw(8) << _flash_time << std::endl;
+  mf::LogWarning("FlashPredict")
+    << "\nBig term " << metric << ":\t" << term
+    << ",\tisl:\t" << isl << "\n"
+    << thresholdMessage.str();
 }
 
 void FlashPredict::beginJob()

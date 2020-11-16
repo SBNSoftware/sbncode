@@ -168,9 +168,6 @@ def generator(nuslice_tree, rootfile, pset):
     for e in nuslice_tree:
         slice = e.charge_x
 
-        if detector == "sbnd":
-            uncoated_coated_ratio = 4*e.flash_unpe/e.flash_pe
-
         dy_hist.Fill(slice, e.flash_y - e.charge_y)
         dy_prof.Fill(slice, e.flash_y - e.charge_y)
         dz_hist.Fill(slice, e.flash_z - e.charge_z)
@@ -178,8 +175,8 @@ def generator(nuslice_tree, rootfile, pset):
         rr_hist.Fill(slice, e.flash_r)
         rr_prof.Fill(slice, e.flash_r)
         if detector == "sbnd":
-            pe_hist.Fill(slice, uncoated_coated_ratio)
-            pe_prof.Fill(slice, uncoated_coated_ratio)
+            pe_hist.Fill(slice, e.flash_ratio)
+            pe_prof.Fill(slice, e.flash_ratio)
 
     # fill histograms for match score calculation from profile histograms
     for ib in list(range(0, profile_bins)):
@@ -204,8 +201,6 @@ def generator(nuslice_tree, rootfile, pset):
 
     for e in nuslice_tree:
         slice = e.charge_x
-        if detector == "sbnd":
-            uncoated_coated_ratio = 100.*e.flash_unpe/e.flash_pe # percentage
         # calculate match score
         isl = int(slice/bin_width)
         score = 0.
@@ -221,15 +216,15 @@ def generator(nuslice_tree, rootfile, pset):
             print("Warning zero spread.\n",
                   f"slice: {slice}. isl: {isl}. rr_spreads[isl]: {rr_spreads[isl]} ")
             rr_spreads[isl] = rr_spreads[isl+1]
-        if detector == "sbnd":
-            if pe_spreads[isl] <= 1.e-8:
-                print("Warning zero spread.\n",
-                      f"slice: {slice}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
-                pe_spreads[isl] = pe_spreads[isl+1]
+        if detector == "sbnd" and pe_spreads[isl] <= 1.e-8:
+            print("Warning zero spread.\n",
+                  f"slice: {slice}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
+            pe_spreads[isl] = pe_spreads[isl+1]
         score += abs(abs(e.flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
         score += abs(abs(e.flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_r-rr_means[isl])/rr_spreads[isl]
-        # score += abs(uncoated_coated_ratio-pe_means[isl])/pe_spreads[isl]
+        if detector == "sbnd" and pset.UseUncoatedPMT:
+            score += abs(e.flash_ratio-pe_means[isl])/pe_spreads[isl]
         match_score_scatter.Fill(slice, score)
         match_score_hist.Fill(score)
     metrics_filename = 'fm_metrics_' + detector + '.root'
