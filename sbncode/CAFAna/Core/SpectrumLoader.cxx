@@ -75,14 +75,14 @@ namespace ana
     fGone = true;
 
     // Find all the unique cuts
-    std::set<Cut, CompareByID> cuts;
-    for(auto& shiftdef: fHistDefs)
-      for(auto& cutdef: shiftdef.second)
-        cuts.insert(cutdef.first);
-    for(const Cut& cut: cuts) fAllCuts.push_back(cut);
+    //    std::set<Cut, CompareByID> cuts;
+    //    for(auto& shiftdef: fHistDefs)
+    //      for(auto& cutdef: shiftdef.second)
+    //        cuts.insert(cutdef.first);
+    //    for(const Cut& cut: cuts) fAllCuts.push_back(cut);
 
-    fLivetimeByCut.resize(fAllCuts.size());
-    fPOTByCut.resize(fAllCuts.size());
+    //    fLivetimeByCut.resize(fAllCuts.size());
+    //    fPOTByCut.resize(fAllCuts.size());
 
 
     const int Nfiles = NFiles();
@@ -139,7 +139,7 @@ namespace ana
     for(n = 0; n < Nentries; ++n){
       if(!dir) tr->LoadTree(n); // nested mode
 
-      for(caf::SRSliceProxy& slc: sr.slc) HandleRecord(&slc);
+      HandleRecord(&sr);
 
       if(prog) prog->SetProgress(double(n)/Nentries);
     } // end for n
@@ -147,12 +147,12 @@ namespace ana
 
   //----------------------------------------------------------------------
   /// Helper for \ref HandleRecord
-  template<class T, class U> class CutVarCache
+  template<class T, class U, class V> class CutVarCache
   {
   public:
     CutVarCache() : fVals(U::MaxID()+1), fValsSet(U::MaxID()+1, false) {}
 
-    inline T Get(const U& var, const caf::SRSliceProxy* slc)
+    inline T Get(const U& var, const V* sr)
     {
       const unsigned int id = var.ID();
 
@@ -160,7 +160,7 @@ namespace ana
         return fVals[id];
       }
       else{
-        const T val = var(slc);
+        const T val = var(sr);
         fVals[id] = val;
         fValsSet[id] = true;
         return val;
@@ -174,96 +174,105 @@ namespace ana
   };
 
   //----------------------------------------------------------------------
-  void SpectrumLoader::HandleRecord(caf::SRSliceProxy* slc)
+  void SpectrumLoader::HandleRecord(caf::SRSpillProxy* sr)
   {
-    // Some shifts only adjust the weight, so they're effectively nominal, but
-    // aren't grouped with the other nominal histograms. Keep track of the
-    // results for nominals in these caches to speed those systs up.
-    CutVarCache<bool, Cut> nomCutCache;
-    CutVarCache<double, Var> nomWeiCache;
-    CutVarCache<double, Var> nomVarCache;
+    for(auto& spillcutdef: fHistDefs){
+      const SpillCut& spillcut = spillcutdef.first;
 
-    for(auto& shiftdef: fHistDefs){
-      const SystShifts& shift = shiftdef.first;
+      const bool spillpass = spillcut(sr); // nomSpillCutCache.Get(spillcut, sr);
+      // Cut failed, skip all the histograms that depended on it
+      if(!spillpass) continue;
 
-      // Need to provide a clean slate for each new set of systematic shifts to
-      // work from. Copying the whole StandardRecord is pretty expensive, so
-      // modify it in place and revert it afterwards.
+      for(caf::SRSliceProxy& slc: sr->slc){
 
-      caf::SRProxySystController::BeginTransaction();
+        // Some shifts only adjust the weight, so they're effectively nominal,
+        // but aren't grouped with the other nominal histograms. Keep track of
+        // the results for nominals in these caches to speed those systs up.
+        CutVarCache<bool, Cut, caf::SRSliceProxy> nomCutCache;
+        CutVarCache<double, Var, caf::SRSliceProxy> nomWeiCache;
+        CutVarCache<double, Var, caf::SRSliceProxy> nomVarCache;
 
-      bool shifted = false;
+        for(auto& shiftdef: spillcutdef.second){
+          const SystShifts& shift = shiftdef.first;
 
-      double systWeight = 1;
-      // Can special-case nominal to not pay cost of Shift()
-      if(!shift.IsNominal()){
-        shift.Shift(slc, systWeight);
-        // If there were only weighting systs applied then the cached nominal
-        // values are still valid.
-        shifted = caf::SRProxySystController::AnyShifted();
-      }
+          // Need to provide a clean slate for each new set of systematic
+          // shifts to work from. Copying the whole StandardRecord is pretty
+          // expensive, so modify it in place and revert it afterwards.
 
-      for(auto& cutdef: shiftdef.second){
-        const Cut& cut = cutdef.first;
+          caf::SRProxySystController::BeginTransaction();
 
-        const bool pass = shifted ? cut(slc) : nomCutCache.Get(cut, slc);
-        // Cut failed, skip all the histograms that depended on it
-        if(!pass) continue;
+          bool shifted = false;
 
-        for(auto& weidef: cutdef.second){
-          const Var& weivar = weidef.first;
+          double systWeight = 1;
+          // Can special-case nominal to not pay cost of Shift()
+          if(!shift.IsNominal()){
+            shift.Shift(&slc, systWeight);
+            // If there were only weighting systs applied then the cached
+            // nominal values are still valid.
+            shifted = caf::SRProxySystController::AnyShifted();
+          }
 
-          double wei = shifted ? weivar(slc) : nomWeiCache.Get(weivar, slc);
+          for(auto& cutdef: shiftdef.second){
+            const Cut& cut = cutdef.first;
 
-          wei *= systWeight;
-          if(wei == 0) continue;
+            const bool pass = shifted ? cut(&slc) : nomCutCache.Get(cut, &slc);
+            // Cut failed, skip all the histograms that depended on it
+            if(!pass) continue;
 
-          for(auto& vardef: weidef.second){
-            if(vardef.first.IsMulti()){
-              for(double val: vardef.first.GetMultiVar()(slc)){
-                for(Spectrum* s: vardef.second.spects)
-                  s->Fill(val, wei);
-              }
-              continue;
-            }
+            for(auto& weidef: cutdef.second){
+              const Var& weivar = weidef.first;
 
-            const Var& var = vardef.first.GetVar();
+              double wei = shifted ? weivar(&slc) : nomWeiCache.Get(weivar, &slc);
 
-            const double val = shifted ? var(slc) : nomVarCache.Get(var, slc);
+              wei *= systWeight;
+              if(wei == 0) continue;
 
-            if(std::isnan(val) || std::isinf(val)){
-              std::cerr << "Warning: Bad value: " << val
-                        << " returned from a Var. The input variable(s) could "
-                        << "be NaN in the CAF, or perhaps your "
-                        << "Var code computed 0/0?";
-              std::cout << " Not filling into this histogram for this slice." << std::endl;
-              continue;
-            }
+              for(auto& vardef: weidef.second){
+                if(vardef.first.IsMulti()){
+                  for(double val: vardef.first.GetMultiVar()(&slc)){
+                    for(Spectrum* s: vardef.second.spects)
+                      s->Fill(val, wei);
+                  }
+                  continue;
+                }
 
-            for(Spectrum* s: vardef.second.spects) s->Fill(val, wei);
+                const Var& var = vardef.first.GetVar();
 
-            for(ReweightableSpectrum* rw: vardef.second.rwSpects){
-              const double yval = rw->ReweightVar()(slc);
+                const double val = shifted ? var(&slc) : nomVarCache.Get(var, &slc);
 
-              if(std::isnan(yval) || std::isinf(yval)){
-                std::cerr << "Warning: Bad value: " << yval
-                          << " for reweighting Var";
-                std::cout << ". Not filling into histogram." << std::endl;
-                continue;
-              }
+                if(std::isnan(val) || std::isinf(val)){
+                  std::cerr << "Warning: Bad value: " << val
+                            << " returned from a Var. The input variable(s) could "
+                            << "be NaN in the CAF, or perhaps your "
+                            << "Var code computed 0/0?";
+                  std::cout << " Not filling into this histogram for this slice." << std::endl;
+                  continue;
+                }
 
-              // TODO: ignoring events with no true neutrino etc
-              if(yval != 0) rw->fHist->Fill(val, yval, wei);
-            } // end for rw
-          } // end for vardef
-        } // end for weidef
-      } // end for cutdef
+                for(Spectrum* s: vardef.second.spects) s->Fill(val, wei);
 
-       
-      // Return StandardRecord to its unshifted form ready for the next
-      // histogram.
-      caf::SRProxySystController::Rollback();
-    } // end for shiftdef
+                for(ReweightableSpectrum* rw: vardef.second.rwSpects){
+                  const double yval = rw->ReweightVar()(&slc);
+
+                  if(std::isnan(yval) || std::isinf(yval)){
+                    std::cerr << "Warning: Bad value: " << yval
+                              << " for reweighting Var";
+                    std::cout << ". Not filling into histogram." << std::endl;
+                    continue;
+                  }
+
+                  rw->fHist->Fill(val, yval, wei);
+                } // end for rw
+              } // end for vardef
+            } // end for weidef
+          } // end for cutdef
+
+          // Return StandardRecord to its unshifted form ready for the next
+          // histogram.
+          caf::SRProxySystController::Rollback();
+        } // end for shiftdef
+      } // end for slc
+    } // end for spillcutdef
   }
 
   //----------------------------------------------------------------------
@@ -287,11 +296,13 @@ namespace ana
   void SpectrumLoader::StoreExposures()
   {
     for(auto& shiftdef: fHistDefs){
-      for(auto& cutdef: shiftdef.second){
-        for(auto& weidef: cutdef.second){
-          for(auto& vardef: weidef.second){
-            for(Spectrum* s: vardef.second.spects) s->fPOT += fPOT;
-            for(ReweightableSpectrum* rw: vardef.second.rwSpects) rw->fPOT += fPOT;
+      for(auto& spillcutdef: shiftdef.second){
+        for(auto& cutdef: spillcutdef.second){
+          for(auto& weidef: cutdef.second){
+            for(auto& vardef: weidef.second){
+              for(Spectrum* s: vardef.second.spects) s->fPOT += fPOT;
+              for(ReweightableSpectrum* rw: vardef.second.rwSpects) rw->fPOT += fPOT;
+            }
           }
         }
       }

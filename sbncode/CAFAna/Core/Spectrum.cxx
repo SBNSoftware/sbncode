@@ -42,36 +42,26 @@ namespace ana
   //----------------------------------------------------------------------
   Spectrum::Spectrum(const std::string& label, const Binning& bins,
                      SpectrumLoaderBase& loader,
-                     const Var& var,
-                     const Cut& cut,
-                     const SystShifts& shift,
-                     const Var& wei)
-    : Spectrum(label, bins)
-  {
-    loader.AddSpectrum(*this, var, cut, shift, wei);
-  }
-
-  //----------------------------------------------------------------------
-  Spectrum::Spectrum(const std::string& label, const Binning& bins,
-                     SpectrumLoaderBase& loader,
                      const MultiVar& var,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei)
     : Spectrum(label, bins)
   {
-    loader.AddSpectrum(*this, var, cut, shift, wei);
+    loader.AddSpectrum(*this, var, spillcut, cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
   Spectrum::Spectrum(SpectrumLoaderBase& loader,
                      const HistAxis& axis,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei)
     : Spectrum(axis.GetLabels(), axis.GetBinnings())
   {
-    loader.AddSpectrum(*this, axis.GetMultiDVar(), cut, shift, wei);
+    loader.AddSpectrum(*this, axis.GetMultiDVar(), spillcut, cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
@@ -122,10 +112,11 @@ namespace ana
   Spectrum::Spectrum(const std::string& label, SpectrumLoaderBase& loader,
                      const Binning& binsx, const Var& varx,
                      const Binning& binsy, const Var& vary,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei)
-    : Spectrum(label, "", loader, binsx, varx, binsy, vary, cut, shift, wei)
+    : Spectrum(label, "", loader, binsx, varx, binsy, vary, spillcut, cut, shift, wei)
   {
     // TODO do we want this variant when there's one with a labelY just below?
   }
@@ -134,13 +125,14 @@ namespace ana
   Spectrum::Spectrum(SpectrumLoaderBase& loader,
                      const HistAxis& xAxis,
                      const HistAxis& yAxis,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei)
     : Spectrum(xAxis.GetLabels()[0], loader,
                xAxis.GetBinnings()[0], xAxis.GetVars()[0],
                yAxis.GetBinnings()[0], yAxis.GetVars()[0],
-               cut, shift, wei)
+               spillcut, cut, shift, wei)
   {
     // TODO - do we want to keep this variant around?
     assert(xAxis.NDimensions() == 1);
@@ -153,6 +145,7 @@ namespace ana
 		     SpectrumLoaderBase& loader,
                      const Binning& binsx, const Var& varx,
                      const Binning& binsy, const Var& vary,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei)
@@ -160,7 +153,7 @@ namespace ana
   {
     Var multiDVar = Var2D(varx, binsx, vary, binsy);
 
-    loader.AddSpectrum(*this, multiDVar, cut, shift, wei);
+    loader.AddSpectrum(*this, multiDVar, spillcut, cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
@@ -168,11 +161,12 @@ namespace ana
                      const Binning& binsx, const Var& varx,
                      const Binning& binsy, const Var& vary,
                      const Binning& binsz, const Var& varz,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei,
 		     ESparse sparse)
-    : Spectrum(label, "", "", loader, binsx, varx, binsy, vary, binsz, varz, cut, shift, wei, sparse)
+    : Spectrum(label, "", "", loader, binsx, varx, binsy, vary, binsz, varz, spillcut, cut, shift, wei, sparse)
   {
     // TODO do we want this variant when there's one with a labelY and labelZ
     // just below?
@@ -186,6 +180,7 @@ namespace ana
                      const Binning& binsx, const Var& varx,
                      const Binning& binsy, const Var& vary,
                      const Binning& binsz, const Var& varz,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei,
@@ -194,7 +189,7 @@ namespace ana
   {
     Var multiDVar = Var3D(varx, binsx, vary, binsy, varz, binsz);
 
-    loader.AddSpectrum(*this, multiDVar, cut, shift, wei);
+    loader.AddSpectrum(*this, multiDVar, spillcut, cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
@@ -202,6 +197,7 @@ namespace ana
                      const HistAxis& xAxis,
                      const HistAxis& yAxis,
                      const HistAxis& zAxis,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei,
@@ -210,7 +206,7 @@ namespace ana
                xAxis.GetBinnings()[0], xAxis.GetVars()[0],
                yAxis.GetBinnings()[0], yAxis.GetVars()[0],
                zAxis.GetBinnings()[0], zAxis.GetVars()[0],
-               cut, shift, wei, sparse)
+               spillcut, cut, shift, wei, sparse)
   {
     // TODO - do we want to keep this variant around?
     assert(xAxis.NDimensions() == 1);

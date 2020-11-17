@@ -47,6 +47,7 @@ namespace ana
     /// For use by the \ref Spectrum constructor
     virtual void AddSpectrum(Spectrum& spect,
                              const Var& var,
+                             const SpillCut& spillcut,
                              const Cut& cut,
                              const SystShifts& shift,
                              const Var& wei = kUnweighted);
@@ -54,6 +55,7 @@ namespace ana
     /// For use by the \ref Spectrum constructor
     virtual void AddSpectrum(Spectrum& spect,
                              const MultiVar& var,
+                             const SpillCut& spillcut,
                              const Cut& cut,
                              const SystShifts& shift,
                              const Var& wei = kUnweighted);
@@ -187,8 +189,8 @@ namespace ana
 
     /// \brief All the spectra that need to be filled
     ///
-    /// [shift][cut][wei][var]
-    IDMap<SystShifts, IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>> fHistDefs;
+    /// [spillcut][shift][cut][wei][var]
+    IDMap<SpillCut, IDMap<SystShifts, IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>>> fHistDefs;
   };
 
   /// \brief Dummy loader that doesn't load any files
@@ -203,11 +205,13 @@ namespace ana
     virtual void Go() override;
     void AddSpectrum(Spectrum& spect,
                      const Var& var,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei = kUnweighted) override {}
     void AddSpectrum(Spectrum& spect,
                      const MultiVar& var,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei = kUnweighted) override {}
