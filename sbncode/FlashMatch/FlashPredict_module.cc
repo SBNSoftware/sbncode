@@ -508,7 +508,7 @@ void FlashPredict::produce(art::Event & e)
 }// end of producer module
 
 
-void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
+void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                                        std::vector<recob::OpHit> const& opHits)
 {
   // store PMT photon counts in the tree as well
@@ -661,9 +661,9 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
 
 
 void FlashPredict::CollectDownstreamPFParticles(
-  const lar_pandora::PFParticleMap &pfParticleMap,
-  const art::Ptr<recob::PFParticle> &particle,
-  lar_pandora::PFParticleVector &downstreamPFParticles) const
+  const lar_pandora::PFParticleMap& pfParticleMap,
+  const art::Ptr<recob::PFParticle>& particle,
+  lar_pandora::PFParticleVector& downstreamPFParticles) const
 {
   if (std::find(downstreamPFParticles.begin(), downstreamPFParticles.end(), particle) == downstreamPFParticles.end()){
     downstreamPFParticles.push_back(particle);
@@ -679,9 +679,9 @@ void FlashPredict::CollectDownstreamPFParticles(
 
 
 void FlashPredict::CollectDownstreamPFParticles(
-  const lar_pandora::PFParticleMap &pfParticleMap,
-  const lar_pandora::PFParticleVector &parentPFParticles,
-  lar_pandora::PFParticleVector &downstreamPFParticles) const
+  const lar_pandora::PFParticleMap& pfParticleMap,
+  const lar_pandora::PFParticleVector& parentPFParticles,
+  lar_pandora::PFParticleVector& downstreamPFParticles) const
 {
   for (const auto &particle : parentPFParticles){
     this->CollectDownstreamPFParticles(pfParticleMap, particle, downstreamPFParticles);
@@ -691,8 +691,8 @@ void FlashPredict::CollectDownstreamPFParticles(
 
 void FlashPredict::AddDaughters(
   const art::Ptr<recob::PFParticle>& pfp_ptr,
-  const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h,
-  std::vector<art::Ptr<recob::PFParticle> > &pfp_v)
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+  std::vector<art::Ptr<recob::PFParticle>>& pfp_v)
 {
   auto daughters = pfp_ptr->Daughters();
   pfp_v.push_back(pfp_ptr);
@@ -723,7 +723,7 @@ double FlashPredict::scoreTerm(double m,
 }
 
 
-bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h)
+bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h)
 {
   for (size_t p=0; p<pfp_h->size(); p++) {
     unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
@@ -895,7 +895,7 @@ void FlashPredict::updateBookKeeping()
 
 template <typename Stream>
 void FlashPredict::printMetrics(std::string metric, int pdgc,
-                                std::set<unsigned> tpcWithHits,
+                                std::set<unsigned>& tpcWithHits,
                                 double term,
                                 Stream&& out)
 {

@@ -84,18 +84,18 @@ private:
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
 
-  void computeFlashMetrics(std::set<unsigned> tpcWithHits,
+  void computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
-  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap &pfParticleMap,
-                                    const art::Ptr<recob::PFParticle> &particle,
-                                    lar_pandora::PFParticleVector &downstreamPFParticles) const;
-  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap &pfParticleMap,
-                                    const lar_pandora::PFParticleVector &parentPFParticles,
-                                    lar_pandora::PFParticleVector &downstreamPFParticles) const;
+  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
+                                    const art::Ptr<recob::PFParticle>& particle,
+                                    lar_pandora::PFParticleVector& downstreamPFParticles) const;
+  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
+                                    const lar_pandora::PFParticleVector& parentPFParticles,
+                                    lar_pandora::PFParticleVector& downstreamPFParticles) const;
   void AddDaughters(const art::Ptr<recob::PFParticle>& pfp_ptr,
-                    const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h,
-                    std::vector<art::Ptr<recob::PFParticle> > &pfp_v);
+                    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+                    std::vector<art::Ptr<recob::PFParticle>>& pfp_v);
   double scoreTerm(double m, double n,
                    double mean, double spread);
   double scoreTerm(double m,
@@ -113,7 +113,7 @@ private:
   void updateBookKeeping();
   template <typename Stream>
   void printMetrics(std::string metric, int pdgc,
-                    std::set<unsigned> tpcWithHits, double term,
+                    std::set<unsigned>& tpcWithHits, double term,
                     Stream&& out);
 
   std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
