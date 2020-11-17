@@ -11,6 +11,7 @@
 #include "SRTrkMCS.h"
 #include "SRTrkRange.h"
 #include "SRCRTHitMatch.h"
+#include "SRCRTTrackMatch.h"
 #include "SRTrackCalo.h"
 
 #include "SRVector3D.h"
@@ -51,6 +52,7 @@ namespace caf
 
       SRTrackTruth   truth;        ///< truth information
       SRCRTHitMatch  crthit;       ///< CRT Hit match
+      SRCRTTrackMatch  crttrack;       ///< CRT Track match
 
       // TO DO: Move the following into SRObjects      
 

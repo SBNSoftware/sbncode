@@ -18,6 +18,7 @@ namespace caf
   /// A matching of TPC slice charge to Optical flash light
   class FlashMatch {
   public:
+    FlashMatch();
     bool present;
     float score;
     float time;

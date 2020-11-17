@@ -1,14 +1,14 @@
 ////////////////////////////////////////////////////////////////////////
-// \file    SRCRTHit.cxx
+// \file    SRCRTTrackMAtch.cxx
 ////////////////////////////////////////////////////////////////////////
-#include "SRCRTHit.h"
+#include "SRCRTTrackMatch.h"
 
 namespace caf
 {
 
-  SRCRTHit::SRCRTHit():
+  SRCRTTrackMatch::SRCRTTrackMatch():
     time(std::numeric_limits<float>::signaling_NaN()),
-    pe(std::numeric_limits<float>::signaling_NaN())
+    angle(std::numeric_limits<float>::signaling_NaN())
   {}
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

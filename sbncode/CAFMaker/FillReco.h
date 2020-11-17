@@ -75,8 +75,11 @@ namespace caf
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
-                       const std::vector<const anab::T0*> &t0match,
+  void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty = false);
+
+  void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 

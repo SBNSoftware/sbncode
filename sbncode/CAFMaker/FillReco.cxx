@@ -179,22 +179,36 @@ namespace caf
 
   //......................................................................
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
-                       const std::vector<const anab::T0*> &t0match,
+  void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
-    if (hitmatch.size()) {
-      assert(hitmatch.size() == 1);
+    if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
-      srtrack.crthit.hit.time = t0match[0]->fTime;
-      srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
-      srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
-      srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
-      srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
-      srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
-      srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
+      srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
+
+      // TODO/FIXME: FILL THESE ONCE WE HAVE THE CRT HIT!!!
+      // srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
+      // srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
+      // srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
+      // srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
+      // srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
+      // srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
+
+    }
+  }
+
+  void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty)
+  {
+    if (t0match.size()) {
+      assert(t0match.size() == 1);
+      srtrack.crttrack.angle = t0match[0]->fTriggerConfidence;
+      srtrack.crttrack.time = t0match[0]->fTime / 1e3; /* ns -> us */
+
+      // TODO/FIXME: FILL MORE ONCE WE HAVE THE CRT HIT!!!
 
     }
   }

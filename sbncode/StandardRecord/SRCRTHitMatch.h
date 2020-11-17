@@ -9,8 +9,7 @@
 
 namespace caf
 {
-  /// Representation of the reco momentum and PID a recob::Track for 
-  /// muon, pion, kaon, and proton assumptions 
+  /// Matching information between a TPC Track and a CRT Hit
   class SRCRTHitMatch
     {
     public:

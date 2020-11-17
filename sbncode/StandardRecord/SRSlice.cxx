@@ -6,11 +6,24 @@
 
 #include "SRSlice.h"
 #include <limits>
+#include <bits/stdc++.h>
 
 namespace caf
 {
+  FlashMatch::FlashMatch():
+    present(false),
+    score(std::numeric_limits<float>::signaling_NaN()),
+    time(std::numeric_limits<float>::signaling_NaN()),
+    pe(std::numeric_limits<float>::signaling_NaN())
+  {}
+
   SRSlice::SRSlice():
-    charge(std::numeric_limits<float>::signaling_NaN())
+    producer(UINT_MAX),
+    charge(std::numeric_limits<float>::signaling_NaN()),
+    is_clear_cosmic(false),
+    nu_pdg(INT_MIN),
+    nu_score(std::numeric_limits<float>::signaling_NaN()),
+    self(INT_MIN)
   {  }
 
 

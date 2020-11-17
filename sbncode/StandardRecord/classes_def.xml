@@ -12,6 +12,7 @@
   <class name="caf::SRShowerSelection" />
   <class name="caf::SRSlice"        />
   <class name="caf::FlashMatch"        />
+  <class name="caf::SRFlashMatch"        />
   <class name="caf::SRSliceRecoBranch" />
   <class name="caf::SRTrack" />
   <class name="caf::SRTrackTruth" />
@@ -45,6 +46,7 @@
   <class name="caf::SRCRTHit" />
   <class name="std::vector<caf::SRCRTHit>" />
   <class name="caf::SRCRTHitMatch" />
+  <class name="caf::SRCRTTrackMatch" />
 
   <enum name="caf::Plane_t" />
   <enum name="caf::Det_t" />
