@@ -27,6 +27,7 @@ namespace ana
                             double z = slc->vertex.z - slc->reco.shw[0].start.z;
                             gap  = sqrt(x*x + y*y + z*z);	
                           }
+
 			  return gap;
 			});
 

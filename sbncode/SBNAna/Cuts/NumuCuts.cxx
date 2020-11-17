@@ -9,7 +9,7 @@ namespace ana{
 			   { // 
 			     bool hastrk = ( slc->reco.ntrk > 0 );
 			     if (!hastrk) return hastrk;
-			 
+
 			     unsigned int muIdx = (unsigned int)kPrimMuonIdx(slc);
  			     double len = slc->reco.trk[muIdx].len;
 			     return (len > 0 );
