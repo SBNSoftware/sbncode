@@ -86,6 +86,8 @@ namespace ana
   /// The simplest possible Var, always 1. Used as a default weight.
   const Var kUnweighted([](const caf::SRSliceProxy*){return 1;});
 
+  const SpillVar kSpillUnweighted([](const caf::SRSpillProxy*){return 1;});
+
   /// \brief Variable formed from two input variables
   ///
   /// The binning of each variable has to be given to allow conversion into a

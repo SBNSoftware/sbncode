@@ -53,6 +53,12 @@ namespace ana
     {
     }
 
+    Spectrum(const std::string& label, const Binning& bins,
+             SpectrumLoaderBase& loader,
+             const SpillVar& var,
+             const SpillCut& cut,
+             const SpillVar& wei = kSpillUnweighted);
+
     /// The only \ref MultiVar variant available
     Spectrum(const std::string& label, const Binning& bins,
              SpectrumLoaderBase& loader,
@@ -61,6 +67,13 @@ namespace ana
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted);
+
+    // And the only SpillMultiVar
+    Spectrum(const std::string& label, const Binning& bins,
+             SpectrumLoaderBase& loader,
+             const SpillMultiVar& var,
+             const SpillCut& cut,
+             const SpillVar& wei = kSpillUnweighted);
 
     Spectrum(SpectrumLoaderBase& loader,
              const HistAxis& axis,

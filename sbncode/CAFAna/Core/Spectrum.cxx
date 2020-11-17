@@ -42,6 +42,30 @@ namespace ana
   //----------------------------------------------------------------------
   Spectrum::Spectrum(const std::string& label, const Binning& bins,
                      SpectrumLoaderBase& loader,
+                     const Var& var,
+                     const SpillCut& spillcut,
+                     const Cut& cut,
+                     const SystShifts& shift,
+                     const Var& wei)
+    : Spectrum(label, bins)
+  {
+    loader.AddSpectrum(*this, var, spillcut, cut, shift, wei);
+  }
+
+  //----------------------------------------------------------------------
+  Spectrum::Spectrum(const std::string& label, const Binning& bins,
+                     SpectrumLoaderBase& loader,
+                     const SpillVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei)
+    : Spectrum(label, bins)
+  {
+    loader.AddSpectrum(*this, var, cut, wei);
+  }
+
+  //----------------------------------------------------------------------
+  Spectrum::Spectrum(const std::string& label, const Binning& bins,
+                     SpectrumLoaderBase& loader,
                      const MultiVar& var,
                      const SpillCut& spillcut,
                      const Cut& cut,
@@ -50,6 +74,17 @@ namespace ana
     : Spectrum(label, bins)
   {
     loader.AddSpectrum(*this, var, spillcut, cut, shift, wei);
+  }
+
+  //----------------------------------------------------------------------
+  Spectrum::Spectrum(const std::string& label, const Binning& bins,
+                     SpectrumLoaderBase& loader,
+                     const SpillMultiVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei)
+    : Spectrum(label, bins)
+  {
+    loader.AddSpectrum(*this, var, cut, wei);
   }
 
   //----------------------------------------------------------------------

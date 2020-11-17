@@ -176,6 +176,21 @@ namespace ana
   //----------------------------------------------------------------------
   void SpectrumLoader::HandleRecord(caf::SRSpillProxy* sr)
   {
+    // Do the spill-level spectra first. Keep this very simple because we
+    // intend to change it.
+    for(auto& spillcutdef: fSpillHistDefs){
+      if(!spillcutdef.first(sr)) continue;
+      for(auto& spillweidef: spillcutdef.second){
+        const double wei = spillweidef.first(sr);
+        if(wei == 0) continue;
+        for(auto spillvardef: spillweidef.second){
+          const double val = spillvardef.first.GetVar()(sr);
+          for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+        }
+      }
+    }
+
+
     for(auto& spillcutdef: fHistDefs){
       const SpillCut& spillcut = spillcutdef.first;
 
@@ -307,5 +322,15 @@ namespace ana
         }
       }
     }
+
+
+    for(auto& spillcutdef: fSpillHistDefs){
+      for(auto& spillweidef: spillcutdef.second){
+        for(auto spillvardef: spillweidef.second){
+          for(Spectrum* s: spillvardef.second.spects) s->fPOT += fPOT;
+        }
+      }
+    }
+
   }
 } // namespace
