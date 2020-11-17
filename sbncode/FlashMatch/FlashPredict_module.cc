@@ -313,7 +313,7 @@ void FlashPredict::produce(art::Event & e)
   }
 
   auto ibin =  ophittime->GetMaximumBin();
-  _flash_time = (ibin * 0.002) + fBeamWindowStart; // in us
+  _flash_time = (ibin * 0.002) + fBeamWindowStart; // in us // TODO: hardcoding
   double lowedge = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
@@ -512,17 +512,15 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
                                        std::vector<recob::OpHit> const& opHits)
 {
   // store PMT photon counts in the tree as well
-  double unpe_tot = 0;
-  double pnorm = 0;
-  double sum =    0;
-  double sumy =   0; double sumz =   0;
-  double sum_Ay = 0; double sum_Az = 0;
-  double sum_By = 0; double sum_Bz = 0;
-  double sum_Cy = 0; double sum_Cz = 0;
-  double sum_D =  0;
-  double maxPE = -9999;
-  // TODO: change this next loop, such that it only loops
-  // through channels in the current fCryostat
+  double pe_tot = 0.;
+  double unpe_tot = 0.;
+  double sum =    0.;
+  double sumy =   0.; double sumz =   0.;
+  double sum_Ay = 0.; double sum_Az = 0.;
+  double sum_By = 0.; double sum_Bz = 0.;
+  double sum_Cy = 0.; double sum_Cz = 0.;
+  double sum_D =  0.;
+  double maxPE = -9999.;
   for(auto const& oph : opHits) {
     if(!isPDRelevant(oph.OpChannel(), tpcWithHits)) continue;
     auto opDet = geometry->OpDetGeoFromOpChannel(oph.OpChannel());
@@ -540,7 +538,7 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
         maxPE = oph.PE();
       }
       sum     += 1.0;
-      pnorm   += oph.PE();
+      pe_tot  += oph.PE();
       sumy    += oph.PE() * opDetXYZ.Y();
       sumz    += oph.PE() * opDetXYZ.Z();
       sum_By  += opDetXYZ.Y();
@@ -566,8 +564,8 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
     }
   }
 
-  if (pnorm > 0) {
-    _flash_pe = pnorm * fPEscale;
+  if (pe_tot > 0) {
+    _flash_pe = pe_tot * fPEscale;
     _flash_y = sum_Cy / sum_D;
     _flash_z = sum_Cz / sum_D;
     sum_By = _flash_y;
@@ -584,10 +582,18 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned> tpcWithHits,
     //   std::cout << "_flash_z:\t" << _flash_z << "\n";
   }
   else {
+    std::string channels;
+    for(auto& op: opHits) channels += std::to_string(op.OpChannel()) + ' ';
+    std::string tpcs;
+    for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
     mf::LogError("FlashPredict")
       << "Really odd that I landed here, this shouldn't had happen.\n"
-      << "pnorm:\t" << pnorm << "\n"
-      << "opHits.size():\t" << opHits.size() << "\n";
+      << "sum:          \t" << sum << "\n"
+      << "pe_tot:       \t" << pe_tot << "\n"
+      << "unpe_tot:     \t" << unpe_tot << "\n"
+      << "tpcWithHits:  \t" << tpcs << "\n"
+      << "opHits.size():\t" << opHits.size() << "\n"
+      << "channels:     \t" << channels << std::endl;
     _flash_y = 0;
     _flash_z = 0;
     _flash_r = 0;
