@@ -325,23 +325,12 @@ void FlashPredict::produce(art::Event & e)
                    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
     opHits.end());
 
-  // FIXME: this optimization, might cause issues
-  // // check if the drift volumes have OpHits
-  // std::array<bool, fDriftVolumes> lightInTPC = {false};
-  // for (size_t dv=0; dv<fDriftVolumes; dv++){
-  //   auto it = std::find_if(opHits.begin(), opHits.end(),
-  //                          [dv, this](const recob::OpHit& oph)-> bool
-  //                          {return isPDRelevant(oph.OpChannel(), dv); });
-  //   lightInTPC[dv] = (it != opHits.end());
-  // }
-  // if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
-  //   mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
-  //   bk.no_ophit++;
-  //   updateBookKeeping();
-  //   e.put(std::move(T0_v));
-  //   e.put(std::move(pfp_t0_assn_v));
-  //   return;
-  // }
+  // FIXME: too hacky
+  std::set<unsigned> tpcWithOpH;
+  for(auto& op: opHits){
+    tpcWithOpH.insert(op.OpChannel() % 2 );
+    if(tpcWithOpH.size() == fNTPC) break;
+  }
 
   _pfpmap.clear();
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
@@ -426,11 +415,17 @@ void FlashPredict::produce(art::Event & e)
 
     // double charge[nMaxTPCs] = {0.}; // TODO: Use this
 
-    // FIXME: optimization might cause issues
-    // if (!lightInTPC[itpc]) {
-    //   // mf::LogDebug("FlashPredict") << "No LIGHT in the " << itpc << " TPC, continue.";
-    //   continue;
-    // }
+    if(fSBND){// because SBND has an opaque cathode 
+      std::set<unsigned> tpcWithHitsOpH;
+      std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
+                            tpcWithOpH.begin(), tpcWithOpH.end(),
+                            std::inserter(tpcWithHitsOpH, tpcWithHitsOpH.begin()));
+      if (tpcWithHitsOpH.size() == 0) {
+        mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
+        bk.no_oph_hits++;
+        continue;
+      }
+    }
 
     double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
     _charge_q = 0;
