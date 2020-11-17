@@ -96,7 +96,7 @@ namespace ana
 
   /// \brief Equivalent of \ref Cut acting on \ref caf::SRSpill. For use in
   /// spill-by-spill data quality cuts
-  typedef GenericCut<caf::SRSpill> SpillCut;
+  typedef GenericCut<caf::SRSpillProxy> SpillCut;
 
   /// \brief Cut designed to be used over the nuTree, ie all neutrinos, not
   /// just those that got slices.
@@ -126,8 +126,5 @@ namespace ana
   const Cut kNoCut([](const caf::SRSliceProxy*){return true;});
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillCut kNoSpillCut([](const caf::SRSpill*){return true;});
-
-  /// The simplest possible cut: pass everything, used as a default
-  const SpillTruthCut kNoSpillTruthCut([](const caf::SRSpillTruthBranch*){return true;});
+  const SpillCut kNoSpillCut([](const caf::SRSpillProxy*){return true;});
 } // namespace

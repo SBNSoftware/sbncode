@@ -72,19 +72,16 @@ namespace ana
   /// value of the variable (which may be some complicated function).
   typedef GenericVar<caf::SRSliceProxy> Var;
 
-  /// \brief Equivalent of \ref Var acting on \ref caf::SRSpill. For use in
-  /// making plots of POT per run etc
-  typedef GenericVar<caf::SRSpill> SpillVar;
-
-  /// \brief Var designed to be used over the nuTree, ie all neutrinos, not
-  /// just those that got slices.
-  typedef GenericVar<caf::SRSpillTruthBranch> SpillTruthVar;
+  /// \brief Equivalent of \ref Var acting on \ref caf::SRSpill
+  typedef GenericVar<caf::SRSpillProxy> SpillVar;
 
   /// \brief For Vars where literally all you need is a single CAF variable
   ///
   /// eg Var myVar = SIMPLEVAR(my.var.str);
   /// NB lack of quotes quotes around my.var.str
 #define SIMPLEVAR(CAFNAME) Var([](const caf::SRSliceProxy* sr){return sr->CAFNAME;})
+
+#define SIMPLESPILLVAR(CAFNAME) SpillVar([](const caf::SRSpillProxy* sr){return sr->CAFNAME;})
 
   /// The simplest possible Var, always 1. Used as a default weight.
   const Var kUnweighted([](const caf::SRSliceProxy*){return 1;});

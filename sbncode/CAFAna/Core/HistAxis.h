@@ -61,5 +61,4 @@ namespace ana
 
   typedef GenericHistAxis<Var> HistAxis;
   typedef GenericHistAxis<SpillVar> SpillHistAxis;
-  typedef GenericHistAxis<SpillTruthVar> SpillTruthHistAxis;
 }

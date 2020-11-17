@@ -5,19 +5,19 @@
 
 namespace ana
 {
-	// Return the run number
-	extern const Var kRun;
+  // Return the run number
+  extern const SpillVar kRun;
 
-	// Return the event number
-	extern const Var kEvt;
+  // Return the event number
+  extern const SpillVar kEvt;
 	
-	// Return the slice number
-	extern const Var kSlc;
+  // Return the slice number
+  //  extern const SliceVar kSlc;
 
-	// Return event count
-	extern const Var kCounting;
+  // Return event count
+  extern const Var kCounting;
 
-	// Select beam mode
-	extern const Cut kIsRHC;
+  // Select beam mode
+  extern const SpillCut kIsRHC;
 
 }

@@ -128,7 +128,7 @@ namespace ana
     if(dir) dir->GetObject("rec", tr); else f->GetObject("recTree", tr);
     assert(tr);
     long n;
-    caf::SRProxy sr(dir, tr, "rec", n, 0);
+    caf::SRSpillProxy sr(dir, tr, "rec", n, 0);
 
 
     //    FloatingExceptionOnNaN fpnan;

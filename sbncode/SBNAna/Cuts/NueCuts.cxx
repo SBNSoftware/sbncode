@@ -6,21 +6,21 @@ namespace ana{
 
 	// Basic reconstruction 
 	const Cut kRecoShower(
-		[](const caf::SRProxy* sr)
+		[](const caf::SRSliceProxy* slc)
 		{
-		  return (sr->reco.nshw > 0 && // need a shower
-				  sr->reco.shw[0].bestplane_energy > 0 && // nothing is terribly wrong
-				  sr->reco.shw[0].len > 0 );
+		  return (slc->reco.nshw > 0 && // need a shower
+				  slc->reco.shw[0].bestplane_energy > 0 && // nothing is terribly wrong
+				  slc->reco.shw[0].len > 0 );
 	}
 	);
 
 	// Basic reconstruction 
 	const Cut kNueBasicCut(
-		[](const caf::SRProxy* sr)
+		[](const caf::SRSliceProxy* slc)
 		{
-		  return (sr->reco.shw[0].bestplane_energy < 250. &&
-				  sr->reco.shw[0].bestplane_dEdx < 2.7 &&
-				  sr->reco.shw[0].len < 42.);
+		  return (slc->reco.shw[0].bestplane_energy < 250. &&
+				  slc->reco.shw[0].bestplane_dEdx < 2.7 &&
+				  slc->reco.shw[0].len < 42.);
 	}
 	);
 

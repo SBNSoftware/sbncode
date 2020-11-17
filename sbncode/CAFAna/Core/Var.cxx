@@ -124,11 +124,9 @@ namespace ana
   // explicitly instantiate the template for the types we know we have
   template Var Var2D(const Var&, const Binning&, const Var&, const Binning&);
   template SpillVar Var2D(const SpillVar&, const Binning&, const SpillVar&, const Binning&);
-  template SpillTruthVar Var2D(const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&);
 
   template Var Var2D(const Var&, int, double, double, const Var&, int, double, double);
   template SpillVar Var2D(const SpillVar&, int, double, double, const SpillVar&, int, double, double);
-  template SpillTruthVar Var2D(const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double);
 
   //----------------------------------------------------------------------
   template<class T> GenericVar<T>
@@ -153,11 +151,9 @@ namespace ana
   // explicitly instantiate the template for the types we know we have
   template Var Var3D(const Var&, const Binning&, const Var&, const Binning&, const Var&, const Binning&);
   template SpillVar Var3D(const SpillVar&, const Binning&, const SpillVar&, const Binning&, const SpillVar&, const Binning&);
-  template SpillTruthVar Var3D(const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&);
 
   template Var Var3D(const Var&, int, double, double, const Var&, int, double, double, const Var&, int, double, double);
   template SpillVar Var3D(const SpillVar&, int, double, double, const SpillVar&, int, double, double, const SpillVar&, int, double, double);
-  template SpillTruthVar Var3D(const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double);
 
   //----------------------------------------------------------------------
   Var Scaled(const Var& v, double s)
@@ -265,10 +261,8 @@ namespace ana
   }
 
   // explicitly instantiate the templates for the types we know we have
-  template class GenericVar<caf::SRProxy>;
+  template class GenericVar<caf::SRSpillProxy>;
   template class GenericVar<caf::SRSliceProxy>;
-  template class GenericVar<caf::SRSpill>;
-  template class GenericVar<caf::SRSpillTruthBranch>;
 
   template<class T> int GenericVar<T>::fgNextID = 0;
 
@@ -280,8 +274,4 @@ namespace ana
   template SpillVar operator/(const SpillVar&, const SpillVar&);
   template SpillVar operator+(const SpillVar&, const SpillVar&);
   template SpillVar operator-(const SpillVar&, const SpillVar&);
-  template SpillTruthVar operator*(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator/(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator+(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator-(const SpillTruthVar&, const SpillTruthVar&);
 }

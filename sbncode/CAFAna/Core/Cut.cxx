@@ -71,8 +71,7 @@ namespace ana
 
   // Make sure all versions get generated
   template Cut operator&&<caf::SRSliceProxy>(const Cut& a, const Cut& b);
-  template SpillCut operator&&<caf::SRSpill>(const SpillCut& a, const SpillCut& b);
-  template SpillTruthCut operator&&<caf::SRSpillTruthBranch>(const SpillTruthCut& a, const SpillTruthCut& b);
+  template SpillCut operator&&<caf::SRSpillProxy>(const SpillCut& a, const SpillCut& b);
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T> operator||(const GenericCut<T>& a,
@@ -97,8 +96,7 @@ namespace ana
 
   // Make sure all versions get generated
   template Cut operator||<caf::SRSliceProxy>(const Cut& a, const Cut& b);
-  template SpillCut operator||<caf::SRSpill>(const SpillCut& a, const SpillCut& b);
-  template SpillTruthCut operator||<caf::SRSpillTruthBranch>(const SpillTruthCut& a, const SpillTruthCut& b);
+  template SpillCut operator||<caf::SRSpillProxy>(const SpillCut& a, const SpillCut& b);
 
   //----------------------------------------------------------------------
   template<class T> GenericCut<T> operator!(const GenericCut<T>& a)
@@ -117,8 +115,7 @@ namespace ana
 
   // Make sure all versions get generated
   template Cut operator!<caf::SRSliceProxy>(const Cut& a);
-  template SpillCut operator!<caf::SRSpill>(const SpillCut& a);
-  template SpillTruthCut operator!<caf::SRSpillTruthBranch>(const SpillTruthCut& a);
+  template SpillCut operator!<caf::SRSpillProxy>(const SpillCut& a);
 
 
   //----------------------------------------------------------------------
@@ -197,10 +194,8 @@ namespace ana
   template<class T> GenericCut<T> operator!=(const GenericVar<T>& a, const GenericVar<T>& b){return !(b == a);}
 
   // Make sure all three versions get generated
-  template class GenericCut<caf::SRProxy>;
+  template class GenericCut<caf::SRSpillProxy>;
   template class GenericCut<caf::SRSliceProxy>;
-  template class GenericCut<caf::SRSpill>;
-  template class GenericCut<caf::SRSpillTruthBranch>;
 
   template<class T> int GenericCut<T>::fgNextID = 0;
 
@@ -240,23 +235,4 @@ namespace ana
   template SpillCut operator<(double, const SpillVar&);
   template SpillCut operator>=(double, const SpillVar&);
   template SpillCut operator<=(double, const SpillVar&);
-
-  template SpillTruthCut operator>(const SpillTruthVar&, double);
-  template SpillTruthCut operator<(const SpillTruthVar&, double);
-  template SpillTruthCut operator>=(const SpillTruthVar&, double);
-  template SpillTruthCut operator<=(const SpillTruthVar&, double);
-  template SpillTruthCut operator==(const SpillTruthVar&, double);
-  template SpillTruthCut operator!=(const SpillTruthVar&, double);
-
-  template SpillTruthCut operator>(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthCut operator<(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthCut operator>=(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthCut operator<=(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthCut operator==(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthCut operator!=(const SpillTruthVar&, const SpillTruthVar&);
-
-  template SpillTruthCut operator>(double, const SpillTruthVar&);
-  template SpillTruthCut operator<(double, const SpillTruthVar&);
-  template SpillTruthCut operator>=(double, const SpillTruthVar&);
-  template SpillTruthCut operator<=(double, const SpillTruthVar&);
 }
