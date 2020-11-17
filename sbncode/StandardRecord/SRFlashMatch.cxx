@@ -1,40 +1,31 @@
 ////////////////////////////////////////////////////////////////////////
-// \file    SRSlice.cxx
-// \brief   SRSlice object for slice summary information.
+// \file    SRFlashMatch.cxx
+// \brief   SRFlashMatch object for flashmatch summary information.
 // \author  $Author: psihas@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRSlice.h"
+#include "SRFlashMatch.h"
 #include <limits>
-#include <bits/stdc++.h>
 
 namespace caf
 {
-  FlashMatch::FlashMatch():
-    present(false),
+  SRFlashMatch::SRFlashMatch():
     score(std::numeric_limits<float>::signaling_NaN()),
     time(std::numeric_limits<float>::signaling_NaN()),
     pe(std::numeric_limits<float>::signaling_NaN())
-  {}
-
-  SRSlice::SRSlice():
-    producer(UINT_MAX),
-    charge(std::numeric_limits<float>::signaling_NaN()),
-    is_clear_cosmic(false),
-    nu_pdg(INT_MIN),
-    nu_score(std::numeric_limits<float>::signaling_NaN()),
-    self(INT_MIN)
   {  }
 
 
-  SRSlice::~SRSlice(){  }
+  SRFlashMatch::~SRFlashMatch(){  }
 
 
-  void SRSlice::setDefault()
+  void SRFlashMatch::setDefault()
   {
-    charge         = -5;
+    present        = false;
+    score          = -5.0;
+    time           = -5.0;
+    pe             = -5.0;
   }
-
 
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

@@ -10,8 +10,12 @@ physics.producers.mycafmaker.TrackPidLabel:  "pandoraSCEPid"
 physics.producers.mycafmaker.FlashMatchLabel:  "fmatchSCE"
 
 physics.producers.pandoraTrackMCS.TrackLabel: pandoraSCETrack
-
 physics.producers.pandoraTrackRange.TrackLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTHit.TpcTrackModuleLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTHit.T0Alg.TPCTrackLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTTrack.TpcTrackModuleLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTTrack.CrtTrackAlg.TPCTrackLabel: pandoraSCETrack
+
 
 physics.producers.pandoraShowerSelectionVars.PandoraLabel: "pandoraSCE"
 physics.producers.pandoraShowerSelectionVars.ShowerLabel:  "pandoraSCEShowerSBN"

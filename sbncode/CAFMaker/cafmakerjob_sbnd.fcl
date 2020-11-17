@@ -16,7 +16,7 @@
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
 #include "crthitconverter_producer.fcl"
-#include "crthitmatch_producer.fcl"
+#include "crtmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
@@ -88,6 +88,7 @@ physics:
    pandoraShowerSelectionVars: 	@local::showerSelectionVars_sbn
    crtconvhit: 		       	@local::crthitconverter_sbnd
    pandoraTrackCRTHit: 	       	@local::crthitmatch_sbnd
+   pandoraTrackCRTTrack: 	@local::crttrackmatch_sbnd
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -97,6 +98,7 @@ physics:
 #    metadata: @local::standard_metadata            #prod
   }
  runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]

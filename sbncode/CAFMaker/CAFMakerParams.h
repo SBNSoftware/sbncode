@@ -138,6 +138,12 @@ namespace caf
       "pandoraTrackCRTHit"
     };
 
+    Atom<string> CRTTrackMatchLabel {
+      Name("CRTTrackMatchLabel"),
+      Comment("Base label of track to CRT track matching producer."),
+      "pandoraTrackCRTTrack"
+    };
+
     Atom<string> TrackMCSLabel {
       Name("TrackMCSLabel"),
       Comment("Base label of track MCS momentum calculation producer."),

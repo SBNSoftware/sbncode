@@ -11,14 +11,13 @@
 // - Add in cycle and batch to params
 // - Move this list some place useful
 // - Add reco.CRT branch
-// - Find the right sintaxis for emshower
-// - Check the third shower data product
 // ---------------------------------------
 
 
 #include "CAFMakerParams.h"
-#include "FillReco.h"
+#include "FillFlashMatch.h"
 #include "FillTrue.h"
+#include "FillReco.h"
 #include "Utils.h"
 
 // C/C++ includes
@@ -798,9 +797,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Hit>(slcShowers, evt,
           fParams.RecoShowerLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::crt::CRTHit, anab::T0> fmCRTHit =
-      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcTracks, evt,
+    // TODO: also save the sbn::crt::CRTHit in the matching so that CAFMaker has access to it
+    art::FindManyP<anab::T0> fmCRTHitMatch =
+      FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTHitMatchLabel() + slice_tag_suff);
+
+    // TODO: also save the sbn::crt::CRTTrack in the matching so that CAFMaker has access to it
+    art::FindManyP<anab::T0> fmCRTTrackMatch =
+      FindManyPStrict<anab::T0>(slcTracks, evt,
+               fParams.CRTTrackMatchLabel() + slice_tag_suff);
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmMCSs;
     static const std::vector<std::string> PIDnames {"muon", "pion", "kaon", "proton"};
@@ -846,6 +851,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVars(*slice, primary, producer, recslc);
     FillSliceMetadata(primary_meta, recslc);
     FillSliceFlashMatch(fmatch, recslc);
+    FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
 
     // select slice
@@ -929,9 +935,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmTrackHit.isValid()) {
           FillTrackTruth(fmTrackHit.at(iPart), clock_data, rec.reco.trk.back());
         }
-        if (fmCRTHit.isValid()) {
-          FillTrackCRTHit(fmCRTHit.at(iPart), fmCRTHit.data(iPart), rec.reco.trk.back());
+        // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
+        if (fmCRTHitMatch.isValid()) {
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), rec.reco.trk.back());
         }
+        if (fmCRTTrackMatch.isValid()) {
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
+        }
+
+	// Duplicate track reco info in the srslice
+        recslc.reco.ntrk ++;
+        recslc.reco.trk.push_back(SRTrack());
+	recslc.reco.trk.back() = rec.reco.trk.back();	
       } // thisTrack exists
 
       else if (thisShower.size()) { // it's a shower!
@@ -953,6 +968,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmShowerHit.isValid()) {
           FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
         }
+
+	// Duplicate track reco info in the srslice
+        recslc.reco.nshw ++;
+        recslc.reco.shw.push_back(SRShower());
+	recslc.reco.shw.back() = rec.reco.shw.back();	
+
       } // thisShower exists
 
       else {}
@@ -998,11 +1019,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   //  Fill rec Tree
   //#######################################################
+  rec.nslc            = rec.slc.size();
   rec.mc              = srtruthbranch;
   rec.true_particles  = true_particles;
+  rec.ntrue_particles = true_particles.size();
   rec.fake_reco       = srfakereco;
+  rec.nfake_reco      = srfakereco.size();
   rec.pass_flashtrig  = pass_flash_trig;  // trigger result
   rec.crt_hits        = srcrthits;
+  rec.ncrt_hits       = srcrthits.size();
 
   // Get metadata information for header
   unsigned int run = evt.run();

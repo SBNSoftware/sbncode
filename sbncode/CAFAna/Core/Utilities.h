@@ -62,6 +62,18 @@ namespace ana
     bool fBackup;
   };
 
+  /// \brief ifdh calls between construction and destruction produce no output
+  ///
+  /// Upon going out of scope, restores the previous setting
+  class IFDHSilent
+  {
+  public:
+    IFDHSilent();
+    ~IFDHSilent();
+  protected:
+    bool fSet;
+  };
+
   /// \brief Alter floating-point exception flag
   ///
   /// Upon going out of scope, restores the previous setting
@@ -73,6 +85,9 @@ namespace ana
   protected:
     fexcept_t fBackup;
   };
+
+  /// $EXPERIMENT or a nice error message and abort
+  std::string Experiment();
 
   /** \brief Compute bin-to-bin covariance matrix from a collection of sets of bin contents.
 

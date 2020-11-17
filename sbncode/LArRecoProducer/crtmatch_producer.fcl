@@ -1,0 +1,29 @@
+BEGIN_PROLOG
+
+crthitmatch_sbnd: {
+  module_type: CRTT0Matching
+  CrtHitModuleLabel: crthit
+  TpcTrackModuleLabel: pandoraTrack
+  T0Alg: {
+    MinTrackLength: 10.
+    TPCTrackLabel: pandoraTrack
+    DistanceLimit: 10000
+    TrackDirectionFrac: 0.5
+  }
+}
+
+crttrackmatch_sbnd: {
+  module_type: CRTTrackMatching
+  TpcTrackModuleLabel: pandoraTrack
+  CrtTrackModuleLabel: crttrack
+  CrtTrackAlg: {
+    SelectionMetric: angle
+    MaxAngleDiff: 10000
+    MaxDistance: -1 # not used
+    MaxScore: -1 # not used
+    TPCTrackLabel: pandoraTrack
+  }
+
+}
+
+END_PROLOG

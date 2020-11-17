@@ -15,7 +15,6 @@
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
-#include "crthitmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
@@ -78,8 +77,6 @@ physics:
    pandoraTrackMCSCryo1: @local::mcs_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-   pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
-   pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
 
    mcreco: @local::standard_mcreco
 }
