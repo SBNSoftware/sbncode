@@ -240,7 +240,7 @@ void FlashPredict::produce(art::Event & e)
   _flash_r       = -9999.;
   _flash_ratio   = -9999.;
   _score         = -9999.;
-  bk.event_++;
+  bk.events++;
 
   // grab PFParticles in event
   auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle> >(fPandoraProducer);
@@ -261,9 +261,9 @@ void FlashPredict::produce(art::Event & e)
 
   if (fSelectNeutrino &&
       !pfpNeutrinoOnEvent(pfp_h)) {
-    mf::LogWarning("FlashPredict")
+    mf::LogInfo("FlashPredict")
       << "No pfp neutrino on event. Skipping...";
-    bk.nopfpneutrino_++;
+    bk.nopfpneutrino++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -276,7 +276,7 @@ void FlashPredict::produce(art::Event & e)
   if(!ophit_h.isValid()) {
     mf::LogError("FlashPredict") << "No optical hits from producer module "
                                  << fOpHitProducer;
-    bk.nonvalidophit_++;
+    bk.nonvalidophit++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -305,7 +305,7 @@ void FlashPredict::produce(art::Event & e)
       << "\nor the integral: " << ophittime->Integral()
       << " is less than " << fMinFlashPE
       << "\nSkipping...";
-    bk.nullophittime_++;
+    bk.nullophittime++;
     updateBookKeeping();
     e.put(std::move(T0_v));
     e.put(std::move(pfp_t0_assn_v));
@@ -336,7 +336,7 @@ void FlashPredict::produce(art::Event & e)
   // }
   // if(std::none_of(lightInTPC.begin(), lightInTPC.end(), [](bool v) { return v; })){
   //   mf::LogWarning("FlashPredict") << "No OpHits on event. Skipping...";
-  //   bk.no_ophit_++;
+  //   bk.no_ophit++;
   //   updateBookKeeping();
   //   e.put(std::move(T0_v));
   //   e.put(std::move(pfp_t0_assn_v));
@@ -346,8 +346,6 @@ void FlashPredict::produce(art::Event & e)
   _pfpmap.clear();
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
 
-  unsigned filled_tree = 0;
-  bool qInTPC = false;
   // Loop over pandora pfp particles
   for (size_t p=0; p<pfp_h->size(); p++) {
     auto const& pfp = pfp_h->at(p);
@@ -357,6 +355,7 @@ void FlashPredict::produce(art::Event & e)
         (pfpPDGC != 12) &&
         (pfpPDGC != 14) &&
         (pfpPDGC != 16) ) continue;
+    bk.pfp_to_score++;
     flashmatch::QCluster_t qClusters;
     std::set<unsigned> tpcWithHits;
 
@@ -444,11 +443,10 @@ void FlashPredict::produce(art::Event & e)
       _charge_q += qp.q;
     }
     if (norm <= 0) {
-      qInTPC = false;
-      // mf::LogDebug("FlashPredict") << "No CHARGE in the " << itpc << " TPC, continue.";
+      mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
+      bk.no_charge++;
       continue;
     }
-    qInTPC = true;
     _charge_x = xave / norm;
     _charge_y = yave / norm;
     _charge_z = zave / norm;
@@ -461,29 +459,30 @@ void FlashPredict::produce(art::Event & e)
       _score = 0.;
       int icount = 0;
       int isl = int(n_bins * (_charge_x / fDriftDistance));
+      auto out = mf::LogWarning("FlashPredict");
 
       if (dy_spreads[isl] > 0) {
         double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("Y", pfp.PdgCode(), tpcWithHits, term);
+        if (term > fTermThreshold) printMetrics("Y", pfp.PdgCode(), tpcWithHits, term, out);
         _score += term;
         icount++;
       }
       if (dz_spreads[isl] > 0) {
         double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("Z", pfp.PdgCode(), tpcWithHits, term);
+        if (term > fTermThreshold) printMetrics("Z", pfp.PdgCode(), tpcWithHits, term, out);
         _score += term;
         icount++;
       }
       if (rr_spreads[isl] > 0 && _flash_r > 0) {
         double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("R", pfp.PdgCode(), tpcWithHits, term);
+        if (term > fTermThreshold) printMetrics("R", pfp.PdgCode(), tpcWithHits, term, out);
         _score += term;
         icount++;
       }
       if (fSBND && fUseUncoatedPMT) {
         if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
           double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
-          if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), tpcWithHits, term);
+          if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), tpcWithHits, term, out);
           _score += term;
           icount++;
         }
@@ -491,32 +490,21 @@ void FlashPredict::produce(art::Event & e)
       //      _score/=icount;
       if (_flash_pe > 0 ) { // TODO: is this really the best condition?
         if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
-        bk.fill_++;
-        filled_tree++;
         if(filled_tree > 1) {
-          bk.multiple_fill_++;
           mf::LogInfo("FlashPredict") << "Event has produced " << filled_tree << " scores";
         }
       }
     }
 
     if (_score > 0) {
+      bk.scored_pfp++;
       // create t0 and pfp-t0 association here
       T0_v->push_back(anab::T0(_flash_time, icountPE, p, 0, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // over all PFparticles
 
-  if(filled_tree == 0 && !qInTPC){
-    mf::LogWarning("FlashPredict")
-      << "No charge associated to pfpneutrino. Skipping...";
-    bk.no_charge_++;
-    updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
-    return;
-  }
-
+  bk.events_processed++;
   updateBookKeeping();
 
   e.put(std::move(T0_v));
@@ -858,76 +846,84 @@ bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc)
   return false;
 }
 
-void FlashPredict::printBookKeeping(std::string stream="info")
-{
-  std::ostringstream message;
-  message
-    << "Book Keeping\n"
-    << "events:       \t  " << bk.event_ << "\n"
-    << "nopfpneutrino:\t -" << bk.nopfpneutrino_ << "\n"
-    << "nullophittime:\t -" << bk.nullophittime_ << "\n"
-    << "nonvalidophit:\t -" << bk.nonvalidophit_ << "\n"
-    << "no_ophit:     \t -" << bk.no_ophit_ << "\n"
-    << "no_charge:    \t -" << bk.no_charge_ << "\n"
-    << "multiple_fill:\t +" << bk.multiple_fill_ << "\n"
-    << "-----------------------------------\n"
-    << "bookkeeping:  \t  " << bk.bookkeeping_ << "\n"
-    << "fill:         \t  " << bk.fill_ << "\n";
 
-  if(stream == "debug")
-    mf::LogDebug("FlashPredict") << message.str();
-  else if(stream == "info")
-    mf::LogInfo("FlashPredict") << message.str();
-  else if(stream == "warning")
-    mf::LogWarning("FlashPredict") << message.str();
-  else
-    mf::LogVerbatim("FlashPredict") << message.str();
+template <typename Stream>
+void FlashPredict::printBookKeeping(Stream&& out)
+{
+  std::ostringstream m;
+  m << "Book Keeping\n";
+  m << "-----------------------------------\n"
+    << "Job tally\n"
+    << "\tevents:       \t  " << bk.events << "\n";
+  if(bk.nopfpneutrino) m << "\tnopfpneutrino:\t -" << bk.nopfpneutrino << "\n";
+  if(bk.nonvalidophit) m << "\tnonvalidophit:\t -" << bk.nonvalidophit << "\n";
+  if(bk.nullophittime) m << "\tnullophittime:\t -" << bk.nullophittime << "\n";
+  if(bk.no_ophit)      m << "\tno_ophit:     \t -" << bk.no_ophit << "\n";
+  m << "\t-------------------\n"
+    << "\tjob_bookkeeping:  \t" << bk.job_bookkeeping << "\n"
+    << "\tevents_processed: \t" << bk.events_processed << "\n"
+    << "-----------------------------------\n"
+    << "pfp tally\n"
+    << "\tpfp to score: \t  " << bk.pfp_to_score << "\n";
+  if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
+  if(bk.no_oph_hits) m << "\tno_oph_hits:  \t -" << bk.no_oph_hits << "\n";
+  m << "\t-------------------\n"
+    << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n"
+    << "\tscored_pfp_:      \t" << bk.scored_pfp << "\n"
+    << "-----------------------------------";
+  out << m.str();
 }
+
 
 void FlashPredict::updateBookKeeping()
 {
-  bk.bookkeeping_ = bk.event_
-    - bk.nopfpneutrino_ - bk.nullophittime_
-    - bk.nonvalidophit_ - bk.no_ophit_
-    - bk.no_charge_
-    + bk.multiple_fill_;
+  // account for the reasons that an event could lack
+  bk.job_bookkeeping = bk.events
+    - bk.nopfpneutrino - bk.nonvalidophit
+    - bk.nullophittime - bk.no_ophit;
 
-  if(bk.fill_ != bk.bookkeeping_) printBookKeeping("warning");
+  // account for the reasons that a particle might lack
+  bk.pfp_bookkeeping = bk.pfp_to_score
+    - bk.no_oph_hits - bk.no_charge ;
+
+  if(bk.events_processed != bk.job_bookkeeping ||
+     bk.scored_pfp != bk.pfp_bookkeeping)
+    printBookKeeping(mf::LogWarning("FlashPredict"));
 }
 
 
+template <typename Stream>
 void FlashPredict::printMetrics(std::string metric, int pdgc,
                                 std::set<unsigned> tpcWithHits,
-                                double term)
+                                double term,
+                                Stream&& out)
 {
   int isl = int(n_bins * (_charge_x / fDriftDistance));
   std::string tpcs;
   for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
-  std::ostringstream thresholdMessage;
-  thresholdMessage << std::left << std::setw(12) << std::setfill(' ');
-  thresholdMessage
+  out
+    << "Big term " << metric << ":\t" << term << "\n"
+    << std::left << std::setw(12) << std::setfill(' ')
+    << "isl:        \t" << isl << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "_run:       \t" << _run << "\n"
     << "_sub:       \t" << _sub << "\n"
     << "_evt:       \t" << _evt << "\n"
     << "tpc:        \t" << tpcs << "\n"
+    << "_flash_time:\t" << std::setw(8) << _flash_time << "\n"
+    << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
+    << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
+    << "_flash_unpe:\t" << std::setw(8) << _flash_unpe << "\n"
     << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
     << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
     << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
     << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
     << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
     << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
-    << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
-    << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
-    << "_flash_unpe:\t" << std::setw(8) << _flash_unpe << ",\t"
-    << "_flash_r:   \t" << std::setw(8) << _flash_r    << "\n"
-    << "_flash_ratio\t" << std::setw(8) << _flash_ratio<< "\n"
-    << "_flash_time:\t" << std::setw(8) << _flash_time << std::endl;
-  mf::LogWarning("FlashPredict")
-    << "\nBig term " << metric << ":\t" << term
-    << ",\tisl:\t" << isl << "\n"
-    << thresholdMessage.str();
+    << "_flash_r:   \t" << std::setw(8) << _flash_r    << ",\t"
+    << "_flash_ratio\t" << std::setw(8) << _flash_ratio<< "\n";
 }
+
 
 void FlashPredict::beginJob()
 {
@@ -937,7 +933,7 @@ void FlashPredict::beginJob()
 
 void FlashPredict::endJob()
 {
-  printBookKeeping("warning");
+  printBookKeeping(mf::LogWarning("FlashPredict"));
 }
 
 DEFINE_ART_MODULE(FlashPredict)

@@ -107,10 +107,13 @@ private:
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
-  void printBookKeeping(std::string stream);
+  template <typename Stream>
+  void printBookKeeping(Stream&& out);
   void updateBookKeeping();
+  template <typename Stream>
   void printMetrics(std::string metric, int pdgc,
-                    std::set<unsigned> tpcWithHits, double term);
+                    std::set<unsigned> tpcWithHits, double term,
+                    Stream&& out);
 
   std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
     fCaloProducer, fTrackProducer;
@@ -161,10 +164,12 @@ private:
   int n_bins;
 
   struct BookKeeping {
-    int event_, fill_, bookkeeping_;
-    unsigned nopfpneutrino_, nullophittime_,
-      nonvalidophit_, no_ophit_, no_charge_;
-    unsigned multiple_fill_;
+    int job_bookkeeping, events_processed;
+    unsigned events, nopfpneutrino, nullophittime,
+      nonvalidophit, no_ophit;
+
+    int pfp_bookkeeping, scored_pfp;
+    unsigned pfp_to_score, no_charge, no_oph_hits;
   };
   BookKeeping bk;
 };
