@@ -87,6 +87,7 @@ private:
   void computeChargeMetrics(flashmatch::QCluster_t& qClusters);
   void computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
+  void computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
                                     const art::Ptr<recob::PFParticle>& particle,
@@ -168,10 +169,11 @@ private:
   struct BookKeeping {
     int job_bookkeeping, events_processed;
     unsigned events, nopfpneutrino, nullophittime,
-      nonvalidophit, no_ophit;
+      nonvalidophit;
 
     int pfp_bookkeeping, scored_pfp;
-    unsigned pfp_to_score, no_charge, no_oph_hits;
+    unsigned pfp_to_score, no_charge, no_oph_hits,
+      no_flash_pe;
   };
   BookKeeping bk;
 };

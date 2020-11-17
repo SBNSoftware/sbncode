@@ -433,54 +433,19 @@ void FlashPredict::produce(art::Event & e)
       bk.no_charge++;
       continue;
     }
+
     computeFlashMetrics(tpcWithHits, opHits);
-
-    // calculate match score here, put association on the event
-    // TODO: pack this block into a function
-    {
-      _score = 0.;
-      int icount = 0;
-      int isl = int(n_bins * (_charge_x / fDriftDistance));
-      auto out = mf::LogWarning("FlashPredict");
-
-      if (dy_spreads[isl] > 0) {
-        double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("Y", pfp.PdgCode(), tpcWithHits, term, out);
-        _score += term;
-        icount++;
-      }
-      if (dz_spreads[isl] > 0) {
-        double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("Z", pfp.PdgCode(), tpcWithHits, term, out);
-        _score += term;
-        icount++;
-      }
-      if (rr_spreads[isl] > 0 && _flash_r > 0) {
-        double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
-        if (term > fTermThreshold) printMetrics("R", pfp.PdgCode(), tpcWithHits, term, out);
-        _score += term;
-        icount++;
-      }
-      if (fSBND && fUseUncoatedPMT) {
-        if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
-          double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
-          if (term > fTermThreshold) printMetrics("RATIO", pfp.PdgCode(), tpcWithHits, term, out);
-          _score += term;
-          icount++;
-        }
-      }
-      //      _score/=icount;
-      if (_flash_pe > 0 ) { // TODO: is this really the best condition?
-        if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
-        if(filled_tree > 1) {
-          mf::LogInfo("FlashPredict") << "Event has produced " << filled_tree << " scores";
-        }
-      }
+    if (_flash_pe <= 0){
+      printMetrics("ERROR", pfp.PdgCode(), tpcWithHits, 0, mf::LogError("FlashPredict"));
+      bk.no_flash_pe++;
+      continue;
     }
 
+    computeScore(tpcWithHits, pfp.PdgCode());
     if (_score > 0) {
+      if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
-      // create t0 and pfp-t0 association here
+      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
       T0_v->push_back(anab::T0(_flash_time, icountPE, p, 0, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
@@ -608,6 +573,45 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     _flash_ratio = 0;
   }
 }
+
+
+void FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
+{
+  _score = 0.;
+  unsigned tcount = 0;
+  int isl = int(n_bins * (_charge_x / fDriftDistance));
+  auto out = mf::LogWarning("FlashPredict");
+
+  if (dy_spreads[isl] > 0) {
+    double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
+    if (term > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, term, out);
+    _score += term;
+    tcount++;
+  }
+  if (dz_spreads[isl] > 0) {
+    double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
+    if (term > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, term, out);
+    _score += term;
+    tcount++;
+  }
+  if (rr_spreads[isl] > 0 && _flash_r > 0) {
+    double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
+    if (term > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, term, out);
+    _score += term;
+    tcount++;
+  }
+  if (fSBND && fUseUncoatedPMT) {
+    if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
+      double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
+      if (term > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, term, out);
+      _score += term;
+      tcount++;
+    }
+  }
+  mf::LogDebug("FlashPredict")
+    << "score:\t" << _score << "using " << tcount << " terms"; 
+}
+
 
 
 ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)
@@ -865,15 +869,15 @@ void FlashPredict::printBookKeeping(Stream&& out)
   if(bk.nopfpneutrino) m << "\tnopfpneutrino:\t -" << bk.nopfpneutrino << "\n";
   if(bk.nonvalidophit) m << "\tnonvalidophit:\t -" << bk.nonvalidophit << "\n";
   if(bk.nullophittime) m << "\tnullophittime:\t -" << bk.nullophittime << "\n";
-  if(bk.no_ophit)      m << "\tno_ophit:     \t -" << bk.no_ophit << "\n";
   m << "\t-------------------\n"
     << "\tjob_bookkeeping:  \t" << bk.job_bookkeeping << "\n"
     << "\tevents_processed: \t" << bk.events_processed << "\n"
     << "-----------------------------------\n"
     << "pfp tally\n"
     << "\tpfp to score: \t  " << bk.pfp_to_score << "\n";
-  if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
   if(bk.no_oph_hits) m << "\tno_oph_hits:  \t -" << bk.no_oph_hits << "\n";
+  if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
+  if(bk.no_flash_pe) m << "\tno_flash_pe:  \t -" << bk.no_flash_pe << "ERROR!\n";
   m << "\t-------------------\n"
     << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n"
     << "\tscored_pfp_:      \t" << bk.scored_pfp << "\n"
@@ -887,11 +891,12 @@ void FlashPredict::updateBookKeeping()
   // account for the reasons that an event could lack
   bk.job_bookkeeping = bk.events
     - bk.nopfpneutrino - bk.nonvalidophit
-    - bk.nullophittime - bk.no_ophit;
+    - bk.nullophittime;
 
   // account for the reasons that a particle might lack
   bk.pfp_bookkeeping = bk.pfp_to_score
-    - bk.no_oph_hits - bk.no_charge ;
+    - bk.no_oph_hits - bk.no_charge
+    - bk.no_flash_pe;
 
   if(bk.events_processed != bk.job_bookkeeping ||
      bk.scored_pfp != bk.pfp_bookkeeping)
