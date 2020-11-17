@@ -170,13 +170,13 @@ namespace ana
     {
     public:
       // v could easily be a temporary, have to make a copy
-      _VarOrMultiVar(const GenericVar<T>& v) : fVar(new GenericVar<T>(v)), fMultiVar(0) {}
-      _VarOrMultiVar(const GenericMultiVar<T>& v) : fVar(0), fMultiVar(new GenericMultiVar<T>(v)) {}
+      _VarOrMultiVar(const _Var<T>& v) : fVar(new _Var<T>(v)), fMultiVar(0) {}
+      _VarOrMultiVar(const _MultiVar<T>& v) : fVar(0), fMultiVar(new _MultiVar<T>(v)) {}
       ~_VarOrMultiVar() {delete fVar; delete fMultiVar;}
 
       _VarOrMultiVar(const _VarOrMultiVar& v)
-        : fVar(v.fVar ? new GenericVar<T>(*v.fVar) : 0),
-          fMultiVar(v.fMultiVar ? new GenericMultiVar<T>(*v.fMultiVar) : 0)
+        : fVar(v.fVar ? new _Var<T>(*v.fVar) : 0),
+          fMultiVar(v.fMultiVar ? new _MultiVar<T>(*v.fMultiVar) : 0)
       {
       }
 
@@ -189,14 +189,14 @@ namespace ana
       }
 
       bool IsMulti() const {return fMultiVar;}
-      const GenericVar<T>& GetVar() const {assert(fVar); return *fVar;}
-      const GenericMultiVar<T>& GetMultiVar() const {assert(fMultiVar); return *fMultiVar;}
+      const _Var<T>& GetVar() const {assert(fVar); return *fVar;}
+      const _MultiVar<T>& GetMultiVar() const {assert(fMultiVar); return *fMultiVar;}
 
       int ID() const {return fVar ? fVar->ID() : fMultiVar->ID();}
 
     protected:
-      const GenericVar<T>* fVar;
-      const GenericMultiVar<T>* fMultiVar;
+      const _Var<T>* fVar;
+      const _MultiVar<T>* fMultiVar;
     };
 
     typedef _VarOrMultiVar<caf::SRSliceProxy> VarOrMultiVar;

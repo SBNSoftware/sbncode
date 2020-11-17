@@ -11,14 +11,14 @@ namespace ana
 {
   /// A Var that returns multiple results for each slice. eg the properties of
   /// multiple prongs. All results will be filled into the Spectrum.
-  template<class T> class GenericMultiVar
+  template<class T> class _MultiVar
   {
   public:
     /// The type of the function part of a var
     typedef std::vector<double> (VarFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    GenericMultiVar(const std::set<std::string>& reqs,
+    _MultiVar(const std::set<std::string>& reqs,
                     const std::function<VarFunc_t>& fun)
       : fFunc(fun), fID(fgNextID--)
     {
@@ -42,7 +42,7 @@ namespace ana
     static int fgNextID;
   };
 
-  typedef GenericMultiVar<caf::SRSliceProxy> MultiVar;
-  typedef GenericMultiVar<caf::SRSpillProxy> SpillMultiVar;
+  typedef _MultiVar<caf::SRSliceProxy> MultiVar;
+  typedef _MultiVar<caf::SRSpillProxy> SpillMultiVar;
 
 } // namespace

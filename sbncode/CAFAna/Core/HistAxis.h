@@ -11,18 +11,18 @@ namespace ana
   ///
   /// That is, what it should be labelled, what the binning should be, and what
   /// variable will be being filled into it.
-  template<class T> class GenericHistAxis
+  template<class T> class _HistAxis
   {
   public:
-    GenericHistAxis(const std::string& label,
+    _HistAxis(const std::string& label,
                     const Binning& bins,
                     const T& var);
 
-    GenericHistAxis(const std::vector<std::string>& labels,
+    _HistAxis(const std::vector<std::string>& labels,
                     const std::vector<Binning>& bins,
                     const std::vector<T>& vars);
 
-    GenericHistAxis(const std::string& labelX,
+    _HistAxis(const std::string& labelX,
                     const Binning& binsX,
                     const T& varX,
                     const std::string& labelY,
@@ -30,12 +30,12 @@ namespace ana
                     const T& varY);
 
     /// Shortcut for simple binnings
-    GenericHistAxis(const std::string& label,
+    _HistAxis(const std::string& label,
                     int nx, double x0, double x1,
                     const T& var);
 
     /// Shortcut for simple binnings
-    GenericHistAxis(const std::string& labelX,
+    _HistAxis(const std::string& labelX,
                     int nx, double x0, double x1,
                     const T& varX,
                     const std::string& labelY,
@@ -59,6 +59,6 @@ namespace ana
     std::vector<T> fVars;
   };
 
-  typedef GenericHistAxis<Var> HistAxis;
-  typedef GenericHistAxis<SpillVar> SpillHistAxis;
+  typedef _HistAxis<Var> HistAxis;
+  typedef _HistAxis<SpillVar> SpillHistAxis;
 }
