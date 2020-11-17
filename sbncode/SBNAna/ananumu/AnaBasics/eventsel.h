@@ -1,6 +1,7 @@
 #include "CAFAna/Core/Binning.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 
+#include "SBNAna/Vars/Vars.h"
 #include "SBNAna/Vars/NumuVars.h"
 #include "SBNAna/Cuts/NumuCuts.h"
 #include "SBNAna/Cuts/TruthCuts.h"
@@ -32,21 +33,6 @@ const Var kPrimTrkCRTdist([](const caf::SRSliceProxy *slc)
 			  return (double)slc->reco.trk[muIdx].crthit.distance;
 			});
 
-// Slice Vertex position
-const Var kSlcVtxX([](const caf::SRSliceProxy *slc)
-		   {
-		     return slc->slc.vertex.x;
-		   });
-
-const Var kSlcVtxY([](const caf::SRSliceProxy *slc)
-		   {
-		     return slc->slc.vertex.y;
-		   });
-
-const Var kSlcVtxZ([](const caf::SRSliceProxy *slc)
-		   {
-		     return slc->slc.vertex.z;
-		   });
 
 // These are examples of useful structs to
 // use when making a bunch of Spectra
