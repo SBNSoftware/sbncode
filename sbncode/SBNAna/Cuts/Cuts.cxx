@@ -14,7 +14,7 @@
 // {xmin = -175, xmax = -1.5}, {xmin = 1.5, xmax = 175}
 std::map<std::string,double> avnd =
 {
-	{"xmin",1.5},
+	{"xmin", 1.5},
 	{"xmax", 175.},
 	{"ymin", -175.},
 	{"ymax", 175.},

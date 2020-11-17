@@ -20,4 +20,9 @@ namespace ana
   // Select beam mode
   extern const SpillCut kIsRHC;
 
+  // Slice verteces
+  extern const Var kSlcVtxX;
+  extern const Var kSlcVtxY;
+  extern const Var kSlcVtxZ;
+
 }
