@@ -415,7 +415,7 @@ void FlashPredict::produce(art::Event & e)
 
     // double charge[nMaxTPCs] = {0.}; // TODO: Use this
 
-    if(fSBND){// because SBND has an opaque cathode 
+    if(fSBND){// because SBND has an opaque cathode
       std::set<unsigned> tpcWithHitsOpH;
       std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
                             tpcWithOpH.begin(), tpcWithOpH.end(),
@@ -427,25 +427,12 @@ void FlashPredict::produce(art::Event & e)
       }
     }
 
-    double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
-    _charge_q = 0;
-    // TODO: use accumulators instead of this for loop
-    for (auto& qp : qClusters) {
-      xave += 0.001 * qp.q * qp.x;
-      yave += 0.001 * qp.q * qp.y;
-      zave += 0.001 * qp.q * qp.z;
-      norm += 0.001 * qp.q;
-      _charge_q += qp.q;
-    }
-    if (norm <= 0) {
+    computeChargeMetrics(qClusters);
+    if (_charge_q <= 0) {
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       continue;
     }
-    _charge_x = xave / norm;
-    _charge_y = yave / norm;
-    _charge_z = zave / norm;
-    // charge[itpc] = _charge_q; //TODO: Use this
     computeFlashMetrics(tpcWithHits, opHits);
 
     // calculate match score here, put association on the event
@@ -506,6 +493,25 @@ void FlashPredict::produce(art::Event & e)
   e.put(std::move(pfp_t0_assn_v));
 
 }// end of producer module
+
+
+void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
+{
+  double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
+  _charge_q = 0;
+  for (auto& qp : qClusters) {
+    xave += 0.001 * qp.q * qp.x;
+    yave += 0.001 * qp.q * qp.y;
+    zave += 0.001 * qp.q * qp.z;
+    norm += 0.001 * qp.q;
+    _charge_q += qp.q;
+  }
+  if (norm > 0) {
+    _charge_x = xave / norm;
+    _charge_y = yave / norm;
+    _charge_z = zave / norm;
+  }
+}
 
 
 void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,

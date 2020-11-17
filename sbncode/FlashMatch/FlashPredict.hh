@@ -84,6 +84,7 @@ private:
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
 
+  void computeChargeMetrics(flashmatch::QCluster_t& qClusters);
   void computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
