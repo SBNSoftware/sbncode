@@ -325,10 +325,9 @@ void FlashPredict::produce(art::Event & e)
                    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
     opHits.end());
 
-  // FIXME: too hacky
   std::set<unsigned> tpcWithOpH;
   for(auto& op: opHits){
-    tpcWithOpH.insert(op.OpChannel() % 2 );
+    tpcWithOpH.insert(sbndPDinTPC(op.OpChannel()));
     if(tpcWithOpH.size() == fNTPC) break;
   }
 
@@ -412,8 +411,6 @@ void FlashPredict::produce(art::Event & e)
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
-
-    // double charge[nMaxTPCs] = {0.}; // TODO: Use this
 
     if(fSBND){// because SBND has an opaque cathode
       std::set<unsigned> tpcWithHitsOpH;
@@ -763,27 +760,28 @@ void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
 bool FlashPredict::isPDRelevant(int pdChannel,
                                 std::set<unsigned>& tpcWithHits)
 {
-  // check whether this optical detector views the light inside this tpc.
-  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
-  // std::ostringstream lostPDMessage;
-  // lostPDMessage << "\nThere's a " << fDetector << " photo detector that belongs nowhere. \n"
-  //               << "Cryostat: " << fCryostat << "\n"
-  //               << "driftVolume:  " << driftVolume <<  "\n"
-  //               << "position: (" << p.X() << p.Y() << p.Z() << ")" <<  std::endl;
   if (fICARUS) {
+    auto& p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
     // if the channel is in the Cryostat is relevant
     return fGeoCryo->ContainsPosition(p);
   }
   else if (fSBND) {
     // if there's hits on all TPCs all channels are relevant
     if(tpcWithHits.size() == fNTPC) return true;
-    p.SetX(p.X()/2.);//OpDets are outside the TPCs
     for(auto itpc: tpcWithHits){
-      if(geo::TPCID(fCryostat, itpc) ==
-         geometry->PositionToTPCID(p)) return true;
+      if(itpc == sbndPDinTPC(pdChannel)) return true;
     }
   }
   return false;
+}
+
+
+// TODO: find better, less hacky solution
+unsigned FlashPredict::sbndPDinTPC(int pdChannel)
+{
+  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  p.SetX(p.X()/2.);//OpDets are outside the TPCs
+  return (geometry->PositionToTPCID(p)).TPC;
 }
 
 

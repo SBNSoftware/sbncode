@@ -107,6 +107,7 @@ private:
                           art::Handle<std::vector<recob::OpHit>>& ophit_h);
   bool isPDRelevant(int pdChannel,
                     std::set<unsigned>& tpcWithHits);
+  unsigned sbndPDinTPC(int pdChannel);
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
