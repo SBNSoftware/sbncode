@@ -12,16 +12,16 @@
 namespace ana
 {
 
-	const Var kRun = SIMPLEVAR(hdr.run);
-	const Var kEvt = SIMPLEVAR(hdr.evt);
-	const Var kSlc = SIMPLEVAR(hdr.subevt);
+	// const Var kRun = SIMPLEVAR(hdr.run);
+	// const Var kEvt = SIMPLEVAR(hdr.evt);
+	// const Var kSlc = SIMPLEVAR(hdr.subevt);
 
-	const Var kCounting([](const caf::SRProxy *sr)
+	const Var kCounting([](const caf::SRSliceProxy *slc)
 	{
 		return 1;
 	});
 
 	// // For when we have spill beam mode info
-	// const Cut kIsRHC([](const caf::SRProxy* sr) {return sr->spill.isRHC;});
+	// const Cut kIsRHC([](const caf::SRSliceProxy* sr) {return sr->spill.isRHC;});
 
 }

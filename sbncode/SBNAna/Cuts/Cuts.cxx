@@ -39,28 +39,28 @@ std::map<std::string,double> avfd_cryo2 = avfd_cryo1;
 namespace ana{
 
   const Cut kActiveVolumeND(
-  	[](const caf::SRProxy* sr){
-  		bool x = (avnd["xmin"] < abs(sr->slc[0].vertex.x)) && (abs(sr->slc[0].vertex.x) < avnd["xmax"]);
-  		bool y = (avnd["ymin"] < sr->slc[0].vertex.y) && (sr->slc[0].vertex.y < avnd["ymax"]);
-  		bool z = (avnd["zmin"] < sr->slc[0].vertex.z) && (sr->slc[0].vertex.z < avnd["zmax"]);
+  	[](const caf::SRSliceProxy* slc){
+  		bool x = (avnd["xmin"] < abs(slc->slc[0].vertex.x)) && (abs(slc->slc[0].vertex.x) < avnd["xmax"]);
+  		bool y = (avnd["ymin"] < slc->slc[0].vertex.y) && (slc->slc[0].vertex.y < avnd["ymax"]);
+  		bool z = (avnd["zmin"] < slc->slc[0].vertex.z) && (slc->slc[0].vertex.z < avnd["zmax"]);
   		return(x && y && z);
   	}
   	);
 
   const Cut kActiveVolumeFDCryo1(
-  	[](const caf::SRProxy* sr){
-  		bool x = (avfd_cryo1["xmin"] < sr->slc[0].vertex.x) && (sr->slc[0].vertex.x < avfd_cryo1["xmax"]);
-  		bool y = (avfd_cryo1["ymin"] < sr->slc[0].vertex.y) && (sr->slc[0].vertex.y < avfd_cryo1["ymax"]);
-  		bool z = (avfd_cryo1["zmin"] < sr->slc[0].vertex.z) && (sr->slc[0].vertex.z < avfd_cryo1["zmax"]);
+  	[](const caf::SRSliceProxy* slc){
+  		bool x = (avfd_cryo1["xmin"] < slc->slc[0].vertex.x) && (slc->slc[0].vertex.x < avfd_cryo1["xmax"]);
+  		bool y = (avfd_cryo1["ymin"] < slc->slc[0].vertex.y) && (slc->slc[0].vertex.y < avfd_cryo1["ymax"]);
+  		bool z = (avfd_cryo1["zmin"] < slc->slc[0].vertex.z) && (slc->slc[0].vertex.z < avfd_cryo1["zmax"]);
   		return(x && y && z);
   	}
   	);
 
   const Cut kActiveVolumeFDCryo2(
-  	[](const caf::SRProxy* sr){
-  		bool x = (avfd_cryo2["xmin"] < sr->slc[0].vertex.x) && (sr->slc[0].vertex.x < avfd_cryo2["xmax"]);
-  		bool y = (avfd_cryo2["ymin"] < sr->slc[0].vertex.y) && (sr->slc[0].vertex.y < avfd_cryo2["ymax"]);
-  		bool z = (avfd_cryo2["zmin"] < sr->slc[0].vertex.z) && (sr->slc[0].vertex.z < avfd_cryo2["zmax"]);
+  	[](const caf::SRSliceProxy* slc){
+  		bool x = (avfd_cryo2["xmin"] < slc->slc[0].vertex.x) && (slc->slc[0].vertex.x < avfd_cryo2["xmax"]);
+  		bool y = (avfd_cryo2["ymin"] < slc->slc[0].vertex.y) && (slc->slc[0].vertex.y < avfd_cryo2["ymax"]);
+  		bool z = (avfd_cryo2["zmin"] < slc->slc[0].vertex.z) && (slc->slc[0].vertex.z < avfd_cryo2["zmax"]);
   		return(x && y && z);
   	}
   	);
