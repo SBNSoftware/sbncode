@@ -18,14 +18,14 @@ namespace caf
       SRShower();
       ~SRShower(){  }
       int bestplane;             ///< shower best reconstructed plane
-      double bestplane_dEdx;     ///< shower dEdx at best plane [MeV/cm]
-      double bestplane_energy;   ///< shower energy at best plane [MeV]
+      float bestplane_dEdx;     ///< shower dEdx at best plane [MeV/cm]
+      float bestplane_energy;   ///< shower energy at best plane [MeV]
       float conversion_gap;      ///< shower start and vertex position difference [cm]
       float density;             ///< shower density [MeV/cm]
       float len;                 ///< shower length [cm]
       float open_angle;          ///< shower opening angle [rad]
-      std::vector<double> dEdx;     ///< shower calculated dEdx at best plane [MeV/cm]
-      std::vector<double> energy;   ///< shower calculated energy at best plane [MeV]
+      std::vector<float> dEdx;     ///< shower calculated dEdx at best plane [MeV/cm]
+      std::vector<float> energy;   ///< shower calculated energy at best plane [MeV]
       SRVector3D dir;               ///< direction cosines at the start of the shower
       SRVector3D start;             ///< shower start point in detector coordinates [cm]
 
