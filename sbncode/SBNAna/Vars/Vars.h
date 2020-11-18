@@ -1,5 +1,6 @@
 #pragma once
 
+#include "CAFAna/Core/MultiVar.h"
 #include "CAFAna/Core/Var.h"
 #include "CAFAna/Core/Cut.h"
 
@@ -11,18 +12,18 @@ namespace ana
   // Return the event number
   extern const SpillVar kEvt;
 
-  // extern const SpillVar kCRTHitX;	
-  // extern const SpillVar kCRTHitY;  
-  // extern const SpillVar kCRTHitZ;  
-  // extern const SpillVar kCRTHitPE;  
-  // extern const SpillVar kCRTHitTime;  
+  extern const SpillMultiVar kCRTHitX;	
+  extern const SpillMultiVar kCRTHitY;  
+  extern const SpillMultiVar kCRTHitZ;  
+  extern const SpillMultiVar kCRTHitPE;  
+  extern const SpillMultiVar kCRTHitTime;  
 
-  // Return the slice number
-  //  extern const SliceVar kSlc;
+  // // Return the slice number
+  // extern const SliceVar kSlc;
 
-  // Return event count
-  extern const SpillVar kCountingSpill;
+  // Return spill count
   extern const Var kCounting;
+  extern const SpillVar kSpillCounting;
 
   // Slice verteces
   extern const Var kSlcVtxX;

@@ -16,14 +16,56 @@ namespace ana
 	const SpillVar kEvt = SIMPLESPILLVAR(hdr.evt);
 	//	const Var kSlc = SIMPLEVAR(hdr.subevt);
 
-	// // TO DO: Fix error 'const class caf::Proxy<std::vector<caf::SRCRTHit> > position'
-	// const SpillVar kCRTHitX = SIMPLESPILLVAR(crt_hits.position.x);
-	// const SpillVar kCRTHitY = SIMPLESPILLVAR(crt_hits.position.y);
-	// const SpillVar kCRTHitZ = SIMPLESPILLVAR(crt_hits.position.z);
-	// const SpillVar kCRHitPE = SIMPLESPILLVAR(crt_hits.pe);
-	// const SpillVar kCRHitTime = SIMPLESPILLVAR(crt_hits.time);
-
 	const Var kCounting = kUnweighted;
+	const SpillVar kSpillCounting = kSpillUnweighted;
+
+
+	// There can be more than one crt hit per spill so the variables are vectors.
+	// Use SpillMultiVar for now.
+ 	const SpillMultiVar kCRTHitX([](const caf::SRSpillProxy *sr)
+ 	{
+ 		std::vector<double> positions;
+ 		for(const auto& hit : sr->crt_hits){
+ 			positions.push_back(hit.position.x);
+ 		}
+ 		return positions;
+ 	});
+
+ 	const SpillMultiVar kCRTHitY([](const caf::SRSpillProxy *sr)
+ 	{
+ 		std::vector<double> positions;
+ 		for(const auto& hit : sr->crt_hits){
+ 			positions.push_back(hit.position.y);
+ 		}
+ 		return positions;
+ 	});
+
+ 	const SpillMultiVar kCRTHitZ([](const caf::SRSpillProxy *sr)
+ 	{
+ 		std::vector<double> positions;
+ 		for(const auto& hit : sr->crt_hits){
+ 			positions.push_back(hit.position.z);
+ 		}
+ 		return positions;
+ 	});
+
+ 	const SpillMultiVar kCRTHitPE([](const caf::SRSpillProxy *sr)
+ 	{
+ 		std::vector<double> pes;
+ 		for(const auto& hit : sr->crt_hits){
+ 			pes.push_back(hit.pe);
+ 		}
+ 		return pes;
+ 	});
+
+ 	const SpillMultiVar kCRTHitTime([](const caf::SRSpillProxy *sr)
+ 	{
+ 		std::vector<double> times;
+ 		for(const auto& hit : sr->crt_hits){
+ 			times.push_back(hit.time);
+ 		}
+ 		return times;
+ 	});
 
 	// // For when we have spill beam mode info
 	// const SpillCut kIsRHC([](const caf::SRProxy* sr) {return sr->spill.isRHC;});
