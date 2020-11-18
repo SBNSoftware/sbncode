@@ -1,19 +1,18 @@
-#include "SBNAna/Cuts/Cuts.h"
 #include "SBNAna/Cuts/NueCuts.h"
 #include "SBNAna/Vars/NueVars.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
-// // icarus active volume cryo 1
-// std::map<std::string,double> avfd_cryo1 =
-// {
-// 	{"xmin", -368.49},
-// 	{"xmax", -71.94},
-// 	{"ymin", -181.86},
-// 	{"ymax", 134.96},
-// 	{"zmin", -894.95},
-// 	{"zmax", 894.95}
-// };
+// icarus active volume cryo 1
+std::map<std::string,double> avfd =
+{
+	{"xmin", -368.49},
+	{"xmax", -71.94},
+	{"ymin", -181.86},
+	{"ymax", 134.96},
+	{"zmin", -894.95},
+	{"zmax", 894.95}
+};
 
 namespace ana{
 
@@ -67,14 +66,14 @@ namespace ana{
 			    this_endz = slc->reco.shw[0].start.z + (slc->reco.shw[0].dir.z * slc->reco.shw[0].len);
 			}
 
-			bool startx = (avfd_cryo1["xmin"] < slc->reco.shw[0].start.x) && (slc->reco.shw[0].start.x < avfd_cryo1["xmax"]);
-			bool endx   = (avfd_cryo1["xmin"] < this_endx) && (this_endx < avfd_cryo1["xmax"]);
+			bool startx = (avfd["xmin"] < slc->reco.shw[0].start.x) && (slc->reco.shw[0].start.x < avfd["xmax"]);
+			bool endx   = (avfd["xmin"] < this_endx) && (this_endx < avfd["xmax"]);
 
-			bool starty = (avfd_cryo1["ymin"] < slc->reco.shw[0].start.y) && (slc->reco.shw[0].start.y < avfd_cryo1["ymax"]);
-			bool endy   = (avfd_cryo1["ymin"] < this_endy) && (this_endy < avfd_cryo1["ymax"]);
+			bool starty = (avfd["ymin"] < slc->reco.shw[0].start.y) && (slc->reco.shw[0].start.y < avfd["ymax"]);
+			bool endy   = (avfd["ymin"] < this_endy) && (this_endy < avfd["ymax"]);
 
-			bool startz = (avfd_cryo1["zmin"] < slc->reco.shw[0].start.z) && (slc->reco.shw[0].start.z < avfd_cryo1["zmax"]);
-			bool endz   = (avfd_cryo1["zmin"] < this_endz) && (this_endz < avfd_cryo1["zmax"]);
+			bool startz = (avfd["zmin"] < slc->reco.shw[0].start.z) && (slc->reco.shw[0].start.z < avfd["zmax"]);
+			bool endz   = (avfd["zmin"] < this_endz) && (this_endz < avfd["zmax"]);
 
 			return (startx && endx && starty && endy && startz && endz);
     }

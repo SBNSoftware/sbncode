@@ -4,6 +4,7 @@
 #include "CAFAna/Core/Cut.h"
 
 // =================================================================== //
+// TO DO: Put these values in a more generic place                     //
 // These values have been used for the nue event selection as of       // 
 // April 29 2020. The active and fiducial volumes are the same so far  //
 // =================================================================== //
