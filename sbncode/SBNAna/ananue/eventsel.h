@@ -80,7 +80,7 @@ struct SelDefSpill
 {
   std::string suffix = "";
   std::string label = "";
-  SpillCut cut = kSpillNoCut;
+  SpillCut cut = kNoSpillCut;
   int color = kBlack;
 };
 
@@ -112,7 +112,7 @@ std::vector<SelDef> sels =
   };
 
 std::vector<SelDefSpill> sels_spill =
-  {{"nocut_spill", "All Slices",         kSpillNoCut,   kBlack},
+  {{"nocut_spill", "All Slices",         kNoSpillCut,   kBlack},
    {"event_spill", "First Events",       kFirstEvents,  kRed+1},
    {"flash_spill", "Pass flash Trigger", kFlashTrigger, kAzure+2}
   };

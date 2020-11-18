@@ -124,7 +124,6 @@ namespace ana
 
   /// The simplest possible cut: pass everything, used as a default
   const Cut kNoCut([](const caf::SRSliceProxy*){return true;});
-  const SpillCut kSpillNoCut([](const caf::SRSpillProxy*){return true;});
 
   /// The simplest possible cut: pass everything, used as a default
   const SpillCut kNoSpillCut([](const caf::SRSpillProxy*){return true;});
