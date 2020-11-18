@@ -12,7 +12,7 @@ namespace caf
 {
 
   SRTrackCalo::SRTrackCalo():
-    nhit(std::numeric_limits<int>::signaling_NaN()),
+    nhit(-999),
     ke(std::numeric_limits<double>::signaling_NaN()),
     charge(std::numeric_limits<double>::signaling_NaN())
   {  }
