@@ -4,9 +4,9 @@
 #ifndef SRSHOWER_H
 #define SRSHOWER_H
 
-#include "SRVector3D.h"
-#include "SRShowerSelection.h"
-#include "SRTrackTruth.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+#include "sbncode/StandardRecord/SRShowerSelection.h"
+#include "sbncode/StandardRecord/SRTrackTruth.h"
 
 namespace caf
 {
@@ -16,7 +16,7 @@ namespace caf
     {
     public:
       SRShower();
-      ~SRShower(){  };
+      ~SRShower(){  }
       int bestplane;             ///< shower best reconstructed plane
       double bestplane_dEdx;     ///< shower dEdx at best plane [MeV/cm]
       double bestplane_energy;   ///< shower energy at best plane [MeV]

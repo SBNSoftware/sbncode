@@ -4,7 +4,7 @@
 #ifndef SRSHOWERSELECTION_H
 #define SRSHOWERSELECTION_H
 
-#include "SRVector3D.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
 
 namespace caf
 {
@@ -13,7 +13,7 @@ namespace caf
     {
     public:
       SRShowerSelection();
-      ~SRShowerSelection(){  };
+      ~SRShowerSelection(){  }
 
       // density gradient metics: split the shower up into N segments,
       // fit to the form of [0]/(X^[1]) and extract the fit

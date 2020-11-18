@@ -4,18 +4,19 @@
 #ifndef SRTRACK_H
 #define SRTRACK_H
 
-/* #include "SRVector3D.h" */
+/* #include "sbncode/StandardRecord/SRVector3D.h" */
 
-#include "SRTrackTruth.h"
-#include "SRTrkChi2PID.h"
-#include "SRTrkMCS.h"
-#include "SRTrkRange.h"
-#include "SRCRTHitMatch.h"
-#include "SRCRTTrackMatch.h"
-#include "SRTrackCalo.h"
+#include "sbncode/StandardRecord/SRTrackTruth.h"
+#include "sbncode/StandardRecord/SRTrkChi2PID.h"
+#include "sbncode/StandardRecord/SRTrkMCS.h"
+#include "sbncode/StandardRecord/SRTrkRange.h"
+#include "sbncode/StandardRecord/SRCRTHitMatch.h"
+#include "sbncode/StandardRecord/SRCRTTrackMatch.h"
+#include "sbncode/StandardRecord/SRTrackCalo.h"
 
-#include "SRVector3D.h"
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+#include "sbncode/StandardRecord/SREnums.h"
+
 #include <vector>
 
 namespace caf
@@ -28,7 +29,7 @@ namespace caf
 
 
       SRTrack();
-      ~SRTrack(){  };
+      ~SRTrack(){  }
 
       unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
       unsigned short npts;         ///< number of points (recob Track.NPoints)

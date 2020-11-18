@@ -4,8 +4,8 @@
 #ifndef SRCRTHITMATCH_H
 #define SRCRTHITMATCH_H
 
-#include "SRCRTHit.h"
-#include "SRVector3D.h"
+#include "sbncode/StandardRecord/SRCRTHit.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
 
 namespace caf
 {

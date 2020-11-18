@@ -4,8 +4,8 @@
 #ifndef SRFAKERECOPARTICLE_H
 #define SRFAKERECOPARTICLE_H
 
-#include "SRTruthMatch.h"
-#include "SRTrueParticle.h"
+#include "sbncode/StandardRecord/SRTruthMatch.h"
+#include "sbncode/StandardRecord/SRTrueParticle.h"
 
 namespace caf
 {
@@ -14,7 +14,7 @@ namespace caf
   {
   public:
     SRFakeRecoParticle();
-    ~SRFakeRecoParticle() {  };
+    ~SRFakeRecoParticle() {  }
 
     float ke; ///! Fake-reco kinetic energy [GeV]
     float costh; ///! Fake-reco cosine of angle w.r.t. beam direction
