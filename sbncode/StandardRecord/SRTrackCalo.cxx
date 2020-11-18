@@ -13,8 +13,8 @@ namespace caf
 
   SRTrackCalo::SRTrackCalo():
     nhit(-999),
-    ke(std::numeric_limits<double>::signaling_NaN()),
-    charge(std::numeric_limits<double>::signaling_NaN())
+    ke(std::numeric_limits<float>::signaling_NaN()),
+    charge(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrackCalo::~SRTrackCalo(){  }

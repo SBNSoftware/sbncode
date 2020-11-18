@@ -11,8 +11,8 @@ namespace caf
 {
 
   SRTrkRange::SRTrkRange():
-    p_muon(std::numeric_limits<double>::signaling_NaN()),
-    p_proton(std::numeric_limits<double>::signaling_NaN())
+    p_muon(std::numeric_limits<float>::signaling_NaN()),
+    p_proton(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrkRange::~SRTrkRange(){  }

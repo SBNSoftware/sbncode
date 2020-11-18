@@ -14,11 +14,11 @@ namespace caf
   SRTrkChi2PID::SRTrkChi2PID():
     pdg(-999),
     pid_ndof(-99),
-    chi2_muon(std::numeric_limits<double>::signaling_NaN()),
-    chi2_pion(std::numeric_limits<double>::signaling_NaN()),
-    chi2_kaon(std::numeric_limits<double>::signaling_NaN()),
-    chi2_proton(std::numeric_limits<double>::signaling_NaN()),
-    pida(std::numeric_limits<double>::signaling_NaN())
+    chi2_muon(std::numeric_limits<float>::signaling_NaN()),
+    chi2_pion(std::numeric_limits<float>::signaling_NaN()),
+    chi2_kaon(std::numeric_limits<float>::signaling_NaN()),
+    chi2_proton(std::numeric_limits<float>::signaling_NaN()),
+    pida(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrkChi2PID::~SRTrkChi2PID(){  }
