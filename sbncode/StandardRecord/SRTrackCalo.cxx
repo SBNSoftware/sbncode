@@ -3,7 +3,8 @@
 // \brief   An SRTrackCalo is a high level track ParticlePID object for
 //          for larana Chi2ParticleID results. 
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrackCalo.h"
+
+#include "sbncode/StandardRecord/SRTrackCalo.h"
 
 #include <limits>
 
@@ -11,9 +12,9 @@ namespace caf
 {
 
   SRTrackCalo::SRTrackCalo():
-    nhit(std::numeric_limits<int>::signaling_NaN()),
-    ke(std::numeric_limits<double>::signaling_NaN()),
-    charge(std::numeric_limits<double>::signaling_NaN())
+    nhit(-999),
+    ke(std::numeric_limits<float>::signaling_NaN()),
+    charge(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrackCalo::~SRTrackCalo(){  }

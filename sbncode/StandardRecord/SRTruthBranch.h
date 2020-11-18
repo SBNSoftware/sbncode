@@ -4,7 +4,7 @@
 #ifndef SRTRUTHBRANCH_H
 #define SRTRUTHBRANCH_H
 
-#include "SRTrueInteraction.h"
+#include "sbncode/StandardRecord/SRTrueInteraction.h"
 
 #include <vector>
 

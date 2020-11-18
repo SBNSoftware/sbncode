@@ -18,8 +18,7 @@ namespace ana
     typedef std::vector<double> (VarFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    _MultiVar(const std::set<std::string>& reqs,
-                    const std::function<VarFunc_t>& fun)
+    _MultiVar(const std::function<VarFunc_t>& fun)
       : fFunc(fun), fID(fgNextID--)
     {
     }

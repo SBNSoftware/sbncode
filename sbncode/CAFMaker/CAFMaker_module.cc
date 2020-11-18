@@ -14,11 +14,11 @@
 // ---------------------------------------
 
 
-#include "CAFMakerParams.h"
-#include "FillFlashMatch.h"
-#include "FillTrue.h"
-#include "FillReco.h"
-#include "Utils.h"
+#include "sbncode/CAFMaker/CAFMakerParams.h"
+#include "sbncode/CAFMaker/FillFlashMatch.h"
+#include "sbncode/CAFMaker/FillTrue.h"
+#include "sbncode/CAFMaker/FillReco.h"
+#include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
 #include <fenv.h>
@@ -98,8 +98,8 @@
 #include "sbncode/StandardRecord/StandardRecord.h"
 
 // // CAFMaker
-#include "AssociationUtil.h"
-// #include "Blinding.h"
+#include "sbncode/CAFMaker/AssociationUtil.h"
+// #include "sbncode/CAFMaker/Blinding.h"
 
 namespace caf {
 
@@ -894,7 +894,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       //   thisShower = fmShowerPand.at(iPart);
       // }
 
-      if (thisTrack.size())  { // it's a track!
+      if (!thisTrack.empty())  { // it's a track!
         assert(thisTrack.size() == 1);
         assert(thisShower.size() == 0);
         rec.reco.ntrk ++;
@@ -944,12 +944,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
 	// Duplicate track reco info in the srslice
-        recslc.reco.ntrk ++;
-        recslc.reco.trk.push_back(SRTrack());
-	recslc.reco.trk.back() = rec.reco.trk.back();	
+        recslc.reco.trk.push_back(rec.reco.trk.back());
+        recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
 
-      else if (thisShower.size()) { // it's a shower!
+      else if (!thisShower.empty()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
@@ -970,9 +969,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
 	// Duplicate track reco info in the srslice
-        recslc.reco.nshw ++;
-        recslc.reco.shw.push_back(SRShower());
-	recslc.reco.shw.back() = rec.reco.shw.back();	
+        recslc.reco.shw.push_back(rec.reco.shw.back());
+        recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
 

@@ -4,8 +4,8 @@
 #ifndef SRTRUEINTERACTION_H
 #define SRTRUEINTERACTION_H
 
-#include "SRTruthMatch.h"
-#include "SRTrueParticle.h"
+#include "sbncode/StandardRecord/SRTruthMatch.h"
+#include "sbncode/StandardRecord/SRTrueParticle.h"
 
 namespace caf
 {
@@ -14,7 +14,7 @@ namespace caf
   {
   public:
     SRTrueInteraction();
-    ~SRTrueInteraction() {  };
+    ~SRTrueInteraction() {  }
 
     int   initpdg;         //!< Initial PDG code of probe neutrino
     int   pdg;             //!< PDG code of probe neutrino

@@ -38,6 +38,14 @@ namespace caf
     //           << ", z:" << srhit.position.z << std::endl;
   }
 
+  std::vector<float> double_to_float_vector(const std::vector<double>& v)
+  {
+    std::vector<float> ret;
+    ret.reserve(v.size());
+    for(double x: v) ret.push_back(x);
+    return ret;
+  }
+
   //......................................................................
   void FillShowerVars(const recob::Shower& shower,
                       const recob::PFParticle &particle,
@@ -51,8 +59,8 @@ namespace caf
     srshower.producer = producer;
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
-    srshower.dEdx     = shower.dEdx();
-    srshower.energy   = shower.Energy();
+    srshower.dEdx     = double_to_float_vector(shower.dEdx());
+    srshower.energy   = double_to_float_vector(shower.Energy());
 
     // TO DO: work out conversion gap
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.

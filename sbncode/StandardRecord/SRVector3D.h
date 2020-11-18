@@ -41,7 +41,7 @@ namespace caf
     SRVector3D Unit() const
     {
       const float m = Mag();
-     return SRVector3D(x/m, y/m, z/m);
+      return SRVector3D(x/m, y/m, z/m);
     }
 
     float x;

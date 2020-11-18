@@ -4,7 +4,8 @@
 // \author  $Author: psihas@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRTruthMatch.h"
+#include "sbncode/StandardRecord/SRTruthMatch.h"
+
 #include <limits>
 
 namespace caf
@@ -12,7 +13,7 @@ namespace caf
   SRTruthMatch::SRTruthMatch():
     eff(std::numeric_limits<float>::signaling_NaN()),
     pur(std::numeric_limits<float>::signaling_NaN()),
-    index(std::numeric_limits<int>::signaling_NaN())
+    index(-999)
   {  }
 
   SRTruthMatch::~SRTruthMatch(){  }

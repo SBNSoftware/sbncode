@@ -2,7 +2,8 @@
 // \file    SRTrkRange.cxx
 // \brief   An SRTrkRange is an object for p estimates using range
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrkRange.h"
+
+#include "sbncode/StandardRecord/SRTrkRange.h"
 
 #include <limits>
 
@@ -10,8 +11,8 @@ namespace caf
 {
 
   SRTrkRange::SRTrkRange():
-    p_muon(std::numeric_limits<double>::signaling_NaN()),
-    p_proton(std::numeric_limits<double>::signaling_NaN())
+    p_muon(std::numeric_limits<float>::signaling_NaN()),
+    p_proton(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrkRange::~SRTrkRange(){  }
