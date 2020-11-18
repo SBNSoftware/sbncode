@@ -184,8 +184,15 @@ namespace ana
         const double wei = spillweidef.first(sr);
         if(wei == 0) continue;
         for(auto spillvardef: spillweidef.second){
-          const double val = spillvardef.first.GetVar()(sr);
-          for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+          if(spillvardef.first.IsMulti()){
+            for(double val: spillvardef.first.GetMultiVar()(sr)){
+              for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+            }
+          }
+          else{
+            const double val = spillvardef.first.GetVar()(sr);
+            for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+          }
         }
       }
     }
