@@ -10,15 +10,19 @@ namespace ana
 
   // Return the event number
   extern const SpillVar kEvt;
-	
+
+  // extern const SpillVar kCRTHitX;	
+  // extern const SpillVar kCRTHitY;  
+  // extern const SpillVar kCRTHitZ;  
+  // extern const SpillVar kCRTHitPE;  
+  // extern const SpillVar kCRTHitTime;  
+
   // Return the slice number
   //  extern const SliceVar kSlc;
 
   // Return event count
+  extern const SpillVar kCountingSpill;
   extern const Var kCounting;
-
-  // Select beam mode
-  extern const SpillCut kIsRHC;
 
   // Slice verteces
   extern const Var kSlcVtxX;

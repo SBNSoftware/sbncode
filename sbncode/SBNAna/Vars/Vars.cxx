@@ -16,6 +16,13 @@ namespace ana
 	const SpillVar kEvt = SIMPLESPILLVAR(hdr.evt);
 	//	const Var kSlc = SIMPLEVAR(hdr.subevt);
 
+	// // TO DO: Fix error 'const class caf::Proxy<std::vector<caf::SRCRTHit> > position'
+	// const SpillVar kCRTHitX = SIMPLESPILLVAR(crt_hits.position.x);
+	// const SpillVar kCRTHitY = SIMPLESPILLVAR(crt_hits.position.y);
+	// const SpillVar kCRTHitZ = SIMPLESPILLVAR(crt_hits.position.z);
+	// const SpillVar kCRHitPE = SIMPLESPILLVAR(crt_hits.pe);
+	// const SpillVar kCRHitTime = SIMPLESPILLVAR(crt_hits.time);
+
 	const Var kCounting = kUnweighted;
 
 	// // For when we have spill beam mode info

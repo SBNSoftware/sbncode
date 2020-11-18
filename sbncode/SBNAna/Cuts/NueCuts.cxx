@@ -57,6 +57,8 @@ namespace ana{
 	const Cut kNueContainedFD(
 		[](const caf::SRSliceProxy* slc){
 
+			if( slc->reco.nshw == 0) return false;
+			
 			double this_endx = -9999.0;
 			double this_endy = -9999.0;
 			double this_endz = -9999.0;

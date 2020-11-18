@@ -37,6 +37,11 @@ std::map<std::string,double> avfd_cryo2 = avfd_cryo1;
 
 namespace ana{
 
+  // Select beam mode
+  // extern const SpillCut kIsRHC;
+  extern const SpillCut kFirstEvents;
+  extern const SpillCut kFlashTrigger;
+
   extern const Cut kActiveVolumeND;
   extern const Cut kActiveVolumeFDCryo1;
   extern const Cut kActiveVolumeFDCryo2;
