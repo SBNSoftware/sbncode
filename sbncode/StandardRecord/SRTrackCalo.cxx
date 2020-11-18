@@ -3,7 +3,8 @@
 // \brief   An SRTrackCalo is a high level track ParticlePID object for
 //          for larana Chi2ParticleID results. 
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrackCalo.h"
+
+#include "sbncode/StandardRecord/SRTrackCalo.h"
 
 #include <limits>
 

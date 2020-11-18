@@ -4,7 +4,8 @@
 // \author  $Author: psihas@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRTruthMatch.h"
+#include "sbncode/StandardRecord/SRTruthMatch.h"
+
 #include <limits>
 
 namespace caf

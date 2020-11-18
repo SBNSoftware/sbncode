@@ -3,7 +3,8 @@
 // \brief   An SRShower is a high level shower object.  It knows its
 //          direction and length, but does not own its cell hits.
 ////////////////////////////////////////////////////////////////////////
-#include "SRShower.h"
+
+#include "sbncode/StandardRecord/SRShower.h"
 
 namespace caf
 {

@@ -4,7 +4,8 @@
 // \author  $Author: psihas@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRSlice.h"
+#include "sbncode/StandardRecord/SRSlice.h"
+
 #include <limits>
 #include <bits/stdc++.h>
 

@@ -2,7 +2,7 @@
 // \file    SRTruthBranch.cxx
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRTruthBranch.h"
+#include "sbncode/StandardRecord/SRTruthBranch.h"
 
 
 namespace caf 

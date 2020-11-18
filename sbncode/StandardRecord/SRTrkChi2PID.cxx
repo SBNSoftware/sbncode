@@ -3,7 +3,8 @@
 // \brief   An SRTrkChi2PID is a high level track ParticlePID object for
 //          for larana Chi2ParticleID results. 
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrkChi2PID.h"
+
+#include "sbncode/StandardRecord/SRTrkChi2PID.h"
 
 #include <limits>
 

@@ -2,7 +2,7 @@
 // \file    SRTrkMCS.cxx
 // \brief   An SRTrkMCS contains reco momentum from MCS track fit
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrkMCS.h"
+#include "sbncode/StandardRecord/SRTrkMCS.h"
 
 #include <limits>
 
