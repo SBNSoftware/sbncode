@@ -75,7 +75,7 @@ namespace ana
     const Var kRecoShower_StartX(
 			[](const caf::SRSliceProxy *slc)
 			{
-			  double vtx = -5.0;
+			  double vtx = -9999.0;
 			  if ( slc->reco.nshw ){
 			    vtx = slc->reco.shw[0].start.x;
 			  }
@@ -85,7 +85,7 @@ namespace ana
     const Var kRecoShower_StartY(
 			[](const caf::SRSliceProxy *slc)
 			{
-			  double vtx = -5.0;
+			  double vtx = -9999.0;
 			  if ( slc->reco.nshw ){
 			    vtx = slc->reco.shw[0].start.y;
 			  }
@@ -95,11 +95,50 @@ namespace ana
     const Var kRecoShower_StartZ(
 			[](const caf::SRSliceProxy *slc)
 			{
-			  double vtx = -5.0;
+			  double vtx = -9999.0;
 			  if ( slc->reco.nshw ){
 			    vtx = slc->reco.shw[0].start.z;
 			  }
 			  return vtx;
+			});
+
+    const Var kRecoShower_EndX(
+			[](const caf::SRSliceProxy *slc)
+			{
+			  double end = -9999.0;
+			  if ( slc->reco.nshw ){
+			    double start = slc->reco.shw[0].start.x;
+			    double dir = slc->reco.shw[0].dir.x;
+			    double len = slc->reco.shw[0].len;
+			    end = start + (dir*len);
+			  }
+			  return end;
+			});
+
+    const Var kRecoShower_EndY(
+			[](const caf::SRSliceProxy *slc)
+			{
+			  double end = -9999.0;
+			  if ( slc->reco.nshw ){
+			    double start = slc->reco.shw[0].start.y;
+			    double dir = slc->reco.shw[0].dir.y;
+			    double len = slc->reco.shw[0].len;
+			    end = start + (dir*len);
+			  }
+			  return end;
+			});
+
+    const Var kRecoShower_EndZ(
+			[](const caf::SRSliceProxy *slc)
+			{
+			  double end = -9999.0;
+			  if ( slc->reco.nshw ){
+			    double start = slc->reco.shw[0].start.z;
+			    double dir = slc->reco.shw[0].dir.z;
+			    double len = slc->reco.shw[0].len;
+			    end = start + (dir*len);
+			  }
+			  return end;
 			});
 
 }

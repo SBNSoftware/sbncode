@@ -15,6 +15,9 @@ namespace ana
 	extern const Var kRecoShower_StartX;
 	extern const Var kRecoShower_StartY;
 	extern const Var kRecoShower_StartZ;
+	extern const Var kRecoShower_EndX;
+	extern const Var kRecoShower_EndY;
+	extern const Var kRecoShower_EndZ;
 
 } // namespace
 
