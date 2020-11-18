@@ -14,7 +14,7 @@ namespace ana{
 
   const SpillCut kFlashTrigger(
     [](const caf::SRSpillProxy* sr){
-      return ( sr->pass_flashtrig == 1);
+      return ( sr->pass_flashtrig );
     }
     );
 

@@ -21,32 +21,23 @@ void make_eventsel()
 
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
-  // const unsigned int kNVarSpill = plots_spill.size();
-  // const unsigned int kNSelSpill = sels_spill.size();
+  const unsigned int kNVarSpill = plots_spill.size();
+  const unsigned int kNSelSpill = sels_spill.size();
 
   // Make an array of spectra with each Var-Cut combination
-  Spectrum *specs[kNSel][kNVar];
-  // Spectrum *specs_spill[kNSelSpill][kNVarSpill];
+  Spectrum *specs[kNSel][kNVar]; // (Slice)Var with (Slice)Cut
 
   for(unsigned int iSel = 0; iSel < kNSel; ++iSel){
     for(unsigned int jVar = 0; jVar < kNVar; ++jVar){
       specs[iSel][jVar] = new Spectrum(plots[jVar].label, plots[jVar].bins, loader, plots[jVar].var, sels[iSel].cut);
     }
   }
-  // for(unsigned int iSel = 0; iSel < kNSelSpill; ++iSel){
-  //   for(unsigned int jVar = 0; jVar < kNVarSpill; ++jVar){
-  //     specs_spill[iSel][jVar] = new Spectrum(plots_spill[jVar].label, plots_spill[jVar].bins, loader, plots_spill[jVar].var, sels_spill[iSel].cut, sels[iSel].cut);
-  //   }
-  // }
 
-  Spectrum *mixcut1 = new Spectrum("flashtrig", Binning::Simple(0,0,100), loader, kEvt, kFlashTrigger);
-  Spectrum *mixcut2 = new Spectrum("noflashtrig", Binning::Simple(0,0,100), loader, kEvt, !kFlashTrigger);
-  Spectrum *mixcut3 = new Spectrum("firstevts", Binning::Simple(0,0,100), loader, kEvt, kFirstEvents);
-  Spectrum *mixcut4 = new Spectrum("nofirstevts", Binning::Simple(0,0,100), loader, kEvt, !kFirstEvents);
-  // Spectrum *mixcut1 = new Spectrum("flashtrig_shortshw", kLengthBinning, loader, kRecoShower_Length, kFlashTrigger, kShortShower);
-  // Spectrum *mixcut2 = new Spectrum("flashtrig_longshw", kLengthBinning, loader, kRecoShower_Length, kFlashTrigger, !kShortShower);
-  // Spectrum *mixcut3 = new Spectrum("firstevt_shortshw", kLengthBinning, loader, kRecoShower_Length, kFirstEvents, kShortShower);
-  // Spectrum *mixcut4 = new Spectrum("firstevt_longshw", kLengthBinning, loader, kRecoShower_Length, kFirstEvents, !kShortShower);
+  // Example spectra with both SpillCut and Cut
+  Spectrum *s0 = new Spectrum("crthitx__flashtrig", kPositionXFDBinning, loader, kCRTHitX, kFlashTrigger); // SpillMultiVar with SpillCut
+  Spectrum *s1 = new Spectrum("shwlen__firstevt_longshw", kLengthBinning, loader, kRecoShower_Length, kFirstEvents, !kShortShower); // (Slice)Var with SpillCut and (Slice)Cut
+  Spectrum *s2 = new Spectrum("shwlen__flashtrig_longshw", kLengthBinning, loader, kRecoShower_Length, kFlashTrigger, !kShortShower); // (Slice)Var with SpillCut and (Slice)Cut
+  Spectrum *s3 = new Spectrum("shwlen__flashtrig_shortshw", kLengthBinning, loader, kRecoShower_Length, kFlashTrigger, kShortShower); // (Slice)Var with SpillCut and (Slice)Cut
 
   // This is the call that actually fills in the spectra
   loader.Go();
@@ -62,17 +53,9 @@ void make_eventsel()
     }
   }
 
-  // for( unsigned int iSel = 0; iSel < kNSelSpill; ++iSel ){
-  //   for( unsigned int jVar = 0; jVar < kNVarSpill; ++jVar ){
-  //     std::string mysuffix = sels_spill[iSel].suffix + "_" + plots_spill[jVar].suffix;
-  //     std::cout << "Saving spectra: " << mysuffix << std::endl;
-  //     specs_spill[iSel][jVar]->SaveTo( fout.mkdir(mysuffix.c_str()) );
-  //   }
-  // }
-
-  mixcut1->SaveTo( fout.mkdir("mixcut1"));
-  mixcut2->SaveTo( fout.mkdir("mixcut2"));
-  mixcut3->SaveTo( fout.mkdir("mixcut3"));
-  mixcut4->SaveTo( fout.mkdir("mixcut4"));
+  s0->SaveTo( fout.mkdir("s0"));
+  s1->SaveTo( fout.mkdir("s1"));
+  s2->SaveTo( fout.mkdir("s2"));
+  s3->SaveTo( fout.mkdir("s3"));
 
 }
