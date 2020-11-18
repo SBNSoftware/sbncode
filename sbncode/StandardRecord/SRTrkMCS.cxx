@@ -26,10 +26,10 @@ namespace caf
     bwdP_err_pion(std::numeric_limits<float>::signaling_NaN()),
     bwdP_err_kaon(std::numeric_limits<float>::signaling_NaN()),
     bwdP_err_proton(std::numeric_limits<float>::signaling_NaN()),
-    is_bwd_muon(std::numeric_limits<bool>::signaling_NaN()),
-    is_bwd_pion(std::numeric_limits<bool>::signaling_NaN()),
-    is_bwd_kaon(std::numeric_limits<bool>::signaling_NaN()),
-    is_bwd_proton(std::numeric_limits<bool>::signaling_NaN())
+    is_bwd_muon(false),
+    is_bwd_pion(false),
+    is_bwd_kaon(false),
+    is_bwd_proton(false)
   {  }
 
   SRTrkMCS::~SRTrkMCS(){  }
