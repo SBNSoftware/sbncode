@@ -3,7 +3,9 @@
 // \brief   An SRTrack is a high level track object.  It knows its
 //          direction and length, but does not own its cell hits.
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrack.h"
+
+#include "sbncode/StandardRecord/SRTrack.h"
+
 #include <bits/stdc++.h>
 
 namespace caf

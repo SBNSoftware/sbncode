@@ -18,8 +18,7 @@ namespace ana
     typedef std::vector<double> (VarFunc_t)(const caf::SRProxy* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    MultiVar(const std::set<std::string>& reqs,
-             const std::function<VarFunc_t>& fun)
+    MultiVar(const std::function<VarFunc_t>& fun)
       : fFunc(fun), fID(fgNextID--)
     {
     }

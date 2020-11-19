@@ -7,12 +7,12 @@
 #ifndef STANDARDRECORD_H
 #define STANDARDRECORD_H
 
-#include "SRCRTHit.h"
-#include "SRHeader.h"
-#include "SRSlice.h"
-#include "SRSliceRecoBranch.h"
-#include "SRTruthBranch.h"
-#include "SRFakeReco.h"
+#include "sbncode/StandardRecord/SRCRTHit.h"
+#include "sbncode/StandardRecord/SRHeader.h"
+#include "sbncode/StandardRecord/SRSlice.h"
+#include "sbncode/StandardRecord/SRSliceRecoBranch.h"
+#include "sbncode/StandardRecord/SRTruthBranch.h"
+#include "sbncode/StandardRecord/SRFakeReco.h"
 
 /// Common Analysis Files
 namespace caf

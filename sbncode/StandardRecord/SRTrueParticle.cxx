@@ -3,7 +3,7 @@
 // \brief   An SRTrueParticle is a high level true track object. It
 //          knows true id, direction, length, but  no hit information.
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrueParticle.h"
+#include "sbncode/StandardRecord/SRTrueParticle.h"
 #include <climits>
 
 namespace caf
