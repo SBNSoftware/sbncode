@@ -46,7 +46,8 @@ namespace ana
 			{
 			  double energy = -5.0;
 			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].energy[0]; // so far taking whatever plane 1 is
+			    energy = slc->reco.shw[0].energy_plane1; // so far taking whatever plane 1 is and first shw
+			    // energy = slc->reco.shw[0].energy.x; // so far taking whatever plane 1 is and first shw
 			  }
 			  return energy;
 			});

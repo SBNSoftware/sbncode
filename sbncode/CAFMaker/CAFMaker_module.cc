@@ -752,12 +752,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<sbn::ShowerDensityFit> fmShowerDensityFit =
       FindManyPStrict<sbn::ShowerDensityFit>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
 
-    // art::FindManyP<recob::Shower> fmShowerEM =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerEMLabel() + slice_tag_suff);
-
-    // art::FindManyP<recob::Shower> fmShowerPand =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerPandLabel() + slice_tag_suff);
-
     art::FindManyP<recob::Track> fmTrack =
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
@@ -885,14 +879,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-      // std::vector<art::Ptr<recob::Shower>> thisShowerEM;
-      // if (fmShowerEM.isValid()) {
-      //   thisShower = fmShowerEM.at(iPart);
-      // }
-      // std::vector<art::Ptr<recob::Shower>> thisShowerPand;
-      // if (fmShowerPand.isValid()) {
-      //   thisShower = fmShowerPand.at(iPart);
-      // }
 
       if (!thisTrack.empty())  { // it's a track!
         assert(thisTrack.size() == 1);
@@ -942,8 +928,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
         }
-
-	// Duplicate track reco info in the srslice
+        // Duplicate track reco info in the srslice
         recslc.reco.trk.push_back(rec.reco.trk.back());
         recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
@@ -967,34 +952,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmShowerHit.isValid()) {
           FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
         }
-
-	// Duplicate track reco info in the srslice
+        // Duplicate track reco info in the srslice
         recslc.reco.shw.push_back(rec.reco.shw.back());
         recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
 
       else {}
-
-      // // placeholding emshowers and padora showers
-      // // these might not be needed at the end
-      // if (thisShowerEM.size()) { // we have a reco em shower
-      //   assert(thisTrack.size() == 0);
-      //   assert(thisShowerEM.size() == 1);
-      //   rec.reco.nshw_em ++;
-      //   rec.reco.shw_em.push_back(SRShower());
-      //   FillShowerVars(*thisShowerEM[0], rec.reco.shw_em.back());
-
-      // } // thisShowerEM exists
-
-      // if (thisShowerPand.size()) { // we have a reco pandora shower
-      //   assert(thisTrack.size() == 0);
-      //   assert(thisShowerPand.size() == 1);
-      //   rec.reco.nshw_pandora ++;
-      //   rec.reco.shw_pandora.push_back(SRShower());
-      //   FillShowerVars(*thisShowerPand[0], rec.reco.shw_pandora.back());
-
-      // } // thisShowerPand exists
 
     }// end for pfparts
 
