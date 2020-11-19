@@ -119,3 +119,8 @@ physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausSCECryo1
+
+physics.producers.pandoraTrackCRTHit.TpcTrackModuleLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTHit.T0Alg.TPCTrackLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTTrack.TpcTrackModuleLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTTrack.CrtTrackAlg.TPCTrackLabel: pandoraSCETrack

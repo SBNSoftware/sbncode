@@ -15,6 +15,7 @@
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
+#include "crtmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
@@ -77,7 +78,8 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-
+   pandoraTrackCRTHit:		@local::crthitmatch_sbnd
+   pandoraTrackCRTTrack: 	@local::crttrackmatch_sbnd
    mcreco: @local::standard_mcreco
 }
   filters:{
@@ -89,7 +91,7 @@ physics:
   }
  runprod: [ flashtrig, flashtrigfilter,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
-    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1, pandoraTrackCRTHit, pandoraTrackCRTTrack,
     mycafmaker ]
 
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
