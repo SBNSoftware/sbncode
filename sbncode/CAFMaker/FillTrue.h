@@ -54,11 +54,13 @@ namespace caf
 			caf::SRTrueInteraction &srneutrino, size_t i);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
 
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRShower& srshower,
 		      bool allowEmpty = false);

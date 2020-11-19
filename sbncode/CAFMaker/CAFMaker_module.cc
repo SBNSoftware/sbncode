@@ -933,7 +933,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
-          FillTrackTruth(fmTrackHit.at(iPart), clock_data, rec.reco.trk.back());
+          FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
@@ -966,7 +966,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
         }
         if (fmShowerHit.isValid()) {
-          FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
+          FillShowerTruth(fmShowerHit.at(iPart), true_particles, clock_data, rec.reco.shw.back());
         }
 
 	// Duplicate track reco info in the srslice

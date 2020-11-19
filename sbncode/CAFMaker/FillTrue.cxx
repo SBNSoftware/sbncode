@@ -13,7 +13,7 @@ caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
 
 caf::g4_process_ GetG4ProcessID(const std::string &name);
 
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
 				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -33,24 +33,26 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
 namespace caf {
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty)
   {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(clockData, hits);
+    srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
 
   }//FillTrackTruth
 
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
           caf::SRShower& srshower,
           bool allowEmpty)
   {
     // Truth matching
-    srshower.truth = MatchTrack2Truth(clockData, hits);
+    srshower.truth = MatchTrack2Truth(clockData, particles, hits);
 
   }//FillShowerTruth
 
@@ -97,6 +99,7 @@ namespace caf {
         srneutrino.visE += srparticles[i_part].planeVisE;
       }
     }
+    srneutrino.nprim = srneutrino.prim.size();
 
     if (mctruth->NeutrinoSet()) {
       // Neutrino
@@ -746,7 +749,7 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 }//ContainedLength
 
 //------------------------------------------------
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<art::Ptr<recob::Hit>> &hits) {
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits) {
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
@@ -773,6 +776,11 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 
   if (ret.matches.size()) {
     ret.bestmatch = ret.matches.at(0);
+    for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
+      if (particles[i_part].G4ID == ret.bestmatch.G4ID) {
+        ret.p = particles[i_part];
+      }
+    }
   }
   ret.nmatches = ret.matches.size();
 

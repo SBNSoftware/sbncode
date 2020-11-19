@@ -59,6 +59,7 @@ namespace caf
     generator_        generator;  ///< The generator that created this neutrino interaction
     std::vector<unsigned int>   genVersion; ///< Version of the generator that created this neutrino interaction
 
+    int                        nprim;       ///< Number of primary daughters
     std::vector<SRTrueParticle> prim;       ///< Primary daughters, lepton comes first in vector.
 
   };
