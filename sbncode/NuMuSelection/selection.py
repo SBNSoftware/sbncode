@@ -68,6 +68,6 @@ def good_reco(data):
 def crttrack(data):
     return np.isnan(data["slc.ptrk.crttrack.angle"]) | (data["slc.ptrk.crttrack.angle"] > 0.2)
 def crthit(data):
-    return np.isnan(data["slc.ptrk.crthit.distance"]) | (data["slc.ptrk.crthit.distance"] > 5) | (np.invert(InBeam(data["slc.ptrk.crthit.hit.time"])))
+    return np.isnan(data["slc.ptrk.crthit.distance"]) | (data["slc.ptrk.crthit.distance"] > 5) | InBeam(data["slc.ptrk.crthit.hit.time"])
 def length(data):
     return (data["slc.ptrk.len"] > 50.)
