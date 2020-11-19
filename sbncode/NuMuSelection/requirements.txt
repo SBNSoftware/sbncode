@@ -1,0 +1,7 @@
+numpy
+scipy
+matplotlib
+uproot
+jupyter
+awkward
+nbstripout
