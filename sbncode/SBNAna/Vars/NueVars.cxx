@@ -41,13 +41,29 @@ namespace ana
 			  return density;
 			});
 
+
+// #define SHWENERGYVAR(SHWID, PLANEID)                           \
+//   Var([](const caf::SRSliceProxy* slc)                         \
+//   	{                                                          \
+//   		double energy = -5.0;                                  \
+//   		if ( slc->reco.nshw ){                                 \
+//   			energy = slc->reco.shw[SHWID].energy[PLANEID];     \
+//   		}                                                      \
+//   		return energy;                                         \
+//   	})
+
+// const Var kRecoShower_Energy0 = SHWENERGYVAR(0, 0);
+// const Var kRecoShower_Energy1 = SHWENERGYVAR(0, 1);
+// const Var kRecoShower_Energy2 = SHWENERGYVAR(0, 2);
+
+
   const Var kRecoShower_Energy(
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double energy = -5.0;
 			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].energy_plane1; // so far taking whatever plane 1 is and first shw
-			    // energy = slc->reco.shw[0].energy.x; // so far taking whatever plane 1 is and first shw
+			    // energy = slc->reco.shw[0].energy_plane1; // so far taking whatever plane 1 is and first shw
+			    energy = slc->reco.shw[0].energy[0]; // so far taking whatever plane 1 is and first shw
 			  }
 			  return energy;
 			});
