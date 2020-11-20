@@ -19,8 +19,8 @@ namespace caf
     open_angle(-5.0),
     dEdx_plane1(-5.0), dEdx_plane2(-5.0), dEdx_plane3(-5.0),
     energy_plane1(-5.0), energy_plane2(-5.0), energy_plane3(-5.0),
-    // dEdx(-5.0, -5.0, -5.0),
-    // energy(-5.0, -5.0, -5.0),
+    dEdx(),
+    energy(),
     dir(-5.0, -5.0, -5.0),
     start(-5.0, -5.0, -5.0)
   {
