@@ -1,5 +1,7 @@
 #pragma once
 
+#include "StandardRecord/Proxy/FwdDeclare.h"
+
 // =================================================================== //
 // These values have been used for the nue event selection as of       //
 // April 29 2020. The active and fiducial volumes are the same so far  //
@@ -9,6 +11,12 @@ struct FidVol
 {
   float xmin, xmax, ymin, ymax, zmin, zmax;
 };
+
+// Only for use with FD volume
+bool PtInVol(const caf::SRVector3DProxy& pt, const FidVol& vol);
+
+// Compare (|x|, y, z) to the volume definition. Must use this for ND volume.
+bool PtInVolAbsX(const caf::SRVector3DProxy& pt, const FidVol& vol);
 
 // x boundary reflected on the cathode atm so we'll use abs values
 // {xmin = -175, xmax = -1.5}, {xmin = 1.5, xmax = 175}
