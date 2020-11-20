@@ -15,10 +15,10 @@ namespace ana
 
   //----------------------------------------------------------------------
   void SystComponentScale::Shift(double sigma,
-                                 caf::SRProxy* sr,
+                                 caf::SRSliceProxy* slc,
                                  double& weight) const
   {
-    if(!fCut(sr)) return;
+    if(!fCut(slc)) return;
 
     if(fType == kExponential){
       weight *= pow(1+fOneSigma, sigma);

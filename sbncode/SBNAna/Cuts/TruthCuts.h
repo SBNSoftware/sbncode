@@ -17,6 +17,10 @@ namespace ana
 	extern const Cut kIsNC;
 
 	// extern const Cut kIsQE;
+  extern const Cut kTrueActiveVolumeND;
+  extern const Cut kTrueActiveVolumeFDCryo1;
+  extern const Cut kTrueActiveVolumeFDCryo2;
+
 	// extern const Cut kIsRes;
 	// extern const Cut kIsDIS;
 	// extern const Cut kIsCoh;

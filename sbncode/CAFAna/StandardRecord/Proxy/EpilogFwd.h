@@ -1,1 +1,4 @@
-namespace caf{using SRProxy = caf::Proxy<caf::StandardRecord>;}
+namespace caf{
+  using SRSliceProxy = caf::Proxy<caf::SRSlice>;
+  using SRSpillProxy = caf::Proxy<caf::StandardRecord>;
+}
