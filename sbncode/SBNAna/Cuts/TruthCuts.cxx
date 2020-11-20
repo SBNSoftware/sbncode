@@ -11,6 +11,12 @@ namespace ana{
     }
     );
 
+  const Cut kTrueFiducialVolumeND(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, fvnd);
+    }
+    );
+
   const Cut kTrueActiveVolumeFDCryo1(
     [](const caf::SRSliceProxy* slc){
       return kHasNu(slc) && PtInVol(slc->truth.position, avfd_cryo1);

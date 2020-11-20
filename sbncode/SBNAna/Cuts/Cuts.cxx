@@ -29,6 +29,12 @@ namespace ana{
       }
       );
 
+  const Cut kFiducialVolumeND(
+  	[](const caf::SRSliceProxy* slc){
+          return PtInVolAbsX(slc->vertex, fvnd);
+  	}
+  	);
+
   const Cut kActiveVolumeND(
   	[](const caf::SRSliceProxy* slc){
           return PtInVolAbsX(slc->vertex, avnd);
