@@ -54,6 +54,7 @@ namespace ana{
  //    );
 
   // TODO: find a better way to set the AV so we do not need to replicate code
+  // shw.end ha been added to the CAF so should be trivial for future iterations
 	const Cut kNueContainedND(
 		[](const caf::SRSliceProxy* slc){
 

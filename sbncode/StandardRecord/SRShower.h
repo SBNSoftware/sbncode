@@ -34,6 +34,7 @@ namespace caf
       std::vector<float> energy;         ///< shower calculated energy at each plane [MeV]
       SRVector3D dir;               ///< direction cosines at the start of the shower
       SRVector3D start;             ///< shower start point in detector coordinates [cm]
+      SRVector3D end;               ///< shower end point (start+len*dir) in detector coordinates [cm]
 
       int            ID;          ///< ID of this shower (taken from the pandora particle "ID" of this PFP)
       std::vector<int> daughters; ///< ID's of daughters of this shower

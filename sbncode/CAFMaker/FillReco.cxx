@@ -103,6 +103,10 @@ namespace caf
 
       srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
     }
+
+    if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
+      srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
+    }
   }
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
