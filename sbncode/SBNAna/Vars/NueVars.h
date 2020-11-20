@@ -6,7 +6,8 @@
 namespace ana
 {
 	// Reconstructed variables
-	extern const Var kRecoShower_BestEnergy;
+  extern const Var kLargestRecoShowerIdx;
+  extern const Var kRecoShower_BestEnergy;
 	extern const Var kRecoShower_ConversionGap;	
 	extern const Var kRecoShower_Density;
 	extern const Var kRecoShower_Energy;

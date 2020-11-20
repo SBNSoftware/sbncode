@@ -5,14 +5,31 @@
 
 namespace ana
 {
+  // Get the Largest shower in the slice
+  const Var kLargestRecoShowerIdx(
+      [](const caf::SRSliceProxy *slc)
+      {
+        int bestIdx(-1);
+        double maxEnergy(-1);
+
+        for (unsigned int i=0; i< slc->reco.nshw; i++) {
+          auto const& shw = slc->reco.shw[i];
+          if (shw.bestplane_energy > maxEnergy){
+            bestIdx = i;
+            maxEnergy = shw.bestplane_energy;
+          }
+        }
+        return bestIdx;
+      });
 
   // Currently assumes shw 0 is the primary
   const Var kRecoShower_BestEnergy(
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double energy = -5.0;
-			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].bestplane_energy;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    energy = slc->reco.shw[largestShwIdx].bestplane_energy;
 			  }
 			  return energy;
 			});
@@ -20,14 +37,11 @@ namespace ana
   const Var kRecoShower_ConversionGap(
 			[](const caf::SRSliceProxy *slc)
 			{
-                          double gap = -5.0;
-                          if ( slc->reco.nshw ){
-                            double x = slc->vertex.x - slc->reco.shw[0].start.x;
-                            double y = slc->vertex.y - slc->reco.shw[0].start.y;
-                            double z = slc->vertex.z - slc->reco.shw[0].start.z;
-                            gap  = sqrt(x*x + y*y + z*z);	
-                          }
-
+        double gap = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          gap = slc->reco.shw[largestShwIdx].conversion_gap;
+        }
 			  return gap;
 			});
 
@@ -35,8 +49,9 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double density = -5.0;
-			  if ( slc->reco.nshw && slc->reco.shw[0].len >0 ){
-			    density = slc->reco.shw[0].bestplane_energy / slc->reco.shw[0].len;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+			    density = slc->reco.shw[largestShwIdx].density;
 			  }
 			  return density;
 			});
@@ -45,9 +60,10 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double energy = -5.0;
-			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].energy_plane1; // so far taking whatever plane 1 is and first shw
-			    // energy = slc->reco.shw[0].energy.x; // so far taking whatever plane 1 is and first shw
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    energy = slc->reco.shw[largestShwIdx].energy_plane1; // so far taking whatever plane 1 is and first shw
+			    // energy = slc->reco.shw[largestShwIdx].energy.x; // so far taking whatever plane 1 is and first shw
 			  }
 			  return energy;
 			});
@@ -56,8 +72,9 @@ namespace ana
 			       [](const caf::SRSliceProxy *slc)
 			       {
 				 double len = -5.0;
-				 if ( slc->reco.nshw ){
-				   len = slc->reco.shw[0].len;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+				   len = slc->reco.shw[largestShwIdx].len;
 				 }
 				 return len;
 			       });
@@ -66,8 +83,9 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double openangle = -5.0;
-			  if ( slc->reco.nshw ){
-			    openangle = slc->reco.shw[0].open_angle;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    openangle = slc->reco.shw[largestShwIdx].open_angle;
 			  }
 			  return openangle;
 			});
@@ -77,8 +95,9 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.x;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    vtx = slc->reco.shw[largestShwIdx].start.x;
 			  }
 			  return vtx;
 			});
@@ -87,8 +106,9 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.y;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    vtx = slc->reco.shw[largestShwIdx].start.y;
 			  }
 			  return vtx;
 			});
@@ -97,8 +117,9 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.z;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    vtx = slc->reco.shw[largestShwIdx].start.z;
 			  }
 			  return vtx;
 			});
@@ -107,10 +128,11 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.x;
-			    double dir = slc->reco.shw[0].dir.x;
-			    double len = slc->reco.shw[0].len;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    double start = slc->reco.shw[largestShwIdx].start.x;
+			    double dir = slc->reco.shw[largestShwIdx].dir.x;
+			    double len = slc->reco.shw[largestShwIdx].len;
 			    end = start + (dir*len);
 			  }
 			  return end;
@@ -120,10 +142,11 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.y;
-			    double dir = slc->reco.shw[0].dir.y;
-			    double len = slc->reco.shw[0].len;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    double start = slc->reco.shw[largestShwIdx].start.y;
+			    double dir = slc->reco.shw[largestShwIdx].dir.y;
+			    double len = slc->reco.shw[largestShwIdx].len;
 			    end = start + (dir*len);
 			  }
 			  return end;
@@ -133,10 +156,11 @@ namespace ana
 			[](const caf::SRSliceProxy *slc)
 			{
 			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.z;
-			    double dir = slc->reco.shw[0].dir.z;
-			    double len = slc->reco.shw[0].len;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    double start = slc->reco.shw[largestShwIdx].start.z;
+			    double dir = slc->reco.shw[largestShwIdx].dir.z;
+			    double len = slc->reco.shw[largestShwIdx].len;
 			    end = start + (dir*len);
 			  }
 			  return end;
