@@ -40,14 +40,14 @@ namespace ana{
 	// const Cut kNueContainedFD(
 	// 	[](const caf::SRSliceProxy* slc){
 
-	// 		bool xstart = (avfd_cryo1["xmin"] < kRecoShower_StartX) && (kRecoShower_StartX < avfd_cryo1["xmax"]);
-	// 		bool xend   = (avfd_cryo1["xmin"] < kRecoShower_EndX) && (kRecoShower_EndX < avfd_cryo1["xmax"]);
+	// 		bool xstart = (avfd_cryo1_cryo1.xmin < kRecoShower_StartX) && (kRecoShower_StartX < avfd_cryo1_cryo1.xmax);
+	// 		bool xend   = (avfd_cryo1_cryo1.xmin < kRecoShower_EndX) && (kRecoShower_EndX < avfd_cryo1_cryo1.xmax);
 
-	// 		bool ystart = (avfd_cryo1["ymin"] < kRecoShower_StartY) && (kRecoShower_StartY < avfd_cryo1["ymax"]);
-	// 		bool yend   = (avfd_cryo1["ymin"] < kRecoShower_EndY) && (kRecoShower_EndY < avfd_cryo1["ymax"]);
+	// 		bool ystart = (avfd_cryo1_cryo1.ymin < kRecoShower_StartY) && (kRecoShower_StartY < avfd_cryo1_cryo1.ymax);
+	// 		bool yend   = (avfd_cryo1_cryo1.ymin < kRecoShower_EndY) && (kRecoShower_EndY < avfd_cryo1_cryo1.ymax);
 
-	// 		bool zstart = (avfd_cryo1["zmin"] < kRecoShower_StartZ) && (kRecoShower_StartZ < avfd_cryo1["zmax"]);
-	// 		bool zend   = (avfd_cryo1["zmin"] < kRecoShower_EndZ) && (kRecoShower_EndZ < avfd_cryo1["zmax"]);
+	// 		bool zstart = (avfd_cryo1_cryo1.zmin < kRecoShower_StartZ) && (kRecoShower_StartZ < avfd_cryo1_cryo1.zmax);
+	// 		bool zend   = (avfd_cryo1_cryo1.zmin < kRecoShower_EndZ) && (kRecoShower_EndZ < avfd_cryo1_cryo1.zmax);
 
 	// 		return (xstart && xend && ystart && yend && zstart && zend);
  //    }
@@ -65,14 +65,14 @@ namespace ana{
 			double this_endy = slc->reco.shw[largestShwIdx].start.y + (slc->reco.shw[largestShwIdx].dir.y * slc->reco.shw[largestShwIdx].len);
 			double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
 
-			bool startx = (avnd["xmin"] < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avnd["xmax"]);
-			bool endx   = (avnd["xmin"] < this_endx) && (this_endx < avnd["xmax"]);
+			bool startx = (avnd.xmin < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avnd.xmax);
+			bool endx   = (avnd.xmin < this_endx) && (this_endx < avnd.xmax);
 
-			bool starty = (avnd["ymin"] < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avnd["ymax"]);
-			bool endy   = (avnd["ymin"] < this_endy) && (this_endy < avnd["ymax"]);
+			bool starty = (avnd.ymin < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avnd.ymax);
+			bool endy   = (avnd.ymin < this_endy) && (this_endy < avnd.ymax);
 
-			bool startz = (avnd["zmin"] < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avnd["zmax"]);
-			bool endz   = (avnd["zmin"] < this_endz) && (this_endz < avnd["zmax"]);
+			bool startz = (avnd.zmin < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avnd.zmax);
+			bool endz   = (avnd.zmin < this_endz) && (this_endz < avnd.zmax);
 
 			return (startx && endx && starty && endy && startz && endz);
     }
@@ -90,14 +90,14 @@ namespace ana{
 			double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
 
 
-			bool startx = (avfd_cryo1["xmin"] < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avfd_cryo1["xmax"]);
-			bool endx   = (avfd_cryo1["xmin"] < this_endx) && (this_endx < avfd_cryo1["xmax"]);
+			bool startx = (avfd_cryo1.xmin < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avfd_cryo1.xmax);
+			bool endx   = (avfd_cryo1.xmin < this_endx) && (this_endx < avfd_cryo1.xmax);
 
-			bool starty = (avfd_cryo1["ymin"] < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avfd_cryo1["ymax"]);
-			bool endy   = (avfd_cryo1["ymin"] < this_endy) && (this_endy < avfd_cryo1["ymax"]);
+			bool starty = (avfd_cryo1.ymin < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avfd_cryo1.ymax);
+			bool endy   = (avfd_cryo1.ymin < this_endy) && (this_endy < avfd_cryo1.ymax);
 
-			bool startz = (avfd_cryo1["zmin"] < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avfd_cryo1["zmax"]);
-			bool endz   = (avfd_cryo1["zmin"] < this_endz) && (this_endz < avfd_cryo1["zmax"]);
+			bool startz = (avfd_cryo1.zmin < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avfd_cryo1.zmax);
+			bool endz   = (avfd_cryo1.zmin < this_endz) && (this_endz < avfd_cryo1.zmax);
 
 			return (startx && endx && starty && endy && startz && endz);
     }
