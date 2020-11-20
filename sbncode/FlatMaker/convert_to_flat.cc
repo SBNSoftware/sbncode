@@ -2,9 +2,10 @@
 
 #include "sbncode/FlatMaker/FlatRecord.h"
 
-//#include "sbncode/CAFAna/Core/Progress.h"
+#include "sbncode/CAFAna/Core/Progress.h"
 
 #include "TFile.h"
+#include "TH1.h"
 #include "TSystem.h"
 #include "TTree.h"
 
@@ -60,9 +61,9 @@ int main(int argc, char** argv)
 
   flat::FlatRecord* rec = new flat::FlatRecord("rec.", trout, 0);//policy);
 
-  //  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
+  ana::Progress prog("Converting '"+inname+"' to '"+outname+"'");
   for(int i = 0; i < tr->GetEntries(); ++i){
-    //    prog.SetProgress(double(i)/tr->GetEntries());
+    prog.SetProgress(double(i)/tr->GetEntries());
 
     tr->GetEntry(i);
     if(is_proposal_flag && !event->mc.nu.empty()){
@@ -82,6 +83,12 @@ int main(int argc, char** argv)
 
   trout->Write();
   delete rec;
+
+  TH1* hPOT = (TH1*)fin->Get("TotalPOT");
+  TH1* hEvts = (TH1*)fin->Get("TotalEvents");
+  fout.cd();
+  hPOT->Write("TotalPOT");
+  hEvts->Write("TotalEvents");
 
   return 0;
 }
