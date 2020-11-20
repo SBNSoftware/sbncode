@@ -3,16 +3,7 @@
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
-// icarus active volume cryo 1
-std::map<std::string,double> avfd =
-{
-	{"xmin", -368.49},
-	{"xmax", -71.94},
-	{"ymin", -181.86},
-	{"ymax", 134.96},
-	{"zmin", -894.95},
-	{"zmax", 894.95}
-};
+#include "SBNAna/Cuts/VolumeDefinitions.h"
 
 namespace ana{
 
@@ -20,9 +11,13 @@ namespace ana{
 	const Cut kRecoShower(
 		[](const caf::SRSliceProxy* slc)
 		{
-		  return (slc->reco.nshw > 0 && // need a shower
-				  slc->reco.shw[0].bestplane_energy > 0 && // nothing is terribly wrong
-				  slc->reco.shw[0].len > 0 );
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			if ( largestShwIdx==-1 )
+        return false;
+
+		  return ( slc->reco.shw[largestShwIdx].bestplane_energy > 0 && // nothing is terribly wrong
+				  slc->reco.shw[largestShwIdx].bestplane_dEdx > 0 &&
+				  slc->reco.shw[largestShwIdx].conversion_gap > 0 );
 	}
 	);
 
@@ -30,9 +25,13 @@ namespace ana{
 	const Cut kNueBasicCut(
 		[](const caf::SRSliceProxy* slc)
 		{
-		  return (slc->reco.shw[0].bestplane_energy < 250. &&
-				  slc->reco.shw[0].bestplane_dEdx < 2.7 &&
-				  slc->reco.shw[0].len < 42.);
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+      if ( largestShwIdx==-1 )
+        return false;
+
+		  return (slc->reco.shw[largestShwIdx].bestplane_energy > 200. &&
+				  slc->reco.shw[largestShwIdx].bestplane_dEdx < 3 &&
+				  slc->reco.shw[largestShwIdx].conversion_gap < 5 );
 	}
 	);
 
@@ -54,28 +53,51 @@ namespace ana{
  //    }
  //    );
 
+  // TODO: find a better way to set the AV so we do not need to replicate code
+	const Cut kNueContainedND(
+		[](const caf::SRSliceProxy* slc){
+
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			if ( largestShwIdx==-1 )
+        return false;
+
+			double this_endx = slc->reco.shw[largestShwIdx].start.x + (slc->reco.shw[largestShwIdx].dir.x * slc->reco.shw[largestShwIdx].len);
+			double this_endy = slc->reco.shw[largestShwIdx].start.y + (slc->reco.shw[largestShwIdx].dir.y * slc->reco.shw[largestShwIdx].len);
+			double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
+
+			bool startx = (avnd["xmin"] < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avnd["xmax"]);
+			bool endx   = (avnd["xmin"] < this_endx) && (this_endx < avnd["xmax"]);
+
+			bool starty = (avnd["ymin"] < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avnd["ymax"]);
+			bool endy   = (avnd["ymin"] < this_endy) && (this_endy < avnd["ymax"]);
+
+			bool startz = (avnd["zmin"] < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avnd["zmax"]);
+			bool endz   = (avnd["zmin"] < this_endz) && (this_endz < avnd["zmax"]);
+
+			return (startx && endx && starty && endy && startz && endz);
+    }
+    );
+
 	const Cut kNueContainedFD(
 		[](const caf::SRSliceProxy* slc){
 
-			if( slc->reco.nshw == 0) return false;
-			
-			double this_endx = -9999.0;
-			double this_endy = -9999.0;
-			double this_endz = -9999.0;
-			if ( slc->reco.nshw ){
-			    this_endx = slc->reco.shw[0].start.x + (slc->reco.shw[0].dir.x * slc->reco.shw[0].len);
-			    this_endy = slc->reco.shw[0].start.y + (slc->reco.shw[0].dir.y * slc->reco.shw[0].len);
-			    this_endz = slc->reco.shw[0].start.z + (slc->reco.shw[0].dir.z * slc->reco.shw[0].len);
-			}
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			if ( largestShwIdx==-1 )
+        return false;
 
-			bool startx = (avfd["xmin"] < slc->reco.shw[0].start.x) && (slc->reco.shw[0].start.x < avfd["xmax"]);
-			bool endx   = (avfd["xmin"] < this_endx) && (this_endx < avfd["xmax"]);
+			double this_endx = slc->reco.shw[largestShwIdx].start.x + (slc->reco.shw[largestShwIdx].dir.x * slc->reco.shw[largestShwIdx].len);
+			double this_endy = slc->reco.shw[largestShwIdx].start.y + (slc->reco.shw[largestShwIdx].dir.y * slc->reco.shw[largestShwIdx].len);
+			double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
 
-			bool starty = (avfd["ymin"] < slc->reco.shw[0].start.y) && (slc->reco.shw[0].start.y < avfd["ymax"]);
-			bool endy   = (avfd["ymin"] < this_endy) && (this_endy < avfd["ymax"]);
 
-			bool startz = (avfd["zmin"] < slc->reco.shw[0].start.z) && (slc->reco.shw[0].start.z < avfd["zmax"]);
-			bool endz   = (avfd["zmin"] < this_endz) && (this_endz < avfd["zmax"]);
+			bool startx = (avfd_cryo1["xmin"] < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avfd_cryo1["xmax"]);
+			bool endx   = (avfd_cryo1["xmin"] < this_endx) && (this_endx < avfd_cryo1["xmax"]);
+
+			bool starty = (avfd_cryo1["ymin"] < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avfd_cryo1["ymax"]);
+			bool endy   = (avfd_cryo1["ymin"] < this_endy) && (this_endy < avfd_cryo1["ymax"]);
+
+			bool startz = (avfd_cryo1["zmin"] < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avfd_cryo1["zmax"]);
+			bool endz   = (avfd_cryo1["zmin"] < this_endz) && (this_endz < avfd_cryo1["zmax"]);
 
 			return (startx && endx && starty && endy && startz && endz);
     }
