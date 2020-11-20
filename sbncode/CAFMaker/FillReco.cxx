@@ -57,10 +57,16 @@ namespace caf
   {
 
     srshower.producer = producer;
+    srshower.dEdx_plane1 = (shower.dEdx())[0];
+    srshower.dEdx_plane2 = (shower.dEdx())[1];
+    srshower.dEdx_plane3 = (shower.dEdx())[2];
+    srshower.energy_plane1 = (shower.Energy())[0];
+    srshower.energy_plane2 = (shower.Energy())[1];
+    srshower.energy_plane3 = (shower.Energy())[2];
+    srshower.dEdx   = double_to_float_vector( shower.dEdx() );
+    srshower.energy = double_to_float_vector( shower.Energy() );
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
-    srshower.dEdx     = double_to_float_vector(shower.dEdx());
-    srshower.energy   = double_to_float_vector(shower.Energy());
 
     // TO DO: work out conversion gap
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
@@ -96,6 +102,10 @@ namespace caf
       const TVector3 vertexTVec3{vertexPos.X(), vertexPos.Y(), vertexPos.Z()};
 
       srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
+    }
+
+    if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
+      srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
   }
 

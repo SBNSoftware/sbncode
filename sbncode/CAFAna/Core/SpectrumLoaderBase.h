@@ -47,6 +47,7 @@ namespace ana
     /// For use by the \ref Spectrum constructor
     virtual void AddSpectrum(Spectrum& spect,
                              const Var& var,
+                             const SpillCut& spillcut,
                              const Cut& cut,
                              const SystShifts& shift,
                              const Var& wei = kUnweighted);
@@ -54,9 +55,22 @@ namespace ana
     /// For use by the \ref Spectrum constructor
     virtual void AddSpectrum(Spectrum& spect,
                              const MultiVar& var,
+                             const SpillCut& spillcut,
                              const Cut& cut,
                              const SystShifts& shift,
                              const Var& wei = kUnweighted);
+
+    /// For use by the \ref Spectrum constructor
+    virtual void AddSpectrum(Spectrum& spect,
+                             const SpillVar& var,
+                             const SpillCut& cut,
+                             const SpillVar& wei = kSpillUnweighted);
+
+    /// For use by the \ref Spectrum constructor
+    virtual void AddSpectrum(Spectrum& spect,
+                             const SpillMultiVar& var,
+                             const SpillCut& cut,
+                             const SpillVar& wei = kSpillUnweighted);
 
     /// For use by the constructors of \ref ReweightableSpectrum subclasses
     virtual void AddReweightableSpectrum(ReweightableSpectrum& spect,
@@ -152,21 +166,21 @@ namespace ana
       std::vector<std::pair<T, U>> fElems;
     };
 
-    class VarOrMultiVar
+    template<class T> class _VarOrMultiVar
     {
     public:
       // v could easily be a temporary, have to make a copy
-      VarOrMultiVar(const Var& v) : fVar(new Var(v)), fMultiVar(0) {}
-      VarOrMultiVar(const MultiVar& v) : fVar(0), fMultiVar(new MultiVar(v)) {}
-      ~VarOrMultiVar() {delete fVar; delete fMultiVar;}
+      _VarOrMultiVar(const _Var<T>& v) : fVar(new _Var<T>(v)), fMultiVar(0) {}
+      _VarOrMultiVar(const _MultiVar<T>& v) : fVar(0), fMultiVar(new _MultiVar<T>(v)) {}
+      ~_VarOrMultiVar() {delete fVar; delete fMultiVar;}
 
-      VarOrMultiVar(const VarOrMultiVar& v)
-        : fVar(v.fVar ? new Var(*v.fVar) : 0),
-          fMultiVar(v.fMultiVar ? new MultiVar(*v.fMultiVar) : 0)
+      _VarOrMultiVar(const _VarOrMultiVar& v)
+        : fVar(v.fVar ? new _Var<T>(*v.fVar) : 0),
+          fMultiVar(v.fMultiVar ? new _MultiVar<T>(*v.fMultiVar) : 0)
       {
       }
 
-      VarOrMultiVar(VarOrMultiVar&& v)
+      _VarOrMultiVar(_VarOrMultiVar&& v)
       {
         fVar = v.fVar;
         fMultiVar = v.fMultiVar;
@@ -175,20 +189,25 @@ namespace ana
       }
 
       bool IsMulti() const {return fMultiVar;}
-      const Var& GetVar() const {assert(fVar); return *fVar;}
-      const MultiVar& GetMultiVar() const {assert(fMultiVar); return *fMultiVar;}
+      const _Var<T>& GetVar() const {assert(fVar); return *fVar;}
+      const _MultiVar<T>& GetMultiVar() const {assert(fMultiVar); return *fMultiVar;}
 
       int ID() const {return fVar ? fVar->ID() : fMultiVar->ID();}
 
     protected:
-      const Var* fVar;
-      const MultiVar* fMultiVar;
+      const _Var<T>* fVar;
+      const _MultiVar<T>* fMultiVar;
     };
+
+    typedef _VarOrMultiVar<caf::SRSliceProxy> VarOrMultiVar;
+    typedef _VarOrMultiVar<caf::SRSpillProxy> SpillVarOrMultiVar;
 
     /// \brief All the spectra that need to be filled
     ///
-    /// [shift][cut][wei][var]
-    IDMap<SystShifts, IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>> fHistDefs;
+    /// [spillcut][shift][cut][wei][var]
+    IDMap<SpillCut, IDMap<SystShifts, IDMap<Cut, IDMap<Var, IDMap<VarOrMultiVar, SpectList>>>>> fHistDefs;
+    /// [spillcut][spillwei][spillvar]
+    IDMap<SpillCut, IDMap<SpillVar, IDMap<SpillVarOrMultiVar, SpectList>>> fSpillHistDefs;
   };
 
   /// \brief Dummy loader that doesn't load any files
@@ -203,14 +222,27 @@ namespace ana
     virtual void Go() override;
     void AddSpectrum(Spectrum& spect,
                      const Var& var,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei = kUnweighted) override {}
     void AddSpectrum(Spectrum& spect,
                      const MultiVar& var,
+                     const SpillCut& spillcut,
                      const Cut& cut,
                      const SystShifts& shift,
                      const Var& wei = kUnweighted) override {}
+
+    void AddSpectrum(Spectrum& spect,
+                     const SpillVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei = kSpillUnweighted) override {}
+
+    void AddSpectrum(Spectrum& spect,
+                     const SpillMultiVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei = kSpillUnweighted) override {}
+
 
     void AddReweightableSpectrum(ReweightableSpectrum& spect,
                                  const Var& var,
@@ -225,4 +257,3 @@ namespace ana
   /// Useful when a loader is required for a component you want to ignore
   static NullLoader kNullLoader;
 }
-

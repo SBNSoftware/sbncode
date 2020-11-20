@@ -38,14 +38,46 @@ namespace ana
     Spectrum(const std::string& label, const Binning& bins,
              SpectrumLoaderBase& loader,
              const Var& var,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted);
+
+    Spectrum(const std::string& label, const Binning& bins,
+             SpectrumLoaderBase& loader,
+             const Var& var,
+             const Cut& cut,
+             const SystShifts& shift = kNoShift,
+             const Var& wei = kUnweighted)
+      : Spectrum(label, bins, loader, var, kNoSpillCut, cut, shift, wei)
+    {
+    }
+
+    Spectrum(const std::string& label, const Binning& bins,
+             SpectrumLoaderBase& loader,
+             const SpillVar& var,
+             const SpillCut& cut,
+             const SpillVar& wei = kSpillUnweighted);
 
     /// The only \ref MultiVar variant available
     Spectrum(const std::string& label, const Binning& bins,
              SpectrumLoaderBase& loader,
              const MultiVar& var,
+             const SpillCut& spillcut,
+             const Cut& cut,
+             const SystShifts& shift = kNoShift,
+             const Var& wei = kUnweighted);
+
+    // And the only SpillMultiVar
+    Spectrum(const std::string& label, const Binning& bins,
+             SpectrumLoaderBase& loader,
+             const SpillMultiVar& var,
+             const SpillCut& cut,
+             const SpillVar& wei = kSpillUnweighted);
+
+    Spectrum(SpectrumLoaderBase& loader,
+             const HistAxis& axis,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted);
@@ -54,7 +86,10 @@ namespace ana
              const HistAxis& axis,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
-             const Var& wei = kUnweighted);
+             const Var& wei = kUnweighted)
+      : Spectrum(loader, axis, kNoSpillCut, cut, shift, wei)
+    {
+    }
 
     Spectrum(const std::string& label, const Binning& bins, ESparse sparse = kDense);
     Spectrum(const std::string& label, double pot, double livetime, const Binning& bins);
@@ -75,6 +110,7 @@ namespace ana
     Spectrum(const std::string& label, SpectrumLoaderBase& loader,
              const Binning& binsx, const Var& varx,
              const Binning& binsy, const Var& vary,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted);
@@ -83,6 +119,7 @@ namespace ana
     Spectrum(SpectrumLoaderBase& loader,
              const HistAxis& xAxis,
              const HistAxis& yAxis,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted);
@@ -92,6 +129,7 @@ namespace ana
 	     SpectrumLoaderBase& loader,
 	     const Binning& binsx, const Var& varx,
 	     const Binning& binsy, const Var& vary,
+             const SpillCut& spillcut,
 	     const Cut& cut,
 	     const SystShifts& shift = kNoShift,
 	     const Var& wei = kUnweighted);
@@ -101,6 +139,7 @@ namespace ana
              const Binning& binsx, const Var& varx,
              const Binning& binsy, const Var& vary,
              const Binning& binsz, const Var& varz,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted,
@@ -113,6 +152,7 @@ namespace ana
              const Binning& binsx, const Var& varx,
              const Binning& binsy, const Var& vary,
              const Binning& binsz, const Var& varz,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted,
@@ -123,6 +163,7 @@ namespace ana
              const HistAxis& xAxis,
              const HistAxis& yAxis,
 	     const HistAxis& zAxis,
+             const SpillCut& spillcut,
              const Cut& cut,
              const SystShifts& shift = kNoShift,
              const Var& wei = kUnweighted,

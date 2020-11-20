@@ -18,7 +18,7 @@ art_make_library(LIBRARY_NAME FlatMaker
 
 art_make_exec(NAME convert_to_flat
               SOURCE convert_to_flat.cc
-              LIBRARIES FlatMaker
+              LIBRARIES FlatMaker CAFAnaCore
 # sbnanalysis doesn't participate fully in the mrb build. Skip this for now
 #                        sbnanalysis_Event
                         ${ROOT_BASIC_LIB_LIST})

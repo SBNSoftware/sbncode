@@ -45,7 +45,7 @@ namespace ana
 
     virtual void HandleFile(TFile* f, Progress* prog = 0);
 
-    virtual void HandleRecord(caf::SRProxy* sr);
+    virtual void HandleRecord(caf::SRSpillProxy* sr);
 
     /// Save results of AccumulateExposures into the individual spectra
     virtual void StoreExposures();
@@ -54,9 +54,9 @@ namespace ana
     virtual void ReportExposures();
 
     /// All unique cuts contained in fHistDefs
-    std::vector<Cut> fAllCuts;
-    std::vector<double> fLivetimeByCut; ///< Indexing matches fAllCuts
-    std::vector<double> fPOTByCut;      ///< Indexing matches fAllCuts
+    //    std::vector<Cut> fAllCuts;
+    //    std::vector<double> fLivetimeByCut; ///< Indexing matches fAllCuts
+    //    std::vector<double> fPOTByCut;      ///< Indexing matches fAllCuts
     int max_entries;
   };
 }

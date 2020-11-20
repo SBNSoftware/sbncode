@@ -1,46 +1,66 @@
 #include "SBNAna/Cuts/TruthCuts.h"
+#include "SBNAna/Cuts/VolumeDefinitions.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
 namespace ana{
 
-	const Cut kIsAntiNu([](const caf::SRProxy* sr){
-		if(int(sr->mc.nnu) == 0 ) return false;
-		assert( int(sr->mc.nnu) == 1);
-		return sr->mc.nu[0].pdg < 0;
-	});
+  const Cut kTrueActiveVolumeND(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, avnd);
+    }
+    );
 
-	const Cut kIsNu([](const caf::SRProxy* sr){
-		if(int(sr->mc.nnu) == 0) return false;
-		assert(int(sr->mc.nnu) == 1);
-		return sr->mc.nu[0].pdg > 0;
-	});
+  const Cut kTrueFiducialVolumeND(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, fvnd);
+    }
+    );
 
-	const Cut kHasNu([](const caf::SRProxy* sr){
-		if(int(sr->mc.nnu) == 0) return false;
-		assert(int(sr->mc.nnu) == 1);
-		return true;
-	});
+  const Cut kTrueActiveVolumeFDCryo1(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVol(slc->truth.position, avfd_cryo1);
+    }
+    );
+
+  const Cut kTrueActiveVolumeFDCryo2(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVol(slc->truth.position, avfd_cryo2);
+    }
+    );
+
+  const Cut kIsAntiNu([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return slc->truth.pdg < 0;
+  });
+
+  const Cut kIsNu([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return slc->truth.pdg > 0;
+  });
+
+  const Cut kHasNu([](const caf::SRSliceProxy* slc){
+            return slc->truth.index >= 0;
+  });
 
 
-	const Cut kIsNue([](const caf::SRProxy* sr){
-		return (int(sr->mc.nnu) == 1 && abs(sr->mc.nu[0].pdg) ==12);
-	});
+  const Cut kIsNue([](const caf::SRSliceProxy* slc){
+            return slc->truth.index >= 0 && abs(slc->truth.pdg) == 12;
+  });
 
-	const Cut kIsNumu([](const caf::SRProxy* sr){
-		return (int(sr->mc.nnu) == 1 && abs(sr->mc.nu[0].pdg) ==14);
-	});
+  const Cut kIsNumu([](const caf::SRSliceProxy* slc){
+            return slc->truth.index >= 0 && abs(slc->truth.pdg) == 14;
+  });
 
-	const Cut kIsNutau([](const caf::SRProxy* sr){
-		return (int(sr->mc.nnu) == 1 && abs(sr->mc.nu[0].pdg) ==16);
-	});
+  const Cut kIsNutau([](const caf::SRSliceProxy* slc){
+            return slc->truth.index >= 0 && abs(slc->truth.pdg) == 16;
+  });
 
 
-	const Cut kIsNC([](const caf::SRProxy* sr){
-		if(int(sr->mc.nnu) == 0) return false;
-		assert(int(sr->mc.nnu) == 1);
-		return !sr->mc.nu[0].iscc;
-	});
+  const Cut kIsNC([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return !slc->truth.iscc;
+  });
 
 
 }

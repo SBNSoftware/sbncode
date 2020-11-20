@@ -47,7 +47,7 @@ namespace ana
     /// \param sr      The record to inspect and alter
     /// \param weight  Scale this weight for reweighting systematics
     virtual void Shift(double sigma,
-                       caf::SRProxy* sr,
+                       caf::SRSliceProxy* sr,
                        double& weight) const = 0;
 
     /// PredictionInterp normally interpolates between spectra made at
