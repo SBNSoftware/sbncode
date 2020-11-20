@@ -8,9 +8,9 @@ namespace ana{
   const Cut kTrueActiveVolumeND(
     [](const caf::SRSliceProxy* slc){
       if (!kHasNu(slc)) return false;
-      bool x = (avnd["xmin"] < abs(slc->truth.position.x)) && (abs(slc->truth.position.x) < avnd["xmax"]);
-      bool y = (avnd["ymin"] < slc->truth.position.y) && (slc->truth.position.y < avnd["ymax"]);
-      bool z = (avnd["zmin"] < slc->truth.position.z) && (slc->truth.position.z < avnd["zmax"]);
+      bool x = (avnd.xmin < abs(slc->truth.position.x)) && (abs(slc->truth.position.x) < avnd.xmax);
+      bool y = (avnd.ymin < slc->truth.position.y) && (slc->truth.position.y < avnd.ymax);
+      bool z = (avnd.zmin < slc->truth.position.z) && (slc->truth.position.z < avnd.zmax);
       return(x && y && z);
     }
     );
@@ -18,9 +18,9 @@ namespace ana{
   const Cut kTrueActiveVolumeFDCryo1(
     [](const caf::SRSliceProxy* slc){
       if (!kHasNu(slc)) return false;
-      bool x = (avfd_cryo1["xmin"] < slc->truth.position.x) && (slc->truth.position.x < avfd_cryo1["xmax"]);
-      bool y = (avfd_cryo1["ymin"] < slc->truth.position.y) && (slc->truth.position.y < avfd_cryo1["ymax"]);
-      bool z = (avfd_cryo1["zmin"] < slc->truth.position.z) && (slc->truth.position.z < avfd_cryo1["zmax"]);
+      bool x = (avfd_cryo1.xmin < slc->truth.position.x) && (slc->truth.position.x < avfd_cryo1.xmax);
+      bool y = (avfd_cryo1.ymin < slc->truth.position.y) && (slc->truth.position.y < avfd_cryo1.ymax);
+      bool z = (avfd_cryo1.zmin < slc->truth.position.z) && (slc->truth.position.z < avfd_cryo1.zmax);
       return(x && y && z);
     }
     );
@@ -28,9 +28,9 @@ namespace ana{
   const Cut kTrueActiveVolumeFDCryo2(
     [](const caf::SRSliceProxy* slc){
       if (!kHasNu(slc)) return false;
-      bool x = (avfd_cryo2["xmin"] < slc->truth.position.x) && (slc->truth.position.x < avfd_cryo2["xmax"]);
-      bool y = (avfd_cryo2["ymin"] < slc->truth.position.y) && (slc->truth.position.y < avfd_cryo2["ymax"]);
-      bool z = (avfd_cryo2["zmin"] < slc->truth.position.z) && (slc->truth.position.z < avfd_cryo2["zmax"]);
+      bool x = (avfd_cryo2.xmin < slc->truth.position.x) && (slc->truth.position.x < avfd_cryo2.xmax);
+      bool y = (avfd_cryo2.ymin < slc->truth.position.y) && (slc->truth.position.y < avfd_cryo2.ymax);
+      bool z = (avfd_cryo2.zmin < slc->truth.position.z) && (slc->truth.position.z < avfd_cryo2.zmax);
       return(x && y && z);
     }
     );
