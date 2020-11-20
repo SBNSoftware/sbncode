@@ -233,6 +233,17 @@ namespace ana
                      const SystShifts& shift,
                      const Var& wei = kUnweighted) override {}
 
+    void AddSpectrum(Spectrum& spect,
+                     const SpillVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei = kSpillUnweighted) override {}
+
+    void AddSpectrum(Spectrum& spect,
+                     const SpillMultiVar& var,
+                     const SpillCut& cut,
+                     const SpillVar& wei = kSpillUnweighted) override {}
+
+
     void AddReweightableSpectrum(ReweightableSpectrum& spect,
                                  const Var& var,
                                  const Cut& cut,
@@ -246,4 +257,3 @@ namespace ana
   /// Useful when a loader is required for a component you want to ignore
   static NullLoader kNullLoader;
 }
-
