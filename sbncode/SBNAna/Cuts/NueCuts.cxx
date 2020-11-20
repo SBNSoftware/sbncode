@@ -66,8 +66,8 @@ namespace ana{
 			double this_endy = slc->reco.shw[largestShwIdx].start.y + (slc->reco.shw[largestShwIdx].dir.y * slc->reco.shw[largestShwIdx].len);
 			double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
 
-			bool startx = (avnd.xmin < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avnd.xmax);
-			bool endx   = (avnd.xmin < this_endx) && (this_endx < avnd.xmax);
+      bool startx = (avnd.xmin < std::abs(slc->reco.shw[largestShwIdx].start.x)) && (std::abs(slc->reco.shw[largestShwIdx].start.x) < avnd.xmax);
+      bool endx   = (avnd.xmin < std::abs(this_endx)) && (std::abs(this_endx) < avnd.xmax);
 
 			bool starty = (avnd.ymin < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avnd.ymax);
 			bool endy   = (avnd.ymin < this_endy) && (this_endy < avnd.ymax);
