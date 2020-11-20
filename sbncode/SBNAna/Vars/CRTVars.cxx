@@ -5,7 +5,7 @@
 
 namespace ana
 {
-  const MultiVar kCRTHit_Times ([](const caf::SRProxy *sr)
+  const SpillMultiVar kCRTHit_Times ([](const caf::SRSpillProxy *sr)
       {
         std::vector<double> crtHitTimes;
         for (int crtHitIter=0; crtHitIter<sr->ncrt_hits; crtHitIter++){
@@ -15,7 +15,7 @@ namespace ana
         return crtHitTimes;
       });
 
-  const MultiVar kCRTHit_PEs ([](const caf::SRProxy *sr)
+  const SpillMultiVar kCRTHit_PEs ([](const caf::SRSpillProxy *sr)
       {
         std::vector<double> crtHitPE;
         for (int crtHitIter=0; crtHitIter<sr->ncrt_hits; crtHitIter++){
@@ -25,7 +25,7 @@ namespace ana
         return crtHitPE;
       });
 
-  const MultiVar kCRTHit_X ([](const caf::SRProxy *sr)
+  const SpillMultiVar kCRTHit_X ([](const caf::SRSpillProxy *sr)
       {
         std::vector<double> crtHitX;
         for (int crtHitIter=0; crtHitIter<sr->ncrt_hits; crtHitIter++){
@@ -35,7 +35,7 @@ namespace ana
         return crtHitX;
       });
 
-  const MultiVar kCRTHit_Y ([](const caf::SRProxy *sr)
+  const SpillMultiVar kCRTHit_Y ([](const caf::SRSpillProxy *sr)
       {
         std::vector<double> crtHitY;
         for (int crtHitIter=0; crtHitIter<sr->ncrt_hits; crtHitIter++){
@@ -45,7 +45,7 @@ namespace ana
         return crtHitY;
       });
 
-  const MultiVar kCRTHit_Z ([](const caf::SRProxy *sr)
+  const SpillMultiVar kCRTHit_Z ([](const caf::SRSpillProxy *sr)
       {
         std::vector<double> crtHitZ;
         for (int crtHitIter=0; crtHitIter<sr->ncrt_hits; crtHitIter++){

@@ -6,10 +6,10 @@
 
 namespace ana
 {
-  extern const MultiVar kCRTHit_Times;
-  extern const MultiVar kCRTHit_PEs;
+  extern const SpillMultiVar kCRTHit_Times;
+  extern const SpillMultiVar kCRTHit_PEs;
 
-  extern const MultiVar kCRTHit_X;
-  extern const MultiVar kCRTHit_Y;
-  extern const MultiVar kCRTHit_Z;
+  extern const SpillMultiVar kCRTHit_X;
+  extern const SpillMultiVar kCRTHit_Y;
+  extern const SpillMultiVar kCRTHit_Z;
 }
