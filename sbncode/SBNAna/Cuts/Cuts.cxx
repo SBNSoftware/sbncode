@@ -1,5 +1,6 @@
 #include "SBNAna/Cuts/Cuts.h"
 #include "SBNAna/Vars/Vars.h"
+#include "SBNAna/Cuts/VolumeDefinitions.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
@@ -17,6 +18,16 @@ namespace ana{
       return ( sr->pass_flashtrig );
     }
     );
+
+  const SpillCut kCRTHitVetoND(
+      [](const caf::SRSpillProxy* sr){
+        for (auto const& crtHit: sr->crt_hits){
+          if (crtHit.time > -0.1 && crtHit.time < 1.7 && crtHit.position.y>-350 && crtHit.pe>100)
+            return false;
+        }
+        return true;
+      }
+      );
 
   const Cut kActiveVolumeND(
   	[](const caf::SRSliceProxy* slc){
