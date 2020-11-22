@@ -37,7 +37,7 @@ void Experiment(std::string expt)
 
 void event_numbers_finalstate(const std::string expt = "SBND")
 {
-  const std::string dir = "/sbnd/data/users/jlarkin/workshop_samples/";
+  const std::string dir = "/sbnd/data/users/bzamoran/workshop-game-0320/";
   const std::string fnameBeam = dir + "output_SBNOsc_NumuSelection_Modern_" + expt + ".flat.root";
 
   // Source of events
@@ -88,6 +88,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
          {
           unsigned int nPis = 0;
           for(unsigned int part_idx = 0; part_idx < sr->truth[0].finalstate.size(); part_idx++){
+	    if(sr->truth[0].finalstate[part_idx].status_code != 1) continue;
             if(sr->truth[0].finalstate[part_idx].pdg == 111) nPis++;
            }
           return nPis;
@@ -98,6 +99,7 @@ void event_numbers_finalstate(const std::string expt = "SBND")
            {
             unsigned int nPis = 0;
             for(unsigned int part_idx = 0; part_idx < sr->truth[0].finalstate.size(); part_idx++){
+	      if(sr->truth[0].finalstate[part_idx].status_code !=1) continue;
               if( abs(sr->truth[0].finalstate[part_idx].pdg) == 211) nPis++;
              }
             return nPis;

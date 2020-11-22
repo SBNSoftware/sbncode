@@ -37,7 +37,7 @@ void Experiment(std::string expt)
 
 void event_numbers(const std::string expt = "SBND")
 {
-  const std::string dir = "/sbnd/data/users/jlarkin/workshop_samples/";
+  const std::string dir = "/sbnd/data/users/bzamoran/workshop-game-0320/";
   const std::string fnameBeam = dir + "output_SBNOsc_NumuSelection_Modern_" + expt + ".flat.root";
 
   // Source of events

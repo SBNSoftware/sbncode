@@ -17,12 +17,9 @@ namespace ana
   // --------------------------------------------------------------------------
   UniverseOracle::UniverseOracle()
   {
-    const std::string dir = "/sbnd/data/users/bckhouse/sample_2.1_fitters/";
+    const std::string dir = "/sbnd/data/users/bzamoran/workshop-game-0320/weights/";
 
-    for(const std::string prefix: {"genie", "fluxunisim"}){
-      // Must be in this order to match the indices in the CAFs
-      for(const std::string ab: {"a", "b"}){
-        const std::string fname = dir+prefix+"_params_"+ab+".txt";
+	const std::string fname = dir+"combined_params_2020a.txt";
         std::ifstream ifin(fname);
         if(ifin.fail()){
           std::cout << "UniverseOracle: Couldn't open file '" << fname << "'" << std::endl;
@@ -34,7 +31,7 @@ namespace ana
           std::string name;
           ifin >> name;
           if(!ifin.good()) break; // probably EOF
-          if(prefix == "genie"){
+	  if(name.find("genie")!=std::string::npos){
             std::string junk;
             ifin >> junk; // second version of the name...
             assert(ifin.good());
@@ -59,13 +56,11 @@ namespace ana
             fData[name].push_back(shift);
           } // end loop over values
         } // end loop over systs
-      } // end for ab
-    } // end for prefix
 
     // Check we didn't screw up the file reading
     for(auto it: fData){
       const unsigned int N = it.second.size();
-      if(N != 1000 && N != 50){
+      if(N != 500){
         std::cout << "UniverseOracle: Unexpected number of shifts (" << N << ") for '" << it.first << "'" << std::endl;
       }
     }
