@@ -110,9 +110,7 @@ physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGausSCE"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGausSCE"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausSCECalo"
 physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausSCEPid"
-physics.producers.mycafmaker.FlashMatchLabel:   "pandoraICARUS"
-physics.producers.mycafmaker.CRTHitLabel:       "crthit"
-physics.producers.mycafmaker.CRTHitMatchLabel:  "crthit"
+physics.producers.mycafmaker.FlashMatchLabel:   "fmatchSCE"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
