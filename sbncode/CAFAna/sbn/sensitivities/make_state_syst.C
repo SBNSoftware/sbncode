@@ -40,27 +40,27 @@ void make_state_syst(const std::string anatype = numuStr)
   }
 
   else if (anatype == nueStr) {
-    const std::string dir = "/sbnd/data/users/bzamoran/Modern_6thNov2019/";
+    const std::string dir = "/sbnd/data/users/bzamoran/nue_Selection_v08_57_00/";
 
     //BNB files contain nominal non-swap beam (so numubg, nuebg, NC)
     const std::string fnameBNB_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Numu.flat.root";
-    const std::string fnameBNB_fd = dir + "output_SBNOsc_NueSelection_Modern_Icarus_Numu.flat.root";
-    const std::string fnameBNB_ub = dir + "output_SBNOsc_NueSelection_Modern_Uboone_Numu.flat.root";
+    const std::string fnameBNB_fd = dir + "output_SBNOsc_NueSelection_Modern_ICARUS_Numu.flat.root";
+    const std::string fnameBNB_ub = dir + "output_SBNOsc_NueSelection_Modern_UBOONE_Numu.flat.root";
 
     //Nue instrinsic only (to increase stats)
-    const std::string fnameInt_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Int.flat.root";
-    const std::string fnameInt_fd = dir + "output_SBNOsc_NueSelection_Modern_Icarus_Int.flat.root";
-    const std::string fnameInt_ub = dir + "output_SBNOsc_NueSelection_Modern_Uboone_Int.flat.root";
+    const std::string fnameInt_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Intrinsic_Nue.flat.root";
+    const std::string fnameInt_fd = dir + "output_SBNOsc_NueSelection_Modern_ICARUS_Intrinsic_Nue.flat.root";
+    const std::string fnameInt_ub = dir + "output_SBNOsc_NueSelection_Modern_UBOONE_Intrinsic_Nue.flat.root";
 
     //Swap files are for signal
-    const std::string fnameSwap_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Osc.flat.root";
-    const std::string fnameSwap_fd = dir + "output_SBNOsc_NueSelection_Modern_Icarus_Osc.flat.root";
-    const std::string fnameSwap_ub = dir + "output_SBNOsc_NueSelection_Modern_Uboone_Osc.flat.root";
+    const std::string fnameSwap_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Nu_Osc.flat.root";
+    const std::string fnameSwap_fd = dir + "output_SBNOsc_NueSelection_Modern_ICARUS_Nu_Osc.flat.root";
+    const std::string fnameSwap_ub = dir + "output_SBNOsc_NueSelection_Modern_UBOONE_Nu_Osc.flat.root";
 
     // //Dirt (background)
-    // const std::string fnameDirt_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_CosDirt.flat.root";
-    // const std::string fnameDirt_fd = dir + "output_SBNOsc_NueSelection_Modern_Icarus_CosDirt.flat.root";
-    // const std::string fnameDirt_ub = dir + "output_SBNOsc_NueSelection_Modern_Uboone_CosDirt.flat.root";
+    // const std::string fnameDirt_nd = dir + "output_SBNOsc_NueSelection_Modern_SBND_Nu_Cosmic_Dirt.flat.root";
+    // const std::string fnameDirt_fd = dir + "output_SBNOsc_NueSelection_Modern_ICARUS_Nu_Cosmic_Dirt.flat.root";
+    // const std::string fnameDirt_ub = dir + "output_SBNOsc_NueSelection_Modern_UBOONE_Nu_Cosmic_Dirt.flat.root";
 
     loaders_nd.SetLoaderPath( fnameBNB_nd,   Loaders::kMC,   ana::kBeam, Loaders::kNonSwap);
     loaders_nd.SetLoaderPath( fnameInt_nd,   Loaders::kMC,   ana::kBeam, Loaders::kIntrinsic);
