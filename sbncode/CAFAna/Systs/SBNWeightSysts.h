@@ -2,6 +2,7 @@
 
 #include "CAFAna/Core/ISyst.h"
 #include "CAFAna/Core/Var.h"
+#include "CAFAna/Cuts/TruthCuts.h"
 
 #include <vector>
 #include <unordered_map>

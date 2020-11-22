@@ -17,6 +17,8 @@ namespace ana
                     return !sr->truth[0].neutrino.iscc;
                   });
 
+  const Cut kIsCC = !kIsNC;
+
   //----------------------------------------------------------------------
   /// Helper for defining true CC event cuts
   class CCFlavSel

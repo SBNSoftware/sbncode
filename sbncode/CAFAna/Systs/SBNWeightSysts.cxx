@@ -2,6 +2,8 @@
 
 #include "CAFAna/Systs/UniverseOracle.h"
 
+#include "CAFAna/Cuts/TruthCuts.h"
+
 #include "StandardRecord/Proxy/SRProxy.h"
 
 #include <cassert>
@@ -85,12 +87,9 @@ namespace ana
   // --------------------------------------------------------------------------
   void SBNWeightSyst::Shift(double x, caf::SRProxy* sr, double& weight) const
   {
-<<<<<<< HEAD
     if(sr->truth.empty()) return;
-=======
-    if(sr->mc.nu.empty()) return;
+
     if(!fCut(sr)) return;
->>>>>>> a8cf6c1... Add special-casing for NonRes...[Alt] syst parameters.
 
     const auto& ws = sr->truth[0].weights;
 
