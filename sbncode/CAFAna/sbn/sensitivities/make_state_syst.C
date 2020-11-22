@@ -29,7 +29,7 @@ void make_state_syst(const std::string anatype = numuStr)
   Loaders loaders_nd, loaders_fd, loaders_ub;
 
   if(anatype == numuStr) {
-    const std::string dir = "/sbnd/data/users/jlarkin/workshop_samples/";
+    const std::string dir = "/sbnd/data/users/bzamoran/workshop-game-0320/";
     const std::string fnameBeam_nd = dir + "output_SBNOsc_NumuSelection_Modern_SBND.flat.root";
     const std::string fnameBeam_fd = dir + "output_SBNOsc_NumuSelection_Modern_Icarus.flat.root";
     const std::string fnameBeam_ub = dir + "output_SBNOsc_NumuSelection_Modern_Uboone.flat.root";
