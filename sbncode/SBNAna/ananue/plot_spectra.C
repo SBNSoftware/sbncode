@@ -1,7 +1,7 @@
 #include "CAFAna/Core/Spectrum.h"
 #include "CAFAna/Core/LoadFromFile.h"
 
-#include "helper_nueselection_icarus.h"
+#include "helper.h"
 
 #include "TCanvas.h"
 #include "TFile.h"
