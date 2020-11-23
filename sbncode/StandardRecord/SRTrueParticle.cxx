@@ -3,12 +3,27 @@
 // \brief   An SRTrueParticle is a high level true track object. It
 //          knows true id, direction, length, but  no hit information.
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrueParticle.h"
+#include "sbncode/StandardRecord/SRTrueParticle.h"
+#include <climits>
 
 namespace caf
 {
 
-  SRTrueParticle::SRTrueParticle()
+  SRTrueParticle::SRTrueParticle():
+    planeVisE(std::numeric_limits<float>::signaling_NaN()),
+    genE(std::numeric_limits<float>::signaling_NaN()),
+    startE(std::numeric_limits<float>::signaling_NaN()),
+    endE(std::numeric_limits<float>::signaling_NaN()),
+    genT(std::numeric_limits<float>::signaling_NaN()),
+    startT(std::numeric_limits<float>::signaling_NaN()),
+    endT(std::numeric_limits<float>::signaling_NaN()),
+    length(std::numeric_limits<float>::signaling_NaN()),
+    cont_tpc(false),
+    crosses_tpc(false),
+    contained(false),
+    pdg(INT_MIN),
+    G4ID(INT_MIN),
+    interaction_id(INT_MIN)
   {
   }
 

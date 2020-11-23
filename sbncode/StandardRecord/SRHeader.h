@@ -5,7 +5,7 @@
 #ifndef SRHEADER_H
 #define SRHEADER_H
 
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SREnums.h"
 
 namespace caf
 {

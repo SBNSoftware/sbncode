@@ -83,8 +83,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  void SystShifts::Shift(caf::SRProxy* sr,
-                         double& weight) const
+  void SystShifts::Shift(caf::SRSliceProxy* sr, double& weight) const
   {
     for(auto it: fSysts) it.first->Shift(it.second, sr, weight);
   }

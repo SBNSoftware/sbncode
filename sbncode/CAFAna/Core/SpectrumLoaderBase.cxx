@@ -168,25 +168,28 @@ namespace ana
     if(str.find(' ') == std::string::npos){
       WildcardSource* ret = new WildcardSource(str, stride, offset);
       if(ret->NFiles() > 0) return ret;
-      else {
-	std::cout << "Warning: " << str << " does not exist!" << std::endl;
-	abort();
-      }
       delete ret;
     }
 
     // Maybe this the name of a SAM project?
-    ifdh_ns::ifdh i;
-    const std::string info = i.dumpProject(i.findProject(str, "nova"));
-    // findProject always gives back an address just by gluing bits
-    // together. But dumpProject will give an empty result for a nonexistent
-    // project.
-    if(!info.empty()){
-      if(stride > 1)
-        std::cout << "Warning: --stride has no effect on SAM projects"
-                  << std::endl;
-
-      return new SAMProjectSource(str);
+    {
+      IFDHSilent silent; // the usual case is for this to fail
+      ifdh_ns::ifdh i;
+      // findProject always gives back an address just by gluing bits together.
+      // (a tad annoying, because it _does_ go and look for the project, and
+      // even would print its 'didn't-find-this-project' error out to stderr if
+      // not for the IFDHSilent, but without scraping its stderr there's no way
+      // to know whether the project is there or not -- you still get the URL.)
+      // however, the WebAPI call looking for the /status will return a 404 if
+      // the project doesn't exist.  (suggested by Robert I. in
+      // INC000000925362)
+      try{
+        ifdh_util_ns::WebAPI webapi(i.findProject(str, Experiment()) +  "/status");
+        return new SAMProjectSource(str);
+      }
+      catch(ifdh_util_ns::WebAPIException &e){
+        ;
+      }
     }
 
     // Maybe this is a SAM dataset or query?
@@ -196,6 +199,7 @@ namespace ana
   //----------------------------------------------------------------------
   void SpectrumLoaderBase::AddSpectrum(Spectrum& spect,
                                        const Var& var,
+                                       const SpillCut& spillcut,
                                        const Cut& cut,
                                        const SystShifts& shift,
                                        const Var& wei)
@@ -205,7 +209,7 @@ namespace ana
       abort();
     }
 
-    fHistDefs[shift][cut][wei][var].spects.push_back(&spect);
+    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(&spect);
 
     spect.AddLoader(this); // Remember we have a Go() pending
   }
@@ -213,6 +217,7 @@ namespace ana
   //----------------------------------------------------------------------
   void SpectrumLoaderBase::AddSpectrum(Spectrum& spect,
                                        const MultiVar& var,
+                                       const SpillCut& spillcut,
                                        const Cut& cut,
                                        const SystShifts& shift,
                                        const Var& wei)
@@ -222,7 +227,39 @@ namespace ana
       abort();
     }
 
-    fHistDefs[shift][cut][wei][var].spects.push_back(&spect);
+    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(&spect);
+
+    spect.AddLoader(this); // Remember we have a Go() pending
+  }
+
+  //----------------------------------------------------------------------
+  void SpectrumLoaderBase::AddSpectrum(Spectrum& spect,
+                                       const SpillVar& var,
+                                       const SpillCut& cut,
+                                       const SpillVar& wei)
+  {
+    if(fGone){
+      std::cerr << "Error: can't add Spectra after the call to Go()" << std::endl;
+      abort();
+    }
+
+    fSpillHistDefs[cut][wei][var].spects.push_back(&spect);
+
+    spect.AddLoader(this); // Remember we have a Go() pending
+  }
+
+  //----------------------------------------------------------------------
+  void SpectrumLoaderBase::AddSpectrum(Spectrum& spect,
+                                       const SpillMultiVar& var,
+                                       const SpillCut& cut,
+                                       const SpillVar& wei)
+  {
+    if(fGone){
+      std::cerr << "Error: can't add Spectra after the call to Go()" << std::endl;
+      abort();
+    }
+
+    fSpillHistDefs[cut][wei][var].spects.push_back(&spect);
 
     spect.AddLoader(this); // Remember we have a Go() pending
   }
@@ -245,7 +282,7 @@ namespace ana
       abort();
     }
 
-    fHistDefs[shift][cut][wei][var].rwSpects.push_back(&spect);
+    fHistDefs[kNoSpillCut][shift][cut][wei][var].rwSpects.push_back(&spect);
 
     spect.AddLoader(this); // Remember we have a Go() pending
   }
@@ -303,7 +340,7 @@ namespace ana
 
   // Apparently the existence of fSpillDefs isn't enough and I need to spell
   // this out to make sure the function bodies are generated.
-  template struct SpectrumLoaderBase::IDMap<SystShifts, SpectrumLoaderBase::IDMap<Cut, SpectrumLoaderBase::IDMap<Var, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::VarOrMultiVar, SpectrumLoaderBase::SpectList>>>>;
+  template struct SpectrumLoaderBase::IDMap<SpillCut, SpectrumLoaderBase::IDMap<SystShifts, SpectrumLoaderBase::IDMap<Cut, SpectrumLoaderBase::IDMap<Var, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::VarOrMultiVar, SpectrumLoaderBase::SpectList>>>>>;
 
+  template struct SpectrumLoaderBase::IDMap<SpillCut, SpectrumLoaderBase::IDMap<SpillVar, SpectrumLoaderBase::IDMap<SpectrumLoaderBase::SpillVarOrMultiVar, SpectrumLoaderBase::SpectList>>>;
 } // namespace
-

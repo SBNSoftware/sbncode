@@ -5,9 +5,10 @@
 #define SRTRUEPARTICLE_H
 
 #include <cstdint>
-#include "SRVector3D.h"
 
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+
+#include "sbncode/StandardRecord/SREnums.h"
 
 /* #include "SRVector3D.h" */
 

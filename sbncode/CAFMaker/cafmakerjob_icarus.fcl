@@ -5,6 +5,7 @@
 
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
+#include "detectorproperties_icarus.fcl"
 #include "particleinventoryservice.fcl"
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
@@ -15,7 +16,6 @@
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
-#include "crthitmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
@@ -78,8 +78,6 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-   pandoraTrackCRTHitCryo0: @local::crthitmatch_icarus_cryo0
-   pandoraTrackCRTHitCryo1: @local::crthitmatch_icarus_cryo1
 
    mcreco: @local::standard_mcreco
 }
@@ -110,20 +108,15 @@ physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalg
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
 physics.producers.mycafmaker.PFParticleLabel:   "pandoraGaus"
 physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGaus"
-# physics.producers.mycafmaker.RecoShowerEMLabel:   "emshower"
-# physics.producers.mycafmaker.RecoShowerPandLabel: "pandoraShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGaus"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausCalo"
 physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausPid"
-physics.producers.mycafmaker.FlashMatchLabel:   "pandoraICARUS"
-physics.producers.mycafmaker.CRTHitLabel:       "crthit"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
-
 
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"

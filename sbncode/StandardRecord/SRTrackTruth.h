@@ -5,12 +5,14 @@
 #define SRTRACKTRUTH_H
 
 #include <vector>
+#include "SRTrueParticle.h"
 
 namespace caf
 {
   /// Match from a reconstructed track to a true particle  */
   class ParticleMatch {
   public:
+    ParticleMatch(); //!< Constructor
     int G4ID; //!< ID of the particle match, taken from G4 */
     float energy; //!< Total energy matching between reco track and true particle across all three planes [GeV]. NOTE: this energy is a sum of the depoisted energy as seen individually by each plane */
   };
@@ -22,15 +24,13 @@ namespace caf
   // TODO: should this be done differently? Use the best plane?
   class SRTrackTruth {
   public:
+    SRTrackTruth(); //!< Constructor
     float total_deposited_energy; //!< True total deposited energy associated with this Track across all 3 planes [GeV]. NOTE: this energy is a sum of the depoisted energy as seen individually by each plane
   
+    int                       nmatches; //!< Number of matches
     std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched */
-
-    /// Get the G4ID of the primary (most energy) particle match to this track (returns -1 if no match)
-    int GetPrimaryMatchID() const;
-    
-    /// Get the purity of the energy associated with this track relative to the best-matched particle (0 if no match) 
-    float Purity() const;
+    ParticleMatch bestmatch; //!< Best match for track (most energy). Same as index-0 of matches. Useful for columnar analyses.
+    SRTrueParticle p; //!< A copy of the true particle for the best match. Set to nonsense if there is no such match.
   };
 } // end namespace
 

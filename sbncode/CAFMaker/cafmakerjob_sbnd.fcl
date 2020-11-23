@@ -5,8 +5,8 @@
 
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
-#include "particleinventoryservice.fcl"
 #include "detectorproperties_sbnd.fcl"
+#include "particleinventoryservice.fcl"
 #include "photonbacktrackerservice.fcl"
 #include "mccheatermodules.fcl"
 
@@ -16,7 +16,7 @@
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
 #include "crthitconverter_producer.fcl"
-#include "crthitmatch_producer.fcl"
+#include "crtmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
 process_name: CAFmaker
@@ -88,6 +88,7 @@ physics:
    pandoraShowerSelectionVars: 	@local::showerSelectionVars_sbn
    crtconvhit: 		       	@local::crthitconverter_sbnd
    pandoraTrackCRTHit: 	       	@local::crthitmatch_sbnd
+   pandoraTrackCRTTrack: 	@local::crttrackmatch_sbnd
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -96,7 +97,9 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
+ runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack,
+            pandoraShowerSelectionVars,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
@@ -110,5 +113,3 @@ physics:
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
-physics.producers.mycafmaker.CRTHitLabel: "crthit"
-physics.producers.mycafmaker.CRTHitUseTS0: false

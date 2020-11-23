@@ -4,7 +4,7 @@
 #ifndef SRCRTHIT_H
 #define SRCRTHIT_H
 
-#include "SRVector3D.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
 
 namespace caf
 {

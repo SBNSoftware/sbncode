@@ -58,10 +58,6 @@ namespace caf
                      caf::SRSlice& srslice,
                      bool allowEmpty = false);
 
-  void FillSliceFlashMatch(const anab::T0 *fmatch,
-                           caf::SRSlice &srslice,
-                           bool allowEmpty = false);
-
   void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
                         caf::SRSlice &srslice,
                         bool allowEmpty = false);
@@ -79,8 +75,11 @@ namespace caf
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
-                       const std::vector<const anab::T0*> &t0match,
+  void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty = false);
+
+  void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 

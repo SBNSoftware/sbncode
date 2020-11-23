@@ -4,9 +4,9 @@
 #ifndef SRSHOWER_H
 #define SRSHOWER_H
 
-#include "SRVector3D.h"
-#include "SRShowerSelection.h"
-#include "SRTrackTruth.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+#include "sbncode/StandardRecord/SRShowerSelection.h"
+#include "sbncode/StandardRecord/SRTrackTruth.h"
 
 namespace caf
 {
@@ -16,18 +16,25 @@ namespace caf
     {
     public:
       SRShower();
-      ~SRShower(){  };
+      ~SRShower(){  }
       int bestplane;             ///< shower best reconstructed plane
-      double bestplane_dEdx;     ///< shower dEdx at best plane [MeV/cm]
-      double bestplane_energy;   ///< shower energy at best plane [MeV]
+      float bestplane_dEdx;     ///< shower dEdx at best plane [MeV/cm]
+      float bestplane_energy;   ///< shower energy at best plane [MeV]
       float conversion_gap;      ///< shower start and vertex position difference [cm]
       float density;             ///< shower density [MeV/cm]
       float len;                 ///< shower length [cm]
       float open_angle;          ///< shower opening angle [rad]
-      std::vector<double> dEdx;     ///< shower calculated dEdx at best plane [MeV/cm]
-      std::vector<double> energy;   ///< shower calculated energy at best plane [MeV]
+      float dEdx_plane1;            ///< shower calculated dEdx at each plane [MeV/cm]
+      float dEdx_plane2;            ///< shower calculated dEdx at each plane [MeV/cm]
+      float dEdx_plane3;            ///< shower calculated dEdx at each plane [MeV/cm]
+      float energy_plane1;          ///< shower calculated energy at each plane [MeV]
+      float energy_plane2;          ///< shower calculated energy at each plane [MeV]
+      float energy_plane3;          ///< shower calculated energy at each plane [MeV]
+      std::vector<float> dEdx;           ///< shower calculated dEdx at each plane [MeV/cm]
+      std::vector<float> energy;         ///< shower calculated energy at each plane [MeV]
       SRVector3D dir;               ///< direction cosines at the start of the shower
       SRVector3D start;             ///< shower start point in detector coordinates [cm]
+      SRVector3D end;               ///< shower end point (start+len*dir) in detector coordinates [cm]
 
       int            ID;          ///< ID of this shower (taken from the pandora particle "ID" of this PFP)
       std::vector<int> daughters; ///< ID's of daughters of this shower

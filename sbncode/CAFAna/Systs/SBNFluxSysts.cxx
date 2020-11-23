@@ -18,10 +18,10 @@ SBNFluxHadronSyst::~SBNFluxHadronSyst()
 }
 
 //----------------------------------------------------------------------
-void SBNFluxHadronSyst::Shift(double sigma, caf::SRProxy* sr, double &weight) const
+void SBNFluxHadronSyst::Shift(double sigma, caf::SRSliceProxy* slc, double &weight) const
 {
   // Only implemented for numus so far
-  if(sr->mc.nnu == 0 || sr->mc.nu[0].initpdg != 14) return;
+  if(/*sr->mc.nnu == 0 ||*/ slc->truth.initpdg != 14) return;
 
   if(!fScale[0]){
     TFile f((FindCAFAnaDir() + "/Systs/flux_shifts.root").c_str());
@@ -44,7 +44,7 @@ void SBNFluxHadronSyst::Shift(double sigma, caf::SRProxy* sr, double &weight) co
 
   // TODO use the regular detector flag as soon as it's filled reliably
   int det;
-  const double L = sr->mc.nu[0].baseline;
+  const double L = slc->truth.baseline;
   if(L < 150) det = 0;
   else if(L < 500) det = 1;
   else det = 2;
@@ -52,7 +52,7 @@ void SBNFluxHadronSyst::Shift(double sigma, caf::SRProxy* sr, double &weight) co
   TH1* h = fScale[det];
   assert(h);
 
-  const int bin = h->FindBin(sr->mc.nu[0].E);
+  const int bin = h->FindBin(slc->truth.E);
 
   if(bin == 0 || bin == h->GetNbinsX()+1) return;
 

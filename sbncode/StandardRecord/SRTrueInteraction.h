@@ -4,8 +4,8 @@
 #ifndef SRTRUEINTERACTION_H
 #define SRTRUEINTERACTION_H
 
-#include "SRTruthMatch.h"
-#include "SRTrueParticle.h"
+#include "sbncode/StandardRecord/SRTruthMatch.h"
+#include "sbncode/StandardRecord/SRTrueParticle.h"
 
 namespace caf
 {
@@ -14,7 +14,7 @@ namespace caf
   {
   public:
     SRTrueInteraction();
-    ~SRTrueInteraction() {  };
+    ~SRTrueInteraction() {  }
 
     int   initpdg;         //!< Initial PDG code of probe neutrino
     int   pdg;             //!< PDG code of probe neutrino
@@ -29,9 +29,6 @@ namespace caf
     bool    iscc;              //!< CC (true) or NC/interference (false)
     bool    isvtxcont;         //!< If true vertex is within TPC
     bool    is_numucc_primary; //!< Whether this is the "primary" reco neutrino slice as defined by the numu CC analysis
-
-    float      eff;           ///< Slice efficiency for this interaction
-    float      pur;           ///< Slicer purity for this interaction
 
     float      E;             ///< True energy [GeV]
     float      visE;          ///< True interaction deposited energy
@@ -55,8 +52,6 @@ namespace caf
     SRVector3D        position;        //!< Neutrino interaction position
     SRVector3D        parentDecayVtx;  //!< Parent hadron/muon decay vertex
 
-    SRTruthMatch      tmatch;
-
     Det_t             det;
 
     interaction_mode_ mode;       ///< True mode of from enum
@@ -64,6 +59,7 @@ namespace caf
     generator_        generator;  ///< The generator that created this neutrino interaction
     std::vector<unsigned int>   genVersion; ///< Version of the generator that created this neutrino interaction
 
+    int                        nprim;       ///< Number of primary daughters
     std::vector<SRTrueParticle> prim;       ///< Primary daughters, lepton comes first in vector.
 
   };

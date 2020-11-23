@@ -10,34 +10,34 @@ using namespace ana;
 // event record and returns a single number to plot
 
 // Useful for counting the number of events that pass a cut
-const Var kCounting([](const caf::SRProxy *sr)
+const Var kCounting([](const caf::SRSliceProxy *slc)
 		    {
 		      return 1;
 		    });
 
 // Costh of the numu primary track (See Vars/NumuVars.cxx)
-const Var kPrimTrkCosth([](const caf::SRProxy *sr)
+const Var kPrimTrkCosth([](const caf::SRSliceProxy *slc)
 			{
-			  int muIdx = kPrimMuonIdx(sr);
+			  int muIdx = kPrimMuonIdx(slc);
 			  if( muIdx < 0 ) return -5.;
 
-			  return (double)sr->reco.trk[muIdx].costh;
+			  return (double)slc->reco.trk[muIdx].costh;
 			});
 
 // Slice Vertex position
-const Var kSlcVtxX([](const caf::SRProxy *sr)
+const Var kSlcVtxX([](const caf::SRSliceProxy *slc)
 		   {
-		     return sr->slc.vertex.x;
+		     return slc->slc.vertex.x;
 		   });
 
-const Var kSlcVtxY([](const caf::SRProxy *sr)
+const Var kSlcVtxY([](const caf::SRSliceProxy *slc)
 		   {
-		     return sr->slc.vertex.y;
+		     return slc->slc.vertex.y;
 		   });
 
-const Var kSlcVtxZ([](const caf::SRProxy *sr)
+const Var kSlcVtxZ([](const caf::SRSliceProxy *slc)
 		   {
-		     return sr->slc.vertex.z;
+		     return slc->slc.vertex.z;
 		   });
 
 // These are examples of useful structs to

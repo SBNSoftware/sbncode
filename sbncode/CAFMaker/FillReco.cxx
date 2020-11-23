@@ -33,9 +33,14 @@ namespace caf
 
     srhit.pe = hit.peshit;
 
-    // std::cout << "x:" << srhit.position.x 
-    //           << ", y:" << srhit.position.y 
-    //           << ", z:" << srhit.position.z << std::endl;
+  }
+
+  std::vector<float> double_to_float_vector(const std::vector<double>& v)
+  {
+    std::vector<float> ret;
+    ret.reserve(v.size());
+    for(double x: v) ret.push_back(x);
+    return ret;
   }
 
   //......................................................................
@@ -49,10 +54,16 @@ namespace caf
   {
 
     srshower.producer = producer;
+    srshower.dEdx_plane1 = (shower.dEdx())[0];
+    srshower.dEdx_plane2 = (shower.dEdx())[1];
+    srshower.dEdx_plane3 = (shower.dEdx())[2];
+    srshower.energy_plane1 = (shower.Energy())[0];
+    srshower.energy_plane2 = (shower.Energy())[1];
+    srshower.energy_plane3 = (shower.Energy())[2];
+    srshower.dEdx   = double_to_float_vector( shower.dEdx() );
+    srshower.energy = double_to_float_vector( shower.Energy() );
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
-    srshower.dEdx     = shower.dEdx();
-    srshower.energy   = shower.Energy();
 
     // TO DO: work out conversion gap
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
@@ -88,6 +99,10 @@ namespace caf
       const TVector3 vertexTVec3{vertexPos.X(), vertexPos.Y(), vertexPos.Z()};
 
       srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
+    }
+
+    if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
+      srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
   }
 
@@ -165,20 +180,7 @@ namespace caf
 
   }
 
-  void FillSliceFlashMatch(const anab::T0 *fmatch /* can be NULL */,
-                           caf::SRSlice &srslice,
-                           bool allowEmpty)
-  {
-    if (fmatch != NULL) {
-      srslice.fmatch.present = true;
-      srslice.fmatch.time = fmatch->Time();
-      srslice.fmatch.score = fmatch->TriggerConfidence();
-      srslice.fmatch.pe = fmatch->TriggerType();
-    }
-    else {
-      srslice.fmatch.present = false;
-    }
-  }
+
   void FillSliceVertex(const recob::Vertex *vertex,
                        caf::SRSlice& slice,
                        bool allowEmpty) {
@@ -192,22 +194,36 @@ namespace caf
 
   //......................................................................
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
-                       const std::vector<const anab::T0*> &t0match,
+  void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
-    if (hitmatch.size()) {
-      assert(hitmatch.size() == 1);
+    if (t0match.size()) {
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
-      srtrack.crthit.hit.time = t0match[0]->fTime;
-      srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
-      srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
-      srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
-      srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
-      srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
-      srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
+      srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
+
+      // TODO/FIXME: FILL THESE ONCE WE HAVE THE CRT HIT!!!
+      // srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
+      // srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
+      // srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
+      // srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
+      // srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
+      // srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
+
+    }
+  }
+
+  void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty)
+  {
+    if (t0match.size()) {
+      assert(t0match.size() == 1);
+      srtrack.crttrack.angle = t0match[0]->fTriggerConfidence;
+      srtrack.crttrack.time = t0match[0]->fTime / 1e3; /* ns -> us */
+
+      // TODO/FIXME: FILL MORE ONCE WE HAVE THE CRT HIT!!!
 
     }
   }
@@ -278,29 +294,21 @@ namespace caf
                         bool allowEmpty)
   {
     // get the particle ID's
-    //
-    // iterate over the planes -- use the conduction plane to get the particle ID
-    //    assert(particleIDs.size() == 0 || particleIDs == 3);
-    srtrack.nchi2pid = 0;
-    if (particleIDs.size() > 0) {
-      srtrack.chi2pid.emplace_back();
-      srtrack.chi2pid.emplace_back();
-      srtrack.chi2pid.emplace_back();
-      srtrack.nchi2pid = 3;
-    }
-
     for (unsigned i = 0; i < particleIDs.size(); i++) {
       const anab::ParticleID &particle_id = *particleIDs[i];
       if (particle_id.PlaneID()) {
-        unsigned plane_id  = particle_id.PlaneID().deepestIndex();
+        unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
-        srtrack.chi2pid[plane_id].chi2_muon = particle_id.Chi2Muon();
-        srtrack.chi2pid[plane_id].chi2_pion = particle_id.Chi2Kaon();
-        srtrack.chi2pid[plane_id].chi2_kaon = particle_id.Chi2Pion();
-        srtrack.chi2pid[plane_id].chi2_proton = particle_id.Chi2Proton();
-        srtrack.chi2pid[plane_id].pid_ndof = particle_id.Ndf();
 
-        srtrack.chi2pid[plane_id].pida = particle_id.PIDA();
+        caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
+        this_pid.chi2_muon = particle_id.Chi2Muon();
+        this_pid.chi2_pion = particle_id.Chi2Kaon();
+        this_pid.chi2_kaon = particle_id.Chi2Pion();
+        this_pid.chi2_proton = particle_id.Chi2Proton();
+        this_pid.pid_ndof = particle_id.Ndf();
+
+        this_pid.pida = particle_id.PIDA();
+
       }
     }
   }
@@ -315,45 +323,43 @@ namespace caf
     // ignore any charge with a deposition > 1000 MeV/cm
     // TODO: ignore first and last hit???
     //    assert(calos.size() == 0 || calos == 3);
-    srtrack.ncalo = 0;
-    if (calos.size() > 0) {
-      srtrack.calo.emplace_back();
-      srtrack.calo.emplace_back();
-      srtrack.calo.emplace_back();
-      srtrack.ncalo = 3;
-    }
-
     for (unsigned i = 0; i < calos.size(); i++) {
       const anab::Calorimetry &calo = *calos[i];
       if (calo.PlaneID()) {
-        unsigned plane_id = calo.PlaneID().deepestIndex();
+        unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
+        caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
+
         const std::vector<float> &dqdx = calo.dQdx();
         const std::vector<float> &dedx = calo.dEdx();
         const std::vector<float> &pitch = calo.TrkPitchVec();
-        srtrack.calo[plane_id].charge = 0.;
-        srtrack.calo[plane_id].ke = 0.;
-        srtrack.calo[plane_id].nhit = 0;
+        this_calo.charge = 0.;
+        this_calo.ke = 0.;
+        this_calo.nhit = 0;
         for (unsigned i = 0; i < dedx.size(); i++) {
           if (dedx[i] > 1000.) continue;
-
-          srtrack.calo[plane_id].nhit ++;
-          srtrack.calo[plane_id].charge += dqdx[i] * pitch[i] / calo_constants[plane_id]; /* convert ADC*tick to electrons */
-          srtrack.calo[plane_id].ke += dedx[i] * pitch[i];
+          this_calo.nhit ++;
+          this_calo.charge += dqdx[i] * pitch[i] / calo_constants[plane_id]; /* convert ADC*tick to electrons */
+          this_calo.ke += dedx[i] * pitch[i];
         }
       }
     }
 
     // Set the plane with the most hits
+    //
+    // We expect the noise to be lowest at planes 2 -> 0 -> 1, so use this to break ties
     caf::Plane_t bestplane = caf::kUnknown;
-    int best_nhit = -1000;
-    for (unsigned i = 0; i < 3; i++) {
-      if (srtrack.calo[i].nhit > best_nhit) {
-        best_nhit = srtrack.calo[i].nhit;
-        bestplane = (caf::Plane_t)i;
-      }
+    if (srtrack.calo2.nhit > 0 && srtrack.calo2.nhit >= srtrack.calo0.nhit && srtrack.calo2.nhit >=  srtrack.calo1.nhit) {
+      bestplane = (caf::Plane_t)2;
+    }
+    else if (srtrack.calo0.nhit > 0 && srtrack.calo0.nhit >= srtrack.calo2.nhit && srtrack.calo0.nhit >=  srtrack.calo1.nhit) {
+      bestplane = (caf::Plane_t)0;
+    }
+    else if (srtrack.calo1.nhit > 1) {
+      bestplane = (caf::Plane_t)1;
     }
     srtrack.bestplane = bestplane;
+
   }
 
   // TODO: crt matching

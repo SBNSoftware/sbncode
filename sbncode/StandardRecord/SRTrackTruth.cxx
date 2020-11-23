@@ -3,20 +3,22 @@
 // \brief   An SRTrack is a high level track object.  It knows its
 //          direction and length, but does not own its cell hits.
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrackTruth.h"
+#include "sbncode/StandardRecord/SRTrackTruth.h"
+
+//#include <bits/stdc++.h> //not available in clang
 
 namespace caf
 {
-  int SRTrackTruth::GetPrimaryMatchID() const {
-    if (matches.size() == 0) return -1;
-    return matches[0].G4ID;
-  }
 
-  float SRTrackTruth::Purity() const {
-    if (matches.size() == 0) return 0.;
-    if (total_deposited_energy < 1e-6) return 1.;
-    return matches[0].energy / total_deposited_energy;
-  }
+SRTrackTruth::SRTrackTruth():
+  total_deposited_energy(std::numeric_limits<float>::signaling_NaN()),
+  nmatches(0)
+{}
+
+ParticleMatch::ParticleMatch():
+  G4ID(INT_MIN),
+  energy(std::numeric_limits<float>::signaling_NaN())
+{}
 
 } // end namespace caf
 ////////////////////////////////////////////////////////////////////////

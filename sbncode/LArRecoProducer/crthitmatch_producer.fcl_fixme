@@ -1,5 +1,7 @@
 BEGIN_PROLOG
 
+// NOTE: This config runs the deprecated CRT matching module -- ignore for now
+
 crthitmatch_sbnd: {
   module_type: CRTHitMatch
   CRTHitLabel: crtconvhit 
