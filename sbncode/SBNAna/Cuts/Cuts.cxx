@@ -29,6 +29,16 @@ namespace ana{
       }
       );
 
+  const SpillCut kCRTHitVetoFD(
+      [](const caf::SRSpillProxy* sr){
+        for (auto const& crtHit: sr->crt_hits){
+          if (crtHit.time > 0. && crtHit.time < 1.8 && crtHit.pe>100) // no discriminating in position, yet.
+            return false;
+        }
+        return true;
+      }
+      );
+
   const Cut kFiducialVolumeND(
   	[](const caf::SRSliceProxy* slc){
           return PtInVolAbsX(slc->vertex, fvnd);
