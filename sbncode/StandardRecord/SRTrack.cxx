@@ -6,7 +6,7 @@
 
 #include "sbncode/StandardRecord/SRTrack.h"
 
-#include <bits/stdc++.h>
+//#include <bits/stdc++.h> //not available in clang
 
 namespace caf
 {
