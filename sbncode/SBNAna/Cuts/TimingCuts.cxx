@@ -5,8 +5,10 @@
 /// Beam spill duration is 1.6 microseconds
 /// TO DO: Change numbers to reflect reality:
 /// Where the beam spill actually starts after the beam trigger?
-const int kBeamWindowMinMicroSec = 0;
-const int kBeamWindowMaxMicroSec = 1.6;
+
+//currently unused, 23 Nov 2020
+//const double kBeamWindowMinMicroSec = 0;
+//const double kBeamWindowMaxMicroSec = 1.6;
 
 namespace ana
 {

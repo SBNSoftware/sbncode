@@ -131,7 +131,7 @@ private:
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
   size_t fNTPC;
-  size_t fTPCPerDriftVolume;
+  //size_t fTPCPerDriftVolume; //unused
   static const size_t fDriftVolumes = 2;
   int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
