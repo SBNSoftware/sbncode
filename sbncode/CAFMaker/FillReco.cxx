@@ -21,7 +21,6 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
-    std::cout << "use ts0: " << use_ts0 << std::endl;
     srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
 
     srhit.position.x = hit.x_pos;
