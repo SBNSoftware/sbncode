@@ -13,9 +13,10 @@ using namespace ana;
 
 void plot_spectra(std::string inFile)
 {
+
   // Arbitrary POT to scale all plots to
-  // Spill tree currently not being filled, so there will be a warning
   double POT = 1E20;
+  double Livetime = 1;
 
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
@@ -33,6 +34,8 @@ void plot_spectra(std::string inFile)
       std::string mysuffix = sels[jSel].suffix + "_" + plots[iVar].suffix;
 
       Spectrum *spec = LoadFromFile<Spectrum>(inFile, mysuffix).release();
+      //double this_pot = spec->POT();
+      //double this_livetime = spec->Livetime();
       TH1* h = spec->ToTH1(POT);
       h->SetLineColor(sels[jSel].color);
 

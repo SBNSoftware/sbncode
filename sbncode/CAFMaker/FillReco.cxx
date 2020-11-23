@@ -33,9 +33,6 @@ namespace caf
 
     srhit.pe = hit.peshit;
 
-    // std::cout << "x:" << srhit.position.x 
-    //           << ", y:" << srhit.position.y 
-    //           << ", z:" << srhit.position.z << std::endl;
   }
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)

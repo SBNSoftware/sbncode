@@ -5,7 +5,8 @@
 ////////////////////////////////////////////////////////////////////////
 #include "sbncode/StandardRecord/SRTrackTruth.h"
 
-#include <bits/stdc++.h>
+#include <climits>
+//#include <bits/stdc++.h> //not available in clang
 
 namespace caf
 {

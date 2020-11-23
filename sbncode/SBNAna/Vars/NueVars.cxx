@@ -34,6 +34,18 @@ namespace ana
 			  return energy;
 			});
 
+  // Currently assumes shw 0 is the primary
+  const Var kRecoShower_BestdEdx(
+			[](const caf::SRSliceProxy *slc)
+			{
+			  double dedx = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+			  if ( largestShwIdx!=-1 ){
+			    dedx = slc->reco.shw[largestShwIdx].bestplane_dEdx;
+			  }
+			  return dedx;
+			});
+
   const Var kRecoShower_ConversionGap(
 			[](const caf::SRSliceProxy *slc)
 			{
