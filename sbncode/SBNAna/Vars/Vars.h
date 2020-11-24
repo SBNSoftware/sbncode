@@ -29,5 +29,8 @@ namespace ana
   extern const Var kSlcVtxX;
   extern const Var kSlcVtxY;
   extern const Var kSlcVtxZ;
+  extern const Var kSlcNuScore;
+  extern const Var kSlcHasFlash;
+  extern const Var kSlcFlashScore;
 
 }

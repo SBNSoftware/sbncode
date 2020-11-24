@@ -40,27 +40,45 @@ namespace ana{
       );
 
   const Cut kFiducialVolumeND(
-  	[](const caf::SRSliceProxy* slc){
-          return PtInVolAbsX(slc->vertex, fvnd);
-  	}
-  	);
+    [](const caf::SRSliceProxy* slc){
+          return PtInVolAbsX(slc->vertex, fvndAbs);
+    }
+    );
 
   const Cut kActiveVolumeND(
-  	[](const caf::SRSliceProxy* slc){
+    [](const caf::SRSliceProxy* slc){
           return PtInVolAbsX(slc->vertex, avnd);
-  	}
-  	);
+    }
+    );
 
   const Cut kActiveVolumeFDCryo1(
-  	[](const caf::SRSliceProxy* slc){
+    [](const caf::SRSliceProxy* slc){
           return PtInVol(slc->vertex, avfd_cryo1);
-  	}
-  	);
+    }
+    );
 
   const Cut kActiveVolumeFDCryo2(
         [](const caf::SRSliceProxy* slc){
           return PtInVol(slc->vertex, avfd_cryo2);
-  	}
-  	);
+    }
+    );
 
+  const Cut kSlcIsRecoNu([](const caf::SRSliceProxy *slc)
+       {
+         return !slc->is_clear_cosmic;
+       });
+
+  const Cut kSlcNuScoreCut([](const caf::SRSliceProxy *slc)
+       {
+         return (kSlcIsRecoNu(slc) && slc->nu_score>0.4);
+       });
+
+  const Cut kSlcHasFlashMatch([](const caf::SRSliceProxy *slc)
+       {
+         return slc->fmatch.present;
+       });
+  const Cut kSlcFlashMatchCut([](const caf::SRSliceProxy *slc)
+       {
+         return (kSlcHasFlashMatch(slc) && slc->fmatch.score>0 && slc->fmatch.score<5);
+       });
 } // namespace

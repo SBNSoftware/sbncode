@@ -21,5 +21,9 @@ namespace ana
 	extern const Var kRecoShower_EndY;
 	extern const Var kRecoShower_EndZ;
 
+  extern const Var kRecoShowers_EnergyCut;
+
+  extern const Var kLongestTrackIdx;
+  extern const Var kLongestTrackLength;
 } // namespace
 
