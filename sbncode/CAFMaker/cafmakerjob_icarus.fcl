@@ -17,6 +17,7 @@
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
+#include "flashmatch_simple_icarus.fcl"
 
 process_name: CAFmaker
 
@@ -73,6 +74,8 @@ physics:
 {
  producers:{
    flashtrig: @local::pmtflashtrigmaker_icarus
+   fmatchCryo0: @local::icarus_simple_flashmatch_0
+   fmatchCryo1: @local::icarus_simple_flashmatch_1   # flashmatch_1 and flashmatch_0 are idently atm
    pandoraTrackMCSCryo0: @local::mcs_sbn
    pandoraTrackMCSCryo1: @local::mcs_sbn
    pandoraTrackRangeCryo0: @local::range_sbn
@@ -89,6 +92,7 @@ physics:
 #    metadata: @local::standard_metadata            #prod
   }
  runprod: [ flashtrig, flashtrigfilter,
+    fmatchCryo0, fmatchCryo1,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
     mycafmaker ]
