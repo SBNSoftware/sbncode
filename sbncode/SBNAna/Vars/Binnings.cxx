@@ -6,10 +6,17 @@
 namespace ana
 {
 
-  const Binning kNueEnergyBinning  	= Binning::Simple( 20, 0, 5);
-  const Binning kNumuEnergyBinning  = Binning::Simple( 20, 0, 5);
+  const std::vector<float> kLowEnergyEdges = {100., 200., 300., 400., 500., 750.,
+					      1000., 1250., 1500., 1750.,
+					      2000., 2250., 2500., 2750.,
+					      3000., 3250., 3500., 3750.,
+					      4000., 4250., 4500., 4750.,
+					      5000.}; 
+  
+  const Binning kNueEnergyBinning   = Binning::Simple( 20, 0., 5000.); // MeV
+  const Binning kNumuEnergyBinning  = Binning::Simple( 20, 0., 5000.); // MeV
 
-  const Binning kLowEnergyBinning  = Binning::Custom({0.1, 0.2, 0.3, 0.4, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.});
+  const Binning kLowEnergyBinning  = Binning::Custom( kLowEnergyEdges ); // MeV
 
   // Position binnings
   const Binning kPositionXNDBinning = Binning::Simple(40, avnd.xmin, avnd.xmax);
