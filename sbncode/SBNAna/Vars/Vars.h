@@ -17,6 +17,7 @@ namespace ana
   extern const SpillMultiVar kCRTHitZ;  
   extern const SpillMultiVar kCRTHitPE;  
   extern const SpillMultiVar kCRTHitTime;  
+  extern const SpillMultiVar kCRTHitTimeFD;  
 
   // // Return the slice number
   // extern const SliceVar kSlc;

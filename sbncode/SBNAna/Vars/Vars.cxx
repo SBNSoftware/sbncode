@@ -67,6 +67,18 @@ namespace ana
     return times;
   });
 
+  // Temporary use for ICARUS as of Nov 25 2020
+  // Bug: the time should be unsigned and the beam spill at zero
+  // Correct by substracting the amount by which the beam spill is shifted
+  const SpillMultiVar kCRTHitTimeFD([](const caf::SRSpillProxy *sr)
+  {
+    std::vector<double> times;
+    for(const auto& hit : sr->crt_hits){
+      times.push_back(hit.time);
+    }
+    return times-1600.;
+  });
+
   // // For when we have spill beam mode info
   // const SpillCut kIsRHC([](const caf::SRProxy* sr) {return sr->spill.isRHC;});
 
