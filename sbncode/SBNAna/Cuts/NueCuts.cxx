@@ -150,14 +150,14 @@ namespace ana{
       double this_endz = slc->reco.shw[largestShwIdx].start.z + (slc->reco.shw[largestShwIdx].dir.z * slc->reco.shw[largestShwIdx].len);
 
 
-      bool startx = (avfd_cryo1.xmin < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < avfd_cryo1.xmax);
-      bool endx   = (avfd_cryo1.xmin < this_endx) && (this_endx < avfd_cryo1.xmax);
+      bool startx = (fvfd_cryo1.xmin < slc->reco.shw[largestShwIdx].start.x) && (slc->reco.shw[largestShwIdx].start.x < fvfd_cryo1.xmax);
+      bool endx   = (fvfd_cryo1.xmin < this_endx) && (this_endx < fvfd_cryo1.xmax);
 
-      bool starty = (avfd_cryo1.ymin < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < avfd_cryo1.ymax);
-      bool endy   = (avfd_cryo1.ymin < this_endy) && (this_endy < avfd_cryo1.ymax);
+      bool starty = (fvfd_cryo1.ymin < slc->reco.shw[largestShwIdx].start.y) && (slc->reco.shw[largestShwIdx].start.y < fvfd_cryo1.ymax);
+      bool endy   = (fvfd_cryo1.ymin < this_endy) && (this_endy < fvfd_cryo1.ymax);
 
-      bool startz = (avfd_cryo1.zmin < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < avfd_cryo1.zmax);
-      bool endz   = (avfd_cryo1.zmin < this_endz) && (this_endz < avfd_cryo1.zmax);
+      bool startz = (fvfd_cryo1.zmin < slc->reco.shw[largestShwIdx].start.z) && (slc->reco.shw[largestShwIdx].start.z < fvfd_cryo1.zmax);
+      bool endz   = (fvfd_cryo1.zmin < this_endz) && (this_endz < fvfd_cryo1.zmax);
 
       return (startx && endx && starty && endy && startz && endz);
     }

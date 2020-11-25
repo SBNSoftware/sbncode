@@ -32,7 +32,8 @@ namespace ana{
   const SpillCut kCRTHitVetoFD(
       [](const caf::SRSpillProxy* sr){
         for (auto const& crtHit: sr->crt_hits){
-          if (crtHit.time > 0. && crtHit.time < 1.8 && crtHit.pe>100) // no discriminating in position, yet.
+          auto thistime = crtHit.time - 1600.; // manually shift to bring beam spill start to zero
+          if (thistime > 0. && thistime < 1.8 && crtHit.pe>100) // no discriminating in position, yet.
             return false;
         }
         return true;

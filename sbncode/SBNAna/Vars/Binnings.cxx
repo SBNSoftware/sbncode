@@ -21,8 +21,8 @@ namespace ana
   const Binning kPositionXNDBinning = Binning::Simple(40, avnd.xmin, avnd.xmax);
   const Binning kPositionYNDBinning = Binning::Simple(40, avnd.ymin, avnd.ymax);
   const Binning kPositionZNDBinning = Binning::Simple(50, avnd.zmin, avnd.zmax);
-  const Binning kPositionXFDBinning = Binning::Simple(50, avfd_cryo1.xmin, avfd_cryo1.xmax);
+  const Binning kPositionXFDBinning = Binning::Simple(47, avfd_cryo1.xmin, avfd_cryo1.xmax);
   const Binning kPositionYFDBinning = Binning::Simple(35, avfd_cryo1.ymin, avfd_cryo1.ymax);
-  const Binning kPositionZFDBinning = Binning::Simple(200, avfd_cryo1.zmin, avfd_cryo1.zmax);
+  const Binning kPositionZFDBinning = Binning::Simple(90, avfd_cryo1.zmin, avfd_cryo1.zmax);
 
 }
