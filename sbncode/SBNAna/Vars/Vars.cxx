@@ -74,9 +74,10 @@ namespace ana
   {
     std::vector<double> times;
     for(const auto& hit : sr->crt_hits){
-      times.push_back(hit.time);
+      auto thistime = hit.time - 1600.;
+      times.push_back(thistime);
     }
-    return times-1600.;
+    return times;
   });
 
   // // For when we have spill beam mode info
