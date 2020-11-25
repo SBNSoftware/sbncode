@@ -71,5 +71,5 @@ namespace ana
   const Binning kTrueEnergyBins = TrueEnergyBins();
 
   // 2km/GeV is the empirical largest L/E at Icarus
-  const Binning kTrueLOverEBins = Binning::Simple(100, 0, 2);
+  const Binning kTrueLOverEBins = Binning::Simple(200, 0, 2);
 }
