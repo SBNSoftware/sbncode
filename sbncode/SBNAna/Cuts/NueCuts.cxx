@@ -72,7 +72,14 @@ namespace ana{
   const Cut kNueNumShowersCut(
     [](const caf::SRSliceProxy* slc)
     {
-      return ((unsigned int)kRecoShowers_EnergyCut(slc) > 0);
+      return ((unsigned int)kRecoShowers_EnergyCut(slc) == 1);
+    }
+    );
+
+  const Cut kNueHasTrackCut(
+    [](const caf::SRSliceProxy* slc)
+    {
+      return slc->reco.ntrk > 0;
     }
     );
 

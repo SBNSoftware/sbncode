@@ -7,8 +7,12 @@ namespace ana
 {
   extern const Cut kRecoShower;
   extern const Cut kNueBasicCut;
+
+  extern const Cut kNueHasTrackCut;
   extern const Cut kNueTrackLenCut;
+
   extern const Cut kNueNumShowersCut;
+
   extern const Cut kShowerEnergyCut;
   extern const Cut kShowerdEdxCut;
   extern const Cut kShowerConvGapCut;

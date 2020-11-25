@@ -80,6 +80,6 @@ namespace ana{
        });
   const Cut kSlcFlashMatchCut([](const caf::SRSliceProxy *slc)
        {
-         return (kSlcHasFlashMatch(slc) && slc->fmatch.score>0 && slc->fmatch.score<5);
+         return (kSlcHasFlashMatch(slc) && slc->fmatch.score>0 && slc->fmatch.score<6);
        });
 } // namespace
