@@ -8,6 +8,7 @@
 #include "CAFAna/Analysis/ExpInfo.h"
 #include "CAFAna/Analysis/Surface.h"
 #include "CAFAna/Systs/SBNWeightSysts.h"
+#include "CAFAna/Systs/SBNFluxSysts.h"
 using namespace ana;
 
 #include "OscLib/IOscCalculator.h"
@@ -53,7 +54,8 @@ void SpectrumPlots(const PredictionInterp* p, const ISyst* s, double pot, const 
 
 void syst_contour()
 {
-  const std::vector<const ISyst*>& systs = GetSBNWeightSysts();
+  std::vector<const ISyst*> systs = GetSBNWeightSysts();
+  for(const ISyst* s: GetSBNFluxHadronSysts(30)) systs.push_back(s);
 
   TFile fin("cafe_state_syst_numu.root");
 
@@ -76,13 +78,21 @@ void syst_contour()
 
   osc::NoOscillations unosc;
   for(const ISyst* s: systs){
-    SpectrumPlots(p_nd, s, sbndPOT, "nd");
-    SpectrumPlots(p_fd, s, icarusPOT, "fd");
-    SpectrumPlots(p_ub, s, uboonePOT, "ub");
-
     osc::NoOscillations unosc;
-    if(fabs(p_fd->PredictSyst(&unosc, SystShifts(s, +1)).Integral(1e20)/p_fd->Predict(&unosc).Integral(1e20)-1) > .01) bigsysts.push_back(s);
-  } // end for s
+
+    TH1D* h0 = p_fd->Predict(&unosc).ToTH1(1e20);
+    TH1D* h1 = p_fd->PredictSyst(&unosc, SystShifts(s, +2)).ToTH1(1e20);
+    TH1D* h2 = p_fd->PredictSyst(&unosc, SystShifts(s, -2)).ToTH1(1e20);
+
+    // We can always tune these values                                                             
+    if( (fabs(h1->Integral()/h0->Integral()-1) > .005)
+	||(fabs(h2->Integral()/h0->Integral()-1) > .005)
+	||(fabs(h1->GetMean()/h0->GetMean()-1) > .001)
+	||(fabs(h2->GetMean()/h0->GetMean()-1) > .001)
+	||(fabs(h1->GetRMS()/h0->GetRMS()-1) > .001)
+	||(fabs(h2->GetRMS()/h0->GetRMS()-1) > .001) )
+      bigsysts.push_back(s);
+  } // end for s 
 
   std::cout << bigsysts.size() << " big systs out of " << systs.size() << std::endl;
   for(const ISyst* s: bigsysts) std::cout << s->ShortName() << " ";
