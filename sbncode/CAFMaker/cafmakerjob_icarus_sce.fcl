@@ -7,10 +7,18 @@ physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGausSCE"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGausSCE"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausSCECalo"
 physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausSCEPid"
-# physics.producers.mycafmaker.FlashMatchLabel:   "fmatch"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausSCECryo1
+
+physics.producers.fmatchCryo0.PandoraProducer:    "pandoraGausSCECryo0"
+physics.producers.fmatchCryo0.TrackProducer:      "pandoraTrackGausSCECryo0"
+physics.producers.fmatchCryo0.CaloProducer:       "pandoraGausSCECaloCryo0"
+physics.producers.fmatchCryo0.SpacePointProducer: "pandoraGausSCECryo0"
+physics.producers.fmatchCryo1.PandoraProducer:    "pandoraGausSCECryo1"
+physics.producers.fmatchCryo1.TrackProducer:      "pandoraTrackGausSCECryo1"
+physics.producers.fmatchCryo1.CaloProducer:       "pandoraGausSCECaloCryo1"
+physics.producers.fmatchCryo1.SpacePointProducer: "pandoraGausSCECryo1"
