@@ -13,10 +13,6 @@
 
 int main(int argc, char** argv)
 {
-  // Have to do it here since we didn't figure out how to statically link it
-  // yet
-  //  gSystem->Load("libsbnanalysis_Event.so");
-
   if(argc != 3){
     std::cout << "Usage: convert_to_flat input.events.root output.flat.root"
               << std::endl;
