@@ -318,11 +318,13 @@ void FlashPredict::produce(art::Event & e)
   double highedge = _flash_time + fLightWindowEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
 
+  auto peakOutsideEdges =
+    [lowedge, highedge](const recob::OpHit& oph)-> bool
+      { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
   // only use optical hits around the flash time
   opHits.erase(
     std::remove_if(opHits.begin(), opHits.end(),
-                   [lowedge, highedge](const recob::OpHit& oph)-> bool
-                   { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); }),
+                   peakOutsideEdges),
     opHits.end());
 
   std::set<unsigned> tpcWithOpH;
@@ -737,8 +739,7 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
     if ((pfpPDGC == 12) ||
         (pfpPDGC == 14) ||
         (pfpPDGC == 16)) {
-     return true;
-      break;
+      return true;
     }
   }
   return false;
@@ -747,12 +748,16 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
 void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
                                       art::Handle<std::vector<recob::OpHit>>& ophit_h)
 {
+  double s = fBeamWindowStart;
+  double e = fBeamWindowEnd;
   // copy ophits that are inside the time window and with PEs
+  auto peakInWindow =
+    [s, e](const recob::OpHit& oph)-> bool
+      {return ((oph.PeakTime() > s) &&
+               (oph.PeakTime() < e) &&
+               (oph.PE() > 0)); };
   auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
-                         [this](const recob::OpHit& oph)-> bool
-                         {return ((oph.PeakTime() > fBeamWindowStart) &&
-                                  (oph.PeakTime() < fBeamWindowEnd)   &&
-                                  (oph.PE() > 0)); });
+                         peakInWindow);
   opHits.resize(std::distance(opHits.begin(), it));
 }
 
