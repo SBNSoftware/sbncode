@@ -1,15 +1,16 @@
 FILE(GLOB SR_DEPENDENCIES $ENV{SBNCODE_DIR}/sbncode/StandardRecord/*.h)
 
-add_custom_command(# Rebuild if Event.hh or the script itself change
+add_custom_command(# Rebuild if anything in StandardRecord/ changes
                    DEPENDS ${SR_DEPENDENCIES}
-                           ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
-                   OUTPUT FlatRecord.cxx
-                   COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/gen_flatrecord.py
+                   OUTPUT FlatRecord.cxx FlatRecord.h FwdDeclare.h
+                   COMMAND gen_srproxy --flat -i sbncode/StandardRecord/StandardRecord.h -o FlatRecord --target caf::StandardRecord --include-path $ENV{SBNCODE_DIR}:$ENV{ROOT_INC} -op sbncode/FlatMaker --prolog $ENV{SBNCODE_DIR}/sbncode/FlatMaker/Prolog.h
                    # Couldn't figure out how to make install() install the
                    # headers so do it directly here
                    COMMAND mkdir -p $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/FlatMaker/
-                   COMMAND cp Flat*.h $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/FlatMaker/
+                   COMMAND cp FlatRecord.h FwdDeclare.h $ENV{MRB_INSTALL}/sbncode/$ENV{SBNCODE_VERSION}/include/FlatMaker/
   )
+
+include_directories($ENV{SRPROXY_INC})
 
 art_make_library(LIBRARY_NAME FlatMaker
                  SOURCE       FlatRecord.cxx
@@ -19,6 +20,4 @@ art_make_library(LIBRARY_NAME FlatMaker
 art_make_exec(NAME convert_to_flat
               SOURCE convert_to_flat.cc
               LIBRARIES FlatMaker CAFAnaCore
-# sbnanalysis doesn't participate fully in the mrb build. Skip this for now
-#                        sbnanalysis_Event
                         ${ROOT_BASIC_LIB_LIST})
