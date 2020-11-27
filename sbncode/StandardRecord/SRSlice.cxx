@@ -7,7 +7,7 @@
 #include "sbncode/StandardRecord/SRSlice.h"
 
 #include <limits>
-#include <bits/stdc++.h>
+#include <climits>
 
 namespace caf
 {

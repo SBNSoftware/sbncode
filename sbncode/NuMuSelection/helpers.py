@@ -22,3 +22,23 @@ def broadcast_ak(var, nbroadcast):
 # Group a numpy array (var) into an awkward array by groups (ngroup)
 def group(var, ngroup):
     return ak.JaggedArray.fromcounts(ngroup, var)
+
+# normalize
+def NeutrinoPOT(data):
+    _, ind = np.unique(data["hdr.subrun"] + data["hdr.run"]*100, return_index=True)
+    return np.sum(data["hdr.pot"][ind])
+
+def NGenEvt(data):
+    _, ind = np.unique(data["hdr.subrun"] + data["hdr.run"]*100, return_index=True)
+    return np.sum(data["hdr.ngenevt"][ind])
+
+def NEvt(data):
+    return len(data["hdr.evt"])
+
+    
+POT_PER_SPILL = 5e12
+def CosmicPOT(cosmic, nu):
+    neutrino_per_spill = (NGenEvt(nu) * POT_PER_SPILL) / NeutrinoPOT(nu)
+    _, ind = np.unique(nu["hdr.subrun"] + nu["hdr.run"]*100, return_index=True)
+    n_cosmic_evt = NGenEvt(cosmic)
+    return n_cosmic_evt * POT_PER_SPILL / (1. - neutrino_per_spill)

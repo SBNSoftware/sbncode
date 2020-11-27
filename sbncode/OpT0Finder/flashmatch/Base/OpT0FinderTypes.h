@@ -75,9 +75,9 @@ namespace flashmatch {
     {}
     /// Alternative ctor
     QPoint_t(double xvalue,
-	     double yvalue,
-	     double zvalue,
-	     double qvalue)
+             double yvalue,
+             double zvalue,
+             double qvalue)
       : x(xvalue)
       , y(yvalue)
       , z(zvalue)
@@ -151,7 +151,7 @@ namespace flashmatch {
     double score;  ///< floating point representing the "goodness" (algorithm dependent)
     QPoint_t tpc_point; ///< estimated & matched 3D flash hypothesis point from TPC information
     QPoint_t tpc_point_err; ///< error on the estimated point
-	unsigned int duration;  ///< Computation time of the match algorithm on this match (ns)
+    unsigned int duration;  ///< Computation time of the match algorithm on this match (ns)
     unsigned int num_steps; ///< Number of MIGRAD steps
     std::vector<double> hypothesis;       ///< Hypothesis flash object
     /// Default ctor assigns invalid values
@@ -159,15 +159,15 @@ namespace flashmatch {
     { tpc_id = kINVALID_ID; flash_id = kINVALID_ID; score = -1; }
     /// Alternative ctor
     FlashMatch_t(const ID_t& tpc_id_value,
-		 const ID_t& flash_id_value,
-		 const double& score_value) : hypothesis()
+                 const ID_t& flash_id_value,
+                 const double& score_value) : hypothesis()
     { tpc_id = tpc_id_value; flash_id = flash_id_value; score = score_value; }
 #ifndef __CINT__ // hyde move from fucking CINT cuz it's fucked
     /// Alternative ctor
     FlashMatch_t(const ID_t& tpc_id_value,
-		 const ID_t& flash_id_value,
-		 const double& score_value,
-		 std::vector<double>&& hypo) : hypothesis(std::move(hypo))
+                 const ID_t& flash_id_value,
+                 const double& score_value,
+                 std::vector<double>&& hypo) : hypothesis(std::move(hypo))
     { tpc_id = tpc_id_value; flash_id = flash_id_value; score = score_value; }
 #endif
   };
@@ -207,12 +207,12 @@ namespace flashmatch {
 
     const std::string kStringPrefix[kMSG_TYPE_MAX] =
       {
-	"\033[94m     [DEBUG]  \033[00m", ///< DEBUG message prefix
-	"\033[92m      [INFO]  \033[00m", ///< INFO message prefix
-	"\033[95m    [NORMAL]  \033[00m", ///< NORMAL message prefix
-	"\033[93m   [WARNING]  \033[00m", ///< WARNING message prefix
-	"\033[91m     [ERROR]  \033[00m", ///< ERROR message prefix
-	"\033[5;1;33;41m [EXCEPTION]  \033[00m"  ///< CRITICAL message prefix
+        "\033[94m     [DEBUG]  \033[00m", ///< DEBUG message prefix
+        "\033[92m      [INFO]  \033[00m", ///< INFO message prefix
+        "\033[95m    [NORMAL]  \033[00m", ///< NORMAL message prefix
+        "\033[93m   [WARNING]  \033[00m", ///< WARNING message prefix
+        "\033[91m     [ERROR]  \033[00m", ///< ERROR message prefix
+        "\033[5;1;33;41m [EXCEPTION]  \033[00m"  ///< CRITICAL message prefix
       };
     ///< Prefix of message
   }

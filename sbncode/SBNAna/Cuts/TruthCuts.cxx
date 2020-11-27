@@ -1,4 +1,5 @@
 #include "SBNAna/Cuts/TruthCuts.h"
+#include "SBNAna/Vars/TruthVars.h"
 #include "SBNAna/Cuts/VolumeDefinitions.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
@@ -8,6 +9,12 @@ namespace ana{
   const Cut kTrueActiveVolumeND(
     [](const caf::SRSliceProxy* slc){
       return kHasNu(slc) && PtInVolAbsX(slc->truth.position, avnd);
+    }
+    );
+
+  const Cut kTrueFiducialVolumeND(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, fvnd);
     }
     );
 
@@ -57,4 +64,8 @@ namespace ana{
   });
 
 
+  const Cut kVtxDistMagCut([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return (kTruthVtxDistMag(slc) < 1);
+  });
 }

@@ -87,7 +87,7 @@ namespace caf
     Atom<string> FlashMatchLabel {
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
-      "fmatch"
+      "fmatch" // same for icarus and sbnd
     };
 
     Atom<string> RecoTrackLabel {
@@ -107,18 +107,6 @@ namespace caf
       Comment("Base label of shower selection vars producer."),
       "pandoraShowerSelectionVars"
     };
-
-    // Atom<string> RecoShowerEMLabel {
-    //   Name("RecoShowerEMLabel"),
-    //   Comment("Base label of reco-base em shower producer."),
-    //   "emshower"
-    // };
-
-    // Atom<string> RecoShowerPandLabel {
-    //   Name("RecoShowerPandLabel"),
-    //   Comment("Base label of reco-base pandora shower producer."),
-    //   "pandoraShower"
-    // };
 
     Atom<string> TrackCaloLabel {
       Name("TrackCaloLabel"),
@@ -159,7 +147,7 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crthit"
+      "crthit" // same for icarus and sbnd
     };
     
     Atom<string> FlashTrigLabel {
@@ -170,7 +158,8 @@ namespace caf
 
     Atom<bool> CRTHitUseTS0 {
       Name("CRTHitUseTS0"),
-      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
+      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit"),
+      false
     };
 
     Atom<string> SimChannelLabel {

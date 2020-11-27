@@ -5,141 +5,218 @@
 
 namespace ana
 {
+  // Get the Largest shower in the slice
+  const Var kLargestRecoShowerIdx(
+      [](const caf::SRSliceProxy *slc)
+      {
+        int bestIdx(-1);
+        double maxEnergy(-1);
+
+        for (unsigned int i=0; i< slc->reco.nshw; i++) {
+          auto const& shw = slc->reco.shw[i];
+          if (shw.bestplane_energy > maxEnergy){
+            bestIdx = i;
+            maxEnergy = shw.bestplane_energy;
+          }
+        }
+        return bestIdx;
+      });
 
   // Currently assumes shw 0 is the primary
   const Var kRecoShower_BestEnergy(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double energy = -5.0;
-			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].bestplane_energy;
-			  }
-			  return energy;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double energy = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          energy = slc->reco.shw[largestShwIdx].bestplane_energy;
+        }
+        return energy;
+      });
+
+  // Currently assumes shw 0 is the primary
+  const Var kRecoShower_BestdEdx(
+      [](const caf::SRSliceProxy *slc)
+      {
+        double dedx = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 && slc->reco.shw[largestShwIdx].bestplane_dEdx>0){
+          dedx = slc->reco.shw[largestShwIdx].bestplane_dEdx;
+        }
+        return dedx;
+      });
 
   const Var kRecoShower_ConversionGap(
-			[](const caf::SRSliceProxy *slc)
-			{
-                          double gap = -5.0;
-                          if ( slc->reco.nshw ){
-                            double x = slc->vertex.x - slc->reco.shw[0].start.x;
-                            double y = slc->vertex.y - slc->reco.shw[0].start.y;
-                            double z = slc->vertex.z - slc->reco.shw[0].start.z;
-                            gap  = sqrt(x*x + y*y + z*z);	
-                          }
-
-			  return gap;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double gap = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          gap = slc->reco.shw[largestShwIdx].conversion_gap;
+        }
+        return gap;
+      });
 
   const Var kRecoShower_Density(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double density = -5.0;
-			  if ( slc->reco.nshw && slc->reco.shw[0].len >0 ){
-			    density = slc->reco.shw[0].bestplane_energy / slc->reco.shw[0].len;
-			  }
-			  return density;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double density = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          density = slc->reco.shw[largestShwIdx].density;
+        }
+        return density;
+      });
 
   const Var kRecoShower_Energy(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double energy = -5.0;
-			  if ( slc->reco.nshw ){
-			    energy = slc->reco.shw[0].energy_plane1; // so far taking whatever plane 1 is and first shw
-			    // energy = slc->reco.shw[0].energy.x; // so far taking whatever plane 1 is and first shw
-			  }
-			  return energy;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double energy = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          energy = slc->reco.shw[largestShwIdx].energy_plane1; // so far taking whatever plane 1 is and first shw
+          // energy = slc->reco.shw[largestShwIdx].energy.x; // so far taking whatever plane 1 is and first shw
+        }
+        return energy;
+      });
 
   const Var kRecoShower_Length(
-			       [](const caf::SRSliceProxy *slc)
-			       {
-				 double len = -5.0;
-				 if ( slc->reco.nshw ){
-				   len = slc->reco.shw[0].len;
-				 }
-				 return len;
-			       });
+             [](const caf::SRSliceProxy *slc)
+             {
+         double len = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+           len = slc->reco.shw[largestShwIdx].len;
+         }
+         return len;
+             });
 
     const Var kRecoShower_OpenAngle(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double openangle = -5.0;
-			  if ( slc->reco.nshw ){
-			    openangle = slc->reco.shw[0].open_angle;
-			  }
-			  return openangle;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double openangle = -5.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          openangle = slc->reco.shw[largestShwIdx].open_angle;
+        }
+        return openangle;
+      });
 
 
     const Var kRecoShower_StartX(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.x;
-			  }
-			  return vtx;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double vtx = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          vtx = slc->reco.shw[largestShwIdx].start.x;
+        }
+        return vtx;
+      });
 
     const Var kRecoShower_StartY(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.y;
-			  }
-			  return vtx;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double vtx = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          vtx = slc->reco.shw[largestShwIdx].start.y;
+        }
+        return vtx;
+      });
 
     const Var kRecoShower_StartZ(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double vtx = -9999.0;
-			  if ( slc->reco.nshw ){
-			    vtx = slc->reco.shw[0].start.z;
-			  }
-			  return vtx;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double vtx = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          vtx = slc->reco.shw[largestShwIdx].start.z;
+        }
+        return vtx;
+      });
 
     const Var kRecoShower_EndX(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.x;
-			    double dir = slc->reco.shw[0].dir.x;
-			    double len = slc->reco.shw[0].len;
-			    end = start + (dir*len);
-			  }
-			  return end;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double end = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          double start = slc->reco.shw[largestShwIdx].start.x;
+          double dir = slc->reco.shw[largestShwIdx].dir.x;
+          double len = slc->reco.shw[largestShwIdx].len;
+          end = start + (dir*len);
+        }
+        return end;
+      });
 
     const Var kRecoShower_EndY(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.y;
-			    double dir = slc->reco.shw[0].dir.y;
-			    double len = slc->reco.shw[0].len;
-			    end = start + (dir*len);
-			  }
-			  return end;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double end = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          double start = slc->reco.shw[largestShwIdx].start.y;
+          double dir = slc->reco.shw[largestShwIdx].dir.y;
+          double len = slc->reco.shw[largestShwIdx].len;
+          end = start + (dir*len);
+        }
+        return end;
+      });
 
     const Var kRecoShower_EndZ(
-			[](const caf::SRSliceProxy *slc)
-			{
-			  double end = -9999.0;
-			  if ( slc->reco.nshw ){
-			    double start = slc->reco.shw[0].start.z;
-			    double dir = slc->reco.shw[0].dir.z;
-			    double len = slc->reco.shw[0].len;
-			    end = start + (dir*len);
-			  }
-			  return end;
-			});
+      [](const caf::SRSliceProxy *slc)
+      {
+        double end = -9999.0;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          double start = slc->reco.shw[largestShwIdx].start.z;
+          double dir = slc->reco.shw[largestShwIdx].dir.z;
+          double len = slc->reco.shw[largestShwIdx].len;
+          end = start + (dir*len);
+        }
+        return end;
+      });
+
+    const Var kRecoShowers_EnergyCut(
+      [](const caf::SRSliceProxy *slc)
+      {
+        unsigned int counter(0);
+        for (auto const& shw : slc->reco.shw) {
+          if (shw.bestplane_energy > 200)
+           ++counter;
+        }
+        return counter;
+      });
+
+  const Var kLongestTrackIdx(
+      [](const caf::SRSliceProxy *slc)
+      {
+        int bestIdx(-1);
+        double maxLength(-1);
+
+        for (unsigned int i=0; i< slc->reco.ntrk; i++) {
+          auto const& trk = slc->reco.trk[i];
+          if (trk.len > maxLength){
+            bestIdx = i;
+            maxLength = trk.len;
+          }
+        }
+        return bestIdx;
+      });
+
+
+    const Var kLongestTrackLength(
+      [](const caf::SRSliceProxy *slc)
+      {
+        double length = -5.f;
+        const int longestTrackIdx(kLongestTrackIdx(slc));
+        if ( longestTrackIdx!=-1 ){
+          length = slc->reco.trk[longestTrackIdx].len;
+        }
+        return length;
+      });
+
+
 
 }

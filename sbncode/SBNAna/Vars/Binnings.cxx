@@ -1,49 +1,28 @@
 #include "CAFAna/Core/Binning.h"
 #include "SBNAna/Vars/Binnings.h"
 
-
-// Assume these fidutial volumes for plotting purposes, different from active volume boundaries
-// x boundary reflected on the cathode atm so we'll use abs values
-// {xmin = -175, xmax = -1.5}, {xmin = 1.5, xmax = 175}
-std::map<std::string,double> fvnd =
-{
-	{"xmin", 20.},
-	{"xmax", 180.},
-	{"ymin", -200.},
-	{"ymax", 200.},
-	{"zmin", 50.},
-	{"zmax", 450.}
-};
-
-// icarus assumed fidutial volume cryo 1
-std::map<std::string,double> fvfd_cryo1 =
-{
-	{"xmin", -400.},
-	{"xmax", -100.},
-	{"ymin", -200.},
-	{"ymax", 150.},
-	{"zmin", 1000.},
-	{"zmax", 1000.}
-};
-
-// icarus fidutial volume cryo 2 same as cryo 1 atm
-std::map<std::string,double> fvfd_cryo2 = fvfd_cryo1;
-
+#include "SBNAna/Cuts/VolumeDefinitions.h"
 
 namespace ana
 {
 
-  const Binning kNueEnergyBinning  	= Binning::Simple( 20, 0, 5);
-  const Binning kNumuEnergyBinning  = Binning::Simple( 20, 0, 5);
+  const std::vector<double> kLowEnergyEdges = {100., 200., 300., 400., 500., 750.,
+					       1000., 1250., 1500., 1750.,
+					       2000., 2250., 2500., 2750.,
+					       3000., 3250., 3500., 3750.,
+					       4000., 4250., 4500., 4750., 5000.}; 
+  
+  const Binning kNueEnergyBinning   = Binning::Simple( 20, 0., 5000.); // MeV
+  const Binning kNumuEnergyBinning  = Binning::Simple( 20, 0., 5000.); // MeV
 
-  const Binning kLowEnergyBinning  = Binning::Custom({0.1, 0.2, 0.3, 0.4, 0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.});
+  const Binning kLowEnergyBinning  = Binning::Custom( kLowEnergyEdges ); // MeV
 
   // Position binnings
-  const Binning kPositionXNDBinning = Binning::Simple(20, fvnd["xmin"], fvnd["xmax"]);
-  const Binning kPositionYNDBinning = Binning::Simple(40, fvnd["ymin"], fvnd["ymax"]);
-  const Binning kPositionZNDBinning = Binning::Simple(50, fvnd["zmin"], fvnd["zmax"]);
-  const Binning kPositionXFDBinning = Binning::Simple(50, fvfd_cryo1["xmin"], fvfd_cryo1["xmax"]);
-  const Binning kPositionYFDBinning = Binning::Simple(35, fvfd_cryo1["ymin"], fvfd_cryo1["ymax"]);
-  const Binning kPositionZFDBinning = Binning::Simple(200, fvfd_cryo1["zmin"], fvfd_cryo1["zmax"]);
+  const Binning kPositionXNDBinning = Binning::Simple(40, avnd.xmin, avnd.xmax);
+  const Binning kPositionYNDBinning = Binning::Simple(40, avnd.ymin, avnd.ymax);
+  const Binning kPositionZNDBinning = Binning::Simple(50, avnd.zmin, avnd.zmax);
+  const Binning kPositionXFDBinning = Binning::Simple(47, avfd_cryo1.xmin, avfd_cryo1.xmax);
+  const Binning kPositionYFDBinning = Binning::Simple(35, avfd_cryo1.ymin, avfd_cryo1.ymax);
+  const Binning kPositionZFDBinning = Binning::Simple(90, avfd_cryo1.zmin, avfd_cryo1.zmax);
 
 }

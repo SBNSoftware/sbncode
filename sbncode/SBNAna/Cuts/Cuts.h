@@ -11,9 +11,17 @@ namespace ana{
   extern const SpillCut kFlashTrigger;
 
   extern const SpillCut kCRTHitVetoND;
+  extern const SpillCut kCRTHitVetoFD;
 
   extern const Cut kActiveVolumeND;
+  extern const Cut kFiducialVolumeND;
+
   extern const Cut kActiveVolumeFDCryo1;
   extern const Cut kActiveVolumeFDCryo2;
 
+  extern const Cut kSlcIsRecoNu;
+  extern const Cut kSlcNuScoreCut;
+
+  extern const Cut kSlcHasFlashMatch;
+  extern const Cut kSlcFlashMatchCut;
 } // namespace
