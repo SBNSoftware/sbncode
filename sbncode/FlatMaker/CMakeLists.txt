@@ -17,7 +17,7 @@ art_make_library(LIBRARY_NAME FlatMaker
                  LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER} # CAFAnaCore
                  )
 
-art_make_exec(NAME convert_to_flat
-              SOURCE convert_to_flat.cc
+art_make_exec(NAME flatten_caf
+              SOURCE flatten_caf.cc
               LIBRARIES FlatMaker CAFAnaCore
                         ${ROOT_BASIC_LIB_LIST})
