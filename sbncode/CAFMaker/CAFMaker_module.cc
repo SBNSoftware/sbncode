@@ -129,6 +129,9 @@ class CAFMaker : public art::EDProducer {
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
+                     
+  bool fFirstInSubRun;
+  bool fFirstInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
@@ -288,6 +291,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
+  fFirstInFile = true;
 
 }
 
@@ -315,6 +319,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fTotalPOT += fSubRunPOT;
   }
   std::cout << "POT: " << fSubRunPOT << std::endl;
+
+  fFirstInSubRun = true;
 
 
 }
@@ -344,6 +350,8 @@ void CAFMaker::InitializeOutfile() {
   fSubRunPOT = 0;
   fTotalSinglePOT = 0;
   fTotalEvents = 0;
+  fFirstInFile = false;
+  fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
 
@@ -1009,10 +1017,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.pot     = fSubRunPOT;
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
+  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.first_in_subrun = fFirstInSubRun;
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
+
+  // reset
+  fFirstInFile = false;
+  fFirstInSubRun = false;
 
   // calculate information that needs information from all of the slices
   // SetNuMuCCPrimary(recs, srneutrinos);
