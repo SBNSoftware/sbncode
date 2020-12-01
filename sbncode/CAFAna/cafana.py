@@ -18,7 +18,7 @@ ROOT.gApplication.ExecuteFile('$MRB_BUILDDIR/sbncode/bin/rootlogon.C')
 print('  in python')
 ROOT.gROOT.ForceStyle()
 
-print('Load libs...')
+print('Load libraries...')
 for lib in ['Minuit2',
             'StandardRecordProxy',
             'CAFAnaCore',
@@ -28,15 +28,19 @@ for lib in ['Minuit2',
             'CAFAnaExtrap',
             'CAFAnaPrediction',
             'CAFAnaExperiment',
-            'CAFAnaAnalysis']:
+            'CAFAnaAnalysis',
+            'SBNAnaVars',
+            'SBNAnaCuts']:
     print(' ', lib)
     ROOT.gSystem.Load('lib'+lib+'.so')
 
 
 import cppyy
 
-print('Load dictionary...')
-cppyy.load_reflection_info('libCAFAna_dict.so')
+print('Load dictionaries... (please ignore errors about .pcm files)')
+for d in ['CAFAna', 'SBNAna']:
+    print(' ', d)
+    cppyy.load_reflection_info('lib'+d+'_dict.so')
 
 class PyCAFAna:
     def __init__(self, cppyy):
@@ -78,8 +82,6 @@ class PyCAFAna:
         self._cppyy.cppdef(text)
         return getattr(self._cppyy.gbl, cut)
 
-
-# TODO simplevar. TODO cuts
 
     # If we don't provide it explicitly, assume it's from the ana namespace
     def __getattr__(self, name):
