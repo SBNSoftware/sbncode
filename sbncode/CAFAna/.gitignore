@@ -6,6 +6,10 @@ setup/
 srt/
 update-release
 
+# Reflex temporaries
+classes.h
+CAFAna_dict.cc
+
 # Temporaries
 *.eps
 *.png
