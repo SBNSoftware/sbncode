@@ -12,9 +12,11 @@ os.environ['ROOT_INCLUDE_PATH'] = \
             inc+'sbncode/CAFAna',
             os.environ['SRPROXY_INC']])
 
-print(os.environ['ROOT_INCLUDE_PATH'])
-
 import ROOT
+
+ROOT.gApplication.ExecuteFile('$MRB_BUILDDIR/sbncode/bin/rootlogon.C')
+print('  in python')
+ROOT.gROOT.ForceStyle()
 
 print('Load libs...')
 for lib in ['Minuit2',
@@ -33,7 +35,7 @@ for lib in ['Minuit2',
 
 import cppyy
 
-print('Load dict...')
+print('Load dictionary...')
 cppyy.load_reflection_info('libCAFAna_dict.so')
 
 class PyCAFAna:
@@ -53,6 +55,29 @@ class PyCAFAna:
         text = '#include "StandardRecord/Proxy/SRProxy.h"\ndouble '+var+'_func(const caf::SRSpillProxy* srp){\nconst caf::SRSpillProxy& sr = *srp;\n'+body+'\n}\nconst ana::Var '+var+'('+var+'_func);'
         self._cppyy.cppdef(text)
         return getattr(self._cppyy.gbl, var)
+
+    def SimpleSliceVar(self, name):
+        '''Equivalent of the SIMPLEVAR() macro'''
+        return self.CSliceVar('return sr.'+name+';')
+
+    def SimpleSpillVar(self, name):
+        '''Equivalent of the SIMPLEVAR() macro'''
+        return self.CSpillVar('return sr.'+name+';')
+
+    def CSliceCut(self, body):
+        '''Construct a new Cut given the C++ body as a string'''
+        cut = 'pycut_'+self._cppyy.gbl.ana.UniqueName()
+        text = '#include "StandardRecord/Proxy/SRProxy.h"\nbool '+cut+'_func(const caf::SRSliceProxy* srp){\nconst caf::SRSliceProxy& sr = *srp;\n'+body+'\n}\nconst ana::Cut '+cut+'('+cut+'_func);'
+        self._cppyy.cppdef(text)
+        return getattr(self._cppyy.gbl, cut)
+
+    def CSpillCut(self, body):
+        '''Construct a new Cut given the C++ body as a string'''
+        cut = 'pycut_'+self._cppyy.gbl.ana.UniqueName()
+        text = '#include "StandardRecord/Proxy/SRProxy.h"\nbool '+cut+'_func(const caf::SRSpillProxy* srp){\nconst caf::SRSpillProxy& sr = *srp;\n'+body+'\n}\nconst ana::Cut '+cut+'('+cut+'_func);'
+        self._cppyy.cppdef(text)
+        return getattr(self._cppyy.gbl, cut)
+
 
 # TODO simplevar. TODO cuts
 
