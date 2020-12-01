@@ -29,6 +29,7 @@ add_subdirectory(bin)
 #cet_script(cafe)
 # same place as cafe script so we can find it
 #cet_script(load_cafana_libs.C)
+cet_script(cafana.py)
 cet_script(rootlogon.C)
 
 install_headers()
