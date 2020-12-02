@@ -545,11 +545,8 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
        sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
     _flash_unpe = unpe_tot * fPEscale;
     _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
-    icountPE = std::round(_flash_pe);
-    //   std::cout << "itpc:\t" << itpc << "\n";
-    //   std::cout << "_flash_pe:\t" << _flash_pe << "\n";
-    //   std::cout << "_flash_y:\t" << _flash_y << "\n";
-    //   std::cout << "_flash_z:\t" << _flash_z << "\n";
+    if (fSBND && fUseUncoatedPMT) icountPE = std::round(_flash_pe + _flash_unpe);
+    else icountPE = std::round(_flash_pe);
   }
   else {
     std::string channels;
