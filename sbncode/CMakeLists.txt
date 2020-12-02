@@ -21,6 +21,7 @@ cet_find_library( BOOST_DATE_TIME     NAMES boost_date_time     PATHS ENV BOOST_
 
 find_ups_product( srproxy )
 find_ups_product( osclib )
+find_ups_product( cafanacore )
 
 add_subdirectory(EventWeight)
 add_subdirectory(OpDet)

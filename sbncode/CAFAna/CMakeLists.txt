@@ -1,5 +1,5 @@
 # CAFAna starts all its includes with just CAFAna/ -- allow that
-include_directories(..)
+include_directories(BEFORE ..)
 
 # But we also want to find the generated SRProxy.h under "StandardRecord/Proxy"
 include_directories($ENV{MRB_BUILDDIR}/sbncode/sbncode/CAFAna/)

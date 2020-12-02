@@ -12,6 +12,8 @@ art_make(LIBRARY_NAME CAFAnaCore
 #                       ${OSCLIB}
                        -L$ENV{OSCLIB_LIB}
                        OscLib
+                       -L$ENV{CAFANACORE_LIB}
+		       CAFAnaCoreExt
                        pthread
                        ${ROOT_BASIC_LIB_LIST}
                        ${IFDH}

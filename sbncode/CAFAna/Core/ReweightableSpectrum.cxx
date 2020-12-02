@@ -488,7 +488,7 @@ namespace ana
     for(int i = 0; ; ++i){
       TDirectory* subdir = dir->GetDirectory(TString::Format("bins%d", i));
       if(!subdir) break;
-      bins.push_back(*Binning::LoadFrom(subdir));
+      bins.push_back(*Binning::LoadFrom(dir, TString::Format("bins%d", i).Data()));
       TObjString* label = (TObjString*)dir->Get(TString::Format("label%d", i));
       labels.push_back(label ? label->GetString().Data() : "");
     }

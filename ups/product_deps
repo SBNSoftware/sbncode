@@ -40,6 +40,7 @@ sbndaq_artdaq_core  v0_07_02_of0
 # For CAFAna
 srproxy          v00.16
 osclib           v00.09
+cafanacore       v01.11
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -48,11 +49,11 @@ cetbuildtools v7_17_01 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     sbndaq_artdaq_core  srproxy osclib         notes
-e19:debug     e19:debug   e19:debug  e19:debug		 py3     e19:debug:stan -nq-
-e19:prof      e19:prof    e19:prof   e19:prof		 py3     e19:prof:stan  -nq-
-c7:debug      c7:debug    c7:debug   c7:debug		 py3     c7:debug:stan -nq-
-c7:prof       c7:prof     c7:prof    c7:prof		 py3     c7:prof:stan  -nq-
+qualifier     larsoft     sbnobj     sbndaq_artdaq_core  srproxy osclib        cafanacore         notes
+e19:debug     e19:debug   e19:debug  e19:debug		 py3     e19:debug:stane19:debug -nq-
+e19:prof      e19:prof    e19:prof   e19:prof		 py3     e19:prof:stan e19:prof -nq-
+c7:debug      c7:debug    c7:debug   c7:debug		 py3     c7:debug:stan c7:debug -nq-
+c7:prof       c7:prof     c7:prof    c7:prof		 py3     c7:prof:stan  c7:prof -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin

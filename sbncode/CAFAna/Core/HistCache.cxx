@@ -1,3 +1,5 @@
+#pragma message "hacks in histcache"
+
 #include "CAFAna/Core/HistCache.h"
 
 #include "CAFAna/Core/Utilities.h"
@@ -24,7 +26,7 @@ namespace ana
     fgMemHandedOut += 16*bins.NBins();
 
     // Look in the cache
-    auto it = fgMap.find(bins.ID());
+    auto it = fgMap.find(0/*bins.ID()*/);
     if(it != fgMap.end()){
       TH1D* ret = it->second.release();
       fgMap.erase(it);
@@ -52,7 +54,7 @@ namespace ana
     ++fgOut;
     fgMemHandedOut += 16*xbins.NBins()*ybins.NBins();
 
-    std::pair<int, int> IDs (xbins.ID(), ybins.ID());
+    std::pair<int, int> IDs (0/*xbins.ID()*/, 0/*ybins.ID()*/);
     auto it = fgMap2D.find(IDs);
     if(it != fgMap2D.end()){
       TH2D* ret = it->second.release();
@@ -96,7 +98,7 @@ namespace ana
     ++fgIn;
     fgMemHandedOut -= 16*h->GetNbinsX();
 
-    fgMap.emplace(Binning::FromTAxis(h->GetXaxis()).ID(),
+    fgMap.emplace(0/*Binning::FromTAxis(h->GetXaxis()).ID()*/,
                   std::unique_ptr<TH1D>(h));
 
     fgEstMemUsage += 16*h->GetNbinsX();
@@ -113,7 +115,7 @@ namespace ana
     ++fgIn;
     fgMemHandedOut -= 16*h->GetNbinsX()*h->GetNbinsY();
 
-    fgMap2D.emplace(std::pair<int, int>(Binning::FromTAxis(h->GetXaxis()).ID(), Binning::FromTAxis(h->GetYaxis()).ID()), 
+    fgMap2D.emplace(std::pair<int, int>(0, 0),//Binning::FromTAxis(h->GetXaxis()).ID(), Binning::FromTAxis(h->GetYaxis()).ID()), 
                     std::unique_ptr<TH2D>(h));
 
     fgEstMemUsage += 16*h->GetNbinsX()*h->GetNbinsY();

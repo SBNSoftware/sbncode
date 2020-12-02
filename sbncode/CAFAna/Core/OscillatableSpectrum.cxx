@@ -364,7 +364,7 @@ namespace ana
 
     for(unsigned int i = 0; i < fBins.size(); ++i){
       TObjString(fLabels[i].c_str()).Write(TString::Format("label%d", i).Data());
-      fBins[i].SaveTo(dir->mkdir(TString::Format("bins%d", i)));
+      fBins[i].SaveTo(dir, TString::Format("bins%d", i).Data());
     }
 
     tmp->cd();
@@ -393,7 +393,7 @@ namespace ana
     for(int i = 0; ; ++i){
       TDirectory* subdir = dir->GetDirectory(TString::Format("bins%d", i));
       if(!subdir) break;
-      bins.push_back(*Binning::LoadFrom(subdir));
+      bins.push_back(*Binning::LoadFrom(dir, TString::Format("bins%d", i).Data()));
       TObjString* label = (TObjString*)dir->Get(TString::Format("label%d", i));
       labels.push_back(label ? label->GetString().Data() : "");
       delete subdir;
