@@ -26,21 +26,47 @@ const double sbndPOT = kPOTnominal;
 const double icarusPOT = kPOTnominal;
 const double uboonePOT = 1.3e21;
 
-void allowed()
-{
-  TFile fin("surfaces.root");  
+const std::string numuStr = "numu";
+const std::string nueStr = "nue";
 
-  Surface& surf_syst_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nd_prop_systs")).release(); 
-  Surface& surf_syst_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/fd_prop_systs")).release(); 
-  Surface& surf_syst_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/ub_prop_systs")).release(); 
-  Surface& surf_syst_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nd_fd_prop_systs")).release();
-  Surface& surf_syst_all = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/allexpt_prop_systs")).release(); 
+void allowed(const std::string anatype = numuStr)
+{
+  const char* name_in;
+  const char* name_out;
+  const char* graph_out;
+  std::string dir;
+  if (anatype == numuStr) {
+    name_in = "surfaces_numu.root";
+    name_out = "allowed_numu.pdf";
+    graph_out = "CAFAna_numu_disapp_allowed.root";
+    dir = "allowed/";
+  }
+  else if (anatype == nueStr) {
+    name_in = "surfaces_nue.root";
+    name_out = "allowed_nue.pdf";
+    graph_out = "CAFAna_nue_app_allowed.root";
+    dir = "LSND/";
+  }
+  else {
+    std::cout << "Must specifiy nue or numu" << std::endl;
+    return;
+  }
+
+  std::string suffix = "prop_systs_mec";
+
+  TFile fin(name_in);
+
+  Surface& surf_syst_nd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nd_"+suffix).c_str())).release(); 
+  Surface& surf_syst_fd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"fd_"+suffix).c_str())).release(); 
+  Surface& surf_syst_ub = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"ub_"+suffix).c_str())).release(); 
+  Surface& surf_syst_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nd_fd_"+suffix).c_str())).release();
+  Surface& surf_syst_all = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"allexpt_"+suffix).c_str())).release(); 
   
-  Surface& surf_nom_nd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nom_nd")).release(); 
-  Surface& surf_nom_ub = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nom_ub")).release(); 
-  Surface& surf_nom_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nom_fd")).release(); 
-  Surface& surf_nom_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nom_nd_fd")).release(); 
-  Surface& surf_nom = *ana::LoadFrom<Surface>(fin.GetDirectory("allowed/nom")).release(); 
+  Surface& surf_nom_nd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nom_nd").c_str())).release(); 
+  Surface& surf_nom_ub = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nom_ub").c_str())).release(); 
+  Surface& surf_nom_fd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nom_fd").c_str())).release(); 
+  Surface& surf_nom_nd_fd = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nom_nd_fd").c_str())).release(); 
+  Surface& surf_nom = *ana::LoadFrom<Surface>(fin.GetDirectory((dir+"nom").c_str())).release(); 
 
   TH2* crit5sig = Gaussian5Sigma2D(surf_nom);
   TH2* crit3sig = Gaussian3Sigma2D(surf_nom);
@@ -48,19 +74,19 @@ void allowed()
   TH2* crit95 = Gaussian95Percent2D(surf_nom);
   TH2* crit99 = Gaussian99Percent2D(surf_nom);
 
-  surf_nom.SetTitle("3 Sigma Allowed Regions");
+  surf_nom.SetTitle("5#sigma Allowed Regions");
  
-  surf_nom.DrawContour(crit3sig, 7, kBlack);
-  surf_nom_nd_fd.DrawContour(crit3sig, 7, kMagenta);
-  surf_nom_nd.DrawContour(crit3sig,7,kRed);
-  surf_nom_ub.DrawContour(crit3sig,7,kGreen);
-  surf_nom_fd.DrawContour(crit3sig, 7, kBlue);
+  surf_nom.DrawContour(crit5sig, 7, kBlack);
+  surf_nom_nd_fd.DrawContour(crit5sig, 7, kMagenta);
+  surf_nom_nd.DrawContour(crit5sig,7,kRed);
+  surf_nom_ub.DrawContour(crit5sig,7,kGreen);
+  surf_nom_fd.DrawContour(crit5sig, 7, kBlue);
 
-  surf_syst_all.DrawContour(crit3sig, kSolid, kBlack);
-  surf_syst_nd.DrawContour(crit3sig, kSolid, kRed);
-  surf_syst_ub.DrawContour(crit3sig, kSolid, kGreen);
-  surf_syst_fd.DrawContour(crit3sig, kSolid, kBlue);
-  surf_syst_nd_fd.DrawContour(crit3sig, kSolid, kMagenta);
+  surf_syst_all.DrawContour(crit5sig, kSolid, kBlack);
+  surf_syst_nd.DrawContour(crit5sig, kSolid, kRed);
+  surf_syst_ub.DrawContour(crit5sig, kSolid, kGreen);
+  surf_syst_fd.DrawContour(crit5sig, kSolid, kBlue);
+  surf_syst_nd_fd.DrawContour(crit5sig, kSolid, kMagenta);
     
   TLegend * lgdis = new TLegend(0.11,0.11,0.3,0.3);
   lgdis->SetFillColor(0);
@@ -80,45 +106,27 @@ void allowed()
   lgdis->AddEntry(dummy->Clone(), "Stats Only");
 
   lgdis->Draw("same");
-  gPad->Print("allowed_3sig.pdf");
+  gPad->Print(name_out);
 
-//  TFile fout("allowed_graphs.root", "RECREATE");
-//  
-//  std::vector<Surface> surfaces {surf_nom, surf_nom_nd, surf_nom_ub, surf_nom_fd, surf_nom_nd_fd, surf_syst_all, surf_syst_nd, surf_syst_ub, surf_syst_fd, surf_syst_nd_fd};
-//
-//  std::vector<TH2*> con_lev {crit90, crit95, crit99, crit3sig, crit5sig};
-//
-//  std::vector<std::string> s_name {"all_stat", "nd_stat", "ub_stat", "fd_stat", "nd_fd_stat", "all_syst", "nd_syst", "ub_syst", "fd_syst", "nd_fd_syst"};
-//
-//  std::vector<std::string> c_name {"_90pct", "_95pct", "_99pct", "_3sig", "_5sig"};
-//  
-//  std::cout<<"Before Loop"<<std::endl;
-//
-//  ofstream txtfile;
-//  txtfile.open("CAFAna_allowed.txt");
-// 
-//  for (int i = 0; i < 10; ++i) {
-//    txtfile<<s_name[i]<<"\n"<<"=========="<<"\n";
-//    for (int j = 0; j < 5; ++j) {
-//      std::vector<TGraph*> graphs = surfaces[i].GetGraphs(con_lev[j]);
-//      std::cout<<"Got Graph"<<std::endl;
-//      txtfile<<c_name[j]<<"\n"<<"------"<<"\n";
-//      for (auto g : graphs) {
-//        g->Write((s_name[i]+c_name[j]).c_str());
-//        int n = g->GetN();
-//        double *x = g->GetX();
-//        double *y = g->GetY();
-//        for (int k = 0; k < n; ++k) {
-//	  //x_v.push_back(x[k]);
-//	  //y_v.push_back(y[k]);
-//          txtfile<<x[k]<<" "<<y[k]<<"\n";
-//	}
-//      }
-//      txtfile<<"\n";
-//    }
-//    txtfile<<"\n\n";
-//  } 
-//
-//  txtfile.close();
+  TFile fout(graph_out, "RECREATE");
+  
+  std::vector<Surface> surfaces {surf_nom, surf_nom_nd, surf_nom_ub, surf_nom_fd, surf_nom_nd_fd, surf_syst_all, surf_syst_nd, surf_syst_ub, surf_syst_fd, surf_syst_nd_fd};
+
+  std::vector<TH2*> con_lev {crit90, crit95, crit99, crit3sig, crit5sig};
+
+  std::vector<std::string> s_name {"all_stat", "nd_stat", "ub_stat", "fd_stat", "nd_fd_stat", "all_syst", "nd_syst", "ub_syst", "fd_syst", "nd_fd_syst"};
+
+  std::vector<std::string> c_name {"_90pct", "_95pct", "_99pct", "_3sig", "_5sig"};
+  
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 5; ++j) {
+      std::vector<TGraph*> graphs = surfaces[i].GetGraphs(con_lev[j]);
+      int k = 1;
+      for (auto g : graphs) {
+        g->Write((s_name[i]+c_name[j]+"_"+std::to_string(k)).c_str());
+        ++k;
+      }
+    }
+  } 
   
 }
