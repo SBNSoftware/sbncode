@@ -481,15 +481,13 @@ void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
 void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                                        std::vector<recob::OpHit> const& opHits)
 {
-  // store PMT photon counts in the tree as well
-  double pe_tot = 0.;
-  double unpe_tot = 0.;
-  double sum =    0.;
-  double sumy =   0.; double sumz =   0.;
-  double sum_Ay = 0.; double sum_Az = 0.;
-  double sum_By = 0.; double sum_Bz = 0.;
-  double sum_Cy = 0.; double sum_Cz = 0.;
-  double sum_D =  0.;
+  double sum = 0.;
+  double sum_PE = 0.;
+  double sum_PE2 = 0.;
+  double sum_unPE = 0.;
+  double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
+  double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
+
   double maxPE = -9999.;
   for(auto const& oph : opHits) {
     if(!isPDRelevant(oph.OpChannel(), tpcWithHits)) continue;
@@ -499,28 +497,23 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     std::string op_type = "pmt"; // the label ICARUS has
     if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
 
-    // only use PMTs for SBND
     if (op_type == "pmt_coated" || op_type == "pmt") {
-      // Add up the position, weighting with PEs
-      double ophPE2 = oph.PE() * oph.PE();
+      // _flash_x is the X coord of the opdet where most PE are deposited
       if (oph.PE()>maxPE){
         _flash_x = opDetXYZ.X();
         maxPE = oph.PE();
       }
-      sum     += 1.0;
-      pe_tot  += oph.PE();
-      sumy    += oph.PE() * opDetXYZ.Y();
-      sumz    += oph.PE() * opDetXYZ.Z();
-      sum_By  += opDetXYZ.Y();
-      sum_Bz  += opDetXYZ.Z();
-      sum_Ay  += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
-      sum_Az  += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
-      sum_D   += ophPE2;
-      sum_Cy  += ophPE2 * opDetXYZ.Y();
-      sum_Cz  += ophPE2 * opDetXYZ.Z();
+      double ophPE2 = oph.PE() * oph.PE();
+      sum       += 1.0;
+      sum_PE    += oph.PE();
+      sum_PE2   += ophPE2;
+      sum_PE2Y  += ophPE2 * opDetXYZ.Y();
+      sum_PE2Z  += ophPE2 * opDetXYZ.Z();
+      sum_PE2Y2 += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
+      sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
     }
     else if (op_type == "pmt_uncoated") {
-      unpe_tot += oph.PE();
+      sum_unPE += oph.PE();
     }
     else if (op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" ) {
       //TODO: Use ARAPUCA
@@ -534,17 +527,15 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     }
   }
 
-  if (pe_tot > 0) {
-    _flash_pe = pe_tot * fPEscale;
-    _flash_y = sum_Cy / sum_D;
-    _flash_z = sum_Cz / sum_D;
-    sum_By = _flash_y;
-    sum_Bz = _flash_z;
-    _flash_r = std::sqrt(
-      (sum_Ay - 2.0 * sum_By * sum_Cy + sum_By * sum_By * sum_D +
-       sum_Az - 2.0 * sum_Bz * sum_Cz + sum_Bz * sum_Bz * sum_D) / sum_D);
-    _flash_unpe = unpe_tot * fPEscale;
+  if (sum_PE > 0) {
+    _flash_pe    = sum_PE   * fPEscale;
+    _flash_unpe  = sum_unPE * fPEscale;
     _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
+    _flash_y  = sum_PE2Y / sum_PE2;
+    _flash_z  = sum_PE2Z / sum_PE2;
+    _flash_r = std::sqrt(
+      (sum_PE2Y2 - 2.0 * _flash_y * sum_PE2Y + _flash_y * _flash_y * sum_PE2 +
+       sum_PE2Z2 - 2.0 * _flash_z * sum_PE2Z + _flash_z * _flash_z * sum_PE2) / sum_PE2);
     if (fSBND && fUseUncoatedPMT) icountPE = std::round(_flash_pe + _flash_unpe);
     else icountPE = std::round(_flash_pe);
   }
@@ -556,8 +547,8 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     mf::LogError("FlashPredict")
       << "Really odd that I landed here, this shouldn't had happen.\n"
       << "sum:          \t" << sum << "\n"
-      << "pe_tot:       \t" << pe_tot << "\n"
-      << "unpe_tot:     \t" << unpe_tot << "\n"
+      << "sum_PE:       \t" << sum_PE << "\n"
+      << "sum_unPE:     \t" << sum_unPE << "\n"
       << "tpcWithHits:  \t" << tpcs << "\n"
       << "opHits.size():\t" << opHits.size() << "\n"
       << "channels:     \t" << channels << std::endl;
