@@ -8,22 +8,12 @@ def InBeamTrue(t): # us
     return (t > 0.) & (t < 1.596) # No wiggle!
 
 def InFV(x, y, z): # cm
-    xmin = -199.15 + 15
-    ymin = -200. + 15
-    zmin = 0.0 + 15
-    xmax = 199.15 - 15
-    ymax =  200. - 15
+    xmin = -199.15 + 10
+    ymin = -200. + 10
+    zmin = 0.0 + 10
+    xmax = 199.15 - 10
+    ymax =  200. - 10
     zmax =  500. - 50
-    
-    return (x > xmin) & (x < xmax) & (y > ymin) & (y < ymax) & (z > zmin) & (z < zmax)
-
-def InAV(x, y, z): # cm
-    xmin = -199.15 + 5
-    ymin = -200. + 5
-    zmin = 0.0 + 5
-    xmax = 199.15 - 5
-    ymax =  200. - 5
-    zmax =  500. - 5
     
     return (x > xmin) & (x < xmax) & (y > ymin) & (y < ymax) & (z > zmin) & (z < zmax)
 
@@ -69,7 +59,7 @@ def f_time(data):
 def f_score(data):
     return data["slc.fmatch.score"] < 7
 def ptrk(data):
-    return data["slc.has_ptrk"]
+    return data["slc.has_ptrk"] & np.invert(np.isnan(data["slc.ptrk.recop"])) & (data["slc.ptrk.recop"] < 7.5) & (data["slc.ptrk.recop"] > 0.)
 def crttrack(data):
     return np.isnan(data["slc.ptrk.crttrack.angle"]) | (data["slc.ptrk.crttrack.angle"] > 0.05)
 def crthit(data):
