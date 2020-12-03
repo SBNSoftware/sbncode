@@ -8,7 +8,8 @@
 #include "CAFAna/Analysis/ExpInfo.h"
 #include "CAFAna/Analysis/Surface.h"
 #include "CAFAna/Systs/SBNWeightSysts.h"
-#include "mySysts.h"
+#include "CAFAna/Systs/SBNFluxSysts.h"
+#include "CAFAna/Systs/Systs.h"
 using namespace ana;
 
 #include "OscLib/IOscCalculator.h"
@@ -33,6 +34,9 @@ void syst_fit(const std::string anatype = numuStr)
   //  GetSBNWeightSysts(); // initialize
   const std::vector<const ISyst*>& wtsysts = GetSBNWeightSysts();
 
+  GetSBNFluxHadronSysts(30);
+  GetMECSyst();
+  
   std::vector<const ISyst*> systs_to_process;
 
   std::vector<std::string> syst_names{"expskin_FluxUnisim","horncurrent_FluxUnisim","kminus_PrimaryHadronNormalization","kplus_PrimaryHadronFeynmanScaling","kzero_PrimaryHadronSanfordWang","nucleoninexsec_FluxUnisim","nucleonqexsec_FluxUnisim","nucleontotxsec_FluxUnisim","piminus_PrimaryHadronSWCentralSplineVariation","pioninexsec_FluxUnisim","pionqexsec_FluxUnisim","piontotxsec_FluxUnisim","piplus_PrimaryHadronSWCentralSplineVariation","genie_ccresAxial_Genie","genie_ncresAxial_Genie","genie_qema_Genie","genie_NC_Genie","genie_NonResRvbarp1pi_Genie","genie_NonResRvbarp2pi_Genie","genie_NonResRvp1pi_Genie","genie_NonResRvp2pi_Genie","genie_NonResRvbarp1piAlt_Genie","genie_NonResRvbarp2piAlt_Genie","genie_NonResRvp1piAlt_Genie","genie_NonResRvp2piAlt_Genie"};
@@ -41,6 +45,8 @@ void syst_fit(const std::string anatype = numuStr)
     for (auto n : syst_names) if (n == s->ShortName()) systs_to_process.push_back(s);
   }
   
+  for(const ISyst* s: GetSBNFluxHadronSysts(30)) systs_to_process.push_back(s);
+
   std::vector<const ISyst*> systs;
   //for (const ISyst* s : det_systs) systs.push_back(s);
   for (const ISyst* s : systs_to_process) systs.push_back(s);
