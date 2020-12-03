@@ -666,7 +666,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], fParams.CRTHitUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
+    }
+  }
+
+  // Get all of the CRT Tracks
+  std::vector<caf::SRCRTTrack> srcrttracks;
+
+  art::Handle<std::vector<sbn::crt::CRTTrack>> crttracks_handle;
+  GetByLabelStrict(evt, fParams.CRTTrackLabel(), crttracks_handle);
+  // fill into event
+  if (crttracks_handle.isValid()) {
+    const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
+    for (unsigned i = 0; i < crttracks.size(); i++) {
+      srcrttracks.emplace_back();
+      FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
   }
 
@@ -998,6 +1012,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.pass_flashtrig  = pass_flash_trig;  // trigger result
   rec.crt_hits        = srcrthits;
   rec.ncrt_hits       = srcrthits.size();
+  rec.crt_tracks        = srcrttracks;
+  rec.ncrt_tracks       = srcrttracks.size();
 
   // Get metadata information for header
   unsigned int run = evt.run();

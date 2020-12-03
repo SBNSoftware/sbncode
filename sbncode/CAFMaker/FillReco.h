@@ -24,7 +24,8 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
 #include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
-#include "sbncode/LArRecoProducer/Products/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -113,6 +114,10 @@ namespace caf
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
+                  bool allowEmpty = false);
+  void FillCRTTrack(const sbn::crt::CRTTrack &track,
+                  bool use_ts0,
+                  caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
 }
 

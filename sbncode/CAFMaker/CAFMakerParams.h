@@ -149,6 +149,12 @@ namespace caf
       Comment("Label of sbn CRT hits."),
       "crthit" // same for icarus and sbnd
     };
+
+    Atom<string> CRTTrackLabel {
+      Name("CRTTrackLabel"),
+      Comment("Label of sbn CRT tracks."),
+      "crttrack" // same for icarus and sbnd
+    };
     
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
@@ -156,9 +162,9 @@ namespace caf
       "flashtrigfilter"
     };
 
-    Atom<bool> CRTHitUseTS0 {
-      Name("CRTHitUseTS0"),
-      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit"),
+    Atom<bool> CRTUseTS0 {
+      Name("CRTUseTS0"),
+      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit and SRCRTTrack"),
       false
     };
 
