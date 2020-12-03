@@ -12,6 +12,7 @@
 
 #include "CAFAna/Systs/SBNWeightSysts.h"
 #include "CAFAna/Systs/SBNFluxSysts.h"
+#include "CAFAna/Systs/Systs.h"
 
 #include "OscLib/IOscCalculator.h"
 
@@ -96,6 +97,7 @@ void make_state_syst(const std::string anatype = numuStr)
 
   std::vector<const ISyst*> systs = GetSBNWeightSysts();
   for(const ISyst* s: GetSBNFluxHadronSysts(30)) systs.push_back(s);
+  systs.push_back(&GetMECSyst());
 
   osc::NoOscillations calc;
 
