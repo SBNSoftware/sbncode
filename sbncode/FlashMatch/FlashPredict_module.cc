@@ -95,7 +95,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     _flashmatch_nuslice_tree->Branch("flash_unpe", &_flash_unpe, "flash_unpe/D");
     _flashmatch_nuslice_tree->Branch("flash_ratio", &_flash_ratio, "flash_ratio/D");
     // TODO: add charge_time?
-    _flashmatch_nuslice_tree->Branch("charge_x_global", &_charge_x_global, "charge_x_global/D");
+    _flashmatch_nuslice_tree->Branch("charge_x_gl", &_charge_x_gl, "charge_x_gl/D");
     _flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
     _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
     _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
@@ -461,7 +461,7 @@ void FlashPredict::produce(art::Event & e)
 bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
                                         flashmatch::QCluster_t& qClustsGl)
 {
-  double xGl = 0.; double xave = 0.; double yave = 0.;
+  double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
   double scale = 0.001;
   _charge_q = 0.;
@@ -472,11 +472,12 @@ bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
     norm += scale * qp.q;
     _charge_q += qp.q;
   }
+  double xGl = 0.;
   for (auto& qp : qClustsGl) {
     xGl += scale * qp.q * qp.x;
   }
   if (norm > 0) {
-    _charge_x = xGl  / norm;
+    _charge_x_gl = xGl  / norm;
     _charge_x = xave / norm;
     _charge_y = yave / norm;
     _charge_z = zave / norm;

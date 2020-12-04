@@ -154,7 +154,7 @@ private:
 
   // Tree variables
   std::vector<double> _pe_reco_v, _pe_hypo_v;
-  double _charge_x_global, _charge_x, _charge_y,
+  double _charge_x_gl, _charge_x, _charge_y,
     _charge_z, _charge_q;
   double _flash_x, _flash_y, _flash_z,
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
