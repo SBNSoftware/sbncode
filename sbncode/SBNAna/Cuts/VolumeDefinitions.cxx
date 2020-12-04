@@ -2,6 +2,8 @@
 
 #include "StandardRecord/Proxy/SRProxy.h"
 
+#include <cmath>
+
 bool PtInVol(const caf::SRVector3DProxy& pt, const FidVol& vol)
 {
   return (vol.xmin < pt.x && pt.x < vol.xmax &&
