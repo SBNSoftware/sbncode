@@ -354,6 +354,7 @@ void FlashPredict::produce(art::Event & e)
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
     AddDaughters(pfp_ptr, pfp_h, pfp_ptr_v);
 
+    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
     //  loop over all mothers and daughters, fill qCluster
     for (auto& pfp_md: pfp_ptr_v) {
       auto key = pfp_md.key();
@@ -406,9 +407,7 @@ void FlashPredict::produce(art::Event & e)
           const auto charge(hit->Integral());
           auto wXYZ = geometry->WireIDToWireGeo(wid).GetCenter();
           double wires_distance_X = std::abs(position[0] - wXYZ.X());
-          qClusters.emplace_back(wires_distance_X, position[1], position[2],
-                                 charge * (lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)
-                                           ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower));
+          qClusters.emplace_back(wires_distance_X, position[1], position[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
