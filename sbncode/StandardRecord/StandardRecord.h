@@ -8,6 +8,7 @@
 #define STANDARDRECORD_H
 
 #include "sbncode/StandardRecord/SRCRTHit.h"
+#include "sbncode/StandardRecord/SRCRTTrack.h"
 #include "sbncode/StandardRecord/SRHeader.h"
 #include "sbncode/StandardRecord/SRSlice.h"
 #include "sbncode/StandardRecord/SRSliceRecoBranch.h"
@@ -41,6 +42,8 @@ namespace caf
     std::vector<SRTrueParticle> true_particles; ///< True particles in spill
     int                        ncrt_hits; ///!< Number of CRT hits in event
     std::vector<SRCRTHit>       crt_hits; ///!< CRT hits in event
+    int                        ncrt_tracks; //!< Number of CRT tracks in event
+    std::vector<SRCRTTrack>     crt_tracks; ///!< CRT tracks in event
 
 
     bool pass_flashtrig;     ///< Whether this Record passed the Flash Trigger requirement

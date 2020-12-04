@@ -33,12 +33,18 @@ const FidVol avnd{ -200., +200.,  // x
                    -200., +200.,  // y
                      +0., +500.}; // z
 
-// icarus active volume cryo 1
-const FidVol avfd_cryo1{ -368.49,  -71.94,  // x
+// icarus fiducial volume cryo 1 same as active volume
+const FidVol fvfd_cryo1{ -368.49,  -71.94,  // x
                          -181.86, +134.96,  // y
                          -894.95, +894.95}; // z
 
+// icarus cheat active volume cryo 1 for plotting
+const FidVol avfd_cryo1{ -400.,  -70.,  // x
+                         -200., +150.,  // y
+                         -900., +900.}; // z
+
 // icarus active volume cryo 2 same as cryo 1 atm
+const FidVol fvfd_cryo2 = fvfd_cryo1;
 const FidVol avfd_cryo2 = avfd_cryo1;
 
 

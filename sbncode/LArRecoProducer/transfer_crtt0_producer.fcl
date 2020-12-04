@@ -1,0 +1,16 @@
+BEGIN_PROLOG
+transfer_crthitt0_sce_sbnd: {
+  module_type: TransferTrackT0
+  TrackLabelIn: pandoraTrack
+  T0Label: pandoraTrackCRTHit
+  TrackLabelOut: pandoraSCETrack
+}
+
+transfer_crtrackt0_sce_sbnd: {
+  module_type: TransferTrackT0
+  TrackLabelIn: pandoraTrack
+  T0Label: pandoraTrackCRTTrack
+  TrackLabelOut: pandoraSCETrack
+}
+
+END_PROLOG

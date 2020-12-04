@@ -120,16 +120,30 @@ namespace ana
   {
     assert(!f->IsZombie());
 
-
-    // Test for flat (has extra trees) or nested cases.
+    // Test for multi (trees are inside a directory) or single (tree is at top
+    // level) tree cases.
     TDirectory* dir = 0;
-    f->GetObject("recTree", dir);
     TTree* tr = 0;
-    if(dir) dir->GetObject("rec", tr); else f->GetObject("recTree", tr);
-    assert(tr);
+
+    TObject* obj = f->Get("recTree");
+    assert(obj); // Must exist in one form or the other
+
+    // It might seem like you could use GetObject() to do the type-checking
+    // directly, but that method seems to have a memory leak in the case that
+    // the types don't match.
+    if(obj->ClassName() == std::string("TTree")){
+      tr = (TTree*)obj;
+    }
+    else{
+      dir = (TDirectory*)obj;
+      tr = (TTree*)dir->Get("rec");
+      assert(tr);
+    }
+
+    const caf::CAFType type = caf::GetCAFType(dir, tr);
+
     long n;
     caf::SRSpillProxy sr(dir, tr, "rec", n, 0);
-
 
     //    FloatingExceptionOnNaN fpnan;
 
@@ -137,7 +151,7 @@ namespace ana
     if (max_entries != 0 && max_entries < Nentries) Nentries = max_entries;
 
     for(n = 0; n < Nentries; ++n){
-      if(!dir) tr->LoadTree(n); // nested mode
+      if(type != caf::kFlatMultiTree) tr->LoadTree(n); // for all single-tree modes
 
       HandleRecord(&sr);
 

@@ -45,6 +45,8 @@
 
   <class name="caf::SRCRTHit" />
   <class name="std::vector<caf::SRCRTHit>" />
+  <class name="caf::SRCRTTrack" />
+  <class name="std::vector<caf::SRCRTTrack>" />
   <class name="caf::SRCRTHitMatch" />
   <class name="caf::SRCRTTrackMatch" />
 

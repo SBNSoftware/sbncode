@@ -6,6 +6,7 @@ print('** Common Analysis Format Executor -- SBN edition **')
 import os, sys
 import argparse
 import tempfile
+import code
 
 
 def makeParser():
@@ -39,6 +40,8 @@ def makeParser():
                           help = 'run root under valgrind')
     dbggroup.add_argument('--leakcheck', action = 'store_true',
                           help = 'run root under valgrind with leak checking')
+    dbggroup.add_argument('--massif', action = 'store_true',
+                          help = 'run root under valgrind\'s massif memory profiler')
     dbggroup.add_argument('--prof', action = 'store_true',
                           help = 'run with google perftools profiler')
 
@@ -109,11 +112,16 @@ if __name__ == '__main__':
         rootargs = ['--leak-check=full',
                     '--suppressions='+os.environ['ROOTSYS']+'/etc/valgrind-root.supp',
                     'root.exe'] + rootargs
+    if opts['massif']:
+        exe = 'valgrind'
+        rootargs = ['--tool=massif',
+                    '--suppressions='+os.environ['ROOTSYS']+'/etc/valgrind-root.supp',
+                    'root.exe'] + rootargs
     if opts['totalview']:
         exe = 'totalview'
         rootargs = ['root.exe', '-a'] + rootargs
 
-    if opts['gdb'] or opts['valgrind'] or opts['leakcheck'] or opts['totalview']:
+    if opts['gdb'] or opts['valgrind'] or opts['leakcheck'] or opts['massif'] or opts['totalview']:
         # Disable the default backtrace printouts since presumably the user
         # intends to get their own
         os.environ['CAFE_NO_BACKTRACE'] = '1'
@@ -137,6 +145,24 @@ if __name__ == '__main__':
 
     if opts['snapshot']:
         os.environ['CAFANA_USE_SNAPSHOTS'] = 'yes'
+
+    if script.endswith('.py'):
+        for a in ['gdb', 'valgrind', 'leakcheck', 'massif', 'totalview', 'prof']:
+            if opts[a]:
+                print('Warning: option --'+a, 'not supported for python scripts')
+
+        if opts['batch']:
+            import ROOT
+            ROOT.gROOT.SetBatch(True)
+
+        # Add cafana.py to the path
+        sys.path.append(os.environ['MRB_BUILDDIR']+'/sbncode/bin/')
+
+        sys.argv = args
+        exec(open(script).read())
+        if not opts['quit']: code.interact(banner='press Ctrl-D to quit')
+        sys.exit(0)
+
 
     if (script.endswith('.C') or script.endswith('.C+')):
         # Usually use .C++ to ensure the macro will always be recompiled, with

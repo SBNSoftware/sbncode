@@ -32,8 +32,38 @@ namespace caf
     srhit.position_err.z = hit.z_err;
 
     srhit.pe = hit.peshit;
+    srhit.plane = hit.plane;
 
   }
+
+  void FillCRTTrack(const sbn::crt::CRTTrack &track,
+                  bool use_ts0,
+                  caf::SRCRTTrack &srtrack,
+                  bool allowEmpty) {
+
+    srtrack.time = (use_ts0 ? (float)track.ts0_ns : track.ts1_ns) / 1000.;
+
+    srtrack.hita.position.x = track.x1_pos;
+    srtrack.hita.position.y = track.y1_pos;
+    srtrack.hita.position.z = track.z1_pos;
+
+    srtrack.hita.position_err.x = track.x1_err;
+    srtrack.hita.position_err.y = track.y1_err;
+    srtrack.hita.position_err.z = track.z1_err;
+
+    srtrack.hita.plane = track.plane1;
+
+    srtrack.hitb.position.x = track.x2_pos;
+    srtrack.hitb.position.y = track.y2_pos;
+    srtrack.hitb.position.z = track.z2_pos;
+
+    srtrack.hitb.position_err.x = track.x2_err;
+    srtrack.hitb.position_err.y = track.y2_err;
+    srtrack.hitb.position_err.z = track.z2_err;
+
+    srtrack.hitb.plane = track.plane2;
+  }
+
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)
   {
@@ -393,6 +423,7 @@ namespace caf
     for (unsigned id: particle.Daughters()) {
       srtrack.daughters.push_back(id);
     }
+    srtrack.ndaughters = srtrack.daughters.size();
 
     srtrack.parent = particle.Parent();
     srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \

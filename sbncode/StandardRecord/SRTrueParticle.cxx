@@ -18,12 +18,18 @@ namespace caf
     startT(std::numeric_limits<float>::signaling_NaN()),
     endT(std::numeric_limits<float>::signaling_NaN()),
     length(std::numeric_limits<float>::signaling_NaN()),
+    wallin(kWallNone),
+    wallout(kWallNone),
     cont_tpc(false),
     crosses_tpc(false),
     contained(false),
     pdg(INT_MIN),
     G4ID(INT_MIN),
-    interaction_id(INT_MIN)
+    interaction_id(INT_MIN),
+    generator(kUnknownGenerator),
+    start_process(g4_process_(-1)), // TODO do we need an "unknown" process?
+    end_process(g4_process_(-1)),
+    gstatus(kIStUndefined)
   {
   }
 
