@@ -1,7 +1,10 @@
 #include "SBNAna/Vars/TruthVars.h"
 #include "SBNAna/Vars/Vars.h"
+
 #include "StandardRecord/Proxy/SRProxy.h"
+
 #include <cassert>
+#include <cmath>
 
 namespace ana
 {
