@@ -95,6 +95,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     _flashmatch_nuslice_tree->Branch("flash_unpe", &_flash_unpe, "flash_unpe/D");
     _flashmatch_nuslice_tree->Branch("flash_ratio", &_flash_ratio, "flash_ratio/D");
     // TODO: add charge_time?
+    _flashmatch_nuslice_tree->Branch("charge_x_global", &_charge_x_global, "charge_x_global/D");
     _flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
     _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
     _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
@@ -347,6 +348,7 @@ void FlashPredict::produce(art::Event & e)
         (pfpPDGC != 16) ) continue;
     bk.pfp_to_score++;
     flashmatch::QCluster_t qClusters;
+    flashmatch::QCluster_t qClustsGl;
     std::set<unsigned> tpcWithHits;
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
@@ -408,6 +410,7 @@ void FlashPredict::produce(art::Event & e)
           auto wXYZ = geometry->WireIDToWireGeo(wid).GetCenter();
           double wires_distance_X = std::abs(position[0] - wXYZ.X());
           qClusters.emplace_back(wires_distance_X, position[1], position[2], charge * chargeToNPhotons);
+          qClustsGl.emplace_back(position[0], position[1], position[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
@@ -425,8 +428,8 @@ void FlashPredict::produce(art::Event & e)
       }
     }
 
-    computeChargeMetrics(qClusters);
     if (_charge_q <= 0) {
+    computeChargeMetrics(qClusters, qClustsGl);
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       continue;
@@ -458,18 +461,25 @@ void FlashPredict::produce(art::Event & e)
 }// end of producer module
 
 
-void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
+void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
+                                        flashmatch::QCluster_t& qClustsGl)
 {
-  double xave = 0.0; double yave = 0.0; double zave = 0.0; double norm = 0.0;
-  _charge_q = 0;
+  double xGl = 0.; double xave = 0.; double yave = 0.;
+  double zave = 0.; double norm = 0.;
+  double scale = 0.001;
+  _charge_q = 0.;
   for (auto& qp : qClusters) {
-    xave += 0.001 * qp.q * qp.x;
-    yave += 0.001 * qp.q * qp.y;
-    zave += 0.001 * qp.q * qp.z;
-    norm += 0.001 * qp.q;
+    xave += scale * qp.q * qp.x;
+    yave += scale * qp.q * qp.y;
+    zave += scale * qp.q * qp.z;
+    norm += scale * qp.q;
     _charge_q += qp.q;
   }
+  for (auto& qp : qClustsGl) {
+    xGl += scale * qp.q * qp.x;
+  }
   if (norm > 0) {
+    _charge_x = xGl  / norm;
     _charge_x = xave / norm;
     _charge_y = yave / norm;
     _charge_z = zave / norm;

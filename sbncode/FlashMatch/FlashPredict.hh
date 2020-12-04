@@ -84,8 +84,9 @@ private:
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
 
-  void computeChargeMetrics(flashmatch::QCluster_t& qClusters);
   void computeFlashMetrics(std::set<unsigned>& tpcWithHits,
+  void computeChargeMetrics(flashmatch::QCluster_t& qClusters,
+                            flashmatch::QCluster_t& qClustsGl);
                            std::vector<recob::OpHit> const& OpHits);
   void computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
@@ -153,7 +154,8 @@ private:
 
   // Tree variables
   std::vector<double> _pe_reco_v, _pe_hypo_v;
-  double _charge_x, _charge_y, _charge_z, _charge_q;
+  double _charge_x_global, _charge_x, _charge_y,
+    _charge_z, _charge_q;
   double _flash_x, _flash_y, _flash_z,
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?
