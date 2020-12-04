@@ -428,22 +428,19 @@ void FlashPredict::produce(art::Event & e)
       }
     }
 
-    if (_charge_q <= 0) {
-    computeChargeMetrics(qClusters, qClustsGl);
+    if(!computeChargeMetrics(qClusters, qClustsGl)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       continue;
     }
 
-    computeFlashMetrics(tpcWithHits, opHits);
-    if (_flash_pe <= 0){
+    if(!computeFlashMetrics(tpcWithHits, opHits)){
       printMetrics("ERROR", pfp.PdgCode(), tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       continue;
     }
 
-    computeScore(tpcWithHits, pfp.PdgCode());
-    if (_score > 0) {
+    if(computeScore(tpcWithHits, pfp.PdgCode())){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
@@ -461,7 +458,7 @@ void FlashPredict::produce(art::Event & e)
 }// end of producer module
 
 
-void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
+bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
                                         flashmatch::QCluster_t& qClustsGl)
 {
   double xGl = 0.; double xave = 0.; double yave = 0.;
@@ -483,11 +480,13 @@ void FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
     _charge_x = xave / norm;
     _charge_y = yave / norm;
     _charge_z = zave / norm;
+    return true;
   }
+  return false;
 }
 
 
-void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
+bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                                        std::vector<recob::OpHit> const& opHits)
 {
   double sum = 0.;
@@ -547,6 +546,7 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
        sum_PE2Z2 - 2.0 * _flash_z * sum_PE2Z + _flash_z * _flash_z * sum_PE2) / sum_PE2);
     if (fSBND && fUseUncoatedPMT) icountPE = std::round(_flash_pe + _flash_unpe);
     else icountPE = std::round(_flash_pe);
+    return true;
   }
   else {
     std::string channels;
@@ -567,11 +567,12 @@ void FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     _flash_pe = 0;
     _flash_unpe = 0;
     _flash_ratio = 0;
+    return false;
   }
 }
 
 
-void FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
+bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 {
   _score = 0.;
   unsigned tcount = 0;
@@ -605,7 +606,9 @@ void FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
     }
   }
   mf::LogDebug("FlashPredict")
-    << "score:\t" << _score << "using " << tcount << " terms"; 
+    << "score:\t" << _score << "using " << tcount << " terms";
+  if(_score > 0.) return true;
+  else return false;
 }
 
 

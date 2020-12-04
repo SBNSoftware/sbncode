@@ -84,11 +84,11 @@ private:
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
 
-  void computeFlashMetrics(std::set<unsigned>& tpcWithHits,
-  void computeChargeMetrics(flashmatch::QCluster_t& qClusters,
+  bool computeChargeMetrics(flashmatch::QCluster_t& qClusters,
                             flashmatch::QCluster_t& qClustsGl);
+  bool computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
-  void computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
+  bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
                                     const art::Ptr<recob::PFParticle>& particle,
