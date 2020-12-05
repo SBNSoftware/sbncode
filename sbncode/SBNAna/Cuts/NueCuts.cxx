@@ -53,7 +53,7 @@ namespace ana{
       if ( largestShwIdx==-1 )
         return false;
 
-      return (slc->reco.shw[largestShwIdx].bestplane_dEdx < 3.f);
+      return (slc->reco.shw[largestShwIdx].bestplane_dEdx < 3.625f);
     }
     );
 
@@ -64,7 +64,7 @@ namespace ana{
       if ( largestShwIdx==-1 )
         return false;
 
-      return (slc->reco.shw[largestShwIdx].conversion_gap > 0.f && slc->reco.shw[largestShwIdx].conversion_gap < 3.f);
+      return (slc->reco.shw[largestShwIdx].conversion_gap > 0.f && slc->reco.shw[largestShwIdx].conversion_gap < 3.25f);
     }
     );
 
@@ -86,7 +86,7 @@ namespace ana{
   const Cut kNueTrackLenCut(
     [](const caf::SRSliceProxy* slc)
     {
-      return kLongestTrackLength(slc) < 50.;
+      return kLongestTrackLength(slc) < 110.f;
     }
     );
 
@@ -97,7 +97,7 @@ namespace ana{
       if ( largestShwIdx==-1 )
         return false;
 
-      return (slc->reco.shw[largestShwIdx].density > 6);
+      return (slc->reco.shw[largestShwIdx].density > 4.5);
     }
     );
 
