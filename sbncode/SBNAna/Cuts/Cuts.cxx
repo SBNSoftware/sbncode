@@ -22,7 +22,7 @@ namespace ana{
   const SpillCut kCRTHitVetoND(
       [](const caf::SRSpillProxy* sr){
         for (auto const& crtHit: sr->crt_hits){
-          if (crtHit.time > 0. && crtHit.time < 1.8 && crtHit.position.y>-350 && crtHit.pe>100)
+          if (crtHit.time > -0.1 && crtHit.time < 1.8 && crtHit.position.y>-350 && crtHit.pe>100)
             return false;
         }
         return true;
@@ -33,7 +33,7 @@ namespace ana{
       [](const caf::SRSpillProxy* sr){
         for (auto const& crtHit: sr->crt_hits){
           auto thistime = crtHit.time - 1600.; // manually shift to bring beam spill start to zero
-          if (thistime > 0. && thistime < 1.8 && crtHit.pe>100) // no discriminating in position, yet.
+          if (thistime > -0.1 && thistime < 1.8 && crtHit.pe > 100)
             return false;
         }
         return true;
@@ -49,6 +49,18 @@ namespace ana{
   const Cut kActiveVolumeND(
     [](const caf::SRSliceProxy* slc){
           return PtInVolAbsX(slc->vertex, avnd);
+    }
+    );
+
+  const Cut kFiducialVolumeFDCryo1(
+    [](const caf::SRSliceProxy* slc){
+          return PtInVol(slc->vertex, fvfd_cryo1);
+    }
+    );
+
+  const Cut kFiducialVolumeFDCryo2(
+    [](const caf::SRSliceProxy* slc){
+          return PtInVol(slc->vertex, fvfd_cryo2);
     }
     );
 
