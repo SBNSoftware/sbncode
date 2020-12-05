@@ -30,6 +30,18 @@ namespace ana{
     }
     );
 
+  const Cut kTrueFiducialVolumeFDCryo1(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVol(slc->truth.position, fvfd_cryo1);
+    }
+    );
+
+  const Cut kTrueFiducialVolumeFDCryo2(
+    [](const caf::SRSliceProxy* slc){
+      return kHasNu(slc) && PtInVol(slc->truth.position, fvfd_cryo2);
+    }
+    );
+
   const Cut kIsAntiNu([](const caf::SRSliceProxy* slc){
             if(slc->truth.index < 0) return false;
             return slc->truth.pdg < 0;
@@ -44,7 +56,6 @@ namespace ana{
             return slc->truth.index >= 0;
   });
 
-
   const Cut kIsNue([](const caf::SRSliceProxy* slc){
             return slc->truth.index >= 0 && abs(slc->truth.pdg) == 12;
   });
@@ -57,15 +68,18 @@ namespace ana{
             return slc->truth.index >= 0 && abs(slc->truth.pdg) == 16;
   });
 
+  const Cut kIsCC([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return (slc->truth.iscc==1);
+  });
 
   const Cut kIsNC([](const caf::SRSliceProxy* slc){
             if(slc->truth.index < 0) return false;
-            return !slc->truth.iscc;
+            return (slc->truth.isnc==1);
   });
 
-
   const Cut kVtxDistMagCut([](const caf::SRSliceProxy* slc){
-            if(slc->truth.index < 0) return false;
+            if(slc->truth.index < 0) return true;
             return (kTruthVtxDistMag(slc) < 1);
   });
 }

@@ -14,12 +14,16 @@ namespace ana
   extern const Cut kIsNutau;
 
   //// Select interaction type
+  extern const Cut kIsCC;
   extern const Cut kIsNC;
-
+  
   // extern const Cut kIsQE;
   extern const Cut kTrueActiveVolumeND;
   extern const Cut kTrueActiveVolumeFDCryo1;
   extern const Cut kTrueActiveVolumeFDCryo2;
+
+  extern const Cut kTrueFiducialVolumeFDCryo1;
+  extern const Cut kTrueFiducialVolumeFDCryo2;
 
   extern const Cut kVtxDistMagCut;
 
