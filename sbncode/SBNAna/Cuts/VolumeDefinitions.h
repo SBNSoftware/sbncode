@@ -33,19 +33,25 @@ const FidVol avnd{ -200., +200.,  // x
                    -200., +200.,  // y
                      +0., +500.}; // z
 
-// icarus fiducial volume cryo 1 same as active volume
+// icarus fiducial volume cryo used to be the same as the actual active volume (not the values below)
+// slightly change these values. still not uptimized.
 const FidVol fvfd_cryo1{ -368.49,  -71.94,  // x
                          -181.86, +134.96,  // y
-                         -894.95, +894.95}; // z
+                         -894.95, +894.85}; // z
 
 // icarus cheat active volume cryo 1 for plotting
-const FidVol avfd_cryo1{ -400.,  -70.,  // x
+const FidVol avfd_cryo1{ -400.,  -50.,  // x
                          -200., +150.,  // y
-                         -900., +900.}; // z
+                         -910., +910.}; // z
 
 // icarus active volume cryo 2 same as cryo 1 atm
 const FidVol fvfd_cryo2 = fvfd_cryo1;
 const FidVol avfd_cryo2 = avfd_cryo1;
+
+// not a fiducial volume but for plotting CRT hit positions
+const FidVol crtfd{ -600,   0.,  // x
+                    -300., +700.,  // y
+                    -1000, +1600}; // z
 
 
 // Once we have C++20 we will be able to rewrite these initializers slightly
