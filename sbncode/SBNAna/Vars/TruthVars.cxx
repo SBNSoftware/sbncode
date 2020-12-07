@@ -15,6 +15,13 @@ namespace ana
       }
       );
 
+    const Var kCompletness(
+      [](const caf::SRSliceProxy *slc)
+      {
+        return ( kHasTruthMatch(slc) ? (float)slc->tmatch.eff : -5.f);
+      }
+      );
+
     const Var kTruthEnergy(
       [](const caf::SRSliceProxy *slc)
       {

@@ -14,6 +14,8 @@ namespace ana
 
         for (unsigned int i=0; i< slc->reco.nshw; i++) {
           auto const& shw = slc->reco.shw[i];
+          if (!shw.parent_is_primary)
+            continue;
           if (shw.bestplane_energy > maxEnergy){
             bestIdx = i;
             maxEnergy = shw.bestplane_energy;
@@ -32,6 +34,21 @@ namespace ana
           energy = slc->reco.shw[largestShwIdx].bestplane_energy;
         }
         return energy;
+      });
+
+  const Var kRecoShower_TruePdg(
+      [](const caf::SRSliceProxy *slc)
+      {
+        int pdg  = -5;
+        const int largestShwIdx(kLargestRecoShowerIdx(slc));
+        if ( largestShwIdx!=-1 ){
+          pdg = slc->reco.shw[largestShwIdx].truth.p.pdg;
+        }
+
+        if (pdg < -2500){
+          std::cout << "Track: NMatches: " << slc->reco.shw[largestShwIdx].truth.nmatches <<  " and best match pdg: "<< pdg << std::endl;
+        }
+        return pdg;
       });
 
   // Currently assumes shw 0 is the primary
@@ -197,6 +214,8 @@ namespace ana
 
         for (unsigned int i=0; i< slc->reco.ntrk; i++) {
           auto const& trk = slc->reco.trk[i];
+          if (!trk.parent_is_primary)
+            continue;
           if (trk.len > maxLength){
             bestIdx = i;
             maxLength = trk.len;
@@ -205,6 +224,20 @@ namespace ana
         return bestIdx;
       });
 
+  const Var kLongestTrackTruePdg(
+      [](const caf::SRSliceProxy *slc)
+      {
+        int pdg  = -5;
+        const int longestTrackIdx(kLongestTrackIdx(slc));
+        if ( longestTrackIdx!=-1 ){
+          pdg = slc->reco.trk[longestTrackIdx].truth.p.pdg;
+        }
+
+        if (pdg < -2500){
+          std::cout << "Track best match pdg: "<< pdg << std::endl;
+        }
+        return pdg;
+      });
 
     const Var kLongestTrackLength(
       [](const caf::SRSliceProxy *slc)
