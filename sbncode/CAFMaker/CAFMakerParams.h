@@ -184,7 +184,8 @@ namespace caf
     Atom<bool> FillTrueParticles {
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"
-              " will still be stored for the neutirno primaries and for trk/shw truth matching.")
+              " will still be stored for the neutirno primaries and for trk/shw truth matching."),
+      true
     };
 
   };
