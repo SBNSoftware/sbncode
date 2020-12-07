@@ -8,17 +8,17 @@
 
 // helper function declarations
 caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-			  const TVector3 p0,
-			  const TVector3 p1);
+        const TVector3 p0,
+        const TVector3 p1);
 
 caf::g4_process_ GetG4ProcessID(const std::string &name);
 
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+           const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                                    const std::vector<caf::SRTrueInteraction> &srneutrinos,
-			 	   const cheat::ParticleInventoryService &inventory_service,
+           const cheat::ParticleInventoryService &inventory_service,
                                    const detinfo::DetectorClocksData &clockData);
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
@@ -35,8 +35,8 @@ namespace caf {
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
-		      caf::SRTrack& srtrack,
-		      bool allowEmpty)
+          caf::SRTrack& srtrack,
+          bool allowEmpty)
   {
     // Truth matching
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
@@ -76,15 +76,15 @@ namespace caf {
     }
 
     std::cout << "Slice matched to index: " << tmatch.index
-	      << " with match frac: " << tmatch.pur << std::endl;
+        << " with match frac: " << tmatch.pur << std::endl;
 
   }//FillSliceTruth
 
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
-			const simb::MCFlux &mcflux,
-			const std::vector<caf::SRTrueParticle> &srparticles,
-			caf::SRTrueInteraction &srneutrino, size_t i) {
+      const simb::MCFlux &mcflux,
+      const std::vector<caf::SRTrueParticle> &srparticles,
+      caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
 
@@ -146,12 +146,12 @@ namespace caf {
   //------------------------------------------------
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
-			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
-			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
                           const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
-			  const cheat::BackTrackerService &backtracker,
-			  const cheat::ParticleInventoryService &inventory_service,
-			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
     std::vector<const sim::IDE*> empty;
@@ -290,6 +290,8 @@ namespace caf {
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
     srparticle.G4ID = particle.TrackId();
+    srparticle.parent = particle.Mother();
+    std::cout << "TEST: "<< srparticle.parent << std::endl;
 
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
@@ -685,8 +687,8 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
           continue;
         // un-contaned one is on edge -- treat both as contained
         else if ((p0_edge && box.Contain(p1)) || (box.Contain(p0) && p1_edge)) {
-	  length = (v1 - v0).Mag();
-	  break;
+    length = (v1 - v0).Mag();
+    break;
         }
         else {
           assert(false); // bad
@@ -769,10 +771,10 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 
   // sort highest energy match to lowest
   std::sort(ret.matches.begin(), ret.matches.end(),
-	    [](const caf::ParticleMatch &a, const caf::ParticleMatch &b) {
-	      return a.energy > b.energy;
-	    }
-	    );
+      [](const caf::ParticleMatch &a, const caf::ParticleMatch &b) {
+        return a.energy > b.energy;
+      }
+      );
 
   if (ret.matches.size()) {
     ret.bestmatch = ret.matches.at(0);
@@ -788,9 +790,9 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 }//MatchTrack2Truth
 //------------------------------------------------
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-				   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+           const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                                    const std::vector<caf::SRTrueInteraction> &srneutrinos,
-				   const cheat::ParticleInventoryService &inventory_service,
+           const cheat::ParticleInventoryService &inventory_service,
                                    const detinfo::DetectorClocksData &clockData) {
   caf::SRTruthMatch ret;
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
@@ -814,8 +816,8 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     }
     for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
       if (truth == neutrinos[ind]) {
-	matching_energy[ind] += pair.second;
-	break;
+  matching_energy[ind] += pair.second;
+  break;
       }
     }
   }
