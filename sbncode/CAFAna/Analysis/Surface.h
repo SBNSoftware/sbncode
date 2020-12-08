@@ -102,13 +102,16 @@ namespace ana
     /// For expert use, custom painting of contours
     std::vector<TGraph*> GetGraphs(TH2* fc, double minchi = -1);
 
-    void SaveTo(TDirectory * dir) const;
-    static std::unique_ptr< Surface > LoadFrom(TDirectory * dir);
+    void SaveTo(TDirectory* dir) const;
+    static std::unique_ptr<Surface> LoadFrom(TDirectory* dir);
+    static std::unique_ptr<Surface> LoadFromMulti(const std::vector<TFile*>& files, const std::string& label);
+    static std::unique_ptr<Surface> LoadFromMulti(const std::string& wildcard, const std::string& label);
 
   protected:
     Surface(){};
 
     void EnsureAxes() const;
+    void CheckMask(const std::string& func) const;
 
     void FillSurface(const std::string& progTitle,
                      const IExperiment* expt,
@@ -137,6 +140,7 @@ namespace ana
     bool fLogX, fLogY;
     std::vector<TH2*> fProfHists;
     std::vector<double> fSeedValues;
+    std::vector<int> fBinMask;
   };
 
   /// Up-value surface for 68% confidence in 2D in gaussian approximation
