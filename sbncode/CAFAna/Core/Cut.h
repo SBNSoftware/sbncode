@@ -25,8 +25,8 @@ namespace ana
   typedef _Cut<caf::SRSpillProxy> SpillCut;
 
   /// The simplest possible cut: pass everything, used as a default
-  const Cut kNoCut([](const caf::SRSliceProxy*){return true;});
+  const Cut kNoCut(NoCut<caf::SRSliceProxy>{});
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillCut kNoSpillCut([](const caf::SRSpillProxy*){return true;});
+  const SpillCut kNoSpillCut(NoCut<caf::SRSpillProxy>{});
 } // namespace
