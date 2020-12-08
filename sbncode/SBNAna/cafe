@@ -129,13 +129,13 @@ if __name__ == '__main__':
     if opts['prof']:
         os.environ['CPUPROFILE'] = tempfile.mkstemp()[1] # 'perf/cprof.prof'
 
-    if opts['stride']:
+    if opts['stride'] != None:
         if opts['stride'] <= 0:
             print('Illegal value for --stride:', opts['stride'])
             sys.exit(1)
         os.environ['CAFANA_STRIDE'] = str(opts['stride'])
-    if opts['offset']:
-        if not opts['stride']:
+    if opts['offset'] != None:
+        if opts['stride'] == None:
             print('Cannot specify --offset without --stride')
         if opts['offset'] < 0 or opts['offset'] >= opts['stride']:
             print('Illegal value for --offset:', opts['offset'])
