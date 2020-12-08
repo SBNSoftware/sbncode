@@ -10,7 +10,9 @@ void test_reducer(std::string fin,
   FileReducer reducer(fin, fout);
 
   // Only keep spills passing flash trigger
-  reducer.AddEventCut(kFlashTrigger);
+  reducer.AddSpillCut(kFlashTrigger);
+  // And within those, only slices passing this cut
+  reducer.AddSliceCut(kSlcNuScoreCut);
 
   // And when we do keep them, remove their true particle list
   reducer.AddReductionStep(ClearTrueParticles);

@@ -32,7 +32,7 @@ namespace ana
                            const std::string& outfile)
     : SpectrumLoaderBase(wildcard),
       fOutfile(outfile),
-      fEventCut(nullptr),
+      fSpillCut(nullptr), fSliceCut(nullptr),
       fCopyMetadata(false)
   {
   }
@@ -42,7 +42,8 @@ namespace ana
                            const std::string& outfile)
     : SpectrumLoaderBase(fnames),
       fOutfile(outfile),
-      fEventCut(nullptr),
+      fSpillCut(nullptr),
+      fSliceCut(nullptr),
       fCopyMetadata(false)
   {
   }
@@ -50,17 +51,29 @@ namespace ana
   //----------------------------------------------------------------------
   FileReducer::~FileReducer()
   {
-    delete fEventCut;
+    delete fSpillCut;
+    delete fSliceCut;
   }
 
   //----------------------------------------------------------------------
-  void FileReducer::AddEventCut(const SpillCut& cut)
+  void FileReducer::AddSpillCut(const SpillCut& cut)
   {
-    if(fEventCut){
-      *fEventCut = *fEventCut && cut;
+    if(fSpillCut){
+      *fSpillCut = *fSpillCut && cut;
     }
     else{
-      fEventCut = new SpillCut(cut);
+      fSpillCut = new SpillCut(cut);
+    }
+  }
+
+  //----------------------------------------------------------------------
+  void FileReducer::AddSliceCut(const SliceCut& cut)
+  {
+    if(fSliceCut){
+      *fSliceCut = *fSliceCut && cut;
+    }
+    else{
+      fSliceCut = new SliceCut(cut);
     }
   }
 
@@ -165,7 +178,7 @@ namespace ana
                                              srProxy.hdr.evt))) continue;
 
         /// see if we want to omit the event
-        if(!fEventCut || (*fEventCut)(&srProxy)){
+        if(!fSpillCut || (*fSpillCut)(&srProxy)){
           recTree->GetEntry(n);
 
           if(sr != oldsr){
@@ -173,9 +186,21 @@ namespace ana
             oldsr = sr;
           }
 
+          std::vector<int> tocut;
+          for(unsigned int i = 0; i < srProxy.slc.size(); ++i){
+            if(fSliceCut && !(*fSliceCut)(&srProxy.slc[i])) tocut.push_back(i);
+          }
+
+          // Remove slices in reverse order so that the indices remain valid
+          for(auto it = tocut.rbegin(); it != tocut.rend(); ++it){
+            sr->slc.erase(sr->slc.begin() + *it);
+          }
+
           // Apply any additional reduction steps
-          for(const auto & f: fReductionFuncs) f(sr);
-          for(const auto & f: fReductionFuncsWithProxy) f(sr, &srProxy);
+          for(const auto& f: fReductionFuncs) f(sr);
+          // This is kind of problematic since the proxy and actual record
+          // could be out of sync. Let's just disable this option for now.
+          //          for(const auto & f: fReductionFuncsWithProxy) f(sr, &srProxy);
 
           ++nRecPassed;
           trOut->Fill();

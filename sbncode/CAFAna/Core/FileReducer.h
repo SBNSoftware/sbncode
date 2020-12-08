@@ -24,19 +24,20 @@ namespace ana
     virtual ~FileReducer();
 
     /// Only copy records to the output file if they pass this cut
-    void AddEventCut(const SpillCut& cut);
+    void AddSpillCut(const SpillCut& cut);
+    void AddSliceCut(const SliceCut& cut);
 
     /// \brief If called, only events whose run/subrun/event occur in \a fname
     /// will be retained.
     void SetEventList(const std::string& fname);
 
     typedef void (ReductionFunc)(caf::StandardRecord*);
-    typedef void (ReductionFuncWithProxy)(caf::StandardRecord*,
-                                          const caf::Proxy<caf::StandardRecord>*);
+    //    typedef void (ReductionFuncWithProxy)(caf::StandardRecord*,
+    //                                          const caf::Proxy<caf::StandardRecord>*);
 
     /// Run the specified reduction function over each event
     void AddReductionStep(const std::function<ReductionFunc> &f) {fReductionFuncs.push_back(f);}
-    void AddReductionStep(const std::function<ReductionFuncWithProxy> &f) {fReductionFuncsWithProxy.push_back(f);}
+    //    void AddReductionStep(const std::function<ReductionFuncWithProxy> &f) {fReductionFuncsWithProxy.push_back(f);}
 
     /// Override any metadata key in the output file
     /*
@@ -59,12 +60,13 @@ namespace ana
     //                        const std::vector<std::string>& fnames) const;
 
     std::string fOutfile;
-    SpillCut*   fEventCut;
+    SpillCut*   fSpillCut;
+    SliceCut*   fSliceCut;
 
     std::set<std::tuple<int, int, int>> fEventList;
 
     std::vector<std::function<ReductionFunc>> fReductionFuncs;
-    std::vector<std::function<ReductionFuncWithProxy>> fReductionFuncsWithProxy;
+    //    std::vector<std::function<ReductionFuncWithProxy>> fReductionFuncsWithProxy;
 
     std::map<std::string, std::string> fMetaMap;
     bool        fCopyMetadata;
