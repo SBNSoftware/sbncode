@@ -324,9 +324,9 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  void SpectrumLoader::AccumulateExposures(const caf::SRSpill* spill)
-  {
-  }
+  //  void SpectrumLoader::AccumulateExposures(const caf::SRSpill* spill)
+  //  {
+  //  }
 
   //----------------------------------------------------------------------
   void SpectrumLoader::StoreExposures()

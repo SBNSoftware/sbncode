@@ -2,7 +2,7 @@
 
 #include "sbncode/FlatMaker/FlatRecord.h"
 
-#include "sbncode/CAFAna/Core/Progress.h"
+#include "CAFAna/Core/Progress.h"
 
 #include "TFile.h"
 #include "TH1.h"

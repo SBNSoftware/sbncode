@@ -40,7 +40,7 @@ sbndaq_artdaq_core  v0_07_02_of0
 # For CAFAna
 srproxy          v00.16
 osclib           v00.09
-cafanacore       v01.11
+cafanacore       v01.11-6-g1d7b843 # this is from the type_erasure branch
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers

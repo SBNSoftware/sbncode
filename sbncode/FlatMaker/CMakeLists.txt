@@ -14,7 +14,10 @@ include_directories($ENV{SRPROXY_INC})
 
 art_make_library(LIBRARY_NAME FlatMaker
                  SOURCE       FlatRecord.cxx
-                 LIBRARIES    ${ROOT_BASIC_LIB_LIST} ${ROOT_TREEPLAYER} # CAFAnaCore
+                 LIBRARIES    ${ROOT_BASIC_LIB_LIST}
+                              ${ROOT_TREEPLAYER}
+                              -L$ENV{CAFANACORE_LIB}
+                              CAFAnaCoreExt
                  )
 
 art_make_exec(NAME flatten_caf

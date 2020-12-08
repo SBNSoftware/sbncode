@@ -96,7 +96,7 @@ namespace ana
                      const Var& wei)
     : Spectrum(axis.GetLabels(), axis.GetBinnings())
   {
-    loader.AddSpectrum(*this, axis.GetMultiDVar(), spillcut, cut, shift, wei);
+    loader.AddSpectrum(*this, axis.GetVar1D(), spillcut, cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
@@ -186,7 +186,7 @@ namespace ana
                      const Var& wei)
     : Spectrum({xLabel, yLabel}, {binsx, binsy})
   {
-    Var multiDVar = Var2D(varx, binsx, vary, binsy);
+    Var multiDVar(varx, binsx, vary, binsy);
 
     loader.AddSpectrum(*this, multiDVar, spillcut, cut, shift, wei);
   }
@@ -222,7 +222,7 @@ namespace ana
 		     ESparse sparse)
     : Spectrum({xLabel, yLabel, zLabel}, {binsx, binsy, binsz}, sparse)
   {
-    Var multiDVar = Var3D(varx, binsx, vary, binsy, varz, binsz);
+    Var multiDVar(varx, binsx, vary, binsy, varz, binsz);
 
     loader.AddSpectrum(*this, multiDVar, spillcut, cut, shift, wei);
   }
@@ -848,7 +848,7 @@ namespace ana
 
     for(unsigned int i = 0; i < fBins.size(); ++i){
       TObjString(fLabels[i].c_str()).Write(TString::Format("label%d", i).Data());
-      fBins[i].SaveTo(dir->mkdir(TString::Format("bins%d", i)));
+      fBins[i].SaveTo(dir, TString::Format("bins%d", i).Data());
     }
 
     tmp->cd();
@@ -877,7 +877,7 @@ namespace ana
     for(int i = 0; ; ++i){
       TDirectory* subdir = dir->GetDirectory(TString::Format("bins%d", i));
       if(!subdir) break;
-      bins.push_back(*Binning::LoadFrom(subdir));
+      bins.push_back(*Binning::LoadFrom(dir, TString::Format("bins%d", i).Data()));
       TObjString* label = (TObjString*)dir->Get(TString::Format("label%d", i));
       labels.push_back(label ? label->GetString().Data() : "");
       delete subdir;

@@ -79,12 +79,12 @@ namespace ana
 
     Var multiDVar = axis.GetVars()[0];
     if(axis.NDimensions() == 2)
-      multiDVar = Var2D(axis.GetVars()[0], axis.GetBinnings()[0],
-                        axis.GetVars()[1], axis.GetBinnings()[1]);
+      multiDVar = Var(axis.GetVars()[0], axis.GetBinnings()[0],
+                      axis.GetVars()[1], axis.GetBinnings()[1]);
     if(axis.NDimensions() == 3)
-      multiDVar = Var3D(axis.GetVars()[0], axis.GetBinnings()[0],
-                        axis.GetVars()[1], axis.GetBinnings()[1],
-                        axis.GetVars()[2], axis.GetBinnings()[2]);
+      multiDVar = Var(axis.GetVars()[0], axis.GetBinnings()[0],
+                      axis.GetVars()[1], axis.GetBinnings()[1],
+                      axis.GetVars()[2], axis.GetBinnings()[2]);
 
     loader.AddReweightableSpectrum(*this, multiDVar, cut, shift, wei);
   }

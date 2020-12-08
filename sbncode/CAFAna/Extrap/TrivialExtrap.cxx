@@ -44,15 +44,15 @@ namespace ana
     // approximately doubles/triples our statistics. SpectrumLoader just adds
     // events and POT for both cases, which is the right thing to do.
 
-    loaderNue  .AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNCFromNumu, shift, wei);
-    loaderNuTau.AddReweightableSpectrum(fNCFromNumu, axis.GetMultiDVar(), cut && kIsNCFromNumu, shift, wei);
+    loaderNue  .AddReweightableSpectrum(fNCFromNumu, axis.GetVar1D(), cut && kIsNCFromNumu, shift, wei);
+    loaderNuTau.AddReweightableSpectrum(fNCFromNumu, axis.GetVar1D(), cut && kIsNCFromNumu, shift, wei);
 
-    loaderNue  .AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
-    loaderNuTau.AddReweightableSpectrum(fNCFromNue, axis.GetMultiDVar(), cut && kIsNCFromNue, shift, wei);
+    loaderNue  .AddReweightableSpectrum(fNCFromNue, axis.GetVar1D(), cut && kIsNCFromNue, shift, wei);
+    loaderNuTau.AddReweightableSpectrum(fNCFromNue, axis.GetVar1D(), cut && kIsNCFromNue, shift, wei);
 
     //Also load in intrinsic nues from nonswap file
-    loaderNonswap.AddReweightableSpectrum(fNueSurv, axis.GetMultiDVar(), cut && kIsBeamNue && !kIsAntiNu, shift, wei);
-    loaderNonswap.AddReweightableSpectrum(fNueSurvAnti, axis.GetMultiDVar(), cut && kIsBeamNue && kIsAntiNu, shift, wei);
+    loaderNonswap.AddReweightableSpectrum(fNueSurv, axis.GetVar1D(), cut && kIsBeamNue && !kIsAntiNu, shift, wei);
+    loaderNonswap.AddReweightableSpectrum(fNueSurvAnti, axis.GetVar1D(), cut && kIsBeamNue && kIsAntiNu, shift, wei);
 
   }
 

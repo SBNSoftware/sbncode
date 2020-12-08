@@ -3,6 +3,11 @@
 #include "CAFAna/Core/Cut.h"
 #include "CAFAna/Core/ISyst.h"
 
+#include <cassert>
+#include <memory>
+
+class TDirectory;
+
 namespace ana
 {
   /// Uncertainty in the scale of a single component of the spectrum

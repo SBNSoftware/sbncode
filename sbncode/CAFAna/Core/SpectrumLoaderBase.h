@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <functional>
 #include <list>
 #include <memory>
@@ -108,7 +109,7 @@ namespace ana
     virtual void RemoveSpectrum(Spectrum*);
     virtual void RemoveReweightableSpectrum(ReweightableSpectrum*);
 
-    virtual void AccumulateExposures(const caf::SRSpill* spill) = 0;
+    //    virtual void AccumulateExposures(const caf::SRSpill* spill) = 0;
 
     /// Forwards to \ref fFileSource
     int NFiles() const;
@@ -250,7 +251,7 @@ namespace ana
                                  const SystShifts& shift,
                                  const Var& wei) override {}
 
-    void AccumulateExposures(const caf::SRSpill* spill) override {};
+    //    void AccumulateExposures(const caf::SRSpill* spill) override {};
   };
   /// \brief Dummy loader that doesn't load any files
   ///

@@ -69,7 +69,7 @@ namespace ana
                         xbins.NBins(), &xbins.Edges()[0],
                         ybins.NBins(), &ybins.Edges()[0]);
 
-    loader.AddReweightableSpectrum(*this, recoAxis.GetMultiDVar(), cut, shift, wei);
+    loader.AddReweightableSpectrum(*this, recoAxis.GetVar1D(), cut, shift, wei);
   }
 
   //----------------------------------------------------------------------
@@ -462,7 +462,7 @@ namespace ana
 
     for(unsigned int i = 0; i < fBins.size(); ++i){
       TObjString(fLabels[i].c_str()).Write(TString::Format("label%d", i).Data());
-      fBins[i].SaveTo(dir->mkdir(TString::Format("bins%d", i)));
+      fBins[i].SaveTo(dir, TString::Format("bins%d", i).Data());
     }
 
     tmp->cd();
