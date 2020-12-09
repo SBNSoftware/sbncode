@@ -146,6 +146,18 @@ if __name__ == '__main__':
     if opts['snapshot']:
         os.environ['CAFANA_USE_SNAPSHOTS'] = 'yes'
 
+    # Take manual control of $ROOT_INCLUDE_PATH so we can decide what is and
+    # isn't accesssible.
+    os.environ['ROOT_INCLUDE_PATH'] = \
+      ':'.join([os.environ['MRB_SOURCE']+'/sbncode/sbncode',
+                os.environ['CAFANACORE_INC'],
+#                os.environ['OSCLIB_INC'],
+                os.environ['SRPROXY_INC'],
+                os.environ['ROOT_INC'],
+                os.environ['STAN_MATH_INC'],
+                os.environ['BOOST_INC'],
+                os.environ['EIGEN_INC']])
+
     if script.endswith('.py'):
         for a in ['gdb', 'valgrind', 'leakcheck', 'massif', 'totalview', 'prof']:
             if opts[a]:
