@@ -22,31 +22,27 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  SpectrumLoader::SpectrumLoader(const std::string& wildcard, DataSource src, int max)
-    : SpectrumLoaderBase(wildcard, src), max_entries(max)
+  SpectrumLoader::SpectrumLoader(const std::string& wildcard, int max)
+    : SpectrumLoaderBase(wildcard), max_entries(max)
   {
   }
 
   //----------------------------------------------------------------------
-  SpectrumLoader::SpectrumLoader(const std::vector<std::string>& fnames,
-                                 DataSource src, int max)
-    : SpectrumLoaderBase(fnames, src), max_entries(max)
+  SpectrumLoader::SpectrumLoader(const std::vector<std::string>& fnames, int max)
+    : SpectrumLoaderBase(fnames), max_entries(max)
   {
   }
 
   //----------------------------------------------------------------------
-  SpectrumLoader::SpectrumLoader(DataSource src)
-    : SpectrumLoaderBase(src)
+  SpectrumLoader::SpectrumLoader()
   {
   }
 
   //----------------------------------------------------------------------
   SpectrumLoader SpectrumLoader::FromSAMProject(const std::string& proj,
-                                                DataSource src,
                                                 int fileLimit)
   {
     SpectrumLoader ret;
-    ret.fSource = src;
     ret.fWildcard = "project "+proj;
     ret.fFileSource = std::unique_ptr<IFileSource>(new SAMProjectSource(proj, fileLimit));
     return ret;
@@ -200,12 +196,12 @@ namespace ana
         for(auto spillvardef: spillweidef.second){
           if(spillvardef.first.IsMulti()){
             for(double val: spillvardef.first.GetMultiVar()(sr)){
-              for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+              for(Spectrum** s: spillvardef.second.spects) if(*s) (*s)->Fill(val, wei);
             }
           }
           else{
             const double val = spillvardef.first.GetVar()(sr);
-            for(Spectrum* s: spillvardef.second.spects) s->Fill(val, wei);
+            for(Spectrum** s: spillvardef.second.spects) if(*s) (*s)->Fill(val, wei);
           }
         }
       }
@@ -266,8 +262,8 @@ namespace ana
               for(auto& vardef: weidef.second){
                 if(vardef.first.IsMulti()){
                   for(double val: vardef.first.GetMultiVar()(&slc)){
-                    for(Spectrum* s: vardef.second.spects)
-                      s->Fill(val, wei);
+                    for(Spectrum** s: vardef.second.spects)
+                      if(*s) (*s)->Fill(val, wei);
                   }
                   continue;
                 }
@@ -285,10 +281,12 @@ namespace ana
                   continue;
                 }
 
-                for(Spectrum* s: vardef.second.spects) s->Fill(val, wei);
+                for(Spectrum** s: vardef.second.spects) if(*s) (*s)->Fill(val, wei);
 
-                for(ReweightableSpectrum* rw: vardef.second.rwSpects){
-                  const double yval = rw->ReweightVar()(&slc);
+                for(auto rv: vardef.second.rwSpects){
+                  ReweightableSpectrum** rw = rv.first;
+                  if(!*rw) continue;
+                  const double yval = rv.second(&slc);
 
                   if(std::isnan(yval) || std::isinf(yval)){
                     std::cerr << "Warning: Bad value: " << yval
@@ -297,7 +295,7 @@ namespace ana
                     continue;
                   }
 
-                  rw->fHist->Fill(val, yval, wei);
+                  (*rw)->Fill(val, yval, wei);
                 } // end for rw
               } // end for vardef
             } // end for weidef
@@ -323,10 +321,16 @@ namespace ana
     std::cout << fPOT << " POT" << std::endl;
   }
 
-  //----------------------------------------------------------------------
-  //  void SpectrumLoader::AccumulateExposures(const caf::SRSpill* spill)
-  //  {
-  //  }
+  // cafanacore's spectra are expecting a different structure of
+  // spectrumloader. But we can easily trick it with these.
+  struct SpectrumSink
+  {
+    static void FillPOT(Spectrum* s, double pot){s->fPOT += pot;}
+  };
+  struct ReweightableSpectrumSink
+  {
+    static void FillPOT(ReweightableSpectrum* rw, double pot){rw->fPOT += pot;}
+  };
 
   //----------------------------------------------------------------------
   void SpectrumLoader::StoreExposures()
@@ -336,8 +340,8 @@ namespace ana
         for(auto& cutdef: spillcutdef.second){
           for(auto& weidef: cutdef.second){
             for(auto& vardef: weidef.second){
-              for(Spectrum* s: vardef.second.spects) s->fPOT += fPOT;
-              for(ReweightableSpectrum* rw: vardef.second.rwSpects) rw->fPOT += fPOT;
+              for(Spectrum** s: vardef.second.spects) if(*s) SpectrumSink::FillPOT(*s, fPOT);
+              for(auto rv: vardef.second.rwSpects) if(*rv.first) ReweightableSpectrumSink::FillPOT(*rv.first, fPOT);
             }
           }
         }
@@ -348,7 +352,7 @@ namespace ana
     for(auto& spillcutdef: fSpillHistDefs){
       for(auto& spillweidef: spillcutdef.second){
         for(auto spillvardef: spillweidef.second){
-          for(Spectrum* s: spillvardef.second.spects) s->fPOT += fPOT;
+          for(Spectrum** s: spillvardef.second.spects) if(*s) SpectrumSink::FillPOT(*s, fPOT);
         }
       }
     }

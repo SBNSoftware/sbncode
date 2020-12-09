@@ -23,44 +23,37 @@
 
 namespace ana
 {
-  //----------------------------------------------------------------------
-  void SpectrumLoaderBase::SpectList::Erase(Spectrum* s)
-  {
-    auto it = std::find(spects.begin(), spects.end(), s);
-    if(it != spects.end()) spects.erase(it);
-  }
 
   //----------------------------------------------------------------------
-  void SpectrumLoaderBase::SpectList::Erase(ReweightableSpectrum* rs)
+  SpectrumLoaderBase::SpectList::~SpectList()
   {
-    auto it = std::find(rwSpects.begin(), rwSpects.end(), rs);
-    if(it != rwSpects.end()) rwSpects.erase(it);
+    // We don't seem to be able to do this - maybe SpectList gets copied?
+    // Let's just bite the bullet and leak a few pointers. This all works
+    // completely differently in NOvA CAFAna with refactored SpectrumLoader.
+    //
+    // Clean up the memory allocated for the pointers themselves
+    //    for(Spectrum** s: spects) delete *s;
+    //    for(auto rv: rwSpects) delete *rv.first;
   }
+
+  // Work around ReweightableSpectrum's friend requirements
+  struct ReweightableSpectrumSink
+  {
+    static void AddLoader(ReweightableSpectrum** rw){(*rw)->AddLoader(rw);}
+    static void RemoveLoader(ReweightableSpectrum** rw){(*rw)->RemoveLoader(rw);}
+  };
 
   //----------------------------------------------------------------------
   void SpectrumLoaderBase::SpectList::RemoveLoader(SpectrumLoaderBase* l)
   {
-    for(Spectrum* s: spects) s->RemoveLoader(l);
-    for(ReweightableSpectrum* rs: rwSpects) rs->RemoveLoader(l);
+    for(Spectrum** s: spects) if(*s) (*s)->RemoveLoader(s);
+    for(auto rv: rwSpects) if(*rv.first) ReweightableSpectrumSink::RemoveLoader(rv.first);
   }
 
   //----------------------------------------------------------------------
   size_t SpectrumLoaderBase::SpectList::TotalSize() const
   {
     return spects.size() + rwSpects.size();
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoaderBase::SpectList::GetSpectra(std::vector<Spectrum*>& ss)
-  {
-    ss.insert(ss.end(), spects.begin(), spects.end());
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoaderBase::SpectList::
-  GetReweightableSpectra(std::vector<ReweightableSpectrum*>& ss)
-  {
-    ss.insert(ss.end(), rwSpects.begin(), rwSpects.end());
   }
 
   //----------------------------------------------------------------------
@@ -72,12 +65,6 @@ namespace ana
     }
     fElems.push_back(std::make_pair(key, U()));
     return fElems.back().second;
-  }
-
-  //----------------------------------------------------------------------
-  template<class T, class U> template<class V> void SpectrumLoaderBase::IDMap<T, U>::Erase(const V& v)
-  {
-    for(auto& it: fElems) it.second.Erase(v);
   }
 
   //----------------------------------------------------------------------
@@ -102,41 +89,24 @@ namespace ana
     return ret;
   }
 
-  //----------------------------------------------------------------------
-  template<class T, class U> void SpectrumLoaderBase::IDMap<T, U>::
-  GetSpectra(std::vector<Spectrum*>& ss)
-  {
-    for(auto& it: fElems) it.second.GetSpectra(ss);
-  }
-
-  //----------------------------------------------------------------------
-  template<class T, class U> void SpectrumLoaderBase::IDMap<T, U>::
-  GetReweightableSpectra(std::vector<ReweightableSpectrum*>& ss)
-  {
-    for(auto& it: fElems) it.second.GetReweightableSpectra(ss);
-  }
-
   // Start of SpectrumLoaderBase proper
 
   //----------------------------------------------------------------------
-  SpectrumLoaderBase::SpectrumLoaderBase(DataSource src)
-    : fSource(src), fGone(false), fPOT(0)
+  SpectrumLoaderBase::SpectrumLoaderBase()
+    : fGone(false), fPOT(0)
   {
   }
 
   //----------------------------------------------------------------------
-  SpectrumLoaderBase::SpectrumLoaderBase(const std::string& wildcard,
-                                         DataSource src)
-    : SpectrumLoaderBase(src)
+  SpectrumLoaderBase::SpectrumLoaderBase(const std::string& wildcard)
+    : SpectrumLoaderBase()
   {
     fWildcard = wildcard;
     fFileSource = std::unique_ptr<IFileSource>(WildcardOrSAMQuery(wildcard));
   }
 
   //----------------------------------------------------------------------
-  SpectrumLoaderBase::SpectrumLoaderBase(const std::vector<std::string>& fnames,
-                                         DataSource src)
-    : SpectrumLoaderBase(src)
+  SpectrumLoaderBase::SpectrumLoaderBase(const std::vector<std::string>& fnames) : SpectrumLoaderBase()
   {
     fWildcard = "file list";
     fFileSource = std::unique_ptr<IFileSource>(new FileListSource(fnames));
@@ -149,6 +119,7 @@ namespace ana
   SpectrumLoaderBase::~SpectrumLoaderBase()
   {
     fHistDefs.RemoveLoader(this);
+    fHistDefs.Clear();
   }
 
   //----------------------------------------------------------------------
@@ -209,9 +180,12 @@ namespace ana
       abort();
     }
 
-    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(&spect);
+    Spectrum** ps = new Spectrum*;
+    *ps = &spect;
+    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(ps);
 
-    spect.AddLoader(this); // Remember we have a Go() pending
+    // Remember we have a Go() pending
+    spect.AddLoader(ps);
   }
 
   //----------------------------------------------------------------------
@@ -227,9 +201,12 @@ namespace ana
       abort();
     }
 
-    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(&spect);
+    Spectrum** ps = new Spectrum*;
+    *ps = &spect;
+    fHistDefs[spillcut][shift][cut][wei][var].spects.push_back(ps);
 
-    spect.AddLoader(this); // Remember we have a Go() pending
+    // Remember we have a Go() pending
+    spect.AddLoader(ps);
   }
 
   //----------------------------------------------------------------------
@@ -243,9 +220,12 @@ namespace ana
       abort();
     }
 
-    fSpillHistDefs[cut][wei][var].spects.push_back(&spect);
+    Spectrum** ps = new Spectrum*;
+    *ps = &spect;
+    fSpillHistDefs[cut][wei][var].spects.push_back(ps);
 
-    spect.AddLoader(this); // Remember we have a Go() pending
+    // Remember we have a Go() pending
+    spect.AddLoader(ps);
   }
 
   //----------------------------------------------------------------------
@@ -259,20 +239,18 @@ namespace ana
       abort();
     }
 
-    fSpillHistDefs[cut][wei][var].spects.push_back(&spect);
+    Spectrum** ps = new Spectrum*;
+    *ps = &spect;
+    fSpillHistDefs[cut][wei][var].spects.push_back(ps);
 
-    spect.AddLoader(this); // Remember we have a Go() pending
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoaderBase::RemoveSpectrum(Spectrum* spect)
-  {
-    fHistDefs.Erase(spect);
+    // Remember we have a Go() pending
+    spect.AddLoader(ps);
   }
 
   //----------------------------------------------------------------------
   void SpectrumLoaderBase::AddReweightableSpectrum(ReweightableSpectrum& spect,
-                                                   const Var& var,
+                                                   const Var& xvar,
+                                                   const Var& yvar,
                                                    const Cut& cut,
                                                    const SystShifts& shift,
                                                    const Var& wei)
@@ -282,16 +260,12 @@ namespace ana
       abort();
     }
 
-    fHistDefs[kNoSpillCut][shift][cut][wei][var].rwSpects.push_back(&spect);
+    ReweightableSpectrum** prw = new ReweightableSpectrum*;
+    *prw = &spect;
+    fHistDefs[kNoSpillCut][shift][cut][wei][xvar].rwSpects.emplace_back(prw, yvar);
 
-    spect.AddLoader(this); // Remember we have a Go() pending
-  }
-
-  //----------------------------------------------------------------------
-  void SpectrumLoaderBase::
-  RemoveReweightableSpectrum(ReweightableSpectrum* spect)
-  {
-    fHistDefs.Erase(spect);
+    // Remember we have a Go() pending
+    ReweightableSpectrumSink::AddLoader(prw);
   }
 
   //----------------------------------------------------------------------

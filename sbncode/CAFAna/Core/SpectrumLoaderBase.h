@@ -25,14 +25,6 @@ namespace ana
   class Spectrum;
   class ReweightableSpectrum;
 
-  /// Is this data-file representing beam spills or cosmic spills?
-  enum DataSource{
-    // TODO there are no longer any actions taken as a result of this
-    // distinction. Remove after SA.
-    kBeam,
-    kCosmic
-  };
-
   /// Base class for the various types of spectrum loader
   class SpectrumLoaderBase
   {
@@ -75,7 +67,8 @@ namespace ana
 
     /// For use by the constructors of \ref ReweightableSpectrum subclasses
     virtual void AddReweightableSpectrum(ReweightableSpectrum& spect,
-                                         const Var& var,
+                                         const Var& xvar,
+                                         const Var& yvar,
                                          const Cut& cut,
                                          const SystShifts& shift,
                                          const Var& wei);
@@ -88,11 +81,11 @@ namespace ana
 
   protected:
     /// Component of other constructors
-    SpectrumLoaderBase(DataSource src = kBeam);
+    SpectrumLoaderBase();
     /// Construct from a filename, wildcard, SAM definition, or SAM query
-    SpectrumLoaderBase(const std::string& wildcard, DataSource src = kBeam);
+    SpectrumLoaderBase(const std::string& wildcard);
     /// Construct from an explicit list of files
-    SpectrumLoaderBase(const std::vector<std::string>& fnames, DataSource src = kBeam);
+    SpectrumLoaderBase(const std::vector<std::string>& fnames);
 
     // Move operations
     SpectrumLoaderBase(SpectrumLoaderBase&&) = default;
@@ -105,11 +98,6 @@ namespace ana
     /// Figure out if \a str is a wildcard or SAM query and return a source
     IFileSource* WildcardOrSAMQuery(const std::string& str) const;
 
-    friend class SpectrumLoaderMockData;
-    virtual void RemoveSpectrum(Spectrum*);
-    virtual void RemoveReweightableSpectrum(ReweightableSpectrum*);
-
-    //    virtual void AccumulateExposures(const caf::SRSpill* spill) = 0;
 
     /// Forwards to \ref fFileSource
     int NFiles() const;
@@ -120,8 +108,6 @@ namespace ana
     std::string fWildcard;
     std::unique_ptr<IFileSource> fFileSource;
 
-    DataSource fSource;
-
     bool fGone; ///< Has Go() been called? Can't add more histograms after that
 
     double fPOT; ///< Accumulated by calls to \ref GetNextFile
@@ -131,15 +117,14 @@ namespace ana
     /// List of Spectrum and OscillatableSpectrum, some utility functions
     struct SpectList
     {
-      void Erase(Spectrum* s);
-      void Erase(ReweightableSpectrum* os);
+      ~SpectList();
       void RemoveLoader(SpectrumLoaderBase* l);
       size_t TotalSize() const;
-      void GetSpectra(std::vector<Spectrum*>& ss);
-      void GetReweightableSpectra(std::vector<ReweightableSpectrum*>& ss);
 
-      std::vector<Spectrum*> spects;
-      std::vector<ReweightableSpectrum*> rwSpects;
+      // Doubled pointers are sadly necessary as we need the locations of the
+      // nodes to be constant so Spectrum can re-register itself if moved.
+      std::vector<Spectrum**> spects;
+      std::vector<std::pair<ReweightableSpectrum**, Var>> rwSpects;
     };
 
     /// \brief Helper class for \ref SpectrumLoaderBase
@@ -157,12 +142,9 @@ namespace ana
       inline it_t begin(){return fElems.begin();}
       inline it_t end(){return fElems.end();}
 
-      template<class V> void Erase(const V& v);
       void RemoveLoader(SpectrumLoaderBase* l);
       void Clear();
       size_t TotalSize();
-      void GetSpectra(std::vector<Spectrum*>& ss);
-      void GetReweightableSpectra(std::vector<ReweightableSpectrum*>& ss);
     protected:
       std::vector<std::pair<T, U>> fElems;
     };
@@ -246,12 +228,11 @@ namespace ana
 
 
     void AddReweightableSpectrum(ReweightableSpectrum& spect,
-                                 const Var& var,
+                                 const Var& xvar,
+                                 const Var& yvar,
                                  const Cut& cut,
                                  const SystShifts& shift,
                                  const Var& wei) override {}
-
-    //    void AccumulateExposures(const caf::SRSpill* spill) override {};
   };
   /// \brief Dummy loader that doesn't load any files
   ///

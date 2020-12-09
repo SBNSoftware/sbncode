@@ -22,34 +22,29 @@ namespace ana
     /// Configure loader via wildcard \a path
     void SetLoaderPath(const std::string& path,
                        DataMC datamc,
-                       DataSource src = kBeam,
                        SwappingConfig swap = kNonSwap);
 
     /// Configure loader via explicit file list
     void SetLoaderFiles(const std::vector<std::string>& files,
                         DataMC datamc,
-                        DataSource src = kBeam,
                         SwappingConfig swap = kNonSwap);
 
     void AddLoader(SpectrumLoaderBase*,
                         DataMC datamc,
-                        DataSource src = kBeam,
                         SwappingConfig swap = kNonSwap);
 
     void DisableLoader(DataMC datamc,
-                       DataSource src = kBeam,
                        SwappingConfig swap = kNonSwap);
 
     /// Retrieve a specific loader
     SpectrumLoaderBase& GetLoader(DataMC datamc,
-                                  DataSource src = kBeam,
                                   SwappingConfig swap = kNonSwap);
 
     /// Call Go() on all the loaders
     void Go();
 
   protected:
-    typedef std::tuple<DataMC, DataSource, SwappingConfig> Key_t;
+    typedef std::tuple<DataMC, SwappingConfig> Key_t;
 
     // Hold a list of paths that have been set
     std::map<Key_t, std::string> fLoaderPaths;
