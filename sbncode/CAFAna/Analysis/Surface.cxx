@@ -222,16 +222,17 @@ namespace ana
                   << "This should never happen." << std::endl;
       }
 
-      if(fParallel){
-        pool->AddMemberTask(this, &Surface::FillSurfacePoint,
-                            expt, calc,
-                            xax, xv, yax, yv,
-                            profVars, profSysts, seedPts, systSeedPts);
-      }
-      else{
+      ThreadPool::func_t task = [=](){
         FillSurfacePoint(expt, calc,
                          xax, xv, yax, yv,
                          profVars, profSysts, seedPts, systSeedPts);
+      };
+
+      if(fParallel){
+        pool->AddTask(task);
+      }
+      else{
+        task(); // Just do it straight away
         ++neval;
         prog->SetProgress(neval*grid_stride/double(Nx*Ny));
       }
