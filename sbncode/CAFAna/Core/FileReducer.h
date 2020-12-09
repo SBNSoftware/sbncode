@@ -51,9 +51,6 @@ namespace ana
 
     virtual void Go() override;
 
-    // required by the interface, but not needed for anything done by FileReducer
-    virtual void AccumulateExposures(const caf::SRSpill* spill) override {};
-
   protected:
     //    void UpdateMetadata(std::map<std::string, std::string>& meta,
     //                        const std::set<std::string>& mask,

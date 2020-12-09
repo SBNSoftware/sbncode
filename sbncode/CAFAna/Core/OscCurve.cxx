@@ -1,128 +1,83 @@
 #include "CAFAna/Core/OscCurve.h"
 
 #include "CAFAna/Core/Binning.h"
-#include "CAFAna/Core/HistCache.h"
-#include "CAFAna/Core/Utilities.h"
 
 #include "OscLib/IOscCalc.h"
 
-#include <cassert>
+#include "TH1.h"
+
 #include <iostream>
 #include <map>
-
-#include "TH1.h"
 
 #include "CAFAna/Core/OscCalcSterileApprox.h"
 
 namespace
 {
-  inline bool IsNoOscillations(const osc::IOscCalc* c)
+  template<class T> inline bool IsNoOscillations(const osc::_IOscCalc<T>* c)
   {
-    return dynamic_cast<const osc::NoOscillations*>(c) != 0;
+    return dynamic_cast<const osc::_NoOscillations<T>*>(c) != 0;
   }
 }
 
 namespace ana
 {
   //----------------------------------------------------------------------
-  OscCurve::OscCurve(osc::IOscCalc* calc, int from, int to, bool LoverE)
-    : fFrom(from), fTo(to)
+  /// Helper for constructors
+  template<class T> Eigen::Array<T, Eigen::Dynamic, 1>
+  ToEigen(osc::_IOscCalc<T>* calc, int from, int to)
   {
-    DontAddDirectory guard;
+    const unsigned int N = kTrueLOverEBins.NBins();
 
-    fHist = LoverE ? HistCache::New("True L / E (km / GeV);Probability", kTrueLOverEBins) : HistCache::New(";True Energy (GeV);Probability", kTrueEnergyBins);
+    // Have to allow for underflow and overflow
+    Eigen::Array<T, Eigen::Dynamic, 1> ret(N+2);
+    ret[0] = (from == to || to == 0) ? 1 : 0; // underflow
+    ret[N+1] = 0; // overflow
+
 
     // We have extra knowledge that calculators of this type have special
     // modes allowing calculation in L/E and an intrinsic energy smearing.
     OscCalcSterileApprox* approx = DowncastToSterileApprox(calc, true);
 
     if(approx){
-      for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
-        if(LoverE){
-          const double LElo = fHist->GetXaxis()->GetBinLowEdge(i);
-          const double LEhi = fHist->GetXaxis()->GetBinUpEdge(i);
-          fHist->SetBinContent(i, approx->P_LoverE(from, to, LElo, LEhi));
-        }
-        else{
-          const double E = fHist->GetBinCenter(i);
-          const double Elo = fHist->GetXaxis()->GetBinLowEdge(i);
-          const double Ehi = fHist->GetXaxis()->GetBinUpEdge(i);
-          // Use 2% resolution (intended to be << the resolution of any actual
-          // event) or the bin width, whichever is larger
-          fHist->SetBinContent(i, approx->P_range(from, to,
-                                                  std::min(Elo, 0.98*E),
-                                                  std::max(Ehi, 1.02*E)));
-        }
-        fHist->SetBinError(i, 0);
+      for(unsigned int i = 1; i <= N; ++i){
+        const double LElo = kTrueLOverEBins.Edges()[i-1];
+        const double LEhi = kTrueLOverEBins.Edges()[i];
+        ret[i] = approx->P_LoverE(from, to, LElo, LEhi);
       }
     }
     else{
-      if(LoverE && !IsNoOscillations(calc)){
+      if(!IsNoOscillations(calc)){
         std::cout << "Trying to use a calculator which is not OscCalcSterileApprox with an L/E axis. Will have to code up additional hacks for this to work" << std::endl;
         abort();
       }
 
-      for(int i = 0; i < fHist->GetNbinsX()+2; ++i){
-        const double E = fHist->GetBinCenter(i);
-        fHist->SetBinContent(i, E > 0 ? calc->P(from, to, E) : 0);
-        fHist->SetBinError(i, 0);
-      }
+      for(unsigned int i = 1; i <= N; ++i) ret[i] = calc->P(from, to, 1); // energy irrelevant for NoOsc calc
     }
+
+    return ret;
   }
 
   //----------------------------------------------------------------------
-  OscCurve::OscCurve(TH1* h)
+  OscCurve::OscCurve(osc::IOscCalc* calc, int from, int to)
+    : Ratio(Hist::Adopt(ToEigen(calc, from, to)),
+            std::vector<Binning>(1, kTrueLOverEBins),
+            std::vector<std::string>(1, "True L / E (km / GeV)")),
+      fFrom(from), fTo(to)
   {
-    DontAddDirectory guard;
+  }
 
-    const TString className = h->ClassName();
-
-    if(className == "TH1D"){
-      // Shortcut if types match
-      fHist = HistCache::Copy((TH1D*)h);
-    }
-    else{
-      fHist = HistCache::New("", h->GetXaxis());
-      fHist->Add(h);
-    }
-
-    fHist->SetTitle(";True Energy (GeV);Probability");
+  //----------------------------------------------------------------------
+  OscCurve::OscCurve(osc::IOscCalcStan* calc, int from, int to)
+    : Ratio(Hist::AdoptStan(ToEigen(calc, from, to)),
+            std::vector<Binning>(1, kTrueLOverEBins),
+            std::vector<std::string>(1, "True L / E (km / GeV)")),
+      fFrom(from), fTo(to)
+  {
   }
 
   //----------------------------------------------------------------------
   OscCurve::~OscCurve()
   {
-    if(fHist && fHist->GetDirectory()){
-      static bool once = true;
-      if(once){
-        once = false;
-        std::cerr << "OscCurve's fHist is associated with a directory. How did that happen?" << std::endl;
-      }
-    }
-
-    HistCache::Delete(fHist);
-  }
-
-  //----------------------------------------------------------------------
-  OscCurve::OscCurve(const OscCurve& rhs)
-  {
-    DontAddDirectory guard;
-
-    assert(rhs.fHist);
-    fHist = HistCache::Copy(rhs.fHist);
-  }
-
-  //----------------------------------------------------------------------
-  OscCurve& OscCurve::operator=(const OscCurve& rhs)
-  {
-    if(&rhs == this) return *this;
-
-    DontAddDirectory guard;
-
-    HistCache::Delete(fHist);
-    assert(rhs.fHist);
-    fHist = HistCache::Copy(rhs.fHist);
-    return *this;
   }
 
   //----------------------------------------------------------------------
@@ -131,7 +86,8 @@ namespace ana
     // Could have a file temporarily open
     DontAddDirectory guard;
 
-    TH1D* ret = HistCache::Copy(fHist);
+    TH1D* ret = Ratio::ToTH1();
+    ret->GetYaxis()->SetTitle("Probability");
 
     if(title){
       // Don't do this work unless it's explicitly requested

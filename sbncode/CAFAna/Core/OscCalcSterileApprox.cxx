@@ -231,4 +231,15 @@ namespace ana
     abort();
   }
 
+
+  //---------------------------------------------------------------------------
+  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalcStan* calc,
+                                                bool allowFail)
+  {
+    if(allowFail) return 0;
+
+    std::cout << "Stan calculator can not be an OscCalcSterileApprox" << std::endl;
+    abort();
+  }
+
 }

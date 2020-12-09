@@ -2,6 +2,8 @@
 
 #include "OscLib/IOscCalc.h"
 
+#include "CAFAna/Core/StanTypedefs.h"
+
 namespace ana
 {
   class OscCalcSterileApprox: public osc::IOscCalc
@@ -75,4 +77,7 @@ namespace ana
 
   const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalc* calc, bool allowFail = false);
   OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalc* calc, bool allowFail = false);
+
+  // This is not possible, but need to provide it to satisfy other interface
+  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalcStan* calc, bool allowFail = false);
 }
