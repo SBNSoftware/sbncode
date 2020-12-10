@@ -517,7 +517,7 @@ namespace ana
   TH2* Gaussian2Sigma2D   (const Surface& s){return Flat(6.18,  s);}
   TH2* Gaussian99Percent2D(const Surface& s){return Flat(9.21,  s);}
   TH2* Gaussian3Sigma2D   (const Surface& s){return Flat(11.83, s);}
-  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.23, s);}
+  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.74, s);}
 
   TH2* Gaussian68Percent1D(const Surface& s){return Flat(1.00, s);}
   TH2* Gaussian90Percent1D(const Surface& s){return Flat(2.71, s);}
