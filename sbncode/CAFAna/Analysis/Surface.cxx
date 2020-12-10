@@ -550,10 +550,10 @@ namespace ana
   TH2* Gaussian3Sigma1D   (const Surface& s){return Flat(9.00, s);}
 
   TH2* Gaussian90Percent1D1Sided(const Surface& s){return Flat(1.64, s);}
-  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(1.96, s);}
-  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(2.58, s);}
+  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(2.71, s);}
+  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(5.41, s);}
   TH2* Gaussian3Sigma1D1Sided(const Surface& s){return Flat(7.74, s);}
-  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.40, s);}
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.66, s);}
 
   //----------------------------------------------------------------------
   void Surface::SaveTo(TDirectory* dir) const
