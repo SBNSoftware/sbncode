@@ -165,14 +165,14 @@ std::array<float, 2> sbnpca::HitPCAEigen(const std::vector<art::Ptr<recob::Hit>>
 std::array<float, 2> sbnpca::Vert2HitCoord(const recob::Vertex &vert, const geo::PlaneID &planeID, 
     const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
 
-  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), planeID) * geo->WirePitch();
+  float vert_wire_coord = geo->WireCoordinate(vert.position(), planeID) * geo->WirePitch();
   float vert_time_coord = vert.position().X();
 
   return {vert_wire_coord, vert_time_coord};
 }
 
 float sbnpca::Vert2HitDistance(const recob::Hit &hit, const recob::Vertex &vert, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-  float vert_wire_coord = geo->WireCoordinate(vert.position().Y(), vert.position().Z(), hit.WireID()) * geo->WirePitch();
+  float vert_wire_coord = geo->WireCoordinate(vert.position(), hit.WireID()) * geo->WirePitch();
   float hit_wire_coord = hit.WireID().Wire * geo->WirePitch();
 
   float vert_time_coord = vert.position().X();
