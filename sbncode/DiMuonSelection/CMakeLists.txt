@@ -1,3 +1,7 @@
+link_directories(
+ $ENV{ROOTSYS}/lib
+)
+
 simple_plugin(NuVertexChargeTree module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -27,6 +31,7 @@ simple_plugin(NuVertexChargeTree module
         larcore_Geometry_Geometry_service
 	larpandora_LArPandoraInterface
         larsim_MCCheater_ParticleInventoryService_service
+	sbn_LArReco	    
 )
 
 install_headers()
