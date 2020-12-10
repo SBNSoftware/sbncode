@@ -32,7 +32,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 
-#include "Products/PCAnglePlane.h"
+#include "sbncode/LArRecoProducer/Products/PCAnglePlane.h"
 #include "PCA.h"
 
 namespace sbn {

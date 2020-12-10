@@ -34,7 +34,7 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 
-#include "Products/VertexHit.h"
+#include "sbncode/LArRecoProducer/Products/VertexHit.h"
 
 namespace sbn {
   class VertexChargeVacuum;

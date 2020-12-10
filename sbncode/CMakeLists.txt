@@ -34,7 +34,6 @@ add_subdirectory(CAFAna)
 # add_subdirectory(FlatMaker)
 add_subdirectory(LArRecoProducer)
 add_subdirectory(SBNAna)
-add_subdirectory(EventGenerator)
 
 add_subdirectory(DiMuonSelection)
 simple_plugin ( EventSelect module
