@@ -16,6 +16,8 @@ namespace ana
   // Reserve 0 for unshifted
   int SystShifts::fgNextID = 1;
 
+  const SystShifts kNoShift = SystShifts::Nominal();
+
   //----------------------------------------------------------------------
   SystShifts::SystShifts() : fID(0)
   {

@@ -2,7 +2,7 @@
 
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/Ratio.h"
-#include "CAFAna/Core/HistCache.h"
+#include "CAFAna/Core/Utilities.h"
 
 #include "CAFAna/Prediction/IPrediction.h"
 
@@ -26,13 +26,8 @@ namespace ana
     
     predFD *= Ratio(fSpectND, predND);
 
-    TH1D* hpred = predFD.ToTH1(fSpectFD.POT());
-    TH1D* hdata = fSpectFD.ToTH1(fSpectFD.POT());
-
-    const double ret = LogLikelihood(hpred, hdata);
-
-    HistCache::Delete(hpred);
-    HistCache::Delete(hdata);
+    const double ret = LogLikelihood(predFD.GetEigen(predFD.POT()),
+                                     fSpectFD.GetEigen(fSpectFD.POT()));
 
     return ret;
   }

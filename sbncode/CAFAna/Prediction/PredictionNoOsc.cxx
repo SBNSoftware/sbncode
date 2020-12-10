@@ -85,12 +85,12 @@ namespace ana
 
     TObjString("PredictionNoOsc").Write("type");
 
-    fSpectrum.SaveTo(dir->mkdir("spect"));
-    fSpectrumNC.SaveTo(dir->mkdir("spect_nc"));
-    fSpectrumNumu.SaveTo(dir->mkdir("spect_numu"));
-    fSpectrumNumubar.SaveTo(dir->mkdir("spect_numubar"));
-    fSpectrumNue.SaveTo(dir->mkdir("spect_nue"));
-    fSpectrumNuebar.SaveTo(dir->mkdir("spect_nuebar"));
+    fSpectrum.SaveTo(dir, "spect");
+    fSpectrumNC.SaveTo(dir, "spect_nc");
+    fSpectrumNumu.SaveTo(dir, "spect_numu");
+    fSpectrumNumubar.SaveTo(dir, "spect_numubar");
+    fSpectrumNue.SaveTo(dir, "spect_nue");
+    fSpectrumNuebar.SaveTo(dir, "spect_nuebar");
 
     tmp->cd();
   }
@@ -99,12 +99,12 @@ namespace ana
   std::unique_ptr<PredictionNoOsc> PredictionNoOsc::LoadFrom(TDirectory* dir)
   {    
     PredictionNoOsc* ret = new PredictionNoOsc(
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect")),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect_nc")),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect_numu")),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect_numubar")),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect_nue")),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("spect_nuebar")));
+      *ana::LoadFrom<Spectrum>(dir, "spect"),
+      *ana::LoadFrom<Spectrum>(dir, "spect_nc"),
+      *ana::LoadFrom<Spectrum>(dir, "spect_numu"),
+      *ana::LoadFrom<Spectrum>(dir, "spect_numubar"),
+      *ana::LoadFrom<Spectrum>(dir, "spect_nue"),
+      *ana::LoadFrom<Spectrum>(dir, "spect_nuebar"));
 
     // Can't use make_unique because constructor is protected
     return std::unique_ptr<PredictionNoOsc>(ret);

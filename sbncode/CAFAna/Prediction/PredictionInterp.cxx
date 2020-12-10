@@ -1,5 +1,4 @@
 #include "CAFAna/Prediction/PredictionInterp.h"
-#include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/Ratio.h"
 #include "CAFAna/Core/SystRegistry.h"
@@ -33,7 +32,7 @@ namespace ana
                                      const SystShifts& shiftMC,
                                      EMode_t mode)
     : fOscOrigin(osc ? osc->Copy() : 0),
-      fBinning(0, {}, {}, 0, 0),
+      fBinning(Spectrum::Uninitialized()),
       fSplitBySign(mode == kSplitBySign)
   {
     for(const ISyst* syst: systs){
@@ -69,26 +68,21 @@ namespace ana
   //----------------------------------------------------------------------
   std::vector<std::vector<PredictionInterp::Coeffs>> PredictionInterp::
   FitRatios(const std::vector<double>& shifts,
-            const std::vector<std::unique_ptr<TH1>>& ratios) const
+            const std::vector<Eigen::ArrayXd>& ratios) const
   {
+    if(ratios.size() < 2){
+      std::cout << "PredictionInterp::FitRatios(): ratios.size() = " << ratios.size() << " - how did that happen?" << std::endl;
+
+      abort();
+    }
+
     assert(shifts.size() == ratios.size());
 
     std::vector<std::vector<Coeffs>> ret;
 
-    const int binMax = ratios[0]->GetNbinsX();
+    const int binMax = ratios[0].size();
 
-    // Linear interpolation
-    if(ratios.size() == 2){
-      for(int binIdx = 0; binIdx < binMax+2; ++binIdx){
-	ret.push_back({});
-	const double y1 = ratios[0]->GetBinContent(binIdx);
-        const double y2 = ratios[1]->GetBinContent(binIdx);
-	ret.back().emplace_back(0, 0, y2-y1, y1);
-      }
-      return ret;
-    }
-
-    for(int binIdx = 0; binIdx < binMax+2; ++binIdx){
+    for(int binIdx = 0; binIdx < binMax; ++binIdx){
       ret.push_back({});
 
       // This is cubic interpolation. For each adjacent set of four points we
@@ -102,10 +96,19 @@ namespace ana
       // at x=1. The matrices are simply the inverses of writing out the
       // constraints expressed above.
 
+      // Special-case for linear interpolation
+      if(ratios.size() == 2){
+        const double y0 = ratios[0][binIdx];
+        const double y1 = ratios[1][binIdx];
+
+        ret.back().emplace_back(0, 0, y1-y0, y0);
+        continue;
+      }
+
       {
-        const double y1 = ratios[0]->GetBinContent(binIdx);
-        const double y2 = ratios[1]->GetBinContent(binIdx);
-        const double y3 = ratios[2]->GetBinContent(binIdx);
+        const double y1 = ratios[0][binIdx];
+        const double y2 = ratios[1][binIdx];
+        const double y3 = ratios[2][binIdx];
         const double v[3] = {y1, y2, (y3-y1)/2};
         const double m[9] = { 1, -1,  1,
                              -2,  2, -1,
@@ -116,10 +119,10 @@ namespace ana
 
       // We're assuming here that the shifts are separated by exactly 1 sigma.
       for(unsigned int shiftIdx = 1; shiftIdx < ratios.size()-2; ++shiftIdx){
-        const double y0 = ratios[shiftIdx-1]->GetBinContent(binIdx);
-        const double y1 = ratios[shiftIdx  ]->GetBinContent(binIdx);
-        const double y2 = ratios[shiftIdx+1]->GetBinContent(binIdx);
-        const double y3 = ratios[shiftIdx+2]->GetBinContent(binIdx);
+        const double y0 = ratios[shiftIdx-1][binIdx];
+        const double y1 = ratios[shiftIdx  ][binIdx];
+        const double y2 = ratios[shiftIdx+1][binIdx];
+        const double y3 = ratios[shiftIdx+2][binIdx];
 
         const double v[4] = {y1, y2, (y2-y0)/2, (y3-y1)/2};
         const double m[16] = { 2, -2,  1,  1,
@@ -132,9 +135,9 @@ namespace ana
 
       {
         const int N = ratios.size()-3;
-        const double y0 = ratios[N  ]->GetBinContent(binIdx);
-        const double y1 = ratios[N+1]->GetBinContent(binIdx);
-        const double y2 = ratios[N+2]->GetBinContent(binIdx);
+        const double y0 = ratios[N  ][binIdx];
+        const double y1 = ratios[N+1][binIdx];
+        const double y2 = ratios[N+2][binIdx];
         const double v[3] = {y1, y2, (y2-y0)/2};
         const double m[9] = {-1,  1, -1,
                               0,  0,  1,
@@ -181,24 +184,25 @@ namespace ana
     // relative to some alternate nominal (eg Birks C where the appropriate
     // nominal is no-rock) can work.
     const Spectrum nom = pNom->PredictComponent(fOscOrigin,
-						flav, curr, sign);
+                                                flav, curr, sign);
 
-    std::vector<std::unique_ptr<TH1>> ratios;
+    std::vector<Eigen::ArrayXd> ratios;
+    ratios.reserve(preds.size());
     for(auto& p: preds){
       ratios.emplace_back(Ratio(p->PredictComponent(fOscOrigin,
                                                     flav, curr, sign),
-                                nom).ToTH1());
+                                nom).GetEigen());
 
-      // Check none of the ratio values is utterly crazy
-      std::unique_ptr<TH1>& r = ratios.back();
-      for(int i = 0; i < r->GetNbinsX()+2; ++i){
-	const double y = r->GetBinContent(i);
-	if(y > 500){
-	  std::cout << "PredictionInterp: WARNING, ratio in bin "
-		    << i << " is " << y
-                    << " for '" << shortName << "'. Ignoring." << std::endl;
-	  r->SetBinContent(i, 1);
-	}
+      // Check none of the ratio values is crazy
+      Eigen::ArrayXd& r = ratios.back();
+      for(int i = 0; i < r.size(); ++i){
+        if (r[i] > 2){
+          // std::cout << "PredictionInterp: WARNING, ratio in bin "
+          // 	    << i << " for " << shifts[&p-&preds.front()]
+          //           << " sigma shift of " << systName << " is " << y
+          //           << " which exceeds limit of 2. Capping." << std::endl;
+          r[i] = 2;
+        }
       }
     }
 
@@ -283,30 +287,32 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionInterp::
-  ShiftSpectrum(const Spectrum& s,
-                CoeffsType type,
-                bool nubar,
-                const SystShifts& shift) const
+  Spectrum PredictionInterp::ShiftSpectrum(const Spectrum& s, CoeffsType type,
+                                           bool nubar,
+                                           const SystShifts &shift) const
   {
     // Save time by not shifting a spectrum that is all zeros anyway
     if(s.POT() == 0 && s.Livetime() == 0) return s;
 
+    Eigen::ArrayXd vec = s.GetEigen(s.POT());
+    ShiftBins(vec.size(), vec.data(), type, nubar, shift);
+    return Spectrum(std::move(vec), HistAxis(s.GetLabels(), s.GetBinnings()), s.POT(), s.Livetime());
+  }
+
+  //----------------------------------------------------------------------
+  void PredictionInterp::ShiftBins(unsigned int N,
+                                   double* arr,
+                                   CoeffsType type,
+                                   bool nubar,
+                                   const SystShifts& shift) const
+  {
     if(nubar) assert(fSplitBySign);
 
-    InitFits();
-
-    // TODO histogram operations could be too slow
-    TH1D* h = s.ToTH1(s.POT());
-
-    const unsigned int N = h->GetNbinsX()+2;
-    std::vector<double> corr(N,1.0);
+    std::vector<double> corr(N, 1);
 
     for(auto& it: fPreds){
       const ISyst* syst = it.first;
       const ShiftedPreds& sp = it.second;
-
-      auto& fits = nubar ? sp.fitsNubar : sp.fits;
 
       double x = shift.GetShift(syst);
 
@@ -314,7 +320,9 @@ namespace ana
 
       int shiftBin = (x - sp.shifts[0])/sp.Stride();
       shiftBin = std::max(0, shiftBin);
-      shiftBin = std::min(shiftBin, sp.nCoeffs-1);
+      shiftBin = std::min(shiftBin, sp.nCoeffs - 1);
+
+      auto& fits = nubar ? sp.fitsNubar : sp.fits;
 
       x -= sp.shifts[shiftBin];
 
@@ -330,14 +338,12 @@ namespace ana
 
         corr[n] *= f.a*x_cube + f.b*x_sqr + f.c*x + f.d;
       } // end for n
+
     } // end for syst
 
-    double* arr = h->GetArray();
-    for(unsigned int n = 0; n < N; ++n){
-      arr[n] *= std::max(corr[n], 0.);
+    for(unsigned int n = 0; n < N; ++n) {
+      arr[n] *= (corr[n] > 0.) ? corr[n] : 0.;
     }
-
-    return Spectrum(std::unique_ptr<TH1D>(h), s.GetLabels(), s.GetBinnings(), s.POT(), s.Livetime());
   }
 
   //----------------------------------------------------------------------
@@ -480,8 +486,7 @@ namespace ana
   {
     TObjString* tag = (TObjString*)dir->Get("type");
     assert(tag);
-    assert(tag->GetString() == "PredictionInterp" ||
-           tag->GetString() == "PredictionInterp2"); // backwards compatibility
+    assert(tag->GetString() == "PredictionInterp");
 
     std::unique_ptr<PredictionInterp> ret(new PredictionInterp);
 
@@ -496,7 +501,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   void PredictionInterp::LoadFromBody(TDirectory* dir, PredictionInterp* ret,
-				      std::vector<const ISyst*> veto)
+                                      std::vector<const ISyst*> veto)
   {
     ret->fPredNom = ana::LoadFrom<IPrediction>(dir->GetDirectory("pred_nom"));
 

@@ -24,6 +24,11 @@ namespace ana
     return T::LoadFrom(dir);
   }
 
+  template<class T> std::unique_ptr<T> LoadFrom(TDirectory* dir, const std::string& name)
+  {
+    return T::LoadFrom(dir, name);
+  }
+
   //----------------------------------------------------------------------
   // But if you're trying to load a base class we need to figure out which
   // derived class is actually in the file and hand off to that. The

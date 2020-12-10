@@ -12,9 +12,7 @@ namespace ana
   class CountingExperiment: public IExperiment
   {
   public:
-    CountingExperiment(const IPrediction* p, const Spectrum& d, const Spectrum& cosmic);
-    /// Version without cosmics may be wanted for MC studies
-    CountingExperiment(const IPrediction* p, const Spectrum& d) : fMC(p), fData(d), fCosmic(0) {}
+    CountingExperiment(const IPrediction* p, const Spectrum& d) : fMC(p), fData(d) {}
     ~CountingExperiment();
     virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
@@ -24,6 +22,5 @@ namespace ana
   protected:
     const IPrediction* fMC;
     Spectrum fData;
-    TH1* fCosmic;
   };
 }

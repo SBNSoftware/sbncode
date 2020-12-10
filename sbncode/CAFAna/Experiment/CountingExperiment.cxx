@@ -9,23 +9,12 @@
 
 #include "TDirectory.h"
 #include "TObjString.h"
-#include "TH1.h"
 
 namespace ana
 {
   //----------------------------------------------------------------------
-  CountingExperiment::CountingExperiment(const IPrediction* p,
-                                         const Spectrum& d,
-                                         const Spectrum& cosmic)
-    : fMC(p), fData(d),
-      fCosmic(cosmic.ToTH1(d.Livetime(), kLivetime))
-  {
-  }
-
-  //----------------------------------------------------------------------
   CountingExperiment::~CountingExperiment()
   {
-    delete fCosmic;
   }
 
   //----------------------------------------------------------------------
@@ -33,7 +22,6 @@ namespace ana
                                    const SystShifts& syst) const
   {
     double exp = fMC->PredictSyst(osc, syst).Integral(fData.POT());
-    if (fCosmic) exp += fCosmic->Integral(0,-1);
     double obs = fData.Integral(fData.POT());
 
     return LogLikelihood(exp, obs);
@@ -48,9 +36,7 @@ namespace ana
     TObjString("CountingExperiment").Write("type");
 
     fMC->SaveTo(dir->mkdir("mc"));
-    fData.SaveTo(dir->mkdir("data"));
-    
-    if(fCosmic) fCosmic->Write("cosmic");
+    fData.SaveTo(dir, "data");
 
     tmp->cd();
   }
@@ -63,17 +49,12 @@ namespace ana
     assert(ptag->GetString() == "CountingExperiment");
 
     assert(dir->GetDirectory("mc"));
-    assert(dir->GetDirectory("data"));
     
 
     const IPrediction* mc = ana::LoadFrom<IPrediction>(dir->GetDirectory("mc")).release();
-    const std::unique_ptr<Spectrum> data = Spectrum::LoadFrom(dir->GetDirectory("data"));
-
-    TH1* cosmic = 0;
-    if(dir->Get("cosmic")) cosmic = (TH1*)dir->Get("cosmic");
+    const std::unique_ptr<Spectrum> data = Spectrum::LoadFrom(dir, "data");
 
     auto ret = std::make_unique<CountingExperiment>(mc, *data);
-    if(cosmic) ret->fCosmic = cosmic;
     return ret;
   }
 }

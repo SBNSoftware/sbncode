@@ -97,7 +97,7 @@ namespace ana
 
     fPredND.SaveTo(dir->mkdir("predND"));
     fPredFD.SaveTo(dir->mkdir("predFD"));
-    fDataND.SaveTo(dir->mkdir("dataND"));
+    fDataND.SaveTo(dir, "dataND");
 
     tmp->cd();
   }
@@ -105,15 +105,11 @@ namespace ana
   //----------------------------------------------------------------------
   std::unique_ptr<PredictionSBNExtrap> PredictionSBNExtrap::LoadFrom(TDirectory* dir)
   {
-    assert(dir->GetDirectory("predND"));
-    assert(dir->GetDirectory("predFD"));
-    assert(dir->GetDirectory("dataND"));
-
     // TODO are these leaks?
     return std::unique_ptr<PredictionSBNExtrap>(new PredictionSBNExtrap(
       *ana::LoadFrom<PredictionNoExtrap>(dir->GetDirectory("predND")).release(),
       *ana::LoadFrom<PredictionNoExtrap>(dir->GetDirectory("predFD")).release(),
-      *ana::LoadFrom<Spectrum>(dir->GetDirectory("dataND")).release()));
+      *ana::LoadFrom<Spectrum>(dir, "dataND").release()));
   }
 
   //----------------------------------------------------------------------

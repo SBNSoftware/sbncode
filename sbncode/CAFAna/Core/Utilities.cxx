@@ -184,6 +184,22 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
+  double LogLikelihood(const Eigen::ArrayXd& ea, const Eigen::ArrayXd& oa, bool useOverflow)
+  {
+    assert(ea.size() == oa.size());
+
+    double chi = 0;
+
+    const int bufferBins = useOverflow ? 0 : -1;
+
+    for(int i = 0; i < ea.size()+bufferBins; ++i){
+      chi += LogLikelihood(ea[i], oa[i]);
+    }
+
+    return chi;
+  }
+
+  //----------------------------------------------------------------------
   double Chi2CovMx(const TVectorD* e, const TVectorD* o, const TMatrixD* covmxinv)
   {
     assert (e->GetNrows() == o->GetNrows());
@@ -644,40 +660,54 @@ namespace ana
 
   //----------------------------------------------------------------------
   // Note that this does not work for 3D!
-  TH1* GetMaskHist(const Spectrum& s, double xmin, double xmax, double ymin, double ymax)
+  Eigen::ArrayXd GetMaskArray(const Spectrum& s, double xmin, double xmax, double ymin, double ymax)
   {
-    if (s.GetBinnings().size() > 2){
+    if (s.NDimensions() > 2){
       std::cout << "Error: unable to apply a mask in " << s.GetBinnings().size() << " dimensions" << std::endl;
       abort();
     }
 
-    // The exposure isn't important here
-    TH1* fMaskND  = s.ToTHX(s.POT());
-    TH1D* fMask1D = s.ToTH1(s.POT());
+    if(s.NDimensions() == 1 && ymax > ymin){
+      std::cout << "Error: GetMaskArray(): can't specify y range for 1D spectrum" << std::endl;
+      abort();
+    }
 
-    int ybins = fMaskND->GetNbinsY();
+    const Binning* xbins = &s.GetBinnings()[0];
+    const Binning* ybins = (s.NDimensions() == 2) ? &s.GetBinnings()[1] : 0;
 
-    for(int i = 0; i < fMask1D->GetNbinsX()+2; ++i){
+    const int Nx = xbins->NBins();
+    const int Ny = ybins ? ybins->NBins() : 1;
 
-      int ix = i / ybins;
-      int iy = i % ybins;
+    // The 1D flattening of 2D binning is pretty confusing. The bins are packed
+    // densely, without under/overflow, *except* there is a single underflow at
+    // 0 and single overflow at Nx*Ny+1. So we do our calculations as if there
+    // were no under/overflow and then add 1 to the output index to account.
+
+    Eigen::ArrayXd ret(Nx*Ny+2);
+
+    // Include underflow and overflow if mask disabled, otherwise exclude
+    ret[0] = ret[Nx*Ny+1] = ((xmin < xmax || ymin < ymax) ? 0 : 1);
+
+    for(int i = 0; i < Nx*Ny; ++i){
+
+      const int ix = i / Ny;
+      const int iy = i % Ny;
 
       bool isMask = false;
 
       if (xmin < xmax){
-	if (fMaskND->GetXaxis()->GetBinLowEdge(ix+1) < xmin) isMask=true;
-	if (fMaskND->GetXaxis()->GetBinUpEdge(ix+1) > xmax) isMask=true;
+	if (xbins->Edges()[ix  ] < xmin) isMask = true;
+	if (xbins->Edges()[ix+1] > xmax) isMask = true;
       }
 
       if (ymin < ymax){
-	if (fMaskND->GetYaxis()->GetBinLowEdge(iy+1) < ymin) isMask=true;
-	if (fMaskND->GetYaxis()->GetBinUpEdge(iy+1) > ymax) isMask=true;
+	if (ybins->Edges()[iy  ] < ymin) isMask = true;
+	if (ybins->Edges()[iy+1] > ymax) isMask = true;
       }
 
-      if (isMask) fMask1D->SetBinContent(i+1, 0);
-      else fMask1D->SetBinContent(i+1, 1);
-
+      ret[i+1] = isMask ? 0 : 1;
     }
-    return fMask1D;
+
+    return ret;
   }
 }

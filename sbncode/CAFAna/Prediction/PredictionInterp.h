@@ -78,10 +78,10 @@ namespace ana
     // If \a savePattern is not empty, print each pad. If it contains "%s" then
     // multiple files will be written, one per systematic.
     void DebugPlots(osc::IOscCalc* calc,
-		    const std::string& savePattern = "",
-		    Flavors::Flavors_t flav = Flavors::kAll,
-		    Current::Current_t curr = Current::kBoth,
-		    Sign::Sign_t sign = Sign::kBoth) const;
+                    const std::string& savePattern = "",
+                    Flavors::Flavors_t flav = Flavors::kAll,
+                    Current::Current_t curr = Current::kBoth,
+                    Sign::Sign_t sign = Sign::kBoth) const;
 
     void SetOscSeed(osc::IOscCalc* oscSeed);
 
@@ -104,7 +104,7 @@ namespace ana
       kNCoeffTypes
     };
 
-    PredictionInterp() : fBinning(0, {}, {}, 0, 0) {}
+    PredictionInterp() : fBinning(Spectrum::Uninitialized()) {}
 
     static void LoadFromBody(TDirectory* dir, PredictionInterp* ret,
 			     std::vector<const ISyst*> veto = {});
@@ -118,7 +118,7 @@ namespace ana
     /// Find coefficients describing this set of shifts
     std::vector<std::vector<Coeffs>>
     FitRatios(const std::vector<double>& shifts,
-              const std::vector<std::unique_ptr<TH1>>& ratios) const;
+              const std::vector<Eigen::ArrayXd>& ratios) const;
 
     /// Find coefficients describing the ratios from this component
     std::vector<std::vector<Coeffs>>
@@ -194,6 +194,13 @@ namespace ana
     void InitFitsHelper(ShiftedPreds& sp,
                         std::vector<std::vector<std::vector<Coeffs>>>& fits,
                         Sign::Sign_t sign) const;
+
+    /// Helper for \ref ShiftSpectrum
+    void ShiftBins(unsigned int N,
+                   double* arr,
+                   CoeffsType type,
+                   bool nubar,
+                   const SystShifts& shift) const;
   };
 
 }

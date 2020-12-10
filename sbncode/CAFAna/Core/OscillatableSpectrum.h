@@ -9,11 +9,12 @@
 #include "CAFAna/Core/StanTypedefs.h"
 #include "CAFAna/Core/ThreadLocal.h"
 
+#include "TMD5.h"
+
 #include <string>
 
 class TH2;
 class TH2D;
-class TMD5;
 
 namespace osc
 {
@@ -24,6 +25,8 @@ namespace osc
 namespace ana
 {
   class Binning;
+
+  extern const Var kTrueLOverE;
 
   struct OscCache
   {
