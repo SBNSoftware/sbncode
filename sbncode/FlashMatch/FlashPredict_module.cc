@@ -219,9 +219,12 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   //
   infile->Close();
 
-  // Call appropriate produces<>() functions here.
 
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
+  consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
+  consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
+  consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
+  consumes<std::vector<recob::OpHit>>(fOpHitProducer);
 } // FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 
