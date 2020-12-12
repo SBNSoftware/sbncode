@@ -10,38 +10,39 @@
 
 
 FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
-  : EDProducer{p}  // ,
-    // More initializers here.
+  : EDProducer{p}
+  , fPandoraProducer(p.get<std::string>("PandoraProducer"))
+  , fSpacePointProducer(p.get<std::string>("SpacePointProducer"))
+  , fOpHitProducer(p.get<std::string>("OpHitProducer"))
+  // , fCaloProducer(p.get<std::string>("CaloProducer"))
+  // , fTrackProducer(p.get<std::string>("TrackProducer"))
+  , fBeamWindowStart(p.get<double>("BeamWindowStart")) // TODO: should come from service
+  , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// in ns // TODO: should come from service
+  , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
+  , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
+  , fTimeBins(unsigned(500 * (fBeamWindowEnd - fBeamWindowStart)))
+  , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
+  , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
+  // , fUseCalo(p.get<bool>("UseCalo", false))
+  , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
+  , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
+  , fMakeTree(p.get<bool>("MakeTree", false))
+  , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
+  , fPEscale(p.get<double>("PEscale", 1.0))
+  , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
+  , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
+  , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
+  , fDriftDistance(p.get<double>("DriftDistance"))// TODO: should come from geometry
+  , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
+  , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
   produces< std::vector< anab::T0 > >();
   produces< art::Assns <recob::PFParticle, anab::T0> >();
   // fFlashProducer         = p.get<art::InputTag>("FlashProducer");
-  fOpHitProducer            = p.get<std::string>("OpHitProducer", "ophit");
-  fPandoraProducer          = p.get<std::string>("PandoraProducer", "pandora");
-  fTrackProducer            = p.get<std::string>("TrackProducer", "pandoraTrack");
-  fCaloProducer             = p.get<std::string>("CaloProducer", "pandoraCalo");
-  fSpacePointProducer       = p.get<std::string>("SpacePointProducer", "pandora");
-  fInputFilename            = p.get<std::string>("InputFileName", "FlashMatch/fm_metrics_sbnd.root"); // root file with score metrics
-  fBeamWindowStart          = p.get<double>("BeamWindowStart", 0.0);
-  fBeamWindowEnd            = p.get<double>("BeamWindowEnd", 4000.0);  // in ns
-  fMinFlashPE               = p.get<double>("MinFlashPE", 0.0);
-  fChargeToNPhotonsShower   = p.get<double>("ChargeToNPhotonsShower", 1.0);  // ~40000/1600
-  fChargeToNPhotonsTrack    = p.get<double>("ChargeToNPhotonsTrack", 1.0);   // ~40000/1600
-  fNoAvailableMetrics       = p.get<bool>("NoAvailableMetrics", false);
-  fMakeTree                 = p.get<bool>("MakeTree", true);
-  fUseCalo                  = p.get<bool>("UseCalo", false);
-  fSelectNeutrino           = p.get<bool>("SelectNeutrino", true);
-  fUseUncoatedPMT           = p.get<bool>("UseUncoatedPMT", false);
-  fLightWindowStart         = p.get<double>("LightWindowStart", -0.010);  // in us w.r.t. flash time
-  fLightWindowEnd           = p.get<double>("LightWindowEnd", 0.090);  // in us w.r.t flash time
-  fDriftDistance            = p.get<double>("DriftDistance", 200.);
-  fVUVToVIS                 = p.get<unsigned>("VUVToVIS", 4);
-  fCryostat                 = p.get<int>("Cryostat", 0); //set =0 ot =1 for ICARUS to match reco chain selection
-  fPEscale                  = p.get<double>("PEscale", 1.0);
-  fTermThreshold            = p.get<double>("ThresholdTerm", 30.);
 
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
   fGeoCryo = std::make_unique<geo::CryostatGeo>(geometry->Cryostat(fCryostat));
+  fNTPC = geometry->NTPC();
 
   fDetector = geometry->DetectorName();
   if(fDetector.find("sbnd") != std::string::npos) {
@@ -59,7 +60,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
         << "Detector: " << fDetector
         << ", not supported. Stopping.\n";
   }
-  fNTPC = geometry->NTPC();
 
   // TODO no point on having fCryostat as parameter, user whatever comes from geometry
   if (fSBND && fCryostat == 1) {

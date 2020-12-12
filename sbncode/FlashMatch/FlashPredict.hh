@@ -120,32 +120,29 @@ private:
                     std::set<unsigned>& tpcWithHits, double term,
                     Stream&& out);
 
-  std::string fPandoraProducer, fSpacePointProducer, fOpHitProducer,
-    fCaloProducer, fTrackProducer;
-  double fBeamWindowEnd, fBeamWindowStart;
-  double fLightWindowEnd, fLightWindowStart;
-  double fMinFlashPE;
-  double fDriftDistance;
-  double fPEscale;
-  unsigned fVUVToVIS;
-  double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  const art::InputTag fPandoraProducer, fSpacePointProducer,
+    fOpHitProducer;//, fCaloProducer, fTrackProducer;
+  const double fBeamWindowStart, fBeamWindowEnd;
+  const double fLightWindowStart, fLightWindowEnd;
+  const unsigned fTimeBins;
+  const bool fSelectNeutrino, fUseUncoatedPMT;//, fUseCalo;
+  const std::string fInputFilename;
+  const bool fNoAvailableMetrics, fMakeTree;
+  const double fMinFlashPE, fPEscale,
+    fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
-  size_t fNTPC;
-  //size_t fTPCPerDriftVolume; //unused
-  static const size_t fDriftVolumes = 2;
-  int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
+  std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
+  const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
   std::unique_ptr<geo::CryostatGeo> fGeoCryo;
-  std::string fInputFilename;
-
-  bool fNoAvailableMetrics, fMakeTree, fSelectNeutrino, fUseUncoatedPMT, fUseCalo;
-  double fTermThreshold;
+  const double fDriftDistance;
+  size_t fNTPC;
+  const unsigned fVUVToVIS;
+  const double fTermThreshold;
   // std::vector<double> fPMTChannelCorrection;
 
-  unsigned icountPE = 0;
   const art::ServiceHandle<geo::Geometry> geometry;
-  std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
@@ -162,6 +159,7 @@ private:
   double _flash_time;
   double _score;
   int _evt, _run, _sub;
+  unsigned icountPE = 0;
 
   std::map<size_t, size_t> _pfpmap;
 
