@@ -83,7 +83,8 @@ private:
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
-
+  void initTree(void);
+  void loadMetrics(void);
   bool computeChargeMetrics(flashmatch::QCluster_t& qClusters,
                             flashmatch::QCluster_t& qClustsGl);
   bool computeFlashMetrics(std::set<unsigned>& tpcWithHits,
@@ -146,11 +147,10 @@ private:
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
-  TH1D *ophittime;
-  TH1D *ophittime2;
+
+  std::vector<double> _pe_reco_v, _pe_hypo_v;
 
   // Tree variables
-  std::vector<double> _pe_reco_v, _pe_hypo_v;
   double _charge_x_gl, _charge_x, _charge_y,
     _charge_z, _charge_q;
   double _flash_x, _flash_y, _flash_z,

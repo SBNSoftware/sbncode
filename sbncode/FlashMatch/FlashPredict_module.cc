@@ -73,152 +73,9 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       << "Check Detector and Cryostat parameter." << std::endl;
   }
 
-  art::ServiceHandle<art::TFileService> tfs;
+  if (fMakeTree) initTree();
 
-  int time_bins = int(500 * (fBeamWindowEnd - fBeamWindowStart));
-  ophittime = tfs->make<TH1D>("ophittime", "ophittime", time_bins, fBeamWindowStart, fBeamWindowEnd); // in us
-  ophittime->SetOption("HIST");
-  ophittime2 = tfs->make<TH1D>("ophittime2", "ophittime2", 5 * time_bins, -5.0, +10.0); // in us
-  ophittime2->SetOption("HIST");
-
-  if (fMakeTree) {
-    _flashmatch_nuslice_tree = tfs->make<TTree>("nuslicetree", "nu FlashPredict tree");
-    _flashmatch_nuslice_tree->Branch("evt", &_evt, "evt/I");
-    _flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
-    _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
-    _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
-    _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
-    _flashmatch_nuslice_tree->Branch("flash_y", &_flash_y, "flash_y/D");
-    _flashmatch_nuslice_tree->Branch("flash_z", &_flash_z, "flash_z/D");
-    _flashmatch_nuslice_tree->Branch("flash_r", &_flash_r, "flash_r/D");
-    _flashmatch_nuslice_tree->Branch("flash_pe", &_flash_pe, "flash_pe/D");
-    _flashmatch_nuslice_tree->Branch("flash_unpe", &_flash_unpe, "flash_unpe/D");
-    _flashmatch_nuslice_tree->Branch("flash_ratio", &_flash_ratio, "flash_ratio/D");
-    // TODO: add charge_time?
-    _flashmatch_nuslice_tree->Branch("charge_x_gl", &_charge_x_gl, "charge_x_gl/D");
-    _flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
-    _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
-    _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
-    _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
-    _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
-  }
-
-  // TODO: Set a better way to run with no metrics
-
-  // TODO: fill histos with less repetition and range for loops
-  // read histograms and fill vectors for match score calculation
-  std::string fname;
-  cet::search_path sp("FW_SEARCH_PATH");
-  sp.find_file(fInputFilename, fname);
-  mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
-  TFile *infile = new TFile(fname.c_str(), "READ");
-  if(!infile->IsOpen()) {
-    throw cet::exception("FlashPredict")
-      << "Could not find the light-charge match root file '"
-      << fname << "'!\n";
-  }
-  //
-  TH1 *temphisto = (TH1*)infile->Get("dy_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dy " << n_bins << " bins " << std::endl;
-    n_bins = 1;
-    dy_means.push_back(0);
-    dy_spreads.push_back(0.001);
-  }
-  else {
-    for (int ib = 1; ib <= n_bins; ++ib) {
-      dy_means.push_back(temphisto->GetBinContent(ib));
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in dy" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      dy_spreads.push_back(tt);
-    }
-  }
-  //
-  temphisto = (TH1*)infile->Get("dz_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dz " << n_bins << " bins " << std::endl;
-    n_bins = 1;
-    dz_means.push_back(0);
-    dz_spreads.push_back(0.001);
-  }
-  else {
-    for (int ib = 1; ib <= n_bins; ++ib) {
-      dz_means.push_back(temphisto->GetBinContent(ib));
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in dz" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      dz_spreads.push_back(tt);
-    }
-  }
-  //
-  temphisto = (TH1*)infile->Get("rr_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for rr " << n_bins << " bins " << std::endl;
-    n_bins = 1;
-    rr_means.push_back(0);
-    rr_spreads.push_back(0.001);
-  }
-  else {
-    for (int ib = 1; ib <= n_bins; ++ib) {
-      rr_means.push_back(temphisto->GetBinContent(ib));
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in rr" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      rr_spreads.push_back(tt);
-    }
-  }
-  //
-  if (fSBND) {
-    temphisto = (TH1*)infile->Get("pe_h1");
-    n_bins = temphisto->GetNbinsX();
-    if (n_bins <= 0 || fNoAvailableMetrics) {
-      std::cout << " problem with input histos for pe " << n_bins << " bins " << std::endl;
-      n_bins = 1;
-      pe_means.push_back(0);
-      pe_spreads.push_back(0.001);
-    }
-    else {
-      for (int ib = 1; ib <= n_bins; ++ib) {
-        pe_means.push_back(temphisto->GetBinContent(ib));
-        double tt = temphisto->GetBinError(ib);
-        if (tt <= 0) {
-          std::cout << "zero value for bin spread in pe" << std::endl;
-          std::cout << "ib:\t" << ib << "\n";
-          std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-          std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-          tt = 100.;
-        }
-        pe_spreads.push_back(tt);
-      }
-    }
-  }
-  else if (fICARUS ) {
-    n_bins = 1;
-    pe_means.push_back(0);
-    pe_spreads.push_back(0.001);
-  }
-  //
-  infile->Close();
-
+  loadMetrics();
 
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
   consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
@@ -275,11 +132,12 @@ void FlashPredict::produce(art::Event & e)
   }
 
   // load OpHits previously created
-  art::Handle<std::vector<recob::OpHit> > ophit_h;
+  art::Handle<std::vector<recob::OpHit>> ophit_h;
   e.getByLabel(fOpHitProducer, ophit_h);
   if(!ophit_h.isValid()) {
-    mf::LogError("FlashPredict") << "No optical hits from producer module "
-                                 << fOpHitProducer;
+    mf::LogError("FlashPredict")
+      << "No optical hits from producer module "
+      << fOpHitProducer;
     bk.nonvalidophit++;
     updateBookKeeping();
     e.put(std::move(T0_v));
@@ -290,23 +148,27 @@ void FlashPredict::produce(art::Event & e)
   std::vector<recob::OpHit> opHits(ophit_h->size());
   copyOpHitsInWindow(opHits, ophit_h);
 
+  {// TODO: pack this into a function
   // get flash time
-  ophittime->Reset();
-  ophittime2->Reset();
+  TH1D ophittime("ophittime", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
+  ophittime.SetOption("HIST");
+  TH1D ophittime2("ophittime2", "ophittime2", 5 * fTimeBins, -5.0, +10.0); // in us
+  ophittime2.SetOption("HIST");
+
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
     auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
     if (fSBND && fPDMapAlgPtr->isPDType(ch, "pmt_uncoated"))
-      ophittime2->Fill(oph.PeakTime(), fPEscale * oph.PE());
+      ophittime2.Fill(oph.PeakTime(), fPEscale * oph.PE());
     if (fSBND && !fPDMapAlgPtr->isPDType(ch, "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
     if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
-    ophittime->Fill(oph.PeakTime(), fPEscale * oph.PE());
+    ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
   }
 
-  if (ophittime->GetEntries() <= 0 || ophittime->Integral() < fMinFlashPE) {
+  if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
     mf::LogWarning("FlashPredict")
-      << "\nOpHitTime has no entries: " << ophittime->GetEntries()
-      << "\nor the integral: " << ophittime->Integral()
+      << "\nOpHitTime has no entries: " << ophittime.GetEntries()
+      << "\nor the integral: " << ophittime.Integral()
       << " is less than " << fMinFlashPE
       << "\nSkipping...";
     bk.nullophittime++;
@@ -316,7 +178,7 @@ void FlashPredict::produce(art::Event & e)
     return;
   }
 
-  auto ibin =  ophittime->GetMaximumBin();
+  auto ibin =  ophittime.GetMaximumBin();
   _flash_time = (ibin * 0.002) + fBeamWindowStart; // in us // TODO: hardcoding
   double lowedge = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
@@ -330,6 +192,7 @@ void FlashPredict::produce(art::Event & e)
     std::remove_if(opHits.begin(), opHits.end(),
                    peakOutsideEdges),
     opHits.end());
+  }// TODO: pack this into a function
 
   std::set<unsigned> tpcWithOpH;
   for(auto& op: opHits){
@@ -459,6 +322,153 @@ void FlashPredict::produce(art::Event & e)
   e.put(std::move(pfp_t0_assn_v));
 
 }// end of producer module
+
+
+void FlashPredict::initTree(void)
+{
+  art::ServiceHandle<art::TFileService> tfs;
+  _flashmatch_nuslice_tree = tfs->make<TTree>("nuslicetree", "nu FlashPredict tree");
+  _flashmatch_nuslice_tree->Branch("evt", &_evt, "evt/I");
+  _flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
+  _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
+  _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
+  _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
+  _flashmatch_nuslice_tree->Branch("flash_y", &_flash_y, "flash_y/D");
+  _flashmatch_nuslice_tree->Branch("flash_z", &_flash_z, "flash_z/D");
+  _flashmatch_nuslice_tree->Branch("flash_r", &_flash_r, "flash_r/D");
+  _flashmatch_nuslice_tree->Branch("flash_pe", &_flash_pe, "flash_pe/D");
+  _flashmatch_nuslice_tree->Branch("flash_unpe", &_flash_unpe, "flash_unpe/D");
+  _flashmatch_nuslice_tree->Branch("flash_ratio", &_flash_ratio, "flash_ratio/D");
+  // TODO: add charge_time?
+  _flashmatch_nuslice_tree->Branch("charge_x_gl", &_charge_x_gl, "charge_x_gl/D");
+  _flashmatch_nuslice_tree->Branch("charge_x", &_charge_x, "charge_x/D");
+  _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
+  _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
+  _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
+  _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
+}
+
+
+void FlashPredict::loadMetrics()
+{
+  // TODO: Set a better way to run with no metrics
+
+  // TODO: fill histos with less repetition and range for loops
+  // read histograms and fill vectors for match score calculation
+  std::string fname;
+  cet::search_path sp("FW_SEARCH_PATH");
+  sp.find_file(fInputFilename, fname);
+  mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
+  TFile *infile = new TFile(fname.c_str(), "READ");
+  if(!infile->IsOpen()) {
+    throw cet::exception("FlashPredict")
+      << "Could not find the light-charge match root file '"
+      << fname << "'!\n";
+  }
+  //
+  TH1 *temphisto = (TH1*)infile->Get("dy_h1");
+  n_bins = temphisto->GetNbinsX();
+  if (n_bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for dy " << n_bins << " bins " << std::endl;
+    n_bins = 1;
+    dy_means.push_back(0);
+    dy_spreads.push_back(0.001);
+  }
+  else {
+    for (int ib = 1; ib <= n_bins; ++ib) {
+      dy_means.push_back(temphisto->GetBinContent(ib));
+      double tt = temphisto->GetBinError(ib);
+      if (tt <= 0) {
+        std::cout << "zero value for bin spread in dy" << std::endl;
+        std::cout << "ib:\t" << ib << "\n";
+        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
+        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
+        tt = 100.;
+      }
+      dy_spreads.push_back(tt);
+    }
+  }
+  //
+  temphisto = (TH1*)infile->Get("dz_h1");
+  n_bins = temphisto->GetNbinsX();
+  if (n_bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for dz " << n_bins << " bins " << std::endl;
+    n_bins = 1;
+    dz_means.push_back(0);
+    dz_spreads.push_back(0.001);
+  }
+  else {
+    for (int ib = 1; ib <= n_bins; ++ib) {
+      dz_means.push_back(temphisto->GetBinContent(ib));
+      double tt = temphisto->GetBinError(ib);
+      if (tt <= 0) {
+        std::cout << "zero value for bin spread in dz" << std::endl;
+        std::cout << "ib:\t" << ib << "\n";
+        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
+        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
+        tt = 100.;
+      }
+      dz_spreads.push_back(tt);
+    }
+  }
+  //
+  temphisto = (TH1*)infile->Get("rr_h1");
+  n_bins = temphisto->GetNbinsX();
+  if (n_bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for rr " << n_bins << " bins " << std::endl;
+    n_bins = 1;
+    rr_means.push_back(0);
+    rr_spreads.push_back(0.001);
+  }
+  else {
+    for (int ib = 1; ib <= n_bins; ++ib) {
+      rr_means.push_back(temphisto->GetBinContent(ib));
+      double tt = temphisto->GetBinError(ib);
+      if (tt <= 0) {
+        std::cout << "zero value for bin spread in rr" << std::endl;
+        std::cout << "ib:\t" << ib << "\n";
+        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
+        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
+        tt = 100.;
+      }
+      rr_spreads.push_back(tt);
+    }
+  }
+  //
+  if (fSBND) {
+    temphisto = (TH1*)infile->Get("pe_h1");
+    n_bins = temphisto->GetNbinsX();
+    if (n_bins <= 0 || fNoAvailableMetrics) {
+      std::cout << " problem with input histos for pe " << n_bins << " bins " << std::endl;
+      n_bins = 1;
+      pe_means.push_back(0);
+      pe_spreads.push_back(0.001);
+    }
+    else {
+      for (int ib = 1; ib <= n_bins; ++ib) {
+        pe_means.push_back(temphisto->GetBinContent(ib));
+        double tt = temphisto->GetBinError(ib);
+        if (tt <= 0) {
+          std::cout << "zero value for bin spread in pe" << std::endl;
+          std::cout << "ib:\t" << ib << "\n";
+          std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
+          std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
+          tt = 100.;
+        }
+        pe_spreads.push_back(tt);
+      }
+    }
+  }
+  else if (fICARUS ) {
+    n_bins = 1;
+    pe_means.push_back(0);
+    pe_spreads.push_back(0.001);
+  }
+  //
+  infile->Close();
+  delete infile;
+
+}
 
 
 bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
@@ -738,8 +748,8 @@ double FlashPredict::scoreTerm(double m,
 
 bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h)
 {
-  for (size_t p=0; p<pfp_h->size(); p++) {
-    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
+  for (auto const& p : (*pfp_h)) {
+    unsigned pfpPDGC = std::abs(p.PdgCode());
     if ((pfpPDGC == 12) ||
         (pfpPDGC == 14) ||
         (pfpPDGC == 16)) {
