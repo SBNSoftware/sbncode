@@ -84,6 +84,17 @@ def generator(nuslice_tree, rootfile, pset):
     dist_to_anode_bins = n_bins
     dist_to_anode_low = 0.
     dist_to_anode_up = drift_distance
+    if detector == "sbnd":
+        x_gl_low = -215
+        x_gl_up = 215
+    elif detector == "icarus":
+        if pset.Cryostat == 0:
+            x_gl_low = -380
+            x_gl_up = -50
+        if pset.Cryostat == 1:
+            x_gl_low = 370
+            x_gl_up = 50
+
     profile_bins = n_bins
     profile_option = 's'  # errors are the standard deviation
 
@@ -156,6 +167,11 @@ def generator(nuslice_tree, rootfile, pset):
         pe_h1.GetXaxis().SetTitle("distance from anode (cm)")
         pe_h1.GetYaxis().SetTitle("ratio_{uncoated/coated}")
 
+    unfolded_score_scatter = TH2D("unfolded_score_scatter", "Scatter plot of match scores",
+                                  2*dist_to_anode_bins, x_gl_low, x_gl_up,
+                                  pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+    unfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
+    unfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_scatter = TH2D("match_score_scatter", "Scatter plot of match scores",
                                dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                                pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
@@ -200,32 +216,34 @@ def generator(nuslice_tree, rootfile, pset):
             pe_spreads[int(ib)] = pe_prof.GetBinError(ibp)
 
     for e in nuslice_tree:
-        slice = e.charge_x
+        qX = e.charge_x
+        qXGl = e.charge_x_gl
         # calculate match score
-        isl = int(slice/bin_width)
+        isl = int(qX/bin_width)
         score = 0.
         if dy_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. dy_spreads[isl]: {dy_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. dy_spreads[isl]: {dy_spreads[isl]} ")
             dy_spreads[isl] = dy_spreads[isl+1]
         if dz_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. dz_spreads[isl]: {dz_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. dz_spreads[isl]: {dz_spreads[isl]} ")
             dz_spreads[isl] = dz_spreads[isl+1]
         if rr_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. rr_spreads[isl]: {rr_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. rr_spreads[isl]: {rr_spreads[isl]} ")
             rr_spreads[isl] = rr_spreads[isl+1]
         if detector == "sbnd" and pe_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
             pe_spreads[isl] = pe_spreads[isl+1]
         score += abs(abs(e.flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
         score += abs(abs(e.flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_r-rr_means[isl])/rr_spreads[isl]
         if detector == "sbnd" and pset.UseUncoatedPMT:
             score += abs(e.flash_ratio-pe_means[isl])/pe_spreads[isl]
-        match_score_scatter.Fill(slice, score)
+        unfolded_score_scatter.Fill(qXGl, score)
+        match_score_scatter.Fill(qX, score)
         match_score_hist.Fill(score)
     metrics_filename = 'fm_metrics_' + detector + '.root'
     hfile = gROOT.FindObject(metrics_filename)
@@ -247,6 +265,7 @@ def generator(nuslice_tree, rootfile, pset):
         pe_prof.Write()
         pe_h1.Write()
     match_score_scatter.Write()
+    unfolded_score_scatter.Write()
     match_score_hist.Write()
     hfile.Close()
 
@@ -292,6 +311,10 @@ def generator(nuslice_tree, rootfile, pset):
         crosses.Draw("Psame")
         canv.Print("pe.pdf")
         canv.Update()
+
+    unfolded_score_scatter.Draw()
+    canv.Print("unfolded_score_scatter.pdf")
+    canv.Update()
 
     match_score_scatter.Draw()
     canv.Print("match_score_scatter.pdf")
