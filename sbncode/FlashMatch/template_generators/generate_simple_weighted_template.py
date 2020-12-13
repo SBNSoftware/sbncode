@@ -344,7 +344,7 @@ def main():
         nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
         # nuslice_tree.Print()
     elif args.icarus:
-        fcl_params = fhicl.make_pset('flashmatch_icarus.fcl')
+        fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
         # TODO: add option to use cryo 0 and cryo 1
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
         detector = "icarus"
