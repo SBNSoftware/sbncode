@@ -886,18 +886,20 @@ void FlashPredict::printBookKeeping(Stream&& out)
   if(bk.nopfpneutrino) m << "\tnopfpneutrino:\t -" << bk.nopfpneutrino << "\n";
   if(bk.nonvalidophit) m << "\tnonvalidophit:\t -" << bk.nonvalidophit << "\n";
   if(bk.nullophittime) m << "\tnullophittime:\t -" << bk.nullophittime << "\n";
-  m << "\t-------------------\n"
-    << "\tjob_bookkeeping:  \t" << bk.job_bookkeeping << "\n"
-    << "\tevents_processed: \t" << bk.events_processed << "\n"
+  m << "\t-------------------\n";
+  if(bk.job_bookkeeping != bk.events_processed)
+    m << "\tjob_bookkeeping:  \t" << bk.job_bookkeeping << "\n";
+  m << "\tevents_processed: \t" << bk.events_processed << "\n"
     << "-----------------------------------\n"
     << "pfp tally\n"
     << "\tpfp to score: \t  " << bk.pfp_to_score << "\n";
   if(bk.no_oph_hits) m << "\tno_oph_hits:  \t -" << bk.no_oph_hits << "\n";
   if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
   if(bk.no_flash_pe) m << "\tno_flash_pe:  \t -" << bk.no_flash_pe << "ERROR!\n";
-  m << "\t-------------------\n"
-    << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n"
-    << "\tscored_pfp_:      \t" << bk.scored_pfp << "\n"
+  m << "\t-------------------\n";
+  if(bk.pfp_bookkeeping != bk.scored_pfp)
+    m << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n";
+  m << "\tscored_pfp_:      \t" << bk.scored_pfp << "\n"
     << "-----------------------------------";
   out << m.str();
 }
