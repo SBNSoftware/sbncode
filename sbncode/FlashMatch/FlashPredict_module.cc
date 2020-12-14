@@ -16,11 +16,12 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fOpHitProducer(p.get<std::string>("OpHitProducer"))
   // , fCaloProducer(p.get<std::string>("CaloProducer"))
   // , fTrackProducer(p.get<std::string>("TrackProducer"))
+  , fClockResolution(p.get<double>("ClockResolution", 0.002)) // us
   , fBeamWindowStart(p.get<double>("BeamWindowStart")) // TODO: should come from service
   , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// in ns // TODO: should come from service
   , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
   , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
-  , fTimeBins(unsigned(500 * (fBeamWindowEnd - fBeamWindowStart)))
+  , fTimeBins(unsigned(1/fClockResolution * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   // , fUseCalo(p.get<bool>("UseCalo", false))
@@ -179,7 +180,7 @@ void FlashPredict::produce(art::Event & e)
   }
 
   auto ibin =  ophittime.GetMaximumBin();
-  _flash_time = (ibin * 0.002) + fBeamWindowStart; // in us // TODO: hardcoding
+  _flash_time = (ibin * fClockResolution) + fBeamWindowStart; // in us
   double lowedge = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;

@@ -123,6 +123,7 @@ private:
 
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer;//, fCaloProducer, fTrackProducer;
+  const double fClockResolution;
   const double fBeamWindowStart, fBeamWindowEnd;
   const double fLightWindowStart, fLightWindowEnd;
   const unsigned fTimeBins;
