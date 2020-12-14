@@ -41,12 +41,12 @@ namespace caf
     return \
       // check contained, id, & end process (stopping-only)
       contained &&
-      ( abs(pdg) == 13 || abs(pdg) == 2212 || 
-	abs(pdg) == 211 || abs(pdg) == 321 ) &&
+      ( abs(pdg) == 13 || abs(pdg) == 2212 ||
+  abs(pdg) == 211 || abs(pdg) == 321 ) &&
       ( end_process ==  kG4CoupledTransportation ||
-	end_process ==  kG4FastScintillation ||
-	end_process ==  kG4Decay ||
-	end_process ==  kG4muMinusCaptureAtRest );
+  end_process ==  kG4FastScintillation ||
+  end_process ==  kG4Decay ||
+  end_process ==  kG4muMinusCaptureAtRest );
   }
 
   bool SRTrueParticle::IsGenie() const {
