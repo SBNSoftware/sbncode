@@ -33,7 +33,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
-  , fDriftDistance(p.get<double>("DriftDistance"))// TODO: should come from geometry
+  , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
   , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
@@ -44,6 +44,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
   fGeoCryo = std::make_unique<geo::CryostatGeo>(geometry->Cryostat(fCryostat));
   fNTPC = geometry->NTPC();
+  for (size_t t = 0; t < fNTPC; t++) {
+    const geo::TPCGeo& tpcg = fGeoCryo->TPC(t);
+    fWiresX_gl.push_back(tpcg.LastPlane().GetCenter().X());
+  }
+  fWiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
 
   fDetector = geometry->DetectorName();
   if(fDetector.find("sbnd") != std::string::npos) {
@@ -215,7 +220,6 @@ void FlashPredict::produce(art::Event & e)
         (pfpPDGC != 16) ) continue;
     bk.pfp_to_score++;
     flashmatch::QCluster_t qClusters;
-    flashmatch::QCluster_t qClustsGl;
     std::set<unsigned> tpcWithHits;
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
@@ -270,14 +274,11 @@ void FlashPredict::produce(art::Event & e)
           // Only use hits from the collection plane
           geo::WireID wid = hit->WireID();
           if (geometry->SignalType(wid) != geo::kCollection) continue;
-          const auto& position(SP->XYZ());
+          const auto& pos(SP->XYZ());
           auto itpc = wid.TPC;
           tpcWithHits.insert(itpc);
           const auto charge(hit->Integral());
-          auto wXYZ = geometry->WireIDToWireGeo(wid).GetCenter();
-          double wires_distance_X = std::abs(position[0] - wXYZ.X());
-          qClusters.emplace_back(wires_distance_X, position[1], position[2], charge * chargeToNPhotons);
-          qClustsGl.emplace_back(position[0], position[1], position[2], charge * chargeToNPhotons);
+          qClusters.emplace_back(pos[0], pos[1], pos[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
@@ -295,7 +296,7 @@ void FlashPredict::produce(art::Event & e)
       }
     }
 
-    if(!computeChargeMetrics(qClusters, qClustsGl)){
+    if(!computeChargeMetrics(qClusters)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       continue;
@@ -472,8 +473,7 @@ void FlashPredict::loadMetrics()
 }
 
 
-bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
-                                        flashmatch::QCluster_t& qClustsGl)
+bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
 {
   double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
@@ -486,13 +486,9 @@ bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters,
     norm += scale * qp.q;
     _charge_q += qp.q;
   }
-  double xGl = 0.;
-  for (auto& qp : qClustsGl) {
-    xGl += scale * qp.q * qp.x;
-  }
   if (norm > 0) {
-    _charge_x_gl = xGl  / norm;
-    _charge_x = xave / norm;
+    _charge_x_gl = xave / norm;
+    _charge_x = driftDistance(_charge_x_gl);
     _charge_y = yave / norm;
     _charge_z = zave / norm;
     return true;
@@ -802,6 +798,21 @@ unsigned FlashPredict::sbndPDinTPC(int pdChannel)
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
   return (geometry->PositionToTPCID(p)).TPC;
+}
+
+double FlashPredict::driftDistance(const double x) const
+{
+  auto wit = fWiresX_gl.begin();
+  for(size_t i=0; i<fWiresX_gl.size()-1; i++){
+    double wxl = *wit;
+    wit++;
+    double wxh = *wit;
+    if(wxl < x && x<= wxh){
+      double mid = (wxl + wxh)/2.;
+      return (x<=mid) ? std::abs(x-wxl) : std::abs(x-wxh);
+    }
+  }
+  return -10.;
 }
 
 

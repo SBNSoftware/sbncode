@@ -54,6 +54,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <list>
 #include <memory>
 #include <set>
 #include <string>
@@ -85,8 +86,7 @@ private:
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
   void initTree(void);
   void loadMetrics(void);
-  bool computeChargeMetrics(flashmatch::QCluster_t& qClusters,
-                            flashmatch::QCluster_t& qClustsGl);
+  bool computeChargeMetrics(flashmatch::QCluster_t& qClusters);
   bool computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
   bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
@@ -110,6 +110,7 @@ private:
   bool isPDRelevant(int pdChannel,
                     std::set<unsigned>& tpcWithHits);
   unsigned sbndPDinTPC(int pdChannel);
+  double driftDistance(const double x) const;
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
@@ -142,6 +143,7 @@ private:
   size_t fNTPC;
   const unsigned fVUVToVIS;
   const double fTermThreshold;
+  std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
 
   const art::ServiceHandle<geo::Geometry> geometry;
@@ -152,8 +154,8 @@ private:
   std::vector<double> _pe_reco_v, _pe_hypo_v;
 
   // Tree variables
-  double _charge_x_gl, _charge_x, _charge_y,
-    _charge_z, _charge_q;
+  double _charge_x_gl, _charge_x,
+    _charge_y, _charge_z, _charge_q;
   double _flash_x, _flash_y, _flash_z,
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?

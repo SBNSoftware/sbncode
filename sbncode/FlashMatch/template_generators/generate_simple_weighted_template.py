@@ -92,7 +92,7 @@ def generator(nuslice_tree, rootfile, pset):
             x_gl_low = -380
             x_gl_up = -50
         if pset.Cryostat == 1:
-            x_gl_low = 370
+            x_gl_low = 380
             x_gl_up = 50
 
     profile_bins = n_bins
