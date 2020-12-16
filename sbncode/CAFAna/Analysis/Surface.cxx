@@ -192,7 +192,7 @@ namespace ana
     int grid_stride = 1;
     if(RunningOnGrid() && NumJobs() > 1){
       grid_stride = NumJobs();
-      bin = step*JobNumber();
+      bin = (step*JobNumber()) % (Nx*Ny);
     }
 
     do{
