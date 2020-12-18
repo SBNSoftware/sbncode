@@ -1,0 +1,21 @@
+<lcgdict>
+  <class name="evgen::ldm::MeVPrtlTruth" />
+  <class name="std::vector<evgen::ldm::MeVPrtlTruth>" />
+  <class name="art::Wrapper<evgen::ldm::MeVPrtlTruth>" />
+  <class name="art::Wrapper<std::vector<evgen::ldm::MeVPrtlTruth>>" />
+
+  <class name="evgen::ldm::MeVPrtlDecay" />
+  <class name="std::vector<evgen::ldm::MeVPrtlDecay>" />
+  <class name="art::Wrapper<evgen::ldm::MeVPrtlDecay>" />
+  <class name="art::Wrapper<std::vector<evgen::ldm::MeVPrtlDecay>>" />
+
+  <class name="evgen::ldm::MeVPrtlFlux" />
+  <class name="std::vector<evgen::ldm::MeVPrtlFlux>" />
+  <class name="art::Wrapper<evgen::ldm::MeVPrtlFlux>" />
+  <class name="art::Wrapper<std::vector<evgen::ldm::MeVPrtlFlux>>" />
+
+  <class name="evgen::ldm::KaonParent" />
+  <class name="std::vector<evgen::ldm::KaonParent>" />
+  <class name="art::Wrapper<evgen::ldm::KaonParent>" />
+  <class name="art::Wrapper<std::vector<evgen::ldm::KaonParent>>" />
+</lcgdict>
