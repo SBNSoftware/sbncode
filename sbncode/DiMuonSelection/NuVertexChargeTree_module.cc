@@ -999,6 +999,10 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt)
       }
     }
 
+    double badpos[3] {-999., -999., -999.};
+    recob::Vertex badvert(badpos);
+    const recob::Vertex &nu_vert = (vert) ? *vert : badvert;
+
     // Lookup truth-matching
     std::vector<std::vector<std::pair<int, float>>> thisSlicePFPMatches; 
     for (unsigned i_pfp = 0; i_pfp < thisSliceParticles.size(); i_pfp++) {
@@ -1015,7 +1019,7 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt)
     FillMeta(evt);
 
     // save the true-neutrino info
-    FillNeutrino(nu, *vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu));
+    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu));
 
     // The vertex hits!
     FillVertexHits(thisVertexHits, thisVertexHitHits, clock_data, trueParticles);

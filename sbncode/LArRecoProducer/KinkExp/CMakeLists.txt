@@ -1,3 +1,7 @@
+link_directories(
+ $ENV{ROOTSYS}/lib
+)
+
 art_make_library(
 	LIBRARY_NAME sbn_LArReco_PCA
 	SOURCE PCA.cc

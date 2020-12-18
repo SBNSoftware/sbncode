@@ -9,12 +9,8 @@
 #include "mccheatermodules.fcl"
 #include "spacecharge.fcl"
 
-#include "mcsproducer.fcl"
-#include "rangeproducer.fcl"
 #include "calorimetry_icarus.fcl"
 #include "particleid.fcl"
-#include "trackareahit_producer.fcl"
-#include "trackhitfilter_module.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "simulationservices_icarus.fcl"

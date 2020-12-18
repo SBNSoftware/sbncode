@@ -16,6 +16,7 @@
 #include "geometry_sbnd.fcl"
 #include "detectorproperties_sbnd.fcl"
 #include "calorimetry_sbnd.fcl"
+#include "spacecharge_sbnd.fcl"
 
 
 process_name: CaloAna
@@ -36,8 +37,8 @@ services:
   NuRandomService: {
     policy: perEvent
   }
-
-
+  TimeTracker:  { printSummary: true }
+  SpaceCharge: @local::sbnd_spacecharge
 }
 services.TFileService.fileName: "vtxQ.root"
 
@@ -64,8 +65,8 @@ physics:
   producers:{
     vertexCharge: {
       module_type: VertexChargeVacuum
-      PFParticleLabel: pandoraSCE
-      TrackLabel: pandoraSCETrack
+      PFParticleLabel: pandora
+      TrackLabel: pandoraTrack
       UseTrackSPRecovery: true
       HitVacuumRadius: 5
       CaloAlg: @local::sbnd_calorimetryalgmc
@@ -73,9 +74,9 @@ physics:
 
     vertexStub: {
       module_type: VertexStubTracker
-      PFPLabel: pandoraSCE
+      PFPLabel: pandora
       VertexChargeLabel: vertexCharge
-      dQdxCut: 500000
+      dQdxCut: 1.7e5
       CaloAlg: @local::sbnd_calorimetryalgmc
     }
   }
@@ -90,7 +91,7 @@ physics:
 
     ana: {
       module_type: NuVertexChargeTree
-      ParticleTags: [pandoraSCE]
+      ParticleTags: [pandora]
       VertexHitTags: [vertexCharge]
       StubTags: [vertexStub]
       xmin: 15
@@ -108,3 +109,4 @@ physics:
   end_paths:     [ stream1 ]
 }
 
+#include "3drift_services_sbnd.fcl"

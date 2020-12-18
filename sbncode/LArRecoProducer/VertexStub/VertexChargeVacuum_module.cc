@@ -34,6 +34,9 @@
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
+
 #include "sbncode/LArRecoProducer/Products/VertexHit.h"
 
 namespace sbn {
@@ -190,6 +193,126 @@ TVector3 PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &vert, 
   return vert_v + trk_dir * dist_3d;
 }
 
+geo::Point_t GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, unsigned TPC, float xsign=1.) {
+  if (sce->EnableCalSpatialSCE()) {
+    geo::Vector_t offset = sce->GetCalPosOffsets(loc_w, TPC);
+    loc_w.SetX(loc_w.X() + xsign * offset.X());
+    loc_w.SetY(loc_w.Y() + offset.Y());
+    loc_w.SetZ(loc_w.Z() + offset.Z());
+  }
+
+  return loc_w;
+}
+
+double GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, unsigned TPC, bool correct_loc_sce, float xsign=1.) {
+
+  double EField = dprop.Efield();
+  if (sce->EnableSimEfieldSCE()) {
+    if (correct_loc_sce) loc = GetLocation(sce, loc, TPC, xsign);
+
+    // Gets relative E field Distortions
+    geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(loc);
+    // Add 1 in X direction as this is the direction of the drift field
+    EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
+    // Convert to Absolute E Field from relative
+    EFieldOffsets = EField * EFieldOffsets;
+    // We only care about the magnitude for recombination
+    EField = EFieldOffsets.r();
+  }
+
+  return EField;
+}
+
+
+geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_t loc, float xsign=1.) { 
+  if (sce->EnableCalSpatialSCE()) {
+    // fix negative sign in TPC 0
+    int corr = 1;
+    float xx = loc.X();
+    if (xx < 0) { corr = -1; }
+
+    // for some reason, one needs to flip the sign of the x-direction when correcting for field distortion
+    geo::Vector_t offset = sce->GetPosOffsets(loc);
+    loc.SetX(loc.X() + corr * xsign * offset.X());
+    loc.SetY(loc.Y() + offset.Y());
+    loc.SetZ(loc.Z() + offset.Z());
+  }
+
+  return loc;
+}
+
+double GetPitch(
+    const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce, 
+    geo::Point_t loc, geo::Vector_t dir, 
+    geo::View_t view, geo::TPCID tpc, 
+    bool correct_sce, bool track_is_sce_corrected, float xsign=1.) {
+
+  double angleToVert = geo->WireAngleToVertical(view, tpc.TPC, tpc.Cryostat) - 0.5*::util::pi<>();
+
+  geo::Vector_t dir_w;
+
+  // "dir_w" should be the direction that the wires see. If the track already has the field
+  // distortion corrections applied, then we need to de-apply them to get the direction as
+  // seen by the wire planes
+  if (sce->EnableCalSpatialSCE() && correct_sce && track_is_sce_corrected) {
+    // fix negative sign in TPC 0
+    int corr = 1;
+    float xx = loc.X();
+    if (xx < 0) { corr = -1; }
+
+    // compute the dir of the track trajectory
+    geo::Point_t loc_mdx = loc - dir * (geo->WirePitch(view) / 2.);
+    geo::Point_t loc_pdx = loc + dir * (geo->WirePitch(view) / 2.);
+
+    geo::Vector_t loc_mdx_offset = sce->GetPosOffsets(loc_mdx);
+
+    loc_mdx.SetX(loc_mdx.X() + corr * xsign * loc_mdx_offset.X());
+    loc_mdx.SetY(loc_mdx.Y() + loc_mdx_offset.Y());
+    loc_mdx.SetZ(loc_mdx.Z() + loc_mdx_offset.Z());
+
+    geo::Vector_t loc_pdx_offset = sce->GetPosOffsets(loc_pdx);
+    loc_pdx.SetX(loc_pdx.X() + corr * xsign * loc_pdx_offset.X());
+    loc_pdx.SetY(loc_pdx.Y() + loc_pdx_offset.Y());
+    loc_pdx.SetZ(loc_pdx.Z() + loc_pdx_offset.Z());
+
+    dir_w = (loc_pdx - loc_mdx) /  (loc_mdx - loc_pdx).r(); 
+  }
+  // If there is no space charge or the track is not yet corrected, then the dir
+  // is the track is what we want
+  else {
+    dir_w = dir;
+  }
+
+  double cosgamma = std::abs(std::sin(angleToVert)*dir_w.Y() + std::cos(angleToVert)*dir_w.Z());
+  double pitch;
+  if (cosgamma) {
+    pitch = geo->WirePitch(view)/cosgamma;
+  }
+  else {
+    pitch = 0.;
+  }
+
+  // now take the pitch computed on the wires and correct it back to the particle trajectory
+  geo::Point_t loc_w = loc;
+  if (correct_sce && track_is_sce_corrected) {
+    loc_w = GetLocationAtWires(sce, loc, xsign);
+  }
+
+  geo::Vector_t dirOffsets = {0., 0., 0.};
+  geo::Vector_t locOffsets = {0., 0., 0.};
+  if (sce->EnableCalSpatialSCE() && correct_sce) {
+    dirOffsets = sce->GetCalPosOffsets(geo::Point_t{loc_w.X()  + pitch*dir_w.X(), loc_w.Y() + pitch*dir_w.Y(), loc_w.Z() + pitch*dir_w.Z()}, tpc.TPC);
+    locOffsets = sce->GetCalPosOffsets(loc_w, tpc.TPC);
+  }
+
+  const TVector3 &dir_corr {pitch*dir_w.X() + (dirOffsets.X() - locOffsets.X()),  
+                            pitch*dir_w.Y() + (dirOffsets.Y() - locOffsets.Y()), pitch*dir_w.Z() + (dirOffsets.Z() - locOffsets.Z())};
+
+  pitch = dir_corr.Mag();
+
+  return pitch;
+}
+
 void sbn::VertexChargeVacuum::produce(art::Event& evt)
 {
   // output stuff
@@ -205,6 +328,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
+  auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   // get the PFParticle's and the associated data
   art::Handle<std::vector<recob::PFParticle>> pfparticle_handle;
@@ -239,6 +363,8 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
   for (unsigned i_pfp = 0; i_pfp < pfparticles.size(); i_pfp++) {
     const recob::PFParticle &pfp = *pfparticles[i_pfp];
     if (!pfp.IsPrimary()) continue;
+    // Ignore PFP's with no vertex
+    if (!pfparticleVertices.at(i_pfp).size()) continue;
 
     // we found a primary PFP! Get its vertex.
     const art::Ptr<recob::Vertex> &vtx_ptr = pfparticleVertices.at(i_pfp).at(0); 
@@ -346,7 +472,6 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
         }
         // No Space-Point. If configured, see if we can look up a point along the assigned track
         else if (fUseTrackSPRecovery) {
-          std::cout << "Trying Recovery!\n";
           unsigned plane = hit.WireID().Plane;
           art::Ptr<recob::PFParticle> matchingPFP;
           for (unsigned i_pfp_chk = 0; i_pfp_chk < daughterPlaneHits[plane].size(); i_pfp_chk++) {
@@ -373,21 +498,15 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
           vhit.spID = spID;
           vhit.spXYZ = spXYZ;
 
-          double angleToVert = geo->WireAngleToVertical(hit.View(), hit.WireID().TPC, hit.WireID().Cryostat) - 0.5*::util::pi<>();
           geo::Point_t pt (spXYZ);
           geo::Vector_t dir = (pt - vert.position()).Unit();
-          double cosgamma = std::abs(std::sin(angleToVert)*dir.Y() + std::cos(angleToVert)*dir.Z());
-          double pitch;
-          if (cosgamma){
-            pitch = geo->WirePitch(hit.View())/cosgamma;
-          }
-          else {
-            pitch = 0;
-          }
-          vhit.pitch = pitch; 
+          vhit.pitch = GetPitch(geo, sce, pt, dir, hit.View(), hit.WireID(), true, true); 
 
-          vhit.dqdx = fCaloAlg.ElectronsFromADCArea((hit.Integral() / pitch), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
-          vhit.dedx = fCaloAlg.dEdx_AREA(clock_data, dprop, hit, pitch, 0.);
+          vhit.dqdx = fCaloAlg.ElectronsFromADCArea((hit.Integral() / vhit.pitch), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
+
+          float EField = GetEfield(dprop, sce, pt, hit.WireID().TPC, true);
+
+          vhit.dedx = fCaloAlg.dEdx_AREA(clock_data, dprop, vhit.dqdx, hit.PeakTime(), hit.WireID().Plane, 0., EField);
 
           std::vector<std::pair<float, int>> pfp_3d_dist; 
           for (unsigned i_dsp = 0; i_dsp < daughterSPIDs.size(); i_dsp++) {
