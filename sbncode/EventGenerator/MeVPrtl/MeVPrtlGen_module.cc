@@ -271,16 +271,13 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     simb::MCTruth mctruth;
 
-    simb::MCParticle daughterA(0, mevprtl_truth.daughterA_pdg, "primary", -1, mevprtl_truth.daughterA_mom.M());
-    daughterA.AddTrajectoryPoint(mevprtl_truth.decay_pos, mevprtl_truth.daughterA_mom);
-    simb::MCParticle daughterB(0, mevprtl_truth.daughterB_pdg, "primary", -1, mevprtl_truth.daughterB_mom.M());
-    daughterB.AddTrajectoryPoint(mevprtl_truth.decay_pos, mevprtl_truth.daughterB_mom);
-
-    mctruth.Add(daughterA);
-    mctruth.Add(daughterB);
+    for (unsigned i_d = 0; i_d < mevprtl_truth.daughter_mom.size(); i_d++) {
+      simb::MCParticle d(0, mevprtl_truth.daughter_pdg[i_d], "primary", -1, mevprtl_truth.daughter_mom[i_d].M());
+      d.AddTrajectoryPoint(mevprtl_truth.decay_pos, mevprtl_truth.daughter_mom[i_d]);
+      mctruth.Add(d);
+    }
 
     mctruthColl->push_back(mctruth);
-
     mcfluxColl->push_back(kaon);
 
     art::Ptr<simb::MCTruth> MCTruthPtr = MCTruthPtrMaker(mctruthColl->size() - 1); 

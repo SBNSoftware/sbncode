@@ -12,10 +12,9 @@ evgen::ldm::MeVPrtlTruth evgen::ldm::BuildMeVPrtlTruth(const MeVPrtlFlux &flux, 
   ret.mevprtl_mom_beamcoord = flux.mom_beamcoord;
 
   ret.decay_pos = decay.pos;
-  ret.daughterA_mom = decay.daughterA_mom;
-  ret.daughterA_pdg = decay.daughterA_pdg;
-  ret.daughterB_mom = decay.daughterB_mom;
-  ret.daughterB_pdg = decay.daughterB_pdg;
+
+  ret.daughter_mom = decay.daughter_mom;
+  ret.daughter_pdg = decay.daughter_pdg;
 
   ret.pot = pot;
   ret.flux_weight = flux_weight;

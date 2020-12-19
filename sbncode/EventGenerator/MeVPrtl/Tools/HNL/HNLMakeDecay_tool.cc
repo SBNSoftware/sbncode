@@ -14,8 +14,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // local includes
-#include "IMeVPrtlDecay.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
+#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
+#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -29,6 +30,10 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+
+// math
+#include <math.h>
+#include <gsl/gsl_integration.h>
 
 // constants
 #include "TDatabasePDG.h"
@@ -56,7 +61,6 @@ public:
     void configure(fhicl::ParameterSet const &pset) override;
 
     bool Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) override;
-    int RandDaughter(double elec_width, double muon_width, double piplus_width, double pizero_width);
 
     // returns the max weight of configured
     float MaxWeight() override { 
@@ -64,71 +68,325 @@ public:
     }
 
 private:
-  float fReferenceRayLength;
-  float fReferenceRayDistance;
-  float fReferenceHNLMass;
-  float fReferenceHNLMixing;
-  float fReferenceHNLMaxEnergy;
+  // Internal data
+  double fMaxWeight;
+  gsl_integration_workspace *fIntegrator;
+  unsigned fIntegratorSize;
 
-  float fMaxWeight;
-  
+  // Configure the MaxWeight
+  double fReferenceUE4;
+  double fReferenceUM4;
+  double fReferenceHNLMass;
+  double fReferenceRayLength;
+  double fReferenceHNLMinEnergy;
+  int fReferenceLeptonPdg;
+
+  // Configure the particle
+  bool fMajorana;
+
+  // Internal struct for holding decay information
+  struct DecayFinalState {
+    float width;
+    std::vector<TLorentzVector> mom;
+    std::vector<int> pdg;
+  };
+
+  // In the threebody-decay case, we need to specify the three momentum vectors, not just the overall
+  // magnitude
+  struct ThreebodyMomentum {
+    TLorentzVector A;
+    TLorentzVector B;
+    TLorentzVector C;
+  };
+
+  typedef DecayFinalState(HNLMakeDecay::*HNLDecayFunction)(const MeVPrtlFlux &flux);
+
+  std::map<std::string, HNLDecayFunction> fAvailableDecays;
+  std::vector<std::string> fDecayConfig;
+  std::vector<HNLDecayFunction> fSelectedDecays;
+
+  // Helper functions
+  double CalculateMaxWeight();
+  ThreebodyMomentum isotropic_threebody_momentum(double parent_mass, double childA_mass, double childB_mass, double childC_mass);
+  double I1(double x, double y, double z);
+  double I2(double x, double y, double z);
+  double NuDiLepDecayWidth(double hnl_mass, double ue4, double um4, bool nu_is_muon, bool lep_is_muon);
+
+  // Decay implementation functions
+  DecayFinalState NuMupMum(const MeVPrtlFlux &flux);
+  DecayFinalState MuPi(const MeVPrtlFlux &flux);
 };
 
-// converts a random number (x) between 0 and 1 to a number
-// from an exponential distribution with mean forced to lie 
-// between a and b
-float flat_to_exp_rand(float x, float mean, float a, float b) {
-  float A = (1. - exp(-(b-a)/mean));
-  return - mean * log(1 - x * A) + a;
+// helpers
+double lambda(double a, double b, double c) {
+  return a*a + b*b + c*c - 2*a*b - 2*b*c - 2*c*a;
 }
 
-// returns the weight associated with forcing the decay to happen within a center length
-double forcedecay_weight(float mean, float a, float b) {
-    return exp(-a/mean) - exp(-b/mean);
+double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
+  if (parent_mass < childA_mass + childB_mass) return -1.;
+
+  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
+    -2 * parent_mass * parent_mass * childA_mass * childA_mass
+    -2 * parent_mass * parent_mass * childB_mass * childB_mass
+       + childA_mass * childA_mass * childA_mass * childA_mass 
+       + childB_mass * childB_mass * childB_mass * childB_mass 
+    -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
+
 }
 
-// constants
-static const double elec_mass = 0.000511; // GeV
-static const double muon_mass = 0.105658; // GeV
-static const double piplus_mass = 0.139570; // GeV
-static const double pizero_mass = 0.134977; // GeV
-static const double higgs_vev = 246.22; // GeV
-static const double hbar = 6.582119569e-16; // GeV*ns
-static const double c_cm_per_ns = 29.9792; // cm / ns
+// Valid for decays where the matix element has no kinematic dependence (i.e. a constant Dalitz density)
+HNLMakeDecay::ThreebodyMomentum HNLMakeDecay::isotropic_threebody_momentum(double parent_mass, double childA_mass, double childB_mass, double childC_mass) {
+  ThreebodyMomentum ret;
+  double sumofdaughtermass = childA_mass + childB_mass + childC_mass;
+  if (parent_mass < sumofdaughtermass) { // shouldn't happen
+    return ret;
+  } 
 
-// Get the partial width for lepton decays
-double LeptonPartialWidth(double lep_mass, double higs_mass, double mixing) {
-  if (lep_mass * 2 >= higs_mass) return 0.;
+  double E_A, E_B, E_C;
+  double P_A, P_B, P_C;
+  double P_max, P_sum;
+  // Kinetic Energy is distributed uniformly to daughters, with the constraint that
+  // total momentum is conserved. Randomly allocate energy until a possible such configuration
+  // is found
+  do {
+    double r1 = GetRandom();
+    double r2 = GetRandom();
+  
+    E_A = childA_mass + (parent_mass - sumofdaughtermass) * std::min(r1, r2);
+    E_B = childB_mass + (parent_mass - sumofdaughtermass) * std::min(1-r1,1-r2);
+    E_C = childC_mass + (parent_mass - sumofdaughtermass) * abs(r1-r2);
 
-  double width = (mixing * mixing * lep_mass * lep_mass * higs_mass / (8 * M_PI * higgs_vev * higgs_vev)) * pow(1 - 4 * lep_mass * lep_mass / (higs_mass * higs_mass), 3. / 2.);
+    P_A = sqrt(E_A*E_A - childA_mass*childA_mass);
+    P_B = sqrt(E_B*E_B - childB_mass*childB_mass);
+    P_C = sqrt(E_C*E_C - childC_mass*childC_mass);
+
+    P_max = std::max(std::max(P_A,P_B),P_C);
+    P_sum = P_A + P_B + P_C;
+
+  } while(P_max > P_sum - P_max);
+
+  // Found a valid momentum allocation!
+  
+  // Pick a random direction for A, have the direction of B, C work to conserve momentum
+  TVector3 dirA = RandomUnitVector();
+
+  // daughter particles B and C have the same momentum perpindicular to the direction of A
+  // Solving for the direction along the axis of particle A gives:
+  double cos_thAB = (P_C*P_C - P_B*P_B - P_A*P_A) / (2. * P_A * P_B);
+  double sin_thAB = sqrt(1. - cos_thAB * cos_thAB);
+  double cos_thAC = (P_B*P_B - P_C*P_C - P_A*P_A) / (2. * P_A * P_C);
+  double sin_thAC = sqrt(1. - cos_thAC * cos_thAC);
+
+  // The azimuthal angle of B and C about A is distributed uniformly
+  double gammaB = (2*GetRandom() - 1.) * M_PI;
+  double gammaC = -gammaB;
+
+  TVector3 dirB(
+  sin_thAB*cos(gammaB)*dirA.CosTheta()*sin(dirA.Phi()) - sin_thAB*sin(gammaB)*sin(dirA.Phi()) + cos_thAB*sqrt(1.-dirA.CosTheta()*dirA.CosTheta()) * cos(dirA.Phi()),
+  sin_thAB*cos(gammaB)*dirA.CosTheta()*cos(dirA.Phi()) - sin_thAB*sin(gammaB)*cos(dirA.Phi()) + cos_thAB*sqrt(1.-dirA.CosTheta()*dirA.CosTheta()) * sin(dirA.Phi()),
+ -sin_thAB*cos(gammaB)*sqrt(1. - dirA.CosTheta() * dirA.CosTheta()) + cos_thAB*dirA.CosTheta());
+
+  TVector3 dirC(
+  sin_thAC*cos(gammaC)*dirA.CosTheta()*sin(dirA.Phi()) - sin_thAC*sin(gammaC)*sin(dirA.Phi()) + cos_thAC*sqrt(1.-dirA.CosTheta()*dirA.CosTheta()) * cos(dirA.Phi()),
+  sin_thAC*cos(gammaC)*dirA.CosTheta()*cos(dirA.Phi()) - sin_thAC*sin(gammaC)*cos(dirA.Phi()) + cos_thAC*sqrt(1.-dirA.CosTheta()*dirA.CosTheta()) * sin(dirA.Phi()),
+ -sin_thAC*cos(gammaC)*sqrt(1. - dirA.CosTheta() * dirA.CosTheta()) + cos_thAC*dirA.CosTheta());
+
+  ret.A = TLorentzVector(P_A*dirA, E_A);
+  ret.B = TLorentzVector(P_B*dirB, E_B);
+  ret.C = TLorentzVector(P_C*dirC, E_C);
+
+  return ret;
+}
+
+double I1_integrand(double s, void *param) {
+  double *xyz = (double *)param;
+  double x = xyz[0];
+  double y = xyz[1];
+  double z = xyz[2];
+
+  return 12.*(s - x*x - y*y)*(1 + z*z - s)*sqrt(lambda(s,x*x,y*y))*sqrt(lambda(1.,s,z*z))/s;
+}
+
+double I2_integrand(double s, void *param) {
+  double *xyz = (double *)param;
+  double x = xyz[0];
+  double y = xyz[1];
+  double z = xyz[2];
+
+  return 24*y*z*(1. + x*x - s)*sqrt(lambda(s,y*y,z*z))*sqrt(lambda(1.,s,z*z))/s;
+}
+
+double HNLMakeDecay::I1(double x, double y, double z) {
+  gsl_function F;
+  double xyz[3];
+  xyz[0] = x;
+  xyz[1] = y;
+  xyz[2] = z;
+  F.function = &I1_integrand;
+  F.params = xyz;
+
+  double result, error;
+  gsl_integration_qags(&F, (x+y)*(x+y), (1.-z)*(1.-z), 0., 1e-7, fIntegratorSize, fIntegrator, &result, &error);
+
+  return result;
+}
+
+double HNLMakeDecay::I2(double x, double y, double z) {
+  gsl_function F;
+  double xyz[3];
+  xyz[0] = x;
+  xyz[1] = y;
+  xyz[2] = z;
+  F.function = &I2_integrand;
+  F.params = xyz;
+
+  double result, error;
+  gsl_integration_qags(&F, (y+z)*(y+z), (1.-x)*(1.-x), 0., 1e-7, fIntegratorSize, fIntegrator, &result, &error);
+
+  return result;
+}
+
+double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double ue4, double um4, bool nu_is_muon, bool lep_is_muon) {
+  double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
+  double u4 = nu_is_muon ? um4 : ue4;
+  double lep_mass = lep_is_muon ? muon_mass : elec_mass;
+
+  if (hnl_mass < lep_mass * 2.) return 0.;
+
+  int CC = (lep_is_muon == nu_is_muon);
+
+  double I1val = I1(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
+  double I2val = I2(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
+
+  double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I1val + (gL*gL+gR*gR+CC*(1+2.*gL))*I2val);
+
   return width;
 }
 
-double ElectronPartialWidth(double higs_mass, double mixing) {
-  return LeptonPartialWidth(elec_mass, higs_mass, mixing);
+HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
+  HNLMakeDecay::DecayFinalState ret;
+  // Decay not kinematically allowed
+  if (2*muon_mass > flux.mass) {
+    ret.width = 0.;
+    return ret;
+  } 
+
+  double ue4 = flux.C1;
+  double um4 = flux.C2;
+  double nue_width = NuDiLepDecayWidth(flux.mass, ue4, um4, false, true);
+  double numu_width = NuDiLepDecayWidth(flux.mass, ue4, um4, true, true);
+
+  // TODO: can majorana go to both nu_e and nu_mu???
+  if (fMajorana) {
+    ret.width = nue_width + numu_width;
+  }
+  else {
+    ret.width = (abs(flux.secondary_pdg) == 13)  ? numu_width : nue_width;
+  }
+
+  if (ret.width == 0.) return ret;
+
+  // Three body decay
+  //
+  // TODO: account for anisotropies in decay
+  ThreebodyMomentum momenta = isotropic_threebody_momentum(flux.mass, 0., muon_mass, muon_mass); 
+
+  // pick whether the neutrino is nue or numu
+  int nu_pdg_sign;
+  if (fMajorana) {
+    nu_pdg_sign = (GetRandom() > 0.5) ? 1:-1;
+  }
+  else {
+    // same as the HNL
+    nu_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
+  }
+  int nu_pdg = nu_pdg_sign * ((GetRandom() > numu_width / (numu_width + nue_width)) ? 14 : 12);
+  ret.pdg.push_back(nu_pdg);
+  ret.mom.push_back(momenta.A);
+
+  ret.pdg.push_back(13);
+  ret.mom.push_back(momenta.B);
+  ret.pdg.push_back(-13);
+  ret.mom.push_back(momenta.C);
+
+  return ret;
 }
 
-double MuonPartialWidth(double higs_mass, double mixing) {
-  return LeptonPartialWidth(muon_mass, higs_mass, mixing);
+HNLMakeDecay::DecayFinalState HNLMakeDecay::MuPi(const MeVPrtlFlux &flux) {
+  HNLMakeDecay::DecayFinalState ret;
+  // Decay not kinematically allowed
+  if (muon_mass + pionp_mass > flux.mass) {
+    ret.width = 0.;
+    return ret;
+  }
+
+  // TODO: Can a Majorana HNL produced in K -> e+N decay to N -> mu + pi????
+
+  // Conserve lepton number
+  if (!fMajorana && abs(flux.secondary_pdg) == 11) {
+    ret.width = 0.;
+    return ret;
+  }
+
+  double um4 = flux.C2;
+  double lep_ratio = (muon_mass * muon_mass) / (flux.mass * flux.mass);
+  double pion_ratio = (pionp_mass * pionp_mass) / (flux.mass * flux.mass);
+  double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
+  ret.width = um4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * flux.mass * flux.mass * flux.mass * Ifunc) / (16 * M_PI);
+
+  double p = twobody_momentum(flux.mass, muon_mass, pionp_mass);
+
+  // twobody decays are Isotropic
+  TVector3 dir = RandomUnitVector();
+
+  // Majorana decays don't conserve lepton number, Dirac decay's do
+  int muon_pdg_sign;
+  if (fMajorana) {
+    muon_pdg_sign = (GetRandom() > 0.5) ? 1 : -1;
+  }
+  else {
+    // Dirac HNL caries opposite lepton number to production lepton
+    muon_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
+  }
+
+  // muon
+  ret.mom.emplace_back(p*dir, sqrt(p*p + muon_mass*muon_mass));
+  ret.pdg.push_back(13*muon_pdg_sign);
+
+  // pion
+  ret.mom.emplace_back(-p*dir, sqrt(p*p + pionp_mass*pionp_mass));
+  ret.pdg.push_back(-211*muon_pdg_sign); 
+
+  return ret;
 }
 
-double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
-  if (pion_mass * 2 >= higs_mass) return 0.;
+double HNLMakeDecay::CalculateMaxWeight() {
+  double ue4 = fReferenceUE4;
+  double um4 = fReferenceUM4;
+  double hnl_mass = fReferenceHNLMass;
+  double length = fReferenceRayLength;
+  double E = fReferenceHNLMinEnergy;
+  int pdg = fReferenceLeptonPdg;
 
-  double form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
+  // make a fake HNL flux with these parameters
+  MeVPrtlFlux hnl;
+  hnl.C1 = ue4;
+  hnl.C2 = um4;
+  hnl.mass = hnl_mass;
+  hnl.mom = TLorentzVector((E*E - hnl_mass*hnl_mass) * RandomUnitVector(), E);
+  hnl.secondary_pdg = pdg;
 
-  double width = (mixing * mixing * 3 * form_factor * form_factor / (32 * M_PI * higgs_vev * higgs_vev * higs_mass)) * pow(1- 4. * pion_mass * pion_mass / (higs_mass * higs_mass), 1. / 2.);
+  double width = 0.;
+  for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
+    width += ((*this.*F)(hnl)).width;
+  }
 
-  return width;
+  double lifetime_ns = hbar / width;
+  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * c_cm_per_ns;
+
+  return length / mean_dist; 
 }
 
-double PiPlusPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(piplus_mass, higs_mass, mixing);
-}
-
-double PiZeroPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(pizero_mass, higs_mass, mixing);
-}
 
 HNLMakeDecay::HNLMakeDecay(fhicl::ParameterSet const &pset):
   IMeVPrtlStage("HNLMakeDecay") 
@@ -140,138 +398,92 @@ HNLMakeDecay::HNLMakeDecay(fhicl::ParameterSet const &pset):
 
 HNLMakeDecay::~HNLMakeDecay()
 {
+  gsl_integration_workspace_free(fIntegrator);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
 {
-  fReferenceRayLength = pset.get<float>("ReferenceRayLength", -1);
-  fReferenceRayDistance = pset.get<float>("ReferenceRayDistance", 0.);
-  fReferenceHNLMass = pset.get<float>("ReferenceHNLMass", -1);
-  fReferenceHNLMixing = pset.get<float>("ReferenceHNLMixing", -1);
-  fReferenceHNLMaxEnergy = pset.get<float>("ReferenceHNLMaxEnergy", -1);
+  fIntegratorSize = 1000;
 
-  // if configured to, divide out some of the decay weight
-  if (fReferenceRayLength > 0. && fReferenceHNLMass > 0. && fReferenceHNLMixing > 0. && fReferenceHNLMaxEnergy > 0.) {
-    // Get each partial width
-    double width_elec = ElectronPartialWidth(fReferenceHNLMass, fReferenceHNLMixing);
-    double width_muon = MuonPartialWidth(fReferenceHNLMass, fReferenceHNLMixing);
-    double width_piplus = PiPlusPartialWidth(fReferenceHNLMass, fReferenceHNLMixing);
-    double width_pizero = PiZeroPartialWidth(fReferenceHNLMass, fReferenceHNLMixing);
+  fIntegrator = gsl_integration_workspace_alloc(fIntegratorSize);
 
-    // total lifetime
-    double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
+  // Setup available decays
+  fAvailableDecays["nu_mu_mu"] = &HNLMakeDecay::NuMupMum;
+  fAvailableDecays["mu_pi"] = &HNLMakeDecay::MuPi;
 
-    // multiply by gamma*v to get the length
-    float gamma_v = sqrt(fReferenceHNLMaxEnergy * fReferenceHNLMaxEnergy - fReferenceHNLMass * fReferenceHNLMass) * c_cm_per_ns / fReferenceHNLMass;
-    float mean_dist = lifetime_ns * gamma_v;
+  // Select which ones are configued
+  fDecayConfig = pset.get<std::vector<std::string>>("Decays");
 
-    // compute the decay weight
-    fMaxWeight = forcedecay_weight(mean_dist, fReferenceRayDistance, fReferenceRayDistance + fReferenceRayLength);
+  for (const std::string &d: fDecayConfig) {
+    if (fAvailableDecays.count(d)) {
+      fSelectedDecays.push_back(fAvailableDecays.at(d));
+    }
+    else {
+      std::cerr << "ERROR: Selected unavailable decay (" << d << ")" << std::endl;
+    }
   }
-  else {
-    fMaxWeight = -1.;
-  }
-}
+  fReferenceUE4 = pset.get<double>("ReferenceUE4");
+  fReferenceUM4 = pset.get<double>("ReferenceUM4");
+  fReferenceHNLMass = pset.get<double>("ReferenceHNLMass");
+  fReferenceRayLength = pset.get<double>("ReferenceRayLength");
+  fReferenceHNLMinEnergy = pset.get<double>("ReferenceHNLMinEnergy");
+  fReferenceLeptonPdg = pset.get<int>("ReferenceLeptonPdg");
+  fMajorana = pset.get<bool>("Majorana");
 
-int HNLMakeDecay::RandDaughter(double elec_width, double muon_width, double piplus_width, double pizero_width) {
-  double total_width = elec_width + muon_width + piplus_width + pizero_width;
-
-  double flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
-
-  if (flat_rand < elec_width / total_width) {
-    return 11;
-  }
-  else if (flat_rand < (elec_width + muon_width) / total_width) {
-    return 13;
-  }
-  else if (flat_rand < (elec_width + muon_width + piplus_width) / total_width) {
-    return 211;
-  }
-  else {
-    return 111;
-  }
-
-  // unreachable
-  return -1;
+  fMaxWeight = CalculateMaxWeight();
 }
 
 bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) {
-  // :q
-  //
+  // Run the selected decay channels
+  std::vector<HNLMakeDecay::DecayFinalState> decays;
+  double total_width = 0.;
+  for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
+    decays.push_back((*this.*F)(flux));
+    total_width += decays.back().width;
+  }
 
-  // Get each partial width
-  double width_elec = ElectronPartialWidth(flux.mass, flux.mixing);
-  double width_muon = MuonPartialWidth(flux.mass, flux.mixing);
-  double width_piplus = PiPlusPartialWidth(flux.mass, flux.mixing);
-  double width_pizero = PiZeroPartialWidth(flux.mass, flux.mixing);
+  if (total_width == 0.) return false;
+
+  // pick one
+  double sum_width = 0.;
+  int idecay = decays.size()-1;
+  double rand = GetRandom();
+  for (unsigned i = 0; i < decays.size()-1; i++) {
+    sum_width += decays[i].width;
+    if (rand < sum_width / total_width) {
+      idecay = i;
+      break;
+    }
+  }
+
+  // Pick a random decay position -- assumes it is uniform across the detector
+  TVector3 decay_pos = in + GetRandom() * (out - in);
+
+  // Get the decay probability
 
   // total lifetime
-  double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
+  double lifetime_ns = hbar / total_width;
 
   // multiply by gamma*v to get the length
   float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * c_cm_per_ns;
 
-  // distance inside detector
-  float in_dist = (flux.pos.Vect() - in).Mag();
-  float out_dist = (flux.pos.Vect() - out).Mag();
-
-  // compute the decay weight
-  weight = forcedecay_weight(mean_dist, in_dist, out_dist);
-
-  // if the weight is literally zero, then there is no way in hell
-  // that this higgs is going to decay in the detector -- reject it
-  if (weight == 0) {
-    return false;
+  // Get the weight (NOTE: this negelects the probability that the HNL decays before the detector)
+  // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)
+  if (mean_dist < 10000) {
+    std::cerr << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid" << std::endl;
   }
 
-  // get the decay location
-  float flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
-  float decay_rand = flat_to_exp_rand(flat_rand, mean_dist, in_dist, out_dist);
-  TVector3 decay_pos3 = flux.pos.Vect() + decay_rand * (in - flux.pos.Vect()).Unit();
+  // saves the weight
+  weight = (out - in).Mag() / mean_dist;
 
-  // decay time
-  float decay_time = flux.pos.T() + decay_rand / (flux.mom.Beta() * c_cm_per_ns);
-  TLorentzVector decay_pos(decay_pos3, decay_time);
-
-  // get the decay type
-  int daughter_pdg = RandDaughter(width_elec, width_muon, width_piplus, width_pizero);
-
-  double daughter_mass = TDatabasePDG::Instance()->GetParticle(daughter_pdg)->Mass();
-
-  // daughter mom+energy in the parent rest-frame
-  float daughterE_HRF = flux.mass / 2.;
-  float daughterP_HRF = sqrt(daughterE_HRF * daughterE_HRF - daughter_mass * daughter_mass);
-
-  // make the two daughters in the higgs rest-frame with a random direction
-  TVector3 pA_HRF = RandomUnitVector() * daughterP_HRF;
-
-  TVector3 pB_HRF = -pA_HRF;
-
-  TLorentzVector p4A = TLorentzVector(pA_HRF, daughterE_HRF);
-  TLorentzVector p4B = TLorentzVector(pB_HRF, daughterE_HRF);
-
-  // Boost
-  p4A.Boost(flux.mom.BoostVector());
-  p4B.Boost(flux.mom.BoostVector());
-
-  // save the decay info
-  decay.decay_width = width_elec + width_muon + width_piplus + width_pizero; 
+  // Save the decay info
+  decay.pos = TLorentzVector(decay_pos, TimeOfFlight(flux, decay_pos));
+  decay.daughter_mom = decays[idecay].mom;
+  decay.daughter_pdg = decays[idecay].pdg;
+  decay.decay_width = total_width;
   decay.mean_lifetime = lifetime_ns;
-  decay.mean_distance = mean_dist; 
-
-  decay.pos = decay_pos;
-  decay.daughterA_mom = p4A;
-  decay.daughterA_pdg = daughter_pdg;
-  decay.daughterB_mom = p4B;
-  // daughter B is anti-particle 
-  if (daughter_pdg == 111) { // pi0 is its own anti-particle
-    decay.daughterB_pdg = daughter_pdg;
-  }
-  else {
-    decay.daughterB_pdg = -daughter_pdg;
-  }
-  decay.daughter_mass = daughter_mass;
+  decay.mean_distance = mean_dist;
 
   return true;
 }

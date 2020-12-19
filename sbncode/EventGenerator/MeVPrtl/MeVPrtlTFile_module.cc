@@ -213,9 +213,10 @@ void evgen::ldm::MeVPrtlTFile::analyze(const art::Event& e)
       fGenTool->GetPOT()
     );
     std::cout << "Decays At: (" << fMeVPrtl->decay_pos.X() << ", " << fMeVPrtl->decay_pos.Y() << ", " << fMeVPrtl->decay_pos.Z() << ")" << std::endl;
-    std::cout << "Into A E=" << fMeVPrtl->daughterA_mom.E() << " Px=" << fMeVPrtl->daughterA_mom.Px() << std::endl;
-    std::cout << "Into B E=" << fMeVPrtl->daughterB_mom.E() << " Px=" << fMeVPrtl->daughterB_mom.Px() << std::endl;
+    for (unsigned i_d = 0; i_d < fMeVPrtl->daughter_mom.size(); i_d++) {
+      std::cout << "Into (" << i_d << ") E=" << fMeVPrtl->daughter_mom[i_d].E() << " Px=" << fMeVPrtl->daughter_mom[i_d].Px() << std::endl;
 
+    } 
     break;
   }
   fTree->Fill();

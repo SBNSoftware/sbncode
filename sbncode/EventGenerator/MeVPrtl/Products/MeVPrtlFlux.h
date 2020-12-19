@@ -20,6 +20,7 @@ public:
   float C5;
   float mass;
   int kaon_pdg;
+  int secondary_pdg;
   int generator;
 
 };

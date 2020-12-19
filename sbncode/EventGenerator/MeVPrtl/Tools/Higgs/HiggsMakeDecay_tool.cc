@@ -15,6 +15,7 @@
 
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
+#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 #include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
 
 // LArSoft includes
@@ -68,7 +69,7 @@ private:
   float fReferenceRayDistance;
   float fReferenceHiggsMass;
   float fReferenceHiggsMixing;
-  float fReferenceHiggsMaxEnergy;
+  float fReferenceHiggsEnergy;
 
   float fMaxWeight;
   
@@ -87,13 +88,6 @@ double forcedecay_weight(float mean, float a, float b) {
     return exp(-a/mean) - exp(-b/mean);
 }
 
-// constants
-static const double elec_mass = 0.000511; // GeV
-static const double muon_mass = 0.105658; // GeV
-static const double piplus_mass = 0.139570; // GeV
-static const double pizero_mass = 0.134977; // GeV
-static const double higgs_vev = 246.22; // GeV
-static const double hbar = 6.582119569e-16; // GeV*ns
 
 // Get the partial width for lepton decays
 double LeptonPartialWidth(double lep_mass, double higs_mass, double mixing) {
@@ -148,10 +142,10 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceRayDistance = pset.get<float>("ReferenceRayDistance", 0.);
   fReferenceHiggsMass = pset.get<float>("ReferenceHiggsMass", -1);
   fReferenceHiggsMixing = pset.get<float>("ReferenceHiggsMixing", -1);
-  fReferenceHiggsMaxEnergy = pset.get<float>("ReferenceHiggsMaxEnergy", -1);
+  fReferenceHiggsEnergy = pset.get<float>("ReferenceHiggsEnergy", -1);
 
   // if configured to, divide out some of the decay weight
-  if (fReferenceRayLength > 0. && fReferenceHiggsMass > 0. && fReferenceHiggsMixing > 0. && fReferenceHiggsMaxEnergy > 0.) {
+  if (fReferenceRayLength > 0. && fReferenceHiggsMass > 0. && fReferenceHiggsMixing > 0. && fReferenceHiggsEnergy > 0.) {
     // Get each partial width
     double width_elec = ElectronPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
     double width_muon = MuonPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
@@ -162,7 +156,7 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
     double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
 
     // multiply by gamma*v to get the length
-    float gamma_v = sqrt(fReferenceHiggsMaxEnergy * fReferenceHiggsMaxEnergy - fReferenceHiggsMass * fReferenceHiggsMass) * c_cm_per_ns / fReferenceHiggsMass;
+    float gamma_v = sqrt(fReferenceHiggsEnergy * fReferenceHiggsEnergy - fReferenceHiggsMass * fReferenceHiggsMass) * c_cm_per_ns / fReferenceHiggsMass;
     float mean_dist = lifetime_ns * gamma_v;
 
     // compute the decay weight
@@ -259,17 +253,18 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
   decay.mean_distance = mean_dist; 
 
   decay.pos = decay_pos;
-  decay.daughterA_mom = p4A;
-  decay.daughterA_pdg = daughter_pdg;
-  decay.daughterB_mom = p4B;
+
+  decay.daughter_mom.push_back(p4A);
+  decay.daughter_pdg.push_back(daughter_pdg);
+
+  decay.daughter_mom.push_back(p4B);
   // daughter B is anti-particle 
   if (daughter_pdg == 111) { // pi0 is its own anti-particle
-    decay.daughterB_pdg = daughter_pdg;
+    decay.daughter_pdg.push_back(daughter_pdg);
   }
   else {
-    decay.daughterB_pdg = -daughter_pdg;
+    decay.daughter_pdg.push_back(daughter_pdg);
   }
-  decay.daughter_mass = daughter_mass;
 
   return true;
 }

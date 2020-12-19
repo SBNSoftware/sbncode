@@ -15,6 +15,7 @@
 #include "CLHEP/Random/RandFlat.h"
 
 // local includes
+#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlFlux.h"
 #include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
 #include "sbncode/EventGenerator/MeVPrtl/Products/KaonParent.h"
@@ -98,28 +99,6 @@ double higgs_momentum(double kaon_mass, double pion_mass, double higs_mass) {
        + higs_mass * higs_mass * higs_mass * higs_mass 
     -2 * pion_mass * pion_mass * higs_mass * higs_mass) / ( 2 * kaon_mass );
 }
-
-// static constants 
-//
-// kaon lifetimes
-static const double kplus_lifetime = 1.238e-8; // s
-static const double klong_lifetime = 5.116e-8; // s
-
-// masses
-static const double kplus_mass = 0.493677; // GeV
-static const double klong_mass = 0.497611; // GeV
-
-static const double pplus_mass = 0.139570; // GeV
-static const double pzero_mass = 0.134977; // GeV
-
-static const double tquark_mass = 172.76; // GeV
-static const double higgs_vev = 246.22; // GeV
-
-// CKM matrix
-static const double abs_VtsVtd_squared = 1.0185e-07;
-static const double rel_VtsVtd_squared = 1.0185e-07;
-
-static const double hbar = 6.582119569e-25; // GeV*s
 
 // compute branching ratios
 double KaonPlusBranchingRatio(double higs_mass, double mixing) {
@@ -269,6 +248,7 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
 
   higgs.kaon_pdg = kaon.kaon_pdg;
   higgs.generator = 0; // kDissonantHiggs
+  higgs.secondary_pdg = PionPdg(kaon.kaon_pdg);
 
   return true;
 }

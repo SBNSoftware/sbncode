@@ -27,10 +27,8 @@ public:
   TVector3 mevprtl_enter;
   TVector3 mevprtl_exit;
   TLorentzVector decay_pos;
-  TLorentzVector daughterA_mom;
-  int daughterA_pdg;
-  TLorentzVector daughterB_mom;
-  int daughterB_pdg;
+  std::vector<TLorentzVector> daughter_mom;
+  std::vector<int> daughter_pdg;
   double pot;
   double flux_weight;
   double ray_weight;

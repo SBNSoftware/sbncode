@@ -8,11 +8,9 @@ namespace ldm {
 class MeVPrtlDecay {
 public:
   TLorentzVector pos;
-  TLorentzVector daughterA_mom;
-  int daughterA_pdg;
-  TLorentzVector daughterB_mom;
-  int daughterB_pdg;
-  double daughter_mass;
+  std::vector<TLorentzVector> daughter_mom;
+  std::vector<int> daughter_pdg;
+
   double decay_width;
   double mean_lifetime;
   double mean_distance;
