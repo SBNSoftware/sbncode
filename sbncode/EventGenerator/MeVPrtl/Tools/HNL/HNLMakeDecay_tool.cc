@@ -78,8 +78,7 @@ private:
   double fReferenceUM4;
   double fReferenceHNLMass;
   double fReferenceRayLength;
-  double fReferenceHNLMinEnergy;
-  int fReferenceLeptonPdg;
+  double fReferenceHNLMaxEnergy;
 
   // Configure the particle
   bool fMajorana;
@@ -276,15 +275,12 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
   double nue_width = NuDiLepDecayWidth(flux.mass, ue4, um4, false, true);
   double numu_width = NuDiLepDecayWidth(flux.mass, ue4, um4, true, true);
 
-  // TODO: can majorana go to both nu_e and nu_mu???
-  if (fMajorana) {
-    ret.width = nue_width + numu_width;
-  }
-  else {
-    ret.width = (abs(flux.secondary_pdg) == 13)  ? numu_width : nue_width;
-  }
+  ret.width = nue_width + numu_width;
 
   if (ret.width == 0.) return ret;
+
+  // Majorana gets an extra factor b.c. it can go to nu and nubar
+  if (fMajorana) ret.width *= 2;
 
   // Three body decay
   //
@@ -320,14 +316,6 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::MuPi(const MeVPrtlFlux &flux) {
     return ret;
   }
 
-  // TODO: Can a Majorana HNL produced in K -> e+N decay to N -> mu + pi????
-
-  // Conserve lepton number
-  if (!fMajorana && abs(flux.secondary_pdg) == 11) {
-    ret.width = 0.;
-    return ret;
-  }
-
   double um4 = flux.C2;
   double lep_ratio = (muon_mass * muon_mass) / (flux.mass * flux.mass);
   double pion_ratio = (pionp_mass * pionp_mass) / (flux.mass * flux.mass);
@@ -335,6 +323,9 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::MuPi(const MeVPrtlFlux &flux) {
   ret.width = um4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * flux.mass * flux.mass * flux.mass * Ifunc) / (16 * M_PI);
 
   double p = twobody_momentum(flux.mass, muon_mass, pionp_mass);
+
+  // Majorana gets an extra factor b.c. it can go to pi+l- and pi-l+
+  if (fMajorana) ret.width *= 2;
 
   // twobody decays are Isotropic
   TVector3 dir = RandomUnitVector();
@@ -365,16 +356,15 @@ double HNLMakeDecay::CalculateMaxWeight() {
   double um4 = fReferenceUM4;
   double hnl_mass = fReferenceHNLMass;
   double length = fReferenceRayLength;
-  double E = fReferenceHNLMinEnergy;
-  int pdg = fReferenceLeptonPdg;
+  double E = fReferenceHNLMaxEnergy;
 
   // make a fake HNL flux with these parameters
   MeVPrtlFlux hnl;
   hnl.C1 = ue4;
   hnl.C2 = um4;
   hnl.mass = hnl_mass;
-  hnl.mom = TLorentzVector((E*E - hnl_mass*hnl_mass) * RandomUnitVector(), E);
-  hnl.secondary_pdg = pdg;
+  hnl.mom = TLorentzVector((E*E - hnl_mass*hnl_mass) * TVector3(1, 0, 0), E);
+  hnl.secondary_pdg = -1; // doesn't affect the end width, just make it viable
 
   double width = 0.;
   for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
@@ -427,8 +417,7 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceUM4 = pset.get<double>("ReferenceUM4");
   fReferenceHNLMass = pset.get<double>("ReferenceHNLMass");
   fReferenceRayLength = pset.get<double>("ReferenceRayLength");
-  fReferenceHNLMinEnergy = pset.get<double>("ReferenceHNLMinEnergy");
-  fReferenceLeptonPdg = pset.get<int>("ReferenceLeptonPdg");
+  fReferenceHNLMaxEnergy = pset.get<double>("ReferenceHNLMaxEnergy");
   fMajorana = pset.get<bool>("Majorana");
 
   fMaxWeight = CalculateMaxWeight();
