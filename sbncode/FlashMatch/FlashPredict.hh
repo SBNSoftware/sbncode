@@ -110,6 +110,7 @@ private:
   bool isPDRelevant(int pdChannel,
                     std::set<unsigned>& tpcWithHits);
   unsigned sbndPDinTPC(int pdChannel);
+  unsigned icarusPDinTPC(int pdChannel);
   double driftDistance(const double x) const;
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
@@ -128,7 +129,7 @@ private:
   const double fBeamWindowStart, fBeamWindowEnd;
   const double fLightWindowStart, fLightWindowEnd;
   const unsigned fTimeBins;
-  const bool fSelectNeutrino, fUseUncoatedPMT;//, fUseCalo;
+  const bool fSelectNeutrino, fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fMinFlashPE, fPEscale,
@@ -141,6 +142,8 @@ private:
   std::unique_ptr<geo::CryostatGeo> fGeoCryo;
   const double fDriftDistance;
   size_t fNTPC;
+  unsigned fDriftVolumes;
+  unsigned fTPCPerDriftVolume;
   const unsigned fVUVToVIS;
   const double fTermThreshold;
   std::list<double> fWiresX_gl;

@@ -24,6 +24,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fTimeBins(unsigned(1/fClockResolution * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
+  , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   // , fUseCalo(p.get<bool>("UseCalo", false))
   , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
@@ -55,11 +56,15 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     fDetector = "SBND";
     fSBND = true;
     fICARUS = false;
+    fTPCPerDriftVolume = 1;
+    fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
   else if (fDetector.find("icarus") != std::string::npos) {
     fDetector = "ICARUS";
     fSBND = false;
     fICARUS = true;
+    fTPCPerDriftVolume = 2;
+    fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
   else {
       throw cet::exception("FlashPredict")
@@ -201,10 +206,19 @@ void FlashPredict::produce(art::Event & e)
   }// TODO: pack this into a function
 
   std::set<unsigned> tpcWithOpH;
-  for(auto& op: opHits){
-    tpcWithOpH.insert(sbndPDinTPC(op.OpChannel()));
-    if(tpcWithOpH.size() == fNTPC) break;
+  if(fSBND) {
+    for(auto& op: opHits){
+      tpcWithOpH.insert(sbndPDinTPC(op.OpChannel()));
+      if(tpcWithOpH.size() == fNTPC) break;
+    }
   }
+  // no point on getting this for ICARUS
+  // else if(fICARUS){
+  //   for(auto& op: opHits){
+  //     tpcWithOpH.insert(icarusPDinTPC(op.OpChannel()));
+  //     if(tpcWithOpH.size() == fNTPC) break;
+  //   }
+  // }
 
   _pfpmap.clear();
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
@@ -437,36 +451,29 @@ void FlashPredict::loadMetrics()
     }
   }
   //
-  if (fSBND) {
-    temphisto = (TH1*)infile->Get("pe_h1");
-    n_bins = temphisto->GetNbinsX();
-    if (n_bins <= 0 || fNoAvailableMetrics) {
-      std::cout << " problem with input histos for pe " << n_bins << " bins " << std::endl;
-      n_bins = 1;
-      pe_means.push_back(0);
-      pe_spreads.push_back(0.001);
-    }
-    else {
-      for (int ib = 1; ib <= n_bins; ++ib) {
-        pe_means.push_back(temphisto->GetBinContent(ib));
-        double tt = temphisto->GetBinError(ib);
-        if (tt <= 0) {
-          std::cout << "zero value for bin spread in pe" << std::endl;
-          std::cout << "ib:\t" << ib << "\n";
-          std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-          std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-          tt = 100.;
-        }
-        pe_spreads.push_back(tt);
-      }
-    }
-  }
-  else if (fICARUS ) {
+  temphisto = (TH1*)infile->Get("pe_h1");
+  n_bins = temphisto->GetNbinsX();
+  if (n_bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for pe " << n_bins << " bins " << std::endl;
     n_bins = 1;
     pe_means.push_back(0);
     pe_spreads.push_back(0.001);
   }
-  //
+  else {
+    for (int ib = 1; ib <= n_bins; ++ib) {
+      pe_means.push_back(temphisto->GetBinContent(ib));
+      double tt = temphisto->GetBinError(ib);
+      if (tt <= 0) {
+        std::cout << "zero value for bin spread in pe" << std::endl;
+        std::cout << "ib:\t" << ib << "\n";
+        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
+        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
+        tt = 100.;
+      }
+      pe_spreads.push_back(tt);
+    }
+  }
+
   infile->Close();
   delete infile;
 
@@ -515,6 +522,31 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
 
     std::string op_type = "pmt"; // the label ICARUS has
     if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
+
+    if (fICARUS && fUseOppVolMetric){
+      unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
+
+      geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
+      // BUG: this function doesn't function well when q is near the cathode
+      unsigned qVolume = (geometry->PositionToTPCID(q)).TPC/fTPCPerDriftVolume;
+      // if(qVolume >= fDriftVolumes) std::cout << "qVolume:\t" << qVolume << "\n";
+      // BUG
+
+      // std::set<unsigned> volumeWithHits;
+      // for(auto& t : tpcWithHits) volumeWithHits.insert(t/fTPCPerDriftVolume);
+      // // if (volumeWithHits.size() == fDriftVolumes){ // cathode crossing
+      // //   sum_unPE += oph.PE();
+      // //   // continue;
+      // // }
+      if(qVolume < fDriftVolumes){ // BUG mitigation
+        if (pdVolume != qVolume){
+          sum_unPE += oph.PE();
+          // not a cathode crossing
+          // if (volumeWithHits.size() != fDriftVolumes) continue;
+          // continue;
+        }
+      }
+    }
 
     if (op_type == "pmt_coated" || op_type == "pmt") {
       // _flash_x is the X coord of the opdet where most PE are deposited
@@ -608,7 +640,8 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
     _score += term;
     tcount++;
   }
-  if (fSBND && fUseUncoatedPMT) {
+  if ((fSBND && fUseUncoatedPMT) ||
+      (fICARUS && fUseOppVolMetric)) {
     if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
       double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
       if (term > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, term, out);
@@ -796,12 +829,23 @@ bool FlashPredict::isPDRelevant(int pdChannel,
 
 
 // TODO: find better, less hacky solution
+unsigned FlashPredict::icarusPDinTPC(int pdChannel)
+{
+  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  if(fCryostat == 0) p.SetX((p.X() + 222.)/2. - 222.);//OpDets are outside the TPCs
+  if(fCryostat == 1) p.SetX((p.X() - 222.)/2. + 222.);//OpDets are outside the TPCs
+  return (geometry->PositionToTPCID(p)).TPC;
+}
+
+
+// TODO: find better, less hacky solution
 unsigned FlashPredict::sbndPDinTPC(int pdChannel)
 {
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
   return (geometry->PositionToTPCID(p)).TPC;
 }
+
 
 double FlashPredict::driftDistance(const double x) const
 {
@@ -910,7 +954,7 @@ void FlashPredict::printBookKeeping(Stream&& out)
     << "\tpfp to score: \t  " << bk.pfp_to_score << "\n";
   if(bk.no_oph_hits) m << "\tno_oph_hits:  \t -" << bk.no_oph_hits << "\n";
   if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
-  if(bk.no_flash_pe) m << "\tno_flash_pe:  \t -" << bk.no_flash_pe << "ERROR!\n";
+  if(bk.no_flash_pe) m << "\tno_flash_pe:  \t -" << bk.no_flash_pe << " ERROR!\n";
   m << "\t-------------------\n";
   if(bk.pfp_bookkeeping != bk.scored_pfp)
     m << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n";
