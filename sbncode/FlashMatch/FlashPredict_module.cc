@@ -777,6 +777,8 @@ bool FlashPredict::isPDRelevant(int pdChannel,
                                 std::set<unsigned>& tpcWithHits)
 {
   if (fICARUS) {
+    // BUG: I believe this function is not working, every now and then
+    // I get ophits from the other cryo
     auto& p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
     // if the channel is in the Cryostat is relevant
     return fGeoCryo->ContainsPosition(p);
@@ -784,8 +786,9 @@ bool FlashPredict::isPDRelevant(int pdChannel,
   else if (fSBND) {
     // if there's hits on all TPCs all channels are relevant
     if(tpcWithHits.size() == fNTPC) return true;
+    unsigned pdTPC = sbndPDinTPC(pdChannel);
     for(auto itpc: tpcWithHits){
-      if(itpc == sbndPDinTPC(pdChannel)) return true;
+      if(itpc == pdTPC) return true;
     }
   }
   return false;
