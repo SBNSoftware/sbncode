@@ -112,6 +112,7 @@ private:
   unsigned sbndPDinTPC(int pdChannel);
   unsigned icarusPDinTPC(int pdChannel);
   double driftDistance(const double x) const;
+  unsigned driftVolume(const double x) const;
   bool isPDInCryoTPC(double pd_x, size_t itpc);
   bool isPDInCryoTPC(int pdChannel, size_t itpc);
   bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);

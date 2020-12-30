@@ -527,23 +527,10 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
       unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
 
       geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
-      // BUG: this function doesn't function well when q is near the cathode
-      unsigned qVolume = (geometry->PositionToTPCID(q)).TPC/fTPCPerDriftVolume;
-      // if(qVolume >= fDriftVolumes) std::cout << "qVolume:\t" << qVolume << "\n";
-      // BUG
-
-      // std::set<unsigned> volumeWithHits;
-      // for(auto& t : tpcWithHits) volumeWithHits.insert(t/fTPCPerDriftVolume);
-      // // if (volumeWithHits.size() == fDriftVolumes){ // cathode crossing
-      // //   sum_unPE += oph.PE();
-      // //   // continue;
-      // // }
-      if(qVolume < fDriftVolumes){ // BUG mitigation
+      unsigned qVolume = driftVolume(_charge_x_gl);
+      if(qVolume < fDriftVolumes){
         if (pdVolume != qVolume){
           sum_unPE += oph.PE();
-          // not a cathode crossing
-          // if (volumeWithHits.size() != fDriftVolumes) continue;
-          // continue;
         }
       }
     }
@@ -860,6 +847,22 @@ double FlashPredict::driftDistance(const double x) const
     }
   }
   return -10.;
+}
+
+
+unsigned FlashPredict::driftVolume(const double x) const
+{
+  auto wit = fWiresX_gl.begin();
+  for(size_t i=0; i<fWiresX_gl.size()-1; i++){
+    double wxl = *wit;
+    wit++;
+    double wxh = *wit;
+    if(wxl < x && x<= wxh){
+      double mid = (wxl + wxh)/2.;
+      return (x<=mid) ? i*fCryostat : (i*fCryostat)+1;
+    }
+  }
+  return 100;
 }
 
 
