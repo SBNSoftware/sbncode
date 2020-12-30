@@ -14,6 +14,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fPandoraProducer(p.get<std::string>("PandoraProducer"))
   , fSpacePointProducer(p.get<std::string>("SpacePointProducer"))
   , fOpHitProducer(p.get<std::string>("OpHitProducer"))
+  , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
   // , fCaloProducer(p.get<std::string>("CaloProducer"))
   // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fClockResolution(p.get<double>("ClockResolution", 0.002)) // us
@@ -25,6 +26,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
+  , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
   // , fUseCalo(p.get<bool>("UseCalo", false))
   , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
@@ -159,21 +161,42 @@ void FlashPredict::produce(art::Event & e)
   std::vector<recob::OpHit> opHits(ophit_h->size());
   copyOpHitsInWindow(opHits, ophit_h);
 
+  if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
+    art::Handle<std::vector<recob::OpHit>> ophitara_h;
+    e.getByLabel(fOpHitARAProducer, ophitara_h);
+    if(!ophitara_h.isValid()) {
+      mf::LogWarning("FlashPredict")
+        << "Non valid ophits from ARAPUCAS"
+        << "\nfUseARAPUCAS: " << fUseARAPUCAS
+        << "\nfOpHitARAProducer: " << fOpHitARAProducer;
+    }
+    else{
+      std::vector<recob::OpHit> opHitsARA(ophitara_h->size());
+      copyOpHitsInWindow(opHitsARA, ophitara_h);
+      opHits.insert(opHits.end(),
+                    opHitsARA.begin(), opHitsARA.end());
+    }
+  }
+
   {// TODO: pack this into a function
   // get flash time
   TH1D ophittime("ophittime", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
   ophittime.SetOption("HIST");
-  TH1D ophittime2("ophittime2", "ophittime2", 5 * fTimeBins, -5.0, +10.0); // in us
-  ophittime2.SetOption("HIST");
+  TH1D ophittime_vis("ophittime_vis", "ophittime_vis", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
+  ophittime_vis.SetOption("HIST");
 
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
     auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
-    if (fSBND && fPDMapAlgPtr->isPDType(ch, "pmt_uncoated"))
-      ophittime2.Fill(oph.PeakTime(), fPEscale * oph.PE());
-    if (fSBND && !fPDMapAlgPtr->isPDType(ch, "pmt_coated")) continue; // use only coated PMTs for SBND for flash_time
     if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
-    ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
+    std::string op_type = "pmt";
+    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
+    if(op_type == "pmt" || op_type == "pmt_coated" ||
+       op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" )
+      ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
+    else if (op_type == "pmt_uncoated" ||
+             op_type == "arapuca_vis" || op_type == "xarapuca_vis")
+      ophittime_vis.Fill(oph.PeakTime(), fPEscale * oph.PE());
   }
 
   if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
@@ -190,6 +213,10 @@ void FlashPredict::produce(art::Event & e)
   }
 
   auto ibin =  ophittime.GetMaximumBin();
+  if (fSBND && fUseUncoatedPMT){
+    auto ibin_vis =  ophittime_vis.GetMaximumBin();
+    ibin = (ibin<ibin_vis) ? ibin : ibin_vis;
+  }
   _flash_time = (ibin * fClockResolution) + fBeamWindowStart; // in us
   double lowedge = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
@@ -511,6 +538,7 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
   double sum_PE = 0.;
   double sum_PE2 = 0.;
   double sum_unPE = 0.;
+  double sum_visARA_PE = 0.;
   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
@@ -535,7 +563,8 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
       }
     }
 
-    if (op_type == "pmt_coated" || op_type == "pmt") {
+    if (op_type == "pmt" || op_type == "pmt_coated" ||
+        op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" ) {
       // _flash_x is the X coord of the opdet where most PE are deposited
       if (oph.PE()>maxPE){
         _flash_x = opDetXYZ.X();
@@ -553,22 +582,18 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     else if (op_type == "pmt_uncoated") {
       sum_unPE += oph.PE();
     }
-    else if (op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" ) {
-      //TODO: Use ARAPUCA
-      // arape_tot+=oph.PE();
-      continue;
-    }
-    else if (op_type == "arapuca_vis" || op_type == "xarapuca_vis")  {
-      //TODO: Use XARAPUCA
-      // xarape_tot+=oph.PE();
-      continue;
+    else if (op_type == "arapuca_vis" || op_type == "xarapuca_vis") {
+      sum_visARA_PE += oph.PE();
     }
   }
 
   if (sum_PE > 0) {
     _flash_pe    = sum_PE   * fPEscale;
     _flash_unpe  = sum_unPE * fPEscale;
+    if(fUseARAPUCAS) _flash_unpe  += sum_visARA_PE * fPEscale;
     _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
+    if(fUseARAPUCAS)
+      _flash_ratio = (fVUVToVIS * sum_unPE  + sum_visARA_PE )* fPEscale / _flash_pe;
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
     _flash_r = std::sqrt(

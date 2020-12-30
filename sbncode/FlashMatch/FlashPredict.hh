@@ -125,12 +125,13 @@ private:
                     Stream&& out);
 
   const art::InputTag fPandoraProducer, fSpacePointProducer,
-    fOpHitProducer;//, fCaloProducer, fTrackProducer;
+    fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
   const double fClockResolution;
   const double fBeamWindowStart, fBeamWindowEnd;
   const double fLightWindowStart, fLightWindowEnd;
   const unsigned fTimeBins;
   const bool fSelectNeutrino, fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
+  const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fMinFlashPE, fPEscale,
