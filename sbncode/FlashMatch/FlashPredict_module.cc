@@ -159,7 +159,7 @@ void FlashPredict::produce(art::Event & e)
   }
 
   std::vector<recob::OpHit> opHits(ophit_h->size());
-  copyOpHitsInWindow(opHits, ophit_h);
+  copyOpHitsInBeamWindow(opHits, ophit_h);
 
   if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
     art::Handle<std::vector<recob::OpHit>> ophitara_h;
@@ -167,43 +167,21 @@ void FlashPredict::produce(art::Event & e)
     if(!ophitara_h.isValid()) {
       mf::LogWarning("FlashPredict")
         << "Non valid ophits from ARAPUCAS"
-        << "\nfUseARAPUCAS: " << fUseARAPUCAS
+        << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
         << "\nfOpHitARAProducer: " << fOpHitARAProducer;
     }
     else{
       std::vector<recob::OpHit> opHitsARA(ophitara_h->size());
-      copyOpHitsInWindow(opHitsARA, ophitara_h);
+      copyOpHitsInBeamWindow(opHitsARA, ophitara_h);
       opHits.insert(opHits.end(),
                     opHitsARA.begin(), opHitsARA.end());
     }
   }
 
-  {// TODO: pack this into a function
-  // get flash time
-  TH1D ophittime("ophittime", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
-  ophittime.SetOption("HIST");
-  TH1D ophittime_vis("ophittime_vis", "ophittime_vis", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
-  ophittime_vis.SetOption("HIST");
-
-  for(auto const& oph : opHits) {
-    auto ch = oph.OpChannel();
-    auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
-    if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
-    std::string op_type = "pmt";
-    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
-    if(op_type == "pmt" || op_type == "pmt_coated" ||
-       op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" )
-      ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
-    else if (op_type == "pmt_uncoated" ||
-             op_type == "arapuca_vis" || op_type == "xarapuca_vis")
-      ophittime_vis.Fill(oph.PeakTime(), fPEscale * oph.PE());
-  }
-
-  if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
+  if(!filterOpHitsOutsideFlash(opHits)){
     mf::LogWarning("FlashPredict")
-      << "\nOpHitTime has no entries: " << ophittime.GetEntries()
-      << "\nor the integral: " << ophittime.Integral()
-      << " is less than " << fMinFlashPE
+      << "\nOpHitTime has no entries,"
+      << "\nor the integral is less than " << fMinFlashPE
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
@@ -211,26 +189,6 @@ void FlashPredict::produce(art::Event & e)
     e.put(std::move(pfp_t0_assn_v));
     return;
   }
-
-  auto ibin =  ophittime.GetMaximumBin();
-  if (fSBND && fUseUncoatedPMT){
-    auto ibin_vis =  ophittime_vis.GetMaximumBin();
-    ibin = (ibin<ibin_vis) ? ibin : ibin_vis;
-  }
-  _flash_time = (ibin * fClockResolution) + fBeamWindowStart; // in us
-  double lowedge = _flash_time + fLightWindowStart;
-  double highedge = _flash_time + fLightWindowEnd;
-  mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
-
-  auto peakOutsideEdges =
-    [lowedge, highedge](const recob::OpHit& oph)-> bool
-      { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
-  // only use optical hits around the flash time
-  opHits.erase(
-    std::remove_if(opHits.begin(), opHits.end(),
-                   peakOutsideEdges),
-    opHits.end());
-  }// TODO: pack this into a function
 
   std::set<unsigned> tpcWithOpH;
   if(fSBND) {
@@ -801,8 +759,8 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
   return false;
 }
 
-void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
-                                      art::Handle<std::vector<recob::OpHit>>& ophit_h)
+void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
+                                          art::Handle<std::vector<recob::OpHit>>& ophit_h)
 {
   double s = fBeamWindowStart;
   double e = fBeamWindowEnd;
@@ -815,6 +773,53 @@ void FlashPredict::copyOpHitsInWindow(std::vector<recob::OpHit>& opHits,
   auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
                          peakInWindow);
   opHits.resize(std::distance(opHits.begin(), it));
+}
+
+
+bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
+{
+  TH1D ophittime("ophittime", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
+  ophittime.SetOption("HIST");
+  TH1D ophittime_vis("ophittime_vis", "ophittime_vis", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
+  ophittime_vis.SetOption("HIST");
+
+  for(auto const& oph : opHits) {
+    auto ch = oph.OpChannel();
+    auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
+    if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
+    std::string op_type = "pmt";
+    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
+    if(op_type == "pmt" || op_type == "pmt_coated" ||
+       op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" )
+      ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
+    else if (op_type == "pmt_uncoated" ||
+             op_type == "arapuca_vis" || op_type == "xarapuca_vis")
+      ophittime_vis.Fill(oph.PeakTime(), fPEscale * oph.PE());
+  }
+
+  if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
+    return false;
+  }
+
+  auto ibin =  ophittime.GetMaximumBin();
+  if (fSBND && fUseUncoatedPMT){
+    auto ibin_vis =  ophittime_vis.GetMaximumBin();
+    ibin = (ibin<ibin_vis) ? ibin : ibin_vis;
+  }
+  _flash_time = (ibin * fClockResolution) + fBeamWindowStart; // in us
+  double lowedge  = _flash_time + fLightWindowStart;
+  double highedge = _flash_time + fLightWindowEnd;
+  mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
+
+  auto peakOutsideEdges =
+    [lowedge, highedge](const recob::OpHit& oph)-> bool
+    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
+  // only use optical hits around the flash time
+  opHits.erase(
+               std::remove_if(opHits.begin(), opHits.end(),
+                              peakOutsideEdges),
+               opHits.end());
+  return true;
 }
 
 

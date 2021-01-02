@@ -105,8 +105,9 @@ private:
   double scoreTerm(double m,
                    double mean, double spread);
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
-  void copyOpHitsInWindow(std::vector<recob::OpHit>& opHitSubset,
-                          art::Handle<std::vector<recob::OpHit>>& ophit_h);
+  void copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHitSubset,
+                              art::Handle<std::vector<recob::OpHit>>& ophit_h);
+  bool filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits);
   bool isPDRelevant(int pdChannel,
                     std::set<unsigned>& tpcWithHits);
   unsigned sbndPDinTPC(int pdChannel);
