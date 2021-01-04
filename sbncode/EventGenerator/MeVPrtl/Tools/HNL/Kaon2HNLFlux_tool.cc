@@ -207,6 +207,10 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.kmom = kaon.mom;
   hnl.kmom.Transform(fBeam2Det);
 
+  // and save the secondary momentum
+  hnl.sec = hnl.kmom - hnl.mom;
+  hnl.sec_beamcoord = hnl.kmom_beamcoord - hnl.mom_beamcoord;
+
   // The weight is the importance weight times the branching-ratio weight 
   weight = kaon.weight * br / SMKaonBR(kaon.kaon_pdg);
 

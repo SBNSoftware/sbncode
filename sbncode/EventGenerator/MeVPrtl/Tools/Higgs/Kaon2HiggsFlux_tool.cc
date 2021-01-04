@@ -242,6 +242,10 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
     weight = weight * fKPBR;
   }
 
+  // and save the secondary momentum
+  higgs.sec = higgs.kmom - higgs.mom;
+  higgs.sec_beamcoord = higgs.kmom_beamcoord - higgs.mom_beamcoord;
+
   // set the mixing
   higgs.C1 = fMixingAngle;
   higgs.mass = fM;

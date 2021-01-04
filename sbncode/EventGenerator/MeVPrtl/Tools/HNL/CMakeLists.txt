@@ -1,3 +1,11 @@
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Dalitz
+          SOURCE HNLDecayDalitz.cpp
+          LIBRARIES
+                        ${ROOT_BASIC_LIB_LIST}
+                        ${ROOT_EVE_LIB_LIST}
+                        ${ROOT_X3d}
+        )
+
 simple_plugin( Kaon2HNLFlux tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -37,6 +45,7 @@ simple_plugin( HNLMakeDecay tool
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
 			gsl
+			sbncode_EventGenerator_MeVPrtl_Dalitz
 )
 
 

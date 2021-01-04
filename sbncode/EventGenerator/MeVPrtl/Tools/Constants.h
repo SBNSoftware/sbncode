@@ -23,7 +23,7 @@ static const double higgs_vev = 246.22; // GeV (=1/sqrt(Gfermi*sqrt(2)))
 static const double sin2thetaW = 0.2229; // electroweak mixing angle
 static const double gL = -0.5 + sin2thetaW;
 static const double gR = sin2thetaW;
-static const double fpion = 0.0254; // Pion electromagnetic/vector form factor
+static const double fpion = 0.1302; // Pion decay constant [GeV]
 
 // unit conversion
 static const double hbar = 6.582119569e-16; // GeV*ns

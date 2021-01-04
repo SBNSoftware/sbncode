@@ -38,6 +38,8 @@
 // constants
 #include "TDatabasePDG.h"
 
+#include "HNLDecayDalitz.h"
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
 
@@ -113,7 +115,9 @@ private:
 
   // Decay implementation functions
   DecayFinalState NuMupMum(const MeVPrtlFlux &flux);
-  DecayFinalState MuPi(const MeVPrtlFlux &flux);
+  DecayFinalState LepPi(const MeVPrtlFlux &flux, bool is_muon);
+  DecayFinalState EPi(const MeVPrtlFlux &flux) { return LepPi(flux, false); }
+  DecayFinalState MuPi(const MeVPrtlFlux &flux) { return LepPi(flux, true); }
 };
 
 // helpers
@@ -121,17 +125,6 @@ double lambda(double a, double b, double c) {
   return a*a + b*b + c*c - 2*a*b - 2*b*c - 2*c*a;
 }
 
-double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
-  if (parent_mass < childA_mass + childB_mass) return -1.;
-
-  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
-    -2 * parent_mass * parent_mass * childA_mass * childA_mass
-    -2 * parent_mass * parent_mass * childB_mass * childB_mass
-       + childA_mass * childA_mass * childA_mass * childA_mass 
-       + childB_mass * childB_mass * childB_mass * childB_mass 
-    -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
-
-}
 
 // Valid for decays where the matix element has no kinematic dependence (i.e. a constant Dalitz density)
 HNLMakeDecay::ThreebodyMomentum HNLMakeDecay::isotropic_threebody_momentum(double parent_mass, double childA_mass, double childB_mass, double childC_mass) {
@@ -245,6 +238,7 @@ double HNLMakeDecay::I2(double x, double y, double z) {
   return result;
 }
 
+
 double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double ue4, double um4, bool nu_is_muon, bool lep_is_muon) {
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
   double u4 = nu_is_muon ? um4 : ue4;
@@ -308,45 +302,69 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
   return ret;
 }
 
-HNLMakeDecay::DecayFinalState HNLMakeDecay::MuPi(const MeVPrtlFlux &flux) {
+HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool is_muon) {
   HNLMakeDecay::DecayFinalState ret;
+  double lep_mass = is_muon ? muon_mass : elec_mass;
+  int lep_pdg = is_muon ? 13 : 11;
+
   // Decay not kinematically allowed
-  if (muon_mass + pionp_mass > flux.mass) {
+  if (lep_mass + pionp_mass > flux.mass) {
     ret.width = 0.;
     return ret;
   }
 
-  double um4 = flux.C2;
-  double lep_ratio = (muon_mass * muon_mass) / (flux.mass * flux.mass);
+  double u4 = is_muon ? flux.C2 : flux.C1;
+  double lep_ratio = (lep_mass * lep_mass) / (flux.mass * flux.mass);
   double pion_ratio = (pionp_mass * pionp_mass) / (flux.mass * flux.mass);
   double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
-  ret.width = um4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * flux.mass * flux.mass * flux.mass * Ifunc) / (16 * M_PI);
-
-  double p = twobody_momentum(flux.mass, muon_mass, pionp_mass);
+  ret.width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * flux.mass * flux.mass * flux.mass * Ifunc) / (16 * M_PI);
 
   // Majorana gets an extra factor b.c. it can go to pi+l- and pi-l+
   if (fMajorana) ret.width *= 2;
 
-  // twobody decays are Isotropic
-  TVector3 dir = RandomUnitVector();
-
   // Majorana decays don't conserve lepton number, Dirac decay's do
-  int muon_pdg_sign;
+  int lep_pdg_sign;
   if (fMajorana) {
-    muon_pdg_sign = (GetRandom() > 0.5) ? 1 : -1;
+    lep_pdg_sign = (GetRandom() > 0.5) ? 1 : -1;
   }
   else {
     // Dirac HNL caries opposite lepton number to production lepton
-    muon_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
+    lep_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
   }
 
-  // muon
-  ret.mom.emplace_back(p*dir, sqrt(p*p + muon_mass*muon_mass));
-  ret.pdg.push_back(13*muon_pdg_sign);
+  // Use rejection sampling to draw a direction for the child particles
+  //
+  // Work in the lab frame
+  double dalitz_max = HNLLepPiDalitzMax(kaonp_mass, flux.sec.M(), flux.mass, pionp_mass, lep_mass); 
+  double this_dalitz = 0.;
+  double p = evgen::ldm::twobody_momentum(flux.mass, lep_mass, pionp_mass);
+  TLorentzVector LB;
+  TLorentzVector PI;
+  do {
+    TVector3 dir = RandomUnitVector(); 
+    LB = TLorentzVector(p*dir, sqrt(p*p + lep_mass*lep_mass));
+    PI = TLorentzVector(-p*dir, sqrt(p*p + pionp_mass*pionp_mass));
+    LB.Boost(flux.mom.BoostVector());
+    PI.Boost(flux.mom.BoostVector());
+    
+    this_dalitz = ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) ? \
+      evgen::ldm::HNLLepPiLNCDalitz(flux.kmom, flux.sec, flux.mom, PI, LB):
+      evgen::ldm::HNLLepPiLNVDalitz(flux.kmom, flux.sec, flux.mom, PI, LB);
+
+    assert(this_dalitz < dalitz_max);
+    if (this_dalitz > dalitz_max) {
+      std::cerr << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
+      exit(1);
+    }
+  } while (GetRandom() > this_dalitz / dalitz_max);
+
+  // lepton
+  ret.mom.push_back(LB);
+  ret.pdg.push_back(lep_pdg*lep_pdg_sign);
 
   // pion
-  ret.mom.emplace_back(-p*dir, sqrt(p*p + pionp_mass*pionp_mass));
-  ret.pdg.push_back(-211*muon_pdg_sign); 
+  ret.mom.emplace_back(PI);
+  ret.pdg.push_back(-211*lep_pdg_sign); 
 
   return ret;
 }
@@ -399,8 +417,10 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fIntegrator = gsl_integration_workspace_alloc(fIntegratorSize);
 
   // Setup available decays
-  fAvailableDecays["nu_mu_mu"] = &HNLMakeDecay::NuMupMum;
   fAvailableDecays["mu_pi"] = &HNLMakeDecay::MuPi;
+  fAvailableDecays["e_pi"] = &HNLMakeDecay::EPi;
+  // TODO: make available
+  // fAvailableDecays["nu_mu_mu"] = &HNLMakeDecay::NuMupMum;
 
   // Select which ones are configued
   fDecayConfig = pset.get<std::vector<std::string>>("Decays");

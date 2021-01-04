@@ -13,6 +13,8 @@ public:
   TLorentzVector kmom;
   TLorentzVector mom;
   TLorentzVector mom_beamcoord;
+  TLorentzVector sec;
+  TLorentzVector sec_beamcoord;
   float C1;
   float C2;
   float C3;

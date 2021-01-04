@@ -1,0 +1,76 @@
+BEGIN_PROLOG
+
+empty_kaon: {
+  tool_type: EmptyKaonGen
+}
+
+numi_kaon: {
+  tool_type: NuMiKaonGen
+  SearchPath: "/pnfs/sbn/persistent/users/gputnam/numiflux/"
+  FluxFiles: ["*.root"]
+  TreeName: "dk2nuTree"
+  MetaTreeName: "dkmetaTree"
+  MaxFluxFileMB: 8192 # 8GB
+}
+
+kaon2hnl: {
+  tool_type: Kaon2HNLFlux
+  M: 0.35 # GeV/c^2
+  MagUe4: 0
+  MagUm4: 1e-7
+  KDAROnly: false
+
+  // uBooNE config
+  Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
+                                                0.0000462540012621546684,       0.99829162468141475,            -0.0584279894529063024,
+                                                -0.38947144863934974,           0.0538324139386641073,          0.91946400794392302 ]
+  // uBooNE pos.
+  // BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
+
+  // ICARUS?
+  BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
+
+  // timing config
+  SpillTimeConfig: "evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
+}
+
+ray_trace_box: {
+  tool_type: RayTraceBox
+  # Volume: volCryostat
+  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+}
+
+rethrow_ray_trace_box: {
+  tool_type: ReThrowRayTraceBox
+  # Volume: volCryostat
+  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+}
+
+decay_hnl: {
+  tool_type: HNLMakeDecay
+  Decays: ["mu_pi"]
+  ReferenceUE4: 0
+  ReferenceUM4: 1e-7
+  ReferenceHNLMass: 0.35
+  ReferenceRayLength: 2500 # 25m
+  ReferenceHNLMaxEnergy: 10 # GeV
+}
+
+hnl: {
+  module_type: MeVPrtlTFile
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl
+  RayTrace: @local::rethrow_ray_trace_box
+  Decay: @local::decay_hnl
+}
+
+hnl_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl
+  RayTrace: @local::rethrow_ray_trace_box
+  Decay: @local::decay_hnl
+}
+
+END_PROLOG
