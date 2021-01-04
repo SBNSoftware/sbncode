@@ -14,7 +14,7 @@ namespace ana{
 
   const Cut kTrueFiducialVolumeND(
     [](const caf::SRSliceProxy* slc){
-      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, fvnd);
+      return kHasNu(slc) && PtInVolAbsX(slc->truth.position, fvndAbs);
     }
     );
 
@@ -81,5 +81,10 @@ namespace ana{
   const Cut kVtxDistMagCut([](const caf::SRSliceProxy* slc){
             if(slc->truth.index < 0) return true;
             return (kTruthVtxDistMag(slc) < 1);
+  });
+
+  const Cut kSlcCompletenessCut([](const caf::SRSliceProxy* slc){
+            if(slc->truth.index < 0) return false;
+            return (kCompletness(slc) > 0.5);
   });
 }

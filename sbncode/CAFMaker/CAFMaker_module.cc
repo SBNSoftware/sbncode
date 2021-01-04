@@ -1005,8 +1005,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   rec.nslc            = rec.slc.size();
   rec.mc              = srtruthbranch;
-  rec.true_particles  = true_particles;
-  rec.ntrue_particles = true_particles.size();
   rec.fake_reco       = srfakereco;
   rec.nfake_reco      = srfakereco.size();
   rec.pass_flashtrig  = pass_flash_trig;  // trigger result
@@ -1014,6 +1012,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_hits       = srcrthits.size();
   rec.crt_tracks        = srcrttracks;
   rec.ncrt_tracks       = srcrttracks.size();
+  if (fParams.FillTrueParticles()) {
+    rec.true_particles  = true_particles;
+  }
+  rec.ntrue_particles = true_particles.size();
 
   // Get metadata information for header
   unsigned int run = evt.run();

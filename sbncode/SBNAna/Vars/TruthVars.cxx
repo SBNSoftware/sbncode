@@ -1,7 +1,10 @@
 #include "SBNAna/Vars/TruthVars.h"
 #include "SBNAna/Vars/Vars.h"
+
 #include "StandardRecord/Proxy/SRProxy.h"
+
 #include <cassert>
+#include <cmath>
 
 namespace ana
 {
@@ -9,6 +12,13 @@ namespace ana
       [](const caf::SRSliceProxy *slc)
       {
         return ( slc->truth.index != -1);
+      }
+      );
+
+    const Var kCompletness(
+      [](const caf::SRSliceProxy *slc)
+      {
+        return ( kHasTruthMatch(slc) ? (float)slc->tmatch.eff : -5.f);
       }
       );
 

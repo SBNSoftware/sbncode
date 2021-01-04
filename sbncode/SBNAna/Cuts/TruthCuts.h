@@ -19,6 +19,7 @@ namespace ana
   
   // extern const Cut kIsQE;
   extern const Cut kTrueActiveVolumeND;
+  extern const Cut kTrueFiducialVolumeND;
   extern const Cut kTrueActiveVolumeFDCryo1;
   extern const Cut kTrueActiveVolumeFDCryo2;
 
@@ -26,6 +27,8 @@ namespace ana
   extern const Cut kTrueFiducialVolumeFDCryo2;
 
   extern const Cut kVtxDistMagCut;
+
+  extern const Cut kSlcCompletenessCut;
 
   // extern const Cut kIsRes;
   // extern const Cut kIsDIS;
