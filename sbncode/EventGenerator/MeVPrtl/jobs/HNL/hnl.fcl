@@ -11,6 +11,7 @@ numi_kaon: {
   TreeName: "dk2nuTree"
   MetaTreeName: "dkmetaTree"
   MaxFluxFileMB: 8192 # 8GB
+  FluxCopyMethod: DIRECT
 }
 
 kaon2hnl: {
@@ -49,6 +50,7 @@ rethrow_ray_trace_box: {
 decay_hnl: {
   tool_type: HNLMakeDecay
   Decays: ["mu_pi"]
+  Majorana: true
   ReferenceUE4: 0
   ReferenceUM4: 1e-7
   ReferenceHNLMass: 0.35

@@ -354,6 +354,17 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
     assert(this_dalitz < dalitz_max);
     if (this_dalitz > dalitz_max) {
       std::cerr << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
+      std::cout << "VERY VERY BAD!!!! Incorrect dalitz max!!!\n";
+      std::cout << "PK: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
+      std::cout << "PA: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+      std::cout << "PN: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+      std::cout << "PP: " << PI.E() << " " << PI.Px() << " " << PI.Py() << " " << PI.Pz() << std::endl;
+      std::cout << "PB: " << LB.E() << " " << LB.Px() << " " << LB.Py() << " " << LB.Pz() << std::endl;
+
+      std::cout << "This Dalitz: " << this_dalitz << std::endl;
+      std::cout << "Max Dalitz: " << dalitz_max << std::endl;
+      std::cout << "LNC: " << ((flux.secondary_pdg > 0 ) != (lep_pdg_sign > 0)) << std::endl;
+
       exit(1);
     }
   } while (GetRandom() > this_dalitz / dalitz_max);
@@ -481,6 +492,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)
   if (mean_dist < 10000) {
     std::cerr << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid" << std::endl;
+    std::cout << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid" << std::endl;
   }
 
   // saves the weight

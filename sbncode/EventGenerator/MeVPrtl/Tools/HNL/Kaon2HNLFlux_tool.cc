@@ -116,7 +116,7 @@ double SMKaonBR(int kaon_pdg) {
 
 double BranchingRatio(double hnl_mass, double u4, bool is_muon) {
   double lep_mass = is_muon ? muon_mass : elec_mass;
-  if (hnl_mass < kaonp_mass - lep_mass) return 0.;
+  if (hnl_mass > kaonp_mass - lep_mass) return 0.;
 
   double smbr = is_muon ? kaonp_mup_numu : kaonp_ep_nue;
   double lep_ratio = (lep_mass * lep_mass) / (kaonp_mass * kaonp_mass);
@@ -130,8 +130,8 @@ double BranchingRatio(double hnl_mass, double u4, bool is_muon) {
 }
 
 std::pair<double, bool> Branch(double hnl_mass, double ue4, double um4, double rand) {
-  double br_muon = (um4 > 0. && hnl_mass > kaonp_mass - muon_mass) ? BranchingRatio(hnl_mass, um4, true) : 0.;
-  double br_elec = (ue4 > 0. && hnl_mass > kaonp_mass - elec_mass) ? BranchingRatio(hnl_mass, ue4, false): 0.;
+  double br_muon = (um4 > 0. && hnl_mass < kaonp_mass - muon_mass) ? BranchingRatio(hnl_mass, um4, true) : 0.;
+  double br_elec = (ue4 > 0. && hnl_mass < kaonp_mass - elec_mass) ? BranchingRatio(hnl_mass, ue4, false): 0.;
   if (br_muon == 0. && br_elec == 0.) return {0., false};
 
   double br_weight = br_muon + br_elec;

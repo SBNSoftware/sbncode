@@ -172,6 +172,15 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
   // set things
   weight = (double)allIntersections.size() / fNThrows;
   flux.mom = mevprtl_mom;
+  // transform to beam-coord frame
+  flux.mom_beamcoord = mevprtl_mom;
+  flux.mom_beamcoord.Boost(-flux.kmom.BoostVector()); // Boost to kaon rest frame
+  flux.mom_beamcoord.Boost(flux.kmom_beamcoord.BoostVector()); // And to beam coordinate frame
+  // Two boosts make a rotation!
+
+  // Set the secondary 4-momentum
+  flux.sec = flux.kmom - flux.mom;
+  flux.sec_beamcoord = flux.kmom_beamcoord - flux.mom_beamcoord;
 
   if ((flux.pos.Vect() - A).Mag() < (flux.pos.Vect() - B).Mag()) {
     intersection = {A, B}; // A is entry, B is exit
