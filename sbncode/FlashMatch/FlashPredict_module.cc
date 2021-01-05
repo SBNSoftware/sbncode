@@ -113,6 +113,7 @@ void FlashPredict::produce(art::Event & e)
   _flash_unpe    = -9999.;
   _flash_r       = -9999.;
   _flash_ratio   = -9999.;
+  _hypo_x        = -9999.;
   _score         = -9999.;
   bk.events++;
 
@@ -308,10 +309,11 @@ void FlashPredict::produce(art::Event & e)
     }
 
     if(computeScore(tpcWithHits, pfp.PdgCode())){
+      _hypo_x = hypoFlashX();
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(_flash_time, icountPE, p, 0, _score));
+      T0_v->push_back(anab::T0(_flash_time, icountPE, p, _hypo_x, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // over all PFparticles
@@ -346,6 +348,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_y", &_charge_y, "charge_y/D");
   _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
   _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
 }
 
@@ -511,7 +514,6 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
 
     if (fICARUS && fUseOppVolMetric){
       unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
-
       geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
       unsigned qVolume = driftVolume(_charge_x_gl);
       if(qVolume < fDriftVolumes){
@@ -592,19 +594,19 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
   int isl = int(n_bins * (_charge_x / fDriftDistance));
   auto out = mf::LogWarning("FlashPredict");
 
-  if (dy_spreads[isl] > 0) {
+  if (dy_spreads[isl] > 0.) {
     double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
     if (term > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, term, out);
     _score += term;
     tcount++;
   }
-  if (dz_spreads[isl] > 0) {
+  if (dz_spreads[isl] > 0.) {
     double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
     if (term > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, term, out);
     _score += term;
     tcount++;
   }
-  if (rr_spreads[isl] > 0 && _flash_r > 0) {
+  if (rr_spreads[isl] > 0.) {
     double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
     if (term > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, term, out);
     _score += term;
@@ -612,7 +614,7 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
   }
   if ((fSBND && fUseUncoatedPMT) ||
       (fICARUS && fUseOppVolMetric)) {
-    if (pe_spreads[isl] > 0 && _flash_ratio > 0) {
+    if (pe_spreads[isl] > 0.) {
       double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
       if (term > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, term, out);
       _score += term;
@@ -625,6 +627,40 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
   else return false;
 }
 
+
+// TODO: Improve this whole function
+double FlashPredict::hypoFlashX()
+{
+  double rr_diff = 10000.;
+  unsigned rr_bin = 10000;
+  for(unsigned i=0; i<rr_means.size(); ++i){
+    double d = std::abs(_flash_r - rr_means[i]);
+    if(d < rr_diff){
+      rr_diff = d;
+      rr_bin = i;
+    }
+  }
+  double rr_width = fDriftDistance / rr_means.size();
+  // TODO: better to get an interpolation
+  double rr_hypo_x = (rr_width/2.) + rr_bin * rr_width;
+  if(!fUseUncoatedPMT && !fUseOppVolMetric)
+    return rr_hypo_x;
+
+  double ratio_diff = 10000.;
+  unsigned ratio_bin = 10000;
+  for(unsigned i=0; i<pe_means.size(); ++i){
+    double d = std::abs(_flash_ratio - pe_means[i]);
+    if(d < ratio_diff){
+      ratio_diff = d;
+      ratio_bin = i;
+    }
+  }
+  double ratio_width = fDriftDistance / pe_means.size();
+  // TODO: better to get an interpolation
+  double ratio_hypo_x = (ratio_width/2.) + ratio_bin * ratio_width;
+  // TODO: better return a weighted average
+  return (rr_spreads[rr_bin] < pe_spreads[ratio_bin]) ? rr_hypo_x : ratio_hypo_x;
+}
 
 
 ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)

@@ -90,6 +90,7 @@ private:
   bool computeFlashMetrics(std::set<unsigned>& tpcWithHits,
                            std::vector<recob::OpHit> const& OpHits);
   bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
+  double hypoFlashX();
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
                                     const art::Ptr<recob::PFParticle>& particle,
@@ -167,6 +168,7 @@ private:
   // TODO: why not charge_time?
   double _flash_time;
   double _score;
+  double _hypo_x;
   int _evt, _run, _sub;
   unsigned icountPE = 0;
 
