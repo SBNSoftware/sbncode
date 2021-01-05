@@ -5,6 +5,7 @@
 namespace ana
 {
   extern const Var kHasTruthMatch;
+  extern const Var kCompletness;
 
   extern const Var kTruthEnergy;
 
