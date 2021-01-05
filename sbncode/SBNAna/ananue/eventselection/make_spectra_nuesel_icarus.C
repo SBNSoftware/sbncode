@@ -6,6 +6,7 @@
 #include "helper_nuesel_icarus.h"
 
 #include "TFile.h"
+#include "TTreeReader.h"
 
 using namespace ana;
 
