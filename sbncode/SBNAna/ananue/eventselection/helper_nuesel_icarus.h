@@ -12,6 +12,8 @@
 #include "SBNAna/Cuts/NueCuts.h"
 #include "SBNAna/Cuts/TruthCuts.h"
 
+#include "TTreeReader.h"
+
 using namespace ana;
 
 Color_t color_nue   = kBlue-7;
@@ -60,7 +62,7 @@ std::vector<PlotDef> plots =
    {"energy",     "Shower energy (MeV)",     kNueEnergyBinning, kRecoShower_Energy},
    {"length",     "Length (cm)",             kLengthBinning,    kRecoShower_Length},
    {"nuscore",    "Pandora #nu score",       kBDTBinning,       kSlcNuScore},
-   {"flashscore", "Flash score",             kFlashBinning,     kSlcFlashScore}
+   {"flashscore", "Flash score",             kFlashBinning,     kSlcFlashScore},
    {"truthenergy","True #nu energy (GeV)",   kTruthLowEnergyBinning, kTruthEnergy},
  };
 
@@ -93,7 +95,7 @@ const Cut kNuECC  = kIsNue && !kIsNC;
 const Cut kNuMuCC = kIsNumu && !kIsNC;
 const Cut kNC     = kIsNC;
 const Cut kTotal  = kNoCut; // Get the total and substract everything else when plotting
-const Cut kCosmic = !kHasNu;
+const Cut kIsCosmic = !kHasNu;
 const Cut kOtherNu = kHasNu && !(kNuECC || kNuMuCC || kNC);
 
 // Step by step cuts
@@ -107,9 +109,9 @@ std::vector<SelDef> types =
   {"nue",   "NuE CC",  kSlcIsRecoNu&&kNuECC,   color_nue},
   {"numu",  "NuMu CC", kSlcIsRecoNu&&kNuMuCC,  color_numu},
   {"nunc",  "NC",      kSlcIsRecoNu&&kNC,      color_nc},
-  {"other", "Other",   kSlcIsRecoNu&&kOtherNu, color_other}
-  {"total", "Total",   kSlcIsRecoNu&&kTotal,   color_other}
-  {"cosmic", "Cosmic", kSlcIsRecoNu&&kCosmic,  color_cos}
+  {"other", "Other",   kSlcIsRecoNu&&kOtherNu, color_other},
+  {"total", "Total",   kSlcIsRecoNu&&kTotal,   color_other},
+  {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
 };
 
 std::vector<SelDef> sels ={
