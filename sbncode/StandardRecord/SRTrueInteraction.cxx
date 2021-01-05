@@ -44,6 +44,7 @@ namespace caf
     mode(kOther),
     generator(kUnknownGenerator),
     genVersion(),
+    nprim(0),
     prim()
   {  }
 

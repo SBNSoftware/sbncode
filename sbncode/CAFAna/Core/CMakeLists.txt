@@ -5,6 +5,7 @@ include_directories(..)
 
 art_make(LIBRARY_NAME CAFAnaCore
          LIB_LIBRARIES StandardRecordProxy
+                       StandardRecord
                        OscLib
                        pthread
                        ${ROOT_BASIC_LIB_LIST}

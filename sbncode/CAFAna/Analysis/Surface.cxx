@@ -89,6 +89,9 @@ namespace ana
     int miny = yax.nbins/2;
     for(int x = 1; x < xax.nbins+1; ++x){
       for(int y = 1; y < yax.nbins+1; ++y){
+        const int bin = (y-1)*fHist->GetNbinsX() + (x-1);
+        if(RunningOnGrid() && NumJobs() > 1
+           && !std::count(fBinMask.begin(), fBinMask.end(), bin)) continue;
         const double chi = fHist->GetBinContent(x, y);
         if(chi < minchi && !isnan(chi) && !isinf(chi)){
           minchi = chi;
@@ -183,6 +186,15 @@ namespace ana
     int bin = 0;
     int neval = 0;
 
+    // Allow the surface to be parallelised across multiple jobs by splitting
+    // up the full surface into patches, and only running bins that fall inside
+    // a certain patch
+    int grid_stride = 1;
+    if(RunningOnGrid() && NumJobs() > 1){
+      grid_stride = NumJobs();
+      bin = (step*JobNumber()) % (Nx*Ny);
+    }
+
     do{
       const int x = bin%Nx+1;
       const int y = bin/Nx+1;
@@ -221,10 +233,15 @@ namespace ana
                          xax, xv, yax, yv,
                          profVars, profSysts, seedPts, systSeedPts);
         ++neval;
-        prog->SetProgress(neval/double(Nx*Ny));
+        prog->SetProgress(neval*grid_stride/double(Nx*Ny));
       }
 
-      bin = (bin+step)%(Nx*Ny);
+      if(grid_stride > 1) fBinMask.push_back(bin);
+
+      for(int i = 0; i < grid_stride; ++i){
+        bin = (bin + step) % (Nx * Ny);
+        if(bin == 0) break;
+      }
     } while(bin != 0);
 
 
@@ -390,6 +407,7 @@ namespace ana
   //---------------------------------------------------------------------
   void Surface::DrawBestFit(Color_t color, Int_t marker) const
   {
+    CheckMask("DrawBestFit");
     EnsureAxes();
 
     TMarker* mark = new TMarker(fMinX, fMinY, marker);
@@ -402,6 +420,8 @@ namespace ana
   //----------------------------------------------------------------------
   std::vector<TGraph*> Surface::GetGraphs(TH2* fc, double minchi)
   {
+    CheckMask("GetGraphs");
+
     std::vector<TGraph*> ret;
 
     if(minchi < 0) minchi = fMinChi;
@@ -458,6 +478,7 @@ namespace ana
   void Surface::DrawContour(TH2* fc, Style_t style, Color_t color,
                             double minchi)
   {
+    CheckMask("DrawContour");
     EnsureAxes();
 
     std::vector<TGraph*> gs = GetGraphs(fc, minchi);
@@ -475,6 +496,8 @@ namespace ana
   //----------------------------------------------------------------------
   TH2F* Surface::ToTH2(double minchi) const
   {
+    CheckMask("ToTH2");
+
     // Could have a file temporarily open
     DontAddDirectory guard;
 
@@ -517,7 +540,7 @@ namespace ana
   TH2* Gaussian2Sigma2D   (const Surface& s){return Flat(6.18,  s);}
   TH2* Gaussian99Percent2D(const Surface& s){return Flat(9.21,  s);}
   TH2* Gaussian3Sigma2D   (const Surface& s){return Flat(11.83, s);}
-  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.23, s);}
+  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.74, s);}
 
   TH2* Gaussian68Percent1D(const Surface& s){return Flat(1.00, s);}
   TH2* Gaussian90Percent1D(const Surface& s){return Flat(2.71, s);}
@@ -527,10 +550,10 @@ namespace ana
   TH2* Gaussian3Sigma1D   (const Surface& s){return Flat(9.00, s);}
 
   TH2* Gaussian90Percent1D1Sided(const Surface& s){return Flat(1.64, s);}
-  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(1.96, s);}
-  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(2.58, s);}
+  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(2.71, s);}
+  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(5.41, s);}
   TH2* Gaussian3Sigma1D1Sided(const Surface& s){return Flat(7.74, s);}
-  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.40, s);}
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.66, s);}
 
   //----------------------------------------------------------------------
   void Surface::SaveTo(TDirectory* dir) const
@@ -557,6 +580,12 @@ namespace ana
       it->Write( TString::Format("hist%d", idx++));
     }
 
+    if(!fBinMask.empty()){
+      const std::vector<double> tmp(fBinMask.begin(), fBinMask.end());
+      TVectorD m(tmp.size(), &tmp[0]);
+      m.Write("mask");
+    }
+
     dir->cd();
     TObjString(fLogX ? "yes" : "no").Write("logx");
     TObjString(fLogY ? "yes" : "no").Write("logy");
@@ -575,6 +604,7 @@ namespace ana
 
     const TVectorD v = *(TVectorD*)dir->Get("minValues");
     const TVectorD s = *(TVectorD*)dir->Get("seeds");
+    const TVectorD* m = (TVectorD*)dir->Get("mask");
 
     std::unique_ptr<Surface> surf(new Surface);
     surf->fHist = (TH2F*)dir->Get("hist");
@@ -593,6 +623,11 @@ namespace ana
         surf->fProfHists.push_back((TH2*)dir->Get(TString::Format("margHists/hist%d", idx)));
     }
 
+    if(m){
+      for(int idx = 0; idx < m->GetNrows(); ++idx)
+        surf->fBinMask.push_back((*m)[idx]);
+    }
+
     const TObjString* logx = (TObjString*)dir->Get("logx");
     const TObjString* logy = (TObjString*)dir->Get("logy");
     // Tolerate missing log tags for backwards compatibility
@@ -602,5 +637,83 @@ namespace ana
     return surf;
   }
 
+  //----------------------------------------------------------------------
+  std::unique_ptr<Surface> Surface::
+  LoadFromMulti(const std::vector<TFile*>& files, const std::string& label)
+  {
+    std::vector<std::unique_ptr<Surface>> surfs;
+    for(TFile* f: files) {
+      surfs.push_back(Surface::LoadFrom(f->GetDirectory(label.c_str())));
+    }
+
+    int Nx = surfs[0]->fHist->GetNbinsX();
+    int Ny = surfs[0]->fHist->GetNbinsY();
+    size_t nbins = Nx * Ny;
+    std::vector<int> binMask;
+
+    // Loop over the surfaces to check all bins are present
+    for(size_t i = 0; i < surfs.size(); ++i) {
+      for(int bin : surfs[i]->fBinMask) {
+        if (std::count(binMask.begin(), binMask.end(), bin))
+          assert(false && "Repeated bin found in surfaces being merged.");
+        binMask.push_back(bin);
+      }
+    }
+    if(binMask.size() != nbins) {
+      std::cout << "Missing bins found in surfaces being merged. "
+                << "Are you sure you included all files for this surface?"
+                << std::endl;
+      assert(false);
+    }
+
+    // Create return surface and initialise with first in list
+    std::unique_ptr<Surface> ret(new Surface);
+    ret->fHist = (TH2F*)surfs[0]->fHist->Clone();
+    ret->fMinChi = surfs[0]->fMinChi;
+    ret->fMinX = surfs[0]->fMinX;
+    ret->fMinY = surfs[0]->fMinY;
+    ret->fLogX = surfs[0]->fLogX;
+    ret->fLogY = surfs[0]->fLogY;
+    ret->fSeedValues = surfs[0]->fSeedValues;
+    for(TH2* h: surfs[0]->fProfHists)
+      ret->fProfHists.push_back((TH2F*)h->Clone());
+
+    // Loop over other surfaces and add them in
+    for(size_t i = 1; i < surfs.size(); ++i) {
+      ret->fHist->Add(surfs[i]->fHist);
+      if(surfs[i]->fMinChi < ret->fMinChi) {
+        ret->fMinChi = surfs[i]->fMinChi;
+        ret->fMinX = surfs[i]->fMinX;
+        ret->fMinY = surfs[i]->fMinY;
+      }
+      for(size_t j = 0; j < ret->fProfHists.size(); ++j)
+        ret->fProfHists[j]->Add(surfs[i]->fProfHists[j]);
+    }
+
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+  std::unique_ptr<Surface> Surface::
+  LoadFromMulti(const std::string& wildcard, const std::string& label)
+  {
+    std::vector<std::string> fileNames = Wildcard(wildcard);
+    std::vector<TFile*> files;
+    for(std::string fileName : fileNames){
+      files.push_back(TFile::Open(fileName.c_str()));
+    }
+    std::unique_ptr<Surface> ret = LoadFromMulti(files, label);
+    for(TFile* f: files) delete f;
+    return ret;
+  }
+
+  //----------------------------------------------------------------------
+  void Surface::CheckMask(const std::string& func) const
+  {
+    if(!fBinMask.empty()) {
+      std::cout << "Cannot call " << func << "() on a partial surface!" << std::endl;
+      abort();
+    }
+  }
 
 } // namespace

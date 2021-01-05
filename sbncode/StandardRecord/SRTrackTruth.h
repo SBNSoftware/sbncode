@@ -5,6 +5,7 @@
 #define SRTRACKTRUTH_H
 
 #include <vector>
+#include "SRTrueParticle.h"
 
 namespace caf
 {
@@ -29,6 +30,7 @@ namespace caf
     int                       nmatches; //!< Number of matches
     std::vector<ParticleMatch> matches; //!< List of particle matches, sorted by most energy matched */
     ParticleMatch bestmatch; //!< Best match for track (most energy). Same as index-0 of matches. Useful for columnar analyses.
+    SRTrueParticle p; //!< A copy of the true particle for the best match. Set to nonsense if there is no such match.
   };
 } // end namespace
 

@@ -87,7 +87,7 @@ namespace caf
     Atom<string> FlashMatchLabel {
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
-      "fmatch"
+      "fmatch" // same for icarus and sbnd
     };
 
     Atom<string> RecoTrackLabel {
@@ -107,18 +107,6 @@ namespace caf
       Comment("Base label of shower selection vars producer."),
       "pandoraShowerSelectionVars"
     };
-
-    // Atom<string> RecoShowerEMLabel {
-    //   Name("RecoShowerEMLabel"),
-    //   Comment("Base label of reco-base em shower producer."),
-    //   "emshower"
-    // };
-
-    // Atom<string> RecoShowerPandLabel {
-    //   Name("RecoShowerPandLabel"),
-    //   Comment("Base label of reco-base pandora shower producer."),
-    //   "pandoraShower"
-    // };
 
     Atom<string> TrackCaloLabel {
       Name("TrackCaloLabel"),
@@ -159,7 +147,13 @@ namespace caf
     Atom<string> CRTHitLabel {
       Name("CRTHitLabel"),
       Comment("Label of sbn CRT hits."),
-      "crthit"
+      "crthit" // same for icarus and sbnd
+    };
+
+    Atom<string> CRTTrackLabel {
+      Name("CRTTrackLabel"),
+      Comment("Label of sbn CRT tracks."),
+      "crttrack" // same for icarus and sbnd
     };
     
     Atom<string> FlashTrigLabel {
@@ -168,9 +162,10 @@ namespace caf
       "flashtrigfilter"
     };
 
-    Atom<bool> CRTHitUseTS0 {
-      Name("CRTHitUseTS0"),
-      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit")
+    Atom<bool> CRTUseTS0 {
+      Name("CRTUseTS0"),
+      Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit and SRCRTTrack"),
+      false
     };
 
     Atom<string> SimChannelLabel {
@@ -184,6 +179,13 @@ namespace caf
       Comment("Constants to convert ADC*tick charge measurement to electrons."
               "Ordered 1st Induction, 2nd Induction, Collection."
               "In units of ADC*tick / electrons")
+    };
+
+    Atom<bool> FillTrueParticles {
+      Name("FillTrueParticles"),
+      Comment("Whether to fill the rec.true_particles branch. The information on true particles"
+              " will still be stored for the neutirno primaries and for trk/shw truth matching."),
+      true
     };
 
   };

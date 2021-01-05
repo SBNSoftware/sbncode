@@ -1,0 +1,8 @@
+BEGIN_PROLOG
+transfer_flasht0_sce_sbnd: {
+  module_type: TransferPFParticleT0
+  PFParticleLabelIn: pandora
+  T0Label: fmatch
+  PFParticleLabelOut: pandoraSCE
+}
+END_PROLOG

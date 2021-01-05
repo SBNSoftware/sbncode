@@ -1,1 +1,4 @@
-*.root
+/env/
+/.ipynb_checkpoints/
+/plots/
+/*.root

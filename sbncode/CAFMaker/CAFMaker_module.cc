@@ -129,6 +129,9 @@ class CAFMaker : public art::EDProducer {
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
+                     
+  bool fFirstInSubRun;
+  bool fFirstInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
@@ -288,6 +291,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   }
 
   fFileNumber ++;
+  fFirstInFile = true;
 
 }
 
@@ -315,6 +319,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fTotalPOT += fSubRunPOT;
   }
   std::cout << "POT: " << fSubRunPOT << std::endl;
+
+  fFirstInSubRun = true;
 
 
 }
@@ -344,6 +350,8 @@ void CAFMaker::InitializeOutfile() {
   fSubRunPOT = 0;
   fTotalSinglePOT = 0;
   fTotalEvents = 0;
+  fFirstInFile = false;
+  fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
 
@@ -658,7 +666,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], fParams.CRTHitUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
+    }
+  }
+
+  // Get all of the CRT Tracks
+  std::vector<caf::SRCRTTrack> srcrttracks;
+
+  art::Handle<std::vector<sbn::crt::CRTTrack>> crttracks_handle;
+  GetByLabelStrict(evt, fParams.CRTTrackLabel(), crttracks_handle);
+  // fill into event
+  if (crttracks_handle.isValid()) {
+    const std::vector<sbn::crt::CRTTrack> &crttracks = *crttracks_handle;
+    for (unsigned i = 0; i < crttracks.size(); i++) {
+      srcrttracks.emplace_back();
+      FillCRTTrack(crttracks[i], fParams.CRTUseTS0(), srcrttracks.back());
     }
   }
 
@@ -751,12 +773,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     art::FindManyP<sbn::ShowerDensityFit> fmShowerDensityFit =
       FindManyPStrict<sbn::ShowerDensityFit>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
-
-    // art::FindManyP<recob::Shower> fmShowerEM =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerEMLabel() + slice_tag_suff);
-
-    // art::FindManyP<recob::Shower> fmShowerPand =
-    //   FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerPandLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Track> fmTrack =
       FindManyPStrict<recob::Track>(fmPFPart, evt,
@@ -885,14 +901,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-      // std::vector<art::Ptr<recob::Shower>> thisShowerEM;
-      // if (fmShowerEM.isValid()) {
-      //   thisShower = fmShowerEM.at(iPart);
-      // }
-      // std::vector<art::Ptr<recob::Shower>> thisShowerPand;
-      // if (fmShowerPand.isValid()) {
-      //   thisShower = fmShowerPand.at(iPart);
-      // }
 
       if (!thisTrack.empty())  { // it's a track!
         assert(thisTrack.size() == 1);
@@ -933,7 +941,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
-          FillTrackTruth(fmTrackHit.at(iPart), clock_data, rec.reco.trk.back());
+          FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
@@ -942,8 +950,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
         }
-
-	// Duplicate track reco info in the srslice
+        // Duplicate track reco info in the srslice
         recslc.reco.trk.push_back(rec.reco.trk.back());
         recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
@@ -965,36 +972,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
         }
         if (fmShowerHit.isValid()) {
-          FillShowerTruth(fmShowerHit.at(iPart), clock_data, rec.reco.shw.back());
+          FillShowerTruth(fmShowerHit.at(iPart), true_particles, clock_data, rec.reco.shw.back());
         }
-
-	// Duplicate track reco info in the srslice
+        // Duplicate track reco info in the srslice
         recslc.reco.shw.push_back(rec.reco.shw.back());
         recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
 
       else {}
-
-      // // placeholding emshowers and padora showers
-      // // these might not be needed at the end
-      // if (thisShowerEM.size()) { // we have a reco em shower
-      //   assert(thisTrack.size() == 0);
-      //   assert(thisShowerEM.size() == 1);
-      //   rec.reco.nshw_em ++;
-      //   rec.reco.shw_em.push_back(SRShower());
-      //   FillShowerVars(*thisShowerEM[0], rec.reco.shw_em.back());
-
-      // } // thisShowerEM exists
-
-      // if (thisShowerPand.size()) { // we have a reco pandora shower
-      //   assert(thisTrack.size() == 0);
-      //   assert(thisShowerPand.size() == 1);
-      //   rec.reco.nshw_pandora ++;
-      //   rec.reco.shw_pandora.push_back(SRShower());
-      //   FillShowerVars(*thisShowerPand[0], rec.reco.shw_pandora.back());
-
-      // } // thisShowerPand exists
 
     }// end for pfparts
 
@@ -1019,13 +1005,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   rec.nslc            = rec.slc.size();
   rec.mc              = srtruthbranch;
-  rec.true_particles  = true_particles;
-  rec.ntrue_particles = true_particles.size();
   rec.fake_reco       = srfakereco;
   rec.nfake_reco      = srfakereco.size();
   rec.pass_flashtrig  = pass_flash_trig;  // trigger result
   rec.crt_hits        = srcrthits;
   rec.ncrt_hits       = srcrthits.size();
+  rec.crt_tracks        = srcrttracks;
+  rec.ncrt_tracks       = srcrttracks.size();
+  if (fParams.FillTrueParticles()) {
+    rec.true_particles  = true_particles;
+  }
+  rec.ntrue_particles = true_particles.size();
 
   // Get metadata information for header
   unsigned int run = evt.run();
@@ -1045,10 +1035,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.pot     = fSubRunPOT;
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
+  rec.hdr.first_in_file = fFirstInFile;
+  rec.hdr.first_in_subrun = fFirstInSubRun;
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
+
+  // reset
+  fFirstInFile = false;
+  fFirstInSubRun = false;
 
   // calculate information that needs information from all of the slices
   // SetNuMuCCPrimary(recs, srneutrinos);

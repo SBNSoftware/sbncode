@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_09_02
+parent sbncode v09_11_00
 defaultqual e19
 
 # These optional lines define the installed directories where headers,
@@ -34,11 +34,11 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_09_02
-sbnobj              v09_09_00
-sbndaq_artdaq_core  v0_07_01_of0
+larsoft             v09_11_00
+sbnobj              v09_09_03
+sbndaq_artdaq_core  v0_07_02_of0
 # For CAFAna
-srproxy          v00.14
+srproxy          v00.17
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers

@@ -9,29 +9,29 @@
 
 #include "CAFAna/Core/Var.h"
 
-namespace caf{class StandardRecord; class SRSpill; class SRSpillTruthBranch;}
+namespace caf{class StandardRecord; class SRSpill; class SRSpillTruthBranch; class SRSlice;}
 
 namespace ana
 {
-  template<class T> class GenericCut;
+  template<class T> class _Cut;
 
-  template<class T> GenericCut<T> operator&&(const GenericCut<T>& a,
-                                             const GenericCut<T>& b);
-  template<class T> GenericCut<T> operator||(const GenericCut<T>& a,
-                                             const GenericCut<T>& b);
-  template<class T> GenericCut<T> operator!(const GenericCut<T>& a);
+  template<class T> _Cut<T> operator&&(const _Cut<T>& a,
+                                             const _Cut<T>& b);
+  template<class T> _Cut<T> operator||(const _Cut<T>& a,
+                                             const _Cut<T>& b);
+  template<class T> _Cut<T> operator!(const _Cut<T>& a);
 
   typedef double (ExposureFunc_t)(const caf::SRSpill* spill);
 
   /// Template for Cut and SpillCut
-  template<class T> class GenericCut
+  template<class T> class _Cut
   {
   public:
     /// The type of the function part of a cut
     typedef bool (CutFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    GenericCut(const std::function<CutFunc_t>& func,
+    _Cut(const std::function<CutFunc_t>& func,
                const std::function<ExposureFunc_t>& liveFunc = 0,
                const std::function<ExposureFunc_t>& potFunc = 0);
 
@@ -62,12 +62,12 @@ namespace ana
     friend std::function<ExposureFunc_t> CombineExposures(const std::function<ExposureFunc_t>& a, const std::function<ExposureFunc_t>& b);
 
     // Give these guys access to the constructor that sets fID.
-    friend GenericCut<T> operator&&<>(const GenericCut<T>& a,
-				      const GenericCut<T>& b);
-    friend GenericCut<T> operator||<>(const GenericCut<T>& a,
-				      const GenericCut<T>& b);
-    friend GenericCut<T> operator!<>(const GenericCut<T>& a);
-    GenericCut(const std::function<CutFunc_t>& fun,
+    friend _Cut<T> operator&&<>(const _Cut<T>& a,
+				      const _Cut<T>& b);
+    friend _Cut<T> operator||<>(const _Cut<T>& a,
+				      const _Cut<T>& b);
+    friend _Cut<T> operator!<>(const _Cut<T>& a);
+    _Cut(const std::function<CutFunc_t>& fun,
                const std::function<ExposureFunc_t>& liveFunc,
                const std::function<ExposureFunc_t>& potFunc,
                int id)
@@ -91,42 +91,40 @@ namespace ana
   ///
   /// Cut objects may be combined with the standard boolean operations && ||
   /// and !
-  typedef GenericCut<caf::SRProxy> Cut;
+  typedef _Cut<caf::SRSliceProxy> SliceCut;
+  typedef _Cut<caf::SRSliceProxy> Cut;
 
   /// \brief Equivalent of \ref Cut acting on \ref caf::SRSpill. For use in
   /// spill-by-spill data quality cuts
-  typedef GenericCut<caf::SRSpill> SpillCut;
+  typedef _Cut<caf::SRSpillProxy> SpillCut;
 
   /// \brief Cut designed to be used over the nuTree, ie all neutrinos, not
   /// just those that got slices.
-  typedef GenericCut<caf::SRSpillTruthBranch> SpillTruthCut;
+  typedef _Cut<caf::SRSpillTruthBranch> SpillTruthCut;
 
-  template<class T> GenericCut<T> operator>(const GenericVar<T>& v, double c);
-  template<class T> GenericCut<T> operator<(const GenericVar<T>& v, double c);
-  template<class T> GenericCut<T> operator>=(const GenericVar<T>& v, double c);
-  template<class T> GenericCut<T> operator<=(const GenericVar<T>& v, double c);
-  template<class T> GenericCut<T> operator==(const GenericVar<T>& v, double c);
-  template<class T> GenericCut<T> operator!=(const GenericVar<T>& v, double c);
+  template<class T> _Cut<T> operator>(const _Var<T>& v, double c);
+  template<class T> _Cut<T> operator<(const _Var<T>& v, double c);
+  template<class T> _Cut<T> operator>=(const _Var<T>& v, double c);
+  template<class T> _Cut<T> operator<=(const _Var<T>& v, double c);
+  template<class T> _Cut<T> operator==(const _Var<T>& v, double c);
+  template<class T> _Cut<T> operator!=(const _Var<T>& v, double c);
 
-  template<class T> GenericCut<T> operator>(const GenericVar<T>& a, const GenericVar<T>& b);
-  template<class T> GenericCut<T> operator<(const GenericVar<T>& a, const GenericVar<T>& b);
-  template<class T> GenericCut<T> operator>=(const GenericVar<T>& a, const GenericVar<T>& b);
-  template<class T> GenericCut<T> operator<=(const GenericVar<T>& a, const GenericVar<T>& b);
-  template<class T> GenericCut<T> operator==(const GenericVar<T>& a, const GenericVar<T>& b);
-  template<class T> GenericCut<T> operator!=(const GenericVar<T>& a, const GenericVar<T>& b);
+  template<class T> _Cut<T> operator>(const _Var<T>& a, const _Var<T>& b);
+  template<class T> _Cut<T> operator<(const _Var<T>& a, const _Var<T>& b);
+  template<class T> _Cut<T> operator>=(const _Var<T>& a, const _Var<T>& b);
+  template<class T> _Cut<T> operator<=(const _Var<T>& a, const _Var<T>& b);
+  template<class T> _Cut<T> operator==(const _Var<T>& a, const _Var<T>& b);
+  template<class T> _Cut<T> operator!=(const _Var<T>& a, const _Var<T>& b);
 
-  template<class T> GenericCut<T> operator>(double c, const GenericVar<T>& v);
-  template<class T> GenericCut<T> operator<(double c, const GenericVar<T>& v);
-  template<class T> GenericCut<T> operator>=(double c, const GenericVar<T>& v);
-  template<class T> GenericCut<T> operator<=(double c, const GenericVar<T>& v);
-  template<class T> GenericCut<T> operator!=(double c, const GenericVar<T>& v);
-
-  /// The simplest possible cut: pass everything, used as a default
-  const Cut kNoCut([](const caf::SRProxy*){return true;});
+  template<class T> _Cut<T> operator>(double c, const _Var<T>& v);
+  template<class T> _Cut<T> operator<(double c, const _Var<T>& v);
+  template<class T> _Cut<T> operator>=(double c, const _Var<T>& v);
+  template<class T> _Cut<T> operator<=(double c, const _Var<T>& v);
+  template<class T> _Cut<T> operator!=(double c, const _Var<T>& v);
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillCut kNoSpillCut([](const caf::SRSpill*){return true;});
+  const Cut kNoCut([](const caf::SRSliceProxy*){return true;});
 
   /// The simplest possible cut: pass everything, used as a default
-  const SpillTruthCut kNoSpillTruthCut([](const caf::SRSpillTruthBranch*){return true;});
+  const SpillCut kNoSpillCut([](const caf::SRSpillProxy*){return true;});
 } // namespace

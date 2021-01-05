@@ -32,11 +32,38 @@ namespace caf
     srhit.position_err.z = hit.z_err;
 
     srhit.pe = hit.peshit;
+    srhit.plane = hit.plane;
 
-    // std::cout << "x:" << srhit.position.x 
-    //           << ", y:" << srhit.position.y 
-    //           << ", z:" << srhit.position.z << std::endl;
   }
+
+  void FillCRTTrack(const sbn::crt::CRTTrack &track,
+                  bool use_ts0,
+                  caf::SRCRTTrack &srtrack,
+                  bool allowEmpty) {
+
+    srtrack.time = (use_ts0 ? (float)track.ts0_ns : track.ts1_ns) / 1000.;
+
+    srtrack.hita.position.x = track.x1_pos;
+    srtrack.hita.position.y = track.y1_pos;
+    srtrack.hita.position.z = track.z1_pos;
+
+    srtrack.hita.position_err.x = track.x1_err;
+    srtrack.hita.position_err.y = track.y1_err;
+    srtrack.hita.position_err.z = track.z1_err;
+
+    srtrack.hita.plane = track.plane1;
+
+    srtrack.hitb.position.x = track.x2_pos;
+    srtrack.hitb.position.y = track.y2_pos;
+    srtrack.hitb.position.z = track.z2_pos;
+
+    srtrack.hitb.position_err.x = track.x2_err;
+    srtrack.hitb.position_err.y = track.y2_err;
+    srtrack.hitb.position_err.z = track.z2_err;
+
+    srtrack.hitb.plane = track.plane2;
+  }
+
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)
   {
@@ -57,10 +84,16 @@ namespace caf
   {
 
     srshower.producer = producer;
+    srshower.dEdx_plane1 = (shower.dEdx())[0];
+    srshower.dEdx_plane2 = (shower.dEdx())[1];
+    srshower.dEdx_plane3 = (shower.dEdx())[2];
+    srshower.energy_plane1 = (shower.Energy())[0];
+    srshower.energy_plane2 = (shower.Energy())[1];
+    srshower.energy_plane3 = (shower.Energy())[2];
+    srshower.dEdx   = double_to_float_vector( shower.dEdx() );
+    srshower.energy = double_to_float_vector( shower.Energy() );
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
-    srshower.dEdx     = double_to_float_vector(shower.dEdx());
-    srshower.energy   = double_to_float_vector(shower.Energy());
 
     // TO DO: work out conversion gap
     // It's sth like this but not quite. And will need to pass a simb::MCtruth object vtx position anyway.
@@ -96,6 +129,10 @@ namespace caf
       const TVector3 vertexTVec3{vertexPos.X(), vertexPos.Y(), vertexPos.Z()};
 
       srshower.conversion_gap = (shower.ShowerStart() - vertexTVec3).Mag();
+    }
+
+    if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
+      srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
   }
 
@@ -386,6 +423,7 @@ namespace caf
     for (unsigned id: particle.Daughters()) {
       srtrack.daughters.push_back(id);
     }
+    srtrack.ndaughters = srtrack.daughters.size();
 
     srtrack.parent = particle.Parent();
     srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
