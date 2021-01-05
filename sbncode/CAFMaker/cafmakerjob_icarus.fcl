@@ -82,8 +82,8 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-   pandoraTrackCRTHit:		@local::crthitmatch_sbnd
-   pandoraTrackCRTTrack: 	@local::crttrackmatch_sbnd
+   pandoraTrackCRTHit:		@local::crthitmatch_icarus
+   pandoraTrackCRTTrack: 	@local::crttrackmatch_icarus
    mcreco: @local::standard_mcreco
 }
   filters:{
