@@ -14,10 +14,15 @@ physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausSCECryo1
 
-physics.producers.pandoraTrackCRTHit.TpcTrackModuleLabel: pandoraSCETrack
-physics.producers.pandoraTrackCRTHit.T0Alg.TPCTrackLabel: pandoraSCETrack
-physics.producers.pandoraTrackCRTTrack.TpcTrackModuleLabel: pandoraSCETrack
-physics.producers.pandoraTrackCRTTrack.CrtTrackAlg.TPCTrackLabel: pandoraSCETrack
+physics.producers.pandoraTrackCRTHitCryo0.TpcTrackModuleLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackCRTHitCryo1.TpcTrackModuleLabel: pandoraTrackGausSCECryo1
+physics.producers.pandoraTrackCRTHitCryo0.T0Alg.TPCTrackLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackCRTHitCryo1.T0Alg.TPCTrackLabel: pandoraTrackGausSCECryo1
+
+physics.producers.pandoraTrackCRTTrackCryo0.TpcTrackModuleLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackCRTTrackCryo1.TpcTrackModuleLabel: pandoraTrackGausSCECryo1
+physics.producers.pandoraTrackCRTTrackCryo0.CrtTrackAlg.TPCTrackLabel: pandoraTrackGausSCECryo0
+physics.producers.pandoraTrackCRTTrackCryo1.CrtTrackAlg.TPCTrackLabel: pandoraTrackGausSCECryo1
 
 physics.producers.fmatchCryo0.PandoraProducer:    "pandoraGausSCECryo0"
 physics.producers.fmatchCryo0.TrackProducer:      "pandoraTrackGausSCECryo0"
