@@ -82,8 +82,10 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-   pandoraTrackCRTHit:		@local::crthitmatch_icarus
-   pandoraTrackCRTTrack: 	@local::crttrackmatch_icarus
+   pandoraTrackCRTHitCryo0:		@local::crthitmatch_icarus
+   pandoraTrackCRTHitCryo1:   @local::crthitmatch_icarus
+   pandoraTrackCRTTrackCryo0: @local::crttrackmatch_icarus
+   pandoraTrackCRTTrackCryo1: @local::crttrackmatch_icarus
    mcreco: @local::standard_mcreco
 }
   filters:{
@@ -96,7 +98,9 @@ physics:
  runprod: [ flashtrig, flashtrigfilter,
     fmatchCryo0, fmatchCryo1,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
-    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1, pandoraTrackCRTHit, pandoraTrackCRTTrack,
+    pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    pandoraTrackCRTHitCryo0, pandoraTrackCRTHitCryo1,
+    pandoraTrackCRTTrackCryo0, pandoraTrackCRTTrackCryo1,
     mycafmaker ]
 
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
@@ -123,6 +127,16 @@ physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
+
+physics.producers.pandoraTrackCRTHitCryo0.TpcTrackModuleLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackCRTHitCryo1.TpcTrackModuleLabel: pandoraTrackGausCryo1
+physics.producers.pandoraTrackCRTHitCryo0.T0Alg.TPCTrackLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackCRTHitCryo1.T0Alg.TPCTrackLabel: pandoraTrackGausCryo1
+
+physics.producers.pandoraTrackCRTTrackCryo0.TpcTrackModuleLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackCRTTrackCryo1.TpcTrackModuleLabel: pandoraTrackGausCryo1
+physics.producers.pandoraTrackCRTTrackCryo0.CrtTrackAlg.TPCTrackLabel: pandoraTrackGausCryo0
+physics.producers.pandoraTrackCRTTrackCryo1.CrtTrackAlg.TPCTrackLabel: pandoraTrackGausCryo1
 
 #services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"

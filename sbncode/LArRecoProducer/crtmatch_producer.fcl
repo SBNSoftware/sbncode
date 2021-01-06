@@ -29,10 +29,10 @@ crttrackmatch_sbnd: {
 crthitmatch_icarus: {
   module_type: CRTT0Matching
   CrtHitModuleLabel: crthit
-  TpcTrackModuleLabel: pandoraTrack
+  TpcTrackModuleLabel: pandoraTrackGaus
   T0Alg: {
     MinTrackLength: 10.
-    TPCTrackLabel: pandoraTrack
+    TPCTrackLabel: pandoraTrackGaus
     DistanceLimit: 10000
     TrackDirectionFrac: 0.5
   }
@@ -40,14 +40,14 @@ crthitmatch_icarus: {
 
 crttrackmatch_icarus: {
   module_type: CRTTrackMatching
-  TpcTrackModuleLabel: pandoraTrack
+  TpcTrackModuleLabel: pandoraTrackGaus
   CrtTrackModuleLabel: crttrack
   CrtTrackAlg: {
     SelectionMetric: angle
     MaxAngleDiff: 10000
     MaxDistance: -1 # not used
     MaxScore: -1 # not used
-    TPCTrackLabel: pandoraTrack
+    TPCTrackLabel: pandoraTrackGaus
   }
 
 }
