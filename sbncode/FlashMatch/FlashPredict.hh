@@ -45,6 +45,7 @@
 #include "TTree.h"
 #include "TFile.h"
 #include "TH1.h"
+#include "TSpline.h"
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
@@ -91,6 +92,8 @@ private:
                            std::vector<recob::OpHit> const& OpHits);
   bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   double hypoFlashX();
+  double hypoFlashX_splines();
+  double bissectSplines(double y0, TSpline3& spl);
   ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
                                     const art::Ptr<recob::PFParticle>& particle,
@@ -157,6 +160,7 @@ private:
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
+  TSpline3 rr_spl, pe_spl;
 
   std::vector<double> _pe_reco_v, _pe_hypo_v;
 
