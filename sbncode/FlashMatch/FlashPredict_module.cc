@@ -643,6 +643,8 @@ double FlashPredict::hypoFlashX()
   double rr_width = fDriftDistance / rr_means.size();
   // TODO: better to get an interpolation
   double rr_hypo_x = (rr_width/2.) + rr_bin * rr_width;
+  // TODO: better to have the weight being the width of a band
+  double rr_wgt = rr_means[rr_bin]/rr_spreads[rr_bin];
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
     return rr_hypo_x;
 
@@ -658,8 +660,9 @@ double FlashPredict::hypoFlashX()
   double ratio_width = fDriftDistance / pe_means.size();
   // TODO: better to get an interpolation
   double ratio_hypo_x = (ratio_width/2.) + ratio_bin * ratio_width;
-  // TODO: better return a weighted average
-  return (rr_spreads[rr_bin] < pe_spreads[ratio_bin]) ? rr_hypo_x : ratio_hypo_x;
+  // TODO: better to have the weight being the width of a band
+  double ratio_wgt = pe_means[ratio_bin]/pe_spreads[ratio_bin];
+  return (rr_hypo_x*rr_wgt + ratio_hypo_x*ratio_wgt ) / (rr_wgt + ratio_wgt );
 }
 
 
