@@ -34,9 +34,9 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_11_00
-sbnobj              v09_09_03
-sbndaq_artdaq_core  v0_07_02_of0
+larsoft             v09_12_00
+sbnobj              v09_09_04
+sbndaq_artdaq_core  v0_07_03_of0
 # For CAFAna
 srproxy          v00.17
 
