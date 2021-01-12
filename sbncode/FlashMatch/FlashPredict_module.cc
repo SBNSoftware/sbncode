@@ -350,6 +350,10 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
   _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
   _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
+  _flashmatch_nuslice_tree->Branch("scr_y", &_scr_y, "scr_y/D");
+  _flashmatch_nuslice_tree->Branch("scr_z", &_scr_z, "scr_z/D");
+  _flashmatch_nuslice_tree->Branch("scr_rr", &_scr_rr, "scr_rr/D");
+  _flashmatch_nuslice_tree->Branch("scr_ratio", &_scr_ratio, "scr_ratio/D");
 }
 
 
@@ -596,32 +600,24 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
   int isl = int(n_bins * (_charge_x / fDriftDistance));
   auto out = mf::LogWarning("FlashPredict");
 
-  if (dy_spreads[isl] > 0.) {
-    double term = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
-    if (term > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, term, out);
-    _score += term;
-    tcount++;
-  }
-  if (dz_spreads[isl] > 0.) {
-    double term = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
-    if (term > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, term, out);
-    _score += term;
-    tcount++;
-  }
-  if (rr_spreads[isl] > 0.) {
-    double term = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
-    if (term > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, term, out);
-    _score += term;
-    tcount++;
-  }
+  _scr_y = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
+  if (_scr_y > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, _scr_y, out);
+  _score += _scr_y;
+  tcount++;
+  _scr_z = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
+  if (_scr_z > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, _scr_z, out);    
+  _score += _scr_z;
+  tcount++;
+  _scr_rr = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
+  if (_scr_rr > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, _scr_rr, out);
+  _score += _scr_rr;
+  tcount++;
   if ((fSBND && fUseUncoatedPMT) ||
       (fICARUS && fUseOppVolMetric)) {
-    if (pe_spreads[isl] > 0.) {
-      double term = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
-      if (term > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, term, out);
-      _score += term;
-      tcount++;
-    }
+    _scr_ratio = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
+    if (_scr_ratio > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, _scr_ratio, out);
+    _score += _scr_ratio;
+    tcount++;
   }
   mf::LogDebug("FlashPredict")
     << "score:\t" << _score << "using " << tcount << " terms";

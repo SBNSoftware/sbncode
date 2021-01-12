@@ -171,7 +171,7 @@ private:
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?
   double _flash_time;
-  double _score;
+  double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x;
   int _evt, _run, _sub;
   unsigned icountPE = 0;
