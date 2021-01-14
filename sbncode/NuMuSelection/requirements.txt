@@ -1,9 +1,0 @@
-numpy
-scipy
-matplotlib
-uproot
-jupyter
-awkward
-xxhash
-lz4
-nbstripout
