@@ -54,3 +54,125 @@ void PimpHist(TH1* histo, Color_t color, Style_t linestyle, int linewidth, Style
   histo->SetMarkerSize(markersize);
 
 }
+
+
+// Legends
+//--------------------------------------------------
+void DrawSigBkgLegend(TH1* h1, char *name1, TH1* h2, char *name2){
+
+  TLegend *leg = new TLegend(.60,.60,.8,.8);
+  leg->AddEntry(h1, name1,"l");
+  leg->AddEntry(h2, name2,"l");
+  leg->SetBorderSize(0); //no border for legend
+  leg->SetFillColor(0);  //fill colour is white
+  leg->SetFillStyle(0);  //fill colour is white
+  leg->SetTextSize(0.04);
+  leg->Draw();
+
+}
+
+
+void DrawSigBkgIntLegend(TH1* h1, char *name1, double iSig, TH1* h2, char *name2, double iBac){
+
+  //double iRatio = iBac/iSig;
+
+  TLegend *leg = new TLegend(.60,.60,.8,.8);
+  leg->AddEntry(h1, name1,"l");
+  leg->AddEntry(h1, TString::Format("%.2f",iSig),"");
+  leg->AddEntry(h2, name2,"l");
+  leg->AddEntry(h2, TString::Format("%.2f",iBac),"");
+  //leg->AddEntry(h2, TString::Format("Ratio=%.2f",iRatio),"");
+  leg->SetBorderSize(0); //no border for legend                                                                                                                                                                                                                             
+  leg->SetFillColor(0);  //fill colour is white                                                                                                                                                                                                                             
+  leg->SetFillStyle(0);  //fill colour is white                                                                                                                                                                                                                             
+  leg->SetTextSize(0.04);
+  leg->Draw();
+
+}
+
+//--------------------------------------------------
+void DrawEffPurLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
+
+  TLegend *leg = new TLegend(.6,.62,.8,.74);
+  leg->AddEntry(g1, name1,"l");
+  leg->AddEntry(g2, name2,"l");
+  leg->SetBorderSize(0); //no border for legend
+  leg->SetFillColor(0);  //fill colour is white
+  leg->SetFillStyle(0);  //fill colour is white
+  leg->SetTextSize(0.04);
+  leg->Draw();
+
+}
+
+//--------------------------------------------------
+void DrawEffPurSMLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
+
+  TLegend *leg = new TLegend(.69,.61,.84,.81);
+  leg->AddEntry(g1, name1,"l");
+  leg->AddEntry(g2, name2,"l");
+  leg->SetBorderSize(0); //no border for legend
+  leg->SetFillColor(0);  //fill colour is white
+  leg->SetFillStyle(0);  //fill colour is white
+  leg->SetTextSize(0.06);
+  leg->Draw();
+
+}
+
+// Efficiency and purity graphs 
+//-----------------------------------------------------------------
+
+TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool effpur) {
+
+  //
+  // Make a ROC TGraph for the given signal and background histos
+  //
+
+  const int NBins = hSignal->GetNbinsX();
+
+  TString xTitle = hSignal->GetXaxis()->GetTitle();
+  TString yTitle = hSignal->GetYaxis()->GetTitle();
+
+  double eff[NBins], pur[NBins], val[NBins];
+  double sb[NBins], ssb[NBins];
+
+  // loop over bins to calculate eff and pur as functions of the bin
+  for(unsigned int i = 1; i <= (unsigned int)NBins; ++i) {
+    double allsig = hSignal   ->GetBinContent(i);
+    double selsig = hSelSignal->GetBinContent(i);
+    double selbac = hSelBack  ->GetBinContent(i);
+    /* double S = hSignal->Integral(i,NBins); */
+    /* double B = hBack  ->Integral(i,NBins); */
+
+    val[i-1] = hSignal->GetBinCenter(i);
+    double EFF = selsig;
+    double PUR = selsig;
+
+    if ( (selsig + selbac) > 0 ){
+      if ( allsig > 0 ) EFF = EFF/allsig;
+      PUR = PUR / (selsig + selbac);
+    }
+
+    eff[i-1] = EFF;
+    pur[i-1] = PUR;
+    if ( PUR > 1 || EFF > 1 ){
+      std::cout<< " >>> \n >>> \n>>> \n>>> \n>>> \n>>> \n>>> \n" << " >>> EFF "<< EFF << "\t PUR "<< PUR << std::endl;
+    }
+    
+  }
+
+  TString n = hSignal->GetName();
+  TGraph *graphPur= new TGraph(NBins,val,pur);
+  graphPur->SetName("SelPur_"+n);
+  graphPur->GetXaxis()->SetTitle(xTitle);
+  graphPur->GetYaxis()->SetTitle("Pur.");
+  TGraph *graphEff= new TGraph(NBins,val,eff);
+  graphEff->SetName("SelEff_"+n);
+  graphEff->GetXaxis()->SetTitle(xTitle);
+  graphEff->GetYaxis()->SetTitle("Eff.");
+
+  if ( effpur == 0 )
+    return graphEff;
+  else
+    return graphPur;
+
+}
