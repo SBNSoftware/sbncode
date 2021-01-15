@@ -26,4 +26,7 @@ namespace ana{
 
   extern const Cut kSlcHasFlashMatch;
   extern const Cut kSlcFlashMatchCut;
+
+  const Cut kContainedFD  = kFiducialVolumeFDCryo1 || kFiducialVolumeFDCryo2;
+
 } // namespace

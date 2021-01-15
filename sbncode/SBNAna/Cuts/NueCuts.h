@@ -21,9 +21,14 @@ extern const Cut kShowerDensityCut;
 extern const Cut kNueContainedND;
 extern const Cut kNueContainedFD;
 
-const Cut kNueCut = kRecoShower && kNueBasicCut && (kRecoShower_ConversionGap < 2.1);
-
 const Cut kPreNueSelND = kFiducialVolumeND && kSlcNuScoreCut && kSlcFlashMatchCut;
 const Cut kRecoNueSel = kRecoShower && kShowerEnergyCut;
 const Cut kFullNueSel = kNueTrackLenCut && kShowerConvGapCut && kShowerdEdxCut && kShowerDensityCut;
+
+// Specific FD cuts although they're currenly basically the same as for the ND
+const Cut kNueFlashScoreFDCut   = kSlcFlashMatchCut;
+const Cut kNuePandoraScoreFDCut = kSlcNuScoreCut;
+const Cut kRecoShowerFD = kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kNueFD        = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShowerFD;
+
 }

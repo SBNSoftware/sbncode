@@ -55,21 +55,34 @@ const Binning kFlashBinning     = Binning::Simple(40,-6.f,34.f);
 
 // // In this example, we are making the following Spectra
 std::vector<PlotDef> plots = 
-  {{"count",      "Number of slices",        Binning::Simple(3,0,3), kCounting},
-   {"bestdedx",   "Best plane dEdx (MeV)",   kDedxBinning,     kRecoShower_BestdEdx},  
-   {"energy",     "Shower energy (MeV)",     kNueEnergyBinning, kRecoShower_Energy},
-   {"length",     "Length (cm)",             kLengthBinning,    kRecoShower_Length},
-   {"nuscore",    "Pandora #nu score",       kBDTBinning,       kSlcNuScore},
-   {"flashscore", "Flash score",             kFlashBinning,     kSlcFlashScore},
-   {"truthenergy","True #nu energy (GeV)",   kTruthLowEnergyBinning, kTruthEnergy},
+  {{"count",      "Number of slices",             Binning::Simple(3,0,3), kCounting},
+   {"openangle",  "Opening angle",                kOpenAngleBinning,      kRecoShower_OpenAngle},
+   {"startx",     "Shower start position X (cm)", kPositionXFDBinning,    kRecoShower_StartX},
+   {"starty",     "Shower start position Y (cm)", kPositionYFDBinning,    kRecoShower_StartY},
+   {"startz",     "Shower start position Z (cm)", kPositionZFDBinning,    kRecoShower_StartZ},
+   {"endx",       "Shower end position X (cm)",   kPositionXFDBinning,    kRecoShower_EndX},
+   {"endy",       "Shower end position Y (cm)",   kPositionYFDBinning,    kRecoShower_EndY},
+   {"endz",       "Shower end position Z (cm)",   kPositionZFDBinning,    kRecoShower_EndZ},
+   {"vtxx",       "Slice vertex X (cm)",          kPositionXFDBinning,    kSlcVtxX},
+   {"vtxy",       "Slice vertes Y (cm)",          kPositionYFDBinning,    kSlcVtxY},
+   {"vtxz",       "Slice vertex Z (cm)",          kPositionZFDBinning,    kSlcVtxZ},
+   {"conversion", "Conversion gap (cm)",          kGapBinning,            kRecoShower_ConversionGap},  
+   {"bestdedx",   "Best plane dEdx (MeV)",        kDedxBinning,           kRecoShower_BestdEdx},  
+   {"bestenergy", "Best plane energy (MeV)",      kEnergyBinning,         kRecoShower_BestEnergy},  
+   {"density",    "Shower density (MeV/cm)",      kDensityBinning,        kRecoShower_Density},
+   {"energy",     "Shower energy (MeV)",          kNueEnergyBinning,      kRecoShower_Energy},
+   {"length",     "Length (cm)",                  kLengthBinning,         kRecoShower_Length},
+   {"nuscore",    "Pandora #nu score",            kBDTBinning,            kSlcNuScore},
+   {"flashscore", "Flash score",                  kFlashBinning,          kSlcFlashScore},
+   {"truthenergy","True #nu energy (GeV)",        kTruthLowEnergyBinning, kTruthEnergy},
  };
 
 std::vector<PlotDefSpill> plots_spill =
   {{"crtx",   "CRT Hit Position X (cm)", kCRTXFDBinning, kCRTHitX},
   {"crty",    "CRT Hit Position Y (cm)", kCRTYFDBinning, kCRTHitY},
   {"crtz",    "CRT Hit Position Z (cm)", kCRTZFDBinning, kCRTHitZ},
-  {"crttime", "CRT Hit Time (#mus)", kTimeBinning, kCRTHitTimeFD},
-  {"crtpe",   "CRT PE", kPEBinning, kCRTHitPE}
+  {"crttime", "CRT Hit Time (#mus)",     kTimeBinning,   kCRTHitTimeFD},
+  {"crtpe",   "CRT PE",                  kPEBinning,     kCRTHitPE}
 };
 
 // Selection Struc
@@ -89,26 +102,39 @@ struct SelDefSpill
   int color = kBlack;
 };
 
-const Cut kNuECC  = kIsNue && !kIsNC;
-const Cut kNuMuCC = kIsNumu && !kIsNC;
-const Cut kNC     = kIsNC;
-const Cut kTotal  = kNoCut; // Get the total and substract everything else when plotting
+const Cut kNuECC    = kIsNue && !kIsNC;
+const Cut kNuMuCC   = kIsNumu && !kIsNC;
+const Cut kNC       = kIsNC;
+const Cut kTotal    = kNoCut; // Get the total and substract everything else when plotting
 const Cut kIsCosmic = !kHasNu;
-const Cut kOtherNu = kHasNu && !(kNuECC || kNuMuCC || kNC);
+const Cut kOtherNu  = kHasNu && !(kNuECC || kNuMuCC || kNC);
 
 // Step by step cuts
-const Cut kContained = kFiducialVolumeFDCryo1;
-const Cut kScoresCut = kSlcFlashMatchCut && kSlcNuScoreCut;
-const Cut kFDRecoCut = kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kFullFDCut = kContained && kScoresCut && kFDRecoCut;
+const Cut kContained = kContainedFD;
+const Cut kRecoCut   = kRecoShowerFD;
+const Cut kFullCut   = kNueFD;
+
+// N-1 cuts
+// // const Cut kAllCuts      = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Contained  = kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShowerFD;
+const Cut kN1Flash      = kContained && kNuePandoraScoreFDCut && kRecoShowerFD;
+const Cut kN1Pandora    = kContained && kNueFlashScoreFDCut && kRecoShowerFD;
+const Cut kN1Reco       = kContained && kNueFlashScoreFDCut && kNuePandoraScoreFDCut;
+const Cut kN1RecoShower = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1NumShowers = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Dedx       = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1ConvGap    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1TrkLen     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Density    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerEnergyCut;
+const Cut kN1Energy     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut;
 
 std::vector<SelDef> types =
 {
-  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNuECC,   color_nue},
-  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNuMuCC,  color_numu},
-  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,      color_nc},
-  {"other", "Other",   kSlcIsRecoNu&&kOtherNu, color_other},
-  {"total", "Total",   kSlcIsRecoNu&&kTotal,   color_other},
+  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNuECC,     color_nue},
+  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNuMuCC,    color_numu},
+  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,        color_nc},
+  {"other", "Other",   kSlcIsRecoNu&&kOtherNu,   color_other},
+  {"total", "Total",   kSlcIsRecoNu&&kTotal,     color_other},
   {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
 };
 
@@ -116,13 +142,32 @@ std::vector<SelDef> sels ={
   {"nocut",     "No cut",             kNoCut,            kBlack},
   {"cont",      "Containment cut",    kContained,        kBlack},
   {"flash",     "Flash score cut",    kSlcFlashMatchCut, kBlack},
-  {"pandnu",    "Neutrino score cut", kSlcNuScoreCut,    kBlack},  
-  {"scores",    "Scores cut",         kScoresCut,        kBlack},
-  {"fdrecocut", "Basic FD reco cut",  kFDRecoCut,        kBlack},
-  {"cont_flash",  "Containment and flash score",    kContained && kSlcFlashMatchCut, kBlack},
-  {"cont_pandnu", "Containment and neutrino score", kContained && kSlcNuScoreCut,    kBlack},
-  {"cont_scores", "Containment and scores",         kContained && kScoresCut,        kBlack},
-  {"everything",  "Full cut", kFullFDCut, kBlack}
+  {"pandnu",    "Neutrino score cut", kSlcNuScoreCut,    kBlack},
+  // Subcuts that go into the fd reco cut
+  {"recoshw",   "Reco shower cut",    kRecoShower,       kBlack},
+  {"nshws",     "Showers number",     kNueNumShowersCut, kBlack},
+  {"dedx",      "DEdx cut",           kShowerdEdxCut,    kBlack},
+  {"convgap",   "Conversion gap cut", kShowerConvGapCut, kBlack},
+  {"trklen",    "Track lenght cut",   kNueTrackLenCut,   kBlack},
+  {"density",   "Shower density cut", kShowerDensityCut, kBlack},
+  {"energy",    "Shower energy cut",  kShowerEnergyCut,  kBlack},
+  {"recocut",   "Reco cut",           kRecoCut,          kBlack},
+  {"cont_flash",  "Cont and flash score",    kContained && kSlcFlashMatchCut, kBlack},
+  {"cont_pandnu", "Cont and neutrino score", kContained && kSlcNuScoreCut,    kBlack},
+  {"cont_fdreco", "Cont and fd reco",        kContained && kFDRecoCut,        kBlack},
+  {"everything",  "Full selection cut",      kFullCut,                        kBlack},
+  // N-1 cuts
+  {"N1cont",    "N1 containment",    kN1Contained,  kBlack},
+  {"N1flash",   "N1 flash score",    kN1Flash,      kBlack},
+  {"N1pandnu",  "N1 neutrino score", kN1Pandora,    kBlack},
+  {"N1recocut", "N1 reco cut",       kN1Reco,       kBlack},
+  {"N1recoshw", "N1 reco shower",    kN1RecoShower, kBlack},
+  {"N1nshws",   "N1 showers number", kN1NumShowers, kBlack},
+  {"N1dedx",    "N1 dEdx",           kN1Dedx,       kBlack},
+  {"N1convgap", "N1 conversion gap", kN1ConvGap,    kBlack},
+  {"N1trklen",  "N1 track length",   kN1TrkLen,     kBlack},
+  {"N1density", "N1 density",        kN1Density,    kBlack},
+  {"N1energy",  "N1 energy",         kN1Energy,     kBlack}
   };
 
 std::vector<SelDefSpill> sels_spill =
