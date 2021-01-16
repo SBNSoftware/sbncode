@@ -114,7 +114,7 @@ const Cut kContained = kContainedFD;
 const Cut kRecoCut   = kRecoShowerFD;
 const Cut kFullCut   = kNueFD;
 
-// N-1 cuts
+// N-1 cuts: apply all except one cut
 // // const Cut kAllCuts      = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
 const Cut kN1Contained  = kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShowerFD;
 const Cut kN1Flash      = kContained && kNuePandoraScoreFDCut && kRecoShowerFD;
@@ -139,35 +139,32 @@ std::vector<SelDef> types =
 };
 
 std::vector<SelDef> sels ={
-  {"nocut",     "No cut",             kNoCut,            kBlack},
-  {"cont",      "Containment cut",    kContained,        kBlack},
-  {"flash",     "Flash score cut",    kSlcFlashMatchCut, kBlack},
-  {"pandnu",    "Neutrino score cut", kSlcNuScoreCut,    kBlack},
+  {"nocut",      "No cut",               kNoCut,            kBlack},
+  {"cont",       "Containment",          kContained,        kBlack},
+  {"flash",      "Flash score",          kSlcFlashMatchCut, kBlack},
+  {"pandnu",     "Neutrino score",       kSlcNuScoreCut,    kBlack},
   // Subcuts that go into the fd reco cut
-  {"recoshw",   "Reco shower cut",    kRecoShower,       kBlack},
-  {"nshws",     "Showers number",     kNueNumShowersCut, kBlack},
-  {"dedx",      "DEdx cut",           kShowerdEdxCut,    kBlack},
-  {"convgap",   "Conversion gap cut", kShowerConvGapCut, kBlack},
-  {"trklen",    "Track lenght cut",   kNueTrackLenCut,   kBlack},
-  {"density",   "Shower density cut", kShowerDensityCut, kBlack},
-  {"energy",    "Shower energy cut",  kShowerEnergyCut,  kBlack},
-  {"recocut",   "Reco cut",           kRecoCut,          kBlack},
-  {"cont_flash",  "Cont and flash score",    kContained && kSlcFlashMatchCut, kBlack},
-  {"cont_pandnu", "Cont and neutrino score", kContained && kSlcNuScoreCut,    kBlack},
-  {"cont_fdreco", "Cont and fd reco",        kContained && kFDRecoCut,        kBlack},
-  {"everything",  "Full selection cut",      kFullCut,                        kBlack},
+  {"recoshw",    "Reconstructed shower", kRecoShower,       kBlack},
+  {"nshws",      "Number of showers",    kNueNumShowersCut, kBlack},
+  {"dedx",       "Shower dE/dx",         kShowerdEdxCut,    kBlack},
+  {"convgap",    "Conversion gap",       kShowerConvGapCut, kBlack},
+  {"trklen",     "Track lenght",         kNueTrackLenCut,   kBlack},
+  {"density",    "Shower density",       kShowerDensityCut, kBlack},
+  {"energy",     "Shower energy",        kShowerEnergyCut,  kBlack},
+  {"recocut",    "Reconstruction (all)", kRecoCut,          kBlack},
+  {"everything", "Full selection",       kFullCut,          kBlack},
   // N-1 cuts
-  {"N1cont",    "N1 containment",    kN1Contained,  kBlack},
-  {"N1flash",   "N1 flash score",    kN1Flash,      kBlack},
-  {"N1pandnu",  "N1 neutrino score", kN1Pandora,    kBlack},
-  {"N1recocut", "N1 reco cut",       kN1Reco,       kBlack},
-  {"N1recoshw", "N1 reco shower",    kN1RecoShower, kBlack},
-  {"N1nshws",   "N1 showers number", kN1NumShowers, kBlack},
-  {"N1dedx",    "N1 dEdx",           kN1Dedx,       kBlack},
-  {"N1convgap", "N1 conversion gap", kN1ConvGap,    kBlack},
-  {"N1trklen",  "N1 track length",   kN1TrkLen,     kBlack},
-  {"N1density", "N1 density",        kN1Density,    kBlack},
-  {"N1energy",  "N1 energy",         kN1Energy,     kBlack}
+  {"N1cont",    "N1 Containment",          kN1Contained,  kBlack},
+  {"N1flash",   "N1 Flash score",          kN1Flash,      kBlack},
+  {"N1pandnu",  "N1 Neutrino score",       kN1Pandora,    kBlack},
+  {"N1recoshw", "N1 Reconstructed shower", kN1RecoShower, kBlack},
+  {"N1nshws",   "N1 Number of showers",    kN1NumShowers, kBlack},
+  {"N1dedx",    "N1 Shower dE/dx",         kN1Dedx,       kBlack},
+  {"N1convgap", "N1 Conversion gap",       kN1ConvGap,    kBlack},
+  {"N1trklen",  "N1 Track length",         kN1TrkLen,     kBlack},
+  {"N1density", "N1 Shower density",       kN1Density,    kBlack},
+  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack},
+  {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack}
   };
 
 std::vector<SelDefSpill> sels_spill =
