@@ -1,4 +1,13 @@
-// Make a few spectra with different cuts.
+///////////////////////////////////////////////////////////////////////
+// Author: Diana Patricia Mendez                                     //
+// Contact: dmendezme@bnl.gov                                        //
+// Last edited: January 15 2021                                      //   
+//                                                                   // 
+// Makes spectra of the variables defined in helper with specific    // 
+// cuts applied to the sample(s).                                    //
+// Takes a CAF from where to read the data and outputs a ROOT file   //
+// containing the resulted histograms                                //
+///////////////////////////////////////////////////////////////////////
 
 #include "CAFAna/Core/SpectrumLoader.h"
 #include "CAFAna/Core/Spectrum.h"

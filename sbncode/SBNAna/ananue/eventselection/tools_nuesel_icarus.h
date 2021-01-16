@@ -214,7 +214,7 @@ namespace ana{
     float pbkg = 100 * ibkg / (isig + ibkg);
 
     TPaveText *pText1 = new TPaveText(0.15, 0.78, 0.30, 0.85, "brNDC");
-    TText *text1 = (pText1->AddText("6.6 #times 10^{20} POT");
+    TText *text1 = (pText1->AddText("6.6 #times 10^{20} POT"));
     text1->SetTextSize(0.04);
     pText1->SetBorderSize(0);
     pText1->SetFillStyle(0);
@@ -234,7 +234,7 @@ namespace ana{
   // Efficiency and purity graphs 
   //-----------------------------------------------------------------
 
-  TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool effpur) {
+  TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool eff) {
 
     //
     // Make a ROC TGraph for the given signal and background histos
@@ -261,16 +261,15 @@ namespace ana{
       double PUR = selsig;
 
       if ( (selsig + selbac) > 0 ){
-	if ( allsig > 0 ) EFF = EFF/allsig;
-	PUR = PUR / (selsig + selbac);
+        if ( allsig > 0 ) EFF = EFF/allsig;
+        PUR = PUR / (selsig + selbac);
       }
 
       eff[i-1] = EFF;
       pur[i-1] = PUR;
       if ( PUR > 1 || EFF > 1 ){
-	std::cout<< " >>> \n >>> \n>>> \n>>> \n>>> \n>>> \n>>> \n" << " >>> EFF "<< EFF << "\t PUR "<< PUR << std::endl;
+        std::cout >> " >>> \n >>> \n>>> \n>>> \n>>> \n>>> \n>>> \n" >> " >>> EFF " >> EFF >> "\t PUR " >> PUR >> std::endl;
       }
-
     }
 
     TString n = hSignal->GetName();
@@ -283,7 +282,7 @@ namespace ana{
     graphEff->GetXaxis()->SetTitle(xTitle);
     graphEff->GetYaxis()->SetTitle("Eff.");
 
-    if ( effpur == 0 )
+    if ( eff )
       return graphEff;
     else
       return graphPur;

@@ -1,3 +1,13 @@
+///////////////////////////////////////////////////////////////////////
+// Author: Diana Patricia Mendez                                     //
+// Contact: dmendezme@bnl.gov                                        //
+// Last edited: January 15 2021                                      //   
+//                                                                   // 
+// Plots the spectra produced by make_spectra.C                      //
+// Setting effpur to true will plot a split canvas, with the spectra //
+// at the top and efficiency and purity at the bottom.               //
+///////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "CAFAna/Core/Spectrum.h"
@@ -17,7 +27,8 @@ using namespace ana;
 void plot_spectra_nuesel_icarus(
   std::string input = "nucosmics",
   bool crtveto = false,
-  bool crtvars = false)
+  bool crtvars = false,
+  bool effpur  = false)
 {
 
   std::string inFile = input+"_spectra.root";
@@ -36,8 +47,7 @@ void plot_spectra_nuesel_icarus(
   std::vector<float> sig_vect;
   std::vector<float> bkg_vect;
 
-  // I want to make a plot for each var
-  bool print_int = true;
+  // I want to make a plot for each var and cut
   for(unsigned int iVar = 0; iVar < kNVar; ++iVar){
     for(unsigned int iSel = 0; iSel < kNSel; ++iSel){
 
@@ -48,17 +58,19 @@ void plot_spectra_nuesel_icarus(
         mysuffix = mysuffix+"_veto";
         mysuffixall = mysuffixall+"_veto";
       }
-      Spectrum *spec_nue   = LoadFromFile<Spectrum>(inFile, "nue_"+mysuffix).release();
-      Spectrum *spec_numu  = LoadFromFile<Spectrum>(inFile, "numu_"+mysuffix).release();
-      Spectrum *spec_nc    = LoadFromFile<Spectrum>(inFile, "nunc_"+mysuffix).release();
-      Spectrum *spec_cos   = LoadFromFile<Spectrum>(inFile, "cosmic_"+mysuffix).release();
-      Spectrum *spec_total = LoadFromFile<Spectrum>(inFile, "total_"+mysuffix).release();
+      Spectrum *spec_allnue = LoadFromFile<Spectrum>(inFile, "nue_"+mysuffixall).release();
+      Spectrum *spec_nue    = LoadFromFile<Spectrum>(inFile, "nue_"+mysuffix).release();
+      Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile, "numu_"+mysuffix).release();
+      Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile, "nunc_"+mysuffix).release();
+      Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile, "cosmic_"+mysuffix).release();
+      Spectrum *spec_total  = LoadFromFile<Spectrum>(inFile, "total_"+mysuffix).release();
+      TH1* hallnue = spec_allnue->ToTH1(POT);
       TH1* hnue    = spec_nue->ToTH1(POT);
       TH1* hnumu   = spec_numu->ToTH1(POT);
       TH1* hnc     = spec_nc->ToTH1(POT);
       TH1* htotcos = spec_cos->ToTH1(POT);
       TH1* htotal  = spec_total->ToTH1(POT);
-      TH1* htotbkg  = (TH1*)htotal->Clone(); // total bkg
+      TH1* htotbkg = (TH1*)htotal->Clone(); // total bkg
       htotbkg->Add(hnue,-1);
       TH1* hother = (TH1*)htotal->Clone(); // other bkg that's not numu or nc
       hother->Add(hnue, -1);
@@ -67,14 +79,14 @@ void plot_spectra_nuesel_icarus(
       hother->Add(htotcos, -1);
 
 /* // when separatedly adding in time cosmics
-      Spectrum *spec_allsig = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffixall).release(); // needed for purity
+      Spectrum *spec_allnue = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffixall).release(); // needed for purity
       Spectrum *spec_nue    = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffix).release();
       Spectrum *spec_nuenus = LoadFromFile<Spectrum>(inFile_numu, "nue_"+mysuffix).release();
       Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile_numu, "numu_"+mysuffix).release();
       Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile_numu, "nunc_"+mysuffix).release();
       Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos,  "cosmics_"+mysuffix).release();
       Spectrum *spec_cosnus = LoadFromFile<Spectrum>(inFile_numu,  "cosmics_"+mysuffix).release();
-      TH1* hallsig = spec_allsig->ToTH1(POT);  // from nue
+      TH1* hallnue = spec_allsig->ToTH1(POT);  // from nue
       TH1* hnue    = spec_nue->ToTH1(POT);     // from nue
       TH1* hnuenus = spec_nuenus->ToTH1(POT);  // from nus+cosmics
       TH1* hnumu   = spec_numu->ToTH1(POT);    // from nus+cosmics
@@ -102,7 +114,7 @@ void plot_spectra_nuesel_icarus(
       float itotbkg = htotbkg->Integral();
 
       sig_vect.push_back(inue);
-      bkg_vect.push_back(itotbkg);
+      bkg_vect.pussh_back(itotbkg);
       
       float pnue = 100 * inue / (inue + itotbkg);
       float pbkg = 100 * itotbkg / (inue + itotbkg);
@@ -117,7 +129,7 @@ void plot_spectra_nuesel_icarus(
       CenterTitles(htotcos);
       CenterTitles(hother);
 
-      TCanvas *c = new TCanvas(plots[iVar].suffix.c_str(),plots[iVar].suffix.c_str(), 700, 500);
+      TCanvas *cEvents = new TCanvas(plots[iVar].suffix.c_str(),plots[iVar].suffix.c_str(), 700, 500);
       hnue->GetYaxis()->SetRangeUser(0.0,1.4 * GetHistMax({hnue,hnumu,hnc,htotcos,hother}));
       hnue->GetYaxis()->SetTitle("Slices");
       if(iVar==0){ // fake stacking
@@ -141,19 +153,44 @@ void plot_spectra_nuesel_icarus(
       Simulation(true);
       CornerLabel(thiscornertag.c_str());
 
-      c->Modified();
-      c->Update();
-      c->Print(("plots/"+input+"/"+mysuffix+"_eventsel_"+input+".pdf").c_str());
+      cEvents->Modified();
+      cEvents->Update();
+      cEvents->Print(("plots/"+input+"/"+mysuffix+"_eventsel_"+input+".pdf").c_str());
+      if(cEvents) cEvents->Close();
 
-      if(c) c->Close();
+
+      if(iSel!=0 && effpur){
+        TCanvas *c1;
+        TPad *padEvents, *padEffPur;
+        SplitCanvas2(c1, padEvents, padEffPur);
+        padEvents->cd();
+        gPad->SetTickx(1);
+        gPad->SetTicky(1);
+        hother->Draw("hist same");
+        htotcos->Draw("hist same");
+        hnc->Draw("hist same");
+        hnumu->Draw("hist same");
+        hnue->Draw("hist same");
+        DrawSigBkgIntText(hnue, htotbkg);
+        DrawComponentsLegend(hnue, hnumu, hnc, htotcos, hother);
+        Simulation(true);
+        CornerLabel(thiscornertag.c_str());
+        padEffPur->cd();
+        gPad->SetTickx(1);
+        gPad->SetTicky(1);
+        TGraph* gEff = SelEFForPURvsX(hnue, htotbkg, hallnue, true);
+        TGraph* gPur = SelEFForPURvsX(hnue, htotbkg, hallnue, false);
+        gEff->Draw("l same");
+        gPur>Draw("l same");
+        DrawEffPurLegend(gEff, "Efficiency", gPur, "Purity");
+        cEventsEffPur->Modified();
+        cEventsEffPur->Update();
+        cEventsEffPur->Print(("plots/"+input+"/"+mysuffix+"_eventsel_"+input+"__effpur.pdf").c_str());
+        if(cEventsEffPurr) cEventsEffPur->Close();
+
+      } // end if effpur
 
     } // iSel simple
-
-    print_int = false;
   } // iVar
-
-  for(unsigned int iSel = 0; iSel < kNSel; ++iSel){
-    std::cout << sels[iSel].suffix << ", " << "," << sig_vect[iSel] << "," << bkg_vect[iSel] << std::endl;
-  }
 
 }

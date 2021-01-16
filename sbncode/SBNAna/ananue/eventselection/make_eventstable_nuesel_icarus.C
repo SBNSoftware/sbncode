@@ -1,3 +1,13 @@
+///////////////////////////////////////////////////////////////////////
+// Author: Diana Patricia Mendez                                     //
+// Contact: dmendezme@bnl.gov                                        //
+// Last edited: January 15 2021                                      //   
+//                                                                   // 
+// Makes summary event count tables from the spectra produced by     //
+// make_spectra.C                                                    //
+// Setting N1table to true will make a table of the N1 cuts only     //
+///////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include "CAFAna/Core/Spectrum.h"
@@ -97,7 +107,7 @@ void plot_eventstable_nuesel_icarus(bool N1table=false)
     float inue    = hnue->Integral();
     float inumu   = hnumu->Integral();
     float inc     = hnc->Integral();
-    float icos    = hnc->Integral();
+    float icos    = htotcos->Integral();
     float iother  = hother->Integral();
     float itotbkg = htotbkg->Integral();
     float itotal  = htotal->Integral();
@@ -120,6 +130,10 @@ void plot_eventstable_nuesel_icarus(bool N1table=false)
   }
 
   printTableHeader();
+  if(N1table){
+    // Always print the no cut result for reference
+    printEventsLine(cutname, events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
+  }
   for(int iSel = initLoop; iSel < endLoop; ++iSel){
     std::string cutname = sels[iSel].label;
     printEventsLine(cutname, events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
