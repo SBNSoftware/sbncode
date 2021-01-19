@@ -392,10 +392,14 @@ namespace ana
     // values to the physical range where necessary.
     double penalty = 0;
     for(unsigned int i = 0; i < fVars.size(); ++i){
-      penalty += fVars[i]->Penalty(pars[i], fCalc);
+      const double x = pars[i];
+      if(isinf(x) || isnan(x)) continue; // DecodePars() should have warned
+      penalty += fVars[i]->Penalty(x, fCalc);
     }
     for(unsigned int j = 0; j < fSysts.size(); ++j){
-      penalty += fSysts[j]->Penalty(pars[fVars.size()+j]);
+      const double x = pars[fVars.size()+j];
+      if(isinf(x) || isnan(x)) continue; // DecodePars() should have warned
+      penalty += fSysts[j]->Penalty(x);
     }
 
     if(fNEval%1000 == 0) std::cout << fNEval << ": EXPT chi2 = " << fExpt->ChiSq(fCalc, fShifts) << "; penalty = " << penalty << std::endl;
