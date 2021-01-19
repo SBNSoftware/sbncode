@@ -99,6 +99,16 @@ namespace ana
     const double y0 = ws[i].second[u.i0];
     const double y1 = ws[i].second[u.i1];
 
+    if(isinf(y0) || isnan(y0) || isinf(y1) || isnan(y1)){
+      std::cout << "Bad weight for syst. This event will not be weighted! "
+                << ShortName()
+                << " index " << u.i0 << " -> " << y0 << ", "
+                << " index " << u.i1 << " -> " << y1
+                << std::endl;
+      return;
+    }
+
+
     weight *= u.w0*y0 + u.w1*y1;
   }
 
