@@ -25,8 +25,8 @@ Style_t line_nc     = kDashed;
 Style_t line_other  = kDotted;
 Style_t line_cos    = kSolid;
 
-// These are examples of useful structs to
-// use when making a bunch of Spectra
+// These are examples of useful structs to making a bunch of Spectra
+// Plot structure
 struct PlotDef
 {
   std::string suffix = "";
@@ -43,6 +43,24 @@ struct PlotDefSpill
   SpillMultiVar var = kCRTHitX;
 };
 
+// Selection structure
+struct SelDef
+{
+  std::string suffix = "";
+  std::string label = "";
+  Cut cut = kNoCut;
+  int color = kBlack;
+};
+
+struct SelDefSpill
+{
+  std::string suffix = "";
+  std::string label = "";
+  SpillCut cut = kNoSpillCut;
+  int color = kBlack;
+};
+
+// Define all the variables and cuts first, including binnings
 const Binning kEnergyBinning    = Binning::Simple(40,0.,3000.); // to define
 const Binning kDedxBinning      = Binning::Simple(20,0.,10); // to define
 const Binning kGapBinning       = Binning::Simple(20,0.,10);
@@ -53,8 +71,105 @@ const Binning kPEBinning        = Binning::Simple(60,0.,600);
 const Binning kTimeBinning      = Binning::Simple(155,-1550.,1550.);
 const Binning kFlashBinning     = Binning::Simple(40,-6.f,34.f);
 
-// // In this example, we are making the following Spectra
-std::vector<PlotDef> plots = 
+const Cut kNueCC    = kIsNue && !kIsNC;
+const Cut kNumuCC   = kIsNumu && !kIsNC;
+const Cut kNC       = kIsNC;
+const Cut kTotal    = kNoCut; // Get the total and substract everything else when plotting
+const Cut kIsCosmic = !kHasNu;
+
+// Step by step cuts
+const Cut kContained = kContainedFD;
+const Cut kRecoCut   = kRecoShowerFD;
+const Cut kFullCut   = kNueFD;
+
+// N-1 cuts: apply all except one cut
+// // AllCuts = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Contained  = kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShowerFD;
+const Cut kN1Flash      = kContained && kNuePandoraScoreFDCut && kRecoShowerFD;
+const Cut kN1Pandora    = kContained && kNueFlashScoreFDCut && kRecoShowerFD;
+const Cut kN1Reco       = kContained && kNueFlashScoreFDCut && kNuePandoraScoreFDCut;
+const Cut kN1RecoShower = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1NumShowers = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Dedx       = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1ConvGap    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1TrkLen     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kShowerDensityCut && kShowerEnergyCut;
+const Cut kN1Density    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerEnergyCut;
+const Cut kN1Energy     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut;
+
+const SpillCut kNueCCSpill  = kIsNueSpill && !kIsNCSpill;
+const SpillCut kNumuCCSpill = kIsNumuSpill && !kIsNCSpill;
+const SpillCut kNCSpill     = kIsNCSpill;
+const SpillCut kTotalSpill  = kNoSpillCut;
+const SpillCut kIsCosmic    = kIsCosmicSpill;
+
+const SpillCut kContainedSpill([](const caf::SRSpillProxy* sr) {
+
+  unsigned int counter(0);
+  for (auto const& slc : sr->slc) {
+    if (slc.tmatch.index < 0)
+      continue
+    if (kContained(&slc))
+      ++counter;
+  }
+
+  return counter;
+});
+
+const SpillCut kFlashMatchSpillCut([](const caf::SRSpillProxy* sr) {
+
+  unsigned int counter(0);
+  for (auto const& slc : sr->slc) {
+    if (slc.tmatch.index < 0)
+      continue
+    if (kSlcFlashMatchCut(&slc))
+      ++counter;
+  }
+
+  return counter;
+});
+
+const SpillCut kNuScoreSpillCut([](const caf::SRSpillProxy* sr) {
+
+  unsigned int counter(0);
+  for (auto const& slc : sr->slc) {
+    if (slc.tmatch.index < 0)
+      continue
+    if (kSlcNuScore(&slc))
+      ++counter;
+  }
+
+  return counter;
+});
+
+const SpillCut kRecoSpillCut([](const caf::SRSpillProxy* sr) {
+
+  unsigned int counter(0);
+  for (auto const& slc : sr->slc) {
+    if (slc.tmatch.index < 0)
+      continue
+    if (kRecoCut(&slc))
+      ++counter;
+  }
+
+  return counter;
+});
+
+const SpillCut kFullSpillCut([](const caf::SRSpillProxy* sr) {
+
+  unsigned int counter(0);
+  for (auto const& slc : sr->slc) {
+    if (slc.tmatch.index < 0)
+      continue
+    if (kFullCut(&slc))
+      ++counter;
+  }
+
+  return counter;
+});
+
+// ----------------------------------------------------------------------------------------------
+// Plots
+std::vector<PlotDef> plots_slice = 
   {{"count",      "Number of slices",             Binning::Simple(3,0,3), kCounting},
    {"openangle",  "Opening angle",                kOpenAngleBinning,      kRecoShower_OpenAngle},
    {"startx",     "Shower start position X (cm)", kPositionXFDBinning,    kRecoShower_StartX},
@@ -77,7 +192,13 @@ std::vector<PlotDef> plots =
    {"truthenergy","True #nu energy (GeV)",        kTruthLowEnergyBinning, kTruthEnergy},
  };
 
-std::vector<PlotDefSpill> plots_spill =
+std::vector<PlotDef> plots_spill = 
+  {{"count",        "Number of spills", Binning::Simple(3,0,3), kSpillCounting},
+  { "nuenergy",     "True Neutrino Energy (GeV)", kEnergyBinningGeV, kNuEnergy },
+  { "leptonenergy", "True Lepton Energy (GeV)",   kEnergyBinningGeV, kLeptonEnergy }
+ };
+
+std::vector<PlotDefSpill> crtplots_spill =
   {{"crtx",   "CRT Hit Position X (cm)", kCRTXFDBinning, kCRTHitX},
   {"crty",    "CRT Hit Position Y (cm)", kCRTYFDBinning, kCRTHitY},
   {"crtz",    "CRT Hit Position Z (cm)", kCRTZFDBinning, kCRTHitZ},
@@ -85,60 +206,29 @@ std::vector<PlotDefSpill> plots_spill =
   {"crtpe",   "CRT PE",                  kPEBinning,     kCRTHitPE}
 };
 
-// Selection Struc
-struct SelDef
+// ----------------------------------------------------------------------------------------------
+// Interaction types
+std::vector<SelDef> types_slice =
 {
-  std::string suffix = "";
-  std::string label = "";
-  Cut cut = kNoCut;
-  int color = kBlack;
-};
-
-struct SelDefSpill
-{
-  std::string suffix = "";
-  std::string label = "";
-  SpillCut cut = kNoSpillCut;
-  int color = kBlack;
-};
-
-const Cut kNuECC    = kIsNue && !kIsNC;
-const Cut kNuMuCC   = kIsNumu && !kIsNC;
-const Cut kNC       = kIsNC;
-const Cut kTotal    = kNoCut; // Get the total and substract everything else when plotting
-const Cut kIsCosmic = !kHasNu;
-const Cut kOtherNu  = kHasNu && !(kNuECC || kNuMuCC || kNC);
-
-// Step by step cuts
-const Cut kContained = kContainedFD;
-const Cut kRecoCut   = kRecoShowerFD;
-const Cut kFullCut   = kNueFD;
-
-// N-1 cuts: apply all except one cut
-// // const Cut kAllCuts      = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1Contained  = kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShowerFD;
-const Cut kN1Flash      = kContained && kNuePandoraScoreFDCut && kRecoShowerFD;
-const Cut kN1Pandora    = kContained && kNueFlashScoreFDCut && kRecoShowerFD;
-const Cut kN1Reco       = kContained && kNueFlashScoreFDCut && kNuePandoraScoreFDCut;
-const Cut kN1RecoShower = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1NumShowers = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1Dedx       = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1ConvGap    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kNueTrackLenCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1TrkLen     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kShowerDensityCut && kShowerEnergyCut;
-const Cut kN1Density    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerEnergyCut;
-const Cut kN1Energy     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut;
-
-std::vector<SelDef> types =
-{
-  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNuECC,     color_nue},
-  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNuMuCC,    color_numu},
+  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,     color_nue},
+  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,    color_numu},
   {"nunc",  "NC",      kSlcIsRecoNu&&kNC,        color_nc},
-  {"other", "Other",   kSlcIsRecoNu&&kOtherNu,   color_other},
   {"total", "Total",   kSlcIsRecoNu&&kTotal,     color_other},
   {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
 };
 
-std::vector<SelDef> sels ={
+std::vector<SelDef> types_spill =
+{
+  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,     color_nue},
+  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,    color_numu},
+  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,        color_nc},
+  {"total", "Total",   kSlcIsRecoNu&&kTotal,     color_other},
+  {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
+};
+
+// ----------------------------------------------------------------------------------------------
+// Cuts
+std::vector<SelDef> sels_slice ={
   {"nocut",      "No cut",               kNoCut,            kBlack},
   {"cont",       "Containment",          kContained,        kBlack},
   {"flash",      "Flash score",          kSlcFlashMatchCut, kBlack},
@@ -167,7 +257,16 @@ std::vector<SelDef> sels ={
   {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack}
   };
 
-std::vector<SelDefSpill> sels_spill =
+std::vector<SelDef> sels_spill ={
+  {"nospillcut",      "No spill cut",               kNoSpillCut,         kBlack},
+  {"contspill",       "Containment spill",          kContainedSpill,     kBlack},
+  {"flashspill",      "Flash score spill",          kFlashMatchSpillCut, kBlack},
+  {"pandnuspill",     "Neutrino score spill",       kNuScoreSpillCut,    kBlack}
+  {"recocutspill",    "Reconstruction (all) spill", kRecoSpillCut,       kBlack}
+  {"everythingspill", "Full selection spill",       kFullSpillCut,       kBlack}
+  };
+
+std::vector<SelDefSpill> crtsels_spill =
   {{"nocut_spill", "All Slices",         kNoSpillCut,   kBlack},
    {"crtveto_spill", "CRTVeto",          kCRTHitVetoFD, kBlue}
   };

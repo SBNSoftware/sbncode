@@ -19,14 +19,15 @@
 
 using namespace ana;
 
-void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1)
+void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1, bool selspill = false)
 {
+
 
   std::string settag = std::to_string(setno);
 
   std::string findir = "cafsdir/"+finname+"/files/";
   const std::string finsample = findir + "hadded_"+settag+"_"+finname+".caf.root";
-  const std::string foutname = finname+"_spectra_hadded_"+settag+".root";
+  const std::string foutname = finname+"_spectra_hadded_"+settag+(byspill ? "_spill" : "_slice")+".root";
 
   // Source of events
   SpectrumLoader loader(finsample);
@@ -65,16 +66,25 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
   //// end pseudo scale cosmics
   ////////////////////////////////
 
+  // select all slices or a single slice per spill
+  std::vector<PlotDef> plots = plots_slice;
+  std::vector<SelDef> types  = types_slice;
+  std::vector<SelDef> sels   = sels_slice;
+  if(selspill){
+    plots = plots_spill;
+    types = types_spill;
+    sels  = sels_spill;
+  }
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
   const unsigned int kNType = types.size();
-  const unsigned int kNVarSpill = plots_spill.size();
-  const unsigned int kNSelSpill = sels_spill.size();
+  const unsigned int kNVarCRTSpill = crtplots_spill.size();
+  const unsigned int kNSelCRTSpill = crtsels_spill.size();
 
   // make an array of spectra with each cut-type-var combination
   Spectrum *specs[kNSel][kNType][kNVar];
   Spectrum *specsveto[kNSel][kNType][kNVar];
-  Spectrum *specsspill[kNSelSpill][kNVarSpill];
+  Spectrum *specscrtspill[kNSelCRTSpill][kNVarCRTSpill];
 
   for(unsigned int iSel = 0; iSel < kNSel; ++iSel){
     for(unsigned int iType = 0; iType < kNType; ++iType){
@@ -85,9 +95,9 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
     }
   }
 
-  for(unsigned int iSel = 0; iSel < kNSelSpill; ++iSel){
-    for(unsigned int jVar = 0; jVar < kNVarSpill; ++jVar){
-      specsspill[iSel][jVar] = new Spectrum(plots_spill[jVar].label, plots_spill[jVar].bins, loader, plots_spill[jVar].var, sels_spill[iSel].cut);
+  for(unsigned int iSel = 0; iSel < kNSelCRTSpill; ++iSel){
+    for(unsigned int jVar = 0; jVar < kNVarCRTSpill; ++jVar){
+      specscrtspill[iSel][jVar] = new Spectrum(crtplots_spill[jVar].label, crtplots_spill[jVar].bins, loader, crtplots_spill[jVar].var, crtsels_spill[iSel].cut);
     }
   }
   // actually make the spectra
@@ -118,11 +128,11 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
     }
   }
 
-  for( unsigned int iSel = 0; iSel < kNSelSpill; ++iSel ){
-    for( unsigned int jVar = 0; jVar < kNVarSpill; ++jVar ){
-      std::string mysuffix = sels_spill[iSel].suffix + "_" + plots_spill[jVar].suffix;
+  for( unsigned int iSel = 0; iSel < kNSelCRTSpill; ++iSel ){
+    for( unsigned int jVar = 0; jVar < kNVarCRTSpill; ++jVar ){
+      std::string mysuffix = crtsels_spill[iSel].suffix + "_" + crtplots_spill[jVar].suffix;
       std::cout << "Saving spectra: " << mysuffix << std::endl;
-      specsspill[iSel][jVar]->SaveTo( fout.mkdir(mysuffix.c_str()) );
+      specscrtspill[iSel][jVar]->SaveTo( fout.mkdir(mysuffix.c_str()) );
     }
   }
 
