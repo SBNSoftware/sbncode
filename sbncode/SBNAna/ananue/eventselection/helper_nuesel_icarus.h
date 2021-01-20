@@ -40,6 +40,14 @@ struct PlotDefSpill
   std::string suffix = "";
   std::string label = "";
   Binning bins = Binning::Simple(3,0,3);
+  SpillVar var = kSpillCounting;
+};
+
+struct PlotDefMultiVar
+{
+  std::string suffix = "";
+  std::string label = "";
+  Binning bins = Binning::Simple(3,0,3);
   SpillMultiVar var = kCRTHitX;
 };
 
@@ -71,11 +79,11 @@ const Binning kPEBinning        = Binning::Simple(60,0.,600);
 const Binning kTimeBinning      = Binning::Simple(155,-1550.,1550.);
 const Binning kFlashBinning     = Binning::Simple(40,-6.f,34.f);
 
-const Cut kNueCC    = kIsNue && !kIsNC;
-const Cut kNumuCC   = kIsNumu && !kIsNC;
-const Cut kNC       = kIsNC;
-const Cut kTotal    = kNoCut; // Get the total and substract everything else when plotting
-const Cut kIsCosmic = !kHasNu;
+const Cut kNueCC      = kIsNue && !kIsNC;
+const Cut kNumuCC     = kIsNumu && !kIsNC;
+const Cut kNC         = kIsNC;
+const Cut kTotal      = kNoCut; // Get the total and substract everything else when plotting
+const Cut kThisCosmic = !kHasNu;
 
 // Step by step cuts
 const Cut kContained = kContainedFD;
@@ -96,18 +104,18 @@ const Cut kN1TrkLen     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScor
 const Cut kN1Density    = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerEnergyCut;
 const Cut kN1Energy     = kContainedFD && kNueFlashScoreFDCut && kNuePandoraScoreFDCut && kRecoShower && kNueNumShowersCut && kShowerdEdxCut && kShowerConvGapCut && kNueTrackLenCut && kShowerDensityCut;
 
-const SpillCut kNueCCSpill  = kIsNueSpill && !kIsNCSpill;
-const SpillCut kNumuCCSpill = kIsNumuSpill && !kIsNCSpill;
-const SpillCut kNCSpill     = kIsNCSpill;
-const SpillCut kTotalSpill  = kNoSpillCut;
-const SpillCut kIsCosmic    = kIsCosmicSpill;
+const SpillCut kNueCCSpill      = kIsNueSpill && !kIsNCSpill;
+const SpillCut kNumuCCSpill     = kIsNumuSpill && !kIsNCSpill;
+const SpillCut kNCSpill         = kIsNCSpill;
+const SpillCut kTotalSpill      = kNoSpillCut;
+const SpillCut kThisCosmicSpill = kIsCosmicSpill;
 
 const SpillCut kContainedSpill([](const caf::SRSpillProxy* sr) {
 
   unsigned int counter(0);
   for (auto const& slc : sr->slc) {
     if (slc.tmatch.index < 0)
-      continue
+      continue;
     if (kContained(&slc))
       ++counter;
   }
@@ -120,7 +128,7 @@ const SpillCut kFlashMatchSpillCut([](const caf::SRSpillProxy* sr) {
   unsigned int counter(0);
   for (auto const& slc : sr->slc) {
     if (slc.tmatch.index < 0)
-      continue
+      continue;
     if (kSlcFlashMatchCut(&slc))
       ++counter;
   }
@@ -133,7 +141,7 @@ const SpillCut kNuScoreSpillCut([](const caf::SRSpillProxy* sr) {
   unsigned int counter(0);
   for (auto const& slc : sr->slc) {
     if (slc.tmatch.index < 0)
-      continue
+      continue;
     if (kSlcNuScore(&slc))
       ++counter;
   }
@@ -146,7 +154,7 @@ const SpillCut kRecoSpillCut([](const caf::SRSpillProxy* sr) {
   unsigned int counter(0);
   for (auto const& slc : sr->slc) {
     if (slc.tmatch.index < 0)
-      continue
+      continue;
     if (kRecoCut(&slc))
       ++counter;
   }
@@ -159,7 +167,7 @@ const SpillCut kFullSpillCut([](const caf::SRSpillProxy* sr) {
   unsigned int counter(0);
   for (auto const& slc : sr->slc) {
     if (slc.tmatch.index < 0)
-      continue
+      continue;
     if (kFullCut(&slc))
       ++counter;
   }
@@ -189,16 +197,16 @@ std::vector<PlotDef> plots_slice =
    {"length",     "Length (cm)",                  kLengthBinning,         kRecoShower_Length},
    {"nuscore",    "Pandora #nu score",            kBDTBinning,            kSlcNuScore},
    {"flashscore", "Flash score",                  kFlashBinning,          kSlcFlashScore},
-   {"truthenergy","True #nu energy (GeV)",        kTruthLowEnergyBinning, kTruthEnergy},
+   {"truthenergy","True #nu energy (GeV)",        kLowEnergyGeVBinning,   kTruthEnergy},
  };
 
-std::vector<PlotDef> plots_spill = 
+std::vector<PlotDefSpill> plots_spill = 
   {{"count",        "Number of spills", Binning::Simple(3,0,3), kSpillCounting},
-  { "nuenergy",     "True Neutrino Energy (GeV)", kEnergyBinningGeV, kNuEnergy },
-  { "leptonenergy", "True Lepton Energy (GeV)",   kEnergyBinningGeV, kLeptonEnergy }
- };
+  { "nuenergy",     "True Neutrino Energy (GeV)", kLowEnergyGeVBinning, kTruthNuEnergy },
+  { "leptonenergy", "True Lepton Energy (GeV)",   kLowEnergyGeVBinning, kTruthLeptonEnergy }
+};
 
-std::vector<PlotDefSpill> crtplots_spill =
+std::vector<PlotDefMultiVar> crtplots_spill =
   {{"crtx",   "CRT Hit Position X (cm)", kCRTXFDBinning, kCRTHitX},
   {"crty",    "CRT Hit Position Y (cm)", kCRTYFDBinning, kCRTHitY},
   {"crtz",    "CRT Hit Position Z (cm)", kCRTZFDBinning, kCRTHitZ},
@@ -210,20 +218,20 @@ std::vector<PlotDefSpill> crtplots_spill =
 // Interaction types
 std::vector<SelDef> types_slice =
 {
-  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,     color_nue},
-  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,    color_numu},
-  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,        color_nc},
-  {"total", "Total",   kSlcIsRecoNu&&kTotal,     color_other},
-  {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
+  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,      color_nue},
+  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,     color_numu},
+  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,         color_nc},
+  {"total", "Total",   kSlcIsRecoNu&&kTotal,      color_other},
+  {"cosmic", "Cosmic", kSlcIsRecoNu&&kThisCosmic, color_cos}
 };
 
-std::vector<SelDef> types_spill =
+std::vector<SelDefSpill> types_spill =
 {
-  {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,     color_nue},
-  {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,    color_numu},
-  {"nunc",  "NC",      kSlcIsRecoNu&&kNC,        color_nc},
-  {"total", "Total",   kSlcIsRecoNu&&kTotal,     color_other},
-  {"cosmic", "Cosmic", kSlcIsRecoNu&&kIsCosmic,  color_cos}
+  {"nue",   "NuE CC",  kNueCCSpill,      color_nue}, // kSlcIsRecoNu is already included in the spill cuts from sels_spill
+  {"numu",  "NuMu CC", kNumuCCSpill,     color_numu},
+  {"nunc",  "NC",      kNCSpill,         color_nc},
+  {"total", "Total",   kTotalSpill,      color_other},
+  {"cosmic", "Cosmic", kThisCosmicSpill, color_cos}
 };
 
 // ----------------------------------------------------------------------------------------------
@@ -257,16 +265,16 @@ std::vector<SelDef> sels_slice ={
   {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack}
   };
 
-std::vector<SelDef> sels_spill ={
+std::vector<SelDefSpill> sels_spill ={
   {"nospillcut",      "No spill cut",               kNoSpillCut,         kBlack},
   {"contspill",       "Containment spill",          kContainedSpill,     kBlack},
   {"flashspill",      "Flash score spill",          kFlashMatchSpillCut, kBlack},
-  {"pandnuspill",     "Neutrino score spill",       kNuScoreSpillCut,    kBlack}
-  {"recocutspill",    "Reconstruction (all) spill", kRecoSpillCut,       kBlack}
+  {"pandnuspill",     "Neutrino score spill",       kNuScoreSpillCut,    kBlack},
+  {"recocutspill",    "Reconstruction (all) spill", kRecoSpillCut,       kBlack},
   {"everythingspill", "Full selection spill",       kFullSpillCut,       kBlack}
   };
 
 std::vector<SelDefSpill> crtsels_spill =
-  {{"nocut_spill", "All Slices",         kNoSpillCut,   kBlack},
-   {"crtveto_spill", "CRTVeto",          kCRTHitVetoFD, kBlue}
+  {{"nocut_spill", "All Slices", kNoSpillCut,   kBlack},
+   {"crtveto_spill", "CRTVeto",  kCRTHitVetoFD, kBlue}
   };

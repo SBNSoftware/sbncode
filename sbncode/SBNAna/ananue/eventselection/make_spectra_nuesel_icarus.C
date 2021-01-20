@@ -25,9 +25,10 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
 
   std::string settag = std::to_string(setno);
 
-  std::string findir = "cafsdir/"+finname+"/files/";
-  const std::string finsample = findir + "hadded_"+settag+"_"+finname+".caf.root";
-  const std::string foutname = finname+"_spectra_hadded_"+settag+(byspill ? "_spill" : "_slice")+".root";
+  std::string findir = "/pnfs/icarus/persistent/users/dmendez/Tests/Outputs/Dec2020CAFs/";
+  std::string foutdir = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
+  const std::string finsample = findir + finname + "_hadded"+settag+".flatcaf.root";
+  const std::string foutname = foutdir + finname + "_spectra_hadded"+settag+(selspill ? "_spill" : "_slice")+".root";
 
   // Source of events
   SpectrumLoader loader(finsample);
@@ -70,11 +71,14 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
   std::vector<PlotDef> plots = plots_slice;
   std::vector<SelDef> types  = types_slice;
   std::vector<SelDef> sels   = sels_slice;
-  if(selspill){
-    plots = plots_spill;
-    types = types_spill;
-    sels  = sels_spill;
-  }
+  // // Not automatically working as these are different structures
+  // // Move from using these structures or make class
+  // // or remember to change by hand ...
+  // if(selspill){
+  //   plots = plots_spill;
+  //   types = types_spill;
+  //   sels  = sels_spill;
+  // }
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
   const unsigned int kNType = types.size();
@@ -115,7 +119,7 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
         Spectrum* spec = specs[iSel][iType][jVar];
         Spectrum* specveto = specsveto[iSel][iType][jVar];
         if(finname=="cosmics"){
-          std::cout << "fake POT scale cosmics" << std::endl;
+          // std::cout << "fake POT scale cosmics" << std::endl;
           const double thisPOT(spec->POT());
           if (thisPOT < std::numeric_limits<double>::epsilon()){
             spec->OverridePOT(cosmicPOT);
