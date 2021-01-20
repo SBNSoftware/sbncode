@@ -6,6 +6,8 @@
 
 namespace ana{
 
+  //---------------------------------------------------------------
+  // Slice cuts 
   const Cut kTrueActiveVolumeND(
     [](const caf::SRSliceProxy* slc){
       return kHasNu(slc) && PtInVolAbsX(slc->truth.position, avnd);
@@ -87,4 +89,43 @@ namespace ana{
             if(slc->truth.index < 0) return false;
             return (kCompletness(slc) > 0.5);
   });
+
+  //---------------------------------------------------------------
+  // Spill cuts 
+
+  const SpillCut kIsCosmicSpill([](const caf::SRSpillProxy* sr) {
+    return (sr->mc.nnu == 0);
+  });
+
+  const SpillCut kIsSingleNuSpill([](const caf::SRSpillProxy* sr) {
+    return (sr->mc.nnu < 2);
+  });
+
+  const SpillCut kIsNueSpill([](const caf::SRSpillProxy* sr){
+    if (kIsCosmicSpill(sr) || !kIsSingleNuSpill(sr)) return false;
+    return (std::abs(sr->mc.nu[0].pdg) == 12);
+  });
+
+  const SpillCut kIsNumuSpill([](const caf::SRSpillProxy* sr){
+    if (kIsCosmicSpill(sr) || !kIsSingleNuSpill(sr)) return false;
+    return (std::abs(sr->mc.nu[0].pdg) == 14);
+  });
+
+  const SpillCut kIsNutauSpill([](const caf::SRSpillProxy* sr){
+    if (kIsCosmicSpill(sr) || !kIsSingleNuSpill(sr)) return false;
+    return (std::abs(sr->mc.nu[0].pdg) == 16);
+  });
+
+  const SpillCut kIsCCSpill([](const caf::SRSpillProxy* sr) {
+    if (kIsCosmicSpill(sr) || !kIsSingleNuSpill(sr)) return false;
+    return ((bool)sr->mc.nu[0].iscc);
+  });
+
+  const SpillCut kIsNCSpill([](const caf::SRSpillProxy* sr) {
+    if (kIsCosmicSpill(sr) || !kIsSingleNuSpill(sr)) return false;
+    return ((bool)sr->mc.nu[0].isnc);
+  });
+
+
+
 }

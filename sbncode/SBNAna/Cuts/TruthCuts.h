@@ -13,11 +13,9 @@ namespace ana
   extern const Cut kIsNumu;
   extern const Cut kIsNutau;
 
-  //// Select interaction type
   extern const Cut kIsCC;
   extern const Cut kIsNC;
   
-  // extern const Cut kIsQE;
   extern const Cut kTrueActiveVolumeND;
   extern const Cut kTrueFiducialVolumeND;
   extern const Cut kTrueActiveVolumeFDCryo1;
@@ -30,6 +28,16 @@ namespace ana
 
   extern const Cut kSlcCompletenessCut;
 
+  extern const SpillCut kIsCosmicSpill;
+  extern const SpillCut kIsSingleNuSpill;
+  extern const SpillCut kIsNueSpill;
+  extern const SpillCut kIsNumuSpill;
+  extern const SpillCut kIsNutauSpill;
+
+  extern const SpillCut kIsCCSpill;
+  extern const SpillCut kIsNCSpill;
+
+  // extern const Cut kIsQE;
   // extern const Cut kIsRes;
   // extern const Cut kIsDIS;
   // extern const Cut kIsCoh;

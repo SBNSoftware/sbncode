@@ -18,4 +18,8 @@ namespace ana
   extern const Var kTruthVtxDistZ;
 
   extern const Var kTruthVtxDistMag;
+
+  extern const SpillVar kTruthNuEnergy;
+  extern const SpillVar kTruthLeptonEnergy;
+
 }
