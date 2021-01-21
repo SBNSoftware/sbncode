@@ -28,15 +28,15 @@ using namespace ana;
 
 void plot_spectra_nuesel_icarus(
   std::string input = "nucosmics",
+  bool crtveto = false,
   bool crtvars = false,
   bool effpur  = false)
 {
 
   std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
-  std::string inFile = inDir + input + "_spectra_hadded1_slice.root";
-  // std::string inFile_nue  = "nue_spectra.root";
-  // std::string inFile_nus  = "nucosmics_spectra.root";
-  // std::string inFile_cos  = "cosmics_spectra.root";
+  std::string inFile_nue  = inDir + "nue_spectra_hadded1_slice.root";
+  std::string inFile_nus  = inDir + "nucosmics_spectra_hadded1_slice.root";
+  std::string inFile_cos  = inDir + "cosmics_spectra_hadded1_slice.root";
   std::string outDir  = "/icarus/data/users/dmendez/SBNAna/ananue/plots/Jan2021/";
 
   std::string pot_tag = "6.6 #times 10^{20} POT";
@@ -74,34 +74,15 @@ void plot_spectra_nuesel_icarus(
         mysuffix = mysuffix+"_veto";
         mysuffixall = mysuffixall+"_veto";
       }
-      Spectrum *spec_allnue = LoadFromFile<Spectrum>(inFile, "nue_"+mysuffixall).release();
-      Spectrum *spec_nue    = LoadFromFile<Spectrum>(inFile, "nue_"+mysuffix).release();
-      Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile, "numu_"+mysuffix).release();
-      Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile, "nunc_"+mysuffix).release();
-      Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile, "cosmic_"+mysuffix).release();
-      Spectrum *spec_total  = LoadFromFile<Spectrum>(inFile, "total_"+mysuffix).release();
-      TH1* hallnue = spec_allnue->ToTH1(POT);
-      TH1* hnue    = spec_nue->ToTH1(POT);
-      TH1* hnumu   = spec_numu->ToTH1(POT);
-      TH1* hnc     = spec_nc->ToTH1(POT);
-      TH1* htotcos = spec_cos->ToTH1(POT);
-      TH1* htotal  = spec_total->ToTH1(POT);
-      TH1* htotbkg = (TH1*)htotal->Clone(); // total bkg
-      htotbkg->Add(hnue,-1);
-      TH1* hother = (TH1*)htotal->Clone(); // other bkg that's not numu or nc
-      hother->Add(hnue, -1);
-      hother->Add(hnumu, -1);
-      hother->Add(hnc, -1);
-      hother->Add(htotcos, -1);
 
-/* // when separatedly adding in time cosmics
       Spectrum *spec_allnue = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffixall).release(); // needed for purity
       Spectrum *spec_nue    = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffix).release();
-      Spectrum *spec_nuenus = LoadFromFile<Spectrum>(inFile_numu, "nue_"+mysuffix).release();
-      Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile_numu, "numu_"+mysuffix).release();
-      Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile_numu, "nunc_"+mysuffix).release();
-      Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos,  "cosmics_"+mysuffix).release();
-      Spectrum *spec_cosnus = LoadFromFile<Spectrum>(inFile_numu,  "cosmics_"+mysuffix).release();
+      Spectrum *spec_nuenus = LoadFromFile<Spectrum>(inFile_nus, "nue_"+mysuffix).release();
+      Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile_nus, "numu_"+mysuffix).release();
+      Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile_nus, "nunc_"+mysuffix).release();
+      Spectrum *spec_total  = LoadFromFile<Spectrum>(inFile_nus, "total_"+mysuffix).release();
+      Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos, "cosmic_"+mysuffix).release();
+      Spectrum *spec_cosnus = LoadFromFile<Spectrum>(inFile_nus, "cosmic_"+mysuffix).release();
       TH1* hallnue = spec_allsig->ToTH1(POT);  // from nue
       TH1* hnue    = spec_nue->ToTH1(POT);     // from nue
       TH1* hnuenus = spec_nuenus->ToTH1(POT);  // from nus+cosmics
@@ -116,11 +97,10 @@ void plot_spectra_nuesel_icarus(
       hother->Add(hnc,-1);
       TH1* hcos= spec_cos->ToTH1(POT);    // from cosmics only
       TH1* htotcos = (TH1*)hcos->Clone(); // from cosmics only
-      TH1* htotcos->Add(hcosnus,1);       // add out of time cosmics
+      htotcos->Add(hcosnus,1); // add out of time cosmics
       TH1* htotbkg = (TH1*)htotal->Clone();
       htotbkg->Add(hnuenus,-1);
       htotbkg->Add(hcos,1);
-*/
 
       float inue    = hnue->Integral();
       float inumu   = hnumu->Integral();
