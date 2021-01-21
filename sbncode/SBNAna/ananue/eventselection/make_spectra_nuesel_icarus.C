@@ -40,9 +40,14 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
 
   TTreeReader cafReader("recTree", &f);
 
-  TTreeReaderValue<unsigned int> run(cafReader, "hdr.run");
-  TTreeReaderValue<unsigned int> subrun(cafReader, "hdr.subrun");
-  TTreeReaderValue<unsigned int> ngenevt(cafReader, "hdr.ngenevt");
+  // TTreeReaderValue<unsigned int> run(cafReader, "hdr.run");
+  // TTreeReaderValue<unsigned int> subrun(cafReader, "hdr.subrun");
+  // TTreeReaderValue<unsigned int> ngenevt(cafReader, "hdr.ngenevt");
+  // // Use this instead of the above if using flatcafs.
+  // // Otherwise cosmics will always have 'POT' set to zero
+  TTreeReaderValue<unsigned int> run(cafReader, "rec.hdr.run");
+  TTreeReaderValue<unsigned int> subrun(cafReader, "rec.hdr.subrun");
+  TTreeReaderValue<unsigned int> ngenevt(cafReader, "rec.hdr.ngenevt");
 
   unsigned int totalGenEvt(0);
 
@@ -63,6 +68,7 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
   const float POTperSpill(5e12);
   const float cosmicPOT(totalGenEvt * POTperSpill / (1.f - nuPerSpill));
 
+  std::cout << "cosmicPOT: " << cosmicPOT << std::endl;
   std::cout << "Spills per cosmic Trigger: " << (cosmicPOT / numTriggers) / POTperSpill << std::endl;
   //// end pseudo scale cosmics
   ////////////////////////////////
