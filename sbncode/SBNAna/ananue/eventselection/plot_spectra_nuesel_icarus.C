@@ -28,7 +28,6 @@ using namespace ana;
 
 void plot_spectra_nuesel_icarus(
   std::string input = "nucosmics",
-  bool crtveto = false,
   bool crtvars = false,
   bool effpur  = false)
 {

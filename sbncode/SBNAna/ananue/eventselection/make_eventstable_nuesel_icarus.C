@@ -24,20 +24,37 @@
 
 using namespace ana;
 
-void plot_eventstable_nuesel_icarus(bool N1table=false)
+void make_eventstable_nuesel_icarus(bool N1table=false,
+  bool crtveto = false)
 {
 
-  std::string inFile = input+"_spectra.root";
+  std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
+  std::string inFile = inDir + "nucosmics_spectra_hadded1_slice.root";
   // std::string inFile_nue  = "nue_spectra.root";
   // std::string inFile_nus  = "nucosmics_spectra.root";
   // std::string inFile_cos  = "cosmics_spectra.root";
+  std::string outDir  = "/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/";
 
   std::string pot_tag = "6.6 #times 10^{20} POT";
   double POT = 6.6E20;
   double Livetime = 1;
 
+  // select all slices or a single slice per spill
+  std::vector<PlotDef> plots = plots_slice;
+  std::vector<SelDef> types  = types_slice;
+  std::vector<SelDef> sels   = sels_slice;
+  // // Not automatically working as these are different structures
+  // // Move from using these structures or make class
+  // // or remember to change by hand ...
+  // if(selspill){
+  //   plots = plots_spill;
+  //   types = types_spill;
+  //   sels  = sels_spill;
+  // }
+
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
+
   const int limitN1 = 13; // N1 cuts start at 13 position in the sels object
   
   // std::vector<float> rem_vect;
@@ -132,7 +149,7 @@ void plot_eventstable_nuesel_icarus(bool N1table=false)
   printTableHeader();
   if(N1table){
     // Always print the no cut result for reference
-    printEventsLine(cutname, events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
+    printEventsLine("No cut", events_nue[0], events_numu[0], events_nc[0], events_cos[0], events_other[0]);
   }
   for(int iSel = initLoop; iSel < endLoop; ++iSel){
     std::string cutname = sels[iSel].label;

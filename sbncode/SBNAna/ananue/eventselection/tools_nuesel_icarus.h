@@ -15,7 +15,7 @@
 #include <fstream>
 #include <iomanip>
 
-ofstream output("nuesel_icarus.txt");
+ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus.txt");
 
 namespace ana{
 
@@ -51,7 +51,7 @@ namespace ana{
     output << "\\begin{tabular}{|l||c|c|c|c|c||c|c|}\n";
     output << "\\hline \n";
     output << "\\multicolumn{1}{|c||}{} & \\multicolumn{5}{c||}{Number of interactions} & \\multicolumn{2}{c|}{Contribution} \\ \\hline \n \
-    \\multicolumn{1}{|c||}{Cut} & $\nu_{e}$ CC & $\nu_{\\mu}$ CC & NC & Cosmic & Other bkg & Signal & Total background \\ \\hline \n";
+    \\multicolumn{1}{|c||}{Cut} & $\\nu_{e}$ CC & $\\nu_{\\mu}$ CC & NC & Cosmic & Other bkg & Signal & Total background \\ \\hline \n";
   }// printTableHeader
 
   void printTableFooter(){
