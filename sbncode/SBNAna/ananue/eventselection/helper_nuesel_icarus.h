@@ -12,6 +12,8 @@
 #include "SBNAna/Cuts/NueCuts.h"
 #include "SBNAna/Cuts/TruthCuts.h"
 
+#include "TStyle.h"
+
 using namespace ana;
 
 Color_t color_nue   = kBlue-7;

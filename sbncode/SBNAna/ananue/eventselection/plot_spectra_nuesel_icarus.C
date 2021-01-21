@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "../../../CAFAna/rootlogon.C"
 #include "CAFAna/Core/Spectrum.h"
 #include "CAFAna/Core/LoadFromFile.h"
 
@@ -20,6 +21,7 @@
 #include "TH1.h"
 #include "TLegend.h"
 #include "TPaveText.h"
+#include "TStyle.h"
 
 
 using namespace ana;
@@ -31,14 +33,29 @@ void plot_spectra_nuesel_icarus(
   bool effpur  = false)
 {
 
-  std::string inFile = input+"_spectra.root";
+  std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
+  std::string inFile = inDir + input + "_spectra_hadded1_slice.root";
   // std::string inFile_nue  = "nue_spectra.root";
   // std::string inFile_nus  = "nucosmics_spectra.root";
   // std::string inFile_cos  = "cosmics_spectra.root";
+  std::string outDir  = "/icarus/data/users/dmendez/SBNAna/ananue/plots/Jan2021/";
 
   std::string pot_tag = "6.6 #times 10^{20} POT";
   double POT = 6.6E20;
   double Livetime = 1;
+
+  // select all slices or a single slice per spill
+  std::vector<PlotDef> plots = plots_slice;
+  std::vector<SelDef> types  = types_slice;
+  std::vector<SelDef> sels   = sels_slice;
+  // // Not automatically working as these are different structures
+  // // Move from using these structures or make class
+  // // or remember to change by hand ...
+  // if(selspill){
+  //   plots = plots_spill;
+  //   types = types_spill;
+  //   sels  = sels_spill;
+  // }
 
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
@@ -114,7 +131,7 @@ void plot_spectra_nuesel_icarus(
       float itotbkg = htotbkg->Integral();
 
       sig_vect.push_back(inue);
-      bkg_vect.pussh_back(itotbkg);
+      bkg_vect.push_back(itotbkg);
       
       float pnue = 100 * inue / (inue + itotbkg);
       float pbkg = 100 * itotbkg / (inue + itotbkg);
@@ -155,14 +172,14 @@ void plot_spectra_nuesel_icarus(
 
       cEvents->Modified();
       cEvents->Update();
-      cEvents->Print(("plots/"+input+"/"+mysuffix+"_eventsel_"+input+".pdf").c_str());
+      cEvents->Print((outDir+mysuffix+"_eventsel_"+input+".pdf").c_str());
       if(cEvents) cEvents->Close();
 
 
       if(iSel!=0 && effpur){
-        TCanvas *c1;
+        TCanvas *cEventsEffPur;
         TPad *padEvents, *padEffPur;
-        SplitCanvas2(c1, padEvents, padEffPur);
+        SplitCanvas2(cEvents,  padEvents, padEffPur);
         padEvents->cd();
         gPad->SetTickx(1);
         gPad->SetTicky(1);
@@ -181,12 +198,12 @@ void plot_spectra_nuesel_icarus(
         TGraph* gEff = SelEFForPURvsX(hnue, htotbkg, hallnue, true);
         TGraph* gPur = SelEFForPURvsX(hnue, htotbkg, hallnue, false);
         gEff->Draw("l same");
-        gPur>Draw("l same");
+        gPur->Draw("l same");
         DrawEffPurLegend(gEff, "Efficiency", gPur, "Purity");
         cEventsEffPur->Modified();
         cEventsEffPur->Update();
-        cEventsEffPur->Print(("plots/"+input+"/"+mysuffix+"_eventsel_"+input+"__effpur.pdf").c_str());
-        if(cEventsEffPurr) cEventsEffPur->Close();
+        cEventsEffPur->Print((outDir+mysuffix+"_eventsel_"+input+"__effpur.pdf").c_str());
+        if(cEventsEffPur) cEventsEffPur->Close();
 
       } // end if effpur
 

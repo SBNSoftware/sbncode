@@ -2,9 +2,18 @@
 #include "CAFAna/Core/LoadFromFile.h"
 
 #include "TCanvas.h"
+#include "TColor.h"
 #include "TFile.h"
+#include "TGraph.h"
 #include "TH1.h"
 #include "TLegend.h"
+#include "TPaveText.h"
+#include "TROOT.h"
+#include "TText.h"
+
+#include <iostream>
+#include <fstream>
+#include <iomanip>
 
 ofstream output("nuesel_icarus.txt");
 
@@ -41,7 +50,7 @@ namespace ana{
     // output << "\\resizebox{\\textwidth}{!}{\n";
     output << "\\begin{tabular}{|l||c|c|c|c|c||c|c|}\n";
     output << "\\hline \n";
-    output << "\\multicolumn{1}{|c||}{} & \\multicolumn{5}{c||}{Number of interactions} & \\multicolumn{2}{c|}{Contribution} \\ \\hline \n
+    output << "\\multicolumn{1}{|c||}{} & \\multicolumn{5}{c||}{Number of interactions} & \\multicolumn{2}{c|}{Contribution} \\ \\hline \n \
     \\multicolumn{1}{|c||}{Cut} & $\nu_{e}$ CC & $\nu_{\\mu}$ CC & NC & Cosmic & Other bkg & Signal & Total background \\ \\hline \n";
   }// printTableHeader
 
@@ -56,7 +65,7 @@ namespace ana{
     float total = nue+numu+nc+cos+other;
     float percnue = nue/total;
     float perctotbkg = (numu+nc+cos+other)/total;
-    output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue << "&" << numu << "&" << nc << "&" << cos << "&" << other "&" << percnue << "&" << perctotbkg << "\\ \\hline \n";
+    output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue << "&" << numu << "&" << nc << "&" << cos << "&" << other << "&" << percnue << "&" << perctotbkg << "\\ \\hline \n";
   }
 
 
@@ -141,7 +150,7 @@ namespace ana{
     l->AddEntry(hnue,   "#nu_{e} CC",   "l");
     l->AddEntry(hnumu,  "#nu_{#mu} CC", "l");
     l->AddEntry(hnc,    "NC",           "l");
-    l->AddEntry(cos,    "Cosmics",      "l");
+    l->AddEntry(hcos,   "Cosmics",      "l");
     l->AddEntry(hother, "Other bkg",    "l");
     l->Draw("");
   }
@@ -168,7 +177,7 @@ namespace ana{
     leg->AddEntry(h1, name1,"l");
     leg->AddEntry(h1, TString::Format("%.2f",iSig),"");
     leg->AddEntry(h2, name2,"l");
-    leg->AddEntry(h2, TString::Format("%.2f",iBac),"");
+    leg->AddEntry(h2, TString::Format("%.2f",iBkg),"");
     //leg->AddEntry(h2, TString::Format("Ratio=%.2f",iRatio),"");
     leg->SetBorderSize(0); //no border for legend                                                                                                                                                                                                                             
     leg->SetFillColor(0);  //fill colour is white                                                                                                                                                                                                                             
@@ -210,7 +219,7 @@ namespace ana{
 
     float isig = hsig->Integral();
     float ibkg = hbkg->Integral();
-    float psig = 100 * insig / (isig + ibkg);
+    float psig = 100 * isig / (isig + ibkg);
     float pbkg = 100 * ibkg / (isig + ibkg);
 
     TPaveText *pText1 = new TPaveText(0.15, 0.78, 0.30, 0.85, "brNDC");
@@ -234,7 +243,7 @@ namespace ana{
   // Efficiency and purity graphs 
   //-----------------------------------------------------------------
 
-  TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool eff) {
+  TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool geteff) {
 
     //
     // Make a ROC TGraph for the given signal and background histos
@@ -268,7 +277,7 @@ namespace ana{
       eff[i-1] = EFF;
       pur[i-1] = PUR;
       if ( PUR > 1 || EFF > 1 ){
-        std::cout >> " >>> \n >>> \n>>> \n>>> \n>>> \n>>> \n>>> \n" >> " >>> EFF " >> EFF >> "\t PUR " >> PUR >> std::endl;
+        std::cout << "\n\n\n" << " >>> EFF " << EFF << "\t PUR " << PUR << std::endl;
       }
     }
 
@@ -282,7 +291,7 @@ namespace ana{
     graphEff->GetXaxis()->SetTitle(xTitle);
     graphEff->GetYaxis()->SetTitle("Eff.");
 
-    if ( eff )
+    if ( geteff )
       return graphEff;
     else
       return graphPur;
