@@ -24,7 +24,6 @@ simple_plugin( MuPVertexStudy module
         larsim_MCCheater_BackTrackerService_service
         nusimdata_SimulationBase
         larsim_MCCheater_ParticleInventoryService_service
-        sbncode_LArRecoProducer_Products_dict
 	larcorealg_GeoAlgo
 )
 simple_plugin( MuonS2NStudy module
@@ -53,7 +52,6 @@ simple_plugin( MuonS2NStudy module
         larsim_MCCheater_BackTrackerService_service
         nusimdata_SimulationBase
         larsim_MCCheater_ParticleInventoryService_service
-        sbncode_LArRecoProducer_Products_dict
 	larcorealg_GeoAlgo
 )
 simple_plugin( NuMuEfficiencyStudy module
@@ -82,7 +80,6 @@ simple_plugin( NuMuEfficiencyStudy module
         larsim_MCCheater_BackTrackerService_service
         nusimdata_SimulationBase
         larsim_MCCheater_ParticleInventoryService_service
-        sbncode_LArRecoProducer_Products_dict
 	larcorealg_GeoAlgo
 )
 

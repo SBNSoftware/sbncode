@@ -180,6 +180,12 @@ namespace caf
       "splitTrackCRTHit"
     };
 
+    Atom<string> SplitCRTTrackMatchLabel {
+      Name("SplitCRTTrackMatchLabel"),
+      Comment("Base label of track to CRT track matching producer."),
+      "splitTrackCRTTrack"
+    };
+
     Atom<string> SplitTrackMCSLabel {
       Name("SplitTrackMCSLabel"),
       Comment("Base label of split-track MCS momentum calculation producer."),

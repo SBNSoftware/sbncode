@@ -33,18 +33,3 @@ add_subdirectory(FlatMaker)
 add_subdirectory(FlashMatch)
 add_subdirectory(LArRecoProducer)
 add_subdirectory(SBNAna)
-
-simple_plugin ( EventSelect module
-                ${IFDH_SERVICE}
-               ${ART_FRAMEWORK_CORE}
-               ${ART_FRAMEWORK_PRINCIPAL}
-               ${ART_FRAMEWORK_SERVICES_REGISTRY}
-               ${ART_FRAMEWORK_SERVICES_BASIC}
-               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-               art_Utilities canvas
-               ${MF_MESSAGELOGGER}
-               ${MF_UTILITIES}
-               ${FHICLCPP}
-               cetlib cetlib_except
-               ${ROOT_BASIC_LIB_LIST}
-)

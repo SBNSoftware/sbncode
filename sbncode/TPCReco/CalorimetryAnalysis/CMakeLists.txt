@@ -24,7 +24,7 @@ simple_plugin( CalorimetryAnalysis module
         larsim_MCCheater_BackTrackerService_service
         nusimdata_SimulationBase
         larsim_MCCheater_ParticleInventoryService_service
-        sbncode_LArRecoProducer_Products_dict
+	sbnobj_Common_Reco
 	larcorealg_GeoAlgo
 	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
 	lardataalg_DetectorInfo

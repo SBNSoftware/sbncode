@@ -805,10 +805,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackPidLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Vertex> fmVertex =
-      FindManyPStrict<recob::Vertex>(fmPFPart, evt,
-             fParams.PFParticleLabel() + slice_tag_suff);
-
     art::FindManyP<recob::Hit> fmTrackHit =
       FindManyPStrict<recob::Hit>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
@@ -873,9 +869,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Hit>(slcsplitTracks, evt,
           fParams.RecoSplitTrackLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::crt::CRTHit, anab::T0> fmSplitCRTHit =
-      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcsplitTracks, evt,
+    // TODO: also save the sbn::crt::CRTHit in the matching so that CAFMaker has access to it
+    art::FindManyP<anab::T0> fmSplitCRTHitMatch =
+      FindManyPStrict<anab::T0>(slcsplitTracks, evt,
                fParams.SplitCRTHitMatchLabel() + slice_tag_suff);
+
+    // TODO: also save the sbn::crt::CRTTrack in the matching so that CAFMaker has access to it
+    art::FindManyP<anab::T0> fmSplitCRTTrackMatch =
+      FindManyPStrict<anab::T0>(slcsplitTracks, evt,
+               fParams.SplitCRTTrackMatchLabel() + slice_tag_suff);
 
     std::vector<art::FindManyP<recob::MCSFitResult>> fmSplitMCSs;
     for (std::string pid: PIDnames) {
@@ -1040,25 +1042,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
         // fill all the stuff
-        FillTrackVars(*thisSplitTrack[0], thisParticle, primary, rec.reco.trk_split.back());
+        FillTrackVars(*thisSplitTrack[0], thisParticle, primary, producer, rec.reco.trk_split.back());
         FillTrackMCS(*thisSplitTrack[0], trajectoryMCS, rec.reco.trk_split.back());
         FillTrackRangeP(*thisSplitTrack[0], rangePs, rec.reco.trk_split.back());
         if (fmSplitPID.isValid())
-          FillTrackChi2PID(fmSplitPID.at(iPart),
-         lar::providerFrom<geo::Geometry>(),
-         rec.reco.trk_split.back());
+          FillTrackChi2PID(fmSplitPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk_split.back());
+
         if (fmSplitCalo.isValid())
-          FillTrackCalo(fmSplitCalo.at(iPart),
-            lar::providerFrom<geo::Geometry>(),
-            fParams.CalorimetryConstants(),
-            rec.reco.trk_split.back());
+          FillTrackCalo(fmSplitCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk_split.back());
+
         if (fmSplitHit.isValid())
-          FillTrackTruth(fmSplitHit.at(iPart), clock_data,
-            rec.reco.trk_split.back());
-        if (fmSplitCRTHit.isValid())
-          FillTrackCRTHit(fmSplitCRTHit.at(iPart),
-            fmSplitCRTHit.data(iPart),
-            rec.reco.trk_split.back());
+          FillTrackTruth(fmSplitHit.at(iPart), true_particles, clock_data, rec.reco.trk_split.back());
+        if (fmSplitCRTHitMatch.isValid())
+          FillTrackCRTHit(fmSplitCRTHitMatch.at(iPart), rec.reco.trk_split.back());
+        if (fmSplitCRTTrackMatch.isValid())
+          FillTrackCRTTrack(fmSplitCRTTrackMatch.at(iPart), rec.reco.trk_split.back());
 
         if (fmSplitInfo.isValid()) FillTrackSplit(fmSplitInfo.at(iPart), *thisSplitTrack[0], rec.reco.trk_split.back());
 
