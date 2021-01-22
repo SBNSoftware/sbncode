@@ -1,0 +1,39 @@
+BEGIN_PROLOG
+
+mergeindetifier_icarus_cryo0: {
+  module_type: MergedTrackIdentifier
+  PFPLabel: pandoraGausCryo0
+  TrackLabel: pandoraTrackGausCryo0
+}
+
+mergeindetifier_icarus_cryo1: {
+  module_type: MergedTrackIdentifier
+  PFPLabel: pandoraGausCryo1
+  TrackLabel: pandoraTrackGausCryo1
+}
+
+mergeidentifier_sbnd: {
+  module_type: MergedTrackIdentifier
+  PFPLabel: pandora
+  TrackLabel: pandoraTrack
+}
+
+tracksplit_icarus_cryo0: {
+  module_type: TrackSplitter
+  MergedPFPLabel: mergeIdentCryo0
+  TrackLabel: pandoraTrackGausCryo0
+}
+
+tracksplit_icarus_cryo1: {
+  module_type: TrackSplitter
+  MergedPFPLabel: mergeIdentCryo1
+  TrackLabel: pandoraTrackGausCryo1
+}
+
+tracksplit_sbnd: {
+  module_type: TrackSplitter
+  MergedPFPLabel: mergeIdent
+  TrackLabel: pandoraTrack
+}
+
+END_PROLOG

@@ -25,6 +25,9 @@ namespace caf
     std::vector<SRTrack>  trk;      ///< Vector of pandora tracks
     size_t               ntrk;     ///< Number of panora tracks
 
+    std::vector<SRTrack> trk_split;  ///< Vector of split tracks
+    size_t              ntrk_split; //< Number of split tracks
+
     std::vector<SRShower> shw;      ///< Vector of trac showers
     size_t               nshw;     ///< Number of trac showers
 

@@ -725,6 +725,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
 
+    art::FindManyP<recob::Vertex> fmVertex =
+      FindManyPStrict<recob::Vertex>(fmPFPart, evt,
+             fParams.PFParticleLabel() + slice_tag_suff);
+
     // make Ptr's to showers for shower -> other object associations
     std::vector<art::Ptr<recob::Shower>> slcShowers;
     if (fmShower.isValid()) {
@@ -782,10 +786,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackPidLabel() + slice_tag_suff);
 
-    art::FindManyP<recob::Vertex> fmVertex =
-      FindManyPStrict<recob::Vertex>(fmPFPart, evt,
-             fParams.PFParticleLabel() + slice_tag_suff);
-
     art::FindManyP<recob::Hit> fmHit =
       FindManyPStrict<recob::Hit>(slcTracks, evt,
           fParams.RecoTrackLabel() + slice_tag_suff);
@@ -808,7 +808,58 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
     }
 
-    // static const std::vector<std::string>> pangePIDnames {"muon", "proton"};
+    // Also look up the split-track tracker info
+    art::FindManyP<recob::Track> fmSplitTrack =
+      FindManyPStrict<recob::Track>(fmPFPart, evt,
+            fParams.RecoSplitTrackLabel() + slice_tag_suff);
+
+    // make Ptr's to tracks for track -> other object associations
+    std::vector<art::Ptr<recob::Track>> slcsplitTracks;
+    if (fmSplitTrack.isValid()) {
+      for (unsigned i = 0; i < fmSplitTrack.size(); i++) {
+        const std::vector<art::Ptr<recob::Track>> &thisTracks = fmSplitTrack.at(i);
+        if (thisTracks.size() == 0) {
+          slcsplitTracks.emplace_back(); // nullptr
+        }
+        else if (thisTracks.size() == 1) {
+          slcsplitTracks.push_back(fmSplitTrack.at(i).at(0));
+        }
+        else assert(false); // bad
+      }
+    }
+
+    art::FindManyP<anab::Calorimetry> fmSplitCalo =
+      FindManyPStrict<anab::Calorimetry>(slcsplitTracks, evt,
+           fParams.SplitTrackCaloLabel() + slice_tag_suff);
+
+    art::FindManyP<anab::ParticleID> fmSplitPID =
+      FindManyPStrict<anab::ParticleID>(slcsplitTracks, evt,
+          fParams.SplitTrackPidLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::Hit> fmSplitHit =
+      FindManyPStrict<recob::Hit>(slcsplitTracks, evt,
+          fParams.RecoSplitTrackLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::crt::CRTHit, anab::T0> fmSplitCRTHit =
+      FindManyPDStrict<sbn::crt::CRTHit, anab::T0>(slcsplitTracks, evt,
+               fParams.SplitCRTHitMatchLabel() + slice_tag_suff);
+
+    std::vector<art::FindManyP<recob::MCSFitResult>> fmSplitMCSs;
+    for (std::string pid: PIDnames) {
+      art::InputTag tag(fParams.SplitTrackMCSLabel() + slice_tag_suff, pid);
+      fmSplitMCSs.push_back(FindManyPStrict<recob::MCSFitResult>(slcsplitTracks, evt, tag));
+    }
+
+    std::vector<art::FindManyP<sbn::RangeP>> fmSplitRanges;
+    for (std::string pid: rangePIDnames) {
+      art::InputTag tag(fParams.SplitTrackRangeLabel() + slice_tag_suff, pid);
+      fmSplitRanges.push_back(FindManyPStrict<sbn::RangeP>(slcsplitTracks, evt, tag));
+    }
+
+    std::cout << "Split info label: " << (fParams.SplitTrackInfoLabel() + slice_tag_suff) << std::endl;
+    art::FindManyP<sbn::MergedTrackInfo> fmSplitInfo =
+      FindManyPStrict<sbn::MergedTrackInfo>(fmPFPart, evt,
+          fParams.SplitTrackInfoLabel() + slice_tag_suff);
 
     //    if (slice.IsNoise() || slice.NCell() == 0) continue;
     // Because we don't care about the noise slice and slices with no hits.
@@ -869,6 +920,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::vector<art::Ptr<recob::Track>> thisTrack;
       if (fmTrack.isValid()) {
         thisTrack = fmTrack.at(iPart);
+      }
+      std::vector<art::Ptr<recob::Track>> thisSplitTrack;
+      if (fmSplitTrack.isValid()) {
+        thisSplitTrack = fmSplitTrack.at(iPart);
       }
       std::vector<art::Ptr<recob::Shower>> thisShower;
       if (fmShower.isValid()) {
@@ -933,7 +988,57 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       } // thisTrack exists
 
-      else if (thisShower.size()) { // it's a shower!
+      if (thisSplitTrack.size()) { // it's a split track!
+        rec.reco.ntrk_split ++;
+        rec.reco.trk_split.push_back(SRTrack());
+
+        // collect all the stuff
+        std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
+        for (unsigned index = 0; index < 4; index++) {
+          if (fmSplitMCSs[index].isValid()) {
+            trajectoryMCS[index] = fmSplitMCSs[index].at(iPart);
+          }
+          else {
+            trajectoryMCS[index] = std::vector<art::Ptr<recob::MCSFitResult>>();
+          }
+        }
+
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
+        for (unsigned index = 0; index < 2; index++) {
+          if (fmSplitRanges[index].isValid()) {
+            rangePs[index] = fmSplitRanges[index].at(iPart);
+          }
+          else {
+            rangePs[index] = std::vector<art::Ptr<sbn::RangeP>>();
+          }
+        }
+
+        // fill all the stuff
+        FillTrackVars(*thisSplitTrack[0], thisParticle, primary, rec.reco.trk_split.back());
+        FillTrackMCS(*thisSplitTrack[0], trajectoryMCS, rec.reco.trk_split.back());
+        FillTrackRangeP(*thisSplitTrack[0], rangePs, rec.reco.trk_split.back());
+        if (fmSplitPID.isValid())
+          FillTrackChi2PID(fmSplitPID.at(iPart),
+         lar::providerFrom<geo::Geometry>(),
+         rec.reco.trk_split.back());
+        if (fmSplitCalo.isValid())
+          FillTrackCalo(fmSplitCalo.at(iPart),
+      lar::providerFrom<geo::Geometry>(),
+      fParams.CalorimetryConstants(),
+      rec.reco.trk_split.back());
+        if (fmSplitHit.isValid())
+          FillTrackTruth(fmSplitHit.at(iPart), clock_data,
+       rec.reco.trk_split.back());
+        if (fmSplitCRTHit.isValid())
+          FillTrackCRTHit(fmSplitCRTHit.at(iPart),
+        fmSplitCRTHit.data(iPart),
+        rec.reco.trk_split.back());
+
+        if (fmSplitInfo.isValid()) FillTrackSplit(fmSplitInfo.at(iPart), *thisSplitTrack[0], rec.reco.trk_split.back());
+
+      } // thisSplitTrack exists
+
+      if (thisShower.size()) { // it's a shower!
         assert(thisTrack.size() == 0);
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
@@ -948,7 +1053,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       } // thisShower exists
 
-      else {}
+
 
       // // placeholding emshowers and padora showers
       // // these might not be needed at the end

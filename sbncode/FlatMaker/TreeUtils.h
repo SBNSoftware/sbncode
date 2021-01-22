@@ -5,7 +5,7 @@
 
 // Helper functions for FlatRecord.cxx
 
-namespace
+namespace flatmaker
 {
   //----------------------------------------------------------------------
   TTree* make_tree(const std::string& name, const std::string& title, TTree* model)
@@ -48,4 +48,4 @@ namespace
     target->reserve(1024*1024);
     tr->Branch(name.c_str(), (void*)target->c_str(), (name+"/C").c_str());
   }
-}
+} // end namespace flatmaker

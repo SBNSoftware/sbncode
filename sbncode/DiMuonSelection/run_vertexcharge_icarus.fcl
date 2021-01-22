@@ -1,0 +1,126 @@
+#include "services_icarus.fcl"
+#include "calorimetry_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_icarus.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "spacecharge.fcl"
+
+#include "calorimetry_icarus.fcl"
+#include "particleid.fcl"
+#include "correctionservices_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+# #include "services_common_icarus.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  @table::icarus_basic_services 
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+  SpaceChargeService: @local::icarus_spacecharge
+
+}
+#have SpaceCharge off by default
+services.SpaceCharge.EnableCalEfieldSCE: false
+services.SpaceCharge.EnableCalSpatialSCE: false
+services.SpaceCharge.EnableSimEfield: false
+services.SpaceCharge.EnableSimEfieldSCE: false
+services.SpaceCharge.EnableSimSpatialSCE: false
+services.SpaceCharge.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+services.SpaceCharge.RepresentationType: "Voxelized_TH3"
+services.SpaceCharge.service_provider: SpaceChargeServiceICARUS
+services.PhotonBackTrackerService: @erase
+services.TFileService.fileName: "vtxQ.root"
+
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+    vertexChargeCryo0: {
+      module_type: VertexChargeVacuum
+      PFParticleLabel: pandoraGausCryo0
+      TrackLabel: pandoraTrackGausCryo0
+      UseTrackSPRecovery: true
+      HitVacuumRadius: 5
+      CaloAlg: @local::icarus_calorimetryalgmc
+    }
+
+    vertexChargeCryo1: {
+      module_type: VertexChargeVacuum
+      PFParticleLabel: pandoraGausCryo1
+      TrackLabel: pandoraTrackGausCryo1
+      UseTrackSPRecovery: true
+      HitVacuumRadius: 5
+      CaloAlg: @local::icarus_calorimetryalgmc
+    }
+
+    vertexStubCryo0: {
+      module_type: VertexStubTracker
+      PFPLabel: pandoraGausCryo0
+      VertexChargeLabel: vertexChargeCryo0
+      dQdxCut: 500000
+      CaloAlg: @local::icarus_calorimetryalgmc
+    }
+
+    vertexStubCryo1: {
+      module_type: VertexStubTracker
+      PFPLabel: pandoraGausCryo1
+      VertexChargeLabel: vertexChargeCryo1
+      dQdxCut: 500000
+      CaloAlg: @local::icarus_calorimetryalgmc
+    }
+  }
+
+  filters: {
+  }
+
+  # evtfilter: [filter]
+
+  analyzers:
+  {
+
+    ana: {
+      module_type: NuVertexChargeTree
+      ParticleTags: [pandoraGausCryo0, pandoraGausCryo1]
+      VertexHitTags: [vertexChargeCryo0, vertexChargeCryo1]
+      StubTags: [vertexStubCryo0, vertexStubCryo1]
+      xmin: 15
+      xmax: 15
+      ymin: 15
+      ymax: 15
+      zmin: 15
+      zmax: 50
+    }
+  }
+
+  runprod: [vertexChargeCryo0, vertexChargeCryo1, vertexStubCryo0, vertexStubCryo1, ana]
+  stream1:       [ ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+

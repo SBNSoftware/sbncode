@@ -6,6 +6,9 @@ art_make( LIBRARY_NAME sbn_Products
           LIB_LIBRARIES
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_EG}
+          DICT_LIBRARIES
+                        ${ROOT_BASIC_LIB_LIST}
+                        ${ROOT_EG}
         )
 
 install_headers()

@@ -1,0 +1,112 @@
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "spacecharge.fcl"
+
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "particleid.fcl"
+#include "trackareahit_producer.fcl"
+#include "trackhitfilter_module.fcl"
+
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "detectorproperties_sbnd.fcl"
+#include "calorimetry_sbnd.fcl"
+#include "spacecharge_sbnd.fcl"
+
+
+process_name: CaloAna
+
+services:
+{
+  TFileService: { fileName: "fullchain_production_hist_prod5.root" closeFileFast: false }
+
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  Geometry:                  @local::sbnd_geo
+  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+  NuRandomService: {
+    policy: perEvent
+  }
+  TimeTracker:  { printSummary: true }
+  SpaceCharge: @local::sbnd_spacecharge
+}
+services.TFileService.fileName: "vtxQ.root"
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+    vertexCharge: {
+      module_type: VertexChargeVacuum
+      PFParticleLabel: pandora
+      TrackLabel: pandoraTrack
+      UseTrackSPRecovery: true
+      HitVacuumRadius: 5
+      CaloAlg: @local::sbnd_calorimetryalgmc
+    }
+
+    vertexStub: {
+      module_type: VertexStubTracker
+      PFPLabel: pandora
+      VertexChargeLabel: vertexCharge
+      dQdxCut: 1.7e5
+      CaloAlg: @local::sbnd_calorimetryalgmc
+    }
+  }
+
+  filters: {
+  }
+
+  # evtfilter: [filter]
+
+  analyzers:
+  {
+
+    ana: {
+      module_type: NuVertexChargeTree
+      ParticleTags: [pandora]
+      VertexHitTags: [vertexCharge]
+      StubTags: [vertexStub]
+      xmin: 15
+      xmax: 15
+      ymin: 15
+      ymax: 15
+      zmin: 15
+      zmax: 50
+    }
+  }
+
+  runprod: [vertexCharge, vertexStub, ana]
+  stream1:       [ ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+
+#include "3drift_services_sbnd.fcl"
