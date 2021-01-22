@@ -35,7 +35,6 @@ add_subdirectory(CAFAna)
 add_subdirectory(LArRecoProducer)
 add_subdirectory(SBNAna)
 
-add_subdirectory(DiMuonSelection)
 simple_plugin ( EventSelect module
                 ${IFDH_SERVICE}
                ${ART_FRAMEWORK_CORE}

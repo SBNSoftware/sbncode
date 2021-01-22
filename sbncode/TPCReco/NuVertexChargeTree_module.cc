@@ -40,8 +40,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "../LArRecoProducer/LArReco/TrackMomentumCalculator.h"
 
-#include "sbncode/LArRecoProducer/Products/VertexHit.h"
-#include "sbncode/LArRecoProducer/Products/Stub.h"
+#include "sbncode/TPCReco/Products/VertexHit.h"
+#include "sbncode/TPCReco/Products/Stub.h"
 
 namespace sbn {
   class NuVertexChargeTree;

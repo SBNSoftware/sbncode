@@ -3,12 +3,6 @@ link_directories(
 )
 
 add_subdirectory(LArReco)
-add_subdirectory(Products)
-
-add_subdirectory(KinkExp)
-add_subdirectory(TrackHit)
-add_subdirectory(TrackSplit)
-add_subdirectory(VertexStub)
 
 simple_plugin(PMTFlashTriggerFilter module
 	${ART_FRAMEWORK_CORE}

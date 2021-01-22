@@ -1,0 +1,39 @@
+<lcgdict>
+  <class name="sbn::Stub" />
+  <class name="std::vector<sbn::Stub>" />
+  <class name="art::Wrapper<sbn::Stub>" />
+  <class name="art::Wrapper<std::vector<sbn::Stub>>" />
+
+  <class name="art::Assns<recob::PFParticle, sbn::Stub>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, sbn::Stub>>" />
+  <class name="art::Assns<recob::Slice, sbn::Stub>" />
+  <class name="art::Wrapper<art::Assns<recob::Slice, sbn::Stub>>" />
+  <class name="art::Assns<recob::Hit, sbn::Stub>" />
+  <class name="art::Wrapper<art::Assns<recob::Hit, sbn::Stub>>" />
+  <class name="art::Assns<sbn::VertexHit, sbn::Stub>" />
+  <class name="art::Wrapper<art::Assns<sbn::VertexHit, sbn::Stub>>" />
+
+  <class name="sbn::VertexHit" />
+  <class name="std::vector<sbn::VertexHit>" />
+  <class name="art::Wrapper<sbn::VertexHit>" />
+  <class name="art::Wrapper<std::vector<sbn::VertexHit>>" />
+
+  <class name="art::Assns<recob::Hit, sbn::VertexHit>" />
+  <class name="art::Wrapper<art::Assns<recob::Hit, sbn::VertexHit>>" />
+  <class name="art::Assns<recob::Slice, sbn::VertexHit>" />
+  <class name="art::Wrapper<art::Assns<recob::Slice, sbn::VertexHit>>" />
+  <class name="art::Assns<recob::Vertex, sbn::VertexHit>" />
+  <class name="art::Wrapper<art::Assns<recob::Vertex, sbn::VertexHit>>" />
+
+  <class name="sbn::MergedTrackInfo" />
+  <class name="std::vector<sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<std::vector<sbn::MergedTrackInfo>>" />
+
+  <class name="art::Assns<recob::PFParticle, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, sbn::MergedTrackInfo>>" />
+  <class name="art::Assns<recob::Track, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::Track, sbn::MergedTrackInfo>>" />
+  <class name="art::Assns<recob::PFParticle, recob::Track, sbn::MergedTrackInfo>" />
+  <class name="art::Wrapper<art::Assns<recob::PFParticle, recob::Track, sbn::MergedTrackInfo>>" />
+</lcgdict>

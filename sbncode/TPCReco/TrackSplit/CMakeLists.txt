@@ -20,7 +20,7 @@ simple_plugin(TrackSplitter module
 
   sbn_LArReco_PCA
   sbn_LArReco
-  sbncode_LArRecoProducer_Products_dict
+  sbncode_TPCReco_Products_dict
 )
 
 simple_plugin(MergedTrackIdentifier module
@@ -43,7 +43,7 @@ simple_plugin(MergedTrackIdentifier module
   larpandora_LArPandoraInterface
 
   sbn_LArReco
-  sbncode_LArRecoProducer_Products_dict
+  sbncode_TPCReco_Products_dict
 )
 install_headers()
 install_fhicl()

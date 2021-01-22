@@ -1,3 +1,11 @@
+add_subdirectory(Products)
+
+add_subdirectory(KinkExp)
+add_subdirectory(TrackHit)
+add_subdirectory(TrackSplit)
+add_subdirectory(VertexStub)
+add_subdirectory(CalorimetryAnalysis)
+
 link_directories(
  $ENV{ROOTSYS}/lib
 )
@@ -18,7 +26,7 @@ simple_plugin(NuVertexChargeTree module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
-	sbncode_LArRecoProducer_Products_dict
+	sbncode_TPCReco_Products_dict
 	lardataobj_AnalysisBase
         
         art_root_io_tfile_support
@@ -33,6 +41,21 @@ simple_plugin(NuVertexChargeTree module
         larsim_MCCheater_ParticleInventoryService_service
 	sbn_LArReco	    
 )
+simple_plugin ( EventSelect module
+                ${IFDH_SERVICE}
+               ${ART_FRAMEWORK_CORE}
+               ${ART_FRAMEWORK_PRINCIPAL}
+               ${ART_FRAMEWORK_SERVICES_REGISTRY}
+               ${ART_FRAMEWORK_SERVICES_BASIC}
+               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+               art_Utilities canvas
+               ${MF_MESSAGELOGGER}
+               ${MF_UTILITIES}
+               ${FHICLCPP}
+               cetlib cetlib_except
+               ${ROOT_BASIC_LIB_LIST}
+)
+
 
 install_headers()
 install_fhicl()
