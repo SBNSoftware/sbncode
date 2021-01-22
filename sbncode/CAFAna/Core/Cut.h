@@ -91,7 +91,7 @@ namespace ana
   ///
   /// Cut objects may be combined with the standard boolean operations && ||
   /// and !
-  //  typedef _Cut<caf::SRProxy> Cut;
+  typedef _Cut<caf::SRSliceProxy> SliceCut;
   typedef _Cut<caf::SRSliceProxy> Cut;
 
   /// \brief Equivalent of \ref Cut acting on \ref caf::SRSpill. For use in

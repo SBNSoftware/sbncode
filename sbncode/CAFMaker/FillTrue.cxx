@@ -291,7 +291,6 @@ namespace caf {
 
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother();
-    std::cout << "TEST: "<< srparticle.parent << std::endl;
 
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
