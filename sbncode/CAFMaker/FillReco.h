@@ -40,6 +40,8 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const geo::GeometryCore *geom,
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
