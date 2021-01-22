@@ -29,7 +29,7 @@ void demo0()
   // event record and returns a single number to plot
   const Var kTruthEnergy([](const caf::SRProxy* sr)
                          {
-                           return sr->truth[0].neutrino.energy;
+                           return sr->mc.nu[0].E;
                          });
 
   // Define a spectrum, ie a histogram with associated POT information

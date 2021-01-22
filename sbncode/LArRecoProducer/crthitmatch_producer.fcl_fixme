@@ -1,0 +1,34 @@
+BEGIN_PROLOG
+
+// NOTE: This config runs the deprecated CRT matching module -- ignore for now
+
+crthitmatch_sbnd: {
+  module_type: CRTHitMatch
+  CRTHitLabel: crtconvhit 
+  TrackLabel: pandoraTrack
+  Alg: {
+    MinTrackLength: 0.
+    TPCTrackLabel: pandoraTrack
+    DistanceLimit: 10000
+    TrackDirectionFrac: 0.5
+  }
+}
+
+crthitmatch_icarus_cryo0: {
+  module_type: CRTHitMatch
+  CRTHitLabel: crtconvhit 
+  TrackLabel: pandoraTrackGausCryo0
+  Alg: {
+    MinTrackLength: 0.
+    TPCTrackLabel: pandoraTrackGausCryo0
+    DistanceLimit: 10000
+    TrackDirectionFrac: 0.5
+    TSMode: 1
+  }
+}
+
+crthitmatch_icarus_cryo1: @local::crthitmatch_icarus_cryo0
+crthitmatch_icarus_cryo1.TrackLabel: pandoraTrackGausCryo1
+crthitmatch_icarus_cryo1.Alg.TPCTrackLabel: pandoraTrackGausCryo1
+
+END_PROLOG

@@ -1,6 +1,7 @@
 #include "CAFAna/Core/Binning.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 
+#include "SBNAna/Vars/Vars.h"
 #include "SBNAna/Vars/NumuVars.h"
 #include "SBNAna/Cuts/NumuCuts.h"
 #include "SBNAna/Cuts/TruthCuts.h"
@@ -9,44 +10,29 @@ using namespace ana;
 
 
 // Useful for counting the number of events that pass a cut
-const Var kCounting([](const caf::SRProxy *sr)
+const Var kCounting([](const caf::SRSliceProxy *slc)
 		    {
 		      return 1;
 		    });
 
 // Costh of the numu primary track (See Vars/NumuVars.cxx)
-const Var kPrimTrkCosth([](const caf::SRProxy *sr)
+const Var kPrimTrkCosth([](const caf::SRSliceProxy *slc)
 			{
-			  int muIdx = kPrimMuonIdx(sr);
+			  int muIdx = kPrimMuonIdx(slc);
 			  if( muIdx < 0 ) return -5.;
 
-			  return (double)sr->reco.trk[muIdx].costh;
+			  return (double)slc->reco.trk[muIdx].costh;
 			});
 
 // Costh of the numu primary track (See Vars/NumuVars.cxx)
-const Var kPrimTrkCRTdist([](const caf::SRProxy *sr)
+const Var kPrimTrkCRTdist([](const caf::SRSliceProxy *slc)
 			{
-			  int muIdx = kPrimMuonIdx(sr);
+			  int muIdx = kPrimMuonIdx(slc);
 			  if( muIdx < 0 ) return -5.;
 			  
-			  return (double)sr->reco.trk[muIdx].crthit.distance;
+			  return (double)slc->reco.trk[muIdx].crthit.distance;
 			});
 
-// Slice Vertex position
-const Var kSlcVtxX([](const caf::SRProxy *sr)
-		   {
-		     return sr->slc.vertex.x;
-		   });
-
-const Var kSlcVtxY([](const caf::SRProxy *sr)
-		   {
-		     return sr->slc.vertex.y;
-		   });
-
-const Var kSlcVtxZ([](const caf::SRProxy *sr)
-		   {
-		     return sr->slc.vertex.z;
-		   });
 
 // These are examples of useful structs to
 // use when making a bunch of Spectra

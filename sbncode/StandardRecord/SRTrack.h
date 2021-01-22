@@ -4,18 +4,20 @@
 #ifndef SRTRACK_H
 #define SRTRACK_H
 
-/* #include "SRVector3D.h" */
+/* #include "sbncode/StandardRecord/SRVector3D.h" */
 
-#include "SRTrackTruth.h"
-#include "SRTrkChi2PID.h"
-#include "SRTrkMCS.h"
-#include "SRTrkRange.h"
-#include "SRTrkSplit.h"
-#include "SRCRTHitMatch.h"
-#include "SRTrackCalo.h"
+#include "sbncode/StandardRecord/SRTrackTruth.h"
+#include "sbncode/StandardRecord/SRTrkChi2PID.h"
+#include "sbncode/StandardRecord/SRTrkMCS.h"
+#include "sbncode/StandardRecord/SRTrkRange.h"
+#include "sbncode/StandardRecord/SRCRTHitMatch.h"
+#include "sbncode/StandardRecord/SRCRTTrackMatch.h"
+#include "sbncode/StandardRecord/SRTrackCalo.h"
+#include "sbncode/StandardRecord/SRTrkSplit.h"
 
-#include "SRVector3D.h"
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+#include "sbncode/StandardRecord/SREnums.h"
+
 #include <vector>
 
 namespace caf
@@ -28,8 +30,9 @@ namespace caf
 
 
       SRTrack();
-      ~SRTrack(){  };
+      ~SRTrack(){  }
 
+      unsigned producer;    ///< Index of the producer that produced this object. In ICARUS, this is the same as the cryostat.
       unsigned short npts;         ///< number of points (recob Track.NPoints)
       float          len;          ///< track length [cm]
       float          costh;       ///< Costh of start direction of track
@@ -39,10 +42,12 @@ namespace caf
       SRVector3D     end;         ///< End point of track
       int            ID;          ///< ID of this track (taken from the pandora particle "ID" of this track)
 
-      int            nchi2pid;
-      std::vector<SRTrkChi2PID> chi2pid; ///< 3-item list of larana Chi2 Particle PID on each plane ordered (1st ind., 2nd ind., coll)
-      int            ncalo;
-      std::vector<SRTrackCalo> calo; ///< 3-item list of Calorimetry information on each plane ordered (1st ind., 2nd ind., coll)
+      SRTrkChi2PID chi2pid0; ///< Plane-0 Chi2 Particle ID (1st Ind.)
+      SRTrkChi2PID chi2pid1; ///< Plane-1 Chi2 Particle ID (2nd Ind.)
+      SRTrkChi2PID chi2pid2; ///< Plane-2 Chi2 Particle ID (Col.)
+      SRTrackCalo calo0; ///< Plane-0 Calorimetry information (1st Ind.)
+      SRTrackCalo calo1; ///< Plane-1 Calorimetry information (2nd Ind.)
+      SRTrackCalo calo2; ///< Plane-2 Calorimetry information (Col.)      
       Plane_t            bestplane;   ///< Plane index with the most hits. -1 if no calorimetry
 
       SRTrkMCS       mcsP;
@@ -52,6 +57,7 @@ namespace caf
 
       SRTrackTruth   truth;        ///< truth information
       SRCRTHitMatch  crthit;       ///< CRT Hit match
+      SRCRTTrackMatch  crttrack;       ///< CRT Track match
 
       // TO DO: Move the following into SRObjects      
 
@@ -74,6 +80,7 @@ namespace caf
 
       //      CRTMatch       crt_match;   ///< Matching to CRT information
       std::vector<int> daughters; ///< ID's of daughters of this track
+      int             ndaughters; //< Number of daughters
       int parent;                 ///< ID of parent particle of this track
       bool parent_is_primary;
 

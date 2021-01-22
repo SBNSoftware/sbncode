@@ -1,3 +1,8 @@
+// None of this exists in the CAFs at present
+#pragma message "WARNING: SBNWeightSysts temporarily disabled"
+
+#if 0
+
 #include "CAFAna/Systs/SBNWeightSysts.h"
 
 #include "CAFAna/Systs/UniverseOracle.h"
@@ -25,8 +30,8 @@ namespace ana
   // --------------------------------------------------------------------------
   double UniverseWeight::operator()(const caf::SRProxy* sr) const
   {
-    if(sr->truth.empty()) return 1;
-    const auto& ws = sr->truth[0].weights;
+    if(sr->mc.nu.empty()) return 1;
+    const auto& ws = sr->mc.nu[0].weights;
 
     // This hack improves throughput vastly
     if(fUnivIdx == 0){
@@ -76,8 +81,8 @@ namespace ana
 
 
   // --------------------------------------------------------------------------
-  SBNWeightSyst::SBNWeightSyst(const std::string& name)
-    : ISyst(name, name), fIdx(-1)
+  SBNWeightSyst::SBNWeightSyst(const std::string& name, const Cut& cut)
+    : ISyst(name, name), fIdx(-1), fCut(cut)
   {
     assert(UniverseOracle::Instance().SystExists(name));
   }
@@ -85,9 +90,10 @@ namespace ana
   // --------------------------------------------------------------------------
   void SBNWeightSyst::Shift(double x, caf::SRProxy* sr, double& weight) const
   {
-    if(sr->truth.empty()) return;
+    if(sr->mc.nu.empty()) return;
+    if(!fCut(sr)) return;
 
-    const auto& ws = sr->truth[0].weights;
+    const auto& ws = sr->mc.nu[0].weights;
 
     const int i = GetIdx(ws);
     const Univs u = GetUnivs(x);
@@ -154,9 +160,23 @@ namespace ana
       const UniverseOracle& uo = UniverseOracle::Instance();
       ret.reserve(uo.Systs().size());
       for(const std::string& name: uo.Systs()){
-        if(name.find("Alt") != std::string::npos) continue; // these seem to be duplicates
         if(name.find("genie") == std::string::npos) continue;
-        ret.push_back(new SBNWeightSyst(name));
+
+        if(name.find("NonRes") == 0){
+          // These NonRes parameters need special handling. There are two
+          // copies, supposed to apply to CC and NC respectively, but instead
+          // the weights are filled for all events.
+          if(name.find("Alt") == std::string::npos){
+            ret.push_back(new SBNWeightSyst(name, kIsNC));
+          }
+          else{
+            ret.push_back(new SBNWeightSyst(name, kIsCC));
+          }
+        }
+        else{
+          // Regular case
+          ret.push_back(new SBNWeightSyst(name));
+        }
       }
     }
     return ret;
@@ -191,3 +211,5 @@ namespace ana
     return ret;
   }
 }
+
+#endif

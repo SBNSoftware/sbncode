@@ -21,7 +21,7 @@ namespace ana
 
     virtual TFile* GetNextFile() override;
 
-    int NFiles() const {return fNFiles;}
+    int NFiles() const override {return fNFiles;}
   protected:
     ifdh_ns::ifdh *fIFDH;
 

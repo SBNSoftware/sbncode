@@ -36,7 +36,7 @@ namespace ana
     if(tag == "PredictionInterp" ||
        tag == "PredictionInterp2") return PredictionInterp::LoadFrom(dir);
 
-    if(tag == "PredictionLinFit") return PredictionLinFit::LoadFrom(dir);
+    //    if(tag == "PredictionLinFit") return PredictionLinFit::LoadFrom(dir);
 
     if(tag == "PredictionNoOsc") return PredictionNoOsc::LoadFrom(dir);
 

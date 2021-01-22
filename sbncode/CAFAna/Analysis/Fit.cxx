@@ -55,7 +55,7 @@ namespace ana
                  std::vector<const ISyst*> systs,
                  Precision prec)
     : fExpt(expt), fVars(vars), fSysts(systs), fPrec(prec), fCalc(0),
-      fSupportsDerivatives(SupportsDerivatives()), fCovar(0), fCovarStatus(-1)
+      fCovar(0), fCovarStatus(-1)
   {
   }
 
@@ -95,25 +95,6 @@ namespace ana
     }
 
     return ret;
-  }
-
-  //----------------------------------------------------------------------
-  bool Fitter::SupportsDerivatives() const
-  {
-    // Make completely opt-in again (some issues for stats. throws)
-    if(getenv("CAFANA_ANALYTIC_DERIVATIVES") == 0) return false;
-
-    // No point using derivatives for FitVars only, we do finite differences,
-    // probably worse than MINUIT would.
-    if(fSysts.empty()) return false;
-
-    // Otherwise, do the minimal trial to see if the experiment will return a
-    // gradient.
-    std::unordered_map<const ISyst*, double> dchi = {{fSysts[0], 0}};
-    osc::NoOscillations calc;
-    fExpt->Derivative(&calc, SystShifts::Nominal(), dchi);
-
-    return !dchi.empty();
   }
 
   //----------------------------------------------------------------------
@@ -158,12 +139,7 @@ namespace ana
     // One way this can go wrong is if two variables have the same ShortName
     assert(mnMin->NFree() == fVars.size()+fSysts.size());
 
-    if(fSupportsDerivatives){
-      mnMin->SetFunction(*this);
-    }
-    else{
-      mnMin->SetFunction((ROOT::Math::IBaseFunctionMultiDim&)*this);
-    }
+    mnMin->SetFunction(*this);
 
     if(verb == Verbosity::kQuiet) mnMin->SetPrintLevel(0);
 
@@ -283,11 +259,6 @@ namespace ana
   //----------------------------------------------------------------------
   void Fitter::SetPrecision(Precision prec)
   {
-    if((prec & kAlgoMask) == kGradDesc && !fSysts.empty() && !fSupportsDerivatives){
-      std::cout << "Warning - not setting precision to kGradDesc, since analytic gradients are not supported by this experiment" << std::endl;
-      return;
-    }
-
     fPrec = prec;
   }
 
@@ -325,7 +296,6 @@ namespace ana
       std::cout << "Finding best fit for";
       for(const IFitVar* v: fVars) std::cout << " " << v->ShortName();
       for(const ISyst* s: fSysts) std::cout << " " << s->ShortName();
-      if(fSupportsDerivatives) std::cout << " using analytic derivatives";
       std::cout << "..." << std::endl;
     }
 
@@ -392,49 +362,18 @@ namespace ana
     // values to the physical range where necessary.
     double penalty = 0;
     for(unsigned int i = 0; i < fVars.size(); ++i){
-      penalty += fVars[i]->Penalty(pars[i], fCalc);
+      const double x = pars[i];
+      if(isinf(x) || isnan(x)) continue; // DecodePars() should have warned
+      penalty += fVars[i]->Penalty(x, fCalc);
     }
     for(unsigned int j = 0; j < fSysts.size(); ++j){
-      penalty += fSysts[j]->Penalty(pars[fVars.size()+j]);
+      const double x = pars[fVars.size()+j];
+      if(isinf(x) || isnan(x)) continue; // DecodePars() should have warned
+      penalty += fSysts[j]->Penalty(x);
     }
 
     if(fNEval%1000 == 0) std::cout << fNEval << ": EXPT chi2 = " << fExpt->ChiSq(fCalc, fShifts) << "; penalty = " << penalty << std::endl;
     return fExpt->ChiSq(fCalc, fShifts) + penalty;
-  }
-
-  //----------------------------------------------------------------------
-  void Fitter::Gradient(const double* pars, double* ret) const
-  {
-    ++fNEvalGrad;
-
-    if(!fVars.empty()){
-      // Have to use finite differences to calculate these derivatives
-      const double dx = 1e-9;
-      const double nom = DoEval(pars);
-      ++fNEvalFiniteDiff;
-      std::vector<double> parsCopy(pars, pars+NDim());
-      for(unsigned int i = 0; i < fVars.size(); ++i){
-        parsCopy[i] += dx;
-        ret[i] = (DoEval(parsCopy.data())-nom)/dx;
-        ++fNEvalFiniteDiff;
-        parsCopy[i] = pars[i];
-      }
-    }
-
-    // Get systematic parts analytically
-
-    DecodePars(pars); // Updates fCalc and fShifts
-
-    std::unordered_map<const ISyst*, double> dchi;
-    for(const ISyst* s: fSysts) dchi[s] = 0;
-    fExpt->Derivative(fCalc, fShifts, dchi);
-
-    for(unsigned int j = 0; j < fSysts.size(); ++j){
-      // Get the un-truncated systematic shift
-      const double x = pars[fVars.size()+j];
-
-      ret[fVars.size()+j] = dchi[fSysts[j]] + fSysts[j]->PenaltyDerivative(x);
-    }
   }
 
   //----------------------------------------------------------------------

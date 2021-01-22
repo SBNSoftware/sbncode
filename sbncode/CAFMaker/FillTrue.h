@@ -49,13 +49,20 @@ namespace caf
 
   // TODO: implement
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
-			const art::Ptr<simb::MCFlux> mcflux, 
+			const simb::MCFlux &mcflux, 
 			const std::vector<caf::SRTrueParticle> &srparticles,
 			caf::SRTrueInteraction &srneutrino, size_t i);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
+		      bool allowEmpty = false);
+
+  void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::vector<caf::SRTrueParticle> &particles,
+                      const detinfo::DetectorClocksData &clockData,
+		      caf::SRShower& srshower,
 		      bool allowEmpty = false);
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 

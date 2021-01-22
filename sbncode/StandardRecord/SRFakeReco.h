@@ -4,8 +4,8 @@
 #ifndef SRFAKERECO_H
 #define SRFAKERECO_H
 
-#include "SRVector3D.h"
-#include "SRFakeRecoParticle.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+#include "sbncode/StandardRecord/SRFakeRecoParticle.h"
 
 namespace caf
 {
@@ -14,7 +14,7 @@ namespace caf
   {
   public:
     SRFakeReco();
-    ~SRFakeReco() {  };
+    ~SRFakeReco() {  }
 
     float nuE; ///! Fake-reco neutrino Energy [GeV]
     SRVector3D vtx; ///! Interaction vertex in detector coordinates [cm] 

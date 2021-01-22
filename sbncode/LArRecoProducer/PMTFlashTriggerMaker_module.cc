@@ -7,41 +7,36 @@
 // from cetlib version v3_07_02.
 ////////////////////////////////////////////////////////////////////////
 
+
+#include "sbncode/OpDet/PDMapAlg.h"
+#include "sbnobj/Common/Reco/FlashTriggerPrimitive.hh"
+
+#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/Utilities/AssociationUtil.h"
+#include "lardataobj/RawData/OpDetWaveform.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Utilities/make_tool.h"
+
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "lardata/Utilities/AssociationUtil.h"
-
-#include "sbncode/LArRecoProducer/Products/FlashTriggerPrimitive.hh"
 
 #include <memory>
 #include <iostream>
 #include <vector>
 
-#include "sbndcode/OpDetSim/sbndPDMapAlg.hh"
-#include "lardataobj/RawData/OpDetWaveform.h"
-
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
 
 namespace sbn {
   class PMTFlashTriggerMaker;
-
-  std::vector<sbn::FlashTriggerPrimitive> TriggerPrimitives(
-    const std::vector<raw::OpDetWaveform> &waveforms, 
-    double tick_period, 
-    std::pair<double, double> &window, 
-    int thresh, 
-    bool is_sbnd);
 }
-
 
 class sbn::PMTFlashTriggerMaker : public art::EDProducer {
 public:
@@ -64,6 +59,15 @@ private:
   std::pair<double, double> fTriggerWindow;
   int fTriggerThreshold;
   bool fOffsetTriggerTime;
+
+  std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
+
+  std::vector<sbn::FlashTriggerPrimitive> 
+  TriggerPrimitives(const std::vector<raw::OpDetWaveform> &waveforms, 
+		    double tick_period, 
+		    std::pair<double, double> &window, 
+		    int thresh);
+
 };
 
 sbn::PMTFlashTriggerMaker::PMTFlashTriggerMaker(fhicl::ParameterSet const& p)
@@ -75,6 +79,9 @@ sbn::PMTFlashTriggerMaker::PMTFlashTriggerMaker(fhicl::ParameterSet const& p)
     fOffsetTriggerTime(p.get<bool>("OffsetTriggerTime"))
 {
   produces< std::vector<sbn::FlashTriggerPrimitive> >();
+
+  fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
+
 }
 
 void sbn::PMTFlashTriggerMaker::produce(art::Event& e)
@@ -97,23 +104,23 @@ void sbn::PMTFlashTriggerMaker::produce(art::Event& e)
   if (waveform_handle.isValid()) {
     const std::vector<raw::OpDetWaveform> &waveforms = *waveform_handle;
     double tick_period = clock_data.OpticalClock().TickPeriod();
-    bool is_sbnd = fExperiment == "SBND";
+    //bool is_sbnd = fExperiment == "SBND"; //replace with PDMapAlgPtr
 
-   *trigs = TriggerPrimitives(waveforms, tick_period, window, fTriggerThreshold, is_sbnd);
+   *trigs = TriggerPrimitives(waveforms, tick_period, window, fTriggerThreshold);
   }
 
   e.put(std::move(trigs));
 }
 
-DEFINE_ART_MODULE(sbn::PMTFlashTriggerMaker)
-
-std::vector<sbn::FlashTriggerPrimitive> sbn::TriggerPrimitives(const std::vector<raw::OpDetWaveform> &waveforms, double tick_period, std::pair<double, double> &window, int thresh, bool is_sbnd) {
+std::vector<sbn::FlashTriggerPrimitive> sbn::PMTFlashTriggerMaker::TriggerPrimitives(const std::vector<raw::OpDetWaveform> &waveforms, 
+										     double tick_period, 
+										     std::pair<double, double> &window, 
+										     int thresh) {
   std::vector<sbn::FlashTriggerPrimitive> ret;
 
-  opdet::sbndPDMapAlg mapalg;
   for (const raw::OpDetWaveform &wvf: waveforms) {
     // check if this is a PMT
-    bool is_pmt = (!is_sbnd) || mapalg.pdType(wvf.ChannelNumber()) == "pmt";
+    bool is_pmt = fPDMapAlgPtr->pdType(wvf.ChannelNumber()) == "pmt";
 
     if (!is_pmt) continue;
 
@@ -136,3 +143,5 @@ std::vector<sbn::FlashTriggerPrimitive> sbn::TriggerPrimitives(const std::vector
   }
   return ret;
 }
+
+DEFINE_ART_MODULE(sbn::PMTFlashTriggerMaker)

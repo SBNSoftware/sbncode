@@ -33,8 +33,7 @@ namespace ana
     /// Penalty term for chi-squared fits
     double Penalty() const;
 
-    void Shift(caf::SRProxy* sr,
-               double& weight) const;
+    void Shift(caf::SRSliceProxy* slc, double& weight) const;
 
     /// Brief description of component shifts, for printing to screen
     std::string ShortName() const;

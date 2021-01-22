@@ -6,15 +6,18 @@
 
 namespace ana
 {
+  const Cut kHasMatchedNu([](const caf::SRSliceProxy* slc)
+                          {
+                            return slc->truth.index >= 0;
+                          });
 
   /// \brief Is this a Neutral %Current event?
   ///
-  /// We use uniform-initializer syntax to concisely pass the list of necessary
-  /// branches. In this case the selection function is simple enough that we
-  /// can include it inline as a lambda function.
-  const Cut kIsNC([](const caf::SRProxy* sr)
+  /// In this case the selection function is simple enough that we can include
+  /// it inline as a lambda function.
+  const Cut kIsNC([](const caf::SRSliceProxy* slc)
                   {
-                    return !sr->truth[0].neutrino.iscc;
+                    return !slc->truth.iscc;
                   });
 
   //----------------------------------------------------------------------
@@ -26,11 +29,12 @@ namespace ana
     {
     }
 
-    bool operator()(const caf::SRProxy* sr) const
+    bool operator()(const caf::SRSliceProxy* slc) const
     {
-
-      return sr->truth[0].neutrino.iscc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig
-             && abs(sr->truth[0].neutrino.pdg) == fPdg;
+      return kHasMatchedNu(slc) &&
+        slc->truth.iscc &&
+        abs(slc->truth.initpdg) == fPdgOrig &&
+        abs(slc->truth.pdg) == fPdg;
     }
   protected:
     int fPdg, fPdgOrig;
@@ -44,9 +48,9 @@ namespace ana
     {
     }
 
-    bool operator()(const caf::SRProxy* sr) const
+    bool operator()(const caf::SRSliceProxy* slc) const
     {
-      return sr->truth[0].neutrino.isnc && abs(sr->truth[0].neutrino.initpdg) == fPdgOrig;
+      return kHasMatchedNu(slc) && slc->truth.isnc && abs(slc->truth.initpdg) == fPdgOrig;
     }
   protected:
     int fPdgOrig;
@@ -76,8 +80,8 @@ namespace ana
   const Cut kIsNCFromNue(NCFlavOrig(12));
 
   /// Is this truly an antineutrino?
-  const Cut kIsAntiNu([](const caf::SRProxy* sr)
+  const Cut kIsAntiNu([](const caf::SRSliceProxy* slc)
                       {
-                        return sr->truth[0].neutrino.pdg < 0;
+                        return kHasMatchedNu(slc) && slc->truth.pdg < 0;
                       });
 }

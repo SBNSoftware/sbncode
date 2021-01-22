@@ -5,7 +5,7 @@
 #ifndef SRHEADER_H
 #define SRHEADER_H
 
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SREnums.h"
 
 namespace caf
 {
@@ -28,6 +28,8 @@ namespace caf
       float          pot;       ///< POT of the subrun associated with this record
       MCType_t       mctype;    ///< Type of Monte Carlo used to generate this record
       Det_t          det;       ///< Detector, SBND=1 ICARUS=2
+      bool           first_in_subrun; ///< Whether this event is the first in the subrun
+      bool           first_in_file;   ///< Whether this event is there first in the input file
       // bool           blind;     ///< if true, record has been corrupted for blindness
 
     };

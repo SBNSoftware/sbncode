@@ -1,3 +1,5 @@
+#if 0 // temporarily disable
+
 #pragma once
 
 #include "CAFAna/Prediction/IPrediction.h"
@@ -86,3 +88,5 @@ namespace ana
     mutable std::vector<std::vector<double>> fCoeffs;
   };
 }
+
+#endif

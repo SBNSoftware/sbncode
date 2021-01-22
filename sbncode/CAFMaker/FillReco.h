@@ -24,8 +24,9 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbncode/LArRecoProducer/Products/RangeP.h"
 #include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
-#include "sbncode/LArRecoProducer/Products/CRTHit.hh"
-#include "sbncode/LArRecoProducer/Products/MergedTrackInfo.hh"
+#include "sbncode/TPCReco/Products/MergedTrackInfo.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -40,6 +41,7 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
@@ -54,12 +56,9 @@ namespace caf
 
   void FillSliceVars(const recob::Slice& slice,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRSlice& srslice,
                      bool allowEmpty = false);
-
-  void FillSliceFlashMatch(const anab::T0 *fmatch,
-                           caf::SRSlice &srslice,
-                           bool allowEmpty = false);
 
   void FillSliceMetadata(const larpandoraobj::PFParticleMetadata *primary_meta,
                         caf::SRSlice &srslice,
@@ -74,11 +73,15 @@ namespace caf
   void FillTrackVars(const recob::Track& track,
                      const recob::PFParticle& particle,
                      const recob::PFParticle *primary,
+                     unsigned producer,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
-  void FillTrackCRTHit(const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
-                       const std::vector<const anab::T0*> &t0match,
+  void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       caf::SRTrack &srtrack,
+                       bool allowEmpty = false);
+
+  void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -117,6 +120,10 @@ namespace caf
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
+                  bool allowEmpty = false);
+  void FillCRTTrack(const sbn::crt::CRTTrack &track,
+                  bool use_ts0,
+                  caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
 }
 

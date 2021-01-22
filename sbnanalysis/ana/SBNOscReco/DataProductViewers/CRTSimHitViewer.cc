@@ -16,11 +16,11 @@
 
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "sbndcode/CRT/CRTProducts/CRTHit.hh"
-#include "sbndcode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/SBND/CRT/CRTData.hh"
 #include "fhiclcpp/ParameterSet.h"
 
 #include "TH2D.h"
@@ -67,8 +67,8 @@ public:
   bool ProcessEvent(const gallery::Event& ev, const std::vector<event::Interaction> &truth, std::vector<event::RecoInteraction>& reco) {
 
     if (fIsICARUS) {
-    auto const &crt_hits_handle = ev.getValidHandle<std::vector<icarus::crt::CRTHit>>(fCRTHitTag);;
-    const std::vector<icarus::crt::CRTHit> &crt_hits = *crt_hits_handle;
+    auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbn::crt::CRTHit>>(fCRTHitTag);;
+    const std::vector<sbn::crt::CRTHit> &crt_hits = *crt_hits_handle;
     const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
     art::FindManyP<icarus::crt::CRTData, void> hits_to_data(crt_hits_handle, ev, fCRTHitTag);
     std::cout << "Event: " << event_ind << std::endl;
@@ -89,7 +89,7 @@ public:
     fOutputFile->cd();
     TH2D *time_v_pe = new TH2D(histo_name.c_str(), "in_time_hits", 200, -1000., 1000., 10, 0., 500000.);
     for (unsigned i = 0; i < crt_hits.size(); i++) {
-      const icarus::crt::CRTHit &crt_hit = crt_hits[i];
+      const sbn::crt::CRTHit &crt_hit = crt_hits[i];
       std::cout << "Hit index: " << i << std::endl;
       std::cout << "TS0 NS: " << (int)crt_hit.ts0_ns << std::endl;
       std::cout << "TS1 NS: " << crt_hit.ts1_ns << std::endl;
@@ -116,8 +116,8 @@ public:
     delete time_v_pe;
     }
     else {
-    auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbnd::crt::CRTHit>>(fCRTHitTag);;
-    const std::vector<sbnd::crt::CRTHit> &crt_hits = *crt_hits_handle;
+    auto const &crt_hits_handle = ev.getValidHandle<std::vector<sbn::crt::CRTHit>>(fCRTHitTag);;
+    const std::vector<sbn::crt::CRTHit> &crt_hits = *crt_hits_handle;
     const std::vector<sim::AuxDetSimChannel> &crt_sim_channels = *ev.getValidHandle<std::vector<sim::AuxDetSimChannel>>("largeant");
     std::cout << "Event: " << event_ind << std::endl;
 
@@ -133,7 +133,7 @@ public:
     }
 
     for (unsigned i = 0; i < crt_hits.size(); i++) {
-      const sbnd::crt::CRTHit &crt_hit = crt_hits[i];
+      const sbn::crt::CRTHit &crt_hit = crt_hits[i];
       std::cout << "Hit index: " << i << std::endl;
       std::cout << "TS0 NS: " << crt_hit.ts0_ns << std::endl;
       std::cout << "TS1 NS: " << crt_hit.ts1_ns << std::endl;

@@ -59,16 +59,6 @@ namespace ana
   public:
     double ChiSq(osc::IOscCalculatorAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
-
-    void Derivative(osc::IOscCalculator*,
-                    const SystShifts&,
-                    std::unordered_map<const ISyst*, double>&) const override
-    {
-      // Nothing to do, since we only depend on osc params and the derivatives
-      // with the systs are all zero. But need to implement, because the
-      // default implementation indicates that we are unable to calculate the
-      // necessary derivatives.
-    }
   };
 
   class Penalizer_GlbLike: public IExperiment
@@ -92,13 +82,6 @@ namespace ana
 
     double ChiSq(osc::IOscCalculatorAdjustable* calc,
                  const SystShifts& syst = SystShifts::Nominal()) const override;
-
-    void Derivative(osc::IOscCalculator*,
-                    const SystShifts&,
-                    std::unordered_map<const ISyst*, double>&) const override
-    {
-      // See justification in NuFitPenalizer::Derivative()
-    }
 
   protected:
     double fDmsq21;

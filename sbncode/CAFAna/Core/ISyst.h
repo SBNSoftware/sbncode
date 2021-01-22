@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace caf{class SRProxy;}
+#include "StandardRecord/Proxy/FwdDeclare.h"
 
 namespace ana
 {
@@ -33,7 +33,6 @@ namespace ana
     virtual std::string LatexName() const final {return fLatexName;}
 
     virtual double Penalty(double x) const;
-    virtual double PenaltyDerivative(double x) const;
 
     /// Should a penalty be applied for this shift?
     virtual bool ApplyPenalty() const {return fApplyPenalty;}
@@ -48,7 +47,7 @@ namespace ana
     /// \param sr      The record to inspect and alter
     /// \param weight  Scale this weight for reweighting systematics
     virtual void Shift(double sigma,
-                       caf::SRProxy* sr,
+                       caf::SRSliceProxy* sr,
                        double& weight) const = 0;
 
     /// PredictionInterp normally interpolates between spectra made at

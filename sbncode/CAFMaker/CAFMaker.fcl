@@ -14,7 +14,6 @@ standard_cafmaker:{
     FileExtension:        ".caf.root"
     GeneratorInput:       "generator"
     StrictMode:           false    # Abort if any required product is not found, unless the label is empty
-    CRTHitUseTS0:         true
 }
 
 END_PROLOG

@@ -19,7 +19,7 @@ target_link_libraries(sbncode_CosmicIdAlgs
 	lardataobj_RecoBase
 	sbndcode_CRT
 	sbndcode_CRTUtils
-	sbndcode_CRTProducts
+	sbnobj_Common_CRT
 )
 
 install(TARGETS sbncode_CosmicIdAlgs DESTINATION lib)

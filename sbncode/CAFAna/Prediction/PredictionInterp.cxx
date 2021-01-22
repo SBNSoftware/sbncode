@@ -300,8 +300,7 @@ namespace ana
     TH1D* h = s.ToTH1(s.POT());
 
     const unsigned int N = h->GetNbinsX()+2;
-    double corr[N];
-    for(unsigned int i = 0; i < N; ++i) corr[i] = 1;
+    std::vector<double> corr(N,1.0);
 
     for(auto& it: fPreds){
       const ISyst* syst = it.first;
@@ -431,124 +430,6 @@ namespace ana
     delete hash;
 
     return ret;
-  }
-
-  //----------------------------------------------------------------------
-  void PredictionInterp::
-  ComponentDerivative(osc::IOscCalculator* calc,
-                      Flavors::Flavors_t flav,
-                      Current::Current_t curr,
-                      Sign::Sign_t sign,
-                      CoeffsType type,
-                      const SystShifts& shift,
-                      double pot,
-                      std::unordered_map<const ISyst*, std::vector<double>>& dp) const
-  {
-    if(fSplitBySign && sign == Sign::kBoth){
-      ComponentDerivative(calc, flav, curr, Sign::kNu,     type, shift, pot, dp);
-      ComponentDerivative(calc, flav, curr, Sign::kAntiNu, type, shift, pot, dp);
-      return;
-    }
-
-    const Spectrum base = PredictComponentSyst(calc, shift, flav, curr, sign);
-    TH1D* h = base.ToTH1(pot);
-    const unsigned int N = h->GetNbinsX()+2;
-
-
-    // Should the interpolation use the nubar fits?
-    const bool nubar = (fSplitBySign && sign == Sign::kAntiNu);
-
-    for(auto& it: dp){
-      const ISyst* syst = it.first;
-      std::vector<double>& diff = it.second;
-      if(diff.empty()) diff.resize(N);
-      assert(diff.size() == N);
-      assert(fPreds.find(syst) != fPreds.end());
-      const ShiftedPreds& sp = fPreds[syst];
-
-      auto& fits = nubar ? sp.fitsNubar : sp.fits;
-
-      double x = shift.GetShift(syst);
-
-      int shiftBin = (x - sp.shifts[0])/sp.Stride();
-      shiftBin = std::max(0, shiftBin);
-      shiftBin = std::min(shiftBin, sp.nCoeffs-1);
-
-      x -= sp.shifts[shiftBin];
-
-      const double x_cube = util::cube(x);
-      const double x_sqr = util::sqr(x);
-
-      for(unsigned int n = 0; n < N; ++n){
-        // Uncomment to debug crashes in this function
-        // assert(type < fits.size());
-        // assert(n < sp.fits[type].size());
-        // assert(shiftBin < int(sp.fits[type][n].size()));
-        const Coeffs& f = fits[type][n][shiftBin];
-
-        const double corr = f.a*x_cube + f.b*x_sqr + f.c*x + f.d;
-        if(corr > 0) diff[n] += (3*f.a*x_sqr + 2*f.b*x + f.c)/corr*h->GetBinContent(n);
-      } // end for n
-    } // end for syst
-
-    HistCache::Delete(h);
-  }
-
-  //----------------------------------------------------------------------
-  void PredictionInterp::
-  Derivative(osc::IOscCalculator* calc,
-             const SystShifts& shift,
-             double pot,
-             std::unordered_map<const ISyst*, std::vector<double>>& dp) const
-  {
-    InitFits();
-
-    // Check that we're able to handle all the systs we were passed
-    for(auto& it: dp){
-      if(fPreds.find(it.first) == fPreds.end()){
-        std::cerr << "This PredictionInterp is not set up to handle the requested systematic: " << it.first->ShortName() << std::endl;
-        abort();
-      }
-      it.second.clear();
-    } // end for syst
-
-    ComponentDerivative(calc, Flavors::kNuEToNuE,    Current::kCC, Sign::kBoth, kNueSurv,  shift, pot, dp);
-    ComponentDerivative(calc, Flavors::kNuEToNuMu,   Current::kCC, Sign::kBoth, kOther,    shift, pot, dp);
-    ComponentDerivative(calc, Flavors::kNuEToNuTau,  Current::kCC, Sign::kBoth, kOther,    shift, pot, dp);
-
-    ComponentDerivative(calc, Flavors::kNuMuToNuE,   Current::kCC, Sign::kBoth, kNueApp,   shift, pot, dp);
-    ComponentDerivative(calc, Flavors::kNuMuToNuMu,  Current::kCC, Sign::kBoth, kNumuSurv, shift, pot, dp);
-    ComponentDerivative(calc, Flavors::kNuMuToNuTau, Current::kCC, Sign::kBoth, kOther,    shift, pot, dp);
-
-    ComponentDerivative(calc, Flavors::kAll, Current::kNC, Sign::kBoth, kNC, shift, pot, dp);
-
-    // Simpler (much slower) implementation in terms of finite differences for
-    // test purposes
-    /*
-    const Spectrum p0 = PredictSyst(calc, shift);
-    TH1D* h0 = p0.ToTH1(pot);
-
-    const double dx = 1e-9;
-    for(auto& it: dp){
-      const ISyst* s =  it.first;
-      std::vector<double>& v = it.second;
-      SystShifts s2 = shift;
-      s2.SetShift(s, s2.GetShift(s)+dx);
-
-      const Spectrum p1 = PredictSyst(calc, s2);
-
-      TH1D* h1 = p1.ToTH1(pot);
-
-      v.resize(h1->GetNbinsX()+2);
-      for(int i = 0; i < h1->GetNbinsX()+2; ++i){
-        v[i] = (h1->GetBinContent(i) - h0->GetBinContent(i))/dx;
-      }
-
-      HistCache::Delete(h1);
-    }
-
-    HistCache::Delete(h0);
-    */
   }
 
   //----------------------------------------------------------------------
@@ -692,8 +573,8 @@ namespace ana
     std::unique_ptr<TH1> nom(fPredNom->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
     const int nbins = nom->GetNbinsX();
 
-    TGraph* curves[nbins];
-    TGraph* points[nbins];
+    std::vector<TGraph*> curves(nbins);
+    std::vector<TGraph*> points(nbins);
 
     for(int i = 0; i <= 80; ++i){
       const double x = .1*i-4;
@@ -724,8 +605,7 @@ namespace ana
 
     for(unsigned int shiftIdx = 0; shiftIdx < it->second.shifts.size(); ++shiftIdx){
       if(!it->second.preds[shiftIdx]) continue; // Probably MinimizeMemory()
-      std::unique_ptr<TH1> h;
-      h = std::move(std::unique_ptr<TH1>(it->second.preds[shiftIdx]->PredictComponent(calc, flav, curr, sign).ToTH1(18e20)));
+      std::unique_ptr<TH1> h(it->second.preds[shiftIdx]->PredictComponent(calc, flav, curr, sign).ToTH1(18e20));
 
       for(int bin = 0; bin < nbins; ++bin){
         const double ratio = h->GetBinContent(bin+1)/hnom->GetBinContent(bin+1);

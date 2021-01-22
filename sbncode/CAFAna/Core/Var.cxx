@@ -7,18 +7,17 @@
 
 namespace ana
 {
-  // explicitly instantiate the template for the types we know we have
-  template class GenericVar<caf::SRProxy>;
-  template class GenericVar<caf::SRSpill>;
-  template class GenericVar<caf::SRSpillTruthBranch>;
-
-  template<class T> int GenericVar<T>::fgNextID = 0;
-
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>::
-  GenericVar(const std::function<VarFunc_t>& fun)
+  template<class T> _Var<T>::
+  _Var(const std::function<VarFunc_t>& fun)
     : fFunc(fun), fID(fgNextID++)
   {
+  }
+
+  //----------------------------------------------------------------------
+  template<class T> int _Var<T>::MaxID()
+  {
+    return fgNextID-1;
   }
 
   //----------------------------------------------------------------------
@@ -26,8 +25,8 @@ namespace ana
   template<class T> class Var2DFunc
   {
   public:
-    Var2DFunc(const GenericVar<T>& a, const Binning binsa,
-              const GenericVar<T>& b, const Binning binsb)
+    Var2DFunc(const _Var<T>& a, const Binning binsa,
+              const _Var<T>& b, const Binning binsb)
       : fA(a), fBinsA(binsa),
 	fB(b), fBinsB(binsb)
     {
@@ -53,9 +52,9 @@ namespace ana
     }
 
   protected:
-    const GenericVar<T> fA;
+    const _Var<T> fA;
     const Binning fBinsA;
-    const GenericVar<T> fB;
+    const _Var<T> fB;
     const Binning fBinsB;
   };
 
@@ -63,9 +62,9 @@ namespace ana
   template<class T> class Var3DFunc
   {
   public:
-    Var3DFunc(const GenericVar<T>& a, const Binning binsa,
-              const GenericVar<T>& b, const Binning binsb,
-              const GenericVar<T>& c, const Binning binsc)
+    Var3DFunc(const _Var<T>& a, const Binning binsa,
+              const _Var<T>& b, const Binning binsb,
+              const _Var<T>& c, const Binning binsc)
       : fA(a), fBinsA(binsa),
 	fB(b), fBinsB(binsb),
 	fC(c), fBinsC(binsc)
@@ -97,26 +96,26 @@ namespace ana
     }
 
   protected:
-    const GenericVar<T> fA;
+    const _Var<T> fA;
     const Binning fBinsA;
-    const GenericVar<T> fB;
+    const _Var<T> fB;
     const Binning fBinsB;
-    const GenericVar<T> fC;
+    const _Var<T> fC;
     const Binning fBinsC;
   };
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  Var2D(const GenericVar<T>& a, const Binning& binsa,
-        const GenericVar<T>& b, const Binning& binsb)
+  template<class T> _Var<T>
+  Var2D(const _Var<T>& a, const Binning& binsa,
+        const _Var<T>& b, const Binning& binsb)
   {
-    return GenericVar<T>(Var2DFunc<T>(a, binsa, b, binsb));
+    return _Var<T>(Var2DFunc<T>(a, binsa, b, binsb));
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  Var2D(const GenericVar<T>& a, int na, double a0, double a1,
-        const GenericVar<T>& b, int nb, double b0, double b1)
+  template<class T> _Var<T>
+  Var2D(const _Var<T>& a, int na, double a0, double a1,
+        const _Var<T>& b, int nb, double b0, double b1)
   {
     return Var2D(a, Binning::Simple(na, a0, a1),
                  b, Binning::Simple(nb, b0, b1));
@@ -125,26 +124,24 @@ namespace ana
   // explicitly instantiate the template for the types we know we have
   template Var Var2D(const Var&, const Binning&, const Var&, const Binning&);
   template SpillVar Var2D(const SpillVar&, const Binning&, const SpillVar&, const Binning&);
-  template SpillTruthVar Var2D(const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&);
 
   template Var Var2D(const Var&, int, double, double, const Var&, int, double, double);
   template SpillVar Var2D(const SpillVar&, int, double, double, const SpillVar&, int, double, double);
-  template SpillTruthVar Var2D(const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double);
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  Var3D(const GenericVar<T>& a, const Binning& binsa,
-        const GenericVar<T>& b, const Binning& binsb,
-        const GenericVar<T>& c, const Binning& binsc)
+  template<class T> _Var<T>
+  Var3D(const _Var<T>& a, const Binning& binsa,
+        const _Var<T>& b, const Binning& binsb,
+        const _Var<T>& c, const Binning& binsc)
   {
-    return GenericVar<T>(Var3DFunc<T>(a, binsa, b, binsb, c, binsc));
+    return _Var<T>(Var3DFunc<T>(a, binsa, b, binsb, c, binsc));
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  Var3D(const GenericVar<T>& a, int na, double a0, double a1,
-        const GenericVar<T>& b, int nb, double b0, double b1,
-        const GenericVar<T>& c, int nc, double c0, double c1)
+  template<class T> _Var<T>
+  Var3D(const _Var<T>& a, int na, double a0, double a1,
+        const _Var<T>& b, int nb, double b0, double b1,
+        const _Var<T>& c, int nc, double c0, double c1)
   {
     return Var3D(a, Binning::Simple(na, a0, a1),
                  b, Binning::Simple(nb, b0, b1),
@@ -154,58 +151,56 @@ namespace ana
   // explicitly instantiate the template for the types we know we have
   template Var Var3D(const Var&, const Binning&, const Var&, const Binning&, const Var&, const Binning&);
   template SpillVar Var3D(const SpillVar&, const Binning&, const SpillVar&, const Binning&, const SpillVar&, const Binning&);
-  template SpillTruthVar Var3D(const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&, const SpillTruthVar&, const Binning&);
 
   template Var Var3D(const Var&, int, double, double, const Var&, int, double, double, const Var&, int, double, double);
   template SpillVar Var3D(const SpillVar&, int, double, double, const SpillVar&, int, double, double, const SpillVar&, int, double, double);
-  template SpillTruthVar Var3D(const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double, const SpillTruthVar&, int, double, double);
 
   //----------------------------------------------------------------------
   Var Scaled(const Var& v, double s)
   {
-    return Var([v, s](const caf::SRProxy* sr){return s*v(sr);});
+    return Var([v, s](const caf::SRSliceProxy* sr){return s*v(sr);});
   }
 
   //----------------------------------------------------------------------
   Var Constant(double c)
   {
-    return Var([c](const caf::SRProxy*){return c;});
+    return Var([c](const caf::SRSliceProxy*){return c;});
   }
 
   //--------------------------------------------------------------------
 
   Var Sqrt(const Var& v)
   {
-    return Var([v](const caf::SRProxy* sr){return sqrt(v(sr));});
+    return Var([v](const caf::SRSliceProxy* sr){return sqrt(v(sr));});
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  operator*(const GenericVar<T>& a, const GenericVar<T>& b)
+  template<class T> _Var<T>
+  operator*(const _Var<T>& a, const _Var<T>& b)
   {
     static std::map<std::pair<int, int>, int> ids;
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>([a, b](const T* sr){return a(sr) * b(sr);},
+      return _Var<T>([a, b](const T* sr){return a(sr) * b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret([a, b](const T* sr){return a(sr) * b(sr);});
+      const _Var<T> ret([a, b](const T* sr){return a(sr) * b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  operator/(const GenericVar<T>& a, const GenericVar<T>& b)
+  template<class T> _Var<T>
+  operator/(const _Var<T>& a, const _Var<T>& b)
   {
     static std::map<std::pair<int, int>, int> ids;
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>([a, b](const T* sr)
+      return _Var<T>([a, b](const T* sr)
                            {
                              const double denom = b(sr);
                              if(denom != 0)
@@ -216,7 +211,7 @@ namespace ana
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret([a, b](const T* sr)
+      const _Var<T> ret([a, b](const T* sr)
                               {
                                 const double denom = b(sr);
                                 if(denom != 0)
@@ -230,43 +225,47 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  operator+(const GenericVar<T>& a, const GenericVar<T>& b)
+  template<class T> _Var<T>
+  operator+(const _Var<T>& a, const _Var<T>& b)
   {
     static std::map<std::pair<int, int>, int> ids;
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>([a, b](const T* sr){return a(sr) + b(sr);},
+      return _Var<T>([a, b](const T* sr){return a(sr) + b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret([a, b](const T* sr){return a(sr) + b(sr);});
+      const _Var<T> ret([a, b](const T* sr){return a(sr) + b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
   }
 
   //----------------------------------------------------------------------
-  template<class T> GenericVar<T>
-  operator-(const GenericVar<T>& a, const GenericVar<T>& b)
+  template<class T> _Var<T>
+  operator-(const _Var<T>& a, const _Var<T>& b)
   {
     static std::map<std::pair<int, int>, int> ids;
     const std::pair<int, int> key(a.ID(), b.ID());
 
     if(ids.count(key)){
-      return GenericVar<T>([a, b](const T* sr){return a(sr) - b(sr);},
+      return _Var<T>([a, b](const T* sr){return a(sr) - b(sr);},
                            ids[key]);
     }
     else{
-      const GenericVar<T> ret([a, b](const T* sr){return a(sr) - b(sr);});
+      const _Var<T> ret([a, b](const T* sr){return a(sr) - b(sr);});
       ids[key] = ret.ID();
       return ret;
     }
   }
 
-
   // explicitly instantiate the templates for the types we know we have
+  template class _Var<caf::SRSpillProxy>;
+  template class _Var<caf::SRSliceProxy>;
+
+  template<class T> int _Var<T>::fgNextID = 0;
+
   template Var operator*(const Var&, const Var&);
   template Var operator/(const Var&, const Var&);
   template Var operator+(const Var&, const Var&);
@@ -275,8 +274,4 @@ namespace ana
   template SpillVar operator/(const SpillVar&, const SpillVar&);
   template SpillVar operator+(const SpillVar&, const SpillVar&);
   template SpillVar operator-(const SpillVar&, const SpillVar&);
-  template SpillTruthVar operator*(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator/(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator+(const SpillTruthVar&, const SpillTruthVar&);
-  template SpillTruthVar operator-(const SpillTruthVar&, const SpillTruthVar&);
 }

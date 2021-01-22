@@ -30,7 +30,7 @@ void CrtTrackCosmicIdAlg::reconfigure(const core::ProviderManager &manager, cons
 
 
 // Tags track as cosmic if it matches a CRTTrack
-bool CrtTrackCosmicIdAlg::CrtTrackCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbnd::crt::CRTTrack> crtTracks) {
+bool CrtTrackCosmicIdAlg::CrtTrackCosmicId(recob::Track track, std::vector<art::Ptr<recob::Hit>> hits, std::vector<sbn::crt::CRTTrack> crtTracks) {
 
   // Get the closest matching CRT track ID
   int crtID = trackMatchAlg.GetMatchedCRTTrackId(track, hits, crtTracks);

@@ -13,7 +13,7 @@ class SBNFluxHadronSyst : public ISyst
 public:
   virtual ~SBNFluxHadronSyst();
 
-  void Shift(double sigma, caf::SRProxy* sr, double& weight) const override;
+  void Shift(double sigma, caf::SRSliceProxy* slc, double& weight) const override;
 
 protected:
   friend const SBNFluxHadronSyst* GetSBNFluxHadronSyst(unsigned int);

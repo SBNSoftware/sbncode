@@ -49,11 +49,11 @@
 
 #include "larsim/MCCheater/ParticleInventory.h"
 #include "larsim/MCCheater/PhotonBackTracker.h"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #ifdef CRTTrack_hh_
 #undef CRTTrack_hh_
 #endif
-#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "sbndcode/CRT/CRTUtils/TPCGeoUtil.h"
 #include "sbndcode/Geometry/GeometryWrappers/CRTGeoAlg.h"
 
@@ -135,8 +135,8 @@ int NumuReco::GetPhotonMotherID(int mcparticle_id) {
   }
 }
 
-sbnd::crt::CRTHit ICARUS2SBNDCrtHit(const icarus::crt::CRTHit& inp) {
-  sbnd::crt::CRTHit ret;
+sbn::crt::CRTHit ICARUS2SBNDCrtHit(const sbn::crt::CRTHit& inp) {
+  sbn::crt::CRTHit ret;
   ret.feb_id = inp.feb_id;
   ret.pesmap = inp.pesmap;
   // convert ADC -> PE's
@@ -1133,9 +1133,9 @@ void NumuReco::CollectCRTInformation(const gallery::Event &ev) {
   _crt_hits_local.clear();
 
   // collect the CRT Tracks
-  gallery::Handle<std::vector<sbnd::crt::CRTTrack>> crt_tracks_sbnd;
+  gallery::Handle<std::vector<sbn::crt::CRTTrack>> crt_tracks_sbnd;
   bool has_crt_tracks_sbnd = ev.getByLabel(_config.CRTTrackTag, crt_tracks_sbnd);
-  gallery::Handle<std::vector<icarus::crt::CRTTrack>> crt_tracks_icarus;
+  gallery::Handle<std::vector<sbn::crt::CRTTrack>> crt_tracks_icarus;
   // bool has_crt_tracks_icarus = ev.getByLabel(_config.CRTTrackTag, crt_tracks_icarus);
   bool has_crt_tracks_icarus = false;
   _has_crt_tracks = has_crt_tracks_sbnd || has_crt_tracks_icarus;
@@ -1143,7 +1143,7 @@ void NumuReco::CollectCRTInformation(const gallery::Event &ev) {
   if (has_crt_tracks_icarus) {
     for (unsigned i = 0; i < crt_tracks_icarus->size(); i++) {
       _crt_tracks_local.emplace_back();
-      memcpy(&_crt_tracks_local[i], &crt_tracks_icarus->at(i), sizeof(sbnd::crt::CRTTrack));
+      memcpy(&_crt_tracks_local[i], &crt_tracks_icarus->at(i), sizeof(sbn::crt::CRTTrack));
     }  
   }
   _crt_tracks = (_has_crt_tracks) ?
@@ -1151,9 +1151,9 @@ void NumuReco::CollectCRTInformation(const gallery::Event &ev) {
     NULL;
 
   // collect the CRT Hits
-  gallery::Handle<std::vector<sbnd::crt::CRTHit>> crt_hits_sbnd;
+  gallery::Handle<std::vector<sbn::crt::CRTHit>> crt_hits_sbnd;
   bool has_crt_hits_sbnd = ev.getByLabel(_config.CRTHitTag, crt_hits_sbnd);
-  gallery::Handle<std::vector<icarus::crt::CRTHit>> crt_hits_icarus;
+  gallery::Handle<std::vector<sbn::crt::CRTHit>> crt_hits_icarus;
   bool has_crt_hits_icarus = ev.getByLabel(_config.CRTHitTag, crt_hits_icarus);
   _has_crt_hits = has_crt_hits_sbnd || has_crt_hits_icarus;
 
@@ -1176,7 +1176,7 @@ numu::CRTMatch NumuReco::CRTMatching(
   
   numu::CRTMatch match;
 
-  std::pair<sbnd::crt::CRTTrack, double> closest_crt_track = { {}, -99999 };
+  std::pair<sbn::crt::CRTTrack, double> closest_crt_track = { {}, -99999 };
   // try to find a match to CRT Track -- if we have one
   if (_has_crt_tracks) {
     closest_crt_track = _crt_track_matchalg->ClosestCRTTrackByAngle(pandora_track, hits, *_crt_tracks);
@@ -1196,7 +1196,7 @@ numu::CRTMatch NumuReco::CRTMatching(
   }
 
   // try to match a hit
-  std::pair<sbnd::crt::CRTHit, double> hit_pair = std::pair<sbnd::crt::CRTHit, double>({sbnd::crt::CRTHit(), -1});
+  std::pair<sbn::crt::CRTHit, double> hit_pair = std::pair<sbn::crt::CRTHit, double>({sbn::crt::CRTHit(), -1});
   if (_has_crt_hits) {
     numu::FlashMatch flash_match; // TODO: fix
     if (_config.CRTHitinOpHitRange && flash_match.present) {
@@ -1302,7 +1302,7 @@ bool NumuReco::InBeamSpill(float time) {
   return time > _config.BeamSpillWindow[0] && time < _config.BeamSpillWindow[1];
 }
 
-numu::CRTHit NumuReco::SBND2numuCRTHit(const sbnd::crt::CRTHit &hit) {
+numu::CRTHit NumuReco::SBND2numuCRTHit(const sbn::crt::CRTHit &hit) {
   numu::CRTHit ret;
   if (_config.TSMode == 0) ret.time = (int)hit.ts0_ns / 1000. /* ns -> us */;
   else ret.time = (int)hit.ts1_ns / 1000. /* ns -> us */;
@@ -1314,7 +1314,7 @@ numu::CRTHit NumuReco::SBND2numuCRTHit(const sbnd::crt::CRTHit &hit) {
 }
 
 void NumuReco::FillCRTHits() {
-  for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
+  for (const sbn::crt::CRTHit &hit: *_crt_hits) {
     _crt_histograms.Fill(hit);
   }
 }
@@ -1322,7 +1322,7 @@ void NumuReco::FillCRTHits() {
 std::vector<numu::CRTHit> NumuReco::InTimeCRTHits() {
   std::vector<numu::CRTHit> ret;
 
-  for (const sbnd::crt::CRTHit &hit: *_crt_hits) {
+  for (const sbn::crt::CRTHit &hit: *_crt_hits) {
     numu::CRTHit this_hit = NumuReco::SBND2numuCRTHit(hit);
     if (InBeamSpill(this_hit.time)) {
       ret.push_back(this_hit);

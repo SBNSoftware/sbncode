@@ -5,16 +5,17 @@
 #define SRTRUEPARTICLE_H
 
 #include <cstdint>
-#include "SRVector3D.h"
 
-#include "SREnums.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
+
+#include "sbncode/StandardRecord/SREnums.h"
 
 /* #include "SRVector3D.h" */
 
 
 namespace caf
 {
-  /// Representation of a simb::MCParticle, knows energy, direction, 
+  /// Representation of a simb::MCParticle, knows energy, direction,
   // etc, but no hit information.
   class SRTrueParticle
     {
@@ -34,13 +35,13 @@ namespace caf
       SRVector3D endp;        //!< Momentum at last point in the active TPC volume [GeV/c]
       SRVector3D gen;         //!< Generation position [cm]
       SRVector3D start;       //!< Start position in the active TPC volume [cm]
-      SRVector3D end;         //!< End position in the active TPC volume [cm] 
+      SRVector3D end;         //!< End position in the active TPC volume [cm]
 
       Wall_t   wallin;      //!< Wall of cryostat particle enters (wNone if starting in detector)
       Wall_t   wallout;     //!< Wall of cryostat particle exits (wNone if stopping in detector)
-      
+
       bool     cont_tpc;    //!< Whether the particle is contained in a single TPC
-      bool     crosses_tpc; //!< Whether the particle crosses a TPC boundary 
+      bool     crosses_tpc; //!< Whether the particle crosses a TPC boundary
       bool     contained;   //!< Whether the particle is contained in a single active volume
 
       int      pdg;          //!< Particle ID code
@@ -48,6 +49,7 @@ namespace caf
       int      interaction_id; //!< Neutrino interaction ID of the source of this particle (-1 if cosmic)
 
       std::vector<unsigned> daughters; //!< ID's of daughter particles from this particle
+      unsigned parent; //!< ID's of parent particle from this particle
 
       generator_    generator;
 

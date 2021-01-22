@@ -16,6 +16,7 @@
 #include "TVector3.h"
 #include "TVectorD.h"
 
+#include <vector>
 #include <cassert>
 #include <cmath>
 #include <fstream>
@@ -47,6 +48,21 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
+  IFDHSilent::IFDHSilent()
+  {
+    const char* s = getenv("IFDH_SILENT");
+    fSet = (s && s == std::string("0"));
+    if(!fSet) setenv("IFDH_SILENT", "1", 1);
+    if(s) std::cout << "IFDH_SILENT=" << s << std::endl;
+  }
+
+  //----------------------------------------------------------------------
+  IFDHSilent::~IFDHSilent()
+  {
+    if(!fSet) unsetenv("IFDH_SILENT");
+  }
+
+  //----------------------------------------------------------------------
   FloatingExceptionOnNaN::FloatingExceptionOnNaN(bool enable)
   {
     // Don't want any pending FPEs to trigger when we flip exceptions
@@ -69,6 +85,19 @@ namespace ana
   FloatingExceptionOnNaN::~FloatingExceptionOnNaN()
   {
     fesetexceptflag(&fBackup, FE_INVALID);
+  }
+
+  //----------------------------------------------------------------------
+  std::string Experiment()
+  {
+    const char* ret = getenv("EXPERIMENT");
+
+    if(!ret){
+      std::cout << "\nERROR: Environment variable $EXPERIMENT not set.\nThis is required for various ifdh/sam functionality.\nYou should probably setup sbndcode or icaruscode, though manually exporting the variable also seems to work." << std::endl;
+      exit(1);
+    }
+
+    return ret;
   }
 
   //----------------------------------------------------------------------
@@ -172,28 +201,6 @@ namespace ana
     }
 
     return chi;
-  }
-
-  //----------------------------------------------------------------------
-  double LogLikelihoodDerivative(double e, double o, double dedx)
-  {
-    double ret = 2*dedx;
-    if(o) ret -= 2*o*dedx / e;
-    return ret;
-  }
-
-  //----------------------------------------------------------------------
-  double LogLikelihoodDerivative(const TH1D* eh, const TH1D* oh,
-                                 const std::vector<double>& dedx)
-  {
-    const double* ea = eh->GetArray();
-    const double* oa = oh->GetArray();
-
-    double ret = 0;
-    for(unsigned int i = 0; i < dedx.size(); ++i){
-      ret += LogLikelihoodDerivative(ea[i], oa[i], dedx[i]);
-    }
-    return ret;
   }
 
   //----------------------------------------------------------------------
@@ -653,11 +660,105 @@ namespace ana
     tmp->cd();
   }
 
-
   //----------------------------------------------------------------------
   bool RunningOnGrid()
   {
-    return (getenv("_CONDOR_SCRATCH_DIR") != 0);
+    static bool cache;
+    static bool cache_set = false;
+    if(!cache_set){
+      cache = (getenv("_CONDOR_SCRATCH_DIR") != 0);
+      cache_set = true;
+    }
+
+    return cache;
+  }
+
+  //----------------------------------------------------------------------
+  size_t Stride(bool allow_default)
+  {
+    static int cache = -1;
+
+    if(cache < 0){
+      char* env = getenv("CAFANA_STRIDE");
+      if(env){
+        cache = std::atoi(env);
+      }
+      else{
+        if(allow_default){
+          cache = 1;
+        }
+        else{
+          std::cout << "Stride() called, but CAFANA_STRIDE is not set (--stride not passed?)" << std::endl;
+          abort();
+        }
+      }
+    }
+
+    return cache;
+  }
+
+  //----------------------------------------------------------------------
+  size_t Offset(bool allow_default)
+  {
+    static int cache = -1;
+
+    if(cache < 0){
+      char* env = getenv("CAFANA_OFFSET");
+      if(env){
+        cache = std::atoi(env);
+      }
+      else{
+        if(allow_default){
+          cache = 0;
+        }
+        else{
+          std::cout << "Offset() called, but CAFANA_OFFSET is not set (--offset not passed?)" << std::endl;
+          abort();
+        }
+      }
+    }
+
+    return cache;
+  }
+
+  //----------------------------------------------------------------------
+  int Limit()
+  {
+    static int cache = 0;
+
+    if(cache == 0){
+      char* env = getenv("CAFANA_LIMIT");
+      if(env){
+        cache = std::atoi(env);
+      }
+      else{
+        cache = -1;
+      }
+    }
+
+    return cache;
+  }
+
+  //----------------------------------------------------------------------
+  size_t JobNumber()
+  {
+    if(!RunningOnGrid()){
+      std::cout << "JobNumber() called, but we are not running on the grid" << std::endl;
+      abort();
+    }
+
+    return Offset(false);
+  }
+
+  //----------------------------------------------------------------------
+  size_t NumJobs()
+  {
+    if(!RunningOnGrid()){
+      std::cout << "NumJobs() called, but we are not running on the grid" << std::endl;
+      abort();
+    }
+
+    return Stride(false);
   }
 
 
@@ -725,8 +826,12 @@ namespace ana
   //----------------------------------------------------------------------
   TF1* FitToFourier::Fit() const
   {
-    double s[fNOsc] = {0};
-    double c[fNOsc] = {0};
+    //double s[fNOsc] = {0};
+    //double c[fNOsc] = {0};
+
+    std::vector<double> s(fNOsc, 0.0);
+    std::vector<double> c(fNOsc, 0.0);
+
     int nBins = 0;
     for(int i = 1; i <= fHist->GetNbinsX(); ++i){
       const double x = M_PI * fHist->GetXaxis()->GetBinCenter(i);

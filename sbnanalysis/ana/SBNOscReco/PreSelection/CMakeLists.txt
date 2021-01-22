@@ -18,8 +18,8 @@ target_link_libraries(sbnanalysis_SBNOscReco_NumuReco
   icaruscode_CRT	
   icaruscode_CRTUtils
   icaruscode_CRTData
-  icaruscode_CRTProducts
-  icaruscode_CRT_CRTProducts_dict
+  sbnobj_Common_CRT
+  sbnobj_Common_CRT_dict
 )
 
 # Install all libraries to the main "lib" directory

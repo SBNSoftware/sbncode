@@ -4,13 +4,12 @@
 #ifndef SRCRTHITMATCH_H
 #define SRCRTHITMATCH_H
 
-#include "SRCRTHit.h"
-#include "SRVector3D.h"
+#include "sbncode/StandardRecord/SRCRTHit.h"
+#include "sbncode/StandardRecord/SRVector3D.h"
 
 namespace caf
 {
-  /// Representation of the reco momentum and PID a recob::Track for 
-  /// muon, pion, kaon, and proton assumptions 
+  /// Matching information between a TPC Track and a CRT Hit
   class SRCRTHitMatch
     {
     public:

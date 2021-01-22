@@ -62,6 +62,18 @@ namespace ana
     bool fBackup;
   };
 
+  /// \brief ifdh calls between construction and destruction produce no output
+  ///
+  /// Upon going out of scope, restores the previous setting
+  class IFDHSilent
+  {
+  public:
+    IFDHSilent();
+    ~IFDHSilent();
+  protected:
+    bool fSet;
+  };
+
   /// \brief Alter floating-point exception flag
   ///
   /// Upon going out of scope, restores the previous setting
@@ -73,6 +85,9 @@ namespace ana
   protected:
     fexcept_t fBackup;
   };
+
+  /// $EXPERIMENT or a nice error message and abort
+  std::string Experiment();
 
   /** \brief Compute bin-to-bin covariance matrix from a collection of sets of bin contents.
 
@@ -122,11 +137,6 @@ namespace ana
       Handles zero observed or expected events correctly.
   **/
   double LogLikelihood(double exp, double obs);
-
-  double LogLikelihoodDerivative(double e, double o, double dedx);
-
-  double LogLikelihoodDerivative(const TH1D* eh, const TH1D* oh,
-                                 const std::vector<double>& dedx);
 
   /**  \brief Chi-squared calculation using a covariance matrix.
 
@@ -244,6 +254,17 @@ namespace ana
 
   /// Is this a grid (condor) job?
   bool RunningOnGrid();
+
+  /// Value passed to --stride, or 1 if not specified
+  size_t Stride(bool allow_default = true);
+  /// Value passed to --offset, or 0 if not specified
+  size_t Offset(bool allow_default = true);
+  /// Value passed to --limit, or -1 if not specified
+  int Limit();
+
+  /// What's the process number for a grid job?
+  size_t JobNumber();
+  size_t NumJobs();
 
   bool AlmostEqual(double a, double b);
 

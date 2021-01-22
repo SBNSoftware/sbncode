@@ -5,27 +5,26 @@
 #include <string>
 #include <vector>
 
-namespace caf{class SRProxy;}
+#include "StandardRecord/Proxy/FwdDeclare.h"
 
 namespace ana
 {
   /// A Var that returns multiple results for each slice. eg the properties of
   /// multiple prongs. All results will be filled into the Spectrum.
-  class MultiVar
+  template<class T> class _MultiVar
   {
   public:
     /// The type of the function part of a var
-    typedef std::vector<double> (VarFunc_t)(const caf::SRProxy* sr);
+    typedef std::vector<double> (VarFunc_t)(const T* sr);
 
     /// std::function can wrap a real function, function object, or lambda
-    MultiVar(const std::set<std::string>& reqs,
-             const std::function<VarFunc_t>& fun)
+    _MultiVar(const std::function<VarFunc_t>& fun)
       : fFunc(fun), fID(fgNextID--)
     {
     }
 
     /// Allows a variable to be called with double value = myVar(sr) syntax
-    std::vector<double> operator()(const caf::SRProxy* sr) const
+    std::vector<double> operator()(const T* sr) const
     {
       return fFunc(sr);
     }
@@ -41,5 +40,8 @@ namespace ana
     /// The next ID that hasn't yet been assigned
     static int fgNextID;
   };
+
+  typedef _MultiVar<caf::SRSliceProxy> MultiVar;
+  typedef _MultiVar<caf::SRSpillProxy> SpillMultiVar;
 
 } // namespace

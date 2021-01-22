@@ -95,43 +95,6 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  void SingleSampleExperiment::
-  Derivative(osc::IOscCalculator* calc,
-             const SystShifts& shift,
-             std::unordered_map<const ISyst*, double>& dchi) const
-  {
-    const double pot = fData.POT();
-
-    std::unordered_map<const ISyst*, std::vector<double>> dp;
-    for(auto it: dchi) dp[it.first] = {};
-    fMC->Derivative(calc, shift, pot, dp);
-
-    if(dp.empty()){ // prediction doesn't implement derivatives
-      dchi.clear(); // pass on that info to our caller
-      return;
-    }
-
-    TH1D* hpred = PredHistIncCosmics(calc, shift);
-    TH1D* hdata = fData.ToTH1(pot);
-
-    for(auto& it: dchi){
-      if(it.first != &kCosmicBkgScaleSyst){
-        it.second += LogLikelihoodDerivative(hpred, hdata, dp[it.first]);
-      }
-      else{
-        const unsigned int N = fCosmic->GetNbinsX()+2;
-        const double* ca = fCosmic->GetArray();
-        std::vector<double> cosErr(N);
-        for(unsigned int i = 0; i < N; ++i) cosErr[i] = ca[i]*fCosmicScaleError;
-        it.second += LogLikelihoodDerivative(hpred, hdata, cosErr);
-      }
-    }
-
-    HistCache::Delete(hpred);
-    HistCache::Delete(hdata);
-  }
-
-  //----------------------------------------------------------------------
   void SingleSampleExperiment::SaveTo(TDirectory* dir) const
   {
     TDirectory* tmp = dir;

@@ -1,16 +1,11 @@
 #pragma once
 
-#include <string>
+#include "SRProxy/IBranchPolicy.h"
+
 #include <unordered_set>
 
 namespace flat
 {
-  class IBranchPolicy
-  {
-  public:
-    virtual bool Include(const std::string&) const = 0;
-  };
-
   /// Branch policy based on a list loaded from a text file
   class FileListBranchPolicy: public IBranchPolicy
   {

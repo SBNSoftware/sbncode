@@ -3,7 +3,8 @@
 // \brief   An SRTrkChi2PID is a high level track ParticlePID object for
 //          for larana Chi2ParticleID results. 
 ////////////////////////////////////////////////////////////////////////
-#include "SRTrkChi2PID.h"
+
+#include "sbncode/StandardRecord/SRTrkChi2PID.h"
 
 #include <limits>
 
@@ -11,13 +12,13 @@ namespace caf
 {
 
   SRTrkChi2PID::SRTrkChi2PID():
-    pdg(std::numeric_limits<int>::signaling_NaN()),
-    pid_ndof(std::numeric_limits<int>::signaling_NaN()),
-    chi2_muon(std::numeric_limits<double>::signaling_NaN()),
-    chi2_pion(std::numeric_limits<double>::signaling_NaN()),
-    chi2_kaon(std::numeric_limits<double>::signaling_NaN()),
-    chi2_proton(std::numeric_limits<double>::signaling_NaN()),
-    pida(std::numeric_limits<double>::signaling_NaN())
+    pdg(-999),
+    pid_ndof(-99),
+    chi2_muon(std::numeric_limits<float>::signaling_NaN()),
+    chi2_pion(std::numeric_limits<float>::signaling_NaN()),
+    chi2_kaon(std::numeric_limits<float>::signaling_NaN()),
+    chi2_proton(std::numeric_limits<float>::signaling_NaN()),
+    pida(std::numeric_limits<float>::signaling_NaN())
   {  }
 
   SRTrkChi2PID::~SRTrkChi2PID(){  }

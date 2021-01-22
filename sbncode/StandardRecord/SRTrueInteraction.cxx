@@ -4,7 +4,7 @@
 // \author  $Author: psihas@fnal.gov
 ////////////////////////////////////////////////////////////////////////
 
-#include "SRTrueInteraction.h"
+#include "sbncode/StandardRecord/SRTrueInteraction.h"
 
 
 namespace caf
@@ -15,17 +15,15 @@ namespace caf
     pdg(-1),
     inttype(0),
     index(-1),
-    targetPDG(std::numeric_limits<int>::signaling_NaN()),
-    genie_intcode(std::numeric_limits<int>::signaling_NaN()),
-    parentPDG(std::numeric_limits<int>::signaling_NaN()),
-    parentDecayMode(std::numeric_limits<int>::signaling_NaN()),
-    isnc(std::numeric_limits<bool>::signaling_NaN()),
-    iscc(std::numeric_limits<bool>::signaling_NaN()),
-    isvtxcont(std::numeric_limits<bool>::signaling_NaN()),
-    is_numucc_primary(std::numeric_limits<bool>::signaling_NaN()),
+    targetPDG(-999),
+    genie_intcode(-999),
+    parentPDG(-999),
+    parentDecayMode(-999),
+    isnc(false),
+    iscc(false),
+    isvtxcont(false),
+    is_numucc_primary(false),
 
-    eff(std::numeric_limits<float>::signaling_NaN()),
-    pur(std::numeric_limits<float>::signaling_NaN()),
     E(std::numeric_limits<float>::signaling_NaN()),
     visE(std::numeric_limits<float>::signaling_NaN()),
     visEinslc(std::numeric_limits<float>::signaling_NaN()),
@@ -46,6 +44,7 @@ namespace caf
     mode(kOther),
     generator(kUnknownGenerator),
     genVersion(),
+    nprim(0),
     prim()
   {  }
 
