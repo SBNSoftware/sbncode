@@ -188,6 +188,20 @@ namespace ana{
   }
 
   //--------------------------------------------------
+  void DrawIntEffPurLegend(float int1, TGraph* g1, char *name1, float int2, TGraph* g2, char *name2){
+
+    TLegend *leg = new TLegend(.6,.62,.8,.74);
+    leg->AddEntry(g1, Form("%s: %2.f", name1, int1),"l");
+    leg->AddEntry(g2, Form("%s: %2.f", name2, int2),"l");
+    leg->SetBorderSize(0); //no border for legend
+    leg->SetFillColor(0);  //fill colour is white
+    leg->SetFillStyle(0);  //fill colour is white
+    leg->SetTextSize(0.04);
+    leg->Draw();
+
+  }
+
+  //--------------------------------------------------
   void DrawEffPurLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
 
     TLegend *leg = new TLegend(.6,.62,.8,.74);

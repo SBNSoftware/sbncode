@@ -28,8 +28,8 @@ using namespace ana;
 
 void plot_spectra_nuesel_icarus(
   std::string input = "nucosmics",
-  bool crtveto = true,
-  bool crtvars = true,
+  bool crtveto = false,
+  bool crtvars = false,
   bool effpur  = true)
 {
 
@@ -58,10 +58,6 @@ void plot_spectra_nuesel_icarus(
 
   const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
-
-  // std::vector<float> rem_vect;
-  std::vector<float> sig_vect;
-  std::vector<float> bkg_vect;
 
   // I want to make a plot for each var and cut
   for(unsigned int iVar = 0; iVar < kNVar; ++iVar){
@@ -102,6 +98,7 @@ void plot_spectra_nuesel_icarus(
       htotbkg->Add(hnuenus,-1);
       htotbkg->Add(hcos,1);
 
+      float iallnue = hallnue->Integral();
       float inue    = hnue->Integral();
       float inumu   = hnumu->Integral();
       float inc     = hnc->Integral();
@@ -109,11 +106,11 @@ void plot_spectra_nuesel_icarus(
       float iother  = hother->Integral();
       float itotbkg = htotbkg->Integral();
 
-      sig_vect.push_back(inue);
-      bkg_vect.push_back(itotbkg);
-      
+      float efficiency = inue / iallnue;
+      float purity     = inue / (inue + itotbkg);      
       float pnue = 100 * inue / (inue + itotbkg);
       float pbkg = 100 * itotbkg / (inue + itotbkg);
+
       PimpHist(hnue, color_nue, line_nue, 2);
       PimpHist(hnumu, color_numu, line_numu, 2);
       PimpHist(hnc, color_nc, line_nc, 2);
@@ -158,7 +155,7 @@ void plot_spectra_nuesel_icarus(
       if(iSel!=0 && effpur){
         TCanvas *cEventsEffPur;
         TPad *padEvents, *padEffPur;
-        SplitCanvas2(cEvents,  padEvents, padEffPur);
+        SplitCanvas2(cEventsEffPur,  padEvents, padEffPur);
         padEvents->cd();
         gPad->SetTickx(1);
         gPad->SetTicky(1);
@@ -178,7 +175,8 @@ void plot_spectra_nuesel_icarus(
         TGraph* gPur = SelEFForPURvsX(hnue, htotbkg, hallnue, false);
         gEff->Draw("l same");
         gPur->Draw("l same");
-        DrawEffPurLegend(gEff, "Efficiency", gPur, "Purity");
+        // DrawEffPurLegend(gEff, "Efficiency", gPur, "Purity");
+        DrawIntEffPurLegend(efficiency, gEff, "Efficiency", purity, gPur, "Purity");
         cEventsEffPur->Modified();
         cEventsEffPur->Update();
         cEventsEffPur->Print((outDir+mysuffix+"_eventsel_"+input+"__effpur.pdf").c_str());
