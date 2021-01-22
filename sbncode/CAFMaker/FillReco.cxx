@@ -332,8 +332,8 @@ namespace caf
 
         caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
         this_pid.chi2_muon = particle_id.Chi2Muon();
-        this_pid.chi2_pion = particle_id.Chi2Kaon();
-        this_pid.chi2_kaon = particle_id.Chi2Pion();
+        this_pid.chi2_pion = particle_id.Chi2Pion();
+        this_pid.chi2_kaon = particle_id.Chi2Kaon();
         this_pid.chi2_proton = particle_id.Chi2Proton();
         this_pid.pid_ndof = particle_id.Ndf();
 
