@@ -21,11 +21,9 @@
 #include "TLegend.h"
 #include "TPaveText.h"
 
-
 using namespace ana;
 
-void make_eventstable_nuesel_icarus(bool N1table=false,
-  bool crtveto = false)
+void make_eventstable_nuesel_icarus(bool crtveto = true)
 {
 
   std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
@@ -36,7 +34,6 @@ void make_eventstable_nuesel_icarus(bool N1table=false,
 
   std::string pot_tag = "6.6 #times 10^{20} POT";
   double POT = 6.6E20;
-  double Livetime = 1;
 
   // select all slices or a single slice per spill
   std::vector<PlotDef> plots = plots_slice;
@@ -51,12 +48,9 @@ void make_eventstable_nuesel_icarus(bool N1table=false,
   //   sels  = sels_spill;
   // }
 
-  const unsigned int kNVar = plots.size();
   const unsigned int kNSel = sels.size();
-
-  const int limitN1 = 13; // N1 cuts start at 13 position in the sels object
   
-  // std::vector<float> rem_vect;
+  std::vector<std::string> names_cut;
   std::vector<float> events_nue;
   std::vector<float> events_numu;
   std::vector<float> events_nc;
@@ -65,23 +59,40 @@ void make_eventstable_nuesel_icarus(bool N1table=false,
   std::vector<float> events_totbkg;
   std::vector<float> events_total;
 
-  // I want to make a plot for each var
-  bool print_int = true;
-  for(unsigned int iSel = 0; iSel < kNSel; ++iSel){
+  unsigned int endLoop = kNSel;
+  if(crtveto) endLoop = kNSel+2; // add one for crtveto and one for the N-1 crtveto
+  for(unsigned int iSel = 0; iSel < endLoop; iSel++){ 
 
-    std::string thiscornertag = sels[iSel].suffix;
-    std::string mysuffix    = sels[iSel].suffix + "_count";
-    if(crtveto){
-      mysuffix = mysuffix+"_veto";
+    std::string mysuffix;
+    std::string cutname;
+    if(iSel<kNSel){
+      mysuffix      = sels[iSel].suffix + "_count";
+      cutname       = sels[iSel].label;
     }
-
+    if(crtveto){
+      if(iSel==(limitN1-1)){ // everything id, and crtveto
+        mysuffix = sels[iSel].suffix + "_veto_count"; // this should equal everything_veto_cout
+        cutname  = "Everything (incl. CRT veto)";
+      }
+      if(iSel==(endLoop-2)){
+        mysuffix = "nocut_veto_count"; // get the crtveto result only
+        cutname  = "CRT veto";
+      }
+      if(iSel==(endLoop-1)){
+        mysuffix = "everything_count"; // get the N-1 crtveto result, which would be everything
+        cutname  = "N1 CRT veto";
+      }
+    }
+    names_cut.push_back(cutname);
+    
+    std::cout << "cutname: " << cutname << ", mysuffix: " << mysuffix << std::endl;
     Spectrum *spec_nue    = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffix).release();
     Spectrum *spec_nuenus = LoadFromFile<Spectrum>(inFile_nus, "nue_"+mysuffix).release();
     Spectrum *spec_numu   = LoadFromFile<Spectrum>(inFile_nus, "numu_"+mysuffix).release();
     Spectrum *spec_nc     = LoadFromFile<Spectrum>(inFile_nus, "nunc_"+mysuffix).release();
     Spectrum *spec_total  = LoadFromFile<Spectrum>(inFile_nus, "total_"+mysuffix).release();
-    Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos, "cosmic_"+mysuffix).release();
     Spectrum *spec_cosnus = LoadFromFile<Spectrum>(inFile_nus, "cosmic_"+mysuffix).release();
+    Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos, "cosmic_"+mysuffix).release();
     TH1* hnue    = spec_nue->ToTH1(POT);     // from nue
     TH1* hnuenus = spec_nuenus->ToTH1(POT);  // from nus+cosmics
     TH1* hnumu   = spec_numu->ToTH1(POT);    // from nus+cosmics
@@ -115,25 +126,39 @@ void make_eventstable_nuesel_icarus(bool N1table=false,
     events_other.push_back(iother);
     events_totbkg.push_back(itotbkg);
     events_total.push_back(itotal);
-      
+    
   } // iSel simple
 
-  int initLoop = 0;
-  int endLoop = limitN1;
-  if(N1table){
-    initLoop = limitN1;
-    endLoop = kNSel;
-  }
-
+  // print single cuts only table
   printTableHeader();
-  if(N1table){
-    // Always print the no cut result for reference
-    printEventsLine("No cut", events_nue[0], events_numu[0], events_nc[0], events_cos[0], events_other[0]);
-  }
-  for(int iSel = initLoop; iSel < endLoop; ++iSel){
-    std::string cutname = sels[iSel].label;
-    printEventsLine(cutname, events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
+  for(unsigned int iSel=0; iSel<limitN1; iSel++){
+    if(iSel==(limitN1-1) && crtveto){
+      printEventsLine(names_cut[endLoop-2], events_nue[endLoop-2], events_numu[endLoop-2], events_nc[endLoop-2], events_cos[endLoop-2], events_other[endLoop-2]);
+      printEventsLine(names_cut[iSel], events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
+    }
+    else
+      printEventsLine(names_cut[iSel], events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
   }
   printTableFooter();
+
+  // print n-1 cuts table
+  printTableHeader();
+  printEventsLine(names_cut[0], events_nue[0], events_numu[0], events_nc[0], events_cos[0], events_other[0]); // print nocut for reference
+  printEventsLine(names_cut[limitN1-1], events_nue[limitN1-1], events_numu[limitN1-1], events_nc[limitN1-1], events_cos[limitN1-1], events_other[limitN1-1]); // print everything for reference
+  for(unsigned int iSel=limitN1; iSel<kNSel; iSel++){
+    printEventsLine(names_cut[iSel], events_nue[iSel], events_numu[iSel], events_nc[iSel], events_cos[iSel], events_other[iSel]);
+  }
+  if(crtveto)
+    printEventsLine(names_cut[endLoop-1], events_nue[endLoop-1], events_numu[endLoop-1], events_nc[endLoop-1], events_cos[endLoop-1], events_other[endLoop-1]);
+  printTableFooter();
+
+  names_cut.clear();
+  events_nue.clear();
+  events_numu.clear();
+  events_nc.clear();
+  events_cos.clear();
+  events_other.clear();
+  events_totbkg.clear();
+  events_total.clear();
 
 } // end make_eventstable

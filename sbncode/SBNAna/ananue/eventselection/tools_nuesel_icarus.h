@@ -63,8 +63,8 @@ namespace ana{
 
   void printEventsLine(std::string cutname, float nue, float numu, float nc, float cos, float other){
     float total = nue+numu+nc+cos+other;
-    float percnue = nue/total;
-    float perctotbkg = (numu+nc+cos+other)/total;
+    float percnue = 100*nue/total;
+    float perctotbkg = 100*(numu+nc+cos+other)/total;
     output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue << "&" << numu << "&" << nc << "&" << cos << "&" << other << "&" << percnue << "&" << perctotbkg << "\\ \\hline \n";
   }
 

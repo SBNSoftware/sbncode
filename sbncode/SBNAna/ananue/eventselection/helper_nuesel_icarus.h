@@ -27,6 +27,8 @@ Style_t line_nc     = kDashed;
 Style_t line_other  = kDotted;
 Style_t line_cos    = kSolid;
 
+const int limitN1 = 13; // N1 cuts start at 13 position in the sels object
+
 // These are examples of useful structs to making a bunch of Spectra
 // Plot structure
 struct PlotDef
@@ -263,8 +265,8 @@ std::vector<SelDef> sels_slice ={
   {"N1convgap", "N1 Conversion gap",       kN1ConvGap,    kBlack},
   {"N1trklen",  "N1 Track length",         kN1TrkLen,     kBlack},
   {"N1density", "N1 Shower density",       kN1Density,    kBlack},
-  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack},
-  {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack}
+  {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack},
+  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack}
   };
 
 std::vector<SelDefSpill> sels_spill ={

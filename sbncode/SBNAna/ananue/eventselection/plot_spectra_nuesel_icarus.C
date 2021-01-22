@@ -28,9 +28,9 @@ using namespace ana;
 
 void plot_spectra_nuesel_icarus(
   std::string input = "nucosmics",
-  bool crtveto = false,
-  bool crtvars = false,
-  bool effpur  = false)
+  bool crtveto = true,
+  bool crtvars = true,
+  bool effpur  = true)
 {
 
   std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
@@ -71,8 +71,8 @@ void plot_spectra_nuesel_icarus(
       std::string mysuffix    = sels[iSel].suffix + "_" + plots[iVar].suffix;
       std::string mysuffixall = "nocut_" + plots[iVar].suffix;
       if(crtveto){
-        mysuffix = mysuffix+"_veto";
-        mysuffixall = mysuffixall+"_veto";
+        mysuffix = sels[iSel].suffix + "_veto_" + plots[iVar].suffix;
+        mysuffixall = "nocut_veto_" + plots[iVar].suffix;
       }
 
       Spectrum *spec_allnue = LoadFromFile<Spectrum>(inFile_nue, "nue_"+mysuffixall).release(); // needed for purity
@@ -83,7 +83,7 @@ void plot_spectra_nuesel_icarus(
       Spectrum *spec_total  = LoadFromFile<Spectrum>(inFile_nus, "total_"+mysuffix).release();
       Spectrum *spec_cos    = LoadFromFile<Spectrum>(inFile_cos, "cosmic_"+mysuffix).release();
       Spectrum *spec_cosnus = LoadFromFile<Spectrum>(inFile_nus, "cosmic_"+mysuffix).release();
-      TH1* hallnue = spec_allsig->ToTH1(POT);  // from nue
+      TH1* hallnue = spec_allnue->ToTH1(POT);  // from nue
       TH1* hnue    = spec_nue->ToTH1(POT);     // from nue
       TH1* hnuenus = spec_nuenus->ToTH1(POT);  // from nus+cosmics
       TH1* hnumu   = spec_numu->ToTH1(POT);    // from nus+cosmics
