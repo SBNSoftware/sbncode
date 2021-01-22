@@ -73,7 +73,7 @@ public:
   void beginRun(art::Run& run);
   void endSubRun(art::SubRun& sr);
 
-  bool Deweight(double &weight, double max_weight);
+  bool Deweight(double &weight, double &max_weight);
 
   ~MeVPrtlGen() noexcept {
     std::cout << "GenTool called (" << fNCalls[0] << ") times. Total duration (" << fNTime[0] << ") ms. Duration per call (" << (fNTime[0] / fNCalls[0]) << ") ms.\n";
@@ -90,6 +90,12 @@ private:
   std::unique_ptr<evgen::ldm::IMeVPrtlFlux> fFluxTool;
   std::unique_ptr<evgen::ldm::IRayTrace> fRayTool;
   std::unique_ptr<evgen::ldm::IMeVPrtlDecay> fDecayTool;
+
+  double fGenMaxWeight;
+  double fFluxMaxWeight;
+  double fRayMaxWeight;
+  double fDecayMaxWeight;
+
   TTree *fTree;
 
   CLHEP::HepJamesRandom *fEngine;
@@ -109,6 +115,18 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   fFluxTool = art::make_tool<IMeVPrtlFlux>(p.get<fhicl::ParameterSet>("Flux"));
   fRayTool = art::make_tool<IRayTrace>(p.get<fhicl::ParameterSet>("RayTrace"));
   fDecayTool = art::make_tool<IMeVPrtlDecay>(p.get<fhicl::ParameterSet>("Decay"));
+
+  fGenMaxWeight = fGenTool->MaxWeight();
+  std::cout << "Gen max weight: " << fGenMaxWeight << std::endl;
+
+  fFluxMaxWeight = fFluxTool->MaxWeight();
+  std::cout << "Flux max weight: " << fFluxMaxWeight << std::endl;
+
+  fRayMaxWeight = fRayTool->MaxWeight();
+  std::cout << "Ray max weight: " << fRayMaxWeight << std::endl;
+
+  fDecayMaxWeight = fDecayTool->MaxWeight();
+  std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
 
   // All the standard generator outputs
   produces< std::vector<simb::MCTruth> >();
@@ -145,16 +163,19 @@ void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
   fSubRunPOT = 0.;
 }
 
-bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double max_weight) {
+bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
   if (!fDoDeweight || max_weight < 0) { //  don't do deweighting procedure
     return true;
   }
 
   // guard
   if (max_weight < weight) {
+    std::cerr << "ERROR: weight (" << weight << ") with max weight (" << max_weight << "). Reconfiguration needed.\n";
     std::cout << "ERROR: weight (" << weight << ") with max weight (" << max_weight << "). Reconfiguration needed.\n";
+    std::cout << "Updating max_weight to new value!\n";
+    max_weight = weight;
+    return true;
   }
-  assert(max_weight >= weight);
 
   // do deweighting
   double rand = CLHEP::RandFlat::shoot(fEngine, 0, max_weight);
@@ -206,7 +227,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[1] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fFluxTool->MakeFlux(kaon, flux, flux_weight) && Deweight(flux_weight, fFluxTool->MaxWeight());
+    success = fFluxTool->MakeFlux(kaon, flux, flux_weight) && Deweight(flux_weight, fFluxMaxWeight);
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[1] += duration.count();
@@ -222,13 +243,12 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[2] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fRayTool->IntersectDetector(flux, intersection, ray_weight) && Deweight(ray_weight, fRayTool->MaxWeight());
+    success = fRayTool->IntersectDetector(flux, intersection, ray_weight) && Deweight(ray_weight, fRayMaxWeight);
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[2] += duration.count();
-
-    if (!success) continue;
       
+    if (!success) continue;
     std::cout << "Ray weight: " << ray_weight << std::endl;
 
     evgen::ldm::MeVPrtlDecay decay;
@@ -236,14 +256,15 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[3] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fDecayTool->Decay(flux, intersection[0], intersection[1], decay, decay_weight) && Deweight(decay_weight, fDecayTool->MaxWeight()); 
+    success = fDecayTool->Decay(flux, intersection[0], intersection[1], decay, decay_weight) && Deweight(decay_weight, fDecayMaxWeight); 
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[3] += duration.count();
 
     if (!success) continue;
-
     std::cout << "Decay weight: " << decay_weight << std::endl;
+
+    std::cout << "PASSED!\n";
 
     // get the POT
     double thisPOT = fGenTool->GetPOT();

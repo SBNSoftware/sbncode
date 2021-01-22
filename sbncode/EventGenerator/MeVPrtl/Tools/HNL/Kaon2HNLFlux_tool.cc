@@ -153,9 +153,9 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
 
 }
 float Kaon2HNLFlux::MaxWeight() { 
-  // Weight comes from the NuMi importance weight -- max is 100 
+  // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon)
   // Scale by the branching ratios here
-  return 100. * std::max(BranchingRatio(fM, fMagUe4, false) / SMKaonBR(321), BranchingRatio(fM, fMagUm4, true) / SMKaonBR(321));
+  return 100.0001 * std::max(BranchingRatio(fM, fMagUe4, false) / SMKaonBR(321), BranchingRatio(fM, fMagUm4, true) / SMKaonBR(321));
 }
 
 bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hnl, double &weight) {
@@ -174,7 +174,6 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.pos = kaon.pos;
   hnl.pos.Transform(fBeam2Det);
   hnl.pos += Beam4;
-
 
   // Branch the parent Kaon Decay
   float hnl_mass = fM;

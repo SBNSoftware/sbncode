@@ -67,11 +67,6 @@ private:
   bool fKDAROnly;
   bool fIgnoreParentDecayTime;
 
-  // derived stuff
-  evgb::EvtTimeShiftI *fTimeShiftMethod;
-  TRotation fBeam2Det;
-  TVector3 fBeamOrigin;
-
   // branching ratios
   double fKPBR;
   double fKLBR;
@@ -181,10 +176,10 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
 }
 
 float Kaon2HiggsFlux::MaxWeight() {
-  // Weight comes from the NuMi importance weight -- max is 100 
+  // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon) 
   //
   // Also get the max BR
-  return 100. * std::max(fKPBR / SMKaonBR(321), fKLBR / SMKaonBR(130));
+  return 100.0001 * std::max(fKPBR / SMKaonBR(321), fKLBR / SMKaonBR(130));
 }
 
 

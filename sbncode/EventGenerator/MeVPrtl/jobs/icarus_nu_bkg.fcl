@@ -1,0 +1,6 @@
+#include "prodcorsika_genie_nooverburden_icarus_Oct2020.fcl"
+
+physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
+physics.producers.generator.FluxCopyMethod: "DIRECT"
+physics.producers.generator.FluxFiles: ["*.root"]
+physics.producers.generator.FiducialCut: "mbox: -370,-180,-920,370,150,820" #Extend the box to include 20cm around the TPC active region

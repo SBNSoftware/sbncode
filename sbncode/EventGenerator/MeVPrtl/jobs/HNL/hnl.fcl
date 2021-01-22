@@ -1,18 +1,5 @@
+#include "numi_kaon_common.fcl"
 BEGIN_PROLOG
-
-empty_kaon: {
-  tool_type: EmptyKaonGen
-}
-
-numi_kaon: {
-  tool_type: NuMiKaonGen
-  SearchPath: "/pnfs/sbn/persistent/users/gputnam/numiflux/"
-  FluxFiles: ["*.root"]
-  TreeName: "dk2nuTree"
-  MetaTreeName: "dkmetaTree"
-  MaxFluxFileMB: 8192 # 8GB
-  FluxCopyMethod: DIRECT
-}
 
 kaon2hnl: {
   tool_type: Kaon2HNLFlux
@@ -35,18 +22,6 @@ kaon2hnl: {
   SpillTimeConfig: "evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 }
 
-ray_trace_box: {
-  tool_type: RayTraceBox
-  # Volume: volCryostat
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
-}
-
-rethrow_ray_trace_box: {
-  tool_type: ReThrowRayTraceBox
-  # Volume: volCryostat
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
-}
-
 decay_hnl: {
   tool_type: HNLMakeDecay
   Decays: ["mu_pi"]
@@ -55,7 +30,8 @@ decay_hnl: {
   ReferenceUM4: 1e-7
   ReferenceHNLMass: 0.35
   ReferenceRayLength: 2500 # 25m
-  ReferenceHNLMaxEnergy: 10 # GeV
+  ReferenceHNLMinEnergy: 0. # GeV
+  ReferenceHNLMinEnergyFromKDAR: true
 }
 
 hnl: {
@@ -74,5 +50,8 @@ hnl_gen: {
   RayTrace: @local::rethrow_ray_trace_box
   Decay: @local::decay_hnl
 }
+
+hnl_gen.RayTrace.ReferencePrtlMass: 0.35 # GeV
+hnl_gen.RayTrace.ReferenceScndPDG: 13 # muon
 
 END_PROLOG

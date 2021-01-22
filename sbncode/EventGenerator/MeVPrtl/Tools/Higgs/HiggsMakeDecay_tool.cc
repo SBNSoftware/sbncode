@@ -88,6 +88,15 @@ double forcedecay_weight(float mean, float a, float b) {
     return exp(-a/mean) - exp(-b/mean);
 }
 
+double higgs_momentum(double kaon_mass, double pion_mass, double higs_mass) {
+  return sqrt(kaon_mass * kaon_mass * kaon_mass * kaon_mass
+    -2 * kaon_mass * kaon_mass * pion_mass * pion_mass
+    -2 * kaon_mass * kaon_mass * higs_mass * higs_mass
+       + pion_mass * pion_mass * pion_mass * pion_mass
+       + higs_mass * higs_mass * higs_mass * higs_mass
+    -2 * pion_mass * pion_mass * higs_mass * higs_mass) / ( 2 * kaon_mass );
+}
+
 
 // Get the partial width for lepton decays
 double LeptonPartialWidth(double lep_mass, double higs_mass, double mixing) {
@@ -143,6 +152,10 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceHiggsMass = pset.get<float>("ReferenceHiggsMass", -1);
   fReferenceHiggsMixing = pset.get<float>("ReferenceHiggsMixing", -1);
   fReferenceHiggsEnergy = pset.get<float>("ReferenceHiggsEnergy", -1);
+  if (pset.get<bool>("ReferenceHiggsEnergyFromKDAR", false)) {
+    double p = higgs_momentum(kaonp_mass, pionp_mass, fReferenceHiggsMass);
+    fReferenceHiggsEnergy = sqrt(p*p + fReferenceHiggsMass*fReferenceHiggsMass);
+  }
 
   // if configured to, divide out some of the decay weight
   if (fReferenceRayLength > 0. && fReferenceHiggsMass > 0. && fReferenceHiggsMixing > 0. && fReferenceHiggsEnergy > 0.) {

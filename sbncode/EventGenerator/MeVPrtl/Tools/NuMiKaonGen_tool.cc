@@ -77,6 +77,7 @@ private:
   std::vector<std::string> fSearchPatterns;
   unsigned long fMaxFluxFileMB;
   std::string fFluxCopyMethod;
+  bool fRandomizeFiles;
 
   std::string fTreeName;
   std::string fMetaTreeName;
@@ -138,6 +139,12 @@ void NuMiKaonGen::configure(fhicl::ParameterSet const &pset)
   fFluxCopyMethod = pset.get<std::string>("FluxCopyMethod", "IFDH");
   fTreeName = pset.get<std::string>("TreeName");
   fMetaTreeName = pset.get<std::string>("MetaTreeName");
+  fRandomizeFiles = pset.get<bool>("RandomizeFiles");
+
+  std::cout << "Searching for flux files at path: " << fSearchPath << std::endl;
+  std::cout << "With patterns:\n";
+  for (const std::string &s: fSearchPatterns) std::cout << s << std::endl;
+  std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
 }
 
 std::vector<std::string> NuMiKaonGen::LoadFluxFiles() {
@@ -151,16 +158,30 @@ std::vector<std::string> NuMiKaonGen::LoadFluxFiles() {
     std::copy (thisList.begin(), thisList.end(), std::back_inserter(allFiles));
   }
 
-  // copy over up to the provided limit
-  //
   // first randomize the flux files
-  std::vector<double> rand(allFiles.size(), 0.);
-  CLHEP::RandFlat::shootArray(fEngine, rand.size(), &rand[0]);
-  
   std::vector<unsigned long> order(allFiles.size(), 0);
-  TMath::Sort(allFiles.size(), &rand[0], &order[0], false);
+  if (fRandomizeFiles) {
+    std::vector<double> rand(allFiles.size(), 0.);
+    CLHEP::RandFlat::shootArray(fEngine, rand.size(), &rand[0]);
+    TMath::Sort(allFiles.size(), &rand[0], &order[0], false);
+  }
+  else {
+    for (unsigned i = 0; i < order.size(); i++) {
+      order[i] = i;
+    }
+  }
 
-  // now copy up to the provided limit
+  // If we are directly accessing the files, no need to copy
+  if (fFluxCopyMethod == "DIRECT") {
+    std::cout << "DIRECTLY ACCESSING FLUX FILES.\n";
+    std::vector<std::string> files(allFiles.size());
+    for (unsigned i = 0; i < order.size(); i++) {
+      files[i] = allFiles[order[i]].first;
+    }
+    return files;
+  }
+
+  // copy over up to the provided limit
   std::vector<std::pair<std::string, long>> selected;
   unsigned long totalBytes = 0;
   unsigned ind = 0;
@@ -204,10 +225,14 @@ double NuMiKaonGen::GetPOT() {
 const bsim::Dk2Nu *NuMiKaonGen::GetNextEntry() {
   // new file -- set the start entry 
   if (fNewFile) {
+    // wrap file index around
     if (fFileIndex >= fFluxFiles.size()) {
-      throw cet::exception("FluxReader Out of Files", 
-                           "At file index (" + std::to_string(fFileIndex) + ") of available files (" + std::to_string(fFluxFiles.size()) + ").");
+      fFileIndex = 0;
     }
+    // if (fFileIndex >= fFluxFiles.size()) {
+    //  throw cet::exception("FluxReader Out of Files", 
+    //                       "At file index (" + std::to_string(fFileIndex) + ") of available files (" + std::to_string(fFluxFiles.size()) + ").");
+    // }
 
     std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
     if (fFluxFile) delete fFluxFile;

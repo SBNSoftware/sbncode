@@ -1,4 +1,9 @@
 <lcgdict>
+  <class name="std::vector<TLorentzVector>" />
+  <class name="art::Wrapper<std::vector<TLorentzVector>>" />
+  <enum name="evgen::ldm::Generator" />
+  <class name="art::Wrapper<evgen::ldm::Generator>" />
+
   <class name="evgen::ldm::MeVPrtlTruth" />
   <class name="std::vector<evgen::ldm::MeVPrtlTruth>" />
   <class name="art::Wrapper<evgen::ldm::MeVPrtlTruth>" />

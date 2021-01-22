@@ -1,4 +1,4 @@
-#include "dissonant_higgs.fcl"
+#include "hnl.fcl"
 # service configuration
 #
 #include "services_icarus_simulation.fcl"
@@ -24,7 +24,7 @@ source: {
 physics:
 {
   producers:{
-    generator: @local::dissonant_higgs_gen
+    generator: @local::hnl_gen
     rns:       { module_type: "RandomNumberSaver" }
   }
   filters:  {} 

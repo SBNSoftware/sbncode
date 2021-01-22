@@ -41,6 +41,19 @@ static const double kaonp_ep_nue = 1.582e-5; // From PDG
 static const double abs_VtsVtd_squared = 1.0185e-07;
 static const double rel_VtsVtd_squared = 1.0185e-07;
 static const double abs_Vud_squared = 0.97420 * 0.97420;
+  
+// Useful computation
+double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
+  if (parent_mass < childA_mass + childB_mass) return -1.;
+
+  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
+    -2 * parent_mass * parent_mass * childA_mass * childA_mass
+    -2 * parent_mass * parent_mass * childB_mass * childB_mass
+       + childA_mass * childA_mass * childA_mass * childA_mass 
+       + childB_mass * childB_mass * childB_mass * childB_mass 
+    -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
+
+}
 
 }
 

@@ -12,7 +12,6 @@ namespace ldm {
   double HNLLepPiLNCDalitz(TLorentzVector K, TLorentzVector LA, TLorentzVector N, TLorentzVector PI, TLorentzVector LB);
 
   double HNLLepPiDalitzMax(double mK, double mA, double mN, double mP, double mB);
-  double twobody_momentum(double parent_mass, double childA_mass, double childB_mass);
 
 } // namespace ldm
 } // namespace evgen

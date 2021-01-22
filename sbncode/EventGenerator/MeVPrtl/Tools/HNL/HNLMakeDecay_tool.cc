@@ -80,7 +80,7 @@ private:
   double fReferenceUM4;
   double fReferenceHNLMass;
   double fReferenceRayLength;
-  double fReferenceHNLMaxEnergy;
+  double fReferenceHNLMinEnergy;
 
   // Configure the particle
   bool fMajorana;
@@ -385,15 +385,34 @@ double HNLMakeDecay::CalculateMaxWeight() {
   double um4 = fReferenceUM4;
   double hnl_mass = fReferenceHNLMass;
   double length = fReferenceRayLength;
-  double E = fReferenceHNLMaxEnergy;
+  double E = fReferenceHNLMinEnergy;
+  double P = sqrt(E*E - hnl_mass * hnl_mass);
+
+  // Compute the boost to get the HNL with the correct energy
+  double lep_mass = (um4 > 0) ? muon_mass : elec_mass;
+  double p0 = twobody_momentum(kaonp_mass, lep_mass, hnl_mass);
+  double e0 = sqrt(p0*p0 + hnl_mass*hnl_mass);
+  double beta = (-e0*p0 + E*P) / (E*E + p0*p0); 
+  TVector3 boost(beta, 0, 0);
 
   // make a fake HNL flux with these parameters
   MeVPrtlFlux hnl;
   hnl.C1 = ue4;
   hnl.C2 = um4;
   hnl.mass = hnl_mass;
-  hnl.mom = TLorentzVector((E*E - hnl_mass*hnl_mass) * TVector3(1, 0, 0), E);
+  hnl.mom = TLorentzVector(p0 * TVector3(1, 0, 0), e0);
+  hnl.mom.Boost(boost);
   hnl.secondary_pdg = -1; // doesn't affect the end width, just make it viable
+
+  std::cout << "Reference Energy: " << E << std::endl;
+  std::cout << "HNL 4P: " << hnl.mom.E() << " " << hnl.mom.Px() << std::endl;
+
+  // Mock up the secondary momenta -- this shouldn't affect width and just 
+  // is there to make sure the decay functions work correctly
+  hnl.kmom = TLorentzVector(TVector3(0, 0, 0), kaonp_mass);
+  hnl.kmom.Boost(boost);
+  hnl.sec = TLorentzVector(-p0 * TVector3(1, 0, 0), sqrt(p0*p0 + lep_mass*lep_mass));
+  hnl.sec.Boost(boost);
 
   double width = 0.;
   for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
@@ -448,7 +467,12 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceUM4 = pset.get<double>("ReferenceUM4");
   fReferenceHNLMass = pset.get<double>("ReferenceHNLMass");
   fReferenceRayLength = pset.get<double>("ReferenceRayLength");
-  fReferenceHNLMaxEnergy = pset.get<double>("ReferenceHNLMaxEnergy");
+  fReferenceHNLMinEnergy = pset.get<double>("ReferenceHNLMinEnergy");
+  if (pset.get<bool>("ReferenceHNLMinEnergyFromKDAR", false)) {
+    double lep_mass = (fReferenceUM4 > 0) ? muon_mass : elec_mass;
+    double p0 = twobody_momentum(kaonp_mass, lep_mass, fReferenceHNLMass);
+    fReferenceHNLMinEnergy = sqrt(p0*p0 + fReferenceHNLMass*fReferenceHNLMass);
+  }
   fMajorana = pset.get<bool>("Majorana");
 
   fMaxWeight = CalculateMaxWeight();
@@ -463,6 +487,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     total_width += decays.back().width;
   }
 
+  std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
   if (total_width == 0.) return false;
 
   // pick one

@@ -1,5 +1,5 @@
 #include "HNLDecayDalitz.h"
-
+#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // STUB
 double evgen::ldm::HNLNuDiLepLNVDalitz(TLorentzVector K, TLorentzVector LA, TLorentzVector LB, TLorentzVector LBD, TLorentzVector NU) {
@@ -13,18 +13,6 @@ double evgen::ldm::HNLNuDiLepLNVDalitz(TLorentzVector K, TLorentzVector LA, TLor
   double A3 = 0.;
 
   return A1*2*NU.Dot(LB)*pcross(LBD) + A2*2*NU.Dot(LBD)*pcross(LB) + A3*LB.Dot(LB)*pcross(NU); 
-}
-
-double evgen::ldm::twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
-  if (parent_mass < childA_mass + childB_mass) return -1.;
-
-  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
-    -2 * parent_mass * parent_mass * childA_mass * childA_mass
-    -2 * parent_mass * parent_mass * childB_mass * childB_mass
-       + childA_mass * childA_mass * childA_mass * childA_mass 
-       + childB_mass * childB_mass * childB_mass * childB_mass 
-    -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
-
 }
 
 double evgen::ldm::HNLLepPiLNCDalitz(TLorentzVector K, TLorentzVector LA, TLorentzVector N, TLorentzVector PI, TLorentzVector LB) {
@@ -48,6 +36,7 @@ double evgen::ldm::HNLLepPiLNVDalitz(TLorentzVector K, TLorentzVector LA, TLoren
 }
 
 // Work in the X frame
+// For the process: K -> lA + (N -> pi + lB)
 //              >
 //          lB -
 //            -

@@ -15,6 +15,7 @@
 // local includes
 #include "IRayTrace.h"
 #include "../Products/MeVPrtlFlux.h"
+#include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -55,15 +56,22 @@ public:
     TLorentzVector ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux);
 
     // always thrown at least once
-    //
-    // TODO: make configurable. 
     float MaxWeight() override { 
-      return 0.005; // estimate from profile of ICARUS @ NuMi target 
+      return fMaxWeight;
     }
 
 private:
   geo::BoxBoundedGeo fBox;
   unsigned fNThrows;
+
+  double fReferenceLabSolidAngle;
+  double fReferencePrtlMass;
+  int fReferenceScndPDG;
+  double fReferenceKaonEnergy;
+
+  void CalculateMaxWeight();
+
+  double fMaxWeight;
 };
 
 ReThrowRayTraceBox::ReThrowRayTraceBox(fhicl::ParameterSet const &pset):
@@ -98,6 +106,45 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
   std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
   std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
 
+  fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
+  fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
+  fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
+  fReferenceKaonEnergy = pset.get<double>("ReferenceKaonEnergy");
+
+  CalculateMaxWeight();
+
+}
+  
+void ReThrowRayTraceBox::CalculateMaxWeight() {
+  double secondary_mass = 0.;
+  switch (fReferenceScndPDG) {
+    case 11:
+    case -11:
+      secondary_mass = elec_mass;
+      break;
+    case 13:
+    case -13:
+      secondary_mass = muon_mass;
+      break;
+    case 211:
+    case -211:
+      secondary_mass = pionp_mass;
+      break;
+    default:
+      std::cerr << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
+      std::cout << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
+      break;
+  }
+
+  double p = twobody_momentum(kaonp_mass, secondary_mass, fReferencePrtlMass);
+  double E = sqrt(p*p + fReferencePrtlMass*fReferencePrtlMass);
+
+  double kgamma = fReferenceKaonEnergy / kaonp_mass;
+  double kbeta = sqrt(1 - 1. / (kgamma * kgamma));
+
+  double scale = kgamma * kgamma * (p + kbeta*E) * (p + kbeta*E) / (p*p);
+
+  fMaxWeight = scale * fReferenceLabSolidAngle;
 }
 
 TLorentzVector ReThrowRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux) {
@@ -149,8 +196,12 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     allHMom.push_back(mevprtl_mom);
   }
 
+  std::cout << "Prtl intersected (" << allIntersections.size() << " / " << fNThrows << ") times.\n";
+
   // did we get a hit?
-  if (allIntersections.size() == 0) return false;
+  if (allIntersections.size() == 0) {
+    return false;
+  }
 
   unsigned ind = CLHEP::RandFlat::shootInt(fEngine, 0, allIntersections.size()-1); // inclusive?
 
@@ -188,6 +239,10 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
   else {
     intersection = {B, A}; // reversed
   }
+
+  std::cout << "Kaon 4P: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
+  std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+  std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
 
   return true;
 }
