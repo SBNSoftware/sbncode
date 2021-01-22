@@ -74,25 +74,25 @@ namespace ana{
   // split canvas in 2
   void SplitCanvas2(TCanvas *& c1, TPad *& pad1, TPad *& pad2){
 
-    c1 = new TCanvas("c1","",500,700);
+    c1 = new TCanvas("c1","",700,800);
     c1->cd();
 
     pad1 = new TPad("pad1","pad1",0,0,1,1);
-    pad1->Draw();
     pad1->SetTopMargin(0.1);
     pad1->SetBottomMargin(0.4);
     pad1->SetLeftMargin(0.12);
     pad1->SetRightMargin(0.03);
     pad1->SetFillStyle(0);
+    pad1->Draw();
     c1->cd();
 
     pad2 = new TPad("pad2","pad2",0,0,1,1);// x1 y1 x2 y2
-    pad2->Draw();
     pad2->SetTopMargin(0.6);
     pad2->SetBottomMargin(0.1);
     pad2->SetLeftMargin(0.12);
     pad2->SetRightMargin(0.03);
     pad2->SetFillStyle(0);
+    pad2->Draw();
     c1->cd();
 
   }
@@ -189,14 +189,14 @@ namespace ana{
 
   //--------------------------------------------------
   void DrawIntEffPurLegend(float int1, TGraph* g1, char *name1, float int2, TGraph* g2, char *name2){
-
-    TLegend *leg = new TLegend(.6,.62,.8,.74);
+    
+    TLegend *leg = new TLegend(.65,.2,.85,.3);
     leg->AddEntry(g1, Form("%s: %2.f", name1, int1),"l");
     leg->AddEntry(g2, Form("%s: %2.f", name2, int2),"l");
     leg->SetBorderSize(0); //no border for legend
     leg->SetFillColor(0);  //fill colour is white
     leg->SetFillStyle(0);  //fill colour is white
-    leg->SetTextSize(0.04);
+    leg->SetTextSize(0.03); // this goes in the split canvas so use smaller text
     leg->Draw();
 
   }
@@ -204,51 +204,37 @@ namespace ana{
   //--------------------------------------------------
   void DrawEffPurLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
 
-    TLegend *leg = new TLegend(.6,.62,.8,.74);
+    TLegend *leg = new TLegend(.65,.2,.85,.3);
     leg->AddEntry(g1, name1,"l");
     leg->AddEntry(g2, name2,"l");
     leg->SetBorderSize(0); //no border for legend
     leg->SetFillColor(0);  //fill colour is white
     leg->SetFillStyle(0);  //fill colour is white
-    leg->SetTextSize(0.04);
+    leg->SetTextSize(0.03); // this goes in the split canvas so use smaller text
     leg->Draw();
 
   }
 
-  //--------------------------------------------------
-  void DrawEffPurSMLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
-
-    TLegend *leg = new TLegend(.69,.61,.84,.81);
-    leg->AddEntry(g1, name1,"l");
-    leg->AddEntry(g2, name2,"l");
-    leg->SetBorderSize(0); //no border for legend
-    leg->SetFillColor(0);  //fill colour is white
-    leg->SetFillStyle(0);  //fill colour is white
-    leg->SetTextSize(0.06);
-    leg->Draw();
-
-  }
-
-  void DrawSigBkgIntText(TH1* hsig, TH1* hbkg){
+  void DrawSigBkgIntText(TH1* hsig, TH1* hbkg, float textsize){
 
     float isig = hsig->Integral();
     float ibkg = hbkg->Integral();
-    float psig = 100 * isig / (isig + ibkg);
-    float pbkg = 100 * ibkg / (isig + ibkg);
+    float psig = 100. * isig / (isig + ibkg);
+    float pbkg = 100. * ibkg / (isig + ibkg);
 
     TPaveText *pText1 = new TPaveText(0.15, 0.78, 0.30, 0.85, "brNDC");
     TText *text1 = (pText1->AddText("6.6 #times 10^{20} POT"));
-    text1->SetTextSize(0.04);
+    text1->SetTextSize(textsize);
     pText1->SetBorderSize(0);
     pText1->SetFillStyle(0);
     pText1->Draw();
     TPaveText *pText2 = new TPaveText(0.15, 0.65, 0.30, 0.75, "brNDC");
     TText *text2 = pText2->AddText(Form("Sig: %2.f = %2.f %%", isig, psig));
     text2->SetTextAlign(11);
-    text2->SetTextSize(0.04);
+    text2->SetTextSize(textsize);
     TText *text3 = pText2->AddText(Form("Bkg: %2.f = %2.f %%", ibkg, pbkg));
     text3->SetTextAlign(11);
-    text3->SetTextSize(0.04);
+    text3->SetTextSize(textsize);
     pText2->SetBorderSize(0);
     pText2->SetFillStyle(0);
     pText2->Draw();

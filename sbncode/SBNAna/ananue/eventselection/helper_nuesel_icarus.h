@@ -16,6 +16,8 @@
 
 using namespace ana;
 
+Color_t color_eff   = kGreen+2;
+Color_t color_pur   = kOrange+2;
 Color_t color_nue   = kBlue-7;
 Color_t color_numu  = kGreen+1;
 Color_t color_nc    = kMagenta;
@@ -77,7 +79,7 @@ const Binning kEnergyBinning    = Binning::Simple(40,0.,3000.); // to define
 const Binning kDedxBinning      = Binning::Simple(20,0.,10); // to define
 const Binning kGapBinning       = Binning::Simple(20,0.,10);
 const Binning kDensityBinning 	= Binning::Simple(25,0.,10);
-const Binning kOpenAngleBinning = Binning::Simple(20,0.,2);
+const Binning kOpenAngleBinning = Binning::Simple(30,0.,1.5);
 const Binning kLengthBinning  	= Binning::Simple(40,0.,200);
 const Binning kPEBinning        = Binning::Simple(60,0.,600);
 const Binning kTimeBinning      = Binning::Simple(155,-1550.,1550.);
@@ -225,7 +227,7 @@ std::vector<SelDef> types_slice =
   {"nue",   "NuE CC",  kSlcIsRecoNu&&kNueCC,      color_nue},
   {"numu",  "NuMu CC", kSlcIsRecoNu&&kNumuCC,     color_numu},
   {"nunc",  "NC",      kSlcIsRecoNu&&kNC,         color_nc},
-  {"total", "Total",   kSlcIsRecoNu&&kTotal,      color_other},
+  {"total", "Total",   kSlcIsRecoNu,              color_other},
   {"cosmic", "Cosmic", kSlcIsRecoNu&&kThisCosmic, color_cos}
 };
 
