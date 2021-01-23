@@ -182,6 +182,9 @@ private:
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
   int n_bins;
 
+  const int kQNoOpHScr = -1;
+  const int kNoChrgScr = -2;
+  const int k0VUVPEScr = -3;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
     unsigned events, nopfpneutrino, nullophittime,

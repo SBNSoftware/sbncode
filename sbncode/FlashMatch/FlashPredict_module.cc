@@ -181,7 +181,7 @@ void FlashPredict::produce(art::Event & e)
 
   if(!filterOpHitsOutsideFlash(opHits)){
     mf::LogWarning("FlashPredict")
-      << "\nOpHitTime has no entries,"
+      << "\nNo OpHits in beam window,"
       << "\nor the integral is less than " << fMinFlashPE
       << "\nSkipping...";
     bk.nullophittime++;
@@ -292,6 +292,9 @@ void FlashPredict::produce(art::Event & e)
       if (tpcWithHitsOpH.size() == 0) {
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
+        mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
+        T0_v->push_back(anab::T0(-9999., 0, p, -9999., kQNoOpHScr));
+        util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
         continue;
       }
     }
@@ -299,17 +302,24 @@ void FlashPredict::produce(art::Event & e)
     if(!computeChargeMetrics(qClusters)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
+      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
+      T0_v->push_back(anab::T0(-9999., 0, p, -9999., kNoChrgScr));
+      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
 
     if(!computeFlashMetrics(tpcWithHits, opHits)){
       printMetrics("ERROR", pfp.PdgCode(), tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
+      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
+      T0_v->push_back(anab::T0(-9999., 0, p, -9999., k0VUVPEScr));
+      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
 
+    _hypo_x = hypoFlashX();
+
     if(computeScore(tpcWithHits, pfp.PdgCode())){
-      _hypo_x = hypoFlashX();
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
@@ -1038,28 +1048,37 @@ template <typename Stream>
 void FlashPredict::printBookKeeping(Stream&& out)
 {
   std::ostringstream m;
-  m << "Book Keeping\n";
-  m << "-----------------------------------\n"
-    << "Job tally\n"
-    << "\tevents:       \t  " << bk.events << "\n";
-  if(bk.nopfpneutrino) m << "\tnopfpneutrino:\t -" << bk.nopfpneutrino << "\n";
-  if(bk.nonvalidophit) m << "\tnonvalidophit:\t -" << bk.nonvalidophit << "\n";
-  if(bk.nullophittime) m << "\tnullophittime:\t -" << bk.nullophittime << "\n";
-  m << "\t-------------------\n";
+  m << "Bookkeeping\n";
+  m << "----------------------------------------\n"
+    << "Job Tally\n"
+    << "\tEvents:       \t  " << bk.events << "\n";
+  if(bk.nopfpneutrino) m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino << "\n";
+  if(bk.nonvalidophit) m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit << "\n";
+  if(bk.nullophittime) m << "\tNo OpHits in-time:\t -" << bk.nullophittime << "\n";
+  m << "\t----------------------\n";
   if(bk.job_bookkeeping != bk.events_processed)
-    m << "\tjob_bookkeeping:  \t" << bk.job_bookkeeping << "\n";
-  m << "\tevents_processed: \t" << bk.events_processed << "\n"
-    << "-----------------------------------\n"
-    << "pfp tally\n"
-    << "\tpfp to score: \t  " << bk.pfp_to_score << "\n";
-  if(bk.no_oph_hits) m << "\tno_oph_hits:  \t -" << bk.no_oph_hits << "\n";
-  if(bk.no_charge)   m << "\tno_charge:    \t -" << bk.no_charge << "\n";
-  if(bk.no_flash_pe) m << "\tno_flash_pe:  \t -" << bk.no_flash_pe << " ERROR!\n";
-  m << "\t-------------------\n";
+    m << "\tJob Bookkeeping:  \t" << bk.job_bookkeeping << " ERROR!\n";
+  m << "\tEvents Processed: \t" << bk.events_processed << "\n"
+    << "----------------------------------------\n"
+    << "PFP Tally\n"
+    << "\tPFP to Score: \t  " << bk.pfp_to_score << "\n";
+  if(bk.no_oph_hits) {
+    m << "\tHits w/o OpHits:\t -" << bk.no_oph_hits
+      << ", scored as: " << kQNoOpHScr << "\n";
+  }
+  if(bk.no_charge) {
+    m << "\tNo Charge:      \t -" << bk.no_charge
+      << ", scored as: " << kQNoOpHScr << "\n";
+  }
+  if(bk.no_flash_pe) {
+    m << "\tNo VUV PE:      \t -" << bk.no_flash_pe
+      << ", scored as: " << kQNoOpHScr << " ERROR!\n";
+  }
+  m << "\t----------------------\n";
   if(bk.pfp_bookkeeping != bk.scored_pfp)
-    m << "\tpfp_bookkeeping:  \t" << bk.pfp_bookkeeping << "\n";
-  m << "\tscored_pfp_:      \t" << bk.scored_pfp << "\n"
-    << "-----------------------------------";
+    m << "\tPFP Bookkeeping: \t" << bk.pfp_bookkeeping << " ERROR!\n";
+  m << "\tScored PFP:      \t" << bk.scored_pfp << "\n"
+    << "----------------------------------------";
   out << m.str();
 }
 
@@ -1096,20 +1115,18 @@ void FlashPredict::printMetrics(std::string metric, int pdgc,
     << std::left << std::setw(12) << std::setfill(' ')
     << "isl:        \t" << isl << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
-    << "_run:       \t" << _run << "\n"
-    << "_sub:       \t" << _sub << "\n"
-    << "_evt:       \t" << _evt << "\n"
-    << "tpc:        \t" << tpcs << "\n"
+    << "tpcWithHits:\t" << tpcs << "\n"
     << "_flash_time:\t" << std::setw(8) << _flash_time << "\n"
     << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
     << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
     << "_flash_unpe:\t" << std::setw(8) << _flash_unpe << "\n"
+    << "_hypo_x:    \t" << std::setw(8) << _hypo_x     << ",\t"
+    << "_charge_x:  \t" << std::setw(8) << _charge_x   << ",\t"
+    << "_flash_x:   \t" << std::setw(8) << _flash_x    << "\n"
     << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
     << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
     << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
     << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
-    << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
-    << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
     << "_flash_r:   \t" << std::setw(8) << _flash_r    << ",\t"
     << "_flash_ratio\t" << std::setw(8) << _flash_ratio<< "\n";
 }
