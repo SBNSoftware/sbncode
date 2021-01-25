@@ -317,7 +317,7 @@ void FlashPredict::produce(art::Event & e)
       continue;
     }
 
-    _hypo_x = hypoFlashX();
+    _hypo_x = hypoFlashX_splines();
 
     if(computeScore(tpcWithHits, pfp.PdgCode())){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
@@ -439,9 +439,11 @@ void FlashPredict::loadMetrics()
     rr_spreads.push_back(0.001);
   }
   else {
-    rr_spl = TSpline3(temphisto, "rr_spl", 0., fDriftDistance);
+    std::vector<double> x, yH, yL;
     for (int ib = 1; ib <= n_bins; ++ib) {
-      rr_means.push_back(temphisto->GetBinContent(ib));
+      double me = temphisto->GetBinContent(ib);
+      rr_means.push_back(me);
+      x.push_back(temphisto->GetBinCenter(ib));
       double tt = temphisto->GetBinError(ib);
       if (tt <= 0) {
         std::cout << "zero value for bin spread in rr" << std::endl;
@@ -451,7 +453,12 @@ void FlashPredict::loadMetrics()
         tt = 100.;
       }
       rr_spreads.push_back(tt);
+      yL.push_back(me - tt);
+      yH.push_back(me + tt);
     }
+    rr_InvSpl = TSpline3("rr_InvSpl", rr_means.data(), x.data(), rr_means.size());
+    rr_l_InvSpl = TSpline3("rr_l_InvSpl", yL.data(), x.data(), yL.size());
+    rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(),  yH.size());
   }
   //
   temphisto = (TH1*)infile->Get("pe_h1");
@@ -463,9 +470,11 @@ void FlashPredict::loadMetrics()
     pe_spreads.push_back(0.001);
   }
   else {
-    pe_spl = TSpline3(temphisto, "pe_spl", 0., fDriftDistance);
+    std::vector<double> x, yH, yL;
     for (int ib = 1; ib <= n_bins; ++ib) {
-      pe_means.push_back(temphisto->GetBinContent(ib));
+      double me = temphisto->GetBinContent(ib);
+      pe_means.push_back(me);
+      x.push_back(temphisto->GetBinCenter(ib));
       double tt = temphisto->GetBinError(ib);
       if (tt <= 0) {
         std::cout << "zero value for bin spread in pe" << std::endl;
@@ -475,7 +484,12 @@ void FlashPredict::loadMetrics()
         tt = 100.;
       }
       pe_spreads.push_back(tt);
+      yL.push_back(me - tt);
+      yH.push_back(me + tt);
     }
+    pe_InvSpl = TSpline3("pe_InvSpl", pe_means.data(), x.data(), pe_means.size());
+    pe_l_InvSpl = TSpline3("pe_l_InvSpl", yL.data(), x.data(), yL.size());
+    pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
   }
 
   infile->Close();
@@ -636,71 +650,33 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 }
 
 
-// TODO: Improve this whole function
-double FlashPredict::hypoFlashX()
-{
-  double rr_diff = 10000.;
-  unsigned rr_bin = 10000;
-  for(unsigned i=0; i<rr_means.size(); ++i){
-    double d = std::abs(_flash_r - rr_means[i]);
-    if(d < rr_diff){
-      rr_diff = d;
-      rr_bin = i;
-    }
-  }
-  double rr_width = fDriftDistance / rr_means.size();
-  // TODO: better to get an interpolation
-  double rr_hypo_x = (rr_width/2.) + rr_bin * rr_width;
-  // TODO: better to have the weight being the width of a band
-  double rr_wgt = rr_means[rr_bin]/rr_spreads[rr_bin];
-  if(!fUseUncoatedPMT && !fUseOppVolMetric)
-    return rr_hypo_x;
-
-  double ratio_diff = 10000.;
-  unsigned ratio_bin = 10000;
-  for(unsigned i=0; i<pe_means.size(); ++i){
-    double d = std::abs(_flash_ratio - pe_means[i]);
-    if(d < ratio_diff){
-      ratio_diff = d;
-      ratio_bin = i;
-    }
-  }
-  double ratio_width = fDriftDistance / pe_means.size();
-  // TODO: better to get an interpolation
-  double ratio_hypo_x = (ratio_width/2.) + ratio_bin * ratio_width;
-  // TODO: better to have the weight being the width of a band
-  double ratio_wgt = pe_means[ratio_bin]/pe_spreads[ratio_bin];
-  return (rr_hypo_x*rr_wgt + ratio_hypo_x*ratio_wgt ) / (rr_wgt + ratio_wgt );
-}
-
-
 double FlashPredict::hypoFlashX_splines()
 {
-  double rr_hypo_x = bissectSplines(_flash_r, rr_spl);
+  double hX, mX, lX;
+  double rr_X = rr_InvSpl.Eval(_flash_r);
+  double rr_hX = rr_h_InvSpl.Eval(_flash_r);
+  double rr_lX = rr_l_InvSpl.Eval(_flash_r);
+  if(0.<rr_X && rr_X<fDriftDistance) mX = rr_X;
+  else mX = (_flash_r<rr_means[0]) ? 0. : fDriftDistance;
+  hX = (0.<rr_hX && rr_hX<fDriftDistance) ? rr_hX : mX;
+  lX = (0.<rr_lX && rr_lX<fDriftDistance) ? rr_lX : mX;
+  double rr_hypoX =  (lX + hX)/2.;
+  double rr_hypoXWgt =  2./std::abs(lX - hX);
+
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
-    return rr_hypo_x;
-  double ratio_hypo_x = bissectSplines(_flash_ratio, pe_spl);
-  return (rr_hypo_x + ratio_hypo_x)/2.;
-}
+    return rr_hypoX;
 
+  double pe_X = pe_InvSpl.Eval(_flash_ratio);
+  double pe_hX = pe_h_InvSpl.Eval(_flash_ratio);
+  double pe_lX = pe_l_InvSpl.Eval(_flash_ratio);
+  if(0.<pe_X && pe_X<fDriftDistance) mX = pe_X;
+  else mX = (_flash_ratio<pe_means[0]) ? 0. : fDriftDistance;
+  hX = (0.<pe_hX && pe_hX<fDriftDistance) ? pe_hX : mX;
+  lX = (0.<pe_lX && pe_lX<fDriftDistance) ? pe_lX : mX;
+  double pe_hypoX =  (lX + hX)/2.;
+  double pe_hypoXWgt =  2./std::abs(lX - hX);
 
-double FlashPredict::bissectSplines(double y0, TSpline3& spl)
-{
-  // double y0 = _flash_r;
-  double a = 0; double b = fDriftDistance;
-  double epsilon = 0.001;
-  double x = -10.;
-  // unsigned counter = 0;
-  while(std::abs(a-b) >= epsilon ){
-    x = (a+b)/2.;
-    double y  = spl.Eval(x) - y0;
-    double fa = spl.Eval(a) - y0;
-    if((fa >= 0) ^ (y < 0)) a = x;
-    else b = x;
-    // counter++;
-  }
-  // std::cout << "counter:\t" << counter << "\n";
-  return x;
+  return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
 }
 
 
