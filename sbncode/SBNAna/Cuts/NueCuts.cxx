@@ -83,12 +83,29 @@ namespace ana{
     }
     );
 
+  const Cut kNueTrackContainmentCut(
+    [](const caf::SRSliceProxy* slc)
+    {
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      if (longestTrackIdx == -1)
+        return true;
+      return PtInVol(slc->reco.trk[longestTrackIdx].end, fvndExit);
+    }
+    );
+
   const Cut kNueTrackLenCut(
     [](const caf::SRSliceProxy* slc)
     {
       return kLongestTrackLength(slc) < 110.f;
     }
     );
+
+  const Cut kNueMuonCut(
+      [](const caf::SRSliceProxy* slc)
+      {
+      return (kLongestTrackLength(slc) < 80.f || kLongestTrackChi2Muon(slc) > 30.f || kLongestTrackChi2Proton(slc) < 60.f);
+      }
+      );
 
   const Cut kShowerDensityCut(
     [](const caf::SRSliceProxy* slc)
@@ -100,6 +117,14 @@ namespace ana{
       return (slc->reco.shw[largestShwIdx].density > 4.5);
     }
     );
+
+  const Cut kShowerOpenAngleCut(
+    [](const caf::SRSliceProxy* slc)
+    {
+      return kRecoShower_OpenAngle(slc) < 12.f;
+    }
+    );
+
 
   // // Cut currently not working as it wants a caf::SRProxy and not caf::SRSliceProxy
   // // Workaround is definiting it with the explicit branch i.e. slc->reco.shw[0].start.z instead of kRecoShower_StartZ
