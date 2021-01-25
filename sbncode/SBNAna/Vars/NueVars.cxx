@@ -102,7 +102,7 @@ const Var kRecoShower_OpenAngle(
       if (largestShwIdx != -1) {
         openangle = slc->reco.shw[largestShwIdx].open_angle;
       }
-      return openangle;
+      return (180 * openangle / M_PI);
     });
 
 const Var kRecoShower_StartX(
@@ -174,6 +174,48 @@ const Var kRecoShower_EndZ(
       return end;
     });
 
+const Var kRecoShower_densityGradient(
+    [](const caf::SRSliceProxy* slc) {
+      double densityGrad = -5.0;
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+      if (largestShwIdx != -1) {
+        densityGrad = slc->reco.shw[largestShwIdx].selVars.densityGradient;
+      }
+      return densityGrad;
+    });
+
+const Var kRecoShower_densityGradientPower(
+    [](const caf::SRSliceProxy* slc) {
+      double densityGradPower = -5.0;
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+      if (largestShwIdx != -1) {
+        densityGradPower = slc->reco.shw[largestShwIdx].open_angle;
+        densityGradPower = slc->reco.shw[largestShwIdx].selVars.densityGradientPower;
+      }
+      return densityGradPower;
+    });
+
+const Var kRecoShower_trackLength(
+    [](const caf::SRSliceProxy* slc) {
+      double trackLength = -5.0;
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+      if (largestShwIdx != -1) {
+        trackLength = slc->reco.shw[largestShwIdx].open_angle;
+        trackLength = slc->reco.shw[largestShwIdx].selVars.trackLength;
+      }
+      return trackLength;
+    });
+
+const Var kRecoShower_trackWidth(
+    [](const caf::SRSliceProxy* slc) {
+      double trackWidth = -5.0;
+      const int largestShwIdx(kLargestRecoShowerIdx(slc));
+      if (largestShwIdx != -1) {
+        trackWidth = slc->reco.shw[largestShwIdx].selVars.trackWidth;
+      }
+      return trackWidth;
+    });
+
 const Var kRecoShowers_EnergyCut(
     [](const caf::SRSliceProxy* slc) {
       unsigned int counter(0);
@@ -193,6 +235,7 @@ const Var kLongestTrackIdx(
         auto const& trk = slc->reco.trk[i];
         if (!trk.parent_is_primary)
           continue;
+
         if (trk.len > maxLength) {
           bestIdx = i;
           maxLength = trk.len;
@@ -216,6 +259,92 @@ const Var kLongestTrackLength(
       double length = -5.f;
       const int longestTrackIdx(kLongestTrackIdx(slc));
       if (longestTrackIdx != -1) {
+        length = slc->reco.trk[longestTrackIdx].len;
+      }
+      return length;
+    });
+
+const Var kLongestTrackChi2Muon(
+    [](const caf::SRSliceProxy* slc) {
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      float chi2(-5.f);
+      if (longestTrackIdx != -1) {
+        const unsigned int bestplane(slc->reco.trk[longestTrackIdx].bestplane);
+
+        switch (bestplane) {
+        case 0:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid0.chi2_muon;
+        case 1:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid1.chi2_muon;
+        case 2:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid2.chi2_muon;
+        }
+      }
+      return chi2;
+    });
+
+const Var kLongestTrackChi2Pion(
+    [](const caf::SRSliceProxy* slc) {
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      float chi2(-5.f);
+      if (longestTrackIdx != -1) {
+        const unsigned int bestplane(slc->reco.trk[longestTrackIdx].bestplane);
+
+        switch (bestplane) {
+        case 0:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid0.chi2_pion;
+        case 1:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid1.chi2_pion;
+        case 2:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid2.chi2_pion;
+        }
+      }
+      return chi2;
+    });
+
+const Var kLongestTrackChi2Kaon(
+    [](const caf::SRSliceProxy* slc) {
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      float chi2(-5.f);
+      if (longestTrackIdx != -1) {
+        const unsigned int bestplane(slc->reco.trk[longestTrackIdx].bestplane);
+
+        switch (bestplane) {
+        case 0:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid0.chi2_kaon;
+        case 1:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid1.chi2_kaon;
+        case 2:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid2.chi2_kaon;
+        }
+      }
+      return chi2;
+    });
+
+const Var kLongestTrackChi2Proton(
+    [](const caf::SRSliceProxy* slc) {
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      float chi2(-5.f);
+      if (longestTrackIdx != -1) {
+        const unsigned int bestplane(slc->reco.trk[longestTrackIdx].bestplane);
+
+        switch (bestplane) {
+        case 0:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid0.chi2_proton;
+        case 1:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid1.chi2_proton;
+        case 2:
+          chi2 = slc->reco.trk[longestTrackIdx].chi2pid2.chi2_proton;
+        }
+      }
+      return chi2;
+    });
+
+const Var kMuonTrackLength(
+    [](const caf::SRSliceProxy* slc) {
+      double length = -5.f;
+      const int longestTrackIdx(kLongestTrackIdx(slc));
+      if (longestTrackIdx != -1 && (kLongestTrackChi2Muon(slc) < 30.f && kLongestTrackChi2Proton(slc) > 60.f)) {
         length = slc->reco.trk[longestTrackIdx].len;
       }
       return length;
