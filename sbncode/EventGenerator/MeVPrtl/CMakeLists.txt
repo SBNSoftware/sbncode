@@ -1,7 +1,10 @@
 find_ups_product(ifdhc)
 find_ups_product(dk2nudata)
+find_ups_product(dk2nugenie)
+
 link_directories( $ENV{ROOTSYS}/lib )
 link_directories( $ENV{DK2NUDATA_LIB} )
+link_directories( $ENV{DK2NUGENIE_LIB} )
 
 add_subdirectory(Tools)
 add_subdirectory(Products)

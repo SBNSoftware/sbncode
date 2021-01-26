@@ -1,8 +1,12 @@
 #ifndef IMeVPrtlConstants_h
 #define IMeVPrtlConstants_h
 
+#include "TVector3.h"
+
 namespace evgen {
 namespace ldm {
+
+// NOTE: all values here use units of GeV/ns/cm
 
 // masses
 static const double elec_mass = 0.000511; // GeV
@@ -26,12 +30,12 @@ static const double gR = sin2thetaW;
 static const double fpion = 0.1302; // Pion decay constant [GeV]
 
 // unit conversion
-static const double hbar = 6.582119569e-16; // GeV*ns
+static const double hbar = 6.582119569e-16; // GeV*ns or eV*s
 static const double c_cm_per_ns = 29.9792; // cm / ns
 
 // kaon lifetimes
-static const double kplus_lifetime = 1.238e-8; // s
-static const double klong_lifetime = 5.116e-8; // s
+static const double kplus_lifetime = 1.238e1; // ns
+static const double klong_lifetime = 5.116e1; // ns
 
 // Kaon decay branching ratios
 static const double kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2018/listings/rpp2018-list-K-plus-minus.pdf 
@@ -42,18 +46,13 @@ static const double abs_VtsVtd_squared = 1.0185e-07;
 static const double rel_VtsVtd_squared = 1.0185e-07;
 static const double abs_Vud_squared = 0.97420 * 0.97420;
   
-// Useful computation
-double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
-  if (parent_mass < childA_mass + childB_mass) return -1.;
+// Useful computations
+double twobody_momentum(double parent_mass, double childA_mass, double childB_mass);
+int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, double rand,
+                     double& lab_frame_p_out, double& costh_rest_out, double& wgt);
+double forwardPrtlEnergy(double parentM, double secM, double prtlM, double parentE);
+double secPDG2Mass(int pdg);
 
-  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
-    -2 * parent_mass * parent_mass * childA_mass * childA_mass
-    -2 * parent_mass * parent_mass * childB_mass * childB_mass
-       + childA_mass * childA_mass * childA_mass * childA_mass 
-       + childB_mass * childB_mass * childB_mass * childB_mass 
-    -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
-
-}
 
 }
 

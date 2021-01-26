@@ -12,7 +12,7 @@ numi_kaon: {
   MetaTreeName: "dkmetaTree"
   MaxFluxFileMB: 8192 # 8GB
   FluxCopyMethod: DIRECT
-  RandomizeFiles: false
+  RandomizeFiles: true
 }
 
 ray_trace_box: {
@@ -32,6 +32,18 @@ rethrow_ray_trace_box: {
 
   ReferenceLabSolidAngle: 1e-4
   ReferenceKaonEnergy: 7.5 # GeV
+}
+
+weighted_ray_trace_box: {
+  tool_type: WeightedRayTraceBox
+  # Volume: volCryostat
+  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+
+  # weight computation
+  #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
+  #ReferenceLabSolidAngle: 1.6e-5 # approx solid angle of ICARUS @NuMI target
+  ReferenceLabSolidAngle: 1e-4
+  ReferenceKaonEnergy: 15. # GeV
 }
 
 

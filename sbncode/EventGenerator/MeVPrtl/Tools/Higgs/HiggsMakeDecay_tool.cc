@@ -70,6 +70,7 @@ private:
   float fReferenceHiggsMass;
   float fReferenceHiggsMixing;
   float fReferenceHiggsEnergy;
+  float fReferenceHiggsKaonEnergy;
 
   float fMaxWeight;
   
@@ -152,9 +153,11 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceHiggsMass = pset.get<float>("ReferenceHiggsMass", -1);
   fReferenceHiggsMixing = pset.get<float>("ReferenceHiggsMixing", -1);
   fReferenceHiggsEnergy = pset.get<float>("ReferenceHiggsEnergy", -1);
-  if (pset.get<bool>("ReferenceHiggsEnergyFromKDAR", false)) {
-    double p = higgs_momentum(kaonp_mass, pionp_mass, fReferenceHiggsMass);
-    fReferenceHiggsEnergy = sqrt(p*p + fReferenceHiggsMass*fReferenceHiggsMass);
+  fReferenceHiggsKaonEnergy = pset.get<float>("ReferenceHiggsEnergyFromKaonEnergy", -1.);
+
+  if (fReferenceHiggsEnergy < 0. && fReferenceHiggsKaonEnergy > 0.) {
+    fReferenceHiggsEnergy = std::min(forwardPrtlEnergy(kaonp_mass, pionp_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy),
+                                     forwardPrtlEnergy(klong_mass, pizero_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy));
   }
 
   // if configured to, divide out some of the decay weight

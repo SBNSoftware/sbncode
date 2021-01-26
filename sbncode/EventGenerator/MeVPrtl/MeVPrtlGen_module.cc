@@ -83,6 +83,9 @@ public:
   }
 
 private:
+  bool fProduce;
+  bool fAnaOutput;
+
   bool fDoDeweight;
   double fSubRunPOT;
 
@@ -95,8 +98,10 @@ private:
   double fFluxMaxWeight;
   double fRayMaxWeight;
   double fDecayMaxWeight;
+  double fRayDecayMaxWeight;
 
   TTree *fTree;
+  MeVPrtlTruth *fMeVPrtl;
 
   CLHEP::HepJamesRandom *fEngine;
 
@@ -107,6 +112,9 @@ private:
 evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   : EDProducer{p}
 {
+  fProduce = p.get<bool>("Produce", true);
+  fAnaOutput = p.get<bool>("AnaOutput", false);
+
   fDoDeweight = p.get<bool>("Deweight", false);
   fSubRunPOT = 0.;
 
@@ -128,21 +136,32 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   fDecayMaxWeight = fDecayTool->MaxWeight();
   std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
 
-  // All the standard generator outputs
-  produces< std::vector<simb::MCTruth> >();
-  produces< std::vector<simb::MCFlux>  >();
-  produces< sumdata::RunData, art::InRun >();
-  produces< sumdata::POTSummary, art::InSubRun >();
-  produces< art::Assns<simb::MCTruth, simb::MCFlux> >();
-  produces< std::vector<sim::BeamGateInfo> >();
+  fRayDecayMaxWeight = fDecayMaxWeight*fRayMaxWeight;
 
-  // also save info pertinent to the scalar
-  produces< std::vector<evgen::ldm::MeVPrtlTruth> >();
-
+  if (fProduce) {
+    // All the standard generator outputs
+    produces< std::vector<simb::MCTruth> >();
+    produces< std::vector<simb::MCFlux>  >();
+    produces< sumdata::RunData, art::InRun >();
+    produces< sumdata::POTSummary, art::InSubRun >();
+    produces< art::Assns<simb::MCTruth, simb::MCFlux> >();
+    produces< std::vector<sim::BeamGateInfo> >();
+    
+    // also save info pertinent to the scalar
+    produces< std::vector<evgen::ldm::MeVPrtlTruth> >();
+  }
+    
   // setup the random number engine
   art::ServiceHandle<rndm::NuRandomService> seedSvc;
   fEngine = new CLHEP::HepJamesRandom;
   seedSvc->registerEngine(rndm::NuRandomService::CLHEPengineSeeder(fEngine), "MeVPrtlGen");
+
+  if (fAnaOutput) {
+    art::ServiceHandle<art::TFileService> tfs;
+    fTree = tfs->make<TTree>("mevprtl_gen", "mevprtl_gen");
+    fMeVPrtl = new evgen::ldm::MeVPrtlTruth();
+    fTree->Branch("mevprtl", &fMeVPrtl);
+  }
     
   fNCalls = {0, 0, 0, 0};
   fNTime = {0., 0., 0., 0.};
@@ -168,7 +187,15 @@ bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
     return true;
   }
 
-  // guard
+  // Guard against bad max weight
+  //
+  // There is some question of whether to crash or handle this gracefully.
+  // Note that there is some literature that proposes that doing rejection
+  // sampling with an adaptive maximum weight (as done below) is valid.
+  // https://www.jstor.org/stable/4140534?seq=1
+  //
+  // However, this is really only true for a larger N than what is typically done
+  // in a larsoft job (10-150). Still, it's probably best not to crash.
   if (max_weight < weight) {
     std::cerr << "ERROR: weight (" << weight << ") with max weight (" << max_weight << "). Reconfiguration needed.\n";
     std::cout << "ERROR: weight (" << weight << ") with max weight (" << max_weight << "). Reconfiguration needed.\n";
@@ -243,7 +270,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[2] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fRayTool->IntersectDetector(flux, intersection, ray_weight) && Deweight(ray_weight, fRayMaxWeight);
+    success = fRayTool->IntersectDetector(flux, intersection, ray_weight);
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[2] += duration.count();
@@ -256,13 +283,23 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[3] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fDecayTool->Decay(flux, intersection[0], intersection[1], decay, decay_weight) && Deweight(decay_weight, fDecayMaxWeight); 
+    success = fDecayTool->Decay(flux, intersection[0], intersection[1], decay, decay_weight);
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[3] += duration.count();
 
     if (!success) continue;
+
     std::cout << "Decay weight: " << decay_weight << std::endl;
+
+    // Deweight the ray and decay weights together because they have some anti-correlation
+    double ray_decay_weight = ray_weight * decay_weight;
+    success = Deweight(ray_decay_weight, fRayDecayMaxWeight);
+
+    if (!success) continue;
+
+    std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+
 
     std::cout << "PASSED!\n";
 
@@ -271,10 +308,11 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     // if we are de-weighting, then the scaling all gets put into the POT variable
     if (fDoDeweight) {
-      thisPOT = thisPOT / (flux_weight * ray_weight * decay_weight);
+      thisPOT = thisPOT / (flux_weight * ray_decay_weight);
       flux_weight = 1.;
       ray_weight = 1.;
       decay_weight = 1.;
+      ray_decay_weight = 1.;
     }
 
     fSubRunPOT += thisPOT;
@@ -283,8 +321,8 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     evgen::ldm::MeVPrtlTruth mevprtl_truth = evgen::ldm::BuildMeVPrtlTruth(flux, decay, 
       intersection,
       flux_weight,
-      ray_weight,
-      decay_weight,
+      1.,
+      ray_decay_weight,
       thisPOT
     );
 
@@ -309,15 +347,23 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     sim::BeamGateInfo gate;
     beamgateColl->push_back(gate);
 
+    if (fAnaOutput) {
+      *fMeVPrtl = mevprtl_truth;
+      fTree->Fill();
+    }
+
     break;
   }
 
-  evt.put(std::move(mctruthColl));
-  evt.put(std::move(mcfluxColl));
-  evt.put(std::move(truth2fluxAssn));
-  evt.put(std::move(beamgateColl));
+  if (fProduce) {
+    evt.put(std::move(mctruthColl));
+    evt.put(std::move(mcfluxColl));
+    evt.put(std::move(truth2fluxAssn));
+    evt.put(std::move(beamgateColl));
+    
+    evt.put(std::move(mevprtlColl));
+  }
 
-  evt.put(std::move(mevprtlColl));
 }
 
 DEFINE_ART_MODULE(evgen::ldm::MeVPrtlGen)

@@ -3,7 +3,7 @@ BEGIN_PROLOG
 
 kaon2hnl: {
   tool_type: Kaon2HNLFlux
-  M: 0.35 # GeV/c^2
+  M: 0.265 # GeV/c^2
   MagUe4: 0
   MagUm4: 1e-7
   KDAROnly: false
@@ -28,17 +28,16 @@ decay_hnl: {
   Majorana: true
   ReferenceUE4: 0
   ReferenceUM4: 1e-7
-  ReferenceHNLMass: 0.35
-  ReferenceRayLength: 2500 # 25m
-  ReferenceHNLMinEnergy: 0. # GeV
-  ReferenceHNLMinEnergyFromKDAR: true
+  ReferenceHNLMass: 0.265
+  ReferenceRayLength: 2100 # 21m
+  ReferenceHNLEnergyFromKaonEnergy: 15. # GeV
 }
 
 hnl: {
   module_type: MeVPrtlTFile
   MesonGen: @local::numi_kaon
   Flux: @local::kaon2hnl
-  RayTrace: @local::rethrow_ray_trace_box
+  RayTrace: @local::weighted_ray_trace_box
   Decay: @local::decay_hnl
 }
 
@@ -47,11 +46,11 @@ hnl_gen: {
   Deweight: true
   MesonGen: @local::numi_kaon
   Flux: @local::kaon2hnl
-  RayTrace: @local::rethrow_ray_trace_box
+  RayTrace: @local::weighted_ray_trace_box
   Decay: @local::decay_hnl
 }
 
-hnl_gen.RayTrace.ReferencePrtlMass: 0.35 # GeV
+hnl_gen.RayTrace.ReferencePrtlMass: 0.265 # GeV
 hnl_gen.RayTrace.ReferenceScndPDG: 13 # muon
 
 END_PROLOG

@@ -56,6 +56,7 @@ simple_plugin( HiggsMakeDecay tool
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
+			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 install_headers()

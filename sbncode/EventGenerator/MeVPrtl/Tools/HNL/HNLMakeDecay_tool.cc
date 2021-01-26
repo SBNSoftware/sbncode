@@ -80,7 +80,8 @@ private:
   double fReferenceUM4;
   double fReferenceHNLMass;
   double fReferenceRayLength;
-  double fReferenceHNLMinEnergy;
+  double fReferenceHNLEnergy;
+  double fReferenceHNLKaonEnergy;
 
   // Configure the particle
   bool fMajorana;
@@ -385,7 +386,7 @@ double HNLMakeDecay::CalculateMaxWeight() {
   double um4 = fReferenceUM4;
   double hnl_mass = fReferenceHNLMass;
   double length = fReferenceRayLength;
-  double E = fReferenceHNLMinEnergy;
+  double E = fReferenceHNLEnergy;
   double P = sqrt(E*E - hnl_mass * hnl_mass);
 
   // Compute the boost to get the HNL with the correct energy
@@ -467,12 +468,14 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceUM4 = pset.get<double>("ReferenceUM4");
   fReferenceHNLMass = pset.get<double>("ReferenceHNLMass");
   fReferenceRayLength = pset.get<double>("ReferenceRayLength");
-  fReferenceHNLMinEnergy = pset.get<double>("ReferenceHNLMinEnergy");
-  if (pset.get<bool>("ReferenceHNLMinEnergyFromKDAR", false)) {
-    double lep_mass = (fReferenceUM4 > 0) ? muon_mass : elec_mass;
-    double p0 = twobody_momentum(kaonp_mass, lep_mass, fReferenceHNLMass);
-    fReferenceHNLMinEnergy = sqrt(p0*p0 + fReferenceHNLMass*fReferenceHNLMass);
+
+  fReferenceHNLEnergy = pset.get<float>("ReferenceHNLEnergy", -1);
+  fReferenceHNLKaonEnergy = pset.get<float>("ReferenceHNLEnergyFromKaonEnergy", -1.);
+  if (fReferenceHNLEnergy < 0. && fReferenceHNLKaonEnergy > 0.) {
+    double lep_mass = (fReferenceUE4 > 0) ? elec_mass : muon_mass;
+    fReferenceHNLEnergy = forwardPrtlEnergy(kaonp_mass, lep_mass, fReferenceHNLMass, fReferenceHNLKaonEnergy);
   }
+
   fMajorana = pset.get<bool>("Majorana");
 
   fMaxWeight = CalculateMaxWeight();

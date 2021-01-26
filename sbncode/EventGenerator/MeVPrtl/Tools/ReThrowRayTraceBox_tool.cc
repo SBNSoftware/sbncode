@@ -113,6 +113,8 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 
   CalculateMaxWeight();
 
+  // TEST: compare results of this weight to calcENuWeight
+
 }
   
 void ReThrowRayTraceBox::CalculateMaxWeight() {
