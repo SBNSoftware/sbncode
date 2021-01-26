@@ -855,12 +855,14 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
     return false;
   }
 
-  auto ibin =  ophittime.GetMaximumBin();
+  int ibin =  ophittime.GetMaximumBin();
+  double maxpeak_time = ophittime.GetBinCenter(ibin);
   if (fSBND && fUseUncoatedPMT){
-    auto ibin_vis =  ophittime_vis.GetMaximumBin();
-    ibin = (ibin<ibin_vis) ? ibin : ibin_vis;
+    int ibin_vis =  ophittime_vis.GetMaximumBin();
+    double maxpeakvis_time = ophittime_vis.GetBinCenter(ibin_vis);
+    maxpeak_time = (maxpeak_time<maxpeakvis_time) ? maxpeak_time : maxpeakvis_time;
   }
-  _flash_time = (ibin * fTickPeriod) + fBeamWindowStart; // in us
+  _flash_time = maxpeak_time; // in us
   double lowedge  = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
