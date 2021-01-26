@@ -30,6 +30,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/WireGeo.h"
+#include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -129,7 +130,8 @@ private:
 
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
-  const double fClockResolution;
+  detinfo::DetectorClocksData const fClockData;
+  const double fTickPeriod;
   const double fBeamWindowStart, fBeamWindowEnd;
   const double fLightWindowStart, fLightWindowEnd;
   const unsigned fTimeBins;

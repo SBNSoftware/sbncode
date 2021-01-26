@@ -22,6 +22,7 @@ art_make(
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
 
+  lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
   lardata_Utilities
   lardataobj_AnalysisBase
   lardataobj_RawData

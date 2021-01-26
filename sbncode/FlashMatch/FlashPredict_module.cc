@@ -17,12 +17,13 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
   // , fCaloProducer(p.get<std::string>("CaloProducer"))
   // , fTrackProducer(p.get<std::string>("TrackProducer"))
-  , fClockResolution(p.get<double>("ClockResolution", 0.002)) // us
+  , fClockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob())
+  , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
   , fBeamWindowStart(p.get<double>("BeamWindowStart")) // TODO: should come from service
   , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// in ns // TODO: should come from service
   , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
   , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
-  , fTimeBins(unsigned(1/fClockResolution * (fBeamWindowEnd - fBeamWindowStart)))
+  , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
@@ -859,7 +860,7 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
     auto ibin_vis =  ophittime_vis.GetMaximumBin();
     ibin = (ibin<ibin_vis) ? ibin : ibin_vis;
   }
-  _flash_time = (ibin * fClockResolution) + fBeamWindowStart; // in us
+  _flash_time = (ibin * fTickPeriod) + fBeamWindowStart; // in us
   double lowedge  = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
