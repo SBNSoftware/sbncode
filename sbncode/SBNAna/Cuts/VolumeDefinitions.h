@@ -42,7 +42,7 @@ const FidVol fvfd_cryo1{ -368.49,  -71.94,  // x
 // icarus cheat active volume cryo 1 for plotting
 const FidVol avfd_cryo1{ -400.,  -50.,  // x
                          -200., +150.,  // y
-                         -910., +910.}; // z
+                         -1000., +1000.}; // z
 
 // icarus active volume cryo 2 same as cryo 1 atm
 const FidVol fvfd_cryo2 = fvfd_cryo1;
