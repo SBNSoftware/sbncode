@@ -76,10 +76,10 @@ struct SelDefSpill
 
 // Define all the variables and cuts first, including binnings
 const Binning kEnergyBinning    = Binning::Simple(40,0.,3000.); // to define
-const Binning kDedxBinning      = Binning::Simple(20,0.,10); // to define
-const Binning kGapBinning       = Binning::Simple(20,0.,10);
-const Binning kDensityBinning 	= Binning::Simple(25,0.,10);
-const Binning kOpenAngleBinning = Binning::Simple(30,0.,1.5);
+const Binning kDedxBinning      = Binning::Simple(40,0.,10); // to define
+const Binning kGapBinning       = Binning::Simple(40,0.,10);
+const Binning kDensityBinning 	= Binning::Simple(50,0.,10);
+const Binning kOpenAngleBinning = Binning::Simple(60,0.,1.5);
 const Binning kLengthBinning  	= Binning::Simple(40,0.,200);
 const Binning kPEBinning        = Binning::Simple(60,0.,600);
 const Binning kTimeBinning      = Binning::Simple(155,-1550.,1550.);
@@ -200,7 +200,8 @@ std::vector<PlotDef> plots_slice =
    {"bestenergy", "Best plane energy (MeV)",      kEnergyBinning,         kRecoShower_BestEnergy},  
    {"density",    "Shower density (MeV/cm)",      kDensityBinning,        kRecoShower_Density},
    {"energy",     "Shower energy (MeV)",          kNueEnergyBinning,      kRecoShower_Energy},
-   {"length",     "Length (cm)",                  kLengthBinning,         kRecoShower_Length},
+   {"lengthshw",  "Shower length (cm)",           kLengthBinning,         kRecoShower_Length},
+   {"lengthtrk",  "Track length (cm)",            kLengthBinning,         kLongestTrackLength},
    {"nuscore",    "Pandora #nu score",            kBDTBinning,            kSlcNuScore},
    {"flashscore", "Flash score",                  kFlashBinning,          kSlcFlashScore},
    {"truthenergy","True #nu energy (GeV)",        kLowEnergyGeVBinning,   kTruthEnergy},
@@ -243,7 +244,8 @@ std::vector<SelDefSpill> types_spill =
 // ----------------------------------------------------------------------------------------------
 // Cuts
 std::vector<SelDef> sels_slice ={
-  {"nocut",      "No cut",               kNoCut,            kBlack},
+  {"nocut",      "No cut",               kNoCut,            kBlack}
+  /*{"nocut",      "No cut",               kNoCut,            kBlack},
   {"cont",       "Containment",          kContained,        kBlack},
   {"flash",      "Flash score",          kSlcFlashMatchCut, kBlack},
   {"pandnu",     "Neutrino score",       kSlcNuScoreCut,    kBlack},
@@ -268,7 +270,7 @@ std::vector<SelDef> sels_slice ={
   {"N1trklen",  "N1 Track length",         kN1TrkLen,     kBlack},
   {"N1density", "N1 Shower density",       kN1Density,    kBlack},
   {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack},
-  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack}
+  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack}*/
   };
 
 std::vector<SelDefSpill> sels_spill ={

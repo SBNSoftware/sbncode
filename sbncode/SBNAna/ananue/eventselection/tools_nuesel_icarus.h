@@ -15,7 +15,8 @@
 #include <fstream>
 #include <iomanip>
 
-ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus.txt");
+// ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus_table.txt");
+ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus_table__crtveto.txt");
 
 namespace ana{
 
@@ -47,11 +48,14 @@ namespace ana{
     std::setprecision(3);
     output << "\\begin{table}[H]\n";
     output << "\\centering\n";
-    // output << "\\resizebox{\\textwidth}{!}{\n";
-    output << "\\begin{tabular}{|l||c|c|c|c|c||c|c|}\n";
+    output << "\\resizebox{\\textwidth}{!}{\n";
+    // output << "\\begin{tabular}{|l||c|c|c|c|c||c|c|}\n";
+    output << "\\begin{tabular}{|l||c|c|c|c|c||c|}\n";
     output << "\\hline \n";
-    output << "\\multicolumn{1}{|c||}{} & \\multicolumn{5}{c||}{Number of interactions} & \\multicolumn{2}{c|}{Contribution} \\ \\hline \n \
-    \\multicolumn{1}{|c||}{Cut} & $\\nu_{e}$ CC & $\\nu_{\\mu}$ CC & NC & Cosmic & Other bkg & Signal & Total background \\ \\hline \n";
+    // output << "\\multicolumn{1}{|c||}{} & \\multicolumn{5}{c||}{Number of interactions (\\% total)} & \\multicolumn{2}{c|}{Integrated} \\\\ \\hline \n \
+    // \\multicolumn{1}{|c||}{Cut} & $\\nu_{e}$ CC & $\\nu_{\\mu}$ CC & NC & Cosmic & Other bkg & Efficiency & Purity \\\\ \\hline \n";
+    output << "\\multicolumn{1}{|c||}{} & \\multicolumn{4}{c||}{Number of interactions (\\% total)} & \\multicolumn{2}{c|}{Integrated} \\\\ \\hline \n \
+    \\multicolumn{1}{|c||}{Cut} & $\\nu_{e}$ CC & $\\nu_{\\mu}$ CC & NC & Cosmic & Efficiency & Purity \\\\ \\hline \n";
   }// printTableHeader
 
   void printTableFooter(){
@@ -61,11 +65,16 @@ namespace ana{
     //output.close();
   }
 
-  void printEventsLine(std::string cutname, float nue, float numu, float nc, float cos, float other){
+  void printEventsLine(std::string cutname, float nue, float numu, float nc, float cos, float other, float eff, float pur){
     float total = nue+numu+nc+cos+other;
-    float percnue = 100*nue/total;
+    float percnue    = 100*nue/total;
+    float percnumu   = 100*numu/total;
+    float percnc     = 100*nc/total;
+    float perccos    = 100*cos/total;
+    float percother  = 100*other/total;
     float perctotbkg = 100*(numu+nc+cos+other)/total;
-    output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue << "&" << numu << "&" << nc << "&" << cos << "&" << other << "&" << percnue << "&" << perctotbkg << "\\ \\hline \n";
+    // output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue <<"("<<percnue<<")"<< "&" << numu<<"("<<percnumu<<")"<< "&" << nc<<"("<<percnc<<")"<< "&" << cos<<"("<<perccos<<")"<< "&" << other<<"("<<percother<<")"<< "&" << eff << "&" << pur << "\\\\ \\hline \n";
+    output << std::fixed << std::setw(6) << std::setprecision(3) << cutname << "&" << nue <<"("<<percnue<<")"<< "&" << numu<<"("<<percnumu<<")"<< "&" << nc<<"("<<percnc<<")"<< "&" << cos<<"("<<perccos<<")"<< "&" << eff << "&" << pur << "\\\\ \\hline \n";
   }
 
 
@@ -188,11 +197,15 @@ namespace ana{
   }
 
   //--------------------------------------------------
-  void DrawIntEffPurLegend(float int1, TGraph* g1, char *name1, float int2, TGraph* g2, char *name2){
+  void DrawIntEffPurLegend(TH1D* g1, char *name1, TH1D* g2, char *name2){
     
+    float int1 = g1->Integral();
+    float int2 = g2->Integral();
     TLegend *leg = new TLegend(.65,.2,.85,.3);
-    leg->AddEntry(g1, Form("%s: %2.f", name1, int1),"l");
-    leg->AddEntry(g2, Form("%s: %2.f", name2, int2),"l");
+    leg->AddEntry(g1, name1,"l");
+    leg->AddEntry(g2, name2,"l");
+    // leg->AddEntry(g1, Form("%s: %2.f", name1, int1),"l");
+    // leg->AddEntry(g2, Form("%s: %2.f", name2, int2),"l");
     leg->SetBorderSize(0); //no border for legend
     leg->SetFillColor(0);  //fill colour is white
     leg->SetFillStyle(0);  //fill colour is white
@@ -202,7 +215,20 @@ namespace ana{
   }
 
   //--------------------------------------------------
-  void DrawEffPurLegend(TGraph* g1, char *name1, TGraph* g2, char *name2){
+  void DrawPurLegend(TH1D* g1, char *name1){
+
+    TLegend *leg = new TLegend(.65,.25,.85,.35);
+    leg->AddEntry(g1, name1,"l");
+    leg->SetBorderSize(0); //no border for legend
+    leg->SetFillColor(0);  //fill colour is white
+    leg->SetFillStyle(0);  //fill colour is white
+    leg->SetTextSize(0.03); // this goes in the split canvas so use smaller text
+    leg->Draw();
+
+  }
+
+  //--------------------------------------------------
+  void DrawEffPurLegend(TH1D* g1, char *name1, TH1D* g2, char *name2){
 
     TLegend *leg = new TLegend(.65,.2,.85,.3);
     leg->AddEntry(g1, name1,"l");
@@ -222,13 +248,13 @@ namespace ana{
     float psig = 100. * isig / (isig + ibkg);
     float pbkg = 100. * ibkg / (isig + ibkg);
 
-    TPaveText *pText1 = new TPaveText(0.15, 0.78, 0.30, 0.85, "brNDC");
+    TPaveText *pText1 = new TPaveText(0.15, 0.84, 0.30, 0.89, "brNDC");
     TText *text1 = (pText1->AddText("6.6 #times 10^{20} POT"));
     text1->SetTextSize(textsize);
     pText1->SetBorderSize(0);
     pText1->SetFillStyle(0);
     pText1->Draw();
-    TPaveText *pText2 = new TPaveText(0.15, 0.65, 0.30, 0.75, "brNDC");
+    TPaveText *pText2 = new TPaveText(0.15, 0.72, 0.30, 0.80, "brNDC");
     TText *text2 = pText2->AddText(Form("Sig: %2.f = %2.f %%", isig, psig));
     text2->SetTextAlign(11);
     text2->SetTextSize(textsize);
@@ -243,7 +269,28 @@ namespace ana{
   // Efficiency and purity graphs 
   //-----------------------------------------------------------------
 
-  TGraph* SelEFForPURvsX(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool geteff) {
+  TH1D* EffOrPurHistogram(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool geteff) {
+
+    //
+    // Make a ROC TGraph for the given signal and background histos
+    //
+    TH1D* hTotal = (TH1D*)hSelSignal->Clone();
+    hTotal->Add(hSelBack);
+
+    TH1D* hPurity = (TH1D*)hSelSignal->Clone();
+    hPurity->Divide(hTotal);
+
+    TH1D* hEfficiency = (TH1D*)hSelSignal->Clone();
+    hEfficiency->Divide(hSignal);
+
+    if ( geteff )
+      return hEfficiency;
+    else
+      return hPurity;
+
+  }
+
+  TGraph* EffOrPurGraph(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool geteff) {
 
     //
     // Make a ROC TGraph for the given signal and background histos
