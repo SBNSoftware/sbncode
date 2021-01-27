@@ -15,8 +15,7 @@
 #include <fstream>
 #include <iomanip>
 
-// ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus_table.txt");
-ofstream output("/icarus/data/users/dmendez/SBNAna/ananue/tables/Jan2021/nuesel_icarus_table__crtveto.txt");
+ofstream output("/outputdir_path/table_output.txt");
 
 namespace ana{
 
@@ -292,10 +291,6 @@ namespace ana{
 
   TGraph* EffOrPurGraph(TH1* hSelSignal, TH1* hSelBack, TH1* hSignal, bool geteff) {
 
-    //
-    // Make a ROC TGraph for the given signal and background histos
-    //
-
     const int NBins = hSignal->GetNbinsX();
 
     TString xTitle = hSignal->GetXaxis()->GetTitle();
@@ -309,8 +304,6 @@ namespace ana{
       double allsig = hSignal   ->GetBinContent(i);
       double selsig = hSelSignal->GetBinContent(i);
       double selbac = hSelBack  ->GetBinContent(i);
-      /* double S = hSignal->Integral(i,NBins); */
-      /* double B = hBack  ->Integral(i,NBins); */
 
       val[i-1] = hSignal->GetBinCenter(i);
       double EFF = selsig;

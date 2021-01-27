@@ -25,8 +25,8 @@ void make_spectra_nuesel_icarus(std::string finname = "nucosmics", int setno = 1
 
   std::string settag = std::to_string(setno);
 
-  std::string findir = "/pnfs/icarus/persistent/users/dmendez/Tests/Outputs/Dec2020CAFs/";
-  std::string foutdir = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
+  std::string findir = "/inputdir_path/";
+  std::string foutdir = "/outputdir_path/";
   const std::string finsample = findir + finname + "_hadded"+settag+".flatcaf.root";
   const std::string foutname = foutdir + finname + "_spectra_hadded"+settag+(selspill ? "_spill" : "_slice")+".root";
 

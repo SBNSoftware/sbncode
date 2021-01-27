@@ -36,12 +36,12 @@ void plot_spectra_nuesel_icarus(
   bool crtvars = true)
 {
 
-  std::string inDir  = "/icarus/data/users/dmendez/SBNAna/ananue/files/Jan2021/";
+  std::string inDir  = "/inputdir_path/";
   std::string inFile = inDir + input + "_spectra_slice.root";
   std::string inFile_nue  = inDir + "nue_spectra_slice.root";
   std::string inFile_nus  = inDir + "nucosmics_spectra_slice.root";
   std::string inFile_cos  = inDir + "cosmics_spectra_slice.root";
-  std::string outDir  = "/icarus/data/users/dmendez/SBNAna/ananue/plots/Jan2021/";
+  std::string outDir  = "/outputdir_path/";
 
   std::string ext_tag = (logscale ? "_logscale" : "");
   std::string pot_tag = "6.6 #times 10^{20} POT";
