@@ -78,9 +78,9 @@ struct SelDefSpill
 const Binning kEnergyBinning    = Binning::Simple(40,0.,3000.); // to define
 const Binning kDedxBinning      = Binning::Simple(40,0.,10); // to define
 const Binning kGapBinning       = Binning::Simple(40,0.,10);
-const Binning kDensityBinning 	= Binning::Simple(50,0.,10);
+const Binning kDensityBinning   = Binning::Simple(50,0.,10);
 const Binning kOpenAngleBinning = Binning::Simple(60,0.,1.5);
-const Binning kLengthBinning  	= Binning::Simple(40,0.,200);
+const Binning kLengthBinning    = Binning::Simple(40,0.,200);
 const Binning kPEBinning        = Binning::Simple(60,0.,600);
 const Binning kTimeBinning      = Binning::Simple(155,-1550.,1550.);
 const Binning kFlashBinning     = Binning::Simple(40,-6.f,34.f);
@@ -244,8 +244,7 @@ std::vector<SelDefSpill> types_spill =
 // ----------------------------------------------------------------------------------------------
 // Cuts
 std::vector<SelDef> sels_slice ={
-  {"nocut",      "No cut",               kNoCut,            kBlack}
-  /*{"nocut",      "No cut",               kNoCut,            kBlack},
+  {"nocut",      "No cut",               kNoCut,            kBlack},
   {"cont",       "Containment",          kContained,        kBlack},
   {"flash",      "Flash score",          kSlcFlashMatchCut, kBlack},
   {"pandnu",     "Neutrino score",       kSlcNuScoreCut,    kBlack},
@@ -270,7 +269,7 @@ std::vector<SelDef> sels_slice ={
   {"N1trklen",  "N1 Track length",         kN1TrkLen,     kBlack},
   {"N1density", "N1 Shower density",       kN1Density,    kBlack},
   {"N1energy",  "N1 Shower energy",        kN1Energy,     kBlack},
-  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack}*/
+  {"N1recocut", "N1 Reconstruction (all)", kN1Reco,       kBlack}
   };
 
 std::vector<SelDefSpill> sels_spill ={
