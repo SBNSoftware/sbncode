@@ -1049,11 +1049,11 @@ void FlashPredict::printBookKeeping(Stream&& out)
   }
   if(bk.no_charge) {
     m << "\tNo Charge:      \t -" << bk.no_charge
-      << ", scored as: " << kQNoOpHScr << "\n";
+      << ", scored as: " << kNoChrgScr << "\n";
   }
   if(bk.no_flash_pe) {
     m << "\tNo VUV PE:      \t -" << bk.no_flash_pe
-      << ", scored as: " << kQNoOpHScr << " ERROR!\n";
+      << ", scored as: " << k0VUVPEScr << " ERROR!\n";
   }
   m << "\t----------------------\n";
   if(bk.pfp_bookkeeping != bk.scored_pfp)
