@@ -1,9 +1,11 @@
 #include "numi_kaon_common.fcl"
 BEGIN_PROLOG
 
+hnlM: 0.265
+
 kaon2hnl: {
   tool_type: Kaon2HNLFlux
-  M: 0.265 # GeV/c^2
+  M: @local::hnlM # GeV/c^2
   MagUe4: 0
   MagUm4: 1e-7
   KDAROnly: false
@@ -28,17 +30,9 @@ decay_hnl: {
   Majorana: true
   ReferenceUE4: 0
   ReferenceUM4: 1e-7
-  ReferenceHNLMass: 0.265
+  ReferenceHNLMass: @local::hnlM
   ReferenceRayLength: 2100 # 21m
   ReferenceHNLEnergyFromKaonEnergy: 15. # GeV
-}
-
-hnl: {
-  module_type: MeVPrtlTFile
-  MesonGen: @local::numi_kaon
-  Flux: @local::kaon2hnl
-  RayTrace: @local::weighted_ray_trace_box
-  Decay: @local::decay_hnl
 }
 
 hnl_gen: {
@@ -46,11 +40,41 @@ hnl_gen: {
   Deweight: true
   MesonGen: @local::numi_kaon
   Flux: @local::kaon2hnl
-  RayTrace: @local::weighted_ray_trace_box
+  RayTrace: @local::mixedweight_ray_trace_box
   Decay: @local::decay_hnl
 }
 
-hnl_gen.RayTrace.ReferencePrtlMass: 0.265 # GeV
+hnl_gen.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
 hnl_gen.RayTrace.ReferenceScndPDG: 13 # muon
+
+hnl: @local::hnl_gen
+hnl.Deweight: false
+hnl.Produce: false
+hnl.AnaOutput: true
+
+
+mcraytrace: @local::rethrow_ray_trace_box
+mcraytrace.ReferencePrtlMass: @local::hnlM # GeV
+mcraytrace.ReferenceScndPDG: 13 # muon
+
+wgtraytrace: @local::weighted_ray_trace_box
+wgtraytrace.ReferencePrtlMass: @local::hnlM # GeV
+wgtraytrace.ReferenceScndPDG: 13 # muon
+
+mxdraytrace: @local::mixedweight_ray_trace_box
+mxdraytrace.ReferencePrtlMass: @local::hnlM # GeV
+mxdraytrace.ReferenceScndPDG: 13 # muon
+
+hnl_test_raytrace: {
+  module_type: MeVPrtlTestRayTrace
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl
+  RayTraces: [
+    @local::mcraytrace,
+    @local::wgtraytrace,
+    @local::mxdraytrace
+  ]
+}
+
 
 END_PROLOG

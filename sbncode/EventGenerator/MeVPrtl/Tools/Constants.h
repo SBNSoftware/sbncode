@@ -53,8 +53,9 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
 double forwardPrtlEnergy(double parentM, double secM, double prtlM, double parentE);
 double secPDG2Mass(int pdg);
 
+// Minimum possible cos theta for a given decay
+double minKinematicCosTheta(double parentM, double secM, double prtlM, double parentE);
 
-}
-
+  }
 }
 #endif

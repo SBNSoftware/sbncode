@@ -1,14 +1,14 @@
 #include "dissonant_higgs.fcl"
 # service configuration
 #
-#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 
 
-process_name: AnaTree
+process_name: dissHTree
 
 services:
 {
-  @table::icarus_basic_services
+  @table::icarus_simulation_services
   TFileService: { fileName: "dissonant_higgs_icarus.root" }
   IFDH: {}
 }
@@ -19,18 +19,14 @@ source: {
 
 physics:
 {
-  producers:{}
-  filters:  {} 
-  analyzers:{
-    
+  producers: {
     disshiggs: @local::dissonant_higgs
-    
   } # analyzers
  
   ana:  [ disshiggs ]
  
-  trigger_paths: [] 
-  end_paths:     [ ana ] 
+  trigger_paths: [ ana ] 
+  end_paths:     [  ] 
   
 } # physics
 

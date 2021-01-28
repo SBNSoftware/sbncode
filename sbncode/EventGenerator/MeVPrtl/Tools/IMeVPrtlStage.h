@@ -45,6 +45,7 @@ public:
       art::ServiceHandle<rndm::NuRandomService> seedSvc;
       fEngine = new CLHEP::HepJamesRandom;
       seedSvc->registerEngine(rndm::NuRandomService::CLHEPengineSeeder(fEngine), name);
+      fName = name;
     }
 
     /**
@@ -69,8 +70,11 @@ public:
       return CLHEP::RandFlat::shoot(fEngine);
     }
 
+    const char *Name() { return fName; }
+
 protected:
     CLHEP::HepRandomEngine* fEngine;
+    const char *fName;
 };
 
 } // namespace ldm

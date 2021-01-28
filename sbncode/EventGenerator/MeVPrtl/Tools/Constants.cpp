@@ -75,18 +75,20 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   bool minus_valid = !isnan(lab_frame_p_minus) && lab_frame_p_minus > 0.;
 
   // Now compute the weight
-  auto wgtf = [costh_lab, rest_frame_p, E_rest, M, beta, gamma](double p_lab) {
+  auto wgtf = [costh_lab, rest_frame_p, E_rest, M, beta, gamma](double p_lab, int SIGN) {
     double E_lab = sqrt(p_lab*p_lab + M*M);
 
     double dp_labdp_rest = (rest_frame_p / (E_rest * gamma)) * (beta*costh_lab +\
-                E_rest / (gamma * sqrt(E_rest*E_rest / (gamma*gamma) - M*M + M*M * beta*beta * costh_lab*costh_lab))) /\
+                SIGN*E_rest / (gamma * sqrt(E_rest*E_rest / (gamma*gamma) - M*M + M*M * beta*beta * costh_lab*costh_lab))) /\
                 (1 - beta*beta * costh_lab*costh_lab);
     return (E_rest / E_lab) * (p_lab*p_lab / (rest_frame_p*rest_frame_p)) * abs(dp_labdp_rest);
   };
 
-  double plus_wgt = plus_valid ? wgtf(lab_frame_p_plus) : 0.;
-  double minus_wgt = minus_valid ? wgtf(lab_frame_p_minus) : 0.;
-  double threshold = (plus_valid || minus_valid) ? minus_valid / (plus_valid + minus_valid) : -1; 
+  double plus_wgt = plus_valid ? wgtf(lab_frame_p_plus, 1) : 0.;
+  double minus_wgt = minus_valid ? wgtf(lab_frame_p_minus, -1) : 0.;
+
+  //double threshold = (plus_valid || minus_valid) ? minus_valid / (plus_valid + minus_valid) : -1; 
+  double threshold = 0.5;
 
   // Select the solution to use
   bool select_plus = plus_valid && (!minus_valid || (rand >= threshold));
@@ -106,22 +108,41 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   std::cout << "WGT PLUS: " << plus_wgt << std::endl;
   std::cout << "WGT MINUS: " << minus_wgt << std::endl;
 
+  if (select_plus) std::cout << "SELECTED PLUS" << std::endl;
+  else if (select_minus) std::cout << "SELECTED MINUS" << std::endl;
+  else std::cout << "SELECTED NONE" << std::endl;
+
   if (select_plus) {
     costh_rest_out = costh_rest_plus;
     lab_frame_p_out = lab_frame_p_plus;
+    wgt = plus_wgt * (plus_valid + minus_valid);
   }
   else if (select_minus) {
     costh_rest_out = costh_rest_minus;
     lab_frame_p_out = lab_frame_p_minus;
+    wgt = minus_wgt * (plus_valid + minus_valid);
   }
   else { // No solution!
     return -1;
   }
 
-  wgt = plus_wgt + minus_wgt;
- 
-
   return 0;
+}
+
+double minKinematicCosTheta(double parentM, double secM, double prtlM, double parentE) {
+  // guard against parent-at-rest
+  if (parentE - parentM < 1e-4) return 0.;
+
+  // look up the rest frame prtl momentum
+  double rest_prtlP = twobody_momentum(parentM, secM, prtlM);
+
+  // set the dir and boost in the same direction
+  double gamma = parentE / parentM;
+  double beta = sqrt(1. - 1. / (gamma*gamma));
+
+  double rest_prtlE = sqrt(prtlM*prtlM + rest_prtlP*rest_prtlP);
+
+  return sqrt(prtlM*prtlM - rest_prtlE * rest_prtlE / (gamma*gamma)) / (prtlM*beta);
 }
 
 // Get the energy of a forward going prtl from a parent with mass M / energy E

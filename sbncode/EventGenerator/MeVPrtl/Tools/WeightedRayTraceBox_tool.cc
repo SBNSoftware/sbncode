@@ -59,8 +59,6 @@ public:
 
     bool IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &intersection, double &weight) override;
 
-    TLorentzVector ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux);
-
     // always thrown at least once
     float MaxWeight() override { 
       return fMaxWeight;

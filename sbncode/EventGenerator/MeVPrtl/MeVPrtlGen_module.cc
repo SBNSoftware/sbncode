@@ -169,7 +169,7 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
 
 void evgen::ldm::MeVPrtlGen::beginRun(art::Run& run) {
   art::ServiceHandle<geo::Geometry const> geo;
-  run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()));
+  if (fProduce) run.put(std::make_unique<sumdata::RunData>(geo->DetectorName()));
 }
 
 void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
@@ -177,7 +177,7 @@ void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
   p->totpot = fSubRunPOT;
   p->totgoodpot = fSubRunPOT;
 
-  sr.put(std::move(p));
+  if (fProduce) sr.put(std::move(p));
 
   fSubRunPOT = 0.;
 }
@@ -221,9 +221,6 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
   std::unique_ptr<std::vector<sim::BeamGateInfo>> beamgateColl(new std::vector<sim::BeamGateInfo>);
 
   std::unique_ptr<std::vector<evgen::ldm::MeVPrtlTruth>> mevprtlColl(new std::vector<evgen::ldm::MeVPrtlTruth>);
-
-  art::PtrMaker<simb::MCFlux> MCFluxPtrMaker {evt};
-  art::PtrMaker<simb::MCTruth> MCTruthPtrMaker {evt};
 
   // TODO: pileup? For now, don't worry
 
@@ -339,9 +336,16 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     mctruthColl->push_back(mctruth);
     mcfluxColl->push_back(kaon);
 
-    art::Ptr<simb::MCTruth> MCTruthPtr = MCTruthPtrMaker(mctruthColl->size() - 1); 
-    art::Ptr<simb::MCFlux> MCFluxPtr = MCFluxPtrMaker(mcfluxColl->size() - 1); 
-    truth2fluxAssn->addSingle(MCTruthPtr, MCFluxPtr);
+    // Make the associations only if we are producing stuff
+    // Otherwise this crashes
+    if (fProduce) {
+      art::PtrMaker<simb::MCFlux> MCFluxPtrMaker {evt};
+      art::PtrMaker<simb::MCTruth> MCTruthPtrMaker {evt};
+      
+      art::Ptr<simb::MCTruth> MCTruthPtr = MCTruthPtrMaker(mctruthColl->size() - 1); 
+      art::Ptr<simb::MCFlux> MCFluxPtr = MCFluxPtrMaker(mcfluxColl->size() - 1); 
+      truth2fluxAssn->addSingle(MCTruthPtr, MCFluxPtr);
+    }
 
     // TODO: implement for real
     sim::BeamGateInfo gate;

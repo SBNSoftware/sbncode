@@ -420,8 +420,12 @@ double HNLMakeDecay::CalculateMaxWeight() {
     width += ((*this.*F)(hnl)).width;
   }
 
+  std::cout << "REFERENCE WIDTH: " << width << std::endl;
+
   double lifetime_ns = hbar / width;
   float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * c_cm_per_ns;
+
+  std::cout << "REFERENCE DECAY LENGTH: " << mean_dist << std::endl;
 
   return length / mean_dist; 
 }
