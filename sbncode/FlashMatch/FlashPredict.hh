@@ -147,6 +147,7 @@ private:
   const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
   std::unique_ptr<geo::CryostatGeo> fGeoCryo;
+  const int fNBins;
   const double fDriftDistance;
   size_t fNTPC;
   unsigned fDriftVolumes;
@@ -181,7 +182,6 @@ private:
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
-  int n_bins;
 
   const int kQNoOpHScr = -1;
   const int kNoChrgScr = -2;

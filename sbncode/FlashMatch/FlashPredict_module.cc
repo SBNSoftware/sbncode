@@ -37,6 +37,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
+  , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
   , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
@@ -386,15 +387,16 @@ void FlashPredict::loadMetrics()
   }
   //
   TH1 *temphisto = (TH1*)infile->Get("dy_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dy " << n_bins << " bins " << std::endl;
-    n_bins = 1;
+  int bins = 0;
+  bins = temphisto->GetNbinsX();
+  if (bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for dy " << bins << " bins " << std::endl;
+    bins = 1;
     dy_means.push_back(0);
     dy_spreads.push_back(0.001);
   }
   else {
-    for (int ib = 1; ib <= n_bins; ++ib) {
+    for (int ib = 1; ib <= bins; ++ib) {
       dy_means.push_back(temphisto->GetBinContent(ib));
       double tt = temphisto->GetBinError(ib);
       if (tt <= 0) {
@@ -409,15 +411,15 @@ void FlashPredict::loadMetrics()
   }
   //
   temphisto = (TH1*)infile->Get("dz_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dz " << n_bins << " bins " << std::endl;
-    n_bins = 1;
+  bins = temphisto->GetNbinsX();
+  if (bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for dz " << bins << " bins " << std::endl;
+    bins = 1;
     dz_means.push_back(0);
     dz_spreads.push_back(0.001);
   }
   else {
-    for (int ib = 1; ib <= n_bins; ++ib) {
+    for (int ib = 1; ib <= bins; ++ib) {
       dz_means.push_back(temphisto->GetBinContent(ib));
       double tt = temphisto->GetBinError(ib);
       if (tt <= 0) {
@@ -432,16 +434,16 @@ void FlashPredict::loadMetrics()
   }
   //
   temphisto = (TH1*)infile->Get("rr_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for rr " << n_bins << " bins " << std::endl;
-    n_bins = 1;
+  bins = temphisto->GetNbinsX();
+  if (bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for rr " << bins << " bins " << std::endl;
+    bins = 1;
     rr_means.push_back(0);
     rr_spreads.push_back(0.001);
   }
   else {
     std::vector<double> x, yH, yL;
-    for (int ib = 1; ib <= n_bins; ++ib) {
+    for (int ib = 1; ib <= bins; ++ib) {
       double me = temphisto->GetBinContent(ib);
       rr_means.push_back(me);
       x.push_back(temphisto->GetBinCenter(ib));
@@ -463,16 +465,16 @@ void FlashPredict::loadMetrics()
   }
   //
   temphisto = (TH1*)infile->Get("pe_h1");
-  n_bins = temphisto->GetNbinsX();
-  if (n_bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for pe " << n_bins << " bins " << std::endl;
-    n_bins = 1;
+  bins = temphisto->GetNbinsX();
+  if (bins <= 0 || fNoAvailableMetrics) {
+    std::cout << " problem with input histos for pe " << bins << " bins " << std::endl;
+    bins = 1;
     pe_means.push_back(0);
     pe_spreads.push_back(0.001);
   }
   else {
     std::vector<double> x, yH, yL;
-    for (int ib = 1; ib <= n_bins; ++ib) {
+    for (int ib = 1; ib <= bins; ++ib) {
       double me = temphisto->GetBinContent(ib);
       pe_means.push_back(me);
       x.push_back(temphisto->GetBinCenter(ib));
@@ -622,7 +624,7 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 {
   _score = 0.;
   unsigned tcount = 0;
-  int isl = int(n_bins * (_charge_x / fDriftDistance));
+  int isl = int(fNBins * (_charge_x / fDriftDistance));
   auto out = mf::LogWarning("FlashPredict");
 
   _scr_y = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
@@ -1086,7 +1088,7 @@ void FlashPredict::printMetrics(std::string metric, int pdgc,
                                 double term,
                                 Stream&& out)
 {
-  int isl = int(n_bins * (_charge_x / fDriftDistance));
+  int isl = int(fNBins * (_charge_x / fDriftDistance));
   std::string tpcs;
   for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
   out
