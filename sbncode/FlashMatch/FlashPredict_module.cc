@@ -588,8 +588,8 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
     _flash_r = std::sqrt(
-      (sum_PE2Y2 - 2.0 * _flash_y * sum_PE2Y + _flash_y * _flash_y * sum_PE2 +
-       sum_PE2Z2 - 2.0 * _flash_z * sum_PE2Z + _flash_z * _flash_z * sum_PE2) / sum_PE2);
+      (sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
+       - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     if (fSBND && fUseUncoatedPMT) icountPE = std::round(_flash_pe + _flash_unpe);
     else icountPE = std::round(_flash_pe);
     return true;
