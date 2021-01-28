@@ -96,12 +96,6 @@ namespace caf
       "pandoraTrack"
     };
 
-    Atom<string> RecoSplitTrackLabel {
-      Name("RecoSplitTrackLabel"),
-      Comment("Base label of reco split-track producer."),
-      "splitTrack"
-    };
-
     Atom<string> RecoShowerLabel {
       Name("RecoShowerLabel"),
       Comment("Base label of reco-base shower producer."),
@@ -161,49 +155,7 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
-
-    Atom<string> SplitTrackCaloLabel {
-      Name("SplitTrackCaloLabel"),
-      Comment("Base label of split-track calorimetry producer."),
-      "splitCalo"
-    };
-
-    Atom<string> SplitTrackPidLabel {
-      Name("SplitTrackPidLabel"),
-      Comment("Base label of split-track particle-id producer."),
-      "splitPid"
-    };
-
-    Atom<string> SplitCRTHitMatchLabel {
-      Name("SplitCRTHitMatchLabel"),
-      Comment("Base label of track to CRT hit matching producer."),
-      "splitTrackCRTHit"
-    };
-
-    Atom<string> SplitCRTTrackMatchLabel {
-      Name("SplitCRTTrackMatchLabel"),
-      Comment("Base label of track to CRT track matching producer."),
-      "splitTrackCRTTrack"
-    };
-
-    Atom<string> SplitTrackMCSLabel {
-      Name("SplitTrackMCSLabel"),
-      Comment("Base label of split-track MCS momentum calculation producer."),
-      "splitTrackMCS"
-    };
-
-    Atom<string> SplitTrackRangeLabel {
-      Name("SplitTrackRangeLabel"),
-      Comment("Base label of split-track range momentum calculation producer."),
-      "splitTrackRange"
-    };
-
-    Atom<string> SplitTrackInfoLabel {
-      Name("SplitTrackInfoLabel"),
-      Comment("Base label of track-splitter identifier information."),
-      "mergeIdent"
-    };
-
+    
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),

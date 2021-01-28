@@ -392,43 +392,6 @@ namespace caf
 
   }
 
-  void FillTrackSplit(const std::vector<art::Ptr<sbn::MergedTrackInfo>> &merged,
-                      const recob::Track &track,
-                      caf::SRTrack &srtrack,
-                      bool allowEmpty) {
-    // not all tracks will have a split
-    (void) allowEmpty;
-
-    if (merged.size()) {
-      const sbn::MergedTrackInfo &merged_v = *merged[0]; 
-
-      // The split exists!
-      srtrack.split.split = true;
-
-      // fill stuff
-      srtrack.split.branch = merged_v.branch;
-      srtrack.split.trunk = merged_v.trunk;
-      srtrack.split.b_overlap = merged_v.branch_overlap;
-
-      // find the location at the split
-      for (unsigned i_tp = track.FirstValidPoint(); i_tp < track.NumberTrajectoryPoints(); i_tp = track.NextValidPoint(i_tp+1)) {
-        TVector3 p = track.LocationAtPoint<TVector3>(i_tp);
-        if (merged_v.direction.Dot(p - merged_v.vertex) >= merged_v.branch_start) {
-          srtrack.split.locAtSplit.x = p.X();
-          srtrack.split.locAtSplit.y = p.Y();
-          srtrack.split.locAtSplit.z = p.Z();
-
-          TVector3 d = track.DirectionAtPoint<TVector3>(i_tp);
-          srtrack.split.dirAtSplit.x = d.X();
-          srtrack.split.dirAtSplit.y = d.Y();
-          srtrack.split.dirAtSplit.z = d.Z();
-
-          break;
-        }
-      }
-    }
-  }
-
   // TODO: crt matching
 
   void FillTrackVars(const recob::Track& track,
@@ -444,10 +407,6 @@ namespace caf
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
     srtrack.phi = track.StartDirection().Phi();
-
-    srtrack.dir.x = track.StartDirection().X();
-    srtrack.dir.y = track.StartDirection().Y();
-    srtrack.dir.z = track.StartDirection().Z();
 
     srtrack.start.x = track.Start().X();
     srtrack.start.y = track.Start().Y();
