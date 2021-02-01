@@ -29,8 +29,8 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
-#include "sbncode/StandardRecord/SRSlice.h"
-#include "sbncode/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRSlice.h"
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 
 namespace caf

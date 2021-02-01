@@ -1,6 +1,0 @@
-<lcgdict>
-  <class pattern="ana::*" noStreamer="true" noInputOperator="true" />
-  <function pattern="ana::*" noStreamer="true" noInputOperator="true" />
-  <enum pattern="ana::*" noStreamer="true" noInputOperator="true" />
-  <variable pattern="ana::*" noStreamer="true" noInputOperator="true" />
-</lcgdict>
