@@ -32,8 +32,8 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 
-#include "sbncode/TPCReco/Products/PCAnglePlane.h"
-#include "sbncode/TPCReco/Products/PCAngleKink.h"
+#include "sbnobj/Common/Reco/PCAnglePlane.h"
+#include "sbnobj/Common/Reco/PCAngleKink.h"
 
 #include "TFitter.h"
 #include "TMinuit.h"

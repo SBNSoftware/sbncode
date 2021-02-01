@@ -37,7 +37,7 @@
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
-#include "sbncode/TPCReco/Products/VertexHit.h"
+#include "sbnobj/Common/Reco/VertexHit.h"
 
 namespace sbn {
   class VertexChargeVacuum;

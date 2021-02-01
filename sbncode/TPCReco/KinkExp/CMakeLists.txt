@@ -6,7 +6,7 @@ art_make_library(
 	LIBRARY_NAME sbn_LArReco_PCA
 	SOURCE PCA.cc
 	LIBRARIES
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_RecoBase_AssnsDicts_dict
 	lardataobj_RecoBase_dict	
 	sbndcode_OpDetSim
@@ -28,7 +28,7 @@ simple_plugin(PCAnglePlaneMaker module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
@@ -52,7 +52,7 @@ simple_plugin(PCAngleKinkFinder module
 	MF_MessageLogger
 	Minuit
 
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
@@ -74,7 +74,7 @@ simple_plugin(PCAngleKinkTree module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         
         art_root_io_tfile_support

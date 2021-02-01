@@ -38,7 +38,7 @@
 
 #include <memory>
 
-#include "sbncode/LArRecoProducer/Products/MergedTrackInfo.hh"
+#include "sbnobj/Common/Reco/MergedTrackInfo.hh"
 
 namespace sbn {
   class MergedTrackIdentifier;

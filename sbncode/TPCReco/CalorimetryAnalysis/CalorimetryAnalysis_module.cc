@@ -42,7 +42,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
-#include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbnobj/Common/Reco/RangeP.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 

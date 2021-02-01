@@ -36,8 +36,8 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
-#include "sbncode/TPCReco/Products/VertexHit.h"
-#include "sbncode/TPCReco/Products/Stub.h"
+#include "sbnobj/Common/Reco/VertexHit.h"
+#include "sbnobj/Common/Reco/Stub.h"
 
 #include <memory>
 #include <optional>

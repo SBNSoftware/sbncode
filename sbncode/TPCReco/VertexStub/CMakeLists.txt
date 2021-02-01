@@ -14,7 +14,7 @@ simple_plugin(VertexChargeVacuum module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
@@ -39,7 +39,7 @@ simple_plugin(VertexStubTracker module
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
-	sbncode_TPCReco_Products_dict
+	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
