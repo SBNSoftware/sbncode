@@ -21,10 +21,10 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
-#include "sbncode/StandardRecord/SRFakeReco.h"
-#include "sbncode/StandardRecord/SRTrueParticle.h"
-#include "sbncode/StandardRecord/SRTruthMatch.h"
-#include "sbncode/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRFakeReco.h"
+#include "sbnanaobj/StandardRecord/SRTrueParticle.h"
+#include "sbnanaobj/StandardRecord/SRTruthMatch.h"
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 namespace caf
 {

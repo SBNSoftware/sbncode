@@ -1,0 +1,96 @@
+#include "services_sbnd.fcl"
+#include "geometry_sbnd.fcl"
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_sbnd.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "simulationservices_sbnd.fcl"
+
+#include "flashmatch.fcl"
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "calorimetry_sbnd.fcl"
+
+
+process_name: CaloAna
+
+services:
+{
+  @table::sbnd_detsim_services
+  TimeTracker: {}
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { 
+    fileName: "output.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  Geometry:                  @local::sbnd_geo
+  AuxDetGeometry:            @local::sbnd_auxdetgeo
+  LArPropertiesService:      @local::standard_properties
+  DetectorClocksService:     @local::sbnd_services.DetectorClocksService
+  DetectorPropertiesService: @local::sbnd_detproperties
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+
+}
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  analyzers:
+  {
+    anawiener: {
+      module_type: MuonS2NStudy
+      WireLabel: "caldata"
+      HitLabel: "gaushit"
+    }
+    anagaus10: {
+      module_type: MuonS2NStudy
+      WireLabel: "caldata10"
+      HitLabel: "gaushit10"
+    }
+    anagaus15: {
+      module_type: MuonS2NStudy
+      WireLabel: "caldata15"
+      HitLabel: "gaushit15"
+    }
+    anagaus20: {
+      module_type: MuonS2NStudy
+      WireLabel: "caldata20"
+      HitLabel: "gaushit20"
+    }
+  }
+
+  stream1:       [anawiener, anagaus10, anagaus15, anagaus20]
+  trigger_paths: [ ] 
+  end_paths:     [ stream1 ]
+}
+
+#include "3drift_services_sbnd.fcl"

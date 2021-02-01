@@ -22,3 +22,7 @@ physics.producers.fmatchCryo1.PandoraProducer:    "pandoraGausSCECryo1"
 physics.producers.fmatchCryo1.TrackProducer:      "pandoraTrackGausSCECryo1"
 physics.producers.fmatchCryo1.CaloProducer:       "pandoraGausSCECaloCryo1"
 physics.producers.fmatchCryo1.SpacePointProducer: "pandoraGausSCECryo1"
+
+### use to only pick up the fixed SCE products from the Dec 2020 PAC production
+### should not be needed in the future
+source.inputCommands: ["keep *_*_*_*", "drop *_*GausSCE*_*_McRecoGauss" ]

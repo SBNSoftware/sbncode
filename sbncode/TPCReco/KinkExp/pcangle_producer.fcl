@@ -1,0 +1,16 @@
+BEGIN_PROLOG
+pcangle_sbnd: {
+  module_type: PCAnglePlaneMaker
+  PFParticleLabel: pandora
+  FollowDaughters: false
+  HitGroupDistance: 4.5 # cm = 15 wires
+}
+
+pcanglekink_sbnd: {
+  module_type: PCAngleKinkFinder
+  PFParticleLabel: pandora
+  HitThreshold: 0.0872665 # [rad] == 5 deg
+  AllowIncomplete: true
+  MinDist: 2.4 # cm = 8 wires -- ~half the group distance
+}
+END_PROLOG

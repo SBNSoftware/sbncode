@@ -22,15 +22,15 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
-#include "sbncode/LArRecoProducer/Products/RangeP.h"
-#include "sbncode/LArRecoProducer/Products/ShowerSelectionVars.h"
+#include "sbnobj/Common/Reco/RangeP.h"
+#include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
-#include "sbncode/StandardRecord/SRSlice.h"
-#include "sbncode/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRSlice.h"
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 
 namespace caf
@@ -40,6 +40,8 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const geo::GeometryCore *geom,
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);

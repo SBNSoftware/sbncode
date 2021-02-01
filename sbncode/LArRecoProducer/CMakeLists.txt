@@ -3,8 +3,6 @@
 #)
 
 add_subdirectory(LArReco)
-#add_subdirectory(Products)
-
 art_make( MODULE_LIBRARIES
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -28,7 +26,6 @@ art_make( MODULE_LIBRARIES
 	lardataobj_RecoBase_dict	
 	lardataobj_RecoBase
 )
-
 
 install_headers()
 install_fhicl()
