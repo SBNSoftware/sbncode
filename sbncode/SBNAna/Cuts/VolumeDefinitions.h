@@ -33,6 +33,11 @@ const FidVol avnd{ -200., +200.,  // x
                    -200., +200.,  // y
                      +0., +500.}; // z
 
+// Define a volume with a 10cm buffer to look for exiting tracks
+const FidVol fvndExit{ -190., +190.,  // x
+                       -190., +190.,  // y
+                       +10., +490. }; // z
+
 // icarus fiducial volume cryo used to be the same as the actual active volume (not the values below)
 // slightly change these values. still not uptimized.
 const FidVol fvfd_cryo1{ -368.49,  -71.94,  // x
