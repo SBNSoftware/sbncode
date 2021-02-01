@@ -18,10 +18,15 @@ namespace ana{
 
   extern const Cut kActiveVolumeFDCryo1;
   extern const Cut kActiveVolumeFDCryo2;
+  extern const Cut kFiducialVolumeFDCryo1;
+  extern const Cut kFiducialVolumeFDCryo2;
 
   extern const Cut kSlcIsRecoNu;
   extern const Cut kSlcNuScoreCut;
 
   extern const Cut kSlcHasFlashMatch;
   extern const Cut kSlcFlashMatchCut;
+
+  const Cut kContainedFD  = kFiducialVolumeFDCryo1 || kFiducialVolumeFDCryo2;
+
 } // namespace

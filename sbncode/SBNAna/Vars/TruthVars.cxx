@@ -77,4 +77,25 @@ namespace ana
         return ( kHasTruthMatch(slc) ? (float)std::hypot( kTruthVtxDistX(slc), kTruthVtxDistY(slc), kTruthVtxDistZ(slc) ) : -5.f );
       }
       );
+
+    // -----------------------------------------------------------------
+    // Spill vars
+
+    const SpillVar kTruthNuEnergy([](const caf::SRSpillProxy* sr) {
+      float energy = (sr->mc.nnu != 1 ? -5.f : (float)sr->mc.nu[0].E);
+      return energy;
+    });
+
+    const SpillVar kTruthLeptonEnergy([](const caf::SRSpillProxy* sr) {
+      if (sr->mc.nnu != 1) return -5.f;
+
+      for (auto const& prim : sr->mc.nu[0].prim) {
+        if (std::abs(prim.pdg) != 11 && std::abs(prim.pdg) != 13)
+          continue;
+
+        return (float)prim.startE;
+      }
+      return -5.f;
+    });
+
 }

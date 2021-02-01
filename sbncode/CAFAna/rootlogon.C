@@ -102,10 +102,10 @@ void rootlogon()
   //gROOT->ForceStyle();
 }
 
-// Put a "SBN Preliminary" tag in the corner
-void Preliminary()
+// Put a "Detector Preliminary" tag in the corner
+void Preliminary(bool isFD = true)
 {
-  TLatex* prelim = new TLatex(.9, .95, "Sbn Preliminary");
+  TLatex* prelim = new TLatex(.9, .95, isFD ? "ICARUS Preliminary" : "SBND Preliminary");
   prelim->SetTextColor(kBlue);
   prelim->SetNDC();
   prelim->SetTextSize(2/30.);
@@ -113,10 +113,10 @@ void Preliminary()
   prelim->Draw();
 }
 
-// Put a "SBN Preliminary" tag on the right
-void PreliminarySide()
+// Put a "Detector Preliminary" tag on the right
+void PreliminarySide(bool isFD = true)
 {
-  TLatex* prelim = new TLatex(.93, .9, "SBN Preliminary");
+  TLatex* prelim = new TLatex(.93, .9, isFD ? "ICARUS Preliminary" : "SBND Preliminary");
   prelim->SetTextColor(kBlue);
   prelim->SetNDC();
   prelim->SetTextSize(2/30.);
@@ -125,10 +125,10 @@ void PreliminarySide()
   prelim->Draw();
 }
 
-// Put a "SBN Simulation" tag in the corner
-void Simulation()
+// Put a "Detector Simulation" tag in the corner
+void Simulation(bool isFD = true)
 {
-  TLatex* prelim = new TLatex(.9, .95, "SBN Simulation");
+  TLatex* prelim = new TLatex(.9, .95, isFD ? "ICARUS Simulation" : "SBND Simulation");
   prelim->SetTextColor(kGray+1);
   prelim->SetNDC();
   prelim->SetTextSize(2/30.);
@@ -136,16 +136,38 @@ void Simulation()
   prelim->Draw();
 }
 
-// Put a "SBN Simulation" tag on the right
-void SimulationSide()
+// Put a "DUNE Simulation" tag on the right
+void SimulationSide(bool isFD = true)
 {
-  TLatex* prelim = new TLatex(.93, .9, "SBN Simulation");
+  TLatex* prelim = new TLatex(.93, .9, isFD ? "ICARUS Simulation" : "SBND Simulation");
   prelim->SetTextColor(kGray+1);
   prelim->SetNDC();
   prelim->SetTextSize(2/30.);
   prelim->SetTextAngle(270);
   prelim->SetTextAlign(12);
   prelim->Draw();
+}
+
+// Put a "DUNE Fake Data" tag in the corner
+void FakeData(bool isFD = true)
+{
+  TLatex* prelim = new TLatex(.9, .95, isFD ? "ICARUS Fake Data" : "SBND Fake Data");
+  prelim->SetTextColor(kBlue);
+  prelim->SetNDC();
+  prelim->SetTextSize(2/30.);
+  prelim->SetTextAlign(32);
+  prelim->Draw();
+}
+
+// Add a label in top left corner
+// Especially useful for "Neutrino Beam" and "Antineutrino Beam" labels
+void CornerLabel(std::string Str) {
+  TLatex* CornLab = new TLatex(.1, .93, Str.c_str());
+  CornLab->SetTextColor(kGray+1);
+  CornLab->SetNDC();
+  CornLab->SetTextSize (2/30.);
+  CornLab->SetTextAlign(11);
+  CornLab->Draw();
 }
 
 void CenterTitles(TH1* histo)

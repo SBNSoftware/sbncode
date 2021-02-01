@@ -62,6 +62,8 @@ outputs:
 {
   outpid:
   {
+    dataTier: cafana # for grid test
+    streamName: out1 # for grid test
     module_type: RootOutput
     fileName:    "pid_r%r_s%s.root"
     fastCloning: false
