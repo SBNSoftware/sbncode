@@ -11,5 +11,6 @@ services: {
   DetectorClocksService:     @local::microboone_services.DetectorClocksService
   DetectorPropertiesService: @local::microboone_detproperties
   ExptGeoHelperInterface:    @local::microboone_geometry_helper
+  GeometryConfigurationWriter: {}
 }
 

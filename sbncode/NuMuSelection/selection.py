@@ -4,6 +4,9 @@ from helpers import *
 def InBeam(t): # us
     return (t > 0.) & (t < 1.800) # allow some wiggle
 
+def InBeamVeto(t): # us
+    return (t > 0.) & (t < 2.200) # allow some wiggle
+
 def InBeamTrue(t): # us
     return (t > 0.) & (t < 1.596) # No wiggle!
 
@@ -49,7 +52,17 @@ def get_true_primary_track(data):
 
 # Define the Cuts!!!!!
 def crtveto(data):
-    return broadcast(np.invert(InBeam(data["crt_hits.time"]).any()), data["nslc"])
+    return broadcast(np.invert(InBeamVeto(data["crt_hits.time"]).any()), data["nslc"])
+def crttrackveto_perevt(data):
+    return np.invert(InBeamVeto(data["crt_tracks.time"]).any())
+def crttrackveto(data):
+    return broadcast(crttrackveto_perevt(data), data["nslc"])
+
+def crttrackveto_nobottom_perevt(data):
+    return np.invert((InBeamVeto(data["crt_tracks.time"]) & (data["crt_tracks.hita.position.y"] > -357.) & (data["crt_tracks.hitb.position.y"] > -357.)).any())
+def crttrackveto_nobottom(data):
+    return broadcast(crttrackveto_nobottom_perevt(data), data["nslc"])
+
 def fid(data):
     return InFV(data["slc.vertex.x"], data["slc.vertex.y"], data["slc.vertex.z"])
 def nu_score(data):

@@ -192,7 +192,7 @@ namespace ana
     int grid_stride = 1;
     if(RunningOnGrid() && NumJobs() > 1){
       grid_stride = NumJobs();
-      bin = step*JobNumber();
+      bin = (step*JobNumber()) % (Nx*Ny);
     }
 
     do{
@@ -498,8 +498,6 @@ namespace ana
   //----------------------------------------------------------------------
   TH2F* Surface::ToTH2(double minchi) const
   {
-    CheckMask("ToTH2");
-
     // Could have a file temporarily open
     DontAddDirectory guard;
 
@@ -542,7 +540,7 @@ namespace ana
   TH2* Gaussian2Sigma2D   (const Surface& s){return Flat(6.18,  s);}
   TH2* Gaussian99Percent2D(const Surface& s){return Flat(9.21,  s);}
   TH2* Gaussian3Sigma2D   (const Surface& s){return Flat(11.83, s);}
-  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.23, s);}
+  TH2* Gaussian5Sigma2D   (const Surface& s){return Flat(28.74, s);}
 
   TH2* Gaussian68Percent1D(const Surface& s){return Flat(1.00, s);}
   TH2* Gaussian90Percent1D(const Surface& s){return Flat(2.71, s);}
@@ -552,10 +550,10 @@ namespace ana
   TH2* Gaussian3Sigma1D   (const Surface& s){return Flat(9.00, s);}
 
   TH2* Gaussian90Percent1D1Sided(const Surface& s){return Flat(1.64, s);}
-  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(1.96, s);}
-  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(2.58, s);}
+  TH2* Gaussian95Percent1D1Sided(const Surface& s){return Flat(2.71, s);}
+  TH2* Gaussian99Percent1D1Sided(const Surface& s){return Flat(5.41, s);}
   TH2* Gaussian3Sigma1D1Sided(const Surface& s){return Flat(7.74, s);}
-  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.40, s);}
+  TH2* Gaussian5Sigma1D1Sided(const Surface& s){return Flat(23.66, s);}
 
   //----------------------------------------------------------------------
   void Surface::SaveTo(TDirectory* dir) const
@@ -670,7 +668,7 @@ namespace ana
 
     // Create return surface and initialise with first in list
     std::unique_ptr<Surface> ret(new Surface);
-    ret->fHist = (TH2F*)surfs[0]->fHist->Clone();
+    ret->fHist = new TH2F(*(TH2F*)surfs[0]->ToTH2(0));
     ret->fMinChi = surfs[0]->fMinChi;
     ret->fMinX = surfs[0]->fMinX;
     ret->fMinY = surfs[0]->fMinY;
@@ -682,7 +680,7 @@ namespace ana
 
     // Loop over other surfaces and add them in
     for(size_t i = 1; i < surfs.size(); ++i) {
-      ret->fHist->Add(surfs[i]->fHist);
+      ret->fHist->Add(surfs[i]->ToTH2(0));
       if(surfs[i]->fMinChi < ret->fMinChi) {
         ret->fMinChi = surfs[i]->fMinChi;
         ret->fMinX = surfs[i]->fMinX;
@@ -691,6 +689,15 @@ namespace ana
       for(size_t j = 0; j < ret->fProfHists.size(); ++j)
         ret->fProfHists[j]->Add(surfs[i]->fProfHists[j]);
     }
+
+    // Scale hist by global minimum
+    for(int x = 0; x < ret->fHist->GetNbinsX()+2; ++x){
+      for(int y = 0; y < ret->fHist->GetNbinsY()+2; ++y){
+        ret->fHist->SetBinContent(x, y, ret->fHist->GetBinContent(x, y)-ret->fMinChi);
+      }
+    }
+
+    ret->fHist->SetMinimum(0);
 
     return ret;
   }
