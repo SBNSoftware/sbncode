@@ -89,13 +89,13 @@
 
 #include "fhiclcpp/ParameterSetRegistry.h"
 
-#include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbnobj/Common/Reco/RangeP.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
 // StandardRecord
-#include "sbncode/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -960,7 +960,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, producer, rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());

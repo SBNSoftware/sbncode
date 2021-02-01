@@ -7,7 +7,6 @@
 #include "FillReco.h"
 #include "RecoUtils/RecoUtils.h"
 
-
 namespace caf
 {
 
@@ -78,18 +77,20 @@ namespace caf
                       const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
                       const recob::PFParticle *primary,
+                      const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const geo::GeometryCore *geom,
                       unsigned producer,
                       caf::SRShower &srshower,
                       bool allowEmpty)
   {
 
     srshower.producer = producer;
-    srshower.dEdx_plane1 = (shower.dEdx())[0];
-    srshower.dEdx_plane2 = (shower.dEdx())[1];
-    srshower.dEdx_plane3 = (shower.dEdx())[2];
-    srshower.energy_plane1 = (shower.Energy())[0];
-    srshower.energy_plane2 = (shower.Energy())[1];
-    srshower.energy_plane3 = (shower.Energy())[2];
+    srshower.dEdx_plane0 = (shower.dEdx())[0];
+    srshower.dEdx_plane1 = (shower.dEdx())[1];
+    srshower.dEdx_plane2 = (shower.dEdx())[2];
+    srshower.energy_plane0 = (shower.Energy())[0];
+    srshower.energy_plane1 = (shower.Energy())[1];
+    srshower.energy_plane2 = (shower.Energy())[2];
     srshower.dEdx   = double_to_float_vector( shower.dEdx() );
     srshower.energy = double_to_float_vector( shower.Energy() );
     srshower.dir    = SRVector3D( shower.Direction() );
@@ -134,6 +135,33 @@ namespace caf
     if (shower.Direction().Z()>-990 && shower.ShowerStart().Z()>-990 && shower.Length()>0) {
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
+
+    for (auto const& hit:hits) {
+      switch (hit->WireID().Plane) {
+        case(0):
+          srshower.nHits_plane0++;
+        case(1):
+          srshower.nHits_plane1++;
+        case(2):
+          srshower.nHits_plane2++;
+      }
+    }
+
+    for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+
+      const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
+      const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
+
+      switch (plane.ID().Plane) {
+        case(0):
+          srshower.wirePitch_plane0 = plane.WirePitch()/cosgamma;
+        case(1):
+          srshower.wirePitch_plane1 = plane.WirePitch()/cosgamma;
+        case(2):
+          srshower.wirePitch_plane2 = plane.WirePitch()/cosgamma;
+      }
+    }
+
   }
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
@@ -332,8 +360,8 @@ namespace caf
 
         caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
         this_pid.chi2_muon = particle_id.Chi2Muon();
-        this_pid.chi2_pion = particle_id.Chi2Kaon();
-        this_pid.chi2_kaon = particle_id.Chi2Pion();
+        this_pid.chi2_pion = particle_id.Chi2Pion();
+        this_pid.chi2_kaon = particle_id.Chi2Kaon();
         this_pid.chi2_proton = particle_id.Chi2Proton();
         this_pid.pid_ndof = particle_id.Ndf();
 
