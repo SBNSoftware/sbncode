@@ -42,7 +42,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionNoOsc::PredictComponent(osc::IOscCalculator* /*calc*/,
+  Spectrum PredictionNoOsc::PredictComponent(osc::IOscCalc* /*calc*/,
                                              Flavors::Flavors_t flav,
                                              Current::Current_t curr,
                                              Sign::Sign_t sign) const

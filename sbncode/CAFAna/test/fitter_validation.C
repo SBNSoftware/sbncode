@@ -18,7 +18,7 @@ using namespace ana;
 
 #include "Utilities/rootlogon.C"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "StandardRecord/StandardRecord.h"
 
@@ -42,7 +42,7 @@ const char* stateFname = "fitter_validation_state.root";
 const char* outputFname = "fitter_validation_cafana.root";
 
 
-void table(FILE* f, IPrediction* p, osc::IOscCalculator* calc)
+void table(FILE* f, IPrediction* p, osc::IOscCalc* calc)
 {
   TH1* hnue = p->PredictComponent(calc, Flavors::kNuMuToNuE, Current::kCC, Sign::kNu).ToTH1(potFD);
   TH1* hnuebar = p->PredictComponent(calc, Flavors::kNuMuToNuE, Current::kCC, Sign::kAntiNu).ToTH1(potFD);
@@ -76,7 +76,7 @@ void table(FILE* f, IPrediction* p, osc::IOscCalculator* calc)
 
 
 double Chisq(IExperiment* expt,
-             osc::IOscCalculatorAdjustable* calc,
+             osc::IOscCalcAdjustable* calc,
              bool oscErr, int nfluxErr, int nxsecErr)
 {
   if(!oscErr && nfluxErr == 0 && nxsecErr == 0) return expt->ChiSq(calc);
@@ -98,7 +98,7 @@ double Chisq(IExperiment* expt,
   Fitter fit(&exptOscErr, oscVars, systVars);
 
   // Caller doesn't expect all the parameters to get messed up by the fit
-  osc::IOscCalculatorAdjustable* calcCopy = calc->Copy();
+  osc::IOscCalcAdjustable* calcCopy = calc->Copy();
   SystShifts systSeed;
   const double ret = fit.Fit(calcCopy, systSeed, Fitter::kQuiet);
   delete calcCopy;
@@ -107,7 +107,7 @@ double Chisq(IExperiment* expt,
 
 double ChisqAllCombos(IExperiment* expt, bool oscErr, int nfluxErr, int nxsecErr)
 {
-  osc::IOscCalculatorAdjustable* oscTest = NuFitOscCalc(+1);
+  osc::IOscCalcAdjustable* oscTest = NuFitOscCalc(+1);
   oscTest->SetdCP(0);
   const double chisq0NH = Chisq(expt, oscTest, oscErr, nfluxErr, nxsecErr);
   oscTest->SetdCP(TMath::Pi());
@@ -261,7 +261,7 @@ void fitter_validation(bool fit = false, bool reload = false)
                                       shifts2b);
 
     // Flux systematics
-    osc::IOscCalculatorAdjustable* inputOsc = NuFitOscCalc(+1);
+    osc::IOscCalcAdjustable* inputOsc = NuFitOscCalc(+1);
     DUNENoExtrapPredictionGenerator genFDNumuFHC(*loaderFDNumuFHCBeam, 
                                                  *loaderFDNumuFHCNue,
                                                  *loaderFDNumuFHCNuTau,
@@ -411,7 +411,7 @@ void fitter_validation(bool fit = false, bool reload = false)
   TFile* fout = new TFile(outputFname, "RECREATE");
 
   for(int hie = -1; hie <= +1; hie += 2){
-    osc::IOscCalculatorAdjustable* inputOsc = NuFitOscCalc(hie);
+    osc::IOscCalcAdjustable* inputOsc = NuFitOscCalc(hie);
     const std::string hieStr = (hie > 0) ? "nh" : "ih";
     for(int deltaIdx = 0; deltaIdx < 4; ++deltaIdx){
       inputOsc->SetdCP(deltaIdx/2.*TMath::Pi());
@@ -445,7 +445,7 @@ void fitter_validation(bool fit = false, bool reload = false)
     } // end for delta
   } // end for hie
 
-  osc::IOscCalculatorAdjustable* inputOsc = NuFitOscCalc(+1);
+  osc::IOscCalcAdjustable* inputOsc = NuFitOscCalc(+1);
   inputOsc->SetdCP(0);
 
   TH1* hnumufhc2a = predFDNumuFHC2a->Predict(inputOsc).ToTH1(potFD);
@@ -468,7 +468,7 @@ void fitter_validation(bool fit = false, bool reload = false)
   hnumurhc2b->Write("numu_rhc_2b");
   hnuerhc2b->Write("nue_rhc_2b");
 
-  osc::IOscCalculatorAdjustable* osc2e = NuFitOscCalcPlusOneSigma(+1);
+  osc::IOscCalcAdjustable* osc2e = NuFitOscCalcPlusOneSigma(+1);
 
   TH1* hnumufhc2e = predFDNumuFHC.Predict(osc2e).ToTH1(potFD);
   TH1* hnuefhc2e = predFDNueFHC.Predict(osc2e).ToTH1(potFD);
@@ -510,7 +510,7 @@ void fitter_validation(bool fit = false, bool reload = false)
     Progress prog(hie > 0 ? "NH" : "IH");
     // Chisq explodes at precise CP conservation for some reason
     for(double delta = .001; delta < 2.01; delta += .1){
-      osc::IOscCalculatorAdjustable* oscFakeData = NuFitOscCalc(hie);
+      osc::IOscCalcAdjustable* oscFakeData = NuFitOscCalc(hie);
       oscFakeData->SetdCP(delta*TMath::Pi());
 
       SingleSampleExperiment exptNueFHC(&predFDNueFHC, predFDNueFHC.Predict(oscFakeData).FakeData(potFD));

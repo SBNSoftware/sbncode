@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CAFAna/Experiment/IExperiment.h"
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 
 #include <memory>
@@ -28,7 +28,7 @@ namespace ana
                   fExptNames.push_back(l);
                   }
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
     /// For the subexperiment \a idx, set up a mapping between systematics

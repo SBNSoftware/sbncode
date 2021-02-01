@@ -10,7 +10,7 @@
 namespace ana
 {
   //----------------------------------------------------------------------
-  double MultiExperimentSBN::ChiSq(osc::IOscCalculatorAdjustable* osc,
+  double MultiExperimentSBN::ChiSq(osc::IOscCalcAdjustable* osc,
                                 const SystShifts& syst) const
   {
     assert(fExpts.size() == fExptNames.size());

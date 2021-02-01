@@ -12,7 +12,11 @@ class TH1;
 class TH2;
 class THStack;
 
-namespace osc{class IOscCalculator;}
+namespace osc
+{
+  template<class T> class _IOscCalc;
+  typedef _IOscCalc<double> IOscCalc;
+}
 
 namespace ana
 {
@@ -36,17 +40,17 @@ namespace ana
   /// \return The first histogram drawn so you can alter axis labels etc
   TH1* DataMCComparisonComponents(const Spectrum& data,
                                   const IPrediction* mc,
-                                  osc::IOscCalculator* calc);
+                                  osc::IOscCalc* calc);
 
   TH1* GetMCSystTotal(const IPrediction* mc,
-                      osc::IOscCalculator* calc,
+                      osc::IOscCalc* calc,
                       const SystShifts& shift,
 		      std::string hist_name,
                       double pot,
                       bool force1D=false);
 
   TH1* GetMCTotal(const IPrediction* mc,
-                  osc::IOscCalculator* calc,
+                  osc::IOscCalc* calc,
                   std::string hist_name,
                   double pot,
                   bool force1D=false);
@@ -55,13 +59,13 @@ namespace ana
   /// A vector of histograms for the MC components. Easier to manipulate elsewhere
   /// Not ideal as returned pointers probably won't get deleted... but very useful...
   std::vector<TH1*> GetMCComponents(const IPrediction* mc,
-				    osc::IOscCalculator* calc,
+				    osc::IOscCalc* calc,
 				    std::string hist_name,
 				    double pot,
 				    bool force1D = false);
   
   std::vector<TH1*> GetMCSystComponents(const IPrediction* mc,
-					osc::IOscCalculator* calc,
+					osc::IOscCalc* calc,
 					const SystShifts& shift,
 					std::string hist_name,
 					double pot,
@@ -69,7 +73,7 @@ namespace ana
 
 
   std::vector<TH1*> GetMCTotalForSystShifts(const IPrediction* mc,
-					    osc::IOscCalculator* calc,
+					    osc::IOscCalc* calc,
 					    const ISyst* syst,
 					    std::string hist_base_name,
 					    double pot,
@@ -82,7 +86,7 @@ namespace ana
   /// Plot data/MC ratio for the given spectrum. Normalize MC to Data by area
   void DataMCAreaNormalizedRatio(const Spectrum& data,
                                  const IPrediction* mc,
-                                 osc::IOscCalculator* calc,
+                                 osc::IOscCalc* calc,
                                  double miny = 0, double maxy = 3);
 
   /// Plot data/MC ratio for the given spectrum. Normalize MC to Data by POT
@@ -92,7 +96,7 @@ namespace ana
   /// Plot data/MC ratio for the given spectrum. Normalize MC to Data by POT
   void DataMCRatio(const Spectrum& data,
 		   const IPrediction* mc,
-		   osc::IOscCalculator* calc,
+		   osc::IOscCalc* calc,
                    double miny = 0, double maxy = 3);
 
   /// Plot data/expected, compared with fit/expected
@@ -114,7 +118,7 @@ namespace ana
   /// \param headroom   Fraction of maximum bin for headroom, default 30%  
   void PlotWithSystErrorBand(IPrediction* pred,
                              const std::vector<const ISyst*>& systs,
-                             osc::IOscCalculator* calc,
+                             osc::IOscCalc* calc,
                              double pot,
                              int col = -1, int errCol = -1, 
                              float headroom = 1.3,

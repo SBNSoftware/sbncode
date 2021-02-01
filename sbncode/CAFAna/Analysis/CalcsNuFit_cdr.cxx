@@ -2,16 +2,16 @@
 
 #include "CAFAna/Core/MathUtil.h"
 
-#include "OscLib/OscCalculatorPMNSOpt.h"
+#include "OscLib/OscCalcPMNSOpt.h"
 
 namespace ana
 {
   //----------------------------------------------------------------------
-  osc::IOscCalculatorAdjustable* NuFitOscCalcCDR(int hie)
+  osc::IOscCalcAdjustable* NuFitOscCalcCDR(int hie)
   {
     assert(hie == +1 || hie == -1);
 
-    osc::IOscCalculatorAdjustable* ret = new osc::OscCalculatorPMNSOpt;
+    osc::IOscCalcAdjustable* ret = new osc::OscCalcPMNSOpt;
     ret->SetL(1300);
     ret->SetRho(2.95674); // g/cm^3. Dan Cherdack's doc "used in GLOBES"
 
@@ -35,11 +35,11 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  osc::IOscCalculatorAdjustable* ThrownNuFitOscCalcCDR(int hie)
+  osc::IOscCalcAdjustable* ThrownNuFitOscCalcCDR(int hie)
   {
     assert(hie == +1 || hie == -1);
 
-    osc::IOscCalculatorAdjustable* ret = new osc::OscCalculatorPMNSOpt;
+    osc::IOscCalcAdjustable* ret = new osc::OscCalcPMNSOpt;
     ret->SetL(1300);
 
     // Throw 12 and rho within errors
@@ -70,11 +70,11 @@ namespace ana
 
 
   //----------------------------------------------------------------------
-  osc::IOscCalculatorAdjustable* NuFitOscCalcCDRPlusOneSigma(int hie)
+  osc::IOscCalcAdjustable* NuFitOscCalcCDRPlusOneSigma(int hie)
   {
     assert(hie == +1 || hie == -1);
 
-    osc::IOscCalculatorAdjustable* ret = new osc::OscCalculatorPMNSOpt;
+    osc::IOscCalcAdjustable* ret = new osc::OscCalcPMNSOpt;
     ret->SetL(1300);
     ret->SetRho(2.95674); // g/cm^3. Dan Cherdack's doc "used in GLOBES"
 
@@ -98,7 +98,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  double NuFitPenalizerCDR::ChiSq(osc::IOscCalculatorAdjustable* calc,
+  double NuFitPenalizerCDR::ChiSq(osc::IOscCalcAdjustable* calc,
                                const SystShifts& /*syst*/) const
   {
     double ret =
@@ -124,7 +124,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Penalizer_GlbLikeCDR::Penalizer_GlbLikeCDR(osc::IOscCalculatorAdjustable* cvcalc, int hietrue, bool weakOnly) : fWeakOnly(weakOnly) {
+  Penalizer_GlbLikeCDR::Penalizer_GlbLikeCDR(osc::IOscCalcAdjustable* cvcalc, int hietrue, bool weakOnly) : fWeakOnly(weakOnly) {
 
     fDmsq21 = cvcalc->GetDmsq21();
     fTh12 = cvcalc->GetTh12();
@@ -148,7 +148,7 @@ namespace ana
     
   }
     
-  double Penalizer_GlbLikeCDR::ChiSq(osc::IOscCalculatorAdjustable* calc,
+  double Penalizer_GlbLikeCDR::ChiSq(osc::IOscCalcAdjustable* calc,
 				  const SystShifts& /*syst*/) const {
 
   //Usage: calc is the fit parameters as above

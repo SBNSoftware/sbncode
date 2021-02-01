@@ -12,7 +12,11 @@ class TH2;
 class TH2D;
 class TMD5;
 
-namespace osc{class IOscCalculator;}
+namespace osc
+{
+  template<class T> class _IOscCalc;
+  typedef _IOscCalc<double> IOscCalc;
+}
 
 namespace ana
 {
@@ -74,7 +78,7 @@ namespace ana
     Spectrum Unoscillated() const {return UnWeighted();}
     Spectrum TrueEnergy() const {return WeightingVariable();}
 
-    Spectrum Oscillated(osc::IOscCalculator* calc, int from, int to) const;
+    Spectrum Oscillated(osc::IOscCalc* calc, int from, int to) const;
 
     OscillatableSpectrum& operator+=(const OscillatableSpectrum& rhs);
     OscillatableSpectrum operator+(const OscillatableSpectrum& rhs) const;

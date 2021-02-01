@@ -6,7 +6,7 @@
 #include "CAFAna/Experiment/IExperiment.h"
 #include "CAFAna/Analysis/GradientDescent.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 #include "CAFAna/Core/MathUtil.h"
 
 #include "TError.h"
@@ -99,7 +99,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   std::unique_ptr<ROOT::Math::Minimizer>
-  Fitter::FitHelperSeeded(osc::IOscCalculatorAdjustable* seed,
+  Fitter::FitHelperSeeded(osc::IOscCalcAdjustable* seed,
                           SystShifts& systSeed, Verbosity verb) const
   {
     // Why, when this is called for each seed?
@@ -173,7 +173,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  double Fitter::FitHelper(osc::IOscCalculatorAdjustable* initseed,
+  double Fitter::FitHelper(osc::IOscCalcAdjustable* initseed,
                            SystShifts& bestSysts,
                            const std::map<const IFitVar*, std::vector<double>>& seedPts,
                            std::vector<SystShifts> systSeedPts,
@@ -184,7 +184,7 @@ namespace ana
     std::vector<double> bestFitPars, bestSystPars;
 
     for(const SeedPt& pt: pts){
-      osc::IOscCalculatorAdjustable *seed = initseed->Copy();
+      osc::IOscCalcAdjustable *seed = initseed->Copy();
 
       for(auto it: pt.fitvars) it.first->SetValue(seed, it.second);
 
@@ -263,13 +263,13 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  double Fitter::Fit(osc::IOscCalculatorAdjustable* seed,
+  double Fitter::Fit(osc::IOscCalcAdjustable* seed,
                      SystShifts& bestSysts,
                      const std::map<const IFitVar*, std::vector<double>>& seedPts,
                      const std::vector<SystShifts>& systSeedPts,
                      Verbosity verb) const
   {
-    // Fits with no osc calculator shouldn't be trying to optimize any
+    // Fits with no osc calc shouldn't be trying to optimize any
     // oscilation parameters...
     assert(seed || fVars.empty());
 
@@ -378,7 +378,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH1* Profile(const IExperiment* expt,
-	       osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+	       osc::IOscCalcAdjustable* calc, const IFitVar* v,
 	       int nbinsx, double minx, double maxx,
 	       double input_minchi,
                const std::vector<const IFitVar*>& profVars,
@@ -465,7 +465,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH1* SqrtProfile(const IExperiment* expt,
-		   osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+		   osc::IOscCalcAdjustable* calc, const IFitVar* v,
 		   int nbinsx, double minx, double maxx, double minchi,
 		   std::vector<const IFitVar*> profVars,
 		   std::vector<const ISyst*> profSysts,
@@ -488,7 +488,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH1* Slice(const IExperiment* expt,
-             osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+             osc::IOscCalcAdjustable* calc, const IFitVar* v,
              int nbinsx, double minx, double maxx,
              double minchi)
   {
@@ -497,7 +497,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH1* SqrtSlice(const IExperiment* expt,
-                 osc::IOscCalculatorAdjustable* calc, const IFitVar* v,
+                 osc::IOscCalcAdjustable* calc, const IFitVar* v,
                  int nbinsx, double minx, double maxx, double minchi)
   {
     TH1* ret = Slice(expt, calc, v, nbinsx, minx, maxx, minchi);
@@ -511,7 +511,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TGraph* FindValley(const IExperiment* expt,
-		     osc::IOscCalculatorAdjustable* calc,
+		     osc::IOscCalcAdjustable* calc,
 		     const IFitVar& scanVar,
 		     const IFitVar& fitVar,
 		     int nbinsx, double xmin, double xmax,

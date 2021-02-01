@@ -107,7 +107,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionScaleComp::PredictComponentSyst(osc::IOscCalculator* calc,
+  Spectrum PredictionScaleComp::PredictComponentSyst(osc::IOscCalc* calc,
                                                      const SystShifts& shift,
                                                      Flavors::Flavors_t flav,
                                                      Current::Current_t curr,
@@ -137,7 +137,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   Spectrum PredictionScaleComp::
-  PredictCategory(osc::IOscCalculator* osc,
+  PredictCategory(osc::IOscCalc* osc,
                   const SystComponentScale* syst) const
   {
     for(unsigned int i = 0; i < fSysts.size(); ++i){

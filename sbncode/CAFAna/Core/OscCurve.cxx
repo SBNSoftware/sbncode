@@ -4,7 +4,7 @@
 #include "CAFAna/Core/HistCache.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include <cassert>
 #include <iostream>
@@ -14,10 +14,18 @@
 
 #include "CAFAna/Core/OscCalcSterileApprox.h"
 
+namespace
+{
+  inline bool IsNoOscillations(const osc::IOscCalc* c)
+  {
+    return dynamic_cast<const osc::NoOscillations*>(c) != 0;
+  }
+}
+
 namespace ana
 {
   //----------------------------------------------------------------------
-  OscCurve::OscCurve(osc::IOscCalculator* calc, int from, int to, bool LoverE)
+  OscCurve::OscCurve(osc::IOscCalc* calc, int from, int to, bool LoverE)
     : fFrom(from), fTo(to)
   {
     DontAddDirectory guard;
@@ -41,9 +49,9 @@ namespace ana
           const double Ehi = fHist->GetXaxis()->GetBinUpEdge(i);
           // Use 2% resolution (intended to be << the resolution of any actual
           // event) or the bin width, whichever is larger
-          fHist->SetBinContent(i, approx->P(from, to,
-                                            std::min(Elo, 0.98*E),
-                                            std::max(Ehi, 1.02*E)));
+          fHist->SetBinContent(i, approx->P_range(from, to,
+                                                  std::min(Elo, 0.98*E),
+                                                  std::max(Ehi, 1.02*E)));
         }
         fHist->SetBinError(i, 0);
       }

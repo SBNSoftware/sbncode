@@ -34,17 +34,17 @@ namespace ana
     static std::unique_ptr<PredictionIncDirt> LoadFrom(TDirectory* dir);
     virtual void SaveTo(TDirectory* dir) const override;
 
-    Spectrum PredictDet(osc::IOscCalculator* calc) const
+    Spectrum PredictDet(osc::IOscCalc* calc) const
     {
       return fDet.Predict(calc);
     }
 
-    Spectrum PredictDirt(osc::IOscCalculator* calc) const
+    Spectrum PredictDirt(osc::IOscCalc* calc) const
     {
       return fDirt.Predict(calc);
     }
 
-    Spectrum PredictComponentDet(osc::IOscCalculator* calc,
+    Spectrum PredictComponentDet(osc::IOscCalc* calc,
                                  Flavors::Flavors_t flav,
                                  Current::Current_t curr,
                                  Sign::Sign_t sign) const
@@ -52,7 +52,7 @@ namespace ana
       return fDet.PredictComponent(calc, flav, curr, sign);
     }
 
-    Spectrum PredictComponentDirt(osc::IOscCalculator* calc,
+    Spectrum PredictComponentDirt(osc::IOscCalc* calc,
                                   Flavors::Flavors_t flav,
                                   Current::Current_t curr,
                                   Sign::Sign_t sign) const
@@ -60,12 +60,12 @@ namespace ana
       return fDirt.PredictComponent(calc, flav, curr, sign);
     }
     
-    virtual Spectrum Predict(osc::IOscCalculator* calc) const override
+    virtual Spectrum Predict(osc::IOscCalc* calc) const override
     {
       return PredictDet(calc) + PredictDirt(calc);
     }
 
-    virtual Spectrum PredictComponent(osc::IOscCalculator* calc,
+    virtual Spectrum PredictComponent(osc::IOscCalc* calc,
                                       Flavors::Flavors_t flav,
                                       Current::Current_t curr,
                                       Sign::Sign_t sign) const override

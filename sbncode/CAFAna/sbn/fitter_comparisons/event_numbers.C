@@ -13,7 +13,7 @@
 #include "CAFAna/Analysis/Calcs.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 #include "CAFAna/Core/MultiVar.h"
-#include "OscLib/OscCalculatorSterile.h"
+#include "OscLib/OscCalcSterile.h"
 
 #include "StandardRecord/Proxy/SRProxy.h"
 

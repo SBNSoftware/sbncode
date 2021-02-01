@@ -18,7 +18,7 @@
 #include "CAFAna/Systs/SBNWeightSysts.h"
 #include "CAFAna/Systs/UniverseOracle.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TCanvas.h"
 #include "TDirectory.h"
@@ -249,20 +249,20 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  Spectrum PredictionLinFit::Predict(osc::IOscCalculator* calc) const
+  Spectrum PredictionLinFit::Predict(osc::IOscCalc* calc) const
   {
     return fNom->Predict(calc);
   }
 
   // --------------------------------------------------------------------------
-  Spectrum PredictionLinFit::PredictSyst(osc::IOscCalculator* calc,
+  Spectrum PredictionLinFit::PredictSyst(osc::IOscCalc* calc,
                                          const SystShifts& syst) const
   {
     return GetRatio(syst) * Predict(calc);
   }
 
   // --------------------------------------------------------------------------
-  Spectrum PredictionLinFit::PredictComponent(osc::IOscCalculator* calc,
+  Spectrum PredictionLinFit::PredictComponent(osc::IOscCalc* calc,
                                               Flavors::Flavors_t flav,
                                               Current::Current_t curr,
                                               Sign::Sign_t sign) const
@@ -271,7 +271,7 @@ namespace ana
   }
 
   // --------------------------------------------------------------------------
-  Spectrum PredictionLinFit::PredictComponentSyst(osc::IOscCalculator* calc,
+  Spectrum PredictionLinFit::PredictComponentSyst(osc::IOscCalc* calc,
                                                   const SystShifts& syst,
                                                   Flavors::Flavors_t flav,
                                                   Current::Current_t curr,
@@ -355,7 +355,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   void PredictionLinFit::DebugPlot(const ISyst* syst,
-                                   osc::IOscCalculator* calc,
+                                   osc::IOscCalc* calc,
                                    Flavors::Flavors_t flav,
                                    Current::Current_t curr,
                                    Sign::Sign_t sign) const
@@ -410,7 +410,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  void PredictionLinFit::DebugPlots(osc::IOscCalculator* calc,
+  void PredictionLinFit::DebugPlots(osc::IOscCalc* calc,
 				    const std::string& savePattern,
 				    Flavors::Flavors_t flav,
 				    Current::Current_t curr,
@@ -444,7 +444,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   void PredictionLinFit::DebugPlotColz(const ISyst* syst,
-                                       osc::IOscCalculator* calc,
+                                       osc::IOscCalc* calc,
                                        Flavors::Flavors_t flav,
                                        Current::Current_t curr,
                                        Sign::Sign_t sign) const
@@ -478,7 +478,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  void PredictionLinFit::DebugPlotsColz(osc::IOscCalculator* calc,
+  void PredictionLinFit::DebugPlotsColz(osc::IOscCalc* calc,
                                         const std::string& savePattern,
                                         Flavors::Flavors_t flav,
                                         Current::Current_t curr,

@@ -22,7 +22,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionExtrap::Predict(osc::IOscCalculator* calc) const
+  Spectrum PredictionExtrap::Predict(osc::IOscCalc* calc) const
   {
     return PredictComponent(calc,
                             Flavors::kAll,
@@ -31,7 +31,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  Spectrum PredictionExtrap::PredictComponent(osc::IOscCalculator* calc,
+  Spectrum PredictionExtrap::PredictComponent(osc::IOscCalc* calc,
                                               Flavors::Flavors_t flav,
                                               Current::Current_t curr,
                                               Sign::Sign_t sign) const

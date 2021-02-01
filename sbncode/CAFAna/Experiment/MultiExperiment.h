@@ -18,7 +18,7 @@ namespace ana
 
     void Add(const IExperiment* expt){fExpts.push_back(expt);}
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
     /// For the subexperiment \a idx, set up a mapping between systematics

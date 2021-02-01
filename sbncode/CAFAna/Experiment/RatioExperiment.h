@@ -5,7 +5,7 @@
 #include "CAFAna/Experiment/IExperiment.h"
 #include "CAFAna/Analysis/ExpInfo.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include <memory>
 #include <vector>
@@ -23,7 +23,7 @@ namespace ana
     {
     }
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& syst = SystShifts::Nominal()) const override;
 
     //    virtual void SaveTo(TDirectory* dir) const override;

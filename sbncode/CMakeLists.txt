@@ -19,6 +19,9 @@ cet_find_library( BOOST_DATE_TIME     NAMES boost_date_time     PATHS ENV BOOST_
 #find_ups_product( clhep )
 #find_ups_product( larcorealg )
 
+find_ups_product( srproxy )
+find_ups_product( osclib )
+
 add_subdirectory(EventWeight)
 add_subdirectory(NuMuSelection)
 add_subdirectory(OpDet)
@@ -27,7 +30,6 @@ add_subdirectory(OpT0Finder)
 add_subdirectory(StandardRecord)
 add_subdirectory(CAFMaker)
 
-add_subdirectory(OscLib)
 add_subdirectory(CAFAna)
 add_subdirectory(FlatMaker)
 add_subdirectory(FlashMatch)

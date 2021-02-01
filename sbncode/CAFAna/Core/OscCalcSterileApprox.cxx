@@ -87,7 +87,7 @@ namespace ana
   // --------------------------------------------------------------------------
   double OscCalcSterileApprox::P(int from, int to, double E)
   {
-    return P(from, to, E, E);
+    return P_range(from, to, E, E);
   }
 
   // --------------------------------------------------------------------------
@@ -118,12 +118,12 @@ namespace ana
       return (1-GetSinSq2ThetaEE()*Delta) + (fSinSq2ThetaMuE*Delta);
     }
 
-    std::cout << "OscCalculatorSterileApprox: P(" << from << ", " << to << ") not implemented" << std::endl;
+    std::cout << "OscCalcSterileApprox: P(" << from << ", " << to << ") not implemented" << std::endl;
     abort();
   }
 
   // --------------------------------------------------------------------------
-  double OscCalcSterileApprox::P(int from, int to, double Elo, double Ehi)
+  double OscCalcSterileApprox::P_range(int from, int to, double Elo, double Ehi)
   {
     if(Ehi <= 0) return 0;
 
@@ -197,7 +197,7 @@ namespace ana
   }
 
   //---------------------------------------------------------------------------
-  const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalculator* calc, bool allowFail)
+  const OscCalcSterileApprox* DowncastToSterileApprox(const osc::IOscCalc* calc, bool allowFail)
   {
     const OscCalcSterileApprox* ret1
       = dynamic_cast<const OscCalcSterileApprox*>(calc);
@@ -214,7 +214,7 @@ namespace ana
   }
 
   //---------------------------------------------------------------------------
-  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalculator* calc,
+  OscCalcSterileApprox* DowncastToSterileApprox(osc::IOscCalc* calc,
                                                 bool allowFail)
   {
     OscCalcSterileApprox* ret1

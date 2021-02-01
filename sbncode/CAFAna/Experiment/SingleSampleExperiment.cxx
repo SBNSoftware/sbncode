@@ -4,7 +4,7 @@
 #include "CAFAna/Core/LoadFromFile.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TDirectory.h"
 #include "TObjString.h"
@@ -44,7 +44,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   TH1D* SingleSampleExperiment::
-  PredHistIncCosmics(osc::IOscCalculator* calc,
+  PredHistIncCosmics(osc::IOscCalc* calc,
                      const SystShifts& syst) const
   {
     SystShifts systNoCosmic = syst;
@@ -68,7 +68,7 @@ namespace ana
   }
 
   //----------------------------------------------------------------------
-  double SingleSampleExperiment::ChiSq(osc::IOscCalculatorAdjustable* calc,
+  double SingleSampleExperiment::ChiSq(osc::IOscCalcAdjustable* calc,
                                        const SystShifts& syst) const
   {
     TH1D* hpred = PredHistIncCosmics(calc, syst);

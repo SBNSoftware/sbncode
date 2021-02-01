@@ -5,7 +5,7 @@
 #include "CAFAna/Cuts/TruthCuts.h"
 #include "CAFAna/Analysis/Calcs.h"
 #include "CAFAna/Core/OscCalcSterileApprox.h"
-#include "OscLib/OscCalculatorSterile.h"
+#include "OscLib/OscCalcSterile.h"
 #include "CAFAna/Prediction/PredictionNoExtrap.h"
 #include "StandardRecord/Proxy/SRProxy.h"
 #include "CAFAna/Core/Loaders.h"

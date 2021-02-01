@@ -15,7 +15,7 @@ namespace ana
     {
     }
 
-    virtual double ChiSq(osc::IOscCalculatorAdjustable* osc,
+    virtual double ChiSq(osc::IOscCalcAdjustable* osc,
                          const SystShifts& shift = SystShifts::Nominal()) const override;
 
     void SaveTo(TDirectory* dir) const override;

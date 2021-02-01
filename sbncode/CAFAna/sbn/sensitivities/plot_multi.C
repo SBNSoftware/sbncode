@@ -11,7 +11,7 @@
 #include "CAFAna/Analysis/Surface.h"
 using namespace ana;
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TCanvas.h"
 #include "TFile.h"

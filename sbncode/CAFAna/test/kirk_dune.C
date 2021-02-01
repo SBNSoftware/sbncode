@@ -17,7 +17,7 @@
 using namespace ana;
 
 #include "StandardRecord/StandardRecord.h"
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "Utilities/rootlogon.C"
 
@@ -77,7 +77,7 @@ void kirk_dune()
   SpectrumLoader loaderNumuRHC("/pnfs/dune/persistent/TaskForce_AnaTree/far/train/v2.2/anumutest.root");
   SpectrumLoader loaderNueRHC("/pnfs/dune/persistent/TaskForce_AnaTree/far/train/v2.2/anuetest.root");
 
-  osc::IOscCalculatorAdjustable* calc = DefaultOscCalc();
+  osc::IOscCalcAdjustable* calc = DefaultOscCalc();
   calc->SetL(1300);
   calc->SetdCP(TMath::Pi()*1.5);
 
@@ -88,7 +88,7 @@ void kirk_dune()
   calc->SetDmsq21(0.000075);
   calc->SetDmsq32(0.002524-0.000075); // quoted value is 31
 
-  osc::IOscCalculatorAdjustable* calci = DefaultOscCalc();
+  osc::IOscCalcAdjustable* calci = DefaultOscCalc();
   calci->SetL(1300);
   calci->SetdCP(TMath::Pi()*1.5);
 

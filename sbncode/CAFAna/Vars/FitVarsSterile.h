@@ -11,8 +11,8 @@ namespace ana
   class FitDmSq32Sterile: public IFitVar
   {
   public: 
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq32";}
     virtual std::string LatexName() const {return "#Deltam^{2}_{32} (eV^{2})";}
   };
@@ -26,8 +26,8 @@ namespace ana
   class FitDmSq41Sterile: public IFitVar
   {
   public: 
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq41";}
     virtual std::string LatexName() const {return "#Deltam^{2}_{41} (eV^{2})";}
   };
@@ -41,8 +41,8 @@ namespace ana
   class FitDmSq43Sterile: public IFitVar
   {
   public: 
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "dmsq43";}
     virtual std::string LatexName() const {return "#Deltam^{2}_{43} (eV^{2})";}
   };
@@ -56,8 +56,8 @@ namespace ana
   class FitDelta13InPiUnitsSterile: public IFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "delta13(pi)";}
     virtual std::string LatexName() const {return "#delta_{13} / #pi";}
   };
@@ -71,8 +71,8 @@ namespace ana
   class FitDelta14InPiUnitsSterile: public IFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "delta14(pi)";}
     virtual std::string LatexName() const {return "#delta_{14} / #pi";}
   };
@@ -86,8 +86,8 @@ namespace ana
   class FitDelta24InPiUnitsSterile: public IFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "delta24(pi)";}
     virtual std::string LatexName() const {return "#delta_{24} / #pi";}
   };
@@ -101,8 +101,8 @@ namespace ana
   class FitTheta13Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th13";}
     virtual std::string LatexName() const {return "#theta_{13}";}
 
@@ -119,8 +119,8 @@ namespace ana
   class FitSinSqTheta13Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ssth13";}
     virtual std::string LatexName() const {return "sin^{2}#theta_{13}";}
 
@@ -137,8 +137,8 @@ namespace ana
   class FitTheta23Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th23";}
     virtual std::string LatexName() const {return "#theta_{23}";}
 
@@ -155,8 +155,8 @@ namespace ana
   class FitSinSqTheta23Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ssth23";}
     virtual std::string LatexName() const {return "sin^{2}#theta_{23}";}
 
@@ -173,8 +173,8 @@ namespace ana
   class FitTheta14Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th14";}
     virtual std::string LatexName() const {return "#theta_{14}";}
 
@@ -191,8 +191,8 @@ namespace ana
   class FitSinSqTheta14Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ssth14";}
     virtual std::string LatexName() const {return "sin^{2}#theta_{14}";}
 
@@ -210,8 +210,8 @@ namespace ana
   class FitSinSq2Theta14Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ss2th14";}
     virtual std::string LatexName() const {return "sin^{2}2#theta_{14}";}
 
@@ -228,8 +228,8 @@ namespace ana
   class FitTheta24Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th24";}
     virtual std::string LatexName() const {return "#theta_{24}";}
 
@@ -246,8 +246,8 @@ namespace ana
   class FitSinSqTheta24Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ssth24";}
     virtual std::string LatexName() const {return "sin^{2}#theta_{24}";}
 
@@ -264,8 +264,8 @@ namespace ana
   class FitSinSq2Theta24Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ss2th24";}
     virtual std::string LatexName() const {return "sin^{2}2#theta_{24}";}
 
@@ -282,8 +282,8 @@ namespace ana
   class FitTheta34Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th34";}
     virtual std::string LatexName() const {return "#theta_{34}";}
 
@@ -300,8 +300,8 @@ namespace ana
   class FitSinSqTheta34Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ssth34";}
     virtual std::string LatexName() const {return "sin^{2}#theta_{34}";}
 
@@ -318,8 +318,8 @@ namespace ana
   class FitSinSq2Theta34Sterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "ss2th34";}
     virtual std::string LatexName() const {return "sin^{2}2#theta_{34}";}
 
@@ -336,8 +336,8 @@ namespace ana
   class FitTheta13InDegreesSterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th13(degrees)";}
     virtual std::string LatexName() const {return "#theta_{13}";}
 
@@ -354,8 +354,8 @@ namespace ana
   class FitTheta23InDegreesSterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th23(degrees)";}
     virtual std::string LatexName() const {return "#theta_{23}";}
 
@@ -372,8 +372,8 @@ namespace ana
   class FitTheta14InDegreesSterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th14(degrees)";}
     virtual std::string LatexName() const {return "#theta_{14}";}
 
@@ -390,8 +390,8 @@ namespace ana
   class FitTheta24InDegreesSterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th24(degrees)";}
     virtual std::string LatexName() const {return "#theta_{24}";}
 
@@ -408,8 +408,8 @@ namespace ana
   class FitTheta34InDegreesSterile: public IConstrainedFitVar
   {
   public:
-    virtual double GetValue(const osc::IOscCalculatorAdjustable* osc) const;
-    virtual void SetValue(osc::IOscCalculatorAdjustable* osc, double val) const;
+    virtual double GetValue(const osc::IOscCalcAdjustable* osc) const;
+    virtual void SetValue(osc::IOscCalcAdjustable* osc, double val) const;
     virtual std::string ShortName() const {return "th34(degrees)";}
     virtual std::string LatexName() const {return "#theta_{34}";}
 

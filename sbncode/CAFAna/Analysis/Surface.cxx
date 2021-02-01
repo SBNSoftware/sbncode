@@ -8,7 +8,7 @@
 #include "CAFAna/Core/ThreadPool.h"
 #include "CAFAna/Core/Utilities.h"
 
-#include "OscLib/IOscCalculator.h"
+#include "OscLib/IOscCalc.h"
 
 #include "TCanvas.h"
 #include "TGraph.h"
@@ -36,7 +36,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
-                   osc::IOscCalculatorAdjustable* calc,
+                   osc::IOscCalcAdjustable* calc,
                    const FitAxis& xax,
                    const FitAxis& yax,
                    const std::vector<const IFitVar*>& profVars,
@@ -125,7 +125,7 @@ namespace ana
 
   //----------------------------------------------------------------------
   Surface::Surface(const IExperiment* expt,
-                   osc::IOscCalculatorAdjustable* calc,
+                   osc::IOscCalcAdjustable* calc,
                    const IFitVar* xvar, int nbinsx, double xmin, double xmax,
                    const IFitVar* yvar, int nbinsy, double ymin, double ymax,
                    const std::vector<const IFitVar*>& profVars,
@@ -144,7 +144,7 @@ namespace ana
   //---------------------------------------------------------------------
   void Surface::FillSurface(const std::string& progTitle,
                             const IExperiment* expt,
-                            osc::IOscCalculatorAdjustable* calc,
+                            osc::IOscCalcAdjustable* calc,
                             const FitAxis& xax, const FitAxis& yax,
                             const std::vector<const IFitVar*>& profVars,
                             const std::vector<const ISyst*>& profSysts,
@@ -259,35 +259,37 @@ namespace ana
   ///
   /// The cacheing of the nominal done in PredictionInterp is not
   /// threadsafe. This is an inelegant but pragmatic way of surpressing it.
-  class OscCalcNoHash: public osc::IOscCalculatorAdjustable
+  class OscCalcNoHash: public osc::IOscCalcAdjustable
   {
   public:
-    OscCalcNoHash(osc::IOscCalculatorAdjustable* c) : fCalc(c) {}
+    OscCalcNoHash(osc::IOscCalcAdjustable* c) : fCalc(c) {}
 
-    osc::IOscCalculatorAdjustable* Copy() const override
+    osc::IOscCalcAdjustable* Copy() const override
     {
       std::cout << "Surface::OscCalcNoHash not copyable." << std::endl;
       abort();
     }
     double P(int a, int b, double E) override {return fCalc->P(a, b, E);}
-    /// Marks this calculator "unhashable" so the cacheing won't occur
+    /// Marks this calc "unhashable" so the cacheing won't occur
     TMD5* GetParamsHash() const override {return 0;}
 
     // It's a shame we have to forward all the getters and setters explicitly,
     // but I don't see how to avoid it. Take away some drudgery with a macro.
+    void SetL(double x) override {fCalc->SetL(x);}
+    void SetRho(double x) override {fCalc->SetRho(x);}
 #define F(v)\
-    void Set##v(double x) override {fCalc->Set##v(x);}\
+    void Set##v(const double& x) override {fCalc->Set##v(x);}\
     double Get##v() const override {return fCalc->Get##v();}
-    F(L); F(Rho); F(Dmsq21); F(Dmsq32); F(Th12); F(Th13); F(Th23); F(dCP);
+    F(Dmsq21); F(Dmsq32); F(Th12); F(Th13); F(Th23); F(dCP);
 #undef F
 
   protected:
-    osc::IOscCalculatorAdjustable* fCalc;
+    osc::IOscCalcAdjustable* fCalc;
   };
 
   //----------------------------------------------------------------------
   void Surface::FillSurfacePoint(const IExperiment* expt,
-                                 osc::IOscCalculatorAdjustable* calc,
+                                 osc::IOscCalcAdjustable* calc,
                                  const FitAxis& xax, double x,
                                  const FitAxis& yax, double y,
                                  const std::vector<const IFitVar*>& profVars,
@@ -295,7 +297,7 @@ namespace ana
                                  const std::map<const IFitVar*, std::vector<double>>& seedPts,
                                  const std::vector<SystShifts>& systSeedPts)
   {
-    osc::IOscCalculatorAdjustable* calcNoHash = 0; // specific to parallel mode
+    osc::IOscCalcAdjustable* calcNoHash = 0; // specific to parallel mode
 
     if(fParallel){
       // Need to take our own copy so that we don't get overwritten by someone
