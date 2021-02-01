@@ -89,7 +89,7 @@
 
 #include "fhiclcpp/ParameterSetRegistry.h"
 
-#include "sbncode/LArRecoProducer/Products/RangeP.h"
+#include "sbnobj/Common/Reco/RangeP.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"

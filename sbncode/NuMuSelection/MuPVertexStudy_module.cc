@@ -94,7 +94,7 @@ public:
   void analyze(art::Event const& e) override;
 
 private:
-  TH1D *nPFParticle;
+  //TH1D *nPFParticle;
   TrueHistos fTrueHistos;
   std::array<TrackHistos, 3> fTrackHistos; 
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
