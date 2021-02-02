@@ -2,7 +2,7 @@
 
 BEGIN_PROLOG
 
-higgsM: 0.35 # GeV/c^2
+higgsM: 0.265 # GeV/c^2
 
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux

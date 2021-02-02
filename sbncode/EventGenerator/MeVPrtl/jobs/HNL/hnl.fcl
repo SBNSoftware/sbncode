@@ -56,12 +56,15 @@ hnl.AnaOutput: true
 mcraytrace: @local::rethrow_ray_trace_box
 mcraytrace.ReferencePrtlMass: @local::hnlM # GeV
 mcraytrace.ReferenceScndPDG: 13 # muon
+mcraytrace.NThrows: 100 
 
 wgtraytrace: @local::weighted_ray_trace_box
 wgtraytrace.ReferencePrtlMass: @local::hnlM # GeV
 wgtraytrace.ReferenceScndPDG: 13 # muon
 
 mxdraytrace: @local::mixedweight_ray_trace_box
+mxdraytrace.NThrow: 200000
+mxdraytrace.NSuccess: 20
 mxdraytrace.ReferencePrtlMass: @local::hnlM # GeV
 mxdraytrace.ReferenceScndPDG: 13 # muon
 

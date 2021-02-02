@@ -66,6 +66,7 @@ private:
   int fReferenceScndPDG;
   double fReferenceKaonEnergy;
 
+  unsigned fNMinThrow;
   unsigned fNThrow;
   unsigned fNSuccess;
 
@@ -123,6 +124,7 @@ void MixedWeightRayTraceBox::configure(fhicl::ParameterSet const &pset)
 
   CalculateMaxWeight();
 
+  fNMinThrow = pset.get<unsigned>("NMinThrow", 100);
   fNThrow = pset.get<unsigned>("NThrow", 10000);
   fNSuccess = pset.get<unsigned>("NSuccess", 2);
 
@@ -149,7 +151,9 @@ void MixedWeightRayTraceBox::CalculateMaxWeight() {
   }
 
   // Normalize the weight
-  fMaxWeight = weight * fReferenceLabSolidAngle / (4*M_PI);
+  //
+  // Cap at 100% intersection probability
+  fMaxWeight = std::min(weight * fReferenceLabSolidAngle / (4*M_PI), 1.);
 }
 
 TLorentzVector MixedWeightRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux, TRotation &RInv, double phi) {
@@ -224,6 +228,13 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   // frame (forced to hit the detector) and th' in the parent-rest-frame. This reduces 
   // the MC to one dimension instead of two, and so should be much more efficient. And,
   // to weight we just need dphi/dphi' = 1.
+  //
+  // To speed up the weight computation, we only sample until we have passed fNSuccess (2)
+  // times. Then, we can compute the expected weight using the QEstimator function (taken from
+  // the negative binomial distribution). To reduce the variance somewhat, we require at least
+  // fNMinThrow (100) throws. If a test takes less than this many throws, we repeat the test until 
+  // the sum of tests do. Finally, we cap the number of throws at fNThrow (10000). Any event that
+  // does not pass the test within this many throws fails.
 
   // Setup the axes so that the parent Momentum is along the z axis
   TVector3 parent_dir = flux.kmom.Vect().Unit();
@@ -256,39 +267,54 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
 
   std::cout << "THISPHI: " << phi << std::endl;
 
-  unsigned ithrow = 0;
-  unsigned nfail = 0;
-  unsigned nsuccess = 0;
   std::vector<std::vector<TVector3>> allIntersections;
   std::vector<TLorentzVector> allHMom;
+  double qavg = 0.;
+  unsigned npass = 0;
+  unsigned ithrow = 0;
 
-  while (nsuccess < fNSuccess && ithrow < fNThrow) {
-    ithrow ++;
+  while (ithrow < fNMinThrow) {
+    unsigned nfail = 0;
+    unsigned nsuccess = 0;
 
-    TLorentzVector mevprtl_mom = ThrowMeVPrtlMomentum(flux, RInv, phi);
-    std::vector<TVector3> box_intersections = fBox.GetIntersections(flux.pos.Vect(), mevprtl_mom.Vect().Unit());
+    while (nsuccess < fNSuccess && ithrow < fNThrow) {
+      ithrow ++;
 
-    // Does this ray intersect the box?
-    if (box_intersections.size() != 2) {
-      nfail ++;
-      continue;
+      TLorentzVector mevprtl_mom = ThrowMeVPrtlMomentum(flux, RInv, phi);
+      std::vector<TVector3> box_intersections = fBox.GetIntersections(flux.pos.Vect(), mevprtl_mom.Vect().Unit());
+
+      // Does this ray intersect the box?
+      if (box_intersections.size() != 2) {
+        nfail ++;
+        continue;
+      }
+
+      // if the ray points the wrong way, it doesn't intersect
+      TVector3 A = box_intersections[0];
+      if (mevprtl_mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
+        nfail ++;
+        continue;
+      }
+
+      // if we're here, we have a valid ray
+      allIntersections.push_back(box_intersections);
+      allHMom.push_back(mevprtl_mom);
+      nsuccess ++;
     }
 
-    // if the ray points the wrong way, it doesn't intersect
-    TVector3 A = box_intersections[0];
-    if (mevprtl_mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
-      nfail ++;
-      continue;
+    std::cout << "NFAIL: " << nfail << std::endl;
+    std::cout << "NSUCCESS: " << nsuccess << std::endl;
+    std::cout << "Q: " << QEstimator(nsuccess, nfail, fNSuccess) << std::endl;
+
+    if (nsuccess == fNSuccess) {
+      qavg = (qavg*npass + QEstimator(nsuccess, nfail, fNSuccess)) / (npass+1);
+      npass ++;
     }
 
-    // if we're here, we have a valid ray
-    allIntersections.push_back(box_intersections);
-    allHMom.push_back(mevprtl_mom);
-    nsuccess ++;
   }
 
-  // Fail if not enough hits
-  if (nsuccess < fNSuccess) return false;
+  // Fail if never passed the test
+  if (npass == 0) return false;
 
   unsigned ind = CLHEP::RandFlat::shootInt(fEngine, 0, allIntersections.size()-1); // inclusive?
   TLorentzVector mevprtl_mom = allHMom[ind];
@@ -306,14 +332,12 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
     );
   }
 
-  std::cout << "NFAIL: " << nfail << std::endl;
-  std::cout << "NSUCCESS: " << nsuccess << std::endl;
-  std::cout << "Q: " << QEstimator(nsuccess, nfail, fNSuccess) << std::endl;
+  std::cout << "Final AVG Q: " << qavg << std::endl;
 
   // weight from forcing phi
   double phiweight = (phihi - philo) / (2*M_PI);
   // Total weight
-  weight = phiweight * QEstimator(nsuccess, nfail, fNSuccess);
+  weight = phiweight * qavg;
 
   flux.mom = mevprtl_mom;
   // transform to beam-coord frame
