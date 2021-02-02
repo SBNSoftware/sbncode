@@ -122,6 +122,17 @@ void FlashPredict::produce(art::Event & e)
   // grab PFParticles in event
   auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle> >(fPandoraProducer);
 
+  if (fSelectNeutrino &&
+      !pfpNeutrinoOnEvent(pfp_h)) {
+    mf::LogInfo("FlashPredict")
+      << "No pfp neutrino on event. Skipping...";
+    bk.nopfpneutrino++;
+    updateBookKeeping();
+    e.put(std::move(T0_v));
+    e.put(std::move(pfp_t0_assn_v));
+    return;
+  }
+
   // grab spacepoints associated with PFParticles
   art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, e, fPandoraProducer);
 
@@ -135,17 +146,6 @@ void FlashPredict::produce(art::Event & e)
   // grab calorimetry info for tracks
   // auto const& calo_h = e.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
   // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h, e, fCaloProducer);
-
-  if (fSelectNeutrino &&
-      !pfpNeutrinoOnEvent(pfp_h)) {
-    mf::LogInfo("FlashPredict")
-      << "No pfp neutrino on event. Skipping...";
-    bk.nopfpneutrino++;
-    updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
-    return;
-  }
 
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit>> ophit_h;
