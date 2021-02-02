@@ -441,8 +441,7 @@ namespace caf
       // find the location at the split
       for (unsigned i_tp = track.FirstValidPoint(); i_tp < track.NumberTrajectoryPoints(); i_tp = track.NextValidPoint(i_tp+1)) {
         TVector3 p = track.LocationAtPoint<TVector3>(i_tp);
-        geo::Point_t p_p = track.LocationAtPoint<geo::Point_t>(i_tp);
-        if (merged_v.direction.Dot(p_p - merged_v.vertex) >= merged_v.branch_start) {
+        if (merged_v.direction.Dot(p - merged_v.vertex) >= merged_v.branch_start) {
           srtrack.split.locAtSplit.x = p.X();
           srtrack.split.locAtSplit.y = p.Y();
           srtrack.split.locAtSplit.z = p.Z();
