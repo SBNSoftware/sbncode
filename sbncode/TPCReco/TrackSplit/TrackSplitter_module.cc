@@ -35,7 +35,6 @@
 
 #include <memory>
 #include <optional>
-
 #include "sbnobj/Common/Reco/MergedTrackInfo.hh"
 
 namespace sbn {
@@ -141,7 +140,7 @@ std::pair<int, float> sbn::TrackSplitter::ClosestTrajectoryPoint(const detinfo::
   for (unsigned i_tp = trk.FirstValidPoint(); i_tp < trk.NumberTrajectoryPoints(); i_tp = trk.NextValidPoint(i_tp+1)) {
     TVector3 pos = trk.LocationAtPoint<TVector3>(i_tp);
     float pos_x = pos.X();           
-    float pos_w = fGeo->WireCoordinate(pos.Y(), pos.Z(), hit.WireID()) * fGeo->WirePitch();
+    float pos_w = fGeo->WireCoordinate(trk.LocationAtPoint<geo::Point_t>(i_tp), hit.WireID()) * fGeo->WirePitch();
     float this_dist = sqrt((pos_x - hit_x) *(pos_x - hit_x) + (pos_w - hit_w) *(pos_w - hit_w));
     if (ret < 0 || this_dist < dist) {
       dist = this_dist;
@@ -435,8 +434,10 @@ std::pair<std::vector<art::Ptr<recob::Hit>>, std::vector<const recob::TrackHitMe
   else if (ret.first.size() && trk.NumberTrajectoryPoints() >= 2) {
     TVector3 start = trk.Start<TVector3>();
     TVector3 start_p1 = trk.LocationAtPoint<TVector3>(trk.NextValidPoint(trk.FirstValidPoint()+1));
-    bool trk_is_ascending = fGeo->WireCoordinate(start.Y(), start.Z(), plane, 0, 0) < 
-                           fGeo->WireCoordinate(start_p1.Y(), start_p1.Z(), plane, 0, 0);
+
+    geo::PlaneID thisplane(0, 0, plane);
+    bool trk_is_ascending = fGeo->WireCoordinate(trk.Start<geo::Point_t>(), thisplane) < 
+                           fGeo->WireCoordinate(trk.LocationAtPoint<geo::Point_t>(trk.NextValidPoint(trk.FirstValidPoint()+1)), thisplane);
     int wire0 = ret.first[0]->WireID().Wire;
     int wire1 = -1;
     for (unsigned i_hit = 1; i_hit < ret.first.size(); i_hit++) {
