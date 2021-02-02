@@ -797,6 +797,8 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
   if (neutrinos.size() == 0) {
+    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+    ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
     ret.eff = -1;
     ret.pur = -1;
     ret.index = -1;
@@ -815,16 +817,22 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     }
     for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
       if (truth == neutrinos[ind]) {
-  matching_energy[ind] += pair.second;
-  break;
+        matching_energy[ind] += pair.second;
+        break;
       }
     }
   }
+
+  float cosmic_energy = total_energy;
+  for (float E: matching_energy) cosmic_energy -= E;
+
   float matching_frac = *std::max_element(matching_energy.begin(), matching_energy.end()) / total_energy;
   int index = (matching_frac > 0.5) ? std::distance(matching_energy.begin(), std::max_element(matching_energy.begin(), matching_energy.end())) : -1;
 
   ret.index = index;
   if (index >= 0) {
+    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+    ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
     ret.eff = (matching_energy[index] / 1000.) / srneutrinos[index].visE;
   }
