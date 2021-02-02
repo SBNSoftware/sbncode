@@ -34,7 +34,8 @@ services:
   # #  @table::standard_services
 
   AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
-  ExpGeoHelperInterface:    @local::icarus_split_induction_geometry_helper 
+  ExptGeoHelperInterface:    @local::icarus_split_induction_geometry_helper 
+  GeometryConfigurationWriter: {}
   Geometry:                  @local::icarus_split_induction_nooverburden_geometry 
   # AuxDetGeometry:            @local::icarus_auxdetgeo
   LArPropertiesService:      @local::standard_properties
@@ -61,6 +62,8 @@ outputs:
 {
   outpid:
   {
+    dataTier: cafana # for grid test
+    streamName: out1 # for grid test
     module_type: RootOutput
     fileName:    "pid_r%r_s%s.root"
     fastCloning: false
@@ -122,5 +125,4 @@ physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
 
-#services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"

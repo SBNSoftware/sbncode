@@ -25,6 +25,7 @@ services:
 
   AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
   ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  GeometryConfigurationWriter: {}
   Geometry:                  @local::sbnd_geo
   AuxDetGeometry:            @local::sbnd_auxdetgeo
   LArPropertiesService:      @local::standard_properties
@@ -89,7 +90,6 @@ physics:
 }
 
 physics.producers.mycafmaker: @local::standard_cafmaker
-#services.Geometry.ForceUseFCLOnly: true
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
 
 # #include "3drift_services_sbnd.fcl"

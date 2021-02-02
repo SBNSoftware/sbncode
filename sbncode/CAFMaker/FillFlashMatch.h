@@ -11,7 +11,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "lardataobj/AnalysisBase/T0.h"
-#include "sbncode/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 
 namespace caf

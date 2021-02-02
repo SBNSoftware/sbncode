@@ -19,6 +19,8 @@
 #include "crtmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 
+#include "flashmatch_sbnd.fcl"
+
 process_name: CAFmaker
 
 services:
@@ -35,6 +37,7 @@ services:
 
   AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
   ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  GeometryConfigurationWriter: {}
   Geometry:                  @local::sbnd_geo
   AuxDetGeometry:            @local::sbnd_auxdetgeo
   LArPropertiesService:      @local::standard_properties
@@ -57,16 +60,6 @@ source:
   maxEvents:   -1        # Number of events to create
 }
 
-outputs:
-{
-  outpid:
-  {
-    module_type: RootOutput
-    fileName:    "pid_r%r_s%s.root"
-    fastCloning: false
-  }
-}
-
 # Define and configure some modules to do work on each event.
 # First modules are defined; they are scheduled later.
 # Modules are grouped by type.
@@ -77,18 +70,20 @@ physics:
 #  exposure:             @local::standard_cosmicexposureinfo  #calib
 #  ifdbspillinfo:        @local::standard_ifdbspillinfo       #beam
 #  calhit:               @local::standard_calhit              #calib
-#  slicer: 		 @local::standard_slicer4d            #reco
+#  slicer:     @local::standard_slicer4d            #reco
 #  slicertd:             @local::standard_td                  #reco
 #  slicer:               @local::standard_slicemergeviews
 #  cosmictrack:          @local::standard_cosmictrack         #reco
 #  windowtrack:          @local::window_cosmictrack           #reco
+   fmatchSCENew:           @local::sbnd_simple_flashmatch
+
    flashtrig: @local::pmtflashtrigmaker_sbnd
-   pandoraTrackMCS:		@local::mcs_sbn
-   pandoraTrackRange:		@local::range_sbn
-   pandoraShowerSelectionVars: 	@local::showerSelectionVars_sbn
-   crtconvhit: 		       	@local::crthitconverter_sbnd
-   pandoraTrackCRTHit: 	       	@local::crthitmatch_sbnd
-   pandoraTrackCRTTrack: 	@local::crttrackmatch_sbnd
+   pandoraTrackMCS:   @local::mcs_sbn
+   pandoraTrackRange:   @local::range_sbn
+   pandoraShowerSelectionVars:  @local::showerSelectionVars_sbn
+   crtconvhit:            @local::crthitconverter_sbnd
+   pandoraTrackCRTHit:          @local::crthitmatch_sbnd
+   pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -97,9 +92,8 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange,
-            pandoraTrackCRTHit, pandoraTrackCRTTrack,
-            pandoraShowerSelectionVars,
+ runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
