@@ -24,6 +24,7 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
+#include "sbnobj/Common/Reco/MergedTrackInfo.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -85,6 +86,11 @@ namespace caf
   void FillTrackCRTTrack(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
+
+  void FillTrackSplit(const std::vector<art::Ptr<sbn::MergedTrackInfo>> &merged,
+                      const recob::Track &track,
+                      caf::SRTrack &srtrack,
+                      bool allowEmpty = false);
 
   void FillTrackMCS(const recob::Track& track,
                     const std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> &mcs_results,
