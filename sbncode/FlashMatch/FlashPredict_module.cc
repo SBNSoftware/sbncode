@@ -19,8 +19,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fClockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob())
   , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
-  , fBeamWindowStart(p.get<double>("BeamWindowStart")) // TODO: should come from service
-  , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// in ns // TODO: should come from service
+  , fBeamWindowStart(p.get<double>("BeamWindowStart")) //us // TODO: should come from service
+  , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// us // TODO: should come from service
   , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
   , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
@@ -583,14 +583,15 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
   if (sum_PE > 0) {
     _flash_pe    = sum_PE   * fPEscale;
     _flash_unpe  = sum_unPE * fPEscale;
-    if(fUseARAPUCAS) _flash_unpe  += sum_visARA_PE * fPEscale;
     _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
-    if(fUseARAPUCAS)
+    if(fUseARAPUCAS) {
+      _flash_unpe  += sum_visARA_PE * fPEscale;
       _flash_ratio = (fVUVToVIS * sum_unPE  + sum_visARA_PE )* fPEscale / _flash_pe;
+    }
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
     _flash_r = std::sqrt(
-      (sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
+      std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     if (fSBND && fUseUncoatedPMT) icountPE = std::round(_flash_pe + _flash_unpe);
     else icountPE = std::round(_flash_pe);
