@@ -17,8 +17,8 @@ simple_plugin(TrackSplitter module
   larcore_Geometry_Geometry_service
   lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
   lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
+  lardataalg_DetectorInfo
 
-  sbn_LArReco_PCA
   sbn_LArReco
   sbnobj_Common_Reco
 )
@@ -45,6 +45,7 @@ simple_plugin(MergedTrackIdentifier module
   sbn_LArReco
   sbnobj_Common_Reco
 )
+
 install_headers()
 install_fhicl()
 install_source()
