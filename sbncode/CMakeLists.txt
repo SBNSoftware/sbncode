@@ -30,3 +30,4 @@ add_subdirectory(CAFMaker)
 
 add_subdirectory(FlashMatch)
 add_subdirectory(LArRecoProducer)
+add_subdirectory(TPCReco)

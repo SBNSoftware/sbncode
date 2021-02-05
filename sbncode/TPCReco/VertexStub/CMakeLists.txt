@@ -18,9 +18,9 @@ simple_plugin(VertexChargeVacuum module
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
-	sbn_LArReco_PCA
 	larreco_Calorimetry
 	lardataobj_RecoBase
+	lardataalg_DetectorInfo
 )
 
 simple_plugin(VertexStubTracker module
@@ -43,8 +43,8 @@ simple_plugin(VertexStubTracker module
 	lardataobj_AnalysisBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
-	sbn_LArReco_PCA
 	larreco_Calorimetry
+	lardataalg_DetectorInfo
 )
 
 install_headers()
