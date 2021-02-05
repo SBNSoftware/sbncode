@@ -145,7 +145,7 @@ public:
      */
   void resetTTree(TTree *_tree);
 
-  void respondToOpenInputFile(const art::FileBlock& fb) {
+  void respondToOpenInputFile(const art::FileBlock& fb) override {
     (void) fb;
     _fileno ++;
   }
@@ -690,7 +690,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     if (thisTrack.size() != 1)
       continue;
 
-    unsigned parent_ind = pfp.Parent();
+    size_t parent_ind = pfp.Parent();
     std::cout << "Parent ind: " << parent_ind << std::endl;
     if (parent_ind == recob::PFParticle::kPFParticlePrimary || parent_ind >= PFParticleList.size()) {
       std::cout << "Parent doesn't exist.\n";
