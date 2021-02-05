@@ -73,7 +73,7 @@ physics:
       ymin: 10
       ymax: 10
       zmin: 10
-      zmax: 10
+      zmax: 50
     }
   }
 

@@ -1,6 +1,3 @@
-add_subdirectory(Products)
-
-add_subdirectory(KinkExp)
 add_subdirectory(TrackHit)
 add_subdirectory(TrackSplit)
 add_subdirectory(VertexStub)
