@@ -1,11 +1,11 @@
 # for classes_def.xml
 include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
-set( PACKAGE CAFMaker )
+#set( PACKAGE CAFMaker )
 FILE( GLOB src_files *.cxx )
 
 add_subdirectory(RecoUtils)
 
-art_make_library( LIBRARY_NAME ${PACKAGE}
+art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   SOURCE ${src_files}
                   LIBRARIES 
                             StandardRecord
@@ -46,7 +46,7 @@ include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
 simple_plugin ( CAFMaker module
-                CAFMaker
+                sbncode_CAFMaker
                StandardRecord
 	       ${IFDH_SERVICE}
                ${ART_FRAMEWORK_CORE}
