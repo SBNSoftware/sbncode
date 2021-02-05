@@ -630,12 +630,14 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(eIoni)
   MATCH_PROCESS(muBrems)
   MATCH_PROCESS(hIoni)
+  MATCH_PROCESS(ionIoni)
+  MATCH_PROCESS(hBrems)
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
-  return caf::kG4primary; // unreachable
+  return caf::kG4UNKNOWN; // unreachable in debug mode
 #undef MATCH_PROCESS
 #undef MATCH_PROCESS_NAMED
 
