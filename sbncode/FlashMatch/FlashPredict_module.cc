@@ -385,6 +385,15 @@ void FlashPredict::loadMetrics()
       << "Could not find the light-charge match root file '"
       << fname << "'!\n";
   }
+  auto metricsInFile = infile->GetListOfKeys();
+  if(!metricsInFile->Contains("dy_h1") ||
+     !metricsInFile->Contains("dz_h1") ||
+     !metricsInFile->Contains("rr_h1") ||
+     !metricsInFile->Contains("pe_h1"))
+  {
+    throw cet::exception("FlashPredict")
+      << "The metrics file lacks at least one metric.";
+  }
   //
   TH1 *temphisto = (TH1*)infile->Get("dy_h1");
   int bins = 0;
@@ -497,7 +506,7 @@ void FlashPredict::loadMetrics()
 
   infile->Close();
   delete infile;
-
+  mf::LogInfo("FlashPredict") << "Finish loading metrics";
 }
 
 
