@@ -138,39 +138,44 @@ def generator(nuslice_tree, rootfile, pset):
                    dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                    pset.rr_bins, pset.rr_low, pset.rr_up)
     rr_hist.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_hist.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_hist.GetYaxis().SetTitle("spread (cm)")
     rr_prof = TProfile("rr_prof", "Profile of PE Spread",
                        profile_bins, dist_to_anode_low, dist_to_anode_up,
                        pset.rr_low, pset.rr_up, profile_option)
     rr_prof.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_prof.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_prof.GetYaxis().SetTitle("spread (cm)")
     rr_h1 = TH1D("rr_h1", "",
                  profile_bins, dist_to_anode_low, dist_to_anode_up)
     rr_h1.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_h1.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_h1.GetYaxis().SetTitle("spread (cm)")
 
     pe_spreads = [None] * n_bins
     pe_means = [None] * n_bins
-    pe_hist = TH2D("pe_hist", "Uncoated/Coated Ratio",
+    pe_hist = TH2D("pe_hist", "PE Ratio",
                    dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                    pset.pe_bins, pset.pe_low, pset.pe_up)
     pe_hist.GetXaxis().SetTitle("distance from anode (cm)")
-    pe_hist.GetYaxis().SetTitle("ratio_{uncoated/coated}")
-    pe_prof = TProfile("pe_prof", "Profile of Uncoated/Coated Ratio",
+    pe_hist.GetYaxis().SetTitle("ratio")
+    pe_prof = TProfile("pe_prof", "Profile of PE Ratio",
                        profile_bins, dist_to_anode_low, dist_to_anode_up,
                        pset.pe_low, pset.pe_up, profile_option)
     pe_prof.GetXaxis().SetTitle("distance from anode (cm)")
-    pe_prof.GetYaxis().SetTitle("ratio_{uncoated/coated}")
+    pe_prof.GetYaxis().SetTitle("ratio")
     pe_h1 = TH1D("pe_h1", "",
                  profile_bins, dist_to_anode_low, dist_to_anode_up)
     pe_h1.GetXaxis().SetTitle("distance from anode (cm)")
-    pe_h1.GetYaxis().SetTitle("ratio_{uncoated/coated}")
+    pe_h1.GetYaxis().SetTitle("ratio")
 
     unfolded_score_scatter = TH2D("unfolded_score_scatter", "Scatter plot of match scores",
                                   2*dist_to_anode_bins, x_gl_low, x_gl_up,
                                   pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
     unfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
     unfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
+    oldunfolded_score_scatter = TH2D("oldunfolded_score_scatter", "Scatter plot of match scores, old metrics",
+                                  2*dist_to_anode_bins, x_gl_low, x_gl_up,
+                                  pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+    oldunfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
+    oldunfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_scatter = TH2D("match_score_scatter", "Scatter plot of match scores",
                                dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                                pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
@@ -241,6 +246,8 @@ def generator(nuslice_tree, rootfile, pset):
         if (detector == "sbnd" and pset.UseUncoatedPMT) or \
            (detector == "icarus" and pset.UseOppVolMetric) :
             score += abs(e.flash_ratio-pe_means[isl])/pe_spreads[isl]
+
+        oldunfolded_score_scatter.Fill(qXGl, e.score)
         unfolded_score_scatter.Fill(qXGl, score)
         match_score_scatter.Fill(qX, score)
         match_score_hist.Fill(score)
@@ -250,6 +257,7 @@ def generator(nuslice_tree, rootfile, pset):
         hfile.Close()
     hfile = TFile(metrics_filename, 'RECREATE',
                   'Simple flash matching metrics for ' + detector.upper())
+
     dy_hist.Write()
     dy_prof.Write()
     dy_h1.Write()
@@ -263,6 +271,7 @@ def generator(nuslice_tree, rootfile, pset):
     pe_prof.Write()
     pe_h1.Write()
     match_score_scatter.Write()
+    oldunfolded_score_scatter.Write()
     unfolded_score_scatter.Write()
     match_score_hist.Write()
     hfile.Close()
@@ -307,6 +316,10 @@ def generator(nuslice_tree, rootfile, pset):
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
     canv.Print("pe.pdf")
+    canv.Update()
+
+    oldunfolded_score_scatter.Draw()
+    canv.Print("oldunfolded_score_scatter.pdf")
     canv.Update()
 
     unfolded_score_scatter.Draw()
