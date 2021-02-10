@@ -552,42 +552,44 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
     auto opDetXYZ = opDet.GetCenter();
 
     std::string op_type = "pmt"; // the label ICARUS has
-    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
+    if(fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
 
-    if (fICARUS && fUseOppVolMetric){
-      unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
-      geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
-      unsigned qVolume = driftVolume(_charge_x_gl);
-      if(qVolume < fDriftVolumes){
-        if (pdVolume != qVolume){
-          sum_unPE += oph.PE();
+    // _flash_x is the X coord of the opdet where most PE are deposited
+    if(oph.PE()>maxPE){
+      _flash_x = opDetXYZ.X();
+      maxPE = oph.PE();
+    }
+    double ophPE2 = oph.PE() * oph.PE();
+    sum       += 1.0;
+    sum_PE    += oph.PE();
+    sum_PE2   += ophPE2;
+    sum_PE2Y  += ophPE2 * opDetXYZ.Y();
+    sum_PE2Z  += ophPE2 * opDetXYZ.Z();
+    sum_PE2Y2 += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
+    sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
+
+    if(fICARUS){
+      if(fUseOppVolMetric){
+        unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
+        geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
+        unsigned qVolume = driftVolume(_charge_x_gl);
+        if(qVolume < fDriftVolumes){
+          if (pdVolume != qVolume){
+            sum_unPE += oph.PE();
+          }
         }
       }
     }
-
-    if (op_type == "pmt" || op_type == "pmt_coated" ||
-        op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" ) {
-      // _flash_x is the X coord of the opdet where most PE are deposited
-      if (oph.PE()>maxPE){
-        _flash_x = opDetXYZ.X();
-        maxPE = oph.PE();
+    else if(fSBND){
+      if(fUseUncoatedPMT && op_type == "pmt_uncoated") {
+        sum_unPE += oph.PE();
       }
-      double ophPE2 = oph.PE() * oph.PE();
-      sum       += 1.0;
-      sum_PE    += oph.PE();
-      sum_PE2   += ophPE2;
-      sum_PE2Y  += ophPE2 * opDetXYZ.Y();
-      sum_PE2Z  += ophPE2 * opDetXYZ.Z();
-      sum_PE2Y2 += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
-      sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
+      else if(fUseARAPUCAS &&
+              (op_type == "arapuca_vis" || op_type == "xarapuca_vis")) {
+        sum_visARA_PE += oph.PE();
+      }
     }
-    else if (op_type == "pmt_uncoated") {
-      sum_unPE += oph.PE();
-    }
-    else if (op_type == "arapuca_vis" || op_type == "xarapuca_vis") {
-      sum_visARA_PE += oph.PE();
-    }
-  }
+  } // for opHits
 
   if (sum_PE > 0) {
     _flash_pe    = sum_PE   * fPEscale;
