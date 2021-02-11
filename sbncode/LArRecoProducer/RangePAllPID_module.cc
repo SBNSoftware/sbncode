@@ -49,9 +49,12 @@ private:
   art::InputTag fTrackLabel;
 
 };
-const static std::vector<int> PIDs {13, 2212};
-const static std::vector<std::string> names {"muon", "proton"};
+const static std::vector<int> PIDs {13, 211, 2212};
+const static std::vector<std::string> names {"muon", "pion", "proton"};
 
+// P.A. Zylaet al.(Particle Data Group), Prog. Theor. Exp. Phys.2020, 083C01 (2020)
+const static double MUON_MASS = 0.10565837; // GeV
+const static double PION_MASS = 0.13957039; // GeV 
 
 sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
   : EDProducer{p},
@@ -80,7 +83,13 @@ void sbn::RangePAllPID::produce(art::Event& e)
 
     for (const art::Ptr<recob::Track> track: tracks) {
       sbn::RangeP rangep;
-      rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length(), PIDs[i]);
+      // Rescale the input and output as described by https://inspirehep.net/literature/1766384
+      if (PIDs[i] == 211) {
+        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length() * (MUON_MASS / PION_MASS), PIDs[i]) * (PION_MASS / MUON_MASS); 
+      }
+      else {
+        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length(), PIDs[i]);
+      }
       rangep.trackID = track->ID();
       rangecol->push_back(rangep);
       util::CreateAssn(*this, e, *rangecol, track, *assn, names[i]);

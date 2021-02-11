@@ -30,6 +30,35 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco);
 
+// helper function definitions
+
+bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
+                    float distance=5.0) {
+  TVector3 nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0).Vect();
+  TVector3 trkStart = track.Start().Position().Vect();
+  return (trkStart - nuVtx).Mag() < distance;
+}
+
+// returns particle mass in MeV
+double PDGMass(int pdg) {
+  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
+  // regular particle
+  if (pdg < 1000000000) {
+    TParticlePDG* ple = PDGTable->GetParticle(pdg);
+    if (ple == NULL) return -1;
+    return ple->Mass() * 1000.0;
+  }
+  // ion
+  else {
+    int p = (pdg % 10000000) / 10000;
+    int n = (pdg % 10000) / 10 - p;
+    return (PDGTable->GetParticle(2212)->Mass() * p +
+            PDGTable->GetParticle(2112)->Mass() * n) * 1000.0;
+  }
+}
+
+
+
 namespace caf {
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
@@ -101,14 +130,27 @@ namespace caf {
     }
     srneutrino.nprim = srneutrino.prim.size();
 
+    // Set the MCFlux stuff
+    srneutrino.initpdg = mcflux.fntype;
+    srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
+    srneutrino.parent_pdg = mcflux.fptype;
+    srneutrino.parent_dcy_mode = mcflux.fndecay;
+    srneutrino.prod_vtx.x = mcflux.fvx;
+    srneutrino.prod_vtx.y = mcflux.fvy;
+    srneutrino.prod_vtx.z = mcflux.fvz;
+    srneutrino.parent_dcy_mom.x = mcflux.fpdpx;
+    srneutrino.parent_dcy_mom.y = mcflux.fpdpy;
+    srneutrino.parent_dcy_mom.z = mcflux.fpdpz;
+    float Pmass = PDGMass(mcflux.fptype) / 1000.; // MeV -> GeV
+    srneutrino.parent_dcy_E = sqrt(mcflux.fpdpx*mcflux.fpdpx + mcflux.fpdpy*mcflux.fpdpy + mcflux.fpdpz*mcflux.fpdpz + Pmass*Pmass);
+    srneutrino.imp_weight = mcflux.fnimpwt;
+
     if (mctruth->NeutrinoSet()) {
       // Neutrino
       const simb::MCNeutrino& nu = mctruth->GetNeutrino();
       srneutrino.isnc =   nu.CCNC()  && (nu.Mode() != simb::kWeakMix);
       srneutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       srneutrino.pdg = nu.Nu().PdgCode();
-      srneutrino.initpdg = mcflux.fntype;
-      srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
       srneutrino.targetPDG = nu.Target();
       srneutrino.genie_intcode = nu.Mode();
       srneutrino.bjorkenX = nu.X();
@@ -135,10 +177,7 @@ namespace caf {
           break;
         }
       }
-
     }
-
-    // total up the visible energy
 
 
   }
@@ -339,34 +378,6 @@ namespace caf {
 
 
 //--------------------------------------------
-
-// helper function definitions
-
-bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
-                    float distance=5.0) {
-  TVector3 nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0).Vect();
-  TVector3 trkStart = track.Start().Position().Vect();
-  return (trkStart - nuVtx).Mag() < distance;
-}
-
-// returns particle mass in MeV
-double PDGMass(int pdg) {
-  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
-  // regular particle
-  if (pdg < 1000000000) {
-    TParticlePDG* ple = PDGTable->GetParticle(pdg);
-    if (ple == NULL) return -1;
-    return ple->Mass() * 1000.0;
-  }
-  // ion
-  else {
-    int p = (pdg % 10000000) / 10000;
-    int n = (pdg % 10000) / 10 - p;
-    return (PDGTable->GetParticle(2212)->Mass() * p +
-            PDGTable->GetParticle(2112)->Mass() * n) * 1000.0;
-  }
-}
-
 
 bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
@@ -630,12 +641,14 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(eIoni)
   MATCH_PROCESS(muBrems)
   MATCH_PROCESS(hIoni)
+  MATCH_PROCESS(ionIoni)
+  MATCH_PROCESS(hBrems)
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
-  return caf::kG4primary; // unreachable
+  return caf::kG4UNKNOWN; // unreachable in debug mode
 #undef MATCH_PROCESS
 #undef MATCH_PROCESS_NAMED
 
@@ -797,6 +810,8 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
   if (neutrinos.size() == 0) {
+    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+    ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
     ret.eff = -1;
     ret.pur = -1;
     ret.index = -1;
@@ -815,16 +830,22 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     }
     for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
       if (truth == neutrinos[ind]) {
-  matching_energy[ind] += pair.second;
-  break;
+        matching_energy[ind] += pair.second;
+        break;
       }
     }
   }
+
+  float cosmic_energy = total_energy;
+  for (float E: matching_energy) cosmic_energy -= E;
+
   float matching_frac = *std::max_element(matching_energy.begin(), matching_energy.end()) / total_energy;
   int index = (matching_frac > 0.5) ? std::distance(matching_energy.begin(), std::max_element(matching_energy.begin(), matching_energy.end())) : -1;
 
   ret.index = index;
   if (index >= 0) {
+    ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
+    ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
     ret.eff = (matching_energy[index] / 1000.) / srneutrinos[index].visE;
   }

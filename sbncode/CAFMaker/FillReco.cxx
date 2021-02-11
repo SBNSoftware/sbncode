@@ -330,17 +330,21 @@ namespace caf
   }
 
   void FillTrackRangeP(const recob::Track& track,
-                       const std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> &range_results,
+                       const std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> &range_results,
                        caf::SRTrack& srtrack,
                        bool allowEmpty)
   {
-    // calculate range momentum
     if (range_results[0].size()) {
       srtrack.rangeP.p_muon = range_results[0][0]->range_p;
       assert(track.ID() == range_results[0][0]->trackID);
     }
 
     if (range_results[1].size()) {
+      srtrack.rangeP.p_pion = range_results[1][0]->range_p;
+      assert(track.ID() == range_results[1][0]->trackID);
+    }
+
+    if (range_results[2].size()) {
       srtrack.rangeP.p_proton = range_results[1][0]->range_p;
       assert(track.ID() == range_results[1][0]->trackID);
     }

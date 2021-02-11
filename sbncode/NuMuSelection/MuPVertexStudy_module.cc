@@ -67,6 +67,10 @@ struct TrackHistos {
   TH1D *proton_purity;
 };
 
+struct VertexHistos {
+  TH1D *vertex_diff;
+};
+
 struct TrueHistos {
   TH1D *cos_open_angle;
   TH1D *muon_length;
@@ -97,13 +101,16 @@ private:
   //TH1D *nPFParticle;
   TrueHistos fTrueHistos;
   std::array<TrackHistos, 3> fTrackHistos; 
+  VertexHistos fVertexHistos;
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
   void InitTrue();
   void InitReco(unsigned i, const std::string &prefix);
+  void InitVertex();
 
   void FillReco(unsigned i, const simb::MCParticle &muon, const simb::MCParticle &proton, float muon_completion, float proton_completion, float muon_purity, float proton_purity);
+  void FillVertex(const TVector3 vertex, const recob::Track *muon, const recob::Track *proton);
 
   void FillTrue(const simb::MCParticle &muon, const simb::MCParticle &proton);
   float ParticleLength(const simb::MCParticle &particle);
@@ -129,9 +136,13 @@ void numu::MuPVertexStudy::InitReco(unsigned i, const std::string &prefix) {
   fTrackHistos[i].proton_completion = tfs->make<TH1D>((prefix + "reco_p_completion").c_str(), "", 100, 0., 1.);
   fTrackHistos[i].muon_purity = tfs->make<TH1D>((prefix + "reco_mu_purity").c_str(), "", 100, 0., 1.);
   fTrackHistos[i].proton_purity = tfs->make<TH1D>((prefix + "reco_p_purity").c_str(), "", 100, 0., 1.);
-
 }
 
+void numu::MuPVertexStudy::InitVertex() {
+  art::ServiceHandle<art::TFileService> tfs; 
+
+  fVertexHistos.vertex_diff = tfs->make<TH1D>("vertex_diff", "", 200, 0, 100.);
+}
 
 numu::MuPVertexStudy::MuPVertexStudy(fhicl::ParameterSet const& p)
   : EDAnalyzer{p}  // ,
@@ -139,6 +150,7 @@ numu::MuPVertexStudy::MuPVertexStudy(fhicl::ParameterSet const& p)
 {
 
   InitTrue();
+  InitVertex();
 
   std::vector<std::string> prefixes {"both", "mu", "p"};
   for (unsigned i = 0; i < 3; i++) {
@@ -210,6 +222,13 @@ void numu::MuPVertexStudy::FillReco(unsigned i, const simb::MCParticle &muon, co
   fTrackHistos[i].proton_length->Fill(ParticleLength(proton));
 
   fTrackHistos[i].cos_open_angle->Fill(muon.Momentum().Vect().Dot(proton.Momentum().Vect()) / (muon.Momentum().Vect().Mag() * proton.Momentum().Vect().Mag()));
+
+}
+
+void numu::MuPVertexStudy::FillVertex(const TVector3 vertex, const recob::Track *muon, const recob::Track *proton) {
+  TVector3 muon_start(muon->Start().X(), muon->Start().Y(), muon->Start().Z());
+  TVector3 muon_end(muon->End().X(), muon->End().Y(), muon->End().Z());
+  fVertexHistos.vertex_diff->Fill(std::min((vertex - muon_start).Mag(), (vertex - muon_end).Mag()));
 }
 
 void numu::MuPVertexStudy::analyze(art::Event const& ev)
@@ -250,6 +269,10 @@ void numu::MuPVertexStudy::analyze(art::Event const& ev)
   const auto &particle_handle = ev.getValidHandle<std::vector<recob::PFParticle>>("pandora");
   const std::vector<recob::PFParticle> &particle_list = *particle_handle;
   art::FindManyP<recob::Cluster> particles_to_clusters(particle_handle, ev, "pandora");
+  art::FindManyP<recob::Track> particles_to_tracks(particle_handle, ev, "pandoraTrack");
+
+  const recob::Track *muon_track = NULL;
+  const recob::Track *proton_track = NULL;
 
   for (unsigned i_part = 0; i_part < particle_list.size(); i_part++) {
     const std::vector<art::Ptr<recob::Cluster>> clusters = particles_to_clusters.at(i_part); 
@@ -270,16 +293,25 @@ void numu::MuPVertexStudy::analyze(art::Event const& ev)
     float muon_purity = Purity(*muon, totalE, matches, mcparticle_list);
     float proton_purity = Purity(*proton, totalE, matches, mcparticle_list);
 
+    const recob::Track *track = particles_to_tracks.at(i_part).size() ? particles_to_tracks.at(i_part).at(0).get() : NULL;
+
     if (muon_completion > 0.5 && proton_completion > 0.5) {
       FillReco(0, *muon, *proton, muon_completion, proton_completion, muon_purity, proton_purity);
+      muon_track = track;
+      proton_track = track;
     }
     else if (muon_completion > 0.5) {
       FillReco(1, *muon, *proton, muon_completion, proton_completion, muon_purity, proton_purity);
+      muon_track = track;
     }
     else if (proton_completion > 0.5) {
       FillReco(2, *muon, *proton, muon_completion, proton_completion, muon_purity, proton_purity);
+      proton_track = track;
     }
   } 
+  if (muon_track && proton_track && muon_track != proton_track) {
+    FillVertex(muon->Position().Vect(), muon_track, proton_track);
+  }
 }
 
 float Completion(const simb::MCParticle &particle, float particleE, const std::vector<std::pair<int, float>> &matches, const std::vector<simb::MCParticle> &particles) {

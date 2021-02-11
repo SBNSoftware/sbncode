@@ -98,7 +98,7 @@ namespace caf
                     bool allowEmpty = false);
 
   void FillTrackRangeP(const recob::Track& track,
-                     const std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> &range_results,
+                     const std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> &range_results,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

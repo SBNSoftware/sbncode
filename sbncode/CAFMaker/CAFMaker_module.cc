@@ -46,6 +46,7 @@
 #include "TTree.h"
 #include "TTimeStamp.h"
 #include "TRandomGen.h"
+#include "TObjString.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -69,6 +70,7 @@
 #include "canvas/Persistency/Common/PtrVector.h"
 
 #include "cetlib_except/exception.h"
+#include "cetlib_except/demangle.h"
 
 #include "fhiclcpp/ParameterSet.h"
 
@@ -420,8 +422,8 @@ art::FindManyP<T> CAFMaker::FindManyPStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << abi::__cxa_demangle(typeid(from).name(), 0, 0, 0) << "' to '"
-              << abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
               << "' found under label '" << tag << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -439,8 +441,8 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << abi::__cxa_demangle(typeid(from).name(), 0, 0, 0) << "' to '"
-              << abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
               << "' found under label '" << tag << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -471,7 +473,7 @@ void CAFMaker::GetByLabelStrict(const art::Event& evt, const std::string& label,
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No product of type '"
-              << abi::__cxa_demangle(typeid(*handle).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(*handle).name())
               << "' found under label '" << label << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -486,7 +488,7 @@ void CAFMaker::GetByLabelIfExists(const art::Event& evt,
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No product of type '"
-              << abi::__cxa_demangle(typeid(*handle).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(*handle).name())
               << "' found under label '" << label << "'. "
               << "Continuing without it." << std::endl;
   }
@@ -831,7 +833,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
-    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    static const std::vector<std::string> rangePIDnames {"muon", "pion", "proton"};
     for (std::string pid: rangePIDnames) {
       art::InputTag tag(fParams.TrackRangeLabel() + slice_tag_suff, pid);
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
@@ -981,8 +983,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
-        for (unsigned index = 0; index < 2; index++) {
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> rangePs;
+        for (unsigned index = 0; index < 3; index++) {
           if (fmRanges[index].isValid()) {
             rangePs[index] = fmRanges[index].at(iPart);
           }
