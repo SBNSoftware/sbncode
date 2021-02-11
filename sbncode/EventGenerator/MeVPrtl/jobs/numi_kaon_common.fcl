@@ -47,10 +47,11 @@ weighted_ray_trace_box: {
 mixedweight_ray_trace_box: {
   tool_type: MixedWeightRayTraceBox
   Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
-  ReferenceLabSolidAngle: 1e-4
+  ReferenceLabSolidAngle: 4e-4
+  MaxWeightFudge: 2.
   ReferenceKaonEnergy: 15. # GeV
-  NThrow: 20000
-  NSuccess: 2
+  NThrow: 250
+  FixNSuccess: false
 }
 
 

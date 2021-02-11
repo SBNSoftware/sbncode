@@ -1,4 +1,4 @@
-#include "prodcorsika_genie_nooverburden_icarus_Oct2020.fcl"
+#include "simulation_genie_icarus_numi_volDetEnclosure.fcl"
 
 physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
 physics.producers.generator.FluxCopyMethod: "DIRECT"

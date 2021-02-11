@@ -21,7 +21,7 @@ kaon2hnl: {
   BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
 
   // timing config
-  SpillTimeConfig: "evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 }
 
 decay_hnl: {

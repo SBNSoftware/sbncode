@@ -1,0 +1,3 @@
+physics.producers.generator.Flux.M: @local::higgsM
+physics.producers.generator.RayTrace.ReferencePrtlMass: @local::higgsM
+physics.producers.generator.Decay.ReferenceHiggsMass: @local::higgsM
