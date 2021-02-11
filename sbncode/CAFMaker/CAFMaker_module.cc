@@ -1033,8 +1033,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
-        for (unsigned index = 0; index < 2; index++) {
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> rangePs;
+        for (unsigned index = 0; index < 3; index++) {
           if (fmSplitRanges[index].isValid()) {
             rangePs[index] = fmSplitRanges[index].at(iPart);
           }
@@ -1061,6 +1061,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCRTTrack(fmSplitCRTTrackMatch.at(iPart), rec.reco.trk_split.back());
 
         if (fmSplitInfo.isValid()) FillTrackSplit(fmSplitInfo.at(iPart), *thisSplitTrack[0], rec.reco.trk_split.back());
+
+        // Duplicate track reco info in the srslice
+        recslc.reco.trk_split.push_back(rec.reco.trk_split.back());
+        recslc.reco.ntrk = recslc.reco.trk_split.size();
 
       } // thisSplitTrack exists
 
