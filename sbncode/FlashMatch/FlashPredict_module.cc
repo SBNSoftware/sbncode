@@ -695,89 +695,89 @@ double FlashPredict::hypoFlashX_splines()
 }
 
 
-::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)
-{
-  // prepare container to store flash
-  ::flashmatch::Flash_t flash;
-  flash.time = opflash.Time();
-  // geometry service
-  const art::ServiceHandle<geo::Geometry> geometry;
-  uint nOpDets(geometry->NOpDets());
-  std::vector<double> PEspectrum;
-  PEspectrum.resize(nOpDets);
-  // apply gain to OpDets
-  for (uint OpChannel=0; OpChannel<nOpDets; ++OpChannel) {
-    uint opdet = geometry->OpDetFromOpChannel(OpChannel);
-    PEspectrum[opdet] = opflash.PEs().at(OpChannel);
-  }
-  _pe_reco_v = PEspectrum;
+// ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum(const recob::OpFlash& opflash)
+// {
+//   // prepare container to store flash
+//   ::flashmatch::Flash_t flash;
+//   flash.time = opflash.Time();
+//   // geometry service
+//   const art::ServiceHandle<geo::Geometry> geometry;
+//   uint nOpDets(geometry->NOpDets());
+//   std::vector<double> PEspectrum;
+//   PEspectrum.resize(nOpDets);
+//   // apply gain to OpDets
+//   for (uint OpChannel=0; OpChannel<nOpDets; ++OpChannel) {
+//     uint opdet = geometry->OpDetFromOpChannel(OpChannel);
+//     PEspectrum[opdet] = opflash.PEs().at(OpChannel);
+//   }
+//   _pe_reco_v = PEspectrum;
 
-  // Reset variables
-  flash.x = flash.y = flash.z = 0;
-  flash.x_err = flash.y_err = flash.z_err = 0;
-  double totalPE = 0.;
-  double sumy = 0., sumz = 0., sumy2 = 0., sumz2 = 0.;
-  for (unsigned int opdet=0; opdet<PEspectrum.size(); opdet++) {
-    double PMTxyz[3];
-    geometry->OpDetGeoFromOpDet(opdet).GetCenter(PMTxyz);
-    // Add up the position, weighting with PEs
-    sumy    += PEspectrum[opdet] * PMTxyz[1];
-    sumy2   += PEspectrum[opdet] * PMTxyz[1] * PMTxyz[1];
-    sumz    += PEspectrum[opdet] * PMTxyz[2];
-    sumz2   += PEspectrum[opdet] * PMTxyz[2] * PMTxyz[2];
-    totalPE += PEspectrum[opdet];
-  }
+//   // Reset variables
+//   flash.x = flash.y = flash.z = 0;
+//   flash.x_err = flash.y_err = flash.z_err = 0;
+//   double totalPE = 0.;
+//   double sumy = 0., sumz = 0., sumy2 = 0., sumz2 = 0.;
+//   for (unsigned int opdet=0; opdet<PEspectrum.size(); opdet++) {
+//     double PMTxyz[3];
+//     geometry->OpDetGeoFromOpDet(opdet).GetCenter(PMTxyz);
+//     // Add up the position, weighting with PEs
+//     sumy    += PEspectrum[opdet] * PMTxyz[1];
+//     sumy2   += PEspectrum[opdet] * PMTxyz[1] * PMTxyz[1];
+//     sumz    += PEspectrum[opdet] * PMTxyz[2];
+//     sumz2   += PEspectrum[opdet] * PMTxyz[2] * PMTxyz[2];
+//     totalPE += PEspectrum[opdet];
+//   }
 
-  flash.y = sumy / totalPE;
-  flash.z = sumz / totalPE;
-  // This is just sqrt(<x^2> - <x>^2)
-  if ((sumy2 * totalPE - sumy * sumy) > 0.)
-    flash.y_err = std::sqrt(sumy2 * totalPE - sumy * sumy) / totalPE;
-  if ((sumz2 * totalPE - sumz * sumz) > 0.)
-    flash.z_err = std::sqrt(sumz2 * totalPE - sumz * sumz) / totalPE;
-  // Set the flash properties
-  flash.pe_v.resize(nOpDets);
-  flash.pe_err_v.resize(nOpDets);
-  // Fill the flash with the PE spectrum
-  for (unsigned int i=0; i<nOpDets; ++i) {
-    const auto PE(PEspectrum.at(i));
-    flash.pe_v.at(i) = PE;
-    flash.pe_err_v.at(i) = std::sqrt(PE);
-  }
-  if (flash.pe_v.size() != nOpDets)
-    throw cet::exception("FlashNeutrinoId") << "Number of channels in beam flash doesn't match the number of OpDets!" << std::endl;
-  return flash;
+//   flash.y = sumy / totalPE;
+//   flash.z = sumz / totalPE;
+//   // This is just sqrt(<x^2> - <x>^2)
+//   if ((sumy2 * totalPE - sumy * sumy) > 0.)
+//     flash.y_err = std::sqrt(sumy2 * totalPE - sumy * sumy) / totalPE;
+//   if ((sumz2 * totalPE - sumz * sumz) > 0.)
+//     flash.z_err = std::sqrt(sumz2 * totalPE - sumz * sumz) / totalPE;
+//   // Set the flash properties
+//   flash.pe_v.resize(nOpDets);
+//   flash.pe_err_v.resize(nOpDets);
+//   // Fill the flash with the PE spectrum
+//   for (unsigned int i=0; i<nOpDets; ++i) {
+//     const auto PE(PEspectrum.at(i));
+//     flash.pe_v.at(i) = PE;
+//     flash.pe_err_v.at(i) = std::sqrt(PE);
+//   }
+//   if (flash.pe_v.size() != nOpDets)
+//     throw cet::exception("FlashNeutrinoId") << "Number of channels in beam flash doesn't match the number of OpDets!" << std::endl;
+//   return flash;
 
-}// ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum
-
-
-void FlashPredict::CollectDownstreamPFParticles(
-  const lar_pandora::PFParticleMap& pfParticleMap,
-  const art::Ptr<recob::PFParticle>& particle,
-  lar_pandora::PFParticleVector& downstreamPFParticles) const
-{
-  if (std::find(downstreamPFParticles.begin(), downstreamPFParticles.end(), particle) == downstreamPFParticles.end()){
-    downstreamPFParticles.push_back(particle);
-  }
-  for (const auto &daughterId : particle->Daughters()) {
-    const auto iter(pfParticleMap.find(daughterId));
-    if (iter == pfParticleMap.end()){
-      throw cet::exception("FlashNeutrinoId") << "Scrambled PFParticle IDs" << std::endl;
-    }
-    this->CollectDownstreamPFParticles(pfParticleMap, iter->second, downstreamPFParticles);
-  }
-} // void FlashPredict::CollectDownstreamPFParticles
+// }// ::flashmatch::Flash_t FlashPredict::GetFlashPESpectrum
 
 
-void FlashPredict::CollectDownstreamPFParticles(
-  const lar_pandora::PFParticleMap& pfParticleMap,
-  const lar_pandora::PFParticleVector& parentPFParticles,
-  lar_pandora::PFParticleVector& downstreamPFParticles) const
-{
-  for (const auto &particle : parentPFParticles){
-    this->CollectDownstreamPFParticles(pfParticleMap, particle, downstreamPFParticles);
-  }
-} // void FlashPredict::CollectDownstreamPFParticles
+// void FlashPredict::CollectDownstreamPFParticles(
+//   const lar_pandora::PFParticleMap& pfParticleMap,
+//   const art::Ptr<recob::PFParticle>& particle,
+//   lar_pandora::PFParticleVector& downstreamPFParticles) const
+// {
+//   if (std::find(downstreamPFParticles.begin(), downstreamPFParticles.end(), particle) == downstreamPFParticles.end()){
+//     downstreamPFParticles.push_back(particle);
+//   }
+//   for (const auto &daughterId : particle->Daughters()) {
+//     const auto iter(pfParticleMap.find(daughterId));
+//     if (iter == pfParticleMap.end()){
+//       throw cet::exception("FlashNeutrinoId") << "Scrambled PFParticle IDs" << std::endl;
+//     }
+//     this->CollectDownstreamPFParticles(pfParticleMap, iter->second, downstreamPFParticles);
+//   }
+// } // void FlashPredict::CollectDownstreamPFParticles
+
+
+// void FlashPredict::CollectDownstreamPFParticles(
+//   const lar_pandora::PFParticleMap& pfParticleMap,
+//   const lar_pandora::PFParticleVector& parentPFParticles,
+//   lar_pandora::PFParticleVector& downstreamPFParticles) const
+// {
+//   for (const auto &particle : parentPFParticles){
+//     this->CollectDownstreamPFParticles(pfParticleMap, particle, downstreamPFParticles);
+//   }
+// } // void FlashPredict::CollectDownstreamPFParticles
 
 
 void FlashPredict::AddDaughters(
@@ -967,75 +967,75 @@ unsigned FlashPredict::driftVolume(const double x) const
 }
 
 
-// TODO: no hardcoding
-// TODO: collapse with the next
-bool FlashPredict::isPDInCryoTPC(double pd_x, size_t itpc)
-{
-  // check whether this optical detector views the light inside this tpc.
-  std::ostringstream lostPDMessage;
-  lostPDMessage << "\nThere's a " << fDetector << " photo detector that belongs nowhere. \n"
-                << "icryo: " << fCryostat << "\n"
-                << "itpc:  " << itpc <<  "\n"
-                << "pd_x:  " << pd_x <<  std::endl;
-  if (fICARUS) {
-    if (fCryostat == 0) {
-      if (itpc == 0 && -400. < pd_x && pd_x < -300. ) return true;
-      else if (itpc == 1 && -100. < pd_x && pd_x < 0.) return true;
-      else {std::cout << lostPDMessage.str(); return false;}
-    }
-    else if (fCryostat == 1) {
-      if (itpc == 0 && 0. < pd_x && pd_x < 100.) return true;
-      else if (itpc == 1 && 300. < pd_x && pd_x < 400.) return true;
-      else {std::cout << lostPDMessage.str(); return false;}
-    }
-  }
-  else if (fSBND) {
-    if (itpc == 0 && -213. < pd_x && pd_x < 0.) return true;
-    else if (itpc == 1 && 0. < pd_x && pd_x < 213.) return true;
-    else {std::cout << lostPDMessage.str(); return false;}
-  }
-  return false;
-}
+// // TODO: no hardcoding
+// // TODO: collapse with the next
+// bool FlashPredict::isPDInCryoTPC(double pd_x, size_t itpc)
+// {
+//   // check whether this optical detector views the light inside this tpc.
+//   std::ostringstream lostPDMessage;
+//   lostPDMessage << "\nThere's a " << fDetector << " photo detector that belongs nowhere. \n"
+//                 << "icryo: " << fCryostat << "\n"
+//                 << "itpc:  " << itpc <<  "\n"
+//                 << "pd_x:  " << pd_x <<  std::endl;
+//   if (fICARUS) {
+//     if (fCryostat == 0) {
+//       if (itpc == 0 && -400. < pd_x && pd_x < -300. ) return true;
+//       else if (itpc == 1 && -100. < pd_x && pd_x < 0.) return true;
+//       else {std::cout << lostPDMessage.str(); return false;}
+//     }
+//     else if (fCryostat == 1) {
+//       if (itpc == 0 && 0. < pd_x && pd_x < 100.) return true;
+//       else if (itpc == 1 && 300. < pd_x && pd_x < 400.) return true;
+//       else {std::cout << lostPDMessage.str(); return false;}
+//     }
+//   }
+//   else if (fSBND) {
+//     if (itpc == 0 && -213. < pd_x && pd_x < 0.) return true;
+//     else if (itpc == 1 && 0. < pd_x && pd_x < 213.) return true;
+//     else {std::cout << lostPDMessage.str(); return false;}
+//   }
+//   return false;
+// }
 
-bool FlashPredict::isPDInCryoTPC(int pdChannel, size_t itpc)
-{
-  // check whether this optical detector views the light inside this tpc.
-  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
-  return isPDInCryoTPC(p.X(), itpc);
-}
+// bool FlashPredict::isPDInCryoTPC(int pdChannel, size_t itpc)
+// {
+//   // check whether this optical detector views the light inside this tpc.
+//   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+//   return isPDInCryoTPC(p.X(), itpc);
+// }
 
-// TODO: no hardcoding
-// TODO: collapse with the previous
-// TODO: figure out what to do with the charge that falls into the crevices
-bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc)
-{
-  std::ostringstream lostChargeMessage;
-  lostChargeMessage << "\nThere's " << fDetector << " charge that belongs nowhere. \n"
-                    << "icryo: " << fCryostat << "\n"
-                    << "itpc: "  << itpc << "\n"
-                    << "qp_x: " << qp_x << std::endl;
+// // TODO: no hardcoding
+// // TODO: collapse with the previous
+// // TODO: figure out what to do with the charge that falls into the crevices
+// bool FlashPredict::isChargeInCryoTPC(double qp_x, int icryo, int itpc)
+// {
+//   std::ostringstream lostChargeMessage;
+//   lostChargeMessage << "\nThere's " << fDetector << " charge that belongs nowhere. \n"
+//                     << "icryo: " << fCryostat << "\n"
+//                     << "itpc: "  << itpc << "\n"
+//                     << "qp_x: " << qp_x << std::endl;
 
-  if (fICARUS) {
-    if (icryo == 0) {
-      if (itpc == 0 && -368.49 <= qp_x && qp_x <= -220.29 ) return true;
-      else if (itpc == 1 && -220.14 <= qp_x && qp_x <= -71.94) return true;
-      // else {std::cout << lostChargeMessage.str(); return false;}
-    }
-    else if (icryo == 1) {
-      if (itpc == 0 && 71.94 <= qp_x && qp_x <= 220.14) return true;
-      else if (itpc == 1 && 220.29 <= qp_x && qp_x <= 368.49) return true;
-      // else {std::cout << lostChargeMessage.str(); return false;}
-    }
-  }
-  else if (fSBND) {
-    if ((itpc == 0 && qp_x < 0) || (itpc == 1 && qp_x > 0) ) return true;
-    else {
-      return false;
-    }
-    //    else {std::cout << lostChargeMessage.str(); return false;}
-  }
-  return false;
-}
+//   if (fICARUS) {
+//     if (icryo == 0) {
+//       if (itpc == 0 && -368.49 <= qp_x && qp_x <= -220.29 ) return true;
+//       else if (itpc == 1 && -220.14 <= qp_x && qp_x <= -71.94) return true;
+//       // else {std::cout << lostChargeMessage.str(); return false;}
+//     }
+//     else if (icryo == 1) {
+//       if (itpc == 0 && 71.94 <= qp_x && qp_x <= 220.14) return true;
+//       else if (itpc == 1 && 220.29 <= qp_x && qp_x <= 368.49) return true;
+//       // else {std::cout << lostChargeMessage.str(); return false;}
+//     }
+//   }
+//   else if (fSBND) {
+//     if ((itpc == 0 && qp_x < 0) || (itpc == 1 && qp_x > 0) ) return true;
+//     else {
+//       return false;
+//     }
+//     //    else {std::cout << lostChargeMessage.str(); return false;}
+//   }
+//   return false;
+// }
 
 
 template <typename Stream>

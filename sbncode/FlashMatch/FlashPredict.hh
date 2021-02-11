@@ -93,13 +93,13 @@ private:
                            std::vector<recob::OpHit> const& OpHits);
   bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   double hypoFlashX_splines();
-  ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
-  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
-                                    const art::Ptr<recob::PFParticle>& particle,
-                                    lar_pandora::PFParticleVector& downstreamPFParticles) const;
-  void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
-                                    const lar_pandora::PFParticleVector& parentPFParticles,
-                                    lar_pandora::PFParticleVector& downstreamPFParticles) const;
+  // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
+  // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
+  //                                   const art::Ptr<recob::PFParticle>& particle,
+  //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
+  // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
+  //                                   const lar_pandora::PFParticleVector& parentPFParticles,
+  //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
   void AddDaughters(const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v);
@@ -117,9 +117,9 @@ private:
   unsigned icarusPDinTPC(int pdChannel);
   double driftDistance(const double x) const;
   unsigned driftVolume(const double x) const;
-  bool isPDInCryoTPC(double pd_x, size_t itpc);
-  bool isPDInCryoTPC(int pdChannel, size_t itpc);
-  bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
+  // bool isPDInCryoTPC(double pd_x, size_t itpc);
+  // bool isPDInCryoTPC(int pdChannel, size_t itpc);
+  // bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
   template <typename Stream>
   void printBookKeeping(Stream&& out);
   void updateBookKeeping();
@@ -164,7 +164,7 @@ private:
   TSpline3 rr_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
   TSpline3 pe_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
 
-  std::vector<double> _pe_reco_v, _pe_hypo_v;
+  // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
   // Tree variables
   double _charge_x_gl, _charge_x,
