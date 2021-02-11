@@ -85,7 +85,7 @@ void sbn::RangePAllPID::produce(art::Event& e)
       sbn::RangeP rangep;
       // Rescale the input and output as described by https://inspirehep.net/literature/1766384
       if (PIDs[i] == 211) {
-        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length() * (MUON_MASS / PION_MASS), PIDs[i]) * (PION_MASS / MUON_MASS); 
+        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length() * (MUON_MASS / PION_MASS), 13) * (PION_MASS / MUON_MASS); 
       }
       else {
         rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length(), PIDs[i]);
