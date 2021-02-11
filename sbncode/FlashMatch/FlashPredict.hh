@@ -139,7 +139,7 @@ private:
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
-  const double fMinFlashPE, fPEscale,
+  const double fMinFlashPE, fMinOpHPE, fPEscale,
     fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;

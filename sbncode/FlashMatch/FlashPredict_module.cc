@@ -33,6 +33,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
   , fMakeTree(p.get<bool>("MakeTree", false))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
+  , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fPEscale(p.get<double>("PEscale", 1.0))
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
@@ -832,12 +833,13 @@ void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
 {
   double s = fBeamWindowStart;
   double e = fBeamWindowEnd;
+  double m = fMinOpHPE;
   // copy ophits that are inside the time window and with PEs
   auto peakInWindow =
-    [s, e](const recob::OpHit& oph)-> bool
+    [s, e, m](const recob::OpHit& oph)-> bool
       {return ((oph.PeakTime() > s) &&
                (oph.PeakTime() < e) &&
-               (oph.PE() > 0)); };
+               (oph.PE() > m)); };
   auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
                          peakInWindow);
   opHits.resize(std::distance(opHits.begin(), it));
