@@ -89,6 +89,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       << "Check Detector and Cryostat parameter." << std::endl;
   }
 
+  fOpHitsTimeHist = std::make_unique<TH1D>("fOpHitsTimeHist", "ophittime", fTimeBins,
+                                           fBeamWindowStart, fBeamWindowEnd); // in us
+  fOpHitsTimeHist->SetOption("HIST");
+  fOpHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
+
   if (fMakeTree) initTree();
 
   loadMetrics();
@@ -182,6 +187,7 @@ void FlashPredict::produce(art::Event & e)
     }
   }
 
+  fOpHitsTimeHist->Reset();
   if(!filterOpHitsOutsideFlash(opHits)){
     mf::LogWarning("FlashPredict")
       << "\nNo OpHits in beam window,"
@@ -195,13 +201,12 @@ void FlashPredict::produce(art::Event & e)
   }
 
   std::set<unsigned> tpcWithOpH;
-  if(fSBND) {
+  if(fSBND) {// no point for ICARUS
     for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
       tpcWithOpH.insert(sbndPDinTPC(oph->OpChannel()));
       if(tpcWithOpH.size() == fNTPC) break;
     }
   }
-  // no point on getting this for ICARUS
 
   _pfpmap.clear();
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
@@ -799,6 +804,7 @@ double FlashPredict::scoreTerm(double m, double n,
   return std::abs(std::abs(m - n) - mean) / spread;
 }
 
+
 inline
 double FlashPredict::scoreTerm(double m,
                                double mean, double spread)
@@ -820,6 +826,7 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
   return false;
 }
 
+
 void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
                                           art::Handle<std::vector<recob::OpHit>>& ophit_h)
 {
@@ -840,25 +847,12 @@ void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
 
 bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
 {
-  TH1D ophittime("ophittime", "ophittime", fTimeBins,
-                 fBeamWindowStart, fBeamWindowEnd); // in us
-  ophittime.SetOption("HIST");
+  if(fOpHitsTimeHist->GetEntries() == 0){// only create it once per event
+    if(!createOpHitsTimeHist(opHits)) return false;
+  }//check hist is empty
 
-  for(auto const& oph : opHits) {
-    auto ch = oph.OpChannel();
-    auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
-    if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
-    if(fSBND && !fUseUncoatedPMT &&
-       !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
-    ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
-  }
-
-  if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
-    return false;
-  }
-
-  int ibin =  ophittime.GetMaximumBin();
-  double maxpeak_time = ophittime.GetBinCenter(ibin);
+  int ibin = fOpHitsTimeHist->GetMaximumBin();
+  double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
   _flash_time = maxpeak_time; // in us
   double lowedge  = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
@@ -874,6 +868,23 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
                opHits.end());
   fOpH_beg = opHits.begin();
   fOpH_end = opHits.end();
+  return true;
+}
+
+
+bool FlashPredict::createOpHitsTimeHist(std::vector<recob::OpHit>& opHits)
+{
+  for(auto const& oph : opHits) {
+    auto ch = oph.OpChannel();
+    auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
+    if (fICARUS &&
+        !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
+    if(fSBND && !fUseUncoatedPMT &&
+       !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
+    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEscale * oph.PE());
+  }
+  if (fOpHitsTimeHist->GetEntries() <= 0 ||
+      fOpHitsTimeHist->Integral() < fMinFlashPE) return false;
   return true;
 }
 
