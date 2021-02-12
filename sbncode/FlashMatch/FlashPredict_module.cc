@@ -196,18 +196,12 @@ void FlashPredict::produce(art::Event & e)
 
   std::set<unsigned> tpcWithOpH;
   if(fSBND) {
-    for(auto& op: opHits){
-      tpcWithOpH.insert(sbndPDinTPC(op.OpChannel()));
+    for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
+      tpcWithOpH.insert(sbndPDinTPC(oph->OpChannel()));
       if(tpcWithOpH.size() == fNTPC) break;
     }
   }
   // no point on getting this for ICARUS
-  // else if(fICARUS){
-  //   for(auto& op: opHits){
-  //     tpcWithOpH.insert(icarusPDinTPC(op.OpChannel()));
-  //     if(tpcWithOpH.size() == fNTPC) break;
-  //   }
-  // }
 
   _pfpmap.clear();
   for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
@@ -311,7 +305,7 @@ void FlashPredict::produce(art::Event & e)
       continue;
     }
 
-    if(!computeFlashMetrics(tpcWithHits, opHits)){
+    if(!computeFlashMetrics(tpcWithHits)){
       printMetrics("ERROR", pfp.PdgCode(), tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
@@ -535,8 +529,7 @@ bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
 }
 
 
-bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
-                                       std::vector<recob::OpHit> const& opHits)
+bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits)
 {
   double sum = 0.;
   double sum_PE = 0.;
@@ -547,22 +540,22 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
   double maxPE = -9999.;
-  for(auto const& oph : opHits) {
-    if(!isPDRelevant(oph.OpChannel(), tpcWithHits)) continue;
-    auto opDet = geometry->OpDetGeoFromOpChannel(oph.OpChannel());
+  for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
+    if(!isPDRelevant(oph->OpChannel(), tpcWithHits)) continue;
+    auto opDet = geometry->OpDetGeoFromOpChannel(oph->OpChannel());
     auto opDetXYZ = opDet.GetCenter();
 
     std::string op_type = "pmt"; // the label ICARUS has
-    if(fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
+    if(fSBND) op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
 
     // _flash_x is the X coord of the opdet where most PE are deposited
-    if(oph.PE()>maxPE){
+    if(oph->PE()>maxPE){
       _flash_x = opDetXYZ.X();
-      maxPE = oph.PE();
+      maxPE = oph->PE();
     }
-    double ophPE2 = oph.PE() * oph.PE();
+    double ophPE2 = oph->PE() * oph->PE();
     sum       += 1.0;
-    sum_PE    += oph.PE();
+    sum_PE    += oph->PE();
     sum_PE2   += ophPE2;
     sum_PE2Y  += ophPE2 * opDetXYZ.Y();
     sum_PE2Z  += ophPE2 * opDetXYZ.Z();
@@ -571,23 +564,23 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
 
     if(fICARUS){
       if(fUseOppVolMetric){
-        unsigned pdVolume = icarusPDinTPC(oph.OpChannel())/fTPCPerDriftVolume;
+        unsigned pdVolume = icarusPDinTPC(oph->OpChannel())/fTPCPerDriftVolume;
         geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
         unsigned qVolume = driftVolume(_charge_x_gl);
         if(qVolume < fDriftVolumes){
           if (pdVolume != qVolume){
-            sum_unPE += oph.PE();
+            sum_unPE += oph->PE();
           }
         }
       }
     }
     else if(fSBND){
       if(fUseUncoatedPMT && op_type == "pmt_uncoated") {
-        sum_unPE += oph.PE();
+        sum_unPE += oph->PE();
       }
       else if(fUseARAPUCAS &&
               (op_type == "arapuca_vis" || op_type == "xarapuca_vis")) {
-        sum_visARA_PE += oph.PE();
+        sum_visARA_PE += oph->PE();
       }
     }
   } // for opHits
@@ -610,7 +603,7 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
   }
   else {
     std::string channels;
-    for(auto& op: opHits) channels += std::to_string(op.OpChannel()) + ' ';
+    for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph) channels += std::to_string(oph->OpChannel()) + ' ';
     std::string tpcs;
     for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
     mf::LogError("FlashPredict")
@@ -619,7 +612,7 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits,
       << "sum_PE:       \t" << sum_PE << "\n"
       << "sum_unPE:     \t" << sum_unPE << "\n"
       << "tpcWithHits:  \t" << tpcs << "\n"
-      << "opHits.size():\t" << opHits.size() << "\n"
+      << "opHits size:  \t" << std::distance(fOpH_beg, fOpH_end) << "\n"
       << "channels:     \t" << channels << std::endl;
     _flash_y = 0;
     _flash_z = 0;
@@ -890,6 +883,8 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
                std::remove_if(opHits.begin(), opHits.end(),
                               peakOutsideEdges),
                opHits.end());
+  fOpH_beg = opHits.begin();
+  fOpH_end = opHits.end();
   return true;
 }
 

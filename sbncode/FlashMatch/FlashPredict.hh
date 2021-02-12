@@ -89,8 +89,7 @@ private:
   void initTree(void);
   void loadMetrics(void);
   bool computeChargeMetrics(flashmatch::QCluster_t& qClusters);
-  bool computeFlashMetrics(std::set<unsigned>& tpcWithHits,
-                           std::vector<recob::OpHit> const& OpHits);
+  bool computeFlashMetrics(std::set<unsigned>& tpcWithHits);
   bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
   double hypoFlashX_splines();
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
@@ -157,6 +156,7 @@ private:
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
 
+  std::vector<recob::OpHit>::iterator fOpH_beg, fOpH_end;
   const art::ServiceHandle<geo::Geometry> geometry;
 
   // root stuff
