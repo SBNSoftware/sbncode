@@ -840,23 +840,17 @@ void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
 
 bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
 {
-  TH1D ophittime("ophittime", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
+  TH1D ophittime("ophittime", "ophittime", fTimeBins,
+                 fBeamWindowStart, fBeamWindowEnd); // in us
   ophittime.SetOption("HIST");
-  TH1D ophittime_vis("ophittime_vis", "ophittime_vis", fTimeBins, fBeamWindowStart, fBeamWindowEnd); // in us
-  ophittime_vis.SetOption("HIST");
 
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
     auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
     if (fICARUS && !fGeoCryo->ContainsPosition(opDetXYZ)) continue; // use only PMTs in the specified cryostat for ICARUS
-    std::string op_type = "pmt";
-    if (fSBND) op_type = fPDMapAlgPtr->pdType(oph.OpChannel());
-    if(op_type == "pmt" || op_type == "pmt_coated" ||
-       op_type == "arapuca_vuv" || op_type == "xarapuca_vuv" )
-      ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
-    else if (op_type == "pmt_uncoated" ||
-             op_type == "arapuca_vis" || op_type == "xarapuca_vis")
-      ophittime_vis.Fill(oph.PeakTime(), fPEscale * oph.PE());
+    if(fSBND && !fUseUncoatedPMT &&
+       !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
+    ophittime.Fill(oph.PeakTime(), fPEscale * oph.PE());
   }
 
   if (ophittime.GetEntries() <= 0 || ophittime.Integral() < fMinFlashPE) {
@@ -865,11 +859,6 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
 
   int ibin =  ophittime.GetMaximumBin();
   double maxpeak_time = ophittime.GetBinCenter(ibin);
-  if (fSBND && fUseUncoatedPMT){
-    int ibin_vis =  ophittime_vis.GetMaximumBin();
-    double maxpeakvis_time = ophittime_vis.GetBinCenter(ibin_vis);
-    maxpeak_time = (maxpeak_time<maxpeakvis_time) ? maxpeak_time : maxpeakvis_time;
-  }
   _flash_time = maxpeak_time; // in us
   double lowedge  = _flash_time + fLightWindowStart;
   double highedge = _flash_time + fLightWindowEnd;
