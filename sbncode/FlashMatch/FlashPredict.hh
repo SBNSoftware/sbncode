@@ -111,6 +111,7 @@ private:
                               art::Handle<std::vector<recob::OpHit>>& ophit_h);
   bool filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits);
   bool createOpHitsTimeHist(std::vector<recob::OpHit>& opHits);
+  bool findMaxPeak(std::vector<recob::OpHit>& opHits);
   bool isPDRelevant(int pdChannel,
                     std::set<unsigned>& tpcWithHits);
   unsigned sbndPDinTPC(int pdChannel);

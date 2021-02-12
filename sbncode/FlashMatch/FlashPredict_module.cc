@@ -849,25 +849,8 @@ bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
 {
   if(fOpHitsTimeHist->GetEntries() == 0){// only create it once per event
     if(!createOpHitsTimeHist(opHits)) return false;
-  }//check hist is empty
-
-  int ibin = fOpHitsTimeHist->GetMaximumBin();
-  double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
-  _flash_time = maxpeak_time; // in us
-  double lowedge  = _flash_time + fLightWindowStart;
-  double highedge = _flash_time + fLightWindowEnd;
-  mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
-
-  auto peakOutsideEdges =
-    [lowedge, highedge](const recob::OpHit& oph)-> bool
-    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
-  // only use optical hits around the flash time
-  opHits.erase(
-               std::remove_if(opHits.begin(), opHits.end(),
-                              peakOutsideEdges),
-               opHits.end());
-  fOpH_beg = opHits.begin();
-  fOpH_end = opHits.end();
+  }
+  if(!findMaxPeak(opHits)) return false;
   return true;
 }
 
@@ -885,6 +868,33 @@ bool FlashPredict::createOpHitsTimeHist(std::vector<recob::OpHit>& opHits)
   }
   if (fOpHitsTimeHist->GetEntries() <= 0 ||
       fOpHitsTimeHist->Integral() < fMinFlashPE) return false;
+  return true;
+}
+
+
+bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
+{
+  int ibin = fOpHitsTimeHist->GetMaximumBin();
+  double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
+  _flash_time = maxpeak_time; // in us
+  double lowedge  = _flash_time + fLightWindowStart;
+  double highedge = _flash_time + fLightWindowEnd;
+  mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
+  int lowedge_bin = fOpHitsTimeHist->FindBin(lowedge);
+  int highedge_bin = fOpHitsTimeHist->FindBin(highedge);
+  if (fOpHitsTimeHist->Integral(lowedge_bin, highedge_bin) < fMinFlashPE){
+    return false;
+  }
+  auto peakOutsideEdges =
+    [lowedge, highedge](const recob::OpHit& oph)-> bool
+    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
+  // only use optical hits around the flash time
+  opHits.erase(
+               std::remove_if(opHits.begin(), opHits.end(),
+                              peakOutsideEdges),
+               opHits.end());
+  fOpH_beg = opHits.begin();
+  fOpH_end = opHits.end();
   return true;
 }
 
@@ -1125,7 +1135,6 @@ void FlashPredict::printMetrics(std::string metric, int pdgc,
 void FlashPredict::beginJob()
 {
   bk = BookKeeping();
-
 }
 
 void FlashPredict::endJob()
