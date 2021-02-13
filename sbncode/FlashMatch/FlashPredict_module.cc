@@ -482,6 +482,7 @@ void FlashPredict::loadMetrics()
       yM.push_back(me);
       yH.push_back(me + tt);
     }
+    rrMax = *std::max_element(yH.begin(), yH.end());
     rr_l_InvSpl = TSpline3("rr_l_InvSpl", yL.data(), x.data(), yL.size());
     rr_m_InvSpl = TSpline3("rr_m_InvSpl", yM.data(), x.data(), yM.size());
     rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(), yH.size());
@@ -514,6 +515,7 @@ void FlashPredict::loadMetrics()
       yM.push_back(me);
       yH.push_back(me + tt);
     }
+    peMax = *std::max_element(yH.begin(), yH.end());
     pe_l_InvSpl = TSpline3("pe_l_InvSpl", yL.data(), x.data(), yL.size());
     pe_m_InvSpl = TSpline3("pe_m_InvSpl", yM.data(), x.data(), yM.size());
     pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
@@ -681,27 +683,35 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 
 double FlashPredict::hypoFlashX_splines()
 {
-  double hX, mX, lX;
-  double rr_lX = rr_l_InvSpl.Eval(_flash_r);
-  double rr_mX = rr_m_InvSpl.Eval(_flash_r);
-  double rr_hX = rr_h_InvSpl.Eval(_flash_r);
-  if(0.<rr_mX && rr_mX<fDriftDistance) mX = rr_mX;
-  else mX = (_flash_r<rr_means[0]) ? 0. : fDriftDistance;
-  hX = (0.<rr_hX && rr_hX<fDriftDistance) ? rr_hX : mX;
-  lX = (0.<rr_lX && rr_lX<fDriftDistance) ? rr_lX : mX;
+  double lX = 0., mX = 0., hX = fDriftDistance;
+  if(_flash_r < rrMax){//don't bother to interpolate otherwise
+    double rr_lX = rr_l_InvSpl.Eval(_flash_r);
+    double rr_mX = rr_m_InvSpl.Eval(_flash_r);
+    double rr_hX = rr_h_InvSpl.Eval(_flash_r);
+    if(0.<rr_mX && rr_mX<fDriftDistance) mX = rr_mX;
+    else mX = (_flash_r<rr_means[0]) ? 0. : fDriftDistance;
+    hX = (0.<rr_hX && rr_hX<fDriftDistance) ? rr_hX : mX;
+    lX = (0.<rr_lX && rr_lX<fDriftDistance) ? rr_lX : mX;
+    if(lX == hX) hX = fDriftDistance, lX = fDriftDistance/3.;//TODO: hack
+  }
+
   double rr_hypoX =  (lX + hX)/2.;
   double rr_hypoXWgt =  1./std::abs(lX - hX);
 
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
     return rr_hypoX;
 
-  double pe_lX = pe_l_InvSpl.Eval(_flash_ratio);
-  double pe_mX = pe_m_InvSpl.Eval(_flash_ratio);
-  double pe_hX = pe_h_InvSpl.Eval(_flash_ratio);
-  if(0.<pe_mX && pe_mX<fDriftDistance) mX = pe_mX;
-  else mX = (_flash_ratio<pe_means[0]) ? 0. : fDriftDistance;
-  hX = (0.<pe_hX && pe_hX<fDriftDistance) ? pe_hX : mX;
-  lX = (0.<pe_lX && pe_lX<fDriftDistance) ? pe_lX : mX;
+  lX = 0., mX = 0., hX = fDriftDistance;
+  if(_flash_ratio < peMax){//don't bother to interpolate otherwise
+    double pe_lX = pe_l_InvSpl.Eval(_flash_ratio);
+    double pe_mX = pe_m_InvSpl.Eval(_flash_ratio);
+    double pe_hX = pe_h_InvSpl.Eval(_flash_ratio);
+    if(0.<pe_mX && pe_mX<fDriftDistance) mX = pe_mX;
+    else mX = (_flash_ratio<pe_means[0]) ? 0. : fDriftDistance;
+    hX = (0.<pe_hX && pe_hX<fDriftDistance) ? pe_hX : mX;
+    lX = (0.<pe_lX && pe_lX<fDriftDistance) ? pe_lX : mX;
+    if(lX == hX) hX = fDriftDistance/2., lX = 0.;//TODO: hack
+  }
   double pe_hypoX =  (lX + hX)/2.;
   double pe_hypoXWgt =  1./std::abs(lX - hX);
 
