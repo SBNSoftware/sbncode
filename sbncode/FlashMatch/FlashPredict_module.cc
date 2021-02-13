@@ -332,8 +332,6 @@ void FlashPredict::produce(art::Event & e)
       continue;
     }
 
-    _hypo_x = hypoFlashX_splines();
-
     if(computeScore(tpcWithHits, pfp.PdgCode())){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
@@ -617,6 +615,7 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits)
     _flash_r = std::sqrt(
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
+    _hypo_x = hypoFlashX_splines();
     icountPE = std::round(_flash_pe);
     return true;
   }
