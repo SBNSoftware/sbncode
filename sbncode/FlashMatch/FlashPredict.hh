@@ -180,8 +180,7 @@ private:
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x;
-  int _evt, _run, _sub, _slices;
-  unsigned icountPE = 0;
+  unsigned _evt, _run, _sub, _slices, _countPE;
 
   std::map<size_t, size_t> _pfpmap;
 

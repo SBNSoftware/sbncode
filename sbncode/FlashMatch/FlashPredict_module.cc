@@ -116,7 +116,8 @@ void FlashPredict::produce(art::Event & e)
   _evt = e.event();
   _sub = e.subRun();
   _run = e.run();
-  _slices = 0;
+  _slices        = 0;
+  _countPE       = 0;
   _flash_time    = -9999.;
   _flash_pe      = -9999.;
   _flash_unpe    = -9999.;
@@ -142,7 +143,7 @@ void FlashPredict::produce(art::Event & e)
   auto const& slice_h = e.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
   _slices = slice_h.product()->size();
   if (_slices == 0) {
-    mf::LogInfo("FlashPredict")
+    mf::LogWarning("FlashPredict")
       << "No recob:Slice on event. Skipping...";
     bk.noslice++;
     updateBookKeeping();
@@ -336,7 +337,7 @@ void FlashPredict::produce(art::Event & e)
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(_flash_time, icountPE, p, _hypo_x, _score));
+      T0_v->push_back(anab::T0(_flash_time, _countPE, p, _hypo_x, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // over all PFparticles
@@ -616,7 +617,7 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits)
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     _hypo_x = hypoFlashX_splines();
-    icountPE = std::round(_flash_pe);
+    _countPE = std::round(_flash_pe);
     return true;
   }
   else {
@@ -907,7 +908,7 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
   // partition container to move the hits of the peak
   // the iterators point to the boundaries of the partition
   fOpH_beg = (fPeakCounter > 0) ? fOpH_end : opHits.begin();
-  fOpH_end = std::partition(opHits.begin(), opHits.end(),
+  fOpH_end = std::partition(fOpH_beg, opHits.end(),
                             peakInsideEdges);
   fPeakCounter++;
   return true;
@@ -1131,6 +1132,7 @@ void FlashPredict::printMetrics(std::string metric, int pdgc,
     << "isl:        \t" << isl << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
+    << "_slices:    \t" << std::setw(8) << _slices     << "\n"
     << "_flash_time:\t" << std::setw(8) << _flash_time << "\n"
     << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
     << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
