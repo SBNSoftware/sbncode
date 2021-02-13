@@ -226,10 +226,10 @@ void FlashPredict::produce(art::Event & e)
   for (size_t p=0; p<pfp_h->size(); p++) pfpMap[pfp_h->at(p).Self()] = p;
 
   // Loop over pandora pfp particles
-  for (size_t p=0; p<pfp_h->size(); p++) {
-    auto const& pfp = pfp_h->at(p);
-    unsigned pfpPDGC = std::abs(pfp_h->at(p).PdgCode());
-    if (!pfp.IsPrimary()) continue;
+  for (size_t pId=0; pId<pfp_h->size(); pId++) {
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+    unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
+    if (!pfp_ptr->IsPrimary()) continue;
     if (fSelectNeutrino &&
         (pfpPDGC != 12) &&
         (pfpPDGC != 14) &&
@@ -238,7 +238,6 @@ void FlashPredict::produce(art::Event & e)
     flashmatch::QCluster_t qClusters;
     std::set<unsigned> tpcWithHits;
 
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
     {//TODO: pack this into a function
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
     AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
@@ -306,7 +305,7 @@ void FlashPredict::produce(art::Event & e)
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
         mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-        T0_v->push_back(anab::T0(-9999., 0, p, -9999., kQNoOpHScr));
+        T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kQNoOpHScr));
         util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
         continue;
       }
@@ -316,25 +315,25 @@ void FlashPredict::produce(art::Event & e)
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, p, -9999., kNoChrgScr));
+      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kNoChrgScr));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
 
     if(!computeFlashMetrics(tpcWithHits)){
-      printMetrics("ERROR", pfp.PdgCode(), tpcWithHits, 0, mf::LogError("FlashPredict"));
+      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, p, -9999., k0VUVPEScr));
+      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., k0VUVPEScr));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
 
-    if(computeScore(tpcWithHits, pfp.PdgCode())){
+    if(computeScore(tpcWithHits, pfpPDGC)){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(_flash_time, _countPE, p, _hypo_x, _score));
+      T0_v->push_back(anab::T0(_flash_time, _countPE, pId, _hypo_x, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // over all PFparticles
