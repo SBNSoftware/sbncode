@@ -38,6 +38,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
+#include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -179,7 +180,7 @@ private:
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x;
-  int _evt, _run, _sub;
+  int _evt, _run, _sub, _slices;
   unsigned icountPE = 0;
 
   std::map<size_t, size_t> _pfpmap;
@@ -192,8 +193,8 @@ private:
   const int k0VUVPEScr = -3;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
-    unsigned events, nopfpneutrino, nullophittime,
-      nonvalidophit;
+    unsigned events, nopfpneutrino, noslice,
+      nullophittime, nonvalidophit;
 
     int pfp_bookkeeping, scored_pfp;
     unsigned pfp_to_score, no_charge, no_oph_hits,
