@@ -222,8 +222,8 @@ void FlashPredict::produce(art::Event & e)
     }
   }
 
-  _pfpmap.clear();
-  for (size_t p=0; p<pfp_h->size(); p++) _pfpmap[pfp_h->at(p).Self()] = p;
+  std::map<size_t, size_t> pfpMap;
+  for (size_t p=0; p<pfp_h->size(); p++) pfpMap[pfp_h->at(p).Self()] = p;
 
   // Loop over pandora pfp particles
   for (size_t p=0; p<pfp_h->size(); p++) {
@@ -241,7 +241,7 @@ void FlashPredict::produce(art::Event & e)
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
     {//TODO: pack this into a function
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
-    AddDaughters(pfp_ptr, pfp_h, pfp_ptr_v);
+    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
 
     double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
     //  loop over all mothers and daughters, fill qCluster
@@ -802,6 +802,7 @@ double FlashPredict::hypoFlashX_splines()
 
 
 void FlashPredict::AddDaughters(
+  const std::map<size_t, size_t>& pfpMap,
   const art::Ptr<recob::PFParticle>& pfp_ptr,
   const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
   std::vector<art::Ptr<recob::PFParticle>>& pfp_v)
@@ -809,12 +810,12 @@ void FlashPredict::AddDaughters(
   auto daughters = pfp_ptr->Daughters();
   pfp_v.push_back(pfp_ptr);
   for(auto const& daughterid : daughters) {
-    if (_pfpmap.find(daughterid) == _pfpmap.end()) {
+    if (pfpMap.find(daughterid) == pfpMap.end()) {
       std::cout << "Did not find DAUGHTERID in map! error" << std::endl;
       continue;
     }
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, _pfpmap.at(daughterid) );
-    AddDaughters(pfp_ptr, pfp_h, pfp_v);
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pfpMap.at(daughterid) );
+    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_v);
   } // for all daughters
   return;
 } // void FlashPredict::AddDaughters

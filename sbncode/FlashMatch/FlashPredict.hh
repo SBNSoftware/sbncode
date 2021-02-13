@@ -100,7 +100,8 @@ private:
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const lar_pandora::PFParticleVector& parentPFParticles,
   //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
-  void AddDaughters(const art::Ptr<recob::PFParticle>& pfp_ptr,
+  void AddDaughters(const std::map<size_t, size_t>& pfpMap,
+                    const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v);
   double scoreTerm(double m, double n,
@@ -182,8 +183,6 @@ private:
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x;
   unsigned _evt, _run, _sub, _slices, _countPE;
-
-  std::map<size_t, size_t> _pfpmap;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
