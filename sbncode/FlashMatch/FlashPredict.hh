@@ -109,7 +109,7 @@ private:
   bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
   void copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHitSubset,
                               art::Handle<std::vector<recob::OpHit>>& ophit_h);
-  bool filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits);
+  bool getOpHitsInFlash(std::vector<recob::OpHit>& opHits);
   bool createOpHitsTimeHist(std::vector<recob::OpHit>& opHits);
   bool findMaxPeak(std::vector<recob::OpHit>& opHits);
   bool isPDRelevant(int pdChannel,
@@ -158,6 +158,7 @@ private:
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
 
+  unsigned fPeakCounter = 0;
   std::vector<recob::OpHit>::iterator fOpH_beg, fOpH_end;
   const art::ServiceHandle<geo::Geometry> geometry;
 

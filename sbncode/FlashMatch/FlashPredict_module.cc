@@ -188,7 +188,8 @@ void FlashPredict::produce(art::Event & e)
   }
 
   fOpHitsTimeHist->Reset();
-  if(!filterOpHitsOutsideFlash(opHits)){
+  fPeakCounter = 0;
+  if(!getOpHitsInFlash(opHits)){
     mf::LogWarning("FlashPredict")
       << "\nNo OpHits in beam window,"
       << "\nor the integral is less than " << fMinFlashPE
@@ -845,7 +846,7 @@ void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
 }
 
 
-bool FlashPredict::filterOpHitsOutsideFlash(std::vector<recob::OpHit>& opHits)
+bool FlashPredict::getOpHitsInFlash(std::vector<recob::OpHit>& opHits)
 {
   if(fOpHitsTimeHist->GetEntries() == 0){// only create it once per event
     if(!createOpHitsTimeHist(opHits)) return false;
@@ -885,16 +886,18 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
   if (fOpHitsTimeHist->Integral(lowedge_bin, highedge_bin) < fMinFlashPE){
     return false;
   }
-  auto peakOutsideEdges =
-    [lowedge, highedge](const recob::OpHit& oph)-> bool
-    { return ((oph.PeakTime() < lowedge) || (oph.PeakTime() > highedge)); };
-  // only use optical hits around the flash time
-  opHits.erase(
-               std::remove_if(opHits.begin(), opHits.end(),
-                              peakOutsideEdges),
-               opHits.end());
-  fOpH_beg = opHits.begin();
-  fOpH_end = opHits.end();
+  for(int i=lowedge_bin; i<highedge_bin; ++i){// clear this peak
+    fOpHitsTimeHist->SetBinContent(i, 0.);
+  }
+  auto peakInsideEdges =
+    [&lowedge, &highedge](const recob::OpHit& oph)-> bool
+      { return ((lowedge <= oph.PeakTime()) && (oph.PeakTime() <= highedge)); };
+  // partition container to move the hits of the peak
+  // the iterators point to the boundaries of the partition
+  fOpH_beg = (fPeakCounter > 0) ? fOpH_end : opHits.begin();
+  fOpH_end = std::partition(opHits.begin(), opHits.end(),
+                            peakInsideEdges);
+  fPeakCounter++;
   return true;
 }
 
