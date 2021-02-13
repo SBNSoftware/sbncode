@@ -239,7 +239,7 @@ void FlashPredict::produce(art::Event & e)
     std::set<unsigned> tpcWithHits;
 
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, p);
-    std::vector<recob::PFParticle> pfp_v;
+    {//TODO: pack this into a function
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
     AddDaughters(pfp_ptr, pfp_h, pfp_ptr_v);
 
@@ -247,8 +247,6 @@ void FlashPredict::produce(art::Event & e)
     //  loop over all mothers and daughters, fill qCluster
     for (auto& pfp_md: pfp_ptr_v) {
       auto key = pfp_md.key();
-      pfp_v.push_back(*pfp_md);
-
       /*
         if ( fUseCalo && lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)) {
         // grab tracks associated with pfp particle
@@ -281,11 +279,10 @@ void FlashPredict::produce(art::Event & e)
       */
 
       auto const& spacepoint_ptr_v = pfp_spacepoint_assn_v.at(key);
-      std::vector< art::Ptr<recob::Hit> > hit_ptr_v;
       for (auto& SP : spacepoint_ptr_v) {
         auto const& spkey = SP.key();
-        const auto& this_hit_ptr_v = spacepoint_hit_assn_v.at(spkey);
-        for (auto& hit : this_hit_ptr_v) {
+        const auto& hit_ptr_v = spacepoint_hit_assn_v.at(spkey);
+        for (auto& hit : hit_ptr_v) {
           // TODO: Add hits from induction wires too.
           // Only use hits from the collection plane
           geo::WireID wid = hit->WireID();
@@ -299,7 +296,7 @@ void FlashPredict::produce(art::Event & e)
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
-
+    }
     if(fSBND){// because SBND has an opaque cathode
       std::set<unsigned> tpcWithHitsOpH;
       std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
