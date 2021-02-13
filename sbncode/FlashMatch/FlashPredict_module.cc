@@ -464,7 +464,7 @@ void FlashPredict::loadMetrics()
     rr_spreads.push_back(0.001);
   }
   else {
-    std::vector<double> x, yH, yL;
+    std::vector<double> x, yL, yM, yH;
     for (int ib = 1; ib <= bins; ++ib) {
       double me = temphisto->GetBinContent(ib);
       rr_means.push_back(me);
@@ -479,11 +479,12 @@ void FlashPredict::loadMetrics()
       }
       rr_spreads.push_back(tt);
       yL.push_back(me - tt);
+      yM.push_back(me);
       yH.push_back(me + tt);
     }
-    rr_InvSpl = TSpline3("rr_InvSpl", rr_means.data(), x.data(), rr_means.size());
     rr_l_InvSpl = TSpline3("rr_l_InvSpl", yL.data(), x.data(), yL.size());
-    rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(),  yH.size());
+    rr_m_InvSpl = TSpline3("rr_m_InvSpl", yM.data(), x.data(), yM.size());
+    rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(), yH.size());
   }
   //
   temphisto = (TH1*)infile->Get("pe_h1");
@@ -495,7 +496,7 @@ void FlashPredict::loadMetrics()
     pe_spreads.push_back(0.001);
   }
   else {
-    std::vector<double> x, yH, yL;
+    std::vector<double> x, yL, yM, yH;
     for (int ib = 1; ib <= bins; ++ib) {
       double me = temphisto->GetBinContent(ib);
       pe_means.push_back(me);
@@ -510,10 +511,11 @@ void FlashPredict::loadMetrics()
       }
       pe_spreads.push_back(tt);
       yL.push_back(me - tt);
+      yM.push_back(me);
       yH.push_back(me + tt);
     }
-    pe_InvSpl = TSpline3("pe_InvSpl", pe_means.data(), x.data(), pe_means.size());
     pe_l_InvSpl = TSpline3("pe_l_InvSpl", yL.data(), x.data(), yL.size());
+    pe_m_InvSpl = TSpline3("pe_m_InvSpl", yM.data(), x.data(), yM.size());
     pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
   }
 
@@ -680,28 +682,28 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 double FlashPredict::hypoFlashX_splines()
 {
   double hX, mX, lX;
-  double rr_X = rr_InvSpl.Eval(_flash_r);
-  double rr_hX = rr_h_InvSpl.Eval(_flash_r);
   double rr_lX = rr_l_InvSpl.Eval(_flash_r);
-  if(0.<rr_X && rr_X<fDriftDistance) mX = rr_X;
+  double rr_mX = rr_m_InvSpl.Eval(_flash_r);
+  double rr_hX = rr_h_InvSpl.Eval(_flash_r);
+  if(0.<rr_mX && rr_mX<fDriftDistance) mX = rr_mX;
   else mX = (_flash_r<rr_means[0]) ? 0. : fDriftDistance;
   hX = (0.<rr_hX && rr_hX<fDriftDistance) ? rr_hX : mX;
   lX = (0.<rr_lX && rr_lX<fDriftDistance) ? rr_lX : mX;
   double rr_hypoX =  (lX + hX)/2.;
-  double rr_hypoXWgt =  2./std::abs(lX - hX);
+  double rr_hypoXWgt =  1./std::abs(lX - hX);
 
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
     return rr_hypoX;
 
-  double pe_X = pe_InvSpl.Eval(_flash_ratio);
-  double pe_hX = pe_h_InvSpl.Eval(_flash_ratio);
   double pe_lX = pe_l_InvSpl.Eval(_flash_ratio);
-  if(0.<pe_X && pe_X<fDriftDistance) mX = pe_X;
+  double pe_mX = pe_m_InvSpl.Eval(_flash_ratio);
+  double pe_hX = pe_h_InvSpl.Eval(_flash_ratio);
+  if(0.<pe_mX && pe_mX<fDriftDistance) mX = pe_mX;
   else mX = (_flash_ratio<pe_means[0]) ? 0. : fDriftDistance;
   hX = (0.<pe_hX && pe_hX<fDriftDistance) ? pe_hX : mX;
   lX = (0.<pe_lX && pe_lX<fDriftDistance) ? pe_lX : mX;
   double pe_hypoX =  (lX + hX)/2.;
-  double pe_hypoXWgt =  2./std::abs(lX - hX);
+  double pe_hypoXWgt =  1./std::abs(lX - hX);
 
   return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
 }

@@ -165,9 +165,9 @@ private:
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
-  TSpline3 rr_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
-  TSpline3 pe_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
   std::unique_ptr<TH1D> fOpHitsTimeHist;
+  TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
+  TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
