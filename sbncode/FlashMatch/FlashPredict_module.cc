@@ -523,7 +523,7 @@ void FlashPredict::loadMetrics()
 }
 
 
-bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
+bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 {
   double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
@@ -547,7 +547,7 @@ bool FlashPredict::computeChargeMetrics(flashmatch::QCluster_t& qClusters)
 }
 
 
-bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits)
+bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 {
   double sum = 0.;
   double sum_PE = 0.;
@@ -644,7 +644,8 @@ bool FlashPredict::computeFlashMetrics(std::set<unsigned>& tpcWithHits)
 }
 
 
-bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
+bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
+                                const int pdgc)
 {
   _score = 0.;
   unsigned tcount = 0;
@@ -677,7 +678,7 @@ bool FlashPredict::computeScore(std::set<unsigned>& tpcWithHits, int pdgc)
 }
 
 
-double FlashPredict::hypoFlashX_splines()
+double FlashPredict::hypoFlashX_splines() const
 {
   double lX = 0., mX = 0., hX = fDriftDistance;
   if(_flash_r < rrMax){//don't bother to interpolate otherwise
@@ -804,7 +805,7 @@ void FlashPredict::AddDaughters(
   const std::map<size_t, size_t>& pfpMap,
   const art::Ptr<recob::PFParticle>& pfp_ptr,
   const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
-  std::vector<art::Ptr<recob::PFParticle>>& pfp_v)
+  std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const
 {
   auto daughters = pfp_ptr->Daughters();
   pfp_v.push_back(pfp_ptr);
@@ -821,22 +822,23 @@ void FlashPredict::AddDaughters(
 
 
 inline
-double FlashPredict::scoreTerm(double m, double n,
-                               double mean, double spread)
+double FlashPredict::scoreTerm(const double m, const double n,
+                               const double mean, const double spread) const
 {
   return std::abs(std::abs(m - n) - mean) / spread;
 }
 
 
 inline
-double FlashPredict::scoreTerm(double m,
-                               double mean, double spread)
+double FlashPredict::scoreTerm(const double m,
+                               const double mean, const double spread) const
 {
   return std::abs(m - mean) / spread;
 }
 
 
-bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h)
+bool FlashPredict::pfpNeutrinoOnEvent(
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const
 {
   for (auto const& p : (*pfp_h)) {
     unsigned pfpPDGC = std::abs(p.PdgCode());
@@ -850,8 +852,9 @@ bool FlashPredict::pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::
 }
 
 
-void FlashPredict::copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHits,
-                                          art::Handle<std::vector<recob::OpHit>>& ophit_h)
+void FlashPredict::copyOpHitsInBeamWindow(
+  std::vector<recob::OpHit>& opHits,
+  const art::Handle<std::vector<recob::OpHit>>& ophit_h) const
 {
   double s = fBeamWindowStart;
   double e = fBeamWindowEnd;
@@ -878,7 +881,8 @@ bool FlashPredict::getOpHitsInFlash(std::vector<recob::OpHit>& opHits)
 }
 
 
-bool FlashPredict::createOpHitsTimeHist(std::vector<recob::OpHit>& opHits)
+bool FlashPredict::createOpHitsTimeHist(
+  const std::vector<recob::OpHit>& opHits) const
 {
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
@@ -924,8 +928,8 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
 }
 
 
-bool FlashPredict::isPDRelevant(int pdChannel,
-                                std::set<unsigned>& tpcWithHits)
+bool FlashPredict::isPDRelevant(const int pdChannel,
+                                const std::set<unsigned>& tpcWithHits) const
 {
   if (fICARUS) {
     // BUG: I believe this function is not working, every now and then
@@ -947,7 +951,7 @@ bool FlashPredict::isPDRelevant(int pdChannel,
 
 
 // TODO: find better, less hacky solution
-unsigned FlashPredict::icarusPDinTPC(int pdChannel)
+unsigned FlashPredict::icarusPDinTPC(const int pdChannel) const
 {
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   if(fCryostat == 0) p.SetX((p.X() + 222.)/2. - 222.);//OpDets are outside the TPCs
@@ -957,7 +961,7 @@ unsigned FlashPredict::icarusPDinTPC(int pdChannel)
 
 
 // TODO: find better, less hacky solution
-unsigned FlashPredict::sbndPDinTPC(int pdChannel)
+unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
 {
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
@@ -1127,10 +1131,11 @@ void FlashPredict::updateBookKeeping()
 
 
 template <typename Stream>
-void FlashPredict::printMetrics(std::string metric, int pdgc,
-                                std::set<unsigned>& tpcWithHits,
-                                double term,
-                                Stream&& out)
+void FlashPredict::printMetrics(const std::string metric,
+                                const int pdgc,
+                                const std::set<unsigned>& tpcWithHits,
+                                const double term,
+                                Stream&& out) const
 {
   int isl = int(fNBins * (_charge_x / fDriftDistance));
   std::string tpcs;

@@ -89,10 +89,10 @@ private:
   // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
   void initTree(void);
   void loadMetrics(void);
-  bool computeChargeMetrics(flashmatch::QCluster_t& qClusters);
-  bool computeFlashMetrics(std::set<unsigned>& tpcWithHits);
-  bool computeScore(std::set<unsigned>& tpcWithHits, int pdgc);
-  double hypoFlashX_splines();
+  bool computeChargeMetrics(const flashmatch::QCluster_t& qClusters);
+  bool computeFlashMetrics(const std::set<unsigned>& tpcWithHits);
+  bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
+  double hypoFlashX_splines() const;
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const art::Ptr<recob::PFParticle>& particle,
@@ -103,21 +103,24 @@ private:
   void AddDaughters(const std::map<size_t, size_t>& pfpMap,
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
-                    std::vector<art::Ptr<recob::PFParticle>>& pfp_v);
-  double scoreTerm(double m, double n,
-                   double mean, double spread);
-  double scoreTerm(double m,
-                   double mean, double spread);
-  bool pfpNeutrinoOnEvent(const art::ValidHandle<std::vector<recob::PFParticle> >& pfp_h);
-  void copyOpHitsInBeamWindow(std::vector<recob::OpHit>& opHitSubset,
-                              art::Handle<std::vector<recob::OpHit>>& ophit_h);
+                    std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
+  double scoreTerm(const double m, const double n,
+                   const double mean, const double spread) const;
+  double scoreTerm(const double m,
+                   const double mean, const double spread) const;
+  bool pfpNeutrinoOnEvent(
+    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const;
+  void copyOpHitsInBeamWindow(
+    std::vector<recob::OpHit>& opHits,
+    const art::Handle<std::vector<recob::OpHit>>& ophit_h) const;
   bool getOpHitsInFlash(std::vector<recob::OpHit>& opHits);
-  bool createOpHitsTimeHist(std::vector<recob::OpHit>& opHits);
+  bool createOpHitsTimeHist(
+    const std::vector<recob::OpHit>& opHits) const;
   bool findMaxPeak(std::vector<recob::OpHit>& opHits);
-  bool isPDRelevant(int pdChannel,
-                    std::set<unsigned>& tpcWithHits);
-  unsigned sbndPDinTPC(int pdChannel);
-  unsigned icarusPDinTPC(int pdChannel);
+  bool isPDRelevant(const int pdChannel,
+                    const std::set<unsigned>& tpcWithHits) const;
+  unsigned sbndPDinTPC(const int pdChannel) const;
+  unsigned icarusPDinTPC(const int pdChannel) const;
   double driftDistance(const double x) const;
   unsigned driftVolume(const double x) const;
   // bool isPDInCryoTPC(double pd_x, size_t itpc);
@@ -127,9 +130,11 @@ private:
   void printBookKeeping(Stream&& out);
   void updateBookKeeping();
   template <typename Stream>
-  void printMetrics(std::string metric, int pdgc,
-                    std::set<unsigned>& tpcWithHits, double term,
-                    Stream&& out);
+  void printMetrics(const std::string metric,
+                    const int pdgc,
+                    const std::set<unsigned>& tpcWithHits,
+                    const double term,
+                    Stream&& out) const;
 
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
