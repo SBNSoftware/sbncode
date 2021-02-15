@@ -192,6 +192,22 @@ private:
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
 
+  struct ChargeDigest {
+     size_t pId;
+     int pfpPDGC;
+     art::Ptr<recob::PFParticle> pfp_ptr;
+     flashmatch::QCluster_t qClusters;
+     std::set<unsigned> tpcWithHits;
+    ChargeDigest() = default;
+    ChargeDigest(const size_t pId_, const int pfpPDGC_,
+                 const art::Ptr<recob::PFParticle>& pfp_ptr_,
+                 const flashmatch::QCluster_t& qClusters_,
+                 const std::set<unsigned>& tpcWithHits_) :
+      pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
+      qClusters(qClusters_), tpcWithHits(tpcWithHits_)
+      {}
+  };
+
   const int kQNoOpHScr = -1;
   const int kNoChrgScr = -2;
   const int k0VUVPEScr = -3;

@@ -225,6 +225,7 @@ void FlashPredict::produce(art::Event & e)
   std::map<size_t, size_t> pfpMap;
   for (size_t p=0; p<pfp_h->size(); p++) pfpMap[pfp_h->at(p).Self()] = p;
 
+  std::map<double, ChargeDigest, std::greater<double>> chargeDigestMap;
   // Loop over pandora pfp particles
   for (size_t pId=0; pId<pfp_h->size(); pId++) {
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
@@ -243,6 +244,7 @@ void FlashPredict::produce(art::Event & e)
     AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
 
     double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
+    double totalCharge = 0;
     //  loop over all mothers and daughters, fill qCluster
     for (auto& pfp_md: pfp_ptr_v) {
       auto key = pfp_md.key();
@@ -290,12 +292,23 @@ void FlashPredict::produce(art::Event & e)
           auto itpc = wid.TPC;
           tpcWithHits.insert(itpc);
           const auto charge(hit->Integral());
+          totalCharge += charge;
           qClusters.emplace_back(pos[0], pos[1], pos[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
-    }
+    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr, qClusters, tpcWithHits);
+    }//TODO: pack this into a function
+  } // over all PFParticles
+
+  for(auto& chargeDigest : chargeDigestMap) {
+    const size_t pId = chargeDigest.second.pId;
+    const int pfpPDGC = chargeDigest.second.pfpPDGC;
+    const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
+    const auto& qClusters = chargeDigest.second.qClusters;
+    const auto& tpcWithHits = chargeDigest.second.tpcWithHits;
+
     if(fSBND){// because SBND has an opaque cathode
       std::set<unsigned> tpcWithHitsOpH;
       std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
@@ -336,8 +349,7 @@ void FlashPredict::produce(art::Event & e)
       T0_v->push_back(anab::T0(_flash_time, _countPE, pId, _hypo_x, _score));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
-  } // over all PFparticles
-
+  } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
   updateBookKeeping();
 
