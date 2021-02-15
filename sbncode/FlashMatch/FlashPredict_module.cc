@@ -124,6 +124,7 @@ void FlashPredict::produce(art::Event & e)
   _flash_r       = -9999.;
   _flash_ratio   = -9999.;
   _hypo_x        = -9999.;
+  _hypo_x_fit    = -9999.;
   _score         = -9999.;
   bk.events++;
 
@@ -382,6 +383,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
   _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_fit", &_hypo_x_fit, "hypo_x_fit/D");
   _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
   _flashmatch_nuslice_tree->Branch("scr_y", &_scr_y, "scr_y/D");
   _flashmatch_nuslice_tree->Branch("scr_z", &_scr_z, "scr_z/D");
@@ -402,6 +404,9 @@ void FlashPredict::loadMetrics()
   mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
   TFile *infile = new TFile(fname.c_str(), "READ");
   if(!infile->IsOpen()) {
+    mf::LogError("FlashPredict")
+      << "Could not find the light-charge match root file '"
+      << fname << "'!\n";
     throw cet::exception("FlashPredict")
       << "Could not find the light-charge match root file '"
       << fname << "'!\n";
@@ -410,8 +415,16 @@ void FlashPredict::loadMetrics()
   if(!metricsInFile->Contains("dy_h1") ||
      !metricsInFile->Contains("dz_h1") ||
      !metricsInFile->Contains("rr_h1") ||
-     !metricsInFile->Contains("pe_h1"))
+     !metricsInFile->Contains("pe_h1") ||
+     !metricsInFile->Contains("rr_fit_l") ||
+     !metricsInFile->Contains("rr_fit_m") ||
+     !metricsInFile->Contains("rr_fit_h") ||
+     !metricsInFile->Contains("pe_fit_l") ||
+     !metricsInFile->Contains("pe_fit_m") ||
+     !metricsInFile->Contains("pe_fit_h"))
   {
+    mf::LogError("FlashPredict")
+      << "The metrics file lacks at least one metric.";
     throw cet::exception("FlashPredict")
       << "The metrics file lacks at least one metric.";
   }
@@ -494,6 +507,18 @@ void FlashPredict::loadMetrics()
     rr_l_InvSpl = TSpline3("rr_l_InvSpl", yL.data(), x.data(), yL.size());
     rr_m_InvSpl = TSpline3("rr_m_InvSpl", yM.data(), x.data(), yM.size());
     rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(), yH.size());
+    unsigned s = 0;
+    for(auto& rrF : rrFits){
+      std::string nold = "rr_fit_" + suffixes[s];
+      std::string nnew = "rrFit_" + suffixes[s];
+      TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
+      auto params = tempF1->GetParameters();
+      rrF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
+      rrF.f->SetParameters(params);
+      rrF.min = rrF.f->GetMinimum(0., fDriftDistance);
+      rrF.max = rrF.f->GetMaximum(0., fDriftDistance);
+      s++;
+    }
   }
   //
   temphisto = (TH1*)infile->Get("pe_h1");
@@ -527,6 +552,18 @@ void FlashPredict::loadMetrics()
     pe_l_InvSpl = TSpline3("pe_l_InvSpl", yL.data(), x.data(), yL.size());
     pe_m_InvSpl = TSpline3("pe_m_InvSpl", yM.data(), x.data(), yM.size());
     pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
+    unsigned s = 0;
+    for(auto& peF : peFits){
+      std::string nold = "pe_fit_" + suffixes[s];
+      std::string nnew = "peFit_" + suffixes[s];
+      TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
+      auto params = tempF1->GetParameters();
+      peF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
+      peF.f->SetParameters(params);
+      peF.min = peF.f->GetMinimum(0., fDriftDistance);
+      peF.max = peF.f->GetMaximum(0., fDriftDistance);
+      s++;
+    }
   }
 
   infile->Close();
@@ -629,6 +666,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     _hypo_x = hypoFlashX_splines();
+    _hypo_x_fit = hypoFlashX_fits();
     _countPE = std::round(_flash_pe);
     return true;
   }
@@ -723,6 +761,65 @@ double FlashPredict::hypoFlashX_splines() const
   }
   double pe_hypoX =  (lX + hX)/2.;
   double pe_hypoXWgt =  1./std::abs(lX - hX);
+
+  return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
+}
+
+
+double FlashPredict::hypoFlashX_fits() const
+{
+  std::vector<double> rrXs;
+  double rr_hypoX, rr_hypoXWgt;
+  for(const auto& rrF : rrFits){
+    if(rrF.min < _flash_r && _flash_r < rrF.max)
+      rrXs.push_back(rrF.f->GetX(_flash_r, 0., fDriftDistance, kEps));
+  }
+  if(rrXs.size() > 1){
+    rr_hypoX = (rrXs[0] + rrXs[1])/2.;
+    rr_hypoXWgt =  1./std::abs(rrXs[0] - rrXs[1]);
+  }
+  else if(rrXs.size() == 0){
+    rr_hypoX = 0.;
+    rr_hypoXWgt = 0.;
+  }
+  else{//(rrXs.size() == 1)
+    if(_flash_r < rrFits[2].min){
+      rr_hypoX =  rrXs[0]/2.;
+      rr_hypoXWgt = 1./std::abs(rrXs[0]);
+    }
+    else{
+      rr_hypoX = (rrXs[0] + fDriftDistance)/2.;
+      rr_hypoXWgt = 1./std::abs(rrXs[0] - fDriftDistance);
+    }
+  }
+
+  if(!fUseUncoatedPMT && !fUseOppVolMetric)
+    return rr_hypoX;
+
+  std::vector<double> peXs;
+  double pe_hypoX, pe_hypoXWgt;
+  for(const auto& peF : peFits){
+    if(peF.min < _flash_ratio && _flash_ratio < peF.max)
+      peXs.push_back(peF.f->GetX(_flash_ratio, 0., fDriftDistance, kEps));
+  }
+  if(peXs.size() > 1){
+    pe_hypoX = (peXs[0] + peXs[1])/2.;
+    pe_hypoXWgt =  1./std::abs(peXs[0] - peXs[1]);
+  }
+  else if(peXs.size() == 0){
+    pe_hypoX = 0.;
+    pe_hypoXWgt = 0.;
+  }
+  else{// peXs.size() == 1
+    if(_flash_ratio < peFits[2].min){
+      pe_hypoX =   peXs[0]/2.;
+      pe_hypoXWgt =  1./std::abs(peXs[0]);
+    }
+    else{
+      pe_hypoX = (peXs[0] + fDriftDistance)/2.;
+      pe_hypoXWgt = 1./std::abs(peXs[0] - fDriftDistance);
+    }
+  }
 
   return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
 }

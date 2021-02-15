@@ -45,6 +45,7 @@
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
 #include "TTree.h"
+#include "TF1.h"
 #include "TFile.h"
 #include "TH1.h"
 #include "TSpline.h"
@@ -93,6 +94,7 @@ private:
   bool computeFlashMetrics(const std::set<unsigned>& tpcWithHits);
   bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
   double hypoFlashX_splines() const;
+  double hypoFlashX_fits() const;
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const art::Ptr<recob::PFParticle>& particle,
@@ -176,6 +178,15 @@ private:
   double rrMax, peMax;
   TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
   TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
+  struct Fits {
+    double min, max;
+    std::unique_ptr<TF1> f;
+  };
+  std::array<Fits, 3> rrFits;
+  std::array<Fits, 3> peFits;
+  const std::array<std::string, 3> suffixes{"l", "h", "m"};
+  // const std::string kPolFit = "pol3";
+  const double kEps = 1e-2;
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
@@ -187,7 +198,7 @@ private:
   // TODO: why not charge_time?
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  double _hypo_x;
+  double _hypo_x, _hypo_x_fit;
   unsigned _evt, _run, _sub, _slices, _countPE;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
