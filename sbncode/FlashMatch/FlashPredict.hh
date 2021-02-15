@@ -117,8 +117,9 @@ private:
   bool createOpHitsTimeHist(
     const std::vector<recob::OpHit>& opHits) const;
   bool findMaxPeak(std::vector<recob::OpHit>& opHits);
-  bool isPDRelevant(const int pdChannel,
-                    const std::set<unsigned>& tpcWithHits) const;
+  bool isPDInCryo(const int pdChannel) const;
+  bool isSBNDPDRelevant(const int pdChannel,
+                        const std::set<unsigned>& tpcWithHits) const;
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
   double driftDistance(const double x) const;

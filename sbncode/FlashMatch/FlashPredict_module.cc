@@ -571,7 +571,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 
   double maxPE = -9999.;
   for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
-    if(!isPDRelevant(oph->OpChannel(), tpcWithHits)) continue;
+    if(fSBND && !isSBNDPDRelevant(oph->OpChannel(), tpcWithHits)) continue;
     auto opDet = geometry->OpDetGeoFromOpChannel(oph->OpChannel());
     auto opDetXYZ = opDet.GetCenter();
 
@@ -872,13 +872,14 @@ void FlashPredict::copyOpHitsInBeamWindow(
   double e = fBeamWindowEnd;
   double m = fMinOpHPE;
   // copy ophits that are inside the time window and with PEs
-  auto peakInWindow =
-    [s, e, m](const recob::OpHit& oph)-> bool
-      {return ((oph.PeakTime() > s) &&
-               (oph.PeakTime() < e) &&
-               (oph.PE() > m)); };
+  auto opHitInWindow =
+    [s, e, m, this](const recob::OpHit& oph)-> bool
+    {return ((oph.PeakTime() > s) &&
+             (oph.PeakTime() < e) &&
+             (oph.PE() > m) &&
+             isPDInCryo(oph.OpChannel())); };
   auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
-                         peakInWindow);
+                         opHitInWindow);
   opHits.resize(std::distance(opHits.begin(), it));
 }
 
@@ -940,23 +941,15 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
 }
 
 
-bool FlashPredict::isPDRelevant(const int pdChannel,
-                                const std::set<unsigned>& tpcWithHits) const
+bool FlashPredict::isPDInCryo(const int pdChannel) const
 {
-  if (fICARUS) {
+  if(fSBND) return true;
+  else if(fICARUS){
     // BUG: I believe this function is not working, every now and then
     // I get ophits from the other cryo
     auto& p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
     // if the channel is in the Cryostat is relevant
     return fGeoCryo->ContainsPosition(p);
-  }
-  else if (fSBND) {
-    // if there's hits on all TPCs all channels are relevant
-    if(tpcWithHits.size() == fNTPC) return true;
-    unsigned pdTPC = sbndPDinTPC(pdChannel);
-    for(auto itpc: tpcWithHits){
-      if(itpc == pdTPC) return true;
-    }
   }
   return false;
 }
@@ -969,6 +962,17 @@ unsigned FlashPredict::icarusPDinTPC(const int pdChannel) const
   if(fCryostat == 0) p.SetX((p.X() + 222.)/2. - 222.);//OpDets are outside the TPCs
   if(fCryostat == 1) p.SetX((p.X() - 222.)/2. + 222.);//OpDets are outside the TPCs
   return (geometry->PositionToTPCID(p)).TPC;
+}
+
+
+bool FlashPredict::isSBNDPDRelevant(const int pdChannel,
+                                    const std::set<unsigned>& tpcWithHits) const
+{
+  // if there's hits on all TPCs all channels are relevant
+  if(tpcWithHits.size() == fNTPC) return true;
+  unsigned pdTPC = sbndPDinTPC(pdChannel);
+  for(auto itpc: tpcWithHits) if(itpc == pdTPC) return true;
+  return false;
 }
 
 
