@@ -29,8 +29,8 @@ import numpy as np
 from time import sleep
 from array import array
 
-from ROOT import TStyle, TCanvas, TGraph, TGraphErrors
-from ROOT import TH1D, TH2D, TProfile, TFile
+from ROOT import TStyle, TCanvas, TColor, TGraph, TGraphErrors
+from ROOT import TH1D, TH2D, TProfile, TFile, TF1
 from ROOT import gROOT
 import ROOT
 # import project_utilities
@@ -251,6 +251,10 @@ def generator(nuslice_tree, rootfile, pset):
         unfolded_score_scatter.Fill(qXGl, score)
         match_score_scatter.Fill(qX, score)
         match_score_hist.Fill(score)
+
+    errors = [1, 0, -1]
+    fitname_suffix = ["_h", "_m", "_l"]
+
     metrics_filename = 'fm_metrics_' + detector + '.root'
     hfile = gROOT.FindObject(metrics_filename)
     if hfile:
@@ -267,9 +271,31 @@ def generator(nuslice_tree, rootfile, pset):
     rr_hist.Write()
     rr_prof.Write()
     rr_h1.Write()
+    rr_fit_funcs = []
+    for e,suf in zip(errors, fitname_suffix):
+        yvals = [a + e*b for a, b in zip(rr_means, rr_spreads)]
+        graph = TGraph(n_bins,
+                       array('f', xvals), array('f', yvals))
+        name = "rr_fit" + suf
+        print("Fitting: ", name)
+        f = TF1(name, "pol3")
+        graph.Fit(f)
+        f.Write()
+        rr_fit_funcs.append(f)
     pe_hist.Write()
     pe_prof.Write()
     pe_h1.Write()
+    pe_fit_funcs = []
+    for e,suf in zip(errors, fitname_suffix):
+        yvals = [a + e*b for a, b in zip(pe_means, pe_spreads)]
+        graph = TGraph(n_bins,
+                       array('f', xvals), array('f', yvals))
+        name = "pe_fit" + suf
+        print("Fitting: ", name)
+        f = TF1(name, "pol3")
+        graph.Fit(f)
+        f.Write()
+        pe_fit_funcs.append(f)
     match_score_scatter.Write()
     oldunfolded_score_scatter.Write()
     unfolded_score_scatter.Write()
@@ -282,7 +308,7 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', dy_means),
                            array('f', xerrs), array('f', dy_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
     canv.Print("dy.pdf")
@@ -292,7 +318,7 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', dz_means),
                            array('f', xerrs), array('f', dz_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
     canv.Print("dz.pdf")
@@ -302,9 +328,12 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', rr_means),
                            array('f', xerrs), array('f', rr_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
+    for f in rr_fit_funcs:
+        f.SetLineColor(ROOT.kOrange+7)
+        f.DrawF1(0., drift_distance, "lsame")
     canv.Print("rr.pdf")
     canv.Update()
 
@@ -312,9 +341,12 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', pe_means),
                            array('f', xerrs), array('f', pe_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
+    for f in pe_fit_funcs:
+        f.SetLineColor(ROOT.kOrange+7)
+        f.DrawF1(0., drift_distance, "lsame")
     canv.Print("pe.pdf")
     canv.Update()
 
