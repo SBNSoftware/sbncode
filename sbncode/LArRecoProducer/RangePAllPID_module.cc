@@ -18,6 +18,8 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
+#include "TDatabasePDG.h"
+
 #include "LArReco/TrackMomentumCalculator.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 
@@ -47,14 +49,13 @@ private:
 
   trkf::TrackMomentumCalculator fRangeCalculator;
   art::InputTag fTrackLabel;
+  double fMuonMass;
+  double fPionMass;
 
 };
+
 const static std::vector<int> PIDs {13, 211, 2212};
 const static std::vector<std::string> names {"muon", "pion", "proton"};
-
-// P.A. Zylaet al.(Particle Data Group), Prog. Theor. Exp. Phys.2020, 083C01 (2020)
-const static double MUON_MASS = 0.10565837; // GeV
-const static double PION_MASS = 0.13957039; // GeV 
 
 sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
   : EDProducer{p},
@@ -65,12 +66,14 @@ sbn::RangePAllPID::RangePAllPID(fhicl::ParameterSet const& p)
     produces<std::vector<sbn::RangeP>>(names[i]);
     produces<art::Assns<recob::Track, sbn::RangeP>>(names[i]); 
   }
+
+  const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
+  fMuonMass = PDGTable->GetParticle(13)->Mass();
+  fPionMass = PDGTable->GetParticle(211)->Mass();
 }
 
 void sbn::RangePAllPID::produce(art::Event& e)
 {
-
-  // Implementation of required member function here.
   art::Handle<std::vector<recob::Track>> track_handle;
   e.getByLabel(fTrackLabel, track_handle);
 
@@ -83,9 +86,9 @@ void sbn::RangePAllPID::produce(art::Event& e)
 
     for (const art::Ptr<recob::Track> track: tracks) {
       sbn::RangeP rangep;
-      // Rescale the input and output as described by https://inspirehep.net/literature/1766384
+      // Rescale the input and output as described by https://inspirehep.net/literature/1766384 (eq. 6.2)
       if (PIDs[i] == 211) {
-        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length() * (MUON_MASS / PION_MASS), 13) * (PION_MASS / MUON_MASS); 
+        rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length() * (fMuonMass / fPionMass), 13) * (fPionMass / fMuonMass); 
       }
       else {
         rangep.range_p = fRangeCalculator.GetTrackMomentum(track->Length(), PIDs[i]);
