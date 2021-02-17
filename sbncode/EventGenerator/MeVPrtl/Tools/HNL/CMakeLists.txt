@@ -26,6 +26,7 @@ simple_plugin( Kaon2HNLFlux tool
 			sbncode_EventGenerator_MeVPrtl_Products
 			nugen_EventGeneratorBase_GENIE
 			nurandom_RandomUtils_NuRandomService_service
+			gsl
 )
 
 simple_plugin( HNLMakeDecay tool
