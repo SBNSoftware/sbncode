@@ -376,7 +376,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
 
   // pion
   ret.mom.emplace_back(PI);
-  ret.pdg.push_back(-211*lep_pdg_sign); 
+  ret.pdg.push_back(211*lep_pdg_sign); // negative of lepton-charge has same-sign-PDG code
 
   return ret;
 }

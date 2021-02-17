@@ -279,7 +279,7 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
     decay.daughter_pdg.push_back(daughter_pdg);
   }
   else {
-    decay.daughter_pdg.push_back(daughter_pdg);
+    decay.daughter_pdg.push_back(-daughter_pdg);
   }
 
   return true;
