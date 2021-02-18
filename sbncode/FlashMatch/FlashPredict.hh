@@ -175,9 +175,9 @@ private:
   // root stuff
   TTree* _flashmatch_nuslice_tree;
   std::unique_ptr<TH1D> fOpHitsTimeHist;
-  double rrMax, peMax;
-  TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
-  TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
+  // double rrMax, peMax;
+  // TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
+  // TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
   struct Fits {
     double min, max;
     std::unique_ptr<TF1> f;
@@ -198,7 +198,7 @@ private:
   // TODO: why not charge_time?
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  double _hypo_x, _hypo_x_fit;
+  double _hypo_x;//, _hypo_x_fit;
   unsigned _evt, _run, _sub, _slices, _countPE;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
