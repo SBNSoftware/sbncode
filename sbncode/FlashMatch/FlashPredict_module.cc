@@ -515,8 +515,8 @@ void FlashPredict::loadMetrics()
       auto params = tempF1->GetParameters();
       rrF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
       rrF.f->SetParameters(params);
-      rrF.min = rrF.f->GetMinimum(0., fDriftDistance);
-      rrF.max = rrF.f->GetMaximum(0., fDriftDistance);
+      rrF.min = rrF.f->GetMinimum(0., fDriftDistance, kEps);
+      rrF.max = rrF.f->GetMaximum(0., fDriftDistance, kEps);
       s++;
     }
   }
@@ -560,8 +560,8 @@ void FlashPredict::loadMetrics()
       auto params = tempF1->GetParameters();
       peF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
       peF.f->SetParameters(params);
-      peF.min = peF.f->GetMinimum(0., fDriftDistance);
-      peF.max = peF.f->GetMaximum(0., fDriftDistance);
+      peF.min = peF.f->GetMinimum(0., fDriftDistance, kEps);
+      peF.max = peF.f->GetMaximum(0., fDriftDistance, kEps);
       s++;
     }
   }
@@ -771,8 +771,16 @@ double FlashPredict::hypoFlashX_fits() const
   std::vector<double> rrXs;
   double rr_hypoX, rr_hypoXWgt;
   for(const auto& rrF : rrFits){
-    if(rrF.min < _flash_r && _flash_r < rrF.max)
-      rrXs.push_back(rrF.f->GetX(_flash_r, 0., fDriftDistance, kEps));
+    if(rrF.min < _flash_r && _flash_r < rrF.max){
+      try{
+        rrXs.push_back(rrF.f->GetX(_flash_r, 0., fDriftDistance, kEps));
+      }catch (...) {
+        mf::LogWarning("FlashPredict")
+          << "Couldn't find root with rrFits.\n"
+          << "min/_flash_ratio/max:"
+          << rrF.min << "/" << _flash_r << "/" << rrF.max;
+      }
+    }
   }
   if(rrXs.size() > 1){
     rr_hypoX = (rrXs[0] + rrXs[1])/2.;
@@ -799,8 +807,16 @@ double FlashPredict::hypoFlashX_fits() const
   std::vector<double> peXs;
   double pe_hypoX, pe_hypoXWgt;
   for(const auto& peF : peFits){
-    if(peF.min < _flash_ratio && _flash_ratio < peF.max)
-      peXs.push_back(peF.f->GetX(_flash_ratio, 0., fDriftDistance, kEps));
+    if(peF.min < _flash_ratio && _flash_ratio < peF.max){
+      try{
+        peXs.push_back(peF.f->GetX(_flash_ratio, 0., fDriftDistance, kEps));
+      }catch (...) {
+        mf::LogWarning("FlashPredict")
+          << "Couldn't find root with peFits.\n"
+          << "min/_flash_ratio/max:"
+          << peF.min << "/" << _flash_ratio << "/" << peF.max;
+      }
+    }
   }
   if(peXs.size() > 1){
     pe_hypoX = (peXs[0] + peXs[1])/2.;

@@ -186,7 +186,7 @@ private:
   std::array<Fits, 3> peFits;
   const std::array<std::string, 3> suffixes{"l", "h", "m"};
   // const std::string kPolFit = "pol3";
-  const double kEps = 1e-2;
+  const double kEps = 1e-4;
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
