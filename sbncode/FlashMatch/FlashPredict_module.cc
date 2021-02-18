@@ -99,7 +99,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   loadMetrics();
 
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
-  consumes<std::vector<recob::Slice>>(fPandoraProducer);
+  // consumes<std::vector<recob::Slice>>(fPandoraProducer);
   consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
@@ -116,7 +116,7 @@ void FlashPredict::produce(art::Event & e)
   _evt = e.event();
   _sub = e.subRun();
   _run = e.run();
-  _slices        = 0;
+  // _slices        = 0;
   _countPE       = 0;
   _flash_time    = -9999.;
   _flash_pe      = -9999.;
@@ -141,17 +141,17 @@ void FlashPredict::produce(art::Event & e)
     return;
   }
 
-  auto const& slice_h = e.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
-  _slices = slice_h.product()->size();
-  if (_slices == 0) {
-    mf::LogWarning("FlashPredict")
-      << "No recob:Slice on event. Skipping...";
-    bk.noslice++;
-    updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
-    return;
-  }
+  // auto const& slice_h = e.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
+  // _slices = slice_h.product()->size();
+  // if (_slices == 0) {
+  //   mf::LogWarning("FlashPredict")
+  //     << "No recob:Slice on event. Skipping...";
+  //   bk.noslice++;
+  //   updateBookKeeping();
+  //   e.put(std::move(T0_v));
+  //   e.put(std::move(pfp_t0_assn_v));
+  //   return;
+  // }
 
   // grab spacepoints associated with PFParticles
   art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, e, fPandoraProducer);
@@ -367,7 +367,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("evt", &_evt, "evt/I");
   _flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
   _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
-  _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
+  // _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
   _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
   _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
   _flashmatch_nuslice_tree->Branch("flash_y", &_flash_y, "flash_y/D");
@@ -1210,7 +1210,7 @@ void FlashPredict::printBookKeeping(Stream&& out)
     << "Job Tally\n"
     << "\tEvents:       \t  " << bk.events << "\n";
   if(bk.nopfpneutrino) m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino << "\n";
-  if(bk.noslice)       m << "\tNo Slice:         \t -" << bk.noslice       << "\n";
+  // if(bk.noslice)       m << "\tNo Slice:         \t -" << bk.noslice       << "\n";
   if(bk.nonvalidophit) m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit << "\n";
   if(bk.nullophittime) m << "\tNo OpHits in-time:\t -" << bk.nullophittime << "\n";
   m << "\t----------------------\n";
@@ -1245,7 +1245,7 @@ void FlashPredict::updateBookKeeping()
 {
   // account for the reasons that an event could lack
   bk.job_bookkeeping = bk.events
-    - bk.nopfpneutrino - bk.noslice
+    - bk.nopfpneutrino //- bk.noslice
     - bk.nonvalidophit - bk.nullophittime;
 
   // account for the reasons that a particle might lack
@@ -1275,7 +1275,7 @@ void FlashPredict::printMetrics(const std::string metric,
     << "isl:        \t" << isl << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
-    << "_slices:    \t" << std::setw(8) << _slices     << "\n"
+    // << "_slices:    \t" << std::setw(8) << _slices     << "\n"
     << "_flash_time:\t" << std::setw(8) << _flash_time << "\n"
     << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
     << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"

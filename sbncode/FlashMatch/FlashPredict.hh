@@ -38,7 +38,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
-#include "lardataobj/RecoBase/Slice.h"
+// #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -199,7 +199,7 @@ private:
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x;//, _hypo_x_fit;
-  unsigned _evt, _run, _sub, _slices, _countPE;
+  unsigned _evt, _run, _sub, _countPE; //_slices;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
@@ -225,7 +225,7 @@ private:
   const int k0VUVPEScr = -3;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
-    unsigned events, nopfpneutrino, noslice,
+    unsigned events, nopfpneutrino,// noslice,
       nullophittime, nonvalidophit;
 
     int pfp_bookkeeping, scored_pfp;
