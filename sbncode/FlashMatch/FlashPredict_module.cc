@@ -598,6 +598,11 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 
 bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 {
+  auto compareOpHits = [] (const recob::OpHit& oph1, const recob::OpHit& oph2)->bool
+    { return oph1.PE() < oph2.PE(); };
+  auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
+  _flash_x = geometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
+
   double sum = 0.;
   double sum_PE = 0.;
   double sum_PE2 = 0.;
@@ -606,7 +611,6 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
-  double maxPE = -9999.;
   for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
     if(fSBND && !isSBNDPDRelevant(oph->OpChannel(), tpcWithHits)) continue;
     auto opDet = geometry->OpDetGeoFromOpChannel(oph->OpChannel());
@@ -615,11 +619,6 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     std::string op_type = "pmt"; // the label ICARUS has
     if(fSBND) op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
 
-    // _flash_x is the X coord of the opdet where most PE are deposited
-    if(oph->PE()>maxPE){
-      _flash_x = opDetXYZ.X();
-      maxPE = oph->PE();
-    }
     double ophPE2 = oph->PE() * oph->PE();
     sum       += 1.0;
     sum_PE    += oph->PE();
@@ -630,6 +629,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
 
     if(fICARUS){
+      // TODO: change this if block
       if(fUseOppVolMetric){
         unsigned pdVolume = icarusPDinTPC(oph->OpChannel())/fTPCPerDriftVolume;
         geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
@@ -640,6 +640,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
           }
         }
       }
+      // // TODO: for this block instead, needs testing!
+      // if(fUseOppVolMetric && _flash_x != opDetXYZ.X()){
+      //   sum_unPE += oph->PE();
+      // }
     }
     else if(fSBND){
       if(fUseUncoatedPMT && op_type == "pmt_uncoated") {
