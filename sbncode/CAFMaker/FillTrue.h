@@ -38,14 +38,15 @@ namespace caf
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty = false);
 
-  void FillTrueG4Particle(const simb::MCParticle &mcparticle, 
-			  const std::vector<geo::BoxBoundedGeo> &active_volumes,
-			  const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-                          const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
-			  const cheat::BackTrackerService &backtracker,
-			  const cheat::ParticleInventoryService &inventory_service,
-			  const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                          caf::SRTrueParticle &srparticle); 
+  void FillTrueG4Particle(const simb::MCParticle &particle,
+        const std::vector<geo::BoxBoundedGeo> &active_volumes,
+        const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
+        const cheat::BackTrackerService &backtracker,
+        const cheat::ParticleInventoryService &inventory_service,
+        const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                          caf::SRTrueParticle &srparticle);
 
   // TODO: implement
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
@@ -71,7 +72,9 @@ namespace caf
                     TRandom &rand,
                     std::vector<caf::SRFakeReco> &srfakereco);
 
-  std::map<int, std::vector<const sim::IDE*>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels);
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo);
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
+    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
 
 }
 
