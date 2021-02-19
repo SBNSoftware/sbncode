@@ -639,7 +639,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();

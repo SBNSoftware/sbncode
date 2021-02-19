@@ -113,6 +113,7 @@ namespace caf {
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
       const std::vector<caf::SRTrueParticle> &srparticles,
+      const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
       caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
@@ -133,6 +134,46 @@ namespace caf {
       }
     }
     srneutrino.nprim = srneutrino.prim.size();
+
+    // Set of hits per-plane: primary particles
+    {
+      std::array<std::set<unsigned>, 3> planehitIDs;
+      for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+        if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
+          int track_id = srparticles[i_part].G4ID;
+          // Look for hits
+          if (!id_to_truehit_map.count(track_id)) continue;
+          for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
+            if (!h->WireID()) continue;
+            planehitIDs[h->WireID().Plane].insert(h.key());
+          }
+        }
+      }
+
+      srneutrino.plane0nhitprim = planehitIDs[0].size();
+      srneutrino.plane0nhitprim = planehitIDs[1].size();
+      srneutrino.plane0nhitprim = planehitIDs[2].size();
+    }
+
+    // Set of hits per-plane: all particles
+    {
+      std::array<std::set<unsigned>, 3> planehitIDs;
+      for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+        if (srparticles[i_part].interaction_id == (int)i) {
+          int track_id = srparticles[i_part].G4ID;
+          // Look for hits
+          if (!id_to_truehit_map.count(track_id)) continue;
+          for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
+            if (!h->WireID()) continue;
+            planehitIDs[h->WireID().Plane].insert(h.key());
+          }
+        }
+      }
+
+      srneutrino.plane0nhit = planehitIDs[0].size();
+      srneutrino.plane0nhit = planehitIDs[1].size();
+      srneutrino.plane0nhit = planehitIDs[2].size();
+    }
 
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
