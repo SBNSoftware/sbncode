@@ -833,7 +833,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
-    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    static const std::vector<std::string> rangePIDnames {"muon", "pion", "proton"};
     for (std::string pid: rangePIDnames) {
       art::InputTag tag(fParams.TrackRangeLabel() + slice_tag_suff, pid);
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
@@ -921,8 +921,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
-        for (unsigned index = 0; index < 2; index++) {
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> rangePs;
+        for (unsigned index = 0; index < 3; index++) {
           if (fmRanges[index].isValid()) {
             rangePs[index] = fmRanges[index].at(iPart);
           }
