@@ -22,7 +22,7 @@ message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ===========
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules)
+list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
 
 include(CetCMakeEnv)
 cet_cmake_env()
