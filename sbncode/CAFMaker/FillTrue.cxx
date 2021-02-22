@@ -151,8 +151,8 @@ namespace caf {
       }
 
       srneutrino.plane0nhitprim = planehitIDs[0].size();
-      srneutrino.plane0nhitprim = planehitIDs[1].size();
-      srneutrino.plane0nhitprim = planehitIDs[2].size();
+      srneutrino.plane1nhitprim = planehitIDs[1].size();
+      srneutrino.plane2nhitprim = planehitIDs[2].size();
     }
 
     // Set of hits per-plane: all particles
@@ -171,8 +171,8 @@ namespace caf {
       }
 
       srneutrino.plane0nhit = planehitIDs[0].size();
-      srneutrino.plane0nhit = planehitIDs[1].size();
-      srneutrino.plane0nhit = planehitIDs[2].size();
+      srneutrino.plane1nhit = planehitIDs[1].size();
+      srneutrino.plane2nhit = planehitIDs[2].size();
     }
 
     // Set the MCFlux stuff
