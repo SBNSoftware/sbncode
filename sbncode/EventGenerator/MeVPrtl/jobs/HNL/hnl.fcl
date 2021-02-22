@@ -35,6 +35,18 @@ decay_hnl: {
   ReferenceHNLEnergyFromKaonEnergy: 15. # GeV
 }
 
+# KDAR configs
+kaon2hnl_kdar: @local::kaon2hnl
+kaon2hnl_kdar.KDAROnly: true
+
+decay_hnl_kdar: @local::decay_hnl
+decay_hnl_kdar.ReferenceHNLEnergyFromKaonEnergy: 0.494
+
+mixedweight_ray_trace_box_kdar: @local::mixedweight_ray_trace_box
+mixedweight_ray_trace_box_kdar.ReferenceKaonEnergy: 0.494
+mixedweight_ray_trace_box_kdar.ReferenceLabSolidAngle: 1e-2
+mixedweight_ray_trace_box_kdar.MaxWeightFudge: 5
+
 hnl_gen: {
   module_type: MeVPrtlGen
   Deweight: true
@@ -43,9 +55,21 @@ hnl_gen: {
   RayTrace: @local::mixedweight_ray_trace_box
   Decay: @local::decay_hnl
 }
-
 hnl_gen.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
 hnl_gen.RayTrace.ReferenceScndPDG: 13 # muon
+
+hnl_gen_kdar: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl_kdar
+  RayTrace: @local::mixedweight_ray_trace_box_kdar
+  Decay: @local::decay_hnl_kdar
+
+}
+hnl_gen_kdar.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
+hnl_gen_kdar.RayTrace.ReferenceScndPDG: 13 # muon
+
 
 hnl: @local::hnl_gen
 hnl.Deweight: false

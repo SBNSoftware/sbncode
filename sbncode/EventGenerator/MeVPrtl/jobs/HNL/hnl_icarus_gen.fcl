@@ -24,7 +24,7 @@ source: {
 physics:
 {
   producers:{
-    generator: @local::hnl_gen
+    generator: @local::hnl_gen_kdar
     rns:       { module_type: "RandomNumberSaver" }
   }
   filters:  {} 
