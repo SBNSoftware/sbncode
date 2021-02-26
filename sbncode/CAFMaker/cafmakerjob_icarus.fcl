@@ -113,6 +113,7 @@ physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::icarus_calorimetryalgmc.CalAreaConstants
 
 physics.producers.mycafmaker.PandoraTagSuffixes: ["Cryo0", "Cryo1"]
+physics.producers.mycafmaker.HitLabel: "cluster3D"
 physics.producers.mycafmaker.PFParticleLabel:   "pandoraGaus"
 physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGaus"

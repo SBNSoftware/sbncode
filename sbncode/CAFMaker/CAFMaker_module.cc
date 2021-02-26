@@ -559,8 +559,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
 
-  std::map<int, std::vector<const sim::IDE*>> id_to_ide_map = PrepSimChannels(simchannels);
-
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, "generator", mcflux_handle);
 
@@ -586,6 +584,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+
+  // Collect the input TPC reco tags
+  std::vector<std::string> pandora_tag_suffixes;
+  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
+  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
+
+  // collect the TPC hits
+  std::vector<art::Ptr<recob::Hit>> hits;
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+    art::Handle<std::vector<recob::Hit>> thisHits;
+    GetByLabelStrict(evt, fParams.HitLabel() + pandora_tag_suffix, thisHits);
+    if (thisHits.isValid()) {
+      art::fill_ptr_vector(hits, thisHits);
+    }
+  }
+
+  // Prep truth-to-reco-matching info
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get()); 
 
   //#######################################################
   // Fill truths & fake reco
@@ -602,6 +621,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          fActiveVolumes,
                          fTPCVolumes,
                          id_to_ide_map,
+                         id_to_truehit_map,
                          *bt_serv.get(),
                          *pi_serv.get(),
                          mctruths,
@@ -619,7 +639,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
@@ -687,10 +707,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // collect the TPC slices
-  std::vector<std::string> pandora_tag_suffixes;
-  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
-  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
-
   std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
   std::vector<unsigned> slice_tag_indices;
