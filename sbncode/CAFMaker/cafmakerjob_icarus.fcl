@@ -84,8 +84,8 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-
-   mcreco: @local::standard_mcreco
+   mcrecoCryo0: @local::standard_mcreco
+   mcrecoCryo1: @local::standard_mcreco
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_icarus
@@ -98,6 +98,7 @@ physics:
     fmatchCryo0, fmatchCryo1,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    mcrecoCryo1, mcrecoCryo1,
     mycafmaker ]
 
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
