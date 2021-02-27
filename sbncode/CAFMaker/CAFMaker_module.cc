@@ -569,7 +569,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
-  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  GetByLabelStrict(evt, fParams.MCTrackLabel()+slice_tag_suff, mctrack_handle);
   std::vector<art::Ptr<sim::MCTrack>> mctracks;
   if (mctrack_handle.isValid()) {
     art::fill_ptr_vector(mctracks, mctrack_handle);
