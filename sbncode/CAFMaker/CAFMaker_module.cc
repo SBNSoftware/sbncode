@@ -1113,7 +1113,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
         FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
 
         if (fmPID.isValid()) {
