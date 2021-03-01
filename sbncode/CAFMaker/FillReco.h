@@ -37,9 +37,7 @@ namespace caf
 {
 
   void FillShowerVars(const recob::Shower& shower,
-                      const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
-                      const recob::PFParticle *primary,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
                       const geo::GeometryCore *geom,
                       unsigned producer,
@@ -72,11 +70,15 @@ namespace caf
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
-                     const recob::PFParticle& particle,
-                     const recob::PFParticle *primary,
                      unsigned producer,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
+
+  void FillPFPVars(const recob::PFParticle &particle,
+                   const recob::PFParticle *primary,
+                   const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   caf::SRPFP& srpfp,
+                   bool allowEmpty= false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,

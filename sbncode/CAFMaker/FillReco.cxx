@@ -74,9 +74,7 @@ namespace caf
 
   //......................................................................
   void FillShowerVars(const recob::Shower& shower,
-                      const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
-                      const recob::PFParticle *primary,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
                       const geo::GeometryCore *geom,
                       unsigned producer,
@@ -113,16 +111,6 @@ namespace caf
 
     if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
         srshower.density = srshower.bestplane_energy / srshower.len;
-
-    // Fill in hierarchy info
-    srshower.ID = particle.Self();
-    srshower.slcID = (primary) ? primary->Self() : -1;
-    for (unsigned id: particle.Daughters()) {
-      srshower.daughters.push_back(id);
-    }
-    srshower.parent = particle.Parent();
-    srshower.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
-      || (primary && particle.Parent() == primary->Self());
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
@@ -431,8 +419,6 @@ namespace caf
   // TODO: crt matching
 
   void FillTrackVars(const recob::Track& track,
-                     const recob::PFParticle &particle,
-                     const recob::PFParticle *primary,
                      unsigned producer,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
@@ -460,20 +446,34 @@ namespace caf
     srtrack.end.y = track.End().Y();
     srtrack.end.z = track.End().Z();
 
-    srtrack.ID = particle.Self();
-    srtrack.slcID = (primary) ? primary->Self() : -1;
+  }
+
+  void FillPFPVars(const recob::PFParticle &particle,
+                   const recob::PFParticle *primary,
+                   const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   caf::SRPFP& srpfp,
+                   bool allowEmpty)
+  {
+    srpfp.ID = particle.Self();
+    srpfp.slcID = (primary) ? primary->Self() : -1;
 
     // set the daughters in the particle flow
     for (unsigned id: particle.Daughters()) {
-      srtrack.daughters.push_back(id);
+      srpfp.daughters.push_back(id);
     }
-    srtrack.ndaughters = srtrack.daughters.size();
+    srpfp.ndaughters = srpfp.daughters.size();
 
-    srtrack.parent = particle.Parent();
-    srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+    srpfp.parent = particle.Parent();
+    srpfp.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
       || (primary && particle.Parent() == primary->Self());
 
+    if (pfpMeta) {
+      auto const &propertiesMap (pfpMeta->GetPropertiesMap());
+      auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
+      srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+    }
   }
+
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,

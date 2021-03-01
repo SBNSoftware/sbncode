@@ -728,7 +728,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Prep truth-to-reco-matching info
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get()); 
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
 
   //#######################################################
   // Fill truths & fake reco
@@ -1107,10 +1107,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
+
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], thisParticle, primary, producer, rec.reco.trk.back());
+        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
+
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
 
         if (fmPID.isValid()) {
            FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
@@ -1138,7 +1142,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+
         // We may have many residuals per shower depending on how many showers ar in the slice
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
