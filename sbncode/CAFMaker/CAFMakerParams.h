@@ -90,6 +90,12 @@ namespace caf
       "fmatch" // same for icarus and sbnd
     };
 
+    Atom<string> HitLabel {
+      Name("HitLabel"),
+      Comment("Base label of the TPC Hit producer."),
+      "gaushit"
+    };
+
     Atom<string> RecoTrackLabel {
       Name("RecoTrackLabel"),
       Comment("Base label of reco-base track producer."),

@@ -113,11 +113,14 @@ namespace caf {
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
       const std::vector<caf::SRTrueParticle> &srparticles,
+      const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
       caf::SRTrueInteraction &srneutrino, size_t i) {
 
     srneutrino.index = i;
 
-    srneutrino.visE = 0.;
+    srneutrino.plane0VisE = 0.;
+    srneutrino.plane1VisE = 0.;
+    srneutrino.plane2VisE = 0.;
     for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
       // save the G4 particles that came from this interaction
       if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
@@ -125,10 +128,52 @@ namespace caf {
       }
       // total up the deposited energy
       if (srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.visE += srparticles[i_part].planeVisE;
+        srneutrino.plane0VisE += srparticles[i_part].plane0VisE;
+        srneutrino.plane1VisE += srparticles[i_part].plane1VisE;
+        srneutrino.plane2VisE += srparticles[i_part].plane2VisE;
       }
     }
     srneutrino.nprim = srneutrino.prim.size();
+
+    // Set of hits per-plane: primary particles
+    {
+      std::array<std::set<unsigned>, 3> planehitIDs;
+      for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+        if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
+          int track_id = srparticles[i_part].G4ID;
+          // Look for hits
+          if (!id_to_truehit_map.count(track_id)) continue;
+          for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
+            if (!h->WireID()) continue;
+            planehitIDs[h->WireID().Plane].insert(h.key());
+          }
+        }
+      }
+
+      srneutrino.plane0nhitprim = planehitIDs[0].size();
+      srneutrino.plane1nhitprim = planehitIDs[1].size();
+      srneutrino.plane2nhitprim = planehitIDs[2].size();
+    }
+
+    // Set of hits per-plane: all particles
+    {
+      std::array<std::set<unsigned>, 3> planehitIDs;
+      for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+        if (srparticles[i_part].interaction_id == (int)i) {
+          int track_id = srparticles[i_part].G4ID;
+          // Look for hits
+          if (!id_to_truehit_map.count(track_id)) continue;
+          for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
+            if (!h->WireID()) continue;
+            planehitIDs[h->WireID().Plane].insert(h.key());
+          }
+        }
+      }
+
+      srneutrino.plane0nhit = planehitIDs[0].size();
+      srneutrino.plane1nhit = planehitIDs[1].size();
+      srneutrino.plane2nhit = planehitIDs[2].size();
+    }
 
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
@@ -187,23 +232,58 @@ namespace caf {
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
-                          const std::map<int, std::vector<const sim::IDE *>> &id_to_ide_map,
+        const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
+        const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle) {
 
-    std::vector<const sim::IDE*> empty;
-    const std::vector<const sim::IDE*> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+    std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
+    const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
+
+    std::vector<art::Ptr<recob::Hit>> emptyHits;
+    const std::vector<art::Ptr<recob::Hit>> &particle_hits = id_to_truehit_map.count(particle.TrackId()) ? id_to_truehit_map.at(particle.TrackId()) : emptyHits;
 
     srparticle.length = 0.;
     srparticle.crosses_tpc = false;
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
-    srparticle.planeVisE = 0.;
-    for (auto const ide: particle_ides) {
-      srparticle.planeVisE += ide->energy / 1000. /* MeV -> GeV*/;
+    srparticle.plane0VisE = 0.;
+    srparticle.plane1VisE = 0.;
+    srparticle.plane2VisE = 0.;
+    srparticle.plane0nhit = 0;
+    srparticle.plane1nhit = 0;
+    srparticle.plane2nhit = 0;
+    for (auto const &ide_pair: particle_ides) {
+      const geo::WireID &w = ide_pair.first;
+      const sim::IDE *ide = ide_pair.second;
+
+      if (w.Plane == 0) {
+        srparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      }
+      else if (w.Plane == 1) {
+        srparticle.plane1VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      }
+      else if (w.Plane == 2) {
+        srparticle.plane2VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      }
     }
+
+    for (const art::Ptr<recob::Hit> h: particle_hits) {
+      const geo::WireID &w = h->WireID();
+
+      if (w.Plane == 0) {
+        srparticle.plane0nhit ++;
+      }
+      else if (w.Plane == 1) {
+        srparticle.plane1nhit ++;
+      }
+      else if (w.Plane == 2) {
+        srparticle.plane2nhit ++;
+      }
+
+    } 
 
     // if no trajectory points, then assume outside AV
     srparticle.cont_tpc = particle.NumberTrajectoryPoints() > 0;
@@ -331,6 +411,11 @@ namespace caf {
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother();
 
+    // Save the daughter particles
+    for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
+      srparticle.daughters.push_back(particle.Daughter(i_d));
+    }
+
     // See if this MCParticle matches a genie truth
     srparticle.interaction_id = -1;
 
@@ -361,13 +446,31 @@ namespace caf {
     }
   }
 
-  std::map<int, std::vector<const sim::IDE*>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels) {
-    std::map<int, std::vector<const sim::IDE*>> ret;
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
+    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
+    std::map<int, std::vector<art::Ptr<recob::Hit>>> ret;
+    for (const art::Ptr<recob::Hit> h: allHits) {
+      for (int ID: backtracker.HitToTrackIds(clockData, *h)) {
+        ret[abs(ID)].push_back(h);
+      }
+    }
+    return ret;
+  }
+
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo) {
+    std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> ret;
+
     for (const art::Ptr<sim::SimChannel> sc : simchannels) {
+      // Lookup the wire of this channel
+      raw::ChannelID_t channel = sc->Channel();
+      std::vector<geo::WireID> maybewire = geo.ChannelToWire(channel);
+      geo::WireID thisWire; // Default constructor makes invalid wire
+      if (maybewire.size()) thisWire = maybewire[0];
+
       for (const auto &item : sc->TDCIDEMap()) {
         for (const sim::IDE &ide: item.second) {
           // indexing initializes empty vector
-          ret[abs(ide.trackID)].push_back(&ide);
+          ret[abs(ide.trackID)].push_back({thisWire, &ide});
         }
       }
     }
@@ -847,7 +950,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
-    ret.eff = (matching_energy[index] / 1000.) / srneutrinos[index].visE;
+    ret.eff = (matching_energy[index] / 1000.) / (srneutrinos[index].plane0VisE + srneutrinos[index].plane1VisE + srneutrinos[index].plane2VisE);
   }
   else {
     ret.pur = -1;
