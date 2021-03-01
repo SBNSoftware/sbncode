@@ -22,7 +22,7 @@ message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ===========
 # cetbuildtools contains our cmake modules
 find_package(cetbuildtools REQUIRED)
 
-list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules)
+list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -44,6 +44,13 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
+find_ups_product(art)
+find_ups_product(art_root_io)
+find_ups_product(nusimdata)
+find_ups_product(nug4)
+find_ups_product(lardataobj)
+find_ups_product(larreco)
+find_ups_product(larpandora)
 find_ups_product(larsoft v09_00_00)
 find_ups_product(artdaq_core v3_06_01)
 find_ups_product(sbnobj v09_10_00)
