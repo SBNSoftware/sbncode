@@ -1,6 +1,6 @@
 
 art_make_library( LIBRARY_NAME sbn_LArReco
-                  SOURCE  TrackMomentumCalculator.cxx TrajectoryMCSFitter.cxx
+  SOURCE  TrackMomentumCalculator.cxx TrajectoryMCSFitter.cxx LGfitter.cxx
                   LIBRARIES 
 		    ${ART_FRAMEWORK_CORE}
 		    ${ART_FRAMEWORK_SERVICES_REGISTRY}
