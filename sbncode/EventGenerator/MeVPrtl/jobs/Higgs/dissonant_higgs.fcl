@@ -21,10 +21,9 @@ kaon2higgs: {
   BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
 
   // timing config
-  SpillTimeConfig: "evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 
-  IgnoreParentDecayTime: false
-
+  IgnoreParentDecayTime: true
 }
 
 mono_energy_flux: {
@@ -62,7 +61,6 @@ dissonant_higgs_gen: {
 
 dissonant_higgs_gen.RayTrace.ReferencePrtlMass: @local::higgsM
 dissonant_higgs_gen.RayTrace.ReferenceScndPDG: 211 # pion
-
 
 dissonant_higgs: @local::dissonant_higgs_gen
 dissonant_higgs.Deweight: false
