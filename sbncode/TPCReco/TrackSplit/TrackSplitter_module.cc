@@ -501,6 +501,11 @@ recob::Track sbn::TrackSplitter::DeMergeTrack(const recob::Track &trunk, const r
   std::vector<TVector3> add_m;
   std::vector<recob::TrajectoryPointFlags> add_f;
 
+  // Collect info
+  TVector3 dir = (branch.Start<TVector3>() - trunk.Start<TVector3>()).Unit();
+  double dist = (branch.Start<TVector3>() - trunk.Start<TVector3>()).Mag();
+  TVector3 start = trunk.Start<TVector3>();
+
   for (unsigned i = 0; i < trunk.NumberTrajectoryPoints(); i++) {
     if (!trunk.HasValidPoint(i)) continue;
 
@@ -509,44 +514,13 @@ recob::Track sbn::TrackSplitter::DeMergeTrack(const recob::Track &trunk, const r
 
     if (p_proj >= info.branch_start) break;
 
-    add_p.push_back(p);
-    add_m.push_back(trunk.DirectionAtPoint<TVector3>(i));
+    // Place this point along the branch
+    TVector3 p_branch = start + dir * dist * (p_proj / info.branch_start);
+
+    add_p.push_back(p_branch);
+    add_m.push_back(dir);
     add_f.push_back(trunk.FlagsAtPoint(i));
   }
-
-  // smooth the addded points to avoid big jump between trunk and branch
-  if (add_p.size() >= 2) {
-    std::vector<TVector3> add_p_old = add_p;
-
-    float dist = info.branch_start;  
-    TVector3 diff = branch.Start<TVector3>() - add_p_old[add_p_old.size()-1];
-
-    for (unsigned i = 1; i < add_p_old.size(); i++) {
-      float this_dist = (add_p_old[i] - info.vertex).Dot(info.direction);
-      add_p[i] = add_p_old[i] + diff * (this_dist / dist);
-    }
-
-    for (int i = 0; i < (int)add_m.size() - 1; i++) {
-      add_m[i] = (add_p[i+1] - add_p[i]).Unit();
-      if (i > 0) add_m[i] = (add_m[i] + (add_p[i] - add_p[i-1]).Unit()).Unit();
-    }
-    add_m[add_p.size()-1] = ((branch.Start<TVector3>() - add_p[add_p.size()-1]).Unit() +
-      (add_p[add_p.size()-1] - add_p[add_p.size()-2])).Unit();
-
-    // TODO: fix what the initial direction gets set to
-    add_m[0] = (branch.Start<TVector3>() - add_p[0]).Unit();
-  }
-
-  /*
-  TVector3 p = trunk.Start<TVector3>();
-  float p_proj = (p - info.vertex).Dot(info.direction);
-
-  if (p_proj < info.branch_start) {
-    add_p.push_back(p);
-    add_m.push_back((branch.Start<TVector3>() - p).Unit());
-    add_f.push_back(trunk.FlagsAtPoint(trunk.FirstValidPoint()));
-  }
-  */
 
   // Save the new points
   recob::Track::Positions_t positions; 
