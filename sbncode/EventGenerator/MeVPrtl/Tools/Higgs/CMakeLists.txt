@@ -37,6 +37,7 @@ simple_plugin( Kaon2HiggsFlux tool
 			sbncode_EventGenerator_MeVPrtl_Products
 			nugen_EventGeneratorBase_GENIE
 			nurandom_RandomUtils_NuRandomService_service
+			gsl
 )
 
 simple_plugin( HiggsMakeDecay tool
