@@ -96,11 +96,13 @@ namespace caf
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 
+  void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
                         const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
                      const std::array<float, 3> &calo_constants,
