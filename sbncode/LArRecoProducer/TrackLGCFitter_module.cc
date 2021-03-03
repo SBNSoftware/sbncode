@@ -49,8 +49,8 @@ class sbn::TrackLGCFitter : public art::EDProducer {
 
   private:
   // Declare member data here.
-  art::InputTag fTrackLabel, fCaloLabel;
-  float fMinTrackLength;
+  const art::InputTag fTrackLabel, fCaloLabel;
+  const float fMinTrackLength;
 
   LGfitter::LGfitter lgFitter;
 
@@ -62,7 +62,7 @@ sbn::TrackLGCFitter::TrackLGCFitter(fhicl::ParameterSet const& p)
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fCaloLabel(p.get<std::string>("CaloLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
-    , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 8.f))
+    , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 3.f))
 {
   produces<std::vector<sbn::LGCFit>>();
   produces<art::Assns<recob::Track, sbn::LGCFit>>();

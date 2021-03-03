@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+tracklgcfitter_sbn: {
+  module_type: TrackLGCFitter
+  TrackLabel: pandoraTrack
+  CaloLabel: pandoraCalo
+  MinTrackLength: 10
+}
+
+END_PROLOG
