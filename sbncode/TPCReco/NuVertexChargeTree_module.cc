@@ -65,7 +65,7 @@ public:
   void analyze(art::Event const& e) override;
 
   // keep track of file index
-  void respondToOpenInputFile(const art::FileBlock& fb) {
+  void respondToOpenInputFile(const art::FileBlock& fb) override {
     (void) fb;
     fIFile += 1;
   }

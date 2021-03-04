@@ -43,7 +43,6 @@
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
-#include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -65,6 +64,11 @@ struct Histos {
   TH1D *vertex_x;
   TH1D *vertex_y;
   TH1D *vertex_z;
+
+  TH1D *muon_completeness;
+  TH1D *muon_purity;
+  TH1D *slice_completeness;
+  TH1D *slice_purity;
 };
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
@@ -98,7 +102,7 @@ private:
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   std::vector<geo::BoxBoundedGeo> fActiveVolumes;
 
-  static const unsigned n_reco_eff = 9;
+  static const unsigned n_reco_eff = 14;
 
   std::array<float, 6> fFiducialInset;
   std::vector<geo::BoxBoundedGeo> fFiducialVolumes;
@@ -109,7 +113,10 @@ private:
 
   void InitHisto(Histos &h, const std::string &prefix);
 
-  void Fill(Histos &h, const simb::MCTruth &interaction, const simb::MCParticle &G4lepton);
+  void FillTrue(Histos &h, const simb::MCTruth &interaction, const simb::MCParticle &G4lepton);
+
+  void FillMatchingMu(Histos &h, float purity, float completeness);
+  void FillMatchingSlc(Histos &h, float purity, float completeness);
 
   float ParticleLength(const simb::MCParticle &particle);
 
@@ -125,7 +132,20 @@ bool numu::NuMuEfficiencyStudy::InFV(TVector3 pos) {
 void numu::NuMuEfficiencyStudy::InitHistos() {
   InitHisto(fTruth, "truth");
 
-  std::array<std::string, n_reco_eff> effnames {"has_muon", "has_reco_muon", "muon_is_fid", "has_slice", "has_pure_slice", "has_reco_slice", "has_fid_slice", "slice_has_muon", "has_fid_pure_slice"};
+  std::array<std::string, n_reco_eff> effnames {"has_muon",
+                                                "has_reco_muon", 
+                                                "muon_is_fid", 
+                                                "has_slice", 
+                                                "has_pure_slice", 
+                                                "has_reco_slice", 
+                                                "has_fid_slice", 
+                                                "slice_has_muon", 
+                                                "has_fid_pure_slice", 
+                                                "has_reco_fid_slice", 
+                                                "slice_has_reco_muon",
+                                                "has_fid_nu_slice",
+                                                "has_pure_nu_slice",
+                                                "has_neutrino_slice"};
   for (unsigned i = 0; i < n_reco_eff; i++) {
     for (unsigned j = 0; j < n_reco_eff; j++) {
       std::string name;
@@ -154,6 +174,12 @@ void numu::NuMuEfficiencyStudy::InitHisto(Histos &h, const std::string &prefix) 
   h.vertex_x = tfs->make<TH1D>((prefix + "_v_x").c_str(), "v_x", 200, XMin, XMax); 
   h.vertex_y = tfs->make<TH1D>((prefix + "_v_y").c_str(), "v_y", 200, YMin, YMax); 
   h.vertex_z = tfs->make<TH1D>((prefix + "_v_z").c_str(), "v_z", 200, ZMin, ZMax); 
+
+  h.muon_completeness = tfs->make<TH1D>((prefix + "_muC").c_str(), "muC", 100, 0., 1.);
+  h.muon_purity = tfs->make<TH1D>((prefix + "_mupur").c_str(), "mupur", 100, 0., 1.);
+
+  h.slice_completeness = tfs->make<TH1D>((prefix + "_nuC").c_str(), "nuC", 100, 0., 1.);
+  h.slice_purity = tfs->make<TH1D>((prefix + "_nupur").c_str(), "nupur", 100, 0., 1.);
 }
 
 numu::NuMuEfficiencyStudy::NuMuEfficiencyStudy(fhicl::ParameterSet const& p)
@@ -213,7 +239,17 @@ float numu::NuMuEfficiencyStudy::ParticleLength(const simb::MCParticle &particle
   return length;
 }
 
-void numu::NuMuEfficiencyStudy::Fill(Histos &h, const simb::MCTruth &truth, const simb::MCParticle &G4lepton) {
+void numu::NuMuEfficiencyStudy::FillMatchingMu(Histos &h, float purity, float completeness) {
+  h.muon_completeness->Fill(completeness);
+  h.muon_purity->Fill(purity);
+}
+
+void numu::NuMuEfficiencyStudy::FillMatchingSlc(Histos &h, float purity, float completeness) {
+  h.slice_completeness->Fill(completeness);
+  h.slice_purity->Fill(purity);
+}
+
+void numu::NuMuEfficiencyStudy::FillTrue(Histos &h, const simb::MCTruth &truth, const simb::MCParticle &G4lepton) {
   h.neutrino_energy->Fill(truth.GetNeutrino().Nu().E());
   h.muon_momentum->Fill(truth.GetNeutrino().Lepton().Momentum().Vect().Mag());
   h.muon_length->Fill(ParticleLength(G4lepton));
@@ -237,6 +273,10 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
 
   art::FindManyP<simb::MCParticle, sim::GeneratedParticleInfo> truth_to_particles(mctruth_handle, ev, "largeant");
   const std::vector<simb::MCParticle> &g4_particles = *ev.getValidHandle<std::vector<simb::MCParticle>>("largeant");
+  std::map<int, const simb::MCParticle*> g4_particle_map;
+  for (unsigned i_g4 = 0; i_g4 < g4_particles.size(); i_g4++) {
+    g4_particle_map[g4_particles[i_g4].TrackId()] =  &g4_particles[i_g4];
+  }
 
   std::vector<int> truth_to_numucc;
   std::vector<simb::MCTruth> numucc;
@@ -249,7 +289,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
     if (InFV(vertex) && truth.GetNeutrino().CCNC() == 0 && abs(truth.GetNeutrino().Nu().PdgCode()) == 14) {
       // find the muon in G4
       const simb::MCParticle *G4muon = Genie2G4MCParticle(truth.GetNeutrino().Lepton(), truth, truth_to_particles.at(i), truth_to_particles.data(i));
-      Fill(fTruth, truth, *G4muon);
+      FillTrue(fTruth, truth, *G4muon);
       numucc.push_back(truth);
       G4muons.push_back(*G4muon);
       truth_to_numucc.push_back(numucc.size()-1);
@@ -288,6 +328,8 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
   //
   // does a muon track exist?
   std::vector<int> matching_track(G4muons.size(), -1);
+  std::vector<float> track_purity(G4muons.size(), -1);
+  std::vector<float> track_completeness(G4muons.size(), -1);
 
   art::ValidHandle<std::vector<recob::PFParticle>> particle_handle = ev.getValidHandle<std::vector<recob::PFParticle>>("pandora");
   art::FindManyP<recob::Track> tracks(particle_handle, ev, "pandoraTrack");
@@ -307,6 +349,10 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
     for (unsigned i_cc = 0; i_cc < G4muons.size(); i_cc++) {
       if (matches.size() && matches[0].first == G4muons[i_cc].TrackId() && matches[0].second / muonVisE[i_cc] > 0.5) {
         matching_track[i_cc] = particle_handle->at(i_part).Self();
+        track_purity[i_cc] = matches[0].second / 
+          std::accumulate(matches.begin(), matches.end(), 0.f,
+            [](auto &a, auto &b){return a + b.second;});
+        track_completeness[i_cc] = matches[0].second / muonVisE[i_cc];
       }
     }
   }
@@ -314,6 +360,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
   // also find a matching slice
   std::vector<int> matching_slice(numucc.size(), -1);
   std::vector<float> matching_purity(numucc.size(), -1);
+  std::vector<float> matching_completeness(numucc.size(), -1);
 
   art::ValidHandle<std::vector<recob::Slice>> slice_handle = ev.getValidHandle<std::vector<recob::Slice>>("pandora"); 
   art::FindManyP<recob::Hit> slice_hits(slice_handle, ev, "pandora");
@@ -321,6 +368,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
 
   for (unsigned i_slice = 0; i_slice < slice_handle->size(); i_slice++) {
     std::vector<float> matchingE(numuVisE.size(), 0.);
+    std::vector<float> matchingPrimaryE(numuVisE.size(), 0.);
     float totalE = 0.;
 
     std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, slice_hits.at(i_slice));
@@ -328,29 +376,27 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
       totalE += matches[i_match].second / 1000.;
     }
 
-    for (unsigned i_g4 = 0; i_g4 < g4_particles.size(); i_g4++) {
-      for (unsigned i_match = 0; i_match < matches.size(); i_match++) {
-        if (matches[i_match].first == g4_particles[i_g4].TrackId()) {
-          if (g4_particles[i_g4].Process() == "primary") {
-            art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(g4_particles[i_g4].TrackId());
-            for (unsigned i_truth = 0; i_truth < mctruth_ptrs.size(); i_truth++) {
-              if (truth == mctruth_ptrs[i_truth]) {
-                if (truth_to_numucc[i_truth] != -1) {
-                  matchingE[truth_to_numucc[i_truth]] += matches[i_match].second / 1000.;
-                }
-                break;
-              }
+    for (unsigned i_match = 0; i_match < matches.size(); i_match++) {
+      if (g4_particle_map.count(matches[i_match].first)) {
+        const simb::MCParticle &part = *g4_particle_map.at(matches[i_match].first);
+        art::Ptr<simb::MCTruth> truth = inventory_service->TrackIdToMCTruth_P(part.TrackId());
+        for (unsigned i_truth = 0; i_truth < mctruth_ptrs.size(); i_truth++) {
+          if (truth == mctruth_ptrs[i_truth]) {
+            if (truth_to_numucc[i_truth] != -1) {
+              if (part.Process() == "primary") matchingPrimaryE[truth_to_numucc[i_truth]] += matches[i_match].second / 1000.;
+              matchingE[truth_to_numucc[i_truth]] += matches[i_match].second / 1000.;
             }
-          } 
-          break;
+            break;
+          }
         }
       }
     }
 
     unsigned best_match = std::distance(matchingE.begin(), std::max_element(matchingE.begin(), matchingE.end()));
-    if (matchingE[best_match] / numuVisE[best_match] > 0.5) {
+    if (matchingPrimaryE[best_match] / numuVisE[best_match] > 0.5) {
       matching_slice[best_match] = i_slice;
       matching_purity[best_match] = matchingE[best_match] / totalE; 
+      matching_completeness[best_match] = matchingPrimaryE[best_match] / numuVisE[best_match];
     }
   }
 
@@ -381,6 +427,7 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
       muon_is_fid = InFV(muon_vert_v);
     }
 
+    bool slice_is_neutrino = false;
     bool slice_is_reco = false;
     bool slice_is_fiducial = false;
     bool slice_has_muon = false;
@@ -391,9 +438,13 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
           const larpandoraobj::PFParticleMetadata &meta = *metadatas.at(pfp.key()).at(0);
           auto const &properties = meta.GetPropertiesMap();
           std::cout << "Particle Properties:\n";
-          for (auto pair: properties) std::cout << pair.first << std::endl;
+          for (auto pair: properties) std::cout << pair.first << " " << pair.second << std::endl;
+
+          if (properties.count("IsNeutrino")) slice_is_neutrino = true;
           if (properties.count("IsNeutrino") && pfp->PdgCode() == 14) slice_is_reco = true;
-          if (slice_is_reco) {
+
+          // check for vertex
+          if (particles_to_vertex.at(pfp.key()).size()) {
             const recob::Vertex &vert = *particles_to_vertex.at(pfp.key()).at(0);
             TVector3 vect(vert.position().X(), vert.position().Y(), vert.position().Z());
             slice_is_fiducial = InFV(vect);
@@ -405,13 +456,19 @@ void numu::NuMuEfficiencyStudy::analyze(art::Event const& ev)
       }
     }
 
+    bool has_pure_nu_slice = has_pure_slice && slice_is_neutrino;
+    bool has_fid_nu_slice = slice_is_fiducial && slice_is_neutrino;
     bool has_fid_pure_slice  = slice_is_fiducial  && has_pure_slice;
+    bool has_reco_fid_slice = slice_is_fiducial && slice_is_reco;
+    bool slice_has_reco_muon = slice_has_muon && muon_is_reco;
 
-    std::array<bool, n_reco_eff> pass {has_muon_track, muon_is_reco, muon_is_fid, has_slice, has_pure_slice, slice_is_reco, slice_is_fiducial, slice_has_muon, has_fid_pure_slice};
+    std::array<bool, n_reco_eff> pass = {has_muon_track, muon_is_reco, muon_is_fid, has_slice, has_pure_slice, slice_is_reco, slice_is_fiducial, slice_has_muon, has_fid_pure_slice, has_reco_fid_slice, slice_has_reco_muon, has_fid_nu_slice, has_pure_nu_slice, slice_is_neutrino};
     for (unsigned j = 0; j < n_reco_eff; j++) {
       for (unsigned k = 0; k < n_reco_eff; k++) {
         if (pass[j] && pass[k]) {
-          Fill(fReco[j * n_reco_eff + k], numucc[i], G4muons[i]);
+          FillTrue(fReco[j * n_reco_eff + k], numucc[i], G4muons[i]);
+          FillMatchingMu(fReco[j * n_reco_eff + k], track_purity[i], track_completeness[i]);
+          FillMatchingSlc(fReco[j * n_reco_eff + k], matching_purity[i], matching_completeness[i]);
         }
       }
     }

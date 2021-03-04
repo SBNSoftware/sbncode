@@ -46,6 +46,7 @@
 #include "TTree.h"
 #include "TTimeStamp.h"
 #include "TRandomGen.h"
+#include "TObjString.h"
 
 // Framework includes
 #include "art/Framework/Core/EDProducer.h"
@@ -69,6 +70,7 @@
 #include "canvas/Persistency/Common/PtrVector.h"
 
 #include "cetlib_except/exception.h"
+#include "cetlib_except/demangle.h"
 
 #include "fhiclcpp/ParameterSet.h"
 
@@ -420,8 +422,8 @@ art::FindManyP<T> CAFMaker::FindManyPStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << abi::__cxa_demangle(typeid(from).name(), 0, 0, 0) << "' to '"
-              << abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
               << "' found under label '" << tag << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -439,8 +441,8 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
-              << abi::__cxa_demangle(typeid(from).name(), 0, 0, 0) << "' to '"
-              << abi::__cxa_demangle(typeid(T).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
               << "' found under label '" << tag << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -471,7 +473,7 @@ void CAFMaker::GetByLabelStrict(const art::Event& evt, const std::string& label,
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No product of type '"
-              << abi::__cxa_demangle(typeid(*handle).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(*handle).name())
               << "' found under label '" << label << "'. "
               << "Set 'StrictMode: false' to continue anyway." << std::endl;
     abort();
@@ -486,7 +488,7 @@ void CAFMaker::GetByLabelIfExists(const art::Event& evt,
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No product of type '"
-              << abi::__cxa_demangle(typeid(*handle).name(), 0, 0, 0)
+              << cet::demangle_symbol(typeid(*handle).name())
               << "' found under label '" << label << "'. "
               << "Continuing without it." << std::endl;
   }
@@ -557,8 +559,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(simchannels, simchannel_handle);
   }
 
-  std::map<int, std::vector<const sim::IDE*>> id_to_ide_map = PrepSimChannels(simchannels);
-
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
   GetByLabelStrict(evt, "generator", mcflux_handle);
 
@@ -584,6 +584,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+
+  // Collect the input TPC reco tags
+  std::vector<std::string> pandora_tag_suffixes;
+  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
+  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
+
+  // collect the TPC hits
+  std::vector<art::Ptr<recob::Hit>> hits;
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+    art::Handle<std::vector<recob::Hit>> thisHits;
+    GetByLabelStrict(evt, fParams.HitLabel() + pandora_tag_suffix, thisHits);
+    if (thisHits.isValid()) {
+      art::fill_ptr_vector(hits, thisHits);
+    }
+  }
+
+  // Prep truth-to-reco-matching info
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get()); 
 
   //#######################################################
   // Fill truths & fake reco
@@ -600,6 +621,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          fActiveVolumes,
                          fTPCVolumes,
                          id_to_ide_map,
+                         id_to_truehit_map,
                          *bt_serv.get(),
                          *pi_serv.get(),
                          mctruths,
@@ -617,7 +639,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
@@ -685,10 +707,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // collect the TPC slices
-  std::vector<std::string> pandora_tag_suffixes;
-  fParams.PandoraTagSuffixes(pandora_tag_suffixes);
-  if (pandora_tag_suffixes.size() == 0) pandora_tag_suffixes.push_back("");
-
   std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
   std::vector<unsigned> slice_tag_indices;
@@ -831,7 +849,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     std::vector<art::FindManyP<sbn::RangeP>> fmRanges;
-    static const std::vector<std::string> rangePIDnames {"muon", "proton"};
+    static const std::vector<std::string> rangePIDnames {"muon", "pion", "proton"};
     for (std::string pid: rangePIDnames) {
       art::InputTag tag(fParams.TrackRangeLabel() + slice_tag_suff, pid);
       fmRanges.push_back(FindManyPStrict<sbn::RangeP>(slcTracks, evt, tag));
@@ -919,8 +937,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-        std::array<std::vector<art::Ptr<sbn::RangeP>>, 2> rangePs;
-        for (unsigned index = 0; index < 2; index++) {
+        std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> rangePs;
+        for (unsigned index = 0; index < 3; index++) {
           if (fmRanges[index].isValid()) {
             rangePs[index] = fmRanges[index].at(iPart);
           }

@@ -205,7 +205,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
     geo->GetBeginID(cid);
     for (auto const &planeID: geo->IteratePlaneIDs(cid)) {
       int lastWire = -100000;
-      for (unsigned j = 0; j < track.NumberTrajectoryPoints()-1; j++) {
+      for (size_t j = 0; j < track.NumberTrajectoryPoints()-1; j++) {
         // go to the next valid point
         j = track.NextValidPoint(j);
         // break if bad/at end of trajectory
@@ -214,7 +214,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         }
 
         // get the next valid point as well -- if the next valid point is at the end, break
-        unsigned next_point_ind = track.NextValidPoint(j+1);
+        size_t next_point_ind = track.NextValidPoint(j+1);
         // break if bad/at end of trajectory
         if (!(next_point_ind < track.NumberTrajectoryPoints()) || next_point_ind == recob::TrackTrajectory::InvalidIndex) {
           break;

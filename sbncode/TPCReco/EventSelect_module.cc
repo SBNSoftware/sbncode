@@ -41,7 +41,7 @@ public:
   // Required functions.
   bool filter(art::Event& e) override;
 
-  void respondToOpenInputFile(const art::FileBlock& fb) { fFileNo ++; }
+  void respondToOpenInputFile(const art::FileBlock& fb) override { fFileNo ++; }
 
 private:
 
