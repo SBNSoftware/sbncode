@@ -391,7 +391,7 @@ namespace caf {
     srparticle.pdg = particle.PdgCode();
 
     srparticle.gen = particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999);
-    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T(): -9999;
+    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T() / 1000. /* ns -> us*/: -9999;
     srparticle.genp = particle.NumberTrajectoryPoints() ? particle.Momentum().Vect(): TVector3(-9999, -9999, -9999);
     srparticle.genE = particle.NumberTrajectoryPoints() ? particle.Momentum().E(): -9999;
 

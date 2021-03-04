@@ -350,6 +350,15 @@ namespace caf
     }
   }
 
+  void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid) {
+    srpid.chi2_muon = particle_id.Chi2Muon();
+    srpid.chi2_pion = particle_id.Chi2Pion();
+    srpid.chi2_kaon = particle_id.Chi2Kaon();
+    srpid.chi2_proton = particle_id.Chi2Proton();
+    srpid.pid_ndof = particle_id.Ndf();
+    srpid.pida = particle_id.PIDA();
+  }
+
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
                         const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
@@ -361,17 +370,24 @@ namespace caf
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
-
         caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
-        this_pid.chi2_muon = particle_id.Chi2Muon();
-        this_pid.chi2_pion = particle_id.Chi2Pion();
-        this_pid.chi2_kaon = particle_id.Chi2Kaon();
-        this_pid.chi2_proton = particle_id.Chi2Proton();
-        this_pid.pid_ndof = particle_id.Ndf();
-
-        this_pid.pida = particle_id.PIDA();
-
+        FillPlaneChi2PID(particle_id, this_pid);
       }
+    }
+  }
+
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo) {
+    const std::vector<float> &dqdx = calo.dQdx();
+    const std::vector<float> &dedx = calo.dEdx();
+    const std::vector<float> &pitch = calo.TrkPitchVec();
+    srcalo.charge = 0.;
+    srcalo.ke = 0.;
+    srcalo.nhit = 0;
+    for (unsigned i = 0; i < dedx.size(); i++) {
+      if (dedx[i] > 1000.) continue;
+      srcalo.nhit ++;
+      srcalo.charge += dqdx[i] * pitch[i] / constant; /* convert ADC*tick to electrons */
+      srcalo.ke += dedx[i] * pitch[i];
     }
   }
 
@@ -391,19 +407,7 @@ namespace caf
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
         caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-
-        const std::vector<float> &dqdx = calo.dQdx();
-        const std::vector<float> &dedx = calo.dEdx();
-        const std::vector<float> &pitch = calo.TrkPitchVec();
-        this_calo.charge = 0.;
-        this_calo.ke = 0.;
-        this_calo.nhit = 0;
-        for (unsigned i = 0; i < dedx.size(); i++) {
-          if (dedx[i] > 1000.) continue;
-          this_calo.nhit ++;
-          this_calo.charge += dqdx[i] * pitch[i] / calo_constants[plane_id]; /* convert ADC*tick to electrons */
-          this_calo.ke += dedx[i] * pitch[i];
-        }
+        FillTrackPlaneCalo(calo, calo_constants[plane_id], this_calo);
       }
     }
 
@@ -439,6 +443,14 @@ namespace caf
     srtrack.len  = track.Length();
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
     srtrack.phi = track.StartDirection().Phi();
+
+    srtrack.dir_end.x = track.EndDirection().X();
+    srtrack.dir_end.y = track.EndDirection().Y();
+    srtrack.dir_end.z = track.EndDirection().Z();
+
+    srtrack.dir.x = track.StartDirection().X();
+    srtrack.dir.y = track.StartDirection().Y();
+    srtrack.dir.z = track.StartDirection().Z();
 
     srtrack.start.x = track.Start().X();
     srtrack.start.y = track.Start().Y();
