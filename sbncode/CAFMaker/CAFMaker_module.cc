@@ -529,6 +529,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mctruths, mctruth_handle);
   }
 
+  // And associated GTruth objects
+  art::FindManyP<simb::GTruth> fmp_gtruth = FindManyPStrict<simb::GTruth>(mctruths, evt, fParams.GenLabel());
+
   art::Handle<std::vector<simb::MCTruth>> cosmic_mctruth_handle;
   evt.getByLabel(fParams.CosmicGenLabel(), cosmic_mctruth_handle);
 
@@ -637,9 +640,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
+    simb::GTruth gtruth;
+    bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
+    if(!ok){
+      std::cout << "Failed to get GTruth object!" << std::endl;
+    }
+
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
