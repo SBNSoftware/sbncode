@@ -1,8 +1,8 @@
-cet_set_compiler_flags(DIAGS CAUTIOUS
-  WERROR
-  NO_UNDEFINED
-  EXTRA_FLAGS  -Wall -Wextra  -pedantic  #-Wconversion
-  )
+#cet_set_compiler_flags(DIAGS CAUTIOUS
+#  WERROR
+#  NO_UNDEFINED
+#  EXTRA_FLAGS  -Wall -Wextra  -pedantic  #-Wconversion
+#  )
 
 art_make(
   MODULE_LIBRARIES
