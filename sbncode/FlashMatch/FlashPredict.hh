@@ -2,10 +2,10 @@
 #define SBN_FLASHMATCH_FLASHPREDICT_HH
 
 // save diagnostic state
-#pragma GCC diagnostic push
+//#pragma GCC diagnostic push
 
 // turn off the specific warning. Can also use "-Wall"
-#pragma GCC diagnostic ignored "-Wconversion"
+//#pragma GCC diagnostic ignored "-Wconversion"
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -54,7 +54,7 @@
 #include "sbncode/OpDet/PDMapAlg.h"
 
 // turn the warnings back on
-#pragma GCC diagnostic pop
+//#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <iterator>
