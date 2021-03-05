@@ -20,6 +20,7 @@
 #include "canvas/Persistency/Common/PtrVector.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
+#include "lardata/Utilities/AssociationUtil.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -198,8 +199,8 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
     reader->BookMVA(fMethodName, fWeightFileFullPath);
   }
   // Call appropriate produces<>() functions here.
-  // produces<std::vector<sbn::MVAPID>>();
-  // produces<art::Assns<recob::Track, sbn::MVAPID>>();
+  produces<std::vector<sbn::MVAPID>>();
+  produces<art::Assns<recob::Track, sbn::MVAPID>>();
 }
 
 void sbn::MVATrackPID::beginJob()
@@ -322,6 +323,9 @@ void sbn::MVATrackPID::produce(art::Event& e)
   art::FindManyP<sbn::ScatterDCA> fmTrackDCA(trackHandle, e, fDCALabel);
   art::FindManyP<sbn::StoppingChi2Fit> fmTrackStoppingChi2(trackHandle, e, fStoppingChi2Label);
 
+  auto mvaPIDVec = std::make_unique<std::vector<sbn::MVAPID>>();
+  auto trackAssns = std::make_unique<art::Assns<recob::Track, sbn::MVAPID>>();
+
   const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap(this->GetPFPMap(pfps));
 
   for (auto const& pfp : pfps) {
@@ -345,9 +349,9 @@ void sbn::MVATrackPID::produce(art::Event& e)
 
     this->FillTrackMetrics(*pfpTrack);
 
-    // TODO look at in terms of runtime
-    if (!recoContained)
-      continue;
+    // // TODO look at in terms of runtime
+    // if (!recoContained)
+    //   continue;
 
     // We expect a calo for each plane
     auto const caloVec(fmTrackCalo.at(pfpTrack.key()));
@@ -394,8 +398,11 @@ void sbn::MVATrackPID::produce(art::Event& e)
     if (stoppingChi2Vec.size() == 1)
       this->FillStoppingChi2Metrics(*stoppingChi2Vec.front());
 
-    if (fRunMVA)
-      this->RunMVA();
+    if (fRunMVA) {
+      sbn::MVAPID mvaPID(this->RunMVA());
+      mvaPIDVec->push_back(mvaPID);
+      util::CreateAssn(*this, e, *mvaPIDVec, pfpTrack, *trackAssns);
+    }
 
     // Only fill the truth metrics if we are saving a TTree
     if (fMakeTree) {
@@ -405,6 +412,8 @@ void sbn::MVATrackPID::produce(art::Event& e)
       trackTree->Fill();
     }
   }
+  e.put(std::move(mvaPIDVec));
+  e.put(std::move(trackAssns));
 }
 
 void sbn::MVATrackPID::ClearTree()
