@@ -92,12 +92,16 @@
 #include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/Reco/RangeP.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
+
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -189,8 +193,8 @@ class CAFMaker : public art::EDProducer {
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message and aborts if StrictMode is true.
-  template <class T>
-  void GetByLabelStrict(const art::Event& evt, const std::string& label,
+  template <class EvtT, class T>
+  void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
@@ -303,10 +307,53 @@ void CAFMaker::beginJob() {
 }
 
 //......................................................................
-void CAFMaker::beginRun(art::Run& r) {
+void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
+{
+  const double& start = m(0, 0);
+  v.insert(v.end(), &start, &start + m.GetNoElements());
+}
+
+//......................................................................
+void CAFMaker::beginRun(art::Run& run) {
   // fDetID = geom->DetId();
   fDet = (Det_t)1;//(Det_t)fDetID;
 
+  art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
+  GetByLabelStrict(run, "genieweight", wgt_params); // TODO label
+
+  SRGlobal global;
+
+  for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
+    SRWeightPSet& cafpset = global.wgts.emplace_back();
+
+    cafpset.name = pset.fName;
+    cafpset.type = caf::ReweightType_t(pset.fRWType);
+    cafpset.nuniv = pset.fNuniverses;
+    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    for(const auto& it: pset.fParameterMap){
+      const sbn::evwgh::EventWeightParameter& param = it.first;
+      const std::vector<float>& vals = it.second;
+
+      SRWeightParam cafparam;
+      cafparam.name = param.fName;
+      cafparam.mean = param.fMean;
+      cafparam.width = param.fWidth;
+      cafparam.covidx = param.fCovIndex;
+
+      cafpset.map.emplace_back(cafparam, vals);
+    } // end for it
+  } // end for pset
+
+  // TODO this is all wrong in the case of multiple input (and hence output)
+  // files, or multiple Runs.
+  fFile->cd();
+  TTree* globalTree = new TTree("globalTree", "globalTree");
+  SRGlobal* pglobal = &global;
+  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
+  if(!br) abort();
+  globalTree->Fill();
+  globalTree->Write();
 }
 
 //......................................................................
@@ -345,7 +392,8 @@ void CAFMaker::InitializeOutfile() {
 
   // Tell the tree it's expecting StandardRecord objects
   StandardRecord* rec = 0;
-  fRecTree->Branch("rec", "caf::StandardRecord", &rec);
+  TBranch* br = fRecTree->Branch("rec", "caf::StandardRecord", &rec);
+  if(!br) abort();
 
   fFileNumber = -1;
   fTotalPOT = 0;
@@ -467,8 +515,8 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
 }
 
 //......................................................................
-template <class T>
-void CAFMaker::GetByLabelStrict(const art::Event& evt, const std::string& label,
+template <class EvtT, class T>
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
                                 art::Handle<T>& handle) const {
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
@@ -629,6 +677,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  art::Handle<std::vector<sbn::evwgh::EventWeightMap>> wgts;
+  GetByLabelStrict(evt, "genieweight", wgts); // TODO label
+  assert(wgts->size() == mctruths.size()); // TODO ensure this triggers
+
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
@@ -641,10 +693,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
+    // For all the weights associated with this MCTruth
+    for(auto it: (*wgts)[i]){
+      // TODO check sequence of strings is consistent / map as the Run had it
+      srneutrinos.back().wgt.genie.wgt.push_back(it.second);
+    }
+
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
-
-  }
+  } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
