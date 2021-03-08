@@ -319,7 +319,7 @@ void CAFMaker::beginRun(art::Run& run) {
   fDet = (Det_t)1;//(Det_t)fDetID;
 
   art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
-  GetByLabelStrict(run, "genieweight", wgt_params); // TODO label
+  GetByLabelStrict(run, fParams.SystWeightLabel(), wgt_params);
 
   SRGlobal global;
 
@@ -677,9 +677,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // TODO eventually we want to handle multiple sources of weights
   art::Handle<std::vector<sbn::evwgh::EventWeightMap>> wgts;
-  GetByLabelStrict(evt, "genieweight", wgts); // TODO label
-  assert(wgts->size() == mctruths.size()); // TODO ensure this triggers
+  GetByLabelStrict(evt, fParams.SystWeightLabel(), wgts);
+  if(wgts->size() != mctruths.size()){
+    // TODO ultimately the matching should be based on an Assn
+    std::cout << "EventWeightMap size doesn't match MCTruth size "
+              << wgts->size() << " vs " << mctruths.size()
+              << std::endl;
+    abort();
+  }
 
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
