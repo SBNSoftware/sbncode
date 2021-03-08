@@ -17,6 +17,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
+#include "art/Persistency/Common/PtrMaker.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "fhiclcpp/ParameterSet.h"
 
@@ -52,6 +53,7 @@ SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p) : EDProducer{p} {
   const size_t n_func = fWeightManager.Configure(p, *this);
   if (n_func > 0) {
     produces<std::vector<sbn::evwgh::EventWeightMap> >();
+    produces<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
     produces<std::vector<sbn::evwgh::EventWeightParameterSet>, art::InRun>();
   }
 }
@@ -59,6 +61,9 @@ SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p) : EDProducer{p} {
 
 void SBNEventWeight::produce(art::Event& e) {
   auto mcwghvec = std::make_unique<std::vector<EventWeightMap> >();
+  auto wghassns = std::make_unique<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
+
+  art::PtrMaker<sbn::evwgh::EventWeightMap> makeWeightPtr(e);
 
   // Get the MC generator information
   std::vector<art::Ptr<simb::MCTruth> > mclist;
@@ -68,10 +73,14 @@ void SBNEventWeight::produce(art::Event& e) {
   // Loop over all truth objects (e.g. neutrinos) in this event
   for (size_t i=0; i<mclist.size(); i++) {
     const EventWeightMap mcwgh = fWeightManager.Run(e, i);
-    mcwghvec->push_back(mcwgh);
+    mcwghvec->push_back(std::move(mcwgh));
+
+    art::Ptr<sbn::evwgh::EventWeightMap> wghPtr = makeWeightPtr(mcwghvec->size() - 1);
+    wghassns->addSingle(mclist.at(i), wghPtr);
   }
 
   e.put(std::move(mcwghvec));
+  e.put(std::move(wghassns));
 }
 
 
