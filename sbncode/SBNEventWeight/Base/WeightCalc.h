@@ -31,6 +31,7 @@ public:
 
   std::string GetName() { return fName; }
   std::string GetType() { return fType; }
+  std::string GetFullName() { return fName + "_" + fType; }
 
   EventWeightParameterSet fParameterSet;
 
