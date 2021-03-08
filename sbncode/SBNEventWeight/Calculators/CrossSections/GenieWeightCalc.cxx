@@ -58,7 +58,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
   std::string mode = pset.get<std::string>("mode");
 
   // Set up parameters
-  fParameterSet.Configure(GetName(), mode, number_of_multisims);
+  fParameterSet.Configure(GetFullName(), mode, number_of_multisims);
 
   for (size_t i=0; i<pars.size(); i++) {
     fParameterSet.AddParameter(pars[i], parsigmas[i]);
@@ -75,7 +75,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 
   for (auto const& it : fParameterSet.fParameterMap) {
     std::string name = it.first.fName;
-    std::cout << GetName() << ": Setting up " << name << std::endl;
+    std::cout << GetFullName() << ": Setting up " << name << std::endl;
 
     for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
       rwgt::NuReweight& rw = rwVector[i];
