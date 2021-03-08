@@ -109,17 +109,16 @@
 
 namespace sbn{
   namespace evwgh{
-    bool operator==(const sbn::evwgh::EventWeightParameterSet& a,
-                    const sbn::evwgh::EventWeightParameterSet& b)
-    {
-      // TODO proper implementation of this should be added in sbnobj
-      return a.fName == b.fName;
-    }
-
     std::ostream& operator<<(std::ostream& os, const sbn::evwgh::EventWeightParameterSet& p)
     {
       // TODO proper implementation of this should be added in sbnobj
-      return os << p.fName;
+      os << p.fName << " " << p.fRWType << std::endl;
+      for(const auto& it: p.fParameterMap){
+        os << it.first.fName << " " << it.first.fMean << " " << it.first.fWidth << std::endl << " ";
+        for(float v: it.second) os << " " << v;
+        os << std::endl;
+      }
+      return os;
     }
   }
 }
