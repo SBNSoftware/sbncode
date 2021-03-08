@@ -719,21 +719,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // TODO eventually we want to handle multiple sources of weights
-  art::Handle<std::vector<sbn::evwgh::EventWeightMap>> wgts;
-  GetByLabelStrict(evt, fParams.SystWeightLabel(), wgts);
-  if(wgts->size() != mctruths.size()){
-    // TODO ultimately the matching should be based on an Assn
-    std::cout << "CAFMaker:EventWeightMap size doesn't match MCTruth size "
-              << wgts->size() << " vs " << mctruths.size()
-              << std::endl;
-    abort();
-  }
+  art::FindManyP<sbn::evwgh::EventWeightMap> fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
 
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
   for (size_t i=0; i<mctruths.size(); i++) {
-
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
@@ -741,17 +732,21 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
+    const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm.at(i);
+
     // For all the weights associated with this MCTruth
-    for(auto it: (*wgts)[i]){
-      if(fWeightPSetIndex.count(it.first) == 0){
-        std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
-        std::cout << "Known names from EventWeightParameterSet:" << std::endl;
-        for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
-        abort();
+    for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
+      for(auto& it: *wgtmap){
+        if(fWeightPSetIndex.count(it.first) == 0){
+          std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+          std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+          for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
+          abort();
+        }
+        const unsigned int idx = fWeightPSetIndex[it.first];
+        if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
+        srneutrinos.back().wgt[idx] = it.second;
       }
-      const unsigned int idx = fWeightPSetIndex[it.first];
-      if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
-      srneutrinos.back().wgt[idx] = it.second;
     }
 
     srtruthbranch.nu  = srneutrinos;
