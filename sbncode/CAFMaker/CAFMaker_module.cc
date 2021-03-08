@@ -107,6 +107,23 @@
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
 
+namespace sbn{
+  namespace evwgh{
+    bool operator==(const sbn::evwgh::EventWeightParameterSet& a,
+                    const sbn::evwgh::EventWeightParameterSet& b)
+    {
+      // TODO proper implementation of this should be added in sbnobj
+      return a.fName == b.fName;
+    }
+
+    std::ostream& operator<<(std::ostream& os, const sbn::evwgh::EventWeightParameterSet& p)
+    {
+      // TODO proper implementation of this should be added in sbnobj
+      return os << p.fName;
+    }
+  }
+}
+
 namespace caf {
 
 /// Module to create Common Analysis Files from ART files
@@ -161,6 +178,10 @@ class CAFMaker : public art::EDProducer {
 
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
+
+  /// What position in the vector each parameter set take
+  std::map<std::string, unsigned int> fWeightPSetIndex;
+  std::optional<std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
 
   void InitializeOutfile();
 
@@ -321,6 +342,25 @@ void CAFMaker::beginRun(art::Run& run) {
   art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
   GetByLabelStrict(run, fParams.SystWeightLabel(), wgt_params);
 
+  if(fPrevWeightPSet){
+    if(*fPrevWeightPSet != *wgt_params){
+      std::cout << "CAFMaker: Run-level EventWeightParameterSet mismatch."
+                << std::endl;
+      std::cout << "Previous parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *fPrevWeightPSet){
+        std::cout << p << std::endl;
+      }
+      std::cout << "\nNew parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *wgt_params){
+        std::cout << p << std::endl;
+      }
+      abort();
+    }
+    return; // Match, no need to refill into tree
+  }
+
+  fPrevWeightPSet = *wgt_params;
+
   SRGlobal global;
 
   for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
@@ -330,6 +370,8 @@ void CAFMaker::beginRun(art::Run& run) {
     cafpset.type = caf::ReweightType_t(pset.fRWType);
     cafpset.nuniv = pset.fNuniverses;
     if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    fWeightPSetIndex[cafpset.name] = global.wgts.size()-1;
 
     for(const auto& it: pset.fParameterMap){
       const sbn::evwgh::EventWeightParameter& param = it.first;
@@ -345,8 +387,6 @@ void CAFMaker::beginRun(art::Run& run) {
     } // end for it
   } // end for pset
 
-  // TODO this is all wrong in the case of multiple input (and hence output)
-  // files, or multiple Runs.
   fFile->cd();
   TTree* globalTree = new TTree("globalTree", "globalTree");
   SRGlobal* pglobal = &global;
@@ -354,6 +394,8 @@ void CAFMaker::beginRun(art::Run& run) {
   if(!br) abort();
   globalTree->Fill();
   globalTree->Write();
+
+  // TODO logic in flatten_caf, FileReducer, etc to propagate this tree
 }
 
 //......................................................................
@@ -682,7 +724,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.SystWeightLabel(), wgts);
   if(wgts->size() != mctruths.size()){
     // TODO ultimately the matching should be based on an Assn
-    std::cout << "EventWeightMap size doesn't match MCTruth size "
+    std::cout << "CAFMaker:EventWeightMap size doesn't match MCTruth size "
               << wgts->size() << " vs " << mctruths.size()
               << std::endl;
     abort();
@@ -702,8 +744,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // For all the weights associated with this MCTruth
     for(auto it: (*wgts)[i]){
-      // TODO check sequence of strings is consistent / map as the Run had it
-      srneutrinos.back().wgt.genie.wgt.push_back(it.second);
+      if(fWeightPSetIndex.count(it.first) == 0){
+        std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+        std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+        for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
+        abort();
+      }
+      const unsigned int idx = fWeightPSetIndex[it.first];
+      if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
+      srneutrinos.back().wgt[idx] = it.second;
     }
 
     srtruthbranch.nu  = srneutrinos;
