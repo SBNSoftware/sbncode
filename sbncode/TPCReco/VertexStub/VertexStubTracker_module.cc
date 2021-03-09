@@ -38,6 +38,7 @@
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
+#include "sbncode/TPCReco/VertexStub/StubBuilder.h"
 
 #include <memory>
 #include <optional>
@@ -68,7 +69,7 @@ private:
   art::InputTag fPFPLabel;
   art::InputTag fVertexChargeLabel;
   float fdQdxCut;
-  calo::CalorimetryAlg fCaloAlg;
+  sbn::StubBuilder fStubBuilder;
 
 };
 
@@ -77,7 +78,7 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
     fPFPLabel(p.get<art::InputTag>("PFPLabel", "pandora")),
     fVertexChargeLabel(p.get<art::InputTag>("VertexChargeLabel", "vhit")),
     fdQdxCut(p.get<float>("dQdxCut")),
-    fCaloAlg(p.get<fhicl::ParameterSet >("CaloAlg"))
+    fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
   produces<std::vector<sbn::Stub>>();
   produces<art::Assns<sbn::VertexHit, sbn::Stub>>();
@@ -85,82 +86,6 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
   produces<art::Assns<sbn::Stub, recob::Slice>>();
   produces<art::Assns<sbn::Stub, recob::PFParticle>>();
   
-}
-
-art::Ptr<recob::PFParticle> FindPFP(
-  const std::vector<art::Ptr<recob::Hit>> &hits, 
-  const std::vector<art::Ptr<recob::PFParticle>> &pfps, 
-  const std::vector<std::vector<art::Ptr<recob::Hit>>> &pfp_hits) {
-
-  std::vector<unsigned> pfp_nhit(pfps.size(), 0);
-
-  for (const art::Ptr<recob::Hit> h: hits) {
-    for (unsigned i_pfp = 0; i_pfp < pfps.size(); i_pfp++) {
-      const std::vector<art::Ptr<recob::Hit>> &thispfpHits = pfp_hits[i_pfp]; 
-      bool found = false;
-      for (const art::Ptr<recob::Hit> &pfp_h: thispfpHits) {
-        if (h == pfp_h) {
-          found = true;
-          pfp_nhit[i_pfp] ++;
-          break;
-        }
-      }
-      if (found) break;
-    }
-  }
-
-  for (unsigned i_pfp = 0; i_pfp < pfps.size(); i_pfp++) {
-    if (pfp_nhit[i_pfp] >= hits.size() / 2) return pfps[i_pfp];
-  }
-
-  art::Ptr<recob::PFParticle> null;
-  return null;
-}
-
-std::vector<art::Ptr<recob::Hit>> CollectHits(
-    const std::vector<art::Ptr<recob::Hit>> &hits, 
-    const sbn::VertexHit &vhit, 
-    const recob::Hit &vhit_hit, 
-    const geo::Point_t &vertex, 
-    const geo::GeometryCore *geo, 
-    const detinfo::DetectorPropertiesData &dprop) {
-
-  // project the vertex onto the wireplane
-  float vert_w = geo->WireCoordinate(vertex, vhit_hit.WireID());
-  float vert_x = vertex.x();
-
-  // get the vertex hit-coordinates
-  float hit_w = vhit_hit.WireID().Wire;
-  float hit_x = dprop.ConvertTicksToX(vhit_hit.PeakTime(), vhit_hit.WireID());
-  geo::PlaneID vhit_plane = vhit_hit.WireID();
-
-  // get the line-segment slope / intercept
-  float slope = (hit_x - vert_x) / (hit_w - vert_w);
-  float intercept = hit_x - slope * hit_w;
-
-  // get all the hits that overlap between these two points
-  std::vector<art::Ptr<recob::Hit>> ret;
-  for (art::Ptr<recob::Hit> h: hits) {
-    float this_hit_w = h->WireID().Wire;
-    geo::PlaneID this_hit_plane = h->WireID();
-    if (this_hit_plane == vhit_plane &&  // check plane
-       ((this_hit_w <= hit_w && this_hit_w >= vert_w) || // check overlap
-        (this_hit_w >= hit_w && this_hit_w <= vert_w))) {
-      float this_proj_x = slope * this_hit_w + intercept;
-
-      float h_time_lo = h->PeakTime() - h->RMS();
-      float h_x_A = dprop.ConvertTicksToX(h_time_lo, h->WireID());
-      float h_time_hi = h->PeakTime() + h->RMS();
-      float h_x_B = dprop.ConvertTicksToX(h_time_hi, h->WireID());
-
-      if ((h_x_A >= this_proj_x && h_x_B <= this_proj_x) ||
-          (h_x_A <= this_proj_x && h_x_B >= this_proj_x)) {
-        ret.push_back(h);
-      }
-    }
-  }
-  
-  return ret;
 }
 
 void sbn::VertexStubTracker::produce(art::Event& e)
@@ -191,6 +116,9 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   art::FindManyP<recob::Vertex> vhitVtxs(vhits, e, fVertexChargeLabel);
   art::FindManyP<recob::Hit> vhitHits(vhits, e, fVertexChargeLabel);
 
+  // Setup the stub builder
+  fStubBuilder.Setup(e, fPFPLabel);
+
   // Holders for saving data on slc info
   std::map<unsigned, std::vector<std::vector<art::Ptr<recob::Hit>>>> slicePFPHits;
 
@@ -202,59 +130,11 @@ void sbn::VertexStubTracker::produce(art::Event& e)
 
     // Collect more data
     art::Ptr<recob::Slice> thisSlice = vhitSlcs.at(i_vhit).at(0);
+    const recob::Vertex &thisVertex = *vhitVtxs.at(i_vhit).at(0);
 
-    art::FindManyP<recob::PFParticle> findThisSlicePFP({thisSlice}, e, fPFPLabel);
-    const std::vector<art::Ptr<recob::PFParticle>> &thisSlicePFPs = findThisSlicePFP.at(0);
-
-    art::FindManyP<recob::Hit> findThisSliceHits({thisSlice}, e, fPFPLabel);
-    const std::vector<art::Ptr<recob::Hit>> &hits = findThisSliceHits.at(0);
-
-    // If we haven't seen this slice beore, collect the hits for its pfparticles
-    if (!slicePFPHits.count(thisSlice.key())) {
-      art::FindManyP<recob::Cluster> pfparticleClusters(thisSlicePFPs, e, fPFPLabel);
-
-      std::vector<std::vector<art::Ptr<recob::Hit>>> thisSlicePFPHits;
-      for (unsigned i_slc_pfp = 0; i_slc_pfp < thisSlicePFPs.size(); i_slc_pfp++) {
-        thisSlicePFPHits.emplace_back();
-        const std::vector<art::Ptr<recob::Cluster>> &thisPFPClusters = pfparticleClusters.at(i_slc_pfp);
-        art::FindManyP<recob::Hit> clusterHits(thisPFPClusters, e, fPFPLabel);
-        for (unsigned i_clus = 0; i_clus < thisPFPClusters.size(); i_clus++) {
-          thisSlicePFPHits.back().insert(thisSlicePFPHits.back().end(), clusterHits.at(i_clus).begin(), clusterHits.at(i_clus).end());
-        }
-      }
-      slicePFPHits[thisSlice.key()] = thisSlicePFPHits;
-    }
-
-    const std::vector<std::vector<art::Ptr<recob::Hit>>> &thisSlicePFPHits = slicePFPHits.at(thisSlice.key());
-
-    const recob::Vertex &vert = *vhitVtxs.at(i_vhit).at(0);
-    TVector3 vert_v(vert.position().X(), vert.position().Y(), vert.position().Z());
-
-    std::vector<art::Ptr<recob::Hit>> thisHits = CollectHits(hits, thisVHit, thisVHitHit, vert.position(), geo, dprop);
-
-    // Find which pfparticle to group this VertexStub with 
-    art::Ptr<recob::PFParticle> thisStubPFP = FindPFP(thisHits, thisSlicePFPs, thisSlicePFPHits);
-
-    float charge = 0.;
-    std::set<int> wires;
-    for (unsigned i_hit = 0; i_hit < thisHits.size(); i_hit++) {
-      const recob::Hit &hit = *thisHits[i_hit];
-      charge += fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
-      wires.insert(hit.WireID().Wire);
-    }
-
-    float vert_w = geo->WireCoordinate(vert.position(), thisVHitHit.WireID());
-    float hit_w = thisVHitHit.WireID().Wire;
-    float wire_dist = abs(hit_w - vert_w);
-
-    sbn::Stub stub;
-    stub.charge = charge;
-    stub.vtx = vert_v;
-    stub.end = thisVHit.spXYZ;
-    stub.pitch = thisVHit.charge / thisVHit.dqdx;
-    stub.nwire = wires.size();
-    stub.wire_dist = wire_dist;
-    stub.plane = thisVHit.wire;
+    std::vector<art::Ptr<recob::Hit>> thisHits;
+    art::Ptr<recob::PFParticle> thisStubPFP;
+    sbn::Stub stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, thisVertex, geo, clock_data, dprop, thisHits, thisStubPFP); 
 
     // Save!
     outStubs->push_back(stub);
