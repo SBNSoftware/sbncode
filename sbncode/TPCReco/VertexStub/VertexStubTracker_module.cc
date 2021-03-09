@@ -13,6 +13,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -39,6 +40,7 @@
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbncode/TPCReco/VertexStub/StubBuilder.h"
+#include "sbncode/TPCReco/VertexStub/IStubMerge.h"
 
 #include <memory>
 #include <optional>
@@ -70,7 +72,7 @@ private:
   art::InputTag fVertexChargeLabel;
   float fdQdxCut;
   sbn::StubBuilder fStubBuilder;
-
+  std::vector<std::unique_ptr<sbn::IStubMerge>> fStubMergeTools;
 };
 
 sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
@@ -80,6 +82,12 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
     fdQdxCut(p.get<float>("dQdxCut")),
     fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
+  // load the tools
+  std::vector<fhicl::ParameterSet> merge_tool_configs(p.get<std::vector<fhicl::ParameterSet>>("MergeTools"));
+  for (unsigned i = 0; i < merge_tool_configs.size(); i++) {
+    fStubMergeTools.push_back(art::make_tool<IStubMerge>(merge_tool_configs[i]));
+  }
+
   produces<std::vector<sbn::Stub>>();
   produces<art::Assns<sbn::VertexHit, sbn::Stub>>();
   produces<art::Assns<sbn::Stub, recob::Hit>>();
@@ -106,50 +114,68 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   art::PtrMaker<sbn::Stub> StubPtrMaker {e};
 
   // input data
-  art::Handle<std::vector<sbn::VertexHit>> vhit_handle;
-  e.getByLabel(fVertexChargeLabel, vhit_handle);
+  art::Handle<std::vector<recob::Slice>> slice_handle;
+  e.getByLabel(fPFPLabel, slice_handle);
 
-  std::vector<art::Ptr<sbn::VertexHit>> vhits;
-  art::fill_ptr_vector(vhits, vhit_handle);
+  std::vector<art::Ptr<recob::Slice>> slices;
+  art::fill_ptr_vector(slices, slice_handle);
 
-  art::FindManyP<recob::Slice> vhitSlcs(vhits, e, fVertexChargeLabel);
-  art::FindManyP<recob::Vertex> vhitVtxs(vhits, e, fVertexChargeLabel);
-  art::FindManyP<recob::Hit> vhitHits(vhits, e, fVertexChargeLabel);
+  art::FindManyP<sbn::VertexHit> slcVHits(slices, e, fVertexChargeLabel);
 
   // Setup the stub builder
   fStubBuilder.Setup(e, fPFPLabel);
 
-  // Holders for saving data on slc info
-  std::map<unsigned, std::vector<std::vector<art::Ptr<recob::Hit>>>> slicePFPHits;
+  for (unsigned i_slc = 0; i_slc < slices.size(); i_slc++) {
+    const std::vector<art::Ptr<sbn::VertexHit>> vhits = slcVHits.at(i_slc);
+    
+    // look up info per vertex hit
+    art::FindManyP<recob::Vertex> vhitVtxs(vhits, e, fVertexChargeLabel);
+    art::FindManyP<recob::Hit> vhitHits(vhits, e, fVertexChargeLabel);
 
-  for (unsigned i_vhit = 0; i_vhit < vhits.size(); i_vhit++) {
-    // Collect data on this Vertex-Hit
-    const sbn::VertexHit &thisVHit = *vhits[i_vhit];
-    const recob::Hit &thisVHitHit = *vhitHits.at(i_vhit).at(0);
-    if (thisVHit.dqdx < fdQdxCut) continue;
+    // stuff common to each vertex hit in a slice
+    art::Ptr<recob::Slice> thisSlice = slices[i_slc];
+    // each hit should have the same vertex
+    recob::Vertex vertex;
+    if (vhits.size()) vertex = *vhitVtxs.at(0).at(0);
+  
+    std::vector<sbn::StubInfo> stubs;
+    for (unsigned i_vhit = 0; i_vhit < vhits.size(); i_vhit++) {
+      // Collect data on this Vertex-Hit
+      const sbn::VertexHit &thisVHit = *vhits[i_vhit];
+      const recob::Hit &thisVHitHit = *vhitHits.at(i_vhit).at(0);
+      if (thisVHit.dqdx < fdQdxCut) continue;
 
-    // Collect more data
-    art::Ptr<recob::Slice> thisSlice = vhitSlcs.at(i_vhit).at(0);
-    const recob::Vertex &thisVertex = *vhitVtxs.at(i_vhit).at(0);
+      sbn::StubInfo sinfo;
+      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, vertex, geo, clock_data, dprop, sinfo.hits, sinfo.pfp); 
+      sinfo.vhit = vhits[i_vhit];
+      sinfo.vhit_hit = vhitHits.at(i_vhit).at(0);
 
-    std::vector<art::Ptr<recob::Hit>> thisHits;
-    art::Ptr<recob::PFParticle> thisStubPFP;
-    sbn::Stub stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, thisVertex, geo, clock_data, dprop, thisHits, thisStubPFP); 
+      stubs.push_back(sinfo);
+
+    } // end iterate over vertex hits
+
+    // Run all of the merging tools
+    for (unsigned i_mrg = 0; i_mrg < fStubMergeTools.size(); i_mrg++) {
+      fStubMergeTools[i_mrg]->Merge(stubs, vertex, geo, dprop);
+    }
 
     // Save!
-    outStubs->push_back(stub);
-    art::Ptr<sbn::Stub> outStub = StubPtrMaker(outStubs->size() - 1);
-    assn->addSingle(vhits[i_vhit], outStub);
-    for (unsigned i_hit = 0; i_hit < thisHits.size(); i_hit++) { 
-      hitAssn->addSingle(outStub, thisHits[i_hit]);
-    }
-    slcAssn->addSingle(outStub, thisSlice);
-    if (thisStubPFP) {
-      pfpAssn->addSingle(outStub, thisStubPFP);
-    }
+    for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
+      const sbn::StubInfo &sinfo = stubs[i_stub];
 
-  } // end iterate over vertex hits
+      outStubs->push_back(sinfo.stub);
+      art::Ptr<sbn::Stub> outStub = StubPtrMaker(outStubs->size() - 1);
+      assn->addSingle(sinfo.vhit, outStub);
+      for (unsigned i_hit = 0; i_hit < sinfo.hits.size(); i_hit++) { 
+        hitAssn->addSingle(outStub, sinfo.hits[i_hit]);
+      }
+      slcAssn->addSingle(outStub, thisSlice);
+      if (sinfo.pfp) {
+        pfpAssn->addSingle(outStub, sinfo.pfp);
+      }
+    } // end loop over stubs
 
+  } // end loop over slices
   // Save into event
   e.put(std::move(outStubs));
   e.put(std::move(assn));
