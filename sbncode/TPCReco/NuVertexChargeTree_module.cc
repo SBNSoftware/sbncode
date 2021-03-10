@@ -40,6 +40,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "../LArRecoProducer/LArReco/TrackMomentumCalculator.h"
 
+#include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
+
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 
@@ -70,7 +72,6 @@ public:
     fIFile += 1;
   }
 
-
 private:
   // helpers
   void Clear();
@@ -82,17 +83,21 @@ private:
    const std::vector<std::vector<std::pair<int, float>>> &slice_pfp_matches,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
    const std::vector<const sim::GeneratedParticleInfo *> infos);
+
   void FillVertexHits(
     const std::vector<art::Ptr<sbn::VertexHit>> &hits, 
     const std::vector<art::Ptr<recob::Hit>> &hit_hits,
     const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles);
+
   void FillStubs(
-    const std::vector<art::Ptr<sbn::Stub>> &stubs,
+    const std::vector<sbn::StubInfo> &stubs,
     const std::vector<unsigned> &stub_hit_inds,
-    const std::vector<std::vector<art::Ptr<recob::Hit>>> &stub_hits,
+    const geo::GeometryCore *geo,
+    const detinfo::DetectorPropertiesData &dprop,
     const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles);
+
   void FillStubPFPs(
     const std::vector<art::Ptr<recob::PFParticle>> &stub_pfps,
     const std::vector<std::vector<art::Ptr<recob::Hit>>> &stub_pfp_hits,
@@ -135,6 +140,10 @@ private:
   std::vector<bool> fFSPMtachedPrimary;
   std::vector<bool> fFSPIsStopping;
 
+  std::vector<float> fFSPEndX;
+  std::vector<float> fFSPEndY;
+  std::vector<float> fFSPEndZ;
+
   float fRecoVertDist;
 
   std::vector<int> fVertexHitSPID;
@@ -149,6 +158,9 @@ private:
   std::vector<float> fVertexHitTrueEnergy;
   std::vector<float> fVertexHitTrueProtonEnergy;
   std::vector<float> fVertexHitTrueBraggProtonEnergy;
+  std::vector<float> fVertexHitTrueX;
+  std::vector<float> fVertexHitTrueY;
+  std::vector<float> fVertexHitTrueZ;
 
   std::array<std::vector<int>, MAX_PFP> fVertexHitPFPIDs;
   std::array<std::vector<float>, MAX_PFP> fVertexHitPFPDists;
@@ -181,6 +193,10 @@ private:
   std::vector<float> fStubPFPTruePx;
   std::vector<float> fStubPFPTruePy;
   std::vector<float> fStubPFPTruePz;
+
+  std::vector<std::vector<int>> fStubMatch;
+  std::vector<std::vector<short>> fStubMatchOverlaps;
+  std::vector<std::vector<float>> fStubMatchDot;
 
   int fNSliceParticles;
   int fNSlicePrimaryParticles;
@@ -215,6 +231,10 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("fsp_py", &fFSPPy);
   _tree->Branch("fsp_pz", &fFSPPz);
 
+  _tree->Branch("fsp_end_x", &fFSPEndZ);
+  _tree->Branch("fsp_end_y", &fFSPEndY);
+  _tree->Branch("fsp_end_z", &fFSPEndZ);
+
   _tree->Branch("fsp_e", &fFSPE);
   _tree->Branch("fsp_ke", &fFSPKE);
   _tree->Branch("fsp_vise", &fFSPVisE);
@@ -239,6 +259,9 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("vertex_hit_true_e", &fVertexHitTrueEnergy);
   _tree->Branch("vertex_hit_true_proton_e", &fVertexHitTrueProtonEnergy);
   _tree->Branch("vertex_hit_true_bragg_proton_e", &fVertexHitTrueBraggProtonEnergy);
+  _tree->Branch("vertex_hit_true_x", &fVertexHitTrueX);
+  _tree->Branch("vertex_hit_true_y", &fVertexHitTrueY);
+  _tree->Branch("vertex_hit_true_z", &fVertexHitTrueZ);
 
   _tree->Branch("stub_dirx", &fStubDirx);
   _tree->Branch("stub_diry", &fStubDiry);
@@ -265,6 +288,10 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("stub_pfp_true_px", &fStubPFPTruePx);
   _tree->Branch("stub_pfp_true_py", &fStubPFPTruePy);
   _tree->Branch("stub_pfp_true_pz", &fStubPFPTruePz);
+
+  _tree->Branch("stub_match", &fStubMatch);
+  _tree->Branch("stub_match_overlaps", &fStubMatchOverlaps);
+  _tree->Branch("stub_match_dot", &fStubMatchDot);
 
   for (unsigned i = 0; i < MAX_PFP; i++) {
     _tree->Branch(("vertex_hit_pfp_ids_" + std::to_string(i)).c_str(), &fVertexHitPFPIDs[i]);
@@ -361,6 +388,10 @@ void sbn::NuVertexChargeTree::Clear() {
   fFSPPy.clear();
   fFSPPz.clear();
 
+  fFSPEndX.clear();
+  fFSPEndY.clear();
+  fFSPEndZ.clear();
+
   fFSPE.clear();
   fFSPKE.clear();
   fFSPVisE.clear();
@@ -384,6 +415,9 @@ void sbn::NuVertexChargeTree::Clear() {
   fVertexHitTrueEnergy.clear();
   fVertexHitTrueProtonEnergy.clear();
   fVertexHitTrueBraggProtonEnergy.clear();
+  fVertexHitTrueX.clear();
+  fVertexHitTrueY.clear();
+  fVertexHitTrueZ.clear();
 
   fStubDirx.clear();
   fStubDiry.clear();
@@ -408,6 +442,10 @@ void sbn::NuVertexChargeTree::Clear() {
   fStubPFPTruePx.clear();
   fStubPFPTruePy.clear();
   fStubPFPTruePz.clear();
+
+  fStubMatch.clear();
+  fStubMatchOverlaps.clear();
+  fStubMatchDot.clear();
 
   for (unsigned i = 0; i < MAX_PFP; i++) {
     fVertexHitPFPIDs[i].clear();
@@ -504,18 +542,21 @@ void sbn::NuVertexChargeTree::FillStubPFPs(
       fStubPFPTruePy.push_back(-1);
       fStubPFPTruePz.push_back(-1);
     }
+
   } // end iterate over Stub-PFParticle's
 }
 
 void sbn::NuVertexChargeTree::FillStubs(
-    const std::vector<art::Ptr<sbn::Stub>> &stubs,
+    const std::vector<sbn::StubInfo> &stubs,
     const std::vector<unsigned> &stub_hit_inds,
-    const std::vector<std::vector<art::Ptr<recob::Hit>>> &stub_hits,
+    const geo::GeometryCore *geo,
+    const detinfo::DetectorPropertiesData &dprop,
     const detinfo::DetectorClocksData &clock_data,
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles) {
       
   for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
-    const sbn::Stub &stub = *stubs[i_stub];
+    const sbn::Stub &stub = stubs[i_stub].stub;
+
     // fill reco info
     fStubLength.push_back((stub.vtx - stub.end).Mag());
     fStubDirx.push_back((stub.end - stub.vtx).Unit().X());
@@ -530,7 +571,7 @@ void sbn::NuVertexChargeTree::FillStubs(
     fStubHitInd.push_back(stub_hit_inds[i_stub]);
 
     // truth-matching
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, stub_hits[i_stub]);
+    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, stubs[i_stub].hits);
     // sort
     std::sort(matches.begin(), matches.end(), 
       [](auto const &lhs, auto const &rhs) {
@@ -569,10 +610,19 @@ void sbn::NuVertexChargeTree::FillStubs(
       fStubTruePz.push_back(-1);
     }
 
-
+    fStubMatch.emplace_back();
+    fStubMatchOverlaps.emplace_back();
+    fStubMatchDot.emplace_back();
+    for (unsigned j_stub = 0; j_stub < stubs.size(); j_stub++) {
+      if (i_stub == j_stub) continue;
+      if (stubs[i_stub].stub.plane == stubs[j_stub].stub.plane) {
+        fStubMatch.back().push_back(j_stub);
+        fStubMatchOverlaps.back().push_back(sbn::StubContains(stubs[i_stub], stubs[j_stub]));
+        fStubMatchDot.back().push_back(sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], geo, dprop)); 
+      }
+    }
   } // end iterate over vertex-stubs
 }
-
 void sbn::NuVertexChargeTree::FillVertexHits(
     const std::vector<art::Ptr<sbn::VertexHit>> &hits, 
     const std::vector<art::Ptr<recob::Hit>> &hit_hits,
@@ -618,6 +668,11 @@ void sbn::NuVertexChargeTree::FillVertexHits(
     fVertexHitTrueEnergy.push_back(0.);
     fVertexHitTrueProtonEnergy.push_back(0.);
     fVertexHitTrueBraggProtonEnergy.push_back(0.);
+
+    fVertexHitTrueX.push_back(0.);
+    fVertexHitTrueY.push_back(0.);
+    fVertexHitTrueZ.push_back(0.);
+
     // Get the matching energy of the hit 
     art::ServiceHandle<cheat::BackTrackerService> bt;
     std::vector<sim::IDE> hit_ides;
@@ -629,6 +684,10 @@ void sbn::NuVertexChargeTree::FillVertexHits(
 
     for (unsigned i_ide = 0; i_ide < hit_ides.size(); i_ide++) {
       fVertexHitTrueEnergy.back() += hit_ides[i_ide].energy;
+      fVertexHitTrueX.back() += hit_ides[i_ide].energy * hit_ides[i_ide].x;
+      fVertexHitTrueY.back() += hit_ides[i_ide].energy * hit_ides[i_ide].y;
+      fVertexHitTrueZ.back() += hit_ides[i_ide].energy * hit_ides[i_ide].z;
+
       for (unsigned i_g4 = 0; i_g4 < trueParticles.size(); i_g4++) {
         if (abs(hit_ides[i_ide].trackID) == trueParticles[i_g4]->TrackId()) {
           if (abs(trueParticles[i_g4]->PdgCode()) == 2212) {
@@ -642,7 +701,14 @@ void sbn::NuVertexChargeTree::FillVertexHits(
         }
       }
     }
-  }
+
+    if (hit_ides.size()) {
+      fVertexHitTrueX.back() /= fVertexHitTrueEnergy.back();
+      fVertexHitTrueY.back() /= fVertexHitTrueEnergy.back();
+      fVertexHitTrueZ.back() /= fVertexHitTrueEnergy.back();
+    }
+
+  } // end iterate over hits
 }
 
 void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu, 
@@ -691,6 +757,10 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     fFSPPx.push_back(particle.Momentum().Px());
     fFSPPy.push_back(particle.Momentum().Py());
     fFSPPz.push_back(particle.Momentum().Pz());
+
+    fFSPEndX.push_back(particle.EndPosition().X());
+    fFSPEndY.push_back(particle.EndPosition().Y());
+    fFSPEndZ.push_back(particle.EndPosition().Z());
 
     fFSPE.push_back(particle.Momentum().E());
     fFSPKE.push_back(particle.Momentum().E() - particle.Momentum().M());
@@ -757,12 +827,14 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
   }
 }
 
-void sbn::NuVertexChargeTree::analyze(art::Event const& evt)
-{
+void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
   // services
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
   art::ServiceHandle<cheat::ParticleInventoryService> inventory_service;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
+  const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
 
   // input data
   std::vector<std::vector<art::Ptr<recob::Slice>>> sliceList;
@@ -980,6 +1052,18 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt)
     const std::vector<art::Ptr<recob::PFParticle>> &thisStubPFPs = sliceStubPFPs.at(slice_match);
     const std::vector<std::vector<art::Ptr<recob::Hit>>> &thisStubPFPHits = sliceStubPFPHits.at(slice_match);
 
+    // Build the stub infos
+    std::vector<sbn::StubInfo> thisStubInfos;
+    for (unsigned i = 0; i < thisStubs.size(); i++) {
+      thisStubInfos.emplace_back();
+
+      thisStubInfos.back().stub = *thisStubs[i];
+      thisStubInfos.back().pfp = thisStubPFPs.at(i);
+      thisStubInfos.back().hits = thisStubHits.at(i);
+      thisStubInfos.back().vhit = thisVertexHits.at(thisStubHitInds[i]);
+      thisStubInfos.back().vhit_hit = thisVertexHitHits.at(thisStubHitInds[i]); 
+    }
+
     (void) thisVertexHitSPs;
     (void) thisVertexHitVtxs;
     //for (unsigned i_hit = 0; i_hit < thisVertexHitHits.size(); i_hit++) {
@@ -1024,7 +1108,7 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt)
     // The vertex hits!
     FillVertexHits(thisVertexHits, thisVertexHitHits, clock_data, trueParticles);
 
-    FillStubs(thisStubs, thisStubHitInds, thisStubHits, clock_data, trueParticles);
+    FillStubs(thisStubInfos, thisStubHitInds, geo, dprop, clock_data, trueParticles);
 
     FillStubPFPs(thisStubPFPs, thisStubPFPHits, clock_data, trueParticles);
 
