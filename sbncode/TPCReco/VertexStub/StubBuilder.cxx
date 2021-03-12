@@ -130,29 +130,32 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     stub_hits = CollectHits(hits, vhit, vhit_hit, vertex.position(), geo, dprop);
 
+    // Sort hits by their proximity to the vertex
+    float vertex_w = geo->WireCoordinate(vertex.position(), vhit_hit.WireID());
+    std::sort(stub_hits.begin(), stub_hits.end(), 
+      [vertex_w](auto const &lhs, auto const &rhs) {
+        return abs(lhs->WireID().Wire - vertex_w) < abs(rhs->WireID().Wire - vertex_w);});
+
     // Find which pfparticle to group this VertexStub with 
     stub_pfp = FindPFP(stub_hits, pfps, pfp_hits);
 
-    float charge = 0.;
+    sbn::Stub stub;
+
+    // Save all the charges
+    stub.charge.emplace_back();
     std::set<int> wires;
     for (unsigned i_hit = 0; i_hit < stub_hits.size(); i_hit++) {
       const recob::Hit &hit = *stub_hits[i_hit];
-      charge += fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
+      float charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
+      stub.charge.back().push_back(charge);
       wires.insert(hit.WireID().Wire);
     }
 
-    float vertex_w = geo->WireCoordinate(vertex.position(), vhit_hit.WireID());
-    float hit_w = vhit_hit.WireID().Wire;
-    float wire_dist = abs(hit_w - vertex_w);
-
-    sbn::Stub stub;
-    stub.charge = charge;
     stub.vtx = vertex_v;
     stub.end = vhit.spXYZ;
-    stub.pitch = vhit.charge / vhit.dqdx;
-    stub.nwire = wires.size();
-    stub.wire_dist = wire_dist;
-    stub.plane = vhit.wire;
+    stub.pitch.push_back(vhit.charge / vhit.dqdx);
+    stub.nwire.push_back(wires.size());
+    stub.plane.push_back(vhit.wire);
 
     return stub;
 }

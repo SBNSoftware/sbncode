@@ -44,7 +44,10 @@ public:
     ~PlaneStubMerge();
 
     void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
-       const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) override;
+       const geo::GeometryCore *geo, 
+       const spacecharge::SpaceCharge *sce, 
+       const detinfo::DetectorClocksData &dclock,
+       const detinfo::DetectorPropertiesData &dprop) override;
 
 private:
   double fStubDotCut;
@@ -61,11 +64,16 @@ PlaneStubMerge::~PlaneStubMerge()
 {
 }
 
-void PlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
+void PlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+    const geo::GeometryCore *geo, 
+    const spacecharge::SpaceCharge *sce,
+    const detinfo::DetectorClocksData &dclock,
+    const detinfo::DetectorPropertiesData &dprop) {
   for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
-    for (unsigned j_stub = i_stub+1; j_stub < stubs.size(); j_stub++) {
+    for (unsigned j_stub = 0; j_stub < stubs.size(); j_stub++) {
+      if (i_stub == j_stub) continue;
       if (sbn::StubContains(stubs[i_stub], stubs[j_stub])) {
-        if (sbn::StubDirectionDot(vertex, stubs[i_stub], stubs[j_stub], geo, dprop) > fStubDotCut) {
+        if (sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], geo, dprop) > fStubDotCut) {
           // delete the smaller stub
           stubs.erase(stubs.begin() + j_stub);
         }

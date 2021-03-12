@@ -21,6 +21,8 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
+#include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
 
 // cpp includes
 #include <vector>
@@ -29,14 +31,6 @@
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 namespace sbn {
-
-struct StubInfo {
-  sbn::Stub stub;
-  art::Ptr<recob::PFParticle> pfp;
-  std::vector<art::Ptr<recob::Hit>> hits;
-  art::Ptr<sbn::VertexHit> vhit;
-  art::Ptr<recob::Hit> vhit_hit;
-};
 
 /**
  *  @brief  IStubMerge interface class definiton
@@ -49,7 +43,11 @@ public:
      */
     virtual ~IStubMerge() noexcept = default;
 
-    virtual void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) = 0;
+    virtual void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+       const geo::GeometryCore *geo, 
+       const spacecharge::SpaceCharge *sce, 
+       const detinfo::DetectorClocksData &dclock,
+       const detinfo::DetectorPropertiesData &dprop) = 0;
 };
 
 } // namespace sbn

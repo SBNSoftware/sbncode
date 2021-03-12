@@ -30,6 +30,7 @@ namespace sbn {
 class StubBuilder {
 public:
   void Setup(const art::Event &e, const art::InputTag &pfplabel);
+  // Build a 1-Plane stub 
   sbn::Stub FromVertexHit(const art::Ptr<recob::Slice> &slice,
 	    const sbn::VertexHit &vhit,
 	    const recob::Hit &vhit_hit, 

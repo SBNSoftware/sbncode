@@ -103,6 +103,8 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+  // TODO: fix -- for now, use a null space-charge service
+  const spacecharge::SpaceCharge *sce = NULL;
 
   // output data products
   std::unique_ptr<std::vector<sbn::Stub>> outStubs(new std::vector<sbn::Stub>);
@@ -156,7 +158,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
 
     // Run all of the merging tools
     for (unsigned i_mrg = 0; i_mrg < fStubMergeTools.size(); i_mrg++) {
-      fStubMergeTools[i_mrg]->Merge(stubs, vertex, geo, dprop);
+      fStubMergeTools[i_mrg]->Merge(stubs, vertex, geo, sce, clock_data, dprop);
     }
 
     // Save!

@@ -1,5 +1,5 @@
-art_make_library(LIBRARY_NAME sbncode_StubBuilder
-        SOURCE StubBuilder.cxx
+art_make_library(LIBRARY_NAME sbncode_StubHelpers
+        SOURCE StubBuilder.cxx PlaneTransform.cxx StubMergeAlgorithms.cxx
         LIBRARIES
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -25,32 +25,6 @@ art_make_library(LIBRARY_NAME sbncode_StubBuilder
 	lardataobj_RecoBase
 	lardataalg_DetectorInfo
 )
-
-art_make_library(LIBRARY_NAME sbncode_StubMergeAlgorithms
-        SOURCE StubMergeAlgorithms.cxx
-        LIBRARIES
-	${ART_FRAMEWORK_CORE}
-	${ART_FRAMEWORK_SERVICES_REGISTRY}
-	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-	${ART_FRAMEWORK_PRINCIPAL}
-	art_Persistency_Common
-	art_Persistency_Provenance
-	art_Utilities canvas
-	${MF_MESSAGELOGGER}
-	${MF_UTILITIES}
-	${FHICLCPP}
-	cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-	MF_MessageLogger
-
-	sbnobj_Common_Reco
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	lardataalg_DetectorInfo
-)
-
 simple_plugin(VertexChargeVacuum module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -74,6 +48,7 @@ simple_plugin(VertexChargeVacuum module
 	larreco_Calorimetry
 	lardataobj_RecoBase
 	lardataalg_DetectorInfo
+	sbncode_StubHelpers
 )
 
 simple_plugin(VertexStubTracker module
@@ -98,7 +73,7 @@ simple_plugin(VertexStubTracker module
         larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataalg_DetectorInfo
-	sbncode_StubBuilder
+	sbncode_StubHelpers
 )
 
 simple_plugin(PlaneStubMerge tool
@@ -123,7 +98,32 @@ simple_plugin(PlaneStubMerge tool
         larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataalg_DetectorInfo
-	sbncode_StubMergeAlgorithms
+	sbncode_StubHelpers
+)
+
+simple_plugin(TwoPlaneStubMerge tool
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Common
+        art_Utilities canvas
+        ${MF_MESSAGELOGGER}
+        ${MF_UTILITIES}
+        ${FHICLCPP}
+        cetlib cetlib_except
+        ${ROOT_EVE_LIB_LIST}
+        ${ROOT_X3d}
+        ${ROOT_BASIC_LIB_LIST}
+        MF_MessageLogger
+
+	sbnobj_Common_Reco
+	lardataobj_AnalysisBase
+        larcorealg_Geometry
+        larcore_Geometry_Geometry_service
+	larreco_Calorimetry
+	lardataalg_DetectorInfo
+	sbncode_StubHelpers
 )
 
 install_headers()

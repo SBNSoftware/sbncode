@@ -37,7 +37,7 @@ simple_plugin(NuVertexChargeTree module
 	larpandora_LArPandoraInterface
         larsim_MCCheater_ParticleInventoryService_service
 	sbn_LArReco	    
-	sbncode_StubMergeAlgorithms
+	sbncode_StubHelpers
 )
 simple_plugin ( EventSelect module
                 ${IFDH_SERVICE}
