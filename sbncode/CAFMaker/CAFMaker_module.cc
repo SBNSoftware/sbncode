@@ -94,6 +94,10 @@
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
+#include "sbnobj/Common/Reco/LGCFit.h"
+#include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -971,9 +975,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
            fParams.TrackCaloLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::ParticleID> fmPID =
+    art::FindManyP<anab::ParticleID> fmChi2PID =
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
-          fParams.TrackPidLabel() + slice_tag_suff);
+          fParams.TrackChi2PidLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::LGCFit> fmLGCFit =
+      FindManyPStrict<sbn::LGCFit>(slcTracks, evt,
+          fParams.TrackLGCFitLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::ScatterDCA> fmScatterDCA =
+      FindManyPStrict<sbn::ScatterDCA>(slcTracks, evt,
+          fParams.TrackScatterDCALabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::StoppingChi2Fit> fmStoppingChi2Fit =
+      FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
+          fParams.TrackStoppingChi2FitLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmMVAPID =
+      FindManyPStrict<sbn::MVAPID>(slcTracks, evt,
+          fParams.TrackMVAPIDLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
@@ -1116,8 +1136,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
         FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
 
-        if (fmPID.isValid()) {
-           FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        if (fmChi2PID.isValid()) {
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        }
+        if (fmLGCFit.isValid() && fmLGCFit.at(iPart).size()==1) {
+           FillTrackLGCFit(fmLGCFit.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmScatterDCA.isValid() && fmScatterDCA.at(iPart).size()==1) {
+           FillTrackScatterDCA(fmScatterDCA.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmMVAPID.isValid() && fmMVAPID.at(iPart).size()==1) {
+           FillTrackMVAPID(fmMVAPID.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());

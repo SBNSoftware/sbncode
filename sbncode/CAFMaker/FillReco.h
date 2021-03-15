@@ -24,6 +24,10 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
+#include "sbnobj/Common/Reco/LGCFit.h"
+#include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -105,6 +109,23 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
+
+  void FillTrackLGCFit(const art::Ptr<sbn::LGCFit> lgc,
+                       caf::SRTrack& srtrack,
+                       bool allowEmpty = false);
+
+  void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,
+                           caf::SRTrack& srtrack,
+                           bool allowEmpty = false);
+
+  void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,
+                                caf::SRTrack& srtrack,
+                                bool allowEmpty = false);
+
+  void FillTrackMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
+
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
                      const std::array<float, 3> &calo_constants,

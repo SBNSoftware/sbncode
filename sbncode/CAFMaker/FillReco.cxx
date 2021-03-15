@@ -377,6 +377,47 @@ namespace caf
       srcalo.charge += dqdx[i] * pitch[i] / constant; /* convert ADC*tick to electrons */
       srcalo.ke += dedx[i] * pitch[i];
     }
+
+  void FillTrackLGCFit(const art::Ptr<sbn::LGCFit> lgc,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.lgcFit.mpv = lgc->mMPV;
+    srtrack.lgcFit.amplitude = lgc->mAmplitude;
+    srtrack.lgcFit.gaussWidth = lgc->mGaussWidth;
+    srtrack.lgcFit.landauWidth = lgc->mLandauWidth;
+    srtrack.lgcFit.chi2 = lgc->mChi2 / lgc->mNDF;
+  }
+
+  void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.scatterDCA.mean = dca->mMean;
+    srtrack.scatterDCA.stdDev = dca->mStdDev;
+    srtrack.scatterDCA.max = dca->mMax;
+  }
+
+  void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.stoppingChi2Fit.pol0Chi2 = stoppingChi2->mPol0Chi2;
+    srtrack.stoppingChi2Fit.expChi2 = stoppingChi2->mExpChi2;
+    srtrack.stoppingChi2Fit.pol0Fit = stoppingChi2->mPol0Fit;
+  }
+
+  void FillTrackMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.mvaPID.muonScore = mvaPID->mMVAScoreMap.at(13);
+    srtrack.mvaPID.pionScore = mvaPID->mMVAScoreMap.at(211);
+    srtrack.mvaPID.protonScore = mvaPID->mMVAScoreMap.at(2212);
+    srtrack.mvaPID.otherScore = mvaPID->mMVAScoreMap.at(0);
+
+    srtrack.mvaPID.pdg = mvaPID->BestPDG();
+    srtrack.mvaPID.bestScore = mvaPID->BestScore();
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,

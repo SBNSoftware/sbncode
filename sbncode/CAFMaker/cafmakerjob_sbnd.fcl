@@ -12,6 +12,10 @@
 
 #include "calorimetry_sbnd.fcl"
 
+#include "pid.fcl"
+#include "tracklgcfitter.fcl"
+#include "trackscatterdca.fcl"
+#include "trackstoppingchi2fitter.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
@@ -84,6 +88,11 @@ physics:
    crtconvhit:            @local::crthitconverter_sbnd
    pandoraTrackCRTHit:          @local::crthitmatch_sbnd
    pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
+
+   pandoraTrackLGC:          @local::tracklgcfitter_sbn
+   pandoraTrackDCA:          @local::trackscatterdca_sbn
+   pandoraTrackStoppingChi2: @local::trackstoppingchi2fitter_sbn
+   pandoraTrackMVAPID:     @local::sbn_MVATrackPID
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -93,7 +102,8 @@ physics:
 #    metadata: @local::standard_metadata            #prod
   }
  runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
-            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew, 
+            pandoraTrackLGC, pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackMVAPID,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
@@ -103,6 +113,10 @@ physics:
 
 
 }
+
+physics.producers.pandoraTrackMVAPID.RunMVA: true
+physics.producers.pandoraTrackMVAPID.MethodName: "BDT::BDTG"
+physics.producers.pandoraTrackMVAPID.WeightFile: "TrackPIDMVA_BDTG.weights.xml"
 
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants

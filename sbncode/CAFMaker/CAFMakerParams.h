@@ -120,10 +120,34 @@ namespace caf
       "pandoraCalo"
     };
 
-    Atom<string> TrackPidLabel {
-      Name("TrackPidLabel"),
-      Comment("Base label of track particle-id producer."),
+    Atom<string> TrackChi2PidLabel {
+      Name("TrackChi2PidLabel"),
+      Comment("Base label of track chi2 particle-id producer."),
       "pandoraPid"
+    };
+
+    Atom<string> TrackLGCFitLabel {
+      Name("TrackLGCFitLabel"),
+      Comment("Base label of track Landau-Guassian fit producer."),
+      "pandoraTrackLGC"
+    };
+
+    Atom<string> TrackScatterDCALabel {
+      Name("TrackScatterDCALabel"),
+      Comment("Base label of track track scatter dca producer."),
+      "pandoraTrackDCA"
+    };
+
+    Atom<string> TrackStoppingChi2FitLabel {
+      Name("TrackStoppingChi2FitLabel"),
+      Comment("Base label of track stopping chi2 fit producer."),
+      "pandoraTrackStoppingChi2"
+    };
+
+    Atom<string> TrackMVAPIDLabel {
+      Name("TrackMVAPIDLabel"),
+      Comment("Base label of track mva particle-id producer."),
+      "pandoraTrackMVAPID"
     };
 
     Atom<string> CRTHitMatchLabel {
