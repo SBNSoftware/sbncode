@@ -1,8 +1,8 @@
 BEGIN_PROLOG
 
 sbnd_plane_transform: {
-  WireAngleU: 1.04719758034
-  WireAngleV: -1.04719758034
+  WireAngleU: -1.04719758034
+  WireAngleV: 1.04719758034
   WireAngleW: 0.
   ViewOrder: [0, 1, 2]
 }

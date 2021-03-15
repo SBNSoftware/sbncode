@@ -134,8 +134,10 @@ private:
   std::vector<float> fFSPPz;
 
   std::vector<float> fFSPE;
+  std::vector<float> fFSPQ;
   std::vector<float> fFSPKE;
   std::vector<float> fFSPVisE;
+  std::vector<float> fFSPLen;
   std::vector<int> fFSPPID;
   std::vector<bool> fFSPMatched;
   std::vector<int> fFSPMatchedPID;
@@ -143,6 +145,9 @@ private:
   std::vector<bool> fFSPMtachedPrimary;
   std::vector<bool> fFSPIsStopping;
 
+  std::vector<float> fFSPStartX;
+  std::vector<float> fFSPStartY;
+  std::vector<float> fFSPStartZ;
   std::vector<float> fFSPEndX;
   std::vector<float> fFSPEndY;
   std::vector<float> fFSPEndZ;
@@ -182,6 +187,7 @@ private:
   std::vector<int> fStubNWire;
   std::vector<int> fStubHitInd;
   std::vector<int> fStubPFPID;
+  std::vector<int> fStubNPlane;
 
   std::vector<float> fStubTrueKE;
   std::vector<float> fStubTrueLength;
@@ -243,6 +249,9 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("fsp_py", &fFSPPy);
   _tree->Branch("fsp_pz", &fFSPPz);
 
+  _tree->Branch("fsp_start_x", &fFSPStartZ);
+  _tree->Branch("fsp_start_y", &fFSPStartY);
+  _tree->Branch("fsp_start_z", &fFSPStartZ);
   _tree->Branch("fsp_end_x", &fFSPEndZ);
   _tree->Branch("fsp_end_y", &fFSPEndY);
   _tree->Branch("fsp_end_z", &fFSPEndZ);
@@ -250,6 +259,8 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("fsp_e", &fFSPE);
   _tree->Branch("fsp_ke", &fFSPKE);
   _tree->Branch("fsp_vise", &fFSPVisE);
+  _tree->Branch("fsp_q", &fFSPQ);
+  _tree->Branch("fsp_len", &fFSPLen);
   _tree->Branch("fsp_pid", &fFSPPID);
   _tree->Branch("fsp_matched", &fFSPMatched);
   _tree->Branch("fsp_matched_pfp_primary", &fFSPMatchedPFPPrimary);
@@ -286,6 +297,7 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("stub_nwire", &fStubNWire);
   _tree->Branch("stub_hit_ind", &fStubHitInd);
   _tree->Branch("stub_pfpid", &fStubPFPID);
+  _tree->Branch("stub_nplane", &fStubNPlane);
 
   _tree->Branch("stub_true_ke", &fStubTrueKE);
   _tree->Branch("stub_true_length", &fStubTrueLength);
@@ -408,13 +420,18 @@ void sbn::NuVertexChargeTree::Clear() {
   fFSPPy.clear();
   fFSPPz.clear();
 
+  fFSPStartX.clear();
+  fFSPStartY.clear();
+  fFSPStartZ.clear();
   fFSPEndX.clear();
   fFSPEndY.clear();
   fFSPEndZ.clear();
 
+  fFSPQ.clear();
   fFSPE.clear();
   fFSPKE.clear();
   fFSPVisE.clear();
+  fFSPLen.clear();
   fFSPPID.clear();
   fFSPMatched.clear();
   fFSPMatchedPFPPrimary.clear();
@@ -450,6 +467,7 @@ void sbn::NuVertexChargeTree::Clear() {
   fStubNWire.clear();
   fStubHitInd.clear();
   fStubPFPID.clear();
+  fStubNPlane.clear();
 
   fStubTrueKE.clear();
   fStubTrueLength.clear();
@@ -599,6 +617,8 @@ void sbn::NuVertexChargeTree::FillStubs(
     fStubRecoP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).Mag(), 2212));
 
     fStubHitInd.push_back(stub_hit_inds[i_stub]);
+
+    fStubNPlane.push_back(stub.plane.size());
 
     // truth-matching
     std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, stubs[i_stub].hits);
@@ -811,6 +831,9 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     fFSPPy.push_back(particle.Momentum().Py());
     fFSPPz.push_back(particle.Momentum().Pz());
 
+    fFSPStartX.push_back(G4->Position().X());
+    fFSPStartY.push_back(G4->Position().Y());
+    fFSPStartZ.push_back(G4->Position().Z());
     fFSPEndX.push_back(G4->EndPosition().X());
     fFSPEndY.push_back(G4->EndPosition().Y());
     fFSPEndZ.push_back(G4->EndPosition().Z());
@@ -818,6 +841,8 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     fFSPE.push_back(particle.Momentum().E());
     fFSPKE.push_back(particle.Momentum().E() - particle.Momentum().M());
     fFSPPID.push_back(particle.PdgCode());
+
+    fFSPLen.push_back((G4->Position().Vect() - G4->EndPosition().Vect()).Mag());
 
     bool is_stopping =  (G4->EndProcess() == "Decay" ||
                                         G4->EndProcess() == "CoupledTransportation" ||
@@ -831,9 +856,14 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     // Total up the energy fromthis particle
     std::vector<const sim::IDE*> particle_ides(backtracker->TrackIdToSimIDEs_Ps(G4->TrackId()));
     float thisVisE = 0.;
-    for (const sim::IDE *ide: particle_ides) thisVisE += ide->energy;
+    float thisQ = 0.;
+    for (const sim::IDE *ide: particle_ides) {
+      thisVisE += ide->energy;
+      thisQ += ide->numElectrons;
+    }
 
     fFSPVisE.push_back(thisVisE / 3. /* average over each plane */);
+    fFSPQ.push_back(thisQ / 3.);
 
     bool found_match = false;
     bool primary_match = false;
@@ -975,8 +1005,8 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
       sliceStubHitInds.emplace_back();
       for (unsigned i_stub = 0; i_stub < sliceVertexHits.back().size(); i_stub++) {
         const std::vector<art::Ptr<sbn::Stub>> &this_vh = vertexStubs.at(i_stub);
-        if (this_vh.size()) {
-          sliceStubs.back().push_back(this_vh.at(0));
+        for (unsigned i_vh_stub = 0; i_vh_stub < this_vh.size(); i_vh_stub++) {
+          sliceStubs.back().push_back(this_vh.at(i_vh_stub));
           sliceStubHitInds.back().push_back(i_stub);
         }
       }

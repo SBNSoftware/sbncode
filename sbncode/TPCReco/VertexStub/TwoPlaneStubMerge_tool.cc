@@ -48,23 +48,28 @@ public:
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
        const detinfo::DetectorPropertiesData &dprop) override;
+
     sbn::StubInfo MergeStubs(const sbn::StubInfo &A, const sbn::StubInfo &B,
       const geo::GeometryCore *geo,
       const spacecharge::SpaceCharge *sce,
       const detinfo::DetectorPropertiesData &dprop);
+
+    bool SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 private:
   sbn::PlaneTransform fPlaneTransform;
   double fMaxMergeTOff;
   double fMaxMergeQOff;
   bool fRemoveDuplicateMerges;
+  bool fSaveOldStubs;
 };
 
 TwoPlaneStubMerge::TwoPlaneStubMerge(fhicl::ParameterSet const &pset):
   fPlaneTransform(pset.get<fhicl::ParameterSet>("PlaneTransform")),
   fMaxMergeTOff(pset.get<double>("MaxMergeTOff")),
   fMaxMergeQOff(pset.get<double>("MaxMergeQOff")),
-  fRemoveDuplicateMerges(pset.get<bool>("RemoveDuplicateMerges"))
+  fRemoveDuplicateMerges(pset.get<bool>("RemoveDuplicateMerges")),
+  fSaveOldStubs(pset.get<bool>("SaveOldStubs"))
 {
 }
 
@@ -72,6 +77,15 @@ TwoPlaneStubMerge::TwoPlaneStubMerge(fhicl::ParameterSet const &pset):
 
 TwoPlaneStubMerge::~TwoPlaneStubMerge()
 {
+}
+    
+// Return true if stub A is "better" than stub B
+bool TwoPlaneStubMerge::SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B) {
+  // First -- try more hits
+  if (A.hits.size() != B.hits.size()) return A.hits.size() > B.hits.size();
+
+  // Sort by desirability of plane: 2 better than 0 better than 1
+  return ((A.vhit_hit->WireID().Plane + 1) % 3) < ((B.vhit_hit->WireID().Plane + 1) % 3);
 }
 
 sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::StubInfo &B,
@@ -87,8 +101,8 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   ret.hits.insert(ret.hits.end(), A.hits.begin(), A.hits.end());
 
   // Figure out which is the "better" stub-plane -- probably the one with the lower pitch
-  const sbn::StubInfo &best = (A.stub.pitch.front() < B.stub.pitch.front()) ? A : B;
-  const sbn::StubInfo &othr = (A.stub.pitch.front() < B.stub.pitch.front()) ? B : A;
+  const sbn::StubInfo &best = SortStubs(A, B) ? A : B;
+  const sbn::StubInfo &othr = SortStubs(A, B) ? B : A;
 
   ret.pfp = best.pfp;
   ret.vhit = best.vhit;
@@ -170,6 +184,8 @@ void TwoPlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Ve
     if (thismrg.toff < fMaxMergeTOff && thismrg.qoff < fMaxMergeQOff) {
       if (!hasmerged.count(thismrg.i) && !hasmerged.count(thismrg.j)) { 
         stubs.push_back(MergeStubs(oldstubs[thismrg.i], oldstubs[thismrg.j], geo, sce, dprop));
+        hasmerged.insert(thismrg.i);
+        hasmerged.insert(thismrg.j);
       }
       else if (!hasmerged.count(thismrg.i) && fRemoveDuplicateMerges) {
         dontsave.insert(thismrg.i);
@@ -178,12 +194,11 @@ void TwoPlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Ve
         dontsave.insert(thismrg.j);
       }
     }
-    else break;
   }
 
   // Save the stubs which were not merged across planes and not marked to be removed
   for (unsigned i_stub = 0; i_stub < oldstubs.size(); i_stub++) {
-    if (!hasmerged.count(i_stub) && !dontsave.count(i_stub)) {
+    if (fSaveOldStubs || (!hasmerged.count(i_stub) && !dontsave.count(i_stub))) {
       stubs.push_back(oldstubs[i_stub]);
     }
   }
