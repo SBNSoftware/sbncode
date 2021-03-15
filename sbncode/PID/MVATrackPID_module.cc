@@ -544,6 +544,10 @@ void sbn::MVATrackPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData
   energyPurity = totalTrueHitEnergy / totalHitEnergy;
 
   const simb::MCParticle* const trueParticle(particleInventory->TrackIdToParticle_P(bestMatch));
+
+  if (!trueParticle)
+    return;
+
   truePdg = trueParticle->PdgCode();
   trueType = this->PdgString(truePdg);
   trueEndProcess = trueParticle->EndProcess();
