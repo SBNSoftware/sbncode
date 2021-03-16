@@ -158,6 +158,9 @@ class CAFMaker : public art::EDProducer {
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
 
+  void AddEnvToFile();
+  void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
+
   void InitializeOutfile();
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
@@ -328,6 +331,94 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
+void CAFMaker::AddEnvToFile()
+{
+  // Global information about the processing details:
+  std::map<std::string, std::string> envmap;
+
+  // Environ comes from unistd.h
+  // environ is not present on OSX for some reason, so just use getenv to
+  // grab the variables we care about.
+#ifdef DARWINBUILD
+  std::set<TString> variables;
+  variables.insert("USER");
+  variables.insert("HOSTNAME");
+  variables.insert("PWD");
+  for (auto var : variables) if(getenv(var)) envmap[var] = getenv(var);
+#else
+  for (char** penv = environ; *penv; ++penv) {
+    const std::string pair = *penv;
+    const size_t split = pair.find("=");
+    if(split == std::string::npos) continue;  // Huh?
+    const std::string key = pair.substr(0, split);
+    const std::string value = pair.substr(split + 1);
+    envmap[key] = value;
+  }
+#endif
+
+  // Default constructor is "now"
+  envmap["date"] = TTimeStamp().AsString();
+  envmap["output"] = fCafFilename;
+
+  // Get the command-line we were invoked with. What I'd really like is
+  // just the fcl script and list of input filenames in a less hacky
+  // fashion. I'm not sure that's actually possible in ART.
+  // TODO: ask the artists.
+  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
+  char* arg = 0;
+  size_t size = 0;
+  std::string cmd;
+  while (getdelim(&arg, &size, 0, cmdline) != -1) {
+    cmd += arg;
+    cmd += " ";
+  }
+  free(arg);
+  fclose(cmdline);
+
+  envmap["cmd"] = cmd;
+
+  fFile->mkdir("env")->cd();
+
+  for(const auto& keyval: envmap){
+    TObjString(keyval.second.c_str()).Write(keyval.first.c_str());
+  }
+
+  TTree* trenv = new TTree("envtree", "envtree");
+  std::string key, value;
+  trenv->Branch("key", &key);
+  trenv->Branch("value", &value);
+  for(const auto& keyval: envmap){
+    key = keyval.first;
+    value = keyval.second;
+    trenv->Fill();
+  }
+  trenv->Write();
+}
+
+//......................................................................
+void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metadata)
+{
+  assert(fFile && "CAFMaker: Trying to add metadata to an uninitialized file");
+
+  fFile->mkdir("metadata")->cd();
+
+  TTree* trmeta = new TTree("metatree", "metatree");
+  std::string key, value;
+  trmeta->Branch("key", &key);
+  trmeta->Branch("value", &value);
+  for(const auto& keyval: metadata){
+    key = keyval.first;
+    value = keyval.second;
+    trmeta->Fill();
+  }
+  trmeta->Write();
+
+  for(const auto& keyval: metadata) {
+    TObjString(keyval.second.c_str()).Write(keyval.first.c_str());
+  }
+}
+
+//......................................................................
 void CAFMaker::InitializeOutfile() {
   assert(!fFile);
   assert(!fCafFilename.empty());
@@ -357,60 +448,11 @@ void CAFMaker::InitializeOutfile() {
   // fCycle = -5;
   // fBatch = -5;
 
-  // Global information about the processing details:
-  std::map<TString, TString> envmap;
-  std::string envstr;
-  // Environ comes from unistd.h
-  // environ is not present on OSX for some reason, so just use getenv to
-  // grab the variables we care about.
-#ifdef DARWINBUILD
-  std::set<TString> variables;
-  variables.insert("USER");
-  variables.insert("HOSTNAME");
-  variables.insert("PWD");
-  variables.insert("SRT_PUBLIC_CONTEXT");
-  variables.insert("SRT_PRIVATE_CONTEXT");
-  for (auto var : variables) envmap[var] = getenv(var);
-#else
-  for (char** penv = environ; *penv; ++penv) {
-    const std::string pair = *penv;
-    envstr += pair;
-    envstr += "\n";
-    const size_t split = pair.find("=");
-    if (split == std::string::npos) continue;  // Huh?
-    const std::string key = pair.substr(0, split);
-    const std::string value = pair.substr(split + 1);
-    envmap[key] = value;
-  }
-#endif
+  AddEnvToFile();
 
-  // Get the command-line we were invoked with. What I'd really like is
-  // just the fcl script and list of input filenames in a less hacky
-  // fashion. I'm not sure that's actually possible in ART.
-  // TODO: ask the artists.
-  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
-  char* arg = 0;
-  size_t size = 0;
-  std::string cmd;
-  while (getdelim(&arg, &size, 0, cmdline) != -1) {
-    cmd += arg;
-    cmd += " ";
-  }
-  free(arg);
-  fclose(cmdline);
-
-  fFile->mkdir("env")->cd();
-
-  TObjString(envmap["USER"]).Write("user");
-  TObjString(envmap["HOSTNAME"]).Write("hostname");
-  TObjString(envmap["PWD"]).Write("pwd");
-  TObjString(envmap["SRT_PUBLIC_CONTEXT"]).Write("publiccontext");
-  TObjString(envmap["SRT_PRIVATE_CONTEXT"]).Write("privatecontext");
-  // Default constructor is "now"
-  TObjString(TTimeStamp().AsString()).Write("date");
-  TObjString(cmd.c_str()).Write("cmd");
-  TObjString(fCafFilename.c_str()).Write("output");
-  TObjString(envstr.c_str()).Write("env");
+  // Dummy metadata for now
+  std::map<std::string, std::string> meta = {{"foo", "bar"}, {"baz", "qux"}};
+  AddMetadataToFile(meta);
 }
 
 //......................................................................
