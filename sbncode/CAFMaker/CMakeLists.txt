@@ -4,6 +4,7 @@ include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 FILE( GLOB src_files *.cxx )
 
 add_subdirectory(RecoUtils)
+add_subdirectory(bin)
 
 art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   SOURCE ${src_files}
