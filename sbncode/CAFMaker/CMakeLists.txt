@@ -37,6 +37,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj_Common_Reco
                   sbnobj_Common_Analysis
                   art_Framework_Services_System_TriggerNamesService_service
+                  sbncode_Metadata_MetadataSBN_service
                   )
 
 SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")

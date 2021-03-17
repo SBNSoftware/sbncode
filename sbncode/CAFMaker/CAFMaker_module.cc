@@ -103,6 +103,9 @@
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
 
+// Metadata
+#include "sbncode/Metadata/MetadataSBN.h"
+
 namespace caf {
 
 /// Module to create Common Analysis Files from ART files
@@ -449,10 +452,6 @@ void CAFMaker::InitializeOutfile() {
   // fBatch = -5;
 
   AddEnvToFile();
-
-  // Dummy metadata for now
-  std::map<std::string, std::string> meta = {{"foo", "bar"}, {"baz", "qux"}};
-  AddMetadataToFile(meta);
 }
 
 //......................................................................
@@ -1154,6 +1153,26 @@ void CAFMaker::endJob() {
   hEvents->Write();
   fFile->Write();
 
+  std::map<std::string, std::string> metamap;
+
+  try{
+    art::ServiceHandle<util::MetadataSBN> meta;
+
+    std::map<std::string, std::string> strs;
+    std::map<std::string, int> ints;
+    std::map<std::string, std::string> objs;
+    meta->GetMetadataMaps(strs, ints, objs);
+
+    for(auto it: strs) metamap[it.first] = "\""+it.second+"\"";
+    for(auto it: ints) metamap[it.first] = std::to_string(it.second);
+    for(auto it: objs) metamap[it.first] = it.second;
+  }
+  catch(art::Exception& e){//(art::errors::ServiceNotFound)
+    // I don't know any way to detect this apart from an exception, unfortunately
+    std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
+  }
+
+  AddMetadataToFile(metamap);
 }
 
 
