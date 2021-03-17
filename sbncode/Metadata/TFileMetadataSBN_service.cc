@@ -88,6 +88,16 @@ util::TFileMetadataSBN::TFileMetadataSBN(fhicl::ParameterSet const& pset,
     reg.sPostProcessEvent.watch(this, &TFileMetadataSBN::postEvent);
     reg.sPostBeginSubRun.watch(this, &TFileMetadataSBN::postBeginSubRun);
   }
+
+  // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
+  art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
+  md.fFCLName = paramhandle->GetFCLName();
+  md.fProjectName = paramhandle->GetProjectName();
+  md.fProjectStage = paramhandle->GetProjectStage();
+  md.fProjectVersion = paramhandle->GetProjectVersion();
+  md.fProjectSoftware = paramhandle->GetProjectSoftware();
+  md.fProductionName = paramhandle->GetProductionName();
+  md.fProductionType = paramhandle->GetProductionType();
 }
 
 /// Un-quote quoted strings
@@ -133,24 +143,17 @@ void util::TFileMetadataSBN::postBeginJob()
   art::FileCatalogMetadata::collection_type artmd;
   artmds->getMetadata(artmd);
 
+  std::map<std::string, std::string> mdmap;
   for(const auto& d: artmd)
-    mdmapStr[d.first] = UnQuoteString(d.second);
-
-  std::map<std::string,std::string>::iterator it;
+    mdmap[d.first] = UnQuoteString(d.second);
 
   // if a certain paramter/key is not found, assign an empty string value to it
-  MaybeCopyFromMap(mdmapStr, "application.family",  std::get<0>(md.fapplication));
-  MaybeCopyFromMap(mdmapStr, "art.process_name",    std::get<1>(md.fapplication));
-  MaybeCopyFromMap(mdmapStr, "application.version", std::get<2>(md.fapplication));
-
-  mdmapObj["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
-  mdmapStr.erase(mdmapStr.find("application.family"));
-  mdmapStr.erase(mdmapStr.find("art.process_name"));
-  mdmapStr.erase(mdmapStr.find("application.version"));
-
-  MaybeCopyFromMap(mdmapStr, "group",        md.fgroup);
-  MaybeCopyFromMap(mdmapStr, "file_type",    md.ffile_type);
-  MaybeCopyFromMap(mdmapStr, "art.run_type", frunType);
+  MaybeCopyFromMap(mdmap, "application.family",  std::get<0>(md.fapplication));
+  MaybeCopyFromMap(mdmap, "art.process_name",    std::get<1>(md.fapplication));
+  MaybeCopyFromMap(mdmap, "application.version", std::get<2>(md.fapplication));
+  MaybeCopyFromMap(mdmap, "group",        md.fgroup);
+  MaybeCopyFromMap(mdmap, "file_type",    md.ffile_type);
+  MaybeCopyFromMap(mdmap, "art.run_type", frunType);
 }
 
 
@@ -250,22 +253,16 @@ std::string util::TFileMetadataSBN::GetRunsString() const
 }
 
 //--------------------------------------------------------------------
-// PostCloseFile callback.
-void util::TFileMetadataSBN::postCloseInputFile()
+void util::TFileMetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs,
+                                             std::map<std::string, int>& ints,
+                                             std::map<std::string, std::string>& objs)
 {
-  // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
+  strs.clear(); ints.clear(); objs.clear();
 
-  art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
-  md.fFCLName = paramhandle->GetFCLName();
-  md.fProjectName = paramhandle->GetProjectName();
-  md.fProjectStage = paramhandle->GetProjectStage();
-  md.fProjectVersion = paramhandle->GetProjectVersion();
-  md.fProjectSoftware = paramhandle->GetProjectSoftware();
-  md.fProductionName = paramhandle->GetProductionName();
-  md.fProductionType = paramhandle->GetProductionType();
+  objs["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
 
-  //update end time
-  md.fend_time = time(0);
+  if(!md.fParents.empty()) objs["parents"] = GetParentsString();
+  if(!md.fruns.empty()) objs["runs"] = GetRunsString();
 
   // convert start and end times into time format: Year-Month-DayTHours:Minutes:Seconds
   char endbuf[80], startbuf[80];
@@ -275,8 +272,39 @@ void util::TFileMetadataSBN::postCloseInputFile()
   tstruct = *localtime(&md.fstart_time);
   strftime(startbuf,sizeof(startbuf),"%Y-%m-%dT%H:%M:%S",&tstruct);
 
-  mdmapStr["start_time"] = startbuf;
-  mdmapStr["end_time"] = endbuf;
+  strs["start_time"] = startbuf;
+  strs["end_time"] = endbuf;
+
+  strs["data_tier"] = md.fdata_tier;
+  ints["event_count"] = md.fevent_count;
+  strs["file_format"] = md.ffile_format;
+  ints["first_event"] = md.ffirst_event;
+  ints["last_event"] = md.flast_event;
+
+  MaybeCopyToMap(md.fFCLName, "fcl.name", strs);
+  MaybeCopyToMap(md.fProjectName, "sbnd_project.name", strs);
+  MaybeCopyToMap(md.fProjectStage, "sbnd_project.stage", strs);
+  MaybeCopyToMap(md.fProjectVersion, "sbnd_project.version", strs);
+  MaybeCopyToMap(md.fProjectSoftware, "sbnd_project.software", strs);
+  MaybeCopyToMap(md.fProductionName, "production.name", strs);
+  MaybeCopyToMap(md.fProductionType, "production.type", strs);
+
+  MaybeCopyToMap(md.fgroup, "group", strs);
+  MaybeCopyToMap(md.ffile_type, "file_type", strs);
+  MaybeCopyToMap(frunType, "art.run_type", strs);
+}
+
+//--------------------------------------------------------------------
+// PostCloseFile callback.
+void util::TFileMetadataSBN::postCloseInputFile()
+{
+  //update end time
+  md.fend_time = time(0);
+
+  std::map<std::string, std::string> strs;
+  std::map<std::string, int> ints;
+  std::map<std::string, std::string> objs;
+  GetMetadataMaps(strs, ints, objs);
 
   // open a json file and write everything from the struct md complying to the
   // samweb json format. This json file holds the below information temporarily.
@@ -285,36 +313,19 @@ void util::TFileMetadataSBN::postCloseInputFile()
 
   std::ofstream jsonfile;
   jsonfile.open(fJSONFileName);
-
-  mdmapStr["data_tier"] = md.fdata_tier;
-  mdmapInt["event_count"] = md.fevent_count;
-  mdmapStr["file_format"] = md.ffile_format;
-  mdmapInt["first_event"] = md.ffirst_event;
-  mdmapInt["last_event"] = md.flast_event;
-
-  if(!md.fParents.empty()) mdmapObj["parents"] = GetParentsString();
-  if(!md.fruns.empty()) mdmapObj["runs"] = GetRunsString();
-
-  MaybeCopyToMap(md.fFCLName, "fcl.name", mdmapStr);
-  MaybeCopyToMap(md.fProjectName, "sbnd_project.name", mdmapStr);
-  MaybeCopyToMap(md.fProjectStage, "sbnd_project.stage", mdmapStr);
-  MaybeCopyToMap(md.fProjectVersion, "sbnd_project.version", mdmapStr);
-  MaybeCopyToMap(md.fProjectSoftware, "sbnd_project.software", mdmapStr);
-  MaybeCopyToMap(md.fProductionName, "production.name", mdmapStr);
-  MaybeCopyToMap(md.fProductionType, "production.type", mdmapStr);
+  jsonfile << "{\n";
 
   bool once = true;
-  // Print the majority of fields
-  for(auto& it: mdmapObj){
+  for(auto& it: objs){
     if(!once) jsonfile << ",\n";
     once = false;
     jsonfile << "  \"" << it.first << "\": " << it.second;
   }
-  for(auto& it: mdmapStr){
+  for(auto& it: strs){
     // Have to escape string outputs
     jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
   }
-  for(auto& it: mdmapInt){
+  for(auto& it: ints){
     jsonfile << ",\n  \"" << it.first << "\": " << it.second;
   }
 

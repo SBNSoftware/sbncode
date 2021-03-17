@@ -56,7 +56,7 @@ namespace util{
       std::string fProjectVersion;
       std::string fProjectSoftware;
       std::string fProductionName; //Production parameter, do not use if not running a production
-    std::string fProductionType; //Production parameter, do not use if not running a production
+      std::string fProductionType; //Production parameter, do not use if not running a production
     };
 
     metadata md;
@@ -64,12 +64,7 @@ namespace util{
 
     void GetMetadataMaps(std::map<std::string, std::string>& strs,
                          std::map<std::string, int>& ints,
-                         std::map<std::string, std::string>& objs)
-    {
-      strs = mdmapStr;
-      ints = mdmapInt;
-      objs = mdmapObj;
-    }
+                         std::map<std::string, std::string>& objs);
 
   private:
 
