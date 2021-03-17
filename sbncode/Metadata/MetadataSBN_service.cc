@@ -75,6 +75,12 @@ util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
   fJSONFileName{pset.get<std::string>("JSONFileName")},
   fFileStats{"", art::ServiceHandle<art::TriggerNamesService const>{}->getProcessName()}
 {
+  // Insist on configuring Experiment from the fcl file (ideally) or the
+  // environment.
+  const char* expt = getenv("EXPERIMENT");
+  if(expt) fExperiment = pset.get<std::string>("Experiment", expt); else fExperiment = pset.get<std::string>("Experiment");
+  std::transform(fExperiment.begin(), fExperiment.end(), fExperiment.begin(), [](unsigned char c){return std::tolower(c);});
+
   md.fdata_tier   = pset.get<std::string>("dataTier");
   md.ffile_format = pset.get<std::string>("fileFormat");
 
@@ -276,11 +282,12 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
   ints["first_event"] = md.ffirst_event;
   ints["last_event"] = md.flast_event;
 
+  const std::string proj = fExperiment+"_project";
   MaybeCopyToMap(md.fFCLName, "fcl.name", strs);
-  MaybeCopyToMap(md.fProjectName, "sbnd_project.name", strs);
-  MaybeCopyToMap(md.fProjectStage, "sbnd_project.stage", strs);
-  MaybeCopyToMap(md.fProjectVersion, "sbnd_project.version", strs);
-  MaybeCopyToMap(md.fProjectSoftware, "sbnd_project.software", strs);
+  MaybeCopyToMap(md.fProjectName, proj+".name", strs);
+  MaybeCopyToMap(md.fProjectStage, proj+".stage", strs);
+  MaybeCopyToMap(md.fProjectVersion, proj+".version", strs);
+  MaybeCopyToMap(md.fProjectSoftware, proj+".software", strs);
   MaybeCopyToMap(md.fProductionName, "production.name", strs);
   MaybeCopyToMap(md.fProductionType, "production.type", strs);
 

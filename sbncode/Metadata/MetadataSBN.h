@@ -83,6 +83,7 @@ namespace util{
     std::map<std::string, std::string> mdmapObj;
 
     // Fcl parameters.
+    std::string fExperiment;
     std::string frunType;
     std::string fJSONFileName;
     art::FileStatsCollector fFileStats;
