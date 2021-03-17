@@ -382,10 +382,6 @@ void CAFMaker::AddEnvToFile()
 
   fFile->mkdir("env")->cd();
 
-  for(const auto& keyval: envmap){
-    TObjString(keyval.second.c_str()).Write(keyval.first.c_str());
-  }
-
   TTree* trenv = new TTree("envtree", "envtree");
   std::string key, value;
   trenv->Branch("key", &key);
@@ -415,10 +411,6 @@ void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metad
     trmeta->Fill();
   }
   trmeta->Write();
-
-  for(const auto& keyval: metadata) {
-    TObjString(keyval.second.c_str()).Write(keyval.first.c_str());
-  }
 }
 
 //......................................................................
