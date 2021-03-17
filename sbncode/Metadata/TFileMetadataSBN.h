@@ -5,7 +5,7 @@
 // from various places.
 //
 // Created: 21-Feb-2017,  D. Brailsford
-//   Based on the DUNE version T. Junk which is based on the MicroBooNE 
+//   Based on the DUNE version T. Junk which is based on the MicroBooNE
 //   version by S. Gollapinni
 //
 ////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@ namespace util{
   {
   public:
     TFileMetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& reg);
-    
+
     struct metadata {
       std::tuple<std::string, std::string, std::string> fapplication;
       //no crc information yet
@@ -45,11 +45,11 @@ namespace util{
       std::string ffile_format;
       std::string ffile_type;
       art::EventNumber_t ffirst_event=0;
-      std::string fgroup; 
+      std::string fgroup;
       art::EventNumber_t flast_event=0;
       std::set<std::string> fParents;
       std::vector<std::tuple<art::RunNumber_t,art::SubRunNumber_t,std::string>> fruns;
-      time_t fstart_time=0; 
+      time_t fstart_time=0;
       std::string fFCLName;
       std::string fProjectName;
       std::string fProjectStage;
@@ -58,13 +58,21 @@ namespace util{
       std::string fProductionName; //Production parameter, do not use if not running a production
     std::string fProductionType; //Production parameter, do not use if not running a production
     };
-    
+
     metadata md;
     std::set<art::SubRunID> fSubRunNumbers;
-    std::map<std::string,std::string> mdmap;    
+
+    void GetMetadataMaps(std::map<std::string, std::string>& strs,
+                         std::map<std::string, int>& ints,
+                         std::map<std::string, std::string>& objs)
+    {
+      strs = mdmapStr;
+      ints = mdmapInt;
+      objs = mdmapObj;
+    }
 
   private:
-   
+
     // Callbacks.
     void postBeginJob();
     void postOpenInputFile(std::string const& fn);
@@ -72,16 +80,23 @@ namespace util{
     void postBeginSubRun(art::SubRun const& subrun);
     void postCloseInputFile();
 
+    std::string GetParentsString() const;
+    std::string GetRunsString() const;
+
+    std::map<std::string,std::string> mdmapStr;
+    std::map<std::string, int> mdmapInt;
+    std::map<std::string, std::string> mdmapObj;
+
     // Fcl parameters.
-    bool fGenerateTFileMetadata;  
-    std::string frunType;                     
+    bool fGenerateTFileMetadata;
+    std::string frunType;
     std::string fJSONFileName;
     art::FileStatsCollector fFileStats;
     art::PostCloseFileRenamer fRenamer{fFileStats};
   }; // class TFileMetadataSBN
 
 } //namespace utils
-	
+
 DECLARE_ART_SERVICE(util::TFileMetadataSBN, LEGACY)
-	
+
 #endif

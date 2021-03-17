@@ -1,16 +1,16 @@
 ////////////////////////////////////////////////////////////////////////
-// Name:  TFileMetadataSBN_service.cc.  
+// Name:  TFileMetadataSBN_service.cc.
 //
 // Purpose:  generate SBN-specific sam metadata for root Tfiles (histogram or ntuple files).
 //
 // FCL parameters: GenerateTFileMetadata: This needs to be set to "true" in the fcl file
 //				    to generate metadata (default value: false)
 //	     	   dataTier: Currrently this needs to be parsed by the user
-//		     	     for ntuples, dataTier = root-tuple; 
+//		     	     for ntuples, dataTier = root-tuple;
 //		             for histos, dataTier = root-histogram
 //		             (default value: root-tuple)
 //	           fileFormat: This is currently specified by the user,
-//			       the fileFormat for Tfiles is "root" (default value: root)	
+//			       the fileFormat for Tfiles is "root" (default value: root)
 //
 // Other notes: 1. This service uses the ART's standard file_catalog_metadata service
 //		to extract some of the common (common to both ART and TFile outputs)
@@ -18,23 +18,23 @@
 //  		service in your fcl file
 //		stick this line in your "services" section of fcl file:
 //		FileCatalogMetadata:  @local::art_file_catalog_mc
-//	
-//              2. When you call FileCatalogMetadata service in your fcl file, and if 
-//		you have (art) root Output section in your fcl file, and if you do not  
+//
+//              2. When you call FileCatalogMetadata service in your fcl file, and if
+//		you have (art) root Output section in your fcl file, and if you do not
 //		have "dataTier" specified in that section, then this service will throw
 //		an exception. To avoid this, either remove the entire root Output section
-//		in your fcl file (and remove art stream output from your end_paths) or 
+//		in your fcl file (and remove art stream output from your end_paths) or
 //		include appropriate dataTier information in the section.If you are only
 //		running analysis job, best way is to not include any art root Output section.
 //
 //	        3. This service is exclusively written to work with production (in other
 //		words for jobs submitted through grid). Some of the metadata parameters
 //		(output TFileName, filesize, Project related details) are captured/updated
-//		during and/or after the workflow. 
-//	
+//		during and/or after the workflow.
+//
 //
 // Created:  21-Feb-2018,  D. Brailsford
-//  based on the SBND version by T. Junk which is based on the 
+//  based on the SBND version by T. Junk which is based on the
 //  based on the MicroBooNE example by S. Gollapinni
 //
 ////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ using namespace std;
 //--------------------------------------------------------------------
 
 // Constructor.
-util::TFileMetadataSBN::TFileMetadataSBN(fhicl::ParameterSet const& pset, 
+util::TFileMetadataSBN::TFileMetadataSBN(fhicl::ParameterSet const& pset,
 					   art::ActivityRegistry& reg):
   fGenerateTFileMetadata{pset.get<bool>("GenerateTFileMetadata")},
   fJSONFileName{pset.get<std::string>("JSONFileName")},
@@ -90,49 +90,71 @@ util::TFileMetadataSBN::TFileMetadataSBN(fhicl::ParameterSet const& pset,
   }
 }
 
+/// Un-quote quoted strings
+std::string UnQuoteString(std::string s)
+{
+  if(s.size() < 2 || s[0] != '\"' || s[s.size()-1] != '\"') return s;
+  s.erase(0, 1);
+  s.erase(s.size()-1, 1);
+  return s;
+}
+
+void MaybeCopyFromMap(const std::map<std::string, std::string>& in,
+                      const std::string& key,
+                      std::string& out)
+{
+  const auto it = in.find(key);
+  if(it == in.end()){
+    out = "";
+  }
+  else{
+    out = UnQuoteString(it->second);
+  }
+}
+
+void MaybeCopyToMap(const std::string& in,
+                    const std::string& key,
+                    std::map<std::string, std::string>& out)
+{
+  if(!in.empty()) out[key] = UnQuoteString(in);
+}
+
 //--------------------------------------------------------------------
 // PostBeginJob callback.
 // Insert per-job metadata via TFileMetadata service.
 void util::TFileMetadataSBN::postBeginJob()
-{ 
-  // get the start time  
-  md.fstart_time = time(0); 
-  
+{
+  // get the start time
+  md.fstart_time = time(0);
+
   // Get art metadata service and extract paramters from there
   art::ServiceHandle<art::FileCatalogMetadata> artmds;
-  
+
   art::FileCatalogMetadata::collection_type artmd;
   artmds->getMetadata(artmd);
-  
-  for(auto const & d : artmd)
-    mdmap[d.first] = d.second;
-    
-  std::map<std::string,std::string>::iterator it;
-  
-  // if a certain paramter/key is not found, assign an empty string value to it
-  
-  if ((it=mdmap.find("application.family"))!=mdmap.end()) std::get<0>(md.fapplication) = it->second;
-  else std::get<0>(md.fapplication) = "\" \"";   
-   
-  if ((it=mdmap.find("art.process_name"))!=mdmap.end()) std::get<1>(md.fapplication) = it->second;
-  else std::get<1>(md.fapplication) = "\" \"";  
-  
-  if ((it=mdmap.find("application.version"))!=mdmap.end()) std::get<2>(md.fapplication) = it->second;
-  else  std::get<2>(md.fapplication) = "\" \"";   
-  
-  if ((it=mdmap.find("group"))!=mdmap.end()) md.fgroup = it->second;
-  else md.fgroup = "\" \"";   
-    
-  if ((it=mdmap.find("file_type"))!=mdmap.end()) md.ffile_type = it->second;
-  else  md.ffile_type = "\" \"";  
-    
-  if ((it=mdmap.find("art.run_type"))!=mdmap.end()) frunType = it->second;
-  else frunType = "\" \"";         	     	
 
+  for(const auto& d: artmd)
+    mdmapStr[d.first] = UnQuoteString(d.second);
+
+  std::map<std::string,std::string>::iterator it;
+
+  // if a certain paramter/key is not found, assign an empty string value to it
+  MaybeCopyFromMap(mdmapStr, "application.family",  std::get<0>(md.fapplication));
+  MaybeCopyFromMap(mdmapStr, "art.process_name",    std::get<1>(md.fapplication));
+  MaybeCopyFromMap(mdmapStr, "application.version", std::get<2>(md.fapplication));
+
+  mdmapObj["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
+  mdmapStr.erase(mdmapStr.find("application.family"));
+  mdmapStr.erase(mdmapStr.find("art.process_name"));
+  mdmapStr.erase(mdmapStr.find("application.version"));
+
+  MaybeCopyFromMap(mdmapStr, "group",        md.fgroup);
+  MaybeCopyFromMap(mdmapStr, "file_type",    md.ffile_type);
+  MaybeCopyFromMap(mdmapStr, "art.run_type", frunType);
 }
 
 
-//--------------------------------------------------------------------        
+//--------------------------------------------------------------------
 // PostOpenFile callback.
 void util::TFileMetadataSBN::postOpenInputFile(std::string const& fn)
 {
@@ -142,7 +164,7 @@ void util::TFileMetadataSBN::postOpenInputFile(std::string const& fn)
   fFileStats.recordInputFile(fn);
 }
 
-//--------------------------------------------------------------------  	
+//--------------------------------------------------------------------
 // PostEvent callback.
 void util::TFileMetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 {
@@ -150,22 +172,22 @@ void util::TFileMetadataSBN::postEvent(art::Event const& evt, art::ScheduleConte
   art::SubRunNumber_t subrun = evt.subRun();
   art::EventNumber_t event = evt.event();
   art::SubRunID srid = evt.id().subRunID();
-      
-  // save run, subrun and runType information once every subrun    
+
+  // save run, subrun and runType information once every subrun
   if (fSubRunNumbers.count(srid) == 0){
     fSubRunNumbers.insert(srid);
-    md.fruns.push_back(make_tuple(run, subrun, frunType));   
+    md.fruns.push_back(make_tuple(run, subrun, frunType));
   }
-  
+
   // save the first event
   if (md.fevent_count == 0) md.ffirst_event = event;
   md.flast_event = event;
   // event counter
   ++md.fevent_count;
-    
+
 }
 
-//--------------------------------------------------------------------  	
+//--------------------------------------------------------------------
 // PostSubRun callback.
 void util::TFileMetadataSBN::postBeginSubRun(art::SubRun const& sr)
 {
@@ -180,13 +202,60 @@ void util::TFileMetadataSBN::postBeginSubRun(art::SubRun const& sr)
   }
 }
 
+std::string Escape(const std::string& s)
+{
+  // If it's formatted as a dict or list, trust it's already formatted
+  if(s.size() >= 2 && ((s[0] == '{' && s.back() == '}') || (s[0] == '[' && s.back() == ']'))) return s;
+
+  // otherwise quote it
+  return "\""+s+"\"";
+}
+
+//--------------------------------------------------------------------
+std::string util::TFileMetadataSBN::GetParentsString() const
+{
+  if(md.fParents.empty()) return "";
+
+  unsigned int c = 0;
+
+  std::string ret = "[\n";
+  for(auto parent: md.fParents) {
+    std::cout<<"Parent " << c << ": " << parent << std::endl;
+    c++;
+    size_t n = parent.find_last_of('/');
+    size_t f1 = (n == std::string::npos ? 0 : n+1);
+    ret += "    {\n     \"file_name\": \"" + parent.substr(f1) + "\"\n    }";
+    if(md.fParents.size() == 1 || c == md.fParents.size()) ret += "\n";
+    else ret += ",\n";
+  }
+
+  ret += "  ]";
+  return ret;
+}
+
+//--------------------------------------------------------------------
+std::string util::TFileMetadataSBN::GetRunsString() const
+{
+  unsigned int c = 0;
+
+  std::string ret = "[\n";
+  for(auto&t :md.fruns){
+    c++;
+    ret += "    [\n     " + std::to_string(std::get<0>(t)) + ",\n     " + std::to_string(std::get<1>(t)) + ",\n     " + std::get<2>(t) + "\n    ]";
+    if(md.fruns.size() == 1 || c == md.fruns.size()) ret += "\n";
+    else ret += ",\n";
+  }
+  ret += "  ]";
+  return ret;
+}
+
 //--------------------------------------------------------------------
 // PostCloseFile callback.
 void util::TFileMetadataSBN::postCloseInputFile()
 {
   // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
-        
-  art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle; 
+
+  art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
   md.fFCLName = paramhandle->GetFCLName();
   md.fProjectName = paramhandle->GetProjectName();
   md.fProjectStage = paramhandle->GetProjectStage();
@@ -205,65 +274,52 @@ void util::TFileMetadataSBN::postCloseInputFile()
   strftime(endbuf,sizeof(endbuf),"%Y-%m-%dT%H:%M:%S",&tstruct);
   tstruct = *localtime(&md.fstart_time);
   strftime(startbuf,sizeof(startbuf),"%Y-%m-%dT%H:%M:%S",&tstruct);
-  
-  // open a json file and write everything from the struct md complying to the 
-  // samweb json format. This json file holds the below information temporarily. 
-  // If you submitted a grid job invoking this service, the information from 
+
+  mdmapStr["start_time"] = startbuf;
+  mdmapStr["end_time"] = endbuf;
+
+  // open a json file and write everything from the struct md complying to the
+  // samweb json format. This json file holds the below information temporarily.
+  // If you submitted a grid job invoking this service, the information from
   // this file is appended to a final json file and this file will be removed
-  
+
   std::ofstream jsonfile;
   jsonfile.open(fJSONFileName);
-  jsonfile<<"{\n  \"application\": {\n    \"family\": "<<std::get<0>(md.fapplication)<<",\n    \"name\": ";
-  jsonfile<<std::get<1>(md.fapplication)<<",\n    \"version\": "<<std::get<2>(md.fapplication)<<"\n  },\n  ";
-  jsonfile<<"\"data_tier\": \""<<md.fdata_tier<<"\",\n  ";
-  jsonfile<<"\"event_count\": "<<md.fevent_count<<",\n  ";
-  jsonfile<<"\"file_format\": \""<<md.ffile_format<<"\",\n  ";
-  jsonfile<<"\"file_type\": "<<md.ffile_type<<",\n  ";
-  jsonfile<<"\"first_event\": "<<md.ffirst_event<<",\n  ";
-  jsonfile<<"\"group\": "<<md.fgroup<<",\n  ";
-  jsonfile<<"\"last_event\": "<<md.flast_event<<",\n  ";
-  //if (md.fdataTier != "generated"){
-  unsigned int c=0;
-  //08/06 DBrailsford.  Only create the parent json object if there are parent names in the set.
-  if (md.fParents.size() > 0){
-    jsonfile<<"\"parents\": [\n";
-    for(auto parent : md.fParents) {
-      std::cout<<"Parent " << c << ": " << parent << std::endl;
-      c++;
-      size_t n = parent.find_last_of('/');
-      size_t f1 = (n == std::string::npos ? 0 : n+1);
-      jsonfile<<"    {\n     \"file_name\": \""<<parent.substr(f1)<<"\"\n    }";
-      if (md.fParents.size()==1 || c==md.fParents.size()) jsonfile<<"\n";
-      else jsonfile<<",\n"; 
-    }      
-    jsonfile<<"  ],\n  "; 
-    //}   
-    c=0;
-  }
-  jsonfile<<"\"runs\": [\n";
-  for(auto &t : md.fruns){
-    c++;
-    jsonfile<<"    [\n     "<<std::get<0>(t)<<",\n     "<<std::get<1>(t)<<",\n     "<<std::get<2>(t)<<"\n    ]";
-    if (md.fruns.size()==1 || c==md.fruns.size()) jsonfile<<"\n";
-    else jsonfile<<",\n"; 
-  }
-  jsonfile<<"  ],\n";          
 
-  if (md.fFCLName!="") jsonfile << "\"fcl.name\": \"" << md.fFCLName << "\",\n";
-  if (md.fProjectName!="") jsonfile << "\"sbnd_project.name\": \"" << md.fProjectName << "\",\n";
-  if (md.fProjectStage!="") jsonfile << "\"sbnd_project.stage\": \"" << md.fProjectStage << "\",\n";
-  if (md.fProjectVersion!="") jsonfile << "\"sbnd_project.version\": \"" << md.fProjectVersion << "\",\n";
-  if (md.fProjectSoftware!="") jsonfile << "\"sbnd_project.software\": \"" << md.fProjectSoftware << "\",\n";
-  if (md.fProductionName!="") jsonfile << "\"production.name\": \"" << md.fProductionName << "\",\n";
-  if (md.fProductionType!="") jsonfile << "\"production.type\": \"" << md.fProductionType << "\",\n";
+  mdmapStr["data_tier"] = md.fdata_tier;
+  mdmapInt["event_count"] = md.fevent_count;
+  mdmapStr["file_format"] = md.ffile_format;
+  mdmapInt["first_event"] = md.ffirst_event;
+  mdmapInt["last_event"] = md.flast_event;
 
-  // put these at the end because we know they'll be there and the last one needs to not have a comma
-  jsonfile<<"\"start_time\": \""<<startbuf<<"\",\n";
-  jsonfile<<"\"end_time\": \""<<endbuf<<"\"\n";
-  
-  
-  jsonfile<<"}\n";
-  jsonfile.close();  
+  if(!md.fParents.empty()) mdmapObj["parents"] = GetParentsString();
+  if(!md.fruns.empty()) mdmapObj["runs"] = GetRunsString();
+
+  MaybeCopyToMap(md.fFCLName, "fcl.name", mdmapStr);
+  MaybeCopyToMap(md.fProjectName, "sbnd_project.name", mdmapStr);
+  MaybeCopyToMap(md.fProjectStage, "sbnd_project.stage", mdmapStr);
+  MaybeCopyToMap(md.fProjectVersion, "sbnd_project.version", mdmapStr);
+  MaybeCopyToMap(md.fProjectSoftware, "sbnd_project.software", mdmapStr);
+  MaybeCopyToMap(md.fProductionName, "production.name", mdmapStr);
+  MaybeCopyToMap(md.fProductionType, "production.type", mdmapStr);
+
+  bool once = true;
+  // Print the majority of fields
+  for(auto& it: mdmapObj){
+    if(!once) jsonfile << ",\n";
+    once = false;
+    jsonfile << "  \"" << it.first << "\": " << it.second;
+  }
+  for(auto& it: mdmapStr){
+    // Have to escape string outputs
+    jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
+  }
+  for(auto& it: mdmapInt){
+    jsonfile << ",\n  \"" << it.first << "\": " << it.second;
+  }
+
+  jsonfile<<"\n}\n";
+  jsonfile.close();
 
   fFileStats.recordFileClose();
   //TODO figure out how to make the name identical to the TFile
