@@ -293,7 +293,6 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 
   MaybeCopyToMap(md.fgroup, "group", strs);
   MaybeCopyToMap(md.ffile_type, "file_type", strs);
-  MaybeCopyToMap(frunType, "art.run_type", strs);
 }
 
 //--------------------------------------------------------------------
