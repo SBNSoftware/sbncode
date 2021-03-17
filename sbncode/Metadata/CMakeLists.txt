@@ -14,7 +14,7 @@ simple_plugin( FileCatalogMetadataSBN  "service"
                ${sbn_meta_lib_list}
         )
 
-simple_plugin( TFileMetadataSBN "service"
+simple_plugin( MetadataSBN "service"
                ${sbn_meta_lib_list}
                art_Framework_IO
                art_Framework_IO_detail

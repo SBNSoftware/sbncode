@@ -1,11 +1,9 @@
 ////////////////////////////////////////////////////////////////////////
-// Name:  TFileMetadataSBN_service.cc.
+// Name:  MetadataSBN_service.cc.
 //
 // Purpose:  generate SBN-specific sam metadata for root Tfiles (histogram or ntuple files).
 //
-// FCL parameters: GenerateTFileMetadata: This needs to be set to "true" in the fcl file
-//				    to generate metadata (default value: false)
-//	     	   dataTier: Currrently this needs to be parsed by the user
+// FCL parameters: dataTier: Currrently this needs to be parsed by the user
 //		     	     for ntuples, dataTier = root-tuple;
 //		             for histos, dataTier = root-histogram
 //		             (default value: root-tuple)
@@ -49,7 +47,7 @@
 #include <string>
 #include <vector>
 
-#include "sbncode/Metadata/TFileMetadataSBN.h"
+#include "sbncode/Metadata/MetadataSBN.h"
 #include "sbncode/Metadata/FileCatalogMetadataSBN.h"
 
 #include "art_root_io/RootDB/SQLite3Wrapper.h"
@@ -72,22 +70,19 @@ using namespace std;
 //--------------------------------------------------------------------
 
 // Constructor.
-util::TFileMetadataSBN::TFileMetadataSBN(fhicl::ParameterSet const& pset,
+util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
 					   art::ActivityRegistry& reg):
-  fGenerateTFileMetadata{pset.get<bool>("GenerateTFileMetadata")},
   fJSONFileName{pset.get<std::string>("JSONFileName")},
   fFileStats{"", art::ServiceHandle<art::TriggerNamesService const>{}->getProcessName()}
 {
-  if (fGenerateTFileMetadata) {
-    md.fdata_tier   = pset.get<std::string>("dataTier");
-    md.ffile_format = pset.get<std::string>("fileFormat");
+  md.fdata_tier   = pset.get<std::string>("dataTier");
+  md.ffile_format = pset.get<std::string>("fileFormat");
 
-    reg.sPostBeginJob.watch(this, &TFileMetadataSBN::postBeginJob);
-    reg.sPostOpenFile.watch(this, &TFileMetadataSBN::postOpenInputFile);
-    reg.sPostCloseFile.watch(this, &TFileMetadataSBN::postCloseInputFile);
-    reg.sPostProcessEvent.watch(this, &TFileMetadataSBN::postEvent);
-    reg.sPostBeginSubRun.watch(this, &TFileMetadataSBN::postBeginSubRun);
-  }
+  reg.sPostBeginJob.watch(this, &MetadataSBN::postBeginJob);
+  reg.sPostOpenFile.watch(this, &MetadataSBN::postOpenInputFile);
+  reg.sPostCloseFile.watch(this, &MetadataSBN::postCloseInputFile);
+  reg.sPostProcessEvent.watch(this, &MetadataSBN::postEvent);
+  reg.sPostBeginSubRun.watch(this, &MetadataSBN::postBeginSubRun);
 
   // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
   art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
@@ -131,8 +126,8 @@ void MaybeCopyToMap(const std::string& in,
 
 //--------------------------------------------------------------------
 // PostBeginJob callback.
-// Insert per-job metadata via TFileMetadata service.
-void util::TFileMetadataSBN::postBeginJob()
+// Insert per-job metadata via Metadata service.
+void util::MetadataSBN::postBeginJob()
 {
   // get the start time
   md.fstart_time = time(0);
@@ -159,7 +154,7 @@ void util::TFileMetadataSBN::postBeginJob()
 
 //--------------------------------------------------------------------
 // PostOpenFile callback.
-void util::TFileMetadataSBN::postOpenInputFile(std::string const& fn)
+void util::MetadataSBN::postOpenInputFile(std::string const& fn)
 {
   // save parent input files here
   // 08/06 DBrailsford: Only save the parent string if the string is filled.  The string still exists (with 0 characters) for generation stage files.  See redmine issue 20124
@@ -169,7 +164,7 @@ void util::TFileMetadataSBN::postOpenInputFile(std::string const& fn)
 
 //--------------------------------------------------------------------
 // PostEvent callback.
-void util::TFileMetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
+void util::MetadataSBN::postEvent(art::Event const& evt, art::ScheduleContext)
 {
   art::RunNumber_t run = evt.run();
   art::SubRunNumber_t subrun = evt.subRun();
@@ -192,7 +187,7 @@ void util::TFileMetadataSBN::postEvent(art::Event const& evt, art::ScheduleConte
 
 //--------------------------------------------------------------------
 // PostSubRun callback.
-void util::TFileMetadataSBN::postBeginSubRun(art::SubRun const& sr)
+void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
 {
   art::RunNumber_t run = sr.run();
   art::SubRunNumber_t subrun = sr.subRun();
@@ -215,7 +210,7 @@ std::string Escape(const std::string& s)
 }
 
 //--------------------------------------------------------------------
-std::string util::TFileMetadataSBN::GetParentsString() const
+std::string util::MetadataSBN::GetParentsString() const
 {
   if(md.fParents.empty()) return "";
 
@@ -237,7 +232,7 @@ std::string util::TFileMetadataSBN::GetParentsString() const
 }
 
 //--------------------------------------------------------------------
-std::string util::TFileMetadataSBN::GetRunsString() const
+std::string util::MetadataSBN::GetRunsString() const
 {
   unsigned int c = 0;
 
@@ -253,9 +248,9 @@ std::string util::TFileMetadataSBN::GetRunsString() const
 }
 
 //--------------------------------------------------------------------
-void util::TFileMetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs,
-                                             std::map<std::string, int>& ints,
-                                             std::map<std::string, std::string>& objs)
+void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs,
+                                        std::map<std::string, int>& ints,
+                                        std::map<std::string, std::string>& objs)
 {
   strs.clear(); ints.clear(); objs.clear();
 
@@ -296,7 +291,7 @@ void util::TFileMetadataSBN::GetMetadataMaps(std::map<std::string, std::string>&
 
 //--------------------------------------------------------------------
 // PostCloseFile callback.
-void util::TFileMetadataSBN::postCloseInputFile()
+void util::MetadataSBN::postCloseInputFile()
 {
   //update end time
   md.fend_time = time(0);
@@ -311,30 +306,32 @@ void util::TFileMetadataSBN::postCloseInputFile()
   // If you submitted a grid job invoking this service, the information from
   // this file is appended to a final json file and this file will be removed
 
-  std::ofstream jsonfile;
-  jsonfile.open(fJSONFileName);
-  jsonfile << "{\n";
+  if(!fJSONFileName.empty()){
+    std::ofstream jsonfile;
+    jsonfile.open(fJSONFileName);
+    jsonfile << "{\n";
 
-  bool once = true;
-  for(auto& it: objs){
-    if(!once) jsonfile << ",\n";
-    once = false;
-    jsonfile << "  \"" << it.first << "\": " << it.second;
-  }
-  for(auto& it: strs){
-    // Have to escape string outputs
-    jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
-  }
-  for(auto& it: ints){
-    jsonfile << ",\n  \"" << it.first << "\": " << it.second;
-  }
+    bool once = true;
+    for(auto& it: objs){
+      if(!once) jsonfile << ",\n";
+      once = false;
+      jsonfile << "  \"" << it.first << "\": " << it.second;
+    }
+    for(auto& it: strs){
+      // Have to escape string outputs
+      jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
+    }
+    for(auto& it: ints){
+      jsonfile << ",\n  \"" << it.first << "\": " << it.second;
+    }
 
-  jsonfile<<"\n}\n";
-  jsonfile.close();
+    jsonfile<<"\n}\n";
+    jsonfile.close();
+  }
 
   fFileStats.recordFileClose();
   //TODO figure out how to make the name identical to the TFile
   //std::string new_name = fRenamer.maybeRenameFile("myjson.json",fJSONFileName);
 }
 
-DEFINE_ART_SERVICE(util::TFileMetadataSBN)
+DEFINE_ART_SERVICE(util::MetadataSBN)

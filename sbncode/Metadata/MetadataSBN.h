@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-// Name: TFileMetadataSBN.h
+// Name: MetadataSBN.h
 //
 // A struct datatype to hold the metadata information as it is extracted
 // from various places.
@@ -30,10 +30,10 @@
 
 namespace util{
 
-  class TFileMetadataSBN
+  class MetadataSBN
   {
   public:
-    TFileMetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& reg);
+    MetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& reg);
 
     struct metadata {
       std::tuple<std::string, std::string, std::string> fapplication;
@@ -83,15 +83,14 @@ namespace util{
     std::map<std::string, std::string> mdmapObj;
 
     // Fcl parameters.
-    bool fGenerateTFileMetadata;
     std::string frunType;
     std::string fJSONFileName;
     art::FileStatsCollector fFileStats;
     art::PostCloseFileRenamer fRenamer{fFileStats};
-  }; // class TFileMetadataSBN
+  }; // class MetadataSBN
 
 } //namespace utils
 
-DECLARE_ART_SERVICE(util::TFileMetadataSBN, LEGACY)
+DECLARE_ART_SERVICE(util::MetadataSBN, LEGACY)
 
 #endif
