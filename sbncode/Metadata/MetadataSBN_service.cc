@@ -245,7 +245,7 @@ std::string util::MetadataSBN::GetRunsString() const
   std::string ret = "[\n";
   for(auto&t :md.fruns){
     c++;
-    ret += "    [\n     " + std::to_string(std::get<0>(t)) + ",\n     " + std::to_string(std::get<1>(t)) + ",\n     " + std::get<2>(t) + "\n    ]";
+    ret += "    [\n     " + std::to_string(std::get<0>(t)) + ",\n     " + std::to_string(std::get<1>(t)) + ",\n     \"" + std::get<2>(t) + "\"\n    ]";
     if(md.fruns.size() == 1 || c == md.fruns.size()) ret += "\n";
     else ret += ",\n";
   }
@@ -293,7 +293,6 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 
   MaybeCopyToMap(md.fgroup, "group", strs);
   MaybeCopyToMap(md.ffile_type, "file_type", strs);
-  MaybeCopyToMap(frunType, "art.run_type", strs);
 }
 
 //--------------------------------------------------------------------
