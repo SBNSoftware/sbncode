@@ -207,12 +207,8 @@ float sbn::StubChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B) {
   assert(A.stub.hits.size() == 1 && B.stub.hits.size() == 1);
 
   // Only count charge on the main stub
-  auto stubcharge_acc = [](float a, const sbn::StubHit &h) {
-    return a + h.charge * (!h.before_vtx) * (!h.after_hit);
-  };
-
-  float ACharge = std::accumulate(A.stub.hits.front().begin(), A.stub.hits.front().end(), 0., stubcharge_acc);
-  float BCharge = std::accumulate(B.stub.hits.front().begin(), B.stub.hits.front().end(), 0., stubcharge_acc);
+  float ACharge = A.stub.CoreCharge();
+  float BCharge = B.stub.CoreCharge();
 
   return abs(ACharge - BCharge);
 }

@@ -82,10 +82,8 @@ TwoPlaneStubMerge::~TwoPlaneStubMerge()
 // Return true if stub A is "better" than stub B
 bool TwoPlaneStubMerge::SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B) {
   // Count the hits on the main stub
-  int A_nhit = 0;
-  for (const sbn::StubHit &h: A.stub.hits.front()) A_nhit += (!h.before_vtx && !h.after_hit);
-  int B_nhit = 0;
-  for (const sbn::StubHit &h: B.stub.hits.front()) B_nhit += (!h.before_vtx && !h.after_hit);
+  int A_nhit = A.stub.CoreNHit();
+  int B_nhit = B.stub.CoreNHit();
 
   // First -- try more hits
   if (A_nhit != B_nhit) return A_nhit > B_nhit;
@@ -134,8 +132,11 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   ret.stub.trkpitch.push_back(best.stub.trkpitch.front());
   ret.stub.trkpitch.push_back(othr.stub.trkpitch.front());
 
-  ret.stub.nwire.push_back(best.stub.nwire.front());
-  ret.stub.nwire.push_back(othr.stub.nwire.front());
+  ret.stub.vtx_w.push_back(best.stub.vtx_w.front());
+  ret.stub.vtx_w.push_back(othr.stub.vtx_w.front());
+
+  ret.stub.hit_w.push_back(best.stub.hit_w.front());
+  ret.stub.hit_w.push_back(othr.stub.hit_w.front());
 
   return ret;
 }

@@ -192,12 +192,13 @@ private:
   std::vector<int> fStubHitInd;
   std::vector<int> fStubPFPID;
   std::vector<int> fStubNPlane;
+  std::vector<float> fStubVtxW;
+  std::vector<int> fStubEndW;
 
+  std::vector<int> fStubQLength;
   std::vector<float> fStubQs;
   std::vector<int> fStubOnTracks;
-  std::vector<int> fStubBeforeVtxs;
-  std::vector<int> fStubAfterHits;
-  std::vector<int> fStubQLength;
+  std::vector<int> fStubWires;
 
   std::vector<float> fStubTrueKE;
   std::vector<float> fStubTrueLength;
@@ -313,12 +314,13 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("stub_hit_ind", &fStubHitInd);
   _tree->Branch("stub_pfpid", &fStubPFPID);
   _tree->Branch("stub_nplane", &fStubNPlane);
+  _tree->Branch("stub_vtx_w", &fStubVtxW);
+  _tree->Branch("stub_end_w", &fStubEndW);
 
   _tree->Branch("stub_qlength", &fStubQLength);
   _tree->Branch("stub_qs", &fStubQs);
   _tree->Branch("stub_ontracks", &fStubOnTracks);
-  _tree->Branch("stub_before_vtxs", &fStubBeforeVtxs);
-  _tree->Branch("stub_after_hits", &fStubAfterHits);
+  _tree->Branch("stub_wires", &fStubWires);
 
   _tree->Branch("stub_true_ke", &fStubTrueKE);
   _tree->Branch("stub_true_length", &fStubTrueLength);
@@ -493,12 +495,13 @@ void sbn::NuVertexChargeTree::Clear() {
   fStubHitInd.clear();
   fStubPFPID.clear();
   fStubNPlane.clear();
+  fStubVtxW.clear();
+  fStubEndW.clear();
 
   fStubQLength.clear();
   fStubQs.clear();
   fStubOnTracks.clear();
-  fStubBeforeVtxs.clear();
-  fStubAfterHits.clear();
+  fStubWires.clear();
 
   fStubTrueKE.clear();
   fStubTrueLength.clear();
@@ -646,16 +649,13 @@ void sbn::NuVertexChargeTree::FillStubs(
     fStubDirx.push_back((stub.end - stub.vtx).Unit().X());
     fStubDiry.push_back((stub.end - stub.vtx).Unit().Y());
     fStubDirz.push_back((stub.end - stub.vtx).Unit().Z());
-    fStubNWire.push_back(stub.nwire.front());
+    fStubNWire.push_back(stub.CoreNHit());
     fStubTrkPitch.push_back(stub.trkpitch.front());
     fStubPitch.push_back(stub.pitch.front());
     fStubLenP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).Mag(), 2212));
 
     // Only count charge on the main stub
-    auto stubcharge_acc = [](float a, const sbn::StubHit &h) {
-      return a + h.charge * (!h.before_vtx) * (!h.after_hit);
-    };
-    fStubCharge.push_back(std::accumulate(stub.hits.front().begin(), stub.hits.front().end(), 0., stubcharge_acc));
+    fStubCharge.push_back(stub.CoreCharge());
 
     // Compute per-charge stuff
     // Save per-charge stuff
@@ -663,13 +663,13 @@ void sbn::NuVertexChargeTree::FillStubs(
     for (const sbn::StubHit &h: stub.hits.front()) {
       fStubQs.push_back(h.charge);
       fStubOnTracks.push_back(h.ontrack);
-      fStubBeforeVtxs.push_back(h.before_vtx);
-      fStubAfterHits.push_back(h.after_hit);
+      fStubWires.push_back(h.wire);
     }
 
     fStubHitInd.push_back(stub_hit_inds[i_stub]);
-
     fStubNPlane.push_back(stub.plane.size());
+    fStubVtxW.push_back(stub.vtx_w.front());
+    fStubEndW.push_back(stub.hit_w.front());
 
     // truth-matching
     std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, stubs[i_stub].hits);

@@ -190,11 +190,12 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     stub_hits = CollectHits(hits, vhit, vhit_hit, vertex.position(), geo, dprop);
 
-    // Sort hits by their proximity to the vertex
+    // Sort hits along the vtx -> end direction
     float vertex_w = geo->WireCoordinate(vertex.position(), vhit_hit.WireID());
+    int stubdir = vertex_w <= vhit_hit.WireID().Wire ? 1 : -1;
     std::sort(stub_hits.begin(), stub_hits.end(), 
-      [vertex_w](auto const &lhs, auto const &rhs) {
-        return abs(lhs->WireID().Wire - vertex_w) < abs(rhs->WireID().Wire - vertex_w);});
+      [stubdir](auto const &lhs, auto const &rhs) {
+        return lhs->WireID().Wire * stubdir < rhs->WireID().Wire * stubdir;});
 
     // Find which pfparticle to group this VertexStub with 
     int pfp_ind = FindPFPInd(stub_hits, pfps, pfp_hits);
@@ -205,9 +206,6 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     // Save all the charges
     stub.hits.emplace_back();
-    std::set<int> wires;
-    int stubdir = (vertex_w <= vhit_hit.WireID().Wire) ? 1 : -1;
-
     for (unsigned i_hit = 0; i_hit < stub_hits.size(); i_hit++) {
       const recob::Hit &hit = *stub_hits[i_hit];
 
@@ -215,14 +213,9 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
       stubhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
       stubhit.ontrack = (pfp_ind >= 0) ? HitOnTrack(stub_hits[i_hit], trks[pfp_ind], trk_hits[pfp_ind], trk_thms[pfp_ind]) : false;
-      stubhit.before_vtx = (((int)hit.WireID().Wire - vertex_w) * stubdir) < 0.;
-      stubhit.after_hit  = (((int)hit.WireID().Wire - (int)vhit_hit.WireID().Wire) * stubdir) > 0;
-
-      // std::cout << "Vertex w: " << vertex_w << " VHit w: " << vhit_hit.WireID().Wire << " stubdir: " << stubdir << " This W: " << hit.WireID().Wire << " COMP: " << (((int)hit.WireID().Wire - (int)vhit_hit.WireID().Wire) * stubdir) << " After Hit: " << stubhit.after_hit << std::endl;
+      stubhit.wire = hit.WireID().Wire;
 
       stub.hits.back().push_back(stubhit);
-
-      wires.insert(hit.WireID().Wire);
     }
 
     // See if we can compute a track pitch
@@ -236,8 +229,9 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     stub.vtx = vertex_v;
     stub.end = vhit.spXYZ;
     stub.pitch.push_back(vhit.charge / vhit.dqdx);
-    stub.nwire.push_back(wires.size());
     stub.plane.push_back(vhit.wire);
+    stub.hit_w.push_back(vhit.wire.Wire);
+    stub.vtx_w.push_back(vertex_w);
 
     return stub;
 }
