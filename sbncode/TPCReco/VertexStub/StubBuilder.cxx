@@ -1,7 +1,27 @@
 #include "StubBuilder.h"
 
 // Helper functions
-art::Ptr<recob::PFParticle> FindPFP(
+bool HitOnTrack(const art::Ptr<recob::Hit> &hit,
+    const art::Ptr<recob::Track> &trk,
+    const std::vector<art::Ptr<recob::Hit>> &trk_hits,
+    const std::vector<const recob::TrackHitMeta *> &trk_thms) {
+
+  if (!trk) return false; // no track: hit can't be on a track
+    
+  for (unsigned i = 0; i < trk_hits.size(); i++) {
+    // Found the hit on the track!
+    if (hit == trk_hits[i]) { 
+      // Is the hit part of the track Calo?
+      if (trk_thms[i]->Index() != std::numeric_limits<int>::max() && trk->HasValidPoint(trk_thms[i]->Index())) { 
+        return true;
+      }
+      break;
+    }
+  }
+  return false;
+}
+
+int FindPFPInd(
   const std::vector<art::Ptr<recob::Hit>> &hits,
   const std::vector<art::Ptr<recob::PFParticle>> &pfps,
   const std::vector<std::vector<art::Ptr<recob::Hit>>> &pfp_hits) {
@@ -24,11 +44,10 @@ art::Ptr<recob::PFParticle> FindPFP(
   }
 
   for (unsigned i_pfp = 0; i_pfp < pfps.size(); i_pfp++) {
-    if (pfp_nhit[i_pfp] >= hits.size() / 2) return pfps[i_pfp];
+    if (pfp_nhit[i_pfp] >= hits.size() / 2) return i_pfp;
   }
 
-  art::Ptr<recob::PFParticle> null;
-  return null;
+  return -1;
 }
 
 std::vector<art::Ptr<recob::Hit>> CollectHits(
@@ -40,22 +59,32 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
     const detinfo::DetectorPropertiesData &dprop) {
 
   // project the vertex onto the wireplane
-  float vert_w = geo->WireCoordinate(vertex, vhit_hit.WireID());
+  float vert_wf = geo->WireCoordinate(vertex, vhit_hit.WireID());
   float vert_x = vertex.x();
 
   // get the vertex hit-coordinates
-  float hit_w = vhit_hit.WireID().Wire;
+  int hit_w = vhit_hit.WireID().Wire;
   float hit_x = dprop.ConvertTicksToX(vhit_hit.PeakTime(), vhit_hit.WireID());
   geo::PlaneID vhit_plane = vhit_hit.WireID();
 
+  std::cout << "COLLECTING HITS!\n";
+  std::cout << "HIT W: " << hit_w << " X: " << hit_x << std::endl;
+  std::cout << "VTX W: " << vert_wf << " X: " << vert_x << std::endl;
+
   // get the line-segment slope / intercept
-  float slope = (hit_x - vert_x) / (hit_w - vert_w);
+  float slope = (hit_x - vert_x) / (hit_w - vert_wf);
   float intercept = hit_x - slope * hit_w;
+
+  // Include wires one after the hit and one before the vtx
+  int vert_w = (int)((hit_w > vert_wf) ? std::floor(vert_wf) : std::ceil(vert_wf));
+  hit_w = hit_w + ((hit_w > vert_wf) ? 1 : -1);
+
+  std::cout << "VTX Wire: " << vert_w << " HIT Wire: " << hit_w << std::endl;
 
   // get all the hits that overlap between these two points
   std::vector<art::Ptr<recob::Hit>> ret;
   for (art::Ptr<recob::Hit> h: hits) {
-    float this_hit_w = h->WireID().Wire;
+    int this_hit_w = h->WireID().Wire;
     geo::PlaneID this_hit_plane = h->WireID();
     if (this_hit_plane == vhit_plane &&  // check plane
        ((this_hit_w <= hit_w && this_hit_w >= vert_w) || // check overlap
@@ -78,11 +107,14 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
 }
   
 
-void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel) {
+void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel, const art::InputTag &trklabel) {
   // Clear out old data
   fSlicePFPHits.clear();
   fSlicePFPs.clear();
   fSliceHits.clear();
+  fSliceTrkHits.clear();
+  fSliceTrkTHMs.clear();
+  fSliceTrks.clear();
 
   // Build the map of the slice key to the hits
   art::Handle<std::vector<recob::Slice>> slice_handle;
@@ -97,7 +129,13 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel)
   for (unsigned i_slc = 0; i_slc < slices.size(); i_slc++) {
     const std::vector<art::Ptr<recob::PFParticle>> thisSlicePFPs = slicePFPs.at(i_slc);
     art::FindManyP<recob::Cluster> pfparticleClusters(thisSlicePFPs, e, pfplabel);
+
+    std::vector<art::Ptr<recob::Track>> thisSliceTracks;
     std::vector<std::vector<art::Ptr<recob::Hit>>> thisSlicePFPHits;
+    std::vector<std::vector<art::Ptr<recob::Hit>>> thisSliceTrkHits;
+    std::vector<std::vector<const recob::TrackHitMeta *>> thisSliceTrkTHMs;
+
+    art::FindManyP<recob::Track> pfparticleTracks(thisSlicePFPs, e, trklabel);
     for (unsigned i_slc_pfp = 0; i_slc_pfp < thisSlicePFPs.size(); i_slc_pfp++) {
       thisSlicePFPHits.emplace_back();
       const std::vector<art::Ptr<recob::Cluster>> &thisPFPClusters = pfparticleClusters.at(i_slc_pfp);
@@ -105,8 +143,26 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel)
       for (unsigned i_clus = 0; i_clus < thisPFPClusters.size(); i_clus++) {
         thisSlicePFPHits.back().insert(thisSlicePFPHits.back().end(), clusterHits.at(i_clus).begin(), clusterHits.at(i_clus).end());
       }
+
+      art::FindManyP<recob::Hit, recob::TrackHitMeta> FMthisTrackHits(pfparticleTracks.at(i_slc_pfp), e, trklabel);
+      if (pfparticleTracks.at(i_slc_pfp).size()) {
+        const std::vector<art::Ptr<recob::Hit>> &thisTrackHits = FMthisTrackHits.at(0);
+        const std::vector<const recob::TrackHitMeta *> &thisTrackTHMs = FMthisTrackHits.data(0);
+        thisSliceTrkHits.push_back(thisTrackHits);
+        thisSliceTrkTHMs.push_back(thisTrackTHMs);
+        thisSliceTracks.push_back(pfparticleTracks.at(i_slc_pfp).at(0));
+      }
+      else {
+        thisSliceTrkHits.emplace_back();
+        thisSliceTrkTHMs.emplace_back();
+        thisSliceTracks.emplace_back(); // nullptr
+      }
+
     }
     fSlicePFPHits[slices[i_slc].key()] = thisSlicePFPHits;
+    fSliceTrkHits[slices[i_slc].key()] = thisSliceTrkHits;
+    fSliceTrkTHMs[slices[i_slc].key()] = thisSliceTrkTHMs;
+    fSliceTrks[slices[i_slc].key()] = thisSliceTracks;
     fSlicePFPs[slices[i_slc].key()] = thisSlicePFPs;
     fSliceHits[slices[i_slc].key()] = sliceHits.at(i_slc);
   }
@@ -117,6 +173,7 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
                                   const recob::Hit &vhit_hit, 
                                   const recob::Vertex &vertex,
                                   const geo::GeometryCore *geo,
+                                  const spacecharge::SpaceCharge *sce,
                                   const detinfo::DetectorClocksData &dclock,
                                   const detinfo::DetectorPropertiesData &dprop,
                                   std::vector<art::Ptr<recob::Hit>> &stub_hits,
@@ -124,7 +181,10 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     // look up stuff
     const std::vector<art::Ptr<recob::Hit>> &hits = fSliceHits.at(slice.key());
     const std::vector<art::Ptr<recob::PFParticle>> &pfps = fSlicePFPs.at(slice.key());
+    const std::vector<art::Ptr<recob::Track>> &trks = fSliceTrks.at(slice.key());
     const std::vector<std::vector<art::Ptr<recob::Hit>>> &pfp_hits = fSlicePFPHits.at(slice.key());
+    const std::vector<std::vector<art::Ptr<recob::Hit>>> &trk_hits = fSliceTrkHits.at(slice.key());
+    const std::vector<std::vector<const recob::TrackHitMeta *>> &trk_thms = fSliceTrkTHMs.at(slice.key());
     
     TVector3 vertex_v(vertex.position().X(), vertex.position().Y(), vertex.position().Z());
 
@@ -137,18 +197,40 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
         return abs(lhs->WireID().Wire - vertex_w) < abs(rhs->WireID().Wire - vertex_w);});
 
     // Find which pfparticle to group this VertexStub with 
-    stub_pfp = FindPFP(stub_hits, pfps, pfp_hits);
+    int pfp_ind = FindPFPInd(stub_hits, pfps, pfp_hits);
+    art::Ptr<recob::PFParticle> null; // nullptr
+    stub_pfp = (pfp_ind >= 0) ? pfps[pfp_ind] : null;
 
     sbn::Stub stub;
 
     // Save all the charges
-    stub.charge.emplace_back();
+    stub.hits.emplace_back();
     std::set<int> wires;
+    int stubdir = (vertex_w <= vhit_hit.WireID().Wire) ? 1 : -1;
+
     for (unsigned i_hit = 0; i_hit < stub_hits.size(); i_hit++) {
       const recob::Hit &hit = *stub_hits[i_hit];
-      float charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
-      stub.charge.back().push_back(charge);
+
+      sbn::StubHit stubhit; 
+
+      stubhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
+      stubhit.ontrack = (pfp_ind >= 0) ? HitOnTrack(stub_hits[i_hit], trks[pfp_ind], trk_hits[pfp_ind], trk_thms[pfp_ind]) : false;
+      stubhit.before_vtx = (((int)hit.WireID().Wire - vertex_w) * stubdir) < 0.;
+      stubhit.after_hit  = (((int)hit.WireID().Wire - (int)vhit_hit.WireID().Wire) * stubdir) > 0;
+
+      // std::cout << "Vertex w: " << vertex_w << " VHit w: " << vhit_hit.WireID().Wire << " stubdir: " << stubdir << " This W: " << hit.WireID().Wire << " COMP: " << (((int)hit.WireID().Wire - (int)vhit_hit.WireID().Wire) * stubdir) << " After Hit: " << stubhit.after_hit << std::endl;
+
+      stub.hits.back().push_back(stubhit);
+
       wires.insert(hit.WireID().Wire);
+    }
+
+    // See if we can compute a track pitch
+    if (pfp_ind >= 0 && trks[pfp_ind]) {
+      stub.trkpitch.push_back(sbn::GetPitch(geo, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), geo->View(vhit_hit.WireID()), vhit_hit.WireID(), true, true));
+    }
+    else {
+      stub.trkpitch.push_back(-1.);
     }
 
     stub.vtx = vertex_v;

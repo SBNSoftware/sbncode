@@ -36,6 +36,7 @@ double GetPitch(
     geo::Point_t loc, geo::Vector_t dir, 
     geo::View_t view, geo::TPCID tpc, 
     bool correct_sce, bool track_is_sce_corrected, float xsign=1.);
+
 geo::Point_t GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, unsigned TPC, float xsign=1.);
 double GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, unsigned TPC, bool correct_loc_sce, float xsign=1.);
 geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_t loc, float xsign=1.);

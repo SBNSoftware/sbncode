@@ -177,17 +177,27 @@ private:
   std::array<std::vector<int>, MAX_PFP> fVertexHitPFP3DIDs;
   std::array<std::vector<float>, MAX_PFP> fVertexHitPFP3DDists;
 
+  std::vector<float> fStubEndx;
+  std::vector<float> fStubEndy;
+  std::vector<float> fStubEndz;
   std::vector<float> fStubDirx;
   std::vector<float> fStubDiry;
   std::vector<float> fStubDirz;
   std::vector<float> fStubLength;
   std::vector<float> fStubCharge;
   std::vector<float> fStubPitch;
-  std::vector<float> fStubRecoP;
+  std::vector<float> fStubTrkPitch;
+  std::vector<float> fStubLenP;
   std::vector<int> fStubNWire;
   std::vector<int> fStubHitInd;
   std::vector<int> fStubPFPID;
   std::vector<int> fStubNPlane;
+
+  std::vector<float> fStubQs;
+  std::vector<int> fStubOnTracks;
+  std::vector<int> fStubBeforeVtxs;
+  std::vector<int> fStubAfterHits;
+  std::vector<int> fStubQLength;
 
   std::vector<float> fStubTrueKE;
   std::vector<float> fStubTrueLength;
@@ -287,17 +297,28 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("vertex_hit_true_y", &fVertexHitTrueY);
   _tree->Branch("vertex_hit_true_z", &fVertexHitTrueZ);
 
+  _tree->Branch("stub_endx", &fStubEndx);
+  _tree->Branch("stub_endy", &fStubEndy);
+  _tree->Branch("stub_endz", &fStubEndz);
+
   _tree->Branch("stub_dirx", &fStubDirx);
   _tree->Branch("stub_diry", &fStubDiry);
   _tree->Branch("stub_dirz", &fStubDirz);
   _tree->Branch("stub_length", &fStubLength);
-  _tree->Branch("stub_recop", &fStubRecoP);
+  _tree->Branch("stub_lenp", &fStubLenP);
   _tree->Branch("stub_charge", &fStubCharge);
+  _tree->Branch("stub_trk_pitch", &fStubTrkPitch);
   _tree->Branch("stub_pitch", &fStubPitch);
   _tree->Branch("stub_nwire", &fStubNWire);
   _tree->Branch("stub_hit_ind", &fStubHitInd);
   _tree->Branch("stub_pfpid", &fStubPFPID);
   _tree->Branch("stub_nplane", &fStubNPlane);
+
+  _tree->Branch("stub_qlength", &fStubQLength);
+  _tree->Branch("stub_qs", &fStubQs);
+  _tree->Branch("stub_ontracks", &fStubOnTracks);
+  _tree->Branch("stub_before_vtxs", &fStubBeforeVtxs);
+  _tree->Branch("stub_after_hits", &fStubAfterHits);
 
   _tree->Branch("stub_true_ke", &fStubTrueKE);
   _tree->Branch("stub_true_length", &fStubTrueLength);
@@ -457,17 +478,27 @@ void sbn::NuVertexChargeTree::Clear() {
   fVertexHitTrueY.clear();
   fVertexHitTrueZ.clear();
 
+  fStubEndx.clear();
+  fStubEndy.clear();
+  fStubEndz.clear();
   fStubDirx.clear();
   fStubDiry.clear();
   fStubDirz.clear();
   fStubLength.clear();
-  fStubRecoP.clear();
+  fStubLenP.clear();
   fStubCharge.clear();
+  fStubTrkPitch.clear();
   fStubPitch.clear();
   fStubNWire.clear();
   fStubHitInd.clear();
   fStubPFPID.clear();
   fStubNPlane.clear();
+
+  fStubQLength.clear();
+  fStubQs.clear();
+  fStubOnTracks.clear();
+  fStubBeforeVtxs.clear();
+  fStubAfterHits.clear();
 
   fStubTrueKE.clear();
   fStubTrueLength.clear();
@@ -608,13 +639,33 @@ void sbn::NuVertexChargeTree::FillStubs(
 
     // fill reco info
     fStubLength.push_back((stub.vtx - stub.end).Mag());
+    fStubEndx.push_back(stub.end.X());
+    fStubEndy.push_back(stub.end.Y());
+    fStubEndz.push_back(stub.end.Z());
+
     fStubDirx.push_back((stub.end - stub.vtx).Unit().X());
     fStubDiry.push_back((stub.end - stub.vtx).Unit().Y());
     fStubDirz.push_back((stub.end - stub.vtx).Unit().Z());
     fStubNWire.push_back(stub.nwire.front());
-    fStubCharge.push_back(std::accumulate(stub.charge.front().begin(), stub.charge.front().end(), 0.));
+    fStubTrkPitch.push_back(stub.trkpitch.front());
     fStubPitch.push_back(stub.pitch.front());
-    fStubRecoP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).Mag(), 2212));
+    fStubLenP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).Mag(), 2212));
+
+    // Only count charge on the main stub
+    auto stubcharge_acc = [](float a, const sbn::StubHit &h) {
+      return a + h.charge * (!h.before_vtx) * (!h.after_hit);
+    };
+    fStubCharge.push_back(std::accumulate(stub.hits.front().begin(), stub.hits.front().end(), 0., stubcharge_acc));
+
+    // Compute per-charge stuff
+    // Save per-charge stuff
+    fStubQLength.push_back(stub.hits.front().size());
+    for (const sbn::StubHit &h: stub.hits.front()) {
+      fStubQs.push_back(h.charge);
+      fStubOnTracks.push_back(h.ontrack);
+      fStubBeforeVtxs.push_back(h.before_vtx);
+      fStubAfterHits.push_back(h.after_hit);
+    }
 
     fStubHitInd.push_back(stub_hit_inds[i_stub]);
 

@@ -69,6 +69,7 @@ private:
 
   // input labels
   art::InputTag fPFPLabel;
+  art::InputTag fTrackLabel;
   art::InputTag fVertexChargeLabel;
   float fdQdxCut;
   sbn::StubBuilder fStubBuilder;
@@ -78,6 +79,7 @@ private:
 sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
   : EDProducer{p},
     fPFPLabel(p.get<art::InputTag>("PFPLabel", "pandora")),
+    fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack")),
     fVertexChargeLabel(p.get<art::InputTag>("VertexChargeLabel", "vhit")),
     fdQdxCut(p.get<float>("dQdxCut")),
     fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
@@ -125,7 +127,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   art::FindManyP<sbn::VertexHit> slcVHits(slices, e, fVertexChargeLabel);
 
   // Setup the stub builder
-  fStubBuilder.Setup(e, fPFPLabel);
+  fStubBuilder.Setup(e, fPFPLabel, fTrackLabel);
 
   for (unsigned i_slc = 0; i_slc < slices.size(); i_slc++) {
     const std::vector<art::Ptr<sbn::VertexHit>> vhits = slcVHits.at(i_slc);
@@ -148,7 +150,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
       if (thisVHit.dqdx < fdQdxCut) continue;
 
       sbn::StubInfo sinfo;
-      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, vertex, geo, clock_data, dprop, sinfo.hits, sinfo.pfp); 
+      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, vertex, geo, sce, clock_data, dprop, sinfo.hits, sinfo.pfp); 
       sinfo.vhit = vhits[i_vhit];
       sinfo.vhit_hit = vhitHits.at(i_vhit).at(0);
 

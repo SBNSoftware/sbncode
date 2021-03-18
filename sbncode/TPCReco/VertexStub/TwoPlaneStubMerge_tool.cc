@@ -81,8 +81,14 @@ TwoPlaneStubMerge::~TwoPlaneStubMerge()
     
 // Return true if stub A is "better" than stub B
 bool TwoPlaneStubMerge::SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B) {
+  // Count the hits on the main stub
+  int A_nhit = 0;
+  for (const sbn::StubHit &h: A.stub.hits.front()) A_nhit += (!h.before_vtx && !h.after_hit);
+  int B_nhit = 0;
+  for (const sbn::StubHit &h: B.stub.hits.front()) B_nhit += (!h.before_vtx && !h.after_hit);
+
   // First -- try more hits
-  if (A.hits.size() != B.hits.size()) return A.hits.size() > B.hits.size();
+  if (A_nhit != B_nhit) return A_nhit > B_nhit;
 
   // Sort by desirability of plane: 2 better than 0 better than 1
   return ((A.vhit_hit->WireID().Plane + 1) % 3) < ((B.vhit_hit->WireID().Plane + 1) % 3);
@@ -119,11 +125,14 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   ret.stub.plane.push_back(best.stub.plane.front());
   ret.stub.plane.push_back(othr.stub.plane.front());
 
-  ret.stub.charge.push_back(best.stub.charge.front());
-  ret.stub.charge.push_back(othr.stub.charge.front());
+  ret.stub.hits.push_back(best.stub.hits.front());
+  ret.stub.hits.push_back(othr.stub.hits.front());
 
   ret.stub.pitch.push_back(best.stub.pitch.front());
   ret.stub.pitch.push_back(othr.stub.pitch.front());
+
+  ret.stub.trkpitch.push_back(best.stub.trkpitch.front());
+  ret.stub.trkpitch.push_back(othr.stub.trkpitch.front());
 
   ret.stub.nwire.push_back(best.stub.nwire.front());
   ret.stub.nwire.push_back(othr.stub.nwire.front());
