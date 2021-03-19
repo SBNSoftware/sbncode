@@ -43,7 +43,7 @@ public:
      */
     ~PlaneStubMerge();
 
-    void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+    std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
        const geo::GeometryCore *geo, 
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
@@ -64,22 +64,32 @@ PlaneStubMerge::~PlaneStubMerge()
 {
 }
 
-void PlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+std::vector<sbn::StubInfo> PlaneStubMerge::Merge(const std::vector<sbn::StubInfo> &stubs,
     const geo::GeometryCore *geo, 
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorClocksData &dclock,
     const detinfo::DetectorPropertiesData &dprop) {
+
+  std::vector<bool> toerase(stubs.size(), false);
   for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
     for (unsigned j_stub = 0; j_stub < stubs.size(); j_stub++) {
       if (i_stub == j_stub) continue;
+      if (toerase[j_stub]) continue; // Already being erased
       if (sbn::StubContains(stubs[i_stub], stubs[j_stub])) {
         if (sbn::StubDirectionDot(stubs[i_stub], stubs[j_stub], geo, dprop) > fStubDotCut) {
-          // delete the smaller stub
-          stubs.erase(stubs.begin() + j_stub);
+          toerase[j_stub] = true;
         }
       }
     }
   }
+
+  std::vector<sbn::StubInfo> ret;
+  // Keep only good stubs
+  for (unsigned i = 0; i < stubs.size(); i++) {
+    if (!toerase[i]) ret.push_back(stubs[i]);
+  }
+
+  return ret;
 }
 
 DEFINE_ART_CLASS_TOOL(PlaneStubMerge)

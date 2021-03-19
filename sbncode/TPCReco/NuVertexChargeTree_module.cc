@@ -83,7 +83,9 @@ private:
    const std::vector<art::Ptr<recob::PFParticle>> &slice_pfps,
    const std::vector<std::vector<std::pair<int, float>>> &slice_pfp_matches,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
-   const std::vector<const sim::GeneratedParticleInfo *> infos);
+   const std::vector<const sim::GeneratedParticleInfo *> infos,
+   const geo::GeometryCore *geo,
+   const detinfo::DetectorPropertiesData &dprop);
 
   void FillVertexHits(
     const std::vector<art::Ptr<sbn::VertexHit>> &hits, 
@@ -840,7 +842,9 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
    const std::vector<art::Ptr<recob::PFParticle>> &slice_pfps,
    const std::vector<std::vector<std::pair<int, float>>> &slice_pfp_matches,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
-   const std::vector<const sim::GeneratedParticleInfo *> infos) {
+   const std::vector<const sim::GeneratedParticleInfo *> infos,
+   const geo::GeometryCore *geo,
+   const detinfo::DetectorPropertiesData &dprop) {
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
 
@@ -910,7 +914,14 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     float thisQ = 0.;
     for (const sim::IDE *ide: particle_ides) {
       thisVisE += ide->energy;
-      thisQ += ide->numElectrons;
+
+      // Correct for electron lifetime 
+      geo::Point_t p {ide->x, ide->y, ide->z};
+      geo::TPCID tpc = geo->FindTPCAtPosition(p);
+      if (tpc) {
+        float driftT = abs(ide->x - geo->TPC(tpc).PlaneLocation(0)[0]) / dprop.DriftVelocity();
+        thisQ += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
+      }
     }
 
     fFSPVisE.push_back(thisVisE / 3. /* average over each plane */);
@@ -1237,7 +1248,7 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
     FillMeta(evt);
 
     // save the true-neutrino info
-    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu));
+    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu), geo, dprop);
 
     // The vertex hits!
     FillVertexHits(thisVertexHits, thisVertexHitHits, dprop, clock_data, trueParticles);

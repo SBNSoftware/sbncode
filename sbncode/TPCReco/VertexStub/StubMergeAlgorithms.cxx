@@ -125,7 +125,11 @@ bool sbn::StubContains(const sbn::StubInfo &A, const sbn::StubInfo &B) {
   if (A.vhit_hit->WireID().Plane != B.vhit_hit->WireID().Plane) return false;
 
   for (const art::Ptr<recob::Hit> &h: A.hits) {
-    if (h.key() == B.vhit_hit.key()) return true;
+    if (A.stub.OnCore(h->WireID())) {
+      if (h.key() == B.vhit_hit.key()) {
+        return true;
+      }
+    }
   }
   return false;
 }

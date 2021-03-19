@@ -160,7 +160,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
 
     // Run all of the merging tools
     for (unsigned i_mrg = 0; i_mrg < fStubMergeTools.size(); i_mrg++) {
-      fStubMergeTools[i_mrg]->Merge(stubs, vertex, geo, sce, clock_data, dprop);
+      stubs = fStubMergeTools[i_mrg]->Merge(stubs, geo, sce, clock_data, dprop);
     }
 
     // Save!

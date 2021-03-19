@@ -43,7 +43,7 @@ public:
      */
     virtual ~IStubMerge() noexcept = default;
 
-    virtual void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+    virtual std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
        const geo::GeometryCore *geo, 
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,

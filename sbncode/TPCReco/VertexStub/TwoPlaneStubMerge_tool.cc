@@ -43,7 +43,7 @@ public:
      */
     ~TwoPlaneStubMerge();
 
-    void Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+    std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
        const geo::GeometryCore *geo, 
        const spacecharge::SpaceCharge *sce, 
        const detinfo::DetectorClocksData &dclock,
@@ -141,7 +141,7 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   return ret;
 }
 
-void TwoPlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Vertex &vertex, 
+std::vector<sbn::StubInfo> TwoPlaneStubMerge::Merge(const std::vector<sbn::StubInfo> &stubs,
     const geo::GeometryCore *geo, 
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorClocksData &dclock,
@@ -185,15 +185,14 @@ void TwoPlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Ve
   // keep track of which index stubs should not be saved
   std::set<unsigned> dontsave;
 
-  // Copy the old stub list and re-populate it with merges
-  std::vector<sbn::StubInfo> oldstubs;
-  stubs.swap(oldstubs);
+  // Output list
+  std::vector<sbn::StubInfo> ret;
 
   for (unsigned i_mrg = 0; i_mrg < merges.size(); i_mrg++) {
     const MergeInfo &thismrg = merges[i_mrg];
     if (thismrg.toff < fMaxMergeTOff && thismrg.qoff < fMaxMergeQOff) {
       if (!hasmerged.count(thismrg.i) && !hasmerged.count(thismrg.j)) { 
-        stubs.push_back(MergeStubs(oldstubs[thismrg.i], oldstubs[thismrg.j], geo, sce, dprop));
+        ret.push_back(MergeStubs(stubs[thismrg.i], stubs[thismrg.j], geo, sce, dprop));
         hasmerged.insert(thismrg.i);
         hasmerged.insert(thismrg.j);
       }
@@ -207,11 +206,13 @@ void TwoPlaneStubMerge::Merge(std::vector<sbn::StubInfo> &stubs, const recob::Ve
   }
 
   // Save the stubs which were not merged across planes and not marked to be removed
-  for (unsigned i_stub = 0; i_stub < oldstubs.size(); i_stub++) {
+  for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
     if (fSaveOldStubs || (!hasmerged.count(i_stub) && !dontsave.count(i_stub))) {
-      stubs.push_back(oldstubs[i_stub]);
+      ret.push_back(stubs[i_stub]);
     }
   }
+
+  return ret;
 }
 
 DEFINE_ART_CLASS_TOOL(TwoPlaneStubMerge)
