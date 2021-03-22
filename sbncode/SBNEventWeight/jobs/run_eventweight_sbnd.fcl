@@ -1,0 +1,10 @@
+#include "seedservice.fcl"
+#include "services_sbnd.fcl"
+#include "run_eventweight_sbn.fcl"
+
+services: {
+  RandomNumberGenerator: {}
+  NuRandomService: @local::random_NuRandomService
+  @table::sbnd_services
+}
+
