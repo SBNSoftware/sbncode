@@ -174,7 +174,7 @@ std::vector<art::Ptr<recob::Hit>> sbn::TrackSplitter::SplitTrunkHits(
     art::Ptr<recob::Hit> h = trunk_hits[i];
     const recob::TrackHitMeta *hmeta = trunk_hmetas[i];
     if (i != main_hit_ind // different hit
-      && (hmeta->Index() == std::numeric_limits<int>::max() || !trunk_trk.HasValidPoint(hmeta->Index())) // not used in trunk traj. 
+      && (hmeta->Index() == std::numeric_limits<unsigned int>::max() || !trunk_trk.HasValidPoint(hmeta->Index())) // not used in trunk traj. 
       && h->WireID() == wire) { // on same wire
 
       // Found a hit! So there are two hits on the trunk on this wire
@@ -231,7 +231,7 @@ sbn::TrackSplitter::PairedHits sbn::TrackSplitter::DeMergePlaneHits(
     const recob::TrackHitMeta *thm = trunk_hmeta[i_hit_trunk];
 
     // ignore hits not used in the trunk trajectory
-    if (thm->Index() == std::numeric_limits<int>::max() || !trunk_trk.HasValidPoint(thm->Index())) continue;
+    if (thm->Index() == std::numeric_limits<unsigned int>::max() || !trunk_trk.HasValidPoint(thm->Index())) continue;
 
     // Are we past the track start?
     TVector3 loc = trunk_trk.LocationAtPoint<TVector3>(thm->Index());
@@ -261,7 +261,7 @@ sbn::TrackSplitter::PairedHits sbn::TrackSplitter::DeMergePlaneHits(
     if (branch_wire_hits.size()) {
       // Check any hits on the branch already have a valid trajectory point.
       for (; i_hit_branch < branch_wire_hits.size(); i_hit_branch++) {
-        if (branch_wire_hmetas[i_hit_branch]->Index() != std::numeric_limits<int>::max() && 
+        if (branch_wire_hmetas[i_hit_branch]->Index() != std::numeric_limits<unsigned int>::max() && 
             old_branch_trk.HasValidPoint(branch_wire_hmetas[i_hit_branch]->Index())) {
           valid_tp = true;
           break;
@@ -350,7 +350,7 @@ sbn::TrackSplitter::PairedHits sbn::TrackSplitter::DeMergePlaneHits(
     const recob::TrackHitMeta *thm = trunk_hmeta[i_hit_trunk];
 
     // ignore hits not used in the trunk trajectory
-    if (thm->Index() == std::numeric_limits<int>::max() || !trunk_trk.HasValidPoint(thm->Index())) continue;
+    if (thm->Index() == std::numeric_limits<unsigned int>::max() || !trunk_trk.HasValidPoint(thm->Index())) continue;
 
     ret.trunk_hits.push_back(hit);
     ret.trunk_hmetas.push_back(*thm);
@@ -361,7 +361,7 @@ sbn::TrackSplitter::PairedHits sbn::TrackSplitter::DeMergePlaneHits(
   for (unsigned i_hit_branch = 0; i_hit_branch < branch_hits.size(); i_hit_branch++) {
 
     // don't save invalid hits
-    if (branch_hmeta[i_hit_branch]->Index() == std::numeric_limits<int>::max() ||
+    if (branch_hmeta[i_hit_branch]->Index() == std::numeric_limits<unsigned int>::max() ||
         !old_branch_trk.HasValidPoint(branch_hmeta[i_hit_branch]->Index())) {
       continue;
     }
@@ -406,14 +406,14 @@ std::pair<std::vector<art::Ptr<recob::Hit>>, std::vector<const recob::TrackHitMe
   int last_valid_hit = -1;
 
   for (unsigned i_hit = 0; i_hit < ret.first.size(); i_hit++) {
-    if (ret.second[i_hit]->Index() != std::numeric_limits<int>::max() && trk.HasValidPoint(ret.second[i_hit]->Index())) {
+    if (ret.second[i_hit]->Index() != std::numeric_limits<unsigned int>::max() && trk.HasValidPoint(ret.second[i_hit]->Index())) {
       first_valid_hit = i_hit;
       break;
     }
   }
 
   for (int i_hit = ret.first.size()-1; i_hit >= 0; i_hit--) {
-    if (ret.second[i_hit]->Index() != std::numeric_limits<int>::max() && trk.HasValidPoint(ret.second[i_hit]->Index())) {
+    if (ret.second[i_hit]->Index() != std::numeric_limits<unsigned int>::max() && trk.HasValidPoint(ret.second[i_hit]->Index())) {
       last_valid_hit = i_hit;
       break;
     }

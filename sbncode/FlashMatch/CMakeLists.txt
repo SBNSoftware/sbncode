@@ -1,8 +1,8 @@
-# cet_set_compiler_flags(DIAGS CAUTIOUS
-#   WERROR
-#   NO_UNDEFINED
-#   EXTRA_FLAGS  -Wconversion -Wno-sign-conversion
-#   )
+#cet_set_compiler_flags(DIAGS CAUTIOUS
+#  WERROR
+#  NO_UNDEFINED
+#  EXTRA_FLAGS  -Wall -Wextra  -pedantic  #-Wconversion
+#  )
 
 art_make(
   MODULE_LIBRARIES
@@ -22,6 +22,7 @@ art_make(
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
 
+  lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
   lardata_Utilities
   lardataobj_AnalysisBase
   lardataobj_RawData

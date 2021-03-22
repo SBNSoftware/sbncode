@@ -9,8 +9,8 @@ add_subdirectory(OpDet)
 add_subdirectory(OpT0Finder)
 
 add_subdirectory(CAFMaker)
+add_subdirectory(Metadata)
 
 add_subdirectory(FlashMatch)
 add_subdirectory(LArRecoProducer)
-
 add_subdirectory(TPCReco)

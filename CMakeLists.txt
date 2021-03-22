@@ -38,7 +38,7 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   WERROR
   NO_UNDEFINED
   ALLOW_DEPRECATIONS
-  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs -Wno-undefined-var-template -I $ENV{CLANG_FQ_DIR}/include/c++/v1
+  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs -Wno-undefined-var-template
 )
 
 cet_report_compiler_flags()
@@ -49,6 +49,8 @@ find_ups_product(art_root_io)
 find_ups_product(nusimdata)
 find_ups_product(nug4)
 find_ups_product(lardataobj)
+find_ups_product(larcorealg)
+find_ups_product(larcore)
 find_ups_product(larreco)
 find_ups_product(larpandora)
 find_ups_product(larsoft v09_00_00)

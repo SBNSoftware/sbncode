@@ -79,7 +79,7 @@ namespace analysis
 // declare helper functions
 void TrkDirectionAtXYZ(const recob::Track trk, const double x, const double y, const double z, float out[3]);
 void True2RecoMappingXYZ(float t, float x, float y, float z, float out[3]);
-float YZtoPlanecoordinate(const float y, const float z, const int plane);
+float XYZtoPlanecoordinate(const float x, const float y, const float z, const int plane);
 float distance3d(const float& x1, const float& y1, const float& z1,
                   const float& x2, const float& y2, const float& z2);
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
@@ -1877,9 +1877,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_start_z = trueParticle->Position().Z();
     _backtracked_start_t = trueParticle->Position().T();
 
-    _backtracked_start_U = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 0);
-    _backtracked_start_V = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 1);
-    _backtracked_start_Y = YZtoPlanecoordinate(_backtracked_start_y, _backtracked_start_z, 2);
+    _backtracked_start_U = XYZtoPlanecoordinate(_backtracked_start_x, _backtracked_start_y, _backtracked_start_z, 0);
+    _backtracked_start_V = XYZtoPlanecoordinate(_backtracked_start_x, _backtracked_start_y, _backtracked_start_z, 1);
+    _backtracked_start_Y = XYZtoPlanecoordinate(_backtracked_start_x, _backtracked_start_y, _backtracked_start_z, 2);
 
     // save the trajectory
     for (unsigned i_traj = 0; i_traj < trueParticle->NumberTrajectoryPoints(); i_traj++) {
@@ -1938,8 +1938,12 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
         for (unsigned i_traj = 0; i_traj < trueParticle->NumberTrajectoryPoints()-1; i_traj++) {
           TVector3 thispoint = trueParticle->Position(i_traj).Vect();
           TVector3 nextpoint = trueParticle->Position(i_traj+1).Vect();
-          double thiswirecoord = geometry->WireCoordinate(thispoint.Y(), thispoint.Z(), planeID);
-          double nextwirecoord = geometry->WireCoordinate(nextpoint.Y(), nextpoint.Z(), planeID);
+
+          geo::Point_t thispoint_p(thispoint.X(), thispoint.Y(), thispoint.Z());
+          geo::Point_t nextpoint_p(nextpoint.X(), nextpoint.Y(), nextpoint.Z());
+
+          double thiswirecoord = geometry->WireCoordinate(thispoint_p, planeID);
+          double nextwirecoord = geometry->WireCoordinate(nextpoint_p, planeID);
           int wireStart = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(thiswirecoord) : std::ceil(thiswirecoord));
           int wireEnd   = std::nearbyint((thiswirecoord >= nextwirecoord) ? std::floor(nextwirecoord) : std::ceil(nextwirecoord));
           // if we're not crossing a wire continue
@@ -2058,9 +2062,9 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_sce_start_y = reco_st[1];
     _backtracked_sce_start_z = reco_st[2];
     
-    _backtracked_sce_start_U = YZtoPlanecoordinate(reco_st[1], reco_st[2], 0);
-    _backtracked_sce_start_V = YZtoPlanecoordinate(reco_st[1], reco_st[2], 1);
-    _backtracked_sce_start_Y = YZtoPlanecoordinate(reco_st[1], reco_st[2], 2);
+    _backtracked_sce_start_U = XYZtoPlanecoordinate(reco_st[0], reco_st[1], reco_st[2], 0);
+    _backtracked_sce_start_V = XYZtoPlanecoordinate(reco_st[0], reco_st[1], reco_st[2], 1);
+    _backtracked_sce_start_Y = XYZtoPlanecoordinate(reco_st[0], reco_st[1], reco_st[2], 2);
     _backtracked_process_is_stopping = (trueParticle->EndProcess() == "Decay" ||
                                         trueParticle->EndProcess() == "CoupledTransportation" ||
                                         trueParticle->EndProcess() == "FastScintillation" ||
@@ -2187,7 +2191,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_u = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_u.push_back(geometry->WireCoordinate(xyz.Y(), xyz.Z(), calo->PlaneID()));
+        _w_u.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
         _t_u.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_u.push_back(xyz.X());
         _y_u.push_back(xyz.Y());
@@ -2213,7 +2217,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_v = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_v.push_back(geometry->WireCoordinate(xyz.Y(), xyz.Z(), calo->PlaneID()));
+        _w_v.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
         _t_v.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_v.push_back(xyz.X());
         _y_v.push_back(xyz.Y());
@@ -2238,7 +2242,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _pitch_y = calo->TrkPitchVec();
       for (auto xyz : xyz_v)
       {
-        _w_y.push_back(geometry->WireCoordinate(xyz.Y(), xyz.Z(), calo->PlaneID()));
+        _w_y.push_back(geometry->WireCoordinate(xyz, calo->PlaneID()));
         _t_y.push_back(dprop.ConvertXToTicks(xyz.X(), calo->PlaneID()));
         _x_y.push_back(xyz.X());
         _y_y.push_back(xyz.Y());
@@ -2421,11 +2425,16 @@ void True2RecoMappingXYZ(float t,float x, float y, float z, float out[3]) {
   out[2] = z;
 }
 
-  float YZtoPlanecoordinate(const float y, const float z, const int plane)
+  float XYZtoPlanecoordinate(const float x, const float y, const float z, const int plane)
   {
     auto const* geom = ::lar::providerFrom<geo::Geometry>();
-    double _wire2cm = geom->WirePitch(0, 0, 0);
-    return geom->WireCoordinate(y, z, geo::PlaneID(0, 0, plane)) * _wire2cm;
+    geo::Point_t p(x,y,z);
+    geo::TPCID tpc = geom->FindTPCAtPosition(p);
+    if (!tpc) return -1e6;
+    geo::PlaneID planeID(tpc, plane);
+    double _wire2cm = geom->WirePitch(planeID);
+
+    return geom->WireCoordinate(p, planeID) * _wire2cm;
   }
 
   float distance3d(const float& x1, const float& y1, const float& z1,

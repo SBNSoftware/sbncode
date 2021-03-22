@@ -107,6 +107,9 @@
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
 
+// Metadata
+#include "sbncode/Metadata/MetadataSBN.h"
+
 namespace sbn{
   namespace evwgh{
     std::ostream& operator<<(std::ostream& os, const sbn::evwgh::EventWeightParameterSet& p)
@@ -181,6 +184,9 @@ class CAFMaker : public art::EDProducer {
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
   std::optional<std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
+
+  void AddEnvToFile();
+  void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
 
   void InitializeOutfile();
 
@@ -418,6 +424,86 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
+void CAFMaker::AddEnvToFile()
+{
+  // Global information about the processing details:
+  std::map<std::string, std::string> envmap;
+
+  // Environ comes from unistd.h
+  // environ is not present on OSX for some reason, so just use getenv to
+  // grab the variables we care about.
+#ifdef DARWINBUILD
+  std::set<TString> variables;
+  variables.insert("USER");
+  variables.insert("HOSTNAME");
+  variables.insert("PWD");
+  for (auto var : variables) if(getenv(var)) envmap[var] = getenv(var);
+#else
+  for (char** penv = environ; *penv; ++penv) {
+    const std::string pair = *penv;
+    const size_t split = pair.find("=");
+    if(split == std::string::npos) continue;  // Huh?
+    const std::string key = pair.substr(0, split);
+    const std::string value = pair.substr(split + 1);
+    envmap[key] = value;
+  }
+#endif
+
+  // Default constructor is "now"
+  envmap["date"] = TTimeStamp().AsString();
+  envmap["output"] = fCafFilename;
+
+  // Get the command-line we were invoked with. What I'd really like is
+  // just the fcl script and list of input filenames in a less hacky
+  // fashion. I'm not sure that's actually possible in ART.
+  // TODO: ask the artists.
+  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
+  char* arg = 0;
+  size_t size = 0;
+  std::string cmd;
+  while (getdelim(&arg, &size, 0, cmdline) != -1) {
+    cmd += arg;
+    cmd += " ";
+  }
+  free(arg);
+  fclose(cmdline);
+
+  envmap["cmd"] = cmd;
+
+  fFile->mkdir("env")->cd();
+
+  TTree* trenv = new TTree("envtree", "envtree");
+  std::string key, value;
+  trenv->Branch("key", &key);
+  trenv->Branch("value", &value);
+  for(const auto& keyval: envmap){
+    key = keyval.first;
+    value = keyval.second;
+    trenv->Fill();
+  }
+  trenv->Write();
+}
+
+//......................................................................
+void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metadata)
+{
+  assert(fFile && "CAFMaker: Trying to add metadata to an uninitialized file");
+
+  fFile->mkdir("metadata")->cd();
+
+  TTree* trmeta = new TTree("metatree", "metatree");
+  std::string key, value;
+  trmeta->Branch("key", &key);
+  trmeta->Branch("value", &value);
+  for(const auto& keyval: metadata){
+    key = keyval.first;
+    value = keyval.second;
+    trmeta->Fill();
+  }
+  trmeta->Write();
+}
+
+//......................................................................
 void CAFMaker::InitializeOutfile() {
   assert(!fFile);
   assert(!fCafFilename.empty());
@@ -435,8 +521,7 @@ void CAFMaker::InitializeOutfile() {
 
   // Tell the tree it's expecting StandardRecord objects
   StandardRecord* rec = 0;
-  TBranch* br = fRecTree->Branch("rec", "caf::StandardRecord", &rec);
-  if(!br) abort();
+  fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
   fFileNumber = -1;
   fTotalPOT = 0;
@@ -448,60 +533,7 @@ void CAFMaker::InitializeOutfile() {
   // fCycle = -5;
   // fBatch = -5;
 
-  // Global information about the processing details:
-  std::map<TString, TString> envmap;
-  std::string envstr;
-  // Environ comes from unistd.h
-  // environ is not present on OSX for some reason, so just use getenv to
-  // grab the variables we care about.
-#ifdef DARWINBUILD
-  std::set<TString> variables;
-  variables.insert("USER");
-  variables.insert("HOSTNAME");
-  variables.insert("PWD");
-  variables.insert("SRT_PUBLIC_CONTEXT");
-  variables.insert("SRT_PRIVATE_CONTEXT");
-  for (auto var : variables) envmap[var] = getenv(var);
-#else
-  for (char** penv = environ; *penv; ++penv) {
-    const std::string pair = *penv;
-    envstr += pair;
-    envstr += "\n";
-    const size_t split = pair.find("=");
-    if (split == std::string::npos) continue;  // Huh?
-    const std::string key = pair.substr(0, split);
-    const std::string value = pair.substr(split + 1);
-    envmap[key] = value;
-  }
-#endif
-
-  // Get the command-line we were invoked with. What I'd really like is
-  // just the fcl script and list of input filenames in a less hacky
-  // fashion. I'm not sure that's actually possible in ART.
-  // TODO: ask the artists.
-  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
-  char* arg = 0;
-  size_t size = 0;
-  std::string cmd;
-  while (getdelim(&arg, &size, 0, cmdline) != -1) {
-    cmd += arg;
-    cmd += " ";
-  }
-  free(arg);
-  fclose(cmdline);
-
-  fFile->mkdir("env")->cd();
-
-  TObjString(envmap["USER"]).Write("user");
-  TObjString(envmap["HOSTNAME"]).Write("hostname");
-  TObjString(envmap["PWD"]).Write("pwd");
-  TObjString(envmap["SRT_PUBLIC_CONTEXT"]).Write("publiccontext");
-  TObjString(envmap["SRT_PRIVATE_CONTEXT"]).Write("privatecontext");
-  // Default constructor is "now"
-  TObjString(TTimeStamp().AsString()).Write("date");
-  TObjString(cmd.c_str()).Write("cmd");
-  TObjString(fCafFilename.c_str()).Write("output");
-  TObjString(envstr.c_str()).Write("env");
+  AddEnvToFile();
 }
 
 //......................................................................
@@ -620,6 +652,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mctruths, mctruth_handle);
   }
 
+  // And associated GTruth objects
+  art::FindManyP<simb::GTruth> fmp_gtruth = FindManyPStrict<simb::GTruth>(mctruths, evt, fParams.GenLabel());
+
   art::Handle<std::vector<simb::MCTruth>> cosmic_mctruth_handle;
   evt.getByLabel(fParams.CosmicGenLabel(), cosmic_mctruth_handle);
 
@@ -730,9 +765,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
+    simb::GTruth gtruth;
+    bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
+    if(!ok){
+      std::cout << "Failed to get GTruth object!" << std::endl;
+    }
+
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
     if(fmpewm.isValid()){
       const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm.at(i);
@@ -1214,6 +1255,26 @@ void CAFMaker::endJob() {
   hEvents->Write();
   fFile->Write();
 
+  std::map<std::string, std::string> metamap;
+
+  try{
+    art::ServiceHandle<util::MetadataSBN> meta;
+
+    std::map<std::string, std::string> strs;
+    std::map<std::string, int> ints;
+    std::map<std::string, std::string> objs;
+    meta->GetMetadataMaps(strs, ints, objs);
+
+    for(auto it: strs) metamap[it.first] = "\""+it.second+"\"";
+    for(auto it: ints) metamap[it.first] = std::to_string(it.second);
+    for(auto it: objs) metamap[it.first] = it.second;
+  }
+  catch(art::Exception& e){//(art::errors::ServiceNotFound)
+    // I don't know any way to detect this apart from an exception, unfortunately
+    std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
+  }
+
+  AddMetadataToFile(metamap);
 }
 
 

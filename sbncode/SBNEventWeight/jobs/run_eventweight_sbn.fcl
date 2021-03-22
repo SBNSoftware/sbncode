@@ -1,0 +1,33 @@
+#include "genie_eventweight_sbn.fcl"
+
+process_name: SBNEventWeight
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+ producers: {
+   genieweight: @local::sbn_genie_eventweight
+   rns: {
+     module_type: "RandomNumberSaver"
+   }
+ }
+
+ simulate: [ rns, genieweight ]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_eventweight.root"
+   dataTier: "detector-simulated"
+   compressionLevel: 1
+ }
+}
+
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
+
