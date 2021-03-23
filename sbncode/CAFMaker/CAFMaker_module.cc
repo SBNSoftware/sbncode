@@ -401,8 +401,6 @@ void CAFMaker::beginRun(art::Run& run) {
   if(!br) abort();
   globalTree->Fill();
   globalTree->Write();
-
-  // TODO logic in flatten_caf, FileReducer, etc to propagate this tree
 }
 
 //......................................................................
