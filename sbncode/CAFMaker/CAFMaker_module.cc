@@ -787,7 +787,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
           const unsigned int idx = fWeightPSetIndex[it.first];
           if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
-          srneutrinos.back().wgt[idx] = it.second;
+	  srneutrinos.back().wgt[idx].univ = it.second;
         } // end for it
       } // end for wgtmap
     } // end if fmpewm
