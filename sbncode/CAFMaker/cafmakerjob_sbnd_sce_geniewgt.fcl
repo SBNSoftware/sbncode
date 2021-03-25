@@ -11,7 +11,7 @@ physics.producers.mycafmaker.TrackCaloLabel: "pandoraSCECalo"
 physics.producers.mycafmaker.TrackPidLabel:  "pandoraSCEPid"
 physics.producers.mycafmaker.CRTHitMatchLabel: "pandoraSCETrackCRTHit"
 physics.producers.mycafmaker.CRTTrackMatchLabel: "pandoraSCETrackCRTTrack"
-physics.producers.mycafmaker.FlashMatchLabel:  "fmatchSCENew"
+physics.producers.mycafmaker.FlashMatchLabel:  "fmatchSCE"
 
 physics.producers.pandoraTrackMCS.TrackLabel: pandoraSCETrack
 physics.producers.pandoraTrackRange.TrackLabel: pandoraSCETrack
