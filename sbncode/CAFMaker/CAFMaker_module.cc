@@ -92,6 +92,8 @@
 #include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/Reco/RangeP.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -99,12 +101,30 @@
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
+
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
 
 // Metadata
 #include "sbncode/Metadata/MetadataSBN.h"
+
+namespace sbn{
+  namespace evwgh{
+    std::ostream& operator<<(std::ostream& os, const sbn::evwgh::EventWeightParameterSet& p)
+    {
+      // TODO proper implementation of this should be added in sbnobj
+      os << p.fName << " " << p.fRWType << std::endl;
+      for(const auto& it: p.fParameterMap){
+        os << it.first.fName << " " << it.first.fMean << " " << it.first.fWidth << std::endl << " ";
+        for(float v: it.second) os << " " << v;
+        os << std::endl;
+      }
+      return os;
+    }
+  }
+}
 
 namespace caf {
 
@@ -161,6 +181,10 @@ class CAFMaker : public art::EDProducer {
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
 
+  /// What position in the vector each parameter set take
+  std::map<std::string, unsigned int> fWeightPSetIndex;
+  std::optional<std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
+
   void AddEnvToFile();
   void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
 
@@ -195,8 +219,8 @@ class CAFMaker : public art::EDProducer {
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message and aborts if StrictMode is true.
-  template <class T>
-  void GetByLabelStrict(const art::Event& evt, const std::string& label,
+  template <class EvtT, class T>
+  void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
@@ -309,10 +333,74 @@ void CAFMaker::beginJob() {
 }
 
 //......................................................................
-void CAFMaker::beginRun(art::Run& r) {
+void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
+{
+  const double& start = m(0, 0);
+  v.insert(v.end(), &start, &start + m.GetNoElements());
+}
+
+//......................................................................
+void CAFMaker::beginRun(art::Run& run) {
   // fDetID = geom->DetId();
   fDet = (Det_t)1;//(Det_t)fDetID;
 
+  if(fParams.SystWeightLabel().empty()) return;
+  // TODO all the below should be in a function somewhere
+  art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
+  GetByLabelStrict(run, fParams.SystWeightLabel(), wgt_params);
+
+  if(fPrevWeightPSet){
+    if(*fPrevWeightPSet != *wgt_params){
+      std::cout << "CAFMaker: Run-level EventWeightParameterSet mismatch."
+                << std::endl;
+      std::cout << "Previous parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *fPrevWeightPSet){
+        std::cout << p << std::endl;
+      }
+      std::cout << "\nNew parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *wgt_params){
+        std::cout << p << std::endl;
+      }
+      abort();
+    }
+    return; // Match, no need to refill into tree
+  }
+
+  fPrevWeightPSet = *wgt_params;
+
+  SRGlobal global;
+
+  for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
+    SRWeightPSet& cafpset = global.wgts.emplace_back();
+
+    cafpset.name = pset.fName;
+    cafpset.type = caf::ReweightType_t(pset.fRWType);
+    cafpset.nuniv = pset.fNuniverses;
+    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    fWeightPSetIndex[cafpset.name] = global.wgts.size()-1;
+
+    for(const auto& it: pset.fParameterMap){
+      const sbn::evwgh::EventWeightParameter& param = it.first;
+      const std::vector<float>& vals = it.second;
+
+      SRWeightParam cafparam;
+      cafparam.name = param.fName;
+      cafparam.mean = param.fMean;
+      cafparam.width = param.fWidth;
+      cafparam.covidx = param.fCovIndex;
+
+      cafpset.map.emplace_back(cafparam, vals);
+    } // end for it
+  } // end for pset
+
+  fFile->cd();
+  TTree* globalTree = new TTree("globalTree", "globalTree");
+  SRGlobal* pglobal = &global;
+  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
+  if(!br) abort();
+  globalTree->Fill();
+  globalTree->Write();
 }
 
 //......................................................................
@@ -500,8 +588,8 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
 }
 
 //......................................................................
-template <class T>
-void CAFMaker::GetByLabelStrict(const art::Event& evt, const std::string& label,
+template <class EvtT, class T>
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
                                 art::Handle<T>& handle) const {
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
@@ -665,11 +753,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // TODO eventually we want to handle multiple sources of weights
+  art::FindManyP<sbn::evwgh::EventWeightMap> fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
+
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
   for (size_t i=0; i<mctruths.size(); i++) {
-
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
@@ -683,10 +773,28 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
+    if(fmpewm.isValid()){
+      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm.at(i);
+
+      // For all the weights associated with this MCTruth
+      for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
+        for(auto& it: *wgtmap){
+          if(fWeightPSetIndex.count(it.first) == 0){
+            std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+            std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+            for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
+            abort();
+          }
+          const unsigned int idx = fWeightPSetIndex[it.first];
+          if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
+          srneutrinos.back().wgt[idx] = it.second;
+        } // end for it
+      } // end for wgtmap
+    } // end if fmpewm
+
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
-
-  }
+  } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
