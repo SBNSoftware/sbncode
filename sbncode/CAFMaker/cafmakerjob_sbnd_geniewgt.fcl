@@ -2,6 +2,7 @@
 
 #include "services_sbnd.fcl"
 #include "geometry_sbnd.fcl"
+#include "eventweight_genie3_sbn_A.fcl"
 
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
@@ -21,7 +22,6 @@
 
 #include "flashmatch_sbnd.fcl"
 
-#include "genie_eventweight_sbn.fcl"
 
 process_name: CAFmaker
 
