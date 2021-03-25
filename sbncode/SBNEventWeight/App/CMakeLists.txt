@@ -14,6 +14,7 @@ art_make(
     ${MF_MESSAGELOGGER}
     ${ROOT_GEOM}
     ${LXML2}
+    ${GSL}
 )
 
 install_headers()
