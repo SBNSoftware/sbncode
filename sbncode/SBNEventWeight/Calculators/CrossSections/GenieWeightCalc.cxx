@@ -210,24 +210,46 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 
 
 std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
+  std::vector<float> weights(rwVector.size(), 1);
+
   // Get the MC generator information
   art::Handle<std::vector<simb::MCTruth> > mcTruthHandle;
   e.getByLabel(fGenieModuleLabel, mcTruthHandle);
-  std::vector<art::Ptr<simb::MCTruth> > mclist;
-  art::fill_ptr_vector(mclist, mcTruthHandle);
 
   art::Handle<std::vector<simb::GTruth> > gTruthHandle;
   e.getByLabel(fGenieModuleLabel, gTruthHandle);
+
+  if (!mcTruthHandle.isValid() || !gTruthHandle.isValid()) {
+    std::cout << "No MCTruth or GTruth information, GenieWeightCalc returning weight 1." << std::endl;
+    return weights;
+  }
+
+  std::vector<art::Ptr<simb::MCTruth> > mclist;
+  art::fill_ptr_vector(mclist, mcTruthHandle);
   std::vector<art::Ptr<simb::GTruth > > glist;
   art::fill_ptr_vector(glist, gTruthHandle);
 
-  // Check tune
+  // Check that this is a beam neutrino
+  if (mclist.at(inu)->Origin() != simb::Origin_t::kBeamNeutrino) {
+    return weights;
+  }
+
+  // Check generator and tune
   const simb::MCGeneratorInfo& genInfo = mclist.at(inu)->GeneratorInfo();
-  std::string tune = genInfo.generatorConfig.at("tune");
-  assert(tune == fTuneName);  // FIXME cet exception
+
+  if (genInfo.generator != simb::Generator_t::kGENIE) {
+    return weights;
+  }
+
+  if (genInfo.generatorConfig.find("tune") != genInfo.generatorConfig.end()) {
+    std::string tune = genInfo.generatorConfig.at("tune");
+    assert(tune == fTuneName);  // FIXME cet exception
+  }
+  else {
+    std::cerr << "GenieWeightCalc: No tune name available in GeneratorInfo, skipping check!" << std::endl;
+  }
 
   // Calculate weights
-  std::vector<float> weights(rwVector.size());
   for (size_t i=0; i<rwVector.size(); i++) {
     weights[i] = rwVector[i].CalcWeight(*(mclist.at(inu)), *(glist.at(inu)));
   }

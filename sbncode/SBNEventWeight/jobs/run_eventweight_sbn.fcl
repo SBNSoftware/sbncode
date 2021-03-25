@@ -1,4 +1,4 @@
-#include "genie_eventweight_sbn.fcl"
+#include "eventweight_genie3_sbn_A.fcl"
 
 process_name: SBNEventWeight
 

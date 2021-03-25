@@ -194,6 +194,10 @@ namespace caf
       true
     };
 
+    Atom<std::string> SystWeightLabel {
+      Name("SystWeightLabel"),
+      Comment("Label for EventWeightMap objects for mc.nu.wgt")
+    };
   };
 }
 
