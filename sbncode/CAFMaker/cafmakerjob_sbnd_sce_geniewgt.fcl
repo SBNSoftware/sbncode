@@ -1,6 +1,6 @@
 #include "transfer_crtt0_producer.fcl"
 #include "transfer_flasht0_producer.fcl"
-#include "cafmakerjob_sbnd.fcl"
+#include "cafmakerjob_sbnd_geniewgt.fcl"
 
 # change all the labels we need to
 physics.producers.mycafmaker.PandoraTagSuffixes: []
