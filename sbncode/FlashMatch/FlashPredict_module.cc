@@ -400,17 +400,16 @@ void FlashPredict::loadMetrics()
   // read histograms and fill vectors for match score calculation
   std::string fname;
   cet::search_path sp("FW_SEARCH_PATH");
-  sp.find_file(fInputFilename, fname);
-  mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
-  TFile *infile = new TFile(fname.c_str(), "READ");
-  if(!infile->IsOpen()) {
+  if(!sp.find_file(fInputFilename, fname)) {
     mf::LogError("FlashPredict")
       << "Could not find the light-charge match root file '"
-      << fname << "'!\n";
+      << fInputFilename << "' on FW_SEARCH_PATH\n";
     throw cet::exception("FlashPredict")
       << "Could not find the light-charge match root file '"
-      << fname << "'!\n";
+      << fInputFilename << "' on FW_SEARCH_PATH\n";
   }
+  mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
+  TFile *infile = new TFile(fname.c_str(), "READ");
   auto metricsInFile = infile->GetListOfKeys();
   if(!metricsInFile->Contains("dy_h1") ||
      !metricsInFile->Contains("dz_h1") ||
@@ -424,9 +423,9 @@ void FlashPredict::loadMetrics()
      !metricsInFile->Contains("pe_fit_h"))
   {
     mf::LogError("FlashPredict")
-      << "The metrics file lacks at least one metric.";
+      << "The metrics file '" << fname << "' lacks at least one metric.";
     throw cet::exception("FlashPredict")
-      << "The metrics file lacks at least one metric.";
+      << "The metrics file '" << fname << "'lacks at least one metric.";
   }
   //
   TH1 *temphisto = (TH1*)infile->Get("dy_h1");
