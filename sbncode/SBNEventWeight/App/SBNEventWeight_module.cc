@@ -39,7 +39,7 @@ public:
 
 private:
   void produce(art::Event& e) override;
-  void endRun(art::Run& run) override;
+  void beginRun(art::Run& run) override;
 
 private:
   WeightManager fWeightManager;
@@ -84,7 +84,7 @@ void SBNEventWeight::produce(art::Event& e) {
 }
 
 
-void SBNEventWeight::endRun(art::Run& run) {
+void SBNEventWeight::beginRun(art::Run& run) {
   auto p = std::make_unique<std::vector<EventWeightParameterSet> >();
   
   for (auto const& it : fWeightManager.GetWeightCalcMap()) {
