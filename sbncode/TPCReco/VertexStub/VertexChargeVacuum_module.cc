@@ -336,6 +336,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
         vhit.wire = hit.WireID();
         vhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
 	vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert, geo, dprop);
+        vhit.vtxw = geo->WireCoordinate(vert.position(), hit.WireID());
 
         // lookup the spacepoint location
         const std::vector<art::Ptr<recob::SpacePoint>> &hit_sp = hitSPs.at(i_hit);

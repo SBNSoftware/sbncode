@@ -72,6 +72,7 @@ private:
   art::InputTag fTrackLabel;
   art::InputTag fVertexChargeLabel;
   float fdQdxCut;
+  float fOneWiredQdxCut;
   sbn::StubBuilder fStubBuilder;
   std::vector<std::unique_ptr<sbn::IStubMerge>> fStubMergeTools;
 };
@@ -82,6 +83,7 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrack")),
     fVertexChargeLabel(p.get<art::InputTag>("VertexChargeLabel", "vhit")),
     fdQdxCut(p.get<float>("dQdxCut")),
+    fOneWiredQdxCut(p.get<float>("OneWiredQdxCut")),
     fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
   // load the tools
@@ -147,7 +149,10 @@ void sbn::VertexStubTracker::produce(art::Event& e)
       // Collect data on this Vertex-Hit
       const sbn::VertexHit &thisVHit = *vhits[i_vhit];
       const recob::Hit &thisVHitHit = *vhitHits.at(i_vhit).at(0);
-      if (thisVHit.dqdx < fdQdxCut) continue;
+
+      bool passcut = (thisVHit.dqdx >= fdQdxCut) || ((abs(thisVHit.wire.Wire - thisVHit.vtxw) < 1.) && (thisVHit.dqdx >= fOneWiredQdxCut));
+
+      if (!passcut) continue;
 
       sbn::StubInfo sinfo;
       sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, vertex, geo, sce, clock_data, dprop, sinfo.hits, sinfo.pfp); 

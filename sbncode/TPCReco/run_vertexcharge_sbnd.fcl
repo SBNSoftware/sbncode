@@ -78,7 +78,8 @@ physics:
       module_type: VertexStubTracker
       PFPLabel: pandora
       VertexChargeLabel: vertexCharge
-      dQdxCut: 1.7e5
+      dQdxCut: 2e5
+      OneWiredQdxCut: 1e5
       MergeTools: @local::stub_merge
       CaloAlg: @local::sbnd_calorimetryalgmc
     }

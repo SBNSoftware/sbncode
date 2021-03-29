@@ -154,6 +154,13 @@ private:
   std::vector<float> fFSPEndY;
   std::vector<float> fFSPEndZ;
 
+  std::vector<float> fFSPMaxQU;
+  std::vector<float> fFSPMaxQV;
+  std::vector<float> fFSPMaxQW;
+  std::vector<float> fFSPPitchU;
+  std::vector<float> fFSPPitchV;
+  std::vector<float> fFSPPitchW;
+
   float fRecoVertDist;
 
   std::vector<int> fVertexHitSPID;
@@ -162,6 +169,7 @@ private:
   std::vector<float> fVertexHitdEdx;
   std::vector<float> fVertexHitCharge;
   std::vector<float> fVertexHitDist;
+  std::vector<float> fVertexHitVtxW;
   std::vector<int> fVertexHitPlane;
   std::vector<int> fVertexHitWire;
   std::vector<int> fNVertexPFPs;
@@ -281,6 +289,13 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("fsp_matched_primary", &fFSPMtachedPrimary);
   _tree->Branch("fsp_process_is_topping", &fFSPIsStopping);
 
+  _tree->Branch("fsp_maxqu", &fFSPMaxQU);
+  _tree->Branch("fsp_maxqv", &fFSPMaxQV);
+  _tree->Branch("fsp_maxqw", &fFSPMaxQW);
+  _tree->Branch("fsp_pitchu", &fFSPPitchU);
+  _tree->Branch("fsp_pitchv", &fFSPPitchV);
+  _tree->Branch("fsp_pitchw", &fFSPPitchW);
+
   _tree->Branch("reco_vert_dist", &fRecoVertDist, "reco_vert_dist/F");
 
   _tree->Branch("vertex_hit_spid", &fVertexHitSPID);
@@ -289,6 +304,7 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("vertex_hit_dedx", &fVertexHitdEdx);
   _tree->Branch("vertex_hit_charge", &fVertexHitCharge);
   _tree->Branch("vertex_hit_dist", &fVertexHitDist);
+  _tree->Branch("vertex_hit_vtxw", &fVertexHitVtxW);
   _tree->Branch("vertex_hit_plane", &fVertexHitPlane);
   _tree->Branch("vertex_hit_wire", &fVertexHitWire);
   _tree->Branch("vertex_npfps", &fNVertexPFPs);
@@ -464,6 +480,13 @@ void sbn::NuVertexChargeTree::Clear() {
   fFSPMtachedPrimary.clear();
   fFSPIsStopping.clear();
 
+  fFSPMaxQU.clear();
+  fFSPMaxQV.clear();
+  fFSPMaxQW.clear();
+  fFSPPitchU.clear();
+  fFSPPitchV.clear();
+  fFSPPitchW.clear();
+
   fRecoVertDist = 0.;
   fVertexHitSPID.clear();
   fVertexHitPitch.clear();
@@ -471,6 +494,7 @@ void sbn::NuVertexChargeTree::Clear() {
   fVertexHitdEdx.clear();
   fVertexHitCharge.clear();
   fVertexHitDist.clear();
+  fVertexHitVtxW.clear();
   fVertexHitPlane.clear();
   fVertexHitWire.clear();
   fNVertexPFPs.clear();
@@ -762,6 +786,7 @@ void sbn::NuVertexChargeTree::FillVertexHits(
     fVertexHitPeakX.push_back(dprop.ConvertTicksToX(hit_hits[i_hit]->PeakTime(), hit_hits[i_hit]->WireID()));
     fVertexHitCharge.push_back(hit.charge);
     fVertexHitDist.push_back(hit.proj_dist_to_vertex);
+    fVertexHitVtxW.push_back(hit.vtxw);
     fNVertexPFPs.push_back(hit.nearbyPFPIDs.size());
     fVertexHitdQdx.push_back(hit.dqdx);
     fVertexHitSPID.push_back(hit.spID);
@@ -847,6 +872,8 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
    const detinfo::DetectorPropertiesData &dprop) {
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
+  // TODO: fix -- for now, use a null space-charge service
+  const spacecharge::SpaceCharge *sce = NULL;
 
   TVector3 vpos(vert.position().X(), vert.position().Y(), vert.position().Z());
 
@@ -909,23 +936,74 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     // see if there is a match
     //
     // Total up the energy fromthis particle
-    std::vector<const sim::IDE*> particle_ides(backtracker->TrackIdToSimIDEs_Ps(G4->TrackId()));
     float thisVisE = 0.;
     float thisQ = 0.;
-    for (const sim::IDE *ide: particle_ides) {
-      thisVisE += ide->energy;
 
-      // Correct for electron lifetime 
-      geo::Point_t p {ide->x, ide->y, ide->z};
-      geo::TPCID tpc = geo->FindTPCAtPosition(p);
-      if (tpc) {
-        float driftT = abs(ide->x - geo->TPC(tpc).PlaneLocation(0)[0]) / dprop.DriftVelocity();
-        thisQ += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
+    std::map<geo::WireID, float> chargemap;
+    std::set<geo::View_t> views_set = geo->Views();
+    std::vector<geo::View_t> views;
+    for (auto const &v: views_set) views.push_back(v);
+    for (geo::View_t view: views) {
+      std::vector<const sim::IDE*> particle_ides(backtracker->TrackIdToSimIDEs_Ps(G4->TrackId(), view));
+      for (const sim::IDE *ide: particle_ides) {
+        thisVisE += ide->energy;
+
+        // Correct for electron lifetime 
+        geo::Point_t p {ide->x, ide->y, ide->z};
+        geo::TPCID tpc = geo->FindTPCAtPosition(p);
+        if (tpc) {
+          float driftT = abs(ide->x - geo->TPC(tpc).PlaneLocation(0)[0]) / dprop.DriftVelocity();
+          thisQ += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
+
+          int plane = -1;
+          for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
+            geo::PlaneID planeID {tpc, i_plane};
+            if (geo->View(planeID) == view) {
+              plane = i_plane;
+              break;
+            }
+          }
+
+          geo::PlaneID planeID {tpc, (unsigned)plane};
+          try {
+            geo::WireID::WireID_t wid = geo->NearestWire(p, planeID);
+            geo::WireID w {planeID, wid};
+            chargemap[w] += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
+          }
+          catch(...) {}
+        }
       }
     }
 
     fFSPVisE.push_back(thisVisE / 3. /* average over each plane */);
     fFSPQ.push_back(thisQ / 3.);
+
+    for (unsigned v = 0; v < 3; v++) {
+      float maxQ = -1;
+      for (auto const &pair: chargemap) {
+        if (geo->View(pair.first) == v) {
+          if (pair.second > maxQ) maxQ = pair.second;
+        }
+      }
+
+      if (v == 0) fFSPMaxQU.push_back(maxQ);
+      if (v == 1) fFSPMaxQV.push_back(maxQ);
+      if (v == 2) fFSPMaxQW.push_back(maxQ);
+    }
+
+    geo::Point_t start_loc(particle.Position().Vect());
+    geo::Vector_t start_dir(particle.Momentum().Vect().Unit());
+    geo::TPCID firstTPC = geo->FindTPCAtPosition(start_loc);
+    if (firstTPC) {
+      fFSPPitchU.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)0, firstTPC, true, true));
+      fFSPPitchV.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)1, firstTPC, true, true));
+      fFSPPitchW.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)2, firstTPC, true, true));
+    }
+    else {
+      fFSPPitchU.push_back(-1);
+      fFSPPitchV.push_back(-1);
+      fFSPPitchW.push_back(-1);
+    }
 
     bool found_match = false;
     bool primary_match = false;
