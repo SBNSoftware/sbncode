@@ -18,6 +18,7 @@
 #include "crthitconverter_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 #include "flashmatch_simple_icarus.fcl"
+#include "genie_eventweight_sbn.fcl"
 
 process_name: CAFmaker
 
@@ -76,6 +77,7 @@ outputs:
 physics:
 {
  producers:{
+   mcreco: @local::standard_mcreco
    flashtrig: @local::pmtflashtrigmaker_icarus
    fmatchCryo0: @local::icarus_simple_flashmatch_0
    fmatchCryo1: @local::icarus_simple_flashmatch_1   # flashmatch_1 and flashmatch_0 are idently atm
@@ -84,8 +86,8 @@ physics:
    pandoraTrackRangeCryo0: @local::range_sbn
    pandoraTrackRangeCryo1: @local::range_sbn
    crtconvhit: @local::crthitconverter_icarus
-
-   mcreco: @local::standard_mcreco
+   rns: { module_type: "RandomNumberSaver" }
+   genieweight: @local::sbn_genie_eventweight
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_icarus
@@ -94,10 +96,12 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter,
+ runprod: [ mcreco,
+    flashtrig, flashtrigfilter,
     fmatchCryo0, fmatchCryo1,
     pandoraTrackMCSCryo0, pandoraTrackMCSCryo1, 
     pandoraTrackRangeCryo0, pandoraTrackRangeCryo1,
+    rns, genieweight,
     mycafmaker ]
 
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
@@ -119,11 +123,14 @@ physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGaus"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausCalo"
 physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausPid"
+physics.producers.mycafmaker.SystWeightLabel:   "genieweight"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
 
 physics.producers.pandoraTrackRangeCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
+
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
 
 #services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
