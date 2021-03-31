@@ -12,13 +12,13 @@
 
 #include "calorimetry_icarus.fcl"
 
+#include "eventweight_genie3_sbn_A.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "crthitconverter_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 #include "flashmatch_simple_icarus.fcl"
-#include "eventweight_genie3_sbn_A.fcl"
 
 process_name: CAFmaker
 
