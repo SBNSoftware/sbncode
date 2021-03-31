@@ -18,7 +18,7 @@
 #include "crthitconverter_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
 #include "flashmatch_simple_icarus.fcl"
-#include "genie_eventweight_sbn.fcl"
+#include "eventweight_genie3_sbn_A.fcl"
 
 process_name: CAFmaker
 
@@ -133,4 +133,7 @@ physics.producers.pandoraTrackRangeCryo1.TrackLabel: pandoraTrackGausCryo1
 
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
 
-#services.Geometry.GDML: "Geometry/gdml/fardet-12x12-28block-xtru-vacuum-stagger-pivoter.gdml"
+# Get the old geometry
+services.Geometry.Name: icarus_splitwires
+services.Geometry.GDML: "icarus_complete_20201107_no_overburden.gdml"
+services.Geometry.ROOT: "icarus_complete_20201107_no_overburden.gdml"
