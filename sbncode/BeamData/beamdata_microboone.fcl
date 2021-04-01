@@ -1,0 +1,37 @@
+
+BEGIN_PROLOG
+
+microboone_beamdata:
+{
+  module_type:    "BeamData"
+  
+  beams: [ "bnb", "numi" ]
+  fetch_beam_data: true
+  bdaq_fhicl_file: "beamdaq_config.fcl"
+
+  bnb:  {
+	 #0x200  external
+	 #0x1000 gate1
+	 #0x800  gate2
+  	 trigger_mask : 0x800
+  	 path_to_beam_file: "./"
+	 time_offset: 35.9 #ms offset between detector and beam clock
+         merge_time_tolerance: 30. #in ms
+	 sum_devices: [ "E:TOR860", "E:TOR875" ]
+	 write_beam_data: true
+	 FOM_version: 2
+	 FOM_cut : 0.95
+        }
+  numi: {
+  	 trigger_mask : 0x1000
+  	 path_to_beam_file: "./"
+	 time_offset: 0.        
+         merge_time_tolerance: 500.
+	 sum_devices: [ "E:TORTGT", "E:TRTGTD", "E:TR101D" ]
+	 write_beam_data: true
+	 FOM_version: 2
+	 FOM_cut : 0.95
+	}
+}
+
+END_PROLOG
