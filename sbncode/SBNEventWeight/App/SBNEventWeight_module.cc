@@ -44,11 +44,15 @@ private:
 private:
   WeightManager fWeightManager;
   std::string fGenieModuleLabel;
+  bool fAllowMissingTruth;
 };
 
 
-SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p) : EDProducer{p} {
-  fGenieModuleLabel = p.get<std::string>("genie_module_label", "generator");
+SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p)
+  : EDProducer{p},
+  fGenieModuleLabel(p.get<std::string>("genie_module_label", "generator")),
+  fAllowMissingTruth(p.get<bool>("AllowMissingTruth"))
+{
 
   const size_t n_func = fWeightManager.Configure(p, *this);
   if (n_func > 0) {
@@ -67,16 +71,21 @@ void SBNEventWeight::produce(art::Event& e) {
 
   // Get the MC generator information
   std::vector<art::Ptr<simb::MCTruth> > mclist;
-  auto const mcTruthHandle = e.getValidHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
-  art::fill_ptr_vector(mclist, mcTruthHandle);
+  art::Handle<std::vector<simb::MCTruth>> mcTruthHandle;
+  if(!fGenieModuleLabel.empty()) e.getByLabel(fGenieModuleLabel, mcTruthHandle);
+  // Prooceed even with missing handle if we want to require the MCTruth to be
+  // found, so that an exception will be thrown explaining the problem.
+  if(mcTruthHandle.isValid() || !fAllowMissingTruth){
+    art::fill_ptr_vector(mclist, mcTruthHandle);
 
-  // Loop over all truth objects (e.g. neutrinos) in this event
-  for (size_t i=0; i<mclist.size(); i++) {
-    const EventWeightMap mcwgh = fWeightManager.Run(e, i);
-    mcwghvec->push_back(std::move(mcwgh));
+    // Loop over all truth objects (e.g. neutrinos) in this event
+    for (size_t i=0; i<mclist.size(); i++) {
+      const EventWeightMap mcwgh = fWeightManager.Run(e, i);
+      mcwghvec->push_back(std::move(mcwgh));
 
-    art::Ptr<sbn::evwgh::EventWeightMap> wghPtr = makeWeightPtr(mcwghvec->size() - 1);
-    wghassns->addSingle(mclist.at(i), wghPtr);
+      art::Ptr<sbn::evwgh::EventWeightMap> wghPtr = makeWeightPtr(mcwghvec->size() - 1);
+      wghassns->addSingle(mclist.at(i), wghPtr);
+    }
   }
 
   e.put(std::move(mcwghvec));

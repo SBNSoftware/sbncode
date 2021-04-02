@@ -114,3 +114,7 @@ physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
+
+# Ensure CAFMaker is configured to pick up the weights we just produced, no
+# matter what the default configuration is.
+physics.producers.mycafmaker.SystWeightLabel: "genieweight"

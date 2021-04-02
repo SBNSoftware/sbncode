@@ -754,7 +754,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // TODO eventually we want to handle multiple sources of weights
-  art::FindManyP<sbn::evwgh::EventWeightMap> fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
+  std::optional<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;
 
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
@@ -773,8 +773,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
 
-    if(fmpewm.isValid()){
-      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm.at(i);
+    // Don't check for syst weight assocations until we have something (MCTruth
+    // corresponding to a neutrino) that could plausibly be reweighted. This
+    // avoids the need for special configuration for cosmics or single particle
+    // simulation, and real data.
+    if(!fmpewm && mctruth->NeutrinoSet()) fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
+
+    if(fmpewm && fmpewm->isValid()){
+      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm->at(i);
 
       // For all the weights associated with this MCTruth
       for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
