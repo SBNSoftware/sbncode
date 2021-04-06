@@ -109,6 +109,26 @@ namespace caf {
 
   }//FillSliceTruth
 
+ void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
+                         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const cheat::ParticleInventoryService &inventory_service,
+                         const detinfo::DetectorClocksData &clockData,
+                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand,
+                         bool allowEmpty)
+  {
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
+    if(tmatch.index >= 0) {
+      bool do_fill = false;
+      caf::SRFakeReco this_fakereco;
+      do_fill = FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, this_fakereco);
+      if(do_fill) srslice.freco = this_fakereco;
+    }
+  }//FillSliceFakeReco
+
+
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
