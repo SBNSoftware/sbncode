@@ -30,4 +30,6 @@ physics:
   
 } # physics
 
+physics.producers.disshiggs.RayTrace: @local::wgtraytrace
+
 services.NuRandomService.policy: "random"

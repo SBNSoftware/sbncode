@@ -20,14 +20,16 @@ source: {
 physics:
 {
   producers: {
-    disshiggs: @local::hnl
+    hnl: @local::hnl
   }
  
-  ana:  [ disshiggs ]
+  ana:  [ hnl ]
  
   trigger_paths: [ana] 
   end_paths:     [ ] 
   
 } # physics
+
+phyiscs.producers.hnl.RayTrace: @local::wgtraytrace
 
 services.NuRandomService.policy: "random"
