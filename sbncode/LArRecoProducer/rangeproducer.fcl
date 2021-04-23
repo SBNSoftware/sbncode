@@ -1,0 +1,7 @@
+BEGIN_PROLOG
+range_sbn: {
+  module_type: RangePAllPID
+  MinTrackLength: 10
+  TrackLabel: pandoraTrack
+}
+END_PROLOG

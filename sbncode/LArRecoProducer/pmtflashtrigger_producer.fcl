@@ -1,0 +1,48 @@
+BEGIN_PROLOG
+pmtflashtrigmaker_sbnd: {
+  module_type: PMTFlashTriggerMaker
+  WaveformLabel: opdaq
+  Experiment: SBND
+  TriggerStart: 0 # us
+  TriggerEnd: 2 # us -- TODO: tune amount after beam spill
+  TriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold) [use a higher threshold when applying the trigger]
+  OffsetTriggerTime: false
+  PDMapAlg: {
+    tool_type: sbndPDMapAlg
+  }
+}
+
+pmtflashtrigmaker_icarus: {
+  module_type: PMTFlashTriggerMaker
+  WaveformLabel: opdaq
+  Experiment: ICARUS
+  TriggerStart: 0 # us 
+  TriggerEnd: 2 # us 
+  TriggerThreshold: 7990 # 8000 (baseline) - 10 (single PE threshold) [use a higher threshold when applying the trigger]
+  OffsetTriggerTime: true # ICARUS pmt t0 is the G4 start time -- offset it to the trigger time
+  PDMapAlg: {
+    tool_type: PDMapAlgSimple
+  }
+}
+
+pmtflashtrigfilter_sbnd: {
+  module_type: PMTFlashTriggerFilter
+  FlashTriggerPrimitiveLabel: flashtrig
+  NPMTAboveThreshold: 4
+  PMTTriggerThreshold: 7950 # ADC equivalent of 5 PE
+  StoreDataProduct: true
+}
+
+pmtflashtrigfilter_icarus: {
+  module_type: PMTFlashTriggerFilter
+  FlashTriggerPrimitiveLabel: flashtrig
+  NPMTAboveThreshold: 4
+  PMTTriggerThreshold: 7875 # ADC equivalent of 12.5 PE
+  # The ICARUS QE is set to 2.5x the SBND QE 
+  # this threshold normalizes the two detectors 
+  # obviously, a dedicated trigger study is needed to fully 
+  # understand what this number should be
+  StoreDataProduct: true
+}
+
+END_PROLOG

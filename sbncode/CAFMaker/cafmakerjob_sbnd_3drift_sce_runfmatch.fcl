@@ -1,0 +1,16 @@
+#include "cafmakerjob_sbnd_sce.fcl"
+#include "flashmatch_sbnd.fcl"
+
+physics.producers.fmatchREDO: @local::sbnd_simple_flashmatch 
+physics.producers.fmatchREDO.PandoraProducer: "pandora"
+physics.producers.fmatchREDO.TrackProducer: "pandoraTrack"
+physics.producers.fmatchREDO.CaloProducer: "pandoraCalo"
+physics.producers.fmatchREDO.SpacePointProducer: "pandora"
+# physics.producers.fmatchREDO.InputFileName: "fm_metrics_sbnd_local.root"
+physics.producers.fmatchREDO.UseUncoatedPMT: false
+
+physics.producers.fmatchSCE.T0Label: "fmatchREDO"
+
+physics.runprod: [fmatchREDO, @sequence::physics.runprod]
+
+#include "3drift_services_sbnd.fcl"

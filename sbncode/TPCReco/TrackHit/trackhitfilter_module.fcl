@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+
+trackhitfilter_sbnd: {
+  module_type: TrackHitFilter
+}
+
+trackhitfilter_icarus: {
+  module_type: TrackHitFilter
+  HitLabel: gaushitTPC0 
+  TrackLabel: pandoraTrackGausCryo0
+}
+
+
+END_PROLOG
