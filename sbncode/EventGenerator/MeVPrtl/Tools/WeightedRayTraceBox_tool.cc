@@ -327,15 +327,16 @@ double WeightedRayTraceBox::SolidAngle(TVector3 loc) {
 }
     
 bool WeightedRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &intersection, double &weight) {
-  // Randomly pick a location in the detector to send this particle to
-  // TVector3 detloc = RandomIntersectionPoint(flux.pos.Vect());
+  // Randomly pick a location in the detector to send this particle to.
+  //
+  // Ensure that the point is picked uniformly in the lab-frame solid angle of the parent kaon
+  TVector3 detloc = RandomIntersectionPoint(flux.pos.Vect());
 
-  // For a box far away from the origin, picking a point uniformly in the volume of the box
-  // is the same as picking a point uniformly on the solid angle about that origin
-  double detX = (fBox.MaxX() - fBox.MinX()) * GetRandom() + fBox.MinX();
-  double detY = (fBox.MaxY() - fBox.MinY()) * GetRandom() + fBox.MinY();
-  double detZ = (fBox.MaxZ() - fBox.MinZ()) * GetRandom() + fBox.MinZ();
-  TVector3 detloc(detX, detY, detZ);
+  // NOTE: picking a point uniformly in the volume does __not__ work!!!
+  // double detX = (fBox.MaxX() - fBox.MinX()) * GetRandom() + fBox.MinX();
+  // double detY = (fBox.MaxY() - fBox.MinY()) * GetRandom() + fBox.MinY();
+  // double detZ = (fBox.MaxZ() - fBox.MinZ()) * GetRandom() + fBox.MinZ();
+  // TVector3 detloc(detX, detY, detZ);
 
   // calculate the weight and kinematics of sending the flux here
   TLorentzVector flux_mom_rest = flux.mom;
