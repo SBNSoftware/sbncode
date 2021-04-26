@@ -67,10 +67,6 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
   float hit_x = dprop.ConvertTicksToX(vhit_hit.PeakTime(), vhit_hit.WireID());
   geo::PlaneID vhit_plane = vhit_hit.WireID();
 
-  std::cout << "COLLECTING HITS!\n";
-  std::cout << "HIT W: " << hit_w << " X: " << hit_x << std::endl;
-  std::cout << "VTX W: " << vert_wf << " X: " << vert_x << std::endl;
-
   // get the line-segment slope / intercept
   float slope = (hit_x - vert_x) / (hit_w - vert_wf);
   float intercept = hit_x - slope * hit_w;
@@ -78,8 +74,6 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
   // Include wires one after the hit and one before the vtx
   int vert_w = (int)((hit_w > vert_wf) ? std::floor(vert_wf) : std::ceil(vert_wf));
   hit_w = hit_w + ((hit_w > vert_wf) ? 1 : -1);
-
-  std::cout << "VTX Wire: " << vert_w << " HIT Wire: " << hit_w << std::endl;
 
   // get all the hits that overlap between these two points
   std::vector<art::Ptr<recob::Hit>> ret;

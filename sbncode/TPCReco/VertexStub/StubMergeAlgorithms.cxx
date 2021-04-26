@@ -168,41 +168,46 @@ geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::St
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
 
+  static const bool VERBOSE = false;
+
   // look up the wire-coordinate of both wires
   double A_w = T.WireCoordinate(geo, A.vhit_hit->WireID());
   double B_w = T.WireCoordinate(geo, B.vhit_hit->WireID());
-
-  std::cout << "A View: " << geo->View(A.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(A.vhit_hit->WireID()), A.vhit_hit->WireID()) << std::endl;
-  std::cout << "B View: " << geo->View(B.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(B.vhit_hit->WireID()), B.vhit_hit->WireID()) << std::endl;
-  std::cout << "A Wire Pos Y: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Z() << std::endl;
-  std::cout << "B Wire Pos Y: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Z() << std::endl;
-
-  std::cout << "A Wire: " << A.vhit_hit->WireID().Wire << " Plane: " << A.vhit_hit->WireID().Plane << " TPC: " << A.vhit_hit->WireID().TPC << " Coord: " << A_w << std::endl;
-  std::cout << "B Wire: " << B.vhit_hit->WireID().Wire << " Plane: " << B.vhit_hit->WireID().Plane << " TPC: " << B.vhit_hit->WireID().TPC << " Coord: " << B_w << std::endl;
 
   // Use this to get y, z
   double y = T.TwoPlaneToY(geo->View(A.vhit_hit->WireID()), A_w, geo->View(B.vhit_hit->WireID()), B_w);
   double z = T.TwoPlaneToZ(geo->View(A.vhit_hit->WireID()), A_w, geo->View(B.vhit_hit->WireID()), B_w);
 
-  std::cout << "Output Y: " << y << " Z: " << z << std::endl;
-
-  std::cout << "A Wire coord: " << geo->WireCoordinate(y, z, A.vhit_hit->WireID()) << std::endl;
-  std::cout << "B Wire coord: " << geo->WireCoordinate(y, z, B.vhit_hit->WireID()) << std::endl;
-
-  std::cout << "A X: " << dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) << std::endl;
-  std::cout << "B X: " << dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID()) << std::endl;
-
   // just average the x-pos
   double x = (dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) + dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID())) / 2.;
 
-  std::cout << "Output X: " << x << std::endl;
-  
   geo::Point_t pos(x, y, z);
 
   // Correct for space charge
   pos = GetLocation(sce, pos, A.vhit_hit->WireID().TPC);
 
-  std::cout << "Final x: " << pos.x() << " y: " << pos.y() << " z: " << pos.z() << std::endl;
+  if (VERBOSE) {
+    std::cout << "A View: " << geo->View(A.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(A.vhit_hit->WireID()), A.vhit_hit->WireID()) << std::endl;
+    std::cout << "B View: " << geo->View(B.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(B.vhit_hit->WireID()), B.vhit_hit->WireID()) << std::endl;
+    std::cout << "A Wire Pos Y: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Z() << std::endl;
+    std::cout << "B Wire Pos Y: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Z() << std::endl;
+    
+    std::cout << "A Wire: " << A.vhit_hit->WireID().Wire << " Plane: " << A.vhit_hit->WireID().Plane << " TPC: " << A.vhit_hit->WireID().TPC << " Coord: " << A_w << std::endl;
+    std::cout << "B Wire: " << B.vhit_hit->WireID().Wire << " Plane: " << B.vhit_hit->WireID().Plane << " TPC: " << B.vhit_hit->WireID().TPC << " Coord: " << B_w << std::endl;
+    
+    std::cout << "Output Y: " << y << " Z: " << z << std::endl;
+    
+    std::cout << "A Wire coord: " << geo->WireCoordinate(y, z, A.vhit_hit->WireID()) << std::endl;
+    std::cout << "B Wire coord: " << geo->WireCoordinate(y, z, B.vhit_hit->WireID()) << std::endl;
+    
+    std::cout << "A X: " << dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) << std::endl;
+    std::cout << "B X: " << dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID()) << std::endl;
+    
+    std::cout << "Output X: " << x << std::endl;
+    
+    
+    std::cout << "Final x: " << pos.x() << " y: " << pos.y() << " z: " << pos.z() << std::endl;
+  }
 
   return pos;
 }

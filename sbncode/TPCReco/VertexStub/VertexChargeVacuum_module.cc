@@ -364,9 +364,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
             }
           }
           if (matchingPFP) {
-            std::cout << "Found PFP: " << matchingPFP->Self() << std::endl;
             const std::vector<art::Ptr<recob::Track>> &pfptrack = pfparticleTracks.at(matchingPFP.key()); 
-            std::cout << "PFP has track: " << pfptrack.size() << std::endl;
             if (pfptrack.size()) {
               const recob::Track &thisTrack = *pfptrack.at(0);
               spXYZ = PlaceHitAlongTrack(thisTrack, vert, hit, geo, dprop); 
