@@ -1,12 +1,7 @@
 #include "services_common_icarus.fcl"
 
 #include "larproperties.fcl"
-#include "backtrackerservice.fcl"
-#include "particleinventoryservice.fcl"
 #include "detectorproperties_icarus.fcl"
-#include "photonbacktrackerservice.fcl"
-#include "mccheatermodules.fcl"
-#include "simulationservices_icarus.fcl"
 
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
@@ -21,20 +16,19 @@ services:
 {
   # @table::icarus_detsim_services
   RandomNumberGenerator: {} #ART native random number generator
-  TFileService: { 
+  TFileService: {
     fileName: "calorimetryout.root"
   }
   message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
   TimeTracker:  { printSummary: true }
   AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
-  BackTrackerService:  @local::standard_backtrackerservice
-  ParticleInventoryService: @local::standard_particleinventoryservice
   @table::icarus_basic_services
-  @table::icarus_backtracking_services
 }
 services.SpaceChargeService: @local::icarus_spacecharge
 
-#Start each new event with an empty event.
+# For run 5396 -- fix the Geometry config
+services.Geometry.Name: icarus_splitwires
+
 source:
 {
   module_type: RootInput
@@ -52,18 +46,31 @@ outputs:
   }
 }
 
-# Define and configure some modules to do work on each event.
-# First modules are defined; they are scheduled later.
-# Modules are grouped by type.
+calorimetry: {
+  AssocHitModuleLabel: ""
+  CaloAlg: {
+    CalAmpConstants: [1., 1., 1.]
+    CalAreaConstants: [1., 1., 1.]
+    CaloDoLifeTimeCorrection: true
+    CaloLifeTimeForm: 0
+    CaloUseModBox: true
+  }
+  ChargeMethod: 1
+  Cryostat: 0
+  FieldDistortion: false
+  FieldDistortionEfield: false
+  T0ModuleLabel: ""
+  TrackIsFieldDistortionCorrected: false
+  TrackModuleLabel: "pandoraTrackGausCryo0"
+  module_type: "GnocchiCalorimetry"
+}
+
 physics:
 {
   producers:{
-    pandoraTrackMCS: @local::mcs_sbn
-    pandoraTrackRange: @local::range_sbn
-    areahit25: @local::trackareahit_icarus
     filthit: @local::trackhitfilter_icarus
     filtgoodhit: @local::trackhitfilter_icarus
-    calorimetry: @local::icarus_gnewcalomc 
+    calorimetry: @local::calorimetry
   }
 
   analyzers:
@@ -75,12 +82,18 @@ physics:
       TRKproducer:  "pandoraTrackGausCryo0"
       PFPproducer: "pandoraGausCryo0"
       HitProducers: ["cluster3DCryo0"]
-      ADCtoE: [] 
+      ADCtoE: []
     }
   }
 
-#  runprod: [ filtgoodhit, pandoraTrackMCS, pandoraTrackRange, areahit25, calorimetryana]
-  runprod: [  calorimetry, filtgoodhit,  pandoraTrackMCS, pandoraTrackRange]
+  filters: {
+    datafilter: {
+      module_type: DataSelect
+      HitLabel: cluster3DCryo0
+    }
+  }
+
+  runprod: [datafilter, calorimetry, filtgoodhit]
   ana: [calorimetryana]
   trigger_paths: [runprod]
   stream1:       [ ]
@@ -88,14 +101,3 @@ physics:
 }
 
 
-physics.producers.filthit.PassBadHits: true
-
-physics.producers.pandoraTrackMCS.TrackLabel: pandoraTrackGausCryo0
-physics.producers.pandoraTrackRange.TrackLabel: pandoraTrackGausCryo0
-
-physics.producers.calorimetry.TrackModuleLabel: pandoraTrackGausCryo0 
-physics.producers.calorimetry.ChargeMethod: 2
-physics.producers.calorimetry.FieldDistortion: false
-physics.producers.calorimetry.FieldDistortionEfield: false
-physics.producers.calorimetry.TrackIsFieldDistortionCorrected: false
-physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]

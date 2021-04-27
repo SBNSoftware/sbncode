@@ -608,15 +608,12 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
 
 void CalorimetryAnalysis::analyze(art::Event const &e)
 {
-  bool fData = e.isRealData();
-  (void) fData;
-
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   _evt = e.event();
   _sub = e.subRun();
   _run = e.run();
-  std::cout << "[CalorimetryAnalysis::analyzeEvent] Run: " << _run << ", SubRun: " << _sub << ", Event: "<< _evt << std::endl;
+  std::cout << "[CalorimetryAnalysis::analyzeEvent] Run: " << _run << ", SubRun: " << _sub << ", Event: "<< _evt << ", Is Data: " << e.isRealData() << std::endl;
 
   // Build larpandora info:
   //lar_pandora::LArPandoraHelper larpandora;
@@ -628,11 +625,19 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   // recob Hits
   std::vector<art::Ptr<recob::Hit>> hitList;
   for (const art::InputTag &t: fHitProducers) {
-    art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(t);
-    art::fill_ptr_vector(hitList, hitHandle);
+    try {
+      art::ValidHandle<std::vector<recob::Hit>> hitHandle = e.getValidHandle<std::vector<recob::Hit>>(t);
+      art::fill_ptr_vector(hitList, hitHandle);
+    }
+    catch(...) {
+      std::cout << "Hit's with tag: " << t << " not present.\n";
+      // Real data may have missing products -- just ignore the event
+      if (e.isRealData()) return;
+      else throw;
+    }
   }
-  // recob Wires:w
 
+  // recob Wires
   art::Handle<std::vector<recob::Wire>> wireHandle;
   e.getByLabel(fWireProducer, wireHandle);
 
@@ -642,25 +647,36 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
   }
 
   // true particles
-  art::ValidHandle<std::vector<simb::MCParticle>> particleHandle = e.getValidHandle<std::vector<simb::MCParticle>>("largeant");
   std::vector<art::Ptr<simb::MCParticle>> particleList;
-  art::fill_ptr_vector(particleList, particleHandle);
-
-  art::ValidHandle<std::vector<sim::SimChannel>> simchannelHandle = e.getValidHandle<std::vector<sim::SimChannel>>("largeant");
   std::vector<art::Ptr<sim::SimChannel>> simchannelList;
-  art::fill_ptr_vector(simchannelList, simchannelHandle);
 
-  art::ValidHandle<std::vector<recob::PFParticle>> pfparticles = e.getValidHandle<std::vector<recob::PFParticle>>(fPFPproducer);
+  if (!e.isRealData()) {
+    art::ValidHandle<std::vector<simb::MCParticle>> particleHandle = e.getValidHandle<std::vector<simb::MCParticle>>("largeant");
+    art::fill_ptr_vector(particleList, particleHandle);
+
+    art::ValidHandle<std::vector<sim::SimChannel>> simchannelHandle = e.getValidHandle<std::vector<sim::SimChannel>>("largeant");
+    art::fill_ptr_vector(simchannelList, simchannelHandle);
+  }
+
   std::vector<art::Ptr<recob::PFParticle>> PFParticleList;
-  art::fill_ptr_vector(PFParticleList, pfparticles);
-  _n_pfp = pfparticles->size();
+  try {
+    art::ValidHandle<std::vector<recob::PFParticle>> pfparticles = e.getValidHandle<std::vector<recob::PFParticle>>(fPFPproducer);
+    art::fill_ptr_vector(PFParticleList, pfparticles);
+  }
+  catch(...) {
+      std::cout << "PFP's with tag: " << fPFPproducer << " not present.\n";
+      // Real data may have missing products -- just ignore the event
+      if (e.isRealData()) return;
+      else throw;
+  }
+  _n_pfp = PFParticleList.size();
 
+  // Now we don't need to guard access to further data. If this is an empty event it should be caught by PFP's or Hit's
   art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTRKproducer); 
 
   art::FindManyP<recob::SpacePoint> fmSpacePoint(PFParticleList, e, fPFPproducer);
 
-  art::FindManyP<recob::Track> fmTracks(pfparticles, e, fTRKproducer);
-  // art::FindManyP<recob::SpacePoint> fmSpacepoints(pfparticles, e, fPFPproducer); 
+  art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTRKproducer);
   // also get hits...
   art::FindManyP<recob::Hit> fmtrkHits(tracks, e, fTRKproducer);
   art::FindManyP<recob::Hit> fmareaHits(tracks, e, fAreaHitproducer);
@@ -740,7 +756,11 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     const std::vector<art::Ptr<recob::Hit>> &caloHits = fmcaloHits.isValid() ? fmcaloHits.at(trkPtr.key()) : emptyHitVector;
     
     // Get the true matching MC particle
-    std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+    std::vector<std::pair<int, float>> matches;
+    if (!e.isRealData()) {
+      matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
+    }
+
     // get the match with the most energy
     int match_id = matches.size() ? std::max_element(matches.begin(), matches.end(),
                                                      [](const auto &a, const auto &b) { return a.second < b.second; })->first : -1;
@@ -759,35 +779,36 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
     // TODO: fix??
     //
     // ignore tracks with no match
-    if (!true_particle) continue;
+    if (!e.isRealData() && !true_particle) continue;
     // only take particle that matches to true instigator
-    if (true_particle->Process() != "primary") continue;
+    if (!e.isRealData() && true_particle->Process() != "primary") continue;
 
-
-    std::cout << "Track: " << track.ID() << " len: " << track.Length() << " matched to particle: " << true_particle->TrackId() << " frac: " << (matchE/trueTrackE) << std::endl;
-
-    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+    if (!e.isRealData()) std::cout << "Track: " << track.ID() << " len: " << track.Length() << " matched to particle: " << true_particle->TrackId() << " frac: " << (matchE/trueTrackE) << std::endl;
 
     std::array<std::map<unsigned, std::vector<const sim::IDE*>>, 3> particle_ide_map;
-    for (const art::Ptr<sim::SimChannel> sc: simchannelList) {
-      for (const auto &pair: sc->TDCIDEMap()) {
-        for (const sim::IDE &ide: pair.second) {
-          if (ide.trackID == true_particle->TrackId() || fAllTrueEnergyDeposits) {
-            unsigned plane_id = geometry->ChannelToWire(sc->Channel()).at(0).Plane;
-            particle_ide_map[plane_id][sc->Channel()].push_back(&ide);
+    std::array<std::vector<const sim::IDE*>, 3> allIDEs;
+
+    if (!e.isRealData()) {
+      art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+      for (const art::Ptr<sim::SimChannel> sc: simchannelList) {
+        for (const auto &pair: sc->TDCIDEMap()) {
+          for (const sim::IDE &ide: pair.second) {
+            if (ide.trackID == true_particle->TrackId() || fAllTrueEnergyDeposits) {
+              unsigned plane_id = geometry->ChannelToWire(sc->Channel()).at(0).Plane;
+              particle_ide_map[plane_id][sc->Channel()].push_back(&ide);
+            }
           }
         }
-      }
-    } 
+      } 
 
-    std::array<std::vector<const sim::IDE*>, 3> allIDEs;
-    for (unsigned i = 0; i < particleList.size(); i++) {
-      int G4ID = particleList[i]->TrackId();
-      for (unsigned plane = 0; plane < 3; plane++) {
-        // build the plane ID
-        geo::PlaneID plane_id(0, 0, plane);
-        std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, geometry->View(plane_id));
-        allIDEs[plane].insert(allIDEs[plane].end(), this_ides.begin(), this_ides.end());
+      for (unsigned i = 0; i < particleList.size(); i++) {
+        int G4ID = particleList[i]->TrackId();
+        for (unsigned plane = 0; plane < 3; plane++) {
+          // build the plane ID
+          geo::PlaneID plane_id(0, 0, plane);
+          std::vector<const sim::IDE*> this_ides = bt_serv->TrackIdToSimIDEs_Ps(G4ID, geometry->View(plane_id));
+          allIDEs[plane].insert(allIDEs[plane].end(), this_ides.begin(), this_ides.end());
+        }
       }
     }
 
@@ -805,7 +826,7 @@ void CalorimetryAnalysis::analyze(art::Event const &e)
           muon_mcs,
           muon_range,
           proton_range,
-          false,
+          e.isRealData(),
           matches,
           true_particle,
           particle_ide_map, 
@@ -1617,7 +1638,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
             //const std::unique_ptr<art::FindManyP<simb::MCParticle, anab::BackTrackerHitMatchingData>> &assocMCPart)
 {
 
-  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
   const spacecharge::SpaceCharge *spacecharge = lar::providerFrom<spacecharge::SpaceChargeService>();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
