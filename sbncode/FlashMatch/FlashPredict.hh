@@ -52,6 +52,7 @@
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
+#include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 
 // turn the warnings back on
 //#pragma GCC diagnostic pop

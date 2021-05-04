@@ -43,8 +43,10 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
-  produces< std::vector< anab::T0 > >();
-  produces< art::Assns <recob::PFParticle, anab::T0> >();
+  //produces< std::vector< anab::T0 > >();
+  produces< std::vector< sbn::SimpleFlashMatch > >();
+  //produces< art::Assns <recob::PFParticle, anab::T0> >();
+  produces< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >();
   // fFlashProducer         = p.get<art::InputTag>("FlashProducer");
 
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
@@ -109,8 +111,10 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 void FlashPredict::produce(art::Event & e)
 {
-  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  std::unique_ptr< art::Assns <recob::PFParticle, anab::T0> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, anab::T0>  );
+  //std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
+  std::unique_ptr< std::vector<sbn::SimpleFlashMatch> > T0_v(new std::vector<sbn::SimpleFlashMatch>);
+  //std::unique_ptr< art::Assns <recob::PFParticle, anab::T0> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, anab::T0>  );
+  std::unique_ptr< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, sbn::SimpleFlashMatch>  );
 
   // reset TTree variables
   _evt = e.event();
@@ -304,7 +308,7 @@ void FlashPredict::produce(art::Event & e)
   } // over all PFParticles
 
   for(auto& chargeDigest : chargeDigestMap) {
-    const size_t pId = chargeDigest.second.pId;
+    //const size_t pId = chargeDigest.second.pId;
     const int pfpPDGC = chargeDigest.second.pfpPDGC;
     const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
     const auto& qClusters = chargeDigest.second.qClusters;
@@ -319,7 +323,7 @@ void FlashPredict::produce(art::Event & e)
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
         mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-        T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kQNoOpHScr));
+        T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, 0.));
         util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
         continue;
       }
@@ -329,7 +333,7 @@ void FlashPredict::produce(art::Event & e)
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kNoChrgScr));
+      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, 0.));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
@@ -338,7 +342,7 @@ void FlashPredict::produce(art::Event & e)
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., k0VUVPEScr));
+      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, 0.));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
@@ -347,7 +351,7 @@ void FlashPredict::produce(art::Event & e)
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(_flash_time, _countPE, pId, _hypo_x, _score));
+      T0_v->push_back(sbn::SimpleFlashMatch(true,_flash_time, _score, _scr_y, _scr_z, _scr_rr, _scr_ratio, _countPE, TVector3(_charge_x,_charge_y, _charge_z), TVector3(_flash_x, _flash_y, _flash_z)));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // chargeDigestMap: PFparticles that pass criteria
