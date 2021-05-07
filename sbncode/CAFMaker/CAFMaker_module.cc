@@ -913,10 +913,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcHits = fmSlcHits.at(0);
     }
 
-    art::FindManyP<anab::T0> fmT0 =
-      FindManyPStrict<anab::T0>(fmPFPart, evt,
-        fParams.FlashMatchLabel() + slice_tag_suff);
-
+    // art::FindManyP<anab::T0> fmT0 =
+    //   FindManyPStrict<anab::T0>(fmPFPart, evt,
+    //     fParams.FlashMatchLabel() + slice_tag_suff);
+    art::FindManyP<sbn::SimpleFlashMatch> fmT0 =
+      FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
+                                             fParams.FlashMatchLabel() + slice_tag_suff);
+    std::cout << "fParams.FlashMatchLabel() + slice_tag_suff:\t" << fParams.FlashMatchLabel() + slice_tag_suff << "\n";
+    
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
@@ -1024,9 +1028,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
     const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    const anab::T0 *fmatch = NULL;
+    // const anab::T0 *fmatch = NULL;
+    const sbn::SimpleFlashMatch *fmatch = NULL;
     if (fmT0.isValid() && primary != NULL) {
-      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+      // std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+      std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fmT0.at(iPart);
+      std::cout << "fmatches.size():\t" << fmatches.size() << "\n";
       if (fmatches.size() != 0) {
         assert(fmatches.size() == 1);
         fmatch = fmatches[0].get();
@@ -1043,6 +1050,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatch(fmatch, recslc);
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
+
+    std::cout << "recslc.fmatch.scr_y:\t" << recslc.fmatch.scr_y << "\n";
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;

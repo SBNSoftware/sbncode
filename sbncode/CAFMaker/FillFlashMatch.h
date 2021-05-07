@@ -14,6 +14,7 @@
 //Include new flash match class
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRFlashMatch.h"
 
 namespace caf
 {

@@ -323,7 +323,7 @@ void FlashPredict::produce(art::Event & e)
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
         mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-        T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, 0.));
+        T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
         util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
         continue;
       }
@@ -333,7 +333,7 @@ void FlashPredict::produce(art::Event & e)
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, 0.));
+      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
@@ -342,7 +342,7 @@ void FlashPredict::produce(art::Event & e)
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, 0.));
+      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
       continue;
     }
@@ -351,7 +351,20 @@ void FlashPredict::produce(art::Event & e)
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(sbn::SimpleFlashMatch(true,_flash_time, _score, _scr_y, _scr_z, _scr_rr, _scr_ratio, _countPE, TVector3(_charge_x,_charge_y, _charge_z), TVector3(_flash_x, _flash_y, _flash_z)));
+      sbn::SimpleFlashMatch fm = new sbn::SimpleFlashMatch();
+      fm.mPresent = true;
+      fm.mTime = _flash_time;
+      fm.mScore = _score;
+      fm.mScr_y = _scr_y;
+      fm.mScr_z = _scr_z;
+      fm.mScr_rr = _scr_rr;
+      fm.mScr_ratio = _scr_ratio;
+      fm.mPE = _countPE;
+      fm.mChargeXYZ = TVector3(_charge_x,_charge_y, _charge_z);
+      fm.mLightXYZ = TVector3(_flash_x, _flash_y, _flash_z);
+      std::cout << fm.mPresent << " " << fm.mTime << " " << fm.mScore << " " << fm.mScr_y << " " << fm.mScr_z << " " << fm.mScr_rr << " " << fm.mScr_ratio << " " << fm.mPE << " " << std::endl; 
+      //T0_v->push_back(sbn::SimpleFlashMatch(true,_flash_time, _score, _scr_y, _scr_z, _scr_rr, _scr_ratio, _countPE, TVector3(_charge_x,_charge_y, _charge_z), TVector3(_flash_x, _flash_y, _flash_z)));
+      T0_v->push_back(fm);
       util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
     }
   } // chargeDigestMap: PFparticles that pass criteria
