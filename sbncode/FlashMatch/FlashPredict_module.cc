@@ -419,6 +419,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
   // _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
   _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
+  _flashmatch_nuslice_tree->Branch("flash_x_gl", &_flash_x_gl, "flash_x_gl/D");
   _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
   _flashmatch_nuslice_tree->Branch("flash_y", &_flash_y, "flash_y/D");
   _flashmatch_nuslice_tree->Branch("flash_z", &_flash_z, "flash_z/D");
@@ -433,6 +434,8 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
   _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_rr", &_hypo_x_rr, "hypo_x_rr/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_ratio", &_hypo_x_ratio, "hypo_x_ratio/D");
   // _flashmatch_nuslice_tree->Branch("hypo_x_fit", &_hypo_x_fit, "hypo_x_fit/D");
   _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
   _flashmatch_nuslice_tree->Branch("scr_y", &_scr_y, "scr_y/D");
@@ -647,6 +650,10 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 
 bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 {
+  // NOTE: _flash_x holds the X coordinate of the opdet that registered
+  //       the most PEs in the flash.
+  // TODO: change _flash_x to hold the X coordinate of the wall that
+  //       registered the most PEs overall
   auto compareOpHits = [] (const recob::OpHit& oph1, const recob::OpHit& oph2)->bool
     { return oph1.PE() < oph2.PE(); };
   auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
@@ -666,7 +673,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     auto opDetXYZ = opDet.GetCenter();
 
     std::string op_type = "pmt"; // the label ICARUS has
-    if(fSBND) op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+    if(fSBND){
+      op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+      if(!fUseUncoatedPMT && op_type == "pmt_uncoated") continue;
+    }
 
     double ophPE2 = oph->PE() * oph->PE();
     sum       += 1.0;
@@ -720,6 +730,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     // _hypo_x = hypoFlashX_splines();
     _hypo_x = hypoFlashX_fits();
+    _flash_x_gl = flashXGl(_hypo_x, _flash_x);
     _countPE = std::round(_flash_pe);
     return true;
   }
@@ -815,7 +826,7 @@ bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
 // }
 
 
-double FlashPredict::hypoFlashX_fits() const
+double FlashPredict::hypoFlashX_fits()
 {
   std::vector<double> rrXs;
   double rr_hypoX, rr_hypoXWgt;
@@ -850,6 +861,7 @@ double FlashPredict::hypoFlashX_fits() const
     }
   }
 
+  _hypo_x_rr = rr_hypoX;
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
     return rr_hypoX;
 
@@ -885,6 +897,7 @@ double FlashPredict::hypoFlashX_fits() const
       pe_hypoXWgt = 1./std::abs(peXs[0] - fDriftDistance);
     }
   }
+  _hypo_x_ratio = pe_hypoX;
 
   return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
 }
@@ -1144,6 +1157,24 @@ unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
   return (geometry->PositionToTPCID(p)).TPC;
+}
+
+
+double FlashPredict::flashXGl(const double hypo_x,
+                              const double flash_x) const
+{
+  double min = 10000;
+  unsigned wId = 0;
+  auto wIt = fWiresX_gl.begin();
+  auto w = wIt;
+  for(size_t i=0; i<fWiresX_gl.size(); i++){
+    if(((*w<0) == (flash_x<0))&& std::abs(*w - flash_x) < min) {
+      wIt = w;
+      wId = i;
+    }
+    w++;;
+  }
+  return (wId % 2) ? (*wIt - hypo_x) : (*wIt + hypo_x);
 }
 
 

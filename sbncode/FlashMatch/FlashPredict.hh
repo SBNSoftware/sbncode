@@ -95,7 +95,7 @@ private:
   bool computeFlashMetrics(const std::set<unsigned>& tpcWithHits);
   bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
   double hypoFlashX_splines() const;
-  double hypoFlashX_fits() const;
+  double hypoFlashX_fits();
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const art::Ptr<recob::PFParticle>& particle,
@@ -125,6 +125,7 @@ private:
                         const std::set<unsigned>& tpcWithHits) const;
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
+  double flashXGl(const double hypo_x, const double flash_x) const;
   double driftDistance(const double x) const;
   unsigned driftVolume(const double x) const;
   // bool isPDInCryoTPC(double pd_x, size_t itpc);
@@ -194,12 +195,12 @@ private:
   // Tree variables
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
-  double _flash_x, _flash_y, _flash_z,
+  double _flash_x, _flash_x_gl, _flash_y, _flash_z,
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  double _hypo_x;//, _hypo_x_fit;
+  double _hypo_x, _hypo_x_rr, _hypo_x_ratio;//, _hypo_x_fit;
   unsigned _evt, _run, _sub, _countPE; //_slices;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
