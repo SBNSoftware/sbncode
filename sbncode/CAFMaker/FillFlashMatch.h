@@ -10,7 +10,6 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
-#include "lardataobj/AnalysisBase/T0.h"
 //Include new flash match class
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
@@ -19,17 +18,17 @@
 namespace caf
 {
 
-  void FillSliceFlashMatch(const sbn::SimpleFlashMatch &fmatch,
-                           caf::SRSlice &srslice,
+  void FillSliceFlashMatch(const sbn::SimpleFlashMatch* fmatch,
+                           caf::SRSlice& srslice,
                            bool allowEmpty = false);
 
-  void FillSliceFlashMatchA(const sbn::SimpleFlashMatch &fmatch,
-			    caf::SRSlice &srslice,
-			    bool allowEmpty = false);
+  void FillSliceFlashMatchA(const sbn::SimpleFlashMatch* fmatch,
+                            caf::SRSlice& srslice,
+                            bool allowEmpty = false);
 
-  void FillSliceFlashMatchB(const sbn::SimpleFlashMatch &fmatch,
-			    caf::SRSlice &srslice,
-			    bool allowEmpty = false);
+  void FillSliceFlashMatchB(const sbn::SimpleFlashMatch* fmatch,
+                            caf::SRSlice& srslice,
+                            bool allowEmpty = false);
 }
 
 #endif

@@ -78,7 +78,7 @@ public:
   FlashPredict& operator=(FlashPredict const&) = delete;
   FlashPredict& operator=(FlashPredict&&) = delete;
   // Required functions.
-  void produce(art::Event& e) override;
+  void produce(art::Event& evt) override;
   // Selected optional functions.
   void beginJob() override;
   void endJob() override;
@@ -221,9 +221,15 @@ private:
       {}
   };
 
+  const bool kNoScr = false;
+  const double kNoScrTime = -9999.;
+  const double kNoScrPE = -9999.;
   const int kQNoOpHScr = -1;
   const int kNoChrgScr = -2;
   const int k0VUVPEScr = -3;
+  const int kNoOpHInEvt = -11;
+  const int kNoPFPInEvt = -12;
+  // const int kNoSlcInEvt = -13;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
     unsigned events, nopfpneutrino,// noslice,

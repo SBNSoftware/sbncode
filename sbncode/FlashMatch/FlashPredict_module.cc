@@ -43,9 +43,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
-  //produces< std::vector< anab::T0 > >();
-  produces< std::vector< sbn::SimpleFlashMatch > >();
-  //produces< art::Assns <recob::PFParticle, anab::T0> >();
+  produces< std::vector<sbn::SimpleFlashMatch> >();
   produces< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >();
   // fFlashProducer         = p.get<art::InputTag>("FlashProducer");
 
@@ -106,20 +104,22 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
   consumes<std::vector<recob::OpHit>>(fOpHitProducer);
+  if(fUseARAPUCAS && !fOpHitARAProducer.empty())
+    consumes<std::vector<recob::OpHit>>(fOpHitARAProducer);
 } // FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 
-void FlashPredict::produce(art::Event & e)
+void FlashPredict::produce(art::Event& evt)
 {
-  //std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  std::unique_ptr< std::vector<sbn::SimpleFlashMatch> > T0_v(new std::vector<sbn::SimpleFlashMatch>);
-  //std::unique_ptr< art::Assns <recob::PFParticle, anab::T0> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, anab::T0>  );
-  std::unique_ptr< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, sbn::SimpleFlashMatch>  );
+  std::unique_ptr< std::vector<sbn::SimpleFlashMatch> >
+    sFM_v(new std::vector<sbn::SimpleFlashMatch>);
+  std::unique_ptr< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >
+    pfp_sFM_assn_v(new art::Assns<recob::PFParticle, sbn::SimpleFlashMatch>);
 
   // reset TTree variables
-  _evt = e.event();
-  _sub = e.subRun();
-  _run = e.run();
+  _evt = evt.event();
+  _sub = evt.subRun();
+  _run = evt.run();
   // _slices        = 0;
   _countPE       = 0;
   _flash_time    = -9999.;
@@ -133,55 +133,79 @@ void FlashPredict::produce(art::Event & e)
   bk.events++;
 
   // grab PFParticles in event
-  auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle>>(fPandoraProducer);
+  auto const& pfp_h =
+    evt.getValidHandle<std::vector<recob::PFParticle>>(fPandoraProducer);
   if (fSelectNeutrino &&
       !pfpNeutrinoOnEvent(pfp_h)) {
     mf::LogInfo("FlashPredict")
       << "No pfp neutrino on event. Skipping...";
     bk.nopfpneutrino++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for (size_t pId=0; pId<pfp_h->size(); pId++) {
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                             kNoScrPE, kNoPFPInEvt));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
 
-  // auto const& slice_h = e.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
+  // auto const& slice_h = evt.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
   // _slices = slice_h.product()->size();
   // if (_slices == 0) {
   //   mf::LogWarning("FlashPredict")
   //     << "No recob:Slice on event. Skipping...";
   //   bk.noslice++;
   //   updateBookKeeping();
-  //   e.put(std::move(T0_v));
-  //   e.put(std::move(pfp_t0_assn_v));
+  //   for (size_t pId=0; pId<pfp_h->size(); pId++) {
+  //     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+  //     sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+  //                                            kNoScrPE, kNoSlcInEvt));
+  //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+  //   }
+  //   evt.put(std::move(sFM_v));
+  //   evt.put(std::move(pfp_sFM_assn_v));
   //   return;
   // }
 
   // grab spacepoints associated with PFParticles
-  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, e, fPandoraProducer);
+  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, evt,
+                                                          fPandoraProducer);
 
-  auto const& spacepoint_h = e.getValidHandle<std::vector<recob::SpacePoint> >(fSpacePointProducer);
-  art::FindManyP<recob::Hit> spacepoint_hit_assn_v(spacepoint_h, e, fSpacePointProducer);
+  auto const& spacepoint_h =
+    evt.getValidHandle<std::vector<recob::SpacePoint>>(fSpacePointProducer);
+  art::FindManyP<recob::Hit> spacepoint_hit_assn_v(spacepoint_h,
+                                                   evt, fSpacePointProducer);
 
   // grab tracks associated with PFParticles
-  // auto const& track_h = e.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
-  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, e, fTrackProducer);
+  // auto const& track_h = evt.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
+  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, evt, fTrackProducer);
 
   // grab calorimetry info for tracks
-  // auto const& calo_h = e.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
-  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h, e, fCaloProducer);
+  // auto const& calo_h =
+  //   evt.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
+  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h,
+  //                                                      evt, fCaloProducer);
 
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit>> ophit_h;
-  e.getByLabel(fOpHitProducer, ophit_h);
+  evt.getByLabel(fOpHitProducer, ophit_h);
   if(!ophit_h.isValid()) {
     mf::LogError("FlashPredict")
       << "No optical hits from producer module "
       << fOpHitProducer;
     bk.nonvalidophit++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for (size_t pId=0; pId<pfp_h->size(); pId++) {
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                             kNoScrPE, kNoOpHInEvt));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
 
@@ -190,7 +214,7 @@ void FlashPredict::produce(art::Event & e)
 
   if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
     art::Handle<std::vector<recob::OpHit>> ophitara_h;
-    e.getByLabel(fOpHitARAProducer, ophitara_h);
+    evt.getByLabel(fOpHitARAProducer, ophitara_h);
     if(!ophitara_h.isValid()) {
       mf::LogWarning("FlashPredict")
         << "Non valid ophits from ARAPUCAS"
@@ -214,8 +238,14 @@ void FlashPredict::produce(art::Event & e)
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for (size_t pId=0; pId<pfp_h->size(); pId++) {
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                             kNoScrPE, kNoOpHInEvt));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
 
@@ -322,9 +352,10 @@ void FlashPredict::produce(art::Event & e)
       if (tpcWithHitsOpH.size() == 0) {
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
-        mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-        T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, kQNoOpHScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
-        util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+        sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                               kNoScrPE, kQNoOpHScr));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
         continue;
       }
     }
@@ -332,47 +363,49 @@ void FlashPredict::produce(art::Event & e)
     if(!computeChargeMetrics(qClusters)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, kNoChrgScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                             kNoScrPE, kNoChrgScr));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
 
     if(!computeFlashMetrics(tpcWithHits)){
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(sbn::SimpleFlashMatch(false,-9999., k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, k0VUVPEScr, 0.,TVector3(-999.0,-999.0, -999.0), TVector3(-999.0, -999.0, -999.0)));
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+                                             kNoScrPE, k0VUVPEScr));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
 
     if(computeScore(tpcWithHits, pfpPDGC)){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      sbn::SimpleFlashMatch fm = new sbn::SimpleFlashMatch();
-      fm.mPresent = true;
-      fm.mTime = _flash_time;
-      fm.mScore = _score;
-      fm.mScr_y = _scr_y;
-      fm.mScr_z = _scr_z;
-      fm.mScr_rr = _scr_rr;
-      fm.mScr_ratio = _scr_ratio;
-      fm.mPE = _countPE;
-      fm.mChargeXYZ = TVector3(_charge_x,_charge_y, _charge_z);
-      fm.mLightXYZ = TVector3(_flash_x, _flash_y, _flash_z);
-      std::cout << fm.mPresent << " " << fm.mTime << " " << fm.mScore << " " << fm.mScr_y << " " << fm.mScr_z << " " << fm.mScr_rr << " " << fm.mScr_ratio << " " << fm.mPE << " " << std::endl; 
-      //T0_v->push_back(sbn::SimpleFlashMatch(true,_flash_time, _score, _scr_y, _scr_z, _scr_rr, _scr_ratio, _countPE, TVector3(_charge_x,_charge_y, _charge_z), TVector3(_flash_x, _flash_y, _flash_z)));
-      T0_v->push_back(fm);
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->push_back(
+        sbn::SimpleFlashMatch(true, _flash_time, _countPE, _score,
+                              _scr_y, _scr_z, _scr_rr, _scr_ratio,
+                              TVector3(_charge_x_gl, _charge_y, _charge_z),
+                              TVector3(_flash_x_gl, _flash_y, _flash_z)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    else{
+      mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
+                                   << "\n_score:     " << _score
+                                   << "\n_scr_y:     " << _scr_y
+                                   << "\n_scr_z:     " << _scr_z
+                                   << "\n_scr_rr:    " << _scr_rr
+                                   << "\n_scr_ratio: " << _scr_ratio;
+      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
     }
   } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
   updateBookKeeping();
 
-  e.put(std::move(T0_v));
-  e.put(std::move(pfp_t0_assn_v));
+  evt.put(std::move(sFM_v));
+  evt.put(std::move(pfp_sFM_assn_v));
 
 }// end of producer module
 
@@ -1225,10 +1258,22 @@ void FlashPredict::printBookKeeping(Stream&& out)
   m << "----------------------------------------\n"
     << "Job Tally\n"
     << "\tEvents:       \t  " << bk.events << "\n";
-  if(bk.nopfpneutrino) m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino << "\n";
-  // if(bk.noslice)       m << "\tNo Slice:         \t -" << bk.noslice       << "\n";
-  if(bk.nonvalidophit) m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit << "\n";
-  if(bk.nullophittime) m << "\tNo OpHits in-time:\t -" << bk.nullophittime << "\n";
+  if(bk.nopfpneutrino) {
+    m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino
+      << ", scored as: " << kNoPFPInEvt << "\n";
+  }
+  // if(bk.noslice) {
+  //   m << "\tNo Slice:         \t -" << bk.noslice
+  //     << ", scored as: " << kNoSlcInEvt << "\n";
+  // }
+  if(bk.nonvalidophit) {
+    m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit
+      << ", scored as: " << kNoOpHInEvt << "\n";
+  }
+  if(bk.nullophittime) {
+    m << "\tNo OpHits in-time:\t -" << bk.nullophittime
+      << ", scored as: " << kNoOpHInEvt << "\n";
+  }      
   m << "\t----------------------\n";
   if(bk.job_bookkeeping != bk.events_processed)
     m << "\tJob Bookkeeping:  \t" << bk.job_bookkeeping << " ERROR!\n";
