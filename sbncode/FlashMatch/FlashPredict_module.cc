@@ -21,10 +21,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
   , fBeamWindowStart(p.get<double>("BeamWindowStart")) //us // TODO: should come from service
   , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// us // TODO: should come from service
-  , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
-  , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
+  , fFlashStart(p.get<double>("FlashStart")) // in us w.r.t. flash time
+  , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
+  , fOnlyPrimaries(p.get<bool>("OnlyPrimaries", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
@@ -34,13 +35,14 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fMakeTree(p.get<bool>("MakeTree", false))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
-  , fPEscale(p.get<double>("PEscale", 1.0))
+  , fQScale(p.get<double>("QScale", 1.0))
+  , fPEScale(p.get<double>("PEScale", 1.0))
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
   , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
-  , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
+  , fOpDetNormalizer(p.get<unsigned>("OpDetNormalizer", 1))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
   produces< std::vector<sbn::SimpleFlashMatch> >();
@@ -248,6 +250,8 @@ void FlashPredict::produce(art::Event& evt)
     evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
+  // TODO: for SBND optically isolated volumes create 2 more opHits:
+  // opHitsOnlyOnTheLeft, opHitsOnlyOnTheRight... or some better name/object
 
   std::set<unsigned> tpcWithOpH;
   if(fSBND) {// no point for ICARUS
@@ -265,7 +269,7 @@ void FlashPredict::produce(art::Event& evt)
   for (size_t pId=0; pId<pfp_h->size(); pId++) {
     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
     unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
-    if (!pfp_ptr->IsPrimary()) continue;
+    if (fOnlyPrimaries && !pfp_ptr->IsPrimary()) continue;
     if (fSelectNeutrino &&
         (pfpPDGC != 12) &&
         (pfpPDGC != 14) &&
@@ -278,7 +282,8 @@ void FlashPredict::produce(art::Event& evt)
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
     AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
 
-    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
+    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ?
+      fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
     double totalCharge = 0;
     //  loop over all mothers and daughters, fill qCluster
     for (auto& pfp_md: pfp_ptr_v) {
@@ -333,7 +338,8 @@ void FlashPredict::produce(art::Event& evt)
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
-    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr, qClusters, tpcWithHits);
+    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr,
+                                                qClusters, tpcWithHits);
     }//TODO: pack this into a function
   } // over all PFParticles
 
@@ -447,8 +453,6 @@ void FlashPredict::initTree(void)
 
 void FlashPredict::loadMetrics()
 {
-  // TODO: Set a better way to run with no metrics
-
   // TODO: fill histos with less repetition and range for loops
   // read histograms and fill vectors for match score calculation
   std::string fname;
@@ -628,13 +632,12 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 {
   double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
-  double scale = 0.001;
   _charge_q = 0.;
   for (auto& qp : qClusters) {
-    xave += scale * qp.q * qp.x;
-    yave += scale * qp.q * qp.y;
-    zave += scale * qp.q * qp.z;
-    norm += scale * qp.q;
+    xave += fQScale * qp.q * qp.x;
+    yave += fQScale * qp.q * qp.y;
+    zave += fQScale * qp.q * qp.z;
+    norm += fQScale * qp.q;
     _charge_q += qp.q;
   }
   if (norm > 0) {
@@ -716,12 +719,12 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   } // for opHits
 
   if (sum_PE > 0) {
-    _flash_pe    = sum_PE   * fPEscale;
-    _flash_unpe  = sum_unPE * fPEscale;
-    _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
+    _flash_pe    = sum_PE   * fPEScale;
+    _flash_unpe  = sum_unPE * fPEScale;
+    _flash_ratio = fOpDetNormalizer * _flash_unpe / _flash_pe;
     if(fUseARAPUCAS) {
-      _flash_unpe  += sum_visARA_PE * fPEscale;
-      _flash_ratio = (fVUVToVIS * sum_unPE  + sum_visARA_PE )* fPEscale / _flash_pe;
+      _flash_unpe  += sum_visARA_PE * fPEScale;
+      _flash_ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE )* fPEScale / _flash_pe;
     }
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
@@ -1079,7 +1082,7 @@ bool FlashPredict::createOpHitsTimeHist(
         !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
     if(fSBND && !fUseUncoatedPMT &&
        !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
-    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEscale * oph.PE());
+    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEScale * oph.PE());
   }
   if (fOpHitsTimeHist->GetEntries() <= 0 ||
       fOpHitsTimeHist->Integral() < fMinFlashPE) return false;
@@ -1092,8 +1095,8 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
   int ibin = fOpHitsTimeHist->GetMaximumBin();
   double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
   _flash_time = maxpeak_time; // in us
-  double lowedge  = _flash_time + fLightWindowStart;
-  double highedge = _flash_time + fLightWindowEnd;
+  double lowedge  = _flash_time + fFlashStart;
+  double highedge = _flash_time + fFlashEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
   int lowedge_bin = fOpHitsTimeHist->FindBin(lowedge);
   int highedge_bin = fOpHitsTimeHist->FindBin(highedge);

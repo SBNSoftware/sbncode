@@ -146,13 +146,14 @@ private:
   detinfo::DetectorClocksData const fClockData;
   const double fTickPeriod;
   const double fBeamWindowStart, fBeamWindowEnd;
-  const double fLightWindowStart, fLightWindowEnd;
+  const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
-  const bool fSelectNeutrino, fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
+  const bool fSelectNeutrino, fOnlyPrimaries;
+  const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
-  const double fMinFlashPE, fMinOpHPE, fPEscale,
+  const double fMinFlashPE, fMinOpHPE, fQScale, fPEScale,
     fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
@@ -165,7 +166,7 @@ private:
   size_t fNTPC;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
-  const unsigned fVUVToVIS;
+  const unsigned fOpDetNormalizer;
   const double fTermThreshold;
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
