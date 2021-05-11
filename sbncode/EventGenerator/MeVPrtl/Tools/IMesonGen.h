@@ -1,8 +1,8 @@
 /**
  *  @file   IMesonGen.h
  *
- *  @brief  This provides an art tool interface definition for tools which can create
- *          fake particles to overlay onto input daq fragments during decoding
+ *  @brief  This is an interface for an art Tool which sources MCFlux objects for
+ *  downstream processing and tabulates POT information.
  *
  *  @author grayputnam@uchicago.edu
  *

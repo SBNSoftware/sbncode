@@ -1,8 +1,10 @@
 /**
  *  @file   IRayTrace.h
  *
- *  @brief  This provides an art tool interface definition for tools which can create
- *          fake particles to overlay onto input daq fragments during decoding
+ *  @brief  This provides an interface for an art tool which ray traces "Prtl"
+ *  (massive) particles from their production position to impinge on a detector
+ *  surface. It provides the intersection points of a MeVPrtlFlux object, along with
+ *  a weight. 
  *
  *  @author grayputnam@uchicago.edu
  *

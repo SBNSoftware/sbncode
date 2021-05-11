@@ -30,7 +30,8 @@ namespace evgen
 {
 namespace ldm {
 /**
- *  @brief  IMeVPrtlStage interface class definiton
+ *  @brief  IMeVPrtlStage interface class definiton. General interface behind each
+ *  stage. Provides random number generation.
  */
 class IMeVPrtlStage
 {
@@ -38,7 +39,9 @@ public:
     /**
      *  @brief  Virtual Destructor
      */
-    virtual ~IMeVPrtlStage() noexcept = default;
+    virtual ~IMeVPrtlStage() noexcept {
+      if (fEngine) delete fEngine;
+    }
 
     IMeVPrtlStage(const char * name) {
       // setup the random number engine

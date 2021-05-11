@@ -1,8 +1,8 @@
 /**
  *  @file   IMeVPrtlDecay.h
  *
- *  @brief  This provides an art tool interface definition for tools which can create
- *          fake particles to overlay onto input daq fragments during decoding
+ *  @brief  This is an interface for an art Tool which decays "Prtl" inside a
+ *  detector volume. It maps MeVPrtlFlux to MeVPrtlDecay. 
  *
  *  @author grayputnam@uchicago.edu
  *

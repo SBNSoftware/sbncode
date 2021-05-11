@@ -128,6 +128,8 @@ NuMiKaonGen::NuMiKaonGen(fhicl::ParameterSet const &pset):
 
 NuMiKaonGen::~NuMiKaonGen()
 {
+
+  if (fDk2Nu) delete fDk2Nu;
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
