@@ -16,7 +16,7 @@ namespace ana
     void Shift(double sigma,
 	       caf::SRProxy* sr, double& weight) const override
     {
-      if(sigma < -1) sigma = 0;
+      if(sigma < -1) sigma = -1;
       if(sr->truth[0].neutrino.genie_intcode == 10) weight *= 1 + sigma;
     }
   };
@@ -27,4 +27,20 @@ namespace ana
     return mSyst;
   }
 
+  class POTSyst: public ISyst
+  {
+  public:
+  POTSyst() : ISyst("potsyst", "2% POT Syst") {}
+    void Shift(double sigma,
+	       caf::SRProxy* sr, double& weight) const override
+    {
+      weight *= (1.0 + 0.02*sigma);
+    }
+  };
+
+  const POTSyst& GetPOTSyst()
+  {
+    static const POTSyst pSyst;
+    return pSyst;
+  }
 }
