@@ -20,6 +20,7 @@ namespace ana
     const std::string dir = "/sbnd/data/users/bzamoran/workshop-game-0320/weights/";
 
 	const std::string fname = dir+"combined_params_2020a.txt";
+	//const std::string fname = "combined_params_2020a.txt";
         std::ifstream ifin(fname);
         if(ifin.fail()){
           std::cout << "UniverseOracle: Couldn't open file '" << fname << "'" << std::endl;
@@ -53,7 +54,41 @@ namespace ana
             ifin >> shift;
 
             if(!ifin.good()) break; // either the next label or EOF
-            fData[name].push_back(shift);
+            if(name.find("NonResRvp1pi") != std::string::npos){
+              if(name.find("Alt") == std::string::npos){
+                fData["genie_NonResRvpCC1pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarnCC1pi_Genie"].push_back(shift);
+              } else {
+                fData["genie_NonResRvpNC1pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarnNC1pi_Genie"].push_back(shift);
+              }
+            } else if(name.find("NonResRvbarp1pi") != std::string::npos){
+              if(name.find("Alt") == std::string::npos){
+                fData["genie_NonResRvnCC1pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarpCC1pi_Genie"].push_back(shift);
+              } else {
+                fData["genie_NonResRvnNC1pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarpNC1pi_Genie"].push_back(shift);
+              }
+            } else if(name.find("NonResRvp2pi") != std::string::npos){
+              if(name.find("Alt") == std::string::npos){
+                fData["genie_NonResRvpCC2pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarnCC2pi_Genie"].push_back(shift);
+              } else {
+                fData["genie_NonResRvpNC2pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarnNC2pi_Genie"].push_back(shift);
+              }
+            } else if(name.find("NonResRvbarp2pi") != std::string::npos){
+              if(name.find("Alt") == std::string::npos){
+                fData["genie_NonResRvnCC2pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarpCC2pi_Genie"].push_back(shift);
+              } else {
+                fData["genie_NonResRvnNC2pi_Genie"].push_back(shift);
+                fData["genie_NonResRvbarpNC2pi_Genie"].push_back(shift);
+              }
+            } else {
+              fData[name].push_back(shift);
+            }
           } // end loop over values
         } // end loop over systs
 

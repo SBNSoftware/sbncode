@@ -99,6 +99,11 @@ namespace ana
     const double y0 = ws[i].second[u.i0];
     const double y1 = ws[i].second[u.i1];
 
+    //if (sr->truth[0].neutrino.genie_intcode == 3 &&
+//	(ShortName() == "genie_cohMA_Genie" || ShortName() == "genie_cohR0_Genie")) {
+ //     std::cout << "Coherent event" << std::endl;
+   // }
+
     if(isinf(y0) || isnan(y0) || isinf(y1) || isnan(y1)){
       std::cout << "Bad weight for syst. This event will not be weighted! "
                 << ShortName()
@@ -115,13 +120,47 @@ namespace ana
   // --------------------------------------------------------------------------
   int SBNWeightSyst::GetIdx(const caf::VectorProxy<caf::PairProxy>& ws) const
   {
+    std::string syst_name = ShortName();
+    if(syst_name.find("NonResRvpCC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvp1pi_Genie";
+    } else if(syst_name.find("NonResRvbarpCC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp1pi_Genie";
+    } else if(syst_name.find("NonResRvnCC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp1pi_Genie";
+    } else if(syst_name.find("NonResRvbarnCC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvp1pi_Genie";
+    } else if(syst_name.find("NonResRvpCC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvp2pi_Genie";
+    } else if(syst_name.find("NonResRvbarpCC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp2pi_Genie";
+    } else if(syst_name.find("NonResRvnCC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp2pi_Genie";
+    } else if(syst_name.find("NonResRvbarnCC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvp2pi_Genie";
+    } else if(syst_name.find("NonResRvpNC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvp1piAlt_Genie";
+    } else if(syst_name.find("NonResRvbarpNC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp1piAlt_Genie";
+    } else if(syst_name.find("NonResRvnNC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp1piAlt_Genie";
+    } else if(syst_name.find("NonResRvbarnNC1pi") != std::string::npos){
+      syst_name = "genie_NonResRvp1piAlt_Genie";
+    } else if(syst_name.find("NonResRvpNC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvp2piAlt_Genie";
+    } else if(syst_name.find("NonResRvbarpNC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp2piAlt_Genie";
+    } else if(syst_name.find("NonResRvnNC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvbarp2piAlt_Genie";
+    } else if(syst_name.find("NonResRvbarnNC2pi") != std::string::npos){
+      syst_name = "genie_NonResRvp2piAlt_Genie";
+    }
     if(fIdx == -1){
       for(unsigned int i = 0; i < ws.size(); ++i){
-        if(ws[i].first == ShortName()) fIdx = i;
+        if(ws[i].first == syst_name) fIdx = i;
       }
 
       if(fIdx == -1){
-        std::cout << "SBNWeightSyst: '" << ShortName() << "' not found in record" << std::endl;
+        std::cout << "SBNWeightSyst: '" << syst_name << "' not found in record" << std::endl;
         std::cout << "Available:";
         for(auto& it: ws) std::cout << " " << std::string(it.first);
         std::cout << std::endl;
@@ -163,6 +202,37 @@ namespace ana
   // --------------------------------------------------------------------------
   const std::vector<const ISyst*>& GetSBNGenieWeightSysts()
   {
+    const Cut kHasProton(
+         [](const caf::SRProxy *sr)
+         {
+          for(unsigned int part_idx = 0; part_idx < sr->truth[0].finalstate.size(); part_idx++){
+	    if(sr->truth[0].finalstate[part_idx].status_code != 1) continue;
+            if(sr->truth[0].finalstate[part_idx].pdg == 2212) return true; 
+           }
+          return false;
+          });
+    const Cut kHasNeutron(
+         [](const caf::SRProxy *sr)
+         {
+          for(unsigned int part_idx = 0; part_idx < sr->truth[0].finalstate.size(); part_idx++){
+	    if(sr->truth[0].finalstate[part_idx].status_code != 1) continue;
+            if(sr->truth[0].finalstate[part_idx].pdg == 2112) return true; 
+           }
+          return false;
+          });
+    const Var kNumPi(
+         [](const caf::SRProxy *sr)
+         {
+          unsigned int nPis = 0;
+          for(unsigned int part_idx = 0; part_idx < sr->truth[0].finalstate.size(); part_idx++){
+	    if(sr->truth[0].finalstate[part_idx].status_code != 1) continue;
+            if(sr->truth[0].finalstate[part_idx].pdg == 111 || 
+               abs(sr->truth[0].finalstate[part_idx].pdg) == 211) nPis++;
+           }
+          return nPis;
+          });
+    const Cut kOnePi = (kNumPi == 1);
+    const Cut kTwoPi = (kNumPi == 2);
     static std::vector<const ISyst*> ret;
     if(ret.empty()){
       const UniverseOracle& uo = UniverseOracle::Instance();
@@ -170,18 +240,39 @@ namespace ana
       for(const std::string& name: uo.Systs()){
         if(name.find("genie") == std::string::npos) continue;
 
-        if(name.find("NonRes") == 0){
-          // These NonRes parameters need special handling. There are two
-          // copies, supposed to apply to CC and NC respectively, but instead
-          // the weights are filled for all events.
-          if(name.find("Alt") == std::string::npos){
-            ret.push_back(new SBNWeightSyst(name, kIsNC));
-          }
-          else{
-            ret.push_back(new SBNWeightSyst(name, kIsCC));
-          }
-        }
-        else{
+        if(name.find("NonResRvpCC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kOnePi && kIsCC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarpCC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kOnePi && kIsCC && kIsAntiNu));
+        } else if(name.find("NonResRvnCC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kOnePi && kIsCC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarnCC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kOnePi && kIsCC && kIsAntiNu));
+        } else if(name.find("NonResRvpCC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kTwoPi && kIsCC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarpCC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kTwoPi && kIsCC && kIsAntiNu));
+        } else if(name.find("NonResRvnCC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kTwoPi && kIsCC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarnCC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kTwoPi && kIsCC && kIsAntiNu));
+        } else if(name.find("NonResRvpNC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kOnePi && kIsNC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarpNC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kOnePi && kIsNC && kIsAntiNu));
+        } else if(name.find("NonResRvnNC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kOnePi && kIsNC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarnNC1pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kOnePi && kIsNC && kIsAntiNu));
+        } else if(name.find("NonResRvpNC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kTwoPi && kIsNC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarpNC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasProton && kTwoPi && kIsNC && kIsAntiNu));
+        } else if(name.find("NonResRvnNC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kTwoPi && kIsNC && !kIsAntiNu));
+        } else if(name.find("NonResRvbarnNC2pi") != std::string::npos){
+          ret.push_back(new SBNWeightSyst(name, kHasNeutron && kTwoPi && kIsNC && kIsAntiNu));
+        } else{
           // Regular case
           ret.push_back(new SBNWeightSyst(name));
         }
