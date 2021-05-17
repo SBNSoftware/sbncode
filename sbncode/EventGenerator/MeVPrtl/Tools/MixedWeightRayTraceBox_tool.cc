@@ -144,10 +144,11 @@ void MixedWeightRayTraceBox::configure(fhicl::ParameterSet const &pset)
 }
   
 void MixedWeightRayTraceBox::CalculateMaxWeight() {
+  double kplus_mass = Constants::Instance().kplus_mass;
   double secondary_mass = secPDG2Mass(fReferenceScndPDG);
 
-  double p = twobody_momentum(kaonp_mass, secondary_mass, fReferencePrtlMass);
-  double beta = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kaonp_mass*kaonp_mass) / fReferenceKaonEnergy;
+  double p = twobody_momentum(kplus_mass, secondary_mass, fReferencePrtlMass);
+  double beta = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kplus_mass*kplus_mass) / fReferenceKaonEnergy;
 
   // Doen't affect weight
   double rand = 1.;

@@ -122,15 +122,15 @@ void ReThrowRayTraceBox::CalculateMaxWeight() {
   switch (fReferenceScndPDG) {
     case 11:
     case -11:
-      secondary_mass = elec_mass;
+      secondary_mass = Constants::Instance().elec_mass;
       break;
     case 13:
     case -13:
-      secondary_mass = muon_mass;
+      secondary_mass = Constants::Instance().muon_mass;
       break;
     case 211:
     case -211:
-      secondary_mass = pionp_mass;
+      secondary_mass = Constants::Instance().piplus_mass;
       break;
     default:
       std::cerr << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
@@ -138,10 +138,10 @@ void ReThrowRayTraceBox::CalculateMaxWeight() {
       break;
   }
 
-  double p = twobody_momentum(kaonp_mass, secondary_mass, fReferencePrtlMass);
+  double p = twobody_momentum(Constants::Instance().kplus_mass, secondary_mass, fReferencePrtlMass);
   double E = sqrt(p*p + fReferencePrtlMass*fReferencePrtlMass);
 
-  double kgamma = fReferenceKaonEnergy / kaonp_mass;
+  double kgamma = fReferenceKaonEnergy / Constants::Instance().kplus_mass;
   double kbeta = sqrt(1 - 1. / (kgamma * kgamma));
 
   double scale = kgamma * kgamma * (p + kbeta*E) * (p + kbeta*E) / (p*p);

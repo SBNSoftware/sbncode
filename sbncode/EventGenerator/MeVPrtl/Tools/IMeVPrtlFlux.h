@@ -94,7 +94,7 @@ public:
         fTimeShiftMethod->PrintConfig();
         std::cout << std::endl;
       }
-      std::cout << "Neutrino TIF: " << (fBeamOrigin.Mag()/c_cm_per_ns) << std::endl;
+      std::cout << "Neutrino TIF: " << (fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns) << std::endl;
     }
 
 protected:
@@ -108,7 +108,7 @@ protected:
     float toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
 
     // subtract out the delay of neutrinos reaching the beam
-    float neutrino_tif = fBeamOrigin.Mag()/c_cm_per_ns;
+    float neutrino_tif = fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns;
     toff -= neutrino_tif;
     return TLorentzVector(fBeamOrigin, toff);
   }

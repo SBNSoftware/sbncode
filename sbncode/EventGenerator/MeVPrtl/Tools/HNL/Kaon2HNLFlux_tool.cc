@@ -116,14 +116,15 @@ double SMKaonBR(int kaon_pdg) {
   }
 }
 
-
 double BranchingRatio(double hnl_mass, double u4, bool is_muon) {
-  double lep_mass = is_muon ? muon_mass : elec_mass;
-  if (hnl_mass > kaonp_mass - lep_mass) return 0.;
+  double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+  double kplus_mass = Constants::Instance().kplus_mass;
 
-  double smbr = is_muon ? kaonp_mup_numu : kaonp_ep_nue;
-  double lep_ratio = (lep_mass * lep_mass) / (kaonp_mass * kaonp_mass);
-  double hnl_ratio = (hnl_mass * hnl_mass) / (kaonp_mass * kaonp_mass);
+  if (hnl_mass > kplus_mass - lep_mass) return 0.;
+
+  double smbr = is_muon ? Constants::Instance().kaonp_mup_numu : Constants::Instance().kaonp_ep_nue;
+  double lep_ratio = (lep_mass * lep_mass) / (kplus_mass * kplus_mass);
+  double hnl_ratio = (hnl_mass * hnl_mass) / (kplus_mass * kplus_mass);
   double kinematic_factor = (lep_ratio + hnl_ratio - (lep_ratio - hnl_ratio) * (lep_ratio - hnl_ratio)) \
        * sqrt(1 + hnl_ratio * hnl_ratio +  lep_ratio * lep_ratio - 2*(hnl_ratio + lep_ratio + hnl_ratio*lep_ratio)) \
        / (lep_ratio * (1. - lep_ratio) * (1. - lep_ratio));
@@ -133,8 +134,10 @@ double BranchingRatio(double hnl_mass, double u4, bool is_muon) {
 }
 
 std::pair<double, bool> Branch(double hnl_mass, double ue4, double um4, double rand) {
-  double br_muon = (um4 > 0. && hnl_mass < kaonp_mass - muon_mass) ? BranchingRatio(hnl_mass, um4, true) : 0.;
-  double br_elec = (ue4 > 0. && hnl_mass < kaonp_mass - elec_mass) ? BranchingRatio(hnl_mass, ue4, false): 0.;
+  double kplus_mass = Constants::Instance().kplus_mass;
+
+  double br_muon = (um4 > 0. && hnl_mass < kplus_mass - Constants::Instance().muon_mass) ? BranchingRatio(hnl_mass, um4, true) : 0.;
+  double br_elec = (ue4 > 0. && hnl_mass < kplus_mass - Constants::Instance().elec_mass) ? BranchingRatio(hnl_mass, ue4, false): 0.;
   if (br_muon == 0. && br_elec == 0.) return {0., false};
 
   double br_weight = br_muon + br_elec;
@@ -183,14 +186,16 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   std::pair<double, bool> decay = Branch(hnl_mass, fMagUe4, fMagUm4, GetRandom());
   double br = decay.first;
   bool is_muon = decay.second;
-  float lep_mass = is_muon ? muon_mass : elec_mass;
+  float lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+
+  std::cout << "BR: " << br << std::endl;
 
   // ignore if we can't make this hnl
   // Ignore if branching ratio is exactly 0.
   if (br == 0.) return false;
 
   // get the momentum direction in the kaon parent rest frame
-  double p = hnl_momentum(kaonp_mass, lep_mass, hnl_mass);
+  double p = hnl_momentum(Constants::Instance().kplus_mass, lep_mass, hnl_mass);
   double e = sqrt(p*p + hnl_mass * hnl_mass);
   // Two-body decays are isotropic
   hnl.mom = TLorentzVector(p*RandomUnitVector(), e);

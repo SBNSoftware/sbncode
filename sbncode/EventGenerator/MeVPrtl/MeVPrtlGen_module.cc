@@ -118,6 +118,9 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   fDoDeweight = p.get<bool>("Deweight", false);
   fSubRunPOT = 0.;
 
+  // Update constants
+  if (p.has_key("Constants")) Constants::Configure(p.get<fhicl::ParameterSet>("Constants"));
+
   // bring in the tools
   fGenTool = art::make_tool<IMesonGen>(p.get<fhicl::ParameterSet>("MesonGen"));
   fFluxTool = art::make_tool<IMeVPrtlFlux>(p.get<fhicl::ParameterSet>("Flux"));

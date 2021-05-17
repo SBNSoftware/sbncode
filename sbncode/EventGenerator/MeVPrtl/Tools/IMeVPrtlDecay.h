@@ -46,7 +46,7 @@ public:
 protected:
     double TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay) {
       // TODO: should the neutrino TOF be subtracted here to get the correct T0?
-      return flux.pos.T() + (flux.pos.Vect() - decay).Mag() * (1. / flux.mom.Beta()) / c_cm_per_ns;
+      return flux.pos.T() + (flux.pos.Vect() - decay).Mag() * (1. / flux.mom.Beta()) / Constants::Instance().c_cm_per_ns;
     }
 };
 

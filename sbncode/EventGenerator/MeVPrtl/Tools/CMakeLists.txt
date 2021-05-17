@@ -7,6 +7,8 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_EVE_LIB_LIST}
                         ${ROOT_X3d}
+                            ${FHICLCPP}
+                            cetlib cetlib_except
         )
 
 
@@ -27,6 +29,7 @@ simple_plugin( EmptyKaonGen tool
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
+			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 simple_plugin( NuMiKaonGen tool
@@ -48,6 +51,7 @@ simple_plugin( NuMiKaonGen tool
 			dk2nuTree
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
+			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 simple_plugin( WeightedRayTraceBox tool
@@ -133,6 +137,7 @@ simple_plugin( RayTraceBox tool
 			${CLHEP}
 			larcorealg_Geometry
 			nurandom_RandomUtils_NuRandomService_service
+			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 add_subdirectory(Higgs)

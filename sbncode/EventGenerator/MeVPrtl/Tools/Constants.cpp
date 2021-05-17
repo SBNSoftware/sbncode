@@ -6,6 +6,69 @@
 namespace evgen {
 namespace ldm {
 
+// Set values
+Constants::Constants() {
+  // P.A. Zylaet al.(Particle Data Group), Prog. Theor. Exp. Phys.2020, 083C01 (2020)
+
+  // Masses
+  elec_mass = 0.0005109989461; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
+  muon_mass = 0.1056583745; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-muon.pdf
+  piplus_mass = 0.13957039; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
+  pizero_mass = 0.1349768; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
+  kplus_mass = 0.493677; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf 
+  klong_mass = 0.497611; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero.pdf
+  tquark_mass = 172.76; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-sum-quarks.pdf (direct measurements)
+  
+  // Couplings
+  Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf 
+  higgs_vev = 1. / sqrt(sqrt(2)*Gfermi); // GeV (246.22)
+  sin2thetaW = 0.2312; // electroweak mixing angle https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
+  gL = -0.5 + sin2thetaW;
+  gR = sin2thetaW;
+  fpion = 0.1302; // Pion decay constant [GeV] https://pdg.lbl.gov/2020/reviews/rpp2020-rev-pseudoscalar-meson-decay-cons.pdf (FLAG 19 average)
+  
+  // unit conversion
+  hbar = 6.582119569e-16; // GeV*ns or eV*s https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
+  c_cm_per_ns = 29.9792458; // cm / ns https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
+  
+  // kaon lifetimes
+  kplus_lifetime = 1.238e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
+  klong_lifetime = 5.116e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero-L.pdf (FIT)
+  
+  // Kaon decay branching ratios
+  kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
+  kaonp_ep_nue = 1.582e-5; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
+  
+  // CKM matrix
+  abs_Vud_squared = 0.97370 * 0.97370; // https://pdg.lbl.gov/2020/reviews/rpp2020-rev-ckm-matrix.pdf (12.7)
+  
+  // Computed using the Wolfenstein parameterization, where:
+  // Vts = -A \lambda^2
+  // Vtd = A \lambda^3 (1 - \rho - I\eta)
+  //
+  // With, from https://pdg.lbl.gov/2020/reviews/rpp2020-rev-ckm-matrix.pdf:
+  // A = 0.790
+  // \lambda = 0.2265
+  // \rho = 0.141
+  // \eta = 0.357
+  abs_VtsVtd_squared = 1.19777e-7;
+  rel_VtsVtd_squared = 1.02136e-7;
+  // (OLD: 1.0185e-07)
+}
+
+// Configure values
+void Constants::Configure(const fhicl::ParameterSet &p) {
+  // For now, which values to override:
+  //
+  // top quark mass, electroweak mixing angle
+  if (p.has_key("tquark_mass")) InstanceMut().tquark_mass = p.get<double>("tquark_mass"); 
+  if (p.has_key("sin2thetaW")) InstanceMut().sin2thetaW = p.get<double>("sin2thetaW"); 
+
+  // Reset downstream constants
+  InstanceMut().gL = -0.5 + Instance().sin2thetaW;
+  InstanceMut().gR = Instance().sin2thetaW;
+}
+
 // Useful computation
 double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
   if (parent_mass < childA_mass + childB_mass) return -1.;
@@ -174,15 +237,15 @@ double secPDG2Mass(int pdg) {
   switch (pdg) {
     case 11:
     case -11:
-      return elec_mass;
+      return Constants::Instance().elec_mass;
       break;
     case 13:
     case -13:
-      return muon_mass;
+      return Constants::Instance().muon_mass;
       break;
     case 211:
     case -211:
-      return pionp_mass;
+      return Constants::Instance().piplus_mass;
       break;
     default:
       std::cerr << "BAD secondary pdg: " << pdg << std::endl;

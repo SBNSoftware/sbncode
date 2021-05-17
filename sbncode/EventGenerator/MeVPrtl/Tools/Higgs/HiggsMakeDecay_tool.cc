@@ -106,20 +106,24 @@ double higgs_momentum(double kaon_mass, double pion_mass, double higs_mass) {
 double LeptonPartialWidth(double lep_mass, double higs_mass, double mixing) {
   if (lep_mass * 2 >= higs_mass) return 0.;
 
+  double higgs_vev = Constants::Instance().higgs_vev;
+
   double width = (mixing * mixing * lep_mass * lep_mass * higs_mass / (8 * M_PI * higgs_vev * higgs_vev)) * pow(1 - 4 * lep_mass * lep_mass / (higs_mass * higs_mass), 3. / 2.);
   return width;
 }
 
 double ElectronPartialWidth(double higs_mass, double mixing) {
-  return LeptonPartialWidth(elec_mass, higs_mass, mixing);
+  return LeptonPartialWidth(Constants::Instance().elec_mass, higs_mass, mixing);
 }
 
 double MuonPartialWidth(double higs_mass, double mixing) {
-  return LeptonPartialWidth(muon_mass, higs_mass, mixing);
+  return LeptonPartialWidth(Constants::Instance().muon_mass, higs_mass, mixing);
 }
 
 double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
   if (pion_mass * 2 >= higs_mass) return 0.;
+
+  double higgs_vev = Constants::Instance().higgs_vev;
 
   double form_factor = (2. / 9.) * higs_mass * higs_mass + (11. / 9.) * pion_mass * pion_mass;
 
@@ -129,11 +133,11 @@ double PionPartialWidth(double pion_mass, double higs_mass, double mixing) {
 }
 
 double PiPlusPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(piplus_mass, higs_mass, mixing);
+  return PionPartialWidth(Constants::Instance().piplus_mass, higs_mass, mixing);
 }
 
 double PiZeroPartialWidth(double higs_mass, double mixing) {
-  return PionPartialWidth(pizero_mass, higs_mass, mixing);
+  return PionPartialWidth(Constants::Instance().pizero_mass, higs_mass, mixing);
 }
 
 HiggsMakeDecay::HiggsMakeDecay(fhicl::ParameterSet const &pset):
@@ -159,8 +163,8 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceHiggsKaonEnergy = pset.get<float>("ReferenceHiggsEnergyFromKaonEnergy", -1.);
 
   if (fReferenceHiggsEnergy < 0. && fReferenceHiggsKaonEnergy > 0.) {
-    fReferenceHiggsEnergy = std::min(forwardPrtlEnergy(kaonp_mass, pionp_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy),
-                                     forwardPrtlEnergy(klong_mass, pizero_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy));
+    fReferenceHiggsEnergy = std::min(forwardPrtlEnergy(Constants::Instance().kplus_mass, Constants::Instance().piplus_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy),
+                                     forwardPrtlEnergy(Constants::Instance().klong_mass, Constants::Instance().pizero_mass, fReferenceHiggsMass, fReferenceHiggsKaonEnergy));
   }
 
   // if configured to, divide out some of the decay weight
@@ -172,10 +176,10 @@ void HiggsMakeDecay::configure(fhicl::ParameterSet const &pset)
     double width_pizero = PiZeroPartialWidth(fReferenceHiggsMass, fReferenceHiggsMixing);
 
     // total lifetime
-    double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
+    double lifetime_ns = Constants::Instance().hbar / (width_elec + width_muon + width_piplus + width_pizero);
 
     // multiply by gamma*v to get the length
-    float gamma_v = sqrt(fReferenceHiggsEnergy * fReferenceHiggsEnergy - fReferenceHiggsMass * fReferenceHiggsMass) * c_cm_per_ns / fReferenceHiggsMass;
+    float gamma_v = sqrt(fReferenceHiggsEnergy * fReferenceHiggsEnergy - fReferenceHiggsMass * fReferenceHiggsMass) * Constants::Instance().c_cm_per_ns / fReferenceHiggsMass;
     float mean_dist = lifetime_ns * gamma_v;
 
     // compute the decay weight
@@ -218,10 +222,10 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
   double width_pizero = PiZeroPartialWidth(flux.mass, mixing);
 
   // total lifetime
-  double lifetime_ns = hbar / (width_elec + width_muon + width_piplus + width_pizero);
+  double lifetime_ns = Constants::Instance().hbar / (width_elec + width_muon + width_piplus + width_pizero);
 
   // multiply by gamma*v to get the length
-  float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * c_cm_per_ns;
+  float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   // distance inside detector
   float in_dist = (flux.pos.Vect() - in).Mag();

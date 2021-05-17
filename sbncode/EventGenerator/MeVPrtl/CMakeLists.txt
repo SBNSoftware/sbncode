@@ -32,6 +32,7 @@ simple_plugin( MeVPrtlGen module
 			nurandom_RandomUtils_NuRandomService_service
 			larcoreobj_SummaryData
 			sbncode_EventGenerator_MeVPrtl_Products_dict
+			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 simple_plugin( MeVPrtlTestRayTrace module

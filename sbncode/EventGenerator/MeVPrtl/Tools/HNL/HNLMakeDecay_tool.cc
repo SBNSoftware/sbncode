@@ -246,7 +246,11 @@ double HNLMakeDecay::I2(double x, double y, double z) {
 double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double ue4, double um4, bool nu_is_muon, bool lep_is_muon) {
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
   double u4 = nu_is_muon ? um4 : ue4;
-  double lep_mass = lep_is_muon ? muon_mass : elec_mass;
+  double lep_mass = lep_is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+
+  double Gfermi = Constants::Instance().Gfermi;
+  double gL = Constants::Instance().gL;
+  double gR = Constants::Instance().gR;
 
   if (hnl_mass < lep_mass * 2.) return 0.;
 
@@ -262,6 +266,9 @@ double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double ue4, double um4, 
 
 HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
   HNLMakeDecay::DecayFinalState ret;
+
+  double muon_mass = Constants::Instance().muon_mass;
+
   // Decay not kinematically allowed
   if (2*muon_mass > flux.mass) {
     ret.width = 0.;
@@ -308,18 +315,23 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
 
 HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool is_muon) {
   HNLMakeDecay::DecayFinalState ret;
-  double lep_mass = is_muon ? muon_mass : elec_mass;
+  double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
   int lep_pdg = is_muon ? 13 : 11;
 
+  double piplus_mass = Constants::Instance().piplus_mass;
+  double Gfermi = Constants::Instance().Gfermi;
+  double fpion = Constants::Instance().fpion;
+  double abs_Vud_squared = Constants::Instance().abs_Vud_squared;
+
   // Decay not kinematically allowed
-  if (lep_mass + pionp_mass > flux.mass) {
+  if (lep_mass + piplus_mass > flux.mass) {
     ret.width = 0.;
     return ret;
   }
 
   double u4 = is_muon ? flux.C2 : flux.C1;
   double lep_ratio = (lep_mass * lep_mass) / (flux.mass * flux.mass);
-  double pion_ratio = (pionp_mass * pionp_mass) / (flux.mass * flux.mass);
+  double pion_ratio = (piplus_mass * piplus_mass) / (flux.mass * flux.mass);
   double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
   ret.width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * flux.mass * flux.mass * flux.mass * Ifunc) / (16 * M_PI);
 
@@ -339,15 +351,15 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
   // Use rejection sampling to draw a direction for the child particles
   //
   // Work in the lab frame
-  double dalitz_max = HNLLepPiDalitzMax(kaonp_mass, flux.sec.M(), flux.mass, pionp_mass, lep_mass); 
+  double dalitz_max = HNLLepPiDalitzMax(Constants::Instance().kplus_mass, flux.sec.M(), flux.mass, piplus_mass, lep_mass); 
   double this_dalitz = 0.;
-  double p = evgen::ldm::twobody_momentum(flux.mass, lep_mass, pionp_mass);
+  double p = evgen::ldm::twobody_momentum(flux.mass, lep_mass, piplus_mass);
   TLorentzVector LB;
   TLorentzVector PI;
   do {
     TVector3 dir = RandomUnitVector(); 
     LB = TLorentzVector(p*dir, sqrt(p*p + lep_mass*lep_mass));
-    PI = TLorentzVector(-p*dir, sqrt(p*p + pionp_mass*pionp_mass));
+    PI = TLorentzVector(-p*dir, sqrt(p*p + piplus_mass*piplus_mass));
     LB.Boost(flux.mom.BoostVector());
     PI.Boost(flux.mom.BoostVector());
     
@@ -393,8 +405,8 @@ double HNLMakeDecay::CalculateMaxWeight() {
   double P = sqrt(E*E - hnl_mass * hnl_mass);
 
   // Compute the boost to get the HNL with the correct energy
-  double lep_mass = (um4 > 0) ? muon_mass : elec_mass;
-  double p0 = twobody_momentum(kaonp_mass, lep_mass, hnl_mass);
+  double lep_mass = (um4 > 0) ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+  double p0 = twobody_momentum(Constants::Instance().kplus_mass, lep_mass, hnl_mass);
   double e0 = sqrt(p0*p0 + hnl_mass*hnl_mass);
   double beta = (-e0*p0 + E*P) / (E*E + p0*p0); 
   TVector3 boost(beta, 0, 0);
@@ -413,7 +425,7 @@ double HNLMakeDecay::CalculateMaxWeight() {
 
   // Mock up the secondary momenta -- this shouldn't affect width and just 
   // is there to make sure the decay functions work correctly
-  hnl.kmom = TLorentzVector(TVector3(0, 0, 0), kaonp_mass);
+  hnl.kmom = TLorentzVector(TVector3(0, 0, 0), Constants::Instance().kplus_mass);
   hnl.kmom.Boost(boost);
   hnl.sec = TLorentzVector(-p0 * TVector3(1, 0, 0), sqrt(p0*p0 + lep_mass*lep_mass));
   hnl.sec.Boost(boost);
@@ -425,8 +437,8 @@ double HNLMakeDecay::CalculateMaxWeight() {
 
   std::cout << "REFERENCE WIDTH: " << width << std::endl;
 
-  double lifetime_ns = hbar / width;
-  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * c_cm_per_ns;
+  double lifetime_ns = Constants::Instance().hbar / width;
+  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   std::cout << "REFERENCE DECAY LENGTH: " << mean_dist << std::endl;
 
@@ -479,8 +491,8 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceHNLEnergy = pset.get<float>("ReferenceHNLEnergy", -1);
   fReferenceHNLKaonEnergy = pset.get<float>("ReferenceHNLEnergyFromKaonEnergy", -1.);
   if (fReferenceHNLEnergy < 0. && fReferenceHNLKaonEnergy > 0.) {
-    double lep_mass = (fReferenceUE4 > 0) ? elec_mass : muon_mass;
-    fReferenceHNLEnergy = forwardPrtlEnergy(kaonp_mass, lep_mass, fReferenceHNLMass, fReferenceHNLKaonEnergy);
+    double lep_mass = (fReferenceUE4 > 0) ? Constants::Instance().elec_mass : Constants::Instance().muon_mass;
+    fReferenceHNLEnergy = forwardPrtlEnergy(Constants::Instance().kplus_mass, lep_mass, fReferenceHNLMass, fReferenceHNLKaonEnergy);
   }
 
   fMajorana = pset.get<bool>("Majorana");
@@ -518,10 +530,10 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   // Get the decay probability
 
   // total lifetime
-  double lifetime_ns = hbar / total_width;
+  double lifetime_ns = Constants::Instance().hbar / total_width;
 
   // multiply by gamma*v to get the length
-  float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * c_cm_per_ns;
+  float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   // Get the weight (NOTE: this negelects the probability that the HNL decays before the detector)
   // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)

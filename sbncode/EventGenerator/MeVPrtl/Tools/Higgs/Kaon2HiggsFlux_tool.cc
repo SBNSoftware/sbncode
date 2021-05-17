@@ -99,32 +99,44 @@ double higgs_momentum(double kaon_mass, double pion_mass, double higs_mass) {
 
 // compute branching ratios
 double KaonPlusBranchingRatio(double higs_mass, double mixing) {
+  double kplus_mass = Constants::Instance().kplus_mass;
+  double piplus_mass = Constants::Instance().piplus_mass;
+  double tquark_mass = Constants::Instance().tquark_mass;
+  double higgs_vev = Constants::Instance().higgs_vev;
+  double abs_VtsVtd_squared = Constants::Instance().abs_VtsVtd_squared;
+
   // Kplus width
   //
   // matrix element for kplus
   double M_KP = (1. / 2.) * ( 3. / (16. * M_PI * M_PI * higgs_vev * higgs_vev * higgs_vev)) * (kplus_mass * kplus_mass) * (tquark_mass * tquark_mass) * mixing;
   double M_KP2 = M_KP * M_KP * abs_VtsVtd_squared;
 
-  double kplus_width = (2 * higgs_momentum(kplus_mass, pplus_mass, higs_mass)/kplus_mass) * M_KP2 / (16 * M_PI * kplus_mass);
+  double kplus_width = (2 * higgs_momentum(kplus_mass, piplus_mass, higs_mass)/kplus_mass) * M_KP2 / (16 * M_PI * kplus_mass);
 
   // convert to partial lifetime
-  double kplus_2higgs_lifetime = hbar / kplus_width; 
+  double kplus_2higgs_lifetime = Constants::Instance().hbar / kplus_width; 
 
   // and branching ratio
   //
   // (this higgs decay would make a negligible contribution to the overall lifetime)
-  return kplus_lifetime / kplus_2higgs_lifetime;
+  return Constants::Instance().kplus_lifetime / kplus_2higgs_lifetime;
 }
 
 double KaonLongBranchingRatio(double higs_mass, double mixing) {
+  double klong_mass = Constants::Instance().klong_mass;
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double tquark_mass = Constants::Instance().tquark_mass;
+  double higgs_vev = Constants::Instance().higgs_vev;
+  double rel_VtsVtd_squared = Constants::Instance().rel_VtsVtd_squared;
+
   double M_KL = (1. / 2.) * (3. / (16. * M_PI * M_PI * higgs_vev * higgs_vev * higgs_vev)) * (klong_mass * klong_mass) * (tquark_mass * tquark_mass) * mixing;
   double M_KL2 = M_KL * M_KL * rel_VtsVtd_squared;
 
-  double klong_width = (2 * higgs_momentum(klong_mass, pzero_mass, higs_mass) / klong_mass) * M_KL2 / (16 * M_PI * klong_mass);
+  double klong_width = (2 * higgs_momentum(klong_mass, pizero_mass, higs_mass) / klong_mass) * M_KL2 / (16 * M_PI * klong_mass);
 
-  double klong_2higgs_lifetime = hbar / klong_width;
+  double klong_2higgs_lifetime = Constants::Instance().hbar / klong_width;
 
-  return klong_lifetime / klong_2higgs_lifetime;
+  return Constants::Instance().klong_lifetime / klong_2higgs_lifetime;
 
 }
 
