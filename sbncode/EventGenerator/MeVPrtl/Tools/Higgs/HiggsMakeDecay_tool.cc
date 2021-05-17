@@ -41,6 +41,9 @@ namespace evgen {
 namespace ldm {
 /**
  *  @brief  HiggsMakeDecay class definiton
+ *
+ *  Implementation of model taken from:
+ *      https://arxiv.org/abs/1909.11670
  */
 class HiggsMakeDecay : public IMeVPrtlDecay {
 public:

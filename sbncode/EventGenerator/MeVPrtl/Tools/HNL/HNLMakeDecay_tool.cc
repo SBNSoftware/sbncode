@@ -47,6 +47,9 @@ namespace evgen {
 namespace ldm {
 /**
  *  @brief  HNLMakeDecay class definiton
+ *
+ *  Implementation of HNL decay ->mupi taken from:
+ *      https://arxiv.org/abs/1610.08512
  */
 class HNLMakeDecay : public IMeVPrtlDecay {
 public:

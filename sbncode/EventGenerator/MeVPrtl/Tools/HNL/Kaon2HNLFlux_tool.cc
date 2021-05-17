@@ -37,6 +37,9 @@ namespace evgen {
 namespace ldm {
 /**
  *  @brief  Kaon2HNLFlux class definiton
+ *
+ *  Implementation of Kaon->HNL branching ratio taken from:
+ *      arXiv:1912.07622
  */
 class Kaon2HNLFlux : public IMeVPrtlFlux
 {

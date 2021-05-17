@@ -1,6 +1,7 @@
 #include "HNLDecayDalitz.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
+
 // STUB
 double evgen::ldm::HNLNuDiLepLNVDalitz(TLorentzVector K, TLorentzVector LA, TLorentzVector LB, TLorentzVector LBD, TLorentzVector NU) {
 
@@ -14,6 +15,10 @@ double evgen::ldm::HNLNuDiLepLNVDalitz(TLorentzVector K, TLorentzVector LA, TLor
 
   return A1*2*NU.Dot(LB)*pcross(LBD) + A2*2*NU.Dot(LBD)*pcross(LB) + A3*LB.Dot(LB)*pcross(NU); 
 }
+
+// Implementation of Dalitz weighting taken from:
+//     https://arxiv.org/abs/1912.05520
+//     (with math checked and worked out in XXXXX)
 
 double evgen::ldm::HNLLepPiLNCDalitz(TLorentzVector K, TLorentzVector LA, TLorentzVector N, TLorentzVector PI, TLorentzVector LB) {
   return 8 * K.Dot(LA) * PI.Dot(LB) * K.Dot(N) * PI.Dot(N) \

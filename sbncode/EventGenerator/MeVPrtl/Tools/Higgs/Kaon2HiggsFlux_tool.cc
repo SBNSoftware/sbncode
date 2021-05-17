@@ -41,6 +41,8 @@ namespace evgen {
 namespace ldm {
 /**
  *  @brief  Kaon2HiggsFlux class definiton
+ *  Implementation of model taken from:
+ *      https://arxiv.org/abs/1909.11670
  */
 class Kaon2HiggsFlux : public IMeVPrtlFlux
 {
