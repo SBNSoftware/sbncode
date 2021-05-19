@@ -33,12 +33,14 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
   , fMakeTree(p.get<bool>("MakeTree", false))
-  , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
-  , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
-  , fQScale(p.get<double>("QScale", 1.0))
-  , fPEScale(p.get<double>("PEScale", 1.0))
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
+  , fMinHitQ(p.get<double>("MinHitQ", 0.0))
+  , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
+  , fQScale(p.get<double>("QScale", 1.0))
+  , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
+  , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
+  , fPEScale(p.get<double>("PEScale", 1.0))
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
   , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
@@ -331,12 +333,14 @@ void FlashPredict::produce(art::Event& evt)
           auto itpc = wid.TPC;
           tpcWithHits.insert(itpc);
           const auto charge(hit->Integral());
+          if (charge < fMinHitQ) continue;
           totalCharge += charge;
           qClusters.emplace_back(pos[0], pos[1], pos[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
+    if (totalCharge < fMinSliceQ) continue;
     chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr,
                                                 qClusters, tpcWithHits);
     }//TODO: pack this into a function

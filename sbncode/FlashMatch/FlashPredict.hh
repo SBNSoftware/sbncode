@@ -153,8 +153,9 @@ private:
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
-  const double fMinFlashPE, fMinOpHPE, fQScale, fPEScale,
-    fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  const double fMinHitQ, fMinSliceQ, fQScale;
+  const double fMinOpHPE, fMinFlashPE, fPEScale;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
   std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
