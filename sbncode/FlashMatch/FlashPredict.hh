@@ -202,7 +202,7 @@ private:
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   double _hypo_x, _hypo_x_rr, _hypo_x_ratio;//, _hypo_x_fit;
-  unsigned _evt, _run, _sub, _countPE; //_slices;
+  unsigned _evt, _run, _sub; //_slices;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
@@ -225,6 +225,7 @@ private:
 
   const bool kNoScr = false;
   const double kNoScrTime = -9999.;
+  const double kNoScrQ  = -9999.;
   const double kNoScrPE = -9999.;
   const int kQNoOpHScr = -1;
   const int kNoChrgScr = -2;

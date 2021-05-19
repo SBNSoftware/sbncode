@@ -19,16 +19,17 @@ namespace caf
       srslice.fmatch.present = false;
       return;
     }
-    srslice.fmatch.present = fmatch->mPresent;
-    srslice.fmatch.time    = fmatch->mTime;
-    srslice.fmatch.pe      = fmatch->mPE;
-    srslice.fmatch.score   = fmatch->mScore;
-    srslice.fmatch.scr_y   = fmatch->mScr_y;
-    srslice.fmatch.scr_z   = fmatch->mScr_z;
-    srslice.fmatch.scr_rr  = fmatch->mScr_rr;
+    srslice.fmatch.present   = fmatch->mPresent;
+    srslice.fmatch.time      = fmatch->mTime;
+    srslice.fmatch.charge_q  = fmatch->mChargeQ;
+    srslice.fmatch.light_pe  = fmatch->mLightPE;
+    srslice.fmatch.score     = fmatch->mScore;
+    srslice.fmatch.scr_y     = fmatch->mScr_y;
+    srslice.fmatch.scr_z     = fmatch->mScr_z;
+    srslice.fmatch.scr_rr    = fmatch->mScr_rr;
     srslice.fmatch.scr_ratio = fmatch->mScr_ratio;
     srslice.fmatch.chargeXYZ = fmatch->mChargeXYZ;
-    srslice.fmatch.lightXYZ = fmatch->mLightXYZ;
+    srslice.fmatch.lightXYZ  = fmatch->mLightXYZ;
   }
 
   //......................................................................
@@ -41,16 +42,17 @@ namespace caf
       flashmatch.present = false;
       return;
     }
-    flashmatch.present = fmatch->mPresent;
-    flashmatch.time    = fmatch->mTime;
-    flashmatch.pe      = fmatch->mPE;
-    flashmatch.score   = fmatch->mScore;
-    flashmatch.scr_y   = fmatch->mScr_y;
-    flashmatch.scr_z   = fmatch->mScr_z;
-    flashmatch.scr_rr  = fmatch->mScr_rr;
+    flashmatch.present   = fmatch->mPresent;
+    flashmatch.time      = fmatch->mTime;
+    flashmatch.charge_q  = fmatch->mChargeQ;
+    flashmatch.light_pe  = fmatch->mLightPE;
+    flashmatch.score     = fmatch->mScore;
+    flashmatch.scr_y     = fmatch->mScr_y;
+    flashmatch.scr_z     = fmatch->mScr_z;
+    flashmatch.scr_rr    = fmatch->mScr_rr;
     flashmatch.scr_ratio = fmatch->mScr_ratio;
     flashmatch.chargeXYZ = fmatch->mChargeXYZ;
-    flashmatch.lightXYZ = fmatch->mLightXYZ;
+    flashmatch.lightXYZ  = fmatch->mLightXYZ;
     srslice.fmatch_a = flashmatch;
   }
 
@@ -63,16 +65,17 @@ namespace caf
       srslice.fmatch_b.present = false;
       return;
     }
-    srslice.fmatch_b.present = fmatch->mPresent;
-    srslice.fmatch_b.time    = fmatch->mTime;
-    srslice.fmatch_b.pe      = fmatch->mPE;
-    srslice.fmatch_b.score   = fmatch->mScore;
-    srslice.fmatch_b.scr_y   = fmatch->mScr_y;
-    srslice.fmatch_b.scr_z   = fmatch->mScr_z;
-    srslice.fmatch_b.scr_rr  = fmatch->mScr_rr;
+    srslice.fmatch_b.present   = fmatch->mPresent;
+    srslice.fmatch_b.time      = fmatch->mTime;
+    srslice.fmatch_b.charge_q  = fmatch->mChargeQ;
+    srslice.fmatch_b.light_pe  = fmatch->mLightPE;
+    srslice.fmatch_b.score     = fmatch->mScore;
+    srslice.fmatch_b.scr_y     = fmatch->mScr_y;
+    srslice.fmatch_b.scr_z     = fmatch->mScr_z;
+    srslice.fmatch_b.scr_rr    = fmatch->mScr_rr;
     srslice.fmatch_b.scr_ratio = fmatch->mScr_ratio;
     srslice.fmatch_b.chargeXYZ = fmatch->mChargeXYZ;
-    srslice.fmatch_b.lightXYZ = fmatch->mLightXYZ;
+    srslice.fmatch_b.lightXYZ  = fmatch->mLightXYZ;
   }
 
   //......................................................................

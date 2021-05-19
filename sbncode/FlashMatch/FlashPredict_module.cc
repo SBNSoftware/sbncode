@@ -123,7 +123,6 @@ void FlashPredict::produce(art::Event& evt)
   _sub = evt.subRun();
   _run = evt.run();
   // _slices        = 0;
-  _countPE       = 0;
   _flash_time    = -9999.;
   _flash_pe      = -9999.;
   _flash_unpe    = -9999.;
@@ -145,7 +144,7 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                              kNoScrPE, kNoPFPInEvt));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
@@ -163,7 +162,7 @@ void FlashPredict::produce(art::Event& evt)
   //   updateBookKeeping();
   //   for (size_t pId=0; pId<pfp_h->size(); pId++) {
   //     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-  //     sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+  //     sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
   //                                            kNoScrPE, kNoSlcInEvt));
   //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
   //   }
@@ -202,7 +201,7 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                              kNoScrPE, kNoOpHInEvt));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
@@ -242,7 +241,7 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                              kNoScrPE, kNoOpHInEvt));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
@@ -359,7 +358,7 @@ void FlashPredict::produce(art::Event& evt)
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
         mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-        sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+        sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                                kNoScrPE, kQNoOpHScr));
         util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
         continue;
@@ -370,7 +369,7 @@ void FlashPredict::produce(art::Event& evt)
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                              kNoScrPE, kNoChrgScr));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
@@ -380,7 +379,7 @@ void FlashPredict::produce(art::Event& evt)
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime,
+      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
                                              kNoScrPE, k0VUVPEScr));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
@@ -391,7 +390,7 @@ void FlashPredict::produce(art::Event& evt)
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
       sFM_v->push_back(
-        sbn::SimpleFlashMatch(true, _flash_time, _countPE, _score,
+        sbn::SimpleFlashMatch(true, _flash_time, _charge_q, _flash_pe, _score,
                               _scr_y, _scr_z, _scr_rr, _scr_ratio,
                               TVector3(_charge_x_gl, _charge_y, _charge_z),
                               TVector3(_flash_x_gl, _flash_y, _flash_z)));
@@ -734,7 +733,6 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     // _hypo_x = hypoFlashX_splines();
     _hypo_x = hypoFlashX_fits();
     _flash_x_gl = flashXGl(_hypo_x, _flash_x);
-    _countPE = std::round(_flash_pe);
     return true;
   }
   else {
@@ -1307,7 +1305,7 @@ void FlashPredict::printBookKeeping(Stream&& out)
   if(bk.nullophittime) {
     m << "\tNo OpHits in-time:\t -" << bk.nullophittime
       << ", scored as: " << kNoOpHInEvt << "\n";
-  }      
+  }
   m << "\t----------------------\n";
   if(bk.job_bookkeeping != bk.events_processed)
     m << "\tJob Bookkeeping:  \t" << bk.job_bookkeeping << " ERROR!\n";
