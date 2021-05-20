@@ -182,11 +182,20 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
   fIgnoreParentDecayTime = pset.get<bool>("IgnoreParentDecayTime");
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
+  // Throw exception for a bad mass value
+  if (fM > Constants::Instance().kplus_mass - Constants::Instance().piplus_mass && 
+      fM > Constants::Instance().klong_mass - Constants::Instance().pizero_mass) {
+    throw cet::exception("Kaon2HiggsFlux Tool: BAD MASS. Configured mass (" + std::to_string(fM) +
+         ") is larger than allowed for K+ (" + std::to_string(Constants::Instance().kplus_mass - Constants::Instance().piplus_mass) + ") and KL (" +
+         std::to_string(Constants::Instance().klong_mass - Constants::Instance().pizero_mass) + " production.");
+  } 
+
   fKPBR = KaonPlusBranchingRatio(fM, fMixingAngle);
   fKLBR = KaonLongBranchingRatio(fM, fMixingAngle);
 
   std::cout << "K+ branching ratio: " << fKPBR << std::endl;
   std::cout << "K0 branching ratio: " << fKLBR << std::endl;
+
 }
 
 float Kaon2HiggsFlux::MaxWeight() {
@@ -198,6 +207,7 @@ float Kaon2HiggsFlux::MaxWeight() {
 
 
 bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &higgs, double &weight) {
+
   // make the kaon parent
   evgen::ldm::KaonParent kaon = evgen::ldm::MakeKaonParent(flux);
   if (!kaon.kaon_pdg) return false; // parent wasn't a kaon

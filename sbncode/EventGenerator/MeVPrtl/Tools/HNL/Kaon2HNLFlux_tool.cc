@@ -157,7 +157,16 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
 
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
+  float max_mass = (fMagUe4 > 0.) ? (Constants::Instance().kplus_mass - Constants::Instance().elec_mass) : 
+      (Constants::Instance().kplus_mass - Constants::Instance().muon_mass);
+
+  if (fM > max_mass) {
+    throw cet::exception("Kaon2HNLFlux Tool: BAD MASS. Configured mass (" + std::to_string(fM) +
+         ") is larger than maximum allowed by enabled couplings (" + std::to_string(max_mass) +  ").");
+  }
+
 }
+
 float Kaon2HNLFlux::MaxWeight() { 
   // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon)
   // Scale by the branching ratios here

@@ -86,6 +86,9 @@ private:
   double fReferenceHNLEnergy;
   double fReferenceHNLKaonEnergy;
 
+  // Guardrail for small decay lengths
+  double fMinDetectorDistance;
+
   // Configure the particle
   bool fMajorana;
 
@@ -107,11 +110,13 @@ private:
   typedef DecayFinalState(HNLMakeDecay::*HNLDecayFunction)(const MeVPrtlFlux &flux);
 
   std::map<std::string, HNLDecayFunction> fAvailableDecays;
+  std::map<std::string, float> fAvailableDecayMasses;
   std::vector<std::string> fDecayConfig;
   std::vector<HNLDecayFunction> fSelectedDecays;
 
   // Helper functions
   double CalculateMaxWeight();
+  double CalculateKDARDecayLength();
   ThreebodyMomentum isotropic_threebody_momentum(double parent_mass, double childA_mass, double childB_mass, double childC_mass);
   double I1(double x, double y, double z);
   double I2(double x, double y, double z);
@@ -396,6 +401,40 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
   return ret;
 }
 
+double HNLMakeDecay::CalculateKDARDecayLength() {
+  double ue4 = fReferenceUE4;
+  double um4 = fReferenceUM4;
+  double hnl_mass = fReferenceHNLMass;
+  // If the muon coupling is turned on, the lower energy / lower decay length HNL would have a muon
+  // secondary
+  double lep_mass = (um4 > 0.) ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+  double P = twobody_momentum(Constants::Instance().kplus_mass, lep_mass, hnl_mass);
+  double E = sqrt(P*P + hnl_mass * hnl_mass);
+
+  // make a fake HNL flux with these parameters
+  MeVPrtlFlux hnl;
+  hnl.C1 = ue4;
+  hnl.C2 = um4;
+  hnl.mass = hnl_mass;
+  hnl.mom = TLorentzVector(P * TVector3(1, 0, 0), E);
+  hnl.secondary_pdg = -1; // doesn't affect the end width, just make it viable
+
+  // Mock up the secondary momenta -- this shouldn't affect width and just 
+  // is there to make sure the decay functions work correctly
+  hnl.kmom = TLorentzVector(TVector3(0, 0, 0), Constants::Instance().kplus_mass);
+  hnl.sec = TLorentzVector(-P * TVector3(1, 0, 0), sqrt(P*P + lep_mass*lep_mass));
+
+  double width = 0.;
+  for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
+    width += ((*this.*F)(hnl)).width;
+  }
+
+  double lifetime_ns = Constants::Instance().hbar / width;
+  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
+
+  return mean_dist;
+}
+
 double HNLMakeDecay::CalculateMaxWeight() {
   double ue4 = fReferenceUE4;
   double um4 = fReferenceUM4;
@@ -468,7 +507,9 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
 
   // Setup available decays
   fAvailableDecays["mu_pi"] = &HNLMakeDecay::MuPi;
+  fAvailableDecayMasses["mu_pi"] = Constants::Instance().muon_mass + Constants::Instance().piplus_mass;
   fAvailableDecays["e_pi"] = &HNLMakeDecay::EPi;
+  fAvailableDecayMasses["e_pi"] = Constants::Instance().elec_mass + Constants::Instance().piplus_mass;
   // TODO: make available
   // fAvailableDecays["nu_mu_mu"] = &HNLMakeDecay::NuMupMum;
 
@@ -495,12 +536,35 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
     fReferenceHNLEnergy = forwardPrtlEnergy(Constants::Instance().kplus_mass, lep_mass, fReferenceHNLMass, fReferenceHNLKaonEnergy);
   }
 
+  fMinDetectorDistance = pset.get<double>("MinDetectorDistance", 100e2); // 100m for NuMI -> SBN/ICARUS
+
   fMajorana = pset.get<bool>("Majorana");
 
   fMaxWeight = CalculateMaxWeight();
+
+  // Guard against bad couplings that will mess with decay weighting approximations
+  double kdar_decay_length = CalculateKDARDecayLength();
+  if (kdar_decay_length < fMinDetectorDistance) {
+    throw cet::exception("HNLMakeDecay Tool: BAD CONFIG. Existing configuration results in a KDAR-flux partial decay length (" +
+          std::to_string(kdar_decay_length) + ") that is smaller than the configured min distance to the detector (" + std::to_string(fMinDetectorDistance) + ").");
+  }
 }
 
 bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) {
+  // Check that the mass/decay configuration is allowed
+  bool has_allowed_decay = false;
+  for (const std::string &d: fDecayConfig) {
+    if (fReferenceHNLMass > fAvailableDecayMasses[d]) {
+      has_allowed_decay = true;
+      break;
+    }
+  }
+
+  if (!has_allowed_decay) {
+    throw cet::exception("HNLMakeDecay Tool: BAD MASS. Configured mass (" + std::to_string(flux.mass) +
+         ") is smaller than any configured decay.");
+  }
+
   // Run the selected decay channels
   std::vector<HNLMakeDecay::DecayFinalState> decays;
   double total_width = 0.;
@@ -537,9 +601,10 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   // Get the weight (NOTE: this negelects the probability that the HNL decays before the detector)
   // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)
-  if (mean_dist < 10000) {
-    std::cerr << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid" << std::endl;
-    std::cout << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid" << std::endl;
+  if (mean_dist < fMinDetectorDistance) {
+    std::cerr << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid. Ignoring event." << std::endl;
+    std::cout << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid. Ignoring event." << std::endl;
+    return false;
   }
 
   // saves the weight

@@ -213,6 +213,12 @@ int HiggsMakeDecay::RandDaughter(double elec_width, double muon_width, double pi
 }
 
 bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) {
+  // Handle bad mass value
+  if (flux.mass < 2*Constants::Instance().elec_mass) {
+    throw cet::exception("HiggsMakeDecay Tool: BAD MASS. Configured mass (" + std::to_string(flux.mass) +
+         ") is smaller than lowest mass available decay e+e- (" + std::to_string(2*Constants::Instance().elec_mass) +")");
+  } 
+
   double mixing = flux.C1; // constant-1 saves the mixing
 
   // Get each partial width
