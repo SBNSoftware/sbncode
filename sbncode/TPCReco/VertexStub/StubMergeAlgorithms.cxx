@@ -20,7 +20,7 @@ double sbn::GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacec
     // Gets relative E field Distortions
     geo::Vector_t EFieldOffsets = sce->GetEfieldOffsets(loc);
     // Add 1 in X direction as this is the direction of the drift field
-    EFieldOffsets = EFieldOffsets + geo::Vector_t{1, 0, 0};
+    EFieldOffsets = EFieldOffsets + geo::Xaxis();
     // Convert to Absolute E Field from relative
     EFieldOffsets = EField * EFieldOffsets;
     // We only care about the magnitude for recombination
@@ -53,7 +53,7 @@ double sbn::GetPitch(
     geo::View_t view, geo::TPCID tpc, 
     bool correct_sce, bool track_is_sce_corrected, float xsign) {
 
-  double angleToVert = geo->WireAngleToVertical(view, tpc.TPC, tpc.Cryostat) - 0.5*::util::pi<>();
+  double angleToVert = geo->WireAngleToVertical(view, tpc) - 0.5*::util::pi<>();
 
   geo::Vector_t dir_w;
 
@@ -81,7 +81,7 @@ double sbn::GetPitch(
     loc_pdx.SetY(loc_pdx.Y() + loc_pdx_offset.Y());
     loc_pdx.SetZ(loc_pdx.Z() + loc_pdx_offset.Z());
 
-    dir_w = (loc_pdx - loc_mdx) /  (loc_mdx - loc_pdx).r(); 
+    dir_w = (loc_pdx - loc_mdx).Unit(); 
   }
   // If there is no space charge or the track is not yet corrected, then the dir
   // is the track is what we want
@@ -107,14 +107,16 @@ double sbn::GetPitch(
   geo::Vector_t dirOffsets = {0., 0., 0.};
   geo::Vector_t locOffsets = {0., 0., 0.};
   if (sce && sce->EnableCalSpatialSCE() && correct_sce) {
-    dirOffsets = sce->GetCalPosOffsets(geo::Point_t{loc_w.X()  + pitch*dir_w.X(), loc_w.Y() + pitch*dir_w.Y(), loc_w.Z() + pitch*dir_w.Z()}, tpc.TPC);
+    dirOffsets = sce->GetCalPosOffsets(loc_w + pitch * dir_w, tpc.TPC);
     locOffsets = sce->GetCalPosOffsets(loc_w, tpc.TPC);
   }
 
-  const TVector3 &dir_corr {pitch*dir_w.X() + (dirOffsets.X() - locOffsets.X()),  
-                            pitch*dir_w.Y() + (dirOffsets.Y() - locOffsets.Y()), pitch*dir_w.Z() + (dirOffsets.Z() - locOffsets.Z())};
+  // const TVector3 &dir_corr {pitch*dir_w.X() + (dirOffsets.X() - locOffsets.X()),  
+  //                           pitch*dir_w.Y() + (dirOffsets.Y() - locOffsets.Y()), pitch*dir_w.Z() + (dirOffsets.Z() - locOffsets.Z())};
 
-  pitch = dir_corr.Mag();
+  geo::Vector_t const dir_corr = pitch*dir_w + dirOffsets - locOffsets;
+
+  pitch = dir_corr.R();
 
   return pitch;
 }
@@ -168,7 +170,7 @@ geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::St
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
 
-  static const bool VERBOSE = false;
+  static constexpr bool VERBOSE = false;
 
   // look up the wire-coordinate of both wires
   double A_w = T.WireCoordinate(geo, A.vhit_hit->WireID());

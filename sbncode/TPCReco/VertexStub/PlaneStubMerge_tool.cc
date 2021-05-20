@@ -3,10 +3,6 @@
  */
 
 // Framework Includes
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/ToolMacros.h"
 #include "cetlib/cpu_timer.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -17,14 +13,9 @@
 #include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
 
 // LArSoft includes
-#include "larcorealg/Geometry/BoxBoundedGeo.h"
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "larcore/CoreUtils/ServiceUtil.h"
 
 // std includes
-#include <string>
-#include <iostream>
 #include <memory>
 
 namespace sbn{

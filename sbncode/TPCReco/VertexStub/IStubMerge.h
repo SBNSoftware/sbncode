@@ -8,25 +8,16 @@
 #define IStubMerge_h
 
 // Framework Includes
-#include "fhiclcpp/ParameterSet.h"
-#include "art/Framework/Principal/Event.h"
-
-#include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/RecoBase/Vertex.h"
-#include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesServiceStandard.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
 #include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
 
 // cpp includes
 #include <vector>
-#include <array>
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 

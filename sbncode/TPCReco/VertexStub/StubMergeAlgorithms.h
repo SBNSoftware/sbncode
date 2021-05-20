@@ -1,14 +1,14 @@
 #ifndef StubMergeAlgorithms_HH
 #define StubMergeAlgorithms_HH
 
-#include "larcore/Geometry/Geometry.h"
+#include "canvas/Persistency/Common/Ptr.h"
+
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataalg/DetectorInfo/DetectorClocksStandard.h"
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
-#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -17,8 +17,6 @@
 #include "sbnobj/Common/Reco/Stub.h"
 
 #include "sbncode/TPCReco/VertexStub/PlaneTransform.h"
-
-#include <memory>
 
 namespace sbn {
 

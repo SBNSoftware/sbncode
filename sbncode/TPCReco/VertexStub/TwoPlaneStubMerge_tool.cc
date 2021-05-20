@@ -165,7 +165,7 @@ std::vector<sbn::StubInfo> TwoPlaneStubMerge::Merge(const std::vector<sbn::StubI
       if (A.stub.plane.size() != 1 || B.stub.plane.size() != 1) continue; // Only match 1-plane-stubs
 
       if (A.stub.plane.front().Plane == B.stub.plane.front().Plane) continue; // Match across planes
-      if (A.stub.plane.front().TPC != B.stub.plane.front().TPC) continue; // But should be in the same TPC
+      if (A.stub.plane.front().asTPCID() != B.stub.plane.front().asTPCID()) continue; // But should be in the same TPC
 
       float toff = sbn::StubTimeOffset(A, B, dclock, dprop);
       float qoff = sbn::StubChargeOffset(A, B);

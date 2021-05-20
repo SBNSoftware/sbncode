@@ -1,4 +1,5 @@
 #include "StubBuilder.h"
+#include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
 
 // Helper functions
 bool HitOnTrack(const art::Ptr<recob::Hit> &hit,
@@ -153,12 +154,15 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel,
       }
 
     }
-    fSlicePFPHits[slices[i_slc].key()] = thisSlicePFPHits;
-    fSliceTrkHits[slices[i_slc].key()] = thisSliceTrkHits;
-    fSliceTrkTHMs[slices[i_slc].key()] = thisSliceTrkTHMs;
-    fSliceTrks[slices[i_slc].key()] = thisSliceTracks;
-    fSlicePFPs[slices[i_slc].key()] = thisSlicePFPs;
-    fSliceHits[slices[i_slc].key()] = sliceHits.at(i_slc);
+
+    std::size_t const sliceKey = slices[i_slc].key();
+
+    fSlicePFPHits[sliceKey] = thisSlicePFPHits;
+    fSliceTrkHits[sliceKey] = thisSliceTrkHits;
+    fSliceTrkTHMs[sliceKey] = thisSliceTrkTHMs;
+    fSliceTrks[sliceKey] = thisSliceTracks;
+    fSlicePFPs[sliceKey] = thisSlicePFPs;
+    fSliceHits[sliceKey] = sliceHits.at(i_slc);
   }
 }
 

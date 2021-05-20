@@ -1,29 +1,9 @@
 #ifndef PlaneTransform_HH
 #define PlaneTransform_HH
 
-#include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/Handle.h"
-#include "canvas/Persistency/Common/FindManyP.h"
-
-#include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/RecoBase/Cluster.h"
-#include "lardataobj/RecoBase/Slice.h"
-#include "lardataobj/RecoBase/Vertex.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/TrackTrajectory.h"
-#include "lardataobj/RecoBase/Trajectory.h"
-#include "lardataobj/RecoBase/Wire.h"
-#include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/RecoBase/TrackHitMeta.h"
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larreco/Calorimetry/CalorimetryAlg.h"
-#include "sbnobj/Common/Reco/VertexHit.h"
-#include "sbnobj/Common/Reco/Stub.h"
 
-#include <memory>
+#include <vector>
 
 namespace sbn {
 

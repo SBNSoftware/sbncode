@@ -108,7 +108,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
   // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = NULL;
+  const spacecharge::SpaceCharge *sce = nullptr;
 
   // output data products
   std::unique_ptr<std::vector<sbn::Stub>> outStubs(new std::vector<sbn::Stub>);
@@ -132,7 +132,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   fStubBuilder.Setup(e, fPFPLabel, fTrackLabel);
 
   for (unsigned i_slc = 0; i_slc < slices.size(); i_slc++) {
-    const std::vector<art::Ptr<sbn::VertexHit>> vhits = slcVHits.at(i_slc);
+    const std::vector<art::Ptr<sbn::VertexHit>> &vhits = slcVHits.at(i_slc);
     
     // look up info per vertex hit
     art::FindManyP<recob::Vertex> vhitVtxs(vhits, e, fVertexChargeLabel);

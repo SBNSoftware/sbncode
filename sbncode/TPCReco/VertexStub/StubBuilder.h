@@ -10,12 +10,8 @@
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/TrackTrajectory.h"
-#include "lardataobj/RecoBase/Trajectory.h"
-#include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
-#include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -25,8 +21,7 @@
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 
-#include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
-
+#include <map>
 #include <memory>
 
 namespace sbn {
