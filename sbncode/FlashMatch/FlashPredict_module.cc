@@ -115,10 +115,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 void FlashPredict::produce(art::Event& evt)
 {
-  std::unique_ptr< std::vector<sbn::SimpleFlashMatch> >
-    sFM_v(new std::vector<sbn::SimpleFlashMatch>);
-  std::unique_ptr< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >
-    pfp_sFM_assn_v(new art::Assns<recob::PFParticle, sbn::SimpleFlashMatch>);
+  // sFM is an alias for sbn::SimpleFlashMatch
+  std::unique_ptr< std::vector<sFM> >
+    sFM_v(new std::vector<sFM>);
+  std::unique_ptr< art::Assns <recob::PFParticle, sFM> >
+    pfp_sFM_assn_v(new art::Assns<recob::PFParticle, sFM>);
 
   // reset TTree variables
   _evt = evt.event();
@@ -146,8 +147,8 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                             kNoScrPE, kNoPFPInEvt));
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoPFPInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
     evt.put(std::move(sFM_v));
@@ -164,8 +165,8 @@ void FlashPredict::produce(art::Event& evt)
   //   updateBookKeeping();
   //   for (size_t pId=0; pId<pfp_h->size(); pId++) {
   //     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-  //     sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-  //                                            kNoScrPE, kNoSlcInEvt));
+  //     sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+  //                          Flash(kNoScrPE), Score(kNoSlcInEvt)));
   //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
   //   }
   //   evt.put(std::move(sFM_v));
@@ -203,8 +204,8 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                             kNoScrPE, kNoOpHInEvt));
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoOpHInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
     evt.put(std::move(sFM_v));
@@ -243,8 +244,8 @@ void FlashPredict::produce(art::Event& evt)
     updateBookKeeping();
     for (size_t pId=0; pId<pfp_h->size(); pId++) {
       const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                             kNoScrPE, kNoOpHInEvt));
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoOpHInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
     evt.put(std::move(sFM_v));
@@ -362,8 +363,8 @@ void FlashPredict::produce(art::Event& evt)
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
         mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-        sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                               kNoScrPE, kQNoOpHScr));
+        sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                             Flash(kNoScrPE), Score(kQNoOpHScr)));
         util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
         continue;
       }
@@ -373,8 +374,8 @@ void FlashPredict::produce(art::Event& evt)
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                             kNoScrPE, kNoChrgScr));
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoChrgScr)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
@@ -383,8 +384,8 @@ void FlashPredict::produce(art::Event& evt)
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(sbn::SimpleFlashMatch(kNoScr, kNoScrTime, kNoScrQ,
-                                             kNoScrPE, k0VUVPEScr));
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(k0VUVPEScr)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
@@ -393,11 +394,10 @@ void FlashPredict::produce(art::Event& evt)
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(
-        sbn::SimpleFlashMatch(true, _flash_time, _charge_q, _flash_pe, _score,
-                              _scr_y, _scr_z, _scr_rr, _scr_ratio,
-                              TVector3(_charge_x_gl, _charge_y, _charge_z),
-                              TVector3(_flash_x_gl, _flash_y, _flash_z)));
+      Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
+      Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
+      Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
+      sFM_v->push_back(sFM(true, _flash_time, charge, flash, score));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
     else{

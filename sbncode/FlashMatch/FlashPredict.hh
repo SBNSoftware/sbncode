@@ -194,6 +194,12 @@ private:
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
+  // aliases for the objects that are stored
+  using sFM    = sbn::SimpleFlashMatch;
+  using Charge = sbn::SimpleFlashMatch::Charge;
+  using Flash  = sbn::SimpleFlashMatch::Flash;
+  using Score  = sbn::SimpleFlashMatch::Score;
+
   // Tree variables
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
@@ -209,11 +215,11 @@ private:
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
 
   struct ChargeDigest {
-     size_t pId;
-     int pfpPDGC;
-     art::Ptr<recob::PFParticle> pfp_ptr;
-     flashmatch::QCluster_t qClusters;
-     std::set<unsigned> tpcWithHits;
+    size_t pId;
+    int pfpPDGC;
+    art::Ptr<recob::PFParticle> pfp_ptr;
+    flashmatch::QCluster_t qClusters;
+    std::set<unsigned> tpcWithHits;
     ChargeDigest() = default;
     ChargeDigest(const size_t pId_, const int pfpPDGC_,
                  const art::Ptr<recob::PFParticle>& pfp_ptr_,

@@ -11,49 +11,47 @@ namespace caf
 
 
   //......................................................................
-  void FillSliceFlashMatchA(const sbn::SimpleFlashMatch* fmatch /* can be nullptr */,
-                            caf::SRSlice& srslice,
-                            bool allowEmpty)
+  void FillSliceFlashMatch(const sbn::SimpleFlashMatch* fmatch /* can be nullptr */,
+                           caf::SRSlice& srslice,
+                           bool allowEmpty)
   {
     if (fmatch == nullptr) {
       srslice.fmatch.present = false;
       return;
     }
-    srslice.fmatch.present   = fmatch->mPresent;
-    srslice.fmatch.time      = fmatch->mTime;
-    srslice.fmatch.charge_q  = fmatch->mChargeQ;
-    srslice.fmatch.light_pe  = fmatch->mLightPE;
-    srslice.fmatch.score     = fmatch->mScore;
-    srslice.fmatch.scr_y     = fmatch->mScr_y;
-    srslice.fmatch.scr_z     = fmatch->mScr_z;
-    srslice.fmatch.scr_rr    = fmatch->mScr_rr;
-    srslice.fmatch.scr_ratio = fmatch->mScr_ratio;
-    srslice.fmatch.chargeXYZ = fmatch->mChargeXYZ;
-    srslice.fmatch.lightXYZ  = fmatch->mLightXYZ;
+    srslice.fmatch.present     = fmatch->present;
+    srslice.fmatch.time        = fmatch->time;
+    srslice.fmatch.charge.q    = fmatch->charge.q;
+    srslice.fmatch.light.pe    = fmatch->light.pe;
+    srslice.fmatch.score.total = fmatch->score.total;
+    srslice.fmatch.score.y     = fmatch->score.y;
+    srslice.fmatch.score.z     = fmatch->score.z;
+    srslice.fmatch.score.rr    = fmatch->score.rr;
+    srslice.fmatch.score.ratio = fmatch->score.ratio;
+    srslice.fmatch.charge.center = fmatch->charge.center;
+    srslice.fmatch.light.center  = fmatch->light.center;
   }
 
   //......................................................................
-  void FillSliceFlashMatch(const sbn::SimpleFlashMatch* fmatch /* can be nullptr */,
-                           caf::SRSlice& srslice,
-                           bool allowEmpty)
+  void FillSliceFlashMatchA(const sbn::SimpleFlashMatch* fmatch /* can be nullptr */,
+                            caf::SRSlice& srslice,
+                            bool allowEmpty)
   {
-    caf::SRFlashMatch flashmatch;
     if (fmatch == nullptr) {
-      flashmatch.present = false;
+      srslice.fmatch_a.present = false;
       return;
     }
-    flashmatch.present   = fmatch->mPresent;
-    flashmatch.time      = fmatch->mTime;
-    flashmatch.charge_q  = fmatch->mChargeQ;
-    flashmatch.light_pe  = fmatch->mLightPE;
-    flashmatch.score     = fmatch->mScore;
-    flashmatch.scr_y     = fmatch->mScr_y;
-    flashmatch.scr_z     = fmatch->mScr_z;
-    flashmatch.scr_rr    = fmatch->mScr_rr;
-    flashmatch.scr_ratio = fmatch->mScr_ratio;
-    flashmatch.chargeXYZ = fmatch->mChargeXYZ;
-    flashmatch.lightXYZ  = fmatch->mLightXYZ;
-    srslice.fmatch_a = flashmatch;
+    srslice.fmatch_a.present     = fmatch->present;
+    srslice.fmatch_a.time        = fmatch->time;
+    srslice.fmatch_a.charge.q    = fmatch->charge.q;
+    srslice.fmatch_a.light.pe    = fmatch->light.pe;
+    srslice.fmatch_a.score.total = fmatch->score.total;
+    srslice.fmatch_a.score.y     = fmatch->score.y;
+    srslice.fmatch_a.score.z     = fmatch->score.z;
+    srslice.fmatch_a.score.rr    = fmatch->score.rr;
+    srslice.fmatch_a.score.ratio = fmatch->score.ratio;
+    srslice.fmatch_a.charge.center = fmatch->charge.center;
+    srslice.fmatch_a.light.center  = fmatch->light.center;
   }
 
   //......................................................................
@@ -65,17 +63,17 @@ namespace caf
       srslice.fmatch_b.present = false;
       return;
     }
-    srslice.fmatch_b.present   = fmatch->mPresent;
-    srslice.fmatch_b.time      = fmatch->mTime;
-    srslice.fmatch_b.charge_q  = fmatch->mChargeQ;
-    srslice.fmatch_b.light_pe  = fmatch->mLightPE;
-    srslice.fmatch_b.score     = fmatch->mScore;
-    srslice.fmatch_b.scr_y     = fmatch->mScr_y;
-    srslice.fmatch_b.scr_z     = fmatch->mScr_z;
-    srslice.fmatch_b.scr_rr    = fmatch->mScr_rr;
-    srslice.fmatch_b.scr_ratio = fmatch->mScr_ratio;
-    srslice.fmatch_b.chargeXYZ = fmatch->mChargeXYZ;
-    srslice.fmatch_b.lightXYZ  = fmatch->mLightXYZ;
+    srslice.fmatch_b.present     = fmatch->present;
+    srslice.fmatch_b.time        = fmatch->time;
+    srslice.fmatch_b.charge.q    = fmatch->charge.q;
+    srslice.fmatch_b.light.pe    = fmatch->light.pe;
+    srslice.fmatch_b.score.total = fmatch->score.total;
+    srslice.fmatch_b.score.y     = fmatch->score.y;
+    srslice.fmatch_b.score.z     = fmatch->score.z;
+    srslice.fmatch_b.score.rr    = fmatch->score.rr;
+    srslice.fmatch_b.score.ratio = fmatch->score.ratio;
+    srslice.fmatch_b.charge.center = fmatch->charge.center;
+    srslice.fmatch_b.light.center  = fmatch->light.center;
   }
 
   //......................................................................
