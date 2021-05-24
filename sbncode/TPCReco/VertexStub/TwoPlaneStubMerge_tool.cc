@@ -30,6 +30,10 @@
 namespace sbn{
 /**
  *  @brief  TwoPlaneStubMerge class definiton
+ *
+ *  Art tool for merging stubs across planes. Uses requireuments on total
+ *  charge and hit timing. Re-computes location information of succesful
+ *  merges.
  */
 class TwoPlaneStubMerge : public sbn::IStubMerge {
 public:

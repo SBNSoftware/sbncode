@@ -3,8 +3,9 @@
 // Plugin Type: producer (art v3_02_06)
 // File:        VertexChargeVacuum_module.cc
 //
-// Generated at Wed Feb 19 17:38:21 2020 by Gray Putnam using cetskelgen
-// from cetlib version v3_07_02.
+// Art module for finding large charge depositions near a reconstructed
+// vertex. Operates on input recob::Hit's. Produces sbn::VertexHit objects
+// which conatin summary information useful for downstream reco/analysis.
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"

@@ -3,8 +3,9 @@
 // Plugin Type: analyzer (art v3_05_01)
 // File:        NuVertexChargeTree_module.cc
 //
-// Generated at Tue Sep  8 10:02:52 2020 by Gray Putnam using cetskelgen
-// from cetlib version v3_10_00.
+// Analyzer module for use with sbn::Stub and sbn::VertexHit objects. 
+// Intended for use with neutrino interactions and neutrino-like particlegun
+// events. Not intended for use on data or on MC with cosmics.
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDAnalyzer.h"

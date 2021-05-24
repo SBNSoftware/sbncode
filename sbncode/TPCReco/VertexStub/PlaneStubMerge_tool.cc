@@ -21,6 +21,9 @@
 namespace sbn{
 /**
  *  @brief  PlaneStubMerge class definiton
+ *
+ *  Art tool for merging stubs on the same plane. Always merges into
+ *  the larger stub.
  */
 class PlaneStubMerge : public sbn::IStubMerge {
 public:

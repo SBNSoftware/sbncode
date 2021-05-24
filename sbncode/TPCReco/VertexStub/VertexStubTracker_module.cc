@@ -3,8 +3,14 @@
 // Plugin Type: producer (art v3_02_06)
 // File:        VertexStubTracker_module.cc
 //
-// Generated at Wed Feb 19 17:38:21 2020 by Gray Putnam using cetskelgen
-// from cetlib version v3_07_02.
+// Art module for building "Stub" reconstruction objects. Stubs are 
+// correspond to low energy hadrons produced in neutrino interactions that
+// produce short, highly-ionizing charge depositions near the vertex. 
+//
+// Module operates on sbn::VertexHit objects and connects the end-point Hit
+// to the start-point Vertex to build a stub. Merging is then done between
+// and across planes to consoldiate and refine output. Produces the sbn::Stub
+// object.
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"

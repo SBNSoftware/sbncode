@@ -3,6 +3,9 @@
  *
  *  @author grayputnam@uchicago.edu
  *
+ *  Abstract interface intented for art tools which take a list 
+ *  of stubs and return a new list with some of them merged.
+ *
  */
 #ifndef IStubMerge_h
 #define IStubMerge_h
