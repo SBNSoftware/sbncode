@@ -31,6 +31,7 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/Exceptions.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
@@ -83,8 +84,8 @@ private:
    const std::vector<art::Ptr<recob::PFParticle>> &slice_pfps,
    const std::vector<std::vector<std::pair<int, float>>> &slice_pfp_matches,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
-   const std::vector<const sim::GeneratedParticleInfo *> infos,
-   const geo::GeometryCore *geo,
+   const std::vector<const sim::GeneratedParticleInfo *> &infos,
+   const geo::GeometryCore &geo,
    const detinfo::DetectorPropertiesData &dprop);
 
   void FillVertexHits(
@@ -867,8 +868,8 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
    const std::vector<art::Ptr<recob::PFParticle>> &slice_pfps,
    const std::vector<std::vector<std::pair<int, float>>> &slice_pfp_matches,
    const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles, 
-   const std::vector<const sim::GeneratedParticleInfo *> infos,
-   const geo::GeometryCore *geo,
+   const std::vector<const sim::GeneratedParticleInfo *> &infos,
+   const geo::GeometryCore &geo,
    const detinfo::DetectorPropertiesData &dprop) {
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
@@ -940,37 +941,24 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     float thisQ = 0.;
 
     std::map<geo::WireID, float> chargemap;
-    std::set<geo::View_t> views_set = geo->Views();
-    std::vector<geo::View_t> views;
-    for (auto const &v: views_set) views.push_back(v);
-    for (geo::View_t view: views) {
+    for (geo::View_t view: geo.Views()) {
       std::vector<const sim::IDE*> particle_ides(backtracker->TrackIdToSimIDEs_Ps(G4->TrackId(), view));
       for (const sim::IDE *ide: particle_ides) {
         thisVisE += ide->energy;
 
         // Correct for electron lifetime 
         geo::Point_t p {ide->x, ide->y, ide->z};
-        geo::TPCID tpc = geo->FindTPCAtPosition(p);
+        geo::TPCGeo const* tpc = geo.PositionToTPCptr(p);
         if (tpc) {
-          float driftT = abs(ide->x - geo->TPC(tpc).PlaneLocation(0)[0]) / dprop.DriftVelocity();
+          float driftT = tpc->FirstPlane().DistanceFromPlane(p) / dprop.DriftVelocity();
           thisQ += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
 
-          int plane = -1;
-          for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-            geo::PlaneID planeID {tpc, i_plane};
-            if (geo->View(planeID) == view) {
-              plane = i_plane;
-              break;
-            }
-          }
-
-          geo::PlaneID planeID {tpc, (unsigned)plane};
+          geo::PlaneGeo const& plane = tpc->Plane(view);
           try {
-            geo::WireID::WireID_t wid = geo->NearestWire(p, planeID);
-            geo::WireID w {planeID, wid};
+            geo::WireID w = plane.NearestWireID(p);
             chargemap[w] += ide->numElectrons * exp(driftT / dprop.ElectronLifetime());
           }
-          catch(...) {}
+          catch(geo::InvalidWireError const&) {} 
         }
       }
     }
@@ -981,7 +969,7 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     for (unsigned v = 0; v < 3; v++) {
       float maxQ = -1;
       for (auto const &pair: chargemap) {
-        if (geo->View(pair.first) == v) {
+        if (geo.View(pair.first) == v) {
           if (pair.second > maxQ) maxQ = pair.second;
         }
       }
@@ -993,11 +981,11 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
 
     geo::Point_t start_loc(particle.Position().Vect());
     geo::Vector_t start_dir(particle.Momentum().Vect().Unit());
-    geo::TPCID firstTPC = geo->FindTPCAtPosition(start_loc);
+    geo::TPCID firstTPC = geo.FindTPCAtPosition(start_loc);
     if (firstTPC) {
-      fFSPPitchU.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)0, firstTPC, true, true));
-      fFSPPitchV.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)1, firstTPC, true, true));
-      fFSPPitchW.push_back(sbn::GetPitch(geo, sce, start_loc, start_dir, (geo::View_t)2, firstTPC, true, true));
+      fFSPPitchU.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)0, firstTPC, true, true));
+      fFSPPitchV.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)1, firstTPC, true, true));
+      fFSPPitchW.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)2, firstTPC, true, true));
     }
     else {
       fFSPPitchU.push_back(-1);
@@ -1280,11 +1268,13 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
     for (unsigned i = 0; i < thisStubs.size(); i++) {
       thisStubInfos.emplace_back();
 
-      thisStubInfos.back().stub = *thisStubs[i];
-      thisStubInfos.back().pfp = thisStubPFPs.at(i);
-      thisStubInfos.back().hits = thisStubHits.at(i);
-      thisStubInfos.back().vhit = thisVertexHits.at(thisStubHitInds[i]);
-      thisStubInfos.back().vhit_hit = thisVertexHitHits.at(thisStubHitInds[i]); 
+      sbn::StubInfo& newStub = thisStubInfos.back();
+
+      newStub.stub = *thisStubs[i];
+      newStub.pfp = thisStubPFPs.at(i);
+      newStub.hits = thisStubHits.at(i);
+      newStub.vhit = thisVertexHits.at(thisStubHitInds[i]);
+      newStub.vhit_hit = thisVertexHitHits.at(thisStubHitInds[i]); 
     }
 
     (void) thisVertexHitSPs;
@@ -1326,7 +1316,7 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
     FillMeta(evt);
 
     // save the true-neutrino info
-    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu), geo, dprop);
+    FillNeutrino(nu, nu_vert, thisSliceParticles, thisSlicePFPMatches, truth_to_particles.at(i_nu), truth_to_particles.data(i_nu), *geo, dprop);
 
     // The vertex hits!
     FillVertexHits(thisVertexHits, thisVertexHitHits, dprop, clock_data, trueParticles);
