@@ -19,17 +19,17 @@ namespace caf
       srslice.fmatch.present = false;
       return;
     }
-    srslice.fmatch.present     = fmatch->present;
-    srslice.fmatch.time        = fmatch->time;
-    srslice.fmatch.charge.q    = fmatch->charge.q;
-    srslice.fmatch.light.pe    = fmatch->light.pe;
-    srslice.fmatch.score.total = fmatch->score.total;
-    srslice.fmatch.score.y     = fmatch->score.y;
-    srslice.fmatch.score.z     = fmatch->score.z;
-    srslice.fmatch.score.rr    = fmatch->score.rr;
-    srslice.fmatch.score.ratio = fmatch->score.ratio;
-    srslice.fmatch.charge.center = fmatch->charge.center;
-    srslice.fmatch.light.center  = fmatch->light.center;
+    srslice.fmatch.present    = fmatch->present;
+    srslice.fmatch.time       = fmatch->time;
+    srslice.fmatch.chargeQ    = fmatch->charge.q;
+    srslice.fmatch.lightPE    = fmatch->light.pe;
+    srslice.fmatch.scoreTotal = fmatch->score.total;
+    srslice.fmatch.scoreY     = fmatch->score.y;
+    srslice.fmatch.scoreZ     = fmatch->score.z;
+    srslice.fmatch.scoreRR    = fmatch->score.rr;
+    srslice.fmatch.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch.chargeCenter = fmatch->charge.center;
+    srslice.fmatch.lightCenter  = fmatch->light.center;
   }
 
   //......................................................................
@@ -41,17 +41,17 @@ namespace caf
       srslice.fmatch_a.present = false;
       return;
     }
-    srslice.fmatch_a.present     = fmatch->present;
-    srslice.fmatch_a.time        = fmatch->time;
-    srslice.fmatch_a.charge.q    = fmatch->charge.q;
-    srslice.fmatch_a.light.pe    = fmatch->light.pe;
-    srslice.fmatch_a.score.total = fmatch->score.total;
-    srslice.fmatch_a.score.y     = fmatch->score.y;
-    srslice.fmatch_a.score.z     = fmatch->score.z;
-    srslice.fmatch_a.score.rr    = fmatch->score.rr;
-    srslice.fmatch_a.score.ratio = fmatch->score.ratio;
-    srslice.fmatch_a.charge.center = fmatch->charge.center;
-    srslice.fmatch_a.light.center  = fmatch->light.center;
+    srslice.fmatch_a.present    = fmatch->present;
+    srslice.fmatch_a.time       = fmatch->time;
+    srslice.fmatch_a.chargeQ    = fmatch->charge.q;
+    srslice.fmatch_a.lightPE    = fmatch->light.pe;
+    srslice.fmatch_a.scoreTotal = fmatch->score.total;
+    srslice.fmatch_a.scoreY     = fmatch->score.y;
+    srslice.fmatch_a.scoreZ     = fmatch->score.z;
+    srslice.fmatch_a.scoreRR    = fmatch->score.rr;
+    srslice.fmatch_a.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch_a.chargeCenter = fmatch->charge.center;
+    srslice.fmatch_a.lightCenter  = fmatch->light.center;
   }
 
   //......................................................................
@@ -63,17 +63,17 @@ namespace caf
       srslice.fmatch_b.present = false;
       return;
     }
-    srslice.fmatch_b.present     = fmatch->present;
-    srslice.fmatch_b.time        = fmatch->time;
-    srslice.fmatch_b.charge.q    = fmatch->charge.q;
-    srslice.fmatch_b.light.pe    = fmatch->light.pe;
-    srslice.fmatch_b.score.total = fmatch->score.total;
-    srslice.fmatch_b.score.y     = fmatch->score.y;
-    srslice.fmatch_b.score.z     = fmatch->score.z;
-    srslice.fmatch_b.score.rr    = fmatch->score.rr;
-    srslice.fmatch_b.score.ratio = fmatch->score.ratio;
-    srslice.fmatch_b.charge.center = fmatch->charge.center;
-    srslice.fmatch_b.light.center  = fmatch->light.center;
+    srslice.fmatch_b.present    = fmatch->present;
+    srslice.fmatch_b.time       = fmatch->time;
+    srslice.fmatch_b.chargeQ    = fmatch->charge.q;
+    srslice.fmatch_b.lightPE    = fmatch->light.pe;
+    srslice.fmatch_b.scoreTotal = fmatch->score.total;
+    srslice.fmatch_b.scoreY     = fmatch->score.y;
+    srslice.fmatch_b.scoreZ     = fmatch->score.z;
+    srslice.fmatch_b.scoreRR    = fmatch->score.rr;
+    srslice.fmatch_b.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch_b.chargeCenter = fmatch->charge.center;
+    srslice.fmatch_b.lightCenter  = fmatch->light.center;
   }
 
   //......................................................................
