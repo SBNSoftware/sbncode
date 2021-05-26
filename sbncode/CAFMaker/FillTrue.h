@@ -45,8 +45,7 @@ namespace caf
                          const detinfo::DetectorClocksData &clockData,
                          caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand,
-                         bool allowEmpty = false);
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,

@@ -116,16 +116,10 @@ namespace caf {
                          const detinfo::DetectorClocksData &clockData,
                          caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
-                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand,
-                         bool allowEmpty)
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
   {
     caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
-    if(tmatch.index >= 0) {
-      bool do_fill = false;
-      caf::SRFakeReco this_fakereco;
-      do_fill = FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, this_fakereco);
-      if(do_fill) srslice.freco = this_fakereco;
-    }
+    if(tmatch.index >= 0) FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco)
   }//FillSliceFakeReco
 
 
@@ -547,6 +541,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   float contained_length_cut = 50.; // cm
   float exiting_length_cut = 100.; // cm
 
+  fakereco.filled = false;
+
   // first check if neutrino exists
   if (!mctruth.NeutrinoSet()) return false;
 
@@ -672,6 +668,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
     fakereco.wgt = 1.;
   }
   fakereco.nhad = fakereco.hadrons.size();
+  fakereco.filled = true;
 
   return true;
 }
