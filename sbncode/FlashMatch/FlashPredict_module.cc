@@ -98,6 +98,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fOpHitsTimeHist->SetOption("HIST");
   fOpHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
 
+  if(!fOnlyPrimaries){
+    mf::LogWarning("FlashPredict")
+      << "The fcl option OnlyPrimaries is useless, sorry. I'll remove it soon.";
+  }
+
   if (fMakeTree) initTree();
 
   loadMetrics();
@@ -137,16 +142,17 @@ void FlashPredict::produce(art::Event& evt)
   bk.events++;
 
   // grab PFParticles in event
-  auto const& pfp_h =
+  const auto pfps_h =
     evt.getValidHandle<std::vector<recob::PFParticle>>(fPandoraProducer);
   if (fSelectNeutrino &&
-      !pfpNeutrinoOnEvent(pfp_h)) {
+      !pfpNeutrinoOnEvent(pfps_h)) {
     mf::LogInfo("FlashPredict")
       << "No pfp neutrino on event. Skipping...";
     bk.nopfpneutrino++;
     updateBookKeeping();
-    for (size_t pId=0; pId<pfp_h->size(); pId++) {
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
       sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
                            Flash(kNoScrPE), Score(kNoPFPInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
@@ -163,8 +169,9 @@ void FlashPredict::produce(art::Event& evt)
   //     << "No recob:Slice on event. Skipping...";
   //   bk.noslice++;
   //   updateBookKeeping();
-  //   for (size_t pId=0; pId<pfp_h->size(); pId++) {
-  //     const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+  //   for(size_t pId=0; pId<pfps_h->size(); pId++) {
+  //     if(!pfps_h->at(pId).IsPrimary()) continue;
+  //     const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
   //     sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
   //                          Flash(kNoScrPE), Score(kNoSlcInEvt)));
   //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
@@ -175,7 +182,7 @@ void FlashPredict::produce(art::Event& evt)
   // }
 
   // grab spacepoints associated with PFParticles
-  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, evt,
+  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfps_h, evt,
                                                           fPandoraProducer);
 
   auto const& spacepoint_h =
@@ -202,8 +209,9 @@ void FlashPredict::produce(art::Event& evt)
       << fOpHitProducer;
     bk.nonvalidophit++;
     updateBookKeeping();
-    for (size_t pId=0; pId<pfp_h->size(); pId++) {
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
       sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
                            Flash(kNoScrPE), Score(kNoOpHInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
@@ -242,8 +250,9 @@ void FlashPredict::produce(art::Event& evt)
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
-    for (size_t pId=0; pId<pfp_h->size(); pId++) {
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
       sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
                            Flash(kNoScrPE), Score(kNoOpHInEvt)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
@@ -264,25 +273,25 @@ void FlashPredict::produce(art::Event& evt)
   }
 
   std::map<size_t, size_t> pfpMap;
-  for (size_t p=0; p<pfp_h->size(); p++) pfpMap[pfp_h->at(p).Self()] = p;
+  for (size_t pId=0; pId<pfps_h->size(); pId++) {
+    pfpMap[pfps_h->at(pId).Self()] = pId;
+  }
 
   std::map<double, ChargeDigest, std::greater<double>> chargeDigestMap;
   // Loop over pandora pfp particles
-  for (size_t pId=0; pId<pfp_h->size(); pId++) {
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+  for(size_t pId=0; pId<pfps_h->size(); pId++) {
+    if(!pfps_h->at(pId).IsPrimary()) continue;
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
     unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
-    if (fOnlyPrimaries && !pfp_ptr->IsPrimary()) continue;
-    if (fSelectNeutrino &&
-        (pfpPDGC != 12) &&
-        (pfpPDGC != 14) &&
-        (pfpPDGC != 16) ) continue;
+    if(fSelectNeutrino &&
+        (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16) ) continue;
     bk.pfp_to_score++;
     flashmatch::QCluster_t qClusters;
     std::set<unsigned> tpcWithHits;
 
     {//TODO: pack this into a function
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
-    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
+    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_ptr_v);
 
     double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ?
       fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
@@ -996,7 +1005,7 @@ double FlashPredict::hypoFlashX_fits()
 void FlashPredict::AddDaughters(
   const std::map<size_t, size_t>& pfpMap,
   const art::Ptr<recob::PFParticle>& pfp_ptr,
-  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
   std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const
 {
   auto daughters = pfp_ptr->Daughters();
@@ -1006,8 +1015,8 @@ void FlashPredict::AddDaughters(
       std::cout << "Did not find DAUGHTERID in map! error" << std::endl;
       continue;
     }
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pfpMap.at(daughterid) );
-    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_v);
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pfpMap.at(daughterid) );
+    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_v);
   } // for all daughters
   return;
 } // void FlashPredict::AddDaughters
@@ -1030,9 +1039,9 @@ double FlashPredict::scoreTerm(const double m,
 
 
 bool FlashPredict::pfpNeutrinoOnEvent(
-  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const
 {
-  for (auto const& p : (*pfp_h)) {
+  for (auto const& p : (*pfps_h)) {
     unsigned pfpPDGC = std::abs(p.PdgCode());
     if ((pfpPDGC == 12) ||
         (pfpPDGC == 14) ||

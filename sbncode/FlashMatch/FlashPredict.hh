@@ -105,14 +105,14 @@ private:
   //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
   void AddDaughters(const std::map<size_t, size_t>& pfpMap,
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
-                    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+                    const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
   double scoreTerm(const double m, const double n,
                    const double mean, const double spread) const;
   double scoreTerm(const double m,
                    const double mean, const double spread) const;
   bool pfpNeutrinoOnEvent(
-    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const;
+    const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;
   void copyOpHitsInBeamWindow(
     std::vector<recob::OpHit>& opHits,
     const art::Handle<std::vector<recob::OpHit>>& ophit_h) const;
