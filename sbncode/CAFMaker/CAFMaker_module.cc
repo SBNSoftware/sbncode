@@ -154,7 +154,7 @@ class CAFMaker : public art::EDProducer {
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
-                     
+
   bool fFirstInSubRun;
   bool fFirstInFile;
   int fFileNumber;
@@ -200,8 +200,8 @@ class CAFMaker : public art::EDProducer {
 
   template <class T, class D, class U>
   art::FindManyP<T, D> FindManyPDStrict(const U& from,
-                                            const art::Event& evt,
-                                            const art::InputTag& tag) const;
+                                        const art::Event& evt,
+                                        const art::InputTag& tag) const;
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -913,9 +913,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcHits = fmSlcHits.at(0);
     }
 
-    art::FindManyP<anab::T0> fmT0 =
-      FindManyPStrict<anab::T0>(fmPFPart, evt,
-        fParams.FlashMatchLabel() + slice_tag_suff);
+    art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
+      FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
+                                             fParams.FlashMatchLabel() + slice_tag_suff);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
@@ -1024,9 +1024,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
     const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    const anab::T0 *fmatch = NULL;
-    if (fmT0.isValid() && primary != NULL) {
-      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+    const sbn::SimpleFlashMatch* fmatch = nullptr;
+    if (fm_sFM.isValid() && primary != NULL) {
+      std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
       if (fmatches.size() != 0) {
         assert(fmatches.size() == 1);
         fmatch = fmatches[0].get();
