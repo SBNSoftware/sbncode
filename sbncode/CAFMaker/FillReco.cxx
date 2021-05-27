@@ -114,8 +114,9 @@ namespace caf
     if(shower.has_length())
       srshower.len = shower.Length();
 
+    // We want density to be in MeV/cm so need to convert the energy back to MeV from GeV
     if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
-        srshower.density = srshower.bestplane_energy / srshower.len;
+        srshower.density = 1000.f * srshower.bestplane_energy / srshower.len;
 
     // Fill in hierarchy info
     srshower.ID = particle.Self();
