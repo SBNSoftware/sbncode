@@ -1051,6 +1051,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceTruth(slcHits, mctruths, srneutrinos,
        *pi_serv.get(), clock_data, recslc, rec.mc);
 
+    FillSliceFakeReco(slcHits, mctruths, srneutrinos,
+       *pi_serv.get(), clock_data, recslc, rec.mc, mctracks, fActiveVolumes,
+       *fFakeRecoTRandom);
+
     //#######################################################
     // Add detector dependent slice info.
     //#######################################################
