@@ -21,10 +21,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
   , fBeamWindowStart(p.get<double>("BeamWindowStart")) //us // TODO: should come from service
   , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// us // TODO: should come from service
-  , fLightWindowStart(p.get<double>("LightWindowStart")) // in us w.r.t. flash time
-  , fLightWindowEnd(p.get<double>("LightWindowEnd"))  // in us w.r.t flash time
+  , fFlashStart(p.get<double>("FlashStart")) // in us w.r.t. flash time
+  , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
+  , fOnlyPrimaries(p.get<bool>("OnlyPrimaries", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
@@ -32,19 +33,22 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
   , fMakeTree(p.get<bool>("MakeTree", false))
-  , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
-  , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
-  , fPEscale(p.get<double>("PEscale", 1.0))
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
+  , fMinHitQ(p.get<double>("MinHitQ", 0.0))
+  , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
+  , fQScale(p.get<double>("QScale", 1.0))
+  , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
+  , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
+  , fPEScale(p.get<double>("PEScale", 1.0))
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
   , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
-  , fVUVToVIS(p.get<unsigned>("VUVToVIS", 4))
+  , fOpDetNormalizer(p.get<unsigned>("OpDetNormalizer", 1))
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
-  produces< std::vector< anab::T0 > >();
-  produces< art::Assns <recob::PFParticle, anab::T0> >();
+  produces< std::vector<sbn::SimpleFlashMatch> >();
+  produces< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >();
   // fFlashProducer         = p.get<art::InputTag>("FlashProducer");
 
   fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
@@ -94,6 +98,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   fOpHitsTimeHist->SetOption("HIST");
   fOpHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
 
+  if(!fOnlyPrimaries){
+    mf::LogWarning("FlashPredict")
+      << "The fcl option OnlyPrimaries is useless, sorry. I'll remove it soon.";
+  }
+
   if (fMakeTree) initTree();
 
   loadMetrics();
@@ -104,20 +113,24 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
   consumes<std::vector<recob::OpHit>>(fOpHitProducer);
+  if(fUseARAPUCAS && !fOpHitARAProducer.empty())
+    consumes<std::vector<recob::OpHit>>(fOpHitARAProducer);
 } // FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
 
-void FlashPredict::produce(art::Event & e)
+void FlashPredict::produce(art::Event& evt)
 {
-  std::unique_ptr< std::vector<anab::T0> > T0_v(new std::vector<anab::T0>);
-  std::unique_ptr< art::Assns <recob::PFParticle, anab::T0> > pfp_t0_assn_v( new art::Assns<recob::PFParticle, anab::T0>  );
+  // sFM is an alias for sbn::SimpleFlashMatch
+  std::unique_ptr< std::vector<sFM> >
+    sFM_v(new std::vector<sFM>);
+  std::unique_ptr< art::Assns <recob::PFParticle, sFM> >
+    pfp_sFM_assn_v(new art::Assns<recob::PFParticle, sFM>);
 
   // reset TTree variables
-  _evt = e.event();
-  _sub = e.subRun();
-  _run = e.run();
+  _evt = evt.event();
+  _sub = evt.subRun();
+  _run = evt.run();
   // _slices        = 0;
-  _countPE       = 0;
   _flash_time    = -9999.;
   _flash_pe      = -9999.;
   _flash_unpe    = -9999.;
@@ -129,55 +142,82 @@ void FlashPredict::produce(art::Event & e)
   bk.events++;
 
   // grab PFParticles in event
-  auto const& pfp_h = e.getValidHandle<std::vector<recob::PFParticle>>(fPandoraProducer);
+  const auto pfps_h =
+    evt.getValidHandle<std::vector<recob::PFParticle>>(fPandoraProducer);
   if (fSelectNeutrino &&
-      !pfpNeutrinoOnEvent(pfp_h)) {
+      !pfpNeutrinoOnEvent(pfps_h)) {
     mf::LogInfo("FlashPredict")
       << "No pfp neutrino on event. Skipping...";
     bk.nopfpneutrino++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoPFPInEvt)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
 
-  // auto const& slice_h = e.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
+  // auto const& slice_h = evt.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
   // _slices = slice_h.product()->size();
   // if (_slices == 0) {
   //   mf::LogWarning("FlashPredict")
   //     << "No recob:Slice on event. Skipping...";
   //   bk.noslice++;
   //   updateBookKeeping();
-  //   e.put(std::move(T0_v));
-  //   e.put(std::move(pfp_t0_assn_v));
+  //   for(size_t pId=0; pId<pfps_h->size(); pId++) {
+  //     if(!pfps_h->at(pId).IsPrimary()) continue;
+  //     const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+  //     sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+  //                          Flash(kNoScrPE), Score(kNoSlcInEvt)));
+  //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+  //   }
+  //   evt.put(std::move(sFM_v));
+  //   evt.put(std::move(pfp_sFM_assn_v));
   //   return;
   // }
 
   // grab spacepoints associated with PFParticles
-  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfp_h, e, fPandoraProducer);
+  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfps_h, evt,
+                                                          fPandoraProducer);
 
-  auto const& spacepoint_h = e.getValidHandle<std::vector<recob::SpacePoint> >(fSpacePointProducer);
-  art::FindManyP<recob::Hit> spacepoint_hit_assn_v(spacepoint_h, e, fSpacePointProducer);
+  auto const& spacepoint_h =
+    evt.getValidHandle<std::vector<recob::SpacePoint>>(fSpacePointProducer);
+  art::FindManyP<recob::Hit> spacepoint_hit_assn_v(spacepoint_h,
+                                                   evt, fSpacePointProducer);
 
   // grab tracks associated with PFParticles
-  // auto const& track_h = e.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
-  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, e, fTrackProducer);
+  // auto const& track_h = evt.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
+  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, evt, fTrackProducer);
 
   // grab calorimetry info for tracks
-  // auto const& calo_h = e.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
-  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h, e, fCaloProducer);
+  // auto const& calo_h =
+  //   evt.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
+  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h,
+  //                                                      evt, fCaloProducer);
 
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit>> ophit_h;
-  e.getByLabel(fOpHitProducer, ophit_h);
+  evt.getByLabel(fOpHitProducer, ophit_h);
   if(!ophit_h.isValid()) {
     mf::LogError("FlashPredict")
       << "No optical hits from producer module "
       << fOpHitProducer;
     bk.nonvalidophit++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoOpHInEvt)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
 
@@ -186,7 +226,7 @@ void FlashPredict::produce(art::Event & e)
 
   if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
     art::Handle<std::vector<recob::OpHit>> ophitara_h;
-    e.getByLabel(fOpHitARAProducer, ophitara_h);
+    evt.getByLabel(fOpHitARAProducer, ophitara_h);
     if(!ophitara_h.isValid()) {
       mf::LogWarning("FlashPredict")
         << "Non valid ophits from ARAPUCAS"
@@ -210,10 +250,19 @@ void FlashPredict::produce(art::Event & e)
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
-    e.put(std::move(T0_v));
-    e.put(std::move(pfp_t0_assn_v));
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoOpHInEvt)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
+  // TODO: for SBND optically isolated volumes create 2 more opHits:
+  // opHitsOnlyOnTheLeft, opHitsOnlyOnTheRight... or some better name/object
 
   std::set<unsigned> tpcWithOpH;
   if(fSBND) {// no point for ICARUS
@@ -224,27 +273,28 @@ void FlashPredict::produce(art::Event & e)
   }
 
   std::map<size_t, size_t> pfpMap;
-  for (size_t p=0; p<pfp_h->size(); p++) pfpMap[pfp_h->at(p).Self()] = p;
+  for (size_t pId=0; pId<pfps_h->size(); pId++) {
+    pfpMap[pfps_h->at(pId).Self()] = pId;
+  }
 
   std::map<double, ChargeDigest, std::greater<double>> chargeDigestMap;
   // Loop over pandora pfp particles
-  for (size_t pId=0; pId<pfp_h->size(); pId++) {
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pId);
+  for(size_t pId=0; pId<pfps_h->size(); pId++) {
+    if(!pfps_h->at(pId).IsPrimary()) continue;
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
     unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
-    if (!pfp_ptr->IsPrimary()) continue;
-    if (fSelectNeutrino &&
-        (pfpPDGC != 12) &&
-        (pfpPDGC != 14) &&
-        (pfpPDGC != 16) ) continue;
+    if(fSelectNeutrino &&
+        (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16) ) continue;
     bk.pfp_to_score++;
     flashmatch::QCluster_t qClusters;
     std::set<unsigned> tpcWithHits;
 
     {//TODO: pack this into a function
     std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
-    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_ptr_v);
+    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_ptr_v);
 
-    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ? fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
+    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ?
+      fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
     double totalCharge = 0;
     //  loop over all mothers and daughters, fill qCluster
     for (auto& pfp_md: pfp_ptr_v) {
@@ -293,18 +343,21 @@ void FlashPredict::produce(art::Event & e)
           auto itpc = wid.TPC;
           tpcWithHits.insert(itpc);
           const auto charge(hit->Integral());
+          if (charge < fMinHitQ) continue;
           totalCharge += charge;
           qClusters.emplace_back(pos[0], pos[1], pos[2], charge * chargeToNPhotons);
         } // for all hits associated to this spacepoint
       } // for all spacepoints
       //      }  // if track or shower
     } // for all pfp pointers
-    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr, qClusters, tpcWithHits);
+    if (totalCharge < fMinSliceQ) continue;
+    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr,
+                                                qClusters, tpcWithHits);
     }//TODO: pack this into a function
   } // over all PFParticles
 
   for(auto& chargeDigest : chargeDigestMap) {
-    const size_t pId = chargeDigest.second.pId;
+    //const size_t pId = chargeDigest.second.pId;
     const int pfpPDGC = chargeDigest.second.pfpPDGC;
     const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
     const auto& qClusters = chargeDigest.second.qClusters;
@@ -318,9 +371,10 @@ void FlashPredict::produce(art::Event & e)
       if (tpcWithHitsOpH.size() == 0) {
         mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
         bk.no_oph_hits++;
-        mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-        T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kQNoOpHScr));
-        util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+        sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                             Flash(kNoScrPE), Score(kQNoOpHScr)));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
         continue;
       }
     }
@@ -328,34 +382,48 @@ void FlashPredict::produce(art::Event & e)
     if(!computeChargeMetrics(qClusters)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
       bk.no_charge++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., kNoChrgScr));
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(kNoChrgScr)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
 
     if(!computeFlashMetrics(tpcWithHits)){
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(-9999., 0, pId, -9999., k0VUVPEScr));
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                           Flash(kNoScrPE), Score(k0VUVPEScr)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
 
     if(computeScore(tpcWithHits, pfpPDGC)){
       if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
       bk.scored_pfp++;
-      mf::LogDebug("FlashPredict") << "Creating T0 and PFP-T0 association";
-      T0_v->push_back(anab::T0(_flash_time, _countPE, pId, _hypo_x, _score));
-      util::CreateAssn(*this, e, *T0_v, pfp_ptr, *pfp_t0_assn_v);
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
+      Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
+      Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
+      sFM_v->push_back(sFM(true, _flash_time, charge, flash, score));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    else{
+      mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
+                                   << "\n_score:     " << _score
+                                   << "\n_scr_y:     " << _scr_y
+                                   << "\n_scr_z:     " << _scr_z
+                                   << "\n_scr_rr:    " << _scr_rr
+                                   << "\n_scr_ratio: " << _scr_ratio;
+      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
     }
   } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
   updateBookKeeping();
 
-  e.put(std::move(T0_v));
-  e.put(std::move(pfp_t0_assn_v));
+  evt.put(std::move(sFM_v));
+  evt.put(std::move(pfp_sFM_assn_v));
 
 }// end of producer module
 
@@ -369,6 +437,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
   // _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
   _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
+  _flashmatch_nuslice_tree->Branch("flash_x_gl", &_flash_x_gl, "flash_x_gl/D");
   _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
   _flashmatch_nuslice_tree->Branch("flash_y", &_flash_y, "flash_y/D");
   _flashmatch_nuslice_tree->Branch("flash_z", &_flash_z, "flash_z/D");
@@ -383,6 +452,8 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
   _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_rr", &_hypo_x_rr, "hypo_x_rr/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_ratio", &_hypo_x_ratio, "hypo_x_ratio/D");
   // _flashmatch_nuslice_tree->Branch("hypo_x_fit", &_hypo_x_fit, "hypo_x_fit/D");
   _flashmatch_nuslice_tree->Branch("score", &_score, "score/D");
   _flashmatch_nuslice_tree->Branch("scr_y", &_scr_y, "scr_y/D");
@@ -394,8 +465,6 @@ void FlashPredict::initTree(void)
 
 void FlashPredict::loadMetrics()
 {
-  // TODO: Set a better way to run with no metrics
-
   // TODO: fill histos with less repetition and range for loops
   // read histograms and fill vectors for match score calculation
   std::string fname;
@@ -575,13 +644,12 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 {
   double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
-  double scale = 0.001;
   _charge_q = 0.;
   for (auto& qp : qClusters) {
-    xave += scale * qp.q * qp.x;
-    yave += scale * qp.q * qp.y;
-    zave += scale * qp.q * qp.z;
-    norm += scale * qp.q;
+    xave += fQScale * qp.q * qp.x;
+    yave += fQScale * qp.q * qp.y;
+    zave += fQScale * qp.q * qp.z;
+    norm += fQScale * qp.q;
     _charge_q += qp.q;
   }
   if (norm > 0) {
@@ -597,6 +665,10 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 
 bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 {
+  // NOTE: _flash_x holds the X coordinate of the opdet that registered
+  //       the most PEs in the flash.
+  // TODO: change _flash_x to hold the X coordinate of the wall that
+  //       registered the most PEs overall
   auto compareOpHits = [] (const recob::OpHit& oph1, const recob::OpHit& oph2)->bool
     { return oph1.PE() < oph2.PE(); };
   auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
@@ -616,7 +688,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     auto opDetXYZ = opDet.GetCenter();
 
     std::string op_type = "pmt"; // the label ICARUS has
-    if(fSBND) op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+    if(fSBND){
+      op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+      if(!fUseUncoatedPMT && op_type == "pmt_uncoated") continue;
+    }
 
     double ophPE2 = oph->PE() * oph->PE();
     sum       += 1.0;
@@ -656,12 +731,12 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   } // for opHits
 
   if (sum_PE > 0) {
-    _flash_pe    = sum_PE   * fPEscale;
-    _flash_unpe  = sum_unPE * fPEscale;
-    _flash_ratio = fVUVToVIS * _flash_unpe / _flash_pe;
+    _flash_pe    = sum_PE   * fPEScale;
+    _flash_unpe  = sum_unPE * fPEScale;
+    _flash_ratio = fOpDetNormalizer * _flash_unpe / _flash_pe;
     if(fUseARAPUCAS) {
-      _flash_unpe  += sum_visARA_PE * fPEscale;
-      _flash_ratio = (fVUVToVIS * sum_unPE  + sum_visARA_PE )* fPEscale / _flash_pe;
+      _flash_unpe  += sum_visARA_PE * fPEScale;
+      _flash_ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE )* fPEScale / _flash_pe;
     }
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
@@ -670,7 +745,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     // _hypo_x = hypoFlashX_splines();
     _hypo_x = hypoFlashX_fits();
-    _countPE = std::round(_flash_pe);
+    _flash_x_gl = flashXGl(_hypo_x, _flash_x);
     return true;
   }
   else {
@@ -765,7 +840,7 @@ bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
 // }
 
 
-double FlashPredict::hypoFlashX_fits() const
+double FlashPredict::hypoFlashX_fits()
 {
   std::vector<double> rrXs;
   double rr_hypoX, rr_hypoXWgt;
@@ -800,6 +875,7 @@ double FlashPredict::hypoFlashX_fits() const
     }
   }
 
+  _hypo_x_rr = rr_hypoX;
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
     return rr_hypoX;
 
@@ -835,6 +911,7 @@ double FlashPredict::hypoFlashX_fits() const
       pe_hypoXWgt = 1./std::abs(peXs[0] - fDriftDistance);
     }
   }
+  _hypo_x_ratio = pe_hypoX;
 
   return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
 }
@@ -928,7 +1005,7 @@ double FlashPredict::hypoFlashX_fits() const
 void FlashPredict::AddDaughters(
   const std::map<size_t, size_t>& pfpMap,
   const art::Ptr<recob::PFParticle>& pfp_ptr,
-  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
   std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const
 {
   auto daughters = pfp_ptr->Daughters();
@@ -938,8 +1015,8 @@ void FlashPredict::AddDaughters(
       std::cout << "Did not find DAUGHTERID in map! error" << std::endl;
       continue;
     }
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfp_h, pfpMap.at(daughterid) );
-    AddDaughters(pfpMap, pfp_ptr, pfp_h, pfp_v);
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pfpMap.at(daughterid) );
+    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_v);
   } // for all daughters
   return;
 } // void FlashPredict::AddDaughters
@@ -962,9 +1039,9 @@ double FlashPredict::scoreTerm(const double m,
 
 
 bool FlashPredict::pfpNeutrinoOnEvent(
-  const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const
 {
-  for (auto const& p : (*pfp_h)) {
+  for (auto const& p : (*pfps_h)) {
     unsigned pfpPDGC = std::abs(p.PdgCode());
     if ((pfpPDGC == 12) ||
         (pfpPDGC == 14) ||
@@ -1016,7 +1093,7 @@ bool FlashPredict::createOpHitsTimeHist(
         !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
     if(fSBND && !fUseUncoatedPMT &&
        !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
-    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEscale * oph.PE());
+    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEScale * oph.PE());
   }
   if (fOpHitsTimeHist->GetEntries() <= 0 ||
       fOpHitsTimeHist->Integral() < fMinFlashPE) return false;
@@ -1029,8 +1106,8 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
   int ibin = fOpHitsTimeHist->GetMaximumBin();
   double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
   _flash_time = maxpeak_time; // in us
-  double lowedge  = _flash_time + fLightWindowStart;
-  double highedge = _flash_time + fLightWindowEnd;
+  double lowedge  = _flash_time + fFlashStart;
+  double highedge = _flash_time + fFlashEnd;
   mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
   int lowedge_bin = fOpHitsTimeHist->FindBin(lowedge);
   int highedge_bin = fOpHitsTimeHist->FindBin(highedge);
@@ -1094,6 +1171,24 @@ unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
   return (geometry->PositionToTPCID(p)).TPC;
+}
+
+
+double FlashPredict::flashXGl(const double hypo_x,
+                              const double flash_x) const
+{
+  double min = 10000;
+  unsigned wId = 0;
+  auto wIt = fWiresX_gl.begin();
+  auto w = wIt;
+  for(size_t i=0; i<fWiresX_gl.size(); i++){
+    if(((*w<0) == (flash_x<0))&& std::abs(*w - flash_x) < min) {
+      wIt = w;
+      wId = i;
+    }
+    w++;;
+  }
+  return (wId % 2) ? (*wIt - hypo_x) : (*wIt + hypo_x);
 }
 
 
@@ -1208,10 +1303,22 @@ void FlashPredict::printBookKeeping(Stream&& out)
   m << "----------------------------------------\n"
     << "Job Tally\n"
     << "\tEvents:       \t  " << bk.events << "\n";
-  if(bk.nopfpneutrino) m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino << "\n";
-  // if(bk.noslice)       m << "\tNo Slice:         \t -" << bk.noslice       << "\n";
-  if(bk.nonvalidophit) m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit << "\n";
-  if(bk.nullophittime) m << "\tNo OpHits in-time:\t -" << bk.nullophittime << "\n";
+  if(bk.nopfpneutrino) {
+    m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino
+      << ", scored as: " << kNoPFPInEvt << "\n";
+  }
+  // if(bk.noslice) {
+  //   m << "\tNo Slice:         \t -" << bk.noslice
+  //     << ", scored as: " << kNoSlcInEvt << "\n";
+  // }
+  if(bk.nonvalidophit) {
+    m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit
+      << ", scored as: " << kNoOpHInEvt << "\n";
+  }
+  if(bk.nullophittime) {
+    m << "\tNo OpHits in-time:\t -" << bk.nullophittime
+      << ", scored as: " << kNoOpHInEvt << "\n";
+  }
   m << "\t----------------------\n";
   if(bk.job_bookkeeping != bk.events_processed)
     m << "\tJob Bookkeeping:  \t" << bk.job_bookkeeping << " ERROR!\n";
