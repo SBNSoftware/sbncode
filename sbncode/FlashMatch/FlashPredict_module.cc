@@ -37,10 +37,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
   , fMinHitQ(p.get<double>("MinHitQ", 0.0))
   , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
-  , fQScale(p.get<double>("QScale", 1.0))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
-  , fPEScale(p.get<double>("PEScale", 1.0))
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
   , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
@@ -644,15 +642,14 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 {
   double xave = 0.; double yave = 0.;
   double zave = 0.; double norm = 0.;
-  _charge_q = 0.;
   for (auto& qp : qClusters) {
-    xave += fQScale * qp.q * qp.x;
-    yave += fQScale * qp.q * qp.y;
-    zave += fQScale * qp.q * qp.z;
-    norm += fQScale * qp.q;
-    _charge_q += qp.q;
+    xave += qp.q * qp.x;
+    yave += qp.q * qp.y;
+    zave += qp.q * qp.z;
+    norm += qp.q;
   }
-  if (norm > 0) {
+  if (norm > 0.) {
+    _charge_q = norm;
     _charge_x_gl = xave / norm;
     _charge_x = driftDistance(_charge_x_gl);
     _charge_y = yave / norm;
@@ -731,12 +728,12 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   } // for opHits
 
   if (sum_PE > 0) {
-    _flash_pe    = sum_PE   * fPEScale;
-    _flash_unpe  = sum_unPE * fPEScale;
+    _flash_pe    = sum_PE;
+    _flash_unpe  = sum_unPE;
     _flash_ratio = fOpDetNormalizer * _flash_unpe / _flash_pe;
     if(fUseARAPUCAS) {
-      _flash_unpe  += sum_visARA_PE * fPEScale;
-      _flash_ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE )* fPEScale / _flash_pe;
+      _flash_unpe  += sum_visARA_PE;
+      _flash_ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE ) / _flash_pe;
     }
     _flash_y  = sum_PE2Y / sum_PE2;
     _flash_z  = sum_PE2Z / sum_PE2;
@@ -1091,9 +1088,9 @@ bool FlashPredict::createOpHitsTimeHist(
     auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
     if (fICARUS &&
         !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
-    if(fSBND && !fUseUncoatedPMT &&
-       !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
-    fOpHitsTimeHist->Fill(oph.PeakTime(), fPEScale * oph.PE());
+    else (fSBND && !fUseUncoatedPMT &&
+          !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
+    fOpHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
   }
   if (fOpHitsTimeHist->GetEntries() <= 0 ||
       fOpHitsTimeHist->Integral() < fMinFlashPE) return false;

@@ -154,8 +154,8 @@ private:
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
-  const double fMinHitQ, fMinSliceQ, fQScale;
-  const double fMinOpHPE, fMinFlashPE, fPEScale;
+  const double fMinHitQ, fMinSliceQ;
+  const double fMinOpHPE, fMinFlashPE;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
   std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
