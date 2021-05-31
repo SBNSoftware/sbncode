@@ -63,6 +63,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     fDetector = "SBND";
     fSBND = true;
     fICARUS = false;
+    if(fUseOppVolMetric) {
+      throw cet::exception("FlashPredict")
+        << "UseOppVolMetric: " << std::boolalpha << fUseOppVolMetric << "\n"
+        << "Not supported on SBND. Stopping.";
+    }
     fTPCPerDriftVolume = 1;
     fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
@@ -70,6 +75,12 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     fDetector = "ICARUS";
     fSBND = false;
     fICARUS = true;
+    if(fUseUncoatedPMT || fUseARAPUCAS) {
+      throw cet::exception("FlashPredict")
+        << "UseUncoatedPMT: " << std::boolalpha << fUseUncoatedPMT << ",\n"
+        << "UseARAPUCAS:    " << std::boolalpha << fUseARAPUCAS << "\n"
+        << "Not supported on ICARUS. Stopping.\n";
+    }
     fTPCPerDriftVolume = 2;
     fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
@@ -222,11 +233,11 @@ void FlashPredict::produce(art::Event& evt)
   std::vector<recob::OpHit> opHits(ophit_h->size());
   copyOpHitsInBeamWindow(opHits, ophit_h);
 
-  if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
     art::Handle<std::vector<recob::OpHit>> ophitara_h;
     evt.getByLabel(fOpHitARAProducer, ophitara_h);
     if(!ophitara_h.isValid()) {
       mf::LogWarning("FlashPredict")
+  if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
         << "Non valid ophits from ARAPUCAS"
         << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
         << "\nfOpHitARAProducer: " << fOpHitARAProducer;
@@ -662,14 +673,15 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 
 bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
 {
-  // NOTE: _flash_x holds the X coordinate of the opdet that registered
-  //       the most PEs in the flash.
-  // TODO: change _flash_x to hold the X coordinate of the wall that
-  //       registered the most PEs overall
+  // NOTE: opHMax_X (and later _flash_x) holds the X coordinate of the
+  //       opdet that registered the most PEs in the flash.
+  // TODO: change to peSumMax_wallX (and later _flash_x) to hold the X
+  //       coordinate of the wall that registered the most PEs overall
   auto compareOpHits = [] (const recob::OpHit& oph1, const recob::OpHit& oph2)->bool
     { return oph1.PE() < oph2.PE(); };
   auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
-  _flash_x = geometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
+  double opHMax_X =
+    geometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
 
   double sum = 0.;
   double sum_PE = 0.;
@@ -684,10 +696,17 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     auto opDet = geometry->OpDetGeoFromOpChannel(oph->OpChannel());
     auto opDetXYZ = opDet.GetCenter();
 
-    std::string op_type = "pmt"; // the label ICARUS has
-    if(fSBND){
-      op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
-      if(!fUseUncoatedPMT && op_type == "pmt_uncoated") continue;
+    bool is_pmt_vis = false, is_ara_vis = false;
+    if(fSBND){// because VIS light
+      auto op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+      if(op_type == "pmt_uncoated") {
+        if(!fUseUncoatedPMT) continue;
+        is_pmt_vis = true, is_ara_vis = false;
+      }
+      else if(op_type == "xarapuca_vis" || op_type == "arapuca_vis") {
+        is_pmt_vis = false, is_ara_vis = true;
+        // if !fUseArapucas, they weren't loaded at all
+      }
     }
 
     double ophPE2 = oph->PE() * oph->PE();
@@ -712,22 +731,21 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
         }
       }
       // // TODO: for this block instead, needs testing!
-      // if(fUseOppVolMetric && _flash_x != opDetXYZ.X()){
+      // if(fUseOppVolMetric && peSumMax_wallX != opDetXYZ.X()){
       //   sum_unPE += oph->PE();
       // }
     }
-    else if(fSBND){
-      if(fUseUncoatedPMT && op_type == "pmt_uncoated") {
+    else {// fSBND
+      if(fUseUncoatedPMT && is_pmt_vis) {
         sum_unPE += oph->PE();
       }
-      else if(fUseARAPUCAS &&
-              (op_type == "arapuca_vis" || op_type == "xarapuca_vis")) {
+      else if(fUseARAPUCAS && is_ara_vis) {
         sum_visARA_PE += oph->PE();
       }
     }
   } // for opHits
 
-  if (sum_PE > 0) {
+  if (sum_PE > 0.) {
     _flash_pe    = sum_PE;
     _flash_unpe  = sum_unPE;
     _flash_ratio = fOpDetNormalizer * _flash_unpe / _flash_pe;
@@ -742,6 +760,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
     // _hypo_x = hypoFlashX_splines();
     _hypo_x = hypoFlashX_fits();
+    // TODO: using _hypo_x make further corrections to _flash_time to
+    // account for light transport time
+    // _flash_time = timeCorrections(_flash_time, _hypo_x);
+    _flash_x = opHMax_X; // TODO: _flash_x = peSumMax_wallX;
     _flash_x_gl = flashXGl(_hypo_x, _flash_x);
     return true;
   }
@@ -758,12 +780,12 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
       << "tpcWithHits:  \t" << tpcs << "\n"
       << "opHits size:  \t" << std::distance(fOpH_beg, fOpH_end) << "\n"
       << "channels:     \t" << channels << std::endl;
-    _flash_y = 0;
-    _flash_z = 0;
-    _flash_r = 0;
-    _flash_pe = 0;
-    _flash_unpe = 0;
-    _flash_ratio = 0;
+    _flash_y = 0.;
+    _flash_z = 0.;
+    _flash_r = 0.;
+    _flash_pe = 0.;
+    _flash_unpe = 0.;
+    _flash_ratio = 0.;
     return false;
   }
 }
@@ -789,8 +811,7 @@ bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
   if (_scr_rr > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, _scr_rr, out);
   _score += _scr_rr;
   tcount++;
-  if ((fSBND && fUseUncoatedPMT) ||
-      (fICARUS && fUseOppVolMetric)) {
+  if (fUseUncoatedPMT || fUseOppVolMetric) {
     _scr_ratio = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
     if (_scr_ratio > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, _scr_ratio, out);
     _score += _scr_ratio;
@@ -1088,8 +1109,8 @@ bool FlashPredict::createOpHitsTimeHist(
     auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
     if (fICARUS &&
         !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
-    else (fSBND && !fUseUncoatedPMT &&
-          !fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_coated")) continue;
+    else if(fSBND && !fUseUncoatedPMT &&
+            fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated")) continue;
     fOpHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
   }
   if (fOpHitsTimeHist->GetEntries() <= 0 ||
@@ -1130,7 +1151,7 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
 bool FlashPredict::isPDInCryo(const int pdChannel) const
 {
   if(fSBND) return true;
-  else if(fICARUS){
+  else { // fICARUS
     // BUG: I believe this function is not working, every now and then
     // I get ophits from the other cryo
     auto& p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
