@@ -1,0 +1,6 @@
+<lcgdict>
+  <class name="sbn::TrackInfo" />
+  <class name="sbn::MetaInfo" />
+  <class name="sbn::HitInfo" />
+  <class name="std::vector<sbn::HitInfo>" />
+</lcgdict>

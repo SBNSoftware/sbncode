@@ -9,6 +9,7 @@
 #include "particleid.fcl"
 #include "trackareahit_producer.fcl"
 #include "trackhitfilter_module.fcl"
+#include "reco_icarus.fcl"
 
 process_name: CaloAna
 
@@ -27,7 +28,7 @@ services:
 services.SpaceChargeService: @local::icarus_spacecharge
 
 # For run 5396 -- fix the Geometry config
-services.Geometry.Name: icarus_splitwires
+# services.Geometry.Name: icarus_splitwires
 
 source:
 {
@@ -51,7 +52,7 @@ calorimetry: {
   CaloAlg: {
     CalAmpConstants: [1., 1., 1.]
     CalAreaConstants: [1., 1., 1.]
-    CaloDoLifeTimeCorrection: true
+    CaloDoLifeTimeCorrection: false
     CaloLifeTimeForm: 0
     CaloUseModBox: true
   }
@@ -61,43 +62,63 @@ calorimetry: {
   FieldDistortionEfield: false
   T0ModuleLabel: ""
   TrackIsFieldDistortionCorrected: false
-  TrackModuleLabel: "pandoraTrackGausCryo0"
+  TrackModuleLabel: "tracks"
   module_type: "GnocchiCalorimetry"
 }
 
 physics:
 {
   producers:{
-    filthit: @local::trackhitfilter_icarus
-    filtgoodhit: @local::trackhitfilter_icarus
-    calorimetry: @local::calorimetry
+    filtgoodhitCryoE: @local::trackhitfilter_icarus
+    calorimetryCryoE: @local::calorimetry
+
+    filtgoodhitCryoW: @local::trackhitfilter_icarus
+    calorimetryCryoW: @local::calorimetry
   }
 
   analyzers:
   {
-    calorimetryana: {
-      module_type: CalorimetryAnalysis
-      CALOproducer: "calorimetry"
-      PIDproducer:  "particleid"
-      TRKproducer:  "pandoraTrackGausCryo0"
-      PFPproducer: "pandoraGausCryo0"
-      HitProducers: ["cluster3DCryo0"]
-      ADCtoE: []
+    caloanaCryoE: {
+      module_type: GCalorimetryAnalysis
+      CALOproducer: "calorimetryCryoE"
+      TRKproducer:  "pandoraTrackGausCryoE"
+      T0producer: "pandoraGausCryoE"
+      PFPproducer: "pandoraGausCryoE"
+      RequireT0: true
+      SelectionTools: []
+    }
+
+    caloanaCryoW: {
+      module_type: GCalorimetryAnalysis
+      CALOproducer: "calorimetryCryoW"
+      TRKproducer:  "pandoraTrackGausCryoW"
+      T0producer: "pandoraGausCryoW"
+      PFPproducer: "pandoraGausCryoW"
+      RequireT0: true
+      SelectionTools: []
     }
   }
 
   filters: {
     datafilter: {
       module_type: DataSelect
-      HitLabel: cluster3DCryo0
+      HitLabel: cluster3DCryo1
     }
   }
 
-  runprod: [datafilter, calorimetry, filtgoodhit]
-  ana: [calorimetryana]
+  runprod: [filtgoodhitCryoE, calorimetryCryoE, filtgoodhitCryoW, calorimetryCryoW] 
+  ana: [caloanaCryoE, caloanaCryoW]
   trigger_paths: [runprod]
   stream1:       [ ]
   end_paths:     [ana]
 }
 
+physics.producers.filtgoodhitCryoE.TrackLabel: "pandoraTrackGausCryoE"
+physics.producers.filtgoodhitCryoE.HitLabel: "cluster3DCryoE"
+
+physics.producers.filtgoodhitCryoW.TrackLabel: "pandoraTrackGausCryoW"
+physics.producers.filtgoodhitCryoW.HitLabel: "cluster3DCryoW"
+
+physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
 
