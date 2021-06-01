@@ -1,40 +1,37 @@
 #include "MeVPrtlTruth.h"
 
-evgen::ldm::MeVPrtlTruth evgen::ldm::BuildMeVPrtlTruth(const MeVPrtlFlux &flux, const MeVPrtlDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot) {
-  MeVPrtlTruth ret;
-  ret.kaon_dmom = flux.kmom;
-  ret.kaon_dmom_beamcoord = flux.kmom_beamcoord;
-  ret.kaon_pdg = flux.kaon_pdg;
-  ret.kaon_dpos_beamcoord = flux.pos_beamcoord;
+evgen::ldm::MeVPrtlTruth::MeVPrtlTruth(const MeVPrtlFlux &flux, const MeVPrtlDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot) {
+  kaon_dmom = flux.kmom;
+  kaon_dmom_beamcoord = flux.kmom_beamcoord;
+  kaon_pdg = flux.kaon_pdg;
+  kaon_dpos_beamcoord = flux.pos_beamcoord;
 
-  ret.mevprtl_mom = flux.mom;
-  ret.mevprtl_start = flux.pos;
-  ret.mevprtl_mom_beamcoord = flux.mom_beamcoord;
+  mevprtl_mom = flux.mom;
+  mevprtl_start = flux.pos;
+  mevprtl_mom_beamcoord = flux.mom_beamcoord;
 
-  ret.decay_pos = decay.pos;
+  decay_pos = decay.pos;
 
-  ret.daughter_mom = decay.daughter_mom;
-  ret.daughter_pdg = decay.daughter_pdg;
+  daughter_mom = decay.daughter_mom;
+  daughter_pdg = decay.daughter_pdg;
 
-  ret.pot = pot;
-  ret.flux_weight = flux_weight;
-  ret.ray_weight = ray_weight;
-  ret.decay_weight = decay_weight;
-  ret.mevprtl_enter = inout[0];
-  ret.mevprtl_exit = inout[1];
+  pot = pot;
+  flux_weight = flux_weight;
+  ray_weight = ray_weight;
+  decay_weight = decay_weight;
+  mevprtl_enter = inout[0];
+  mevprtl_exit = inout[1];
 
-  ret.mass = flux.mass;
-  ret.C1 = flux.C1;
-  ret.C2 = flux.C2;
-  ret.C3 = flux.C3;
-  ret.C4 = flux.C4;
-  ret.C5 = flux.C5;
+  mass = flux.mass;
+  C1 = flux.C1;
+  C2 = flux.C2;
+  C3 = flux.C3;
+  C4 = flux.C4;
+  C5 = flux.C5;
 
-  ret.decay_width = decay.decay_width;
-  ret.mean_lifetime = decay.mean_lifetime;
-  ret.mean_distance = decay.mean_distance;
+  decay_width = decay.decay_width;
+  mean_lifetime = decay.mean_lifetime;
+  mean_distance = decay.mean_distance;
 
-  ret.gen = (evgen::ldm::Generator)flux.generator;
-
-  return ret;
+  gen = (evgen::ldm::Generator)flux.generator;
 }

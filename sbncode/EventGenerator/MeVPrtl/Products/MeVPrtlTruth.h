@@ -46,9 +46,10 @@ public:
   double mean_distance;
 
   Generator gen;
-};
 
-MeVPrtlTruth BuildMeVPrtlTruth(const MeVPrtlFlux &flux, const MeVPrtlDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot);
+  MeVPrtlTruth(const MeVPrtlFlux &flux, const MeVPrtlDecay &decay, std::array<TVector3, 2> inout, double flux_weight, double ray_weight, double decay_weight, double pot);
+  MeVPrtlTruth() {} // Default initialize
+};
 
 } // end namespace ldm
 

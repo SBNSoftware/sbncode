@@ -80,6 +80,9 @@ public:
     std::cout << "FlxTool called (" << fNCalls[1] << ") times. Total duration (" << fNTime[1] << ") ms. Duration per call (" << (fNTime[1] / fNCalls[1]) << ") ms.\n";
     std::cout << "RayTool called (" << fNCalls[2] << ") times. Total duration (" << fNTime[2] << ") ms. Duration per call (" << (fNTime[2] / fNCalls[2]) << ") ms.\n";
     std::cout << "DcyTool called (" << fNCalls[3] << ") times. Total duration (" << fNTime[3] << ") ms. Duration per call (" << (fNTime[3] / fNCalls[3]) << ") ms.\n";
+
+    if (fEngine) delete fEngine;
+    if (fMeVPrtl) delete fMeVPrtl;
   }
 
 private:
@@ -112,6 +115,10 @@ private:
 evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   : EDProducer{p}
 {
+  // nullify pointers
+  fMeVPrtl = NULL;
+  fEngine = NULL;
+
   fProduce = p.get<bool>("Produce", true);
   fAnaOutput = p.get<bool>("AnaOutput", false);
 
@@ -237,7 +244,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     std::chrono::duration<double, std::milli> duration = t2 - t1;
     fNTime[0] = duration.count();
 
-    evgen::ldm::KaonParent kaonp = MakeKaonParent(kaon);
+    evgen::ldm::KaonParent kaonp(kaon);
     bool is_kaon = kaonp.kaon_pdg != 0;
 
     // (void) is_kaon;
@@ -318,7 +325,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fSubRunPOT += thisPOT;
 
     // build the output objects
-    evgen::ldm::MeVPrtlTruth mevprtl_truth = evgen::ldm::BuildMeVPrtlTruth(flux, decay, 
+    evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay, 
       intersection,
       flux_weight,
       1.,

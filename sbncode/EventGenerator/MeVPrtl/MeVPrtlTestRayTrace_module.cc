@@ -117,7 +117,7 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
   while (1) {
     simb::MCFlux kaon = fGenTool->GetNext();
 
-    evgen::ldm::KaonParent kaonp = MakeKaonParent(kaon);
+    evgen::ldm::KaonParent kaonp(kaon);
     bool is_kaon = kaonp.kaon_pdg != 0;
 
     // (void) is_kaon;
@@ -177,7 +177,7 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
 
     evgen::ldm::MeVPrtlDecay decay;
     std::array<TVector3, 2> intersection;
-    *fMeVPrtl = evgen::ldm::BuildMeVPrtlTruth(flux, decay, intersection, flux_weight, 1., 1., 0.);
+    *fMeVPrtl = evgen::ldm::MeVPrtlTruth(flux, decay, intersection, flux_weight, 1., 1., 0.);
     for (unsigned iray = 0; iray < fRayTools.size(); iray++) {
       fBranchWeights[iray] = weightsum[iray] / fNCall;
     }

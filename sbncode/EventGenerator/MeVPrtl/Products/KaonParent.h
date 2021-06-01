@@ -14,9 +14,10 @@ public:
   int kaon_pdg;
   double weight;
   int mode;
-};
 
-KaonParent MakeKaonParent(const simb::MCFlux &flux);
+  KaonParent() {} // Default initialize
+  KaonParent(const simb::MCFlux &flux);
+};
 
 }
 }

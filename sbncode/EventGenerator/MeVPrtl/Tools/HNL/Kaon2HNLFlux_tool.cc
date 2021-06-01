@@ -175,7 +175,7 @@ float Kaon2HNLFlux::MaxWeight() {
 
 bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hnl, double &weight) {
   // make the kaon parent
-  evgen::ldm::KaonParent kaon = evgen::ldm::MakeKaonParent(flux);
+  evgen::ldm::KaonParent kaon(flux);
   if (abs(kaon.kaon_pdg) != 321) return false; // Only take charged kaons
 
   // select on the kaon

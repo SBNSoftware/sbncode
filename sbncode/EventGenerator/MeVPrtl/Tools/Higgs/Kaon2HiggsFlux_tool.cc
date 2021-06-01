@@ -209,7 +209,7 @@ float Kaon2HiggsFlux::MaxWeight() {
 bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &higgs, double &weight) {
 
   // make the kaon parent
-  evgen::ldm::KaonParent kaon = evgen::ldm::MakeKaonParent(flux);
+  evgen::ldm::KaonParent kaon(flux);
   if (!kaon.kaon_pdg) return false; // parent wasn't a kaon
 
   // select on the kaon
