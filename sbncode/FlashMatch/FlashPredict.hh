@@ -120,6 +120,7 @@ private:
   bool createOpHitsTimeHist(
     const std::vector<recob::OpHit>& opHits) const;
   bool findMaxPeak(std::vector<recob::OpHit>& opHits);
+  inline std::string detectorName(const std::string detName) const;
   bool isPDInCryo(const int pdChannel) const;
   bool isSBNDPDRelevant(const int pdChannel,
                         const std::set<unsigned>& tpcWithHits) const;
@@ -156,15 +157,16 @@ private:
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   const double fMinHitQ, fMinSliceQ;
   const double fMinOpHPE, fMinFlashPE;
-  std::string fDetector; // SBND or ICARUS
-  bool fSBND, fICARUS;
-  std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
+  const art::ServiceHandle<geo::Geometry> fGeometry;
+  const std::string fDetector; // SBND or ICARUS
+  const bool fSBND, fICARUS;
+  const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
   const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
-  std::unique_ptr<geo::CryostatGeo> fGeoCryo;
+  const std::unique_ptr<geo::CryostatGeo> fGeoCryo;
   const int fNBins;
   const double fDriftDistance;
-  size_t fNTPC;
+  const size_t fNTPC;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
   const unsigned fOpDetNormalizer;
@@ -174,7 +176,6 @@ private:
 
   unsigned fPeakCounter = 0;
   std::vector<recob::OpHit>::iterator fOpH_beg, fOpH_end;
-  const art::ServiceHandle<geo::Geometry> geometry;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;

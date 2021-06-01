@@ -39,30 +39,28 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
-  , fCryostat(p.get<int>("Cryostat", 0)) //set =0 ot =1 for ICARUS to match reco chain selection
+  , fDetector(detectorName(fGeometry->DetectorName()))
+  , fSBND((fDetector == "SBND") ? true : false )
+  , fICARUS((fDetector == "ICARUS") ? true : false )
+  , fPDMapAlgPtr(art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg")))
+  , fCryostat(p.get<int>("Cryostat", 0)) //set =0 or =1 for ICARUS to match reco chain selection
+  , fGeoCryo(std::make_unique<geo::CryostatGeo>(fGeometry->Cryostat(fCryostat)))
   , fNBins(p.get<int>("n_bins"))
   , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
-  , fOpDetNormalizer(p.get<unsigned>("OpDetNormalizer", 1))
+  , fNTPC(fGeometry->NTPC())
+  , fOpDetNormalizer((fSBND) ? 4 : 1)
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
   produces< std::vector<sbn::SimpleFlashMatch> >();
   produces< art::Assns <recob::PFParticle, sbn::SimpleFlashMatch> >();
-  // fFlashProducer         = p.get<art::InputTag>("FlashProducer");
 
-  fPDMapAlgPtr = art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg"));
-  fGeoCryo = std::make_unique<geo::CryostatGeo>(geometry->Cryostat(fCryostat));
-  fNTPC = geometry->NTPC();
   for (size_t t = 0; t < fNTPC; t++) {
     const geo::TPCGeo& tpcg = fGeoCryo->TPC(t);
     fWiresX_gl.push_back(tpcg.LastPlane().GetCenter().X());
   }
   fWiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
 
-  fDetector = geometry->DetectorName();
-  if(fDetector.find("sbnd") != std::string::npos) {
-    fDetector = "SBND";
-    fSBND = true;
-    fICARUS = false;
+  if(fSBND && !fICARUS) {
     if(fUseOppVolMetric) {
       throw cet::exception("FlashPredict")
         << "UseOppVolMetric: " << std::boolalpha << fUseOppVolMetric << "\n"
@@ -71,10 +69,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     fTPCPerDriftVolume = 1;
     fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
-  else if (fDetector.find("icarus") != std::string::npos) {
-    fDetector = "ICARUS";
-    fSBND = false;
-    fICARUS = true;
+  else if(fICARUS && !fSBND) {
     if(fUseUncoatedPMT || fUseARAPUCAS) {
       throw cet::exception("FlashPredict")
         << "UseUncoatedPMT: " << std::boolalpha << fUseUncoatedPMT << ",\n"
@@ -91,7 +86,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   }
 
   // TODO no point on having fCryostat as parameter, user whatever comes from geometry
-  if (fSBND && fCryostat == 1) {
+  if (fSBND && fCryostat != 0) {
     throw cet::exception("FlashPredict")
       << "SBND has only one cryostat. \n"
       << "Check Detector and Cryostat parameter." << std::endl;
@@ -347,7 +342,7 @@ void FlashPredict::produce(art::Event& evt)
           // TODO: Add hits from induction wires too.
           // Only use hits from the collection plane
           geo::WireID wid = hit->WireID();
-          if (geometry->SignalType(wid) != geo::kCollection) continue;
+          if(fGeometry->SignalType(wid) != geo::kCollection) continue;
           const auto& pos(SP->XYZ());
           auto itpc = wid.TPC;
           tpcWithHits.insert(itpc);
@@ -681,7 +676,7 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     { return oph1.PE() < oph2.PE(); };
   auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
   double opHMax_X =
-    geometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
+    fGeometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
 
   double sum = 0.;
   double sum_PE = 0.;
@@ -692,13 +687,15 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
   for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
-    if(fSBND && !isSBNDPDRelevant(oph->OpChannel(), tpcWithHits)) continue;
-    auto opDet = geometry->OpDetGeoFromOpChannel(oph->OpChannel());
+    int opChannel = oph->OpChannel();
+    // TODO remove this if !isSBNDPDRelevant(), eventually
+    if(fSBND && !isSBNDPDRelevant(opChannel, tpcWithHits)) continue;
+    auto opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
     auto opDetXYZ = opDet.GetCenter();
 
     bool is_pmt_vis = false, is_ara_vis = false;
     if(fSBND){// because VIS light
-      auto op_type = fPDMapAlgPtr->pdType(oph->OpChannel());
+      auto op_type = fPDMapAlgPtr->pdType(opChannel);
       if(op_type == "pmt_uncoated") {
         if(!fUseUncoatedPMT) continue;
         is_pmt_vis = true, is_ara_vis = false;
@@ -709,9 +706,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
       }
     }
 
-    double ophPE2 = oph->PE() * oph->PE();
+    double ophPE  = oph->PE();
+    double ophPE2 = ophPE * ophPE;
     sum       += 1.0;
-    sum_PE    += oph->PE();
+    sum_PE    += ophPE;
     sum_PE2   += ophPE2;
     sum_PE2Y  += ophPE2 * opDetXYZ.Y();
     sum_PE2Z  += ophPE2 * opDetXYZ.Z();
@@ -721,26 +719,26 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     if(fICARUS){
       // TODO: change this if block
       if(fUseOppVolMetric){
-        unsigned pdVolume = icarusPDinTPC(oph->OpChannel())/fTPCPerDriftVolume;
+        unsigned pdVolume = icarusPDinTPC(opChannel)/fTPCPerDriftVolume;
         geo::Point_t q(_charge_x_gl, _charge_y, _charge_z);
         unsigned qVolume = driftVolume(_charge_x_gl);
         if(qVolume < fDriftVolumes){
           if (pdVolume != qVolume){
-            sum_unPE += oph->PE();
+            sum_unPE += ophPE;
           }
         }
       }
       // // TODO: for this block instead, needs testing!
-      // if(fUseOppVolMetric && peSumMax_wallX != opDetXYZ.X()){
-      //   sum_unPE += oph->PE();
+      // if(fUseOppVolMetric && std::abs(peSumMax_wallX-opDetXYZ.X()) < 10.){
+      //   sum_unPE += ophPE;
       // }
     }
     else {// fSBND
       if(fUseUncoatedPMT && is_pmt_vis) {
-        sum_unPE += oph->PE();
+        sum_unPE += ophPE;
       }
       else if(fUseARAPUCAS && is_ara_vis) {
-        sum_visARA_PE += oph->PE();
+        sum_visARA_PE += ophPE;
       }
     }
   } // for opHits
@@ -1106,7 +1104,7 @@ bool FlashPredict::createOpHitsTimeHist(
 {
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
-    auto opDetXYZ = geometry->OpDetGeoFromOpChannel(ch).GetCenter();
+    auto opDetXYZ = fGeometry->OpDetGeoFromOpChannel(ch).GetCenter();
     if (fICARUS &&
         !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
     else if(fSBND && !fUseUncoatedPMT &&
@@ -1148,13 +1146,21 @@ bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
 }
 
 
+inline std::string FlashPredict::detectorName(const std::string detName) const
+{
+  if(detName.find("sbnd")   != std::string::npos) return "SBND";
+  if(detName.find("icarus") != std::string::npos) return "ICARUS";
+  return "";
+}
+
+
 bool FlashPredict::isPDInCryo(const int pdChannel) const
 {
   if(fSBND) return true;
   else { // fICARUS
     // BUG: I believe this function is not working, every now and then
     // I get ophits from the other cryo
-    auto& p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+    auto& p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
     // if the channel is in the Cryostat is relevant
     return fGeoCryo->ContainsPosition(p);
   }
@@ -1165,10 +1171,10 @@ bool FlashPredict::isPDInCryo(const int pdChannel) const
 // TODO: find better, less hacky solution
 unsigned FlashPredict::icarusPDinTPC(const int pdChannel) const
 {
-  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  auto p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   if(fCryostat == 0) p.SetX((p.X() + 222.)/2. - 222.);//OpDets are outside the TPCs
   if(fCryostat == 1) p.SetX((p.X() - 222.)/2. + 222.);//OpDets are outside the TPCs
-  return (geometry->PositionToTPCID(p)).TPC;
+  return (fGeometry->PositionToTPCID(p)).TPC;
 }
 
 
@@ -1186,9 +1192,9 @@ bool FlashPredict::isSBNDPDRelevant(const int pdChannel,
 // TODO: find better, less hacky solution
 unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
 {
-  auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  auto p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
-  return (geometry->PositionToTPCID(p)).TPC;
+  return (fGeometry->PositionToTPCID(p)).TPC;
 }
 
 
@@ -1276,7 +1282,7 @@ unsigned FlashPredict::driftVolume(const double x) const
 // bool FlashPredict::isPDInCryoTPC(int pdChannel, size_t itpc)
 // {
 //   // check whether this optical detector views the light inside this tpc.
-//   auto p = geometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+//   auto p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
 //   return isPDInCryoTPC(p.X(), itpc);
 // }
 
