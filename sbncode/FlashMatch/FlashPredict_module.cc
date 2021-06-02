@@ -25,7 +25,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
-  , fOnlyPrimaries(p.get<bool>("OnlyPrimaries", true))
+  , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
@@ -36,6 +36,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
   , fChargeToNPhotonsTrack(p.get<double>("ChargeToNPhotonsTrack", 1.0))  // ~40000/1600
   , fMinHitQ(p.get<double>("MinHitQ", 0.0))
+  , fMinSpacePointQ(p.get<double>("MinSpacePointQ", 0.0))
+  , fMinParticleQ(p.get<double>("MinParticleQ", 0.0))
   , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
@@ -101,10 +103,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
                                            fBeamWindowStart, fBeamWindowEnd); // in us
   fOpHitsTimeHist->SetOption("HIST");
   fOpHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
-
-  if(!fOnlyPrimaries){
-    mf::LogWarning("FlashPredict")
-      << "The fcl option OnlyPrimaries is useless, sorry. I'll remove it soon.";
   }
 
   if (fMakeTree) initTree();
@@ -185,25 +183,6 @@ void FlashPredict::produce(art::Event& evt)
   //   return;
   // }
 
-  // grab spacepoints associated with PFParticles
-  art::FindManyP<recob::SpacePoint> pfp_spacepoint_assn_v(pfps_h, evt,
-                                                          fPandoraProducer);
-
-  auto const& spacepoint_h =
-    evt.getValidHandle<std::vector<recob::SpacePoint>>(fSpacePointProducer);
-  art::FindManyP<recob::Hit> spacepoint_hit_assn_v(spacepoint_h,
-                                                   evt, fSpacePointProducer);
-
-  // grab tracks associated with PFParticles
-  // auto const& track_h = evt.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
-  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, evt, fTrackProducer);
-
-  // grab calorimetry info for tracks
-  // auto const& calo_h =
-  //   evt.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
-  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h,
-  //                                                      evt, fCaloProducer);
-
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit>> ophit_h;
   evt.getByLabel(fOpHitProducer, ophit_h);
@@ -276,89 +255,8 @@ void FlashPredict::produce(art::Event& evt)
     }
   }
 
-  std::map<size_t, size_t> pfpMap;
-  for (size_t pId=0; pId<pfps_h->size(); pId++) {
-    pfpMap[pfps_h->at(pId).Self()] = pId;
-  }
 
-  std::map<double, ChargeDigest, std::greater<double>> chargeDigestMap;
-  // Loop over pandora pfp particles
-  for(size_t pId=0; pId<pfps_h->size(); pId++) {
-    if(!pfps_h->at(pId).IsPrimary()) continue;
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-    unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
-    if(fSelectNeutrino &&
-        (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16) ) continue;
-    bk.pfp_to_score++;
-    flashmatch::QCluster_t qClusters;
-    std::set<unsigned> tpcWithHits;
-
-    {//TODO: pack this into a function
-    std::vector<art::Ptr<recob::PFParticle> > pfp_ptr_v;
-    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_ptr_v);
-
-    double chargeToNPhotons = lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr) ?
-      fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
-    double totalCharge = 0;
-    //  loop over all mothers and daughters, fill qCluster
-    for (auto& pfp_md: pfp_ptr_v) {
-      auto key = pfp_md.key();
-      /*
-        if ( fUseCalo && lar_pandora::LArPandoraHelper::IsTrack(pfp_ptr)) {
-        // grab tracks associated with pfp particle
-        auto const& track_ptr_v = pfp_track_assn_v.at(key);
-        for (size_t tr=0; tr < track_ptr_v.size(); tr++) {
-        auto mytrack = track_ptr_v[tr];
-        auto const& trackkey = mytrack.key();
-        // grab calo objects associated with tracks
-        const std::vector< art::Ptr<anab::Calorimetry> > calo_ptr_v = track_calo_assn_v.at( trackkey );
-        for (size_t ca=0;  ca <  calo_ptr_v.size(); ca++) {
-        auto mycalo = calo_ptr_v.at( ca );
-        int npts = mycalo->dEdx().size();
-        for (int ip=0;ip<npts;++ip) {
-        Point_t pxyz=mycalo->fXYZ[ip];
-        double ds = mycalo->fTrkPitch[ip];
-        double dQdx = mycalo->fdQdx[ip];
-        double dEdx = mycalo->fdEdx[ip];
-        double alpha = dQdx/dEdx;
-        double charge = (1-alpha)*dEdx*ds;
-        // hardcode for now for SBND
-        double xpos = 0.0;
-        if (pxyz[0]<0) xpos = fabs(pxyz[0]+200.0);
-        else xpos = fabs(200.0-pxyz[0]);
-        qClusterInTPC[tpcindex].emplace_back(xpos, position[1], position[2], charge);
-        }
-        }
-        }
-        }
-        else { // this is a shower
-      */
-
-      auto const& spacepoint_ptr_v = pfp_spacepoint_assn_v.at(key);
-      for (auto& SP : spacepoint_ptr_v) {
-        auto const& spkey = SP.key();
-        const auto& hit_ptr_v = spacepoint_hit_assn_v.at(spkey);
-        for (auto& hit : hit_ptr_v) {
-          // TODO: Add hits from induction wires too.
-          // Only use hits from the collection plane
-          geo::WireID wid = hit->WireID();
-          if(fGeometry->SignalType(wid) != geo::kCollection) continue;
-          const auto& pos(SP->XYZ());
-          auto itpc = wid.TPC;
-          tpcWithHits.insert(itpc);
-          const auto charge(hit->Integral());
-          if (charge < fMinHitQ) continue;
-          totalCharge += charge;
-          qClusters.emplace_back(pos[0], pos[1], pos[2], charge * chargeToNPhotons);
-        } // for all hits associated to this spacepoint
-      } // for all spacepoints
-      //      }  // if track or shower
-    } // for all pfp pointers
-    if (totalCharge < fMinSliceQ) continue;
-    chargeDigestMap[totalCharge] = ChargeDigest(pId, pfpPDGC, pfp_ptr,
-                                                qClusters, tpcWithHits);
-    }//TODO: pack this into a function
-  } // over all PFParticles
+  ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
   for(auto& chargeDigest : chargeDigestMap) {
     //const size_t pId = chargeDigest.second.pId;
@@ -1018,24 +916,104 @@ double FlashPredict::hypoFlashX_fits()
 // } // void FlashPredict::CollectDownstreamPFParticles
 
 
-void FlashPredict::AddDaughters(
-  const std::map<size_t, size_t>& pfpMap,
+FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
+  const art::Event& evt,
+  const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h)
+{
+  // grab spacepoints associated with PFParticles
+  const art::FindManyP<recob::SpacePoint>
+    pfp_spacepoints_assns(pfps_h, evt, fPandoraProducer);
+  const auto& spacepoints_h =
+    evt.getValidHandle<std::vector<recob::SpacePoint>>(fSpacePointProducer);
+  const art::FindManyP<recob::Hit>
+    spacepoint_hits_assns(spacepoints_h, evt, fSpacePointProducer);
+  // grab tracks associated with PFParticles
+  // auto const& track_h = evt.getValidHandle<std::vector<recob::Track> >(fTrackProducer);
+  // art::FindManyP<recob::Track> pfp_track_assn_v(track_h, evt, fTrackProducer);
+  // grab calorimetry info for tracks
+  // auto const& calo_h =
+  //   evt.getValidHandle<std::vector<anab::Calorimetry> >(fCaloProducer);
+  // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h,
+  //                                                      evt, fCaloProducer);
+
+  std::unordered_map<size_t, size_t> pfpMap;
+  for(size_t pId=0; pId<pfps_h->size(); pId++) {
+    pfpMap[pfps_h->at(pId).Self()] = pId;
+  }
+
+  ChargeDigestMap chargeDigestMap;
+  // Loop over pandora pfp particles
+  for(size_t pId=0; pId<pfps_h->size(); pId++) {
+    if(!pfps_h->at(pId).IsPrimary()) continue;
+    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+    unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
+    if(fSelectNeutrino &&
+       (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16)) continue;
+    bk.pfp_to_score++;
+    std::set<unsigned> tpcWithHits;
+
+    std::vector<art::Ptr<recob::PFParticle>> particles_in_slice;
+    addDaughters(pfpMap, pfp_ptr, pfps_h, particles_in_slice);
+
+    double sliceQ = 0.;
+    flashmatch::QCluster_t particlesClusters;
+    for(const auto& particle: particles_in_slice) {
+      const auto particle_key = particle.key();
+      const auto& particle_spacepoints = pfp_spacepoints_assns.at(particle_key);
+      double particleQ = 0.;
+      flashmatch::QCluster_t spsClusters;
+      for(const auto& spacepoint : particle_spacepoints) {
+        const auto spacepoint_key = spacepoint.key();
+        const auto& hits = spacepoint_hits_assns.at(spacepoint_key);
+        const auto& pos = spacepoint->XYZ();
+        double spacepointQ = 0.;
+        flashmatch::QCluster_t hitsClusters;
+        for(const auto& hit : hits) {
+          geo::WireID wId = hit->WireID();
+          if(fOnlyCollectionWires &&
+             fGeometry->SignalType(wId) != geo::kCollection) continue;
+          const double hitQ = hit->Integral();
+          if(hitQ < fMinHitQ) continue;
+          spacepointQ += hitQ;
+          hitsClusters.emplace_back(pos[0], pos[1], pos[2], hitQ);
+          const auto itpc = wId.TPC;
+          tpcWithHits.insert(itpc);
+        } // for hits associated to spacepoint
+        if(spacepointQ < fMinSpacePointQ) continue;
+        particleQ += spacepointQ;
+        spsClusters.insert(spsClusters.end(),
+                           hitsClusters.begin(), hitsClusters.end());
+      } // for spacepoints in particle
+      double chargeToNPhots = lar_pandora::LArPandoraHelper::IsTrack(particle) ?
+        fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
+      particleQ *= chargeToNPhots;
+      if(particleQ < fMinParticleQ) continue;
+      sliceQ += particleQ;
+      particlesClusters.insert(particlesClusters.end(),
+                               spsClusters.begin(), spsClusters.end());
+    } // for particles in slice
+    if(sliceQ < fMinSliceQ) continue;
+    chargeDigestMap[sliceQ] =
+      ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, tpcWithHits);
+  } // over all slices
+  return chargeDigestMap;
+}
+
+
+void FlashPredict::addDaughters(
+  const std::unordered_map<size_t, size_t>& pfpMap,
   const art::Ptr<recob::PFParticle>& pfp_ptr,
   const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
-  std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const
+  std::vector<art::Ptr<recob::PFParticle>>& mothers_daughters) const
 {
-  auto daughters = pfp_ptr->Daughters();
-  pfp_v.push_back(pfp_ptr);
-  for(auto const& daughterid : daughters) {
-    if (pfpMap.find(daughterid) == pfpMap.end()) {
-      std::cout << "Did not find DAUGHTERID in map! error" << std::endl;
-      continue;
-    }
-    const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pfpMap.at(daughterid) );
-    AddDaughters(pfpMap, pfp_ptr, pfps_h, pfp_v);
-  } // for all daughters
+  mothers_daughters.push_back(pfp_ptr);
+  const auto daughters = pfp_ptr->Daughters();
+  for(const auto daughter : daughters) {
+    const art::Ptr<recob::PFParticle> daughter_ptr(pfps_h, pfpMap.at(daughter));
+    addDaughters(pfpMap, daughter_ptr, pfps_h, mothers_daughters);
+  }
   return;
-} // void FlashPredict::AddDaughters
+}
 
 
 inline
@@ -1054,6 +1032,7 @@ double FlashPredict::scoreTerm(const double m,
 }
 
 
+inline
 bool FlashPredict::pfpNeutrinoOnEvent(
   const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const
 {

@@ -83,6 +83,22 @@ public:
   void beginJob() override;
   void endJob() override;
 
+  struct ChargeDigest {
+    size_t pId;
+    int pfpPDGC;
+    art::Ptr<recob::PFParticle> pfp_ptr;
+    flashmatch::QCluster_t qClusters;
+    std::set<unsigned> tpcWithHits;
+    ChargeDigest() = default;
+    ChargeDigest(const size_t pId_, const int pfpPDGC_,
+                 const art::Ptr<recob::PFParticle>& pfp_ptr_,
+                 const flashmatch::QCluster_t& qClusters_,
+                 const std::set<unsigned>& tpcWithHits_) :
+      pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
+      qClusters(qClusters_), tpcWithHits(tpcWithHits_)
+      {}
+  };
+  using ChargeDigestMap = std::map<double, ChargeDigest, std::greater<double>>;
 
 private:
   // Declare member data here.
@@ -103,15 +119,18 @@ private:
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const lar_pandora::PFParticleVector& parentPFParticles,
   //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
-  void AddDaughters(const std::map<size_t, size_t>& pfpMap,
+  ChargeDigestMap makeChargeDigest(
+    const art::Event& evt,
+    const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h);
+  void addDaughters(const std::unordered_map<size_t, size_t>& pfpMap,
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
-  double scoreTerm(const double m, const double n,
+  inline double scoreTerm(const double m, const double n,
                    const double mean, const double spread) const;
-  double scoreTerm(const double m,
+  inline double scoreTerm(const double m,
                    const double mean, const double spread) const;
-  bool pfpNeutrinoOnEvent(
+  inline bool pfpNeutrinoOnEvent(
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;
   void copyOpHitsInBeamWindow(
     std::vector<recob::OpHit>& opHits,
@@ -149,13 +168,14 @@ private:
   const double fBeamWindowStart, fBeamWindowEnd;
   const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
-  const bool fSelectNeutrino, fOnlyPrimaries;
+  const bool fSelectNeutrino;
+  const bool fOnlyCollectionWires;
   const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
-  const double fMinHitQ, fMinSliceQ;
+  const double fMinHitQ, fMinSpacePointQ, fMinParticleQ, fMinSliceQ;
   const double fMinOpHPE, fMinFlashPE;
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS
@@ -214,22 +234,6 @@ private:
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
-
-  struct ChargeDigest {
-    size_t pId;
-    int pfpPDGC;
-    art::Ptr<recob::PFParticle> pfp_ptr;
-    flashmatch::QCluster_t qClusters;
-    std::set<unsigned> tpcWithHits;
-    ChargeDigest() = default;
-    ChargeDigest(const size_t pId_, const int pfpPDGC_,
-                 const art::Ptr<recob::PFParticle>& pfp_ptr_,
-                 const flashmatch::QCluster_t& qClusters_,
-                 const std::set<unsigned>& tpcWithHits_) :
-      pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
-      qClusters(qClusters_), tpcWithHits(tpcWithHits_)
-      {}
-  };
 
   const bool kNoScr = false;
   const double kNoScrTime = -9999.;
