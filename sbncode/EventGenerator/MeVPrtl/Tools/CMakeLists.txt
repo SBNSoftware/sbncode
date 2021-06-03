@@ -1,4 +1,3 @@
-include_directories( $ENV{IFDHC_LIB}/../inc )
 link_directories( $ENV{ROOTSYS}/lib )
 
 art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
@@ -32,7 +31,16 @@ simple_plugin( EmptyKaonGen tool
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
+SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
+cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
+include_directories( $ENV{IFDHC_FQ_DIR}/inc )
+include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
+
+cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
+
+
 simple_plugin( NuMiKaonGen tool
+                            ${IFDH_SERVICE}
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
                             ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
@@ -46,7 +54,6 @@ simple_plugin( NuMiKaonGen tool
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
-	                   ${IFDH_SERVICE}
 			${CLHEP}
 			ifdh
 			dk2nuTree
