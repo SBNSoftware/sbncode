@@ -46,6 +46,7 @@ simple_plugin( NuMiKaonGen tool
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
+	                   ${IFDH_SERVICE}
 			${CLHEP}
 			ifdh
 			dk2nuTree
