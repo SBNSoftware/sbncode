@@ -1,0 +1,10 @@
+add_subdirectory(Retriever)
+add_subdirectory(job)
+
+link_directories(
+ $ENV{ROOTSYS}/lib
+)
+
+install_headers()
+install_fhicl()
+install_source()
