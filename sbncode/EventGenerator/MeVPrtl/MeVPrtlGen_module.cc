@@ -70,8 +70,8 @@ public:
   void produce(art::Event& e) override;
 
   // produce per run and per subrun stuff
-  void beginRun(art::Run& run);
-  void endSubRun(art::SubRun& sr);
+  void beginRun(art::Run& run) override ;
+  void endSubRun(art::SubRun& sr) override ;
 
   bool Deweight(double &weight, double &max_weight);
 
@@ -156,11 +156,11 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
     produces< sumdata::POTSummary, art::InSubRun >();
     produces< art::Assns<simb::MCTruth, simb::MCFlux> >();
     produces< std::vector<sim::BeamGateInfo> >();
-    
+
     // also save info pertinent to the scalar
     produces< std::vector<evgen::ldm::MeVPrtlTruth> >();
   }
-    
+
   // setup the random number engine
   art::ServiceHandle<rndm::NuRandomService> seedSvc;
   fEngine = new CLHEP::HepJamesRandom;
@@ -172,7 +172,7 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
     fMeVPrtl = new evgen::ldm::MeVPrtlTruth();
     fTree->Branch("mevprtl", &fMeVPrtl);
   }
-    
+
   fNCalls = {0, 0, 0, 0};
   fNTime = {0., 0., 0., 0.};
 }
@@ -234,7 +234,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
   // TODO: pileup? For now, don't worry
 
-  // get the next MeVPrtl Truth 
+  // get the next MeVPrtl Truth
   while (1) {
 
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
@@ -248,8 +248,8 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     bool is_kaon = kaonp.kaon_pdg != 0;
 
     // (void) is_kaon;
-    if (is_kaon) { 
-     std::cout << "Flux is kaon (" << is_kaon << "). Weight: " << kaonp.weight << ". Produced with energy: " << kaonp.mom.E() 
+    if (is_kaon) {
+     std::cout << "Flux is kaon (" << is_kaon << "). Weight: " << kaonp.weight << ". Produced with energy: " << kaonp.mom.E()
              << " M=" << kaonp.mom.M() << " P=(" << kaonp.mom.Px() << ", " << kaonp.mom.Py() << ", " << kaonp.mom.Pz() << ") At: ("
              << kaonp.pos.X() << ", " << kaonp.pos.Y() << ", " << kaonp.pos.Z() << ")" << std::endl;
     }
@@ -281,7 +281,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[2] += duration.count();
-      
+
     if (!success) continue;
     std::cout << "Ray weight: " << ray_weight << std::endl;
 
@@ -325,7 +325,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fSubRunPOT += thisPOT;
 
     // build the output objects
-    evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay, 
+    evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay,
       intersection,
       flux_weight,
       1.,
@@ -351,9 +351,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     if (fProduce) {
       art::PtrMaker<simb::MCFlux> MCFluxPtrMaker {evt};
       art::PtrMaker<simb::MCTruth> MCTruthPtrMaker {evt};
-      
-      art::Ptr<simb::MCTruth> MCTruthPtr = MCTruthPtrMaker(mctruthColl->size() - 1); 
-      art::Ptr<simb::MCFlux> MCFluxPtr = MCFluxPtrMaker(mcfluxColl->size() - 1); 
+
+      art::Ptr<simb::MCTruth> MCTruthPtr = MCTruthPtrMaker(mctruthColl->size() - 1);
+      art::Ptr<simb::MCFlux> MCFluxPtr = MCFluxPtrMaker(mcfluxColl->size() - 1);
       truth2fluxAssn->addSingle(MCTruthPtr, MCFluxPtr);
     }
 
@@ -374,7 +374,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     evt.put(std::move(mcfluxColl));
     evt.put(std::move(truth2fluxAssn));
     evt.put(std::move(beamgateColl));
-    
+
     evt.put(std::move(mevprtlColl));
   }
 
