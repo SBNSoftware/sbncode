@@ -15,33 +15,33 @@ Constants::Constants() {
   muon_mass = 0.1056583745; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-muon.pdf
   piplus_mass = 0.13957039; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
   pizero_mass = 0.1349768; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
-  kplus_mass = 0.493677; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf 
+  kplus_mass = 0.493677; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_mass = 0.497611; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero.pdf
   tquark_mass = 172.76; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-sum-quarks.pdf (direct measurements)
-  
+
   // Couplings
-  Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf 
+  Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   higgs_vev = 1. / sqrt(sqrt(2)*Gfermi); // GeV (246.22)
   sin2thetaW = 0.2312; // electroweak mixing angle https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   gL = -0.5 + sin2thetaW;
   gR = sin2thetaW;
   fpion = 0.1302; // Pion decay constant [GeV] https://pdg.lbl.gov/2020/reviews/rpp2020-rev-pseudoscalar-meson-decay-cons.pdf (FLAG 19 average)
-  
+
   // unit conversion
   hbar = 6.582119569e-16; // GeV*ns or eV*s https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   c_cm_per_ns = 29.9792458; // cm / ns https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
-  
+
   // kaon lifetimes
   kplus_lifetime = 1.238e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_lifetime = 5.116e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero-L.pdf (FIT)
-  
+
   // Kaon decay branching ratios
   kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   kaonp_ep_nue = 1.582e-5; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
-  
+
   // CKM matrix
   abs_Vud_squared = 0.97370 * 0.97370; // https://pdg.lbl.gov/2020/reviews/rpp2020-rev-ckm-matrix.pdf (12.7)
-  
+
   // Computed using the Wolfenstein parameterization, where:
   // Vts = -A \lambda^2
   // Vtd = A \lambda^3 (1 - \rho - I\eta)
@@ -61,8 +61,8 @@ void Constants::Configure(const fhicl::ParameterSet &p) {
   // For now, which values to override:
   //
   // top quark mass, electroweak mixing angle
-  if (p.has_key("tquark_mass")) InstanceMut().tquark_mass = p.get<double>("tquark_mass"); 
-  if (p.has_key("sin2thetaW")) InstanceMut().sin2thetaW = p.get<double>("sin2thetaW"); 
+  if (p.has_key("tquark_mass")) InstanceMut().tquark_mass = p.get<double>("tquark_mass");
+  if (p.has_key("sin2thetaW")) InstanceMut().sin2thetaW = p.get<double>("sin2thetaW");
 
   // Reset downstream constants
   InstanceMut().gL = -0.5 + Instance().sin2thetaW;
@@ -73,11 +73,11 @@ void Constants::Configure(const fhicl::ParameterSet &p) {
 double twobody_momentum(double parent_mass, double childA_mass, double childB_mass) {
   if (parent_mass < childA_mass + childB_mass) return -1.;
 
-  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass 
+  return sqrt(parent_mass * parent_mass * parent_mass * parent_mass
     -2 * parent_mass * parent_mass * childA_mass * childA_mass
     -2 * parent_mass * parent_mass * childB_mass * childB_mass
-       + childA_mass * childA_mass * childA_mass * childA_mass 
-       + childB_mass * childB_mass * childB_mass * childB_mass 
+       + childA_mass * childA_mass * childA_mass * childA_mass
+       + childB_mass * childB_mass * childB_mass * childB_mass
     -2 * childA_mass * childA_mass * childB_mass * childB_mass) / ( 2 * parent_mass );
 
 }
@@ -86,12 +86,12 @@ double twobody_momentum(double parent_mass, double childA_mass, double childB_ma
 //
 // Changed to allow for a massive particle, as well as cleaned up
 //
-// Given the momentum in the rest frame of the parent particle, the 
-// desired direction in the lab frame, and the boost vector 
+// Given the momentum in the rest frame of the parent particle, the
+// desired direction in the lab frame, and the boost vector
 // of the parent particle in the lab frame: computes the momentum and "weight"
 // of the daughter going through the input end point.
 //
-// The weight is given as the ratio of the solid angle between the lab frame and 
+// The weight is given as the ratio of the solid angle between the lab frame and
 // parent rest frame. I.e. -- it should be converted to an event weight as:
 //
 // event weight = weight * (detector lab frame solid angle) / (4*pi)
@@ -127,7 +127,7 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   double costh_rest_plus = costh_rest(1);
   double costh_rest_minus = costh_rest(-1);
 
-  auto lab_frame_p = [costh_lab, sinth_lab_sq, beta, gamma, M, rest_frame_p, E_rest](int SIGN) { return (1. / (1 - beta*beta * costh_lab*costh_lab)) *\
+  auto lab_frame_p = [costh_lab, beta, gamma, M, E_rest](int SIGN) { return (1. / (1 - beta*beta * costh_lab*costh_lab)) *\
         (E_rest * beta * costh_lab / gamma \
         + SIGN * sqrt(-M*M + (E_rest*E_rest)/(gamma*gamma) + M*M * beta*beta * costh_lab*costh_lab)); };
 
@@ -150,7 +150,7 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   double plus_wgt = plus_valid ? wgtf(lab_frame_p_plus, 1) : 0.;
   double minus_wgt = minus_valid ? wgtf(lab_frame_p_minus, -1) : 0.;
 
-  //double threshold = (plus_valid || minus_valid) ? minus_valid / (plus_valid + minus_valid) : -1; 
+  //double threshold = (plus_valid || minus_valid) ? minus_valid / (plus_valid + minus_valid) : -1;
   double threshold = 0.5;
 
   // Select the solution to use
@@ -163,7 +163,7 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   std::cout << "MASS: " << M << std::endl;
   std::cout << "BETA: " << beta << std::endl;
   std::cout << "GAMMA: " << gamma << std::endl;
-  
+
   std::cout << "COSTH REST PLUS: " << costh_rest_plus << std::endl;
   std::cout << "COSTH REST MINUS: " << costh_rest_minus << std::endl;
   std::cout << "PLAB PLUS: " << lab_frame_p_plus << std::endl;
