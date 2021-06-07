@@ -39,6 +39,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fMinSpacePointQ(p.get<double>("MinSpacePointQ", 0.0))
   , fMinParticleQ(p.get<double>("MinParticleQ", 0.0))
   , fMinSliceQ(p.get<double>("MinSliceQ", 0.0))
+  , fMaxFlashes(p.get<unsigned>("MaxFlashes", 1))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
   , fDetector(detectorName(fGeometry->DetectorName()))
@@ -97,12 +98,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     throw cet::exception("FlashPredict")
       << "ICARUS has only two cryostats. \n"
       << "Check Detector and Cryostat parameter." << std::endl;
-  }
-
-  fOpHitsTimeHist = std::make_unique<TH1D>("fOpHitsTimeHist", "ophittime", fTimeBins,
-                                           fBeamWindowStart, fBeamWindowEnd); // in us
-  fOpHitsTimeHist->SetOption("HIST");
-  fOpHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
   }
 
   if (fMakeTree) initTree();
@@ -184,9 +179,9 @@ void FlashPredict::produce(art::Event& evt)
   // }
 
   // load OpHits previously created
-  art::Handle<std::vector<recob::OpHit>> ophit_h;
-  evt.getByLabel(fOpHitProducer, ophit_h);
-  if(!ophit_h.isValid()) {
+  art::Handle<std::vector<recob::OpHit>> ophits_h;
+  evt.getByLabel(fOpHitProducer, ophits_h);
+  if(!ophits_h.isValid()) {
     mf::LogError("FlashPredict")
       << "No optical hits from producer module "
       << fOpHitProducer;
@@ -204,29 +199,31 @@ void FlashPredict::produce(art::Event& evt)
     return;
   }
 
-  std::vector<recob::OpHit> opHits(ophit_h->size());
-  copyOpHitsInBeamWindow(opHits, ophit_h);
+  std::vector<recob::OpHit> opHits(ophits_h->size());
+  copyOpHitsInBeamWindow(opHits, ophits_h);
 
-    art::Handle<std::vector<recob::OpHit>> ophitara_h;
-    evt.getByLabel(fOpHitARAProducer, ophitara_h);
-    if(!ophitara_h.isValid()) {
-      mf::LogWarning("FlashPredict")
   if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
+    art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
+    evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
+    if(!ophits_ara_h.isValid()) {
+      mf::LogError("FlashPredict")
         << "Non valid ophits from ARAPUCAS"
         << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
         << "\nfOpHitARAProducer: " << fOpHitARAProducer;
     }
     else{
-      std::vector<recob::OpHit> opHitsARA(ophitara_h->size());
-      copyOpHitsInBeamWindow(opHitsARA, ophitara_h);
+      std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
+      copyOpHitsInBeamWindow(opHitsARA, ophits_ara_h);
       opHits.insert(opHits.end(),
                     opHitsARA.begin(), opHitsARA.end());
     }
   }
 
-  fOpHitsTimeHist->Reset();
-  fPeakCounter = 0;
-  if(!getOpHitsInFlash(opHits)){
+
+  std::vector<recob::OpHit> opHitsLeft, opHitsRght;
+  const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
+    makeSimpleFlashes(opHits, opHitsLeft, opHitsRght) : makeSimpleFlashes(opHits);
+  if(simpleFlashes.empty()){
     mf::LogWarning("FlashPredict")
       << "\nNo OpHits in beam window,"
       << "\nor the integral is less than " << fMinFlashPE
@@ -244,20 +241,19 @@ void FlashPredict::produce(art::Event& evt)
     evt.put(std::move(pfp_sFM_assn_v));
     return;
   }
-  // TODO: for SBND optically isolated volumes create 2 more opHits:
-  // opHitsOnlyOnTheLeft, opHitsOnlyOnTheRight... or some better name/object
 
-  std::set<unsigned> tpcWithOpH;
-  if(fSBND) {// no point for ICARUS
-    for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
-      tpcWithOpH.insert(sbndPDinTPC(oph->OpChannel()));
-      if(tpcWithOpH.size() == fNTPC) break;
-    }
-  }
+  // std::set<unsigned> tpcWithOpH;
+  // if(fSBND) {// no point for ICARUS
+  //   for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
+  //     tpcWithOpH.insert(sbndPDinTPC(oph->OpChannel()));
+  //     if(tpcWithOpH.size() == fNTPC) break;
+  //   }
+  // }
 
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
+  std::map<unsigned, FlashMetrics> flashMetricsMap;
   for(auto& chargeDigest : chargeDigestMap) {
     //const size_t pId = chargeDigest.second.pId;
     const int pfpPDGC = chargeDigest.second.pfpPDGC;
@@ -265,21 +261,21 @@ void FlashPredict::produce(art::Event& evt)
     const auto& qClusters = chargeDigest.second.qClusters;
     const auto& tpcWithHits = chargeDigest.second.tpcWithHits;
 
-    if(fSBND){// because SBND has an opaque cathode
-      std::set<unsigned> tpcWithHitsOpH;
-      std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
-                            tpcWithOpH.begin(), tpcWithOpH.end(),
-                            std::inserter(tpcWithHitsOpH, tpcWithHitsOpH.begin()));
-      if (tpcWithHitsOpH.size() == 0) {
-        mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
-        bk.no_oph_hits++;
-        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-        sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                             Flash(kNoScrPE), Score(kQNoOpHScr)));
-        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-        continue;
-      }
-    }
+    // if(fSBND){// because SBND has an opaque cathode
+    //   std::set<unsigned> tpcWithHitsOpH;
+    //   std::set_intersection(tpcWithHits.begin(), tpcWithHits.end(),
+    //                         tpcWithOpH.begin(), tpcWithOpH.end(),
+    //                         std::inserter(tpcWithHitsOpH, tpcWithHitsOpH.begin()));
+    //   if (tpcWithHitsOpH.size() == 0) {
+    //     mf::LogWarning("FlashPredict") << "No OpHits where there's charge. Skipping...";
+    //     bk.no_oph_hits++;
+    //     mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+    //     sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+    //                          Flash(kNoScrPE), Score(kQNoOpHScr)));
+    //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    //     continue;
+    //   }
+    // }
 
     if(!computeChargeMetrics(qClusters)){
       mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
@@ -291,34 +287,47 @@ void FlashPredict::produce(art::Event& evt)
       continue;
     }
 
-    if(!computeFlashMetrics(tpcWithHits)){
-      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
-      bk.no_flash_pe++;
-      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                           Flash(kNoScrPE), Score(k0VUVPEScr)));
-      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-      continue;
-    }
 
-    if(computeScore(tpcWithHits, pfpPDGC)){
-      if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
-      bk.scored_pfp++;
-      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
-      Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
-      Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
-      sFM_v->push_back(sFM(true, _flash_time, charge, flash, score));
-      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-    }
-    else{
-      mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
-                                   << "\n_score:     " << _score
-                                   << "\n_scr_y:     " << _scr_y
-                                   << "\n_scr_z:     " << _scr_z
-                                   << "\n_scr_rr:    " << _scr_rr
-                                   << "\n_scr_ratio: " << _scr_ratio;
-      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+    // TODO: finish rest of items for multiflash support:
+    for(auto& simpleFlash : simpleFlashes) {
+      if(simpleFlash.flashUId != kBothOpHs) continue;// TODO
+      // check if metrics already computed, if so skip computing and grab them
+      if(!computeFlashMetrics(simpleFlash)){
+        printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+        bk.no_flash_pe++;
+        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+        sFM_v->push_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                             Flash(kNoScrPE), Score(k0VUVPEScr)));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+        continue;
+      }
+
+      // TODO:
+      // update metrics map outside computeflashmetrics
+
+      // TODO:
+      // computeScore is also inside the loop, the assigned score and
+      // variables that are writen to the root tree and the artobject
+      // should be those of the lowest score
+      if(computeScore(tpcWithHits, pfpPDGC)){
+        if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
+        bk.scored_pfp++;
+        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+        Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
+        Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
+        Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
+        sFM_v->push_back(sFM(true, _flash_time, charge, flash, score));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      }
+      else{
+        mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
+                                     << "\n_score:     " << _score
+                                     << "\n_scr_y:     " << _scr_y
+                                     << "\n_scr_z:     " << _scr_z
+                                     << "\n_scr_rr:    " << _scr_rr
+                                     << "\n_scr_ratio: " << _scr_ratio;
+        printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+      }
     }
   } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
@@ -478,7 +487,7 @@ void FlashPredict::loadMetrics()
     // rr_m_InvSpl = TSpline3("rr_m_InvSpl", yM.data(), x.data(), yM.size());
     // rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(), yH.size());
     unsigned s = 0;
-    for(auto& rrF : rrFits){
+    for(auto& rrF : fRRFits){
       std::string nold = "rr_fit_" + suffixes[s];
       std::string nnew = "rrFit_" + suffixes[s];
       TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
@@ -523,7 +532,7 @@ void FlashPredict::loadMetrics()
     // pe_m_InvSpl = TSpline3("pe_m_InvSpl", yM.data(), x.data(), yM.size());
     // pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
     unsigned s = 0;
-    for(auto& peF : peFits){
+    for(auto& peF : fRatioFits){
       std::string nold = "pe_fit_" + suffixes[s];
       std::string nnew = "peFit_" + suffixes[s];
       TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
@@ -564,15 +573,33 @@ bool FlashPredict::computeChargeMetrics(const flashmatch::QCluster_t& qClusters)
 }
 
 
-bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
+bool FlashPredict::computeFlashMetrics(const SimpleFlash& simpleFlash)
 {
+  // unsigned flashMetricsId = fFlashCounter;
+  // unsigned tens = 10;
+  // for(unsigned t : tpcWithHits) {
+  //   flashMetricsId += tens * t;
+  //   tens *= 10;
+  // }
+  // if(auto it=flashMetricsMap.find(flashMetricsId); it!=flashMetricsMap.end()){
+  //   mf::LogDebug("FlashPredict") << "Reusing metrics previously computed, "
+  //                                << "for flashMetricsId " << flashMetricsId;
+  //   auto flashMetrics = it->second;
+  //   if(!flashMetrics.metric_ok) return false;
+  //   updateFlashMetrics(flashMetrics);
+  //   return true;
+  // }
+
+  const OpHitIt opH_beg = simpleFlash.opH_beg;
+  const OpHitIt opH_end = simpleFlash.opH_end;
+
   // NOTE: opHMax_X (and later _flash_x) holds the X coordinate of the
   //       opdet that registered the most PEs in the flash.
   // TODO: change to peSumMax_wallX (and later _flash_x) to hold the X
   //       coordinate of the wall that registered the most PEs overall
   auto compareOpHits = [] (const recob::OpHit& oph1, const recob::OpHit& oph2)->bool
     { return oph1.PE() < oph2.PE(); };
-  auto opHMax = std::max_element(fOpH_beg, fOpH_end, compareOpHits);
+  auto opHMax = std::max_element(opH_beg, opH_end, compareOpHits);
   double opHMax_X =
     fGeometry->OpDetGeoFromOpChannel(opHMax->OpChannel()).GetCenter().X();
 
@@ -584,10 +611,10 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
   double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
   double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
 
-  for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph){
+  for(auto oph=opH_beg; oph!=opH_end; ++oph){
     int opChannel = oph->OpChannel();
     // TODO remove this if !isSBNDPDRelevant(), eventually
-    if(fSBND && !isSBNDPDRelevant(opChannel, tpcWithHits)) continue;
+    // if(fSBND && !isSBNDPDRelevant(opChannel, tpcWithHits)) continue;
     auto opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
     auto opDetXYZ = opDet.GetCenter();
 
@@ -654,27 +681,29 @@ bool FlashPredict::computeFlashMetrics(const std::set<unsigned>& tpcWithHits)
     _flash_r = std::sqrt(
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
-    // _hypo_x = hypoFlashX_splines();
-    _hypo_x = hypoFlashX_fits();
+    auto [_hypo_x, _hypo_x_rr, _hypo_x_ratio] = hypoFlashX_fits(_flash_r, _flash_ratio);
     // TODO: using _hypo_x make further corrections to _flash_time to
-    // account for light transport time
-    // _flash_time = timeCorrections(_flash_time, _hypo_x);
+    // account for light transport time and/or rising edge
+    // _flash_time = timeCorrections(simpleFlash.maxpeak_time, _hypo_x);
+    _flash_time = simpleFlash.maxpeak_time;
     _flash_x = opHMax_X; // TODO: _flash_x = peSumMax_wallX;
     _flash_x_gl = flashXGl(_hypo_x, _flash_x);
+    // storeFlashMetrics(flashMetricsId, flashMetricsMap);
     return true;
   }
   else {
+    // flashMetricsMap[flashMetricsId] = FlashMetrics();//faulty flash
     std::string channels;
-    for(auto oph=fOpH_beg; oph!=fOpH_end; ++oph) channels += std::to_string(oph->OpChannel()) + ' ';
-    std::string tpcs;
-    for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
+    for(auto oph=opH_beg; oph!=opH_end; ++oph) channels += std::to_string(oph->OpChannel()) + ' ';
+    // std::string tpcs;
+    // for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
     mf::LogError("FlashPredict")
       << "Really odd that I landed here, this shouldn't had happen.\n"
       << "sum:          \t" << sum << "\n"
       << "sum_PE:       \t" << sum_PE << "\n"
       << "sum_unPE:     \t" << sum_unPE << "\n"
-      << "tpcWithHits:  \t" << tpcs << "\n"
-      << "opHits size:  \t" << std::distance(fOpH_beg, fOpH_end) << "\n"
+      // << "tpcWithHits:  \t" << tpcs << "\n"
+      << "opHits size:  \t" << std::distance(opH_beg, opH_end) << "\n"
       << "channels:     \t" << channels << std::endl;
     _flash_y = 0.;
     _flash_z = 0.;
@@ -754,19 +783,20 @@ bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
 // }
 
 
-double FlashPredict::hypoFlashX_fits()
+std::tuple<double, double, double> FlashPredict::hypoFlashX_fits(
+  double flash_r, double flash_ratio) const
 {
   std::vector<double> rrXs;
   double rr_hypoX, rr_hypoXWgt;
-  for(const auto& rrF : rrFits){
-    if(rrF.min < _flash_r && _flash_r < rrF.max){
+  for(const auto& rrF : fRRFits){
+    if(rrF.min < flash_r && flash_r < rrF.max){
       try{
-        rrXs.push_back(rrF.f->GetX(_flash_r, 0., fDriftDistance, kEps));
+        rrXs.push_back(rrF.f->GetX(flash_r, 0., fDriftDistance, kEps));
       }catch (...) {
         mf::LogWarning("FlashPredict")
-          << "Couldn't find root with rrFits.\n"
+          << "Couldn't find root with fRRFits.\n"
           << "min/_flash_ratio/max:"
-          << rrF.min << "/" << _flash_r << "/" << rrF.max;
+          << rrF.min << "/" << flash_r << "/" << rrF.max;
       }
     }
   }
@@ -779,7 +809,7 @@ double FlashPredict::hypoFlashX_fits()
     rr_hypoXWgt = 0.;
   }
   else{//(rrXs.size() == 1)
-    if(_flash_r < rrFits[2].min){
+    if(flash_r < fRRFits[2].min){
       rr_hypoX =  rrXs[0]/2.;
       rr_hypoXWgt = 1./std::abs(rrXs[0]);
     }
@@ -789,45 +819,45 @@ double FlashPredict::hypoFlashX_fits()
     }
   }
 
-  _hypo_x_rr = rr_hypoX;
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
-    return rr_hypoX;
+    return {rr_hypoX, rr_hypoX, 0.};
 
-  std::vector<double> peXs;
-  double pe_hypoX, pe_hypoXWgt;
-  for(const auto& peF : peFits){
-    if(peF.min < _flash_ratio && _flash_ratio < peF.max){
+  std::vector<double> ratioXs;
+  double ratio_hypoX, ratio_hypoXWgt;
+  for(const auto& ratioF : fRatioFits){
+    if(ratioF.min < flash_ratio && flash_ratio < ratioF.max){
       try{
-        peXs.push_back(peF.f->GetX(_flash_ratio, 0., fDriftDistance, kEps));
+        ratioXs.push_back(ratioF.f->GetX(flash_ratio, 0., fDriftDistance, kEps));
       }catch (...) {
         mf::LogWarning("FlashPredict")
-          << "Couldn't find root with peFits.\n"
-          << "min/_flash_ratio/max:"
-          << peF.min << "/" << _flash_ratio << "/" << peF.max;
+          << "Couldn't find root with fRatioFits.\n"
+          << "min/flash_ratio/max:"
+          << ratioF.min << "/" << flash_ratio << "/" << ratioF.max;
       }
     }
   }
-  if(peXs.size() > 1){
-    pe_hypoX = (peXs[0] + peXs[1])/2.;
-    pe_hypoXWgt =  1./std::abs(peXs[0] - peXs[1]);
+  if(ratioXs.size() > 1){
+    ratio_hypoX = (ratioXs[0] + ratioXs[1])/2.;
+    ratio_hypoXWgt =  1./std::abs(ratioXs[0] - ratioXs[1]);
   }
-  else if(peXs.size() == 0){
-    pe_hypoX = 0.;
-    pe_hypoXWgt = 0.;
+  else if(ratioXs.size() == 0){
+    ratio_hypoX = 0.;
+    ratio_hypoXWgt = 0.;
   }
-  else{// peXs.size() == 1
-    if(_flash_ratio < peFits[2].min){
-      pe_hypoX =   peXs[0]/2.;
-      pe_hypoXWgt =  1./std::abs(peXs[0]);
+  else{// ratioXs.size() == 1
+    if(flash_ratio < fRatioFits[2].min){
+      ratio_hypoX =   ratioXs[0]/2.;
+      ratio_hypoXWgt =  1./std::abs(ratioXs[0]);
     }
     else{
-      pe_hypoX = (peXs[0] + fDriftDistance)/2.;
-      pe_hypoXWgt = 1./std::abs(peXs[0] - fDriftDistance);
+      ratio_hypoX = (ratioXs[0] + fDriftDistance)/2.;
+      ratio_hypoXWgt = 1./std::abs(ratioXs[0] - fDriftDistance);
     }
   }
-  _hypo_x_ratio = pe_hypoX;
 
-  return (rr_hypoX*rr_hypoXWgt + pe_hypoX*pe_hypoXWgt) / (rr_hypoXWgt + pe_hypoXWgt);
+  double hypo_x = (rr_hypoX*rr_hypoXWgt + ratio_hypoX*ratio_hypoXWgt) /
+    (rr_hypoXWgt + ratio_hypoXWgt);
+  return {hypo_x, rr_hypoX, ratio_hypoX};
 }
 
 
@@ -1017,6 +1047,28 @@ void FlashPredict::addDaughters(
 
 
 inline
+void FlashPredict::updateFlashMetrics(const FlashMetrics& flashMetrics)
+{
+  const auto& f = flashMetrics;
+  _flash_x = f.x; _flash_x_gl = f.x_gl; _flash_y = f.y;
+  _flash_z = f.z; _flash_r = f.r; _flash_pe = f.pe; _flash_unpe = f.unpe;
+  _flash_ratio = f.ratio; _flash_time = f.time; _hypo_x = f.hypo;
+  _hypo_x_rr  = f.hypo_rr; _hypo_x_ratio = f.hypo_ratio;
+}
+
+
+inline
+void FlashPredict::storeFlashMetrics(
+  const unsigned flashUId,
+  std::map<unsigned, FlashMetrics>& flashMetricsMap) const
+{
+  flashMetricsMap[flashUId] = FlashMetrics(
+    _flash_x, _flash_x_gl, _flash_y, _flash_z, _flash_r, _flash_pe, _flash_unpe,
+    _flash_ratio, _flash_time, _hypo_x, _hypo_x_rr, _hypo_x_ratio, true);
+}
+
+
+inline
 double FlashPredict::scoreTerm(const double m, const double n,
                                const double mean, const double spread) const
 {
@@ -1050,7 +1102,7 @@ bool FlashPredict::pfpNeutrinoOnEvent(
 
 void FlashPredict::copyOpHitsInBeamWindow(
   std::vector<recob::OpHit>& opHits,
-  const art::Handle<std::vector<recob::OpHit>>& ophit_h) const
+  const art::Handle<std::vector<recob::OpHit>>& ophits_h) const
 {
   double s = fBeamWindowStart;
   double e = fBeamWindowEnd;
@@ -1062,65 +1114,153 @@ void FlashPredict::copyOpHitsInBeamWindow(
              (oph.PeakTime() < e) &&
              (oph.PE() > m) &&
              isPDInCryo(oph.OpChannel())); };
-  auto it = std::copy_if(ophit_h->begin(), ophit_h->end(), opHits.begin(),
+  auto it = std::copy_if(ophits_h->begin(), ophits_h->end(), opHits.begin(),
                          opHitInWindow);
   opHits.resize(std::distance(opHits.begin(), it));
 }
 
 
-bool FlashPredict::getOpHitsInFlash(std::vector<recob::OpHit>& opHits)
+//SBND overload
+std::vector<FlashPredict::SimpleFlash> FlashPredict::makeSimpleFlashes(
+  std::vector<recob::OpHit>& opHits,
+  std::vector<recob::OpHit>& opHitsLeft,
+  std::vector<recob::OpHit>& opHitsRght) const
 {
-  if(fOpHitsTimeHist->GetEntries() == 0){// only create it once per event
-    if(!createOpHitsTimeHist(opHits)) return false;
+  std::unique_ptr<TH1D> opHitsTimeHist = std::make_unique<TH1D>(
+    "opHitsTimeHist", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd);
+  opHitsTimeHist->SetOption("HIST");
+  opHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
+  std::unique_ptr<TH1D> opHitsTimeHistLeft = std::make_unique<TH1D>(
+    "opHitsTimeHistLeft", "ophittimel", fTimeBins, fBeamWindowStart, fBeamWindowEnd);
+  opHitsTimeHistLeft->SetOption("HIST");
+  opHitsTimeHistLeft->SetDirectory(0);//turn off ROOT's object ownership
+  std::unique_ptr<TH1D> opHitsTimeHistRght = std::make_unique<TH1D>(
+    "opHitsTimeHistRght", "ophittimer", fTimeBins, fBeamWindowStart, fBeamWindowEnd);
+  opHitsTimeHistRght->SetOption("HIST");
+  opHitsTimeHistRght->SetDirectory(0);//turn off ROOT's object ownership
+  if(!createOpHitsTimeHist(
+       opHits, opHitsLeft, opHitsRght,
+       opHitsTimeHist, opHitsTimeHistLeft, opHitsTimeHistRght)) return {};
+
+  std::vector<FlashPredict::SimpleFlash> simpleFlashes;
+  if(!findSimpleFlashes(simpleFlashes, opHits, kBothOpHs, opHitsTimeHist))
+    return {};
+  if(opHitsLeft.size() > 0 && opHitsTimeHistLeft->GetEntries() > 0)
+    findSimpleFlashes(simpleFlashes, opHitsLeft, kLeftOpHs, opHitsTimeHistLeft);
+  if(opHitsRght.size() > 0 && opHitsTimeHistRght->GetEntries() > 0)
+    findSimpleFlashes(simpleFlashes, opHitsRght, kRghtOpHs, opHitsTimeHistRght);
+  return simpleFlashes;
+}
+
+
+//ICARUS overload
+std::vector<FlashPredict::SimpleFlash> FlashPredict::makeSimpleFlashes(
+  std::vector<recob::OpHit>& opHits) const
+{
+  std::unique_ptr<TH1D> opHitsTimeHist = std::make_unique<TH1D>(
+    "opHitsTimeHist", "ophittime", fTimeBins, fBeamWindowStart, fBeamWindowEnd);
+  opHitsTimeHist->SetOption("HIST");
+  opHitsTimeHist->SetDirectory(0);//turn off ROOT's object ownership
+  if(!createOpHitsTimeHist(opHits, opHitsTimeHist)) return {};
+
+  std::vector<FlashPredict::SimpleFlash> simpleFlashes;
+  if(!findSimpleFlashes(simpleFlashes, opHits, kBothOpHs, opHitsTimeHist))
+    return {};
+  return simpleFlashes;
+}
+
+
+//SBND overload
+bool FlashPredict::createOpHitsTimeHist(
+  const std::vector<recob::OpHit>& opHits,
+  std::vector<recob::OpHit>& opHitsLeft,
+  std::vector<recob::OpHit>& opHitsRght,
+  std::unique_ptr<TH1D>& opHitsTimeHist,
+  std::unique_ptr<TH1D>& opHitsTimeHistLeft,
+  std::unique_ptr<TH1D>& opHitsTimeHistRght) const
+{
+  for(const auto& oph : opHits) {
+    auto ch = oph.OpChannel();
+    if(!fUseUncoatedPMT &&
+       fPDMapAlgPtr->isPDType(ch, "pmt_uncoated")) continue;
+    opHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
+    if(sbndPDinTPC(ch) == 0){
+      // opHitsLeft.push_back(oph);
+      opHitsLeft.emplace_back(oph);
+      opHitsTimeHistLeft->Fill(oph.PeakTime(), oph.PE());
+    }
+    else{
+      // opHitsRght.push_back(oph);
+      opHitsRght.emplace_back(oph);
+      opHitsTimeHistRght->Fill(oph.PeakTime(), oph.PE());
+    }
   }
-  if(!findMaxPeak(opHits)) return false;
+  if(opHitsTimeHist->GetEntries() <= 0 ||
+     opHitsTimeHist->Integral() < fMinFlashPE) return false;
+  if(opHitsTimeHistLeft->GetEntries() <= 0 ||
+     opHitsTimeHistLeft->Integral() < fMinFlashPE)
+    opHitsTimeHistLeft->Reset();
+  if(opHitsTimeHistRght->GetEntries() <= 0 ||
+     opHitsTimeHistRght->Integral() < fMinFlashPE)
+    opHitsTimeHistRght->Reset();
   return true;
 }
 
 
+//ICARUS overload
 bool FlashPredict::createOpHitsTimeHist(
-  const std::vector<recob::OpHit>& opHits) const
+  const std::vector<recob::OpHit>& opHits,
+  std::unique_ptr<TH1D>& opHitsTimeHist) const
 {
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
     auto opDetXYZ = fGeometry->OpDetGeoFromOpChannel(ch).GetCenter();
-    if (fICARUS &&
-        !fGeoCryo->ContainsPosition(opDetXYZ)) continue;
-    else if(fSBND && !fUseUncoatedPMT &&
-            fPDMapAlgPtr->isPDType(oph.OpChannel(), "pmt_uncoated")) continue;
-    fOpHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
+    if(!fGeoCryo->ContainsPosition(opDetXYZ)) continue;
+    opHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
   }
-  if (fOpHitsTimeHist->GetEntries() <= 0 ||
-      fOpHitsTimeHist->Integral() < fMinFlashPE) return false;
+  if(opHitsTimeHist->GetEntries() <= 0 ||
+     opHitsTimeHist->Integral() < fMinFlashPE) return false;
   return true;
 }
 
 
-bool FlashPredict::findMaxPeak(std::vector<recob::OpHit>& opHits)
+bool FlashPredict::findSimpleFlashes(
+  std::vector<FlashPredict::SimpleFlash>& simpleFlashes,
+  std::vector<recob::OpHit>& opHits,
+  const unsigned volumeId,
+  std::unique_ptr<TH1D>& opHitsTimeHist) const
 {
-  int ibin = fOpHitsTimeHist->GetMaximumBin();
-  double maxpeak_time = fOpHitsTimeHist->GetBinCenter(ibin);
-  _flash_time = maxpeak_time; // in us
-  double lowedge  = _flash_time + fFlashStart;
-  double highedge = _flash_time + fFlashEnd;
-  mf::LogDebug("FlashPredict") << "light window " << lowedge << " " << highedge << std::endl;
-  int lowedge_bin = fOpHitsTimeHist->FindBin(lowedge);
-  int highedge_bin = fOpHitsTimeHist->FindBin(highedge);
-  if (fOpHitsTimeHist->Integral(lowedge_bin, highedge_bin) < fMinFlashPE){
-    return false;
-  }
-  for(int i=lowedge_bin; i<highedge_bin; ++i){// clear this peak
-    fOpHitsTimeHist->SetBinContent(i, 0.);
-  }
-  auto peakInsideEdges =
-    [&lowedge, &highedge](const recob::OpHit& oph)-> bool
+  OpHitIt opH_beg = opHits.begin();
+  for(unsigned flashId=0; flashId<fMaxFlashes; ++flashId){
+    int ibin = opHitsTimeHist->GetMaximumBin();
+    double maxpeak_time = opHitsTimeHist->GetBinCenter(ibin);
+    double lowedge  = maxpeak_time + fFlashStart;
+    double highedge = maxpeak_time + fFlashEnd;
+    mf::LogDebug("FlashPredict")
+      << "light window " << lowedge << " " << highedge << std::endl;
+    int lowedge_bin = opHitsTimeHist->FindBin(lowedge);
+    int highedge_bin = opHitsTimeHist->FindBin(highedge);
+    // check if flash has enough PEs, return if is the first one
+    if (opHitsTimeHist->Integral(lowedge_bin, highedge_bin) < fMinFlashPE){
+      if(flashId == 0) return false;
+      break;
+    }
+    // clear this peak to enforce non-overlapping flashes
+    for(int i=lowedge_bin; i<highedge_bin; ++i){
+      opHitsTimeHist->SetBinContent(i, 0.);
+    }
+    auto peakInsideEdges =
+      [&lowedge, &highedge](const recob::OpHit& oph)-> bool
       { return ((lowedge <= oph.PeakTime()) && (oph.PeakTime() <= highedge)); };
-  // partition container to move the hits of the peak
-  // the iterators point to the boundaries of the partition
-  fOpH_beg = (fPeakCounter > 0) ? fOpH_end : opHits.begin();
-  fOpH_end = std::partition(fOpH_beg, opHits.end(),
-                            peakInsideEdges);
-  fPeakCounter++;
+    // partition container to move the hits of the flash
+    // the iterators point to the boundaries of the partition
+    OpHitIt opH_end = std::partition(opH_beg, opHits.end(),
+                                     peakInsideEdges);
+    simpleFlashes.emplace_back
+      (SimpleFlash(flashId, flashId + volumeId,
+                   opH_beg, opH_end, maxpeak_time));
+    opH_beg = opH_end;
+  }
   return true;
 }
 

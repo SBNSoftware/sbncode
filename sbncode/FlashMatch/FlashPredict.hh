@@ -63,6 +63,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 
 class FlashPredict;
 class FlashPredict : public art::EDProducer {
@@ -100,6 +101,37 @@ public:
   };
   using ChargeDigestMap = std::map<double, ChargeDigest, std::greater<double>>;
 
+  using OpHitIt = std::vector<recob::OpHit>::iterator;
+  struct SimpleFlash {
+    unsigned flashId, flashUId;
+    OpHitIt opH_beg, opH_end;
+    double maxpeak_time;
+    SimpleFlash(unsigned flashId_, unsigned flashUId_,
+                OpHitIt opH_beg_, OpHitIt opH_end_,
+                double maxpeak_time_) :
+      flashId(flashId_), flashUId(flashUId_),
+      opH_beg(opH_beg_), opH_end(opH_end_),
+      maxpeak_time(maxpeak_time_)
+      {}
+  };
+
+  struct FlashMetrics {
+    double x, x_gl, y, z, r, pe, unpe, ratio, time;
+    double hypo, hypo_rr, hypo_ratio;
+    bool metric_ok;
+    FlashMetrics(double x_, double x_gl_, double y_, double z_, double r_,
+                 double pe_, double unpe_, double ratio_, double time_,
+                 double hypo_, double hypo_rr_, double hypo_ratio_,
+                 bool metric_ok_) :
+      x(x_), x_gl(x_gl_), y(y_), z(z_), r(r_), pe(pe_), unpe(unpe_),
+      ratio(ratio_), time(time_), hypo(hypo_), hypo_rr(hypo_rr_),
+      hypo_ratio(hypo_ratio_), metric_ok(metric_ok_)
+      {}
+    // faulty flashes constructor
+    FlashMetrics() : metric_ok(false) {}
+  };
+
+
 private:
   // Declare member data here.
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
@@ -108,10 +140,11 @@ private:
   void initTree(void);
   void loadMetrics(void);
   bool computeChargeMetrics(const flashmatch::QCluster_t& qClusters);
-  bool computeFlashMetrics(const std::set<unsigned>& tpcWithHits);
+  bool computeFlashMetrics(const SimpleFlash& simpleFlash);
   bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
-  double hypoFlashX_splines() const;
-  double hypoFlashX_fits();
+  // double hypoFlashX_splines() const;
+  std::tuple<double, double, double> hypoFlashX_fits(
+    double flash_r, double flash_ratio) const;
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const art::Ptr<recob::PFParticle>& particle,
@@ -126,6 +159,10 @@ private:
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
+  void updateFlashMetrics(const FlashMetrics& flashMetrics);
+  void storeFlashMetrics(
+    const unsigned flashUId,
+    std::map<unsigned, FlashMetrics>& flashMetricsMap) const;
   inline double scoreTerm(const double m, const double n,
                    const double mean, const double spread) const;
   inline double scoreTerm(const double m,
@@ -135,10 +172,27 @@ private:
   void copyOpHitsInBeamWindow(
     std::vector<recob::OpHit>& opHits,
     const art::Handle<std::vector<recob::OpHit>>& ophit_h) const;
-  bool getOpHitsInFlash(std::vector<recob::OpHit>& opHits);
-  bool createOpHitsTimeHist(
-    const std::vector<recob::OpHit>& opHits) const;
-  bool findMaxPeak(std::vector<recob::OpHit>& opHits);
+  std::vector<SimpleFlash> makeSimpleFlashes(//SBND overload
+    std::vector<recob::OpHit>& opHits,
+    std::vector<recob::OpHit>& opHitsLeft,
+    std::vector<recob::OpHit>& opHitsRght) const;
+  std::vector<SimpleFlash> makeSimpleFlashes(//ICARUS overload
+    std::vector<recob::OpHit>& opHits) const;
+  bool createOpHitsTimeHist(//SBND overload
+    const std::vector<recob::OpHit>& opHits,
+    std::vector<recob::OpHit>& opHitsLeft,
+    std::vector<recob::OpHit>& opHitsRght,
+    std::unique_ptr<TH1D>& opHitsTimeHist,
+    std::unique_ptr<TH1D>& opHitsTimeHistLeft,
+    std::unique_ptr<TH1D>& opHitsTimeHistRght) const;
+  bool createOpHitsTimeHist(//ICARUS overload
+    const std::vector<recob::OpHit>& opHits,
+    std::unique_ptr<TH1D>& opHitsTimeHist) const;
+  bool findSimpleFlashes(
+    std::vector<SimpleFlash>& simpleFlashes,
+    std::vector<recob::OpHit>& opHits,
+    const unsigned volumeId,
+    std::unique_ptr<TH1D>& opHitsTimeHist) const;
   inline std::string detectorName(const std::string detName) const;
   bool isPDInCryo(const int pdChannel) const;
   bool isSBNDPDRelevant(const int pdChannel,
@@ -176,6 +230,7 @@ private:
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   const double fMinHitQ, fMinSpacePointQ, fMinParticleQ, fMinSliceQ;
+  const unsigned fMaxFlashes;
   const double fMinOpHPE, fMinFlashPE;
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS
@@ -194,12 +249,12 @@ private:
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
 
-  unsigned fPeakCounter = 0;
-  std::vector<recob::OpHit>::iterator fOpH_beg, fOpH_end;
+  const unsigned kLeftOpHs = 10;
+  const unsigned kRghtOpHs = 20;
+  const unsigned kBothOpHs = 30;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
-  std::unique_ptr<TH1D> fOpHitsTimeHist;
   // double rrMax, peMax;
   // TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
   // TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
@@ -207,8 +262,8 @@ private:
     double min, max;
     std::unique_ptr<TF1> f;
   };
-  std::array<Fits, 3> rrFits;
-  std::array<Fits, 3> peFits;
+  std::array<Fits, 3> fRRFits;
+  std::array<Fits, 3> fRatioFits;
   const std::array<std::string, 3> suffixes{"l", "h", "m"};
   // const std::string kPolFit = "pol3";
   const double kEps = 1e-4;
@@ -225,11 +280,9 @@ private:
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
   double _flash_x, _flash_x_gl, _flash_y, _flash_z,
-    _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
-  // TODO: why not charge_time?
-  double _flash_time;
+    _flash_r, _flash_pe, _flash_unpe, _flash_ratio,
+    _flash_time, _hypo_x, _hypo_x_rr, _hypo_x_ratio;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  double _hypo_x, _hypo_x_rr, _hypo_x_ratio;//, _hypo_x_fit;
   unsigned _evt, _run, _sub; //_slices;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
