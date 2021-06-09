@@ -103,9 +103,6 @@ void sbn::Retriever::produce(art::Event& e)
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
   e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
-  icarus::ICARUSTriggerUDPFragment frag(fragment);
-
-
 
   //  double t_previous_event = 1616202844.932767280;
   //  double t_current_event  = 1616202843.932767280;
@@ -115,8 +112,8 @@ void sbn::Retriever::produce(art::Event& e)
   std::cout << "This many raw_datums : " << raw_data.size() << std::endl;
   for(auto raw_datum : raw_data){
    
-    uint64_t artdaq_ts = fragment.timestamp();
-    icarus::ICARUSTriggerUDPFragment frag(fragment);
+    //uint64_t artdaq_ts = raw_datum.timestamp();
+    icarus::ICARUSTriggerUDPFragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
@@ -130,8 +127,7 @@ void sbn::Retriever::produce(art::Event& e)
   
   std::cout << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
   
-  if(t_previous_event == t_current_event) return -1;
-
+  //if(t_previous_event == t_current_event) return -1;
   
   try{
     double test_curr; double test_t1;
