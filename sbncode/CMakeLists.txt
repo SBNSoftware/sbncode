@@ -18,3 +18,4 @@ add_subdirectory(LArRecoProducer)
 add_subdirectory(TPCReco)
 
 add_subdirectory(BeamSpillInfoRetriever)
+add_subdirectory(EventGenerator)

@@ -52,6 +52,7 @@
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
+#include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 
 // turn the warnings back on
 //#pragma GCC diagnostic pop
@@ -77,7 +78,7 @@ public:
   FlashPredict& operator=(FlashPredict const&) = delete;
   FlashPredict& operator=(FlashPredict&&) = delete;
   // Required functions.
-  void produce(art::Event& e) override;
+  void produce(art::Event& evt) override;
   // Selected optional functions.
   void beginJob() override;
   void endJob() override;
@@ -94,7 +95,7 @@ private:
   bool computeFlashMetrics(const std::set<unsigned>& tpcWithHits);
   bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
   double hypoFlashX_splines() const;
-  double hypoFlashX_fits() const;
+  double hypoFlashX_fits();
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
   //                                   const art::Ptr<recob::PFParticle>& particle,
@@ -104,14 +105,14 @@ private:
   //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
   void AddDaughters(const std::map<size_t, size_t>& pfpMap,
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
-                    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h,
+                    const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
   double scoreTerm(const double m, const double n,
                    const double mean, const double spread) const;
   double scoreTerm(const double m,
                    const double mean, const double spread) const;
   bool pfpNeutrinoOnEvent(
-    const art::ValidHandle<std::vector<recob::PFParticle>>& pfp_h) const;
+    const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;
   void copyOpHitsInBeamWindow(
     std::vector<recob::OpHit>& opHits,
     const art::Handle<std::vector<recob::OpHit>>& ophit_h) const;
@@ -124,6 +125,7 @@ private:
                         const std::set<unsigned>& tpcWithHits) const;
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
+  double flashXGl(const double hypo_x, const double flash_x) const;
   double driftDistance(const double x) const;
   unsigned driftVolume(const double x) const;
   // bool isPDInCryoTPC(double pd_x, size_t itpc);
@@ -144,14 +146,16 @@ private:
   detinfo::DetectorClocksData const fClockData;
   const double fTickPeriod;
   const double fBeamWindowStart, fBeamWindowEnd;
-  const double fLightWindowStart, fLightWindowEnd;
+  const double fFlashStart, fFlashEnd;
   const unsigned fTimeBins;
-  const bool fSelectNeutrino, fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
+  const bool fSelectNeutrino, fOnlyPrimaries;
+  const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
-  const double fMinFlashPE, fMinOpHPE, fPEscale,
-    fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
+  const double fMinHitQ, fMinSliceQ, fQScale;
+  const double fMinOpHPE, fMinFlashPE, fPEScale;
   std::string fDetector; // SBND or ICARUS
   bool fSBND, fICARUS;
   std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
@@ -163,7 +167,7 @@ private:
   size_t fNTPC;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
-  const unsigned fVUVToVIS;
+  const unsigned fOpDetNormalizer;
   const double fTermThreshold;
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
@@ -190,26 +194,32 @@ private:
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
 
+  // aliases for the objects that are stored
+  using sFM    = sbn::SimpleFlashMatch;
+  using Charge = sbn::SimpleFlashMatch::Charge;
+  using Flash  = sbn::SimpleFlashMatch::Flash;
+  using Score  = sbn::SimpleFlashMatch::Score;
+
   // Tree variables
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
-  double _flash_x, _flash_y, _flash_z,
+  double _flash_x, _flash_x_gl, _flash_y, _flash_z,
     _flash_r, _flash_pe, _flash_unpe, _flash_ratio;
   // TODO: why not charge_time?
   double _flash_time;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  double _hypo_x;//, _hypo_x_fit;
-  unsigned _evt, _run, _sub, _countPE; //_slices;
+  double _hypo_x, _hypo_x_rr, _hypo_x_ratio;//, _hypo_x_fit;
+  unsigned _evt, _run, _sub; //_slices;
 
   std::vector<double> dy_means, dz_means, rr_means, pe_means;
   std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
 
   struct ChargeDigest {
-     size_t pId;
-     int pfpPDGC;
-     art::Ptr<recob::PFParticle> pfp_ptr;
-     flashmatch::QCluster_t qClusters;
-     std::set<unsigned> tpcWithHits;
+    size_t pId;
+    int pfpPDGC;
+    art::Ptr<recob::PFParticle> pfp_ptr;
+    flashmatch::QCluster_t qClusters;
+    std::set<unsigned> tpcWithHits;
     ChargeDigest() = default;
     ChargeDigest(const size_t pId_, const int pfpPDGC_,
                  const art::Ptr<recob::PFParticle>& pfp_ptr_,
@@ -220,9 +230,16 @@ private:
       {}
   };
 
+  const bool kNoScr = false;
+  const double kNoScrTime = -9999.;
+  const double kNoScrQ  = -9999.;
+  const double kNoScrPE = -9999.;
   const int kQNoOpHScr = -1;
   const int kNoChrgScr = -2;
   const int k0VUVPEScr = -3;
+  const int kNoOpHInEvt = -11;
+  const int kNoPFPInEvt = -12;
+  // const int kNoSlcInEvt = -13;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
     unsigned events, nopfpneutrino,// noslice,
