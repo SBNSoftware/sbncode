@@ -61,6 +61,7 @@ find_ups_product(libwda)
 find_ups_product(sbnobj v09_10_00)
 #find_ups_product(sbndcode v06_67_00)
 #find_ups_product(uboonecode v06_67_00)
+find_ups_product( sbndaq_artdaq_core )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
