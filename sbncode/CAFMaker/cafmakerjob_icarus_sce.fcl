@@ -6,7 +6,7 @@ physics.producers.mycafmaker.PFParticleLabel:   "pandoraGausSCE"
 physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGausSCE"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGausSCE"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausSCECalo"
-physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausSCEPid"
+physics.producers.mycafmaker.TrackChi2PidLabel: "pandoraGausSCEPid"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausSCECryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausSCECryo1
