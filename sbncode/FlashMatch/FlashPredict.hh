@@ -143,7 +143,7 @@ private:
   bool computeFlashMetrics(const SimpleFlash& simpleFlash);
   bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
   // double hypoFlashX_splines() const;
-  std::tuple<double, double, double> hypoFlashX_fits(
+  std::tuple<double, double, double, double> hypoFlashX_fits(
     double flash_r, double flash_ratio) const;
   // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
   // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
@@ -264,7 +264,7 @@ private:
   };
   std::array<Fits, 3> fRRFits;
   std::array<Fits, 3> fRatioFits;
-  const std::array<std::string, 3> suffixes{"l", "h", "m"};
+  const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
   // const std::string kPolFit = "pol3";
   const double kEps = 1e-4;
 
@@ -280,8 +280,8 @@ private:
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
   double _flash_x, _flash_x_gl, _flash_y, _flash_z,
-    _flash_r, _flash_pe, _flash_unpe, _flash_ratio,
-    _flash_time, _hypo_x, _hypo_x_rr, _hypo_x_ratio;
+    _flash_r, _flash_pe, _flash_unpe, _flash_ratio, _flash_time,
+    _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   unsigned _evt, _run, _sub; //_slices;
 

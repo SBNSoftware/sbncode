@@ -134,6 +134,9 @@ void FlashPredict::produce(art::Event& evt)
   _flash_r       = -9999.;
   _flash_ratio   = -9999.;
   _hypo_x        = -9999.;
+  _hypo_x_err    = -9999.;
+  _hypo_x_rr     = -9999.;
+  _hypo_x_ratio  = -9999.;
   // _hypo_x_fit    = -9999.;
   _score         = -9999.;
   bk.events++;
@@ -363,6 +366,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("charge_z", &_charge_z, "charge_z/D");
   _flashmatch_nuslice_tree->Branch("charge_q", &_charge_q, "charge_q/D");
   _flashmatch_nuslice_tree->Branch("hypo_x", &_hypo_x, "hypo_x/D");
+  _flashmatch_nuslice_tree->Branch("hypo_x_err", &_hypo_x_err, "hypo_x_err/D");
   _flashmatch_nuslice_tree->Branch("hypo_x_rr", &_hypo_x_rr, "hypo_x_rr/D");
   _flashmatch_nuslice_tree->Branch("hypo_x_ratio", &_hypo_x_ratio, "hypo_x_ratio/D");
   // _flashmatch_nuslice_tree->Branch("hypo_x_fit", &_hypo_x_fit, "hypo_x_fit/D");
@@ -488,8 +492,8 @@ void FlashPredict::loadMetrics()
     // rr_h_InvSpl = TSpline3("rr_h_InvSpl", yH.data(), x.data(), yH.size());
     unsigned s = 0;
     for(auto& rrF : fRRFits){
-      std::string nold = "rr_fit_" + suffixes[s];
-      std::string nnew = "rrFit_" + suffixes[s];
+      std::string nold = "rr_fit_" + kSuffixes[s];
+      std::string nnew = "rrFit_" + kSuffixes[s];
       TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
       auto params = tempF1->GetParameters();
       rrF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
@@ -533,8 +537,8 @@ void FlashPredict::loadMetrics()
     // pe_h_InvSpl = TSpline3("pe_h_InvSpl", yH.data(), x.data(), yH.size());
     unsigned s = 0;
     for(auto& peF : fRatioFits){
-      std::string nold = "pe_fit_" + suffixes[s];
-      std::string nnew = "peFit_" + suffixes[s];
+      std::string nold = "pe_fit_" + kSuffixes[s];
+      std::string nnew = "peFit_" + kSuffixes[s];
       TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
       auto params = tempF1->GetParameters();
       peF.f = std::make_unique<TF1>(nnew.c_str(), "pol3", 0., fDriftDistance);
@@ -681,7 +685,8 @@ bool FlashPredict::computeFlashMetrics(const SimpleFlash& simpleFlash)
     _flash_r = std::sqrt(
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (_flash_y * _flash_y + _flash_z * _flash_z)
        - 2.0 * (_flash_y * sum_PE2Y + _flash_z * sum_PE2Z) ) / sum_PE2);
-    auto [_hypo_x, _hypo_x_rr, _hypo_x_ratio] = hypoFlashX_fits(_flash_r, _flash_ratio);
+    std::tie(_hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio) =
+      hypoFlashX_fits(_flash_r, _flash_ratio);
     // TODO: using _hypo_x make further corrections to _flash_time to
     // account for light transport time and/or rising edge
     // _flash_time = timeCorrections(simpleFlash.maxpeak_time, _hypo_x);
@@ -783,7 +788,7 @@ bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
 // }
 
 
-std::tuple<double, double, double> FlashPredict::hypoFlashX_fits(
+std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
   double flash_r, double flash_ratio) const
 {
   std::vector<double> rrXs;
@@ -800,27 +805,30 @@ std::tuple<double, double, double> FlashPredict::hypoFlashX_fits(
       }
     }
   }
-  if(rrXs.size() > 1){
+  if(rrXs.size() > 1){//between: [l,h], [l,m], or [h,m]
     rr_hypoX = (rrXs[0] + rrXs[1])/2.;
-    rr_hypoXWgt =  1./std::abs(rrXs[0] - rrXs[1]);
+    double half_interval = (rrXs[1] - rrXs[0])/2.;
+    rr_hypoXWgt =  1./(half_interval*half_interval);
   }
-  else if(rrXs.size() == 0){
+  else if(rrXs.size() == 0){//can't estimate
     rr_hypoX = 0.;
     rr_hypoXWgt = 0.;
   }
   else{//(rrXs.size() == 1)
-    if(flash_r < fRRFits[2].min){
+    if(flash_r < fRRFits[2].min){//between: [l, m)
       rr_hypoX =  rrXs[0]/2.;
-      rr_hypoXWgt = 1./std::abs(rrXs[0]);
+      double half_interval = rrXs[0]/2.;
+      rr_hypoXWgt = 1./(half_interval*half_interval);
     }
-    else{
+    else{//between: (m, h]
       rr_hypoX = (rrXs[0] + fDriftDistance)/2.;
-      rr_hypoXWgt = 1./std::abs(rrXs[0] - fDriftDistance);
+      double half_interval = (fDriftDistance - rrXs[0]);
+      rr_hypoXWgt = 1./(half_interval*half_interval);
     }
   }
 
   if(!fUseUncoatedPMT && !fUseOppVolMetric)
-    return {rr_hypoX, rr_hypoX, 0.};
+    return {rr_hypoX, rr_hypoXWgt, rr_hypoX, 0.};
 
   std::vector<double> ratioXs;
   double ratio_hypoX, ratio_hypoXWgt;
@@ -836,28 +844,33 @@ std::tuple<double, double, double> FlashPredict::hypoFlashX_fits(
       }
     }
   }
-  if(ratioXs.size() > 1){
+  if(ratioXs.size() > 1){//between: [l,h], [l,m], or [h,m]
     ratio_hypoX = (ratioXs[0] + ratioXs[1])/2.;
-    ratio_hypoXWgt =  1./std::abs(ratioXs[0] - ratioXs[1]);
+    double half_interval = (ratioXs[1] - ratioXs[0])/2.;
+    ratio_hypoXWgt =  1./(half_interval*half_interval);
   }
-  else if(ratioXs.size() == 0){
+  else if(ratioXs.size() == 0){//can't estimate
     ratio_hypoX = 0.;
     ratio_hypoXWgt = 0.;
   }
-  else{// ratioXs.size() == 1
-    if(flash_ratio < fRatioFits[2].min){
-      ratio_hypoX =   ratioXs[0]/2.;
-      ratio_hypoXWgt =  1./std::abs(ratioXs[0]);
+  else{//(ratioXs.size() == 1)
+    if(flash_r < fRatioFits[2].min){//between: [l, m)
+      ratio_hypoX =  ratioXs[0]/2.;
+      double half_interval = ratioXs[0]/2.;
+      ratio_hypoXWgt = 1./(half_interval*half_interval);
     }
-    else{
+    else{//between: (m, h]
       ratio_hypoX = (ratioXs[0] + fDriftDistance)/2.;
-      ratio_hypoXWgt = 1./std::abs(ratioXs[0] - fDriftDistance);
+      double half_interval = (fDriftDistance - ratioXs[0]);
+      ratio_hypoXWgt = 1./(half_interval*half_interval);
     }
   }
 
-  double hypo_x = (rr_hypoX*rr_hypoXWgt + ratio_hypoX*ratio_hypoXWgt) /
-    (rr_hypoXWgt + ratio_hypoXWgt);
-  return {hypo_x, rr_hypoX, ratio_hypoX};
+  double sum_weights = rr_hypoXWgt + ratio_hypoXWgt;
+  double hypo_x =
+    (rr_hypoX*rr_hypoXWgt + ratio_hypoX*ratio_hypoXWgt) / sum_weights;
+  double hypo_x_err = std::sqrt(sum_weights) / sum_weights;
+  return {hypo_x, hypo_x_err, rr_hypoX, ratio_hypoX};
 }
 
 
