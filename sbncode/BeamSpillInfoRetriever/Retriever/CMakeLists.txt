@@ -32,8 +32,10 @@ simple_plugin(Retriever module
        	sbnobj_Common_POTAccounting
 	${IFBEAMSERVICE}
 	${IFBEAM}
-        artdaq-core_Utilities
+	sbndaq-artdaq-core_Overlays_Common
+  	sbndaq-artdaq-core_Overlays
 	sbndaq-artdaq-core_Overlays_ICARUS	
+        artdaq-core_Utilities
 	sbn_BeamSpillInfoRetriever_MWRData	
 )
 
