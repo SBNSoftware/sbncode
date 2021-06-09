@@ -103,6 +103,8 @@ void sbn::Retriever::produce(art::Event& e)
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
   e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
+
+
   //  double t_previous_event = 1616202844.932767280;
   //  double t_current_event  = 1616202843.932767280;
 
@@ -115,7 +117,7 @@ void sbn::Retriever::produce(art::Event& e)
     icarus::ICARUSTriggerUDPFragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);  
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
     gate_type = datastream_info.gate_type;
     double delta_gates = frag.getDeltaGatesBNB();
     std::cout << "Gate_type: " << gate_type << std::endl;
@@ -127,35 +129,7 @@ void sbn::Retriever::produce(art::Event& e)
       t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
     else
       t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000);
-    int gate_type = datastream_info.gate_type;
-    if(gate_type != 1) continue;
-
-    t_current_event = datastream_info.getNanoseconds_since_UTC_epoch() + 2; //check this offset...
-    t_previous_event = frag.getLastTimestampBNB();
-     
-  }
-  
-  std::cout << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
-  
-  //if(t_previous_event == t_current_event) return -1;
-  
-  try{
-    double test_curr; double test_t1;
-    bfp->GetNamedData((t_previous_event)-fTimePad,"E:THCURR",&test_curr,&test_t1);
-    std::cout << "got values " << test_curr <<  "for E:THCURR at time " << test_t1 << "\n";
-  }
-  catch (WebAPIException &we) {
-    std::cout << "got exception: " << we.what() << "\n";
-  }
-  std::cout.precision(17);
-
-
-  try{
-    auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_previous_event)-35,"E:M875BB{4440:888}.RAW");
-  }
-  catch (WebAPIException &we) {
-    //we have to have this or it doesn't work...
->>>>>>> b831f5685458e11a49d3ee5445bd0fc65e47295c
+    
   }
   
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
