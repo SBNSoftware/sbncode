@@ -35,6 +35,8 @@ art_make( MODULE_LIBRARIES
   larsim_MCCheater_BackTrackerService_service
   larsim_MCCheater_ParticleInventoryService_service
   nusimdata_SimulationBase
+
+  caf_RecoUtils
 )
 
 install_headers()

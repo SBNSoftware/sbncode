@@ -10,12 +10,25 @@ sbn_MVATrackPID:
     MCSLabel:      "pandoraTrackMCS"
     Chi2Label:     "pandoraPid"
     RangeLabel:    "pandoraTrackRange"
-    LGCLabel:    "pandoraTrackLGC"
+    # LGCLabel:    "pandoraTrackLGC"
     DCALabel:    "pandoraTrackDCA"
     StoppingChi2Label:    "pandoraTrackStoppingChi2"
     MakeTree:       true
     RunMVA: false
     MinTrackLength: 10
+}
+
+
+sbn_MVAShowerPID:
+{
+    module_type:   MVAShowerPID
+    LArGeantLabel: "largeant"
+    PFPLabel:      "pandora"
+    ShowerLabel:   "pandoraShower"
+    ShowerSelVarsLabel:   "pandoraShowerSelectionVars"
+    MakeTree:       true
+    RunMVA: false
+    MinShowerEnergy: 50
 }
 
 END_PROLOG

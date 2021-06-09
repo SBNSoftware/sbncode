@@ -108,10 +108,22 @@ namespace caf
       "pandoraShowerSBN"
     };
 
+    Atom<string> ShowerMVAPIDLabel {
+      Name("ShowerMVAPIDLabel"),
+      Comment("Base label of shower mva particle-id producer."),
+      "pandoraShowerMVAPID"
+    };
+
     Atom<string> RecoShowerSelectionLabel {
       Name("RecoShowerSelectionLabel"),
       Comment("Base label of shower selection vars producer."),
       "pandoraShowerSelectionVars"
+    };
+
+    Atom<string> ShowerCosmicCylinderLabel {
+      Name("ShowerCosmicCylinderLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "pandoraShowerCosmicCylinder"
     };
 
     Atom<string> TrackCaloLabel {
@@ -124,12 +136,6 @@ namespace caf
       Name("TrackChi2PidLabel"),
       Comment("Base label of track chi2 particle-id producer."),
       "pandoraPid"
-    };
-
-    Atom<string> TrackLGCFitLabel {
-      Name("TrackLGCFitLabel"),
-      Comment("Base label of track Landau-Guassian fit producer."),
-      "pandoraTrackLGC"
     };
 
     Atom<string> TrackScatterDCALabel {

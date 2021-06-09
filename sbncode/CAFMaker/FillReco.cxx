@@ -149,7 +149,27 @@ namespace caf
           srshower.wirePitch_plane2 = plane.WirePitch()/cosgamma;
       }
     }
+  }
 
+  void FillShowerMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+      caf::SRShower& srshower,
+      bool allowEmpty)
+  {
+    srshower.mvaPID.electronScore = mvaPID->mMVAScoreMap.at(11);
+    srshower.mvaPID.photonScore = mvaPID->mMVAScoreMap.at(22);
+    srshower.mvaPID.otherScore = mvaPID->mMVAScoreMap.at(0);
+
+    srshower.mvaPID.pdg = mvaPID->BestPDG();
+    srshower.mvaPID.bestScore = mvaPID->BestScore();
+  }
+
+
+  void FillShowerCosmicCylinder(const std::vector<art::Ptr<float> >& cosmicCylinderVec,
+                      caf::SRShower& srshower)
+  {
+      if (cosmicCylinderVec.size() != 1)
+        return;
+      srshower.cosmicCylinder = *cosmicCylinderVec.front();
   }
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,

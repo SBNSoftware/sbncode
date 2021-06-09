@@ -24,7 +24,6 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
-#include "sbnobj/Common/Reco/LGCFit.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterDCA.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
@@ -47,6 +46,13 @@ namespace caf
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
+
+  void FillShowerMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+                        caf::SRShower& srshower,
+                        bool allowEmpty = false);
+
+  void FillShowerCosmicCylinder(const std::vector<art::Ptr<float> >& cosmicCylinderVec,
+                      caf::SRShower& srshower);
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
                       caf::SRShower& srshower);

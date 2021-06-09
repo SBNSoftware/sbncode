@@ -5,6 +5,9 @@
 //
 // Generated at Mon Mar  1 10:30:45 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Producer to identify Bragg peaks from stopping tracks
+// Based on the StoppingParticleCosmicIDAlg by Tom Brooks in sbndcode
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -93,6 +96,7 @@ void sbn::TrackStoppingChi2Fitter::produce(art::Event& e)
     if (caloVec.size() != 3)
       continue;
 
+    // Find the plane with the most hits: prefer collection > 1st induction > 2nd induction if multiple planes have the same number
     const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), std::max(caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size())));
     const int bestPlane((caloVec[2]->dEdx().size() == maxHits) ? 2 : (caloVec[0]->dEdx().size() == maxHits) ? 0 : (caloVec[1]->dEdx().size() == maxHits) ? 1 : -1);
 

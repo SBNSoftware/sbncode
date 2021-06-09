@@ -943,6 +943,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    art::FindManyP<float> fmShowerCosmicCylinder =
+      FindManyPStrict<float>(slcShowers, evt, fParams.ShowerCosmicCylinderLabel() + slice_tag_suff);
+
     art::FindManyP<float> fmShowerResiduals =
       FindManyPStrict<float>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
 
@@ -979,10 +982,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::LGCFit> fmLGCFit =
-      FindManyPStrict<sbn::LGCFit>(slcTracks, evt,
-          fParams.TrackLGCFitLabel() + slice_tag_suff);
-
     art::FindManyP<sbn::ScatterDCA> fmScatterDCA =
       FindManyPStrict<sbn::ScatterDCA>(slcTracks, evt,
           fParams.TrackScatterDCALabel() + slice_tag_suff);
@@ -991,9 +990,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
           fParams.TrackStoppingChi2FitLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::MVAPID> fmMVAPID =
+    art::FindManyP<sbn::MVAPID> fmTrackMVAPID =
       FindManyPStrict<sbn::MVAPID>(slcTracks, evt,
           fParams.TrackMVAPIDLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmShowerMVAPID =
+      FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
+          fParams.ShowerMVAPIDLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
@@ -1139,17 +1142,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
-        if (fmLGCFit.isValid() && fmLGCFit.at(iPart).size()==1) {
-           FillTrackLGCFit(fmLGCFit.at(iPart).front(), rec.reco.trk.back());
-        }
         if (fmScatterDCA.isValid() && fmScatterDCA.at(iPart).size()==1) {
            FillTrackScatterDCA(fmScatterDCA.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
            FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
         }
-        if (fmMVAPID.isValid() && fmMVAPID.at(iPart).size()==1) {
-           FillTrackMVAPID(fmMVAPID.at(iPart).front(), rec.reco.trk.back());
+        if (fmTrackMVAPID.isValid() && fmTrackMVAPID.at(iPart).size()==1) {
+           FillTrackMVAPID(fmTrackMVAPID.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
@@ -1180,6 +1180,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
+
+        if (fmShowerMVAPID.isValid() && fmShowerMVAPID.at(iPart).size()==1) {
+           FillShowerMVAPID(fmShowerMVAPID.at(iPart).front(), rec.reco.shw.back());
+        }
+        if (fmShowerCosmicCylinder.isValid() && fmShowerCosmicCylinder.at(iPart).size() != 0) {
+          FillShowerCosmicCylinder(fmShowerCosmicCylinder.at(iPart), rec.reco.shw.back());
+        }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         }

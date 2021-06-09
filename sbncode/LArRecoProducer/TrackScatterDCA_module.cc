@@ -5,6 +5,9 @@
 //
 // Generated at Mon Mar  1 10:30:45 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Producer to look at the average distance of closest approach from
+// the centroid of a track to quantify the scattering
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -87,9 +90,11 @@ void sbn::TrackScatterDCA::produce(art::Event& e)
 
 sbn::ScatterDCA sbn::TrackScatterDCA::CalculateDCA(const recob::Track& track) const
 {
+  // Interpolate the start and end of the track to find the centroid axis
   const TVector3 start(track.Start<TVector3>());
   const TVector3 dir((start - track.End<TVector3>()).Unit());
 
+  // Calculate the perpendicular distance from the centroid to each traj point
   float sumDCA(0), maxDCA(0);
   unsigned int counter(0);
   for (size_t i = 0; i < track.NumberTrajectoryPoints(); i++) {
@@ -111,6 +116,7 @@ sbn::ScatterDCA sbn::TrackScatterDCA::CalculateDCA(const recob::Track& track) co
 
   const float meanDCA(sumDCA / counter);
 
+  // Calculate the spread in DCA around the mean value
   float sumStdDev(0);
   for (size_t i = 0; i < track.NumberTrajectoryPoints(); i++) {
     if (!track.HasValidPoint(i))

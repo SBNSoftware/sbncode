@@ -36,13 +36,13 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 
-#include "sbnobj/Common/Reco/LGCFit.h"
+// #include "sbnobj/Common/Reco/LGCFit.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ScatterDCA.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
-#include "sbncode/LArRecoProducer/LArReco/LGfitter.h"
+// #include "sbncode/LArRecoProducer/LArReco/LGfitter.h"
 
 // Root Includes
 #include "TCanvas.h"
@@ -84,22 +84,27 @@ class sbn::MVATrackPID : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fLGCLabel, fDCALabel, fStoppingChi2Label;
+  art::InputTag fLArGeantLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fDCALabel, fStoppingChi2Label;
   const float fMinTrackLength;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
 
-  const LGfitter::LGfitter lgFitter;
+  // const LGfitter::LGfitter lgFitter;
 
   // The metrics actually used in the MVA
-  float recoLen;                                 // The length of the track
-  float chi2PIDMuon, chi2PIDPion, chi2PIDProton; // Chi2 PID scores for different hyptheses
-  float mcsScatterMean, mscScatterMax;           // Scattering angles used in MCS calculation
-  float meanDCA;                                 // Distacnce of closest approach to interpolated track
-  float stoppingChi2Ratio;                       // Ratio of exp/pol0 chi2 fits to end of track
-  float lgcMPV;                                  // Most Probable value of fitted Landau-Guassian
-  float pDiff;                                   // Relatve momentum agreement between range and MCS
-  //TODO: Root insists that we pass the reader floats, but these should really be ints:w
+  float recoLen;                    // The length of the track [cm]
+  float chi2PIDMuon, chi2PIDProton; // Chi2 PID scores for different hyptheses
+  // The muon and pion scores are very correlated, instead take the relative difference
+  float chi2PIDMuonPionDiff;
+  // The mean and max are very correlates, take the ration max/mean
+  float mcsScatterMean, mcsScatterMaxRatio; // Scattering angles used in MCS calculation [mrad]
+  float meanDCA;                            // Distance of closest approach to interpolated track [cm]
+  float stoppingChi2Ratio;                  // Ratio of exp/pol0 chi2 fits to end of track
+  // This variable takes too long to calculate reliably, so instead approximate using pol0 fit
+  // float lgcMPV;                                  // Most Probable value of fitted Landau-Guassian [MeV/cm]
+  float chi2Pol0Fit; // Fitted pol0 to find the dE/dx of the track [MeV/cm]
+  float pDiff;       // Relatve momentum agreement between range and MCS
+  //TODO: Root insists that we pass the reader floats, but these should really be ints
   float numDaughters, maxDaughterHits; // Hierarchy of the track
 
   // MVA scores
@@ -112,14 +117,13 @@ class sbn::MVATrackPID : public art::EDProducer {
 
   int truePdg, chi2PIDPDG, chi2PIDPDGNoKaon, numHits, bestPlane, bestPlaneHits, hierarchyDepth, trueStopping, recoContained, recoPrimary;
 
-  float chi2PIDKaon;
-  float chi2Pol0Fit, chi2Pol0Chi2, chi2ExpChi2;
-  float mcsScatterMax;
-  float lgcAmp, lgcGaussWidth, lgcLandauWidth, lgcChi2;
+  float chi2PIDPion, chi2PIDKaon;
+  float chi2Pol0Chi2, chi2ExpChi2;
+  // float lgcAmp, lgcGaussWidth, lgcLandauWidth, lgcChi2;
   float stdDevDCA, maxDCA;
-  float mcsMuonP, rangeMuonP;
+  float mcsScatterMax, mcsMuonP, rangeMuonP;
   float trackScore, daughterTrackScore;
-  float startX, startY, startZ, endX, endY, endZ, trueStartX, trueStartY, trueStartZ, trueEndX, trueEndY, trueEndZ, startDist, endDist, trueP, energyComp, energyPurity;
+  float startX, startY, startZ, endX, endY, endZ, trueStartX, trueStartY, trueStartZ, trueEndX, trueEndY, trueEndZ, truePx, truePy, truePz, startDist, endDist, trueP, trueEndP, trueThetaXZ, trueThetaYZ, energyComp, energyPurity;
 
   std::string trueType, trueEndProcess, chi2PIDType, chi2PIDTypeNoKaon;
 
@@ -132,7 +136,7 @@ class sbn::MVATrackPID : public art::EDProducer {
   void FillMCSMetrics(const recob::MCSFitResult& mcs);
   void FillChi2PIDMetrics(const anab::ParticleID& pid);
   void FillRangePMetrics(const sbn::RangeP& range);
-  void FillLGCMetrics(const sbn::LGCFit& lgc);
+  // void FillLGCMetrics(const sbn::LGCFit& lgc);
   void FillDCAMetrics(const sbn::ScatterDCA& dca);
   void FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingChi2);
   sbn::MVAPID RunMVA();
@@ -153,7 +157,7 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
     , fMCSLabel(p.get<std::string>("MCSLabel"), std::string("muon"))
     , fChi2Label(p.get<std::string>("Chi2Label"))
     , fRangeLabel(p.get<std::string>("RangeLabel"), std::string("muon"))
-    , fLGCLabel(p.get<std::string>("LGCLabel"))
+    // , fLGCLabel(p.get<std::string>("LGCLabel"))
     , fDCALabel(p.get<std::string>("DCALabel"))
     , fStoppingChi2Label(p.get<std::string>("StoppingChi2Label"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
@@ -161,7 +165,7 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
     , fRunMVA(p.get<bool>("RunMVA"))
     , fMethodName(p.get<std::string>("MethodName", ""))
     , fWeightFile(p.get<std::string>("WeightFile", ""))
-    , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 8.f))
+// , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 8.f))
 {
   if (!fMakeTree && !fRunMVA)
     throw cet::exception("MVATrackPID") << "Configured to do nothing";
@@ -175,7 +179,6 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
     if (!searchPath.find_file(fWeightFile, fWeightFileFullPath))
       throw cet::exception("MVATrackPID") << "Unable to find weight file: " << fWeightFile << " in FW_SEARCH_PATH: " << searchPath.to_string();
 
-    // reader = new TMVA::Reader("Error");
     reader = new TMVA::Reader("V");
 
     // std::cout << "Adding Variable: recoLen" << std::endl;
@@ -183,14 +186,14 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
 
     reader->AddVariable("chi2PIDMuon", &chi2PIDMuon);
     reader->AddVariable("chi2PIDProton", &chi2PIDProton);
-    reader->AddVariable("chi2PIDPion", &chi2PIDPion);
+    reader->AddVariable("chi2PIDMuonPionDiff", &chi2PIDMuonPionDiff);
 
     reader->AddVariable("mcsScatterMean", &mcsScatterMean);
-    reader->AddVariable("mcsScatterMax", &mcsScatterMax);
+    reader->AddVariable("mcsScatterMaxRatio", &mcsScatterMaxRatio);
     reader->AddVariable("meanDCA", &meanDCA);
 
     reader->AddVariable("stoppingChi2Ratio", &stoppingChi2Ratio);
-    reader->AddVariable("lgcMPV", &lgcMPV);
+    reader->AddVariable("chi2Pol0Fit", &chi2Pol0Fit);
 
     reader->AddVariable("pDiff", &pDiff);
     reader->AddVariable("numDaughters", &numDaughters);
@@ -213,12 +216,14 @@ void sbn::MVATrackPID::beginJob()
     trackTree->Branch("chi2PIDMuon", &chi2PIDMuon);
     trackTree->Branch("chi2PIDPion", &chi2PIDPion);
     trackTree->Branch("chi2PIDProton", &chi2PIDProton);
+    trackTree->Branch("chi2PIDMuonPionDiff", &chi2PIDMuonPionDiff);
     trackTree->Branch("mcsScatterMean", &mcsScatterMean);
-    trackTree->Branch("mcsScatterMax", &mcsScatterMax);
+    trackTree->Branch("mcsScatterMaxRatio", &mcsScatterMaxRatio);
     trackTree->Branch("meanDCA", &meanDCA);
     trackTree->Branch("stoppingChi2Ratio", &stoppingChi2Ratio);
-    trackTree->Branch("lgcMPV", &lgcMPV);
+    // trackTree->Branch("lgcMPV", &lgcMPV);
     trackTree->Branch("pDiff", &pDiff);
+    trackTree->Branch("chi2Pol0Fit", &chi2Pol0Fit);
     trackTree->Branch("numDaughters", &numDaughters);
     trackTree->Branch("maxDaughterHits", &maxDaughterHits);
 
@@ -233,6 +238,9 @@ void sbn::MVATrackPID::beginJob()
 
     trackTree->Branch("truePdg", &truePdg);
     trackTree->Branch("trueP", &trueP);
+    trackTree->Branch("trueEndP", &trueEndP);
+    trackTree->Branch("trueThetaXZ", &trueThetaXZ);
+    trackTree->Branch("trueThetaYZ", &trueThetaYZ);
     trackTree->Branch("trueType", &trueType);
     trackTree->Branch("trueEndProcess", &trueEndProcess);
     trackTree->Branch("energyComp", &energyComp);
@@ -256,6 +264,10 @@ void sbn::MVATrackPID::beginJob()
     trackTree->Branch("trueEndY", &trueEndY);
     trackTree->Branch("trueEndZ", &trueEndZ);
 
+    trackTree->Branch("truePx", &truePx);
+    trackTree->Branch("truePy", &truePy);
+    trackTree->Branch("truePz", &truePz);
+
     trackTree->Branch("startDist", &startDist);
     trackTree->Branch("endDist", &endDist);
 
@@ -275,16 +287,15 @@ void sbn::MVATrackPID::beginJob()
     trackTree->Branch("chi2PIDType", &chi2PIDType);
     trackTree->Branch("chi2PIDTypeNoKaon", &chi2PIDTypeNoKaon);
 
-    trackTree->Branch("lgcAmp", &lgcAmp);
-    trackTree->Branch("lgcGaussWidth", &lgcGaussWidth);
-    trackTree->Branch("lgcLandauWidth", &lgcLandauWidth);
-    trackTree->Branch("lgcChi2", &lgcChi2);
+    // trackTree->Branch("lgcAmp", &lgcAmp);
+    // trackTree->Branch("lgcGaussWidth", &lgcGaussWidth);
+    // trackTree->Branch("lgcLandauWidth", &lgcLandauWidth);
+    // trackTree->Branch("lgcChi2", &lgcChi2);
 
-    trackTree->Branch("chi2Pol0Fit", &chi2Pol0Fit);
-    trackTree->Branch("chi2Pol0Chi2", &chi2Pol0Chi2);
     trackTree->Branch("chi2ExpChi2", &chi2ExpChi2);
 
     trackTree->Branch("mcsMuonP", &mcsMuonP);
+    trackTree->Branch("mcsScatterMax", &mcsScatterMax);
 
     trackTree->Branch("rangeMuonP", &rangeMuonP);
 
@@ -318,7 +329,7 @@ void sbn::MVATrackPID::produce(art::Event& e)
   art::FindManyP<recob::MCSFitResult> fmTrackMCS(trackHandle, e, fMCSLabel);
   art::FindManyP<anab::ParticleID> fmTrackChi2(trackHandle, e, fChi2Label);
 
-  art::FindManyP<sbn::LGCFit> fmTrackLGC(trackHandle, e, fLGCLabel);
+  // art::FindManyP<sbn::LGCFit> fmTrackLGC(trackHandle, e, fLGCLabel);
   art::FindManyP<sbn::RangeP> fmTrackRange(trackHandle, e, fRangeLabel);
   art::FindManyP<sbn::ScatterDCA> fmTrackDCA(trackHandle, e, fDCALabel);
   art::FindManyP<sbn::StoppingChi2Fit> fmTrackStoppingChi2(trackHandle, e, fStoppingChi2Label);
@@ -386,9 +397,9 @@ void sbn::MVATrackPID::produce(art::Event& e)
     if (chi2Vec.size() == 3)
       this->FillChi2PIDMetrics(*chi2Vec[bestPlane]);
 
-    auto const lgcVec(fmTrackLGC.at(pfpTrack.key()));
-    if (lgcVec.size() == 1)
-      this->FillLGCMetrics(*lgcVec.front());
+    // auto const lgcVec(fmTrackLGC.at(pfpTrack.key()));
+    // if (lgcVec.size() == 1)
+    //   this->FillLGCMetrics(*lgcVec.front());
 
     auto const dcaVec(fmTrackDCA.at(pfpTrack.key()));
     if (dcaVec.size() == 1)
@@ -452,10 +463,16 @@ void sbn::MVATrackPID::ClearTree()
   trueEndX = -999.f;
   trueEndY = -999.f;
   trueEndZ = -999.f;
+  truePx = -999.f;
+  truePy = -999.f;
+  truePz = -999.f;
   startDist = -999.f;
   endDist = -999.f;
 
   trueP = -5.f;
+  trueEndP = -5.f;
+  trueThetaXZ = -5.f;
+  trueThetaYZ = -5.f;
   energyPurity = -5.f;
   energyComp = -5.f;
   recoLen = -5.f;
@@ -466,17 +483,19 @@ void sbn::MVATrackPID::ClearTree()
   chi2PIDPion = -5.f;
   chi2PIDKaon = -5.f;
   chi2PIDProton = -5.f;
-  lgcMPV = -5.f;
-  lgcAmp = -5.f;
-  lgcGaussWidth = -5.f;
-  lgcLandauWidth = -5.f;
-  lgcChi2 = -5.f;
+  chi2PIDMuonPionDiff = -5.f;
+  // lgcMPV = -5.f;
+  // lgcAmp = -5.f;
+  // lgcGaussWidth = -5.f;
+  // lgcLandauWidth = -5.f;
+  // lgcChi2 = -5.f;
   chi2Pol0Fit = -5.f;
   chi2Pol0Chi2 = -5.f;
   chi2ExpChi2 = -5.f;
   stoppingChi2Ratio = -5.f;
   mcsScatterMean = -5.f;
   mcsScatterMax = -5.f;
+  mcsScatterMaxRatio = -5.f;
   meanDCA = -5.f;
   stdDevDCA = -5.f;
   maxDCA = -5.f;
@@ -490,10 +509,11 @@ void sbn::MVATrackPID::ClearTree()
 void sbn::MVATrackPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
     const art::FindManyP<recob::Cluster>& fmCluster, const art::FindManyP<recob::Hit>& fmHit, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta)
 {
-  try {
-    recoPrimary = (int)pfpMap.at(pfp->Parent())->IsPrimary();
-  } catch (...) {
-  }
+  auto const parentId(pfp->Parent());
+  auto const& parentIter(pfpMap.find(parentId));
+  if (parentIter != pfpMap.end())
+    recoPrimary = parentIter->second->IsPrimary();
+
   numDaughters = pfp->Daughters().size();
   trackScore = this->GetPFPTrackScore(pfp, fmMeta);
 
@@ -501,15 +521,19 @@ void sbn::MVATrackPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, co
     return;
 
   for (auto const daughterId : pfp->Daughters()) {
-    auto const& daughter(pfpMap.at(daughterId));
-    auto const& clusters(fmCluster.at(daughter.key()));
+    auto const& daughterIter(pfpMap.find(daughterId));
+    if (daughterIter == pfpMap.end())
+      continue;
+
+    auto const& clusters(fmCluster.at(daughterIter->second.key()));
     int daughterHits(0);
     for (auto const& cluster : clusters) {
       daughterHits += fmHit.at(cluster.key()).size();
     }
+
     if (daughterHits > maxDaughterHits) {
       maxDaughterHits = daughterHits;
-      daughterTrackScore = this->GetPFPTrackScore(daughter, fmMeta);
+      daughterTrackScore = this->GetPFPTrackScore(daughterIter->second, fmMeta);
     }
   }
 
@@ -555,6 +579,7 @@ void sbn::MVATrackPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData
   trueStopping = (int)(trueEndProcess == "CoupledTransportation" || trueEndProcess == "FastScintillation" || trueEndProcess == "Decay" || trueEndProcess == "muMinusCaptureAtRest");
 
   trueP = trueParticle->P();
+  trueEndP = trueParticle->P(trueParticle->NumberTrajectoryPoints() - 2);
 
   const TVector3 trackStart(track.Start<TVector3>());
   const TVector3 trackEnd(track.End<TVector3>());
@@ -569,6 +594,13 @@ void sbn::MVATrackPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData
   trueEndX = trueEnd.X();
   trueEndY = trueEnd.Y();
   trueEndZ = trueEnd.Z();
+
+  truePx = trueParticle->Px() / trueP;
+  truePy = trueParticle->Py() / trueP;
+  truePz = trueParticle->Pz() / trueP;
+
+  trueThetaXZ = std::atan2(truePx, truePz);
+  trueThetaYZ = std::atan2(truePy, truePz);
 
   startDist = (trueStart - trackStart).Mag();
   endDist = (trueEnd - trackEnd).Mag();
@@ -621,6 +653,7 @@ void sbn::MVATrackPID::FillMCSMetrics(const recob::MCSFitResult& mcs)
 
   mcsScatterMax = maxScatter;
   mcsScatterMean = meanScatter / counter;
+  mcsScatterMaxRatio = maxScatter / meanScatter;
 }
 
 void sbn::MVATrackPID::FillRangePMetrics(const sbn::RangeP& range)
@@ -630,18 +663,18 @@ void sbn::MVATrackPID::FillRangePMetrics(const sbn::RangeP& range)
   pDiff = (rangeMuonP > 0 && mcsMuonP > 0) ? (mcsMuonP - rangeMuonP) / rangeMuonP : -5.f;
 }
 
-void sbn::MVATrackPID::FillLGCMetrics(const sbn::LGCFit& lgc)
-{
-  lgcMPV = lgc.mMPV;
+// void sbn::MVATrackPID::FillLGCMetrics(const sbn::LGCFit& lgc)
+// {
+//   lgcMPV = lgc.mMPV;
 
-  if (!fMakeTree)
-    return;
+//   if (!fMakeTree)
+//     return;
 
-  lgcAmp = lgc.mAmplitude;
-  lgcGaussWidth = lgc.mGaussWidth;
-  lgcLandauWidth = lgc.mLandauWidth;
-  lgcChi2 = lgc.mChi2 / lgc.mNDF;
-}
+//   lgcAmp = lgc.mAmplitude;
+//   lgcGaussWidth = lgc.mGaussWidth;
+//   lgcLandauWidth = lgc.mLandauWidth;
+//   lgcChi2 = lgc.mChi2 / lgc.mNDF;
+// }
 
 void sbn::MVATrackPID::FillDCAMetrics(const sbn::ScatterDCA& dca)
 {
@@ -698,6 +731,8 @@ void sbn::MVATrackPID::FillChi2PIDMetrics(const anab::ParticleID& pid)
   chi2PIDPion = pid.Chi2Pion();
   chi2PIDKaon = pid.Chi2Kaon();
   chi2PIDProton = pid.Chi2Proton();
+
+  chi2PIDMuonPionDiff = chi2PIDMuon - chi2PIDPion;
 
   if (!fMakeTree)
     return;

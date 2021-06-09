@@ -12,13 +12,14 @@
 
 #include "calorimetry_sbnd.fcl"
 
-#include "pid.fcl"
-#include "tracklgcfitter.fcl"
 #include "trackscatterdca.fcl"
 #include "trackstoppingchi2fitter.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
+#include "showercosmicscylinderprodcer.fcl"
+#include "pid.fcl"
+
 #include "crthitconverter_producer.fcl"
 #include "crtmatch_producer.fcl"
 #include "pmtflashtrigger_producer.fcl"
@@ -79,20 +80,22 @@ physics:
 #  slicer:               @local::standard_slicemergeviews
 #  cosmictrack:          @local::standard_cosmictrack         #reco
 #  windowtrack:          @local::window_cosmictrack           #reco
-   fmatchSCENew:           @local::sbnd_simple_flashmatch
 
    flashtrig: @local::pmtflashtrigmaker_sbnd
    pandoraTrackMCS:   @local::mcs_sbn
    pandoraTrackRange:   @local::range_sbn
-   pandoraShowerSelectionVars:  @local::showerSelectionVars_sbn
    crtconvhit:            @local::crthitconverter_sbnd
    pandoraTrackCRTHit:          @local::crthitmatch_sbnd
    pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
 
-   pandoraTrackLGC:          @local::tracklgcfitter_sbn
    pandoraTrackDCA:          @local::trackscatterdca_sbn
    pandoraTrackStoppingChi2: @local::trackstoppingchi2fitter_sbn
    pandoraTrackMVAPID:     @local::sbn_MVATrackPID
+
+   pandoraShowerSelectionVars: @local::showerSelectionVars_sbn
+   pandoraShowerCosmicCylinder: @local::showerCosmicCylinder_sbn
+   pandoraShowerMVAPID:     @local::sbn_MVAShowerPID
+
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -101,9 +104,10 @@ physics:
   {
 #    metadata: @local::standard_metadata            #prod
   }
- runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
-            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew, 
-            pandoraTrackLGC, pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackMVAPID,
+ runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack,
+            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackMVAPID,
+            pandoraShowerCosmicCylinder, pandoraShowerMVAPID,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
@@ -117,6 +121,10 @@ physics:
 physics.producers.pandoraTrackMVAPID.RunMVA: true
 physics.producers.pandoraTrackMVAPID.MethodName: "BDT::BDTG"
 physics.producers.pandoraTrackMVAPID.WeightFile: "TrackPIDMVA_BDTG.weights.xml"
+
+physics.producers.pandoraShowerMVAPID.RunMVA: true
+physics.producers.pandoraShowerMVAPID.MethodName: "BDT::BDTG"
+physics.producers.pandoraShowerMVAPID.WeightFile: "ShowerPIDMVA_BDTG.weights.xml"
 
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
