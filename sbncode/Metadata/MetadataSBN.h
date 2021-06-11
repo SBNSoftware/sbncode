@@ -21,7 +21,6 @@
 #include "canvas/Persistency/Provenance/IDNumber.h"
 #include "fhiclcpp/ParameterSet.h"
 
-#include <time.h>
 #include <fstream>
 #include <set>
 #include <string>
@@ -57,6 +56,7 @@ namespace util{
       std::string fProjectSoftware;
       std::string fProductionName; //Production parameter, do not use if not running a production
       std::string fProductionType; //Production parameter, do not use if not running a production
+      int merge;
     };
 
     metadata md;
@@ -85,7 +85,10 @@ namespace util{
     // Fcl parameters.
     std::string fExperiment;
     std::string frunType;
-    std::string fJSONFileName;
+    std::vector<std::string> fJSONFileName;
+    std::vector<std::string> fDataTier;
+    std::vector<std::string> fFileFormat;
+    std::vector<int> fMerge;
     art::FileStatsCollector fFileStats;
     art::PostCloseFileRenamer fRenamer{fFileStats};
   }; // class MetadataSBN

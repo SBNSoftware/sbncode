@@ -6,11 +6,18 @@
 //
 //           FCL parameters:
 //
-//           FCLName        - FCL file name.
-//           FCLVersion     - FCL file version.
-//           ProjectName    - Project name.
-//           ProjectStage   - Project stage.
-//           ProjectVersion - Project version.
+//           FCLName         - FCL file name.
+//           ProjectName     - Project name.
+//           ProjectStage    - Project stage.
+//           ProjectVersion  - Project version.
+//           ProjectSoftware - Project software information.
+//           ProductionName  - Production campaign name.
+//           ProductionType  - Production campaign type.
+//           Merge           - Merge flag.
+//                              1 - Set merge.merge = 1 and merge.merged = 0
+//                              0 - Set merge.merge = 0 and merge.merged = 0
+//                             -1 - Do not generate merge parameters.
+//           Parameters      - Arbitrary (key, value) parameters
 //
 //           Above values will be added in internal metadata of artroot
 //           output files whenever this service is included in job
@@ -49,7 +56,8 @@ namespace util {
     const std::string& GetProjectSoftware() const {return fProjectSoftware;}
     const std::string& GetProductionName() const {return fProductionName;}
     const std::string& GetProductionType() const {return fProductionType;}
-
+    int GetMerge() const {return fMerge;}
+    const std::vector<std::string>& GetParameters() const {return fParameters;}
 
   private:
 
@@ -66,6 +74,8 @@ namespace util {
     std::string fProjectSoftware;
     std::string fProductionName; //Production parameter, do not use if not running a production
     std::string fProductionType; //Production parameter, do not use if not running a production
+    int fMerge;
+    std::vector<std::string> fParameters;
   };
 
 } // namespace util
