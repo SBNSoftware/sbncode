@@ -258,9 +258,6 @@ def generator(nuslice_tree, rootfile, pset):
         match_score_scatter.Fill(qX, score)
         match_score_hist.Fill(score)
 
-    errors = [1, 0, -1]
-    fitname_suffix = ["_h", "_m", "_l"]
-
     metrics_filename = 'fm_metrics_' + detector + '.root'
     hfile = gROOT.FindObject(metrics_filename)
     if hfile:
@@ -277,6 +274,10 @@ def generator(nuslice_tree, rootfile, pset):
     rr_hist.Write()
     rr_prof.Write()
     rr_h1.Write()
+
+    errors = [1, 0, -1]
+    fitname_suffix = ["_h", "_m", "_l"]
+
     rr_fit_funcs = []
     for e,suf in zip(errors, fitname_suffix):
         yvals = [a + e*b for a, b in zip(rr_means, rr_spreads)]
