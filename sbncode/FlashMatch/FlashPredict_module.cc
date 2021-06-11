@@ -291,11 +291,19 @@ void FlashPredict::produce(art::Event& evt)
     }
 
 
-    // TODO: finish rest of items for multiflash support:
+    Score score_min = {std::numeric_limits<double>::max()};
     for(auto& simpleFlash : simpleFlashes) {
       if(simpleFlash.flashUId != kBothOpHs) continue;// TODO
       // check if metrics already computed, if so skip computing and grab them
+      // TODO: check if metrics already computed, if so skip computing
+      // and grab them
+
+      // TODO: computeFlashMetrics should return FlashMetrics object
+      // which is then stored into the FlashMetricsMap
+
+      // TODO: change func to computeFlashMetrics() const
       if(!computeFlashMetrics(simpleFlash)){
+        //TODO: this error should be outside the loop
         printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
         bk.no_flash_pe++;
         mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
@@ -305,33 +313,38 @@ void FlashPredict::produce(art::Event& evt)
         continue;
       }
 
-      // TODO:
-      // update metrics map outside computeflashmetrics
 
-      // TODO:
-      // computeScore is also inside the loop, the assigned score and
-      // variables that are writen to the root tree and the artobject
-      // should be those of the lowest score
-      if(computeScore(tpcWithHits, pfpPDGC)){
-        if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
-        bk.scored_pfp++;
-        mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-        Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
-        Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
-        Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
-        sFM_v->push_back(sFM(true, _flash_time, charge, flash, score));
-        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      Score score_tmp = computeScore(tpcWithHits, pfpPDGC);
+      if(score_tmp.total > 0. && score_tmp.total < score_min.total){
+        score_min = score_tmp;
+        // TODO: here updateFlashMetrics(flashMetrics)
+
+        // TODO: update _scr_vars here
+        _score = score_min.total, _scr_y = score_min.y, _scr_z = score_min.z,
+          _scr_rr = score_min.rr, _scr_ratio = score_min.ratio;
       }
-      else{
-        mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
-                                     << "\n_score:     " << _score
-                                     << "\n_scr_y:     " << _scr_y
-                                     << "\n_scr_z:     " << _scr_z
-                                     << "\n_scr_rr:    " << _scr_rr
-                                     << "\n_scr_ratio: " << _scr_ratio;
-        printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
-      }
+    } // for simpleFlashes
+    if(score_min.total > 0. &&
+       score_min.total < std::numeric_limits<double>::max()){
+      if (fMakeTree) {_flashmatch_nuslice_tree->Fill();}
+      bk.scored_pfp++;
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      Charge charge{_charge_q, TVector3(_charge_x_gl, _charge_y, _charge_z)};
+      Flash flash{_flash_pe, TVector3(_flash_x_gl, _flash_y, _flash_z)};
+      // Score score{_score, _scr_y, _scr_z, _scr_rr, _scr_ratio};
+      sFM_v->push_back(sFM(true, _flash_time, charge, flash, score_min));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
+    else{
+      mf::LogError("FlashPredict") << "ERROR: score <= 0. Dumping info."
+                                   << "\n_score:     " << _score
+                                   << "\n_scr_y:     " << _scr_y
+                                   << "\n_scr_z:     " << _scr_z
+                                   << "\n_scr_rr:    " << _scr_rr
+                                   << "\n_scr_ratio: " << _scr_ratio;
+      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+    }
+
   } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
   updateBookKeeping();
@@ -721,36 +734,37 @@ bool FlashPredict::computeFlashMetrics(const SimpleFlash& simpleFlash)
 }
 
 
-bool FlashPredict::computeScore(const std::set<unsigned>& tpcWithHits,
-                                const int pdgc)
+FlashPredict::Score FlashPredict::computeScore(
+  const std::set<unsigned>& tpcWithHits,
+  const int pdgc) const
 {
-  _score = 0.;
+  double score = 0.;
   unsigned tcount = 0;
-  int isl = int(fNBins * (_charge_x / fDriftDistance));
+  int xbin = static_cast<int>(fNBins * (_charge_x / fDriftDistance));
   auto out = mf::LogWarning("FlashPredict");
 
-  _scr_y = scoreTerm(_flash_y, _charge_y, dy_means[isl], dy_spreads[isl]);
-  if (_scr_y > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, _scr_y, out);
-  _score += _scr_y;
+  double scr_y = scoreTerm(_flash_y, _charge_y, dy_means[xbin], dy_spreads[xbin]);
+  if (scr_y > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, scr_y, out);
+  score += scr_y;
   tcount++;
-  _scr_z = scoreTerm(_flash_z, _charge_z, dz_means[isl], dz_spreads[isl]);
-  if (_scr_z > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, _scr_z, out);    
-  _score += _scr_z;
+  double scr_z = scoreTerm(_flash_z, _charge_z, dz_means[xbin], dz_spreads[xbin]);
+  if (scr_z > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, scr_z, out);
+  score += scr_z;
   tcount++;
-  _scr_rr = scoreTerm(_flash_r, rr_means[isl], rr_spreads[isl]);
-  if (_scr_rr > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, _scr_rr, out);
-  _score += _scr_rr;
+  double scr_rr = scoreTerm(_flash_r, rr_means[xbin], rr_spreads[xbin]);
+  if (scr_rr > fTermThreshold) printMetrics("R", pdgc, tpcWithHits, scr_rr, out);
+  score += scr_rr;
   tcount++;
+  double scr_ratio = 0.;
   if (fUseUncoatedPMT || fUseOppVolMetric) {
-    _scr_ratio = scoreTerm(_flash_ratio, pe_means[isl], pe_spreads[isl]);
-    if (_scr_ratio > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, _scr_ratio, out);
-    _score += _scr_ratio;
+    scr_ratio = scoreTerm(_flash_ratio, pe_means[xbin], pe_spreads[xbin]);
+    if (scr_ratio > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, scr_ratio, out);
+    score += scr_ratio;
     tcount++;
   }
   mf::LogDebug("FlashPredict")
-    << "score:\t" << _score << "using " << tcount << " terms";
-  if(_score > 0.) return true;
-  else return false;
+    << "score:\t" << score << "using " << tcount << " terms";
+  return {score, scr_y, scr_z, scr_rr, scr_ratio};
 }
 
 
@@ -1529,13 +1543,13 @@ void FlashPredict::printMetrics(const std::string metric,
                                 const double term,
                                 Stream&& out) const
 {
-  int isl = int(fNBins * (_charge_x / fDriftDistance));
+  int xbin = static_cast<int>(fNBins * (_charge_x / fDriftDistance));
   std::string tpcs;
   for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
   out
     << "Big term " << metric << ":\t" << term << "\n"
     << std::left << std::setw(12) << std::setfill(' ')
-    << "isl:        \t" << isl << "\n"
+    << "xbin:        \t" << xbin << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
     // << "_slices:    \t" << std::setw(8) << _slices     << "\n"

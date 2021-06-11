@@ -59,6 +59,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <list>
 #include <memory>
 #include <set>
@@ -133,6 +134,12 @@ public:
 
 
 private:
+  // aliases for the objects that are stored
+  using sFM    = sbn::SimpleFlashMatch;
+  using Charge = sbn::SimpleFlashMatch::Charge;
+  using Flash  = sbn::SimpleFlashMatch::Flash;
+  using Score  = sbn::SimpleFlashMatch::Score;
+
   // Declare member data here.
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
@@ -141,7 +148,8 @@ private:
   void loadMetrics(void);
   bool computeChargeMetrics(const flashmatch::QCluster_t& qClusters);
   bool computeFlashMetrics(const SimpleFlash& simpleFlash);
-  bool computeScore(const std::set<unsigned>& tpcWithHits, const int pdgc);
+  Score computeScore(const std::set<unsigned>& tpcWithHits,
+                    const int pdgc) const;
   // double hypoFlashX_splines() const;
   std::tuple<double, double, double, double> hypoFlashX_fits(
     double flash_r, double flash_ratio) const;
@@ -269,12 +277,6 @@ private:
   const double kEps = 1e-4;
 
   // std::vector<double> _pe_reco_v, _pe_hypo_v;
-
-  // aliases for the objects that are stored
-  using sFM    = sbn::SimpleFlashMatch;
-  using Charge = sbn::SimpleFlashMatch::Charge;
-  using Flash  = sbn::SimpleFlashMatch::Flash;
-  using Score  = sbn::SimpleFlashMatch::Score;
 
   // Tree variables
   double _charge_x_gl, _charge_x,
