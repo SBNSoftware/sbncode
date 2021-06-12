@@ -333,7 +333,21 @@ void FlashPredict::produce(art::Event& evt)
         flash = flash_tmp;
       }
     } // for simpleFlashes
-    if(!flash.metric_ok){
+    // TODO: make sure this is ok, again got to think about ICARUS
+    if(!hits_ophits_concurrence) {
+      std::string extra_message = (fForceConcurrence) ? "" :
+        "\nConsider setting ForceConcurrence to false to lower requirements";
+      mf::LogWarning("FlashPredict")
+        << "No OpHits where there's charge. Skipping..." << extra_message;
+      bk.no_oph_hits++;
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                              Flash(kNoScrPE), Score(kQNoOpHScr)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      continue;
+    }
+
+    else if(!flash.metric_ok){
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
@@ -368,19 +382,6 @@ void FlashPredict::produce(art::Event& evt)
       printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
     }
 
-    // TODO: make sure this is ok, again got to think about ICARUS
-    if(!hits_ophits_concurrence) {
-      std::string extra_message = (fForceConcurrence) ? "" :
-        "\nConsider setting ForceConcurrence to false to lower requirements";
-      mf::LogWarning("FlashPredict")
-        << "No OpHits where there's charge. Skipping..." << extra_message;
-      bk.no_oph_hits++;
-      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
-      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                              Flash(kNoScrPE), Score(kQNoOpHScr)));
-      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-      continue;
-    }
 
   } // chargeDigestMap: PFparticles that pass criteria
   bk.events_processed++;
