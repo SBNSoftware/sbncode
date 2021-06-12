@@ -33,22 +33,19 @@
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/Vertex.h"
+// #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 // #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
-#include "lardataobj/RecoBase/OpFlash.h"
-#include "lardataobj/AnalysisBase/T0.h"
+// #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 
 #include "TTree.h"
 #include "TF1.h"
 #include "TFile.h"
 #include "TH1.h"
-#include "TSpline.h"
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
@@ -104,32 +101,46 @@ public:
 
   using OpHitIt = std::vector<recob::OpHit>::iterator;
   struct SimpleFlash {
-    unsigned flashId, flashUId;
+    unsigned flashId, ophsInVolume;
     OpHitIt opH_beg, opH_end;
     double maxpeak_time;
-    SimpleFlash(unsigned flashId_, unsigned flashUId_,
+    SimpleFlash(unsigned flashId_, unsigned ophsInVolume_,
                 OpHitIt opH_beg_, OpHitIt opH_end_,
                 double maxpeak_time_) :
-      flashId(flashId_), flashUId(flashUId_),
+      flashId(flashId_), ophsInVolume(ophsInVolume_),
       opH_beg(opH_beg_), opH_end(opH_end_),
       maxpeak_time(maxpeak_time_)
       {}
   };
 
-  struct FlashMetrics {
-    double x, x_gl, y, z, r, pe, unpe, ratio, time;
-    double hypo, hypo_rr, hypo_ratio;
+  struct ChargeMetrics {
+    double x, x_gl, y, z, q;
     bool metric_ok;
-    FlashMetrics(double x_, double x_gl_, double y_, double z_, double r_,
+    ChargeMetrics(double x_, double x_gl_, double y_, double z_,
+                  double q_, bool metric_ok_) :
+      x(x_), x_gl(x_gl_), y(y_), z(z_), q(q_), metric_ok(metric_ok_)
+      {}
+    // faulty charges constructor
+    ChargeMetrics() : metric_ok(false) {}
+  };
+
+  struct FlashMetrics {
+    double x, x_gl, y, z, rr, pe, unpe, ratio, time;
+    double hypo, hypo_err, hypo_rr, hypo_ratio;
+    bool metric_ok;
+    FlashMetrics(double x_, double x_gl_, double y_, double z_, double rr_,
                  double pe_, double unpe_, double ratio_, double time_,
-                 double hypo_, double hypo_rr_, double hypo_ratio_,
-                 bool metric_ok_) :
-      x(x_), x_gl(x_gl_), y(y_), z(z_), r(r_), pe(pe_), unpe(unpe_),
-      ratio(ratio_), time(time_), hypo(hypo_), hypo_rr(hypo_rr_),
-      hypo_ratio(hypo_ratio_), metric_ok(metric_ok_)
+                 double hypo_, double hypo_err_, double hypo_rr_,
+                 double hypo_ratio_, bool metric_ok_) :
+      x(x_), x_gl(x_gl_), y(y_), z(z_), rr(rr_), pe(pe_), unpe(unpe_),
+      ratio(ratio_), time(time_), hypo(hypo_), hypo_err(hypo_err_),
+      hypo_rr(hypo_rr_), hypo_ratio(hypo_ratio_), metric_ok(metric_ok_)
       {}
     // faulty flashes constructor
-    FlashMetrics() : metric_ok(false) {}
+    FlashMetrics() :
+      x(0.), x_gl(0.), y(0.), z(0.), rr(0.), pe(0.), unpe(0.),
+      ratio(0.), time(0.), hypo(0.), hypo_err(0.),
+      hypo_rr(0.), hypo_ratio(0.), metric_ok(false) {}
   };
 
 
@@ -143,23 +154,17 @@ private:
   // Declare member data here.
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
-  // art::InputTag fT0Producer; // producer for ACPT in-time anab::T0 <-> recob::Track assocaition
   void initTree(void);
   void loadMetrics(void);
-  bool computeChargeMetrics(const flashmatch::QCluster_t& qClusters);
-  bool computeFlashMetrics(const SimpleFlash& simpleFlash);
-  Score computeScore(const std::set<unsigned>& tpcWithHits,
-                    const int pdgc) const;
-  // double hypoFlashX_splines() const;
+  ChargeMetrics computeChargeMetrics(
+    const flashmatch::QCluster_t& qClusters) const;
+  FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
+  Score computeScore(const ChargeMetrics& charge,
+                     const FlashMetrics& flash,
+                     const std::set<unsigned>& tpcWithHits,
+                     const int pdgc) const;
   std::tuple<double, double, double, double> hypoFlashX_fits(
-    double flash_r, double flash_ratio) const;
-  // ::flashmatch::Flash_t GetFlashPESpectrum(const recob::OpFlash& opflash);
-  // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
-  //                                   const art::Ptr<recob::PFParticle>& particle,
-  //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
-  // void CollectDownstreamPFParticles(const lar_pandora::PFParticleMap& pfParticleMap,
-  //                                   const lar_pandora::PFParticleVector& parentPFParticles,
-  //                                   lar_pandora::PFParticleVector& downstreamPFParticles) const;
+    double flash_rr, double flash_ratio) const;
   ChargeDigestMap makeChargeDigest(
     const art::Event& evt,
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h);
@@ -167,14 +172,13 @@ private:
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
+  void updateChargeMetrics(const ChargeMetrics& chargeMetrics);
   void updateFlashMetrics(const FlashMetrics& flashMetrics);
-  void storeFlashMetrics(
-    const unsigned flashUId,
-    std::map<unsigned, FlashMetrics>& flashMetricsMap) const;
+  void updateScore(const Score& score);
   inline double scoreTerm(const double m, const double n,
-                   const double mean, const double spread) const;
+                          const double mean, const double spread) const;
   inline double scoreTerm(const double m,
-                   const double mean, const double spread) const;
+                          const double mean, const double spread) const;
   inline bool pfpNeutrinoOnEvent(
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;
   void copyOpHitsInBeamWindow(
@@ -182,24 +186,24 @@ private:
     const art::Handle<std::vector<recob::OpHit>>& ophit_h) const;
   std::vector<SimpleFlash> makeSimpleFlashes(//SBND overload
     std::vector<recob::OpHit>& opHits,
-    std::vector<recob::OpHit>& opHitsLeft,
-    std::vector<recob::OpHit>& opHitsRght) const;
+    std::vector<recob::OpHit>& opHitsRght,
+    std::vector<recob::OpHit>& opHitsLeft) const;
   std::vector<SimpleFlash> makeSimpleFlashes(//ICARUS overload
     std::vector<recob::OpHit>& opHits) const;
   bool createOpHitsTimeHist(//SBND overload
     const std::vector<recob::OpHit>& opHits,
-    std::vector<recob::OpHit>& opHitsLeft,
     std::vector<recob::OpHit>& opHitsRght,
+    std::vector<recob::OpHit>& opHitsLeft,
     std::unique_ptr<TH1D>& opHitsTimeHist,
-    std::unique_ptr<TH1D>& opHitsTimeHistLeft,
-    std::unique_ptr<TH1D>& opHitsTimeHistRght) const;
+    std::unique_ptr<TH1D>& opHitsTimeHistRght,
+    std::unique_ptr<TH1D>& opHitsTimeHistLeft) const;
   bool createOpHitsTimeHist(//ICARUS overload
     const std::vector<recob::OpHit>& opHits,
     std::unique_ptr<TH1D>& opHitsTimeHist) const;
   bool findSimpleFlashes(
     std::vector<SimpleFlash>& simpleFlashes,
     std::vector<recob::OpHit>& opHits,
-    const unsigned volumeId,
+    const unsigned ophsInVolume,
     std::unique_ptr<TH1D>& opHitsTimeHist) const;
   inline std::string detectorName(const std::string detName) const;
   bool isPDInCryo(const int pdChannel) const;
@@ -207,12 +211,11 @@ private:
                         const std::set<unsigned>& tpcWithHits) const;
   unsigned sbndPDinTPC(const int pdChannel) const;
   unsigned icarusPDinTPC(const int pdChannel) const;
+  double wallXWithMaxPE(const OpHitIt opH_beg,
+                        const OpHitIt opH_end) const;
   double flashXGl(const double hypo_x, const double flash_x) const;
   double driftDistance(const double x) const;
   unsigned driftVolume(const double x) const;
-  // bool isPDInCryoTPC(double pd_x, size_t itpc);
-  // bool isPDInCryoTPC(int pdChannel, size_t itpc);
-  // bool isChargeInCryoTPC(double qp_x, int icryo, int itpc);
   template <typename Stream>
   void printBookKeeping(Stream&& out);
   void updateBookKeeping();
@@ -232,6 +235,7 @@ private:
   const unsigned fTimeBins;
   const bool fSelectNeutrino;
   const bool fOnlyCollectionWires;
+  const bool fForceConcurrence;
   const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
   const std::string fInputFilename;
@@ -257,15 +261,15 @@ private:
   std::list<double> fWiresX_gl;
   // std::vector<double> fPMTChannelCorrection;
 
-  const unsigned kLeftOpHs = 10;
-  const unsigned kRghtOpHs = 20;
-  const unsigned kBothOpHs = 30;
+  const unsigned kRght = 0;
+  const unsigned kLeft = 1;
+
+  const unsigned kActivityInRght = 100;
+  const unsigned kActivityInLeft = 200;
+  const unsigned kActivityInBoth = 300;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
-  // double rrMax, peMax;
-  // TSpline3 rr_m_InvSpl, rr_h_InvSpl, rr_l_InvSpl;
-  // TSpline3 pe_m_InvSpl, pe_h_InvSpl, pe_l_InvSpl;
   struct Fits {
     double min, max;
     std::unique_ptr<TF1> f;
@@ -276,13 +280,11 @@ private:
   // const std::string kPolFit = "pol3";
   const double kEps = 1e-4;
 
-  // std::vector<double> _pe_reco_v, _pe_hypo_v;
-
   // Tree variables
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
   double _flash_x, _flash_x_gl, _flash_y, _flash_z,
-    _flash_r, _flash_pe, _flash_unpe, _flash_ratio, _flash_time,
+    _flash_rr, _flash_pe, _flash_unpe, _flash_ratio, _flash_time,
     _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
   unsigned _evt, _run, _sub; //_slices;
