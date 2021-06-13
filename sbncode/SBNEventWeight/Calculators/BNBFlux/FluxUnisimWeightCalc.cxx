@@ -26,6 +26,10 @@
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 
+
+#include "TH1F.h"//need these to read histograms
+#include "TFile.h"
+
 namespace sbn {
   namespace evwgh {
 
@@ -49,25 +53,23 @@ public:
   double MicroBooNEWeightCalc(double enu, int ptype, int ntype, int uni, bool noNeg);
 
 private:
-  std::vector<rwgt::NuReweight> rwVector;//reweighter?
+  //std::vector<rwgt::NuReweight> rwVector;//reweighter? Delete this, if this is for Genie weights
+  
   std::string fGenieModuleLabel;
 //  std::string fTuneName;
 
 	//Below are from ubcode; some can actually move to the function that needs it?
+  std::string fMode;//should be under fParameterSet.fRWType, tb fixed CHECK
   double fScalePos{}; 
   double fScaleNeg{}; 
-  std::string fMode;//should be under fParameterSet.fRWType, tb fixed CHECK
   std::vector<double> fWeightArray{};//a vector of random numbers
+
+  //contents of the input histograms;
+  //[mu/pi/k-/k] x [nue,anue,numu,anumu] x [bin#]
   double fCV[4][4][200];
   double fRWpos[4][4][200];
   double fRWneg[4][4][200];
   bool PosOnly{false};
-
-  
-  // Define the files that store the histograms
-  TFile fcv(Form("%s",cvfile.c_str()));
-  TFile frwpos(Form("%s", rwfilepos.c_str()));
-  TFile frwneg(Form("%s", rwfileneg.c_str()));
 
   DECLARE_WEIGHTCALC(FluxUnisimWeightCalc)
 };
@@ -77,33 +79,48 @@ private:
 // Implement the above functions.
 
 //Configure() need to:
-//- Set fMode;
+//- Configure reweighting environment (should be done somewhere else):
+//	- Set fMode;
+//- Configure calculator setting: 
+//	- Load histograms and save them;
 
 void FluxUnisimWeightCalc::Configure(fhicl::ParameterSet const& p,
                                 CLHEP::HepRandomEngine& engine) {
   // Global config
-  fGenieModuleLabel = p.get<std::string>("genie_module_label");
+  // Calculator config
+	//horncurrent: {
+	//	<<  Reweighting  Environment >>
+	//type: FluxUnisim
+	//		  parameter_list: ["horncurrent"]
+	//		  random_seed: 7
+	//		  mode: multisim
+	//		  number_of_multisims: 1000
+	//
+	//	<<  Calculator Setting >>
+	//		  CentralValue_hist_file: "*.root"
+	//		  PositiveSystematicVariation_hist_file: "*.root"
+	//		  NegativeSystematicVariation_hist_file: ".root"
+	//		  scale_factor_pos: 1
+	//		  scale_factor_neg: 1
+	//		  weight_calculator: "MicroBooNE" # "MicroBooNE" OR "MiniBooNE"
+	//	<< Outdated >>
+	//		  use_MiniBooNE_random_numbers: false
+	//			 }
+  
+
+  fGenieModuleLabel = p.get<std::string>("genie_module_label");//use this label to get MC*Handle
   const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
 
-  // Calculator config
-  // Example:
-	//genie_qevec: {
-	//type: Genie
-	//		  random_seed: 16
-	//		  parameter_list: ["QEVec", "QEVec", "QEVec", "QEVec", "QEVec", "QEVec" ]
-	//		  parameter_sigma: [ -3, -2, -1, +1, +2, +3 ]
-	//		  mode: fixed
-	//		  number_of_multisims: @local::n_universes_A_slow
-	//			 }
-
+	//Collect FHiCL parameters:
   auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
-  auto const& parsigmas = pset.get<std::vector<float> >("parameter_sigma");
+//  auto const& parsigmas = pset.get<std::vector<float> >("parameter_sigma");
 
-  if (pars.size() != parsigmas.size()) {
-    throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-      << "parameter_list and parameter_sigma length mismatch."
-      << std::endl;
-  }
+  //ErrorMsg
+//  if (pars.size() != parsigmas.size()) {
+//    throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+//      << "parameter_list and parameter_sigma length mismatch."
+//      << std::endl;
+//  }
 
   int number_of_multisims = pset.get<int>("number_of_multisims", 1);
   std::string mode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
@@ -112,7 +129,8 @@ void FluxUnisimWeightCalc::Configure(fhicl::ParameterSet const& p,
   fParameterSet.Configure(GetFullName(), mode, number_of_multisims);
 
   for (size_t i=0; i<pars.size(); i++) {
-    fParameterSet.AddParameter(pars[i], parsigmas[i]);
+	//Check, no sigma is used in this script.
+    fParameterSet.AddParameter(pars[i], 1);//parsigmas[i]);
   }
 
   fParameterSet.Sample(engine);
@@ -122,33 +140,33 @@ void FluxUnisimWeightCalc::Configure(fhicl::ParameterSet const& p,
 //  fTuneName = evgb::ExpandEnvVar("${GENIE_XSEC_TUNE}");
 
   // Set up reweighters
-  rwVector.resize(fParameterSet.fNuniverses);
+  fWeightArray.resize(fParameterSet.fNuniverses);
 
-  for (auto const& it : fParameterSet.fParameterMap) {
-    std::string name = it.first.fName;
-    std::cout << GetFullName() << ": Setting up " << name << std::endl;
-
-    for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
-      rwgt::NuReweight& rw = rwVector[i];
-
-      // Axial mass for NC elastic
-      if (name == "NCELaxial")
-        rw.ReweightNCEL(it.second[i], 0);
-      // Strange axial form factor for NC elastic
-      else if (name == "NCELeta")
-        rw.ReweightNCEL(0, it.second[i]);
-      // Axial mass for CC quasi-elastic
-      else {
-        throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-          << "Unknown GENIE parameter " << name << std::endl;
-      }
-    }
-  }
+//  for (auto const& it : fParameterSet.fParameterMap) {
+//    std::string name = it.first.fName;
+//    std::cout << GetFullName() << ": Setting up " << name << std::endl;
+//
+//    for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
+//      rwgt::NuReweight& rw = fWeightArray[i];
+//
+//      // Axial mass for NC elastic
+//      if (name == "NCELaxial")
+//        rw.ReweightNCEL(it.second[i], 0);
+//      // Strange axial form factor for NC elastic
+//      else if (name == "NCELeta")
+//        rw.ReweightNCEL(0, it.second[i]);
+//      // Axial mass for CC quasi-elastic
+//      else {
+//        throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+//          << "Unknown GENIE parameter " << name << std::endl;
+//      }
+//    }
+//  }//next weights?
 
   // Configure reweight drivers
-  for (auto& rw : rwVector) {
-    rw.Configure();
-  }
+//  for (auto& rw : fWeightArray) {
+//    rw.Configure();
+//  }
 }
 
 //K: To be updated version requires:
@@ -162,7 +180,7 @@ void FluxUnisimWeightCalc::Configure(fhicl::ParameterSet const& p,
 // [ ] fluxlist not working;
 
 std::vector<float> FluxUnisimWeightCalc::GetWeight(art::Event& e, size_t inu) {
-	std::vector<float> weights(rwVector.size(), 1);
+	std::vector<float> weights(fWeightArray.size(), 1);
 
 //--- Copy over from ubcode
 //
@@ -235,7 +253,7 @@ std::vector<float> FluxUnisimWeightCalc::GetWeight(art::Event& e, size_t inu) {
 				std::cout<<__LINE__<<" CHECK multisim? "<<fMode<<std::endl;
 				if(1){//continue calculation with multisim
 //CHECK				if((fParameterSet.GetType())==("multisim") ){//continue calculation with multisim}
-					for (size_t i=0;i<rwVector.size();i++) {
+					for (size_t i=0;i<fWeightArray.size();i++) {
 
 //						if(fWeightCalc.find("MicroBooNE") != std::string::npos){
 							weights[i]=1;
