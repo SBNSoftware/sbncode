@@ -55,22 +55,6 @@ simple_plugin ( EventSelect module
 	${ROOT_BASIC_LIB_LIST}
 )
 
-simple_plugin ( DataSelect module
-                ${IFDH_SERVICE}
-               ${ART_FRAMEWORK_CORE}
-               ${ART_FRAMEWORK_PRINCIPAL}
-               ${ART_FRAMEWORK_SERVICES_REGISTRY}
-               ${ART_FRAMEWORK_SERVICES_BASIC}
-               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-               art_Utilities canvas
-               ${MF_MESSAGELOGGER}
-               ${MF_UTILITIES}
-               ${FHICLCPP}
-               cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-)
 
 install_headers()
 install_fhicl()
