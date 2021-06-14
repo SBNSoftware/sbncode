@@ -44,6 +44,8 @@ int FindPFPInd(
     }
   }
 
+  // Look to see if more than half of the hits on the stub match to a single
+  // PFParticle
   for (unsigned i_pfp = 0; i_pfp < pfps.size(); i_pfp++) {
     if (pfp_nhit[i_pfp] >= hits.size() / 2) return i_pfp;
   }
@@ -71,6 +73,29 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
   // get the line-segment slope / intercept
   float slope = (hit_x - vert_x) / (hit_w - vert_wf);
   float intercept = hit_x - slope * hit_w;
+
+  // check for "bad" (infinite) slope
+  //
+  // In this case, only hits overlapping with the vertex hit should be
+  // included in the returned list
+  bool badslope = abs(hit_w - vert_wf) < 1e-5;
+  if (badslope) {
+    std::vector<art::Ptr<recob::Hit>> ret;
+    for (art::Ptr<recob::Hit> h: hits) {
+      int this_hit_w = h->WireID().Wire;
+      geo::PlaneID this_hit_plane = h->WireID();
+      if (this_hit_plane == vhit_plane &&  // check plane
+          this_hit_w == hit_w /* check wire */) {
+        float h_time_lo = h->PeakTime() - h->RMS();
+        float h_time_hi = h->PeakTime() + h->RMS();
+
+        if (h_time_lo < vhit_hit.PeakTime() && h_time_hi > vhit_hit.PeakTime()) {
+          ret.push_back(h);
+        }
+      }
+    }
+    return ret;
+  }
 
   // Include wires one after the hit and one before the vtx
   int vert_w = (int)((hit_w > vert_wf) ? std::floor(vert_wf) : std::ceil(vert_wf));

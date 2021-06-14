@@ -2,6 +2,7 @@
 // Class:       VertexChargeVacuumFinder
 // Plugin Type: producer (art v3_02_06)
 // File:        VertexChargeVacuum_module.cc
+// Author:      grayputnam@uchicago.edu
 //
 // Art module for finding large charge depositions near a reconstructed
 // vertex. Operates on input recob::Hit's. Produces sbn::VertexHit objects

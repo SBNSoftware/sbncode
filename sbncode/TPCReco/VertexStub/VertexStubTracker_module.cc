@@ -2,6 +2,7 @@
 // Class:       VertexStubTracker
 // Plugin Type: producer (art v3_02_06)
 // File:        VertexStubTracker_module.cc
+// Author:      grayputnam@uchicago.edu
 //
 // Art module for building "Stub" reconstruction objects. Stubs are 
 // correspond to low energy hadrons produced in neutrino interactions that
@@ -148,7 +149,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
     art::Ptr<recob::Slice> thisSlice = slices[i_slc];
     // each hit should have the same vertex
     recob::Vertex vertex;
-    if (vhits.size()) vertex = *vhitVtxs.at(0).at(0);
+    if (!vhits.empty()) vertex = *vhitVtxs.at(0).at(0);
   
     std::vector<sbn::StubInfo> stubs;
     for (unsigned i_vhit = 0; i_vhit < vhits.size(); i_vhit++) {

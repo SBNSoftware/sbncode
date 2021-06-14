@@ -1,4 +1,4 @@
-art_make_library(LIBRARY_NAME sbncode_StubHelpers
+art_make_library(
         SOURCE StubBuilder.cxx PlaneTransform.cxx StubMergeAlgorithms.cxx
         LIBRARIES
 	${ART_FRAMEWORK_CORE}
@@ -14,7 +14,6 @@ art_make_library(LIBRARY_NAME sbncode_StubHelpers
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
-        larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataobj_RecoBase
 	lardataalg_DetectorInfo
@@ -36,11 +35,10 @@ simple_plugin(VertexChargeVacuum module
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
         larcorealg_Geometry
-        larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataobj_RecoBase
 	lardataalg_DetectorInfo
-	sbncode_StubHelpers
+	sbncode_TPCReco_VertexStub
 )
 
 simple_plugin(VertexStubTracker module
@@ -66,7 +64,7 @@ simple_plugin(VertexStubTracker module
         larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataalg_DetectorInfo
-	sbncode_StubHelpers
+	sbncode_TPCReco_VertexStub
 )
 
 simple_plugin(PlaneStubMerge tool
@@ -92,7 +90,7 @@ simple_plugin(PlaneStubMerge tool
         larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataalg_DetectorInfo
-	sbncode_StubHelpers
+	sbncode_TPCReco_VertexStub
 )
 
 simple_plugin(TwoPlaneStubMerge tool
@@ -117,7 +115,7 @@ simple_plugin(TwoPlaneStubMerge tool
         larcore_Geometry_Geometry_service
 	larreco_Calorimetry
 	lardataalg_DetectorInfo
-	sbncode_StubHelpers
+	sbncode_TPCReco_VertexStub
 )
 
 install_headers()

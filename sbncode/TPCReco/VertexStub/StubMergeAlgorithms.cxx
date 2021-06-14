@@ -61,25 +61,13 @@ double sbn::GetPitch(
   // distortion corrections applied, then we need to de-apply them to get the direction as
   // seen by the wire planes
   if (sce && sce->EnableCalSpatialSCE() && correct_sce && track_is_sce_corrected) {
-    // fix negative sign in TPC 0
-    int corr = 1;
-    float xx = loc.X();
-    if (xx < 0) { corr = -1; }
-
     // compute the dir of the track trajectory
     geo::Point_t loc_mdx = loc - dir * (geo->WirePitch(view) / 2.);
     geo::Point_t loc_pdx = loc + dir * (geo->WirePitch(view) / 2.);
 
-    geo::Vector_t loc_mdx_offset = sce->GetPosOffsets(loc_mdx);
-
-    loc_mdx.SetX(loc_mdx.X() + corr * xsign * loc_mdx_offset.X());
-    loc_mdx.SetY(loc_mdx.Y() + loc_mdx_offset.Y());
-    loc_mdx.SetZ(loc_mdx.Z() + loc_mdx_offset.Z());
-
-    geo::Vector_t loc_pdx_offset = sce->GetPosOffsets(loc_pdx);
-    loc_pdx.SetX(loc_pdx.X() + corr * xsign * loc_pdx_offset.X());
-    loc_pdx.SetY(loc_pdx.Y() + loc_pdx_offset.Y());
-    loc_pdx.SetZ(loc_pdx.Z() + loc_pdx_offset.Z());
+    // map to the wires
+    loc_mdx = GetLocationAtWires(sce, loc_mdx, xsign);
+    loc_pdx = GetLocationAtWires(sce, loc_pdx, xsign);
 
     dir_w = (loc_pdx - loc_mdx).Unit(); 
   }

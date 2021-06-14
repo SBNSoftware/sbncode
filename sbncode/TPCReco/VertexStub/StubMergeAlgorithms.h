@@ -53,7 +53,7 @@ geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_
 // For matching stubs on the same plane
 bool StubContains(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
-// Computes the dot produt of two stubs
+// Computes the dot product of two stubs
 float StubDirectionDot(const sbn::StubInfo &A, const sbn::StubInfo &B, 
     const geo::GeometryCore *geo,
     const detinfo::DetectorPropertiesData &dprop);

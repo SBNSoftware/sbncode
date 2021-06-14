@@ -32,11 +32,6 @@ public:
      */
     PlaneStubMerge(fhicl::ParameterSet const &pset);
 
-    /**
-     *  @brief  Destructor
-     */
-    ~PlaneStubMerge();
-
     std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
        const geo::GeometryCore *geo, 
        const spacecharge::SpaceCharge *sce, 
@@ -49,12 +44,6 @@ private:
 
 PlaneStubMerge::PlaneStubMerge(fhicl::ParameterSet const &pset):
   fStubDotCut(pset.get<double>("StubDotCut"))
-{
-}
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-PlaneStubMerge::~PlaneStubMerge()
 {
 }
 

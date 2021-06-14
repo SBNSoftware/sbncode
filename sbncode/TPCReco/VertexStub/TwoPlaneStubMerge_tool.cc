@@ -42,11 +42,6 @@ public:
      */
     TwoPlaneStubMerge(fhicl::ParameterSet const &pset);
 
-    /**
-     *  @brief  Destructor
-     */
-    ~TwoPlaneStubMerge();
-
     std::vector<sbn::StubInfo> Merge(const std::vector<sbn::StubInfo> &stubs,
        const geo::GeometryCore *geo, 
        const spacecharge::SpaceCharge *sce, 
@@ -77,12 +72,6 @@ TwoPlaneStubMerge::TwoPlaneStubMerge(fhicl::ParameterSet const &pset):
 {
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------
-
-TwoPlaneStubMerge::~TwoPlaneStubMerge()
-{
-}
-    
 // Return true if stub A is "better" than stub B
 bool TwoPlaneStubMerge::SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B) {
   // Count the hits on the main stub
