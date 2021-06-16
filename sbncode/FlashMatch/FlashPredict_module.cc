@@ -235,7 +235,7 @@ void FlashPredict::produce(art::Event& evt)
   if(simpleFlashes.empty()){
     mf::LogWarning("FlashPredict")
       << "\nNo OpHits in beam window,"
-      << "\nor the integral is less than " << fMinFlashPE
+      << "\nor the integral is less or equal to " << fMinFlashPE
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
@@ -1038,17 +1038,19 @@ std::vector<FlashPredict::SimpleFlash> FlashPredict::makeSimpleFlashes(
   bool oph_in_rght = false, oph_in_left = false;
   std::vector<FlashPredict::SimpleFlash> simpleFlashes;
   if(opHitsRght.size() > 0 && opHitsTimeHistRght->GetEntries() > 0){
-    oph_in_rght = findSimpleFlashes(simpleFlashes, opHitsRght,
-                                    kActivityInRght, opHitsTimeHistRght);
+    oph_in_rght = true;
+    findSimpleFlashes(simpleFlashes, opHitsRght,
+                      kActivityInRght, opHitsTimeHistRght);
   }
   if(opHitsLeft.size() > 0 && opHitsTimeHistLeft->GetEntries() > 0){
-    oph_in_left = findSimpleFlashes(simpleFlashes, opHitsLeft,
-                                    kActivityInLeft, opHitsTimeHistLeft);
+    oph_in_left = true;
+    findSimpleFlashes(simpleFlashes, opHitsLeft,
+                      kActivityInLeft, opHitsTimeHistLeft);
   }
-  if(oph_in_rght == true && oph_in_left == true ){
+  if(oph_in_rght && oph_in_left ){
     findSimpleFlashes(simpleFlashes, opHits, kActivityInBoth, opHitsTimeHist);
   }
-  else if(oph_in_rght == false && oph_in_left == false){
+  else if(!oph_in_rght && !oph_in_left){
     return {};
   }
   return simpleFlashes;
@@ -1096,12 +1098,12 @@ bool FlashPredict::createOpHitsTimeHist(
     }
   }
   if(opHitsTimeHist->GetEntries() <= 0 ||
-     opHitsTimeHist->Integral() < fMinFlashPE) return false;
+     opHitsTimeHist->Integral() <= fMinFlashPE) return false;
   if(opHitsTimeHistRght->GetEntries() <= 0 ||
-     opHitsTimeHistRght->Integral() < fMinFlashPE)
+     opHitsTimeHistRght->Integral() <= fMinFlashPE)
     opHitsTimeHistRght->Reset();
   if(opHitsTimeHistLeft->GetEntries() <= 0 ||
-     opHitsTimeHistLeft->Integral() < fMinFlashPE)
+     opHitsTimeHistLeft->Integral() <= fMinFlashPE)
     opHitsTimeHistLeft->Reset();
   return true;
 }
@@ -1119,7 +1121,7 @@ bool FlashPredict::createOpHitsTimeHist(
     opHitsTimeHist->Fill(oph.PeakTime(), oph.PE());
   }
   if(opHitsTimeHist->GetEntries() <= 0 ||
-     opHitsTimeHist->Integral() < fMinFlashPE) return false;
+     opHitsTimeHist->Integral() <= fMinFlashPE) return false;
   return true;
 }
 
@@ -1141,7 +1143,7 @@ bool FlashPredict::findSimpleFlashes(
     int lowedge_bin = opHitsTimeHist->FindBin(lowedge);
     int highedge_bin = opHitsTimeHist->FindBin(highedge);
     // check if flash has enough PEs, return if is the first one
-    if (opHitsTimeHist->Integral(lowedge_bin, highedge_bin) < fMinFlashPE){
+    if (opHitsTimeHist->Integral(lowedge_bin, highedge_bin) <= fMinFlashPE){
       if(flashId == 0) return false;
       break;
     }
