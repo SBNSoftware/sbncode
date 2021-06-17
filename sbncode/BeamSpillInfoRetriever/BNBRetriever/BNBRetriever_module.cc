@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       Retriever
+// Class:       BNBRetriever
 // Plugin Type: producer 
-// File:        Retriever_module.cc
+// File:        BNBRetriever_module.cc
 //
 // Created by hand Wed April 9 2021 by J. Zennamo (FNAL)
 // Based heavily on code by Z. Pavlovic written for MicroBooNE 
@@ -28,7 +28,7 @@
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "sbnobj/Common/POTAccounting/BeamSpillInfo.h"
+#include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
 #include "IFBeam_service.h"
 #include "ifbeam_c.h"
@@ -42,20 +42,20 @@
 #include <time.h>
 
 namespace sbn {
-  class Retriever;
+  class BNBRetriever;
 }
 
-class sbn::Retriever : public art::EDProducer {
+class sbn::BNBRetriever : public art::EDProducer {
 public:
-  explicit Retriever(fhicl::ParameterSet const& p);
+  explicit BNBRetriever(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  Retriever(Retriever const&) = delete;
-  Retriever(Retriever&&) = delete;
-  Retriever& operator=(Retriever const&) = delete;
-  Retriever& operator=(Retriever&&) = delete;
+  BNBRetriever(BNBRetriever const&) = delete;
+  BNBRetriever(BNBRetriever&&) = delete;
+  BNBRetriever& operator=(BNBRetriever const&) = delete;
+  BNBRetriever& operator=(BNBRetriever&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -64,7 +64,7 @@ public:
 
 private:
   // input labels
-  std::vector< sbn::BeamSpillInfo > fOutbeamInfos;
+  std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
   int fTimePad;
   std::string fURL;
   MWRData mwrdata;
@@ -73,44 +73,40 @@ private:
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
+  int TotalBeamSpills;
+
 
 };
 
 
-sbn::Retriever::Retriever(fhicl::ParameterSet const& p)
+sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   : EDProducer{p},
   fTimePad(p.get<double>("TimePadding",0.0333)), //seconds 
   raw_data_label_(p.get<std::string>("raw_data_label")),
   bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
   bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow")))
 {
-  bfp->set_epsilon(0.0333); // how close in time does the spill time have to be from the DAQ time (in seconds).
+ 
+  //bfp->set_epsilon(0.0333); // how close in time does the spill time have to be from the DAQ time (in seconds).
+
+  bfp->set_epsilon(0.02); // how close in time does the spill time have to be from the DAQ time (in seconds).
   bfp_mwr->set_epsilon(100); // how close in time does the spill time have to be from the DAQ time (in seconds).
-  produces< std::vector< sbn::BeamSpillInfo >, art::InSubRun >();
-  
+  produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
+  TotalBeamSpills = 0;
 }
 
-void sbn::Retriever::produce(art::Event& e)
+void sbn::BNBRetriever::produce(art::Event& e)
 {
-
-  //Get the time of the event and the previous event
-  // time since epoch sec . nanoseconds
-  //1616202843.932767280
-  //.932767280
-  //.030000000
   
   int gate_type = 0;
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
   e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
 
-
-  //  double t_previous_event = 1616202844.932767280;
-  //  double t_current_event  = 1616202843.932767280;
-
   double t_previous_event = 0;
   double t_current_event  = 0;
-  std::cout << "This many raw_datums : " << raw_data.size() << std::endl;
+  double number_of_gates_since_previous_event = 0;
+  
   for(auto raw_datum : raw_data){
    
     uint64_t artdaq_ts = raw_datum.timestamp();
@@ -119,11 +115,8 @@ void sbn::Retriever::produce(art::Event& e)
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
     gate_type = datastream_info.gate_type;
-    double delta_gates = frag.getDeltaGatesBNB();
-    std::cout << "Gate_type: " << gate_type << std::endl;
-    if(gate_type == 1)
-      std::cout << "Number of beam gates since the last spill of this type: " << delta_gates << std::endl;
-    std::cout << "Fragment timestamp: " << artdaq_ts << std::endl; 
+    number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
+  
     t_current_event = static_cast<double>(artdaq_ts)/(1000000000); //check this offset...
     if(gate_type == 1)
       t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
@@ -134,18 +127,17 @@ void sbn::Retriever::produce(art::Event& e)
   
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
   
-  //if(t_previous_event == t_current_event) continue;
-
   if(gate_type == 1)
   {
-    std::cout << "Is BNB event! Extracting POT!" << std::endl;
+    TotalBeamSpills += number_of_gates_since_previous_event;
+   
     try{
       double test_curr; double test_t1;
       bfp->GetNamedData((t_previous_event)-fTimePad,"E:THCURR",&test_curr,&test_t1);
       std::cout << "got values " << test_curr <<  "for E:THCURR at time " << test_t1 << "\n";
     }
     catch (WebAPIException &we) {
-      std::cout << "got exception: " << we.what() << "\n";
+   
     }
     std::cout.precision(17);
     
@@ -181,40 +173,43 @@ void sbn::Retriever::produce(art::Event& e)
       
     //var - > E:M875BB{888:888}.RAW
       t_mwr = 0;
-      std::vector<double> packed_M876BB = bfp_mwr->GetNamedVector((t_previous_event)-35,vars[i],&t_mwr);
       
-      packed_data_str.clear();
-      packed_data_str += std::to_string(int(t_mwr));
-      packed_data_str.append(",");
-      packed_data_str.append(vars[i]);
-      packed_data_str.append(",,");
-      
-      for(int j = 0; j < int(packed_M876BB.size()); j++){
-	packed_data_str += std::to_string(int(packed_M876BB[j]));
-	if(j < int(packed_M876BB.size())-1)
-	  packed_data_str.append(",");
+      try{
+	std::vector<double> packed_M876BB = bfp_mwr->GetNamedVector((t_previous_event)-35,vars[i],&t_mwr);
+	
+	packed_data_str.clear();
+	packed_data_str += std::to_string(int(t_mwr));
+	packed_data_str.append(",");
+	packed_data_str.append(vars[i]);
+	packed_data_str.append(",,");
+	
+	for(int j = 0; j < int(packed_M876BB.size()); j++){
+	  packed_data_str += std::to_string(int(packed_M876BB[j]));
+	  if(j < int(packed_M876BB.size())-1)
+	    packed_data_str.append(",");
+	}
+	
+	auto unpacked_M876BB_str_temp = mwrdata.unpackMWR(packed_data_str,long(-35));
+	unpacked_M876BB_str.insert(unpacked_M876BB_str.end(),
+				   unpacked_M876BB_str_temp.begin(),
+				 unpacked_M876BB_str_temp.end());
+	
+      }
+      catch (WebAPIException &we) {
+
       }
       
-      //    std::cout << packed_data_str << std::endl;
-      
-      auto unpacked_M876BB_str_temp = mwrdata.unpackMWR(packed_data_str,long(-35));
-      unpacked_M876BB_str.insert(unpacked_M876BB_str.end(),
-				 unpacked_M876BB_str_temp.begin(),
-				 unpacked_M876BB_str_temp.end());
-      
-      
-      //std::cout <<  int(unpacked_M876BB_str.size()) << " unpacked datas ... " << std::endl;
     }
-
-    //for(int j = 0; j < int(unpacked_M876BB_str.size()); j++){
-    //  std::cout << unpacked_M876BB_str[j] << std::endl;
-  //}
     
     
-    std::vector<double> times_temps = bfp->GetTimeList();
+    std::vector<double> times_temps = bfp->GetTimeList("E:TOR860");
+int spill_count = 0;
     for (size_t i = 0; i < times_temps.size(); i++) {
-      if(times_temps[i] > (t_current_event+fTimePad)){break;}
-      
+
+      if(times_temps[i] > (t_current_event+fTimePad)){continue;}
+      if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
+
+      spill_count++;
       double TOR860 = 0;
       double TOR875 = 0;
       double LM875A = 0;
@@ -230,14 +225,25 @@ void sbn::Retriever::produce(art::Event& e)
       double THCURR = 0;
       
       double TOR860_time = 0;
-      
-      bfp->GetNamedData(times_temps[i], "E:TOR860@,E:TOR875,E:LM875A,E:LM875B,E:LM875C,E:HP875,E:VP875,E:HPTG1,E:VPTG1,E:HPTG2,E:VPTG2,E:BTJT2,E:THCURR",&TOR860,&TOR860_time,&TOR875,&LM875A,&LM875B,&LM875C,&HP875,&VP875,&HPTG1,&VPTG1,&HPTG2,&VPTG2,&BTJT2,&THCURR);
-      
+
+	try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+	try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       
       unsigned long int time_closest_int = (int) TOR860_time;
       double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
       
-      sbn::BeamSpillInfo beamInfo;
+      sbn::BNBSpillInfo beamInfo;
       beamInfo.TOR860 = TOR860;
       beamInfo.TOR875 = TOR875;
       beamInfo.LM875A = LM875A;
@@ -258,23 +264,27 @@ void sbn::Retriever::produce(art::Event& e)
     
     
     }
+std::cout << "Event Spills : " << spill_count << std::endl;
   }
 }
 
-void sbn::Retriever::beginSubRun(art::SubRun& sr)
+void sbn::BNBRetriever::beginSubRun(art::SubRun& sr)
 {
   return;
 }
 
 //____________________________________________________________________________                                                                                                                                                                                      
-void sbn::Retriever::endSubRun(art::SubRun& sr)
+void sbn::BNBRetriever::endSubRun(art::SubRun& sr)
 {
 
-  auto p =  std::make_unique< std::vector< sbn::BeamSpillInfo > >(fOutbeamInfos);
+std::cout << "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
+std::cout << "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
+
+  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >(fOutbeamInfos);
 
   sr.put(std::move(p));
 
   return;
 }
 
-DEFINE_ART_MODULE(sbn::Retriever)    
+DEFINE_ART_MODULE(sbn::BNBRetriever)    

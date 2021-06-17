@@ -1,4 +1,4 @@
-add_subdirectory(Retriever)
+add_subdirectory(BNBRetriever)
 add_subdirectory(job)
 
 link_directories(

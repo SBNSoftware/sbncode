@@ -7,12 +7,12 @@ cet_find_library( IFBEAMSERVICE        NAMES IFBeam_service    PATHS ENV IFDH_AR
 cet_find_library( IFBEAM               NAMES ifbeam            PATHS ENV IFBEAM_LIB   NO_DEFAULT_PATH )
 
 art_make_library(
-	LIBRARY_NAME sbn_BeamSpillInfoRetriever_MWRData
+	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
 	SOURCE MWRData.cpp
 )
 
 
-simple_plugin(Retriever module
+simple_plugin(BNBRetriever module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
 	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
@@ -36,7 +36,7 @@ simple_plugin(Retriever module
   	sbndaq-artdaq-core_Overlays
 	sbndaq-artdaq-core_Overlays_ICARUS	
         artdaq-core_Utilities
-	sbn_BeamSpillInfoRetriever_MWRData	
+	sbn_BNBSpillInfoRetriever_MWRData	
 )
 
 install_headers()
