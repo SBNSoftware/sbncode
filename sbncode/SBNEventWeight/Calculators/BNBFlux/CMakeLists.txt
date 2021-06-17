@@ -12,7 +12,8 @@ art_make(
 		${ART_PERSISTENCY_PROVENANCE}
 		${ART_FRAMEWORK_SERVICES_REGISTRY}
 		${FHICLCPP}
-		cetlib_except
+		${CETLIB}
+		nusimdata_SimulationBase
 		)
 
 install_headers()
