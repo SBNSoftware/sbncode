@@ -10,6 +10,6 @@ bnbspillinfo: {
     MultiWireBundle: "BNBMultiWire"
     TimeWindow: "500" #seconds
     raw_data_label: "daq"
-
+    DeviceUsedForTiming: "E:TOR860"
 }
 END_PROLOG
