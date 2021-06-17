@@ -26,8 +26,10 @@
 
 namespace sbn {
 
-// Helper class which takes in data product information from the event and makes stub
-// objects from hits near the vertex.
+/**
+ * Helper class which takes in data product information from the event and makes stub
+ * objects from hits near the vertex.
+ */
 class StubBuilder {
 public:
   void Setup(const art::Event &e, const art::InputTag &pfplabel, const art::InputTag &trklabel);
