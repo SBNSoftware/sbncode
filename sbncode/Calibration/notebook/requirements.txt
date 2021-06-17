@@ -1,0 +1,9 @@
+jupyterlab
+numpy
+uproot
+matplotlib
+scipy
+pandas
+pylandau
+nbstripout
+git+https://github.com/gputnam/landau.git

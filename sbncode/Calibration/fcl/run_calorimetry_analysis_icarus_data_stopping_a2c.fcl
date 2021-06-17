@@ -1,0 +1,9 @@
+#include "run_calorimetry_analysis_icarus_data_stopping.fcl"
+
+a2c_selection: {
+  tool_type: TrackCaloSkimmerSelectAnocde2CathodeTrack
+  TickCut: 2300
+}
+
+physics.analyzers.caloanaCryoE.SelectionTools: [@sequence::physics.analyzers.caloanaCryoE.SelectionTools, @local::a2c_selection]
+physics.analyzers.caloanaCryoW.SelectionTools: [@sequence::physics.analyzers.caloanaCryoW.SelectionTools, @local::a2c_selection]
