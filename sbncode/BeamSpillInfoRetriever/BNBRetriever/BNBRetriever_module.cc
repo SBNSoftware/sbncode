@@ -69,11 +69,13 @@ private:
   std::string fURL;
   MWRData mwrdata;
   std::string raw_data_label_;
- 
+  std::string fDeviceUsedForTiming;
+  int TotalBeamSpills;  
+  //
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
-  int TotalBeamSpills;
+
 
 
 };
@@ -83,14 +85,17 @@ sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   : EDProducer{p},
   fTimePad(p.get<double>("TimePadding",0.0333)), //seconds 
   raw_data_label_(p.get<std::string>("raw_data_label")),
+  fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
   bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
   bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow")))
 {
  
-  //bfp->set_epsilon(0.0333); // how close in time does the spill time have to be from the DAQ time (in seconds).
-
-  bfp->set_epsilon(0.02); // how close in time does the spill time have to be from the DAQ time (in seconds).
-  bfp_mwr->set_epsilon(100); // how close in time does the spill time have to be from the DAQ time (in seconds).
+  // how close in time does the spill time have to be from the DAQ time (in seconds).
+  // If these are too large then it fails to capture the device 
+  // If these are too small then the time jitter in devices means we miss good data 
+  bfp->set_epsilon(0.02); //20 ms, this was tuned by hand and compared to IFBeamDB times  
+  
+  bfp_mwr->set_epsilon(100); // TO BE TUNED!
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   TotalBeamSpills = 0;
 }
@@ -98,13 +103,18 @@ sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
 void sbn::BNBRetriever::produce(art::Event& e)
 {
   
+  //Here we read in the artdaq Fragments and extract three pieces of information:
+  // 1. The time of the current event, t_current_event
+  // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
+  // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
+  
   int gate_type = 0;
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
   e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
 
-  double t_previous_event = 0;
   double t_current_event  = 0;
+  double t_previous_event = 0;
   double number_of_gates_since_previous_event = 0;
   
   for(auto raw_datum : raw_data){
@@ -126,35 +136,28 @@ void sbn::BNBRetriever::produce(art::Event& e)
   }
   
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
-  
+
+  //We only want to process BNB gates, i.e. type 1 
   if(gate_type == 1)
   {
+    // Keep track of the number of beam gates the DAQ thinks 
+    //   are in this file
     TotalBeamSpills += number_of_gates_since_previous_event;
    
-    try{
-      double test_curr; double test_t1;
-      bfp->GetNamedData((t_previous_event)-fTimePad,"E:THCURR",&test_curr,&test_t1);
-      std::cout << "got values " << test_curr <<  "for E:THCURR at time " << test_t1 << "\n";
-    }
-    catch (WebAPIException &we) {
-   
-    }
-    std::cout.precision(17);
-    
-    
-    try{
-      auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_previous_event)-35,"E:M875BB{4440:888}.RAW");
-    }
-    catch (WebAPIException &we) {
-      //we have to have this or it doesn't work...
-    }
+    // These lines get everything primed within the IFBeamDB
+    //   They seem redundant but they are needed
+    try{auto cur_vec_temp = bfp->GetNamedVector((t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
+    try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_previous_event)-35,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
+
+
+    // I have to FIX the MultiWireReadouts to....work...
     
     //  bfp_mwr->setValidWindow(86400);  
     //std::cout << "Is this a valid Window " << bfp_mwr->getValidWindow()<<std::endl;
     
     
-  //  std::vector< std::vector<std::string> > unpacked_M876BB_str;
-  // unpacked_M876BB_str.resize(3);
+    //  std::vector< std::vector<std::string> > unpacked_M876BB_str;
+    // unpacked_M876BB_str.resize(3);
     std::vector<std::string> unpacked_M876BB_str;
     std::string packed_data_str; 
     //  int dev = 0;
@@ -199,50 +202,72 @@ void sbn::BNBRetriever::produce(art::Event& e)
 
       }
       
-    }
+    }// Iterate over all the multiwire devices
     
+
+    //Here we will start collecting all the other beamline devices
+    // First we get the times that the beamline device fired
+    //  we have to pick a specific variable to use
+    std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
+
+    // We'll keep track of how many of these spills match to our 
+    // DAQ trigger times
+    int spill_count = 0;
     
-    std::vector<double> times_temps = bfp->GetTimeList("E:TOR860");
-int spill_count = 0;
+    // Iterating through each of the beamline times
     for (size_t i = 0; i < times_temps.size(); i++) {
 
+      // Only continue if these times are matched to our DAQ time
+      // plus or minus some time padding, currently using 3.3 ms 
+      // which is half the Booster Rep Rate
       if(times_temps[i] > (t_current_event+fTimePad)){continue;}
       if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
 
+      //Great we found a matched spill! Let's count it
       spill_count++;
-      double TOR860 = 0;
-      double TOR875 = 0;
-      double LM875A = 0;
-      double LM875B = 0;
-      double LM875C = 0;
-      double HP875 = 0;
-      double VP875 = 0;
-      double HPTG1 = 0;
-      double VPTG1 = 0;
-      double HPTG2 = 0;
-      double VPTG2 = 0;
-      double BTJT2 = 0;
-      double THCURR = 0;
       
-      double TOR860_time = 0;
+      // initializing all of our device carriers
+      // device definitions can be found in BNBSpillInfo.h
 
-	try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-	try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      double TOR860 = 0; // units e12 protons
+      double TOR875 = 0; // units e12 protons
+      double LM875A = 0; // units R/s
+      double LM875B = 0; // units R/s
+      double LM875C = 0; // units R/s
+      double HP875 = 0; // units mm
+      double VP875 = 0; // units mm
+      double HPTG1 = 0; // units mm
+      double VPTG1 = 0; // units mm
+      double HPTG2 = 0; // units mm
+      double VPTG2 = 0; // units mm
+      double BTJT2 = 0; // units Deg C
+      double THCURR = 0; // units kiloAmps
       
+      double TOR860_time = 0; // units s
+      
+      // Here we request all the devices
+      // since sometimes devices fail to report we'll
+      // allow each to throw an exception but still move forward
+      // interpreting these failures will be part of the beam quality analyses 
+      try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      
+      //crunch the times 
       unsigned long int time_closest_int = (int) TOR860_time;
       double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
       
+      //Store everything in our data-product
       sbn::BNBSpillInfo beamInfo;
       beamInfo.TOR860 = TOR860;
       beamInfo.TOR875 = TOR875;
@@ -261,12 +286,14 @@ int spill_count = 0;
       beamInfo.spill_time_ns = time_closest_ns;    
       
       fOutbeamInfos.push_back(beamInfo);
+      // We do not write these to the art::Events because 
+      // we can filter events but want to keep all the POT 
+      // information, so we'll write it to the SubRun
     
-    
-    }
+    }//end iteration over beam device times
 std::cout << "Event Spills : " << spill_count << std::endl;
-  }
-}
+  } //end check if BNB DAQ triggered gate
+}//end iteration over art::Events
 
 void sbn::BNBRetriever::beginSubRun(art::SubRun& sr)
 {
@@ -276,6 +303,9 @@ void sbn::BNBRetriever::beginSubRun(art::SubRun& sr)
 //____________________________________________________________________________                                                                                                                                                                                      
 void sbn::BNBRetriever::endSubRun(art::SubRun& sr)
 {
+  // We will add all of the BNBSpillInfo data-products to the 
+  // art::SubRun so it persists 
+  // currently this is ~2.7 kB/event or ~0.07 kB/spill
 
 std::cout << "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
 std::cout << "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
