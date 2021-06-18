@@ -129,16 +129,12 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
     }
   }
 
-  std::cout << "Track end: " << t.end_x << " " << t.end_y << " " << t.end_z << " is FID: " << end_is_fid << std::endl;
-
   // Collection plane times need to be fiducial
   bool time_is_fid = \
     (t.hit_min_time_p2_tpcE < 0. || t.hit_min_time_p2_tpcE > fFidTickMin) &&
     (t.hit_max_time_p2_tpcE < 0. || t.hit_max_time_p2_tpcE < fFidTickMax) &&
     (t.hit_min_time_p2_tpcW < 0. || t.hit_min_time_p2_tpcW > fFidTickMin) &&
     (t.hit_max_time_p2_tpcW < 0. || t.hit_max_time_p2_tpcW < fFidTickMax);
-
-  std::cout << "Track times: " << t.hit_min_time_p2_tpcE << " " << t.hit_max_time_p2_tpcE << " " << t.hit_min_time_p2_tpcW << " " << t.hit_max_time_p2_tpcW << " is FID: " << time_is_fid << std::endl;
 
   // compute the median dqdx of the last 5 cm
   std::vector<double> endp_dqdx;
@@ -161,8 +157,6 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
 
   bool valid_med_dqdx = ((med_dqdx > 0.) && (med_dqdx > fEndMediandQdxCut)) || (fEndMediandQdxCut < 0.);
 
-  std::cout << "Track MED dqdx: " << med_dqdx << " is valid: " << valid_med_dqdx << std::endl;
-
   // Make sure the stopping fit worked
   bool valid_stopping_fit = t.n_fit_point > 2 || !fRequireFit;
 
@@ -172,8 +166,6 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
   double reduced_residual_offset = (t.const_fit_residuals - t.exp_fit_residuals) / t.n_fit_point;
 
   bool valid_stopping_residuals = (reduced_residual_offset < fFitResidualsCut) || (fFitResidualsCut < 0.) || !fRequireFit;
-
-  std::cout << "Fit is valid: " << valid_stopping_fit << " " << valid_stopping_expR << " " << valid_stopping_residuals << std::endl;
 
   return downwards && end_is_fid && time_is_fid && valid_med_dqdx && valid_stopping_fit && valid_stopping_expR && valid_stopping_residuals;
 }
