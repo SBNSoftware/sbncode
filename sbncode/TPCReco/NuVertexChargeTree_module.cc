@@ -1,12 +1,7 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       NuVertexChargeTree
-// Plugin Type: analyzer (art v3_05_01)
-// File:        NuVertexChargeTree_module.cc
-//
-// Analyzer module for use with sbn::Stub and sbn::VertexHit objects. 
-// Intended for use with neutrino interactions and neutrino-like particlegun
-// events. Not intended for use on data or on MC with cosmics.
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file        NuVertexChargeTree_module.cc
+ * @author      Gray Putnam (grayputnam@uchicago.edu)
+ */
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -54,6 +49,12 @@ namespace sbn {
 
 static const unsigned MAX_PFP = 1;
 
+/**
+ * @brief Analyzer module for use with sbn::Stub and sbn::VertexHit objects.
+ * 
+ * Intended for use with neutrino interactions and neutrino-like particlegun
+ * events. Not intended for use on data or on MC with cosmics.
+ */
 class sbn::NuVertexChargeTree : public art::EDAnalyzer {
 public:
   explicit NuVertexChargeTree(fhicl::ParameterSet const& p);
