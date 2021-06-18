@@ -17,7 +17,7 @@ sbn::PlaneTransform::PlaneTransform(fhicl::ParameterSet const& p):
   if (abs(m_sinVminusU) < std::numeric_limits<double>::epsilon() ||
       abs(m_sinWminusV) < std::numeric_limits<double>::epsilon() ||
       abs(m_sinUminusW) < std::numeric_limits<double>::epsilon()) {
-    std::cout << "PlaneTransform::PlaneTransform -- does not support provided TPC configuration.\n";
+    throw cet::exception("PlaneTransform::PlaneTransform: Does not support provided TPC configuration.");
   }
 
   std::vector<unsigned> ViewOrderConfig = p.get<std::vector<unsigned>>("ViewOrder");

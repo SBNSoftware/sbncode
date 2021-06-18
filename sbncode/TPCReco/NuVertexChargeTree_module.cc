@@ -427,7 +427,7 @@ const simb::MCParticle *Genie2G4MCParticle(
   const std::vector<art::Ptr<simb::MCParticle>> &g4_mcparticles,
   const std::vector<const sim::GeneratedParticleInfo *> infos) {
 
-  const simb::MCParticle *ret = NULL;
+  const simb::MCParticle *ret = nullptr;
   for (int iparticle = 0; iparticle < (int)g4_mcparticles.size(); iparticle++) {
     if (infos[iparticle]->hasGeneratedParticleIndex() &&
         (int)infos[iparticle]->generatedParticleIndex() < mctruth.NParticles() && // TODO: why is this number sometimes bigger than the number of particles?
@@ -444,7 +444,7 @@ const simb::MCParticle *Genie2G4MCParticle(
         matched_genie_particle.PdgCode() == g4_mcparticles[iparticle]->PdgCode()) {
 
         // this should only be true for one particle
-        assert(ret == NULL);
+        assert(ret == nullptr);
         ret = g4_mcparticles[iparticle].get();
       }
     }
@@ -663,7 +663,7 @@ void sbn::NuVertexChargeTree::FillStubs(
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles) {
 
   // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = NULL;
+  const spacecharge::SpaceCharge *sce = nullptr;
       
   for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
     const sbn::Stub &stub = stubs[i_stub].stub;
@@ -875,7 +875,7 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
   // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = NULL;
+  const spacecharge::SpaceCharge *sce = nullptr;
 
   TVector3 vpos(vert.position().X(), vert.position().Y(), vert.position().Z());
 
