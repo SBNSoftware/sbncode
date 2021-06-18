@@ -5,6 +5,9 @@
 //
 // Generated at Mon May 17 09:46:34 2021 by Gray Putnam using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Module for creating a skim of track calorimetry reconstruction for use
+// with calibrations in ICARUS.
 ////////////////////////////////////////////////////////////////////////
 
 #include "TrackCaloSkimmer.h"
@@ -61,7 +64,12 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
+  fVerbose = p.get<bool>("Verbose", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
+  fTailFitResidualRange = p.get<double>("TailFitResidualRange", 5.);
+  if (fTailFitResidualRange > 10.) {
+    std::cout << "sbn::TrackCaloSkimmer: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
+  }
 
   fRawDigitproducers = p.get<std::vector<art::InputTag>>("RawDigitproducers", {});
 
@@ -94,7 +102,9 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   unsigned evt = e.event();
   unsigned sub = e.subRun();
   unsigned run = e.run();
-  std::cout << "[TrackCaloSkimmer::analyzeEvent] Run: " << run << ", SubRun: " << sub << ", Event: "<< evt << ", Is Data: " << e.isRealData() << std::endl;
+  if (fVerbose) {
+    std::cout << "[TrackCaloSkimmer::analyzeEvent] Run: " << run << ", SubRun: " << sub << ", Event: "<< evt << ", Is Data: " << e.isRealData() << std::endl;
+  }
 
   fMeta.evt = evt;
   fMeta.subrun = sub;
@@ -188,7 +198,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       continue;
     }
 
-    std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
+    if (fVerbose) std::cout << "Processing new track! ID: " << trkPtr->ID() << " time: " << t0 << std::endl;
 
     FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, calo, rawdigits, track_infos);
   }
@@ -311,7 +321,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   
   // Save!
   if (select) {
-    std::cout << "Track Selected!\n";
+    if (fVerbose) std::cout << "Track Selected!\n";
     fTree->Fill();
   }
 }
@@ -322,7 +332,7 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
   std::vector<double> fit_dqdx;
 
   for (const HitInfo &h: fTrack->hits2) {
-    if (h.oncalo && h.rr > 0. && h.rr < 5.) {
+    if (h.oncalo && h.rr > 0. && h.rr < fTailFitResidualRange) {
       fit_rr.push_back(h.rr);
       fit_dqdx.push_back(h.dqdx);
     }
@@ -332,8 +342,6 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
   for (unsigned i = 0; i < fit_rr.size() && i < MAX_N_FIT_DATA; i++) {
     FIT_RR[i] = fit_rr[i];
     FIT_DQDX[i] = fit_dqdx[i];
-
-    std::cout << "FIT: " << FIT_RR[i] << " " << FIT_DQDX[i] << std::endl;
   }
   N_FIT_DATA = std::min(fit_rr.size(), MAX_N_FIT_DATA);
 
@@ -369,9 +377,6 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
 
     fTrack->const_fit_C = C;    
     fTrack->const_fit_residuals = cresiduals;
-
-    std::cout << "EXP FIT. A: " << A << " R: " << R << " resid: " << residuals << std::endl;
-    std::cout << "CONST FIT. C: " << C << " resid: " << cresiduals << std::endl;
   }
 }
 

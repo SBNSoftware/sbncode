@@ -138,7 +138,9 @@ private:
   std::vector<art::InputTag> fRawDigitproducers;
   bool fRequireT0;
   bool fDoTailFit;
+  bool fVerbose;
   double fHitRawDigitsTickCollectWidth;
+  double fTailFitResidualRange;
 
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;
