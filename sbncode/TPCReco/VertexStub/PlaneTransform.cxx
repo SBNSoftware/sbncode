@@ -1,9 +1,10 @@
 #include "PlaneTransform.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
-sbn::PlaneTransform::PlaneTransform(fhicl::ParameterSet const& p):
-  m_thetaU(p.get<double>("WireAngleU")),
-  m_thetaV(p.get<double>("WireAngleV")),
-  m_thetaW(p.get<double>("WireAngleW")),
+sbn::PlaneTransform::PlaneTransform(fhicl::ParameterSet const& p, const geo::GeometryCore *geo):
+  m_thetaU(geo->Plane(0, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
+  m_thetaV(geo->Plane(1, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
+  m_thetaW(geo->Plane(2, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
   m_sinU(sin(m_thetaU)),
   m_sinV(sin(m_thetaV)),
   m_sinW(sin(m_thetaW)),
@@ -12,17 +13,14 @@ sbn::PlaneTransform::PlaneTransform(fhicl::ParameterSet const& p):
   m_cosW(cos(m_thetaW)),
   m_sinVminusU(sin(m_thetaV - m_thetaU)),
   m_sinWminusV(sin(m_thetaW - m_thetaV)),
-  m_sinUminusW(sin(m_thetaU - m_thetaW))
+  m_sinUminusW(sin(m_thetaU - m_thetaW)),
+  fGeo(geo)
 {
   if (abs(m_sinVminusU) < std::numeric_limits<double>::epsilon() ||
       abs(m_sinWminusV) < std::numeric_limits<double>::epsilon() ||
       abs(m_sinUminusW) < std::numeric_limits<double>::epsilon()) {
     throw cet::exception("PlaneTransform::PlaneTransform: Does not support provided TPC configuration.");
   }
-
-  std::vector<unsigned> ViewOrderConfig = p.get<std::vector<unsigned>>("ViewOrder");
-  for (unsigned v: ViewOrderConfig) m_vieworder.push_back((geo::View_t)v);
-
 }
 
 double sbn::PlaneTransform::UVtoW(const double u, const double v) const
@@ -87,16 +85,24 @@ double sbn::PlaneTransform::YZtoW(const double y, const double z) const
   return (z * m_cosW - y * m_sinW);
 }
 
-int sbn::PlaneTransform::ViewtoUVW(geo::View_t v) const {
-  for (unsigned i = 0; i < m_vieworder.size(); i++) {
-    if (m_vieworder[i] == v) return i;
-  }
+int sbn::PlaneTransform::PlanetoUVW(const geo::PlaneID &p) const {
+  double eps = 1e-5;
+
+  double theta = fGeo->Plane(p).ThetaZ() - 0.5*::util::pi<>();
+
+  if (abs(theta - m_thetaU) < eps) return 0; 
+  if (abs(theta - m_thetaV) < eps) return 1;
+  if (abs(theta - m_thetaW) < eps) return 2;
+
+  throw cet::exception("Bad Plane: " + p.toString() + ". Has angle (" + std::to_string(theta) + ") not specified in U/V/W: ("
+    + std::to_string(m_thetaU) + "/" + std::to_string(m_thetaV) + "/" + std::to_string(m_thetaW) + ")");
+
   return -1;
 }
 
-double sbn::PlaneTransform::TwoPlaneToY(geo::View_t v1, double w1, geo::View_t v2, double w2) const {
-  unsigned uvw1 = ViewtoUVW(v1);
-  unsigned uvw2 = ViewtoUVW(v2);
+double sbn::PlaneTransform::TwoPlaneToY(const geo::PlaneID &p1, double w1, const geo::PlaneID &p2, double w2) const {
+  unsigned uvw1 = PlanetoUVW(p1);
+  unsigned uvw2 = PlanetoUVW(p2);
 
   if (uvw1 == 0 && uvw2 == 1) {
     return UVtoY(w1, w2);
@@ -121,9 +127,9 @@ double sbn::PlaneTransform::TwoPlaneToY(geo::View_t v1, double w1, geo::View_t v
   return -100000.;
 }
 
-double sbn::PlaneTransform::TwoPlaneToZ(geo::View_t v1, double w1, geo::View_t v2, double w2) const {
-  unsigned uvw1 = ViewtoUVW(v1);
-  unsigned uvw2 = ViewtoUVW(v2);
+double sbn::PlaneTransform::TwoPlaneToZ(const geo::PlaneID &p1, double w1, const geo::PlaneID &p2, double w2) const {
+  unsigned uvw1 = PlanetoUVW(p1);
+  unsigned uvw2 = PlanetoUVW(p2);
 
   if (uvw1 == 0 && uvw2 == 1) {
     return UVtoZ(w1, w2);
@@ -148,8 +154,8 @@ double sbn::PlaneTransform::TwoPlaneToZ(geo::View_t v1, double w1, geo::View_t v
   return -100000.;
 }
 
-double sbn::PlaneTransform::YZtoPlane(geo::View_t v, double y, double z) const {
-  unsigned uvw = ViewtoUVW(v);
+double sbn::PlaneTransform::YZtoPlane(const geo::PlaneID &p, double y, double z) const {
+  unsigned uvw = PlanetoUVW(p);
 
   if (uvw == 0) return YZtoU(y, z);
   else if (uvw == 1) return YZtoV(y, z);
@@ -159,10 +165,9 @@ double sbn::PlaneTransform::YZtoPlane(geo::View_t v, double y, double z) const {
   return -100000.;
 }
 
-double sbn::PlaneTransform::WireCoordinate(const geo::GeometryCore *geo, const geo::WireID &w) const {
-  geo::View_t v = geo->View(w);
-  TVector3 coord = geo->Wire(w).GetCenter();
+double sbn::PlaneTransform::WireCoordinate(const geo::WireID &w) const {
+  TVector3 coord = fGeo->Wire(w).GetCenter();
 
-  return YZtoPlane(v, coord.Y(), coord.Z());
+  return YZtoPlane(w, coord.Y(), coord.Z());
 }
 

@@ -12,7 +12,7 @@ namespace sbn {
 // Copied liberally from the Pandora LArRotationalTransformationPlugin
 class PlaneTransform {
 public:
-  PlaneTransform(fhicl::ParameterSet const& p);
+  PlaneTransform(fhicl::ParameterSet const& p, const geo::GeometryCore *geo);
   double UVtoW(const double u, const double v) const;
   double VWtoU(const double v, const double w) const;
   double WUtoV(const double w, const double u) const;
@@ -28,11 +28,11 @@ public:
   double YZtoV(const double y, const double z) const;
   double YZtoW(const double y, const double z) const;
 
-  int ViewtoUVW(geo::View_t v) const;
-  double TwoPlaneToY(geo::View_t v1, double w1, geo::View_t v2, double w2) const;
-  double TwoPlaneToZ(geo::View_t v1, double w1, geo::View_t v2, double w2) const;
-  double YZtoPlane(geo::View_t v, double y, double z) const;
-  double WireCoordinate(const geo::GeometryCore *geo, const geo::WireID &w) const;
+  int PlanetoUVW(const geo::PlaneID &p) const;
+  double TwoPlaneToY(const geo::PlaneID &p1, double w1, const geo::PlaneID &p2, double w2) const;
+  double TwoPlaneToZ(const geo::PlaneID &p1, double w1, const geo::PlaneID &p2, double w2) const;
+  double YZtoPlane(const geo::PlaneID &p, double y, double z) const;
+  double WireCoordinate(const geo::WireID &w) const;
 
   void GetMinChiSquaredYZ(const double u, const double v, const double w, const double sigmaU, const double sigmaV, const double sigmaW,
     double &y, double &z, double &chiSquared) const;
@@ -61,8 +61,7 @@ private:
   double    m_maxAngularDiscrepancyW; ///< Maximum allowed difference between w wire angles between LArTPCs
   double    m_maxSigmaDiscrepancy;    ///< Maximum allowed difference between like wire sigma values between LArTPCs
 
-  std::vector<geo::View_t> m_vieworder;
-
+  const     geo::GeometryCore *fGeo;   ///< Handle to the geometry
 };
 
 } // end namespace sbn

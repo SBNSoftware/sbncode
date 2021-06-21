@@ -385,7 +385,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
           vhit.dqdx = fCaloAlg.ElectronsFromADCArea((hit.Integral() / vhit.pitch), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
 
-          float EField = sbn::GetEfield(dprop, sce, pt, hit.WireID().TPC, true);
+          float EField = sbn::GetEfield(dprop, sce, pt, hit.WireID(), true);
 
           vhit.dedx = fCaloAlg.dEdx_AREA(clock_data, dprop, vhit.dqdx, hit.PeakTime(), hit.WireID().Plane, 0., EField);
 

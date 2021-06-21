@@ -9,7 +9,7 @@ plane_stub_merge: {
 
 twoplane_stub_merge: {
   tool_type: TwoPlaneStubMerge
-  PlaneTransform: @local::sbnd_plane_transform
+  PlaneTransform: @local::sbn_plane_transform
   MaxMergeTOff: 4 # ticks
   MaxMergeQOff: 3e5 # #elec
   RemoveDuplicateMerges: true

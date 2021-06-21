@@ -64,7 +64,7 @@ private:
 };
 
 TwoPlaneStubMerge::TwoPlaneStubMerge(fhicl::ParameterSet const &pset):
-  fPlaneTransform(pset.get<fhicl::ParameterSet>("PlaneTransform")),
+  fPlaneTransform(pset.get<fhicl::ParameterSet>("PlaneTransform"), lar::providerFrom<geo::Geometry>()),
   fMaxMergeTOff(pset.get<double>("MaxMergeTOff")),
   fMaxMergeQOff(pset.get<double>("MaxMergeQOff")),
   fRemoveDuplicateMerges(pset.get<bool>("RemoveDuplicateMerges")),

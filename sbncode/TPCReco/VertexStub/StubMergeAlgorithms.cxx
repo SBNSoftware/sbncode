@@ -1,8 +1,8 @@
 #include "StubMergeAlgorithms.h"
 
-geo::Point_t sbn::GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, unsigned TPC, float xsign) {
+geo::Point_t sbn::GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, geo::TPCID TPC, float xsign) {
   if (sce && sce->EnableCalSpatialSCE()) {
-    geo::Vector_t offset = sce->GetCalPosOffsets(loc_w, TPC);
+    geo::Vector_t offset = sce->GetCalPosOffsets(loc_w, TPC.TPC);
     loc_w.SetX(loc_w.X() + xsign * offset.X());
     loc_w.SetY(loc_w.Y() + offset.Y());
     loc_w.SetZ(loc_w.Z() + offset.Z());
@@ -11,7 +11,7 @@ geo::Point_t sbn::GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t 
   return loc_w;
 }
 
-double sbn::GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, unsigned TPC, bool correct_loc_sce, float xsign) {
+double sbn::GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, geo::TPCID TPC, bool correct_loc_sce, float xsign) {
 
   double EField = dprop.Efield();
   if (sce && sce->EnableSimEfieldSCE()) {
@@ -30,12 +30,10 @@ double sbn::GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacec
   return EField;
 }
 
-geo::Point_t sbn::GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_t loc, float xsign) { 
+geo::Point_t sbn::GetLocationAtWires(const spacecharge::SpaceCharge *sce, const geo::GeometryCore *geo, geo::Point_t loc, geo::TPCID TPC, float xsign) { 
   if (sce && sce->EnableCalSpatialSCE()) {
-    // fix negative sign in TPC 0
-    int corr = 1;
-    float xx = loc.X();
-    if (xx < 0) { corr = -1; }
+    // Returned X is the drift -- multiply by the drift direction to undo this
+    int corr = geo->TPC(TPC).DriftDir()[0];
 
     // for some reason, one needs to flip the sign of the x-direction when correcting for field distortion
     geo::Vector_t offset = sce->GetPosOffsets(loc);
@@ -66,8 +64,8 @@ double sbn::GetPitch(
     geo::Point_t loc_pdx = loc + dir * (geo->WirePitch(view) / 2.);
 
     // map to the wires
-    loc_mdx = GetLocationAtWires(sce, loc_mdx, xsign);
-    loc_pdx = GetLocationAtWires(sce, loc_pdx, xsign);
+    loc_mdx = GetLocationAtWires(sce, geo, loc_mdx, tpc, xsign);
+    loc_pdx = GetLocationAtWires(sce, geo, loc_pdx, tpc, xsign);
 
     dir_w = (loc_pdx - loc_mdx).Unit(); 
   }
@@ -89,7 +87,7 @@ double sbn::GetPitch(
   // now take the pitch computed on the wires and correct it back to the particle trajectory
   geo::Point_t loc_w = loc;
   if (correct_sce && track_is_sce_corrected) {
-    loc_w = sbn::GetLocationAtWires(sce, loc, xsign);
+    loc_w = sbn::GetLocationAtWires(sce, geo, loc, tpc, xsign);
   }
 
   geo::Vector_t dirOffsets = {0., 0., 0.};
@@ -161,12 +159,12 @@ geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::St
   static constexpr bool VERBOSE = false;
 
   // look up the wire-coordinate of both wires
-  double A_w = T.WireCoordinate(geo, A.vhit_hit->WireID());
-  double B_w = T.WireCoordinate(geo, B.vhit_hit->WireID());
+  double A_w = T.WireCoordinate(A.vhit_hit->WireID());
+  double B_w = T.WireCoordinate(B.vhit_hit->WireID());
 
   // Use this to get y, z
-  double y = T.TwoPlaneToY(geo->View(A.vhit_hit->WireID()), A_w, geo->View(B.vhit_hit->WireID()), B_w);
-  double z = T.TwoPlaneToZ(geo->View(A.vhit_hit->WireID()), A_w, geo->View(B.vhit_hit->WireID()), B_w);
+  double y = T.TwoPlaneToY(A.vhit_hit->WireID(), A_w, B.vhit_hit->WireID(), B_w);
+  double z = T.TwoPlaneToZ(A.vhit_hit->WireID(), A_w, B.vhit_hit->WireID(), B_w);
 
   // just average the x-pos
   double x = (dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) + dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID())) / 2.;
@@ -174,7 +172,7 @@ geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::St
   geo::Point_t pos(x, y, z);
 
   // Correct for space charge
-  pos = GetLocation(sce, pos, A.vhit_hit->WireID().TPC);
+  pos = GetLocation(sce, pos, A.vhit_hit->WireID());
 
   if (VERBOSE) {
     std::cout << "A View: " << geo->View(A.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(A.vhit_hit->WireID()), A.vhit_hit->WireID()) << std::endl;

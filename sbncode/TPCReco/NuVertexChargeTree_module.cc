@@ -157,12 +157,12 @@ private:
   std::vector<float> fFSPEndY;
   std::vector<float> fFSPEndZ;
 
-  std::vector<float> fFSPMaxQU;
-  std::vector<float> fFSPMaxQV;
-  std::vector<float> fFSPMaxQW;
-  std::vector<float> fFSPPitchU;
-  std::vector<float> fFSPPitchV;
-  std::vector<float> fFSPPitchW;
+  std::vector<float> fFSPMaxQ0;
+  std::vector<float> fFSPMaxQ1;
+  std::vector<float> fFSPMaxQ2;
+  std::vector<float> fFSPPitch0;
+  std::vector<float> fFSPPitch1;
+  std::vector<float> fFSPPitch2;
 
   float fRecoVertDist;
 
@@ -253,7 +253,7 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
     fStubTags(p.get<std::vector<std::string>>("StubTags")),
     fFiducialInset({p.get<float>("xmin"), p.get<float>("xmax"), p.get<float>("ymin"), p.get<float>("ymax"), p.get<float>("zmin"), p.get<float>("zmax")}), 
     fRangeCalculator(p.get<float>("MinTrackLength", 0.1)),
-    fPlaneTransform(p.get<fhicl::ParameterSet>("PlaneTransform"))
+    fPlaneTransform(p.get<fhicl::ParameterSet>("PlaneTransform"), lar::providerFrom<geo::Geometry>())
 {
   fIEvt = 0;
   fIFile = 0;
@@ -292,12 +292,12 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("fsp_matched_primary", &fFSPMtachedPrimary);
   _tree->Branch("fsp_process_is_topping", &fFSPIsStopping);
 
-  _tree->Branch("fsp_maxqu", &fFSPMaxQU);
-  _tree->Branch("fsp_maxqv", &fFSPMaxQV);
-  _tree->Branch("fsp_maxqw", &fFSPMaxQW);
-  _tree->Branch("fsp_pitchu", &fFSPPitchU);
-  _tree->Branch("fsp_pitchv", &fFSPPitchV);
-  _tree->Branch("fsp_pitchw", &fFSPPitchW);
+  _tree->Branch("fsp_maxq0", &fFSPMaxQ0);
+  _tree->Branch("fsp_maxq1", &fFSPMaxQ1);
+  _tree->Branch("fsp_maxq2", &fFSPMaxQ2);
+  _tree->Branch("fsp_pitch0", &fFSPPitch0);
+  _tree->Branch("fsp_pitch1", &fFSPPitch1);
+  _tree->Branch("fsp_pitch2", &fFSPPitch2);
 
   _tree->Branch("reco_vert_dist", &fRecoVertDist, "reco_vert_dist/F");
 
@@ -483,12 +483,12 @@ void sbn::NuVertexChargeTree::Clear() {
   fFSPMtachedPrimary.clear();
   fFSPIsStopping.clear();
 
-  fFSPMaxQU.clear();
-  fFSPMaxQV.clear();
-  fFSPMaxQW.clear();
-  fFSPPitchU.clear();
-  fFSPPitchV.clear();
-  fFSPPitchW.clear();
+  fFSPMaxQ0.clear();
+  fFSPMaxQ1.clear();
+  fFSPMaxQ2.clear();
+  fFSPPitch0.clear();
+  fFSPPitch1.clear();
+  fFSPPitch2.clear();
 
   fRecoVertDist = 0.;
   fVertexHitSPID.clear();
@@ -968,31 +968,31 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
     fFSPVisE.push_back(thisVisE / 3. /* average over each plane */);
     fFSPQ.push_back(thisQ / 3.);
 
-    for (unsigned v = 0; v < 3; v++) {
+    for (unsigned p = 0; p < 3; p++) {
       float maxQ = -1;
       for (auto const &pair: chargemap) {
-        if (geo.View(pair.first) == v) {
+        if (pair.first.Plane == p) {
           if (pair.second > maxQ) maxQ = pair.second;
         }
       }
 
-      if (v == 0) fFSPMaxQU.push_back(maxQ);
-      if (v == 1) fFSPMaxQV.push_back(maxQ);
-      if (v == 2) fFSPMaxQW.push_back(maxQ);
+      if (p == 0) fFSPMaxQ0.push_back(maxQ);
+      if (p == 1) fFSPMaxQ1.push_back(maxQ);
+      if (p == 2) fFSPMaxQ2.push_back(maxQ);
     }
 
     geo::Point_t start_loc(particle.Position().Vect());
     geo::Vector_t start_dir(particle.Momentum().Vect().Unit());
     geo::TPCID firstTPC = geo.FindTPCAtPosition(start_loc);
     if (firstTPC) {
-      fFSPPitchU.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)0, firstTPC, true, true));
-      fFSPPitchV.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)1, firstTPC, true, true));
-      fFSPPitchW.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, (geo::View_t)2, firstTPC, true, true));
+      fFSPPitch0.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 0)), firstTPC, true, true));
+      fFSPPitch1.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 1)), firstTPC, true, true));
+      fFSPPitch2.push_back(sbn::GetPitch(&geo, sce, start_loc, start_dir, geo.View(geo::PlaneID(firstTPC, 2)), firstTPC, true, true));
     }
     else {
-      fFSPPitchU.push_back(-1);
-      fFSPPitchV.push_back(-1);
-      fFSPPitchW.push_back(-1);
+      fFSPPitch0.push_back(-1);
+      fFSPPitch1.push_back(-1);
+      fFSPPitch2.push_back(-1);
     }
 
     bool found_match = false;
