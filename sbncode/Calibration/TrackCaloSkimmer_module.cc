@@ -263,6 +263,10 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->dir_y = track.StartDirection().Y();
   fTrack->dir_z = track.StartDirection().Z();
 
+  if (hits.size() > 0) {
+    fTrack->cryostat = hits[0]->WireID().Cryostat;
+  }
+
   // Fill each hit
   for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
     sbn::HitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, calo, rawdigits);
