@@ -75,10 +75,10 @@ namespace fluxr {
     string nultx[]     ={"#nu_{e}", "#bar{#nu}_{e}", "#nu_{#mu}", "#bar{#nu}_{#mu}"};
     string pltx[]      ={"#mu^{#pm}","#pi^{#pm}","K^{0}_{L}","K^{#pm}"};
     string secltx[]  ={"pBe->#pi^{#pm}->...->#mu^{#pm}",
-		       "pBe->#pi^{#pm}->..(not #mu^{#pm})..",
-		       "pBe->K^{0}_{L}->...",
-		       "pBe->K^{#pm}->...",
-		       "pBe->(p or n)->..."};
+                       "pBe->#pi^{#pm}->..(not #mu^{#pm})..",
+                       "pBe->K^{0}_{L}->...",
+                       "pBe->K^{#pm}->...",
+                       "pBe->(p or n)->..."};
 
 
     int nbins=ps.get<int>("nBins",0);
@@ -87,24 +87,24 @@ namespace fluxr {
 
     for (int i=0;i<4;i++) {
       fHFlux[i]=tffluxdir.make<TH1D>(Form("h50%i",i+1),
-				    Form("%s (all);Energy %s (GeV);#phi(%s)/50MeV/POT",nultx[i].c_str(),nultx[i].c_str(),nultx[i].c_str()),
-				    nbins,Elow,Ehigh);
+                                     Form("%s (all);Energy %s (GeV);#phi(%s)/50MeV/POT",nultx[i].c_str(),nultx[i].c_str(),nultx[i].c_str()),
+                                     nbins,Elow,Ehigh);
       fHFlux[i]->Sumw2();
     }
 
     for (int inu=0;inu<4;inu++) {
       for (int ipar=0;ipar<4;ipar++) {
-	fHFluxParent[inu][ipar]=tffluxdir.make<TH1D>(Form("h5%i%i",ipar+1,inu+1),
-						Form("...->%s->%s;Energy %s (GeV);#phi(%s)/50MeV/POT",pltx[ipar].c_str(),nultx[inu].c_str(),nultx[inu].c_str(),nultx[inu].c_str()),
-						nbins,Elow,Ehigh);
+        fHFluxParent[inu][ipar]=tffluxdir.make<TH1D>(Form("h5%i%i",ipar+1,inu+1),
+                                                     Form("...->%s->%s;Energy %s (GeV);#phi(%s)/50MeV/POT",pltx[ipar].c_str(),nultx[inu].c_str(),nultx[inu].c_str(),nultx[inu].c_str()),
+                                                     nbins,Elow,Ehigh);
 
-	fHFluxParent[inu][ipar]->Sumw2();
+        fHFluxParent[inu][ipar]->Sumw2();
       }
       for (int isec=0;isec<5;isec++) {
-	fHFluxSec[inu][isec]=tffluxdir.make<TH1D>(Form("h7%i%i",isec+1,inu+1),
-					     Form("%s->%s;Energy %s (GeV);#phi(%s)/50MeV/POT",secltx[isec].c_str(),nultx[inu].c_str(),nultx[inu].c_str(),nultx[inu].c_str()),
-					     nbins,Elow,Ehigh);
-	fHFluxSec[inu][isec]->Sumw2();
+        fHFluxSec[inu][isec]=tffluxdir.make<TH1D>(Form("h7%i%i",isec+1,inu+1),
+                                                  Form("%s->%s;Energy %s (GeV);#phi(%s)/50MeV/POT",secltx[isec].c_str(),nultx[inu].c_str(),nultx[inu].c_str(),nultx[inu].c_str()),
+                                                  nbins,Elow,Ehigh);
+        fHFluxSec[inu][isec]->Sumw2();
       }
     }
 
@@ -128,7 +128,7 @@ namespace fluxr {
   }
 
   void FluxReader::readFile(std::string const &name,
-			    art::FileBlock* &fb)
+                            art::FileBlock* &fb)
   {
     std::cout << "readFile " << name << std::endl;
     // Fill and return a new Fileblock.
@@ -164,10 +164,10 @@ namespace fluxr {
 
 
   bool FluxReader::readNext(art::RunPrincipal* const &/*inR*/,
-			    art::SubRunPrincipal* const &/*inSR*/,
-			    art::RunPrincipal* &outR,
-			    art::SubRunPrincipal* &outSR,
-			    art::EventPrincipal* &outE)
+                            art::SubRunPrincipal* const &/*inSR*/,
+                            art::RunPrincipal* &outR,
+                            art::SubRunPrincipal* &outSR,
+                            art::EventPrincipal* &outE)
   {
     if (fMaxEvents > 0 && fEventCounter == unsigned(fMaxEvents))
       return false;
@@ -272,32 +272,32 @@ namespace fluxr {
       pot->totgoodpot = fPOT;
 
       art::put_product_in_principal(std::move(pot),
-				    *outSR,
-				    "flux");
+                                    *outSR,
+                                    "flux");
 
       fSubRunID = newID;
     }
 
 
     outE = fSourceHelper.makeEventPrincipal(fSubRunID.run(),
-					    fSubRunID.subRun(),
-					    fEventCounter,
-					    tstamp);
+                                            fSubRunID.subRun(),
+                                            fEventCounter,
+                                            tstamp);
 
     // Put products in the event.
     art::put_product_in_principal(std::move(mcfluxvec),
-				  *outE,
-				  "flux"); // Module label
+                                  *outE,
+                                  "flux"); // Module label
     art::put_product_in_principal(std::move(mctruthvec),
-				  *outE,
-				  "flux"); // Module label
+                                  *outE,
+                                  "flux"); // Module label
     if (fInputType=="dk2nu") {
       art::put_product_in_principal(std::move(dk2nuvec),
-				    *outE,
-				    "flux"); // Module label
+                                    *outE,
+                                    "flux"); // Module label
       art::put_product_in_principal(std::move(nuchoicevec),
-				    *outE,
-				    "flux"); // Module label
+                                    *outE,
+                                    "flux"); // Module label
 
       auto aptr = fSourceHelper.makePtr<simb::MCTruth>(fTLmctruth, *outE, 0);
       auto bptr = fSourceHelper.makePtr<bsim::Dk2Nu>(fTLdk2nu,*outE, 0);
@@ -309,17 +309,14 @@ namespace fluxr {
       mcfluxassn->addSingle(aptr,dptr);
 
       art::put_product_in_principal(std::move(dk2nuassn),
-				    *outE,
-				    "flux"); // Module label
+                                    *outE,
+                                    "flux"); // Module label
       art::put_product_in_principal(std::move(nuchoiceassn),
-				    *outE,
-				    "flux"); // Module label
+                                    *outE,
+                                    "flux"); // Module label
       art::put_product_in_principal(std::move(mcfluxassn),
-				    *outE,
-				    "flux"); // Module label
-
-
-
+                                    *outE,
+                                    "flux"); // Module label
     }
 
     return true;

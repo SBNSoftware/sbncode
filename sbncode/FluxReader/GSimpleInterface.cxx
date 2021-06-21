@@ -90,19 +90,19 @@ namespace fluxr {
       const std::vector<double>& auxdbl = fGSimpleAux->auxdbl;
 
       for (size_t id=0; id<auxdblname.size(); ++id) {
-	if ("muparpx"   == auxdblname[id]) flux.fmuparpx  = auxdbl[id];
-	if ("muparpy"   == auxdblname[id]) flux.fmuparpy  = auxdbl[id];
-	if ("muparpz"   == auxdblname[id]) flux.fmuparpz  = auxdbl[id];
-	if ("mupare"    == auxdblname[id]) flux.fmupare   = auxdbl[id];
-	if ("necm"      == auxdblname[id]) flux.fnecm     = auxdbl[id];
-	if ("nimpwt"    == auxdblname[id]) flux.fnimpwt   = auxdbl[id];
-	if ("fgXYWgt"   == auxdblname[id]) {
-	  flux.fnwtnear = flux.fnwtfar = auxdbl[id];
-	}
+        if ("muparpx"   == auxdblname[id]) flux.fmuparpx  = auxdbl[id];
+        if ("muparpy"   == auxdblname[id]) flux.fmuparpy  = auxdbl[id];
+        if ("muparpz"   == auxdblname[id]) flux.fmuparpz  = auxdbl[id];
+        if ("mupare"    == auxdblname[id]) flux.fmupare   = auxdbl[id];
+        if ("necm"      == auxdblname[id]) flux.fnecm     = auxdbl[id];
+        if ("nimpwt"    == auxdblname[id]) flux.fnimpwt   = auxdbl[id];
+        if ("fgXYWgt"   == auxdblname[id]) {
+          flux.fnwtnear = flux.fnwtfar = auxdbl[id];
+        }
       }
       for (size_t ii=0; ii<auxintname.size(); ++ii) {
-	if ("tgen"      == auxintname[ii]) flux.ftgen     = auxint[ii];
-	if ("tgptype"   == auxintname[ii]) flux.ftgptype  = auxint[ii];
+        if ("tgen"      == auxintname[ii]) flux.ftgen     = auxint[ii];
+        if ("tgptype"   == auxintname[ii]) flux.ftgptype  = auxint[ii];
       }
     }
     return true;

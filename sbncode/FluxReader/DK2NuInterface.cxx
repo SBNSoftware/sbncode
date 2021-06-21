@@ -176,12 +176,12 @@ namespace fluxr {
     beamxyz = fBeamRotInv*(usrxyz-fBeamZero);
   }
   void DK2NuInterface::Beam2UserPos(const TLorentzVector& beamxyz,
-				    TLorentzVector& usrxyz) const
+                                    TLorentzVector& usrxyz) const
   {
     usrxyz = fBeamRot*beamxyz + fBeamZero;
   }
   void DK2NuInterface::Beam2UserP4 (const TLorentzVector& beamp4,
-				    TLorentzVector& usrp4 ) const
+                                    TLorentzVector& usrp4 ) const
   {
     usrp4 = fBeamRot*beamp4;
   }
