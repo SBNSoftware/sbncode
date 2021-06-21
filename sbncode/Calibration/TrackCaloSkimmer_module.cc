@@ -66,6 +66,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fDoTailFit = p.get<bool>("DoTailFit", true);
   fVerbose = p.get<bool>("Verbose", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
+  fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
   fTailFitResidualRange = p.get<double>("TailFitResidualRange", 5.);
   if (fTailFitResidualRange > 10.) {
     std::cout << "sbn::TrackCaloSkimmer: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
@@ -244,6 +245,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // Reset other persistent info
   fSnippetCount.clear();
+  fWiresToSave.clear();
 
   // Fill top level stuff
   fTrack->meta = fMeta;
@@ -269,7 +271,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // Fill each hit
   for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
-    sbn::HitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, calo, rawdigits);
+    sbn::HitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, calo);
     if (hinfo.plane == 0) {
       fTrack->hits0.push_back(hinfo);
     }
@@ -297,6 +299,45 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // Save information on a fit to the end of the track
   if (fDoTailFit) DoTailFit();
+
+  // Save the Wire ADC values we need to
+  for (auto const &w_pair: fWiresToSave) {
+    geo::WireID wire = w_pair.first;
+
+    if (rawdigits.count(wire)) {
+      const raw::RawDigit &thisdigit = *rawdigits.at(wire);
+      int min_tick = std::max(0, w_pair.second.first);
+      int max_tick = std::min((int)thisdigit.NADC(), w_pair.second.second);
+
+      // collect the adcs
+      std::vector<short> adcs;
+      for (int t = min_tick; t < max_tick; t++) {
+        adcs.push_back(thisdigit.ADC(t));
+      }
+
+      WireInfo winfo;
+      winfo.wire = wire.Wire;
+      winfo.plane = wire.Plane;
+      winfo.tpc = wire.TPC;
+      winfo.tdc0 = min_tick;
+      winfo.adcs = adcs;
+
+      if (winfo.plane == 0) {
+        fTrack->wires0.push_back(winfo);
+      }
+      else if (winfo.plane == 1) {
+        fTrack->wires1.push_back(winfo);
+      }
+      else if (winfo.plane == 2) {
+        fTrack->wires2.push_back(winfo);
+      }
+    }
+  }
+  // Sort the ADC values by wire
+  std::sort(fTrack->wires0.begin(), fTrack->wires0.end(), [](auto const &lhs, auto const &rhs) {return lhs.wire < rhs.wire;});
+  std::sort(fTrack->wires1.begin(), fTrack->wires1.end(), [](auto const &lhs, auto const &rhs) {return lhs.wire < rhs.wire;});
+  std::sort(fTrack->wires2.begin(), fTrack->wires2.end(), [](auto const &lhs, auto const &rhs) {return lhs.wire < rhs.wire;});
+
 
   // get information on nearby tracks
   for (const GlobalTrackInfo &othr: tracks) {
@@ -397,8 +438,7 @@ sbn::HitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
-    const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-    const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits) {
+    const std::vector<art::Ptr<anab::Calorimetry>> &calo) {
 
   // HitInfo to save
   sbn::HitInfo hinfo;
@@ -426,17 +466,19 @@ sbn::HitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     hinfo.i_snippet = fSnippetCount[snippet];
   }
 
-  // Information from the RawDigits
-  if (rawdigits.count(hit.WireID())) {
-    const raw::RawDigit &thisdigit = *rawdigits.at(hit.WireID());
-    // Save the ticks around the hit peak
-    int min_tick = std::max(0, (int)std::floor(hit.PeakTime() - fHitRawDigitsTickCollectWidth));
-    int max_tick = std::min((int)thisdigit.NADC(), (int)std::ceil(hit.PeakTime() + fHitRawDigitsTickCollectWidth));
+  // Which wires to save
+  int min_tick = (int)std::floor(hit.PeakTime() - fHitRawDigitsTickCollectWidth);
+  int max_tick = (int)std::ceil(hit.PeakTime() + fHitRawDigitsTickCollectWidth);
+  for (int wire = hinfo.wire - fHitRawDigitsWireCollectWidth; wire <= hinfo.wire + fHitRawDigitsWireCollectWidth; wire++) {
+    geo::WireID w(hit.WireID(), wire);
 
-    for (int t = min_tick; t < max_tick; t++) {
-      hinfo.adcs.push_back(thisdigit.ADC(t));
+    if (fWiresToSave.count(w)) {
+      fWiresToSave.at(w).first = std::min(fWiresToSave.at(w).first, min_tick);
+      fWiresToSave.at(w).second = std::min(fWiresToSave.at(w).second, max_tick);
     }
-    hinfo.tdc0 = min_tick;
+    else {
+      fWiresToSave[w] = {min_tick, max_tick};
+    }
   }
 
   // Information from the TrackHitMeta

@@ -123,8 +123,7 @@ private:
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
-    const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-    const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits);
+    const std::vector<art::Ptr<anab::Calorimetry>> &calo);
 
   void DoTailFit();
 
@@ -141,6 +140,7 @@ private:
   bool fVerbose;
   double fHitRawDigitsTickCollectWidth;
   double fTailFitResidualRange;
+  int fHitRawDigitsWireCollectWidth;
 
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;
@@ -149,6 +149,7 @@ private:
   MetaInfo fMeta;
 
   std::map<Snippet, int> fSnippetCount;
+  std::map<geo::WireID, std::pair<int, int>> fWiresToSave;
 
   // Output
   TTree *fTree;
