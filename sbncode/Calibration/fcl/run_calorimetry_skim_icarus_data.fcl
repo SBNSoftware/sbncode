@@ -1,0 +1,77 @@
+#include "services_common_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "detectorproperties_icarus.fcl"
+
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "particleid.fcl"
+#include "trackareahit_producer.fcl"
+#include "trackhitfilter_module.fcl"
+#include "reco_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  # @table::icarus_detsim_services
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: {
+    fileName: "calorimetryout.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
+  @table::icarus_basic_services
+}
+services.SpaceChargeService: @local::icarus_spacecharge
+
+# For run 5396 -- fix the Geometry config
+# services.Geometry.Name: icarus_splitwires
+
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+
+
+physics:
+{
+  producers:{
+    calorimetryCryoE: @local::calorimetry
+
+    calorimetryCryoW: @local::calorimetry
+  }
+
+  analyzers:
+  {
+    caloskimCryoE: @local::caloskim_cryoe_nodigits
+    caloskimCryoW: @local::cryoskim_cryow_nodigits
+  }
+
+  filters: {}
+
+  runprod: [calorimetryCryoE, calorimetryCryoW] 
+  ana: [caloskimCryoE, caloskimCryoW]
+  trigger_paths: [runprod]
+  stream1:       [ ]
+  end_paths:     [ana]
+}
+
+physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
+
