@@ -338,6 +338,14 @@ void sbn::TrackCaloSkimmer::DoTailFit() {
     }
   }
 
+  // TODO: should we throw an exception here??
+  // 
+  // If there is too much data to fit in the array, throw exception
+  if (fit_rr.size() > MAX_N_FIT_DATA) {
+    throw cet::exception("sbn::TrackCaloSkimmer::DoTailFit: More fitting points required (" 
+      + std::to_string(fit_rr.size()) + ") than available in fit array (" + std::to_string(MAX_N_FIT_DATA) + ").\n");
+  }
+
   // Copy the fit data to the global array
   for (unsigned i = 0; i < fit_rr.size() && i < MAX_N_FIT_DATA; i++) {
     FIT_RR[i] = fit_rr[i];
