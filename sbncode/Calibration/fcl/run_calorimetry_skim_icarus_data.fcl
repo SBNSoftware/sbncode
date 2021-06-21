@@ -60,7 +60,7 @@ physics:
   analyzers:
   {
     caloskimCryoE: @local::caloskim_cryoe_nodigits
-    caloskimCryoW: @local::cryoskim_cryow_nodigits
+    caloskimCryoW: @local::caloskim_cryow_nodigits
   }
 
   filters: {}

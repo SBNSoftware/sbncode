@@ -474,7 +474,7 @@ sbn::HitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
     if (fWiresToSave.count(w)) {
       fWiresToSave.at(w).first = std::min(fWiresToSave.at(w).first, min_tick);
-      fWiresToSave.at(w).second = std::min(fWiresToSave.at(w).second, max_tick);
+      fWiresToSave.at(w).second = std::max(fWiresToSave.at(w).second, max_tick);
     }
     else {
       fWiresToSave[w] = {min_tick, max_tick};
