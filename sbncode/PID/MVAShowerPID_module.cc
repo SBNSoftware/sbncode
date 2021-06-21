@@ -232,6 +232,8 @@ void sbn::MVAShowerPID::beginJob()
     showerTree->Branch("bestPlaneHits", &bestPlaneHits);
     showerTree->Branch("bestPitch", &bestPitch);
     showerTree->Branch("modHitDensity", &modHitDensity);
+    showerTree->Branch("sqrtEnergyDensity", &sqrtEnergyDensity);
+    showerTree->Branch("logEnergyDensity", &logEnergyDensity);
   }
 }
 
