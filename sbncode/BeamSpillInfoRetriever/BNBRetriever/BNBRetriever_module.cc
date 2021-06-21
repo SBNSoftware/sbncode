@@ -155,30 +155,27 @@ void sbn::BNBRetriever::produce(art::Event& e)
     //  bfp_mwr->setValidWindow(86400);  
     //std::cout << "Is this a valid Window " << bfp_mwr->getValidWindow()<<std::endl;
     
-    
-    //  std::vector< std::vector<std::string> > unpacked_M876BB_str;
-    // unpacked_M876BB_str.resize(3);
-    std::vector<std::string> unpacked_M876BB_str;
+    std::vector< std::vector<std::string> > unpacked_MWR_str;
+    std::vector< std::vector<double> >               MWR_times;
+    unpacked_MWR_str.resize(3);
+    MWR_times.resize(3);
+
     std::string packed_data_str; 
-    //  int dev = 0;
     std::vector<std::string> vars = bfp_mwr->GetDeviceList();
-    double t_mwr;
+    double time_for_mwr;
     std::cout << int(vars.size()) << " MWR Devices " << std::endl;
     for (int i = 0; i < int(vars.size()); i++) {
       if(vars[i].empty()) continue;
       
       /// Check the device name and interate the double-vector index
-      // if(vars[i].M875BB) dev = 0;
-      //M876BB;
-      //MMBTBB;
-      //std::cout << vars[i] << std::endl;
+      if(vars[i].find("M875BB") != std::string::npos ) dev = 0;
+      if(vars[i].find("M876BB") != std::string::npos ) dev = 1;
+      if(vars[i].find("MMBTBB") != std::string::npos ) dev = 2;
       
-      
-    //var - > E:M875BB{888:888}.RAW
-      t_mwr = 0;
+      time_for_mwr = 0;
       
       try{
-	std::vector<double> packed_M876BB = bfp_mwr->GetNamedVector((t_previous_event)-35,vars[i],&t_mwr);
+	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-35,vars[i],&time_for_mwr);
 	
 	packed_data_str.clear();
 	packed_data_str += std::to_string(int(t_mwr));
@@ -186,20 +183,21 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	packed_data_str.append(vars[i]);
 	packed_data_str.append(",,");
 	
-	for(int j = 0; j < int(packed_M876BB.size()); j++){
-	  packed_data_str += std::to_string(int(packed_M876BB[j]));
-	  if(j < int(packed_M876BB.size())-1)
+	for(int j = 0; j < int(packed_MWR.size()); j++){
+	  packed_data_str += std::to_string(int(packed_MWR[j]));
+	  if(j < int(packed_MWR.size())-1)
 	    packed_data_str.append(",");
 	}
-	
+
+	// FIXME : Need to correct the vector names and store the times
 	auto unpacked_M876BB_str_temp = mwrdata.unpackMWR(packed_data_str,long(-35));
 	unpacked_M876BB_str.insert(unpacked_M876BB_str.end(),
 				   unpacked_M876BB_str_temp.begin(),
-				 unpacked_M876BB_str_temp.end());
+				   unpacked_M876BB_str_temp.end());
 	
       }
       catch (WebAPIException &we) {
-
+	std::cout << "got exception: " << we.what() << "\n" << std::endl;
       }
       
     }// Iterate over all the multiwire devices
