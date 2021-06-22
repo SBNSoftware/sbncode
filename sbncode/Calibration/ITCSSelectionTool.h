@@ -13,10 +13,10 @@ public:
     fNPreScale(p.get<unsigned>("PreScale", 1)),
     fISelect(0) 
   {
-      // Set ISelect to a random number between 0 and fNPreScale
+      // Set ISelect to a random number
       // so that events get prescaled uniformly across runs
       srand (time(NULL)); // random seed
-      fISelect = rand() % fNPreScale;
+      fISelect = rand();
   }
 
   virtual ~ITCSSelectionTool() noexcept = default;
