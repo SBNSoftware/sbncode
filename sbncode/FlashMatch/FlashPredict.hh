@@ -37,7 +37,7 @@
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
-// #include "lardataobj/RecoBase/Slice.h"
+#include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
 // #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
@@ -46,6 +46,7 @@
 #include "TF1.h"
 #include "TFile.h"
 #include "TH1.h"
+#include "TH2.h"
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
@@ -125,22 +126,29 @@ public:
   };
 
   struct FlashMetrics {
-    double x, x_gl, y, z, rr, pe, unpe, ratio, time;
-    double hypo, hypo_err, hypo_rr, hypo_ratio;
+    double x, x_gl, y, yb, z, zb;
+    double rr, pe, unpe, ratio, time;
+    double h_x, h_xerr, h_xrr, h_xratio;
+    double y_skew, z_skew;
     bool metric_ok;
-    FlashMetrics(double x_, double x_gl_, double y_, double z_, double rr_,
-                 double pe_, double unpe_, double ratio_, double time_,
-                 double hypo_, double hypo_err_, double hypo_rr_,
-                 double hypo_ratio_, bool metric_ok_) :
-      x(x_), x_gl(x_gl_), y(y_), z(z_), rr(rr_), pe(pe_), unpe(unpe_),
-      ratio(ratio_), time(time_), hypo(hypo_), hypo_err(hypo_err_),
-      hypo_rr(hypo_rr_), hypo_ratio(hypo_ratio_), metric_ok(metric_ok_)
+    FlashMetrics(double x_, double x_gl_, double y_, double yb_, double z_, double zb_,
+                 double rr_, double pe_, double unpe_, double ratio_, double time_,
+                 double h_x_, double h_xerr_, double h_xrr_, double h_xratio_,
+                 double y_skew_, double z_skew_,
+                 bool metric_ok_) :
+      x(x_), x_gl(x_gl_), y(y_), yb(yb_), z(z_), zb(zb_),
+      rr(rr_), pe(pe_), unpe(unpe_), ratio(ratio_), time(time_),
+      h_x(h_x_), h_xerr(h_xerr_), h_xrr(h_xrr_), h_xratio(h_xratio_),
+      y_skew(y_skew_), z_skew(z_skew_),
+      metric_ok(metric_ok_)
       {}
     // faulty flashes constructor
     FlashMetrics() :
-      x(0.), x_gl(0.), y(0.), z(0.), rr(0.), pe(0.), unpe(0.),
-      ratio(0.), time(0.), hypo(0.), hypo_err(0.),
-      hypo_rr(0.), hypo_ratio(0.), metric_ok(false) {}
+      x(0.), x_gl(0.), y(0.), yb(0.), z(0.), zb(0.),
+      rr(0.), pe(0.), unpe(0.), ratio(0.), time(0.),
+      h_x(0.), h_xerr(0.), h_xrr(0.), h_xratio(0.),
+      y_skew(0.), z_skew(0.),
+      metric_ok(false) {}
   };
 
 
@@ -165,6 +173,10 @@ private:
                      const int pdgc) const;
   std::tuple<double, double, double, double> hypoFlashX_fits(
     double flash_rr, double flash_ratio) const;
+  std::tuple<double, double, double, double> hypoFlashX_H2(
+    double flash_rr, double flash_ratio) const;
+  std::tuple<double, double> xEstimateAndRMS(
+    double metric_value, const TH2D* metric_h2) const;
   ChargeDigestMap makeChargeDigest(
     const art::Event& evt,
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h);
@@ -197,7 +209,7 @@ private:
     std::unique_ptr<TH1D>& opHitsTimeHist,
     std::unique_ptr<TH1D>& opHitsTimeHistRght,
     std::unique_ptr<TH1D>& opHitsTimeHistLeft) const;
-  bool createOpHitsTimeHist(//ICARUS overload
+  unsigned createOpHitsTimeHist(//ICARUS overload
     const std::vector<recob::OpHit>& opHits,
     std::unique_ptr<TH1D>& opHitsTimeHist) const;
   bool findSimpleFlashes(
@@ -251,8 +263,13 @@ private:
   const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
   const std::unique_ptr<geo::CryostatGeo> fGeoCryo;
-  const int fNBins;
-  const double fDriftDistance;
+  const double fDriftDistance, fXBinWidth;
+  const int fXBins;
+  const std::string fRR_TF1_fit, fRatio_TF1_fit;
+  unsigned fYBins,fZBins;
+  double fYLow, fYHigh, fZLow, fZHigh;
+  double fYSkewThreshold, fZSkewThreshold;
+  const double fYBiasSlope, fZBiasSlope;
   const size_t fNTPC;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
@@ -274,23 +291,25 @@ private:
     double min, max;
     std::unique_ptr<TF1> f;
   };
+  TH2D* fRRH2; TH2D* fRatioH2;
+  const unsigned kMinEntriesInProjection = 100;
   std::array<Fits, 3> fRRFits;
   std::array<Fits, 3> fRatioFits;
   const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
-  // const std::string kPolFit = "pol3";
   const double kEps = 1e-4;
 
   // Tree variables
   double _charge_x_gl, _charge_x,
     _charge_y, _charge_z, _charge_q;
-  double _flash_x, _flash_x_gl, _flash_y, _flash_z,
+  double _flash_x, _flash_x_gl, _flash_y, _flash_yb, _flash_z, _flash_zb,
     _flash_rr, _flash_pe, _flash_unpe, _flash_ratio, _flash_time,
-    _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio;
+    _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio,
+    _y_skew, _z_skew;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  unsigned _evt, _run, _sub; //_slices;
+  unsigned _evt, _run, _sub, _slices;
 
-  std::vector<double> dy_means, dz_means, rr_means, pe_means;
-  std::vector<double> dy_spreads, dz_spreads, rr_spreads, pe_spreads;
+  std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans;
+  std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads;
 
   const bool kNoScr = false;
   const double kNoScrTime = -9999.;
