@@ -397,16 +397,6 @@ namespace caf
       srcalo.charge += dqdx[i] * pitch[i] / constant; /* convert ADC*tick to electrons */
       srcalo.ke += dedx[i] * pitch[i];
     }
-
-  void FillTrackLGCFit(const art::Ptr<sbn::LGCFit> lgc,
-      caf::SRTrack& srtrack,
-      bool allowEmpty)
-  {
-    srtrack.lgcFit.mpv = lgc->mMPV;
-    srtrack.lgcFit.amplitude = lgc->mAmplitude;
-    srtrack.lgcFit.gaussWidth = lgc->mGaussWidth;
-    srtrack.lgcFit.landauWidth = lgc->mLandauWidth;
-    srtrack.lgcFit.chi2 = lgc->mChi2 / lgc->mNDF;
   }
 
   void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,

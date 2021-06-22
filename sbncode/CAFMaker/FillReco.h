@@ -116,10 +116,6 @@ namespace caf
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
 
-  void FillTrackLGCFit(const art::Ptr<sbn::LGCFit> lgc,
-                       caf::SRTrack& srtrack,
-                       bool allowEmpty = false);
-
   void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,
                            caf::SRTrack& srtrack,
                            bool allowEmpty = false);
