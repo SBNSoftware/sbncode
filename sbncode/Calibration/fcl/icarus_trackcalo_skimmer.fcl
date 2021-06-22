@@ -67,8 +67,28 @@ stopping_selection: {
   NumberTimeSamples: 4096
 }
 
+throughgoing_selection: {
+  tool_type: TrackCaloSkimmerSelectStoppingTrack
+  Invert: true
+  PreScale: 1
+  FVInsetMinX: 5
+  FVInsetMaxX: 5
+  FVInsetMinY: 5
+  FVInsetMaxY: 5
+  FVInsetMinZ: 5
+  FVInsetMaxZ: 5
+  MinTimeTickInset: 0
+  MaxTimeTickInset: 0
+  ExpFitRCut: -1
+  FitResidualsCut: -1
+  RequireFit: false
+  EndMediandQdxCut: -1
+  RequireDownwards: false
+  NumberTimeSamples: 4096
+}
+
 a2c_selection: {
-  tool_type: TrackCaloSkimmerSelectAnocde2CathodeTrack
+  tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
   TickCut: 2300
 }
 

@@ -6,11 +6,11 @@
 
 namespace sbn {
 
-class TrackCaloSkimmerSelectAnocde2CathodeTrack: public ITCSSelectionTool {
+class TrackCaloSkimmerSelectAnode2CathodeTrack: public ITCSSelectionTool {
 public:
 
-  TrackCaloSkimmerSelectAnocde2CathodeTrack(const fhicl::ParameterSet &p);
-  ~TrackCaloSkimmerSelectAnocde2CathodeTrack() {}
+  TrackCaloSkimmerSelectAnode2CathodeTrack(const fhicl::ParameterSet &p);
+  ~TrackCaloSkimmerSelectAnode2CathodeTrack() {}
 
   bool Select(const TrackInfo &t) override;
 
@@ -19,16 +19,17 @@ private:
   double fTickCut;
 };
 
-TrackCaloSkimmerSelectAnocde2CathodeTrack::TrackCaloSkimmerSelectAnocde2CathodeTrack(const fhicl::ParameterSet &p):
+TrackCaloSkimmerSelectAnode2CathodeTrack::TrackCaloSkimmerSelectAnode2CathodeTrack(const fhicl::ParameterSet &p):
+  ITCSSelectionTool(p),
   fTickCut(p.get<double>("TickCut"))
 {}
 
-bool TrackCaloSkimmerSelectAnocde2CathodeTrack::Select(const TrackInfo &t) {
+bool TrackCaloSkimmerSelectAnode2CathodeTrack::Select(const TrackInfo &t) {
   // use the collection plane
   return std::max(abs(t.hit_max_time_p2_tpcE - t.hit_min_time_p2_tpcE), abs(t.hit_max_time_p2_tpcW - t.hit_min_time_p2_tpcW)) > fTickCut;
 
 }
 
-DEFINE_ART_CLASS_TOOL(TrackCaloSkimmerSelectAnocde2CathodeTrack)
+DEFINE_ART_CLASS_TOOL(TrackCaloSkimmerSelectAnode2CathodeTrack)
 
 } // end namespace sbn

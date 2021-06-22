@@ -39,6 +39,7 @@ private:
   bool fRequireFit;
   double fEndMediandQdxCut;
   unsigned fNumberTimeSamples;
+  bool fRequireDownwards;
 
   // Time info grabbed from Detector Properties
   int fTickMin;
@@ -57,6 +58,7 @@ private:
 };
 
 TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const fhicl::ParameterSet &p):
+  ITCSSelectionTool(p),
   fFVInsetMinX(p.get<double>("FVInsetMinX")),
   fFVInsetMaxX(p.get<double>("FVInsetMaxX")),
   fFVInsetMinY(p.get<double>("FVInsetMinY")),
@@ -69,7 +71,8 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
   fFitResidualsCut(p.get<double>("FitResidualsCut")),
   fRequireFit(p.get<bool>("RequireFit")),
   fEndMediandQdxCut(p.get<double>("EndMediandQdxCut")),
-  fNumberTimeSamples(p.get<unsigned>("NumberTimeSamples"))
+  fNumberTimeSamples(p.get<unsigned>("NumberTimeSamples")),
+  fRequireDownwards(p.get<bool>("RequireDownwards", true))
 {
   // Get the fiducial volume info
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
@@ -117,7 +120,7 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
 }
 
 bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
-  bool downwards = t.dir_y < 0.;
+  bool downwards = (t.dir_y < 0.) || !fRequireDownwards;
 
   bool end_is_fid = false;
   for (const geo::BoxBoundedGeo &g: fFiducialVolumes) {

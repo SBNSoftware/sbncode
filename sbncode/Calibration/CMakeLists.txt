@@ -51,7 +51,7 @@ simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
 	lardataalg_DetectorInfo
 )
 
-simple_plugin(TrackCaloSkimmerSelectAnocde2CathodeTrack tool
+simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
                             ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}

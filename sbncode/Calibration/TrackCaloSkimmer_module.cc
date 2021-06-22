@@ -356,7 +356,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   // Take the OR of each selection tool
   int i_select = 0;
   for (const std::unique_ptr<sbn::ITCSSelectionTool> &t: fSelectionTools) {
-    if (t->Select(*fTrack)) {
+    if (t->DoSelect(*fTrack)) {
       select = true;
       fTrack->selected = i_select;
       break;
