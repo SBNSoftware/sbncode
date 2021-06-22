@@ -122,9 +122,8 @@ physics.producers.mycafmaker.PFParticleLabel:   "pandoraGaus"
 physics.producers.mycafmaker.RecoShowerLabel:   "SBNShowerGaus"
 physics.producers.mycafmaker.RecoTrackLabel:    "pandoraTrackGaus"
 physics.producers.mycafmaker.TrackCaloLabel:    "pandoraGausCalo"
-physics.producers.mycafmaker.TrackPidLabel:     "pandoraGausPid"
-physics.producers.mycafmaker.SystWeightLabel:   "genieweight"
 physics.producers.mycafmaker.TrackChi2PidLabel: "pandoraGausPid"
+physics.producers.mycafmaker.SystWeightLabel:   "genieweight"
 
 physics.producers.pandoraTrackMCSCryo0.TrackLabel: pandoraTrackGausCryo0
 physics.producers.pandoraTrackMCSCryo1.TrackLabel: pandoraTrackGausCryo1
