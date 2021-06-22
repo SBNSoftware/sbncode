@@ -1,8 +1,0 @@
-BEGIN_PROLOG
-microboone_fluxreader:
-{
-	module_type:	"FluxReaderSource"
-	maxEvents: 0
-	skipEvents: 0
-}
-END_PROLOG
