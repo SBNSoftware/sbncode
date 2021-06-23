@@ -494,6 +494,11 @@ sbn::HitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     hinfo.y = loc.Y();
     hinfo.z = loc.Z();
 
+    geo::Vector_t dir = trk.DirectionAtPoint(thm.Index());
+    hinfo.dir_x = dir.X();
+    hinfo.dir_y = dir.Y();
+    hinfo.dir_z = dir.Z();
+
     // And determine if the Hit is on a Calorimetry object
     for (const art::Ptr<anab::Calorimetry> &c: calo) {
       if (c->PlaneID().Plane != hinfo.plane) continue;
