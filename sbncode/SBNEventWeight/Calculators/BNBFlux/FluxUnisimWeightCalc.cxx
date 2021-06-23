@@ -46,12 +46,14 @@ namespace sbn {
 
 				//GetWeight() returns the final weights as a vector
 				//	each weight calculation is carried out by WeightCalc() function;
+				//inu indicates the ith parameter.
 				std::vector<float> GetWeight(art::Event& e, size_t inu) override;
 
 				//Function for evaluating a specific weight
 				//enu - neutrino energy from simb::MCTruth; 
 				//ptype-  parent particles label: pi, k, k0, mu 
 				//ntype - neutrino flavor label: numu, numubar, nue, nuebar 
+				//uni - the nth universe
 				//noNeg - formulas for weights depending on input histograms.
 				double MicroBooNEWeightCalc(double enu, int ptype, int ntype, int uni, bool noNeg);
 
@@ -59,13 +61,14 @@ namespace sbn {
 				//std::vector<rwgt::NuReweight> rwVector;//reweighter? Delete this, if this is for Genie weights
 
 				std::string fGenieModuleLabel;
-				//  std::string fTuneName;
 
-				//Below are from ubcode; some can actually move to the function that needs it?
 				std::string fMode;//should be under fParameterSet.fRWType, tb fixed CHECK
 				double fScalePos{}; 
 				double fScaleNeg{}; 
+
 				std::vector<double> fWeightArray{};//a vector of random numbers
+				//replaced by std::map<EventWeightParameter, std::vector<float> > fParameterSet.fParameterMap
+				//CHECK, cannot handld the cituation that there are two sets of fWerightArray; i.e. from AddParameter()
 
 				//contents of the input histograms;
 				//[mu/pi/k-/k] x [nue,anue,numu,anumu] x [bin#]
@@ -74,7 +77,6 @@ namespace sbn {
 				double fRWneg[4][4][200];
 				bool PosOnly{false};
 
-//				std::string fWeightCalc{}; // if you want MiniBooNE or MicroBooNE calculator; CHECK, maybe no need this?
 
 				DECLARE_WEIGHTCALC(FluxUnisimWeightCalc)
 		};
@@ -133,17 +135,41 @@ namespace sbn {
 				fParameterSet.AddParameter(pars[i], 1);//parsigmas[i]);
 			}
 
-			std::string mode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
+			fMode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
 
 			int number_of_multisims = pset.get<int>("number_of_multisims", 1);
-			fParameterSet.Configure(GetFullName(), mode, number_of_multisims);//set fParameterSet members
-			fParameterSet.Sample(engine);//random_seed is loade
 
-			fWeightArray.resize(number_of_multisims);
-			//  fWeightArray.resize(fParameterSet.fNuniverses); //same thing, Check
+			//CHECK mode is not recognized.
+			std::cout<<"\nfPSet configure "<<GetFullName()<<","<<fMode<<","<<number_of_multisims<<std::endl;
+			fParameterSet.Configure(GetFullName(), fMode, number_of_multisims);//set fParameterSet members
+			//second input is ReweightType rwtype; how does ReweightType work?
+			std::cout<<"Outcome: "<<fParameterSet.fName<<","<<fParameterSet.fRWType<<","<<fParameterSet.fNuniverses<<std::endl;
+			fParameterSet.Sample(engine);//random_seed is loaded
+
+			//--New version--
+			//fWeightArray = random#*1000
+			//random# taken care in  sbnobj/sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h 
+			
+			for (auto const& it : fParameterSet.fParameterMap) {
+
+				std::cout << GetFullName() << ": Setting up " << it.first.fName << std::endl;
+				fWeightArray.resize(fParameterSet.fNuniverses);
+
+				for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
+					fWeightArray[i] = it.second[i];
+				}
+			}
+			//---
+			//generate random numbers;
+//			fWeightArray.resize(number_of_multisims);
+//			if (fMode == "multisim" )
+//				for (double& weight : fWeightArray) weight = CLHEP::RandGaussQ::shoot(&engine, 0, 1.);
+//			else
+//				for (double& weight : fWeightArray) weight=1.;
+
+
 
 			//2. << Calculator Settings >>
-			//  CHECK, search_path function is not available;
 			cet::search_path sp("FW_SEARCH_PATH");
 
 			/// Grab the histogram related to the CV
@@ -160,6 +186,8 @@ namespace sbn {
 			std::string rwfileneg		= sp.find_file(dataInput2neg);
 			TFile frwneg(Form("%s", rwfileneg.c_str()));
 
+			if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth, use only one variations
+    
 
 			int ptype[4] = {1,2,3,4}; //mu, pi, k0, k
 			int ntype[4] = {1,2,3,4}; //nue, anue, numu, anumu
@@ -167,11 +195,9 @@ namespace sbn {
 			for (int iptyp=0;iptyp<4;iptyp++) {
 				for (int intyp=0;intyp<4;intyp++) {
 					for (int ibin=0;ibin<200;ibin++) { //Grab events from ibin+1 
-
 						fCV[iptyp][intyp][ibin]=(dynamic_cast<TH1F*> (fcv.Get(Form("h5%d%d",ptype[iptyp],ntype[intyp]))))->GetBinContent(ibin+1);
 						fRWpos[iptyp][intyp][ibin]=(dynamic_cast<TH1F*> (frwpos.Get(Form("h5%d%d",ptype[iptyp],ntype[intyp]))))->GetBinContent(ibin+1);
 						fRWneg[iptyp][intyp][ibin]=(dynamic_cast<TH1F*> (frwneg.Get(Form("h5%d%d",ptype[iptyp],ntype[intyp]))))->GetBinContent(ibin+1);
-
 					}// energy bin
 				}//   type of neutrinos
 			}//     type of hadron parent 
@@ -184,8 +210,6 @@ namespace sbn {
 			fScalePos 	= pset.get<double>("scale_factor_pos");
 			fScaleNeg 	= pset.get<double>("scale_factor_neg");
 
-//			fWeightCalc	= pset.get<std::string>("weight_calculator");//CHECK, no need this?
-
 		}
 
 		//K: New version requires:
@@ -195,7 +219,7 @@ namespace sbn {
 		// - boolean (true - identical in histograms?)
 
 		std::vector<float> FluxUnisimWeightCalc::GetWeight(art::Event& e, size_t inu) {
-			std::vector<float> weights(fWeightArray.size(), 1);
+
 
 			//--- Copy over from ubcode
 			//
@@ -221,6 +245,8 @@ namespace sbn {
 			//	weight.resize(mclist.size());
 
 			// No neutrinos in this event
+			std::cout<<"CHECK mclist size is "<<mclist.size()<<std::endl;
+			std::vector<float> weights(fWeightArray.size(), 0);
 			if(mclist.size() == 0) return weights;
 
 			//Iterate through each neutrino in the event
@@ -234,43 +260,42 @@ namespace sbn {
 
 			// Discover the neutrino parent type
 			//     This contains the neutrino's parentage information
-			if (      fluxlist[inu].fptype==13  || fluxlist[inu].fptype==-13  ) ptype = 0;
-			else if ( fluxlist[inu].fptype==211 || fluxlist[inu].fptype==-211 ) ptype = 1;
-			else if ( fluxlist[inu].fptype==130                               ) ptype = 2;
-			else if ( fluxlist[inu].fptype==321 || fluxlist[inu].fptype==-321 ) ptype = 3;
+			if (      fluxlist[inu].fptype==13  || fluxlist[inu].fptype==-13  ) ptype = 0;//mu
+			else if ( fluxlist[inu].fptype==211 || fluxlist[inu].fptype==-211 ) ptype = 1;//pi
+			else if ( fluxlist[inu].fptype==130                               ) ptype = 2;//K0
+			else if ( fluxlist[inu].fptype==321 || fluxlist[inu].fptype==-321 ) ptype = 3;//K
 			else {
 				throw cet::exception(__FUNCTION__) << GetName()<<"::Unknown ptype "<<fluxlist[0].fptype<< std::endl;
 			}
 
 			// Discover the neutrino type
 			//     This contains the neutrino's flavor information
-			if (      fluxlist[inu].fntype== 12  ) ntype=0;
-			else if ( fluxlist[inu].fntype==-12  ) ntype=1;
-			else if ( fluxlist[inu].fntype== 14  ) ntype=2;
-			else if ( fluxlist[inu].fntype==-14  ) ntype=3;
+			std::cout<<"CHECK current fluxlist gives fntype = "<<fluxlist[inu].fntype<<std::endl;
+			if (      fluxlist[inu].fntype== 12  ) ntype=0;//nue
+			else if ( fluxlist[inu].fntype==-12  ) ntype=1;//nuebar
+			else if ( fluxlist[inu].fntype== 14  ) ntype=2;//numu
+			else if ( fluxlist[inu].fntype==-14  ) ntype=3;//numubar
 			else {
-				throw cet::exception(__FUNCTION__) << GetName()<<"::Unknown ntype "<<fluxlist[0].fntype<< std::endl;
+				throw cet::exception(__FUNCTION__) << GetName()<<"::Unknown ntype "<<fluxlist[inu].fntype<< std::endl;
 			}
 
 			// Collect neutrino energy
 			//CHECK cant get mclist info; same error as fluxlist
 			double enu= mclist[inu].GetNeutrino().Nu().E();
-			std::cout<<"CHECK we got enu = "<<enu<<std::endl;
-			std::cout<<"CHECK we got ntype = "<<ntype<<std::endl;
-			std::cout<<"CHECK we got ptype = "<<ptype<<std::endl;
+//			std::cout<<"CHECK we got enu = "<<enu<<std::endl;
+//			std::cout<<"CHECK we got ntype = "<<ntype<<std::endl;
+//			std::cout<<"CHECK we got ptype = "<<ptype<<std::endl;
 
 			//Let's make a weights based on the calculator you have requested 
-//			std::cout<<__LINE__<<" CHECK multisim? "<<fMode<<std::endl;
 			if(fMode=="multisim"){//continue calculation with multisim
-				//CHECK				if((fParameterSet.GetType())==("multisim") ){//continue calculation with multisim}
+				std::cout<<"fMode in"<<std::endl;
 				for (size_t i=0;i<weights.size();i++) {
-
 					weights[i]=MicroBooNEWeightCalc(enu, ptype, ntype, i, PosOnly);
-
 				}//Iterate through the number of universes      
 			}
 
-			std::cout<<"\n\n\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
+			std::cout<<"Working on inu:"<<inu<<" with weight "<<weights[inu]<<" size "<<weights.size()<<std::endl;
+			std::cout<<"\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
 
 			//--- Copy over from ubcode
 
@@ -278,26 +303,14 @@ namespace sbn {
 		}
 
 		double FluxUnisimWeightCalc::MicroBooNEWeightCalc(double enu, int ptype, int ntype, int uni, bool noNeg)
-		{
-
-			// 
-			//  Largely built off the MiniBooNE code 
-			//  but this is intended to expand beyond it
-			//
-			//  Edits from MiniBooNE code:
-			//
-			//  JZ (6/2017) : Remove max weight, set to max_limit of a double
-			//
+		{//same copy from the FluxUnisimWeightCalc.cxx in ubsim/EventWeight/
+		//Keng Lin June 2021
 
 			double weight = 1;
 
 			int bin = int(enu/0.05); //convert energy (in GeV) into 50 MeV bin
 
 
-			//  This is based on:
-			//    http://cdcvs0.fnal.gov/cgi-bin/public-cvs/cvsweb-public.cgi/~checkout~/...
-			//          miniboone/AnalysisFramework/MultisimMatrix/src/MultisimMatrix_initialise.F?rev=1.18;content-type=text%2Fplain
-			//
 			//  pseudocode:
 			//   Scaled Reweighting = ScaleFactor * Reweighting + ( 1 - ScaleFactor) * Central Value
 			//
@@ -307,10 +320,6 @@ namespace sbn {
 			double scaled_neg = fScaleNeg*fRWneg[ptype][ntype][bin] + 
 				(1-fScaleNeg)*fCV[ptype][ntype][bin];
 
-			// This is based on:
-			//    http://cdcvs0.fnal.gov/cgi-bin/public-cvs/cvsweb-public.cgi/~checkout~/...
-			//           miniboone/AnalysisFramework/MultisimMatrix/src/MultisimMatrix_getWeight.F?rev=1.41;content-type=text%2Fplain
-			//
 			//  pseudocode:
 			//   Check value of Random Number array [RAND] for this universe [uni] such that:
 			//   If RAND[uni] > 0
@@ -328,8 +337,8 @@ namespace sbn {
 				weight = 1 + (syst);
 
 				if(scaled_pos == 0) weight = 1;
-
 			}
+
 			else if(noNeg == true){      
 				double syst = fWeightArray[uni]*( (2 - (scaled_pos/fCV[ptype][ntype][bin])) - 1);           
 				weight = 1 - (syst);      
@@ -353,9 +362,10 @@ namespace sbn {
 				std::cout << "UniSim " <<  fParameterSet.fName << " : Failed to get a finite weight" << std::endl;      
 				weight = 30;}
 
-			if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;
-			if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;
+			if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;//nue from mu or pi
+			if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;//numu from pi or k
 
+			std::cout<<weight<<" ";
 			return weight;
 
 		}
