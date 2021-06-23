@@ -112,6 +112,10 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   geo::Point_t end = sbn::TwoStubEndPosition(fPlaneTransform, best, othr, geo, sce, dprop);
   ret.stub.end = TVector3(end.X(), end.Y(), end.Z());
 
+  // Save the EField at the start and end point
+  ret.stub.efield_vtx = sbn::GetEfield(dprop, sce, geo::Point_t(ret.stub.vtx), ret.vhit_hit->WireID(), false);
+  ret.stub.efield_end = sbn::GetEfield(dprop, sce, geo::Point_t(ret.stub.end), ret.vhit_hit->WireID(), false);
+
   // In all the plane info stuff put the best stub first
   ret.stub.plane.push_back(best.stub.plane.front());
   ret.stub.plane.push_back(othr.stub.plane.front());

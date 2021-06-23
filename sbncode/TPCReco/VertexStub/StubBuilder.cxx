@@ -256,6 +256,10 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     stub.hit_w.push_back(vhit.wire.Wire);
     stub.vtx_w.push_back(vertex_w);
 
+    // Save the EField at the start and end point
+    stub.efield_vtx = sbn::GetEfield(dprop, sce, vertex.position(), vhit_hit.WireID(), false);
+    stub.efield_end = sbn::GetEfield(dprop, sce, geo::Point_t(vhit.spXYZ), vhit_hit.WireID(), false);
+
     return stub;
 }
 
