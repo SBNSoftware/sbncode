@@ -10,11 +10,11 @@ using namespace std;
 
 namespace sbn{
 
-std::vector<std::string> MWRData::unpackMWR(std::string packed_data, long timeoffset)
+  std::vector< std::vector < int > > MWRData::unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset)
 {
 
-  std::vector<std::string> unpacked_data;
-
+  std::vector<std::vector<int> > unpacked_data;
+  unpacked_data.resize(4);
   short data[444];
 
   std::vector<std::string> row(0);
@@ -26,21 +26,13 @@ std::vector<std::string> MWRData::unpackMWR(std::string packed_data, long timeof
     string devname=row[1].substr(0,8);
     for (int idev=0;idev<4;idev++) {
       mwrpulse_t mwr=getMWRdata(data,idev);
-      std::stringstream ss;
-      ss<< std::to_string(mwr.sheader.timesec*1000.+mwr.sheader.timensec/1000000.+timeoffset)<<","<<devname<<",";
+      time_stamp.push_back(mwr.sheader.timesec+mwr.sheader.timensec/1000000000.+timeoffset);
       for (int ich=0;ich<48;ich++) {
-	ss<<","<<std::to_string(mwr.hor[ich]);
+	unpacked_data[idev].push_back(mwr.hor[ich]);
       }
       for (int ich=0;ich<48;ich++) {
-	ss<<","<<std::to_string(mwr.ver[ich]);
+	unpacked_data[idev].push_back(mwr.ver[ich]);
       }
-      ss<< ", "<<mwr.sheader.boosterevent
-	<< ", "<<mwr.sheader.mievent
-	<< ", "<<mwr.sheader.hz15micnt
-	<< ", "<<mwr.sheader.delta1f
-	<< ", "<<mwr.sheader.pulsemi
-	<< ", "<<mwr.sheader.pulsesc;
-      unpacked_data.push_back(ss.str());
     }
   } else {
     cout <<"Bad data!"<<endl;

@@ -32,7 +32,7 @@ class MWRData
   mwrpulse_t getMWRdata(short* data, int nblock);
   
  public:
-  std::vector<std::string> unpackMWR(std::string packed_data, long timeoffset=0);
+  std::vector< std::vector < int > > unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset=0);
 };
 }
 
