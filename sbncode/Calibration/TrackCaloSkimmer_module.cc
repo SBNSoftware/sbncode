@@ -206,10 +206,15 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 }
 
 // helpers
+
+// Returns the minimum hit time for hits in either TPC E (TPCE==true)
+// or TPC W (TPCE==false)
 float HitMinTime(const std::vector<sbn::HitInfo> &hits, bool TPCE) {
   double min = -1;
 
   for (const sbn::HitInfo &h: hits) {
+    // TODO: what about SBND?
+    // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
     bool hit_is_TPCE = h.tpc <= 1;
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (min < 0. || h.time < min) min = h.time;
@@ -219,10 +224,14 @@ float HitMinTime(const std::vector<sbn::HitInfo> &hits, bool TPCE) {
   return min;
 }
 
+// Returns the maximum hit time for hits in either TPC E (TPCE==true)
+// or TPC W (TPCE==false)
 float HitMaxTime(const std::vector<sbn::HitInfo> &hits, bool TPCE) {
   double max = -1;
 
   for (const sbn::HitInfo &h: hits) {
+    // TODO: what about SBND?
+    // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
     bool hit_is_TPCE = h.tpc <= 1;
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (max < 0. || h.time > max) max = h.time;
