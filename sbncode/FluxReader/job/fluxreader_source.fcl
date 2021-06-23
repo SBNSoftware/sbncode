@@ -1,0 +1,63 @@
+# Driver fcl file for reading in dk2nu files
+# this one comes from MicroBooNE
+
+#include "services_microboone.fcl"
+#include "eventweight_microboone.fcl"
+#include "seedservice_microboone.fcl"
+
+process_name: FluxReader
+
+services:
+{
+  TFileService: { fileName: "flux_hist.root" }
+  RandomNumberGenerator: {} #ART native random number generator
+  NuRandomService:   @local::microboone_seedservice
+  TimeTracker:       {}
+  FileCatalogMetadata:     @local::art_file_catalog_mc
+}
+
+
+source:
+{
+  fileNames:        []
+  module_type:	    FluxReader
+  skipEvents:       0
+  maxEvents:        -1
+  inputType:        "gsimple"
+  nBins:            200
+  Elow:             0
+  Ehigh:            10
+  SelfIncrementRun: false
+}
+
+outputs:
+{
+ out1:
+  {
+   module_type: RootOutput
+   fileName:    "fluxreader.root"
+   compressionLevel: 1
+   dataTier:    "simulated"
+  }
+}
+
+physics:
+{
+ producers:
+ {
+   eventweight:    @local::microboone_eventweight
+   rns:            { module_type: "RandomNumberSaver" }
+ }
+ analyzers:
+ {
+ }
+ ana: []
+
+ simulate: [ rns, eventweight ]
+ stream1:   [ out1 ]
+ end_paths: [ stream1 ]
+}
+
+physics.producers.eventweight.genie_module_label: flux
+physics.producers.eventweight.weight_functions: [piplus, piminus, kplus, kzero, kminus, horncurrent, pioninexsec, nucleontotxsec, nucleonqexsec, nucleoninexsec, pionqexsec, piontotxsec, expskin]
+
