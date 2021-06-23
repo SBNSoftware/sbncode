@@ -95,7 +95,7 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
 
   // Combine the hits
   ret.hits.insert(ret.hits.end(), A.hits.begin(), A.hits.end());
-  ret.hits.insert(ret.hits.end(), A.hits.begin(), A.hits.end());
+  ret.hits.insert(ret.hits.end(), B.hits.begin(), B.hits.end());
 
   // Figure out which is the "better" stub-plane -- probably the one with the lower pitch
   const sbn::StubInfo &best = SortStubs(A, B) ? A : B;
