@@ -70,7 +70,7 @@ stopping_selection: {
 throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
   Invert: true
-  PreScale: 1
+  PreScale: 10
   FVInsetMinX: 5
   FVInsetMaxX: 5
   FVInsetMinY: 5
@@ -93,8 +93,8 @@ a2c_selection: {
 }
 
 caloskim_cryow_nodigits_goldentracks: @local::caloskim_cryow_nodigits
-caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection]
+caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 caloskim_cryoe_nodigits_goldentracks: @local::caloskim_cryoe_nodigits
-caloskim_cryoe_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection]
+caloskim_cryoe_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 
 END_PROLOG
