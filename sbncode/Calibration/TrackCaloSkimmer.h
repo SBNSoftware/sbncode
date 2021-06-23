@@ -138,6 +138,7 @@ private:
   bool fRequireT0;
   bool fDoTailFit;
   bool fVerbose;
+  bool fSilenceMissingDataProducts;
   double fHitRawDigitsTickCollectWidth;
   double fTailFitResidualRange;
   int fHitRawDigitsWireCollectWidth;

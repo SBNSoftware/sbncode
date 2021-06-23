@@ -65,6 +65,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fRequireT0 = p.get<bool>("RequireT0", false);
   fDoTailFit = p.get<bool>("DoTailFit", true);
   fVerbose = p.get<bool>("Verbose", false);
+  fSilenceMissingDataProducts = p.get<bool>("SilenceMissingDataProducts", false);
   fHitRawDigitsTickCollectWidth = p.get<double>("HitRawDigitsTickCollectWidth", 50.);
   fHitRawDigitsWireCollectWidth = p.get<int>("HitRawDigitsWireCollectWidth", 5);
   fTailFitResidualRange = p.get<double>("TailFitResidualRange", 5.);
@@ -119,7 +120,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   catch(...) {
       std::cout << "PFP's with tag: " << fPFPproducer << " not present.\n";
       // Real data may have missing products -- just ignore the event
-      if (e.isRealData()) return;
+      if (fSilenceMissingDataProducts) return;
       else throw;
   }
 

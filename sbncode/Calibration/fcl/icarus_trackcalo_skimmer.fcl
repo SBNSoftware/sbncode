@@ -29,6 +29,7 @@ caloskim_cryoe: {
   RequireT0: true
   HitRawDigitsTickCollectWidth: 50
   DoTailFit: false
+  SilenceMissingDataProducts: true
   SelectionTools: []
 }
 
@@ -42,6 +43,7 @@ caloskim_cryow: {
   RequireT0: true
   HitRawDigitsTickCollectWidth: 50
   DoTailFit: false
+  SilenceMissingDataProducts: true
   SelectionTools: []
 }
 
