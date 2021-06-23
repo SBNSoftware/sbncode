@@ -87,7 +87,7 @@ sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   raw_data_label_(p.get<std::string>("raw_data_label")),
   fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
   bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
-  bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow")))
+  bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("MWR_TimeWindow")))
 {
  
   // how close in time does the spill time have to be from the DAQ time (in seconds).
@@ -95,7 +95,8 @@ sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   // If these are too small then the time jitter in devices means we miss good data 
   bfp->set_epsilon(0.02); //20 ms, this was tuned by hand and compared to IFBeamDB times  
   
-  bfp_mwr->set_epsilon(100); // TO BE TUNED!
+  bfp_mwr->set_epsilon(0.5); // TO BE TUNED!
+  bfp_mwr->setValidWindow(86400);  
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   TotalBeamSpills = 0;
 }
@@ -147,60 +148,96 @@ void sbn::BNBRetriever::produce(art::Event& e)
     // These lines get everything primed within the IFBeamDB
     //   They seem redundant but they are needed
     try{auto cur_vec_temp = bfp->GetNamedVector((t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
-    try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_previous_event)-35,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
+    try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
 
 
-    // I have to FIX the MultiWireReadouts to....work...
-    
-    //  bfp_mwr->setValidWindow(86400);  
-    //std::cout << "Is this a valid Window " << bfp_mwr->getValidWindow()<<std::endl;
-    
-    std::vector< std::vector<std::string> > unpacked_MWR_str;
-    std::vector< std::vector<double> >               MWR_times;
-    unpacked_MWR_str.resize(3);
+    //The multiwire chambers provide their
+    // data in a vector format but we'll have 
+    // to sort through it in std::string format
+    // to correctly unpack it
+    std::vector< std::vector< std::vector< int > > >  unpacked_MWR;
+    std::vector< std::vector< double> > MWR_times;
+    unpacked_MWR.resize(3);
     MWR_times.resize(3);
-
     std::string packed_data_str; 
+    
+    //Create a list of all the MWR devices with their different
+    // memory buffer increments 
+    // generally in the format: "E:<Device>.{Memory Block}"
     std::vector<std::string> vars = bfp_mwr->GetDeviceList();
-    double time_for_mwr;
-    std::cout << int(vars.size()) << " MWR Devices " << std::endl;
-    for (int i = 0; i < int(vars.size()); i++) {
-      if(vars[i].empty()) continue;
-      
-      /// Check the device name and interate the double-vector index
-      if(vars[i].find("M875BB") != std::string::npos ) dev = 0;
-      if(vars[i].find("M876BB") != std::string::npos ) dev = 1;
-      if(vars[i].find("MMBTBB") != std::string::npos ) dev = 2;
-      
-      time_for_mwr = 0;
-      
-      try{
-	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-35,vars[i],&time_for_mwr);
-	
-	packed_data_str.clear();
-	packed_data_str += std::to_string(int(t_mwr));
-	packed_data_str.append(",");
-	packed_data_str.append(vars[i]);
-	packed_data_str.append(",,");
-	
-	for(int j = 0; j < int(packed_MWR.size()); j++){
-	  packed_data_str += std::to_string(int(packed_MWR[j]));
-	  if(j < int(packed_MWR.size())-1)
-	    packed_data_str.append(",");
-	}
+    
+    // Tracking the time from the IFBeamDB
+    double time_for_mwr;    
+    
+    // this is an iterator to track which of the 
+    // three devices we will be working with
+    int dev = 0;
+    
+    // The MWR devices are annoying and have confusing buffer
+    // what we'll do is sort through all of them first and then 
+    // match them to the closest spills in time
+    // 
+    int t_steps = int(fabs((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
+    
+    for(int t = 0; t < t_steps; t++){//Iterate through time increments
+      for (int i = 0; i < int(vars.size()); i++) {// Iterate through the devices
 
-	// FIXME : Need to correct the vector names and store the times
-	auto unpacked_M876BB_str_temp = mwrdata.unpackMWR(packed_data_str,long(-35));
-	unpacked_M876BB_str.insert(unpacked_M876BB_str.end(),
-				   unpacked_M876BB_str_temp.begin(),
-				   unpacked_M876BB_str_temp.end());
+	//Make sure we have a device
+	if(vars[i].empty()) continue;
 	
-      }
-      catch (WebAPIException &we) {
-	std::cout << "got exception: " << we.what() << "\n" << std::endl;
-      }
-      
-    }// Iterate over all the multiwire devices
+	/// Check the device name and interate the double-vector index
+	if(vars[i].find("M875BB") != std::string::npos ) dev = 0;
+	else if(vars[i].find("M876BB") != std::string::npos ) dev = 1;
+	else if(vars[i].find("MMBTBB") != std::string::npos ) dev = 2;
+	else{continue;}
+
+	time_for_mwr = 0;
+	
+	try{
+	  //Pull the MWR data for the device
+	  // these data are "packed"
+	  std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-fTimePad+double(0.5*t),vars[i],&time_for_mwr);
+
+	  //We'll convert this into a format
+	  // that we can unpack doubles >> strings
+	  //
+	  packed_data_str.clear();
+	  packed_data_str += std::to_string(int(time_for_mwr));
+	  packed_data_str.append(",");
+	  packed_data_str.append(vars[i]);
+	  packed_data_str.append(",,");
+	  
+	  for(int j = 0; j < int(packed_MWR.size()); j++){
+	    packed_data_str += std::to_string(int(packed_MWR[j]));
+	    if(j < int(packed_MWR.size())-1)
+	      packed_data_str.append(",");
+	  }
+	  
+	  // Use Zarko's unpacking function to turn this into consumeable data
+	  std::vector<double> MWR_times_temp;
+
+	  // There is a 35 ms offset between the toriod and the MWR times
+	  //   we'll just remove that here to match to the spill times
+	  std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,-0.035);
+	  
+	  //There are four events that are packed into one MWR IFBeam entry
+	  for(int s = 0; s < int(unpacked_MWR_temp.size()); s++){
+	  
+	    // If this entry has a unique time them store it for later	  
+	    if(std::find(MWR_times[dev].begin(), MWR_times[dev].end(), MWR_times_temp[s]) == MWR_times[dev].end()){
+	      unpacked_MWR[dev].push_back(unpacked_MWR_temp[s]);
+	      MWR_times[dev].push_back(MWR_times_temp[s]);
+	    }//check for unique time 
+
+	  }//Iterate through the unpacked events
+	}//try
+	catch (WebAPIException &we) {
+	  //Ignore when we can't find the MWR devices
+	  //   they don't always report and the timing of them can be annoying
+	 
+	}//catch
+      }// Iterate over all the multiwire devices
+    }// Iterate over all times
     
 
     //Here we will start collecting all the other beamline devices
@@ -211,7 +248,9 @@ void sbn::BNBRetriever::produce(art::Event& e)
     // We'll keep track of how many of these spills match to our 
     // DAQ trigger times
     int spill_count = 0;
-    
+    std::vector<int> matched_MWR;
+    matched_MWR.resize(3);
+
     // Iterating through each of the beamline times
     for (size_t i = 0; i < times_temps.size(); i++) {
 
@@ -220,6 +259,46 @@ void sbn::BNBRetriever::produce(art::Event& e)
       // which is half the Booster Rep Rate
       if(times_temps[i] > (t_current_event+fTimePad)){continue;}
       if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
+
+      //Loop through the multiwire devices:
+      
+      for(int dev = 0; dev < int(MWR_times.size()); dev++){
+
+	//Loop through the multiwire times:
+	double Tdiff = 1000000000.;
+	matched_MWR[dev] = 0;
+	bool best_match = false;
+	for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
+	  
+	  //found a candidate match! 
+	  if(fabs((MWR_times[dev][mwrt] - times_temps[i])) < Tdiff){
+	    best_match = true;
+	    
+	    //Check for a better match...
+	    for (size_t j = 0; j < times_temps.size(); j++) {
+	      if( j == i) continue;
+	      if(times_temps[j] > (t_current_event+fTimePad)){continue;}
+	      if(times_temps[j] <= (t_previous_event-fTimePad)){continue;}
+	      
+	      //is there a better match later in the spill sequence
+	      if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
+		 fabs((MWR_times[dev][mwrt] - times_temps[i]))){
+		//we can have patience...
+		best_match = false;
+		break;
+	      }	     
+	    }//end better match check
+
+	    //Verified best match!
+	    if(best_match == true){
+	      matched_MWR[dev] = mwrt;
+	      Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
+	    }
+	  }//Find matches between 
+	}//end loop over MWR times 
+	
+      }//end loop over MWR devices
+
 
       //Great we found a matched spill! Let's count it
       spill_count++;
@@ -282,7 +361,14 @@ void sbn::BNBRetriever::produce(art::Event& e)
       beamInfo.THCURR = THCURR;
       beamInfo.spill_time_s = time_closest_int;
       beamInfo.spill_time_ns = time_closest_ns;    
-      
+
+      beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
+      beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - times_temps[i]);
+      beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
+      beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - times_temps[i]);
+      beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
+      beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - times_temps[i]);
+
       fOutbeamInfos.push_back(beamInfo);
       // We do not write these to the art::Events because 
       // we can filter events but want to keep all the POT 
