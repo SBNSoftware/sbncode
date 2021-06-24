@@ -2,9 +2,9 @@
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
 sbn::PlaneTransform::PlaneTransform(fhicl::ParameterSet const& p, const geo::GeometryCore *geo):
-  m_thetaU(geo->Plane(0, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
-  m_thetaV(geo->Plane(1, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
-  m_thetaW(geo->Plane(2, 0, 0).ThetaZ() - - 0.5*::util::pi<>()),
+  m_thetaU(fmod(geo->Plane(0, 0, 0).ThetaZ(), ::util::pi<>()) - 0.5*::util::pi<>()),
+  m_thetaV(fmod(geo->Plane(1, 0, 0).ThetaZ(), ::util::pi<>()) - 0.5*::util::pi<>()),
+  m_thetaW(fmod(geo->Plane(2, 0, 0).ThetaZ(), ::util::pi<>()) - 0.5*::util::pi<>()),
   m_sinU(sin(m_thetaU)),
   m_sinV(sin(m_thetaV)),
   m_sinW(sin(m_thetaW)),
@@ -88,7 +88,7 @@ double sbn::PlaneTransform::YZtoW(const double y, const double z) const
 int sbn::PlaneTransform::PlanetoUVW(const geo::PlaneID &p) const {
   double eps = 1e-5;
 
-  double theta = fGeo->Plane(p).ThetaZ() - 0.5*::util::pi<>();
+  double theta = fmod(fGeo->Plane(p).ThetaZ(), ::util::pi<>()) - 0.5*::util::pi<>();
 
   if (abs(theta - m_thetaU) < eps) return 0; 
   if (abs(theta - m_thetaV) < eps) return 1;
