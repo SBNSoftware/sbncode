@@ -35,6 +35,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "../LArRecoProducer/LArReco/TrackMomentumCalculator.h"
 
 #include "sbncode/TPCReco/VertexStub/PlaneTransform.h"
@@ -122,6 +123,7 @@ private:
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   trkf::TrackMomentumCalculator fRangeCalculator;
   sbn::PlaneTransform fPlaneTransform;
+  bool fCorrectSCE;
 
   // output
   TTree *_tree;
@@ -254,6 +256,7 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
     fFiducialInset({p.get<float>("xmin"), p.get<float>("xmax"), p.get<float>("ymin"), p.get<float>("ymax"), p.get<float>("zmin"), p.get<float>("zmax")}), 
     fRangeCalculator(p.get<float>("MinTrackLength", 0.1)),
     fPlaneTransform(p.get<fhicl::ParameterSet>("PlaneTransform"), lar::providerFrom<geo::Geometry>())
+    fCorrectSCE(p.get<bool>("CorrectSCE"))
 {
   fIEvt = 0;
   fIFile = 0;
@@ -664,7 +667,7 @@ void sbn::NuVertexChargeTree::FillStubs(
     const std::vector<art::Ptr<simb::MCParticle>> &trueParticles) {
 
   // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = nullptr;
+  const spacecharge::SpaceCharge *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
       
   for (unsigned i_stub = 0; i_stub < stubs.size(); i_stub++) {
     const sbn::Stub &stub = stubs[i_stub].stub;
@@ -876,7 +879,9 @@ void sbn::NuVertexChargeTree::FillNeutrino(const simb::MCTruth &nu,
 
   art::ServiceHandle<cheat::BackTrackerService> backtracker;
   // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = nullptr;
+  const spacecharge::SpaceCharge *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+  // If we are not correcting for SCE, then blank out the service
+  if (!fCorrectSCE) sce = nullptr;
 
   TVector3 vpos(vert.position().X(), vert.position().Y(), vert.position().Z());
 

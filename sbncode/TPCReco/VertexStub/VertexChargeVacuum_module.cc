@@ -69,6 +69,7 @@ private:
   art::InputTag fTrackLabel;
   float fHitVacuumRadius;
   bool fUseTrackSPRecovery;
+  bool fCorrectSCE;
 
   // private data 
   calo::CalorimetryAlg fCaloAlg;
@@ -81,6 +82,7 @@ sbn::VertexChargeVacuum::VertexChargeVacuum(fhicl::ParameterSet const& p)
     fTrackLabel(p.get<std::string>("TrackLabel", "pandoraTrack")),
     fHitVacuumRadius(p.get<float>("HitVacuumRadius")),
     fUseTrackSPRecovery(p.get<bool>("UseTrackSPRecovery")),
+    fCorrectSCE(p.get<bool>("CorrectSCE")),
     fCaloAlg(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
 
@@ -211,6 +213,8 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+  // If we are not correcting for SCE, then blank out the service
+  if (!fCorrectSCE) sce = nullptr;
 
   // get the PFParticle's and the associated data
   art::Handle<std::vector<recob::PFParticle>> pfparticle_handle;

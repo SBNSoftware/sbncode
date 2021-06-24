@@ -90,19 +90,10 @@ double sbn::GetPitch(
     loc_w = sbn::GetLocationAtWires(sce, geo, loc, tpc, xsign);
   }
 
-  geo::Vector_t dirOffsets = {0., 0., 0.};
-  geo::Vector_t locOffsets = {0., 0., 0.};
-  if (sce && sce->EnableCalSpatialSCE() && correct_sce) {
-    dirOffsets = sce->GetCalPosOffsets(loc_w + pitch * dir_w, tpc.TPC);
-    locOffsets = sce->GetCalPosOffsets(loc_w, tpc.TPC);
-  }
+  geo::Point_t locw_traj = sbn::GetLocation(sce, loc_w, tpc, xsign);
+  geo::Point_t locw_pdx_traj = sbn::GetLocation(sce, loc_w + pitch * dir_w, tpc, xsign);
 
-  // const TVector3 &dir_corr {pitch*dir_w.X() + (dirOffsets.X() - locOffsets.X()),  
-  //                           pitch*dir_w.Y() + (dirOffsets.Y() - locOffsets.Y()), pitch*dir_w.Z() + (dirOffsets.Z() - locOffsets.Z())};
-
-  geo::Vector_t const dir_corr = pitch*dir_w + dirOffsets - locOffsets;
-
-  pitch = dir_corr.R();
+  pitch = (locw_traj - locw_pdx_traj).R();
 
   return pitch;
 }

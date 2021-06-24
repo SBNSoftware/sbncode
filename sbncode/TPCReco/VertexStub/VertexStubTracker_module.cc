@@ -80,6 +80,7 @@ private:
   art::InputTag fVertexChargeLabel;
   float fdQdxCut;
   float fOneWiredQdxCut;
+  bool fCorrectSCE;
   sbn::StubBuilder fStubBuilder;
   std::vector<std::unique_ptr<sbn::IStubMerge>> fStubMergeTools;
 };
@@ -91,6 +92,7 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
     fVertexChargeLabel(p.get<art::InputTag>("VertexChargeLabel", "vhit")),
     fdQdxCut(p.get<float>("dQdxCut")),
     fOneWiredQdxCut(p.get<float>("OneWiredQdxCut")),
+    fCorrectSCE(p.get<bool>("CorrectSCE")),
     fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
   // load the tools
@@ -114,8 +116,9 @@ void sbn::VertexStubTracker::produce(art::Event& e)
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
-  // TODO: fix -- for now, use a null space-charge service
-  const spacecharge::SpaceCharge *sce = nullptr;
+  const spacecharge::SpaceCharge *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+  // If we are not correcting for SCE, then blank out the service
+  if (!fCorrectSCE) sce = nullptr;
 
   // output data products
   std::unique_ptr<std::vector<sbn::Stub>> outStubs(new std::vector<sbn::Stub>);
