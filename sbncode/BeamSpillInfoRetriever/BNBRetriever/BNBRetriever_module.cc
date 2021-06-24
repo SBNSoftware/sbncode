@@ -250,6 +250,28 @@ void sbn::BNBRetriever::produce(art::Event& e)
     int spill_count = 0;
     std::vector<int> matched_MWR;
     matched_MWR.resize(3);
+    
+
+    // Need to handle the first event in a run differently
+    if(e.event() == 1){
+
+      //We'll remove the spills after our event
+      int spills_after_our_target = 0;
+      // iterate through all the spills to find the 
+      // spills that are after our triggered event
+      for (size_t i = 0; i < times_temps.size(); i++) {       
+	if(times_temps[i] > (t_current_event+fTimePad)){
+	  spills_after_our_target++;
+	}
+      }//end loop through spill times 	 
+      
+      // Remove the spills after our trigger
+      times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
+
+      // Remove the spills before the start of our Run
+      times_temps.erase(times_temps.begin(),times_temps.end()-number_of_gates_since_previous_event);
+
+    }//end fix for "first event"
 
     // Iterating through each of the beamline times
     for (size_t i = 0; i < times_temps.size(); i++) {
@@ -257,8 +279,11 @@ void sbn::BNBRetriever::produce(art::Event& e)
       // Only continue if these times are matched to our DAQ time
       // plus or minus some time padding, currently using 3.3 ms 
       // which is half the Booster Rep Rate
-      if(times_temps[i] > (t_current_event+fTimePad)){continue;}
-      if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
+      
+      if(e.event() != 1){//We already addressed the "first event" above
+	if(times_temps[i] > (t_current_event+fTimePad)){continue;}
+	if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
+      }
 
       //Loop through the multiwire devices:
       
@@ -375,7 +400,12 @@ void sbn::BNBRetriever::produce(art::Event& e)
       // information, so we'll write it to the SubRun
     
     }//end iteration over beam device times
-std::cout << "Event Spills : " << spill_count << std::endl;
+
+    if(spill_count > number_of_gates_since_previous_event)
+      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
+    else
+      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
+
   } //end check if BNB DAQ triggered gate
 }//end iteration over art::Events
 
