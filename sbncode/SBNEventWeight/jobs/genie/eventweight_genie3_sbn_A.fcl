@@ -14,6 +14,8 @@ sbn_genie_eventweight: {
 
   genie_module_label: generator
 
+  AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
+
   weight_functions_genie: [
     # proposal weights
     genie_qema,
