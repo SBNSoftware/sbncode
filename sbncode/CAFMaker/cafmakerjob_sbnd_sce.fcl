@@ -1,5 +1,5 @@
 #include "transfer_crtt0_producer.fcl"
-#include "transfer_flasht0_producer.fcl"
+#include "transfer_flashmatch_producer.fcl"
 #include "cafmakerjob_sbnd.fcl"
 
 # change all the labels we need to
@@ -35,7 +35,7 @@ physics.producers.pandoraTrackDazzle.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackDazzle.CaloLabel: "pandoraSCECalo"
 physics.producers.pandoraTrackDazzle.Chi2Label: "pandoraSCEPid"
 
-physics.producers.fmatchSCE: @local::transfer_flasht0_sce_sbnd
+physics.producers.fmatchSCE: @local::transfer_flashmatch_sce_sbnd
 
 physics.runprod: [ pandoraTrackMCS, pandoraTrackRange,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,

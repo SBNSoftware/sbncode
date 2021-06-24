@@ -9,7 +9,7 @@ physics.producers.fmatchREDO.SpacePointProducer: "pandora"
 # physics.producers.fmatchREDO.InputFileName: "fm_metrics_sbnd_local.root"
 physics.producers.fmatchREDO.UseUncoatedPMT: false
 
-physics.producers.fmatchSCE.T0Label: "fmatchREDO"
+physics.producers.fmatchSCE.FlashLabel: "fmatchREDO"
 
 physics.runprod: [fmatchREDO, @sequence::physics.runprod]
 
