@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       MVATrackPID
+// Class:       Dazzle
 // Plugin Type: producer (art v3_05_01)
-// File:        MVATrackPID_module.cc
+// File:        Dazzle_module.cc
 //
 // Generated at Tue Jan 26 08:37:49 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_10_00.
@@ -60,20 +60,20 @@
 #include <vector>
 
 namespace sbn {
-class MVATrackPID;
+class Dazzle;
 }
 
-class sbn::MVATrackPID : public art::EDProducer {
+class sbn::Dazzle : public art::EDProducer {
   public:
-  explicit MVATrackPID(fhicl::ParameterSet const& p);
+  explicit Dazzle(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  MVATrackPID(MVATrackPID const&) = delete;
-  MVATrackPID(MVATrackPID&&) = delete;
-  MVATrackPID& operator=(MVATrackPID const&) = delete;
-  MVATrackPID& operator=(MVATrackPID&&) = delete;
+  Dazzle(Dazzle const&) = delete;
+  Dazzle(Dazzle&&) = delete;
+  Dazzle& operator=(Dazzle const&) = delete;
+  Dazzle& operator=(Dazzle&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -148,7 +148,7 @@ class sbn::MVATrackPID : public art::EDProducer {
   std::string PdgString(const int pdg) const;
 };
 
-sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
+sbn::Dazzle::Dazzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
@@ -168,16 +168,16 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
 // , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 8.f))
 {
   if (!fMakeTree && !fRunMVA)
-    throw cet::exception("MVATrackPID") << "Configured to do nothing";
+    throw cet::exception("Dazzle") << "Configured to do nothing";
 
   if (fRunMVA) {
     if (fMethodName == "" || fWeightFile == "")
-      throw cet::exception("MVATrackPID") << "Trying to run MVA with inputs not set: MethodName: " << fMethodName << " and WeightFile: " << fWeightFile;
+      throw cet::exception("Dazzle") << "Trying to run MVA with inputs not set: MethodName: " << fMethodName << " and WeightFile: " << fWeightFile;
 
     cet::search_path searchPath("FW_SEARCH_PATH");
     std::string fWeightFileFullPath;
     if (!searchPath.find_file(fWeightFile, fWeightFileFullPath))
-      throw cet::exception("MVATrackPID") << "Unable to find weight file: " << fWeightFile << " in FW_SEARCH_PATH: " << searchPath.to_string();
+      throw cet::exception("Dazzle") << "Unable to find weight file: " << fWeightFile << " in FW_SEARCH_PATH: " << searchPath.to_string();
 
     reader = new TMVA::Reader("V");
 
@@ -206,7 +206,7 @@ sbn::MVATrackPID::MVATrackPID(fhicl::ParameterSet const& p)
   produces<art::Assns<recob::Track, sbn::MVAPID>>();
 }
 
-void sbn::MVATrackPID::beginJob()
+void sbn::Dazzle::beginJob()
 {
   if (fMakeTree) {
     trackTree = tfs->make<TTree>("trackTree", "Tree filled per Track with  PID variables");
@@ -304,7 +304,7 @@ void sbn::MVATrackPID::beginJob()
   }
 }
 
-void sbn::MVATrackPID::produce(art::Event& e)
+void sbn::Dazzle::produce(art::Event& e)
 {
   auto const clockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
 
@@ -351,7 +351,7 @@ void sbn::MVATrackPID::produce(art::Event& e)
 
     // There should be 1-1 PFP to tracks
     if (pfpTrackVec.size() > 1)
-      throw cet::exception("MVATrackPID") << "Too many tracks: " << pfpTrackVec.size();
+      throw cet::exception("Dazzle") << "Too many tracks: " << pfpTrackVec.size();
 
     art::Ptr<recob::Track>& pfpTrack(pfpTrackVec.front());
 
@@ -376,7 +376,7 @@ void sbn::MVATrackPID::produce(art::Event& e)
     bestPlaneHits = maxHits;
 
     if (bestPlane < 0 || bestPlane > 3)
-      throw cet::exception("MVATrackPID") << "Best plane: " << bestPlane;
+      throw cet::exception("Dazzle") << "Best plane: " << bestPlane;
 
     this->FillPFPMetrics(pfp, pfpMap, fmPFPCluster, fmClusterHit, fmPFPMeta);
 
@@ -427,7 +427,7 @@ void sbn::MVATrackPID::produce(art::Event& e)
   e.put(std::move(trackAssns));
 }
 
-void sbn::MVATrackPID::ClearTree()
+void sbn::Dazzle::ClearTree()
 {
   truePdg = -5;
   chi2PIDPDG = -5;
@@ -506,7 +506,7 @@ void sbn::MVATrackPID::ClearTree()
   chi2PIDTypeNoKaon = "";
 }
 
-void sbn::MVATrackPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
+void sbn::Dazzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
     const art::FindManyP<recob::Cluster>& fmCluster, const art::FindManyP<recob::Hit>& fmHit, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta)
 {
   auto const parentId(pfp->Parent());
@@ -543,7 +543,7 @@ void sbn::MVATrackPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, co
   hierarchyDepth = this->GetPFPHierarchyDepth(pfp, pfpMap);
 }
 
-void sbn::MVATrackPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Track& track, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
+void sbn::Dazzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Track& track, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
 {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const int bestMatch(TruthMatchUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits, true));
@@ -606,7 +606,7 @@ void sbn::MVATrackPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData
   endDist = (trueEnd - trackEnd).Mag();
 }
 
-void sbn::MVATrackPID::FillTrackMetrics(const recob::Track& track)
+void sbn::Dazzle::FillTrackMetrics(const recob::Track& track)
 {
   recoLen = track.Length();
 
@@ -626,12 +626,12 @@ void sbn::MVATrackPID::FillTrackMetrics(const recob::Track& track)
   endZ = end.Z();
 }
 
-bool sbn::MVATrackPID::InFV(const TVector3& pos) const
+bool sbn::Dazzle::InFV(const TVector3& pos) const
 {
   return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
 }
 
-void sbn::MVATrackPID::FillMCSMetrics(const recob::MCSFitResult& mcs)
+void sbn::Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)
 {
   mcsMuonP = mcs.fwdMomentum();
 
@@ -656,14 +656,14 @@ void sbn::MVATrackPID::FillMCSMetrics(const recob::MCSFitResult& mcs)
   mcsScatterMaxRatio = maxScatter / meanScatter;
 }
 
-void sbn::MVATrackPID::FillRangePMetrics(const sbn::RangeP& range)
+void sbn::Dazzle::FillRangePMetrics(const sbn::RangeP& range)
 {
   rangeMuonP = range.range_p;
 
   pDiff = (rangeMuonP > 0 && mcsMuonP > 0) ? (mcsMuonP - rangeMuonP) / rangeMuonP : -5.f;
 }
 
-// void sbn::MVATrackPID::FillLGCMetrics(const sbn::LGCFit& lgc)
+// void sbn::Dazzle::FillLGCMetrics(const sbn::LGCFit& lgc)
 // {
 //   lgcMPV = lgc.mMPV;
 
@@ -676,7 +676,7 @@ void sbn::MVATrackPID::FillRangePMetrics(const sbn::RangeP& range)
 //   lgcChi2 = lgc.mChi2 / lgc.mNDF;
 // }
 
-void sbn::MVATrackPID::FillDCAMetrics(const sbn::ScatterDCA& dca)
+void sbn::Dazzle::FillDCAMetrics(const sbn::ScatterDCA& dca)
 {
   meanDCA = dca.mMean;
 
@@ -687,7 +687,7 @@ void sbn::MVATrackPID::FillDCAMetrics(const sbn::ScatterDCA& dca)
   maxDCA = dca.mMax;
 }
 
-void sbn::MVATrackPID::FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingChi2)
+void sbn::Dazzle::FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingChi2)
 {
   chi2Pol0Chi2 = stoppingChi2.mPol0Chi2;
   chi2ExpChi2 = stoppingChi2.mExpChi2;
@@ -700,7 +700,7 @@ void sbn::MVATrackPID::FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stopp
   chi2Pol0Fit = stoppingChi2.mPol0Fit;
 }
 
-sbn::MVAPID sbn::MVATrackPID::RunMVA()
+sbn::MVAPID sbn::Dazzle::RunMVA()
 {
   const std::vector<float> mvaScores(reader->EvaluateMulticlass(fMethodName));
 
@@ -725,7 +725,7 @@ sbn::MVAPID sbn::MVATrackPID::RunMVA()
   return pidResults;
 }
 
-void sbn::MVATrackPID::FillChi2PIDMetrics(const anab::ParticleID& pid)
+void sbn::Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
 {
   chi2PIDMuon = pid.Chi2Muon();
   chi2PIDPion = pid.Chi2Pion();
@@ -755,7 +755,7 @@ void sbn::MVATrackPID::FillChi2PIDMetrics(const anab::ParticleID& pid)
   }
 }
 
-std::map<size_t, art::Ptr<recob::PFParticle>> sbn::MVATrackPID::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
+std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Dazzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
 {
   std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap;
   for (auto const& pfp : pfps) {
@@ -764,7 +764,7 @@ std::map<size_t, art::Ptr<recob::PFParticle>> sbn::MVATrackPID::GetPFPMap(std::v
   return pfpMap;
 }
 
-unsigned int sbn::MVATrackPID::GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap) const
+unsigned int sbn::Dazzle::GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap) const
 {
   if (pfp->Daughters().empty()) {
     return 1;
@@ -776,7 +776,7 @@ unsigned int sbn::MVATrackPID::GetPFPHierarchyDepth(const art::Ptr<recob::PFPart
   return maxDepth + 1;
 }
 
-float sbn::MVATrackPID::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
+float sbn::Dazzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
 {
   auto const pfpMetaVec(fmMeta.at(pfp.key()));
   if (pfpMetaVec.size() != 1)
@@ -786,7 +786,7 @@ float sbn::MVATrackPID::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp,
   return pfpTrackScoreIter == propertiesMap.end() ? -5.f : pfpTrackScoreIter->second;
 }
 
-std::string sbn::MVATrackPID::PdgString(const int pdg) const
+std::string sbn::Dazzle::PdgString(const int pdg) const
 {
   switch (std::abs(pdg)) {
   case 13:
@@ -802,4 +802,4 @@ std::string sbn::MVATrackPID::PdgString(const int pdg) const
   }
 }
 
-DEFINE_ART_MODULE(sbn::MVATrackPID)
+DEFINE_ART_MODULE(sbn::Dazzle)

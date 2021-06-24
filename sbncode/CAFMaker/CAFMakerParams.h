@@ -108,10 +108,10 @@ namespace caf
       "pandoraShowerSBN"
     };
 
-    Atom<string> ShowerMVAPIDLabel {
-      Name("ShowerMVAPIDLabel"),
+    Atom<string> ShowerRazzleLabel {
+      Name("ShowerRazzleLabel"),
       Comment("Base label of shower mva particle-id producer."),
-      "pandoraShowerMVAPID"
+      "pandoraShowerRazzle"
     };
 
     Atom<string> RecoShowerSelectionLabel {
@@ -150,10 +150,10 @@ namespace caf
       "pandoraTrackStoppingChi2"
     };
 
-    Atom<string> TrackMVAPIDLabel {
-      Name("TrackMVAPIDLabel"),
+    Atom<string> TrackDazzleLabel {
+      Name("TrackDazzleLabel"),
       Comment("Base label of track mva particle-id producer."),
-      "pandoraTrackMVAPID"
+      "pandoraTrackDazzle"
     };
 
     Atom<string> CRTHitMatchLabel {

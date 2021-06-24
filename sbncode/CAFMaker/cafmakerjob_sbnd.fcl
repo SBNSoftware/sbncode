@@ -90,11 +90,11 @@ physics:
 
    pandoraTrackDCA:          @local::trackscatterdca_sbn
    pandoraTrackStoppingChi2: @local::trackstoppingchi2fitter_sbn
-   pandoraTrackMVAPID:     @local::sbn_MVATrackPID
+   pandoraTrackDazzle:       @local::dazzle_sbnd
 
-   pandoraShowerSelectionVars: @local::showerSelectionVars_sbn
+   pandoraShowerSelectionVars:  @local::showerSelectionVars_sbn
    pandoraShowerCosmicCylinder: @local::showerCosmicCylinder_sbn
-   pandoraShowerMVAPID:     @local::sbn_MVAShowerPID
+   pandoraShowerRazzle:         @local::razzle_sbnd
 
 }
   filters:{
@@ -106,8 +106,8 @@ physics:
   }
  runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
-            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackMVAPID,
-            pandoraShowerCosmicCylinder, pandoraShowerMVAPID,
+            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackDazzle,
+            pandoraShowerCosmicCylinder, pandoraShowerRazzle,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
@@ -117,14 +117,6 @@ physics:
 
 
 }
-
-physics.producers.pandoraTrackMVAPID.RunMVA: true
-physics.producers.pandoraTrackMVAPID.MethodName: "BDT::BDTG"
-physics.producers.pandoraTrackMVAPID.WeightFile: "TrackPIDMVA_BDTG.weights.xml"
-
-physics.producers.pandoraShowerMVAPID.RunMVA: true
-physics.producers.pandoraShowerMVAPID.MethodName: "BDT::BDTG"
-physics.producers.pandoraShowerMVAPID.WeightFile: "ShowerPIDMVA_BDTG.weights.xml"
 
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants

@@ -989,13 +989,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
           fParams.TrackStoppingChi2FitLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::MVAPID> fmTrackMVAPID =
+    art::FindManyP<sbn::MVAPID> fmTrackDazzle =
       FindManyPStrict<sbn::MVAPID>(slcTracks, evt,
-          fParams.TrackMVAPIDLabel() + slice_tag_suff);
+          fParams.TrackDazzleLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::MVAPID> fmShowerMVAPID =
+    art::FindManyP<sbn::MVAPID> fmShowerRazzle =
       FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
-          fParams.ShowerMVAPIDLabel() + slice_tag_suff);
+          fParams.ShowerRazzleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
@@ -1147,8 +1147,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
            FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
         }
-        if (fmTrackMVAPID.isValid() && fmTrackMVAPID.at(iPart).size()==1) {
-           FillTrackMVAPID(fmTrackMVAPID.at(iPart).front(), rec.reco.trk.back());
+        if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
@@ -1180,8 +1180,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
-        if (fmShowerMVAPID.isValid() && fmShowerMVAPID.at(iPart).size()==1) {
-           FillShowerMVAPID(fmShowerMVAPID.at(iPart).front(), rec.reco.shw.back());
+        if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
         }
         if (fmShowerCosmicCylinder.isValid() && fmShowerCosmicCylinder.at(iPart).size() != 0) {
           FillShowerCosmicCylinder(fmShowerCosmicCylinder.at(iPart), rec.reco.shw.back());

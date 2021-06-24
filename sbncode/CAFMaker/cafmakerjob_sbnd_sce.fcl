@@ -20,8 +20,8 @@ physics.producers.pandoraShowerSelectionVars.PandoraLabel: "pandoraSCE"
 physics.producers.pandoraShowerSelectionVars.ShowerLabel:  "pandoraSCEShowerSBN"
 physics.producers.pandoraShowerCosmicCylinder.PandoraLabel: "pandoraSCE"
 physics.producers.pandoraShowerCosmicCylinder.ShowerLabel:  "pandoraSCEShowerSBN"
-physics.producers.pandoraShowerMVAPID.PFPLabel: "pandoraSCE"
-physics.producers.pandoraShowerMVAPID.ShowerLabel: "pandoraSCEShowerSBN"
+physics.producers.pandoraShowerRazzle.PFPLabel: "pandoraSCE"
+physics.producers.pandoraShowerRazzle.ShowerLabel: "pandoraSCEShowerSBN"
 
 physics.producers.pandoraSCETrackCRTHit: @local::transfer_crthitt0_sce_sbnd
 physics.producers.pandoraSCETrackCRTTrack: @local::transfer_crttrackt0_sce_sbnd
@@ -30,16 +30,16 @@ physics.producers.pandoraTrackDCA.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackStoppingChi2.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackStoppingChi2.CaloLabel: "pandoraSCECalo"
 
-physics.producers.pandoraTrackMVAPID.PFPLabel: "pandoraSCE"
-physics.producers.pandoraTrackMVAPID.TrackLabel: "pandoraSCETrack"
-physics.producers.pandoraTrackMVAPID.CaloLabel: "pandoraSCECalo"
-physics.producers.pandoraTrackMVAPID.Chi2Label: "pandoraSCEPid"
+physics.producers.pandoraTrackDazzle.PFPLabel: "pandoraSCE"
+physics.producers.pandoraTrackDazzle.TrackLabel: "pandoraSCETrack"
+physics.producers.pandoraTrackDazzle.CaloLabel: "pandoraSCECalo"
+physics.producers.pandoraTrackDazzle.Chi2Label: "pandoraSCEPid"
 
 physics.producers.fmatchSCE: @local::transfer_flasht0_sce_sbnd
 
 physics.runprod: [ pandoraTrackMCS, pandoraTrackRange,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
             pandoraSCETrackCRTHit, pandoraSCETrackCRTTrack, fmatchSCE,
-            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackMVAPID,
-            pandoraShowerSelectionVars,pandoraShowerCosmicCylinder, pandoraShowerMVAPID,
+            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackDazzle,
+            pandoraShowerSelectionVars,pandoraShowerCosmicCylinder, pandoraShowerRazzle,
             mycafmaker ]

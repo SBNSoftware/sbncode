@@ -47,7 +47,7 @@ namespace caf
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
 
-  void FillShowerMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+  void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
                         caf::SRShower& srshower,
                         bool allowEmpty = false);
 
@@ -124,7 +124,7 @@ namespace caf
                                 caf::SRTrack& srtrack,
                                 bool allowEmpty = false);
 
-  void FillTrackMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+  void FillTrackDazzle(const art::Ptr<sbn::MVAPID> dazzle,
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 

@@ -1,8 +1,8 @@
 BEGIN_PROLOG
 
-sbn_MVATrackPID:
+dazzle:
 {
-  module_type:         MVATrackPID
+  module_type:         Dazzle
   LArGeantLabel:       "largeant"
   PFPLabel:            "pandora"
   TrackLabel:          "pandoraTrack"
@@ -18,16 +18,27 @@ sbn_MVATrackPID:
   MinTrackLength:      10
 }
 
-sbn_MVAShowerPID:
+razzle:
 {
-  module_type:         MVAShowerPID
+  module_type:         Razzle
   LArGeantLabel:       "largeant"
   PFPLabel:            "pandora"
-  ShowerLabel:         "pandoraShower"
+  ShowerLabel:         "pandoraShowerSBN"
   ShowerSelVarsLabel:  "pandoraShowerSelectionVars"
   MakeTree:            false
   RunMVA:              false
   MinShowerEnergy:     50
 }
+
+
+dazzle_sbnd: @local::dazzle
+dazzle_sbnd.RunMVA: true
+dazzle_sbnd.MethodName: "BDT::BDTG"
+dazzle_sbnd.WeightFile: "Dazzle.weights.xml"
+
+razzle_sbnd: @local::razzle
+razzle_sbnd.RunMVA: true
+razzle_sbnd.MethodName: "BDT::BDTG"
+razzle_sbnd.WeightFile: "Razzle.weights.xml"
 
 END_PROLOG

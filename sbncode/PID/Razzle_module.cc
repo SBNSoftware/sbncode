@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       MVAShowerPID
+// Class:       Razzle
 // Plugin Type: producer (art v3_05_01)
-// File:        MVAShowerPID_module.cc
+// File:        Razzle_module.cc
 //
 // Generated at Tue Jan 26 08:37:49 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_10_00.
@@ -55,20 +55,20 @@
 #include <vector>
 
 namespace sbn {
-class MVAShowerPID;
+class Razzle;
 }
 
-class sbn::MVAShowerPID : public art::EDProducer {
+class sbn::Razzle : public art::EDProducer {
   public:
-  explicit MVAShowerPID(fhicl::ParameterSet const& p);
+  explicit Razzle(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  MVAShowerPID(MVAShowerPID const&) = delete;
-  MVAShowerPID(MVAShowerPID&&) = delete;
-  MVAShowerPID& operator=(MVAShowerPID const&) = delete;
-  MVAShowerPID& operator=(MVAShowerPID&&) = delete;
+  Razzle(Razzle const&) = delete;
+  Razzle(Razzle&&) = delete;
+  Razzle& operator=(Razzle const&) = delete;
+  Razzle& operator=(Razzle&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -128,7 +128,7 @@ class sbn::MVAShowerPID : public art::EDProducer {
   std::string PdgString(const int pdg) const;
 };
 
-sbn::MVAShowerPID::MVAShowerPID(fhicl::ParameterSet const& p)
+sbn::Razzle::Razzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
@@ -141,16 +141,16 @@ sbn::MVAShowerPID::MVAShowerPID(fhicl::ParameterSet const& p)
     , fWeightFile(p.get<std::string>("WeightFile", ""))
 {
   if (!fMakeTree && !fRunMVA)
-    throw cet::exception("MVAShowerPID") << "Configured to do nothing";
+    throw cet::exception("Razzle") << "Configured to do nothing";
 
   if (fRunMVA) {
     if (fMethodName == "" || fWeightFile == "")
-      throw cet::exception("MVAShowerPID") << "Trying to run MVA with inputs not set: MethodName: " << fMethodName << " and WeightFile: " << fWeightFile;
+      throw cet::exception("Razzle") << "Trying to run MVA with inputs not set: MethodName: " << fMethodName << " and WeightFile: " << fWeightFile;
 
     cet::search_path searchPath("FW_SEARCH_PATH");
     std::string fWeightFileFullPath;
     if (!searchPath.find_file(fWeightFile, fWeightFileFullPath))
-      throw cet::exception("MVAShowerPID") << "Unable to find weight file: " << fWeightFile << " in FW_SEARCH_PATH: " << searchPath.to_string();
+      throw cet::exception("Razzle") << "Unable to find weight file: " << fWeightFile << " in FW_SEARCH_PATH: " << searchPath.to_string();
 
     reader = new TMVA::Reader("V");
 
@@ -170,7 +170,7 @@ sbn::MVAShowerPID::MVAShowerPID(fhicl::ParameterSet const& p)
   produces<art::Assns<recob::Shower, sbn::MVAPID>>();
 }
 
-void sbn::MVAShowerPID::beginJob()
+void sbn::Razzle::beginJob()
 {
   if (fMakeTree) {
     showerTree = tfs->make<TTree>("showerTree", "Tree filled per Shower with  PID variables");
@@ -237,7 +237,7 @@ void sbn::MVAShowerPID::beginJob()
   }
 }
 
-void sbn::MVAShowerPID::produce(art::Event& e)
+void sbn::Razzle::produce(art::Event& e)
 {
   auto const clockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
 
@@ -277,7 +277,7 @@ void sbn::MVAShowerPID::produce(art::Event& e)
 
     // There should be 1-1 PFP to showers
     if (pfpShowerVec.size() > 1)
-      throw cet::exception("MVAShowerPID") << "Too many showers: " << pfpShowerVec.size();
+      throw cet::exception("Razzle") << "Too many showers: " << pfpShowerVec.size();
 
     art::Ptr<recob::Shower>& pfpShower(pfpShowerVec.front());
 
@@ -314,7 +314,7 @@ void sbn::MVAShowerPID::produce(art::Event& e)
   e.put(std::move(showerAssns));
 }
 
-void sbn::MVAShowerPID::ClearTree()
+void sbn::Razzle::ClearTree()
 {
   truePdg = -5;
   numHits = -5;
@@ -373,7 +373,7 @@ void sbn::MVAShowerPID::ClearTree()
   trueEndProcess = "";
 }
 
-void sbn::MVAShowerPID::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
+void sbn::Razzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
 {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const int bestMatch(TruthMatchUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits, true));
@@ -438,7 +438,7 @@ void sbn::MVAShowerPID::FillTrueParticleMetrics(const detinfo::DetectorClocksDat
   endDist = (trueEnd - showerEnd).Mag();
 }
 
-void sbn::MVAShowerPID::FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec)
+void sbn::Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec)
 {
   const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
 
@@ -470,7 +470,7 @@ void sbn::MVAShowerPID::FillShowerMetrics(const recob::Shower& shower, const std
   bestPlane = shower.best_plane();
 
   if (bestPlane < 0 || bestPlane > 3)
-    throw cet::exception("MVAShowerPID") << "Best plane: " << bestPlane;
+    throw cet::exception("Razzle") << "Best plane: " << bestPlane;
 
   bestdEdx = shower.dEdx()[bestPlane];
   bestdEdx = std::min(bestdEdx, 20.f);
@@ -499,12 +499,12 @@ void sbn::MVAShowerPID::FillShowerMetrics(const recob::Shower& shower, const std
   endZ = end.Z();
 }
 
-bool sbn::MVAShowerPID::InFV(const TVector3& pos) const
+bool sbn::Razzle::InFV(const TVector3& pos) const
 {
   return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
 }
 
-void sbn::MVAShowerPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
+void sbn::Razzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
     const recob::Shower& shower, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta, const art::FindManyP<recob::Vertex>& fmVertex)
 {
   numDaughters = pfp->Daughters().size();
@@ -531,19 +531,19 @@ void sbn::MVAShowerPID::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, c
   convGap = std::min(convGap, 50.f);
 }
 
-void sbn::MVAShowerPID::FillDensityFitMetrics(const sbn::ShowerDensityFit& densityFit)
+void sbn::Razzle::FillDensityFitMetrics(const sbn::ShowerDensityFit& densityFit)
 {
   densityFitGrad = densityFit.mDensityGrad;
   densityFitPow = densityFit.mDensityPow;
 }
-void sbn::MVAShowerPID::FillTrackFitMetrics(const sbn::ShowerTrackFit& trackFit)
+void sbn::Razzle::FillTrackFitMetrics(const sbn::ShowerTrackFit& trackFit)
 {
   trackLength = trackFit.mTrackLength;
   trackWidth = trackFit.mTrackWidth;
   trackHits = trackFit.mNumHits;
 }
 
-sbn::MVAPID sbn::MVAShowerPID::RunMVA()
+sbn::MVAPID sbn::Razzle::RunMVA()
 {
   const std::vector<float> mvaScores(reader->EvaluateMulticlass(fMethodName));
 
@@ -566,7 +566,7 @@ sbn::MVAPID sbn::MVAShowerPID::RunMVA()
   return pidResults;
 }
 
-std::map<size_t, art::Ptr<recob::PFParticle>> sbn::MVAShowerPID::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
+std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Razzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
 {
   std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap;
   for (auto const& pfp : pfps) {
@@ -575,7 +575,7 @@ std::map<size_t, art::Ptr<recob::PFParticle>> sbn::MVAShowerPID::GetPFPMap(std::
   return pfpMap;
 }
 
-float sbn::MVAShowerPID::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
+float sbn::Razzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
 {
   auto const pfpMetaVec(fmMeta.at(pfp.key()));
   if (pfpMetaVec.size() != 1)
@@ -585,7 +585,7 @@ float sbn::MVAShowerPID::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp
   return pfpTrackScoreIter == propertiesMap.end() ? -5.f : pfpTrackScoreIter->second;
 }
 
-std::string sbn::MVAShowerPID::PdgString(const int pdg) const
+std::string sbn::Razzle::PdgString(const int pdg) const
 {
   switch (std::abs(pdg)) {
   case 11:
@@ -597,4 +597,4 @@ std::string sbn::MVAShowerPID::PdgString(const int pdg) const
   }
 }
 
-DEFINE_ART_MODULE(sbn::MVAShowerPID)
+DEFINE_ART_MODULE(sbn::Razzle)

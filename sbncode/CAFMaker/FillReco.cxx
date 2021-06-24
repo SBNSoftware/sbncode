@@ -151,16 +151,16 @@ namespace caf
     }
   }
 
-  void FillShowerMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+  void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
       caf::SRShower& srshower,
       bool allowEmpty)
   {
-    srshower.mvaPID.electronScore = mvaPID->mMVAScoreMap.at(11);
-    srshower.mvaPID.photonScore = mvaPID->mMVAScoreMap.at(22);
-    srshower.mvaPID.otherScore = mvaPID->mMVAScoreMap.at(0);
+    srshower.razzle.electronScore = razzle->mMVAScoreMap.at(11);
+    srshower.razzle.photonScore = razzle->mMVAScoreMap.at(22);
+    srshower.razzle.otherScore = razzle->mMVAScoreMap.at(0);
 
-    srshower.mvaPID.pdg = mvaPID->BestPDG();
-    srshower.mvaPID.bestScore = mvaPID->BestScore();
+    srshower.razzle.pdg = razzle->BestPDG();
+    srshower.razzle.bestScore = razzle->BestScore();
   }
 
 
@@ -417,17 +417,17 @@ namespace caf
     srtrack.stoppingChi2Fit.pol0Fit = stoppingChi2->mPol0Fit;
   }
 
-  void FillTrackMVAPID(const art::Ptr<sbn::MVAPID> mvaPID,
+  void FillTrackDazzle(const art::Ptr<sbn::MVAPID> dazzle,
       caf::SRTrack& srtrack,
       bool allowEmpty)
   {
-    srtrack.mvaPID.muonScore = mvaPID->mMVAScoreMap.at(13);
-    srtrack.mvaPID.pionScore = mvaPID->mMVAScoreMap.at(211);
-    srtrack.mvaPID.protonScore = mvaPID->mMVAScoreMap.at(2212);
-    srtrack.mvaPID.otherScore = mvaPID->mMVAScoreMap.at(0);
+    srtrack.dazzle.muonScore = dazzle->mMVAScoreMap.at(13);
+    srtrack.dazzle.pionScore = dazzle->mMVAScoreMap.at(211);
+    srtrack.dazzle.protonScore = dazzle->mMVAScoreMap.at(2212);
+    srtrack.dazzle.otherScore = dazzle->mMVAScoreMap.at(0);
 
-    srtrack.mvaPID.pdg = mvaPID->BestPDG();
-    srtrack.mvaPID.bestScore = mvaPID->BestScore();
+    srtrack.dazzle.pdg = dazzle->BestPDG();
+    srtrack.dazzle.bestScore = dazzle->BestScore();
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
