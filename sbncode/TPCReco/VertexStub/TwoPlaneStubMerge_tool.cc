@@ -56,7 +56,6 @@ public:
     bool SortStubs(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 private:
-  sbn::PlaneTransform fPlaneTransform;
   double fMaxMergeTOff;
   double fMaxMergeQOff;
   bool fRemoveDuplicateMerges;
@@ -64,7 +63,6 @@ private:
 };
 
 TwoPlaneStubMerge::TwoPlaneStubMerge(fhicl::ParameterSet const &pset):
-  fPlaneTransform(pset.get<fhicl::ParameterSet>("PlaneTransform"), lar::providerFrom<geo::Geometry>()),
   fMaxMergeTOff(pset.get<double>("MaxMergeTOff")),
   fMaxMergeQOff(pset.get<double>("MaxMergeQOff")),
   fRemoveDuplicateMerges(pset.get<bool>("RemoveDuplicateMerges")),
@@ -109,7 +107,7 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   // Vertex should be the same between the two
   ret.stub.vtx = A.stub.vtx;
   // The real thing -- combine the two positions to get a new endpoint
-  geo::Point_t end = sbn::TwoStubEndPosition(fPlaneTransform, best, othr, geo, sce, dprop);
+  geo::Point_t end = sbn::TwoStubEndPosition(best, othr, geo, sce, dprop);
   ret.stub.end = TVector3(end.X(), end.Y(), end.Z());
 
   // Save the EField at the start and end point

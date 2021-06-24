@@ -142,20 +142,19 @@ float sbn::StubTimeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
   return abs(dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) - dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID())) / dprop.DriftVelocity() / dclock.TPCClock().TickPeriod();
 }
 
-geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+geo::Point_t sbn::TwoStubEndPosition(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
 
   static constexpr bool VERBOSE = false;
 
-  // look up the wire-coordinate of both wires
-  double A_w = T.WireCoordinate(A.vhit_hit->WireID());
-  double B_w = T.WireCoordinate(B.vhit_hit->WireID());
-
-  // Use this to get y, z
-  double y = T.TwoPlaneToY(A.vhit_hit->WireID(), A_w, B.vhit_hit->WireID(), B_w);
-  double z = T.TwoPlaneToZ(A.vhit_hit->WireID(), A_w, B.vhit_hit->WireID(), B_w);
+  // intersect the wires with the geometry service
+  geo::Point_t yz;
+  bool intersects = geo->WireIDsIntersect(A.vhit_hit->WireID(), B.vhit_hit->WireID(), yz);
+  (void) intersects; // TODO: Do we care if the wires intersect? Means the end point will be outside the AV
+  double y = yz.Y();
+  double z = yz.Z();
 
   // just average the x-pos
   double x = (dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) + dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID())) / 2.;
@@ -168,16 +167,18 @@ geo::Point_t sbn::TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::St
   if (VERBOSE) {
     std::cout << "A View: " << geo->View(A.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(A.vhit_hit->WireID()), A.vhit_hit->WireID()) << std::endl;
     std::cout << "B View: " << geo->View(B.vhit_hit->WireID()) << " Angle to Vertical: " << geo->WireAngleToVertical(geo->View(B.vhit_hit->WireID()), B.vhit_hit->WireID()) << std::endl;
+    std::cout << "A End: " << A.stub.end.X() << " " << A.stub.end.Y() << " " << A.stub.end.Z() << std::endl;
+    std::cout << "B End: " << B.stub.end.X() << " " << B.stub.end.Y() << " " << B.stub.end.Z() << std::endl;
     std::cout << "A Wire Pos Y: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(A.vhit_hit->WireID()).GetCenter().Z() << std::endl;
     std::cout << "B Wire Pos Y: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Y() << " Z: " << geo->Wire(B.vhit_hit->WireID()).GetCenter().Z() << std::endl;
     
-    std::cout << "A Wire: " << A.vhit_hit->WireID().Wire << " Plane: " << A.vhit_hit->WireID().Plane << " TPC: " << A.vhit_hit->WireID().TPC << " Coord: " << A_w << std::endl;
-    std::cout << "B Wire: " << B.vhit_hit->WireID().Wire << " Plane: " << B.vhit_hit->WireID().Plane << " TPC: " << B.vhit_hit->WireID().TPC << " Coord: " << B_w << std::endl;
+    std::cout << "A Wire: " << A.vhit_hit->WireID().Wire << " Plane: " << A.vhit_hit->WireID().Plane << " TPC: " << A.vhit_hit->WireID().TPC << std::endl;
+    std::cout << "B Wire: " << B.vhit_hit->WireID().Wire << " Plane: " << B.vhit_hit->WireID().Plane << " TPC: " << B.vhit_hit->WireID().TPC << std::endl;
     
     std::cout << "Output Y: " << y << " Z: " << z << std::endl;
     
-    std::cout << "A Wire coord: " << geo->WireCoordinate(y, z, A.vhit_hit->WireID()) << std::endl;
-    std::cout << "B Wire coord: " << geo->WireCoordinate(y, z, B.vhit_hit->WireID()) << std::endl;
+    std::cout << "A Wire coord: " << geo->WireCoordinate(pos, A.vhit_hit->WireID()) << std::endl;
+    std::cout << "B Wire coord: " << geo->WireCoordinate(pos, B.vhit_hit->WireID()) << std::endl;
     
     std::cout << "A X: " << dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) << std::endl;
     std::cout << "B X: " << dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID()) << std::endl;
@@ -205,13 +206,13 @@ float sbn::StubPeakChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B) 
   return abs(A.vhit->charge - B.vhit->charge);
 }
 
-float sbn::StubPeakdQdxOffset(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+float sbn::StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
 
   TVector3 vtx = A.stub.vtx;
-  geo::Point_t end = sbn::TwoStubEndPosition(T, A, B, geo, sce, dprop); 
+  geo::Point_t end = sbn::TwoStubEndPosition(A, B, geo, sce, dprop); 
   TVector3 end_v(end.x(), end.y(), end.z());
 
   geo::Vector_t dir((end_v-vtx).Unit());

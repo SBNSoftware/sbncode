@@ -38,7 +38,6 @@
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "../LArRecoProducer/LArReco/TrackMomentumCalculator.h"
 
-#include "sbncode/TPCReco/VertexStub/PlaneTransform.h"
 #include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
 
 #include "sbnobj/Common/Reco/VertexHit.h"
@@ -122,7 +121,6 @@ private:
   std::vector<geo::BoxBoundedGeo> fFiducialVolumes;
   std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
   trkf::TrackMomentumCalculator fRangeCalculator;
-  sbn::PlaneTransform fPlaneTransform;
   bool fCorrectSCE;
 
   // output
@@ -255,7 +253,6 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
     fStubTags(p.get<std::vector<std::string>>("StubTags")),
     fFiducialInset({p.get<float>("xmin"), p.get<float>("xmax"), p.get<float>("ymin"), p.get<float>("ymax"), p.get<float>("zmin"), p.get<float>("zmax")}), 
     fRangeCalculator(p.get<float>("MinTrackLength", 0.1)),
-    fPlaneTransform(p.get<fhicl::ParameterSet>("PlaneTransform"), lar::providerFrom<geo::Geometry>())
     fCorrectSCE(p.get<bool>("CorrectSCE"))
 {
   fIEvt = 0;
@@ -768,8 +765,9 @@ void sbn::NuVertexChargeTree::FillStubs(
           fStubXPlaneMatch.push_back(j_stub);
           fStubXPlaneMatchTOff.push_back(sbn::StubTimeOffset(stubs[i_stub], stubs[j_stub], clock_data, dprop));
           fStubXPlaneMatchQOff.push_back(sbn::StubChargeOffset(stubs[i_stub], stubs[j_stub]));
-          fStubXPlaneMatchdQdxOff.push_back(sbn::StubPeakdQdxOffset(fPlaneTransform, stubs[i_stub], stubs[j_stub], geo, sce, dprop));
           fStubXPlaneMatchPeakQOff.push_back(sbn::StubPeakChargeOffset(stubs[i_stub], stubs[j_stub]));
+          fStubXPlaneMatchdQdxOff.push_back((stubs[i_stub].stub.plane.front().TPC == stubs[j_stub].stub.plane.front().TPC) ?
+            sbn::StubPeakdQdxOffset(stubs[i_stub], stubs[j_stub], geo, sce, dprop) : std::numeric_limits<float>::signaling_NaN());
         }
       }
       fStubXPlaneMatchLength.push_back(fStubXPlaneMatch.size() - start_size);

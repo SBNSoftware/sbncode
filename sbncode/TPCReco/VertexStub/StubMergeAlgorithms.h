@@ -16,8 +16,6 @@
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 
-#include "sbncode/TPCReco/VertexStub/PlaneTransform.h"
-
 // Helper algorithms/utilities useful for merging stubs
 
 namespace sbn {
@@ -75,7 +73,7 @@ float StubTimeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const detinfo::DetectorPropertiesData &dprop);
 
 /// Returns an updated end position of a stub after merging across two planes
-geo::Point_t TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+geo::Point_t TwoStubEndPosition(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);
@@ -87,7 +85,7 @@ float StubChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B);
 float StubPeakChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 /// Difference of the endpoint dQ/dx between two stubs
-float StubPeakdQdxOffset(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+float StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);
