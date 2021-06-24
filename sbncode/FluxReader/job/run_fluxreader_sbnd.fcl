@@ -2,7 +2,7 @@
 # for SBND
 
 #include "simulationservices_sbnd.fcl"
-#include "fluxfilter.fcl"
+#include "fluxfilter_sbnd.fcl"
 
 process_name: FluxReader
 
