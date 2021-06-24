@@ -1,0 +1,33 @@
+#include "extcountinfo.fcl"
+
+process_name: EXTInfoGen
+
+services:{
+  IFBeam:{}
+}
+
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+ producers: {
+   extinfo: @local::extcountinfo
+ }
+
+ simulate: [extinfo ]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_extinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+
