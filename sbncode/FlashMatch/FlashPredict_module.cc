@@ -271,8 +271,7 @@ void FlashPredict::produce(art::Event& evt)
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
-  // TODO: store flashMetrics
-  // std::map<unsigned, FlashMetrics> flashMetricsMap;
+  std::map<unsigned, FlashMetrics> flashMetricsMap;
   for(auto& chargeDigest : chargeDigestMap) {
     //const size_t pId = chargeDigest.second.pId;
     const int pfpPDGC = chargeDigest.second.pfpPDGC;
@@ -328,18 +327,16 @@ void FlashPredict::produce(art::Event& evt)
       }
       hits_ophits_concurrence = true;
 
-      // TODO: check if metrics already computed, if so skip computing
-      // and grab them. Depends on hitsInVolume, ophsInVolume and the
-      // current flash number ... perhaps?
-      // flashUId = something
-      // if(auto it=flashMetricsMap.find(flashUId); it!=flashMetricsMap.end()){
-      //   mf::LogDebug("FlashPredict") << "Reusing metrics previously computed, "
-      //                                << "for flashUId " << flashUId;
-      //   auto flash_tmp = it->second;
-      //   flashMetricsMap[flashUId] = flash_tmp;
-      // }
-
-      FlashMetrics flash_tmp = computeFlashMetrics(simpleFlash);
+      unsigned flashUId = simpleFlash.ophsInVolume * 10 + simpleFlash.flashId;
+      bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
+      FlashMetrics flash_tmp = (mets_in_map) ?
+        flashMetricsMap[flashUId] : computeFlashMetrics(simpleFlash);
+      if(mets_in_map){
+        mf::LogDebug("FlashPredict")
+          << "Reusing metrics previously computed, for flashUId " << flashUId;
+      }
+      else
+        flashMetricsMap[flashUId] = flash_tmp;
 
       Score score_tmp = computeScore(charge, flash_tmp, tpcWithHits, pfpPDGC);
       if(score_tmp.total > 0. && score_tmp.total < score.total
