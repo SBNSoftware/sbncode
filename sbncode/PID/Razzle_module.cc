@@ -43,7 +43,6 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 
-#include "sbncode/CAFMaker/RecoUtils/ShowerUtils.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 
