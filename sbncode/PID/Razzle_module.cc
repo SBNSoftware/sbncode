@@ -62,10 +62,7 @@
 #include <vector>
 
 namespace sbn {
-class Razzle;
-}
-
-class sbn::Razzle : public art::EDProducer {
+class Razzle : public art::EDProducer {
   public:
   explicit Razzle(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -125,9 +122,9 @@ class sbn::Razzle : public art::EDProducer {
   void FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec);
   void FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
       const recob::Shower& shower, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta, const art::FindManyP<recob::Vertex>& fmVertex);
-  void FillDensityFitMetrics(const sbn::ShowerDensityFit& densityFit);
-  void FillTrackFitMetrics(const sbn::ShowerTrackFit& trackFit);
-  sbn::MVAPID RunMVA();
+  void FillDensityFitMetrics(const ShowerDensityFit& densityFit);
+  void FillTrackFitMetrics(const ShowerTrackFit& trackFit);
+  MVAPID RunMVA();
 
   std::map<size_t, art::Ptr<recob::PFParticle>> GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const;
   float GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const;
@@ -135,7 +132,7 @@ class sbn::Razzle : public art::EDProducer {
   std::string PdgString(const int pdg) const;
 };
 
-sbn::Razzle::Razzle(fhicl::ParameterSet const& p)
+Razzle::Razzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
@@ -173,11 +170,11 @@ sbn::Razzle::Razzle(fhicl::ParameterSet const& p)
     reader->BookMVA(fMethodName, fWeightFileFullPath);
   }
   // Call appropriate produces<>() functions here.
-  produces<std::vector<sbn::MVAPID>>();
-  produces<art::Assns<recob::Shower, sbn::MVAPID>>();
+  produces<std::vector<MVAPID>>();
+  produces<art::Assns<recob::Shower, MVAPID>>();
 }
 
-void sbn::Razzle::beginJob()
+void Razzle::beginJob()
 {
   if (fMakeTree) {
     showerTree = tfs->make<TTree>("showerTree", "Tree filled per Shower with  PID variables");
@@ -244,7 +241,7 @@ void sbn::Razzle::beginJob()
   }
 }
 
-void sbn::Razzle::produce(art::Event& e)
+void Razzle::produce(art::Event& e)
 {
   auto const clockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
 
@@ -264,11 +261,11 @@ void sbn::Razzle::produce(art::Event& e)
   art::FindManyP<recob::Shower> fmPFPShower(pfpHandle, e, fShowerLabel);
   art::FindManyP<recob::Hit> fmShowerHit(showerHandle, e, fShowerLabel);
 
-  art::FindManyP<sbn::ShowerDensityFit> fmShowerDensityFit(showerHandle, e, fShowerSelVarsLabel);
-  art::FindManyP<sbn::ShowerTrackFit> fmShowerTrackFit(showerHandle, e, fShowerSelVarsLabel);
+  art::FindManyP<ShowerDensityFit> fmShowerDensityFit(showerHandle, e, fShowerSelVarsLabel);
+  art::FindManyP<ShowerTrackFit> fmShowerTrackFit(showerHandle, e, fShowerSelVarsLabel);
 
-  auto mvaPIDVec = std::make_unique<std::vector<sbn::MVAPID>>();
-  auto showerAssns = std::make_unique<art::Assns<recob::Shower, sbn::MVAPID>>();
+  auto mvaPIDVec = std::make_unique<std::vector<MVAPID>>();
+  auto showerAssns = std::make_unique<art::Assns<recob::Shower, MVAPID>>();
 
   const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap(this->GetPFPMap(pfps));
 
@@ -306,7 +303,7 @@ void sbn::Razzle::produce(art::Event& e)
       this->FillTrackFitMetrics(*trackFitVec.front());
 
     if (fRunMVA) {
-      sbn::MVAPID mvaPID(this->RunMVA());
+      MVAPID mvaPID(this->RunMVA());
       mvaPIDVec->push_back(mvaPID);
       util::CreateAssn(*this, e, *mvaPIDVec, pfpShower, *showerAssns);
     }
@@ -321,7 +318,7 @@ void sbn::Razzle::produce(art::Event& e)
   e.put(std::move(showerAssns));
 }
 
-void sbn::Razzle::ClearTree()
+void Razzle::ClearTree()
 {
   truePdg = -5;
   numHits = -5;
@@ -380,7 +377,7 @@ void sbn::Razzle::ClearTree()
   trueEndProcess = "";
 }
 
-void sbn::Razzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
+void Razzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
 {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const int bestMatch(TruthMatchUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits, true));
@@ -445,7 +442,7 @@ void sbn::Razzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clo
   endDist = (trueEnd - showerEnd).Mag();
 }
 
-void sbn::Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec)
+void Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec)
 {
   const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
 
@@ -506,12 +503,12 @@ void sbn::Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vect
   endZ = end.Z();
 }
 
-bool sbn::Razzle::InFV(const TVector3& pos) const
+bool Razzle::InFV(const TVector3& pos) const
 {
   return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
 }
 
-void sbn::Razzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
+void Razzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
     const recob::Shower& shower, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta, const art::FindManyP<recob::Vertex>& fmVertex)
 {
   numDaughters = pfp->Daughters().size();
@@ -538,23 +535,23 @@ void sbn::Razzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const s
   convGap = std::min(convGap, 50.f);
 }
 
-void sbn::Razzle::FillDensityFitMetrics(const sbn::ShowerDensityFit& densityFit)
+void Razzle::FillDensityFitMetrics(const ShowerDensityFit& densityFit)
 {
   densityFitGrad = densityFit.mDensityGrad;
   densityFitPow = densityFit.mDensityPow;
 }
-void sbn::Razzle::FillTrackFitMetrics(const sbn::ShowerTrackFit& trackFit)
+void Razzle::FillTrackFitMetrics(const ShowerTrackFit& trackFit)
 {
   trackLength = trackFit.mTrackLength;
   trackWidth = trackFit.mTrackWidth;
   trackHits = trackFit.mNumHits;
 }
 
-sbn::MVAPID sbn::Razzle::RunMVA()
+MVAPID Razzle::RunMVA()
 {
   const std::vector<float> mvaScores(reader->EvaluateMulticlass(fMethodName));
 
-  sbn::MVAPID pidResults;
+  MVAPID pidResults;
 
   pidResults.AddScore(11, mvaScores.at(0));
   pidResults.AddScore(22, mvaScores.at(1));
@@ -573,7 +570,7 @@ sbn::MVAPID sbn::Razzle::RunMVA()
   return pidResults;
 }
 
-std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Razzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
+std::map<size_t, art::Ptr<recob::PFParticle>> Razzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
 {
   std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap;
   for (auto const& pfp : pfps) {
@@ -582,7 +579,7 @@ std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Razzle::GetPFPMap(std::vector
   return pfpMap;
 }
 
-float sbn::Razzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
+float Razzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
 {
   auto const pfpMetaVec(fmMeta.at(pfp.key()));
   if (pfpMetaVec.size() != 1)
@@ -592,7 +589,7 @@ float sbn::Razzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, cons
   return pfpTrackScoreIter == propertiesMap.end() ? -5.f : pfpTrackScoreIter->second;
 }
 
-std::string sbn::Razzle::PdgString(const int pdg) const
+std::string Razzle::PdgString(const int pdg) const
 {
   switch (std::abs(pdg)) {
   case 11:
@@ -602,6 +599,7 @@ std::string sbn::Razzle::PdgString(const int pdg) const
   default:
     return "Other";
   }
+}
 }
 
 DEFINE_ART_MODULE(sbn::Razzle)

@@ -27,10 +27,7 @@
 #include <memory>
 
 namespace sbn {
-class TrackScatterDCA;
-}
-
-class sbn::TrackScatterDCA : public art::EDProducer {
+class TrackScatterDCA : public art::EDProducer {
   public:
   explicit TrackScatterDCA(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -50,19 +47,19 @@ class sbn::TrackScatterDCA : public art::EDProducer {
   const art::InputTag fTrackLabel;
   const float fMinTrackLength;
 
-  sbn::ScatterDCA CalculateDCA(const recob::Track& track) const;
+  ScatterDCA CalculateDCA(const recob::Track& track) const;
 };
 
-sbn::TrackScatterDCA::TrackScatterDCA(fhicl::ParameterSet const& p)
+TrackScatterDCA::TrackScatterDCA(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
 {
-  produces<std::vector<sbn::ScatterDCA>>();
-  produces<art::Assns<recob::Track, sbn::ScatterDCA>>();
+  produces<std::vector<ScatterDCA>>();
+  produces<art::Assns<recob::Track, ScatterDCA>>();
 }
 
-void sbn::TrackScatterDCA::produce(art::Event& e)
+void TrackScatterDCA::produce(art::Event& e)
 {
   // Implementation of required member function here.
   auto const trackHandle(e.getValidHandle<std::vector<recob::Track>>(fTrackLabel));
@@ -70,15 +67,15 @@ void sbn::TrackScatterDCA::produce(art::Event& e)
   std::vector<art::Ptr<recob::Track>> tracks;
   art::fill_ptr_vector(tracks, trackHandle);
 
-  auto dcaVec = std::make_unique<std::vector<sbn::ScatterDCA>>();
-  auto trackAssns = std::make_unique<art::Assns<recob::Track, sbn::ScatterDCA>>();
+  auto dcaVec = std::make_unique<std::vector<ScatterDCA>>();
+  auto trackAssns = std::make_unique<art::Assns<recob::Track, ScatterDCA>>();
 
   for (auto const& track : tracks) {
 
     if (track->Length() < fMinTrackLength)
       continue;
 
-    sbn::ScatterDCA dca(this->CalculateDCA(*track));
+    ScatterDCA dca(this->CalculateDCA(*track));
 
     dcaVec->push_back(dca);
     util::CreateAssn(*this, e, *dcaVec, track, *trackAssns);
@@ -88,7 +85,7 @@ void sbn::TrackScatterDCA::produce(art::Event& e)
   e.put(std::move(trackAssns));
 }
 
-sbn::ScatterDCA sbn::TrackScatterDCA::CalculateDCA(const recob::Track& track) const
+ScatterDCA TrackScatterDCA::CalculateDCA(const recob::Track& track) const
 {
   // Interpolate the start and end of the track to find the centroid axis
   const TVector3 start(track.Start<TVector3>());
@@ -112,7 +109,7 @@ sbn::ScatterDCA sbn::TrackScatterDCA::CalculateDCA(const recob::Track& track) co
   }
 
   if (!counter)
-    return sbn::ScatterDCA();
+    return ScatterDCA();
 
   const float meanDCA(sumDCA / counter);
 
@@ -133,7 +130,8 @@ sbn::ScatterDCA sbn::TrackScatterDCA::CalculateDCA(const recob::Track& track) co
 
   const float stdDevDCA(std::sqrt(sumStdDev / counter));
 
-  return sbn::ScatterDCA(meanDCA, stdDevDCA, maxDCA);
+  return ScatterDCA(meanDCA, stdDevDCA, maxDCA);
+}
 }
 
 DEFINE_ART_MODULE(sbn::TrackScatterDCA)

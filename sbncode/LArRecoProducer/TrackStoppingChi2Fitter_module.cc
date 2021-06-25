@@ -31,10 +31,7 @@
 #include <memory>
 
 namespace sbn {
-class TrackStoppingChi2Fitter;
-}
-
-class sbn::TrackStoppingChi2Fitter : public art::EDProducer {
+class TrackStoppingChi2Fitter : public art::EDProducer {
   public:
   explicit TrackStoppingChi2Fitter(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -55,10 +52,10 @@ class sbn::TrackStoppingChi2Fitter : public art::EDProducer {
   const float fMinTrackLength, fMaxTrackLength, fMaxdEdx;
   const unsigned int fMinHits;
 
-  sbn::StoppingChi2Fit RunFit(const anab::Calorimetry& calo) const;
+  StoppingChi2Fit RunFit(const anab::Calorimetry& calo) const;
 };
 
-sbn::TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
+TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fCaloLabel(p.get<std::string>("CaloLabel"))
@@ -67,12 +64,12 @@ sbn::TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const&
     , fMaxdEdx(p.get<float>("MaxdEdx"))
     , fMinHits(p.get<unsigned int>("MinHits"))
 {
-  produces<std::vector<sbn::StoppingChi2Fit>>();
-  produces<art::Assns<recob::Track, sbn::StoppingChi2Fit>>();
-  produces<art::Assns<anab::Calorimetry, sbn::StoppingChi2Fit>>();
+  produces<std::vector<StoppingChi2Fit>>();
+  produces<art::Assns<recob::Track, StoppingChi2Fit>>();
+  produces<art::Assns<anab::Calorimetry, StoppingChi2Fit>>();
 }
 
-void sbn::TrackStoppingChi2Fitter::produce(art::Event& e)
+void TrackStoppingChi2Fitter::produce(art::Event& e)
 {
   // Implementation of required member function here.
   auto const trackHandle(e.getValidHandle<std::vector<recob::Track>>(fTrackLabel));
@@ -82,9 +79,9 @@ void sbn::TrackStoppingChi2Fitter::produce(art::Event& e)
 
   art::FindManyP<anab::Calorimetry> fmTrackCalo(trackHandle, e, fCaloLabel);
 
-  auto fitVec = std::make_unique<std::vector<sbn::StoppingChi2Fit>>();
-  auto trackAssns = std::make_unique<art::Assns<recob::Track, sbn::StoppingChi2Fit>>();
-  auto caloAssns = std::make_unique<art::Assns<anab::Calorimetry, sbn::StoppingChi2Fit>>();
+  auto fitVec = std::make_unique<std::vector<StoppingChi2Fit>>();
+  auto trackAssns = std::make_unique<art::Assns<recob::Track, StoppingChi2Fit>>();
+  auto caloAssns = std::make_unique<art::Assns<anab::Calorimetry, StoppingChi2Fit>>();
 
   for (auto const& track : tracks) {
 
@@ -103,7 +100,7 @@ void sbn::TrackStoppingChi2Fitter::produce(art::Event& e)
     if (bestPlane == -1)
       continue;
 
-    sbn::StoppingChi2Fit thisFit(this->RunFit(*caloVec.at(bestPlane)));
+    StoppingChi2Fit thisFit(this->RunFit(*caloVec.at(bestPlane)));
 
     if (thisFit.mPol0Chi2 < 0.f || thisFit.mExpChi2 < 0.f)
       continue;
@@ -118,7 +115,7 @@ void sbn::TrackStoppingChi2Fitter::produce(art::Event& e)
   e.put(std::move(caloAssns));
 }
 
-sbn::StoppingChi2Fit sbn::TrackStoppingChi2Fitter::RunFit(const anab::Calorimetry& calo) const
+StoppingChi2Fit TrackStoppingChi2Fitter::RunFit(const anab::Calorimetry& calo) const
 {
 
   std::vector<float> dEdxVec, resRangeVec;
@@ -137,7 +134,7 @@ sbn::StoppingChi2Fit sbn::TrackStoppingChi2Fitter::RunFit(const anab::Calorimetr
     throw cet::exception("TrachStoppingChi2Fitter") << "dEdx and Res Range do not have same length: " << dEdxVec.size() << " and " << resRangeVec.size() << std::endl;
 
   if (dEdxVec.size() < fMinHits)
-    return sbn::StoppingChi2Fit();
+    return StoppingChi2Fit();
 
   const auto graph(std::make_unique<TGraph>(dEdxVec.size(), &resRangeVec[0], &dEdxVec[0]));
 
@@ -152,7 +149,8 @@ sbn::StoppingChi2Fit sbn::TrackStoppingChi2Fitter::RunFit(const anab::Calorimetr
   const TF1* expFit = graph->GetFunction("expo");
   const float expChi2(expFit ? expFit->GetChisquare() : -5.f);
 
-  return sbn::StoppingChi2Fit(pol0Chi2, expChi2, pol0Fit);
+  return StoppingChi2Fit(pol0Chi2, expChi2, pol0Fit);
+}
 }
 
 DEFINE_ART_MODULE(sbn::TrackStoppingChi2Fitter)

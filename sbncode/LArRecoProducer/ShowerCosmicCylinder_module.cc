@@ -34,10 +34,7 @@
 #include "TGraph.h"
 
 namespace sbn {
-class ShowerCosmicCylinder;
-}
-
-class sbn::ShowerCosmicCylinder : public art::EDProducer {
+class ShowerCosmicCylinder : public art::EDProducer {
   public:
   explicit ShowerCosmicCylinder(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -67,7 +64,7 @@ class sbn::ShowerCosmicCylinder : public art::EDProducer {
       const art::FindManyP<recob::SpacePoint>& fmPFPSP) const;
 };
 
-sbn::ShowerCosmicCylinder::ShowerCosmicCylinder(fhicl::ParameterSet const& p)
+ShowerCosmicCylinder::ShowerCosmicCylinder(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fPandoraLabel(p.get<art::InputTag>("PandoraLabel"))
     , fShowerLabel(p.get<art::InputTag>("ShowerLabel"))
@@ -77,7 +74,7 @@ sbn::ShowerCosmicCylinder::ShowerCosmicCylinder(fhicl::ParameterSet const& p)
   produces<art::Assns<recob::Shower, float>>();
 }
 
-void sbn::ShowerCosmicCylinder::produce(art::Event& e)
+void ShowerCosmicCylinder::produce(art::Event& e)
 {
   //Get the showers
   auto const showerHandle = e.getValidHandle<std::vector<recob::Shower>>(fShowerLabel);
@@ -122,7 +119,7 @@ void sbn::ShowerCosmicCylinder::produce(art::Event& e)
   e.put(std::move(residualAssns));
 }
 
-const std::vector<art::Ptr<recob::PFParticle>> sbn::ShowerCosmicCylinder::GetCosmicPFPs(
+const std::vector<art::Ptr<recob::PFParticle>> ShowerCosmicCylinder::GetCosmicPFPs(
     const std::vector<art::Ptr<recob::PFParticle>>& pfps,
     const art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta) const
 {
@@ -147,7 +144,7 @@ const std::vector<art::Ptr<recob::PFParticle>> sbn::ShowerCosmicCylinder::GetCos
   return cosmicPFPs;
 }
 
-const float sbn::ShowerCosmicCylinder::FindShowerResidual(const recob::Shower& shower,
+const float ShowerCosmicCylinder::FindShowerResidual(const recob::Shower& shower,
     const std::vector<art::Ptr<recob::PFParticle>>& cosmicPFPs,
     const art::FindManyP<recob::SpacePoint>& fmPFPSP) const
 {
@@ -165,6 +162,7 @@ const float sbn::ShowerCosmicCylinder::FindShowerResidual(const recob::Shower& s
     }
   }
   return res;
+}
 }
 
 DEFINE_ART_MODULE(sbn::ShowerCosmicCylinder)

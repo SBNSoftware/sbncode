@@ -69,10 +69,7 @@
 #include <vector>
 
 namespace sbn {
-class Dazzle;
-}
-
-class sbn::Dazzle : public art::EDProducer {
+class Dazzle : public art::EDProducer {
   public:
   explicit Dazzle(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
@@ -142,11 +139,11 @@ class sbn::Dazzle : public art::EDProducer {
   void FillTrackMetrics(const recob::Track& track);
   void FillMCSMetrics(const recob::MCSFitResult& mcs);
   void FillChi2PIDMetrics(const anab::ParticleID& pid);
-  void FillRangePMetrics(const sbn::RangeP& range);
-  // void FillLGCMetrics(const sbn::LGCFit& lgc);
-  void FillDCAMetrics(const sbn::ScatterDCA& dca);
-  void FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingChi2);
-  sbn::MVAPID RunMVA();
+  void FillRangePMetrics(const RangeP& range);
+  // void FillLGCMetrics(const LGCFit& lgc);
+  void FillDCAMetrics(const ScatterDCA& dca);
+  void FillStoppingChi2Metrics(const StoppingChi2Fit& stoppingChi2);
+  MVAPID RunMVA();
 
   std::map<size_t, art::Ptr<recob::PFParticle>> GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const;
   unsigned int GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap) const;
@@ -155,7 +152,7 @@ class sbn::Dazzle : public art::EDProducer {
   std::string PdgString(const int pdg) const;
 };
 
-sbn::Dazzle::Dazzle(fhicl::ParameterSet const& p)
+Dazzle::Dazzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
@@ -209,11 +206,11 @@ sbn::Dazzle::Dazzle(fhicl::ParameterSet const& p)
     reader->BookMVA(fMethodName, fWeightFileFullPath);
   }
   // Call appropriate produces<>() functions here.
-  produces<std::vector<sbn::MVAPID>>();
-  produces<art::Assns<recob::Track, sbn::MVAPID>>();
+  produces<std::vector<MVAPID>>();
+  produces<art::Assns<recob::Track, MVAPID>>();
 }
 
-void sbn::Dazzle::beginJob()
+void Dazzle::beginJob()
 {
   if (fMakeTree) {
     trackTree = tfs->make<TTree>("trackTree", "Tree filled per Track with  PID variables");
@@ -311,7 +308,7 @@ void sbn::Dazzle::beginJob()
   }
 }
 
-void sbn::Dazzle::produce(art::Event& e)
+void Dazzle::produce(art::Event& e)
 {
   auto const clockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
 
@@ -336,13 +333,13 @@ void sbn::Dazzle::produce(art::Event& e)
   art::FindManyP<recob::MCSFitResult> fmTrackMCS(trackHandle, e, fMCSLabel);
   art::FindManyP<anab::ParticleID> fmTrackChi2(trackHandle, e, fChi2Label);
 
-  // art::FindManyP<sbn::LGCFit> fmTrackLGC(trackHandle, e, fLGCLabel);
-  art::FindManyP<sbn::RangeP> fmTrackRange(trackHandle, e, fRangeLabel);
-  art::FindManyP<sbn::ScatterDCA> fmTrackDCA(trackHandle, e, fDCALabel);
-  art::FindManyP<sbn::StoppingChi2Fit> fmTrackStoppingChi2(trackHandle, e, fStoppingChi2Label);
+  // art::FindManyP<LGCFit> fmTrackLGC(trackHandle, e, fLGCLabel);
+  art::FindManyP<RangeP> fmTrackRange(trackHandle, e, fRangeLabel);
+  art::FindManyP<ScatterDCA> fmTrackDCA(trackHandle, e, fDCALabel);
+  art::FindManyP<StoppingChi2Fit> fmTrackStoppingChi2(trackHandle, e, fStoppingChi2Label);
 
-  auto mvaPIDVec = std::make_unique<std::vector<sbn::MVAPID>>();
-  auto trackAssns = std::make_unique<art::Assns<recob::Track, sbn::MVAPID>>();
+  auto mvaPIDVec = std::make_unique<std::vector<MVAPID>>();
+  auto trackAssns = std::make_unique<art::Assns<recob::Track, MVAPID>>();
 
   const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap(this->GetPFPMap(pfps));
 
@@ -417,7 +414,7 @@ void sbn::Dazzle::produce(art::Event& e)
       this->FillStoppingChi2Metrics(*stoppingChi2Vec.front());
 
     if (fRunMVA) {
-      sbn::MVAPID mvaPID(this->RunMVA());
+      MVAPID mvaPID(this->RunMVA());
       mvaPIDVec->push_back(mvaPID);
       util::CreateAssn(*this, e, *mvaPIDVec, pfpTrack, *trackAssns);
     }
@@ -434,7 +431,7 @@ void sbn::Dazzle::produce(art::Event& e)
   e.put(std::move(trackAssns));
 }
 
-void sbn::Dazzle::ClearTree()
+void Dazzle::ClearTree()
 {
   truePdg = -5;
   chi2PIDPDG = -5;
@@ -513,7 +510,7 @@ void sbn::Dazzle::ClearTree()
   chi2PIDTypeNoKaon = "";
 }
 
-void sbn::Dazzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
+void Dazzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
     const art::FindManyP<recob::Cluster>& fmCluster, const art::FindManyP<recob::Hit>& fmHit, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta)
 {
   auto const parentId(pfp->Parent());
@@ -550,7 +547,7 @@ void sbn::Dazzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const s
   hierarchyDepth = this->GetPFPHierarchyDepth(pfp, pfpMap);
 }
 
-void sbn::Dazzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Track& track, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
+void Dazzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Track& track, const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<art::Ptr<sim::SimChannel>>& simChannels)
 {
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   const int bestMatch(TruthMatchUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits, true));
@@ -613,7 +610,7 @@ void sbn::Dazzle::FillTrueParticleMetrics(const detinfo::DetectorClocksData& clo
   endDist = (trueEnd - trackEnd).Mag();
 }
 
-void sbn::Dazzle::FillTrackMetrics(const recob::Track& track)
+void Dazzle::FillTrackMetrics(const recob::Track& track)
 {
   recoLen = track.Length();
 
@@ -633,12 +630,12 @@ void sbn::Dazzle::FillTrackMetrics(const recob::Track& track)
   endZ = end.Z();
 }
 
-bool sbn::Dazzle::InFV(const TVector3& pos) const
+bool Dazzle::InFV(const TVector3& pos) const
 {
   return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
 }
 
-void sbn::Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)
+void Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)
 {
   mcsMuonP = mcs.fwdMomentum();
 
@@ -663,14 +660,14 @@ void sbn::Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)
   mcsScatterMaxRatio = maxScatter / meanScatter;
 }
 
-void sbn::Dazzle::FillRangePMetrics(const sbn::RangeP& range)
+void Dazzle::FillRangePMetrics(const RangeP& range)
 {
   rangeMuonP = range.range_p;
 
   pDiff = (rangeMuonP > 0 && mcsMuonP > 0) ? (mcsMuonP - rangeMuonP) / rangeMuonP : -5.f;
 }
 
-// void sbn::Dazzle::FillLGCMetrics(const sbn::LGCFit& lgc)
+// void Dazzle::FillLGCMetrics(const LGCFit& lgc)
 // {
 //   lgcMPV = lgc.mMPV;
 
@@ -683,7 +680,7 @@ void sbn::Dazzle::FillRangePMetrics(const sbn::RangeP& range)
 //   lgcChi2 = lgc.mChi2 / lgc.mNDF;
 // }
 
-void sbn::Dazzle::FillDCAMetrics(const sbn::ScatterDCA& dca)
+void Dazzle::FillDCAMetrics(const ScatterDCA& dca)
 {
   meanDCA = dca.mMean;
 
@@ -694,7 +691,7 @@ void sbn::Dazzle::FillDCAMetrics(const sbn::ScatterDCA& dca)
   maxDCA = dca.mMax;
 }
 
-void sbn::Dazzle::FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingChi2)
+void Dazzle::FillStoppingChi2Metrics(const StoppingChi2Fit& stoppingChi2)
 {
   chi2Pol0Chi2 = stoppingChi2.mPol0Chi2;
   chi2ExpChi2 = stoppingChi2.mExpChi2;
@@ -707,11 +704,11 @@ void sbn::Dazzle::FillStoppingChi2Metrics(const sbn::StoppingChi2Fit& stoppingCh
   chi2Pol0Fit = stoppingChi2.mPol0Fit;
 }
 
-sbn::MVAPID sbn::Dazzle::RunMVA()
+MVAPID Dazzle::RunMVA()
 {
   const std::vector<float> mvaScores(reader->EvaluateMulticlass(fMethodName));
 
-  sbn::MVAPID pidResults;
+  MVAPID pidResults;
 
   pidResults.AddScore(13, mvaScores.at(0));
   pidResults.AddScore(211, mvaScores.at(1));
@@ -732,7 +729,7 @@ sbn::MVAPID sbn::Dazzle::RunMVA()
   return pidResults;
 }
 
-void sbn::Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
+void Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
 {
   chi2PIDMuon = pid.Chi2Muon();
   chi2PIDPion = pid.Chi2Pion();
@@ -762,7 +759,7 @@ void sbn::Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
   }
 }
 
-std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Dazzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
+std::map<size_t, art::Ptr<recob::PFParticle>> Dazzle::GetPFPMap(std::vector<art::Ptr<recob::PFParticle>>& pfps) const
 {
   std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap;
   for (auto const& pfp : pfps) {
@@ -771,7 +768,7 @@ std::map<size_t, art::Ptr<recob::PFParticle>> sbn::Dazzle::GetPFPMap(std::vector
   return pfpMap;
 }
 
-unsigned int sbn::Dazzle::GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap) const
+unsigned int Dazzle::GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap) const
 {
   if (pfp->Daughters().empty()) {
     return 1;
@@ -783,7 +780,7 @@ unsigned int sbn::Dazzle::GetPFPHierarchyDepth(const art::Ptr<recob::PFParticle>
   return maxDepth + 1;
 }
 
-float sbn::Dazzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
+float Dazzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta) const
 {
   auto const pfpMetaVec(fmMeta.at(pfp.key()));
   if (pfpMetaVec.size() != 1)
@@ -793,7 +790,7 @@ float sbn::Dazzle::GetPFPTrackScore(const art::Ptr<recob::PFParticle>& pfp, cons
   return pfpTrackScoreIter == propertiesMap.end() ? -5.f : pfpTrackScoreIter->second;
 }
 
-std::string sbn::Dazzle::PdgString(const int pdg) const
+std::string Dazzle::PdgString(const int pdg) const
 {
   switch (std::abs(pdg)) {
   case 13:
@@ -807,6 +804,7 @@ std::string sbn::Dazzle::PdgString(const int pdg) const
   default:
     return "Other";
   }
+}
 }
 
 DEFINE_ART_MODULE(sbn::Dazzle)
