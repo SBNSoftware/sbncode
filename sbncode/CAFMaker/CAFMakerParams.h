@@ -120,10 +120,10 @@ namespace caf
       "pandoraShowerSelectionVars"
     };
 
-    Atom<string> ShowerCosmicCylinderLabel {
-      Name("ShowerCosmicCylinderLabel"),
+    Atom<string> ShowerCosmicDistLabel {
+      Name("ShowerCosmicDistLabel"),
       Comment("Base label of shower selection vars producer."),
-      "pandoraShowerCosmicCylinder"
+      "pandoraShowerCosmicDist"
     };
 
     Atom<string> TrackCaloLabel {
@@ -138,10 +138,10 @@ namespace caf
       "pandoraPid"
     };
 
-    Atom<string> TrackScatterDCALabel {
-      Name("TrackScatterDCALabel"),
-      Comment("Base label of track track scatter dca producer."),
-      "pandoraTrackDCA"
+    Atom<string> TrackScatterClosestApproachLabel {
+      Name("TrackScatterClosestApproachLabel"),
+      Comment("Base label of track track scatter closestapproach producer."),
+      "pandoraTrackClosestApproach"
     };
 
     Atom<string> TrackStoppingChi2FitLabel {

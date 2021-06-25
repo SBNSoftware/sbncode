@@ -1,9 +1,0 @@
-BEGIN_PROLOG
-
-trackscatterdca_sbn: {
-  module_type: TrackScatterDCA
-  TrackLabel: pandoraTrack
-  MinTrackLength: 10
-}
-
-END_PROLOG

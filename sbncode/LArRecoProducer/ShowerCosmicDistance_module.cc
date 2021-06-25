@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       ShowerCosmicCylinder
+// Class:       ShowerCosmicDistance
 // Plugin Type: producer (art v3_03_01)
-// File:        ShowerCosmicCylinder_module.cc
+// File:        ShowerCosmicDistance_module.cc
 //
 // Generated at Tue Sep 15 08:54:39 2020 by Edward Tyley using cetskelgen
 // from cetlib version v3_08_00.
@@ -34,17 +34,17 @@
 #include "TGraph.h"
 
 namespace sbn {
-class ShowerCosmicCylinder : public art::EDProducer {
+class ShowerCosmicDistance : public art::EDProducer {
   public:
-  explicit ShowerCosmicCylinder(fhicl::ParameterSet const& p);
+  explicit ShowerCosmicDistance(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  ShowerCosmicCylinder(ShowerCosmicCylinder const&) = delete;
-  ShowerCosmicCylinder(ShowerCosmicCylinder&&) = delete;
-  ShowerCosmicCylinder& operator=(ShowerCosmicCylinder const&) = delete;
-  ShowerCosmicCylinder& operator=(ShowerCosmicCylinder&&) = delete;
+  ShowerCosmicDistance(ShowerCosmicDistance const&) = delete;
+  ShowerCosmicDistance(ShowerCosmicDistance&&) = delete;
+  ShowerCosmicDistance& operator=(ShowerCosmicDistance const&) = delete;
+  ShowerCosmicDistance& operator=(ShowerCosmicDistance&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -64,7 +64,7 @@ class ShowerCosmicCylinder : public art::EDProducer {
       const art::FindManyP<recob::SpacePoint>& fmPFPSP) const;
 };
 
-ShowerCosmicCylinder::ShowerCosmicCylinder(fhicl::ParameterSet const& p)
+ShowerCosmicDistance::ShowerCosmicDistance(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fPandoraLabel(p.get<art::InputTag>("PandoraLabel"))
     , fShowerLabel(p.get<art::InputTag>("ShowerLabel"))
@@ -74,7 +74,7 @@ ShowerCosmicCylinder::ShowerCosmicCylinder(fhicl::ParameterSet const& p)
   produces<art::Assns<recob::Shower, float>>();
 }
 
-void ShowerCosmicCylinder::produce(art::Event& e)
+void ShowerCosmicDistance::produce(art::Event& e)
 {
   //Get the showers
   auto const showerHandle = e.getValidHandle<std::vector<recob::Shower>>(fShowerLabel);
@@ -89,12 +89,12 @@ void ShowerCosmicCylinder::produce(art::Event& e)
 
   const art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta(pfpHandle, e, fPandoraLabel);
   if (!fmPFPMeta.isValid()) {
-    throw cet::exception("ShowerCosmicCylinder") << "PFP-Meta association is somehow not valid. Stopping";
+    throw cet::exception("ShowerCosmicDistance") << "PFP-Meta association is somehow not valid. Stopping";
     return;
   }
   const art::FindManyP<recob::SpacePoint> fmPFPSP(pfpHandle, e, fPandoraLabel);
   if (!fmPFPSP.isValid()) {
-    throw cet::exception("ShowerCosmicCylinder") << "PFP-SP association is somehow not valid. Stopping";
+    throw cet::exception("ShowerCosmicDistance") << "PFP-SP association is somehow not valid. Stopping";
     return;
   }
 
@@ -119,7 +119,7 @@ void ShowerCosmicCylinder::produce(art::Event& e)
   e.put(std::move(residualAssns));
 }
 
-const std::vector<art::Ptr<recob::PFParticle>> ShowerCosmicCylinder::GetCosmicPFPs(
+const std::vector<art::Ptr<recob::PFParticle>> ShowerCosmicDistance::GetCosmicPFPs(
     const std::vector<art::Ptr<recob::PFParticle>>& pfps,
     const art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta) const
 {
@@ -131,7 +131,7 @@ const std::vector<art::Ptr<recob::PFParticle>> ShowerCosmicCylinder::GetCosmicPF
 
     auto const& pfpMetaVec(fmPFPMeta.at(pfp.key()));
     if (pfpMetaVec.size() != 1)
-      throw cet::exception("ShowerCosmicCylinder") << "Wrong metadata entries for PFP: " << pfpMetaVec.size() << ". Stopping";
+      throw cet::exception("ShowerCosmicDistance") << "Wrong metadata entries for PFP: " << pfpMetaVec.size() << ". Stopping";
 
     // Ignore anything that is not a clear cosmic
     if (!pfpMetaVec.front()->GetPropertiesMap().count("IsClearCosmic"))
@@ -144,7 +144,7 @@ const std::vector<art::Ptr<recob::PFParticle>> ShowerCosmicCylinder::GetCosmicPF
   return cosmicPFPs;
 }
 
-const float ShowerCosmicCylinder::FindShowerResidual(const recob::Shower& shower,
+const float ShowerCosmicDistance::FindShowerResidual(const recob::Shower& shower,
     const std::vector<art::Ptr<recob::PFParticle>>& cosmicPFPs,
     const art::FindManyP<recob::SpacePoint>& fmPFPSP) const
 {
@@ -165,4 +165,4 @@ const float ShowerCosmicCylinder::FindShowerResidual(const recob::Shower& shower
 }
 }
 
-DEFINE_ART_MODULE(sbn::ShowerCosmicCylinder)
+DEFINE_ART_MODULE(sbn::ShowerCosmicDistance)

@@ -25,7 +25,7 @@
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
-#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
@@ -51,7 +51,7 @@ namespace caf
                         caf::SRShower& srshower,
                         bool allowEmpty = false);
 
-  void FillShowerCosmicCylinder(const std::vector<art::Ptr<float> >& cosmicCylinderVec,
+  void FillShowerCosmicDist(const std::vector<art::Ptr<float> >& cosmicDistVec,
                       caf::SRShower& srshower);
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
@@ -116,7 +116,7 @@ namespace caf
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
 
-  void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,
+  void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
                            caf::SRTrack& srtrack,
                            bool allowEmpty = false);
 

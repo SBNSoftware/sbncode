@@ -48,7 +48,7 @@
 // #include "sbnobj/Common/Reco/LGCFit.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/RangeP.h"
-#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
 // #include "sbncode/LArRecoProducer/LArReco/LGfitter.h"
@@ -90,7 +90,7 @@ class Dazzle : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fDCALabel, fStoppingChi2Label;
+  art::InputTag fLArGeantLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
   const float fMinTrackLength;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
@@ -141,7 +141,7 @@ class Dazzle : public art::EDProducer {
   void FillChi2PIDMetrics(const anab::ParticleID& pid);
   void FillRangePMetrics(const RangeP& range);
   // void FillLGCMetrics(const LGCFit& lgc);
-  void FillDCAMetrics(const ScatterDCA& dca);
+  void FillClosestApproachMetrics(const ScatterClosestApproach& closestApproach);
   void FillStoppingChi2Metrics(const StoppingChi2Fit& stoppingChi2);
   MVAPID RunMVA();
 
@@ -162,7 +162,7 @@ Dazzle::Dazzle(fhicl::ParameterSet const& p)
     , fChi2Label(p.get<std::string>("Chi2Label"))
     , fRangeLabel(p.get<std::string>("RangeLabel"), std::string("muon"))
     // , fLGCLabel(p.get<std::string>("LGCLabel"))
-    , fDCALabel(p.get<std::string>("DCALabel"))
+    , fClosestApproachLabel(p.get<std::string>("ClosestApproachLabel"))
     , fStoppingChi2Label(p.get<std::string>("StoppingChi2Label"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
     , fMakeTree(p.get<bool>("MakeTree"))
@@ -335,7 +335,7 @@ void Dazzle::produce(art::Event& e)
 
   // art::FindManyP<LGCFit> fmTrackLGC(trackHandle, e, fLGCLabel);
   art::FindManyP<RangeP> fmTrackRange(trackHandle, e, fRangeLabel);
-  art::FindManyP<ScatterDCA> fmTrackDCA(trackHandle, e, fDCALabel);
+  art::FindManyP<ScatterClosestApproach> fmTrackClosestApproach(trackHandle, e, fClosestApproachLabel);
   art::FindManyP<StoppingChi2Fit> fmTrackStoppingChi2(trackHandle, e, fStoppingChi2Label);
 
   auto mvaPIDVec = std::make_unique<std::vector<MVAPID>>();
@@ -405,9 +405,9 @@ void Dazzle::produce(art::Event& e)
     // if (lgcVec.size() == 1)
     //   this->FillLGCMetrics(*lgcVec.front());
 
-    auto const dcaVec(fmTrackDCA.at(pfpTrack.key()));
-    if (dcaVec.size() == 1)
-      this->FillDCAMetrics(*dcaVec.front());
+    auto const closestApproachVec(fmTrackClosestApproach.at(pfpTrack.key()));
+    if (closestApproachVec.size() == 1)
+      this->FillClosestApproachMetrics(*closestApproachVec.front());
 
     auto const stoppingChi2Vec(fmTrackStoppingChi2.at(pfpTrack.key()));
     if (stoppingChi2Vec.size() == 1)
@@ -680,15 +680,15 @@ void Dazzle::FillRangePMetrics(const RangeP& range)
 //   lgcChi2 = lgc.mChi2 / lgc.mNDF;
 // }
 
-void Dazzle::FillDCAMetrics(const ScatterDCA& dca)
+void Dazzle::FillClosestApproachMetrics(const ScatterClosestApproach& closestApproach)
 {
-  meanDCA = dca.mMean;
+  meanDCA = closestApproach.mMean;
 
   if (!fMakeTree)
     return;
 
-  stdDevDCA = dca.mStdDev;
-  maxDCA = dca.mMax;
+  stdDevDCA = closestApproach.mStdDev;
+  maxDCA = closestApproach.mMax;
 }
 
 void Dazzle::FillStoppingChi2Metrics(const StoppingChi2Fit& stoppingChi2)

@@ -95,7 +95,7 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
-#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
@@ -942,8 +942,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-    art::FindManyP<float> fmShowerCosmicCylinder =
-      FindManyPStrict<float>(slcShowers, evt, fParams.ShowerCosmicCylinderLabel() + slice_tag_suff);
+    art::FindManyP<float> fmShowerCosmicDist =
+      FindManyPStrict<float>(slcShowers, evt, fParams.ShowerCosmicDistLabel() + slice_tag_suff);
 
     art::FindManyP<float> fmShowerResiduals =
       FindManyPStrict<float>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
@@ -981,9 +981,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
           fParams.TrackChi2PidLabel() + slice_tag_suff);
 
-    art::FindManyP<sbn::ScatterDCA> fmScatterDCA =
-      FindManyPStrict<sbn::ScatterDCA>(slcTracks, evt,
-          fParams.TrackScatterDCALabel() + slice_tag_suff);
+    art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
+      FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
+          fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
 
     art::FindManyP<sbn::StoppingChi2Fit> fmStoppingChi2Fit =
       FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
@@ -1141,8 +1141,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
-        if (fmScatterDCA.isValid() && fmScatterDCA.at(iPart).size()==1) {
-           FillTrackScatterDCA(fmScatterDCA.at(iPart).front(), rec.reco.trk.back());
+        if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
            FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
@@ -1183,8 +1183,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
            FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
         }
-        if (fmShowerCosmicCylinder.isValid() && fmShowerCosmicCylinder.at(iPart).size() != 0) {
-          FillShowerCosmicCylinder(fmShowerCosmicCylinder.at(iPart), rec.reco.shw.back());
+        if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
         }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());

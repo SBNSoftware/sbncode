@@ -13,12 +13,12 @@
 
 #include "calorimetry_sbnd.fcl"
 
-#include "trackscatterdca.fcl"
+#include "trackscatterclosestapproach.fcl"
 #include "trackstoppingchi2fitter.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
-#include "showercosmicscylinderprodcer.fcl"
+#include "showercosmicdistanceproducer.fcl"
 #include "pid.fcl"
 
 #include "crthitconverter_producer.fcl"
@@ -90,12 +90,12 @@ physics:
    pandoraTrackCRTHit:          @local::crthitmatch_sbnd
    pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
 
-   pandoraTrackDCA:          @local::trackscatterdca_sbn
+   pandoraTrackClosestApproach:          @local::trackscatterclosestapproach_sbn
    pandoraTrackStoppingChi2: @local::trackstoppingchi2fitter_sbn
    pandoraTrackDazzle:       @local::dazzle_sbnd
 
    pandoraShowerSelectionVars:  @local::showerSelectionVars_sbn
-   pandoraShowerCosmicCylinder: @local::showerCosmicCylinder_sbn
+   pandoraShowerCosmicDist: @local::showerCosmicDist_sbn
    pandoraShowerRazzle:         @local::razzle_sbnd
 
    rns: { module_type: "RandomNumberSaver" }
@@ -110,8 +110,8 @@ physics:
   }
  runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
-            pandoraTrackDCA, pandoraTrackStoppingChi2, pandoraTrackDazzle,
-            pandoraShowerCosmicCylinder, pandoraShowerRazzle,
+            pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraTrackDazzle,
+            pandoraShowerCosmicDist, pandoraShowerRazzle,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]

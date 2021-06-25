@@ -2,20 +2,20 @@ BEGIN_PROLOG
 
 dazzle:
 {
-  module_type:         Dazzle
-  LArGeantLabel:       "largeant"
-  PFPLabel:            "pandora"
-  TrackLabel:          "pandoraTrack"
-  CaloLabel:           "pandoraCalo"
-  MCSLabel:            "pandoraTrackMCS"
-  Chi2Label:           "pandoraPid"
-  RangeLabel:          "pandoraTrackRange"
+  module_type:          Dazzle
+  LArGeantLabel:        "largeant"
+  PFPLabel:             "pandora"
+  TrackLabel:           "pandoraTrack"
+  CaloLabel:            "pandoraCalo"
+  MCSLabel:             "pandoraTrackMCS"
+  Chi2Label:            "pandoraPid"
+  RangeLabel:           "pandoraTrackRange"
   #LGCLabel:            "pandoraTrackLGC"
-  DCALabel:            "pandoraTrackDCA"
-  StoppingChi2Label:   "pandoraTrackStoppingChi2"
-  MakeTree:            false
-  RunMVA:              false
-  MinTrackLength:      10
+  ClosestApproachLabel: "pandoraTrackClosestApproach"
+  StoppingChi2Label:    "pandoraTrackStoppingChi2"
+  MakeTree:             false
+  RunMVA:               false
+  MinTrackLength:       10
 }
 
 razzle:

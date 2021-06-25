@@ -164,12 +164,12 @@ namespace caf
   }
 
 
-  void FillShowerCosmicCylinder(const std::vector<art::Ptr<float> >& cosmicCylinderVec,
+  void FillShowerCosmicDist(const std::vector<art::Ptr<float> >& cosmicDistVec,
                       caf::SRShower& srshower)
   {
-      if (cosmicCylinderVec.size() != 1)
+      if (cosmicDistVec.size() != 1)
         return;
-      srshower.cosmicCylinder = *cosmicCylinderVec.front();
+      srshower.cosmicDist = *cosmicDistVec.front();
   }
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
@@ -399,13 +399,13 @@ namespace caf
     }
   }
 
-  void FillTrackScatterDCA(const art::Ptr<sbn::ScatterDCA> dca,
+  void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
       caf::SRTrack& srtrack,
       bool allowEmpty)
   {
-    srtrack.scatterDCA.mean = dca->mMean;
-    srtrack.scatterDCA.stdDev = dca->mStdDev;
-    srtrack.scatterDCA.max = dca->mMax;
+    srtrack.scatterClosestApproach.mean = closestapproach->mMean;
+    srtrack.scatterClosestApproach.stdDev = closestapproach->mStdDev;
+    srtrack.scatterClosestApproach.max = closestapproach->mMax;
   }
 
   void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,

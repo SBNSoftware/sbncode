@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       TrackScatterDCA
+// Class:       TrackScatterClosestApproach
 // Plugin Type: producer (art v3_06_03)
-// File:        TrackScatterDCA_module.cc
+// File:        TrackScatterClosestApproach_module.cc
 //
 // Generated at Mon Mar  1 10:30:45 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_11_01.
@@ -22,22 +22,22 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "lardataobj/RecoBase/Track.h"
-#include "sbnobj/Common/Reco/ScatterDCA.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 
 #include <memory>
 
 namespace sbn {
-class TrackScatterDCA : public art::EDProducer {
+class TrackScatterClosestApproach : public art::EDProducer {
   public:
-  explicit TrackScatterDCA(fhicl::ParameterSet const& p);
+  explicit TrackScatterClosestApproach(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  TrackScatterDCA(TrackScatterDCA const&) = delete;
-  TrackScatterDCA(TrackScatterDCA&&) = delete;
-  TrackScatterDCA& operator=(TrackScatterDCA const&) = delete;
-  TrackScatterDCA& operator=(TrackScatterDCA&&) = delete;
+  TrackScatterClosestApproach(TrackScatterClosestApproach const&) = delete;
+  TrackScatterClosestApproach(TrackScatterClosestApproach&&) = delete;
+  TrackScatterClosestApproach& operator=(TrackScatterClosestApproach const&) = delete;
+  TrackScatterClosestApproach& operator=(TrackScatterClosestApproach&&) = delete;
 
   // Required functions.
   void produce(art::Event& e) override;
@@ -47,19 +47,19 @@ class TrackScatterDCA : public art::EDProducer {
   const art::InputTag fTrackLabel;
   const float fMinTrackLength;
 
-  ScatterDCA CalculateDCA(const recob::Track& track) const;
+  ScatterClosestApproach CalculateClosestApproach(const recob::Track& track) const;
 };
 
-TrackScatterDCA::TrackScatterDCA(fhicl::ParameterSet const& p)
+TrackScatterClosestApproach::TrackScatterClosestApproach(fhicl::ParameterSet const& p)
     : EDProducer { p }
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
 {
-  produces<std::vector<ScatterDCA>>();
-  produces<art::Assns<recob::Track, ScatterDCA>>();
+  produces<std::vector<ScatterClosestApproach>>();
+  produces<art::Assns<recob::Track, ScatterClosestApproach>>();
 }
 
-void TrackScatterDCA::produce(art::Event& e)
+void TrackScatterClosestApproach::produce(art::Event& e)
 {
   // Implementation of required member function here.
   auto const trackHandle(e.getValidHandle<std::vector<recob::Track>>(fTrackLabel));
@@ -67,32 +67,32 @@ void TrackScatterDCA::produce(art::Event& e)
   std::vector<art::Ptr<recob::Track>> tracks;
   art::fill_ptr_vector(tracks, trackHandle);
 
-  auto dcaVec = std::make_unique<std::vector<ScatterDCA>>();
-  auto trackAssns = std::make_unique<art::Assns<recob::Track, ScatterDCA>>();
+  auto closestapproachVec = std::make_unique<std::vector<ScatterClosestApproach>>();
+  auto trackAssns = std::make_unique<art::Assns<recob::Track, ScatterClosestApproach>>();
 
   for (auto const& track : tracks) {
 
     if (track->Length() < fMinTrackLength)
       continue;
 
-    ScatterDCA dca(this->CalculateDCA(*track));
+    ScatterClosestApproach closestapproach(this->CalculateClosestApproach(*track));
 
-    dcaVec->push_back(dca);
-    util::CreateAssn(*this, e, *dcaVec, track, *trackAssns);
+    closestapproachVec->push_back(closestapproach);
+    util::CreateAssn(*this, e, *closestapproachVec, track, *trackAssns);
   }
 
-  e.put(std::move(dcaVec));
+  e.put(std::move(closestapproachVec));
   e.put(std::move(trackAssns));
 }
 
-ScatterDCA TrackScatterDCA::CalculateDCA(const recob::Track& track) const
+ScatterClosestApproach TrackScatterClosestApproach::CalculateClosestApproach(const recob::Track& track) const
 {
   // Interpolate the start and end of the track to find the centroid axis
   const TVector3 start(track.Start<TVector3>());
   const TVector3 dir((start - track.End<TVector3>()).Unit());
 
   // Calculate the perpendicular distance from the centroid to each traj point
-  float sumDCA(0), maxDCA(0);
+  float sumClosestApproach(0), maxClosestApproach(0);
   unsigned int counter(0);
   for (size_t i = 0; i < track.NumberTrajectoryPoints(); i++) {
     if (!track.HasValidPoint(i))
@@ -102,18 +102,18 @@ ScatterDCA TrackScatterDCA::CalculateDCA(const recob::Track& track) const
     const TVector3 pos(track.LocationAtPoint<TVector3>(i));
     const TVector3 disp(pos - start);
     const float proj(disp.Dot(dir));
-    const float thisDCA((disp - proj * dir).Mag());
+    const float thisClosestApproach((disp - proj * dir).Mag());
 
-    sumDCA += thisDCA;
-    maxDCA = std::max(maxDCA, thisDCA);
+    sumClosestApproach += thisClosestApproach;
+    maxClosestApproach = std::max(maxClosestApproach, thisClosestApproach);
   }
 
   if (!counter)
-    return ScatterDCA();
+    return ScatterClosestApproach();
 
-  const float meanDCA(sumDCA / counter);
+  const float meanClosestApproach(sumClosestApproach / counter);
 
-  // Calculate the spread in DCA around the mean value
+  // Calculate the spread in ClosestApproach around the mean value
   float sumStdDev(0);
   for (size_t i = 0; i < track.NumberTrajectoryPoints(); i++) {
     if (!track.HasValidPoint(i))
@@ -122,16 +122,16 @@ ScatterDCA TrackScatterDCA::CalculateDCA(const recob::Track& track) const
     const TVector3 pos(track.LocationAtPoint<TVector3>(i));
     const TVector3 disp(pos - start);
     const float proj(disp.Dot(dir));
-    const float thisDCA((disp - proj * dir).Mag());
-    const float thisDCADev(thisDCA - meanDCA);
+    const float thisClosestApproach((disp - proj * dir).Mag());
+    const float thisClosestApproachDev(thisClosestApproach - meanClosestApproach);
 
-    sumStdDev += thisDCADev * thisDCADev;
+    sumStdDev += thisClosestApproachDev * thisClosestApproachDev;
   }
 
-  const float stdDevDCA(std::sqrt(sumStdDev / counter));
+  const float stdDevClosestApproach(std::sqrt(sumStdDev / counter));
 
-  return ScatterDCA(meanDCA, stdDevDCA, maxDCA);
+  return ScatterClosestApproach(meanClosestApproach, stdDevClosestApproach, maxClosestApproach);
 }
 }
 
-DEFINE_ART_MODULE(sbn::TrackScatterDCA)
+DEFINE_ART_MODULE(sbn::TrackScatterClosestApproach)

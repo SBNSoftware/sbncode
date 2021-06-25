@@ -1,6 +1,6 @@
 BEGIN_PROLOG
-showerCosmicCylinder_sbn: {
-  module_type: ShowerCosmicCylinder
+showerCosmicDist_sbn: {
+  module_type: ShowerCosmicDistance
   PandoraLabel: pandora
   ShowerLabel: pandoraShowerSBN
   MinShowerEnergy: 100
