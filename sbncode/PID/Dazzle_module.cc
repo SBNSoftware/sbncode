@@ -5,6 +5,15 @@
 //
 // Generated at Tue Jan 26 08:37:49 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_10_00.
+//
+// Module that attempts to classify each tracks as either:
+// - Muon (13)
+// - Pion (211)
+// - Proton (2212)
+// - Other (0)
+//
+// If a track is not classified (becuase it is too short) it will be
+// assigned a pdg of -5
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -88,8 +97,6 @@ class sbn::Dazzle : public art::EDProducer {
   const float fMinTrackLength;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
-
-  // const LGfitter::LGfitter lgFitter;
 
   // The metrics actually used in the MVA
   float recoLen;                    // The length of the track [cm]

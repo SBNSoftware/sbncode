@@ -5,6 +5,14 @@
 //
 // Generated at Tue Jan 26 08:37:49 2021 by Edward Tyley using cetskelgen
 // from cetlib version v3_10_00.
+//
+// Module that attempts to classify each shower as either:
+// - Electron (11)
+// - Photon (22)
+// - Other (0)
+//
+// If a shower is not classified (becuase it is too small) it will be
+// assigned a pdg of -5
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
