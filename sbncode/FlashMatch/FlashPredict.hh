@@ -225,8 +225,10 @@ private:
   unsigned icarusPDinTPC(const int pdChannel) const;
   double wallXWithMaxPE(const OpHitIt opH_beg,
                         const OpHitIt opH_end) const;
+  std::list<double> wiresXGl() const;
+  double driftDistance() const;
   double flashXGl(const double hypo_x, const double flash_x) const;
-  double driftDistance(const double x) const;
+  double foldXGl(const double x_gl) const;
   unsigned driftVolume(const double x) const;
   template <typename Stream>
   void printBookKeeping(Stream&& out);
@@ -260,23 +262,23 @@ private:
   const std::string fDetector; // SBND or ICARUS
   const bool fSBND, fICARUS;
   const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
+  const size_t fNTPC;
   const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
   const std::unique_ptr<geo::CryostatGeo> fGeoCryo;
-  const double fDriftDistance, fXBinWidth;
+  const std::list<double> fWiresX_gl;
+  const double fDriftDistance;
   const int fXBins;
+  const double fXBinWidth;
   const std::string fRR_TF1_fit, fRatio_TF1_fit;
   unsigned fYBins,fZBins;
   double fYLow, fYHigh, fZLow, fZHigh;
   double fYSkewThreshold, fZSkewThreshold;
   const double fYBiasSlope, fZBiasSlope;
-  const size_t fNTPC;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
   const unsigned fOpDetNormalizer;
   const double fTermThreshold;
-  std::list<double> fWiresX_gl;
-  // std::vector<double> fPMTChannelCorrection;
 
   const unsigned kRght = 0;
   const unsigned kLeft = 1;

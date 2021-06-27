@@ -133,8 +133,8 @@ def z_bias(z_skew, hypo_x, z_bias_slope):
 
 def generator(nuslice_tree, rootfile, pset):
     drift_distance = pset.DriftDistance
-    xbin_width = pset.XBinWidth
-    x_bins = int(drift_distance/xbin_width)
+    x_bins = pset.XBins
+    xbin_width = drift_distance/x_bins
     half_bin_width = xbin_width/2.
     y_bias_slope = pset.YBiasSlope
     z_bias_slope = pset.ZBiasSlope

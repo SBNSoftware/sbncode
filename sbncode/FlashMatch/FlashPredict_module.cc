@@ -47,16 +47,17 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fSBND((fDetector == "SBND") ? true : false )
   , fICARUS((fDetector == "ICARUS") ? true : false )
   , fPDMapAlgPtr(art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg")))
+  , fNTPC(fGeometry->NTPC())
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 or =1 for ICARUS to match reco chain selection
   , fGeoCryo(std::make_unique<geo::CryostatGeo>(fGeometry->Cryostat(fCryostat)))
-  , fDriftDistance(p.get<double>("DriftDistance"))// rounded up for binning
-  , fXBinWidth(p.get<double>("XBinWidth", 5.))// cm
-  , fXBins(int(fDriftDistance/fXBinWidth))
+  , fWiresX_gl(wiresXGl())
+  , fDriftDistance(driftDistance())
+  , fXBins(p.get<double>("XBins"))
+  , fXBinWidth(fDriftDistance/fXBins)// cm
   , fRR_TF1_fit(p.get<std::string>("rr_TF1_fit", "pol3"))
   , fRatio_TF1_fit(p.get<std::string>("ratio_TF1_fit", "pol3"))
   , fYBiasSlope(p.get<double>("YBiasSlope", 0.))
   , fZBiasSlope(p.get<double>("ZBiasSlope", 0.))
-  , fNTPC(fGeometry->NTPC())
   , fOpDetNormalizer((fSBND) ? 4 : 1)
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
@@ -68,11 +69,11 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     throw cet::exception("FlashPredict");
   }
 
-  for (size_t t = 0; t < fNTPC; t++) {
-    const geo::TPCGeo& tpcg = fGeoCryo->TPC(t);
-    fWiresX_gl.push_back(tpcg.LastPlane().GetCenter().X());
+  if(p.get<double>("DriftDistance") != driftDistance()){
+    mf::LogError("FlashPredict")
+      << "Provided driftDistance: " << p.get<double>("DriftDistance")
+      << " is different than expected: " << driftDistance();
   }
-  fWiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
 
   if(fSBND && !fICARUS) {
     if(fUseOppVolMetric) {
@@ -619,7 +620,7 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   if (norm > 0.) {
     double charge_q = norm;
     double charge_x_gl = xave / norm;
-    double charge_x = driftDistance(charge_x_gl);
+    double charge_x = foldXGl(charge_x_gl);
     double charge_y = yave / norm;
     double charge_z = zave / norm;
     return {charge_x, charge_x_gl, charge_y, charge_z, charge_q, true};
@@ -1389,6 +1390,27 @@ double FlashPredict::wallXWithMaxPE(const OpHitIt opH_beg,
 }
 
 
+std::list<double> FlashPredict::wiresXGl() const
+{
+  std::list<double> wiresX_gl;
+  for (size_t t = 0; t < fNTPC; t++) {
+    const geo::TPCGeo& tpcg = fGeoCryo->TPC(t);
+    wiresX_gl.push_back(tpcg.LastPlane().GetCenter().X());
+  }
+  wiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
+  return wiresX_gl;
+}
+
+
+double FlashPredict::driftDistance() const
+{
+  auto wit = fWiresX_gl.begin();
+  auto wite = fWiresX_gl.begin();
+  wite++;
+  return std::abs(*wite - *wit)/2.;
+}
+
+
 double FlashPredict::flashXGl(const double hypo_x,
                               const double flash_x) const
 {
@@ -1408,16 +1430,16 @@ double FlashPredict::flashXGl(const double hypo_x,
 }
 
 
-double FlashPredict::driftDistance(const double x) const
+double FlashPredict::foldXGl(const double x_gl) const
 {
   auto wit = fWiresX_gl.begin();
   for(size_t i=0; i<fWiresX_gl.size()-1; i++){
     double wxl = *wit;
     wit++;
     double wxh = *wit;
-    if(wxl < x && x<= wxh){
+    if(wxl < x_gl && x_gl<= wxh){
       double mid = (wxl + wxh)/2.;
-      return (x<=mid) ? std::abs(x-wxl) : std::abs(x-wxh);
+      return (x_gl<=mid) ? std::abs(x_gl-wxl) : std::abs(x_gl-wxh);
     }
   }
   return -10.;
