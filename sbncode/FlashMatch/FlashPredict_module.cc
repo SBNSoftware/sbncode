@@ -724,12 +724,16 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
       double y_correction = 0.;
       double z_correction = 0.;
       if(fSBND) {
-        y_correction = flash.y_skew * flash.h_x*flash.h_x * fYBiasSlope;
-        z_correction = flash.z_skew * flash.h_x * fZBiasSlope;
+        y_correction = (std::abs(flash.y_skew)<10) ?
+          flash.y_skew * flash.h_x*flash.h_x * fYBiasSlope : 0.;
+        z_correction = (std::abs(flash.z_skew)<10) ?
+          flash.z_skew * flash.h_x * fZBiasSlope : 0.;
       }
       else{// fICARUS
-        y_correction = flash.y_skew * flash.h_x * fYBiasSlope;
-        z_correction = flash.z_skew * flash.h_x * fZBiasSlope;
+        y_correction = (std::abs(flash.y_skew)<10) ?
+          flash.y_skew * flash.h_x * fYBiasSlope : 0.;
+        z_correction =  (std::abs(flash.z_skew)<10) ?
+          flash.z_skew * flash.h_x * fZBiasSlope : 0.;
       }
       flash.y = flash.yb - y_correction;
       flash.z = flash.zb - z_correction;
