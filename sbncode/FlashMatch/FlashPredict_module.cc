@@ -792,6 +792,15 @@ FlashPredict::Score FlashPredict::computeScore(
   double scr_ratio = 0.;
   if(fUseUncoatedPMT || fUseOppVolMetric) {
     scr_ratio = scoreTerm(flash.ratio, fRatioMeans[xbin], fRatioSpreads[xbin]);
+    if(fICARUS && !std::isnan(flash.h_x)){
+      // HACK to penalise matches with flash and charge on opposite volumes
+      double x_gl_diff = std::abs(flash.x_gl-charge.x_gl);
+      double x_diff = std::abs(flash.h_x-charge.x);
+      double cathode_tolerance = 40.;
+      if(x_gl_diff > x_diff + cathode_tolerance) // ok if close to the cathode
+        scr_ratio += scoreTerm((flash.pe-flash.unpe)/flash.pe,
+                               fRatioMeans[xbin], fRatioSpreads[xbin]);
+    }
     if(scr_ratio > fTermThreshold) printMetrics("RATIO", charge, flash, pdgc, tpcWithHits, scr_ratio, out);
     score += scr_ratio;
     tcount++;
@@ -916,6 +925,7 @@ std::tuple<double, double> FlashPredict::xEstimateAndRMS(
     TH1D* metric_px = metric_h2->ProjectionX("metric_px", low_bin, high_bin);
     if(metric_px->GetEntries() > kMinEntriesInProjection){
       metric_hypoX = metric_px->GetRandom();
+      // metric_hypoX = metric_px->GetMean(); TODO: which one is more justified?
       double metric_rmsX = metric_px->GetRMS();
       if(metric_rmsX < fXBinWidth){//something went wrong
         mf::LogDebug("FlashPredict")
