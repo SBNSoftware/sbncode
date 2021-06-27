@@ -123,6 +123,18 @@ public:
       {}
     // faulty charges constructor
     ChargeMetrics() : metric_ok(false) {}
+    std::string dumpMetrics() const
+      {
+        std::ostringstream stream;
+        stream
+          << "  x:       " << x << "\n"
+          << "  x_gl:    " << x_gl << "\n"
+          << "  y:       " << y << "\n"
+          << "  z:       " << z << "\n"
+          << "  q:       " << q << "\n"
+          << "  metric_ok: " << metric_ok << "\n";
+        return stream.str();
+      }
   };
 
   struct FlashMetrics {
@@ -149,6 +161,30 @@ public:
       h_x(0.), h_xerr(0.), h_xrr(0.), h_xratio(0.),
       y_skew(0.), z_skew(0.),
       metric_ok(false) {}
+    std::string dumpMetrics() const
+      {
+        std::ostringstream stream;
+        stream
+          << "  x:       " << x << "\n"
+          << "  x_gl:    " << x_gl << "\n"
+          << "  y:       " << y << "\n"
+          << "  yb:      " << yb << "\n"
+          << "  z:       " << z << "\n"
+          << "  zb:      " << zb << "\n"
+          << "  rr:      " << rr << "\n"
+          << "  pe:      " << pe << "\n"
+          << "  unpe:    " << unpe << "\n"
+          << "  ratio:   " << ratio << "\n"
+          << "  time:    " << time << "\n"
+          << "  h_x:     " << h_x << "\n"
+          << "  h_xerr:  " << h_xerr << "\n"
+          << "  h_xrr:   " << h_xrr << "\n"
+          << "  h_xratio:" << h_xratio << "\n"
+          << "  y_skew:  " << y_skew << "\n"
+          << "  z_skew:  " << z_skew << "\n"
+          << "  metric_ok: " << std::boolalpha << metric_ok << "\n";
+        return stream.str();
+      }
   };
 
 
@@ -235,6 +271,8 @@ private:
   void updateBookKeeping();
   template <typename Stream>
   void printMetrics(const std::string metric,
+                    const ChargeMetrics& charge,
+                    const FlashMetrics& flash,
                     const int pdgc,
                     const std::set<unsigned>& tpcWithHits,
                     const double term,

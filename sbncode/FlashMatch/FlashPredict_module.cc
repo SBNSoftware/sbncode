@@ -359,7 +359,7 @@ void FlashPredict::produce(art::Event& evt)
       continue;
     }
     else if(!flash.metric_ok){
-      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+      printMetrics("ERROR", charge, flash, pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
       bk.no_flash_pe++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
       sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
@@ -390,7 +390,7 @@ void FlashPredict::produce(art::Event& evt)
                                    << "\n_scr_z:     " << _scr_z
                                    << "\n_scr_rr:    " << _scr_rr
                                    << "\n_scr_ratio: " << _scr_ratio;
-      printMetrics("ERROR", pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
+      printMetrics("ERROR", charge, flash, pfpPDGC, tpcWithHits, 0, mf::LogError("FlashPredict"));
     }
 
   } // chargeDigestMap: PFparticles that pass criteria
@@ -774,21 +774,21 @@ FlashPredict::Score FlashPredict::computeScore(
   auto out = mf::LogWarning("FlashPredict");
 
   double scr_y = scoreTerm(flash.y, charge.y, fdYMeans[xbin], fdYSpreads[xbin]);
-  if (scr_y > fTermThreshold) printMetrics("Y", pdgc, tpcWithHits, scr_y, out);
+  if(scr_y > fTermThreshold) printMetrics("Y", charge, flash, pdgc, tpcWithHits, scr_y, out);
   score += scr_y;
   tcount++;
   double scr_z = scoreTerm(flash.z, charge.z, fdZMeans[xbin], fdZSpreads[xbin]);
-  if (scr_z > fTermThreshold) printMetrics("Z", pdgc, tpcWithHits, scr_z, out);
+  if(scr_z > fTermThreshold) printMetrics("Z", charge, flash, pdgc, tpcWithHits, scr_z, out);
   score += scr_z;
   tcount++;
   double scr_rr = scoreTerm(flash.rr, fRRMeans[xbin], fRRSpreads[xbin]);
-  if (scr_rr > fTermThreshold) printMetrics("RR", pdgc, tpcWithHits, scr_rr, out);
+  if(scr_rr > fTermThreshold) printMetrics("RR", charge, flash, pdgc, tpcWithHits, scr_rr, out);
   score += scr_rr;
   tcount++;
   double scr_ratio = 0.;
-  if (fUseUncoatedPMT || fUseOppVolMetric) {
+  if(fUseUncoatedPMT || fUseOppVolMetric) {
     scr_ratio = scoreTerm(flash.ratio, fRatioMeans[xbin], fRatioSpreads[xbin]);
-    if (scr_ratio > fTermThreshold) printMetrics("RATIO", pdgc, tpcWithHits, scr_ratio, out);
+    if(scr_ratio > fTermThreshold) printMetrics("RATIO", charge, flash, pdgc, tpcWithHits, scr_ratio, out);
     score += scr_ratio;
     tcount++;
   }
@@ -1526,17 +1526,16 @@ void FlashPredict::updateBookKeeping()
     - bk.no_oph_hits - bk.no_charge
     - bk.no_flash_pe;
 
-  if(bk.events_processed != bk.job_bookkeeping ||
-     bk.scored_pfp != bk.pfp_bookkeeping)
+  if(1-std::abs(bk.events_processed-bk.job_bookkeeping) == 0 ||
+     1-std::abs(bk.scored_pfp != bk.pfp_bookkeeping) == 0)
     printBookKeeping(mf::LogWarning("FlashPredict"));
 }
 
 
-// TODO: this is a bit broken, it uses the root _variables (_charge_x,
-// _flash_time, ...) but instead it should accept the charge and flash
-// objects
 template <typename Stream>
 void FlashPredict::printMetrics(const std::string metric,
+                                const ChargeMetrics& charge,
+                                const FlashMetrics& flash,
                                 const int pdgc,
                                 const std::set<unsigned>& tpcWithHits,
                                 const double term,
@@ -1552,20 +1551,8 @@ void FlashPredict::printMetrics(const std::string metric,
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
     << "_slices:    \t" << std::setw(8) << _slices     << "\n"
-    << "_flash_time:\t" << std::setw(8) << _flash_time << "\n"
-    << "_charge_q:  \t" << std::setw(8) << _charge_q   << "\n"
-    << "_flash_pe:  \t" << std::setw(8) << _flash_pe   << ",\t"
-    << "_flash_unpe:\t" << std::setw(8) << _flash_unpe << "\n"
-    << "_hypo_x:    \t" << std::setw(8) << _hypo_x     << ",\t"
-    << "_charge_x:  \t" << std::setw(8) << _charge_x   << "\n"
-    << "_flash_x:   \t" << std::setw(8) << _flash_x    << ",\t"
-    << "_charge_x_gl\t" << std::setw(8) << _charge_x_gl<< "\n"
-    << "_flash_y:   \t" << std::setw(8) << _flash_y    << ",\t"
-    << "_charge_y:  \t" << std::setw(8) << _charge_y   << "\n"
-    << "_flash_z:   \t" << std::setw(8) << _flash_z    << ",\t"
-    << "_charge_z:  \t" << std::setw(8) << _charge_z   << "\n"
-    << "_flash_rr:  \t" << std::setw(8) << _flash_rr   << ",\t"
-    << "_flash_ratio\t" << std::setw(8) << _flash_ratio<< "\n";
+    << "charge metrics:\n" << charge.dumpMetrics() << "\n"
+    << "flash metrics:\n"  << flash.dumpMetrics() << "\n";
 }
 
 
