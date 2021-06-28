@@ -94,6 +94,9 @@ class Dazzle : public art::EDProducer {
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
 
+  // FV defintion
+  const float fXMax, fYMax, fZMin, fZMax;
+
   // The metrics actually used in the MVA
   float recoLen;                    // The length of the track [cm]
   float chi2PIDMuon, chi2PIDProton; // Chi2 PID scores for different hyptheses
@@ -168,6 +171,10 @@ Dazzle::Dazzle(fhicl::ParameterSet const& p)
     , fRunMVA(p.get<bool>("RunMVA"))
     , fMethodName(p.get<std::string>("MethodName", ""))
     , fWeightFile(p.get<std::string>("WeightFile", ""))
+    , fXMax(p.get<float>("XMax"))
+    , fYMax(p.get<float>("YMax"))
+    , fZMin(p.get<float>("ZMin"))
+    , fZMax(p.get<float>("ZMax"))
 // , lgFitter(p.get<float>("LGFitterNP", 100.f), p.get<float>("LGFitterSC", 8.f))
 {
   if (!fMakeTree && !fRunMVA)
@@ -373,7 +380,7 @@ void Dazzle::produce(art::Event& e)
 
     // Fill only for the best plane, defined as the one with the most hits
     // Prefer collection plane > 1st induction > 2nd induction
-    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size()));
+    const unsigned int maxHits(std::max({ caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size() }));
     bestPlane = (caloVec[2]->dEdx().size() == maxHits) ? 2 : (caloVec[0]->dEdx().size() == maxHits) ? 0 : (caloVec[1]->dEdx().size() == maxHits) ? 1 : -1;
     bestPlaneHits = maxHits;
 
@@ -630,7 +637,7 @@ void Dazzle::FillTrackMetrics(const recob::Track& track)
 
 bool Dazzle::InFV(const TVector3& pos) const
 {
-  return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
+  return (std::abs(pos.X()) < fXMax && std::abs(pos.Y()) < fYMax && pos.Z() > fZMin && pos.Z() < fZMax);
 }
 
 void Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)

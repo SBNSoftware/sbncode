@@ -88,6 +88,9 @@ class Razzle : public art::EDProducer {
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
 
+  // FV defintion
+  const float fXMax, fYMax, fZMin, fZMax;
+
   // The metrics actually used in the MVA
   float bestdEdx;      // The dE/dx at the start of the shower (in the best plane)
   float convGap;       // The gap between the shower start and parent vertex
@@ -143,6 +146,10 @@ Razzle::Razzle(fhicl::ParameterSet const& p)
     , fRunMVA(p.get<bool>("RunMVA"))
     , fMethodName(p.get<std::string>("MethodName", ""))
     , fWeightFile(p.get<std::string>("WeightFile", ""))
+    , fXMax(p.get<float>("XMax"))
+    , fYMax(p.get<float>("YMax"))
+    , fZMin(p.get<float>("ZMin"))
+    , fZMax(p.get<float>("ZMax"))
 {
   if (!fMakeTree && !fRunMVA)
     throw cet::exception("Razzle") << "Configured to do nothing";
@@ -504,7 +511,7 @@ void Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<ar
 
 bool Razzle::InFV(const TVector3& pos) const
 {
-  return (std::abs(pos.X()) < 195 && std::abs(pos.Y()) < 195 && pos.Z() > 5 && pos.Z() < 495);
+  return (std::abs(pos.X()) < fXMax && std::abs(pos.Y()) < fYMax && pos.Z() > fZMin && pos.Z() < fZMax);
 }
 
 void Razzle::FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,

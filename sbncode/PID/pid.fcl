@@ -16,6 +16,10 @@ dazzle:
   MakeTree:             false
   RunMVA:               false
   MinTrackLength:       10
+  XMax:                 195
+  YMax:                 195
+  ZMax:                 5
+  ZMin:                 495
 }
 
 razzle:
@@ -28,6 +32,10 @@ razzle:
   MakeTree:            false
   RunMVA:              false
   MinShowerEnergy:     50
+  XMax:                 195
+  YMax:                 195
+  ZMax:                 5
+  ZMin:                 495
 }
 
 

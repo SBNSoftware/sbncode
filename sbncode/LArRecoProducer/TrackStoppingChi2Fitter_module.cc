@@ -94,7 +94,7 @@ void TrackStoppingChi2Fitter::produce(art::Event& e)
       continue;
 
     // Find the plane with the most hits: prefer collection > 1st induction > 2nd induction if multiple planes have the same number
-    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size()));
+    const unsigned int maxHits(std::max({ caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size() }));
     const int bestPlane((caloVec[2]->dEdx().size() == maxHits) ? 2 : (caloVec[0]->dEdx().size() == maxHits) ? 0 : (caloVec[1]->dEdx().size() == maxHits) ? 1 : -1);
 
     if (bestPlane == -1)
