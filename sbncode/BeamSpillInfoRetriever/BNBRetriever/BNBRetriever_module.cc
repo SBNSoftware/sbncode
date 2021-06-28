@@ -138,7 +138,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   if(gate_type == 1)
   {
     // Keep track of the number of beam gates the DAQ thinks 
-    //   are in this file
+    //   are in this job
     TotalBeamSpills += number_of_gates_since_previous_event;
    
     // These lines get everything primed within the IFBeamDB
