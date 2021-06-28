@@ -79,7 +79,6 @@ void ShowerCosmicDistance::produce(art::Event& e)
   //Get the showers
   auto const showerHandle = e.getValidHandle<std::vector<recob::Shower>>(fShowerLabel);
   auto const pfpHandle = e.getValidHandle<std::vector<recob::PFParticle>>(fPandoraLabel);
-  // auto const spHandle = e.getValidHandle<std::vector<recob::SpacePoint> >(fPandoraLabel);
 
   std::vector<art::Ptr<recob::Shower>> showers;
   art::fill_ptr_vector(showers, showerHandle);

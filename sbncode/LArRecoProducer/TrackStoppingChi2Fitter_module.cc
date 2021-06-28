@@ -49,7 +49,7 @@ class TrackStoppingChi2Fitter : public art::EDProducer {
   private:
   // Declare member data here.
   const art::InputTag fTrackLabel, fCaloLabel;
-  const float fMinTrackLength, fMaxTrackLength, fMaxdEdx;
+  const float fMinTrackLength, fFitRange, fMaxdEdx;
   const unsigned int fMinHits;
 
   StoppingChi2Fit RunFit(const anab::Calorimetry& calo) const;
@@ -60,7 +60,7 @@ TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fCaloLabel(p.get<std::string>("CaloLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
-    , fMaxTrackLength(p.get<float>("MaxTrackLength"))
+    , fFitRange(p.get<float>("FitRange"))
     , fMaxdEdx(p.get<float>("MaxdEdx"))
     , fMinHits(p.get<unsigned int>("MinHits"))
 {
@@ -94,7 +94,7 @@ void TrackStoppingChi2Fitter::produce(art::Event& e)
       continue;
 
     // Find the plane with the most hits: prefer collection > 1st induction > 2nd induction if multiple planes have the same number
-    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), std::max(caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size())));
+    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size()));
     const int bestPlane((caloVec[2]->dEdx().size() == maxHits) ? 2 : (caloVec[0]->dEdx().size() == maxHits) ? 0 : (caloVec[1]->dEdx().size() == maxHits) ? 1 : -1);
 
     if (bestPlane == -1)
@@ -123,7 +123,7 @@ StoppingChi2Fit TrackStoppingChi2Fitter::RunFit(const anab::Calorimetry& calo) c
   for (size_t i = 1; i < calo.dEdx().size() - 1; i++) {
     const float thisdEdx(calo.dEdx()[i]);
     const float thisResRange(calo.ResidualRange()[i]);
-    if (thisResRange > fMaxTrackLength || thisdEdx > fMaxdEdx)
+    if (thisResRange > fFitRange || thisdEdx > fMaxdEdx)
       continue;
 
     dEdxVec.push_back(thisdEdx);

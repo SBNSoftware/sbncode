@@ -38,7 +38,6 @@ void ShowerPIDMVA(TString fileName)
     dataloader->AddVariable("modHitDensity", "Modified Hit Density", "", 'F', 0, 10);
     dataloader->AddVariable("sqrtEnergyDensity", "Sqrt Energy Density", "", 'F', 0, 10);
     // dataloader->AddVariable("logEnergyDensity", "Sqrt Energy Density", "cm^-1", 'F', 0, 10);
-    // 0, 10); dataloader->AddVariable("", "", "", 'F', 0, 10); dataloader->AddVariable("", "", "", 'F', 0, 10);
 
     // dataloader->AddSpectator("trueP", "True Momentum", "GeV");
     // dataloader->AddSpectator("bestEnergy", "Reco Energy", "MeV");

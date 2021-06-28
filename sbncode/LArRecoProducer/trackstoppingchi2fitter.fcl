@@ -5,7 +5,7 @@ trackstoppingchi2fitter_sbn: {
   TrackLabel: pandoraTrack
   CaloLabel: pandoraCalo
   MinTrackLength: 10
-  MaxTrackLength: 30
+  FitRange: 30
   MaxdEdx: 30
   MinHits: 30
 }

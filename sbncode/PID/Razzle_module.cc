@@ -116,7 +116,7 @@ class Razzle : public art::EDProducer {
 
   std::string trueType, trueEndProcess;
 
-  void ClearTree();
+  void ClearTreeValues();
   void FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hits,
       std::vector<art::Ptr<sim::SimChannel>>& simChannels);
   void FillShowerMetrics(const recob::Shower& shower, const std::vector<art::Ptr<recob::Hit>>& hitVec);
@@ -158,7 +158,6 @@ Razzle::Razzle(fhicl::ParameterSet const& p)
 
     reader = new TMVA::Reader("V");
 
-    // std::cout << "Adding Variable: recoLen" << std::endl;
     // reader->AddVariable("recoLen", &recoLen);
     reader->AddVariable("bestdEdx", &bestdEdx);
     reader->AddVariable("convGap", &convGap);
@@ -270,7 +269,7 @@ void Razzle::produce(art::Event& e)
   const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap(this->GetPFPMap(pfps));
 
   for (auto const& pfp : pfps) {
-    this->ClearTree();
+    this->ClearTreeValues();
 
     // Get the shower for the PFP
     std::vector<art::Ptr<recob::Shower>> pfpShowerVec(fmPFPShower.at(pfp.key()));
@@ -318,7 +317,7 @@ void Razzle::produce(art::Event& e)
   e.put(std::move(showerAssns));
 }
 
-void Razzle::ClearTree()
+void Razzle::ClearTreeValues()
 {
   truePdg = -5;
   numHits = -5;

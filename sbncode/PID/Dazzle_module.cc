@@ -45,7 +45,6 @@
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 
-// #include "sbnobj/Common/Reco/LGCFit.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
@@ -131,7 +130,7 @@ class Dazzle : public art::EDProducer {
 
   std::string trueType, trueEndProcess, chi2PIDType, chi2PIDTypeNoKaon;
 
-  void ClearTree();
+  void ClearTreeValues();
   void FillPFPMetrics(const art::Ptr<recob::PFParticle>& pfp, const std::map<size_t, art::Ptr<recob::PFParticle>>& pfpMap,
       const art::FindManyP<recob::Cluster>& fmCluster, const art::FindManyP<recob::Hit>& fmHit, const art::FindManyP<larpandoraobj::PFParticleMetadata>& fmMeta);
   void FillTrueParticleMetrics(const detinfo::DetectorClocksData& clockData, const recob::Track& track, const std::vector<art::Ptr<recob::Hit>>& hits,
@@ -185,7 +184,6 @@ Dazzle::Dazzle(fhicl::ParameterSet const& p)
 
     reader = new TMVA::Reader("V");
 
-    // std::cout << "Adding Variable: recoLen" << std::endl;
     reader->AddVariable("recoLen", &recoLen);
 
     reader->AddVariable("chi2PIDMuon", &chi2PIDMuon);
@@ -344,7 +342,7 @@ void Dazzle::produce(art::Event& e)
   const std::map<size_t, art::Ptr<recob::PFParticle>> pfpMap(this->GetPFPMap(pfps));
 
   for (auto const& pfp : pfps) {
-    this->ClearTree();
+    this->ClearTreeValues();
 
     // Get the track for the PFP
     std::vector<art::Ptr<recob::Track>> pfpTrackVec(fmPFPTrack.at(pfp.key()));
@@ -375,7 +373,7 @@ void Dazzle::produce(art::Event& e)
 
     // Fill only for the best plane, defined as the one with the most hits
     // Prefer collection plane > 1st induction > 2nd induction
-    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), std::max(caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size())));
+    const unsigned int maxHits(std::max(caloVec[0]->dEdx().size(), caloVec[1]->dEdx().size(), caloVec[2]->dEdx().size()));
     bestPlane = (caloVec[2]->dEdx().size() == maxHits) ? 2 : (caloVec[0]->dEdx().size() == maxHits) ? 0 : (caloVec[1]->dEdx().size() == maxHits) ? 1 : -1;
     bestPlaneHits = maxHits;
 
@@ -431,7 +429,7 @@ void Dazzle::produce(art::Event& e)
   e.put(std::move(trackAssns));
 }
 
-void Dazzle::ClearTree()
+void Dazzle::ClearTreeValues()
 {
   truePdg = -5;
   chi2PIDPDG = -5;
