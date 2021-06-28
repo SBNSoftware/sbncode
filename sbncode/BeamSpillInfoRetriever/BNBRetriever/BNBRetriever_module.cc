@@ -36,9 +36,6 @@
 #include <memory>
 #include <optional>
 #include <vector>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
 
 namespace sbn {
   class BNBRetriever;
