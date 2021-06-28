@@ -55,8 +55,8 @@ public:
 
   // Required functions.
   void produce(art::Event& e) override;
-  void beginSubRun(art::SubRun& sr);
-  void endSubRun(art::SubRun& sr);
+  void beginSubRun(art::SubRun& sr) override;
+  void endSubRun(art::SubRun& sr) override;
 
 private:
   // input labels
