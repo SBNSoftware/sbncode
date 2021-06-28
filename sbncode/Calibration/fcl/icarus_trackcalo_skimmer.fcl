@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-calorimetry: {
+caloskim_calorimetry: {
   AssocHitModuleLabel: ""
   CaloAlg: {
     CalAmpConstants: [1., 1., 1.]

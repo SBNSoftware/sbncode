@@ -52,9 +52,9 @@ outputs:
 physics:
 {
   producers:{
-    calorimetryCryoE: @local::calorimetry
+    calorimetryCryoE: @local::caloskim_calorimetry
 
-    calorimetryCryoW: @local::calorimetry
+    calorimetryCryoW: @local::caloskim_calorimetry
   }
 
   analyzers:
