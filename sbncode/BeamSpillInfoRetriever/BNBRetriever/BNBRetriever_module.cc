@@ -20,6 +20,7 @@
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/Utilities/sparse_vector.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h"
+#include "larcorealg/CoreUtils/counter.h"
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
@@ -106,9 +107,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
   int gate_type = 0;
-  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
-  auto const & raw_data = (*raw_data_ptr);
+  auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
 
   double t_current_event  = 0;
   double t_previous_event = 0;
@@ -176,7 +175,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   int t_steps = int(fabs((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
   
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
-    for (auto const& var : vars) {// Iterate through the devices
+    for (std::string const& var : vars) {// Iterate through the devices
       
       //Make sure we have a device
       if(var.empty()) continue;
@@ -203,10 +202,9 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	packed_data_str.append(var);
 	packed_data_str.append(",,");
 	
-	for(int j = 0; j < int(packed_MWR.size()); j++){
-	  packed_data_str += std::to_string(int(packed_MWR[j]));
-	  if(j < int(packed_MWR.size())-1)
-	    packed_data_str.append(",");
+	for(auto const value: packed_MWR){
+	  packed_data_str += ',';
+	  packed_data_str += std::to_string(int(value));
 	}
 	
 	// Use Zarko's unpacking function to turn this into consumeable data
@@ -217,7 +215,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,-0.035);
 	
 	//There are four events that are packed into one MWR IFBeam entry
-	for(int s = 0; s < int(unpacked_MWR_temp.size()); s++){
+	for(std::size_t s: util::counter(unpacked_MWR_temp.size())){
+	  //for(int s = 0; s < int(unpacked_MWR_temp.size()); s++){
 	  
 	  // If this entry has a unique time them store it for later	  
 	  if(std::find(MWR_times[dev].begin(), MWR_times[dev].end(), MWR_times_temp[s]) == MWR_times[dev].end()){
