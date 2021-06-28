@@ -31,6 +31,8 @@ public:
     return selected && (fISelect % fNPreScale == 0) /* implement prescale */;
   }
 
+  unsigned GetPrescale() const { return fNPreScale; }
+
 protected:
   /// For children to implement: Whether to select a given track
   virtual bool Select(const TrackInfo &t) = 0;

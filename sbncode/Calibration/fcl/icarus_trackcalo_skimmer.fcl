@@ -72,7 +72,7 @@ stopping_selection: {
 throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
   Invert: true
-  PreScale: 10
+  PreScale: 1
   FVInsetMinX: 5
   FVInsetMaxX: 5
   FVInsetMinY: 5

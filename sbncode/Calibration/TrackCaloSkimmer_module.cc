@@ -369,6 +369,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     if (t->DoSelect(*fTrack)) {
       select = true;
       fTrack->selected = i_select;
+      fTrack->nprescale = t->GetPrescale();
       break;
     }
     i_select ++;
