@@ -176,15 +176,15 @@ void sbn::BNBRetriever::produce(art::Event& e)
   int t_steps = int(fabs((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
   
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
-    for (int i = 0; i < int(vars.size()); i++) {// Iterate through the devices
+    for (auto const& var : vars) {// Iterate through the devices
       
       //Make sure we have a device
-      if(vars[i].empty()) continue;
+      if(var.empty()) continue;
       
       /// Check the device name and interate the double-vector index
-      if(vars[i].find("M875BB") != std::string::npos ) dev = 0;
-      else if(vars[i].find("M876BB") != std::string::npos ) dev = 1;
-      else if(vars[i].find("MMBTBB") != std::string::npos ) dev = 2;
+      if(var.find("M875BB") != std::string::npos ) dev = 0;
+      else if(var.find("M876BB") != std::string::npos ) dev = 1;
+      else if(var.find("MMBTBB") != std::string::npos ) dev = 2;
       else{continue;}
       
       time_for_mwr = 0;
@@ -192,7 +192,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
       try{
 	//Pull the MWR data for the device
 	// these data are "packed"
-	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-fTimePad+double(0.5*t),vars[i],&time_for_mwr);
+	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-fTimePad+double(0.5*t),var,&time_for_mwr);
 	
 	//We'll convert this into a format
 	// that we can unpack doubles >> strings
@@ -200,7 +200,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	packed_data_str.clear();
 	packed_data_str += std::to_string(int(time_for_mwr));
 	packed_data_str.append(",");
-	packed_data_str.append(vars[i]);
+	packed_data_str.append(var);
 	packed_data_str.append(",,");
 	
 	for(int j = 0; j < int(packed_MWR.size()); j++){
