@@ -1,13 +1,12 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       BNBRetriever
-// Plugin Type: producer 
-// File:        BNBRetriever_module.cc
-//
-// Created by hand Wed April 9 2021 by J. Zennamo (FNAL)
-// Based heavily on code by Z. Pavlovic written for MicroBooNE 
-// Based heavily on code by NOvA collaboration (Thanks NOvA!):
-//       https://cdcvs.fnal.gov/redmine/projects/novaart/repository/entry/trunk/IFDBSpillInfo/BNBInfo_module.cc
-////////////////////////////////////////////////////////////////////////
+/** ********************************************************************
+ * @file BNBRetriever_module.cc
+ * @date Wed April 9 2021
+ * @author J. Zennamo (FNAL)
+ * 
+ * Based heavily on code by Z. Pavlovic written for MicroBooNE 
+ * Based heavily on code by NOvA collaboration (Thanks NOvA!):
+ *        https://cdcvs.fnal.gov/redmine/projects/novaart/repository/entry/trunk/IFDBSpillInfo/BNBInfo_module.cc
+ */
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
