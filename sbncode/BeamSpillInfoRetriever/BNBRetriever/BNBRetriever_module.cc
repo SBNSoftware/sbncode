@@ -61,12 +61,12 @@ public:
 private:
   // input labels
   std::vector< sbn::BNBSpillInfo > fOutbeamInfos;
-  int fTimePad;
+  double fTimePad;
   std::string fURL;
   MWRData mwrdata;
   std::string raw_data_label_;
   std::string fDeviceUsedForTiming;
-  int TotalBeamSpills;  
+  unsigned int TotalBeamSpills;  
   //
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
@@ -79,7 +79,7 @@ private:
 
 sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fTimePad(p.get<double>("TimePadding",0.0333)), //seconds 
+  fTimePad{p.get<double>("TimePadding",0.0333)}, //seconds
   raw_data_label_(p.get<std::string>("raw_data_label")),
   fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
   bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
@@ -132,7 +132,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
     
   }
   
-  std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
+  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
 
   //We only want to process BNB gates, i.e. type 1 
   if(gate_type == 1)
@@ -347,19 +347,19 @@ void sbn::BNBRetriever::produce(art::Event& e)
       // since sometimes devices fail to report we'll
       // allow each to throw an exception but still move forward
       // interpreting these failures will be part of the beam quality analyses 
-      try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-      try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       
       //crunch the times 
       unsigned long int time_closest_int = (int) TOR860_time;
@@ -398,9 +398,9 @@ void sbn::BNBRetriever::produce(art::Event& e)
     }//end iteration over beam device times
 
     if(spill_count > number_of_gates_since_previous_event)
-      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
+      mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
     else
-      std::cout << "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
+      mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
 
   } //end check if BNB DAQ triggered gate
 }//end iteration over art::Events
@@ -417,8 +417,8 @@ void sbn::BNBRetriever::endSubRun(art::SubRun& sr)
   // art::SubRun so it persists 
   // currently this is ~2.7 kB/event or ~0.07 kB/spill
 
-std::cout << "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
-std::cout << "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
+mf::LogDebug("BNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
+mf::LogDebug("BNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >(fOutbeamInfos);
 
