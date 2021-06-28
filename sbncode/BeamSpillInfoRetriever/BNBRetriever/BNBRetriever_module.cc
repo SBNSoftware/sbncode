@@ -422,7 +422,7 @@ std::cout << "Total number of Selected Spills : " << fOutbeamInfos.size() << std
 
   auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >(fOutbeamInfos);
 
-  sr.put(std::move(p));
+  sr.put(std::move(p), art::subRunFragment());
 
   return;
 }
