@@ -28,6 +28,7 @@
 
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
+#include <sys/stat.h>
 
 
 #include "TH1F.h"//need these to read histograms
@@ -47,7 +48,7 @@ namespace sbn {
 				//GetWeight() returns the final weights as a vector
 				//	each weight calculation is carried out by WeightCalc() function;
 				//inu indicates the ith parameter.
-				std::vector<float> GetWeight(art::Event& e, size_t inu) override;
+				std::vector<float> GetWeight(art::Event& e, size_t inu) override;//CHECK, why fluxreader did not go through this?
 
 				//Function for evaluating a specific weight
 				//enu - neutrino energy from simb::MCTruth; 
@@ -76,6 +77,7 @@ namespace sbn {
 				double fRWpos[4][4][200];
 				double fRWneg[4][4][200];
 				bool PosOnly{false};
+//				int validate_code = 0 ;//print out first few weights;
 
 
 				DECLARE_WEIGHTCALC(FluxUnisimWeightCalc)
@@ -210,6 +212,8 @@ namespace sbn {
 			fScalePos 	= pset.get<double>("scale_factor_pos");
 			fScaleNeg 	= pset.get<double>("scale_factor_neg");
 
+//			std::cout<<"CHECK! "<<__FUNCTION__<< " Configure() finishs"<<std::endl;
+
 		}
 
 		//K: New version requires:
@@ -288,16 +292,19 @@ namespace sbn {
 
 			//Let's make a weights based on the calculator you have requested 
 			if(fMode=="multisim"){//continue calculation with multisim
-				std::cout<<"fMode in"<<std::endl;
+//				std::cout<<"<<--- CHECK Filling Weights: "<<std::endl;
 				for (size_t i=0;i<weights.size();i++) {
+//					if(validate_code > 4) break;
 					weights[i]=MicroBooNEWeightCalc(enu, ptype, ntype, i, PosOnly);
+//					if(weights[i]>1) validate_code++;
 				}//Iterate through the number of universes      
 			}
 
-			std::cout<<"Working on inu:"<<inu<<" with weight "<<weights[inu]<<" size "<<weights.size()<<std::endl;
-			std::cout<<"\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
+//			std::cout<<"Working on inu:"<<inu<<" with weight "<<weights[inu]<<" size "<<weights.size()<<std::endl;
+//			std::cout<<"\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
 
 			//--- Copy over from ubcode
+
 
 			return weights;
 		}
@@ -362,10 +369,11 @@ namespace sbn {
 				std::cout << "UniSim " <<  fParameterSet.fName << " : Failed to get a finite weight" << std::endl;      
 				weight = 30;}
 
-			if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;//nue from mu or pi
-			if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;//numu from pi or k
+			if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;//nue/nuebar from pion
+			if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;//nuebar/numubar from pi or charged kaon
 
-			std::cout<<weight<<" ";
+			//CHECK cout
+			std::cout<<weight<<" ("<<fWeightArray[uni]<<") ";
 			return weight;
 
 		}
