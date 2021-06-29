@@ -95,7 +95,7 @@ class Dazzle : public art::EDProducer {
   const std::string fMethodName, fWeightFile;
 
   // FV defintion
-  const float fXMax, fYMax, fZMin, fZMax;
+  const float fXMin, fXMax, fYMin, fYMax, fZMin, fZMax;
 
   // The metrics actually used in the MVA
   float recoLen;                    // The length of the track [cm]
@@ -171,7 +171,9 @@ Dazzle::Dazzle(fhicl::ParameterSet const& p)
     , fRunMVA(p.get<bool>("RunMVA"))
     , fMethodName(p.get<std::string>("MethodName", ""))
     , fWeightFile(p.get<std::string>("WeightFile", ""))
+    , fXMin(p.get<float>("XMin"))
     , fXMax(p.get<float>("XMax"))
+    , fYMin(p.get<float>("YMin"))
     , fYMax(p.get<float>("YMax"))
     , fZMin(p.get<float>("ZMin"))
     , fZMax(p.get<float>("ZMax"))
@@ -637,7 +639,7 @@ void Dazzle::FillTrackMetrics(const recob::Track& track)
 
 bool Dazzle::InFV(const TVector3& pos) const
 {
-  return (std::abs(pos.X()) < fXMax && std::abs(pos.Y()) < fYMax && pos.Z() > fZMin && pos.Z() < fZMax);
+  return (pos.X() > fXMin && pos.X() < fXMax && pos.Y() > fYMin && pos.Y() < fYMax && pos.Z() > fZMin && pos.Z() < fZMax);
 }
 
 void Dazzle::FillMCSMetrics(const recob::MCSFitResult& mcs)
