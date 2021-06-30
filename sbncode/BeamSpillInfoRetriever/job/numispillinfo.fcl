@@ -1,0 +1,16 @@
+
+BEGIN_PROLOG
+
+numispillinfo: {
+
+    module_type: "NuMIRetriever"
+    TimePadding: 0.5 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away
+    URL: "" #keep this blank and we're good
+    Bundle: "NuMI_Physics_A9"
+    MultiWireBundle: "BNBMultiWire"
+    TimeWindow: "600" #seconds
+    MWR_TimeWindow: "3601" #seconds
+    raw_data_label: "daq"
+    DeviceUsedForTiming: "E:TRTGTD"
+}
+END_PROLOG
