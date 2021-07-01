@@ -107,3 +107,7 @@ physics:
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
+
+# This job doesn't run the genie weights, and we assume they won't be in the
+# input art file.
+physics.producers.mycafmaker.SystWeightLabel: ""

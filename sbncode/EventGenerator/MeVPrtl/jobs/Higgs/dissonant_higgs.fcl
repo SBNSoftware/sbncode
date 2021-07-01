@@ -1,0 +1,81 @@
+#include "numi_kaon_common.fcl"
+
+BEGIN_PROLOG
+
+higgsM: 0.240 # GeV/c^2
+
+kaon2higgs: {
+  tool_type: Kaon2HiggsFlux
+  M: @local::higgsM
+  MixingAngle: 1e-5
+  KDAROnly: false
+
+  // uBooNE config
+  Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
+                                                0.0000462540012621546684,       0.99829162468141475,            -0.0584279894529063024,
+                                                -0.38947144863934974,           0.0538324139386641073,          0.91946400794392302 ]
+  // uBooNE pos.
+  // BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
+
+  // ICARUS?
+  BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
+
+  // timing config
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
+
+  IgnoreParentDecayTime: true
+}
+
+mono_energy_flux: {
+  tool_type: MonoEnergyHiggsFlux
+  E: 0.3 # GeV
+  M: @local::higgsM
+  MixingAngle: 1e-5
+
+  X: 0 # cm
+  Y: 0
+  Z: -10000
+
+  Xdir: 0 # unit-vector
+  Ydir: 0
+  Zdir: 1
+}
+
+decay_higgs: {
+  tool_type: HiggsMakeDecay
+  ReferenceRayLength: 2100 # 21m
+  ReferenceHiggsMass: @local::higgsM
+  ReferenceHiggsMixing: 1e-5
+  ReferenceRayDistance: 10400 # 104m
+  ReferenceHiggsEnergyFromKaonEnergy: 15. # GeV
+}
+
+# RayTrace configs
+mcraytrace: @local::rethrow_ray_trace_box
+mcraytrace.ReferencePrtlMass: @local::higgsM # GeV
+mcraytrace.ReferenceScndPDG: 211 # pion
+mcraytrace.NThrows: 100 
+
+wgtraytrace: @local::weighted_ray_trace_box
+wgtraytrace.ReferencePrtlMass: @local::higgsM # GeV
+wgtraytrace.ReferenceScndPDG: 211 # pion
+
+mxdraytrace: @local::mixedweight_ray_trace_box
+mxdraytrace.ReferencePrtlMass: @local::higgsM # GeV
+mxdraytrace.ReferenceScndPDG: 211 # pion
+
+dissonant_higgs_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2higgs
+  RayTrace: @local::mxdraytrace
+  Decay: @local::decay_higgs
+}
+
+dissonant_higgs: @local::dissonant_higgs_gen
+dissonant_higgs.Deweight: false
+dissonant_higgs.Produce: false
+dissonant_higgs.AnaOutput: true
+
+END_PROLOG

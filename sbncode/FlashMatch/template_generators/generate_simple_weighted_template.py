@@ -33,9 +33,15 @@ from ROOT import TStyle, TCanvas, TColor, TGraph, TGraphErrors
 from ROOT import TH1D, TH2D, TProfile, TFile, TF1
 from ROOT import gROOT
 import ROOT
-# import project_utilities
-import larbatch_posix
-import fhicl
+
+try:
+    # import project_utilities
+    import larbatch_posix
+    import fhicl
+except ImportError:
+    print("Failed to import 'larbatch_posix' or 'fhicl' modules")
+    print("Setup 'fhiclpy' first:\n\tsetup fhiclpy vV_VV_VV -q QQQ:QQQQ")
+    exit(1)
 
 
 class dotDict(dict):
