@@ -505,7 +505,7 @@ namespace caf
                    caf::SRPFP& srpfp,
                    bool allowEmpty)
   {
-    srpfp.ID = particle.Self();
+    srpfp.id = particle.Self();
     srpfp.slcID = (primary) ? primary->Self() : -1;
 
     // set the daughters in the particle flow
