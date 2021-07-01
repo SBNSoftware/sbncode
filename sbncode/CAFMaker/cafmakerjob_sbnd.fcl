@@ -19,7 +19,7 @@
 #include "rangeproducer.fcl"
 #include "showerselectionvarsproducer.fcl"
 #include "showercosmicdistanceproducer.fcl"
-#include "pid.fcl"
+#include "sbn_pid.fcl"
 
 #include "crthitconverter_producer.fcl"
 #include "crtmatch_producer.fcl"
