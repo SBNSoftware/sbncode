@@ -155,9 +155,9 @@ namespace caf
       caf::SRShower& srshower,
       bool allowEmpty)
   {
-    srshower.razzle.electronScore = razzle->mMVAScoreMap.at(11);
-    srshower.razzle.photonScore = razzle->mMVAScoreMap.at(22);
-    srshower.razzle.otherScore = razzle->mMVAScoreMap.at(0);
+    srshower.razzle.electronScore = razzle->MVAScoreMap.at(11);
+    srshower.razzle.photonScore = razzle->MVAScoreMap.at(22);
+    srshower.razzle.otherScore = razzle->MVAScoreMap.at(0);
 
     srshower.razzle.pdg = razzle->BestPDG();
     srshower.razzle.bestScore = razzle->BestScore();
@@ -403,28 +403,28 @@ namespace caf
       caf::SRTrack& srtrack,
       bool allowEmpty)
   {
-    srtrack.scatterClosestApproach.mean = closestapproach->mMean;
-    srtrack.scatterClosestApproach.stdDev = closestapproach->mStdDev;
-    srtrack.scatterClosestApproach.max = closestapproach->mMax;
+    srtrack.scatterClosestApproach.mean = closestapproach->Mean;
+    srtrack.scatterClosestApproach.stdDev = closestapproach->StdDev;
+    srtrack.scatterClosestApproach.max = closestapproach->Max;
   }
 
   void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,
       caf::SRTrack& srtrack,
       bool allowEmpty)
   {
-    srtrack.stoppingChi2Fit.pol0Chi2 = stoppingChi2->mPol0Chi2;
-    srtrack.stoppingChi2Fit.expChi2 = stoppingChi2->mExpChi2;
-    srtrack.stoppingChi2Fit.pol0Fit = stoppingChi2->mPol0Fit;
+    srtrack.stoppingChi2Fit.pol0Chi2 = stoppingChi2->Pol0Chi2;
+    srtrack.stoppingChi2Fit.expChi2 = stoppingChi2->ExpChi2;
+    srtrack.stoppingChi2Fit.pol0Fit = stoppingChi2->Pol0Fit;
   }
 
   void FillTrackDazzle(const art::Ptr<sbn::MVAPID> dazzle,
       caf::SRTrack& srtrack,
       bool allowEmpty)
   {
-    srtrack.dazzle.muonScore = dazzle->mMVAScoreMap.at(13);
-    srtrack.dazzle.pionScore = dazzle->mMVAScoreMap.at(211);
-    srtrack.dazzle.protonScore = dazzle->mMVAScoreMap.at(2212);
-    srtrack.dazzle.otherScore = dazzle->mMVAScoreMap.at(0);
+    srtrack.dazzle.muonScore = dazzle->MVAScoreMap.at(13);
+    srtrack.dazzle.pionScore = dazzle->MVAScoreMap.at(211);
+    srtrack.dazzle.protonScore = dazzle->MVAScoreMap.at(2212);
+    srtrack.dazzle.otherScore = dazzle->MVAScoreMap.at(0);
 
     srtrack.dazzle.pdg = dazzle->BestPDG();
     srtrack.dazzle.bestScore = dazzle->BestScore();
