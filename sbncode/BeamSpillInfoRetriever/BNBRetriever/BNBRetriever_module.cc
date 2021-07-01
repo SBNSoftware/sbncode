@@ -177,7 +177,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
   // what we'll do is sort through all of them first and then 
   // match them to the closest spills in time
   // 
-  int t_steps = int(fabs((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
+
+  int t_steps = int(((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
   
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
     for (std::string const& var : vars) {// Iterate through the devices
