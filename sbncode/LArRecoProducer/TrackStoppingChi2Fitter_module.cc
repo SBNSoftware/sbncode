@@ -102,7 +102,7 @@ void TrackStoppingChi2Fitter::produce(art::Event& e)
 
     StoppingChi2Fit thisFit(this->RunFit(*caloVec.at(bestPlane)));
 
-    if (thisFit.Pol0Chi2 < 0.f || thisFit.ExpChi2 < 0.f)
+    if (thisFit.pol0Chi2 < 0.f || thisFit.expChi2 < 0.f)
       continue;
 
     fitVec->push_back(thisFit);

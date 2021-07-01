@@ -689,26 +689,26 @@ void Dazzle::FillRangePMetrics(const RangeP& range)
 
 void Dazzle::FillClosestApproachMetrics(const ScatterClosestApproach& closestApproach)
 {
-  meanDCA = closestApproach.Mean;
+  meanDCA = closestApproach.mean;
 
   if (!fMakeTree)
     return;
 
-  stdDevDCA = closestApproach.StdDev;
-  maxDCA = closestApproach.Max;
+  stdDevDCA = closestApproach.stdDev;
+  maxDCA = closestApproach.max;
 }
 
 void Dazzle::FillStoppingChi2Metrics(const StoppingChi2Fit& stoppingChi2)
 {
-  chi2Pol0Chi2 = stoppingChi2.Pol0Chi2;
-  chi2ExpChi2 = stoppingChi2.ExpChi2;
+  chi2Pol0Chi2 = stoppingChi2.pol0Chi2;
+  chi2ExpChi2 = stoppingChi2.expChi2;
 
   stoppingChi2Ratio = (chi2Pol0Chi2 > 0.f && chi2ExpChi2 > 0.f) ? chi2Pol0Chi2 / chi2ExpChi2 : -5.f;
 
   if (!fMakeTree)
     return;
 
-  chi2Pol0Fit = stoppingChi2.Pol0Fit;
+  chi2Pol0Fit = stoppingChi2.pol0Fit;
 }
 
 MVAPID Dazzle::RunMVA()
