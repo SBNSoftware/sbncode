@@ -85,7 +85,13 @@ sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
   bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
   bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("MWR_TimeWindow")))
 {
- 
+  
+  // Check fTimePad is positive 
+  if (fTimePad < 0) {
+    throw art::Exception(art::errors::Configuration)
+      << "Parameter `TimePadding` must be non-negative (" << fTimePad << " was specified).\n";
+  }//End Time check  
+  
   // how close in time does the spill time have to be from the DAQ time (in seconds).
   // If these are too large then it fails to capture the device 
   // If these are too small then the time jitter in devices means we miss good data 
