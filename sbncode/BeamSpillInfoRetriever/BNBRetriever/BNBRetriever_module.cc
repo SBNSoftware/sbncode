@@ -72,6 +72,8 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
+  static const double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
+
 
 
 };
@@ -223,7 +225,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	
 	// There is a 35 ms offset between the toriod and the MWR times
 	//   we'll just remove that here to match to the spill times
-	std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,-0.035);
+	std::vector< std::vector< int > > unpacked_MWR_temp = mwrdata.unpackMWR(packed_data_str,MWR_times_temp,MWRtoroidDelay);
 	
 	//There are four events that are packed into one MWR IFBeam entry
 	for(std::size_t s: util::counter(unpacked_MWR_temp.size())){
