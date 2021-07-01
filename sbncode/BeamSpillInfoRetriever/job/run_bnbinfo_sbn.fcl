@@ -1,0 +1,33 @@
+#include "bnbspillinfo.fcl"
+
+process_name: BNBInfoGen
+
+services:{
+  IFBeam:{}
+}
+
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+ producers: {
+   bnbinfo: @local::bnbspillinfo
+ }
+
+ simulate: [bnbinfo ]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_bnbinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+
