@@ -1,0 +1,60 @@
+# Driver fcl file for reading in gsimple files
+# for SBND
+
+#include "simulationservices_sbnd.fcl"
+#include "fluxfilter_sbnd.fcl"
+
+process_name: FluxReader
+
+services:
+{
+  TFileService: { fileName: "flux_hist.root" }
+  RandomNumberGenerator: {}
+  TimeTracker:       {}
+  FileCatalogMetadata:     @local::art_file_catalog_mc
+  @table::sbnd_basic_services
+  @table::sbnd_random_services
+}
+
+
+source:
+{
+  fileNames:        []
+  module_type:	    FluxReader
+  skipEvents:       0
+  maxEvents:        -1
+  inputType:        "gsimple"
+  nBins:            200
+  Elow:             0
+  Ehigh:            10
+  SelfIncrementRun: false
+}
+
+outputs:
+{
+ out1:
+  {
+   module_type: RootOutput
+   fileName:    "fluxreader.root"
+   compressionLevel: 1
+   dataTier:    "simulated"
+   SelectEvents: [ filter ]
+  }
+}
+
+physics:
+{
+ producers:
+ {
+ }
+ filters:
+ {
+   fluxfilter: @local::flux_filter
+ }
+
+ filter: [ fluxfilter ]
+ stream1: [ out1 ]
+ trigger_paths: [ filter ]
+ end_paths: [ stream1 ]
+}
+
