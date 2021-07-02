@@ -1,0 +1,13 @@
+BEGIN_PROLOG
+
+trackstoppingchi2fitter_sbn: {
+  module_type: TrackStoppingChi2Fitter
+  TrackLabel: pandoraTrack
+  CaloLabel: pandoraCalo
+  MinTrackLength: 10
+  FitRange: 30
+  MaxdEdx: 30
+  MinHits: 30
+}
+
+END_PROLOG

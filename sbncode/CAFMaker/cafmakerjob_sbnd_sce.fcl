@@ -1,5 +1,5 @@
 #include "transfer_crtt0_producer.fcl"
-#include "transfer_flasht0_producer.fcl"
+#include "transfer_flashmatch_producer.fcl"
 #include "cafmakerjob_sbnd.fcl"
 
 # change all the labels we need to
@@ -8,24 +8,38 @@ physics.producers.mycafmaker.PFParticleLabel: "pandoraSCE"
 physics.producers.mycafmaker.RecoShowerLabel: "pandoraSCEShowerSBN"
 physics.producers.mycafmaker.RecoTrackLabel: "pandoraSCETrack"
 physics.producers.mycafmaker.TrackCaloLabel: "pandoraSCECalo"
-physics.producers.mycafmaker.TrackPidLabel:  "pandoraSCEPid"
+physics.producers.mycafmaker.TrackChi2PidLabel:  "pandoraSCEPid"
 physics.producers.mycafmaker.CRTHitMatchLabel: "pandoraSCETrackCRTHit"
 physics.producers.mycafmaker.CRTTrackMatchLabel: "pandoraSCETrackCRTTrack"
 physics.producers.mycafmaker.FlashMatchLabel:  "fmatchSCE"
 
-physics.producers.pandoraTrackMCS.TrackLabel: pandoraSCETrack
-physics.producers.pandoraTrackRange.TrackLabel: pandoraSCETrack
+physics.producers.pandoraTrackMCS.TrackLabel: "pandoraSCETrack"
+physics.producers.pandoraTrackRange.TrackLabel: "pandoraSCETrack"
 
 physics.producers.pandoraShowerSelectionVars.PandoraLabel: "pandoraSCE"
 physics.producers.pandoraShowerSelectionVars.ShowerLabel:  "pandoraSCEShowerSBN"
+physics.producers.pandoraShowerCosmicDist.PandoraLabel: "pandoraSCE"
+physics.producers.pandoraShowerCosmicDist.ShowerLabel:  "pandoraSCEShowerSBN"
+physics.producers.pandoraShowerRazzle.PFPLabel: "pandoraSCE"
+physics.producers.pandoraShowerRazzle.ShowerLabel: "pandoraSCEShowerSBN"
 
 physics.producers.pandoraSCETrackCRTHit: @local::transfer_crthitt0_sce_sbnd
 physics.producers.pandoraSCETrackCRTTrack: @local::transfer_crttrackt0_sce_sbnd
 
-physics.producers.fmatchSCE: @local::transfer_flasht0_sce_sbnd
+physics.producers.pandoraTrackClosestApproach.TrackLabel: "pandoraSCETrack"
+physics.producers.pandoraTrackStoppingChi2.TrackLabel: "pandoraSCETrack"
+physics.producers.pandoraTrackStoppingChi2.CaloLabel: "pandoraSCECalo"
 
-physics.runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange,
+physics.producers.pandoraTrackDazzle.PFPLabel: "pandoraSCE"
+physics.producers.pandoraTrackDazzle.TrackLabel: "pandoraSCETrack"
+physics.producers.pandoraTrackDazzle.CaloLabel: "pandoraSCECalo"
+physics.producers.pandoraTrackDazzle.Chi2Label: "pandoraSCEPid"
+
+physics.producers.fmatchSCE: @local::transfer_flashmatch_sce_sbnd
+
+physics.runprod: [ pandoraTrackMCS, pandoraTrackRange,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
             pandoraSCETrackCRTHit, pandoraSCETrackCRTTrack, fmatchSCE,
-            pandoraShowerSelectionVars,
+            pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraTrackDazzle,
+            pandoraShowerSelectionVars,pandoraShowerCosmicDist, pandoraShowerRazzle,
             mycafmaker ]
