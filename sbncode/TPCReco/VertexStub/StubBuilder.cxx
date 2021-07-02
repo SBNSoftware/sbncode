@@ -13,7 +13,7 @@ bool HitOnTrack(const art::Ptr<recob::Hit> &hit,
     // Found the hit on the track!
     if (hit == trk_hits[i]) { 
       // Is the hit part of the track Calo?
-      if (trk->HasValidPoint(trk_thms[i]->Index())) { 
+      if (trk_thms[i]->Index() != std::numeric_limits<int>::max() && trk->HasValidPoint(trk_thms[i]->Index())) { 
         return true;
       }
       break;
