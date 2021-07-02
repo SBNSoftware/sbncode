@@ -46,11 +46,11 @@ razzle:
 dazzle_sbnd: @local::dazzle
 dazzle_sbnd.RunMVA: true
 dazzle_sbnd.MethodName: "BDT::BDTG"
-dazzle_sbnd.WeightFile: "Dazzle.weights.xml"
+dazzle_sbnd.WeightFile: "PID/Dazzle.weights.xml"
 
 razzle_sbnd: @local::razzle
 razzle_sbnd.RunMVA: true
 razzle_sbnd.MethodName: "BDT::BDTG"
-razzle_sbnd.WeightFile: "Razzle.weights.xml"
+razzle_sbnd.WeightFile: "PID/Razzle.weights.xml"
 
 END_PROLOG
