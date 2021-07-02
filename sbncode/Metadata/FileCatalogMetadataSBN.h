@@ -17,7 +17,9 @@
 //                              1 - Set merge.merge = 1 and merge.merged = 0
 //                              0 - Set merge.merge = 0 and merge.merged = 0
 //                             -1 - Do not generate merge parameters.
-//           Parameters      - Arbitrary (key, value) parameters
+//           Parameters      - Arbitrary (key, value) parameters.
+//                             Specify in fcl file as sequence-of-sequence:
+//                             [[key1, value1], [key2, value2],...]
 //
 //           Above values will be added in internal metadata of artroot
 //           output files whenever this service is included in job
@@ -57,7 +59,7 @@ namespace util {
     const std::string& GetProductionName() const {return fProductionName;}
     const std::string& GetProductionType() const {return fProductionType;}
     int GetMerge() const {return fMerge;}
-    const std::vector<std::string>& GetParameters() const {return fParameters;}
+    const std::vector<std::pair<std::string, std::string>>& GetParameters() const {return fParameters;}
 
   private:
 
@@ -67,6 +69,7 @@ namespace util {
 
     // Data members.
 
+    std::string fExperiment;
     std::string fFCLName;
     std::string fProjectName;
     std::string fProjectStage;
@@ -75,7 +78,7 @@ namespace util {
     std::string fProductionName; //Production parameter, do not use if not running a production
     std::string fProductionType; //Production parameter, do not use if not running a production
     int fMerge;
-    std::vector<std::string> fParameters;
+    std::vector<std::pair<std::string, std::string>> fParameters;
   };
 
 } // namespace util

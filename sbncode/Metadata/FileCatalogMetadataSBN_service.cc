@@ -19,6 +19,12 @@
 util::FileCatalogMetadataSBN::
 FileCatalogMetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& reg)
 {
+  // Insist on configuring Experiment from the fcl file (ideally) or the
+  // environment.
+  const char* expt = getenv("EXPERIMENT");
+  if(expt) fExperiment = pset.get<std::string>("Experiment", expt); else fExperiment = pset.get<std::string>("Experiment");
+  std::transform(fExperiment.begin(), fExperiment.end(), fExperiment.begin(), [](unsigned char c){return std::tolower(c);});
+
   // Get parameters.
 
   fFCLName = pset.get<std::string>("FCLName");
@@ -29,14 +35,7 @@ FileCatalogMetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& r
   fProductionName = pset.get<std::string>("ProductionName","");  //Leave as default value if not running a production   
   fProductionType = pset.get<std::string>("ProductionType",""); //Leave as default value if not running a production
   fMerge = pset.get<int>("Merge", -1);
-  fParameters = pset.get<std::vector<std::string> >("Parameters", std::vector<std::string>());
-
-  // It doesn't make sense for parameter vector to have an odd number of elements.
-
-  if(fParameters.size() % 2 != 0) {
-    throw cet::exception("FileCatalogMetadataSBN") 
-      << "Parameter vector has odd number of elements.\n";
-  }
+  fParameters = pset.get<std::vector<std::pair<std::string, std::string>>>("Parameters", std::vector<std::pair<std::string, std::string>>());
 
   // Register for callbacks.
 
@@ -55,10 +54,10 @@ void util::FileCatalogMetadataSBN::postBeginJob()
   // Add metadata.
 
   mds->addMetadata("fcl.name", fFCLName);
-  mds->addMetadata("sbnd_project.name", fProjectName);
-  mds->addMetadata("sbnd_project.stage", fProjectStage);
-  mds->addMetadata("sbnd_project.version", fProjectVersion);
-  mds->addMetadata("sbnd_project.software", fProjectSoftware);
+  mds->addMetadata(fExperiment + "_project.name", fProjectName);
+  mds->addMetadata(fExperiment + "_project.stage", fProjectStage);
+  mds->addMetadata(fExperiment + "_project.version", fProjectVersion);
+  mds->addMetadata(fExperiment + "_project.software", fProjectSoftware);
   mds->addMetadata("production.name", fProductionName);
   mds->addMetadata("production.type", fProductionType);
   std::ostringstream ostr;
@@ -69,8 +68,8 @@ void util::FileCatalogMetadataSBN::postBeginJob()
       mds->addMetadata("merge.merge", "0");
     mds->addMetadata("merge.merged", "0");
   }
-  for(unsigned int i=0; i<fParameters.size(); i += 2)
-    mds->addMetadata(fParameters[i], fParameters[i+1]);
+  for(auto const& param : fParameters)
+    mds->addMetadata(param.first, param.second);
 }
 
 DEFINE_ART_SERVICE(util::FileCatalogMetadataSBN)
