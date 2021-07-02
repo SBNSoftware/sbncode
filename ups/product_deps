@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_25_00
+parent sbncode v09_25_00_00
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -35,8 +35,8 @@ fwdir   product_dir scripts
 
 product             version
 larsoft             v09_25_00
-sbnobj              v09_11_12
-sbnanaobj           v09_16_08
+sbnobj              v09_11_13
+sbnanaobj           v09_16_09
 sbndaq_artdaq_core  v0_07_06_01_of0
 
 # list products required ONLY for the build
