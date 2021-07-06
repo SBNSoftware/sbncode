@@ -84,9 +84,7 @@ void sbn::EXTRetriever::produce(art::Event& e)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
   int gate_type = 0;
-  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
-  auto const & raw_data = (*raw_data_ptr);
+  auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
 
   double number_of_gates_since_previous_event = 0;
   
