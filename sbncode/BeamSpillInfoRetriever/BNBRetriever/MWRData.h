@@ -24,15 +24,15 @@ class MWRData
     swicheader_t sheader;
   } mwrpulse_t;  
   
-  long flipByte(long data)
+  static long flipByte(long data)
   {
     return ((data>>16)&0x0000FFFF) | ((data<<16)&0xFFFF0000);
   }
   
-  mwrpulse_t getMWRdata(short* data, int nblock);
+  mwrpulse_t getMWRdata(short* data, int nblock) const;
   
  public:
-  std::vector< std::vector < int > > unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset=0);
+  std::vector< std::vector < int > > unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset=0) const;
 };
 }
 
