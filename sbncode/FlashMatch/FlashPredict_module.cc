@@ -1182,9 +1182,10 @@ double FlashPredict::flashXGl(const double hypo_x,
   auto wIt = fWiresX_gl.begin();
   auto w = wIt;
   for(size_t i=0; i<fWiresX_gl.size(); i++){
-    if(((*w<0) == (flash_x<0))&& std::abs(*w - flash_x) < min) {
+    if(((*w<0) == (flash_x<0)) && std::abs(*w - flash_x) < min) {
       wIt = w;
       wId = i;
+      min = std::abs(*w - flash_x);
     }
     w++;;
   }

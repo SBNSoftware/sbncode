@@ -1,0 +1,54 @@
+#include "dissonant_higgs.fcl"
+# service configuration
+#
+#include "services_icarus_simulation.fcl"
+
+process_name: Gen
+
+services:
+{
+  @table::icarus_simulation_services
+  TFileService: { fileName: "dissonant_higgs_icarus.root" }
+  IFDH: {}
+}
+
+source: {
+  module_type: "EmptyEvent"
+  firstEvent: 1
+  firstRun: 1
+  timestampPlugin: {
+    plugin_type: "GeneratedEventTimestamp"
+  }
+}
+
+physics:
+{
+  producers:{
+    generator: @local::dissonant_higgs_gen
+    rns:       { module_type: "RandomNumberSaver" }
+  }
+  filters:  {} 
+  analyzers:{
+    
+  } # analyzers
+ 
+  runprod:  [ generator, rns ]
+  stream: [out]
+
+  trigger_paths: [ runprod ]
+  end_paths:     [ stream ] 
+  
+} # physics
+
+outputs: {
+ out:
+ {
+   module_type: RootOutput
+   dataTier: "simulated"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+
+}
+
+services.NuRandomService.policy: "random"
