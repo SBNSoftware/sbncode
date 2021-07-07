@@ -1,37 +1,17 @@
 // FluxUnisimWeightCalc.cxx
-//
-// Handles event weights for GENIE systematics studies
-//
-// Updated by Marco Del Tutto on Feb 18 2017
-//
-// Ported from uboonecode to larsim on Feb 14 2017
-//   by Marco Del Tutto <marco.deltutto@physics.ox.ac.uk>
-//
-// Ported to/adapted for SBNCode, Dec 2020, A. Mastbaum
-//
-// ----
-// Ported from ubcode; objects used here are based on
-//		SBNEventweight/Calculator/CrossSections/GenieWeightCalc.cxx
-//
-//  - GetWeight() function is re-introduced but it has bug to be fixed;
-//		by Keng Lin Jun. 2021
-
-
+// Based on  ubsim / EventWeight / Calculators / FluxUnisimWeightCalc.cxx  @ UBOONE_SUITE_v08_00_00_55 
+// Ported to/adapted for SBNCode by Keng Lin July 2021
 
 #include "art/Framework/Principal/Event.h"
 #include "nugen/NuReweight/art/NuReweight.h"
-
-#include "nusimdata/SimulationBase/MCFlux.h" //new for flux
+#include "nusimdata/SimulationBase/MCFlux.h" 
 #include "nusimdata/SimulationBase/MCTruth.h"
-//#include "nusimdata/SimulationBase/GTruth.h"
-//#include "nugen/EventGeneratorBase/GENIE/GENIE2ART.h"
 
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 #include <sys/stat.h>
 
-
-#include "TH1F.h"//need these to read histograms
+#include "TH1F.h"
 #include "TFile.h"
 
 namespace sbn {
@@ -47,23 +27,21 @@ namespace sbn {
 
 				//GetWeight() returns the final weights as a vector
 				//	each weight calculation is carried out by WeightCalc() function;
-				//inu indicates the ith parameter.
-				std::vector<float> GetWeight(art::Event& e, size_t inu) override;//CHECK, why fluxreader did not go through this?
+				//inu - the ith parameter.
+				std::vector<float> GetWeight(art::Event& e, size_t inu) override;//CHECK, why fluxreader did not go through this? A: fcl setup is incorrect
 
-				//Function for evaluating a specific weight
+				//MicroBooNEWeightCalc() - Function for evaluating a specific weight
 				//enu - neutrino energy from simb::MCTruth; 
-				//ptype-  parent particles label: pi, k, k0, mu 
-				//ntype - neutrino flavor label: numu, numubar, nue, nuebar 
+				//ptype-  parent particles label: pi, k, k0, mu from simb:MCFlux
+				//ntype - neutrino flavor label: numu, numubar, nue, nuebar from simb:MCFlux
 				//uni - the nth universe
-				//noNeg - formulas for weights depending on input histograms.
+				//noNeg - determine what formulas to use for weights depending on input histograms.
 				double MicroBooNEWeightCalc(double enu, int ptype, int ntype, int uni, bool noNeg);
 
 			private:
-				//std::vector<rwgt::NuReweight> rwVector;//reweighter? Delete this, if this is for Genie weights
 
 				std::string fGenieModuleLabel;
 
-				std::string fMode;//should be under fParameterSet.fRWType, tb fixed CHECK
 				double fScalePos{}; 
 				double fScaleNeg{}; 
 
@@ -71,14 +49,12 @@ namespace sbn {
 				//replaced by std::map<EventWeightParameter, std::vector<float> > fParameterSet.fParameterMap
 				//CHECK, cannot handld the cituation that there are two sets of fWerightArray; i.e. from AddParameter()
 
-				//contents of the input histograms;
+				//Contents of the input histograms;
 				//[mu/pi/k-/k] x [nue,anue,numu,anumu] x [bin#]
 				double fCV[4][4][200];
 				double fRWpos[4][4][200];
 				double fRWneg[4][4][200];
 				bool PosOnly{false};
-//				int validate_code = 0 ;//print out first few weights;
-
 
 				DECLARE_WEIGHTCALC(FluxUnisimWeightCalc)
 		};
@@ -137,15 +113,15 @@ namespace sbn {
 				fParameterSet.AddParameter(pars[i], 1);//parsigmas[i]);
 			}
 
-			fMode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
+			std::string fMode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
 
 			int number_of_multisims = pset.get<int>("number_of_multisims", 1);
 
 			//CHECK mode is not recognized.
-			std::cout<<"\nfPSet configure "<<GetFullName()<<","<<fMode<<","<<number_of_multisims<<std::endl;
+//			std::cout<<"\nfPSet configure "<<GetFullName()<<","<<fMode<<","<<number_of_multisims<<std::endl;
 			fParameterSet.Configure(GetFullName(), fMode, number_of_multisims);//set fParameterSet members
 			//second input is ReweightType rwtype; how does ReweightType work?
-			std::cout<<"Outcome: "<<fParameterSet.fName<<","<<fParameterSet.fRWType<<","<<fParameterSet.fNuniverses<<std::endl;
+//			std::cout<<"Outcome: "<<fParameterSet.fName<<","<<fParameterSet.fRWType<<","<<fParameterSet.fNuniverses<<std::endl;
 			fParameterSet.Sample(engine);//random_seed is loaded
 
 			//--New version--
@@ -161,15 +137,6 @@ namespace sbn {
 					fWeightArray[i] = it.second[i];
 				}
 			}
-			//---
-			//generate random numbers;
-//			fWeightArray.resize(number_of_multisims);
-//			if (fMode == "multisim" )
-//				for (double& weight : fWeightArray) weight = CLHEP::RandGaussQ::shoot(&engine, 0, 1.);
-//			else
-//				for (double& weight : fWeightArray) weight=1.;
-
-
 
 			//2. << Calculator Settings >>
 			cet::search_path sp("FW_SEARCH_PATH");
@@ -212,15 +179,8 @@ namespace sbn {
 			fScalePos 	= pset.get<double>("scale_factor_pos");
 			fScaleNeg 	= pset.get<double>("scale_factor_neg");
 
-//			std::cout<<"CHECK! "<<__FUNCTION__<< " Configure() finishs"<<std::endl;
-
 		}
 
-		//K: New version requires:
-		// GetWeight() needs:
-		// - art::Handle< std::vector<simb::MCFlux> > 
-		// - art::Handle< std::vector<simb::MCTruth> >
-		// - boolean (true - identical in histograms?)
 
 		std::vector<float> FluxUnisimWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
@@ -244,12 +204,8 @@ namespace sbn {
 			art::Handle< std::vector<simb::MCTruth> > mctruthHandle;
 			e.getByLabel(fGenieModuleLabel,mctruthHandle);
 			std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
-			//Create a vector of weights for each neutrino 
-			//	std::vector< std::vector<double> > weight;
-			//	weight.resize(mclist.size());
 
 			// No neutrinos in this event
-			std::cout<<"CHECK mclist size is "<<mclist.size()<<std::endl;
 			std::vector<float> weights(fWeightArray.size(), 0);
 			if(mclist.size() == 0) return weights;
 
@@ -274,7 +230,6 @@ namespace sbn {
 
 			// Discover the neutrino type
 			//     This contains the neutrino's flavor information
-			std::cout<<"CHECK current fluxlist gives fntype = "<<fluxlist[inu].fntype<<std::endl;
 			if (      fluxlist[inu].fntype== 12  ) ntype=0;//nue
 			else if ( fluxlist[inu].fntype==-12  ) ntype=1;//nuebar
 			else if ( fluxlist[inu].fntype== 14  ) ntype=2;//numu
@@ -284,14 +239,11 @@ namespace sbn {
 			}
 
 			// Collect neutrino energy
-			//CHECK cant get mclist info; same error as fluxlist
 			double enu= mclist[inu].GetNeutrino().Nu().E();
-//			std::cout<<"CHECK we got enu = "<<enu<<std::endl;
-//			std::cout<<"CHECK we got ntype = "<<ntype<<std::endl;
-//			std::cout<<"CHECK we got ptype = "<<ptype<<std::endl;
 
 			//Let's make a weights based on the calculator you have requested 
-			if(fMode=="multisim"){//continue calculation with multisim
+
+			if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
 //				std::cout<<"<<--- CHECK Filling Weights: "<<std::endl;
 				for (size_t i=0;i<weights.size();i++) {
 //					if(validate_code > 4) break;
@@ -300,7 +252,7 @@ namespace sbn {
 				}//Iterate through the number of universes      
 			}
 
-//			std::cout<<"Working on inu:"<<inu<<" with weight "<<weights[inu]<<" size "<<weights.size()<<std::endl;
+//			std::cout<<"Working on inu:"<<inu<<" with first weight "<<weights[0]<<" size "<<weights.size()<<std::endl;
 //			std::cout<<"\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
 
 			//--- Copy over from ubcode
