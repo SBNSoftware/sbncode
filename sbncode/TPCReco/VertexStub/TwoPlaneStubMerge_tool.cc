@@ -107,12 +107,11 @@ sbn::StubInfo TwoPlaneStubMerge::MergeStubs(const sbn::StubInfo &A, const sbn::S
   // Vertex should be the same between the two
   ret.stub.vtx = A.stub.vtx;
   // The real thing -- combine the two positions to get a new endpoint
-  geo::Point_t end = sbn::TwoStubEndPosition(best, othr, geo, sce, dprop);
-  ret.stub.end = TVector3(end.X(), end.Y(), end.Z());
+  ret.stub.end = sbn::TwoStubEndPosition(best, othr, geo, sce, dprop);
 
   // Save the EField at the start and end point
-  ret.stub.efield_vtx = sbn::GetEfield(dprop, sce, geo::Point_t(ret.stub.vtx), ret.vhit_hit->WireID(), false);
-  ret.stub.efield_end = sbn::GetEfield(dprop, sce, geo::Point_t(ret.stub.end), ret.vhit_hit->WireID(), false);
+  ret.stub.efield_vtx = sbn::GetEfield(dprop, sce, ret.stub.vtx, ret.vhit_hit->WireID(), false);
+  ret.stub.efield_end = sbn::GetEfield(dprop, sce, ret.stub.end, ret.vhit_hit->WireID(), false);
 
   // In all the plane info stuff put the best stub first
   ret.stub.plane.push_back(best.stub.plane.front());

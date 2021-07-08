@@ -57,13 +57,12 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
     const std::vector<art::Ptr<recob::Hit>> &hits, 
     const sbn::VertexHit &vhit, 
     const recob::Hit &vhit_hit, 
-    const geo::Point_t &vertex, 
     const geo::GeometryCore *geo, 
     const detinfo::DetectorPropertiesData &dprop) {
 
   // project the vertex onto the wireplane
-  float vert_wf = geo->WireCoordinate(vertex, vhit_hit.WireID());
-  float vert_x = vertex.x();
+  float vert_wf = vhit.vtxw;
+  float vert_x = vhit.vtxx;
 
   // get the vertex hit-coordinates
   int hit_w = vhit_hit.WireID().Wire;
@@ -194,7 +193,6 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel,
 sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
                                   const sbn::VertexHit &vhit,
                                   const recob::Hit &vhit_hit, 
-                                  const recob::Vertex &vertex,
                                   const geo::GeometryCore *geo,
                                   const spacecharge::SpaceCharge *sce,
                                   const detinfo::DetectorClocksData &dclock,
@@ -209,12 +207,10 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     const std::vector<std::vector<art::Ptr<recob::Hit>>> &trk_hits = fSliceTrkHits.at(slice.key());
     const std::vector<std::vector<const recob::TrackHitMeta *>> &trk_thms = fSliceTrkTHMs.at(slice.key());
     
-    TVector3 vertex_v(vertex.position().X(), vertex.position().Y(), vertex.position().Z());
-
-    stub_hits = CollectHits(hits, vhit, vhit_hit, vertex.position(), geo, dprop);
+    stub_hits = CollectHits(hits, vhit, vhit_hit, geo, dprop);
 
     // Sort hits along the vtx -> end direction
-    float vertex_w = geo->WireCoordinate(vertex.position(), vhit_hit.WireID());
+    float vertex_w = vhit.vtxw;
     int stubdir = vertex_w <= vhit_hit.WireID().Wire ? 1 : -1;
     std::sort(stub_hits.begin(), stub_hits.end(), 
       [stubdir](auto const &lhs, auto const &rhs) {
@@ -243,13 +239,13 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     // See if we can compute a track pitch
     if (pfp_ind >= 0 && trks[pfp_ind]) {
-      stub.trkpitch.push_back(sbn::GetPitch(geo, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), geo->View(vhit_hit.WireID()), vhit_hit.WireID(), true, true));
+      stub.trkpitch.push_back(sbn::GetPitch(geo, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), geo->View(vhit_hit.WireID()), vhit_hit.WireID(), true, fPositionsAreSCECorrected));
     }
     else {
       stub.trkpitch.push_back(-1.);
     }
 
-    stub.vtx = vertex_v;
+    stub.vtx = vhit.vtxXYZ;
     stub.end = vhit.spXYZ;
     stub.pitch.push_back(vhit.charge / vhit.dqdx);
     stub.plane.push_back(vhit.wire);
@@ -257,8 +253,8 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     stub.vtx_w.push_back(vertex_w);
 
     // Save the EField at the start and end point
-    stub.efield_vtx = sbn::GetEfield(dprop, sce, vertex.position(), vhit_hit.WireID(), false);
-    stub.efield_end = sbn::GetEfield(dprop, sce, geo::Point_t(vhit.spXYZ), vhit_hit.WireID(), false);
+    stub.efield_vtx = sbn::GetEfield(dprop, sce, vhit.vtxXYZ, vhit_hit.WireID(), false);
+    stub.efield_end = sbn::GetEfield(dprop, sce, vhit.spXYZ, vhit_hit.WireID(), false);
 
     return stub;
 }

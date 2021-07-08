@@ -70,9 +70,14 @@ private:
   float fHitVacuumRadius;
   bool fUseTrackSPRecovery;
   bool fCorrectSCE;
+  bool fPositionsAreSCECorrected;
 
   // private data 
   calo::CalorimetryAlg fCaloAlg;
+
+  // helpers
+  geo::Point_t PositionAtWires(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
+  geo::Point_t PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
 };
 
 
@@ -83,6 +88,7 @@ sbn::VertexChargeVacuum::VertexChargeVacuum(fhicl::ParameterSet const& p)
     fHitVacuumRadius(p.get<float>("HitVacuumRadius")),
     fUseTrackSPRecovery(p.get<bool>("UseTrackSPRecovery")),
     fCorrectSCE(p.get<bool>("CorrectSCE")),
+    fPositionsAreSCECorrected(p.get<bool>("PositionsAreSCECorrected")),
     fCaloAlg(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
 
@@ -120,14 +126,14 @@ std::array<float, 2> HitDirection(const std::vector<art::Ptr<recob::Hit>> &hits,
                const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   if (!hits.size()) return {0., 0.};
 
-  TVector3 avg(0., 0., 0.);
+  geo::Vector_t avg(0., 0., 0.);
 
   std::array<float, 2> vert_v = VertexVector(vert, hits[0]->WireID(), geo, dprop);
-  TVector3 vert_p(vert_v[0], vert_v[1], 0.);
+  geo::Point_t vert_p(vert_v[0], vert_v[1], 0.);
 
   for (const art::Ptr<recob::Hit> &h: hits) {
     std::array<float, 2> hit_v = HitVector(*h, geo, dprop);
-    TVector3 hit_p(hit_v[0], hit_v[1], 0.);
+    geo::Point_t hit_p(hit_v[0], hit_v[1], 0.);
     avg += (hit_p - vert_p).Unit(); 
   }
 
@@ -136,31 +142,18 @@ std::array<float, 2> HitDirection(const std::vector<art::Ptr<recob::Hit>> &hits,
   return {(float)avg.X(), (float)avg.Y()};
 }
 
-std::array<float, 2> TrackDirection(const recob::Track &trk, const geo::PlaneID &plane,
-               const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
-
-  float angleToVert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
-  float cosgamma = std::abs(std::sin(angleToVert)*trk.StartDirection().y() + std::cos(angleToVert)*trk.StartDirection().z());
-
-  std::array<float, 2> ret {cosgamma, (float)trk.StartDirection().x()};
-
-  // normalize
-  float ret_norm = sqrt(ret[0] * ret[0] + ret[1] * ret[1]);
-
-  return {ret[0] / ret_norm, ret[1] / ret_norm};
-}
-
-float TrackDirectionPerp(const recob::Track &trk, const geo::PlaneID &plane,
+float TrackDirectionParallel(const recob::Track &trk, const geo::PlaneID &plane,
                const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   double angleToVert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
   double cosgamma = std::abs(std::sin(angleToVert)*trk.StartDirection().y() + std::cos(angleToVert)*trk.StartDirection().z());
 
-  float ret = sqrt(1 - cosgamma * cosgamma - trk.StartDirection().x() * trk.StartDirection().x());
+  float ret = sqrt(cosgamma * cosgamma + trk.StartDirection().x() * trk.StartDirection().x());
 
   return ret;
+  
 }
 
-TVector3 PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &vert, const recob::Hit &hit,
+geo::Point_t PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &vert, const recob::Hit &hit,
                const geo::GeometryCore *geo, const detinfo::DetectorPropertiesData &dprop) {
   // project the vertex onto the hit Plane
   std::array<float, 2> v_plane = VertexVector(vert, hit.WireID(), geo, dprop); 
@@ -168,35 +161,47 @@ TVector3 PlaceHitAlongTrack(const recob::Track &trk, const recob::Vertex &vert, 
   // also get the 2d hit location
   std::array<float, 2> h_plane = HitVector(hit, geo, dprop);
 
-  // Project the track direction onto the hit Plane
-  std::array<float, 2> t_dir_plane = TrackDirection(trk, hit.WireID(), geo, dprop);
+  float t_dir_parallel_plane = TrackDirectionParallel(trk, hit.WireID(), geo, dprop);
 
-  float t_dir_perp_plane = TrackDirectionPerp(trk, hit.WireID(), geo, dprop);
-
-  // Get the distance from the vertex to the hit on the plane projected along the track direction
-  float plane_dist = (h_plane[0] - v_plane[0]) * t_dir_plane[0] + (h_plane[1] - v_plane[1]) * t_dir_plane[1];
+  // Get the distance from the vertex to the hit on the plane.
+  //
+  // The track "should" be along the same direction as the vertex to the hit in the plane,
+  // so this distance is the same as the distance along the track
+  float plane_dist = (h_plane[0] - v_plane[0]) + (h_plane[1] - v_plane[1]);
  
   // Use this distance to place the hit along the track trajectory in 3D
-  float dist_3d = plane_dist / sqrt(1 - t_dir_perp_plane * t_dir_perp_plane);
+  float dist_3d = plane_dist / t_dir_parallel_plane;
 
   // std::cout << "Placing Hit\n";
   // std::cout << "Hit wire: " << hit.WireID() << std::endl;
   // std::cout << "Hit plane coord: " << h_plane[0] << " " << h_plane[1] << std::endl;
   // std::cout << "Vtx plane coord: " << v_plane[0] << " " << v_plane[1] << std::endl;
-  // std::cout << "Trk dir plane coord: " << t_dir_plane[0] << " " << t_dir_plane[1] << std::endl;
-  // std::cout << "Trk dir plane proj: " << t_dir_plane[0]*(trk.StartDirection().x()/t_dir_plane[1]) << " " << t_dir_plane[1]*(trk.StartDirection().x()/t_dir_plane[1]) << std::endl;
   // std::cout << "Trk dir: " << trk.StartDirection().x() << " " << trk.StartDirection().y() << " " << trk.StartDirection().z() << std::endl;
   // std::cout << "Vtx pos: " << vert.position().x() << " " << vert.position().y() << " " << vert.position().z() << std::endl;
 
-  // std::cout << "Trk perp dir: " << t_dir_perp_plane << std::endl;
+  // std::cout << "Trk parallel dir: " << t_dir_parallel_plane << std::endl;
   // std::cout << "Hit plane dist: " << plane_dist << std::endl;
   // std::cout << "Hit 3d dist: " << dist_3d << std::endl;
 
-  TVector3 trk_dir(trk.StartDirection().x(), trk.StartDirection().y(), trk.StartDirection().z());
-  TVector3 vert_v(vert.position().x(), vert.position().y(), vert.position().z()); 
+  geo::Vector_t trk_dir(trk.StartDirection().x(), trk.StartDirection().y(), trk.StartDirection().z());
 
-  return vert_v + trk_dir * dist_3d;
+  return vert.position() + trk_dir * dist_3d;
 }
+
+geo::Point_t sbn::VertexChargeVacuum::PositionAtWires(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce) {
+  geo::TPCID tpc = geo->FindTPCAtPosition(p);
+
+  if (tpc && fPositionsAreSCECorrected) return sbn::GetLocationAtWires(sce, geo, p, tpc);
+  return p; 
+}
+
+geo::Point_t sbn::VertexChargeVacuum::PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce) {
+  geo::TPCID tpc = geo->FindTPCAtPosition(p);
+
+  if (tpc && !fPositionsAreSCECorrected) return sbn::GetLocation(sce, p, tpc);
+  return p;
+}
+
 void sbn::VertexChargeVacuum::produce(art::Event& evt)
 {
   // output stuff
@@ -225,7 +230,6 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
   art::FindManyP<recob::Vertex> pfparticleVertices(pfparticles, evt, fPFParticleLabel);
   art::FindManyP<recob::Cluster> pfparticleClusters(pfparticles, evt, fPFParticleLabel);
-  art::FindManyP<recob::SpacePoint> pfparticleSpacePoints(pfparticles, evt, fPFParticleLabel);
   art::FindManyP<recob::Slice> pfparticleSlices(pfparticles, evt, fPFParticleLabel);
   art::FindManyP<recob::Track> pfparticleTracks(pfparticles, evt, fTrackLabel);
 
@@ -255,7 +259,23 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
     // we found a primary PFP! Get its vertex.
     const art::Ptr<recob::Vertex> &vtx_ptr = pfparticleVertices.at(i_pfp).at(0); 
     const recob::Vertex &vert = *vtx_ptr;
-    TVector3 vert_v(vert.position().X(), vert.position().Y(), vert.position().Z()); 
+
+    // The presence of space charge creates two different positions: the position as
+    // "seen" by the wires (post-space charge) and the true position (pre-space charge)
+    //
+    // In some cases we want the wire-position and in other we want the true-position.
+    // To be explicit, create two different vertexes for these two different cases
+    recob::Vertex vert_absolute(PositionAbsolute(vert.position(), geo, sce),
+            vert.covariance(), 
+            vert.chi2(),
+            vert.ndof(),
+            vert.ID());
+
+    recob::Vertex vert_atwires(PositionAtWires(vert.position(), geo, sce),
+            vert.covariance(), 
+            vert.chi2(),
+            vert.ndof(),
+            vert.ID());
 
     // also get all the daughter PFParticles
     const std::vector<size_t> &daughters = pfp.Daughters();
@@ -280,27 +300,6 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
       }
     }
 
-    // also look up the space-points
-    std::vector<int> daughterSPIDs;
-    std::vector<TVector3> daughter3DDir;
-    for (unsigned i_d = 0; i_d < daughterPFPs.size(); i_d++) {
-      const art::Ptr<recob::PFParticle> &d = daughterPFPs[i_d];
-      const std::vector<art::Ptr<recob::SpacePoint>> &dsp = pfparticleSpacePoints.at(d.key());
-      TVector3 this_dir(0., 0., 0.);
-      bool set = false;
-      for (const art::Ptr<recob::SpacePoint> &sp: dsp) {
-        TVector3 sp_v(sp->XYZ());
-        if ((sp_v-vert_v).Mag() < fHitVacuumRadius) {
-          this_dir += (sp_v - vert_v).Unit();
-          set = true;
-        }
-      }
-      if (set) {
-        daughter3DDir.push_back(this_dir.Unit());
-        daughterSPIDs.push_back(d->Self());
-      }
-    }
-
     // Get the Slice associated with the primary PFP
     art::Ptr<recob::Slice> thisSlc = pfparticleSlices.at(i_pfp).at(0);
     // look up the hits
@@ -309,23 +308,12 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
     // work on each plane
     for (unsigned i_plane = 0; i_plane < 3; i_plane++) {
-      std::vector<std::array<float, 2>> daughterPlaneDirs;
-      std::vector<int> daughterPFPIDs;
-      // Get the PC-axis of each PFParticle daughter projected on this plane
-      for (unsigned i_d = 0; i_d < daughterPFPs.size(); i_d++) {
-        if (daughterPlaneHits[i_plane][i_d].size()) {
-          std::array<float, 2> thisDir = HitDirection(daughterPlaneHits[i_plane][i_d], vert, geo, dprop);
-          daughterPlaneDirs.push_back(thisDir);
-          daughterPFPIDs.push_back(daughterPFPs[i_d]->Self());
-        }
-      }
-
       // vacuum up all the hits within the radius
       std::vector<art::Ptr<recob::Hit>> nearbyHits;
       for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
         const recob::Hit &hit = *hits[i_hit];
         if (hit.WireID().Plane == i_plane) {
-          if (Vert2HitDistance(hit, vert, geo, dprop) < fHitVacuumRadius) {
+          if (Vert2HitDistance(hit, vert_atwires, geo, dprop) < fHitVacuumRadius) {
             nearbyHits.push_back(hits[i_hit]);
           }
         }
@@ -341,20 +329,22 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 	sbn::VertexHit vhit;
         vhit.wire = hit.WireID();
         vhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
-	vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert, geo, dprop);
-        vhit.vtxw = geo->WireCoordinate(vert.position(), hit.WireID());
+	vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert_atwires, geo, dprop);
+        vhit.vtxw = geo->WireCoordinate(vert_atwires.position(), hit.WireID());
+        vhit.vtxx = vert_atwires.position().x();
+        vhit.vtxXYZ = vert_absolute.position();
 
         // lookup the spacepoint location
         const std::vector<art::Ptr<recob::SpacePoint>> &hit_sp = hitSPs.at(i_hit);
 
         bool has_xyz = false;
         int spID = -1;
-        TVector3 spXYZ;
+        geo::Point_t spXYZ;
         // Space-Point!
         if (hit_sp.size()) {
           const recob::SpacePoint sp = *hit_sp.at(0);
           spID = sp.ID();
-          spXYZ = TVector3(sp.XYZ());
+          spXYZ = PositionAbsolute(sp.position(), geo, sce);
           has_xyz = true;
         }
         // No Space-Point. If configured, see if we can look up a point along the assigned track
@@ -373,7 +363,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
             const std::vector<art::Ptr<recob::Track>> &pfptrack = pfparticleTracks.at(matchingPFP.key()); 
             if (pfptrack.size()) {
               const recob::Track &thisTrack = *pfptrack.at(0);
-              spXYZ = PlaceHitAlongTrack(thisTrack, vert, hit, geo, dprop); 
+              spXYZ = PositionAbsolute(PlaceHitAlongTrack(thisTrack, vert_atwires, hit, geo, dprop), geo, sce); 
               has_xyz = true;
             }
           }
@@ -383,26 +373,18 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
           vhit.spID = spID;
           vhit.spXYZ = spXYZ;
 
-          geo::Point_t pt (spXYZ);
-          geo::Vector_t dir = (pt - vert.position()).Unit();
-          vhit.pitch = sbn::GetPitch(geo, sce, pt, dir, hit.View(), hit.WireID(), true, true); 
+          geo::Vector_t dir = (spXYZ - vert_absolute.position()).Unit();
+
+          // Compute the pitch. Since we have used the corrected vertex and Space-Point position, the
+          // pt and dir here are space-charge corrected regardless of the input configuration
+          vhit.pitch = sbn::GetPitch(geo, sce, spXYZ, dir, hit.View(), hit.WireID(), fCorrectSCE, true); 
 
           vhit.dqdx = fCaloAlg.ElectronsFromADCArea((hit.Integral() / vhit.pitch), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
 
-          float EField = sbn::GetEfield(dprop, sce, pt, hit.WireID(), true);
+          // Same here -- input position is already corrected
+          float EField = sbn::GetEfield(dprop, sce, spXYZ, hit.WireID(), false);
 
           vhit.dedx = fCaloAlg.dEdx_AREA(clock_data, dprop, vhit.dqdx, hit.PeakTime(), hit.WireID().Plane, 0., EField);
-
-          std::vector<std::pair<float, int>> pfp_3d_dist; 
-          for (unsigned i_dsp = 0; i_dsp < daughterSPIDs.size(); i_dsp++) {
-            pfp_3d_dist.push_back({daughter3DDir[i_dsp].Dot((vhit.spXYZ - vert_v).Unit()), daughterSPIDs[i_dsp]});
-          }
-          std::sort(pfp_3d_dist.begin(), pfp_3d_dist.end(),
-            [](auto const &lhs, auto const &rhs) { return lhs.second > rhs.second;});
-          for (auto const &pair: pfp_3d_dist) {
-            vhit.nearbyPFP3DDists.push_back(pair.first);
-	    vhit.nearbyPFP3DIDs.push_back(pair.second);
-          }
         }
         else {
           vhit.spID = -1;
@@ -411,39 +393,13 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
           vhit.dedx = -1;
         }
 
-        // now for each hit compute the dot with each PFP PC
-        std::vector<std::pair<float, int>> pfp_proj_dist; 
-        for (unsigned i_pfp = 0; i_pfp < daughterPFPIDs.size(); i_pfp++) {
-          std::array<float, 2> dir = daughterPlaneDirs[i_pfp];
-          std::array<float, 2> vv = VertexVector(vert, hit.WireID(), geo, dprop);
-          std::array<float, 2> hv = HitVector(hit, geo, dprop);
-          hv[0] = hv[0] - vv[0];
-          hv[1] = hv[1] - vv[1];
-
-          float dot;
-
-          if (hv[0] < 1e-4 && hv[1] < 1e-4) dot = 1;
-          else dot = (dir[0]*hv[0] + dir[1]*hv[1]) / 
-            (sqrt(hv[0]*hv[0]+hv[1]*hv[1]) *
-             sqrt(dir[0]*dir[0]+dir[1]*dir[1]));
-
-          pfp_proj_dist.push_back({dot, daughterPFPIDs[i_pfp]});
-        }
-
-        std::sort(pfp_proj_dist.begin(), pfp_proj_dist.end(),
-          [](auto const &lhs, auto const &rhs) {return lhs.first > rhs.first;});
-
-        for (auto const &pair: pfp_proj_dist) {
-          vhit.nearbyPFPDists.push_back(pair.first);
-	  vhit.nearbyPFPIDs.push_back(pair.second);
-        }
-
         // Save!
         outVHit->push_back(vhit);
         art::Ptr<sbn::VertexHit> thisVHitPtr = vhitPtrMaker(outVHit->size()-1);
         assn->addSingle(thisSlc, thisVHitPtr);
         vtxAssn->addSingle(vtx_ptr, thisVHitPtr);
         hitAssn->addSingle(nearbyHits[i_hit], thisVHitPtr);
+
       } // end iterate over hits
     } // end iterate over planes
   } // end iterate over pfparticle's 

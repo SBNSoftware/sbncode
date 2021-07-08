@@ -35,7 +35,6 @@ geo::Point_t sbn::GetLocationAtWires(const spacecharge::SpaceCharge *sce, const 
     // Returned X is the drift -- multiply by the drift direction to undo this
     int corr = geo->TPC(TPC).DriftDir()[0];
 
-    // for some reason, one needs to flip the sign of the x-direction when correcting for field distortion
     geo::Vector_t offset = sce->GetPosOffsets(loc);
     loc.SetX(loc.X() + corr * xsign * offset.X());
     loc.SetY(loc.Y() + offset.Y());
@@ -117,11 +116,11 @@ float sbn::StubDirectionDot(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const detinfo::DetectorPropertiesData &dprop) {
 
-  geo::Point_t vertex(A.stub.vtx);
-  
-  // project the vertex onto the wireplane
-  float vert_w = geo->WireCoordinate(vertex, A.vhit_hit->WireID()) * geo->WirePitch();
-  float vert_x = vertex.x();
+  // A and B should chare vertex locations
+  //
+  // We want this to be the vertex as seen by the wires
+  float vert_w = A.vhit->vtxw;
+  float vert_x = A.vhit->vtxx;;
 
   float Ahit_w = A.vhit_hit->WireID().Wire * geo->WirePitch() - vert_w;
   float Ahit_x = dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) - vert_x;
@@ -138,6 +137,7 @@ float sbn::StubDirectionDot(const sbn::StubInfo &A, const sbn::StubInfo &B,
 float sbn::StubTimeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B, 
     const detinfo::DetectorClocksData &dclock,
     const detinfo::DetectorPropertiesData &dprop) {
+
   // Convert the ticks to an X-point to undo tick-offsets between planes. And then convert to ticks.
   return abs(dprop.ConvertTicksToX(A.vhit_hit->PeakTime(), A.vhit_hit->WireID()) - dprop.ConvertTicksToX(B.vhit_hit->PeakTime(), B.vhit_hit->WireID())) / dprop.DriftVelocity() / dclock.TPCClock().TickPeriod();
 }
@@ -211,12 +211,13 @@ float sbn::StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop) {
 
-  TVector3 vtx = A.stub.vtx;
+  // stubs should share the vertex
+  geo::Point_t vtx = A.stub.vtx; 
   geo::Point_t end = sbn::TwoStubEndPosition(A, B, geo, sce, dprop); 
-  TVector3 end_v(end.x(), end.y(), end.z());
 
-  geo::Vector_t dir((end_v-vtx).Unit());
+  geo::Vector_t dir((end-vtx).Unit());
 
+  // Input point, dir are always space charge corrected here
   float Apitch = GetPitch(geo, sce, end, dir, A.vhit_hit->View(), A.vhit_hit->WireID(), true, true);
   float Bpitch = GetPitch(geo, sce, end, dir, B.vhit_hit->View(), B.vhit_hit->WireID(), true, true);
 

@@ -47,8 +47,6 @@ namespace sbn {
   class NuVertexChargeTree;
 }
 
-static const unsigned MAX_PFP = 1;
-
 /**
  * @brief Analyzer module for use with sbn::Stub and sbn::VertexHit objects.
  * 
@@ -175,7 +173,6 @@ private:
   std::vector<float> fVertexHitVtxW;
   std::vector<int> fVertexHitPlane;
   std::vector<int> fVertexHitWire;
-  std::vector<int> fNVertexPFPs;
   std::vector<float> fVertexHitPeakX;
   std::vector<float> fVertexHitTrueEnergy;
   std::vector<float> fVertexHitTrueProtonEnergy;
@@ -183,12 +180,6 @@ private:
   std::vector<float> fVertexHitTrueX;
   std::vector<float> fVertexHitTrueY;
   std::vector<float> fVertexHitTrueZ;
-
-  std::array<std::vector<int>, MAX_PFP> fVertexHitPFPIDs;
-  std::array<std::vector<float>, MAX_PFP> fVertexHitPFPDists;
-
-  std::array<std::vector<int>, MAX_PFP> fVertexHitPFP3DIDs;
-  std::array<std::vector<float>, MAX_PFP> fVertexHitPFP3DDists;
 
   std::vector<float> fStubEndx;
   std::vector<float> fStubEndy;
@@ -207,6 +198,8 @@ private:
   std::vector<int> fStubNPlane;
   std::vector<float> fStubVtxW;
   std::vector<int> fStubEndW;
+  std::vector<float> fStubVtxEField;
+  std::vector<float> fStubEndEField;
 
   std::vector<int> fStubQLength;
   std::vector<float> fStubQs;
@@ -310,7 +303,6 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("vertex_hit_vtxw", &fVertexHitVtxW);
   _tree->Branch("vertex_hit_plane", &fVertexHitPlane);
   _tree->Branch("vertex_hit_wire", &fVertexHitWire);
-  _tree->Branch("vertex_npfps", &fNVertexPFPs);
   _tree->Branch("vertex_hit_peak_x", &fVertexHitPeakX);
   _tree->Branch("vertex_hit_true_e", &fVertexHitTrueEnergy);
   _tree->Branch("vertex_hit_true_proton_e", &fVertexHitTrueProtonEnergy);
@@ -337,6 +329,8 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("stub_nplane", &fStubNPlane);
   _tree->Branch("stub_vtx_w", &fStubVtxW);
   _tree->Branch("stub_end_w", &fStubEndW);
+  _tree->Branch("stub_vtx_efield", &fStubVtxEField);
+  _tree->Branch("stub_end_efield", &fStubEndEField);
 
   _tree->Branch("stub_qlength", &fStubQLength);
   _tree->Branch("stub_qs", &fStubQs);
@@ -368,14 +362,6 @@ sbn::NuVertexChargeTree::NuVertexChargeTree(fhicl::ParameterSet const& p)
   _tree->Branch("stub_xplane_match_qoff", &fStubXPlaneMatchQOff);
   _tree->Branch("stub_xplane_match_dqdxoff", &fStubXPlaneMatchdQdxOff);
   _tree->Branch("stub_xplane_match_peakqoff", &fStubXPlaneMatchPeakQOff);
-
-  for (unsigned i = 0; i < MAX_PFP; i++) {
-    _tree->Branch(("vertex_hit_pfp_ids_" + std::to_string(i)).c_str(), &fVertexHitPFPIDs[i]);
-    _tree->Branch(("vertex_hit_pfp_dists_" + std::to_string(i)).c_str(), &fVertexHitPFPDists[i]);
-
-    _tree->Branch(("vertex_hit_pfp_3d_ids_" + std::to_string(i)).c_str(), &fVertexHitPFP3DIDs[i]);
-    _tree->Branch(("vertex_hit_pfp_3d_dists_" + std::to_string(i)).c_str(), &fVertexHitPFP3DDists[i]);
-  }
 
   _tree->Branch("n_slice_particles", &fNSliceParticles, "n_slice_particles/i");
   _tree->Branch("n_slice_primary_particles", &fNSlicePrimaryParticles, "n_slice_primary_particles/i");
@@ -500,7 +486,6 @@ void sbn::NuVertexChargeTree::Clear() {
   fVertexHitVtxW.clear();
   fVertexHitPlane.clear();
   fVertexHitWire.clear();
-  fNVertexPFPs.clear();
   fVertexHitPeakX.clear();
   fVertexHitTrueEnergy.clear();
   fVertexHitTrueProtonEnergy.clear();
@@ -526,6 +511,8 @@ void sbn::NuVertexChargeTree::Clear() {
   fStubNPlane.clear();
   fStubVtxW.clear();
   fStubEndW.clear();
+  fStubVtxEField.clear();
+  fStubEndEField.clear();
 
   fStubQLength.clear();
   fStubQs.clear();
@@ -555,14 +542,6 @@ void sbn::NuVertexChargeTree::Clear() {
   fStubXPlaneMatchQOff.clear();
   fStubXPlaneMatchdQdxOff.clear();
   fStubXPlaneMatchPeakQOff.clear();
-
-  for (unsigned i = 0; i < MAX_PFP; i++) {
-    fVertexHitPFPIDs[i].clear();
-    fVertexHitPFPDists[i].clear();
-
-    fVertexHitPFP3DIDs[i].clear();
-    fVertexHitPFP3DDists[i].clear();
-  }
 
   fNSliceParticles = 0;
   fNSlicePrimaryParticles = 0;
@@ -670,7 +649,7 @@ void sbn::NuVertexChargeTree::FillStubs(
     const sbn::Stub &stub = stubs[i_stub].stub;
 
     // fill reco info
-    fStubLength.push_back((stub.vtx - stub.end).Mag());
+    fStubLength.push_back((stub.vtx - stub.end).r());
     fStubEndx.push_back(stub.end.X());
     fStubEndy.push_back(stub.end.Y());
     fStubEndz.push_back(stub.end.Z());
@@ -681,7 +660,7 @@ void sbn::NuVertexChargeTree::FillStubs(
     fStubNWire.push_back(stub.CoreNHit());
     fStubTrkPitch.push_back(stub.trkpitch.front());
     fStubPitch.push_back(stub.pitch.front());
-    fStubLenP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).Mag(), 2212));
+    fStubLenP.push_back(fRangeCalculator.GetTrackMomentum((stub.vtx - stub.end).r(), 2212));
 
     // Only count charge on the main stub
     fStubCharge.push_back(stub.CoreCharge());
@@ -699,6 +678,9 @@ void sbn::NuVertexChargeTree::FillStubs(
     fStubNPlane.push_back(stub.plane.size());
     fStubVtxW.push_back(stub.vtx_w.front());
     fStubEndW.push_back(stub.hit_w.front());
+
+    fStubVtxEField.push_back(stub.efield_vtx);
+    fStubEndEField.push_back(stub.efield_end);
 
     // truth-matching
     std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, stubs[i_stub].hits);
@@ -791,34 +773,10 @@ void sbn::NuVertexChargeTree::FillVertexHits(
     fVertexHitCharge.push_back(hit.charge);
     fVertexHitDist.push_back(hit.proj_dist_to_vertex);
     fVertexHitVtxW.push_back(hit.vtxw);
-    fNVertexPFPs.push_back(hit.nearbyPFPIDs.size());
     fVertexHitdQdx.push_back(hit.dqdx);
     fVertexHitSPID.push_back(hit.spID);
     fVertexHitPitch.push_back(hit.pitch);
     fVertexHitdEdx.push_back(hit.dedx);
-    // if (hit.nearbyPFPIDs.size() > MAX_PFP) {
-    //  std::cout << "ERROR: MORE PRIMARY PFPs (" << hit.nearbyPFPIDs.size() << ") than tree slots (" << MAX_PFP << "(\n";
-    // }
-    for (unsigned i_part = 0; i_part < hit.nearbyPFPIDs.size() && i_part < MAX_PFP; i_part++) {
-      fVertexHitPFPIDs[i_part].push_back(hit.nearbyPFPIDs[i_part]);
-      fVertexHitPFPDists[i_part].push_back(hit.nearbyPFPDists[i_part]);
-    }
-    for (unsigned i_part = hit.nearbyPFPIDs.size(); i_part < MAX_PFP; i_part++) {
-      fVertexHitPFPIDs[i_part].push_back(-1);
-      fVertexHitPFPDists[i_part].push_back(-100.);
-    }
-
-    // if (hit.nearbyPFP3DIDs.size() > MAX_PFP) {
-    //  std::cout << "ERROR: MORE PRIMARY PFPs (" << hit.nearbyPFP3DIDs.size() << ") than tree slots (" << MAX_PFP << "(\n";
-    // }
-    for (unsigned i_part = 0; i_part < hit.nearbyPFP3DIDs.size() && i_part < MAX_PFP; i_part++) {
-      fVertexHitPFP3DIDs[i_part].push_back(hit.nearbyPFP3DIDs[i_part]);
-      fVertexHitPFP3DDists[i_part].push_back(hit.nearbyPFP3DDists[i_part]);
-    }
-    for (unsigned i_part = hit.nearbyPFP3DIDs.size(); i_part < MAX_PFP; i_part++) {
-      fVertexHitPFP3DIDs[i_part].push_back(-1);
-      fVertexHitPFP3DDists[i_part].push_back(-100.);
-    }
 
     fVertexHitTrueEnergy.push_back(0.);
     fVertexHitTrueProtonEnergy.push_back(0.);
@@ -1295,7 +1253,8 @@ void sbn::NuVertexChargeTree::analyze(art::Event const& evt) {
     // Get the primary vertex
     art::Ptr<recob::Vertex> vert;
     for (unsigned i_pfp = 0; i_pfp < thisSliceParticles.size(); i_pfp++) {
-      if (thisSliceParticles[i_pfp]->IsPrimary()) {
+      if (thisSliceParticles[i_pfp]->IsPrimary() &&
+          /* TODO: remove. Needed because of issue in SCE correction module */ thisSliceParticleVertexs.at(i_pfp).size()) {
         vert = thisSliceParticleVertexs.at(i_pfp).at(0);
         break;
       }

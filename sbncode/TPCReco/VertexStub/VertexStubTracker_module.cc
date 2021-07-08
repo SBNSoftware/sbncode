@@ -81,6 +81,7 @@ private:
   float fdQdxCut;
   float fOneWiredQdxCut;
   bool fCorrectSCE;
+  bool fPositionsAreSCECorrected;
   sbn::StubBuilder fStubBuilder;
   std::vector<std::unique_ptr<sbn::IStubMerge>> fStubMergeTools;
 };
@@ -93,7 +94,8 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
     fdQdxCut(p.get<float>("dQdxCut")),
     fOneWiredQdxCut(p.get<float>("OneWiredQdxCut")),
     fCorrectSCE(p.get<bool>("CorrectSCE")),
-    fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"))
+    fPositionsAreSCECorrected(p.get<bool>("PositionsAreSCECorrected")),
+    fStubBuilder(p.get<fhicl::ParameterSet >("CaloAlg"), fPositionsAreSCECorrected)
 {
   // load the tools
   std::vector<fhicl::ParameterSet> merge_tool_configs(p.get<std::vector<fhicl::ParameterSet>>("MergeTools"));
@@ -150,9 +152,6 @@ void sbn::VertexStubTracker::produce(art::Event& e)
 
     // stuff common to each vertex hit in a slice
     art::Ptr<recob::Slice> thisSlice = slices[i_slc];
-    // each hit should have the same vertex
-    recob::Vertex vertex;
-    if (!vhits.empty()) vertex = *vhitVtxs.at(0).at(0);
   
     std::vector<sbn::StubInfo> stubs;
     for (unsigned i_vhit = 0; i_vhit < vhits.size(); i_vhit++) {
@@ -165,7 +164,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
       if (!passcut) continue;
 
       sbn::StubInfo sinfo;
-      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, vertex, geo, sce, clock_data, dprop, sinfo.hits, sinfo.pfp); 
+      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, geo, sce, clock_data, dprop, sinfo.hits, sinfo.pfp); 
       sinfo.vhit = vhits[i_vhit];
       sinfo.vhit_hit = vhitHits.at(i_vhit).at(0);
 
