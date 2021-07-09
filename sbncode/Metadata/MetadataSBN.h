@@ -57,6 +57,7 @@ namespace util{
       std::string fProductionName; //Production parameter, do not use if not running a production
       std::string fProductionType; //Production parameter, do not use if not running a production
       int merge;
+      double fTotPOT=0.;
     };
 
     metadata md;
@@ -64,6 +65,7 @@ namespace util{
 
     void GetMetadataMaps(std::map<std::string, std::string>& strs,
                          std::map<std::string, int>& ints,
+			 std::map<std::string, double>& doubles,
                          std::map<std::string, std::string>& objs);
 
   private:
@@ -73,6 +75,7 @@ namespace util{
     void postOpenInputFile(std::string const& fn);
     void postEvent(art::Event const& ev, art::ScheduleContext);
     void postBeginSubRun(art::SubRun const& subrun);
+    void postEndSubRun(art::SubRun const& subrun);
     void postCloseInputFile();
 
     std::string GetParentsString() const;
@@ -80,6 +83,7 @@ namespace util{
 
     std::map<std::string,std::string> mdmapStr;
     std::map<std::string, int> mdmapInt;
+    std::map<std::string, double> mdmapDouble;
     std::map<std::string, std::string> mdmapObj;
 
     // Fcl parameters.
@@ -89,6 +93,7 @@ namespace util{
     std::vector<std::string> fDataTier;
     std::vector<std::string> fFileFormat;
     std::vector<int> fMerge;
+    std::string fPOTModuleLabel;
     art::FileStatsCollector fFileStats;
     art::PostCloseFileRenamer fRenamer{fFileStats};
   }; // class MetadataSBN

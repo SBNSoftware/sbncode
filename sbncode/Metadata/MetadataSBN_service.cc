@@ -15,6 +15,7 @@
 //                         1 - Set merge.merge = 1 and merge.merged = 0
 //                         0 - Set merge.merge = 0 and merge.merged = 0
 //                        -1 - Do not generate merge parameters.
+//                 POTModuleLabel  - POTSummary module label (default "generator").
 //
 //                 Parameters JSONFileName, dataTier, and fileFormat can be single
 //                 stringss or sequences of strings.  In case of sequences of length
@@ -59,6 +60,7 @@
 
 #include "sbncode/Metadata/MetadataSBN.h"
 #include "sbncode/Metadata/FileCatalogMetadataSBN.h"
+#include "larcoreobj/SummaryData/POTSummary.h"
 
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/SubRun.h"
@@ -114,12 +116,14 @@ util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
     else if(pset.is_key_to_sequence("Merge"))
       fMerge = pset.get<std::vector<int> >("Merge");
   }
+  fPOTModuleLabel = pset.get<std::string>("POTModuleLabel", "generator");
 
   reg.sPostBeginJob.watch(this, &MetadataSBN::postBeginJob);
   reg.sPostOpenFile.watch(this, &MetadataSBN::postOpenInputFile);
   reg.sPostCloseFile.watch(this, &MetadataSBN::postCloseInputFile);
   reg.sPostProcessEvent.watch(this, &MetadataSBN::postEvent);
   reg.sPostBeginSubRun.watch(this, &MetadataSBN::postBeginSubRun);
+  reg.sPostEndSubRun.watch(this, &MetadataSBN::postEndSubRun);
 
   // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
   art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
@@ -131,6 +135,7 @@ util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
   md.fProductionName = paramhandle->GetProductionName();
   md.fProductionType = paramhandle->GetProductionType();
   md.merge = -1;
+  md.fTotPOT = 0.;
 }
 
 /// Un-quote quoted strings
@@ -238,6 +243,20 @@ void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
   }
 }
 
+//--------------------------------------------------------------------  	
+// PostEndSubRun callback.
+void util::MetadataSBN::postEndSubRun(art::SubRun const& sr)
+{
+  art::Handle< sumdata::POTSummary > potListHandle;
+  double fTotPOT = 0;
+  if(sr.getByLabel(fPOTModuleLabel,potListHandle)){
+    fTotPOT+=potListHandle->totpot;
+  }
+
+  md.fTotPOT += fTotPOT;
+}
+
+
 //--------------------------------------------------------------------
 std::string Escape(const std::string& s)
 {
@@ -289,9 +308,10 @@ std::string util::MetadataSBN::GetRunsString() const
 //--------------------------------------------------------------------
 void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs,
                                         std::map<std::string, int>& ints,
+					std::map<std::string, double>& doubles,
                                         std::map<std::string, std::string>& objs)
 {
-  strs.clear(); ints.clear(); objs.clear();
+  strs.clear(); ints.clear(); doubles.clear(); objs.clear();
 
   objs["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
 
@@ -331,6 +351,7 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
     ints["merge.merge"] = (md.merge==0 ? 0 : 1);
     ints["merge.merged"] = 0;
   }
+  doubles["mc.pot"] = md.fTotPOT;  
 }
 
 //--------------------------------------------------------------------
@@ -356,8 +377,9 @@ void util::MetadataSBN::postCloseInputFile()
 
     std::map<std::string, std::string> strs;
     std::map<std::string, int> ints;
+    std::map<std::string, double> doubles;
     std::map<std::string, std::string> objs;
-    GetMetadataMaps(strs, ints, objs);
+    GetMetadataMaps(strs, ints, doubles, objs);
 
     // open a json file and write everything from the struct md complying to the
     // samweb json format. This json file holds the below information temporarily.
@@ -380,6 +402,9 @@ void util::MetadataSBN::postCloseInputFile()
 	jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
       }
       for(auto& it: ints){
+	jsonfile << ",\n  \"" << it.first << "\": " << it.second;
+      }
+      for(auto& it: doubles){
 	jsonfile << ",\n  \"" << it.first << "\": " << it.second;
       }
 

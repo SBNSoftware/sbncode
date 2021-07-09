@@ -20,6 +20,7 @@
 //           Parameters      - Arbitrary (key, value) parameters.
 //                             Specify in fcl file as sequence-of-sequence:
 //                             [[key1, value1], [key2, value2],...]
+//           POTModuleLabel  - POTSummary module label (default "generator").
 //
 //           Above values will be added in internal metadata of artroot
 //           output files whenever this service is included in job
@@ -66,6 +67,7 @@ namespace util {
     // Callbacks.
 
     void postBeginJob();
+    void postEndSubRun(art::SubRun const& subrun);
 
     // Data members.
 
@@ -79,6 +81,8 @@ namespace util {
     std::string fProductionType; //Production parameter, do not use if not running a production
     int fMerge;
     std::vector<std::pair<std::string, std::string>> fParameters;
+    std::string fPOTModuleLabel;
+    double fTotPOT;
   };
 
 } // namespace util
