@@ -46,6 +46,7 @@ FileCatalogMetadataSBN(fhicl::ParameterSet const& pset, art::ActivityRegistry& r
 
   reg.sPostBeginJob.watch(this, &FileCatalogMetadataSBN::postBeginJob);
   reg.sPostEndSubRun.watch(this, &FileCatalogMetadataSBN::postEndSubRun);
+  reg.sPreCloseOutputFile.watch(this, &FileCatalogMetadataSBN::preCloseOutputFile);
 }
 
 //--------------------------------------------------------------------
@@ -88,6 +89,13 @@ void util::FileCatalogMetadataSBN::postEndSubRun(art::SubRun const& sr)
   art::Handle< sumdata::POTSummary > potListHandle;
   if(sr.getByLabel(fPOTModuleLabel,potListHandle)){
     fTotPOT+=potListHandle->totpot;}
+}
+
+// PreCloseOutputFile callback.
+void util::FileCatalogMetadataSBN::preCloseOutputFile(const std::string& label)
+{
+
+  art::ServiceHandle<art::FileCatalogMetadata> mds;
 
   if(fTotPOT > 0.) {
     std::ostringstream streamObj;
@@ -95,6 +103,7 @@ void util::FileCatalogMetadataSBN::postEndSubRun(art::SubRun const& sr)
     std::string strPOT = streamObj.str();
     mds->addMetadata("mc.pot", strPOT);
   }
+  fTotPOT = 0.;
 }
 
 DEFINE_ART_SERVICE(util::FileCatalogMetadataSBN)

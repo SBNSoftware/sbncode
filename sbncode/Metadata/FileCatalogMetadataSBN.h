@@ -68,6 +68,7 @@ namespace util {
 
     void postBeginJob();
     void postEndSubRun(art::SubRun const& subrun);
+    void preCloseOutputFile(const std::string& label);
 
     // Data members.
 
