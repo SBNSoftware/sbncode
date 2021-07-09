@@ -37,7 +37,7 @@ product             version
 larsoft             v09_26_00
 sbnobj              v09_11_14
 sbnanaobj           v09_16_10
-sbndaq_artdaq_core  v0_07_06_01_of0
+sbndaq_artdaq_core  v0_07_08_of0
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
