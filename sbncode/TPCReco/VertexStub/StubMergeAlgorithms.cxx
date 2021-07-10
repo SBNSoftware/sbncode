@@ -89,8 +89,8 @@ double sbn::GetPitch(
     loc_w = sbn::GetLocationAtWires(sce, geo, loc, tpc, xsign);
   }
 
-  geo::Point_t locw_traj = sbn::GetLocation(sce, loc_w, tpc, xsign);
-  geo::Point_t locw_pdx_traj = sbn::GetLocation(sce, loc_w + pitch * dir_w, tpc, xsign);
+  geo::Point_t locw_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w, tpc, xsign) : loc_w;
+  geo::Point_t locw_pdx_traj = (correct_sce) ? sbn::GetLocation(sce, loc_w + pitch * dir_w, tpc, xsign) : (loc_w + pitch * dir_w);
 
   pitch = (locw_traj - locw_pdx_traj).R();
 
