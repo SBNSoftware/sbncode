@@ -1,4 +1,0 @@
-#include "dissonant_higgs_gen.fcl"
-
-higgsM: 0.22
-#include "set_higgsM.fcl"

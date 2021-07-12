@@ -14,7 +14,7 @@
 
 // local includes
 #include "IRayTrace.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // LArSoft includes

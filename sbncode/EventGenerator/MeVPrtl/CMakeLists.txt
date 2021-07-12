@@ -7,8 +7,7 @@ link_directories( $ENV{DK2NUDATA_LIB} )
 link_directories( $ENV{DK2NUGENIE_LIB} )
 
 add_subdirectory(Tools)
-add_subdirectory(Products)
-add_subdirectory(jobs)
+add_subdirectory(config)
 
 simple_plugin( MeVPrtlGen module
               ${ART_FRAMEWORK_CORE}
@@ -30,10 +29,11 @@ simple_plugin( MeVPrtlGen module
               ${ROOT_BASIC_LIB_LIST}
         			${ROOT_XMLIO}
         			${CLHEP}
+		nusimdata_SimulationBase
               larcorealg_Geometry
         			nurandom_RandomUtils_NuRandomService_service
         			larcoreobj_SummaryData
-        			sbncode_EventGenerator_MeVPrtl_Products_dict
+        			sbnobj_Common_EventGen_MeVPrtl
         			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
@@ -58,7 +58,7 @@ simple_plugin( MeVPrtlTestRayTrace module
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service
 			larcoreobj_SummaryData
-			sbncode_EventGenerator_MeVPrtl_Products_dict
+        		sbnobj_Common_EventGen_MeVPrtl
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 

@@ -14,7 +14,7 @@
 
 // local includes
 #include "IRayTrace.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"

@@ -17,8 +17,9 @@
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlFlux.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/KaonParent.h"
+
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
 
 // LArSoft includes
 #include "nugen/EventGeneratorBase/GENIE/EvtTimeShiftFactory.h"

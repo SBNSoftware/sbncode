@@ -25,7 +25,8 @@
 #include <vector>
 #include <array>
 
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 

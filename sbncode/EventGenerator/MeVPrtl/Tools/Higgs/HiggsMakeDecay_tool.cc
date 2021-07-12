@@ -16,7 +16,8 @@
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
+
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -283,10 +284,12 @@ bool HiggsMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TV
 
   decay.pos = decay_pos;
 
-  decay.daughter_mom.push_back(p4A);
+  decay.daughter_mom.push_back(p4A.Vect());
+  decay.daughter_e.push_back(p4A.E());
   decay.daughter_pdg.push_back(daughter_pdg);
 
-  decay.daughter_mom.push_back(p4B);
+  decay.daughter_mom.push_back(p4B.Vect());
+  decay.daughter_e.push_back(p4B.E());
   // daughter B is anti-particle 
   if (daughter_pdg == 111) { // pi0 is its own anti-particle
     decay.daughter_pdg.push_back(daughter_pdg);

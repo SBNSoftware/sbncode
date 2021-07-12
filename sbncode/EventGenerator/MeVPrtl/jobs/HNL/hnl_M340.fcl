@@ -1,4 +1,0 @@
-#include "hnl_icarus_gen.fcl"
-
-hnlM: 0.34
-#include "set_hnlM.fcl"

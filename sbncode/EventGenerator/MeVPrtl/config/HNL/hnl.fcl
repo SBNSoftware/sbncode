@@ -10,15 +10,8 @@ kaon2hnl: {
   MagUm4: 1e-7
   KDAROnly: false
 
-  // uBooNE config
-  Beam2DetectorRotation: [       0.92103853804025682,            0.0227135048039241207,          0.38880857519374290,
-                                                0.0000462540012621546684,       0.99829162468141475,            -0.0584279894529063024,
-                                                -0.38947144863934974,           0.0538324139386641073,          0.91946400794392302 ]
-  // uBooNE pos.
-  // BeamOrigin: [0, 0, 0, 5502, 7259, 67270 ]
-
-  // ICARUS?
-  BeamOrigin: [0, 0, -13000, 5502, 7259, 67270 ]
+  Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
+  BeamOrigin: @local::icarus_numi_beam_origin
 
   // timing config
   SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
