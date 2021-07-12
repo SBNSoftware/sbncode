@@ -6,6 +6,8 @@ set( sbn_meta_lib_list   ${ART_FRAMEWORK_CORE}
                          ${ART_FRAMEWORK_SERVICES_BASIC}
                          ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
                          art_Framework_Services_System_TriggerNamesService_service
+			 art_Persistency_Common canvas
+			 art_Persistency_Provenance canvas
                          ${MF_MESSAGELOGGER}
                          ${ROOT_BASIC_LIB_LIST}
     )
