@@ -38,7 +38,7 @@ services:
   RandomNumberGenerator: {} #ART native random number generator
   TFileService: { fileName: "fullchain_production_hist_prod5.root" closeFileFast: false }
 #  scheduler:    { wantTracer: false wantSummary: true }
-  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+   message:     @local::sbnd_message_services_prod
   TimeTracker:  { printSummary: true }
   # #  @table::standard_services
 
