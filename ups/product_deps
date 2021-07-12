@@ -47,10 +47,10 @@ cetbuildtools v7_17_01 - only_for_build
 # Make the table by adding columns before "notes".
 
 qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core  notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug           -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof            -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug            -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof             -nq-
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s110      -nq-
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s110       -nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s110       -nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s110        -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
