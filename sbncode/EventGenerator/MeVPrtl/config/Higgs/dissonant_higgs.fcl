@@ -40,7 +40,7 @@ decay_higgs: {
   ReferenceHiggsMass: @local::higgsM
   ReferenceHiggsMixing: 1e-5
   ReferenceRayDistance: 10400 # 104m
-  ReferenceHiggsEnergyFromKaonEnergy: 50. # GeV
+  ReferenceHiggsEnergyFromKaonEnergy: 15. # GeV
 }
 
 # RayTrace configs
