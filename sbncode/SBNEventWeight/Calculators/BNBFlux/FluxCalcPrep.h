@@ -9,10 +9,12 @@
 
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
+#include "sbncode/SBNEventWeight/Base/SmearingUtils.h"//MultiGaussianSmearing!
 #include <sys/stat.h> //for exit(0);
 
 #include "TH1F.h"
 #include "TFile.h"
+#include "TDecompChol.h"//for Choleskey Decomposition
 
 namespace sbn {
 	namespace evwgh {
@@ -24,14 +26,6 @@ namespace sbn {
 				//Read FHiCL and store the settings for the reweighting environment and the calculator.
 				void Configure(fhicl::ParameterSet const& pset,
 						CLHEP::HepRandomEngine& engine) override;
-
-				//5 types of configurations
-//				void ConfigureUnisim(fhicl::ParameterSet const& pset);//Unisim
-//				void ConfigurePHFS	(fhicl::ParameterSet const& pset);//PrimaryHadronFeynmanScaling
-//				void ConfigurePHSW	(fhicl::ParameterSet const& pset);//PrimaryHadronSanfordWang$
-//				void ConfigurePHSWSV(fhicl::ParameterSet const& pset);//PrimaryHadronSWCentralSplineVariation
-//				void ConfigurePHN	(fhicl::ParameterSet const& pset);//PrimaryHadronNormalization
-
 
 
 				//GetWeight() returns the final weights as a vector
@@ -46,19 +40,24 @@ namespace sbn {
 				//randomN - input randmo number
 				//noNeg - determine what formulas to use for weights depending on input histograms.
 				double UnisimWeightCalc(double enu, int ptype, int ntype, double randomN, bool noNeg);//Unisim
+				std::pair<bool, double> PHNWeightCalc(simb::MCFlux flux, double  rand);//PrimaryHadronNormalizationWeightCalc
 
-//tool
+				std::pair<bool, double> PHFSWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronFeynmanScaling
+				std::pair<bool, double> PHSWWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronSanfordWangWeightCalc
+				std::pair<bool, double> PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronSWCentralSplineVariationWeightCalc
+				//tool
 				std::vector<double> ConvertToVector(TArrayD const* array);
 
 			private:
-//fParameterSet was prepared in `sbncode/Base/WeightManager.h`
+				//fParameterSet was prepared in `sbncode/Base/WeightManager.h`
 				std::string fGenieModuleLabel;
 				std::string CalcType;
 
 				double fScalePos{}; 
 				double fScaleNeg = 1; //for Unisim
 
-//				std::vector<double> fWeightArray{};//a vector of random numbers
+				std::vector< std::vector< double > > fWeightArray{};//2d matrix of random numbers
+				//				std::vector<double> fWeightArray{};//a vector of random numbers
 				//replaced by std::map<EventWeightParameter, std::vector<float> > fParameterSet.fParameterMap
 				//CHECK, cannot handld the cituation that there are two sets of fWerightArray; i.e. from AddParameter()
 
@@ -77,12 +76,13 @@ namespace sbn {
 				TMatrixD* FitCov{nullptr};//Shared to SanfordWang
 
 				//-- SWCentaralSplineVariation
-//				TMatrixD* HARPCov{nullptr};
-				TMatrixD* HARPLowerTriangluarCov{nullptr};//reduced HARPCov matrix to be used
+				//				TMatrixD* HARPCov{nullptr};
+				//				TMatrixD* HARPLowerTriangluarCov{nullptr};//reduced HARPCov matrix to be used; use FixCov for this
 				TMatrixD* HARPXSec{nullptr};
 				std::vector<double> HARPmomentumBounds{};
 				std::vector<double> HARPthetaBounds{};
 				std::vector<double> SWParam{};
+				bool fIsDecomposed{false};
 
 				DECLARE_WEIGHTCALC(FluxWeightCalc)
 		};
