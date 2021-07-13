@@ -1,0 +1,160 @@
+#include "services_common_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_icarus.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "simulationservices_icarus.fcl"
+
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "calorimetry_icarus.fcl"
+#include "scecorrections.fcl"
+#include "trackfindermodules_icarus.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  # @table::icarus_detsim_services
+  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { 
+    fileName: "calorimetryout.root"
+  }
+  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
+  TimeTracker:  { printSummary: true }
+  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
+  BackTrackerService:  @local::standard_backtrackerservice
+  ParticleInventoryService: @local::standard_particleinventoryservice
+  @table::icarus_basic_services
+  @table::icarus_backtracking_services
+}
+services.SpaceCharge: @local::icarus_spacecharge
+services.SpaceCharge.EnableCalEfieldSCE: true
+services.SpaceCharge.EnableCalSpatialSCE: true
+services.SpaceCharge.EnableSimEfield: true
+services.SpaceCharge.EnableSimEfieldSCE: true
+services.SpaceCharge.EnableSimSpatialSCE: true
+services.SpaceCharge.EnableCorrSCE: true
+services.SpaceCharge.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+services.SpaceCharge.RepresentationType: "Voxelized_TH3"
+services.SpaceCharge.service_provider: SpaceChargeServiceICARUS
+
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+    pandoraGausSCECryo0: @local::scecorrection
+    pandoraGausSCECryo1: @local::scecorrection
+    pandoraTrackGausSCECryo0: @local::icarus_pandoraTrackCreation
+    pandoraTrackGausSCECryo1: @local::icarus_pandoraTrackCreation
+    pandoraGausSCECaloCryo0: @local::icarus_gnewcalomc
+    pandoraGausSCECaloCryo1: @local::icarus_gnewcalomc
+    pandoraGausCaloCryo0: @local::icarus_gnewcalomc
+    pandoraGausCaloCryo1: @local::icarus_gnewcalomc
+  }
+
+  analyzers:
+  {
+    caloanaCryo0: {
+      module_type: CalorimetryAnalysis
+      CALOproducer: "pandoraGausCaloCryo0"
+      PIDproducer:  "particleid"
+      TRKproducer:  "pandoraTrackGausCryo0"
+      PFPproducer: "pandoraGausCryo0"
+      HitProducers: ["cluster3DCryo0"]
+      ADCtoE: [] 
+    }
+    caloanaCryo1: {
+      module_type: CalorimetryAnalysis
+      CALOproducer: "pandoraGausCaloCryo1"
+      PIDproducer:  "particleid"
+      TRKproducer:  "pandoraTrackGausCryo1"
+      PFPproducer: "pandoraGausCryo1"
+      HitProducers: ["cluster3DCryo1"]
+      ADCtoE: [] 
+    }
+    caloanasceCryo0: {
+      module_type: CalorimetryAnalysis
+      CALOproducer: "pandoraGausSCECaloCryo0"
+      PIDproducer:  "particleid"
+      TRKproducer:  "pandoraTrackGausSCECryo0"
+      PFPproducer: "pandoraGausSCECryo0"
+      HitProducers: ["cluster3DCryo0"]
+      ADCtoE: [] 
+    }
+    caloanasceCryo1: {
+      module_type: CalorimetryAnalysis
+      CALOproducer: "pandoraGausSCECaloCryo1"
+      PIDproducer:  "particleid"
+      TRKproducer:  "pandoraTrackGausSCECryo1"
+      PFPproducer: "pandoraGausSCECryo1"
+      HitProducers: ["cluster3DCryo1"]
+      ADCtoE: [] 
+    }
+  }
+
+  runprod: [pandoraGausCaloCryo0, pandoraGausCaloCryo1, 
+            pandoraGausSCECryo0, pandoraGausSCECryo1, pandoraTrackGausSCECryo0, pandoraTrackGausSCECryo1, pandoraGausSCECaloCryo0, pandoraGausSCECaloCryo1] 
+  ana: [caloanaCryo0, caloanaCryo1, caloanasceCryo0, caloanasceCryo1]
+  trigger_paths: [runprod]
+  stream1:       [ ]
+  end_paths:     [ana]
+}
+
+physics.producers.pandoraGausSCECryo0.T0Labels: []
+physics.producers.pandoraGausSCECryo0.T0LabelsCorrectT0: []
+physics.producers.pandoraGausSCECryo0.CorrectNoT0Tag: true
+physics.producers.pandoraGausSCECryo0.PFPLabel: "pandoraGausCryo0"
+physics.producers.pandoraGausSCECryo0.TrackLabel: "pandoraTrackGausCryo0"
+physics.producers.pandoraGausSCECryo1.T0Labels: []
+physics.producers.pandoraGausSCECryo1.T0LabelsCorrectT0: []
+physics.producers.pandoraGausSCECryo1.CorrectNoT0Tag: true
+physics.producers.pandoraGausSCECryo1.PFPLabel: "pandoraGausCryo1"
+physics.producers.pandoraGausSCECryo1.TrackLabel: "pandoraTrackGausCryo1"
+
+physics.producers.pandoraTrackGausSCECryo0.PFParticleLabel: "pandoraGausSCECryo0"
+physics.producers.pandoraTrackGausSCECryo1.PFParticleLabel: "pandoraGausSCECryo1"
+
+physics.producers.pandoraGausSCECaloCryo0.TrackModuleLabel: "pandoraTrackGausSCECryo0"
+physics.producers.pandoraGausSCECaloCryo0.FieldDistortion: true
+physics.producers.pandoraGausSCECaloCryo0.TrackIsFieldDistortionCorrected: true
+physics.producers.pandoraGausSCECaloCryo0.FieldDistortionEfield: true
+physics.producers.pandoraGausSCECaloCryo1.TrackModuleLabel: "pandoraTrackGausSCECryo1"
+physics.producers.pandoraGausSCECaloCryo1.FieldDistortion: true
+physics.producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected: true
+physics.producers.pandoraGausSCECaloCryo1.FieldDistortionEfield: true
+
+physics.producers.pandoraGausCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
+physics.producers.pandoraGausCaloCryo0.FieldDistortion: false
+physics.producers.pandoraGausCaloCryo0.TrackIsFieldDistortionCorrected: false
+physics.producers.pandoraGausCaloCryo0.FieldDistortionEfield: false
+physics.producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
+physics.producers.pandoraGausCaloCryo1.FieldDistortion: false
+physics.producers.pandoraGausCaloCryo1.TrackIsFieldDistortionCorrected: false
+physics.producers.pandoraGausCaloCryo1.FieldDistortionEfield: false
+
+# physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
