@@ -34,9 +34,6 @@ services:
 }
 services.SpaceChargeService: @local::icarus_spacecharge
 
-# services.IFBeam: {}
-# services.BackTracker: @local::standard_backtracker
-
 #Start each new event with an empty event.
 source:
 {

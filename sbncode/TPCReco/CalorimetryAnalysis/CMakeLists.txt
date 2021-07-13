@@ -29,8 +29,6 @@ simple_plugin( CalorimetryAnalysis module
 	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
 	lardataalg_DetectorInfo
 )
-
-
 install_headers()
 install_fhicl()
 install_source()
