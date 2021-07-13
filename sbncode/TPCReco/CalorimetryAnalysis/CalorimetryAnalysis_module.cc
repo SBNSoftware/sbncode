@@ -1618,13 +1618,16 @@ std::vector<unsigned> FinddEdxHits(const anab::Calorimetry &calo, const std::vec
 float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector3 location, TVector3 direction, const spacecharge::SpaceCharge *SCEService=NULL) {
   float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
 
-  // apply space charge change to dir
+  // apply space charge change to dir if we can (i.e. if point is fiducial)
   if (SCEService) {
     geo::Point_t location_p(location);
     geo::Vector_t offset_v = SCEService->GetPosOffsets(location_p);
     TVector3 offset = TVector3(offset_v.X(), offset_v.Y(), offset_v.Z());
+
+    int corr = geo->TPC(plane).DriftDir()[0];
+
     // fix the x-sign
-    if (location.X() < 0.) offset.SetX(-offset.X());
+    offset.SetX(corr*offset.X());
 
     // location a ~wire's distance along the track 
     TVector3 location_dx = location + geo->WirePitch(plane) * direction;
@@ -1634,7 +1637,7 @@ float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector
     geo::Vector_t offset_dx_v = SCEService->GetPosOffsets(location_dx_p);
     TVector3 offset_dx(offset_dx_v.X(), offset_dx_v.Y(), offset_dx_v.Z());
     // fix the x-sign
-    if (location_dx.X() < 0.) offset_dx.SetX(-offset_dx.X());
+    offset_dx.SetX(corr*offset_dx.X());
 
     // this is the actual direction
     direction = (offset_dx + location_dx - offset - location).Unit();
@@ -1650,7 +1653,8 @@ float calcPitch(const geo::GeometryCore *geo, const geo::PlaneID &plane, TVector
     geo::Vector_t offset_v = SCEService->GetPosOffsets(location_p);
     TVector3 offset(offset_v.X(), offset_v.Y(), offset_v.Z());
     // fix the x-sign
-    if (location.X() < 0.) offset.SetX(-offset.X());
+    int corr = geo->TPC(plane).DriftDir()[0];
+    offset.SetX(corr*offset.X());
 
     TVector3 location_sce = location + offset;
 
