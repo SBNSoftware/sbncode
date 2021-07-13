@@ -37,7 +37,6 @@ public:
   sbn::Stub FromVertexHit(const art::Ptr<recob::Slice> &slice,
 	    const sbn::VertexHit &vhit,
 	    const recob::Hit &vhit_hit, 
-	    const recob::Vertex &vertex,
 	    const geo::GeometryCore *geo,
             const spacecharge::SpaceCharge *sce,
 	    const detinfo::DetectorClocksData &dclock,
@@ -45,10 +44,16 @@ public:
 	    std::vector<art::Ptr<recob::Hit>> &stub_hits,
 	    art::Ptr<recob::PFParticle> &stub_pfp);
 
-  StubBuilder(fhicl::ParameterSet const& p): fCaloAlg(p) {}
+  StubBuilder(fhicl::ParameterSet const& p, bool PositionsAreSCECorrected): 
+    fCaloAlg(p),
+    fPositionsAreSCECorrected(PositionsAreSCECorrected) {}
 
 private:
+  // config
   calo::CalorimetryAlg fCaloAlg;
+  bool fPositionsAreSCECorrected;
+
+  // data holders
   std::map<unsigned, std::vector<art::Ptr<recob::Hit>>> fSliceHits;
   std::map<unsigned, std::vector<art::Ptr<recob::PFParticle>>> fSlicePFPs;
   std::map<unsigned, std::vector<art::Ptr<recob::Track>>> fSliceTrks;
