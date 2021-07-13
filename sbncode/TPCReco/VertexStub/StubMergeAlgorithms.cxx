@@ -57,7 +57,7 @@ double sbn::GetPitch(
   // "dir_w" should be the direction that the wires see. If the track already has the field
   // distortion corrections applied, then we need to de-apply them to get the direction as
   // seen by the wire planes
-  if (sce && sce->EnableCalSpatialSCE() && correct_sce && track_is_sce_corrected) {
+  if (correct_sce && track_is_sce_corrected) {
     // compute the dir of the track trajectory
     geo::Point_t loc_mdx = loc - dir * (geo->WirePitch(view) / 2.);
     geo::Point_t loc_pdx = loc + dir * (geo->WirePitch(view) / 2.);
@@ -69,7 +69,7 @@ double sbn::GetPitch(
     dir_w = (loc_pdx - loc_mdx).Unit(); 
   }
   // If there is no space charge or the track is not yet corrected, then the dir
-  // is the track is what we want
+  // is what we want
   else {
     dir_w = dir;
   }
