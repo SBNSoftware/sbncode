@@ -22,6 +22,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
@@ -35,6 +36,11 @@
 
 namespace caf
 {
+
+  void FillStubVars(const sbn::Stub &stub,
+                    const art::Ptr<recob::PFParticle> stubpfp,
+                    caf::SRStub &srstub,
+                    bool allowEmpty = false);
 
   void FillShowerVars(const recob::Shower& shower,
                       const recob::PFParticle &particle,

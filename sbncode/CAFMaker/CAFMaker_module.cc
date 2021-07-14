@@ -811,6 +811,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    // Get the stubs!
+    art::FindManyP<sbn::Stub> fmSlcStubs =
+      FindManyPStrict<sbn::Stub>(sliceList, evt,
+          fParams.StubLabel() + slice_tag_suff);
+
+    std::vector<art::Ptr<sbn::Stub>> fmStubs;
+    if (fmSlcStubs.isValid()) {
+      fmStubs = fmSlcStubs.at(0);
+    } 
+
+    // Lookup stubs to overlaid PFP
+    art::FindManyP<recob::PFParticle> fmStubPFPs =
+      FindManyPStrict<recob::PFParticle>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
+    // and get the stub hits for truth matching
+    art::FindManyP<recob::Hit> fmStubHits =
+      FindManyPStrict<recob::Hit>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
+
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
            fParams.TrackCaloLabel() + slice_tag_suff);
@@ -904,7 +923,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // }
 
     //#######################################################
-    // Add reconstructed objects.
+    // Add stub reconstructed objects.
+    //#######################################################
+    for (size_t iStub = 0; iStub < fmStubs.size(); iStub++) {
+      const sbn::Stub &thisStub = *fmStubs[iStub];
+      art::Ptr<recob::PFParticle> thisStubPFP;
+      if (fmStubPFPs.at(iStub).size()) thisStubPFP = fmStubPFPs.at(iStub).at(0);
+      rec.reco.nstub ++;
+      rec.reco.stub.emplace_back();
+      FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
+      FillStubTruth(fmStubHits.at(iStub), true_particles, clock_data, rec.reco.stub.back());
+      // Duplicate stub reco info in the srslice
+      recslc.reco.stub.push_back(rec.reco.stub.back());
+      recslc.reco.nstub = recslc.reco.stub.size();
+    }
+
+    //#######################################################
+    // Add track/shower reconstructed objects.
     //#######################################################
     // Reco objects have assns to the slice PFParticles
     // This depends on the findMany object created above.

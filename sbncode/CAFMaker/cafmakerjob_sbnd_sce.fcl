@@ -24,8 +24,20 @@ physics.producers.pandoraSCETrackCRTTrack: @local::transfer_crttrackt0_sce_sbnd
 
 physics.producers.fmatchSCE: @local::transfer_flasht0_sce_sbnd
 
+# Just over-write the stub reco labels -- no need to change to "SCE"
+physics.producers.vertexCharge: @local::vertex_charge_sbnd_sce
+physics.producers.vertexStub: @local::vertex_stub_sbnd_sce
+# set the CaloAlg again
+physics.producers.vertexCharge.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
+
+
 physics.runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
             pandoraSCETrackCRTHit, pandoraSCETrackCRTTrack, fmatchSCE,
-            pandoraShowerSelectionVars,
+            pandoraShowerSelectionVars, vertexCharge, vertexStub,
             mycafmaker ]
+
+# Enable the Space-Charge service
+#include "enable_spacecharge_services_sbnd.fcl"
+

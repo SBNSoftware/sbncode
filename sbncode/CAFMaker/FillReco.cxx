@@ -16,6 +16,50 @@ namespace caf
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
+  void FillStubVars(const sbn::Stub &stub,
+                    const art::Ptr<recob::PFParticle> stubpfp,
+                    caf::SRStub &srstub,
+                    bool allowEmpty) {
+
+    // allowEmpty does not (yet) matter here
+    (void) allowEmpty;
+
+    // Copy the stub object over
+    srstub.vtx.x = stub.vtx.x();
+    srstub.vtx.y = stub.vtx.y();
+    srstub.vtx.z = stub.vtx.z();
+
+    srstub.end.x = stub.end.x();
+    srstub.end.y = stub.end.y();
+    srstub.end.z = stub.end.z();
+
+    srstub.efield_vtx = stub.efield_vtx;
+    srstub.efield_end = stub.efield_end;
+
+    for (unsigned ip = 0; ip < stub.plane.size(); ip++) {
+      caf::SRStubPlane plane;
+      plane.p = (caf::Plane_t)stub.plane[ip].Plane;
+      plane.pitch = stub.pitch[ip];
+      plane.trkpitch = stub.trkpitch[ip];
+      plane.vtx_w = stub.vtx_w[ip];
+      plane.hit_w = stub.hit_w[ip];
+      for (unsigned ih = 0; ih < stub.hits[ip].size(); ih++) {
+        caf::SRStubHit hit;
+        hit.charge = stub.hits[ip][ih].charge;
+        hit.wire = stub.hits[ip][ih].wire;
+        hit.ontrack = stub.hits[ip][ih].ontrack;
+
+        plane.hits.push_back(hit);
+      }
+
+      srstub.planes.push_back(plane);     
+    }
+
+    // If there is an overlaid PFParticle, save its ID
+    if (stubpfp) srstub.pfpid = stubpfp->Self();
+
+  }
+
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,

@@ -20,6 +20,7 @@
 #include "pmtflashtrigger_producer.fcl"
 
 #include "flashmatch_sbnd.fcl"
+#include "sbn_stub.fcl"
 
 process_name: CAFmaker
 
@@ -45,6 +46,7 @@ services:
   DetectorPropertiesService: @local::sbnd_detproperties
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+  SpaceCharge:               @local::sbnd_spacecharge
   NuRandomService: {
     policy: perEvent
   }
@@ -84,6 +86,9 @@ physics:
    crtconvhit:            @local::crthitconverter_sbnd
    pandoraTrackCRTHit:          @local::crthitmatch_sbnd
    pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
+
+   vertexCharge: @local::vertex_charge_sbnd
+   vertexStub: @local::vertex_stub_sbnd
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -93,7 +98,7 @@ physics:
 #    metadata: @local::standard_metadata            #prod
   }
  runprod: [ flashtrig, flashtrigfilter, pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
-            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack, fmatchSCENew, vertexCharge, vertexStub,
             mycafmaker ]
 # makecaf: [mycafmaker] #list the modules for this path, order matters, filters reject all following items
 # stream1: [metadata]
@@ -103,6 +108,9 @@ physics:
 
 
 }
+
+physics.producers.vertexCharge.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
 
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants

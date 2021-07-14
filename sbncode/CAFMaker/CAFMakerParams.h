@@ -84,6 +84,12 @@ namespace caf
       "pandora"
     };
 
+    Atom<string> StubLabel {
+      Name("StubLabel"),
+      Comment("Base label of Stub producer."),
+      "vertexStub"
+    };
+
     Atom<string> FlashMatchLabel {
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
