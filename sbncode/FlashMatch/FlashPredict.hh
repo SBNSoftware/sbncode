@@ -52,6 +52,8 @@
 #include "sbncode/OpDet/PDMapAlg.h"
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 
+// #include "nusimdata/SimulationBase/MCParticle.h" //uncomment for creating metrics
+// #include "nusimdata/SimulationBase/MCTruth.h" //uncomment for creating metrics
 // turn the warnings back on
 //#pragma GCC diagnostic pop
 
@@ -346,7 +348,7 @@ private:
     _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio,
     _y_skew, _z_skew;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  unsigned _evt, _run, _sub, _slices;
+  unsigned _evt, _run, _sub, _slices;//, _true_nus; // uncomment for creating metrics
 
   std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans;
   std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads;

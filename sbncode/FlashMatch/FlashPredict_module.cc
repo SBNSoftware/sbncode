@@ -151,6 +151,7 @@ void FlashPredict::produce(art::Event& evt)
     _sub = evt.subRun();
     _run = evt.run();
     _slices        = 0;
+    // _true_nus      = 0; //uncomment for creating metrics
     _flash_time    = -9999.;
     _flash_pe      = -9999.;
     _flash_unpe    = -9999.;
@@ -163,6 +164,29 @@ void FlashPredict::produce(art::Event& evt)
     _score         = -9999.;
   }
   bk.events++;
+
+  // // uncomment below for creating metrics
+  // // * MC truth information
+  // art::Handle<std::vector<simb::MCTruth> > mctruthList_h;
+  // std::vector<art::Ptr<simb::MCTruth> > mclist;
+  // if(evt.getByLabel("generator", mctruthList_h))
+  //   art::fill_ptr_vector(mclist, mctruthList_h);
+  // _true_nus = 0;
+  // for(auto const& mc: mclist){
+  //   //Only deal with neutrinos
+  //   if(mc->Origin() != simb::kBeamNeutrino){continue;}
+  //   ++_true_nus;
+  //   // Anything else you need to do with truth at this stage...
+  // }
+  // // if (_true_nus > 1) {
+  // //   mf::LogWarning("FlashPredict") << "\t _true_nus:\t" << _true_nus << ". Skipping.";
+  // //   bk.noslice++;
+  // //   updateBookKeeping();
+  // //   e.put(std::move(T0_v));
+  // //   e.put(std::move(pfp_t0_assn_v));
+  // //   return;
+  // // }
+  // // uncomment above for creating metrics
 
   // grab PFParticles in event
   const auto pfps_h =
@@ -411,6 +435,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
   _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
   _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
+  // _flashmatch_nuslice_tree->Branch("true_nus", &_true_nus, "true_nus/I"); // uncomment for creating metrics
   _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
   _flashmatch_nuslice_tree->Branch("flash_x_gl", &_flash_x_gl, "flash_x_gl/D");
   _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
@@ -1565,6 +1590,7 @@ void FlashPredict::printMetrics(const std::string metric,
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
     << "_slices:    \t" << std::setw(8) << _slices     << "\n"
+    // << "_true_nus:  \t" << std::setw(8) << _true_nus   << "\n" // uncomment for creating metrics
     << "charge metrics:\n" << charge.dumpMetrics() << "\n"
     << "flash metrics:\n"  << flash.dumpMetrics() << "\n";
 }
