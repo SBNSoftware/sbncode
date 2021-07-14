@@ -247,6 +247,7 @@ def generator(nuslice_tree, rootfile, pset):
 
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
+        if e.slices > e.true_nus: continue
         qX = e.charge_x
         rr_h2.Fill(qX, e.flash_rr)
         rr_prof.Fill(qX, e.flash_rr)
@@ -254,6 +255,7 @@ def generator(nuslice_tree, rootfile, pset):
         ratio_prof.Fill(qX, e.flash_ratio)
     # use rr_h2 and ratio_h2 to compute hypo_x
     for e in nuslice_tree:
+        if e.slices > e.true_nus: continue
         qX = e.charge_x
         hypo_x = hypo_flashx_from_H2(e.flash_rr, rr_h2, e.flash_ratio, ratio_h2)
         corr_flash_y = e.flash_yb - y_bias(e.y_skew, hypo_x, y_bias_slope)
@@ -286,6 +288,7 @@ def generator(nuslice_tree, rootfile, pset):
         ratio_spreads[int(ib)] = ratio_prof.GetBinError(ibp)
 
     for e in nuslice_tree:
+        if e.slices > e.true_nus: continue
         qX = e.charge_x
         qXGl = e.charge_x_gl
         # calculate match score
