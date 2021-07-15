@@ -376,7 +376,7 @@ namespace caf
     }
   }
 
-  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo) {
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, caf::SRTrackCalo &srcalo) {
     const std::vector<float> &dqdx = calo.dQdx();
     const std::vector<float> &dedx = calo.dEdx();
     const std::vector<float> &pitch = calo.TrkPitchVec();
@@ -386,14 +386,13 @@ namespace caf
     for (unsigned i = 0; i < dedx.size(); i++) {
       if (dedx[i] > 1000.) continue;
       srcalo.nhit ++;
-      srcalo.charge += dqdx[i] * pitch[i] / constant; /* convert ADC*tick to electrons */
+      srcalo.charge += dqdx[i] * pitch[i]; // ADC
       srcalo.ke += dedx[i] * pitch[i];
     }
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
-                     const std::array<float, 3> &calo_constants,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -407,7 +406,7 @@ namespace caf
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
         caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-        FillTrackPlaneCalo(calo, calo_constants[plane_id], this_calo);
+        FillTrackPlaneCalo(calo, this_calo);
       }
     }
 

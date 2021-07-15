@@ -180,13 +180,6 @@ namespace caf
       "largeant"
     };
 
-    fhicl::Sequence<float, 3u> CalorimetryConstants {
-      Name("CalorimetryConstants"),
-      Comment("Constants to convert ADC*tick charge measurement to electrons."
-              "Ordered 1st Induction, 2nd Induction, Collection."
-              "In units of ADC*tick / electrons")
-    };
-
     Atom<bool> FillTrueParticles {
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"

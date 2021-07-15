@@ -102,10 +102,9 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
-  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, caf::SRTrackCalo &srcalo);
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const geo::GeometryCore *geom,
-                     const std::array<float, 3> &calo_constants,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

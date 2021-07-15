@@ -1116,7 +1116,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
+          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
           FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
