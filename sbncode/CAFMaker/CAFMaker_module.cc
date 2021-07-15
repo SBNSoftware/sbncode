@@ -927,12 +927,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     for (size_t iStub = 0; iStub < fmStubs.size(); iStub++) {
       const sbn::Stub &thisStub = *fmStubs[iStub];
+
       art::Ptr<recob::PFParticle> thisStubPFP;
-      if (fmStubPFPs.at(iStub).size()) thisStubPFP = fmStubPFPs.at(iStub).at(0);
-      rec.reco.nstub ++;
+      if (!fmStubPFPs.at(iStub).empty()) thisStubPFP = fmStubPFPs.at(iStub).at(0);
+
       rec.reco.stub.emplace_back();
       FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
       FillStubTruth(fmStubHits.at(iStub), true_particles, clock_data, rec.reco.stub.back());
+      rec.reco.nstub = rec.reco.stub.size();
+
       // Duplicate stub reco info in the srslice
       recslc.reco.stub.push_back(rec.reco.stub.back());
       recslc.reco.nstub = recslc.reco.stub.size();
