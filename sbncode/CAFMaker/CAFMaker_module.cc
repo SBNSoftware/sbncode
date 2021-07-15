@@ -369,6 +369,9 @@ void CAFMaker::beginRun(art::Run& run) {
     return; // Match, no need to refill into tree
   }
 
+  // If there were no weights available, return
+  if (!wgt_params.isValid()) return;
+
   fPrevWeightPSet = *wgt_params;
 
   SRGlobal global;
