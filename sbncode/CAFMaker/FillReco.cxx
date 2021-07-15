@@ -385,6 +385,7 @@ namespace caf
   }
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+        const std::vector<art::Ptr<recob::Hit>> &hits,
         bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
         const detinfo::DetectorPropertiesData &dprop,
         caf::SRTrackCalo &srcalo) {
@@ -395,6 +396,7 @@ namespace caf
     const std::vector<float> &pitch = calo.TrkPitchVec();
     const std::vector<float> &rr = calo.ResidualRange();
     const std::vector<geo::Point_t> &xyz = calo.XYZ();
+    const std::vector<size_t> &tps = calo.TpIndices();
 
     srcalo.charge = 0.;
     srcalo.ke = 0.;
@@ -415,6 +417,16 @@ namespace caf
         p.dedx = dedx[i];
         p.pitch = pitch[i];
         p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+
+        // lookup the wire -- the Calorimery object makes this
+        // __way__ harder than it should be
+        for (const art::Ptr<recob::Hit> &h: hits) {
+          if (h.key() == tps[i]) {
+            p.wire = h->WireID().Wire;
+            p.sumadc = h->SummedADC();
+            p.integral = h->Integral();
+          }
+        }
 
         // Save
         srcalo.points.push_back(p);
@@ -466,6 +478,7 @@ namespace caf
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
@@ -481,7 +494,7 @@ namespace caf
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
         caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-        FillTrackPlaneCalo(calo, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
+        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
       }
     }
 

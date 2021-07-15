@@ -116,6 +116,7 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
                      const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrackCalo &srcalo);
@@ -133,6 +134,7 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
                      const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
