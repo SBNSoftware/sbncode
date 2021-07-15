@@ -1126,7 +1126,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
+              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
