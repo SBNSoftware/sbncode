@@ -71,6 +71,7 @@ private:
   bool fUseTrackSPRecovery;
   bool fCorrectSCE;
   bool fPositionsAreSCECorrected;
+  bool fSelectNeutrino;
 
   // private data 
   calo::CalorimetryAlg fCaloAlg;
@@ -89,6 +90,7 @@ sbn::VertexChargeVacuum::VertexChargeVacuum(fhicl::ParameterSet const& p)
     fUseTrackSPRecovery(p.get<bool>("UseTrackSPRecovery")),
     fCorrectSCE(p.get<bool>("CorrectSCE")),
     fPositionsAreSCECorrected(p.get<bool>("PositionsAreSCECorrected")),
+    fSelectNeutrino(p.get<bool>("SelectNeutrino")),
     fCaloAlg(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
 
@@ -255,6 +257,11 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
     if (!pfp.IsPrimary()) continue;
     // Ignore PFP's with no vertex
     if (!pfparticleVertices.at(i_pfp).size()) continue;
+
+    // If configured, require this to be a PFP neutrino
+    unsigned pfpPDGC = std::abs(pfp.PdgCode());
+    if(fSelectNeutrino &&
+        (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16) ) continue;
 
     // we found a primary PFP! Get its vertex.
     const art::Ptr<recob::Vertex> &vtx_ptr = pfparticleVertices.at(i_pfp).at(0); 

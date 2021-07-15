@@ -10,7 +10,7 @@ twoplane_stub_merge: {
   MaxMergeTOff: 4 # ticks
   MaxMergeQOff: 3e5 # #elec
   RemoveDuplicateMerges: true
-  SaveOldStubs: true
+  SaveOldStubs: false
 }
 
 stub_merge: [@local::plane_stub_merge, @local::twoplane_stub_merge]

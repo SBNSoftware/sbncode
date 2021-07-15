@@ -118,6 +118,8 @@ simple_plugin(TwoPlaneStubMerge tool
 	sbncode_TPCReco_VertexStub
 )
 
+add_subdirectory(config)
+
 install_headers()
 install_fhicl()
 install_source()

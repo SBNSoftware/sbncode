@@ -1,0 +1,111 @@
+#include "sbn_stub_merge_tools.fcl"
+
+BEGIN_PROLOG
+vertex_charge_sbnd: {
+  module_type: VertexChargeVacuum
+  PFParticleLabel: pandora
+  TrackLabel: pandoraTrack
+  UseTrackSPRecovery: true
+  HitVacuumRadius: 5
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false 
+  SelectNeutrino: true
+}
+
+vertex_charge_sbnd_sce: @local::vertex_charge_sbnd
+vertex_charge_sbnd_sce.PFParticleLabel: pandoraSCE
+vertex_charge_sbnd_sce.TrackLabel: pandoraSCETrack
+vertex_charge_sbnd_sce.CorrectSCE: true
+vertex_charge_sbnd_sce.PositionsAreSCECorrected: true
+
+vertex_stub_sbnd: {
+  module_type: VertexStubTracker
+  PFPLabel: pandora
+  VertexChargeLabel: vertexCharge
+  dQdxCut: 2e5 # elec/cm
+  OneWiredQdxCut: 1e5 # elec/cm
+  MergeTools: @local::stub_merge
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false
+}
+
+vertex_stub_sbnd_sce: @local::vertex_stub_sbnd
+vertex_stub_sbnd_sce.PFPLabel: pandoraSCE
+vertex_stub_sbnd_sce.CorrectSCE: true
+vertex_stub_sbnd_sce.PositionsAreSCECorrected: true
+
+vertex_charge_icarus_cryo0: {
+  module_type: VertexChargeVacuum
+  PFParticleLabel: pandoraGausCryo0
+  TrackLabel: pandoraTrackGausCryo0
+  UseTrackSPRecovery: true
+  HitVacuumRadius: 5
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false 
+  SelectNeutrino: true
+}
+
+vertex_charge_icarus_sce_cryo0: @local::vertex_charge_icarus_cryo0
+vertex_charge_icarus_sce_cryo0.PFParticleLabel: pandoraGausSCECryo0
+vertex_charge_icarus_sce_cryo0.TrackLabel: pandoraTrackGausSCECryo0
+vertex_charge_icarus_sce_cryo0.CorrectSCE: true
+vertex_charge_icarus_sce_cryo0.PositionsAreSCECorrected: true
+
+
+vertex_charge_icarus_cryo1: {
+  module_type: VertexChargeVacuum
+  PFParticleLabel: pandoraGausCryo1
+  TrackLabel: pandoraTrackGausCryo1
+  UseTrackSPRecovery: true
+  HitVacuumRadius: 5
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false 
+  SelectNeutrino: true
+}
+
+vertex_charge_icarus_sce_cryo1: @local::vertex_charge_icarus_cryo1
+vertex_charge_icarus_sce_cryo1.PFParticleLabel: pandoraGausSCECryo1
+vertex_charge_icarus_sce_cryo1.TrackLabel: pandoraTrackGausSCECryo1
+vertex_charge_icarus_sce_cryo1.CorrectSCE: true
+vertex_charge_icarus_sce_cryo1.PositionsAreSCECorrected: true
+
+vertex_stub_icarus_cryo0: {
+  module_type: VertexStubTracker
+  PFPLabel: pandoraGausCryo0
+  VertexChargeLabel: vertexChargeCryo0
+  dQdxCut: 2e5 # elec/cm
+  OneWiredQdxCut: 1e5 # elec/cm
+  MergeTools: @local::stub_merge
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false 
+}
+
+vertex_stub_icarus_sce_cryo0: @local::vertex_stub_icarus_cryo0
+vertex_stub_icarus_sce_cryo0.PFPLabel: pandoraGausSCECryo0
+vertex_stub_icarus_cryo0.CorrectSCE: true
+vertex_stub_icarus_cryo0.PositionsAreSCECorrected: true
+
+vertex_stub_icarus_cryo1: {
+  module_type: VertexStubTracker
+  PFPLabel: pandoraGausCryo1
+  VertexChargeLabel: vertexChargeCryo1
+  dQdxCut: 2e5 # elec/cm
+  OneWiredQdxCut: 1e5 # elec/cm
+  MergeTools: @local::stub_merge
+  CaloAlg: {} # overwrite me
+  CorrectSCE: false
+  PositionsAreSCECorrected: false 
+}
+
+vertex_stub_icarus_sce_cryo1: @local::vertex_stub_icarus_cryo1
+vertex_stub_icarus_sce_cryo1.PFPLabel: pandoraGausSCECryo1
+vertex_stub_icarus_cryo1.CorrectSCE: true
+vertex_stub_icarus_cryo1.PositionsAreSCECorrected: true
+
+
+END_PROLOG

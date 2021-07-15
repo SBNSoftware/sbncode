@@ -61,6 +61,12 @@ namespace caf
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
 
+  void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<caf::SRTrueParticle> &particles,
+                     const detinfo::DetectorClocksData &clockData,
+                     caf::SRStub& srstub,
+                     bool allowEmpty = false);
+
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
