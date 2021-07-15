@@ -96,6 +96,9 @@
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
+#include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
+#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -732,7 +735,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Prep truth-to-reco-matching info
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get()); 
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
 
   //#######################################################
   // Fill truths & fake reco
@@ -943,6 +946,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    art::FindManyP<float> fmShowerCosmicDist =
+      FindManyPStrict<float>(slcShowers, evt, fParams.ShowerCosmicDistLabel() + slice_tag_suff);
+
     art::FindManyP<float> fmShowerResiduals =
       FindManyPStrict<float>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
 
@@ -975,9 +981,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
            fParams.TrackCaloLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::ParticleID> fmPID =
+    art::FindManyP<anab::ParticleID> fmChi2PID =
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
-          fParams.TrackPidLabel() + slice_tag_suff);
+          fParams.TrackChi2PidLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
+      FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
+          fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::StoppingChi2Fit> fmStoppingChi2Fit =
+      FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
+          fParams.TrackStoppingChi2FitLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmTrackDazzle =
+      FindManyPStrict<sbn::MVAPID>(slcTracks, evt,
+          fParams.TrackDazzleLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmShowerRazzle =
+      FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
+          fParams.ShowerRazzleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
@@ -1117,13 +1139,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
+
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], thisParticle, primary, producer, rec.reco.trk.back());
+        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
-        if (fmPID.isValid()) {
-           FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+
+        if (fmChi2PID.isValid()) {
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        }
+        if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
@@ -1150,8 +1185,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+
         // We may have many residuals per shower depending on how many showers ar in the slice
+
+        if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
+        }
+        if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
+        }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         }

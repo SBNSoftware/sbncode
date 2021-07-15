@@ -108,10 +108,22 @@ namespace caf
       "pandoraShowerSBN"
     };
 
+    Atom<string> ShowerRazzleLabel {
+      Name("ShowerRazzleLabel"),
+      Comment("Base label of shower mva particle-id producer."),
+      "pandoraShowerRazzle"
+    };
+
     Atom<string> RecoShowerSelectionLabel {
       Name("RecoShowerSelectionLabel"),
       Comment("Base label of shower selection vars producer."),
       "pandoraShowerSelectionVars"
+    };
+
+    Atom<string> ShowerCosmicDistLabel {
+      Name("ShowerCosmicDistLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "pandoraShowerCosmicDist"
     };
 
     Atom<string> TrackCaloLabel {
@@ -120,10 +132,28 @@ namespace caf
       "pandoraCalo"
     };
 
-    Atom<string> TrackPidLabel {
-      Name("TrackPidLabel"),
-      Comment("Base label of track particle-id producer."),
+    Atom<string> TrackChi2PidLabel {
+      Name("TrackChi2PidLabel"),
+      Comment("Base label of track chi2 particle-id producer."),
       "pandoraPid"
+    };
+
+    Atom<string> TrackScatterClosestApproachLabel {
+      Name("TrackScatterClosestApproachLabel"),
+      Comment("Base label of track track scatter closestapproach producer."),
+      "pandoraTrackClosestApproach"
+    };
+
+    Atom<string> TrackStoppingChi2FitLabel {
+      Name("TrackStoppingChi2FitLabel"),
+      Comment("Base label of track stopping chi2 fit producer."),
+      "pandoraTrackStoppingChi2"
+    };
+
+    Atom<string> TrackDazzleLabel {
+      Name("TrackDazzleLabel"),
+      Comment("Base label of track mva particle-id producer."),
+      "pandoraTrackDazzle"
     };
 
     Atom<string> CRTHitMatchLabel {
