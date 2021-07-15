@@ -682,7 +682,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   evt.getByLabel(fParams.GenLabel(), mevprtltruth_handle);
 
   std::vector<art::Ptr<evgen::ldm::MeVPrtlTruth>> mevprtl_truths;
-  art::fill_ptr_vector(mevprtl_truths, mevprtltruth_handle);
+  if (mevprtltruth_handle.isValid()) art::fill_ptr_vector(mevprtl_truths, mevprtltruth_handle);
 
   // prepare map of track ID's to energy depositions
   art::Handle<std::vector<sim::SimChannel>> simchannel_handle;
