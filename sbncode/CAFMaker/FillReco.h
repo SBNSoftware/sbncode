@@ -6,6 +6,7 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -102,9 +103,13 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
-  void FillTrackPlaneCalo(const anab::Calorimetry &calo, caf::SRTrackCalo &srcalo);
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
+                     const detinfo::DetectorPropertiesData &dprop,
+                     caf::SRTrackCalo &srcalo);
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
-                     const geo::GeometryCore *geom,
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
+                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

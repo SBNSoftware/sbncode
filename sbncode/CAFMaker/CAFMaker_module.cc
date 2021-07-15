@@ -59,6 +59,8 @@
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -708,6 +710,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // Collect the input TPC reco tags
@@ -1047,6 +1051,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
+    // Whether Pandora thinks this slice is a neutrino
+    //
+    // This requirement is used to determine whether to save additional
+    // per-hit information about the slice.
+    bool NeutrinoSlice = !recslc.is_clear_cosmic;
+
     // Fill truth info after decision on selection is made
     FillSliceTruth(slcHits, mctruths, srneutrinos,
        *pi_serv.get(), clock_data, recslc, rec.mc);
@@ -1116,7 +1126,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+          FillTrackCalo(fmCalo.at(iPart), (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+              fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
+              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
           FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
