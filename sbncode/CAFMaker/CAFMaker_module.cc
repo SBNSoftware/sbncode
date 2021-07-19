@@ -1332,11 +1332,13 @@ void CAFMaker::endJob() {
 
     std::map<std::string, std::string> strs;
     std::map<std::string, int> ints;
+    std::map<std::string, double> doubles;
     std::map<std::string, std::string> objs;
-    meta->GetMetadataMaps(strs, ints, objs);
+    meta->GetMetadataMaps(strs, ints, doubles, objs);
 
     for(auto it: strs) metamap[it.first] = "\""+it.second+"\"";
     for(auto it: ints) metamap[it.first] = std::to_string(it.second);
+    for(auto it: doubles) metamap[it.first] = std::to_string(it.second);
     for(auto it: objs) metamap[it.first] = it.second;
   }
   catch(art::Exception& e){//(art::errors::ServiceNotFound)
