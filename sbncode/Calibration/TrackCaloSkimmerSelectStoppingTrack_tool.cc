@@ -120,11 +120,11 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
 }
 
 bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
-  bool downwards = (t.dir_y < 0.) || !fRequireDownwards;
+  bool downwards = (t.dir.y < 0.) || !fRequireDownwards;
 
   bool end_is_fid = false;
   for (const geo::BoxBoundedGeo &g: fFiducialVolumes) {
-    geo::Point_t end {t.end_x, t.end_y, t.end_z};
+    geo::Point_t end {t.end.x, t.end.y, t.end.z};
 
     if (g.ContainsPosition(end)) {
       end_is_fid = true;
@@ -141,7 +141,7 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
 
   // compute the median dqdx of the last 5 cm
   std::vector<double> endp_dqdx;
-  for (const sbn::HitInfo &h: t.hits2) {
+  for (const sbn::TrackHitInfo &h: t.hits2) {
     if (h.oncalo && h.rr < 5.) endp_dqdx.push_back(h.dqdx);
   }
   double med_dqdx = -1;

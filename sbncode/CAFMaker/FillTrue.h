@@ -28,7 +28,12 @@
 
 namespace caf
 {
+  // Helpers
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
+        const TVector3 p0,
+        const TVector3 p1);
 
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
