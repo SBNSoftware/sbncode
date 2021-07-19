@@ -84,6 +84,12 @@ namespace sbn {
 				std::vector<double> SWParam{};
 				bool fIsDecomposed{false};
 
+				int wc = 0;
+				int wcn = 0;
+				int wc0 = 0;
+				int wc1 = 0;
+				int wc30 = 0;
+
 				DECLARE_WEIGHTCALC(FluxWeightCalc)
 		};
 

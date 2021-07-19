@@ -7,6 +7,7 @@ namespace sbn {
 		//Configure everything here! 
 		void FluxWeightCalc::Configure(fhicl::ParameterSet const& p,
 				CLHEP::HepRandomEngine& engine) {
+			std::cout<<"SBNEventWeight : configure "<< GetName() << std::endl;
 
 			fGenieModuleLabel = p.get<std::string>("genie_module_label");//use this label to get MC*Handle
 			const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
@@ -16,9 +17,6 @@ namespace sbn {
 			//skip "random_seed"
 			auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
 			std::vector< float > parsigmas(pars.size(), 1.0);
-//			std::cout<<"Default "<<parsigmas[0]<<std::endl;
-//CHECK		std::cout<<"after get_if_present "<<parsigmas[0]<<std::endl;
-//CHECK		if(pset.has_key("parameter_sigma") )	std::cout<<" Valid"<<std::endl;
 			if (pars.size() != parsigmas.size()) {
 				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
 					<< "parameter_list and parameter_sigma length mismatch."
@@ -32,6 +30,7 @@ namespace sbn {
 			std::string fMode = pset.get<std::string>("mode");//3 types: multisim/pmNsigma/fixed
 			int number_of_multisims = pset.get<int>("number_of_multisims", 1);
 
+			fParameterSet.Configure(GetFullName(), fMode, number_of_multisims);
 			for (size_t i=0; i<pars.size(); i++) {
 				//Check, no sigma is used in this script.
 				fParameterSet.AddParameter(pars[i], parsigmas[i]);//parsigmas[i]);
@@ -39,12 +38,12 @@ namespace sbn {
 
 
 			//1. << Calculator Settings >>
-			std::string calctype = pset.get< std::string >("calc_type");//Unisim,PrimaryHadronSWCentralSplineVariation,PrimaryHadronFeynmanScaling,PrimaryHadronSanfordWang,PrimaryHadronNormalization
-			std::cout<<"Calculator type: "<<calctype<<std::endl;
+			CalcType = pset.get< std::string >("calc_type");//Unisim,PrimaryHadronSWCentralSplineVariation,PrimaryHadronFeynmanScaling,PrimaryHadronSanfordWang,PrimaryHadronNormalization
+			std::cout<<" Calculator type: "<<CalcType<<std::endl;
 
 			fScalePos 	= pset.get<double>("scale_factor_pos");
 			if(!pset.get_if_present("scale_factor_neg",fScaleNeg)){
-				std::cout<<" `scale_factor_neg` is set to 1."<<std::endl;
+				std::cout<<"  auto-asignment: scale_factor_neg = 1."<<std::endl;
 				}
 
 			cet::search_path sp("FW_SEARCH_PATH");
@@ -53,14 +52,19 @@ namespace sbn {
 			//----------------------------
 			//-- Non hadrons production --
 			//----------------------------
-			fParameterSet.Configure(GetFullName(), fMode, number_of_multisims);
-			if( calctype == "Unisim"){//Unisim Calculator
+			
+//	CHECK				std::string dataInput       =   pset.get< std::string >("ExternalData");
+//					std::string ExternalDataInput = sp.find_file(dataInput);
+//					//std::cout<<__LINE__<<" CHECK find "<<ExternalDataInput<<std::endl;
+//					TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
+			if( CalcType == "Unisim"){//Unisim Calculator
+
 				fParameterSet.Sample(engine);//random_seed is loaded at sbncode/Base/WeightManager.h
 				std::string dataInput1	= pset.get< std::string >("CentralValue_hist_file");
-				std::cout<<__LINE__<<" CHECK find "<<dataInput1<<std::endl;
-				std::string cvfile	= sp.find_file(dataInput1);
-//				std::cout<<__LINE__<<" CHECK "<<cvfile<<std::endl;
-				TFile fcv(Form("%s",cvfile.c_str()));
+//				std::cout<<__LINE__<<" CHECK find "<<dataInput1<<std::endl;
+				std::string cvfile_path	= sp.find_file(dataInput1);
+//				std::cout<<__LINE__<<" CHECK "<<cvfile_path<<std::endl;
+				TFile fcv(Form("%s",cvfile_path.c_str()));
 
 				/// Grab the histogram related to the variation 
 				std::string dataInput2pos	= pset.get< std::string >("PositiveSystematicVariation_hist_file");
@@ -93,28 +97,30 @@ namespace sbn {
 			//-------------
 			//-- Hadrons --
 			//-------------
-			} else if( calctype.compare(0, 13,"PrimaryHadron") == 0){//Hadron Calculators
+			} else if( CalcType.compare(0, 13,"PrimaryHadron") == 0){//Hadron Calculators
 //				std::cout<<"CHECK  Find a Hadron"<<std::endl;
 
 				fprimaryHad	=   pset.get< std::vector<int>>("PrimaryHadronGeantCode");//for Feynman Scaling
 
 
-				if( calctype == "PrimaryHadronNormalization" ){//k-
+				if( CalcType == "PrimaryHadronNormalization" ){//k-
 
-					fParameterSet.Sample(engine);//random_seed is loaded at sbncode/Base/WeightManager.h
+					fParameterSet.Sample(engine);//
+					fParameterSet.Sample(engine);//Yes.. load it twice;
 					
-					//					CHECK, use old method to generate random#;
-					//					fParameterSet.Sample(engine);
+					//		CHECK, use old method to generate random#;
+					//		fParameterSet.Sample(engine);
 					//Nothing else to configure
 
 				} else{//Hadron Calculator, slightly complicated
 
 					std::string dataInput       =   pset.get< std::string >("ExternalData");
 					std::string ExternalDataInput = sp.find_file(dataInput);
+					//std::cout<<__LINE__<<" CHECK find "<<ExternalDataInput<<std::endl;
 					TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
 
 					std::vector< std::string > pname; // these are what we will extract from the file
-					if( calctype == "PrimaryHadronFeynmanScaling" ){//k+
+					if( CalcType == "PrimaryHadronFeynmanScaling" ){//k+
 
 
 						pname.push_back("FS/KPlus/FSKPlusFitVal");
@@ -125,7 +131,7 @@ namespace sbn {
 						FitCov = (TMatrixD*) file->Get(pname[1].c_str());
 						*(FitCov) *= fScalePos*fScalePos;
 
-					}else if( calctype == "PrimaryHadronSanfordWang" ){//k0
+					}else if( CalcType == "PrimaryHadronSanfordWang" ){//k0
 						pname.push_back("SW/K0s/SWK0sFitVal");
 						pname.push_back("SW/K0s/SWK0sFitCov");
 						TArrayD* SWK0FitValArray = (TArrayD*) file->Get(pname[0].c_str());
@@ -135,7 +141,7 @@ namespace sbn {
 						*(FitCov) *= fScalePos*fScalePos;
 
 
-					}else if( calctype == "PrimaryHadronSWCentralSplineVariation" ){//pi+-
+					}else if( CalcType == "PrimaryHadronSWCentralSplineVariation" ){//pi+-
 
 						std::string fitInput = pset.get< std::string >("ExternalFit");
 						std::string HadronName; 
@@ -219,15 +225,15 @@ namespace sbn {
 
 			if (!validC){
 				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-					<<" calculator "+calctype + "is invalid"
+					<<" calculator "+CalcType + "is invalid"
 					<<std::endl;
 			}
-
+			std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
 		}//End of Configure() function
 
 
 		std::vector<float> FluxWeightCalc::GetWeight(art::Event& e, size_t inu) {
-std::cout<<"CHECK Getting weights "<<inu<<std::endl;
+			std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
 			//MCFlux & MCTruth
 			art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
 			e.getByLabel(fGenieModuleLabel,mcFluxHandle);
@@ -239,31 +245,27 @@ std::cout<<"CHECK Getting weights "<<inu<<std::endl;
 			//e.getByLabel(fGenieModuleLabel,mctruthHandle);
 			//std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
 
-			//CHECK, load random# here
-			//--New version--
-			//fWeightArray has 1000 random number
-			//random# taken care in  sbnobj/sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h 
-
-//			std::vector<double> fWeightArray{};//a vector of random numbers
-//			for (auto const& it : fParameterSet.fParameterMap) {
-//
-//				std::cout << GetFullName() << ": Load random numbers in " << it.first.fName << std::endl;
-//				fWeightArray.resize(fParameterSet.fNuniverses);
-//
-//				for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
-//					fWeightArray[i] = it.second[i];
-//				}
-//			}
 			// No neutrinos in this event gives 0;
 			int NUni = fParameterSet.fNuniverses;
-			std::cout<<__LINE__<<"CHECK universes # "<<NUni<<std::endl;
-			std::vector<float> weights( NUni, 0);
-			if(mclist.size() == 0) return weights;
+			std::vector<float> weights;//( mclist.size(), 0);
+			if(mclist.size() == 0){ 
+				std::cout<<"EMPTY WEIGHTS"<<std::endl;
+				return weights;
+			}
 
 			//Iterate through each neutrino in the event
+//CHECK no reseting			
+//			std::cout<<"CHECK Reset weight counters for "<<CalcType<<std::endl;
+//
+//			wc = 0;
+//			wcn = 0;
+//			wc0 = 0;
+//			wc1 = 0;
+//			wc30 = 0;
 
-
+//			std::cout<<__LINE__<<" Check type "<<CalcType<<std::endl;
 			if( CalcType == "Unisim"){//Unisim Calculator
+//			std::cout<<__LINE__<<" Got a Unisim  "<<inu<<" "<<CalcType<<std::endl;
 				//Unisim specific
 				//containers for the parent and neutrino type information
 				int ptype = std::numeric_limits<int>::max(); 
@@ -301,23 +303,41 @@ std::cout<<"CHECK Getting weights "<<inu<<std::endl;
 						//					weights[i]=UnisimWeightCalc(enu, ptype, ntype, fWeightArray[i], PosOnly);
 						double randomN = (fParameterSet.fParameterMap.begin())->second[i];
 						weights[i]=UnisimWeightCalc(enu, ptype, ntype, randomN , PosOnly);//AddParameter result does not work here;
+
+						if(weights[i]<0){
+							wcn++;
+						}else if((weights[i]-0)<1e-30){
+							wc0++;
+						}else if(fabs(weights[i]-30) < 1e-30){
+							wc30++;
+						} else if(fabs(weights[i]-1)<1e-30){
+							wc1++;
+						} else {
+							wc++;
+						}
+
+
 						//					if(weights[i]>1) validate_code++;
 					}//Iterate through the number of universes      
 				}
 			} else{//then this must be PrimaryHadron
 
+
 				// First let's check that the parent of the neutrino we are looking for is 
 				//  the particle we intended it to be, if not set all weights to 1
-				if (fluxlist[inu].ftptype != fprimaryHad[0]){//if first one not the one we need, skip.
+			if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(fluxlist[inu].ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
+//			std::cout<<__LINE__<<" Check ftptype "<<fluxlist[inu].ftptype<<" and requested "<<fprimaryHad[0]<<std::endl;
 					weights.resize( NUni);
 					std::fill(weights.begin(), weights.end(), 1);
+					std::cout<<"  "<<fluxlist[inu].ftptype<<" not found. All weights are 1 "<<std::endl;
 					return weights;//done, all 1
 				}// Hadronic parent check
 
-std::cout<<__LINE__<<" CHECK "<<std::endl;
 				if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
-std::cout<<__LINE__<<" CHECK "<<std::endl;
+//				std::cout<<"Check 	Multisim weights size "<<weights.size()<<" Universe "<<NUni<<std::endl;
+
 					for (unsigned int i = 0; int(weights.size()) < NUni; i++) {//if all weights are 1, no need to calculate weights;
+//						std::cout<<"CHECK Universe: "<<NUni<<std::endl;
 						std::pair<bool, double> test_weight;
 						if( CalcType == "PrimaryHadronNormalization"){//Normalization
 							double randomN = (fParameterSet.fParameterMap.begin())->second[i];
@@ -327,19 +347,37 @@ std::cout<<__LINE__<<" CHECK "<<std::endl;
 						} else if( CalcType == "PrimaryHadronSanfordWang"){//SanfordWang
 							test_weight = PHSWWeightCalc(fluxlist[inu], fWeightArray[i]);
 						} else if( CalcType == "PrimaryHadronSWCentralSplineVariation"){//SWCentaralSplineVariation
+//						std::cout<<__LINE__<<" Get this calculator "<<std::endl;
 							test_weight = PHSWCSVWeightCalc(fluxlist[inu], fWeightArray[i]);
 
 						} else throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": this shouldnt happen.."<<std::endl;
 
-						if(test_weight.first)	weights.push_back(test_weight.second);
+						if(test_weight.first){	
+							weights.push_back(test_weight.second);
+							double tmp_weight = test_weight.second;
+//							std::cout<<i<<" (";
+							if(tmp_weight<0){
+								wcn++;
+							}else if((tmp_weight-0)<1e-30){
+								wc0++;
+							}else if(fabs(tmp_weight-30) < 1e-30){
+								wc30++;
+							} else if(fabs(tmp_weight-1)<1e-30){
+								wc1++;
+							} else {
+								wc++;
+							}
+
+						};
 
 					}//Iterate through the number of universes      
 				}//Yes, Multisim
-std::cout<<__LINE__<<" CHECK "<<std::endl;
-			} 
+			}
 
-			std::cout<<"Working on inu:"<<inu<<" with first weight "<<weights[0]<<" size "<<weights.size()<<std::endl;
-			std::cout<<"\n The DUMMY VERSION WORKS!********\n\n\n"<<std::endl;
+
+			std::cout<<"Weights counter: (normal, <0, ==0, 1, 30)= ";
+			std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
+			std::cout<<"Next partile/event\n"<<std::endl;
 
 			return weights;
 		}//GetWeight()

@@ -9,6 +9,7 @@ namespace sbn {
 
   std::pair<bool, double> FluxWeightCalc::PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<double> rand){
 
+//std::cout<<__LINE__<<" Getting One weight with rand# "<<rand[0]<<std::endl;
     // 
     //  Largely built off the MiniBooNE code 
     //  but this is intended to expand beyond it
@@ -19,7 +20,6 @@ namespace sbn {
     //  JZ (6/2017) : Changed guards on c9 to be double point precision 
     //   
     
-std::cout<<__LINE__<<" CHECK "<<std::endl;
     bool parameters_pass = true;
     
     double c1 = SWParam[0];
@@ -32,6 +32,7 @@ std::cout<<__LINE__<<" CHECK "<<std::endl;
     double c8 = SWParam[7];
     double c9 = 1.0; // This isn't in the table but it is described in the text
     
+//std::cout<<__LINE__<<" SWParam0 "<<c1<<std::endl;
     //  Lay out the event kinimatics 
     double HadronMass = 0.13957010;
       
@@ -197,7 +198,6 @@ std::cout<<__LINE__<<" CHECK "<<std::endl;
       std::vector< TSpline3 > SplinesVsMomentum; 
       SplinesVsMomentum.resize(Ntbins);
 
-std::cout<<__LINE__<<" CHECK "<<std::endl;
       for(int tbin = 0; tbin < Ntbins; tbin++){
 	  for(int pbin = 0; pbin < Npbins; pbin++){
 	
@@ -232,7 +232,7 @@ std::cout<<__LINE__<<" CHECK "<<std::endl;
 	  SplinesVsMomentum[tbin] = TSpline3(&(MomentumBins[tbin]),"b2e2",0,0); 
 
       }
-std::cout<<__LINE__<<" CHECK "<<std::endl;
+//std::cout<<__LINE__<<" CHECK "<<std::endl;
       MomentumBins.clear();
       delete smearedHARPXSec;
       //
@@ -299,7 +299,7 @@ std::cout<<__LINE__<<" CHECK "<<std::endl;
       }
 
       std::pair<bool, double> output(parameters_pass, weight);
-
+//	std::cout<<__LINE__<<" Get the weight "<<weight<<std::endl;
       return output; 
 
   }// Done with the MicroBooNE function

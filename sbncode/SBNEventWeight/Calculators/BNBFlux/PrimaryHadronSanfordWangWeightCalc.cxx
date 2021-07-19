@@ -121,7 +121,7 @@ namespace sbn {
            
       double weight = 1; 
 
-      if(RW < 0 || CV < 0){
+      if(RW < 0 || CV < 0){//dont bother this; if this happens, the weight would be skipped...
 	weight = 1;
       }
       else if(fabs(CV) < 1.e-12){

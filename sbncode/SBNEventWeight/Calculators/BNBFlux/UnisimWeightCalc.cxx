@@ -6,46 +6,6 @@
 namespace sbn {
 	namespace evwgh {
 
-//		void FluxWeightCalc::ConfigureUnisim(fhicl::ParameterSet const& pset){
-//				std::cout<<__FILE__<<__LINE__<<" CHECK  Find a Unisim"<<std::endl;
-//
-//				/// Grab the histogram related to the CV
-//				std::string dataInput1	= pset.get< std::string >("CentralValue_hist_file");
-//				std::string cvfile		= sp.find_file(dataInput1);
-//				TFile fcv(Form("%s",cvfile.c_str()));
-//
-//				/// Grab the histogram related to the variation 
-//				std::string dataInput2pos	= pset.get< std::string >("PositiveSystematicVariation_hist_file");
-//				std::string rwfilepos		= sp.find_file(dataInput2pos);
-//				TFile frwpos(Form("%s", rwfilepos.c_str()));
-//
-//				std::string dataInput2neg	= pset.get< std::string >("NegativeSystematicVariation_hist_file");
-//				std::string rwfileneg		= sp.find_file(dataInput2neg);
-//				TFile frwneg(Form("%s", rwfileneg.c_str()));
-//
-//
-//				if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth, use only one variations
-//				//Conventions used in the Unisim histogram names
-//				int cptype[4] = {1,2,3,4}; //mu, pi, k0, k
-//				int cntype[4] = {1,2,3,4}; //nue, anue, numu, anumu
-//
-//				for (int iptyp=0;iptyp<4;iptyp++) {
-//					for (int intyp=0;intyp<4;intyp++) {
-//						for (int ibin=0;ibin<200;ibin++) { //Grab events from ibin+1 
-//							fCV[iptyp][intyp][ibin]=(dynamic_cast<TH1F*>	(fcv.Get(Form("h5%d%d",cptype[iptyp],cntype[intyp]))))->GetBinContent(ibin+1);
-//							fRWpos[iptyp][intyp][ibin]=(dynamic_cast<TH1F*> (frwpos.Get(Form("h5%d%d",cptype[iptyp],cntype[intyp]))))->GetBinContent(ibin+1);
-//							fRWneg[iptyp][intyp][ibin]=(dynamic_cast<TH1F*> (frwneg.Get(Form("h5%d%d",cptype[iptyp],cntype[intyp]))))->GetBinContent(ibin+1);
-//						}// energy bin
-//					}//   type of neutrinos
-//				}//type of hadron parent 
-//				fcv.Close();
-//				frwpos.Close();
-//				frwneg.Close(); 
-//		}
-
-
-
-
 		double FluxWeightCalc::UnisimWeightCalc(double enu, int ptype, int ntype, double randomN, bool noNeg)
 		{//same copy from the FluxWeightCalc.cxx in ubsim/EventWeight/
 		//Keng Lin June 2021
