@@ -80,8 +80,8 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
     std::cout << "sbn::TrackCaloSkimmer: Bad tail fit residual range config :(" << fTailFitResidualRange << "). Fits will not be meaningful.\n";
   }
   fFillTrackEndHits = p.get<bool>("FillTrackEndHits", true);
-  fTrackEndHitWireBox = p.get<float>("TrackEndHitWireBox", 30); // 10 cm
-  fTrackEndHitTimeBox = p.get<float>("TrackEndHitTimeBox", 150); // about 10cm
+  fTrackEndHitWireBox = p.get<float>("TrackEndHitWireBox", 60); // 20 cm
+  fTrackEndHitTimeBox = p.get<float>("TrackEndHitTimeBox", 300); // about 20cm
 
   fRawDigitproducers = p.get<std::vector<art::InputTag>>("RawDigitproducers", {});
 
