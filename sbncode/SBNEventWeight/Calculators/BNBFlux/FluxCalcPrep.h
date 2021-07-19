@@ -40,11 +40,11 @@ namespace sbn {
 				//randomN - input randmo number
 				//noNeg - determine what formulas to use for weights depending on input histograms.
 				double UnisimWeightCalc(double enu, int ptype, int ntype, double randomN, bool noNeg);//Unisim
-				std::pair<bool, double> PHNWeightCalc(simb::MCFlux flux, double  rand);//PrimaryHadronNormalizationWeightCalc
+				std::pair<bool, double> PHNWeightCalc	(simb::MCFlux flux, float rand);//PrimaryHadronNormalizationWeightCalc
 
-				std::pair<bool, double> PHFSWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronFeynmanScaling
-				std::pair<bool, double> PHSWWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronSanfordWangWeightCalc
-				std::pair<bool, double> PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<double> rand);//PrimaryHadronSWCentralSplineVariationWeightCalc
+				std::pair<bool, double> PHFSWeightCalc	(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronFeynmanScaling
+				std::pair<bool, double> PHSWWeightCalc	(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronSanfordWangWeightCalc
+				std::pair<bool, double> PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronSWCentralSplineVariationWeightCalc
 				//tool
 				std::vector<double> ConvertToVector(TArrayD const* array);
 
@@ -56,7 +56,7 @@ namespace sbn {
 				double fScalePos{}; 
 				double fScaleNeg = 1; //for Unisim
 
-				std::vector< std::vector< double > > fWeightArray{};//2d matrix of random numbers
+//				std::vector< std::vector< double > > fWeightArray{};//2d matrix of random numbers
 				//				std::vector<double> fWeightArray{};//a vector of random numbers
 				//replaced by std::map<EventWeightParameter, std::vector<float> > fParameterSet.fParameterMap
 				//CHECK, cannot handld the cituation that there are two sets of fWerightArray; i.e. from AddParameter()

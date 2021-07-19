@@ -7,7 +7,7 @@
 namespace sbn {
 	namespace evwgh {
 
-  std::pair<bool, double> FluxWeightCalc::PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<double> rand){
+  std::pair<bool, double> FluxWeightCalc::PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<float> rand){
 
 //std::cout<<__LINE__<<" Getting One weight with rand# "<<rand[0]<<std::endl;
     // 

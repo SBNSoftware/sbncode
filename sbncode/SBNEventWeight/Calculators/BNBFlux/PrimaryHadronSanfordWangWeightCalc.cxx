@@ -6,7 +6,7 @@
 namespace sbn {
 	namespace evwgh {
 
-  std::pair<bool, double> FluxWeightCalc::PHSWWeightCalc(simb::MCFlux flux, std::vector<double> rand){
+  std::pair<bool, double> FluxWeightCalc::PHSWWeightCalc(simb::MCFlux flux, std::vector<float> rand){
 
     // 
     //  Largely built off the MiniBooNE code 

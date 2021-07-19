@@ -57,9 +57,10 @@ namespace sbn {
 //					std::string ExternalDataInput = sp.find_file(dataInput);
 //					//std::cout<<__LINE__<<" CHECK find "<<ExternalDataInput<<std::endl;
 //					TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
+
+			fParameterSet.Sample(engine);//random_seed is loaded at sbncode/Base/WeightManager.h
 			if( CalcType == "Unisim"){//Unisim Calculator
 
-				fParameterSet.Sample(engine);//random_seed is loaded at sbncode/Base/WeightManager.h
 				std::string dataInput1	= pset.get< std::string >("CentralValue_hist_file");
 //				std::cout<<__LINE__<<" CHECK find "<<dataInput1<<std::endl;
 				std::string cvfile_path	= sp.find_file(dataInput1);
@@ -105,7 +106,6 @@ namespace sbn {
 
 				if( CalcType == "PrimaryHadronNormalization" ){//k-
 
-					fParameterSet.Sample(engine);//
 					fParameterSet.Sample(engine);//Yes.. load it twice;
 					
 					//		CHECK, use old method to generate random#;
@@ -203,27 +203,36 @@ namespace sbn {
 
 					}else	validC = false;//the calculator name might have typos
 
-					if(validC){
-						std::cout << "Scale Factor being applied : " << fScalePos << std::endl; 
 
-						//Generate 2d Random Numbers here
-						fWeightArray.resize(2*number_of_multisims);
-
-						for (unsigned int i=0;i<fWeightArray.size();i++) {
-							fWeightArray[i].resize(FitCov->GetNcols());
-							if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
-								for(unsigned int j = 0; j < fWeightArray[i].size(); j++){
-									fWeightArray[i][j] = CLHEP::RandGaussQ::shoot(&engine, 0, 1.);
-								}//Iterate over the covariance matrix size
-							}
-						}
-					}
 
 				}//end of special Hadron calculator configurations
 			} else	validC = false; //the calculator name is way too off.
 
+			if(validC){//load random numbers based on FitCov
+				//{2*multisim vector}
+				//{{Ncols() elements}} <-- feed these amount everytime;
+				for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
+					fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
+				}
+				//					if(validC){
+				//						std::cout << "Scale Factor being applied : " << fScalePos << std::endl; 
+				//
+				//						//Generate 2d Random Numbers here
+				//						fWeightArray.resize(2*number_of_multisims);
+				//
+				//						for (unsigned int i=0;i<fWeightArray.size();i++) {
+				//							fWeightArray[i].resize(FitCov->GetNcols());
+				//							if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
+				//								for(unsigned int j = 0; j < fWeightArray[i].size(); j++){
+				//									fWeightArray[i][j] = CLHEP::RandGaussQ::shoot(&engine, 0, 1.);
+				//								}//Iterate over the covariance matrix size
+				//							}
+				//						}
+				//					}
 
-			if (!validC){
+
+
+			}else {
 				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
 					<<" calculator "+CalcType + "is invalid"
 					<<std::endl;
@@ -339,23 +348,28 @@ namespace sbn {
 					for (unsigned int i = 0; int(weights.size()) < NUni; i++) {//if all weights are 1, no need to calculate weights;
 //						std::cout<<"CHECK Universe: "<<NUni<<std::endl;
 						std::pair<bool, double> test_weight;
+						
+						std::vector< float > Vrandom = (fParameterSet.fParameterMap.begin())->second;//vector of random #
+						std::vector< float > subVrandom;//sub-vector of random numbers;
 						if( CalcType == "PrimaryHadronNormalization"){//Normalization
-							double randomN = (fParameterSet.fParameterMap.begin())->second[i];
-							test_weight = PHNWeightCalc(fluxlist[inu], randomN);
-						} else if( CalcType == "PrimaryHadronFeynmanScaling"){//FeynmanScaling
-							test_weight = PHFSWeightCalc(fluxlist[inu], fWeightArray[i]);
-						} else if( CalcType == "PrimaryHadronSanfordWang"){//SanfordWang
-							test_weight = PHSWWeightCalc(fluxlist[inu], fWeightArray[i]);
-						} else if( CalcType == "PrimaryHadronSWCentralSplineVariation"){//SWCentaralSplineVariation
-//						std::cout<<__LINE__<<" Get this calculator "<<std::endl;
-							test_weight = PHSWCSVWeightCalc(fluxlist[inu], fWeightArray[i]);
+							test_weight = PHNWeightCalc(fluxlist[inu], Vrandom[i]);
+						} else {
+							subVrandom = {Vrandom.begin()+i*FitCov->GetNcols(), Vrandom.begin()+(i+1)*FitCov->GetNcols()};
+							if( CalcType == "PrimaryHadronFeynmanScaling"){//FeynmanScaling
+								test_weight = PHFSWeightCalc(fluxlist[inu], subVrandom);
+							} else if( CalcType == "PrimaryHadronSanfordWang"){//SanfordWang
+								test_weight = PHSWWeightCalc(fluxlist[inu], subVrandom);
+							} else if( CalcType == "PrimaryHadronSWCentralSplineVariation"){//SWCentaralSplineVariation
+								//						std::cout<<__LINE__<<" Get this calculator "<<std::endl;
+								test_weight = PHSWCSVWeightCalc(fluxlist[inu], subVrandom);
 
-						} else throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": this shouldnt happen.."<<std::endl;
+							} else throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": this shouldnt happen.."<<std::endl;
+						}
 
 						if(test_weight.first){	
 							weights.push_back(test_weight.second);
 							double tmp_weight = test_weight.second;
-//							std::cout<<i<<" (";
+							std::cout<<i<<" ("<<tmp_weight<<") ";
 							if(tmp_weight<0){
 								wcn++;
 							}else if((tmp_weight-0)<1e-30){
@@ -367,7 +381,7 @@ namespace sbn {
 							} else {
 								wc++;
 							}
-
+						
 						};
 
 					}//Iterate through the number of universes      

@@ -6,7 +6,7 @@
 namespace sbn {
 	namespace evwgh {
 
-  std::pair<bool, double> FluxWeightCalc::PHNWeightCalc(simb::MCFlux flux, double rand){
+  std::pair<bool, double> FluxWeightCalc::PHNWeightCalc(simb::MCFlux flux, float rand){
     // We need to guard against unphysical parameters 
     bool parameters_pass = false;
 
