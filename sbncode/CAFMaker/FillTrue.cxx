@@ -309,15 +309,31 @@ namespace caf {
     int cryostat_index = -1;
     int tpc_index = -1;
 
+    // Assume 2 max vols... look for secondary entry point.
+    // If this isn't the case then save a default -9999 (later)
+    int secondary_entry_point = -1;
+    bool volTouched[2];
+    for (unsigned i = 0; i < 2; i++) {
+      volTouched[i] = false;
+    }
+
     for (unsigned j = 0; j < particle.NumberTrajectoryPoints(); j++) {
       for (unsigned i = 0; i < active_volumes.size(); i++) {
+        if (volTouched[i]) continue;
         if (active_volumes.at(i).ContainsPosition(particle.Position(j).Vect())) {
-          entry_point = j;
-          cryostat_index = i;
+          if (entry_point >= 0) {
+            secondary_entry_point = j;
+          }
+          if (entry_point == -1) {
+            entry_point = j;
+            cryostat_index = i;
+          }
+          volTouched[i] = true;
           break;
         }
       }
-      if (entry_point != -1) break;
+      if (entry_point != -1 && active_volumes.size()==1) break;
+      if (secondary_entry_point != -1) break;
     }
     // get the wall
     if (entry_point > 0) {
@@ -325,6 +341,7 @@ namespace caf {
     }
 
     int exit_point = -1;
+    int secondary_exit_point = -1; // For secondary volume
 
     // now setup the cryostat the particle is in
     std::vector<geo::BoxBoundedGeo> volumes;
@@ -401,6 +418,36 @@ namespace caf {
       srparticle.wallout = GetWallCross(active_volumes.at(cryostat_index), particle.Position(exit_point).Vect(), particle.Position(exit_point+1).Vect());
     }
 
+    // Now look at secondary cryo
+    // NB: this still doesn't handle edge case of a particle scattering back into volume it just "left"
+    for (unsigned i = 0; i < active_volumes.size(); i++) {
+      if (!volTouched[i]) continue; // nothing in this cryostat or it doesn't exist
+      if (int(i) == cryostat_index) continue; // this is the primary cryostat for the track
+
+      const simb::MCTrajectory &trajectory = particle.Trajectory();
+      TVector3 pos = trajectory.Position(secondary_entry_point).Vect();
+      for (unsigned j = secondary_entry_point+1; j < particle.NumberTrajectoryPoints(); j++) {
+        TVector3 this_point = trajectory.Position(j).Vect();
+        if (!active_volumes.at(i).ContainsPosition(this_point) && active_volumes.at(i).ContainsPosition(pos)) {
+          secondary_exit_point = j-1;
+          break;
+        }
+        pos = trajectory.Position(j).Vect();
+      }
+
+      if (secondary_exit_point < 0 && secondary_entry_point >= 0) {
+        secondary_exit_point = particle.NumberTrajectoryPoints() - 1;
+        break; // particle stopped, no need to continue
+      }
+    } // end secondary Cryo volumes
+
+    // If it has a secondary_exit_point then this is the new exit point and make the initial exit point now primary_exit_point
+    int primary_exit_point = -1;
+    if (secondary_entry_point >=0) {
+      primary_exit_point = exit_point;
+      exit_point = secondary_exit_point;
+    }
+
     // other truth information
     srparticle.pdg = particle.PdgCode();
 
@@ -419,6 +466,16 @@ namespace caf {
     srparticle.endp = (exit_point >= 0) ? particle.Momentum(exit_point).Vect() : TVector3(-9999, -9999, -9999);
     srparticle.endE = (exit_point >= 0) ? particle.Momentum(exit_point).E() : -9999.;
 
+    // Start/End P and Pos for points at active volume edges
+    srparticle.prim_end = (primary_exit_point >= 0) ? particle.Position(primary_exit_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.prim_endT = (primary_exit_point) ? particle.Position(primary_exit_point).T() / 1000. : -9999;
+    srparticle.prim_endp = (primary_exit_point >= 0) ? particle.Momentum(primary_exit_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.prim_endE = (primary_exit_point >= 0) ? particle.Momentum(primary_exit_point).E() : -9999;
+    srparticle.scdy_start = (secondary_entry_point >= 0) ? particle.Position(secondary_entry_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.scdy_startT = (secondary_entry_point >= 0) ? particle.Position(secondary_entry_point).T() / 1000. : -9999;
+    srparticle.scdy_startp = (secondary_entry_point >= 0) ? particle.Momentum(secondary_entry_point).Vect() : TVector3(-9999, -9999, -9999);
+    srparticle.scdy_startE = (secondary_entry_point >= 0) ? particle.Momentum(secondary_entry_point).E() : -9999;
+    
     srparticle.start_process = GetG4ProcessID(particle.Process());
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
