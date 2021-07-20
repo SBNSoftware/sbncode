@@ -1,4 +1,3 @@
-// FluxWeightCalc.cxx
 // Based on  ubsim / EventWeight / Calculators / FluxUnisimWeightCalc.cxx  @ UBOONE_SUITE_v08_00_00_55 
 // Ported to/adapted for SBNCode by Keng Lin July 2021
 
@@ -10,7 +9,7 @@
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 #include "sbncode/SBNEventWeight/Base/SmearingUtils.h"//MultiGaussianSmearing!
-#include <sys/stat.h> //for exit(0);
+#include <sys/stat.h> //for exit(0); debugging purpose
 
 #include "TH1F.h"
 #include "TFile.h"
@@ -29,9 +28,9 @@ namespace sbn {
 
 
 				//GetWeight() returns the final weights as a vector
-				//	each weight calculation is carried out by WeightCalc() function;
+				//	each weight evaluaed by *WeightCalc() function;
 				//inu - the ith parameter.
-				std::vector<float> GetWeight(art::Event& e, size_t inu) override;//CHECK, why fluxreader did not go through this? A: fcl setup is incorrect
+				std::vector<float> GetWeight(art::Event& e, size_t inu) override;
 
 				//UnisimWeightCalc() - Function for evaluating a specific weight
 				//enu - neutrino energy from simb::MCTruth; 
@@ -39,13 +38,15 @@ namespace sbn {
 				//ntype - neutrino flavor label: numu, numubar, nue, nuebar from simb:MCFlux
 				//randomN - input randmo number
 				//noNeg - determine what formulas to use for weights depending on input histograms.
+
+				//4 *WeightCalc() functions
 				double UnisimWeightCalc(double enu, int ptype, int ntype, double randomN, bool noNeg);//Unisim
 				std::pair<bool, double> PHNWeightCalc	(simb::MCFlux flux, float rand);//PrimaryHadronNormalizationWeightCalc
-
 				std::pair<bool, double> PHFSWeightCalc	(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronFeynmanScaling
 				std::pair<bool, double> PHSWWeightCalc	(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronSanfordWangWeightCalc
 				std::pair<bool, double> PHSWCSVWeightCalc(simb::MCFlux flux, std::vector<float> rand);//PrimaryHadronSWCentralSplineVariationWeightCalc
-				//tool
+				
+				//Handy tool
 				std::vector<double> ConvertToVector(TArrayD const* array);
 
 			private:
@@ -56,14 +57,8 @@ namespace sbn {
 				double fScalePos{}; 
 				double fScaleNeg = 1; //for Unisim
 
-//				std::vector< std::vector< double > > fWeightArray{};//2d matrix of random numbers
-				//				std::vector<double> fWeightArray{};//a vector of random numbers
-				//replaced by std::map<EventWeightParameter, std::vector<float> > fParameterSet.fParameterMap
-				//CHECK, cannot handld the cituation that there are two sets of fWerightArray; i.e. from AddParameter()
-
 				//for Unisim
-				//Contents of the input histograms;
-				//[mu/pi/k-/k] x [nue,anue,numu,anumu] x [bin#]
+				//load histograms values: [mu/pi/k-/k] x [nue,anue,numu,anumu] x [bin#]
 				double fCV[4][4][200];
 				double fRWpos[4][4][200];
 				double fRWneg[4][4][200];
@@ -76,14 +71,13 @@ namespace sbn {
 				TMatrixD* FitCov{nullptr};//Shared to SanfordWang
 
 				//-- SWCentaralSplineVariation
-				//				TMatrixD* HARPCov{nullptr};
-				//				TMatrixD* HARPLowerTriangluarCov{nullptr};//reduced HARPCov matrix to be used; use FixCov for this
 				TMatrixD* HARPXSec{nullptr};
 				std::vector<double> HARPmomentumBounds{};
 				std::vector<double> HARPthetaBounds{};
 				std::vector<double> SWParam{};
 				bool fIsDecomposed{false};
 
+				//Weight Counter
 				int wc = 0;
 				int wcn = 0;
 				int wc0 = 0;

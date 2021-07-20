@@ -1,4 +1,5 @@
 #include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_flux_sbn.fcl"
 
 process_name: SBNEventWeight
 
@@ -9,12 +10,13 @@ source: {
 physics: {
  producers: {
    genieweight: @local::sbn_genie_eventweight
+   fluxweight:  @local::sbn_eventweight_flux
    rns: {
      module_type: "RandomNumberSaver"
    }
  }
 
- simulate: [ rns, genieweight ]
+ simulate: [ rns, genieweight, fluweight ]
  stream1: [ out1 ]
  trigger_paths: [ simulate ]
  end_paths: [ stream1 ]
@@ -30,4 +32,4 @@ outputs: {
 }
 
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
-
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux

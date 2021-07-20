@@ -53,21 +53,15 @@ namespace sbn {
 			//-- Non hadrons production --
 			//----------------------------
 			
-//	CHECK				std::string dataInput       =   pset.get< std::string >("ExternalData");
-//					std::string ExternalDataInput = sp.find_file(dataInput);
-//					//std::cout<<__LINE__<<" CHECK find "<<ExternalDataInput<<std::endl;
-//					TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
 
 			fParameterSet.Sample(engine);//random_seed is loaded at sbncode/Base/WeightManager.h
+
 			if( CalcType == "Unisim"){//Unisim Calculator
 
 				std::string dataInput1	= pset.get< std::string >("CentralValue_hist_file");
-//				std::cout<<__LINE__<<" CHECK find "<<dataInput1<<std::endl;
 				std::string cvfile_path	= sp.find_file(dataInput1);
-//				std::cout<<__LINE__<<" CHECK "<<cvfile_path<<std::endl;
 				TFile fcv(Form("%s",cvfile_path.c_str()));
 
-				/// Grab the histogram related to the variation 
 				std::string dataInput2pos	= pset.get< std::string >("PositiveSystematicVariation_hist_file");
 				std::string rwfilepos		= sp.find_file(dataInput2pos);
 				TFile frwpos(Form("%s", rwfilepos.c_str()));
@@ -77,7 +71,7 @@ namespace sbn {
 				TFile frwneg(Form("%s", rwfileneg.c_str()));
 
 
-				if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth, use only one variations
+				if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth
 				//Those May07*.root use the following convention to name histograms
 				int cptype[4] = {1,2,3,4}; //mu, pi, k0, k
 				int cntype[4] = {1,2,3,4}; //nue, anue, numu, anumu
@@ -99,35 +93,27 @@ namespace sbn {
 			//-- Hadrons --
 			//-------------
 			} else if( CalcType.compare(0, 13,"PrimaryHadron") == 0){//Hadron Calculators
-//				std::cout<<"CHECK  Find a Hadron"<<std::endl;
 
-				fprimaryHad	=   pset.get< std::vector<int>>("PrimaryHadronGeantCode");//for Feynman Scaling
-
+				fprimaryHad	=   pset.get< std::vector<int>>("PrimaryHadronGeantCode");
 
 				if( CalcType == "PrimaryHadronNormalization" ){//k-
 
-					fParameterSet.Sample(engine);//Yes.. load it twice;
-					
-					//		CHECK, use old method to generate random#;
-					//		fParameterSet.Sample(engine);
-					//Nothing else to configure
+					fParameterSet.Sample(engine);//Yes.. load it again;
 
-				} else{//Hadron Calculator, slightly complicated
+				} else{//Other Hadron Calculators
 
 					std::string dataInput       =   pset.get< std::string >("ExternalData");
 					std::string ExternalDataInput = sp.find_file(dataInput);
-					//std::cout<<__LINE__<<" CHECK find "<<ExternalDataInput<<std::endl;
 					TFile* file = new TFile(Form("%s",ExternalDataInput.c_str()));
 
-					std::vector< std::string > pname; // these are what we will extract from the file
+					std::vector< std::string > pname; // these are keys to histograms
 					if( CalcType == "PrimaryHadronFeynmanScaling" ){//k+
-
 
 						pname.push_back("FS/KPlus/FSKPlusFitVal");
 						pname.push_back("FS/KPlus/FSKPlusFitCov");
 
 						TArrayD* FSKPlusFitValArray = (TArrayD*) file->Get(pname[0].c_str());
-						FitVal = FluxWeightCalc::ConvertToVector(FSKPlusFitValArray);    
+						FitVal = FluxWeightCalc::ConvertToVector(FSKPlusFitValArray);
 						FitCov = (TMatrixD*) file->Get(pname[1].c_str());
 						*(FitCov) *= fScalePos*fScalePos;
 
@@ -135,11 +121,10 @@ namespace sbn {
 						pname.push_back("SW/K0s/SWK0sFitVal");
 						pname.push_back("SW/K0s/SWK0sFitCov");
 						TArrayD* SWK0FitValArray = (TArrayD*) file->Get(pname[0].c_str());
-						//TArrayD is the most annoying format I have ever experienced so let's convert it to a vector
-						FitVal = FluxWeightCalc::ConvertToVector(SWK0FitValArray);    
+						
+						FitVal = FluxWeightCalc::ConvertToVector(SWK0FitValArray);//TArrayD--> vector
 						FitCov = (TMatrixD*) file->Get(pname[1].c_str());
 						*(FitCov) *= fScalePos*fScalePos;
-
 
 					}else if( CalcType == "PrimaryHadronSWCentralSplineVariation" ){//pi+-
 
@@ -149,12 +134,10 @@ namespace sbn {
 						if(fprimaryHad[0] == 211){
 							HadronName = "PiPlus";
 							HadronAbriviation = "PP";
-						}
-						else if(fprimaryHad[0] == -211){
+						} else if(fprimaryHad[0] == -211){
 							HadronName = "PiMinus";
 							HadronAbriviation = "PM";
-						}
-						else{ 
+						} else{ 
 							throw art::Exception(art::errors::StdException)
 								<< "sanford-wang is only configured for charged pions ";
 						}
@@ -165,17 +148,17 @@ namespace sbn {
 
 						HARPXSec = (TMatrixD*) file->Get(pname[0].c_str());
 						TMatrixD* HARPCov  = (TMatrixD*) file->Get(pname[1].c_str());
-						//perform Choleskey Decomposition
-						TDecompChol dc = TDecompChol(*(HARPCov));
+						
+						TDecompChol dc = TDecompChol(*(HARPCov));//perform Choleskey Decomposition
 						if(!dc.Decompose()){
 							throw art::Exception(art::errors::StdException)
 								<< "Cannot decompose covariance matrix to begin smearing.";
 						}
+
 						//Get upper triangular matrix. This maintains the relations in the
-						//covariance matrix, but simplifies the structure.
+						//	covariance matrix, but simplifies the structure.
 						fIsDecomposed = true;
 						FitCov = new TMatrixD(dc.GetU());  
-						//HARPLowerTriangluarCov = new TMatrixD(dc.GetU());  
 
 
 						TArrayD* HARPmomentumBoundsArray = (TArrayD*) file->Get(pname[2].c_str());
@@ -190,7 +173,6 @@ namespace sbn {
 						//
 						////////////////
 
-
 						std::string ExternalFitInput = sp.find_file(fitInput);
 						TFile* Fitfile = new TFile(Form("%s",ExternalFitInput.c_str()));
 
@@ -201,9 +183,7 @@ namespace sbn {
 						SWParam = FluxWeightCalc::ConvertToVector(SWParamArray);
 
 
-					}else	validC = false;//the calculator name might have typos
-
-
+					}else	validC = false;//slightly incorrect calculator name in *fcl
 
 				}//end of special Hadron calculator configurations
 			} else	validC = false; //the calculator name is way too off.
@@ -214,23 +194,6 @@ namespace sbn {
 				for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
 					fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
 				}
-				//					if(validC){
-				//						std::cout << "Scale Factor being applied : " << fScalePos << std::endl; 
-				//
-				//						//Generate 2d Random Numbers here
-				//						fWeightArray.resize(2*number_of_multisims);
-				//
-				//						for (unsigned int i=0;i<fWeightArray.size();i++) {
-				//							fWeightArray[i].resize(FitCov->GetNcols());
-				//							if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
-				//								for(unsigned int j = 0; j < fWeightArray[i].size(); j++){
-				//									fWeightArray[i][j] = CLHEP::RandGaussQ::shoot(&engine, 0, 1.);
-				//								}//Iterate over the covariance matrix size
-				//							}
-				//						}
-				//					}
-
-
 
 			}else {
 				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
@@ -247,14 +210,10 @@ namespace sbn {
 			art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
 			e.getByLabel(fGenieModuleLabel,mcFluxHandle);
 			std::vector<simb::MCFlux> const& fluxlist = *mcFluxHandle;
-
+			//or do the above 3 lines in one line
 			auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
-			//one line definition above.
-			//art::Handle< std::vector<simb::MCTruth> > mctruthHandle;
-			//e.getByLabel(fGenieModuleLabel,mctruthHandle);
-			//std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
 
-			// No neutrinos in this event gives 0;
+			// If mo neutrinos in this event, gives 0 weight;
 			int NUni = fParameterSet.fNuniverses;
 			std::vector<float> weights;//( mclist.size(), 0);
 			if(mclist.size() == 0){ 
@@ -263,7 +222,6 @@ namespace sbn {
 			}
 
 			//Iterate through each neutrino in the event
-//CHECK no reseting			
 //			std::cout<<"CHECK Reset weight counters for "<<CalcType<<std::endl;
 //
 //			wc = 0;
