@@ -65,13 +65,14 @@ Hadron production uncertainty are from world data:
 - Skin depth in horn
 
 `PrimaryHadronSWCentralSplineVariation`
-- piplus and piminus
+- piplus 
+- piminus
 
 `PrimaryHadronFeynmanScaling`
 - kplus
 
-PrimaryHadronSanfordWang  
+`PrimaryHadronSanfordWang`  
 - kzero
 
-PrimaryHadronNormalization
+`PrimaryHadronNormalization`
 - kzero
