@@ -199,7 +199,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 2
     mode: multisim
-    number_of_multisims: 10
+    number_of_multisims: 1000
     parameter_list: ["piplus"]
     parameter_sigma: [1]
 

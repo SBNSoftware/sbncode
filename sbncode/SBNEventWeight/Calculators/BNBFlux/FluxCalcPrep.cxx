@@ -70,7 +70,6 @@ namespace sbn {
 				std::string rwfileneg		= sp.find_file(dataInput2neg);
 				TFile frwneg(Form("%s", rwfileneg.c_str()));
 
-
 				if(dataInput2pos == dataInput2neg) PosOnly = true;//true - for skin depth
 				//Those May07*.root use the following convention to name histograms
 				int cptype[4] = {1,2,3,4}; //mu, pi, k0, k
@@ -121,7 +120,7 @@ namespace sbn {
 						pname.push_back("SW/K0s/SWK0sFitVal");
 						pname.push_back("SW/K0s/SWK0sFitCov");
 						TArrayD* SWK0FitValArray = (TArrayD*) file->Get(pname[0].c_str());
-						
+
 						FitVal = FluxWeightCalc::ConvertToVector(SWK0FitValArray);//TArrayD--> vector
 						FitCov = (TMatrixD*) file->Get(pname[1].c_str());
 						*(FitCov) *= fScalePos*fScalePos;
@@ -148,7 +147,7 @@ namespace sbn {
 
 						HARPXSec = (TMatrixD*) file->Get(pname[0].c_str());
 						TMatrixD* HARPCov  = (TMatrixD*) file->Get(pname[1].c_str());
-						
+
 						TDecompChol dc = TDecompChol(*(HARPCov));//perform Choleskey Decomposition
 						if(!dc.Decompose()){
 							throw art::Exception(art::errors::StdException)
@@ -186,20 +185,21 @@ namespace sbn {
 					}else	validC = false;//slightly incorrect calculator name in *fcl
 
 				}//end of special Hadron calculator configurations
-			} else	validC = false; //the calculator name is way too off.
 
-			if(validC){//load random numbers based on FitCov
-				//{2*multisim vector}
-				//{{Ncols() elements}} <-- feed these amount everytime;
-				for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
-					fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
+				if(validC){//load random numbers based on FitCov
+					//{2*multisim vector}
+					//{{Ncols() elements}} <-- feed these amount everytime;
+					for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
+						fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
+					}
+
+				}else {
+					throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+						<<" calculator "+CalcType + "is invalid"
+						<<std::endl;
 				}
 
-			}else {
-				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-					<<" calculator "+CalcType + "is invalid"
-					<<std::endl;
-			}
+			} else	validC = false; //the calculator name is way too off.
 			std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
 		}//End of Configure() function
 
@@ -232,6 +232,7 @@ namespace sbn {
 
 //			std::cout<<__LINE__<<" Check type "<<CalcType<<std::endl;
 			if( CalcType == "Unisim"){//Unisim Calculator
+				weights.resize(NUni);
 //			std::cout<<__LINE__<<" Got a Unisim  "<<inu<<" "<<CalcType<<std::endl;
 				//Unisim specific
 				//containers for the parent and neutrino type information
@@ -282,8 +283,6 @@ namespace sbn {
 						} else {
 							wc++;
 						}
-
-
 						//					if(weights[i]>1) validate_code++;
 					}//Iterate through the number of universes      
 				}
@@ -327,7 +326,7 @@ namespace sbn {
 						if(test_weight.first){	
 							weights.push_back(test_weight.second);
 							double tmp_weight = test_weight.second;
-							std::cout<<i<<" ("<<tmp_weight<<") ";
+//							std::cout<<i<<" ("<<tmp_weight<<") ";
 							if(tmp_weight<0){
 								wcn++;
 							}else if((tmp_weight-0)<1e-30){
