@@ -205,7 +205,7 @@ namespace sbn {
 
 
 		std::vector<float> FluxWeightCalc::GetWeight(art::Event& e, size_t inu) {
-			std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
+//			std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
 			//MCFlux & MCTruth
 			art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
 			e.getByLabel(fGenieModuleLabel,mcFluxHandle);
@@ -222,18 +222,8 @@ namespace sbn {
 			}
 
 			//Iterate through each neutrino in the event
-//			std::cout<<"CHECK Reset weight counters for "<<CalcType<<std::endl;
-//
-//			wc = 0;
-//			wcn = 0;
-//			wc0 = 0;
-//			wc1 = 0;
-//			wc30 = 0;
-
-//			std::cout<<__LINE__<<" Check type "<<CalcType<<std::endl;
 			if( CalcType == "Unisim"){//Unisim Calculator
 				weights.resize(NUni);
-//			std::cout<<__LINE__<<" Got a Unisim  "<<inu<<" "<<CalcType<<std::endl;
 				//Unisim specific
 				//containers for the parent and neutrino type information
 				int ptype = std::numeric_limits<int>::max(); 
@@ -265,10 +255,8 @@ namespace sbn {
 				//Let's make a weights based on the calculator you have requested 
 
 				if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
-					//				std::cout<<"<<--- CHECK Filling Weights: "<<std::endl;
+
 					for (size_t i=0;i<weights.size();i++) {
-						//					if(validate_code > 4) break;
-						//					weights[i]=UnisimWeightCalc(enu, ptype, ntype, fWeightArray[i], PosOnly);
 						double randomN = (fParameterSet.fParameterMap.begin())->second[i];
 						weights[i]=UnisimWeightCalc(enu, ptype, ntype, randomN , PosOnly);//AddParameter result does not work here;
 
@@ -283,7 +271,6 @@ namespace sbn {
 						} else {
 							wc++;
 						}
-						//					if(weights[i]>1) validate_code++;
 					}//Iterate through the number of universes      
 				}
 			} else{//then this must be PrimaryHadron
@@ -292,32 +279,30 @@ namespace sbn {
 				// First let's check that the parent of the neutrino we are looking for is 
 				//  the particle we intended it to be, if not set all weights to 1
 			if (std::find(fprimaryHad.begin(), fprimaryHad.end(),(fluxlist[inu].ftptype)) == fprimaryHad.end() ){//if it does not contain any particles we need get 1
-//			std::cout<<__LINE__<<" Check ftptype "<<fluxlist[inu].ftptype<<" and requested "<<fprimaryHad[0]<<std::endl;
 					weights.resize( NUni);
 					std::fill(weights.begin(), weights.end(), 1);
-					std::cout<<"  "<<fluxlist[inu].ftptype<<" not found. All weights are 1 "<<std::endl;
 					return weights;//done, all 1
 				}// Hadronic parent check
 
 				if(fParameterSet.fRWType == EventWeightParameterSet::kMultisim){
-//				std::cout<<"Check 	Multisim weights size "<<weights.size()<<" Universe "<<NUni<<std::endl;
 
 					for (unsigned int i = 0; int(weights.size()) < NUni; i++) {//if all weights are 1, no need to calculate weights;
-//						std::cout<<"CHECK Universe: "<<NUni<<std::endl;
 						std::pair<bool, double> test_weight;
 						
 						std::vector< float > Vrandom = (fParameterSet.fParameterMap.begin())->second;//vector of random #
 						std::vector< float > subVrandom;//sub-vector of random numbers;
 						if( CalcType == "PrimaryHadronNormalization"){//Normalization
 							test_weight = PHNWeightCalc(fluxlist[inu], Vrandom[i]);
+
 						} else {
 							subVrandom = {Vrandom.begin()+i*FitCov->GetNcols(), Vrandom.begin()+(i+1)*FitCov->GetNcols()};
 							if( CalcType == "PrimaryHadronFeynmanScaling"){//FeynmanScaling
 								test_weight = PHFSWeightCalc(fluxlist[inu], subVrandom);
+
 							} else if( CalcType == "PrimaryHadronSanfordWang"){//SanfordWang
 								test_weight = PHSWWeightCalc(fluxlist[inu], subVrandom);
+
 							} else if( CalcType == "PrimaryHadronSWCentralSplineVariation"){//SWCentaralSplineVariation
-								//						std::cout<<__LINE__<<" Get this calculator "<<std::endl;
 								test_weight = PHSWCSVWeightCalc(fluxlist[inu], subVrandom);
 
 							} else throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": this shouldnt happen.."<<std::endl;
@@ -344,7 +329,6 @@ namespace sbn {
 					}//Iterate through the number of universes      
 				}//Yes, Multisim
 			}
-
 
 			std::cout<<"Weights counter: (normal, <0, ==0, 1, 30)= ";
 			std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;

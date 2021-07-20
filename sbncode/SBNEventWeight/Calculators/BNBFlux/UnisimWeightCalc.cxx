@@ -69,8 +69,7 @@ namespace sbn {
 			if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;//nue/nuebar from pion
 			if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;//nuebar/numubar from pi or charged kaon
 
-			//CHECK cout
-			std::cout<<weight<<" ("<<randomN<<") ";
+//			std::cout<<weight<<" ("<<randomN<<") ";
 			return weight;
 
 		}
