@@ -76,3 +76,7 @@ Hadron production uncertainty are from world data:
 
 `PrimaryHadronNormalization`
 - kzero
+
+
+#### Reference
+(MicroBooNE-doc-8622-v2)[https://microboone-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=8622]
