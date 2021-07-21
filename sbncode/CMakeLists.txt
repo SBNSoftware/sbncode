@@ -14,9 +14,6 @@ add_subdirectory(Metadata)
 add_subdirectory(FlashMatch)
 add_subdirectory(LArRecoProducer)
 add_subdirectory(TPCReco)
-<<<<<<< HEAD
 
 add_subdirectory(FluxReader)
-=======
 add_subdirectory(EventGenerator)
->>>>>>> 15003182067cf42a4f4938a06f977668ef0ec9e4

@@ -8,7 +8,7 @@ namespace sbn {
 
     double FluxWeightCalc::UnisimWeightCalc(double enu, int ptype, int ntype, double randomN, bool noNeg)
     {//same copy from the FluxWeightCalc.cxx in ubsim/EventWeight/
-    //Keng Lin June 2021
+      //Keng Lin June 2021
 
       double weight = 1;
 
@@ -69,7 +69,7 @@ namespace sbn {
       if( (ntype == 0 || ntype == 1) && ptype == 1) weight = 1;//nue/nuebar from pion
       if( (ntype == 1 || ntype == 3) && ptype == 3) weight = 1;//nuebar/numubar from pi or charged kaon
 
-//      std::cout<<weight<<" ("<<randomN<<") ";
+      //      std::cout<<weight<<" ("<<randomN<<") ";
       return weight;
 
     }

@@ -24,11 +24,11 @@ namespace sbn {
       // Get Neutrino Parent Kinimatics       
       double HadronMass = 0.4937;
 
-//      if(fabs(fprimaryHad) == 321) HadronMass = 0.4937; //Charged Kaon
-//      else{ 
-//        throw art::Exception(art::errors::StdException)
-//          << "Feynman Scaling is only configured for Charged Kaons ";
-//      }
+      //      if(fabs(fprimaryHad) == 321) HadronMass = 0.4937; //Charged Kaon
+      //      else{ 
+      //        throw art::Exception(art::errors::StdException)
+      //          << "Feynman Scaling is only configured for Charged Kaons ";
+      //      }
 
       TLorentzVector HadronVec; 
       double HadronPx = flux.ftpx;
@@ -65,13 +65,13 @@ namespace sbn {
       double gammaBeta = ProtonVec.P()/E_cm;
 
       double MaxThreshold = 2.053;
-//      if(fabs(fprimaryHad) == 321){
-//        MaxThreshold = 2.053; // Mike S. Comment: K+: lambda + proton
-//      }
-//      else{
-//        throw art::Exception(art::errors::StdException)
-//          << "Feynman Scaling is only configured for Charged Kaons ";  
-//      }
+      //      if(fabs(fprimaryHad) == 321){
+      //        MaxThreshold = 2.053; // Mike S. Comment: K+: lambda + proton
+      //      }
+      //      else{
+      //        throw art::Exception(art::errors::StdException)
+      //          << "Feynman Scaling is only configured for Charged Kaons ";  
+      //      }
 
       double E_cm_max = (E_cm*E_cm
           +HadronMass*HadronMass
