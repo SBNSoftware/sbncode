@@ -16,7 +16,7 @@ physics: {
    }
  }
 
- simulate: [ rns, genieweight, fluweight ]
+ simulate: [ rns, genieweight, fluxweight ]
  stream1: [ out1 ]
  trigger_paths: [ simulate ]
  end_paths: [ stream1 ]
