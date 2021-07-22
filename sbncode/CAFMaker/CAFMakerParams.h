@@ -13,6 +13,7 @@ namespace caf
   struct CAFMakerParams
   {
     template<class T> using Atom = fhicl::Atom<T>;
+    template<class T> using Sequence = fhicl::Sequence<T>;
     template<class T> using Table = fhicl::Table<T>;
     using Comment  = fhicl::Comment;
     using Name     = fhicl::Name;
@@ -224,9 +225,9 @@ namespace caf
       true
     };
 
-    Atom<std::string> SystWeightLabel {
-      Name("SystWeightLabel"),
-      Comment("Label for EventWeightMap objects for mc.nu.wgt")
+    Sequence<std::string> SystWeightLabels {
+      Name("SystWeightLabels"),
+      Comment("Labels for EventWeightMap objects for mc.nu.wgt")
     };
   };
 }
