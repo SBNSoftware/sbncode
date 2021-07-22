@@ -558,7 +558,7 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
   float closest_wire_dist = -1.;
   // Get the hit closest to the end to get the end time 
   for (const TrackHitInfo &h: fTrack->hits2) {
-    if (closest_wire_dist < 0. || abs(h.h.wire - end_w) < closest_wire_dist) {
+    if (h.oncalo && (closest_wire_dist < 0. || abs(h.h.wire - end_w) < closest_wire_dist)) {
       closest_wire_dist = abs(h.h.wire - end_w);
       end_t = h.h.time;
     }
