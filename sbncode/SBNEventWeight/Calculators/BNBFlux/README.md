@@ -1,13 +1,13 @@
 # BNBFlux Uncertainty Evaluations
 
-These codes are ported from MicroBooNE Flux Uncertainty Eventweight $v08_00_00_55$
+These codes are ported from MicroBooNE flux uncertainty eventweight $v08_00_00_55$
 
 
 ## Structure
 `FluxCalcPrep.*` implements the `FluxWeightCalc` class. `*WeightCalc()` are the weight calculators in different methods.
 
 ## FHiCL files
-For each flux uncertainties, there are two parts of parameters: `Reweighting Environment` and `Calculator Settings`.
+For each flux uncertainties, there are two parts of parameters: Reweighting Environment and Calculator Settings.
 
 - Reweighting Environment
 	- `type: Flux` request `WeightCalc` to use `FluxWeightCalc` class;
@@ -29,7 +29,7 @@ For each flux uncertainties, there are two parts of parameters: `Reweighting Env
 
 ### External files needed
 `Unisim` for non-hadron production uncertainty; it uses 
-v
+
 - CV simulation from BooBeamNT with parents redecayed 1000 times: *beamData/UnisimHists/may06_10kpot_ntrd1000_flux. root*; this simulation is reweighted to match up the may06 CV.
 - Variation simulations are from MiniBooNE beam simulations by fine tuning one of the variables:
  - *beamData/UnisimHists/may06_horn175ka_rgen610.6_flux.root*	
@@ -49,9 +49,9 @@ v
  - *beamData/UnisimHists/expskin_nrtd1000_flux.root*
  - *beamData/UnisimHists/expskin_nrtd1000_flux.root*
 
-Hadron production uncertainty are from world data:
-- MicroBooNE external data *beamData/ExternalData/BNBExternalData_uBooNE.root*
-- HARP cross-section measurement *beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root*
+Hadron production uncertainty are derived from world data:
+- *beamData/ExternalData/BNBExternalData_uBooNE.root*
+- *beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root*
 
 #### Flux uncertainties breakdown
 `Unisim` flux uncertainty reweights the following `parameter_list`:
@@ -71,12 +71,12 @@ Hadron production uncertainty are from world data:
 `PrimaryHadronFeynmanScaling`
 - kplus
 
-`PrimaryHadronSanfordWang`  
+`PrimaryHadronSanfordWang`
 - kzero
 
 `PrimaryHadronNormalization`
 - kzero
 
 
-#### Reference
-(MicroBooNE-doc-8622-v2)[https://microboone-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=8622]
+## Reference
+Technote is available at [MicroBooNE-doc-8622-v2](https://microboone-docdb.fnal.gov/cgi-bin/sso/ShowDocument?docid=8622)
