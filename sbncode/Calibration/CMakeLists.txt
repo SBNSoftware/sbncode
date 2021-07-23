@@ -29,6 +29,7 @@ simple_plugin( TrackCaloSkimmer module
 	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
 	lardataalg_DetectorInfo
 	Minuit
+	sbncode_CAFMaker
 )
 
 simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
