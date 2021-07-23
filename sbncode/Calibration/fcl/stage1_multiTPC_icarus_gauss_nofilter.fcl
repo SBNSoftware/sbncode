@@ -1,0 +1,7 @@
+#include "stage1_multiTPC_icarus_gauss.fcl"
+
+physics.reco: [@sequence::icarus_reco_Gauss_CryoE, @sequence::icarus_reco_Gauss_CryoW ] 
+                
+physics.end_paths: [ stream1 ]
+outputs.out1.SelectEvents: @erase
+
