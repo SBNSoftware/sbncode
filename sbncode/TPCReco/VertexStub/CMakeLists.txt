@@ -1,5 +1,5 @@
 art_make_library(
-        SOURCE StubBuilder.cxx PlaneTransform.cxx StubMergeAlgorithms.cxx
+        SOURCE StubBuilder.cxx StubMergeAlgorithms.cxx
         LIBRARIES
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_PRINCIPAL}

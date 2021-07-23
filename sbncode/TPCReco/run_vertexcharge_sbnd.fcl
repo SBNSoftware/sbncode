@@ -17,7 +17,6 @@
 #include "detectorproperties_sbnd.fcl"
 #include "calorimetry_sbnd.fcl"
 #include "spacecharge_sbnd.fcl"
-#include "sbn_plane_transform.fcl"
 #include "sbn_stub_merge_tools.fcl"
 
 
@@ -98,7 +97,6 @@ physics:
       ParticleTags: [pandora]
       VertexHitTags: [vertexCharge]
       StubTags: [vertexStub]
-      PlaneTransform: @local::sbnd_plane_transform
       xmin: 15
       xmax: 15
       ymin: 15
