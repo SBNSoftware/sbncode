@@ -15,8 +15,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Principal/Event.h"
 
-#include "../Products/MeVPrtlFlux.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
 // LArSoft includes
 #include "nugen/EventGeneratorBase/GENIE/EvtTimeShiftFactory.h"
