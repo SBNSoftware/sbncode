@@ -34,10 +34,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_24_01
+larsoft             v09_24_00
 sbnobj              v09_11_10
 sbnanaobj           v09_16_08
-sbndaq_artdaq_core  v0_07_06_01_of0
+sbndaq_artdaq_core  v0_07_06_of0
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
