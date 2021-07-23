@@ -123,6 +123,11 @@ private:
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks);
 
+  void FillTrackDaughterRays(const recob::Track &trk,
+    const recob::PFParticle &pfp, 
+    const std::vector<art::Ptr<recob::PFParticle>> &PFParticleList, 
+    const art::FindManyP<recob::SpacePoint> &PFParticleSPs);
+
   void FillTrackEndHits(const geo::GeometryCore *geometry,
     const detinfo::DetectorPropertiesData &dprop,
     const recob::Track &track,

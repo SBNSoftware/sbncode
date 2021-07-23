@@ -184,7 +184,9 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       else throw;
   }
 
+  // PFP-associated data
   art::FindManyP<anab::T0> fmT0(PFParticleList, e, fT0Producer);
+  art::FindManyP<recob::SpacePoint> PFParticleSPs(PFParticleList, e, fPFPproducer);
 
   // Now we don't need to guard access to further data. If this is an empty event it should be caught by PFP's or Hit's
   art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTRKproducer); 
@@ -288,6 +290,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     // Fill the track!
     FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, calo, rawdigits, track_infos);
+
+    FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
     if (fFillTrackEndHits) FillTrackEndHits(geometry, dprop, *trkPtr, allHits, allHitSPs);
 
@@ -656,6 +660,32 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
   }
 }
 
+    
+void sbn::TrackCaloSkimmer::FillTrackDaughterRays(const recob::Track &trk,
+    const recob::PFParticle &pfp, 
+    const std::vector<art::Ptr<recob::PFParticle>> &PFParticleList, 
+    const art::FindManyP<recob::SpacePoint> &PFParticleSPs) {
+
+  for (unsigned d: pfp.Daughters()) {
+    const recob::PFParticle &d_pfp = *PFParticleList[d];
+
+    fTrack->daughter_pdg.push_back(d_pfp.PdgCode());
+
+    unsigned nsp = 0;
+    float min_distance = -1.;
+    for (const art::Ptr<recob::SpacePoint> &sp: PFParticleSPs.at(d)) {
+      if (min_distance < 0. || (sp->position() - trk.End()).r() < min_distance) {
+        min_distance = (sp->position() - trk.End()).r();
+      }
+      nsp++;
+    }
+
+    fTrack->daughter_sp_toend_dist.push_back(min_distance);
+    fTrack->daughter_nsp.push_back(nsp);
+  }
+
+}
+
 void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track, 
     const recob::PFParticle &pfp, float t0, 
     const std::vector<art::Ptr<recob::Hit>> &hits,
@@ -669,7 +699,6 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   fTrack->t0 = t0;
   fTrack->id = track.ID();
   fTrack->clear_cosmic_muon = pfp.Parent() == recob::PFParticle::kPFParticlePrimary;
-  fTrack->ndaughters = pfp.Daughters().size();
 
   fTrack->length = track.Length();
   fTrack->start.x = track.Start().X();
