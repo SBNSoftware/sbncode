@@ -7,11 +7,6 @@
 #include <algorithm>
 
 // helper function declarations
-caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-caf::g4_process_ GetG4ProcessID(const std::string &name);
 
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
@@ -673,7 +668,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   return true;
 }
 
-caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
+caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
@@ -715,7 +710,7 @@ caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, co
 
 //------------------------------------------
 
-caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
+caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
 #define MATCH_PROCESS(name) if (process_name == #name) {return caf::kG4 ## name;}
 #define MATCH_PROCESS_NAMED(strname, id) if (process_name == #strname) {return caf::kG4 ## id;}
   MATCH_PROCESS(primary)

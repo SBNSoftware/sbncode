@@ -25,6 +25,9 @@ caloskim_cryoe: {
   TRKproducer:  "pandoraTrackGausCryoE"
   T0producer: "pandoraGausCryoE"
   PFPproducer: "pandoraGausCryoE"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3DCryoE"
   RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCEW", "daqTPC:PHYSCRATEDATATPCEE"]
   RequireT0: true
   HitRawDigitsTickCollectWidth: 50
@@ -39,6 +42,9 @@ caloskim_cryow: {
   TRKproducer:  "pandoraTrackGausCryoW"
   T0producer: "pandoraGausCryoW"
   PFPproducer: "pandoraGausCryoW"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3DCryoE"
   RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCWW", "daqTPC:PHYSCRATEDATATPCWE"]
   RequireT0: true
   HitRawDigitsTickCollectWidth: 50

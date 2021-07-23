@@ -384,19 +384,66 @@ namespace caf
     }
   }
 
-  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo) {
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+        const std::vector<art::Ptr<recob::Hit>> &hits,
+        bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
+        const detinfo::DetectorPropertiesData &dprop,
+        caf::SRTrackCalo &srcalo) {
+
+    // Collect info from Calorimetry
     const std::vector<float> &dqdx = calo.dQdx();
     const std::vector<float> &dedx = calo.dEdx();
     const std::vector<float> &pitch = calo.TrkPitchVec();
+    const std::vector<float> &rr = calo.ResidualRange();
+    const std::vector<geo::Point_t> &xyz = calo.XYZ();
+    const std::vector<size_t> &tps = calo.TpIndices();
+
     srcalo.charge = 0.;
     srcalo.ke = 0.;
     srcalo.nhit = 0;
+
+    float rrmax = !rr.empty() ? *std::max_element(rr.begin(), rr.end()) : 0.;
+
     for (unsigned i = 0; i < dedx.size(); i++) {
+      // Save the points we need to
+      if (fill_calo_points && (
+          (rrmax - rr[i]) < fillhit_rrstart || // near start
+          rr[i] < fillhit_rrend)) { // near end
+
+        // Point information
+        caf::SRCaloPoint p;
+        p.rr = rr[i];
+        p.dqdx = dqdx[i];
+        p.dedx = dedx[i];
+        p.pitch = pitch[i];
+        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+
+        // lookup the wire -- the Calorimery object makes this
+        // __way__ harder than it should be
+        for (const art::Ptr<recob::Hit> &h: hits) {
+          if (h.key() == tps[i]) {
+            p.wire = h->WireID().Wire;
+            p.sumadc = h->SummedADC();
+            p.integral = h->Integral();
+          }
+        }
+
+        // Save
+        srcalo.points.push_back(p);
+      }
+
       if (dedx[i] > 1000.) continue;
       srcalo.nhit ++;
-      srcalo.charge += dqdx[i] * pitch[i] / constant; /* convert ADC*tick to electrons */
+      srcalo.charge += dqdx[i] * pitch[i]; // ADC
       srcalo.ke += dedx[i] * pitch[i];
     }
+
+    // Sort the points by residual range hi->lo
+    std::sort(srcalo.points.begin(), srcalo.points.end(),
+      [](const caf::SRCaloPoint &lhs, const caf::SRCaloPoint &rhs) {
+        return lhs.rr > rhs.rr;
+    });
+
   }
 
   void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
@@ -431,8 +478,9 @@ namespace caf
   }
 
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
-                     const geo::GeometryCore *geom,
-                     const std::array<float, 3> &calo_constants,
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
+                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -446,7 +494,7 @@ namespace caf
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
         caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-        FillTrackPlaneCalo(calo, calo_constants[plane_id], this_calo);
+        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
       }
     }
 
