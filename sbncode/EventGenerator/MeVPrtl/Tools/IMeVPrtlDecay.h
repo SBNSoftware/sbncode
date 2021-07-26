@@ -14,8 +14,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Principal/Event.h"
 
-#include "../Products/MeVPrtlFlux.h"
-#include "../Products/MeVPrtlDecay.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
 
 #include "IMeVPrtlStage.h"
 #include "Constants.h"
