@@ -1,0 +1,3 @@
+physics.producers.generator.Flux.M: @local::hnlM
+physics.producers.generator.RayTrace.ReferencePrtlMass: @local::hnlM
+physics.producers.generator.Decay.ReferenceHNLMass: @local::hnlM

@@ -59,6 +59,8 @@
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -92,6 +94,11 @@
 #include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/Reco/RangeP.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
+#include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
+#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -99,9 +106,30 @@
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
+
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
+
+// Metadata
+#include "sbncode/Metadata/MetadataSBN.h"
+
+namespace sbn{
+  namespace evwgh{
+    std::ostream& operator<<(std::ostream& os, const sbn::evwgh::EventWeightParameterSet& p)
+    {
+      // TODO proper implementation of this should be added in sbnobj
+      os << p.fName << " " << p.fRWType << std::endl;
+      for(const auto& it: p.fParameterMap){
+        os << it.first.fName << " " << it.first.fMean << " " << it.first.fWidth << std::endl << " ";
+        for(float v: it.second) os << " " << v;
+        os << std::endl;
+      }
+      return os;
+    }
+  }
+}
 
 namespace caf {
 
@@ -131,7 +159,7 @@ class CAFMaker : public art::EDProducer {
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
-                     
+
   bool fFirstInSubRun;
   bool fFirstInFile;
   int fFileNumber;
@@ -158,6 +186,13 @@ class CAFMaker : public art::EDProducer {
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
 
+  /// What position in the vector each parameter set take
+  std::map<std::string, unsigned int> fWeightPSetIndex;
+  std::optional<std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
+
+  void AddEnvToFile();
+  void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
+
   void InitializeOutfile();
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
@@ -170,8 +205,8 @@ class CAFMaker : public art::EDProducer {
 
   template <class T, class D, class U>
   art::FindManyP<T, D> FindManyPDStrict(const U& from,
-                                            const art::Event& evt,
-                                            const art::InputTag& tag) const;
+                                        const art::Event& evt,
+                                        const art::InputTag& tag) const;
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -189,8 +224,8 @@ class CAFMaker : public art::EDProducer {
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message and aborts if StrictMode is true.
-  template <class T>
-  void GetByLabelStrict(const art::Event& evt, const std::string& label,
+  template <class EvtT, class T>
+  void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
@@ -303,10 +338,77 @@ void CAFMaker::beginJob() {
 }
 
 //......................................................................
-void CAFMaker::beginRun(art::Run& r) {
+void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
+{
+  const double& start = m(0, 0);
+  v.insert(v.end(), &start, &start + m.GetNoElements());
+}
+
+//......................................................................
+void CAFMaker::beginRun(art::Run& run) {
   // fDetID = geom->DetId();
   fDet = (Det_t)1;//(Det_t)fDetID;
 
+  if(fParams.SystWeightLabel().empty()) return;
+  // TODO all the below should be in a function somewhere
+  art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
+  GetByLabelStrict(run, fParams.SystWeightLabel(), wgt_params);
+
+  if(fPrevWeightPSet){
+    if(*fPrevWeightPSet != *wgt_params){
+      std::cout << "CAFMaker: Run-level EventWeightParameterSet mismatch."
+                << std::endl;
+      std::cout << "Previous parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *fPrevWeightPSet){
+        std::cout << p << std::endl;
+      }
+      std::cout << "\nNew parameter sets:";
+      for(const sbn::evwgh::EventWeightParameterSet& p: *wgt_params){
+        std::cout << p << std::endl;
+      }
+      abort();
+    }
+    return; // Match, no need to refill into tree
+  }
+
+  // If there were no weights available, return
+  if (!wgt_params.isValid()) return;
+
+  fPrevWeightPSet = *wgt_params;
+
+  SRGlobal global;
+
+  for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
+    SRWeightPSet& cafpset = global.wgts.emplace_back();
+
+    cafpset.name = pset.fName;
+    cafpset.type = caf::ReweightType_t(pset.fRWType);
+    cafpset.nuniv = pset.fNuniverses;
+    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    fWeightPSetIndex[cafpset.name] = global.wgts.size()-1;
+
+    for(const auto& it: pset.fParameterMap){
+      const sbn::evwgh::EventWeightParameter& param = it.first;
+      const std::vector<float>& vals = it.second;
+
+      SRWeightParam cafparam;
+      cafparam.name = param.fName;
+      cafparam.mean = param.fMean;
+      cafparam.width = param.fWidth;
+      cafparam.covidx = param.fCovIndex;
+
+      cafpset.map.emplace_back(cafparam, vals);
+    } // end for it
+  } // end for pset
+
+  fFile->cd();
+  TTree* globalTree = new TTree("globalTree", "globalTree");
+  SRGlobal* pglobal = &global;
+  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
+  if(!br) abort();
+  globalTree->Fill();
+  globalTree->Write();
 }
 
 //......................................................................
@@ -325,6 +427,86 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fFirstInSubRun = true;
 
 
+}
+
+//......................................................................
+void CAFMaker::AddEnvToFile()
+{
+  // Global information about the processing details:
+  std::map<std::string, std::string> envmap;
+
+  // Environ comes from unistd.h
+  // environ is not present on OSX for some reason, so just use getenv to
+  // grab the variables we care about.
+#ifdef DARWINBUILD
+  std::set<TString> variables;
+  variables.insert("USER");
+  variables.insert("HOSTNAME");
+  variables.insert("PWD");
+  for (auto var : variables) if(getenv(var)) envmap[var] = getenv(var);
+#else
+  for (char** penv = environ; *penv; ++penv) {
+    const std::string pair = *penv;
+    const size_t split = pair.find("=");
+    if(split == std::string::npos) continue;  // Huh?
+    const std::string key = pair.substr(0, split);
+    const std::string value = pair.substr(split + 1);
+    envmap[key] = value;
+  }
+#endif
+
+  // Default constructor is "now"
+  envmap["date"] = TTimeStamp().AsString();
+  envmap["output"] = fCafFilename;
+
+  // Get the command-line we were invoked with. What I'd really like is
+  // just the fcl script and list of input filenames in a less hacky
+  // fashion. I'm not sure that's actually possible in ART.
+  // TODO: ask the artists.
+  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
+  char* arg = 0;
+  size_t size = 0;
+  std::string cmd;
+  while (getdelim(&arg, &size, 0, cmdline) != -1) {
+    cmd += arg;
+    cmd += " ";
+  }
+  free(arg);
+  fclose(cmdline);
+
+  envmap["cmd"] = cmd;
+
+  fFile->mkdir("env")->cd();
+
+  TTree* trenv = new TTree("envtree", "envtree");
+  std::string key, value;
+  trenv->Branch("key", &key);
+  trenv->Branch("value", &value);
+  for(const auto& keyval: envmap){
+    key = keyval.first;
+    value = keyval.second;
+    trenv->Fill();
+  }
+  trenv->Write();
+}
+
+//......................................................................
+void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metadata)
+{
+  assert(fFile && "CAFMaker: Trying to add metadata to an uninitialized file");
+
+  fFile->mkdir("metadata")->cd();
+
+  TTree* trmeta = new TTree("metatree", "metatree");
+  std::string key, value;
+  trmeta->Branch("key", &key);
+  trmeta->Branch("value", &value);
+  for(const auto& keyval: metadata){
+    key = keyval.first;
+    value = keyval.second;
+    trmeta->Fill();
+  }
+  trmeta->Write();
 }
 
 //......................................................................
@@ -357,60 +539,7 @@ void CAFMaker::InitializeOutfile() {
   // fCycle = -5;
   // fBatch = -5;
 
-  // Global information about the processing details:
-  std::map<TString, TString> envmap;
-  std::string envstr;
-  // Environ comes from unistd.h
-  // environ is not present on OSX for some reason, so just use getenv to
-  // grab the variables we care about.
-#ifdef DARWINBUILD
-  std::set<TString> variables;
-  variables.insert("USER");
-  variables.insert("HOSTNAME");
-  variables.insert("PWD");
-  variables.insert("SRT_PUBLIC_CONTEXT");
-  variables.insert("SRT_PRIVATE_CONTEXT");
-  for (auto var : variables) envmap[var] = getenv(var);
-#else
-  for (char** penv = environ; *penv; ++penv) {
-    const std::string pair = *penv;
-    envstr += pair;
-    envstr += "\n";
-    const size_t split = pair.find("=");
-    if (split == std::string::npos) continue;  // Huh?
-    const std::string key = pair.substr(0, split);
-    const std::string value = pair.substr(split + 1);
-    envmap[key] = value;
-  }
-#endif
-
-  // Get the command-line we were invoked with. What I'd really like is
-  // just the fcl script and list of input filenames in a less hacky
-  // fashion. I'm not sure that's actually possible in ART.
-  // TODO: ask the artists.
-  FILE* cmdline = fopen("/proc/self/cmdline", "rb");
-  char* arg = 0;
-  size_t size = 0;
-  std::string cmd;
-  while (getdelim(&arg, &size, 0, cmdline) != -1) {
-    cmd += arg;
-    cmd += " ";
-  }
-  free(arg);
-  fclose(cmdline);
-
-  fFile->mkdir("env")->cd();
-
-  TObjString(envmap["USER"]).Write("user");
-  TObjString(envmap["HOSTNAME"]).Write("hostname");
-  TObjString(envmap["PWD"]).Write("pwd");
-  TObjString(envmap["SRT_PUBLIC_CONTEXT"]).Write("publiccontext");
-  TObjString(envmap["SRT_PRIVATE_CONTEXT"]).Write("privatecontext");
-  // Default constructor is "now"
-  TObjString(TTimeStamp().AsString()).Write("date");
-  TObjString(cmd.c_str()).Write("cmd");
-  TObjString(fCafFilename.c_str()).Write("output");
-  TObjString(envstr.c_str()).Write("env");
+  AddEnvToFile();
 }
 
 //......................................................................
@@ -467,8 +596,8 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
 }
 
 //......................................................................
-template <class T>
-void CAFMaker::GetByLabelStrict(const art::Event& evt, const std::string& label,
+template <class EvtT, class T>
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
                                 art::Handle<T>& handle) const {
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
@@ -529,6 +658,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::fill_ptr_vector(mctruths, mctruth_handle);
   }
 
+  // And associated GTruth objects
+  art::FindManyP<simb::GTruth> fmp_gtruth = FindManyPStrict<simb::GTruth>(mctruths, evt, fParams.GenLabel());
+
   art::Handle<std::vector<simb::MCTruth>> cosmic_mctruth_handle;
   evt.getByLabel(fParams.CosmicGenLabel(), cosmic_mctruth_handle);
 
@@ -584,6 +716,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // Collect the input TPC reco tags
@@ -604,7 +738,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // Prep truth-to-reco-matching info
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get()); 
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
 
   //#######################################################
   // Fill truths & fake reco
@@ -629,22 +763,54 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // TODO eventually we want to handle multiple sources of weights
+  std::optional<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;
+
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
 
   for (size_t i=0; i<mctruths.size(); i++) {
-
     auto const& mctruth = mctruths.at(i);
     const simb::MCFlux &mcflux = (mcfluxes.size()) ? *mcfluxes.at(i) : badflux;
 
+    simb::GTruth gtruth;
+    bool ok = GetAssociatedProduct(fmp_gtruth, i, gtruth);
+    if(!ok){
+      std::cout << "Failed to get GTruth object!" << std::endl;
+    }
+
     srneutrinos.push_back(SRTrueInteraction());
 
-    FillTrueNeutrino(mctruth, mcflux, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+
+    // Don't check for syst weight assocations until we have something (MCTruth
+    // corresponding to a neutrino) that could plausibly be reweighted. This
+    // avoids the need for special configuration for cosmics or single particle
+    // simulation, and real data.
+    if(!fmpewm && mctruth->NeutrinoSet()) fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
+
+    if(fmpewm && fmpewm->isValid()){
+      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm->at(i);
+
+      // For all the weights associated with this MCTruth
+      for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
+        for(auto& it: *wgtmap){
+          if(fWeightPSetIndex.count(it.first) == 0){
+            std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+            std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+            for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
+            abort();
+          }
+          const unsigned int idx = fWeightPSetIndex[it.first];
+          if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
+	  srneutrinos.back().wgt[idx].univ = it.second;
+        } // end for it
+      } // end for wgtmap
+    } // end if fmpewm
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
-
-  }
+  } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
   unsigned n_gen_evt = 0;
@@ -757,9 +923,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcHits = fmSlcHits.at(0);
     }
 
-    art::FindManyP<anab::T0> fmT0 =
-      FindManyPStrict<anab::T0>(fmPFPart, evt,
-        fParams.FlashMatchLabel() + slice_tag_suff);
+    art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
+      FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
+                                             fParams.FlashMatchLabel() + slice_tag_suff);
 
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
@@ -782,6 +948,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         else assert(false); // bad
       }
     }
+
+    art::FindManyP<float> fmShowerCosmicDist =
+      FindManyPStrict<float>(slcShowers, evt, fParams.ShowerCosmicDistLabel() + slice_tag_suff);
 
     art::FindManyP<float> fmShowerResiduals =
       FindManyPStrict<float>(slcShowers, evt, fParams.RecoShowerSelectionLabel() + slice_tag_suff);
@@ -834,9 +1003,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
            fParams.TrackCaloLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::ParticleID> fmPID =
+    art::FindManyP<anab::ParticleID> fmChi2PID =
       FindManyPStrict<anab::ParticleID>(slcTracks, evt,
-          fParams.TrackPidLabel() + slice_tag_suff);
+          fParams.TrackChi2PidLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::ScatterClosestApproach> fmScatterClosestApproach =
+      FindManyPStrict<sbn::ScatterClosestApproach>(slcTracks, evt,
+          fParams.TrackScatterClosestApproachLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::StoppingChi2Fit> fmStoppingChi2Fit =
+      FindManyPStrict<sbn::StoppingChi2Fit>(slcTracks, evt,
+          fParams.TrackStoppingChi2FitLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmTrackDazzle =
+      FindManyPStrict<sbn::MVAPID>(slcTracks, evt,
+          fParams.TrackDazzleLabel() + slice_tag_suff);
+
+    art::FindManyP<sbn::MVAPID> fmShowerRazzle =
+      FindManyPStrict<sbn::MVAPID>(slcShowers, evt,
+          fParams.ShowerRazzleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Vertex> fmVertex =
       FindManyPStrict<recob::Vertex>(fmPFPart, evt,
@@ -887,9 +1072,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const recob::PFParticle *primary = (iPart == fmPFPart.size()) ? NULL : fmPFPart[iPart].get();
     const larpandoraobj::PFParticleMetadata *primary_meta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
     // get the flash match
-    const anab::T0 *fmatch = NULL;
-    if (fmT0.isValid() && primary != NULL) {
-      std::vector<art::Ptr<anab::T0>> fmatches = fmT0.at(iPart);
+    const sbn::SimpleFlashMatch* fmatch = nullptr;
+    if (fm_sFM.isValid() && primary != NULL) {
+      std::vector<art::Ptr<sbn::SimpleFlashMatch>> fmatches = fm_sFM.at(iPart);
       if (fmatches.size() != 0) {
         assert(fmatches.size() == 1);
         fmatch = fmatches[0].get();
@@ -910,9 +1095,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
+    // Whether Pandora thinks this slice is a neutrino
+    //
+    // This requirement is used to determine whether to save additional
+    // per-hit information about the slice.
+    bool NeutrinoSlice = !recslc.is_clear_cosmic;
+
     // Fill truth info after decision on selection is made
     FillSliceTruth(slcHits, mctruths, srneutrinos,
        *pi_serv.get(), clock_data, recslc, rec.mc);
+
+    FillSliceFakeReco(slcHits, mctruths, srneutrinos,
+       *pi_serv.get(), clock_data, recslc, rec.mc, mctracks, fActiveVolumes,
+       *fFakeRecoTRandom);
 
     //#######################################################
     // Add detector dependent slice info.
@@ -985,16 +1180,32 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
+
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], thisParticle, primary, producer, rec.reco.trk.back());
+        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
-        if (fmPID.isValid()) {
-           FillTrackChi2PID(fmPID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+
+        if (fmChi2PID.isValid()) {
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+        }
+        if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+        }
+        if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
+          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
+              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+              fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
+              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
           FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
@@ -1016,8 +1227,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], thisParticle, vertex, primary, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
+
+        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+
         // We may have many residuals per shower depending on how many showers ar in the slice
+
+        if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
+        }
+        if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
+        }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
           FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
         }
@@ -1141,6 +1363,28 @@ void CAFMaker::endJob() {
   hEvents->Write();
   fFile->Write();
 
+  std::map<std::string, std::string> metamap;
+
+  try{
+    art::ServiceHandle<util::MetadataSBN> meta;
+
+    std::map<std::string, std::string> strs;
+    std::map<std::string, int> ints;
+    std::map<std::string, double> doubles;
+    std::map<std::string, std::string> objs;
+    meta->GetMetadataMaps(strs, ints, doubles, objs);
+
+    for(auto it: strs) metamap[it.first] = "\""+it.second+"\"";
+    for(auto it: ints) metamap[it.first] = std::to_string(it.second);
+    for(auto it: doubles) metamap[it.first] = std::to_string(it.second);
+    for(auto it: objs) metamap[it.first] = it.second;
+  }
+  catch(art::Exception& e){//(art::errors::ServiceNotFound)
+    // I don't know any way to detect this apart from an exception, unfortunately
+    std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
+  }
+
+  AddMetadataToFile(metamap);
 }
 
 

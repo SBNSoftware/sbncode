@@ -118,9 +118,7 @@ namespace caf
 
   //......................................................................
   void FillShowerVars(const recob::Shower& shower,
-                      const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
-                      const recob::PFParticle *primary,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
                       const geo::GeometryCore *geom,
                       unsigned producer,
@@ -157,16 +155,6 @@ namespace caf
 
     if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
         srshower.density = srshower.bestplane_energy / srshower.len;
-
-    // Fill in hierarchy info
-    srshower.ID = particle.Self();
-    srshower.slcID = (primary) ? primary->Self() : -1;
-    for (unsigned id: particle.Daughters()) {
-      srshower.daughters.push_back(id);
-    }
-    srshower.parent = particle.Parent();
-    srshower.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
-      || (primary && particle.Parent() == primary->Self());
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
@@ -205,7 +193,27 @@ namespace caf
           srshower.wirePitch_plane2 = plane.WirePitch()/cosgamma;
       }
     }
+  }
 
+  void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
+      caf::SRShower& srshower,
+      bool allowEmpty)
+  {
+    srshower.razzle.electronScore = razzle->mvaScoreMap.at(11);
+    srshower.razzle.photonScore = razzle->mvaScoreMap.at(22);
+    srshower.razzle.otherScore = razzle->mvaScoreMap.at(0);
+
+    srshower.razzle.pdg = razzle->BestPDG();
+    srshower.razzle.bestScore = razzle->BestScore();
+  }
+
+
+  void FillShowerCosmicDist(const std::vector<art::Ptr<float> >& cosmicDistVec,
+                      caf::SRShower& srshower)
+  {
+      if (cosmicDistVec.size() != 1)
+        return;
+      srshower.cosmicDist = *cosmicDistVec.front();
   }
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
@@ -394,6 +402,15 @@ namespace caf
     }
   }
 
+  void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid) {
+    srpid.chi2_muon = particle_id.Chi2Muon();
+    srpid.chi2_pion = particle_id.Chi2Pion();
+    srpid.chi2_kaon = particle_id.Chi2Kaon();
+    srpid.chi2_proton = particle_id.Chi2Proton();
+    srpid.pid_ndof = particle_id.Ndf();
+    srpid.pida = particle_id.PIDA();
+  }
+
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
                         const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
@@ -405,23 +422,109 @@ namespace caf
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
-
         caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
-        this_pid.chi2_muon = particle_id.Chi2Muon();
-        this_pid.chi2_pion = particle_id.Chi2Pion();
-        this_pid.chi2_kaon = particle_id.Chi2Kaon();
-        this_pid.chi2_proton = particle_id.Chi2Proton();
-        this_pid.pid_ndof = particle_id.Ndf();
-
-        this_pid.pida = particle_id.PIDA();
-
+        FillPlaneChi2PID(particle_id, this_pid);
       }
     }
   }
 
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+        const std::vector<art::Ptr<recob::Hit>> &hits,
+        bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
+        const detinfo::DetectorPropertiesData &dprop,
+        caf::SRTrackCalo &srcalo) {
+
+    // Collect info from Calorimetry
+    const std::vector<float> &dqdx = calo.dQdx();
+    const std::vector<float> &dedx = calo.dEdx();
+    const std::vector<float> &pitch = calo.TrkPitchVec();
+    const std::vector<float> &rr = calo.ResidualRange();
+    const std::vector<geo::Point_t> &xyz = calo.XYZ();
+    const std::vector<size_t> &tps = calo.TpIndices();
+
+    srcalo.charge = 0.;
+    srcalo.ke = 0.;
+    srcalo.nhit = 0;
+
+    float rrmax = !rr.empty() ? *std::max_element(rr.begin(), rr.end()) : 0.;
+
+    for (unsigned i = 0; i < dedx.size(); i++) {
+      // Save the points we need to
+      if (fill_calo_points && (
+          (rrmax - rr[i]) < fillhit_rrstart || // near start
+          rr[i] < fillhit_rrend)) { // near end
+
+        // Point information
+        caf::SRCaloPoint p;
+        p.rr = rr[i];
+        p.dqdx = dqdx[i];
+        p.dedx = dedx[i];
+        p.pitch = pitch[i];
+        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+
+        // lookup the wire -- the Calorimery object makes this
+        // __way__ harder than it should be
+        for (const art::Ptr<recob::Hit> &h: hits) {
+          if (h.key() == tps[i]) {
+            p.wire = h->WireID().Wire;
+            p.sumadc = h->SummedADC();
+            p.integral = h->Integral();
+          }
+        }
+
+        // Save
+        srcalo.points.push_back(p);
+      }
+
+      if (dedx[i] > 1000.) continue;
+      srcalo.nhit ++;
+      srcalo.charge += dqdx[i] * pitch[i]; // ADC
+      srcalo.ke += dedx[i] * pitch[i];
+    }
+
+    // Sort the points by residual range hi->lo
+    std::sort(srcalo.points.begin(), srcalo.points.end(),
+      [](const caf::SRCaloPoint &lhs, const caf::SRCaloPoint &rhs) {
+        return lhs.rr > rhs.rr;
+    });
+
+  }
+
+  void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.scatterClosestApproach.mean = closestapproach->mean;
+    srtrack.scatterClosestApproach.stdDev = closestapproach->stdDev;
+    srtrack.scatterClosestApproach.max = closestapproach->max;
+  }
+
+  void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.stoppingChi2Fit.pol0Chi2 = stoppingChi2->pol0Chi2;
+    srtrack.stoppingChi2Fit.expChi2  = stoppingChi2->expChi2;
+    srtrack.stoppingChi2Fit.pol0Fit  = stoppingChi2->pol0Fit;
+  }
+
+  void FillTrackDazzle(const art::Ptr<sbn::MVAPID> dazzle,
+      caf::SRTrack& srtrack,
+      bool allowEmpty)
+  {
+    srtrack.dazzle.muonScore = dazzle->mvaScoreMap.at(13);
+    srtrack.dazzle.pionScore = dazzle->mvaScoreMap.at(211);
+    srtrack.dazzle.protonScore = dazzle->mvaScoreMap.at(2212);
+    srtrack.dazzle.otherScore = dazzle->mvaScoreMap.at(0);
+
+    srtrack.dazzle.pdg = dazzle->BestPDG();
+    srtrack.dazzle.bestScore = dazzle->BestScore();
+  }
+
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
-                     const geo::GeometryCore *geom,
-                     const std::array<float, 3> &calo_constants,
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
+                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {
@@ -435,19 +538,7 @@ namespace caf
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
         caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-
-        const std::vector<float> &dqdx = calo.dQdx();
-        const std::vector<float> &dedx = calo.dEdx();
-        const std::vector<float> &pitch = calo.TrkPitchVec();
-        this_calo.charge = 0.;
-        this_calo.ke = 0.;
-        this_calo.nhit = 0;
-        for (unsigned i = 0; i < dedx.size(); i++) {
-          if (dedx[i] > 1000.) continue;
-          this_calo.nhit ++;
-          this_calo.charge += dqdx[i] * pitch[i] / calo_constants[plane_id]; /* convert ADC*tick to electrons */
-          this_calo.ke += dedx[i] * pitch[i];
-        }
+        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
       }
     }
 
@@ -471,8 +562,6 @@ namespace caf
   // TODO: crt matching
 
   void FillTrackVars(const recob::Track& track,
-                     const recob::PFParticle &particle,
-                     const recob::PFParticle *primary,
                      unsigned producer,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
@@ -484,6 +573,14 @@ namespace caf
     srtrack.costh = track.StartDirection().Z() / sqrt(track.StartDirection().Mag2());
     srtrack.phi = track.StartDirection().Phi();
 
+    srtrack.dir_end.x = track.EndDirection().X();
+    srtrack.dir_end.y = track.EndDirection().Y();
+    srtrack.dir_end.z = track.EndDirection().Z();
+
+    srtrack.dir.x = track.StartDirection().X();
+    srtrack.dir.y = track.StartDirection().Y();
+    srtrack.dir.z = track.StartDirection().Z();
+
     srtrack.start.x = track.Start().X();
     srtrack.start.y = track.Start().Y();
     srtrack.start.z = track.Start().Z();
@@ -492,20 +589,34 @@ namespace caf
     srtrack.end.y = track.End().Y();
     srtrack.end.z = track.End().Z();
 
-    srtrack.ID = particle.Self();
-    srtrack.slcID = (primary) ? primary->Self() : -1;
+  }
+
+  void FillPFPVars(const recob::PFParticle &particle,
+                   const recob::PFParticle *primary,
+                   const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   caf::SRPFP& srpfp,
+                   bool allowEmpty)
+  {
+    srpfp.id = particle.Self();
+    srpfp.slcID = (primary) ? primary->Self() : -1;
 
     // set the daughters in the particle flow
     for (unsigned id: particle.Daughters()) {
-      srtrack.daughters.push_back(id);
+      srpfp.daughters.push_back(id);
     }
-    srtrack.ndaughters = srtrack.daughters.size();
+    srpfp.ndaughters = srpfp.daughters.size();
 
-    srtrack.parent = particle.Parent();
-    srtrack.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
+    srpfp.parent = particle.Parent();
+    srpfp.parent_is_primary = (particle.Parent() == recob::PFParticle::kPFParticlePrimary) \
       || (primary && particle.Parent() == primary->Self());
 
+    if (pfpMeta) {
+      auto const &propertiesMap (pfpMeta->GetPropertiesMap());
+      auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
+      srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+    }
   }
+
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,

@@ -1,0 +1,469 @@
+BEGIN_PROLOG
+
+##########################################################
+## EventWeight configurations for GENIEv3 from the March
+## 2020 SBN analysis workshop.
+##########################################################
+
+n_universes_B: 400
+n_universes_B_slow: 1
+n_universes_B_maybe_slow: 1
+
+sbn_genie_eventweight_B: {
+  module_type: "EventWeight"
+
+  genie_module_label: generator
+
+  AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
+
+  weight_functions_genie: [
+    # proposal weights
+    genie_qema,
+    genie_ncresAxial, genie_ccresAxial,
+    genie_NC,
+    genie_NonResRvp1pi, genie_NonResRvbarp1pi,
+    genie_NonResRvp2pi, genie_NonResRvbarp2pi,
+    # alternate weights for non-resonant backgrounds
+    # so that we can weight CC and NC differently
+    genie_NonResRvp1piAlt, genie_NonResRvbarp1piAlt,
+    genie_NonResRvp2piAlt, genie_NonResRvbarp2piAlt,
+
+    # cocktail of weights from Andy
+    # genie_qevec,
+    genie_ncelAxial,
+    genie_ncelEta, genie_ccresVector,
+    genie_ncresVector,
+    genie_cohMA, genie_cohR0,
+    genie_ResDecayGamma,
+    genie_DISAth, genie_DISBth, genie_DISCv1u, genie_DISCv2u,
+    # genie_AGKYxF, genie_AGKYpT,
+    # genie_FormZone,
+    genie_IntraNukeNmfp, genie_IntraNukeNcex,
+    genie_IntraNukeNinel, genie_IntraNukeNabs, genie_IntraNukeNpi,
+    genie_IntraNukePImfp, genie_IntraNukePIcex,
+    genie_IntraNukePIinel, genie_IntraNukePIabs, genie_IntraNukePIpi
+  ]
+
+  genie_qema: {
+    type: Genie
+    random_seed: 2015
+    parameter_list: ["QEMA"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_qevec: {
+    type: Genie
+    random_seed: 2016
+    parameter_list: ["QEVec"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B_slow
+  }
+
+  genie_ncelAxial: {
+    type: Genie
+    random_seed: 2017
+    parameter_list: ["NCELaxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ncelEta: {
+    type: Genie
+    random_seed: 2018
+    parameter_list: ["NCELeta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+
+  genie_ccresAxial: {
+    type: Genie
+    random_seed: 2019
+    parameter_list: ["CCResAxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ccresVector: {
+    type: Genie
+    random_seed: 2020
+    parameter_list: ["CCResVector"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ncresAxial: {
+    type: Genie
+    random_seed: 2021
+    parameter_list: ["NCResAxial"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ncresVector: {
+    type: Genie
+    random_seed: 2022
+    parameter_list: ["NCResVector"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_cohMA: {
+    type: Genie
+    random_seed: 2023
+    parameter_list: ["CohMA"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_cohR0: {
+    type: Genie
+    random_seed: 2024
+    parameter_list: ["CohR0"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvp1pi: {
+    type: Genie
+    random_seed: 2025
+    parameter_list: ["NonResRvp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvbarp1pi: {
+    type: Genie
+    random_seed: 2026
+    parameter_list: ["NonResRvbarp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvp2pi: {
+    type: Genie
+    random_seed: 2027
+    parameter_list: ["NonResRvp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvbarp2pi: {
+    type: Genie
+    random_seed: 2028
+    parameter_list: ["NonResRvbarp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvp1piAlt: {
+    type: Genie
+    random_seed: 2054
+    parameter_list: ["NonResRvp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvbarp1piAlt: {
+    type: Genie
+    random_seed: 2055
+    parameter_list: ["NonResRvbarp1pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvp2piAlt: {
+    type: Genie
+    random_seed: 2056
+    parameter_list: ["NonResRvp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NonResRvbarp2piAlt: {
+    type: Genie
+    random_seed: 2057
+    parameter_list: ["NonResRvbarp2pi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ResDecayGamma: {
+    type: Genie
+    random_seed: 2029
+    parameter_list: ["ResDecayGamma"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ResDecayEta: {
+    type: Genie
+   random_seed: 2030
+    parameter_list: ["ResDecayEta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_ResDecayTheta: {
+    type: Genie
+    random_seed: 2031
+    parameter_list: ["ResDecayTheta"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_NC: {
+    type: Genie
+    random_seed: 2032
+    parameter_list: ["NC"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_DISAth: {
+    type: Genie
+    random_seed: 2033
+    parameter_list: ["DISAth"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_DISBth: {
+    type: Genie
+    random_seed: 2034
+    parameter_list: ["DISBth"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_DISCv1u: {
+    type: Genie
+    random_seed: 2035
+    parameter_list: ["DISCv1u"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_DISCv2u: {
+    type: Genie
+    random_seed: 2036
+    parameter_list: ["DISCv2u"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_AGKYxF: {
+    type: Genie
+    random_seed: 2037
+    parameter_list: ["AGKYxF"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B_maybe_slow
+  }
+
+  genie_AGKYpT: {
+    type: Genie
+    random_seed: 2038
+    parameter_list: ["AGKYpT"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B_maybe_slow
+  }
+
+  genie_FormZone: {
+    type: Genie
+    random_seed: 2039
+    parameter_list: ["FormZone"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B_maybe_slow
+  }
+
+  ## genie_FermiGasModelKf: {
+  ##   type: Genie
+  ##   random_seed: 2040
+  ##   parameter_list: ["FermiGasModelKf"]
+  ##   parameter_sigma: [ 1 ]
+  ##   mode: multisim
+  ##   number_of_multisims: @local::n_universes_B_maybe_slow
+  ## }
+
+  ## genie_FermiGasModelSf: {
+  ##   type: Genie
+  ##   random_seed: 2041
+  ##   parameter_list: ["FermiGasModelSf"]
+  ##   parameter_sigma: [ 1 ]
+  ##   mode: multisim
+  ##   number_of_multisims: @local::n_universes_B_maybe_slow
+  ## }
+
+  genie_IntraNukeNmfp: {
+    type: Genie
+    random_seed: 2042
+    parameter_list: ["IntraNukeNmfp"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukeNcex: {
+    type: Genie
+    random_seed: 2043
+    parameter_list: ["IntraNukeNcex"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  #genie_IntraNukeNel: {
+  #  type: Genie
+  #  random_seed: 2044
+  #  parameter_list: ["IntraNukeNel"]
+  #  parameter_sigma: [ 1 ]
+  #  mode: multisim
+  #  number_of_multisims: @local::n_universes_B
+  #}
+
+  genie_IntraNukeNinel: {
+    type: Genie
+    random_seed: 2045
+    parameter_list: ["IntraNukeNinel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukeNabs: {
+    type: Genie
+    random_seed: 2046
+    parameter_list: ["IntraNukeNabs"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukeNpi: {
+    type: Genie
+    random_seed: 2047
+    parameter_list: ["IntraNukeNpi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukePImfp: {
+    type: Genie
+    random_seed: 2048
+    parameter_list: ["IntraNukePImfp"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukePIcex: {
+    type: Genie
+    random_seed: 2049
+    parameter_list: ["IntraNukePIcex"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  #genie_IntraNukePIel: {
+  #  type: Genie
+  #  random_seed: 2050
+  #  parameter_list: ["IntraNukePIel"]
+  #  parameter_sigma: [ 1 ]
+  #  mode: multisim
+  #  number_of_multisims: @local::n_universes_B
+  #}
+
+  genie_IntraNukePIinel: {
+    type: Genie
+    random_seed: 2051
+    parameter_list: ["IntraNukePIinel"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukePIabs: {
+    type: Genie
+    random_seed: 2052
+    parameter_list: ["IntraNukePIabs"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  genie_IntraNukePIpi: {
+    type: Genie
+    random_seed: 2053
+    parameter_list: ["IntraNukePIpi"]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+
+  # Single function to reweight all GENIE parameters at once
+  genie_all: {
+    type: Genie
+    random_seed: 2100
+    parameter_list: [
+      "QEMA", "NCELaxial", "NCELeta", "CCResAxial", "CCResVector",
+      "NCResAxial", "NCResVector",
+      "NonResRvp1pi", "NonResRvbarp1pi", "NonResRvp2pi", "NonResRvbarp2pi",
+      "NC",
+      "DISAth", "DISBth", "DISCv1u", "DISCv2u",
+      "FormZone",
+      "IntraNukeNmfp", "IntraNukeNcex",
+      "IntraNukeNinel",
+      "IntraNukeNabs", "IntraNukeNpi",
+      "IntraNukePImfp", "IntraNukePIcex",
+      "IntraNukePIinel", "IntraNukePIabs", "IntraNukePIpi"
+    ]
+    parameter_sigma: [
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+      1, 1, 1, 1, 1, 1, 1
+    ]
+    mode: multisim
+    number_of_multisims: @local::n_universes_B
+  }
+}
+
+sbn_genie_eventweight_B.weight_functions: [
+  @sequence::sbn_genie_eventweight_B.weight_functions_genie
+]
+
+## sbn_genie_eventweight_B.weight_functions: [ "genie_all" ]
+
+
+END_PROLOG

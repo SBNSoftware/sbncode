@@ -28,7 +28,12 @@
 
 namespace caf
 {
+  // Helpers
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
+        const TVector3 p0,
+        const TVector3 p1);
 
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -37,6 +42,15 @@ namespace caf
                       const detinfo::DetectorClocksData &clockData,
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty = false);
+
+  void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
+                         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const cheat::ParticleInventoryService &inventory_service,
+                         const detinfo::DetectorClocksData &clockData,
+                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -48,9 +62,9 @@ namespace caf
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle);
 
-  // TODO: implement
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const simb::MCFlux &mcflux, 
+                        const simb::GTruth& gtruth,
 			const std::vector<caf::SRTrueParticle> &srparticles,
                         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
 			caf::SRTrueInteraction &srneutrino, size_t i);

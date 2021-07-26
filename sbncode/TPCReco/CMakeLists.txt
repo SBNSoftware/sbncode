@@ -51,7 +51,9 @@ simple_plugin ( EventSelect module
                ${MF_UTILITIES}
                ${FHICLCPP}
                cetlib cetlib_except
-               ${ROOT_BASIC_LIB_LIST}
+	${ROOT_EVE_LIB_LIST}
+	${ROOT_X3d}
+	${ROOT_BASIC_LIB_LIST}
 )
 
 

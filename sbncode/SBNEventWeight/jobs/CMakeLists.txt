@@ -2,5 +2,5 @@ install_headers()
 install_fhicl()
 install_source()
 
-add_subdirectory(jobs)
+add_subdirectory(genie)
 

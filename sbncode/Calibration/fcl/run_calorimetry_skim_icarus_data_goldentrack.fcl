@@ -1,0 +1,4 @@
+#include "run_calorimetry_skim_icarus_data.fcl"
+
+physics.analyzers.caloskimCryoE: @local::caloskim_cryoe_nodigits_goldentracks
+physics.analyzers.caloskimCryoW: @local::caloskim_cryow_nodigits_goldentracks

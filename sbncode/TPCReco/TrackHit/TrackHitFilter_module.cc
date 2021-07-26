@@ -101,7 +101,7 @@ void sbn::TrackHitFilter::produce(art::Event& e)
       const recob::TrackHitMeta &meta = *trkHitMetas[i_hit];
 
       // figure out if bad hit -- copy of what Calorimetry module does
-      bool badhit = (meta.Index() == std::numeric_limits<int>::max()) ||
+      bool badhit = (meta.Index() == std::numeric_limits<unsigned int>::max()) ||
                     (!track.HasValidPoint(meta.Index()));
       if (!badhit || fPassBadHits) {
         // save to output data

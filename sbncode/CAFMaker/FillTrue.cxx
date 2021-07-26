@@ -7,11 +7,6 @@
 #include <algorithm>
 
 // helper function declarations
-caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-caf::g4_process_ GetG4ProcessID(const std::string &name);
 
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
@@ -118,9 +113,24 @@ namespace caf {
 
   }//FillSliceTruth
 
+ void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
+                         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const cheat::ParticleInventoryService &inventory_service,
+                         const detinfo::DetectorClocksData &clockData,
+                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
+  {
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
+    if(tmatch.index >= 0) FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
+  }//FillSliceFakeReco
+
+
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
       const simb::MCFlux &mcflux,
+      const simb::GTruth& gtruth,
       const std::vector<caf::SRTrueParticle> &srparticles,
       const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
       caf::SRTrueInteraction &srneutrino, size_t i) {
@@ -184,6 +194,17 @@ namespace caf {
       srneutrino.plane2nhit = planehitIDs[2].size();
     }
 
+    // Set the GTruth stuff
+    srneutrino.npiplus = gtruth.fNumPiPlus;
+    srneutrino.npiminus = gtruth.fNumPiMinus;
+    srneutrino.npizero = gtruth.fNumPi0;
+    srneutrino.nproton = gtruth.fNumProton;
+    srneutrino.nneutron = gtruth.fNumNeutron;
+    srneutrino.ischarm = gtruth.fIsCharm;
+    srneutrino.isseaquark = gtruth.fIsSeaQuark;
+    srneutrino.resnum = gtruth.fResNum;
+    srneutrino.xsec = gtruth.fXsec;
+
     // Set the MCFlux stuff
     srneutrino.initpdg = mcflux.fntype;
     srneutrino.baseline = mcflux.fdk2gen + mcflux.fgen2vtx;
@@ -206,6 +227,7 @@ namespace caf {
       srneutrino.iscc = (!nu.CCNC()) && (nu.Mode() != simb::kWeakMix);
       srneutrino.pdg = nu.Nu().PdgCode();
       srneutrino.targetPDG = nu.Target();
+      srneutrino.hitnuc = nu.HitNuc();
       srneutrino.genie_intcode = nu.Mode();
       srneutrino.bjorkenX = nu.X();
       srneutrino.inelasticityY = nu.Y();
@@ -214,6 +236,7 @@ namespace caf {
       srneutrino.E = nu.Nu().EndMomentum().Energy();
       srneutrino.momentum = nu.Nu().EndMomentum().Vect();
       srneutrino.position = nu.Nu().Position().Vect();
+      srneutrino.genweight = nu.Nu().Weight();
 
       const simb::MCParticle& lepton = nu.Lepton();
       TLorentzVector q_labframe;
@@ -400,7 +423,7 @@ namespace caf {
     srparticle.pdg = particle.PdgCode();
 
     srparticle.gen = particle.NumberTrajectoryPoints() ? particle.Position().Vect() : TVector3(-9999, -9999, -9999);
-    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T(): -9999;
+    srparticle.genT = particle.NumberTrajectoryPoints() ? particle.Position().T() / 1000. /* ns -> us*/: -9999;
     srparticle.genp = particle.NumberTrajectoryPoints() ? particle.Momentum().Vect(): TVector3(-9999, -9999, -9999);
     srparticle.genE = particle.NumberTrajectoryPoints() ? particle.Momentum().E(): -9999;
 
@@ -521,6 +544,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   // length cut
   float contained_length_cut = 50.; // cm
   float exiting_length_cut = 100.; // cm
+
+  fakereco.filled = false;
 
   // first check if neutrino exists
   if (!mctruth.NeutrinoSet()) return false;
@@ -647,11 +672,12 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
     fakereco.wgt = 1.;
   }
   fakereco.nhad = fakereco.hadrons.size();
+  fakereco.filled = true;
 
   return true;
 }
 
-caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
+caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
@@ -693,7 +719,7 @@ caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, co
 
 //------------------------------------------
 
-caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
+caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
 #define MATCH_PROCESS(name) if (process_name == #name) {return caf::kG4 ## name;}
 #define MATCH_PROCESS_NAMED(strname, id) if (process_name == #strname) {return caf::kG4 ## id;}
   MATCH_PROCESS(primary)

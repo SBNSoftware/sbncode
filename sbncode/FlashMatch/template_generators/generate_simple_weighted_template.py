@@ -29,13 +29,19 @@ import numpy as np
 from time import sleep
 from array import array
 
-from ROOT import TStyle, TCanvas, TGraph, TGraphErrors
-from ROOT import TH1D, TH2D, TProfile, TFile
+from ROOT import TStyle, TCanvas, TColor, TGraph, TGraphErrors
+from ROOT import TH1D, TH2D, TProfile, TFile, TF1
 from ROOT import gROOT
 import ROOT
-# import project_utilities
-import larbatch_posix
-import fhicl
+
+try:
+    # import project_utilities
+    import larbatch_posix
+    import fhicl
+except ImportError:
+    print("Failed to import 'larbatch_posix' or 'fhicl' modules")
+    print("Setup 'fhiclpy' first:\n\tsetup fhiclpy vV_VV_VV -q QQQ:QQQQ")
+    exit(1)
 
 
 class dotDict(dict):
@@ -84,6 +90,17 @@ def generator(nuslice_tree, rootfile, pset):
     dist_to_anode_bins = n_bins
     dist_to_anode_low = 0.
     dist_to_anode_up = drift_distance
+    if detector == "sbnd":
+        x_gl_low = -215
+        x_gl_up = 215
+    elif detector == "icarus":
+        if pset.Cryostat == 0:
+            x_gl_low = -380
+            x_gl_up = -50
+        if pset.Cryostat == 1:
+            x_gl_low = 380
+            x_gl_up = 50
+
     profile_bins = n_bins
     profile_option = 's'  # errors are the standard deviation
 
@@ -127,35 +144,44 @@ def generator(nuslice_tree, rootfile, pset):
                    dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                    pset.rr_bins, pset.rr_low, pset.rr_up)
     rr_hist.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_hist.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_hist.GetYaxis().SetTitle("spread (cm)")
     rr_prof = TProfile("rr_prof", "Profile of PE Spread",
                        profile_bins, dist_to_anode_low, dist_to_anode_up,
                        pset.rr_low, pset.rr_up, profile_option)
     rr_prof.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_prof.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_prof.GetYaxis().SetTitle("spread (cm)")
     rr_h1 = TH1D("rr_h1", "",
                  profile_bins, dist_to_anode_low, dist_to_anode_up)
     rr_h1.GetXaxis().SetTitle("distance from anode (cm)")
-    rr_h1.GetYaxis().SetTitle("RMS flash (cm)")
+    rr_h1.GetYaxis().SetTitle("spread (cm)")
 
-    if detector == "sbnd":
-        pe_spreads = [None] * n_bins
-        pe_means = [None] * n_bins
-        pe_hist = TH2D("pe_hist", "Uncoated/Coated Ratio",
-                       dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
-                       pset.pe_bins, pset.pe_low, pset.pe_up)
-        pe_hist.GetXaxis().SetTitle("distance from anode (cm)")
-        pe_hist.GetYaxis().SetTitle("ratio_{uncoated/coated}")
-        pe_prof = TProfile("pe_prof", "Profile of Uncoated/Coated Ratio",
-                           profile_bins, dist_to_anode_low, dist_to_anode_up,
-                           pset.pe_low, pset.pe_up, profile_option)
-        pe_prof.GetXaxis().SetTitle("distance from anode (cm)")
-        pe_prof.GetYaxis().SetTitle("ratio_{uncoated/coated}")
-        pe_h1 = TH1D("pe_h1", "",
-                     profile_bins, dist_to_anode_low, dist_to_anode_up)
-        pe_h1.GetXaxis().SetTitle("distance from anode (cm)")
-        pe_h1.GetYaxis().SetTitle("ratio_{uncoated/coated}")
+    pe_spreads = [None] * n_bins
+    pe_means = [None] * n_bins
+    pe_hist = TH2D("pe_hist", "PE Ratio",
+                   dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
+                   pset.pe_bins, pset.pe_low, pset.pe_up)
+    pe_hist.GetXaxis().SetTitle("distance from anode (cm)")
+    pe_hist.GetYaxis().SetTitle("ratio")
+    pe_prof = TProfile("pe_prof", "Profile of PE Ratio",
+                       profile_bins, dist_to_anode_low, dist_to_anode_up,
+                       pset.pe_low, pset.pe_up, profile_option)
+    pe_prof.GetXaxis().SetTitle("distance from anode (cm)")
+    pe_prof.GetYaxis().SetTitle("ratio")
+    pe_h1 = TH1D("pe_h1", "",
+                 profile_bins, dist_to_anode_low, dist_to_anode_up)
+    pe_h1.GetXaxis().SetTitle("distance from anode (cm)")
+    pe_h1.GetYaxis().SetTitle("ratio")
 
+    unfolded_score_scatter = TH2D("unfolded_score_scatter", "Scatter plot of match scores",
+                                  2*dist_to_anode_bins, x_gl_low, x_gl_up,
+                                  pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+    unfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
+    unfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
+    oldunfolded_score_scatter = TH2D("oldunfolded_score_scatter", "Scatter plot of match scores, old metrics",
+                                  2*dist_to_anode_bins, x_gl_low, x_gl_up,
+                                  pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+    oldunfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
+    oldunfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_scatter = TH2D("match_score_scatter", "Scatter plot of match scores",
                                dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
                                pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
@@ -166,17 +192,16 @@ def generator(nuslice_tree, rootfile, pset):
     match_score_hist.GetXaxis().SetTitle("match score (arbitrary)")
 
     for e in nuslice_tree:
-        slice = e.charge_x
+        qX = e.charge_x
 
-        dy_hist.Fill(slice, e.flash_y - e.charge_y)
-        dy_prof.Fill(slice, e.flash_y - e.charge_y)
-        dz_hist.Fill(slice, e.flash_z - e.charge_z)
-        dz_prof.Fill(slice, e.flash_z - e.charge_z)
-        rr_hist.Fill(slice, e.flash_r)
-        rr_prof.Fill(slice, e.flash_r)
-        if detector == "sbnd":
-            pe_hist.Fill(slice, e.flash_ratio)
-            pe_prof.Fill(slice, e.flash_ratio)
+        dy_hist.Fill(qX, e.flash_y - e.charge_y)
+        dy_prof.Fill(qX, e.flash_y - e.charge_y)
+        dz_hist.Fill(qX, e.flash_z - e.charge_z)
+        dz_prof.Fill(qX, e.flash_z - e.charge_z)
+        rr_hist.Fill(qX, e.flash_r)
+        rr_prof.Fill(qX, e.flash_r)
+        pe_hist.Fill(qX, e.flash_ratio)
+        pe_prof.Fill(qX, e.flash_ratio)
 
     # fill histograms for match score calculation from profile histograms
     for ib in list(range(0, profile_bins)):
@@ -193,46 +218,56 @@ def generator(nuslice_tree, rootfile, pset):
         rr_h1.SetBinError(ibp, rr_prof.GetBinError(ibp))
         rr_means[int(ib)] = rr_prof.GetBinContent(ibp)
         rr_spreads[int(ib)] = rr_prof.GetBinError(ibp)
-        if detector == "sbnd":
-            pe_h1.SetBinContent(ibp, pe_prof.GetBinContent(ibp))
-            pe_h1.SetBinError(ibp, pe_prof.GetBinError(ibp))
-            pe_means[int(ib)] = pe_prof.GetBinContent(ibp)
-            pe_spreads[int(ib)] = pe_prof.GetBinError(ibp)
+        pe_h1.SetBinContent(ibp, pe_prof.GetBinContent(ibp))
+        pe_h1.SetBinError(ibp, pe_prof.GetBinError(ibp))
+        pe_means[int(ib)] = pe_prof.GetBinContent(ibp)
+        pe_spreads[int(ib)] = pe_prof.GetBinError(ibp)
 
     for e in nuslice_tree:
-        slice = e.charge_x
+        qX = e.charge_x
+        qXGl = e.charge_x_gl
         # calculate match score
-        isl = int(slice/bin_width)
+        isl = int(qX/bin_width)
         score = 0.
         if dy_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. dy_spreads[isl]: {dy_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. dy_spreads[isl]: {dy_spreads[isl]} ")
             dy_spreads[isl] = dy_spreads[isl+1]
         if dz_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. dz_spreads[isl]: {dz_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. dz_spreads[isl]: {dz_spreads[isl]} ")
             dz_spreads[isl] = dz_spreads[isl+1]
         if rr_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. rr_spreads[isl]: {rr_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. rr_spreads[isl]: {rr_spreads[isl]} ")
             rr_spreads[isl] = rr_spreads[isl+1]
-        if detector == "sbnd" and pe_spreads[isl] <= 1.e-8:
+        if pe_spreads[isl] <= 1.e-8:
             print("Warning zero spread.\n",
-                  f"slice: {slice}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
+                  f"qX: {qX}. isl: {isl}. pe_spreads[isl]: {pe_spreads[isl]} ")
             pe_spreads[isl] = pe_spreads[isl+1]
+            # pe_spreads[isl] = pe_spreads[isl-1]
         score += abs(abs(e.flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
         score += abs(abs(e.flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_r-rr_means[isl])/rr_spreads[isl]
-        if detector == "sbnd" and pset.UseUncoatedPMT:
+        if (detector == "sbnd" and pset.UseUncoatedPMT) or \
+           (detector == "icarus" and pset.UseOppVolMetric) :
             score += abs(e.flash_ratio-pe_means[isl])/pe_spreads[isl]
-        match_score_scatter.Fill(slice, score)
+
+        oldunfolded_score_scatter.Fill(qXGl, e.score)
+        unfolded_score_scatter.Fill(qXGl, score)
+        match_score_scatter.Fill(qX, score)
         match_score_hist.Fill(score)
+
+    errors = [1, 0, -1]
+    fitname_suffix = ["_h", "_m", "_l"]
+
     metrics_filename = 'fm_metrics_' + detector + '.root'
     hfile = gROOT.FindObject(metrics_filename)
     if hfile:
         hfile.Close()
     hfile = TFile(metrics_filename, 'RECREATE',
                   'Simple flash matching metrics for ' + detector.upper())
+
     dy_hist.Write()
     dy_prof.Write()
     dy_h1.Write()
@@ -242,11 +277,34 @@ def generator(nuslice_tree, rootfile, pset):
     rr_hist.Write()
     rr_prof.Write()
     rr_h1.Write()
-    if detector == "sbnd":
-        pe_hist.Write()
-        pe_prof.Write()
-        pe_h1.Write()
+    rr_fit_funcs = []
+    for e,suf in zip(errors, fitname_suffix):
+        yvals = [a + e*b for a, b in zip(rr_means, rr_spreads)]
+        graph = TGraph(n_bins,
+                       array('f', xvals), array('f', yvals))
+        name = "rr_fit" + suf
+        print("Fitting: ", name)
+        f = TF1(name, "pol3")
+        graph.Fit(f)
+        f.Write()
+        rr_fit_funcs.append(f)
+    pe_hist.Write()
+    pe_prof.Write()
+    pe_h1.Write()
+    pe_fit_funcs = []
+    for e,suf in zip(errors, fitname_suffix):
+        yvals = [a + e*b for a, b in zip(pe_means, pe_spreads)]
+        graph = TGraph(n_bins,
+                       array('f', xvals), array('f', yvals))
+        name = "pe_fit" + suf
+        print("Fitting: ", name)
+        f = TF1(name, "pol3")
+        graph.Fit(f)
+        f.Write()
+        pe_fit_funcs.append(f)
     match_score_scatter.Write()
+    oldunfolded_score_scatter.Write()
+    unfolded_score_scatter.Write()
     match_score_hist.Write()
     hfile.Close()
 
@@ -256,7 +314,7 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', dy_means),
                            array('f', xerrs), array('f', dy_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
     canv.Print("dy.pdf")
@@ -266,7 +324,7 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', dz_means),
                            array('f', xerrs), array('f', dz_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
     canv.Print("dz.pdf")
@@ -276,22 +334,35 @@ def generator(nuslice_tree, rootfile, pset):
     crosses = TGraphErrors(n_bins,
                            array('f', xvals), array('f', rr_means),
                            array('f', xerrs), array('f', rr_spreads))
-    crosses.SetLineColor(9)
+    crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
+    for f in rr_fit_funcs:
+        f.SetLineColor(ROOT.kOrange+7)
+        f.DrawF1(0., drift_distance, "lsame")
     canv.Print("rr.pdf")
     canv.Update()
 
-    if detector == "sbnd":
-        pe_hist.Draw()
-        crosses = TGraphErrors(n_bins,
-                               array('f', xvals), array('f', pe_means),
-                               array('f', xerrs), array('f', pe_spreads))
-        crosses.SetLineColor(9)
-        crosses.SetLineWidth(3)
-        crosses.Draw("Psame")
-        canv.Print("pe.pdf")
-        canv.Update()
+    pe_hist.Draw()
+    crosses = TGraphErrors(n_bins,
+                           array('f', xvals), array('f', pe_means),
+                           array('f', xerrs), array('f', pe_spreads))
+    crosses.SetLineColor(ROOT.kAzure+9)
+    crosses.SetLineWidth(3)
+    crosses.Draw("Psame")
+    for f in pe_fit_funcs:
+        f.SetLineColor(ROOT.kOrange+7)
+        f.DrawF1(0., drift_distance, "lsame")
+    canv.Print("pe.pdf")
+    canv.Update()
+
+    oldunfolded_score_scatter.Draw()
+    canv.Print("oldunfolded_score_scatter.pdf")
+    canv.Update()
+
+    unfolded_score_scatter.Draw()
+    canv.Print("unfolded_score_scatter.pdf")
+    canv.Update()
 
     match_score_scatter.Draw()
     canv.Print("match_score_scatter.pdf")
@@ -344,7 +415,7 @@ def main():
         nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
         # nuslice_tree.Print()
     elif args.icarus:
-        fcl_params = fhicl.make_pset('flashmatch_icarus.fcl')
+        fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
         # TODO: add option to use cryo 0 and cryo 1
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
         detector = "icarus"
