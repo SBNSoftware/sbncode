@@ -108,10 +108,22 @@ namespace caf
       "pandoraShowerSBN"
     };
 
+    Atom<string> ShowerRazzleLabel {
+      Name("ShowerRazzleLabel"),
+      Comment("Base label of shower mva particle-id producer."),
+      "pandoraShowerRazzle"
+    };
+
     Atom<string> RecoShowerSelectionLabel {
       Name("RecoShowerSelectionLabel"),
       Comment("Base label of shower selection vars producer."),
       "pandoraShowerSelectionVars"
+    };
+
+    Atom<string> ShowerCosmicDistLabel {
+      Name("ShowerCosmicDistLabel"),
+      Comment("Base label of shower selection vars producer."),
+      "pandoraShowerCosmicDist"
     };
 
     Atom<string> TrackCaloLabel {
@@ -120,10 +132,28 @@ namespace caf
       "pandoraCalo"
     };
 
-    Atom<string> TrackPidLabel {
-      Name("TrackPidLabel"),
-      Comment("Base label of track particle-id producer."),
+    Atom<string> TrackChi2PidLabel {
+      Name("TrackChi2PidLabel"),
+      Comment("Base label of track chi2 particle-id producer."),
       "pandoraPid"
+    };
+
+    Atom<string> TrackScatterClosestApproachLabel {
+      Name("TrackScatterClosestApproachLabel"),
+      Comment("Base label of track track scatter closestapproach producer."),
+      "pandoraTrackClosestApproach"
+    };
+
+    Atom<string> TrackStoppingChi2FitLabel {
+      Name("TrackStoppingChi2FitLabel"),
+      Comment("Base label of track stopping chi2 fit producer."),
+      "pandoraTrackStoppingChi2"
+    };
+
+    Atom<string> TrackDazzleLabel {
+      Name("TrackDazzleLabel"),
+      Comment("Base label of track mva particle-id producer."),
+      "pandoraTrackDazzle"
     };
 
     Atom<string> CRTHitMatchLabel {
@@ -180,13 +210,6 @@ namespace caf
       "largeant"
     };
 
-    fhicl::Sequence<float, 3u> CalorimetryConstants {
-      Name("CalorimetryConstants"),
-      Comment("Constants to convert ADC*tick charge measurement to electrons."
-              "Ordered 1st Induction, 2nd Induction, Collection."
-              "In units of ADC*tick / electrons")
-    };
-
     Atom<bool> FillTrueParticles {
       Name("FillTrueParticles"),
       Comment("Whether to fill the rec.true_particles branch. The information on true particles"
@@ -198,6 +221,31 @@ namespace caf
       Name("SystWeightLabel"),
       Comment("Label for EventWeightMap objects for mc.nu.wgt")
     };
+
+    Atom<bool> FillHitsAllSlices {
+      Name("FillHitsAllSlices"),
+      Comment("Fill per-hit information in all reconstructed slices."),
+      false
+    };
+
+    Atom<bool> FillHitsNeutrinoSlices {
+      Name("FillHitsNeutrinoSlices"),
+      Comment("Fill per-hit information in neutrino ID-d reconstructed slices."),
+      true
+    };
+
+    Atom<float> TrackHitFillRRStartCut {
+      Name("TrackHitFillRRStartCut"),
+      Comment("How long from the start of a track to save calo-point information. Set to -1 to save nothing"),
+      5.
+    };
+
+    Atom<float> TrackHitFillRREndCut {
+      Name("TrackHitFillRREndCut"),
+      Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
+      25.
+    };
+
   };
 }
 

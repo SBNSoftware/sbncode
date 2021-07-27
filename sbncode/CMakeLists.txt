@@ -11,9 +11,11 @@ add_subdirectory(OpT0Finder)
 add_subdirectory(CAFMaker)
 add_subdirectory(Metadata)
 
+add_subdirectory(Calibration)
 add_subdirectory(FlashMatch)
 add_subdirectory(LArRecoProducer)
 add_subdirectory(TPCReco)
 
 add_subdirectory(FluxReader)
 add_subdirectory(EventGenerator)
+add_subdirectory(PID)

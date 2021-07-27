@@ -50,7 +50,6 @@ namespace fluxr {
 
     FluxInterface*                fFluxDriver;
     TFile*                        fFluxInputFile;
-    int                           fNuPdgCode[4];
     TH1D*                         fHFlux[4];
     TH1D*                         fHFluxParent[4][4];
     TH1D*                         fHFluxSec[4][5];
