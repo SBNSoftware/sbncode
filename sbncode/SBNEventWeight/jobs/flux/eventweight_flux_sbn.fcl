@@ -23,8 +23,8 @@ sbn_eventweight_flux: {
     horncurrent, expskin,
 	pioninexsec, pionqexsec, piontotxsec,
 	nucleoninexsec, nucleonqexsec, nucleontotxsec,
-	kplus,kminus,kzero,
-	piplus,piminus
+	kplus, kminus, kzero,
+	piplus, piminus
   ]
 
   horncurrent: {

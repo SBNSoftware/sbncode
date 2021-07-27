@@ -184,20 +184,21 @@ namespace sbn {
 
           }else  validC = false;//slightly incorrect calculator name in *fcl
 
-        }//end of special Hadron calculator configurations
-
-        if(validC){//load random numbers based on FitCov
-          //{2*multisim vector}
-          //{{Ncols() elements}} <-- feed these amount everytime;
-          for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
-            fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
+          if(validC){//load random numbers based on FitCov
+            //{2*multisim vector}
+            //{{Ncols() elements}} <-- feed these amount everytime;
+            for( int index = 1; index < 2*(FitCov->GetNcols()); index ++){
+              fParameterSet.Sample(engine);//load it 2*<number_of_multisims> times
+            }
+  
+          }else {
+            throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+              <<" calculator "+CalcType + "is invalid"
+              <<std::endl;
           }
 
-        }else {
-          throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-            <<" calculator "+CalcType + "is invalid"
-            <<std::endl;
-        }
+
+        }//end of special Hadron calculator configurations
 
       } else  validC = false; //the calculator name is way too off.
       std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
