@@ -31,6 +31,8 @@ art_make(
 
   larpandora_LArPandoraInterface
 
+  # caf_RecoUtils //uncomment for creating metrics
+  # nusimdata_SimulationBase //uncomment for creating metrics
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${ROOT_GEOM}

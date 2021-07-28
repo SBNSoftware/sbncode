@@ -30,6 +30,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
+  , fStoreCheatMCT0(p.get<bool>("StoreCheatMCT0", false))
     // , fUseCalo(p.get<bool>("UseCalo", false))
   , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
@@ -151,7 +152,7 @@ void FlashPredict::produce(art::Event& evt)
     _sub = evt.subRun();
     _run = evt.run();
     _slices        = 0;
-    // _true_nus      = 0; //uncomment for creating metrics
+    // _true_nus      = -9999; //uncomment for creating metrics
     _flash_time    = -9999.;
     _flash_pe      = -9999.;
     _flash_unpe    = -9999.;
@@ -162,31 +163,20 @@ void FlashPredict::produce(art::Event& evt)
     _hypo_x_rr     = -9999.;
     _hypo_x_ratio  = -9999.;
     _score         = -9999.;
+    // if(fStoreCheatMCT0) _mcT0 = -9999.; //uncomment for creating metrics
   }
   bk.events++;
 
-  // // uncomment below for creating metrics
-  // // * MC truth information
+  // //uncomment below for creating metrics
   // art::Handle<std::vector<simb::MCTruth> > mctruthList_h;
   // std::vector<art::Ptr<simb::MCTruth> > mclist;
   // if(evt.getByLabel("generator", mctruthList_h))
   //   art::fill_ptr_vector(mclist, mctruthList_h);
   // _true_nus = 0;
   // for(auto const& mc: mclist){
-  //   //Only deal with neutrinos
-  //   if(mc->Origin() != simb::kBeamNeutrino){continue;}
-  //   ++_true_nus;
-  //   // Anything else you need to do with truth at this stage...
+  //   if(mc->Origin() == simb::kBeamNeutrino) ++_true_nus;
   // }
-  // // if (_true_nus > 1) {
-  // //   mf::LogWarning("FlashPredict") << "\t _true_nus:\t" << _true_nus << ". Skipping.";
-  // //   bk.noslice++;
-  // //   updateBookKeeping();
-  // //   e.put(std::move(T0_v));
-  // //   e.put(std::move(pfp_t0_assn_v));
-  // //   return;
-  // // }
-  // // uncomment above for creating metrics
+  // //uncomment above for creating metrics
 
   // grab PFParticles in event
   const auto pfps_h =
@@ -303,6 +293,7 @@ void FlashPredict::produce(art::Event& evt)
     const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
     const auto& qClusters = chargeDigest.second.qClusters;
     const auto& tpcWithHits = chargeDigest.second.tpcWithHits;
+    // _mcT0 = chargeDigest.second.mcT0; //uncomment for creating metrics
 
     unsigned hitsInVolume = 0;
     bool in_right = false, in_left = false;
@@ -435,7 +426,6 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("run", &_run, "run/I");
   _flashmatch_nuslice_tree->Branch("sub", &_sub, "sub/I");
   _flashmatch_nuslice_tree->Branch("slices", &_slices, "slices/I");
-  // _flashmatch_nuslice_tree->Branch("true_nus", &_true_nus, "true_nus/I"); // uncomment for creating metrics
   _flashmatch_nuslice_tree->Branch("flash_time", &_flash_time, "flash_time/D");
   _flashmatch_nuslice_tree->Branch("flash_x_gl", &_flash_x_gl, "flash_x_gl/D");
   _flashmatch_nuslice_tree->Branch("flash_x", &_flash_x, "flash_x/D");
@@ -463,6 +453,8 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("scr_ratio", &_scr_ratio, "scr_ratio/D");
   _flashmatch_nuslice_tree->Branch("y_skew", &_y_skew, "y_skew/D");
   _flashmatch_nuslice_tree->Branch("z_skew", &_z_skew, "z_skew/D");
+  // _flashmatch_nuslice_tree->Branch("true_nus", &_true_nus, "true_nus/I"); //uncomment for creating metrics
+  // if(fStoreCheatMCT0) _flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D"); //uncomment for creating metrics
 }
 
 
@@ -628,6 +620,29 @@ void FlashPredict::loadMetrics()
   infile->Close();
   delete infile;
   mf::LogInfo("FlashPredict") << "Finish loading metrics";
+}
+
+
+double FlashPredict::cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
+                               const std::vector<art::Ptr<simb::MCParticle>>& mcParticles)
+{
+  auto clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+  const std::vector<std::pair<int, float>> matches =
+    CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
+  int pidMaxEnergy = -1;
+  double maxEnergy = -10;
+  for(auto& m : matches){
+    if(m.second > maxEnergy){
+      pidMaxEnergy = m.first;
+      maxEnergy = m.second;
+    }
+  }
+  for(auto& mcp: mcParticles){
+    if(mcp->TrackId() == pidMaxEnergy){
+      return mcp->Position().T();
+    }
+  }
+  return -9999999.;
 }
 
 
@@ -991,6 +1006,13 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
   // art::FindManyP<anab::Calorimetry>  track_calo_assn_v(calo_h,
   //                                                      evt, fCaloProducer);
 
+  // //uncomment for creating metrics
+  // std::vector<art::Ptr<simb::MCParticle>> mcParticles;
+  // if(fStoreCheatMCT0){
+  //   lar_pandora::LArPandoraHelper::CollectMCParticles(evt, "largeant", mcParticles);
+  // }
+  // //uncomment for creating metrics
+
   std::unordered_map<size_t, size_t> pfpMap;
   for(size_t pId=0; pId<pfps_h->size(); pId++) {
     pfpMap[pfps_h->at(pId).Self()] = pId;
@@ -1041,6 +1063,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     addDaughters(pfpMap, pfp_ptr, pfps_h, particles_in_slice);
 
     double sliceQ = 0.;
+    // std::vector<art::Ptr<recob::Hit>> hits_in_slice;//uncomment for creating metrics
     flashmatch::QCluster_t particlesClusters;
     for(const auto& particle: particles_in_slice) {
       const auto particle_key = particle.key();
@@ -1050,6 +1073,12 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
       for(const auto& spacepoint : particle_spacepoints) {
         const auto spacepoint_key = spacepoint.key();
         const auto& hits = spacepoint_hits_assns.at(spacepoint_key);
+        // //uncomment for creating metrics
+        // if(fStoreCheatMCT0){
+        //   hits_in_slice.insert(hits_in_slice.end(),
+        //                        hits.begin(), hits.end());
+        // }
+        // //uncomment for creating metrics
         const auto& pos = spacepoint->XYZ();
         double spacepointQ = 0.;
         flashmatch::QCluster_t hitsClusters;
@@ -1080,6 +1109,13 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     if(sliceQ < fMinSliceQ) continue;
     chargeDigestMap[sliceQ] =
       ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, tpcWithHits);
+
+    // //uncomment this instead of above line for running with metrics
+    // double mcT0 = (fStoreCheatMCT0) ? cheatMCT0(hits_in_slice, mcParticles)/1000.
+    //   : -9999.;
+    // chargeDigestMap[sliceQ] =
+    //   ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, tpcWithHits, mcT0);
+    // //uncomment this instead of above line for running with metrics
   } // over all slices
   return chargeDigestMap;
 }
@@ -1589,10 +1625,11 @@ void FlashPredict::printMetrics(const std::string metric,
     << "xbin:        \t" << xbin << "\n"
     << "pfp.PdgCode:\t" << pdgc << "\n"
     << "tpcWithHits:\t" << tpcs << "\n"
-    << "_slices:    \t" << std::setw(8) << _slices     << "\n"
-    // << "_true_nus:  \t" << std::setw(8) << _true_nus   << "\n" // uncomment for creating metrics
-    << "charge metrics:\n" << charge.dumpMetrics() << "\n"
-    << "flash metrics:\n"  << flash.dumpMetrics() << "\n";
+    << "_slices:    \t" << std::setw(8) << _slices   << "\n"
+    // << "_true_nus:  \t" << std::setw(8) << _true_nus << "\n" //uncomment for creating metrics
+    // << "_mcT0:      \t" << std::setw(8) << _mcT0     << "\n" //uncomment for creating metrics
+    << "charge metrics:\n" << charge.dumpMetrics()   << "\n"
+    << "flash metrics:\n"  << flash.dumpMetrics()    << "\n";
 }
 
 

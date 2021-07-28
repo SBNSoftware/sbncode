@@ -1,12 +1,6 @@
 #ifndef SBN_FLASHMATCH_FLASHPREDICT_HH
 #define SBN_FLASHMATCH_FLASHPREDICT_HH
 
-// save diagnostic state
-//#pragma GCC diagnostic push
-
-// turn off the specific warning. Can also use "-Wall"
-//#pragma GCC diagnostic ignored "-Wconversion"
-
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -41,6 +35,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 // #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+// #include "nusimdata/SimulationBase/MCParticle.h" //uncomment for creating metrics
 
 #include "TTree.h"
 #include "TF1.h"
@@ -48,14 +43,13 @@
 #include "TH1.h"
 #include "TH2.h"
 
+// #include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" //uncomment for creating metrics
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 
 // #include "nusimdata/SimulationBase/MCParticle.h" //uncomment for creating metrics
 // #include "nusimdata/SimulationBase/MCTruth.h" //uncomment for creating metrics
-// turn the warnings back on
-//#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <iterator>
@@ -91,6 +85,7 @@ public:
     art::Ptr<recob::PFParticle> pfp_ptr;
     flashmatch::QCluster_t qClusters;
     std::set<unsigned> tpcWithHits;
+    double mcT0 = -9999;
     ChargeDigest() = default;
     ChargeDigest(const size_t pId_, const int pfpPDGC_,
                  const art::Ptr<recob::PFParticle>& pfp_ptr_,
@@ -98,6 +93,14 @@ public:
                  const std::set<unsigned>& tpcWithHits_) :
       pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
       qClusters(qClusters_), tpcWithHits(tpcWithHits_)
+      {}
+    ChargeDigest(const size_t pId_, const int pfpPDGC_,
+                 const art::Ptr<recob::PFParticle>& pfp_ptr_,
+                 const flashmatch::QCluster_t& qClusters_,
+                 const std::set<unsigned>& tpcWithHits_,
+                 const double mcT0_) :
+      pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
+      qClusters(qClusters_), tpcWithHits(tpcWithHits_), mcT0(mcT0_)
       {}
   };
   using ChargeDigestMap = std::map<double, ChargeDigest, std::greater<double>>;
@@ -202,6 +205,8 @@ private:
   // art::InputTag fFlashProducer;
   void initTree(void);
   void loadMetrics(void);
+  double cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
+                   const std::vector<art::Ptr<simb::MCParticle>>& mcParticles);
   ChargeMetrics computeChargeMetrics(
     const flashmatch::QCluster_t& qClusters) const;
   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
@@ -292,6 +297,7 @@ private:
   const bool fForceConcurrence;
   const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
+  const bool fStoreCheatMCT0;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
@@ -348,7 +354,9 @@ private:
     _hypo_x, _hypo_x_err, _hypo_x_rr, _hypo_x_ratio,
     _y_skew, _z_skew;
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio;
-  unsigned _evt, _run, _sub, _slices;//, _true_nus; // uncomment for creating metrics
+  unsigned _evt, _run, _sub;
+  unsigned _slices = -1; unsigned _true_nus = -1;
+  double _mcT0 = -9999.;
 
   std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans;
   std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads;
