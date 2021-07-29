@@ -326,12 +326,12 @@ private:
   const unsigned fOpDetNormalizer;
   const double fTermThreshold;
 
-  const unsigned kRght = 0;
-  const unsigned kLeft = 1;
+  static constexpr unsigned kRght = 0;
+  static constexpr unsigned kLeft = 1;
 
-  const unsigned kActivityInRght = 100;
-  const unsigned kActivityInLeft = 200;
-  const unsigned kActivityInBoth = 300;
+  static constexpr unsigned kActivityInRght = 100;
+  static constexpr unsigned kActivityInLeft = 200;
+  static constexpr unsigned kActivityInBoth = 300;
 
   // root stuff
   TTree* _flashmatch_nuslice_tree;
@@ -340,11 +340,11 @@ private:
     std::unique_ptr<TF1> f;
   };
   TH2D* fRRH2; TH2D* fRatioH2;
-  const unsigned kMinEntriesInProjection = 100;
+  static constexpr unsigned kMinEntriesInProjection = 100;
   std::array<Fits, 3> fRRFits;
   std::array<Fits, 3> fRatioFits;
   const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
-  const double kEps = 1e-4;
+  static constexpr double kEps = 1e-4;
 
   // Tree variables
   double _charge_x_gl, _charge_x,
@@ -361,19 +361,19 @@ private:
   std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans;
   std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads;
 
-  const bool kNoScr = false;
-  const double kNoScrTime = -9999.;
-  const double kNoScrQ  = -9999.;
-  const double kNoScrPE = -9999.;
-  const int kQNoOpHScr = -1;
-  const int kNoChrgScr = -2;
-  const int k0VUVPEScr = -3;
-  const int kNoOpHInEvt = -11;
-  const int kNoPFPInEvt = -12;
-  // const int kNoSlcInEvt = -13;
+  static constexpr bool kNoScr = false;
+  static constexpr double kNoScrTime = -9999.;
+  static constexpr double kNoScrQ  = -9999.;
+  static constexpr double kNoScrPE = -9999.;
+  static constexpr int kQNoOpHScr = -1;
+  static constexpr int kNoChrgScr = -2;
+  static constexpr int k0VUVPEScr = -3;
+  static constexpr int kNoOpHInEvt = -11;
+  static constexpr int kNoPFPInEvt = -12;
+  static constexpr int kNoSlcInEvt = -13;
   struct BookKeeping {
     int job_bookkeeping, events_processed;
-    unsigned events, nopfpneutrino,// noslice,
+    unsigned events, nopfpneutrino, noslice,
       nullophittime, nonvalidophit;
 
     int pfp_bookkeeping, scored_pfp;

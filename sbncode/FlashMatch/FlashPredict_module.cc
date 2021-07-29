@@ -128,7 +128,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   loadMetrics();
 
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
-  // consumes<std::vector<recob::Slice>>(fPandoraProducer);
+  consumes<std::vector<recob::Slice>>(fPandoraProducer);
   consumes<art::Assns<recob::SpacePoint, recob::PFParticle>>(fPandoraProducer);
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
@@ -202,23 +202,23 @@ void FlashPredict::produce(art::Event& evt)
   if(fMakeTree){
     auto const& slice_h = evt.getValidHandle<std::vector<recob::Slice>>(fPandoraProducer);
     _slices = slice_h.product()->size();
+    if (_slices == 0) {
+      mf::LogWarning("FlashPredict")
+        << "No recob:Slice on event. Skipping...";
+      bk.noslice++;
+      updateBookKeeping();
+      for(size_t pId=0; pId<pfps_h->size(); pId++) {
+        if(!pfps_h->at(pId).IsPrimary()) continue;
+        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                                Flash(kNoScrPE), Score(kNoSlcInEvt)));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      }
+      evt.put(std::move(sFM_v));
+      evt.put(std::move(pfp_sFM_assn_v));
+      return;
+    }
   }
-  // if (_slices == 0) {
-  //   mf::LogWarning("FlashPredict")
-  //     << "No recob:Slice on event. Skipping...";
-  //   bk.noslice++;
-  //   updateBookKeeping();
-  //   for(size_t pId=0; pId<pfps_h->size(); pId++) {
-  //     if(!pfps_h->at(pId).IsPrimary()) continue;
-  //     const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-  //     sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-  //                             Flash(kNoScrPE), Score(kNoSlcInEvt)));
-  //     util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-  //   }
-  //   evt.put(std::move(sFM_v));
-  //   evt.put(std::move(pfp_sFM_assn_v));
-  //   return;
-  // }
 
   // load OpHits previously created
   art::Handle<std::vector<recob::OpHit>> ophits_h;
@@ -1549,10 +1549,10 @@ void FlashPredict::printBookKeeping(Stream&& out)
     m << "\tNo PFP Neutrino:  \t -" << bk.nopfpneutrino
       << ", scored as: " << kNoPFPInEvt << "\n";
   }
-  // if(bk.noslice) {
-  //   m << "\tNo Slice:         \t -" << bk.noslice
-  //     << ", scored as: " << kNoSlcInEvt << "\n";
-  // }
+  if(bk.noslice) {
+    m << "\tNo Slice:         \t -" << bk.noslice
+      << ", scored as: " << kNoSlcInEvt << "\n";
+  }
   if(bk.nonvalidophit) {
     m << "\tNon Valid OpHits: \t -" << bk.nonvalidophit
       << ", scored as: " << kNoOpHInEvt << "\n";
@@ -1593,7 +1593,7 @@ void FlashPredict::updateBookKeeping()
 {
   // account for the reasons that an event could lack
   bk.job_bookkeeping = bk.events
-    - bk.nopfpneutrino //- bk.noslice
+    - bk.nopfpneutrino - bk.noslice
     - bk.nonvalidophit - bk.nullophittime;
 
   // account for the reasons that a particle might lack
