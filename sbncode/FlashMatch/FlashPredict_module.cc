@@ -749,7 +749,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
         y_correction = (std::abs(flash.y_skew)<10) ?
           flash.y_skew * flash.h_x*flash.h_x * fYBiasSlope : 0.;
         z_correction = (std::abs(flash.z_skew)<10) ?
-          flash.z_skew * flash.h_x * fZBiasSlope : 0.;
+          flash.z_skew * flash.h_x*flash.h_x * fZBiasSlope : 0.;
       }
       else{// fICARUS
         y_correction = (std::abs(flash.y_skew)<10) ?
