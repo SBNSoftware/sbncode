@@ -317,9 +317,8 @@ private:
   const int fXBins;
   const double fXBinWidth;
   const std::string fRR_TF1_fit, fRatio_TF1_fit;
-  unsigned fYBins,fZBins;
-  double fYLow, fYHigh, fZLow, fZHigh;
-  double fYSkewThreshold, fZSkewThreshold;
+  const unsigned fYBins,fZBins;
+  const double fYLow, fYHigh, fZLow, fZHigh;
   const double fYBiasSlope, fZBiasSlope;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;

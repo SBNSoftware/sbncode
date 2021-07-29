@@ -19,8 +19,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fClockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob())
   , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
-  , fBeamWindowStart(p.get<double>("BeamWindowStart")) //us // TODO: should come from service
-  , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// us // TODO: should come from service
+  , fBeamWindowStart(p.get<double>("BeamWindowStart")) //us
+  , fBeamWindowEnd(p.get<double>("BeamWindowEnd"))// us
   , fFlashStart(p.get<double>("FlashStart")) // in us w.r.t. flash time
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
@@ -57,6 +57,12 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fXBinWidth(fDriftDistance/fXBins)// cm
   , fRR_TF1_fit(p.get<std::string>("rr_TF1_fit", "pol3"))
   , fRatio_TF1_fit(p.get<std::string>("ratio_TF1_fit", "pol3"))
+  , fYBins(p.get<unsigned>("YBins", 0.))
+  , fZBins(p.get<unsigned>("ZBins", 0.))
+  , fYLow(p.get<double>("YLow", 0.))
+  , fYHigh(p.get<double>("YHigh", 0.))
+  , fZLow(p.get<double>("ZLow", 0.))
+  , fZHigh(p.get<double>("ZHigh", 0.))
   , fYBiasSlope(p.get<double>("YBiasSlope", 0.))
   , fZBiasSlope(p.get<double>("ZBiasSlope", 0.))
   , fOpDetNormalizer((fSBND) ? 4 : 1)
@@ -84,11 +90,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     }
     fTPCPerDriftVolume = 1;
     fDriftVolumes = fNTPC/fTPCPerDriftVolume;
-    // TODO: make these few fcl params
-    fYBins = 9; fYLow = -180.; fYHigh = 180.;
-    fYSkewThreshold = 0.3; //fYBiasSlope = 0.004;
-    fZBins = 12; fZLow = 10.; fZHigh = 490.;
-    fZSkewThreshold = 0.33; //fZBiasSlope = 0.35;
   }
   else if(fICARUS && !fSBND) {
     if(fUseUncoatedPMT || fUseARAPUCAS) {
@@ -99,11 +100,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
     }
     fTPCPerDriftVolume = 2;
     fDriftVolumes = fNTPC/fTPCPerDriftVolume;
-    // TODO: make these few fcl params
-    fYBins = 5; fYLow = -135.; fYHigh = 85.;
-    fYSkewThreshold = 0.1; //fYBiasSlope = 0.4;
-    fZBins = 18; fZLow = -900.; fZHigh = 900.;
-    fZSkewThreshold = 1e8; //fZBiasSlope = 0.; // No Z bias correction
   }
   else {
     throw cet::exception("FlashPredict")
@@ -777,13 +773,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
       }
       flash.y = flash.yb - y_correction;
       flash.z = flash.zb - z_correction;
-      //     (-fYSkewThreshold<flash.y_skew && flash.y_skew<fYSkewThreshold) ?
-      //   0. : copysign(1., flash.y_skew);
-      // double z_correction =
-      //   (-fZSkewThreshold<flash.z_skew && flash.z_skew<fZSkewThreshold) ?
-      //   0. : copysign(1., flash.z_skew);
-      // flash.y = flash.yb - y_correction * fYBiasSlope * flash.h_x;
-      // flash.z = flash.zb - z_correction * fZBiasSlope * flash.h_x;
     }
 
     return flash;
