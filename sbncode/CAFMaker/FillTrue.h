@@ -21,10 +21,13 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
+
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
 namespace caf
 {
@@ -61,6 +64,9 @@ namespace caf
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle);
+
+  void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                        caf::SRMeVPrtl &srtruth);
 
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const simb::MCFlux &mcflux, 

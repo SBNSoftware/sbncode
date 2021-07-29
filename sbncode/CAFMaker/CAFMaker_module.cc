@@ -93,6 +93,7 @@
 
 #include "fhiclcpp/ParameterSetRegistry.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
@@ -682,6 +683,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     mctype = caf::kMCParticleGun;
   }
 
+  // Lookup the MeV-Portal info if it is there
+  //
+  // Don't be "strict" because this will only be true for a subset of MC
+  art::Handle<std::vector<evgen::ldm::MeVPrtlTruth>> mevprtltruth_handle;
+  evt.getByLabel(fParams.GenLabel(), mevprtltruth_handle);
+
+  std::vector<art::Ptr<evgen::ldm::MeVPrtlTruth>> mevprtl_truths;
+  if (mevprtltruth_handle.isValid()) art::fill_ptr_vector(mevprtl_truths, mevprtltruth_handle);
+
   // prepare map of track ID's to energy depositions
   art::Handle<std::vector<sim::SimChannel>> simchannel_handle;
   GetByLabelStrict(evt, fParams.SimChannelLabel(), simchannel_handle);
@@ -828,6 +838,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+
+  // Fill the MeVPrtl stuff
+  for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
+    srtruthbranch.prtl.emplace_back();
+    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], srtruthbranch.prtl.back());
+    srtruthbranch.nprtl = srtruthbranch.prtl.size();
+  } 
 
   //#######################################################
   // Fill detector & reco
