@@ -35,7 +35,8 @@
 #include "lardataobj/RecoBase/OpHit.h"
 // #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
-// #include "nusimdata/SimulationBase/MCParticle.h" //uncomment for creating metrics
+#include "larsim/Utils/TruthMatchUtils.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
 
 #include "TTree.h"
 #include "TF1.h"
@@ -43,13 +44,12 @@
 #include "TH1.h"
 #include "TH2.h"
 
-// #include "sbncode/CAFMaker/RecoUtils/RecoUtils.h" //uncomment for creating metrics
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 
-// #include "nusimdata/SimulationBase/MCParticle.h" //uncomment for creating metrics
-// #include "nusimdata/SimulationBase/MCTruth.h" //uncomment for creating metrics
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
 
 #include <algorithm>
 #include <iterator>
@@ -227,6 +227,7 @@ private:
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
+  unsigned trueNus(art::Event& evt) const;
   void updateChargeMetrics(const ChargeMetrics& chargeMetrics);
   void updateFlashMetrics(const FlashMetrics& flashMetrics);
   void updateScore(const Score& score);
@@ -297,6 +298,7 @@ private:
   const bool fForceConcurrence;
   const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
+  const bool fStoreTrueNus;
   const bool fStoreCheatMCT0;
   const std::string fInputFilename;
   const bool fNoAvailableMetrics, fMakeTree;
