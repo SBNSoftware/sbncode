@@ -1584,7 +1584,7 @@ void FlashPredict::updateBookKeeping()
     - bk.no_flash_pe;
 
   if(1-std::abs(bk.events_processed-bk.job_bookkeeping) == 0 ||
-     1-std::abs(bk.scored_pfp != bk.pfp_bookkeeping) == 0)
+     1-std::abs(bk.scored_pfp-bk.pfp_bookkeeping) == 0)
     printBookKeeping(mf::LogWarning("FlashPredict"));
 }
 
