@@ -30,6 +30,13 @@ physics.producers.pandoraTrackClosestApproach.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackStoppingChi2.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackStoppingChi2.CaloLabel: "pandoraSCECalo"
 
+# Just over-write the stub reco labels -- no need to change to "SCE"
+physics.producers.vertexCharge: @local::vertex_charge_sbnd_sce
+physics.producers.vertexStub: @local::vertex_stub_sbnd_sce
+# set the CaloAlg again
+physics.producers.vertexCharge.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
+
 physics.producers.pandoraTrackDazzle.PFPLabel: "pandoraSCE"
 physics.producers.pandoraTrackDazzle.TrackLabel: "pandoraSCETrack"
 physics.producers.pandoraTrackDazzle.CaloLabel: "pandoraSCECalo"
@@ -39,7 +46,11 @@ physics.producers.fmatchSCE: @local::transfer_flashmatch_sce_sbnd
 
 physics.runprod: [ pandoraTrackMCS, pandoraTrackRange,
             pandoraTrackCRTHit, pandoraTrackCRTTrack,
-            pandoraSCETrackCRTHit, pandoraSCETrackCRTTrack, fmatchSCE,
+            pandoraSCETrackCRTHit, pandoraSCETrackCRTTrack, fmatchSCE, vertexCharge, vertexStub,
             pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraTrackDazzle,
             pandoraShowerSelectionVars,pandoraShowerCosmicDist, pandoraShowerRazzle,
             mycafmaker ]
+
+# Enable the Space-Charge service
+#include "enable_spacecharge_services_sbnd.fcl"
+
