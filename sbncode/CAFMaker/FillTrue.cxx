@@ -295,6 +295,26 @@ namespace caf {
 
   //------------------------------------------------
 
+  void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
+                       caf::SRTrueInteraction& srint,
+                       const std::map<std::string, unsigned int>& weightPSetIndex)
+  {
+    for(auto& it: wgtmap){
+      if(weightPSetIndex.count(it.first) == 0){
+        std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+        std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+        for(auto k: weightPSetIndex) std::cout << "  " << k.first << std::endl;
+        abort();
+      }
+
+      const unsigned int idx = weightPSetIndex.at(it.first);
+      if(idx >= srint.wgt.size()) srint.wgt.resize(idx+1);
+      srint.wgt[idx].univ = it.second;
+    }
+  }
+
+  //------------------------------------------------
+
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,

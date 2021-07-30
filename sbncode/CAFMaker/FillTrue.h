@@ -69,6 +69,10 @@ namespace caf
                         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
 			caf::SRTrueInteraction &srneutrino, size_t i);
 
+  void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
+                       caf::SRTrueInteraction& srint,
+                       const std::map<std::string, unsigned int>& weightPSetIndex);
+
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,

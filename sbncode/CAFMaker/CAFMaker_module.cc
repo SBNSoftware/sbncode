@@ -772,17 +772,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       // For all the weights associated with this MCTruth
       for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
-        for(auto& it: *wgtmap){
-          if(fWeightPSetIndex.count(it.first) == 0){
-            std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
-            std::cout << "Known names from EventWeightParameterSet:" << std::endl;
-            for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
-            abort();
-          }
-          const unsigned int idx = fWeightPSetIndex[it.first];
-          if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
-          srneutrinos.back().wgt[idx].univ = it.second;
-        } // end for it
+        FillEventWeight(*wgtmap, srneutrinos.back(), fWeightPSetIndex);
       } // end for wgtmap
     } // end for fm
 
