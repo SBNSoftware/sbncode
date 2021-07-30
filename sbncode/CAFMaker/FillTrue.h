@@ -19,16 +19,21 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 namespace caf
 {
-
+  void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
+                    caf::SRGlobal& srglobal,
+                    std::map<std::string, unsigned int>& weightPSetIndex);
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
