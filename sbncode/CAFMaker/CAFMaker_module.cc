@@ -89,6 +89,10 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
+#include "lardataobj/MCBase/MCTrack.h"
+
+#include "larsim/MCCheater/BackTrackerService.h"
+
 #include "fhiclcpp/ParameterSetRegistry.h"
 
 #include "sbnobj/Common/Reco/RangeP.h"

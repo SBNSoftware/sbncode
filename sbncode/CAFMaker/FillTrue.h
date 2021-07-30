@@ -1,33 +1,71 @@
-
 #ifndef CAF_FILLTRUE_H
 #define CAF_FILLTRUE_H
 
-#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "canvas/Persistency/Common/Ptr.h"
 
-#include "TRandom.h"
-#include "TDatabasePDG.h"
+#include <map>
+#include <string>
+#include <vector>
 
-// LArSoft includes
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
-#include "larcorealg/Geometry/BoxBoundedGeo.h"
-#include "larsim/MCCheater/BackTrackerService.h"
-#include "larsim/MCCheater/ParticleInventoryService.h"
+class TRandom;
 
-#include "nusimdata/SimulationBase/GTruth.h"
-#include "nusimdata/SimulationBase/MCFlux.h"
-#include "nusimdata/SimulationBase/MCNeutrino.h"
-#include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
-#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
-#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
-#include "lardataobj/MCBase/MCTrack.h"
+namespace cheat
+{
+  class BackTrackerService;
+  class ParticleInventoryService;
+}
 
-#include "sbnanaobj/StandardRecord/SRFakeReco.h"
-#include "sbnanaobj/StandardRecord/SRGlobal.h"
-#include "sbnanaobj/StandardRecord/SRTrueParticle.h"
-#include "sbnanaobj/StandardRecord/SRTruthMatch.h"
-#include "sbnanaobj/StandardRecord/StandardRecord.h"
+namespace detinfo
+{
+  class DetectorClocksData;
+}
+
+namespace geo
+{
+  class BoxBoundedGeo;
+  class GeometryCore;
+  class WireID;
+}
+
+namespace simb
+{
+  class GTruth;
+  class MCFlux;
+  class MCNeutrino;
+  class MCParticle;
+  class MCTruth;
+}
+
+namespace sim
+{
+  class IDE;
+  class MCTrack;
+  class SimChannel;
+}
+
+namespace sbn::evwgh
+{
+  typedef std::map<std::string, std::vector<float> > EventWeightMap;
+  class EventWeightParameterSet;
+}
+
+namespace recob
+{
+  class Hit;
+}
+
+namespace caf
+{
+  class SRFakeReco;
+  class SRGlobal;
+  class SRShower;
+  class SRSlice;
+  class SRTrack;
+  class SRTrueParticle;
+  class SRTruthBranch;
+  class SRTruthMatch;
+  class SRTrueInteraction;
+}
 
 namespace caf
 {

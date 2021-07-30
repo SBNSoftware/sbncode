@@ -1,7 +1,31 @@
-#include "FillTrue.h"
+#include "sbncode/CAFMaker/FillTrue.h"
+
+// LArSoft includes
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/BoxBoundedGeo.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+
+#include "nusimdata/SimulationBase/GTruth.h"
+#include "nusimdata/SimulationBase/MCFlux.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+
+#include "lardataobj/MCBase/MCTrack.h"
+
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
+
+#include "sbnanaobj/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "RecoUtils/RecoUtils.h"
+
+#include "TRandom.h"
+#include "TDatabasePDG.h"
 
 #include <functional>
 #include <algorithm>
