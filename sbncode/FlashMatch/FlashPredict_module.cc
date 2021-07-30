@@ -24,9 +24,9 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fFlashStart(p.get<double>("FlashStart")) // in us w.r.t. flash time
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
   , fTimeBins(unsigned(1/fTickPeriod * (fBeamWindowEnd - fBeamWindowStart)))
-  , fSelectNeutrino(p.get<bool>("SelectNeutrino", true))
+  , fSelectNeutrino(p.get<bool>("SelectNeutrino", true)) // only attempt to match potential neutrino slices 
   , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
-  , fForceConcurrence(p.get<bool>("ForceConcurrence", false))
+  , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
@@ -58,14 +58,14 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fXBinWidth(fDriftDistance/fXBins)// cm
   , fRR_TF1_fit(p.get<std::string>("rr_TF1_fit", "pol3"))
   , fRatio_TF1_fit(p.get<std::string>("ratio_TF1_fit", "pol3"))
-  , fYBins(p.get<unsigned>("YBins", 0.))
-  , fZBins(p.get<unsigned>("ZBins", 0.))
-  , fYLow(p.get<double>("YLow", 0.))
-  , fYHigh(p.get<double>("YHigh", 0.))
-  , fZLow(p.get<double>("ZLow", 0.))
-  , fZHigh(p.get<double>("ZHigh", 0.))
-  , fYBiasSlope(p.get<double>("YBiasSlope", 0.))
-  , fZBiasSlope(p.get<double>("ZBiasSlope", 0.))
+  , fYBins(p.get<unsigned>("YBins", 0.)) // roughly match the rows of opdets
+  , fZBins(p.get<unsigned>("ZBins", 0.)) // roughly match the columns of opdets
+  , fYLow(p.get<double>("YLow", 0.)) // lowest opdet position in cm
+  , fYHigh(p.get<double>("YHigh", 0.)) // highest opdet position in cm
+  , fZLow(p.get<double>("ZLow", 0.)) // most upstream opdet position in cm
+  , fZHigh(p.get<double>("ZHigh", 0.)) // most downstream opdet position in cm
+  , fYBiasSlope(p.get<double>("YBiasSlope", 0.)) // correcting Y factor
+  , fZBiasSlope(p.get<double>("ZBiasSlope", 0.)) // correcting Z factor
   , fOpDetNormalizer((fSBND) ? 4 : 1)
   , fTermThreshold(p.get<double>("ThresholdTerm", 30.))
 {
@@ -74,7 +74,9 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
   // TODO: check params are sane:
   if(fFlashStart > 0. || fFlashEnd < 0.){
-    throw cet::exception("FlashPredict");
+    throw cet::exception("FlashPredict")
+      << "fFlashStart has to be non-positive, "
+      << "and fFlashEnd has to be non-negative.";
   }
 
   if(p.get<double>("DriftDistance") != driftDistance()){
@@ -108,7 +110,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       << ", not supported. Stopping.\n";
   }
 
-  // TODO no point on having fCryostat as parameter, user whatever comes from geometry
   if (fSBND && fCryostat != 0) {
     throw cet::exception("FlashPredict")
       << "SBND has only one cryostat. \n"
