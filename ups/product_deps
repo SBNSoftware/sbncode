@@ -38,7 +38,7 @@ larsoft             v09_27_00
 sbnobj              v09_11_15_01
 sbnanaobj           v09_16_12
 sbndaq_artdaq_core  v0_07_08_of0
-genie_xsec          v3_00_04a
+genie_xsec          v3_00_06
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
