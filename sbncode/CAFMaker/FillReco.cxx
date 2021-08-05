@@ -405,14 +405,14 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty)
   {
+    srtrack.chi2pid.resize(3);
     // get the particle ID's
     for (unsigned i = 0; i < particleIDs.size(); i++) {
       const anab::ParticleID &particle_id = *particleIDs[i];
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
-        caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
-        FillPlaneChi2PID(particle_id, this_pid);
+        FillPlaneChi2PID(particle_id, srtrack.chi2pid[plane_id]);
       }
     }
   }
@@ -521,13 +521,13 @@ namespace caf
     // ignore any charge with a deposition > 1000 MeV/cm
     // TODO: ignore first and last hit???
     //    assert(calos.size() == 0 || calos == 3);
+    srtrack.calo.resize(3);
     for (unsigned i = 0; i < calos.size(); i++) {
       const anab::Calorimetry &calo = *calos[i];
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
-        caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
+        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, srtrack.calo[plane_id]);
       }
     }
 
@@ -535,15 +535,14 @@ namespace caf
     //
     // We expect the noise to be lowest at planes 2 -> 0 -> 1, so use this to break ties
     caf::Plane_t bestplane = caf::kUnknown;
-    if (srtrack.calo2.nhit > 0 && srtrack.calo2.nhit >= srtrack.calo0.nhit && srtrack.calo2.nhit >=  srtrack.calo1.nhit) {
-      bestplane = (caf::Plane_t)2;
+    int bestnhit = -1;
+    for(int plane: {2, 0, 1}){
+      if(srtrack.calo[plane].nhit > bestnhit){
+        bestplane = caf::Plane_t(plane);
+        bestnhit = srtrack.calo[plane].nhit;
+      }
     }
-    else if (srtrack.calo0.nhit > 0 && srtrack.calo0.nhit >= srtrack.calo2.nhit && srtrack.calo0.nhit >=  srtrack.calo1.nhit) {
-      bestplane = (caf::Plane_t)0;
-    }
-    else if (srtrack.calo1.nhit > 1) {
-      bestplane = (caf::Plane_t)1;
-    }
+
     srtrack.bestplane = bestplane;
 
   }
