@@ -127,17 +127,12 @@ namespace caf
   {
 
     srshower.producer = producer;
-    srshower.dEdx_plane0 = (shower.dEdx())[0];
-    srshower.dEdx_plane1 = (shower.dEdx())[1];
-    srshower.dEdx_plane2 = (shower.dEdx())[2];
+
     // We need to convert the energy from MeV to GeV
     // Also convert -999 -> -5 for consistency with other defaults in the CAFs
     srshower.energy.clear();
     std::transform(shower.Energy().begin(), shower.Energy().end(), std::back_inserter(srshower.energy),
         [] (float e) {return e > 0 ? e / 1000.f : -5.f;});
-    srshower.energy_plane0 = srshower.energy[0];
-    srshower.energy_plane1 = srshower.energy[1];
-    srshower.energy_plane2 = srshower.energy[2];
     srshower.dEdx   = double_to_float_vector( shower.dEdx() );
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
@@ -173,30 +168,19 @@ namespace caf
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
 
-    for (auto const& hit:hits) {
-      switch (hit->WireID().Plane) {
-        case(0):
-          srshower.nHits_plane0++;
-        case(1):
-          srshower.nHits_plane1++;
-        case(2):
-          srshower.nHits_plane2++;
-      }
-    }
+    srshower.nHits.clear();
+    srshower.nHits.resize(3);
+    for (auto const& hit:hits) ++srshower.nHits[hit->WireID().Plane];
+
+    srshower.wirePitch.clear();
+    srshower.wirePitch.resize(3);
 
     for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
 
       const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
 
-      switch (plane.ID().Plane) {
-        case(0):
-          srshower.wirePitch_plane0 = plane.WirePitch()/cosgamma;
-        case(1):
-          srshower.wirePitch_plane1 = plane.WirePitch()/cosgamma;
-        case(2):
-          srshower.wirePitch_plane2 = plane.WirePitch()/cosgamma;
-      }
+      srshower.wirePitch[plane.ID().Plane] = plane.WirePitch()/cosgamma;
     }
   }
 
