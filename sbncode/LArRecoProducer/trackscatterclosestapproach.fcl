@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+trackscatterclosestapproach_sbn: {
+  module_type: TrackScatterClosestApproach
+  TrackLabel: pandoraTrack
+  MinTrackLength: 10
+}
+
+END_PROLOG

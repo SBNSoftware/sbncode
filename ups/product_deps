@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_23_01_00
+parent sbncode v09_27_00_02
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -34,10 +34,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_23_01
-sbnobj              v09_11_09
-sbnanaobj           v09_16_07
-sbndaq_artdaq_core  v0_07_06_of0
+larsoft             v09_27_00
+sbnobj              v09_11_15_01
+sbnanaobj           v09_16_12
+sbndaq_artdaq_core  v0_07_08_of0
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -47,10 +47,10 @@ cetbuildtools v7_17_01 - only_for_build
 # Make the table by adding columns before "notes".
 
 qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core  notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug           -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof            -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug            -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof             -nq-
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s110      -nq-
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s110       -nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s110       -nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s110        -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin

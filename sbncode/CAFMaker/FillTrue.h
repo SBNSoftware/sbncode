@@ -21,14 +21,22 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
+
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
 namespace caf
 {
+  // Helpers
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
+        const TVector3 p0,
+        const TVector3 p1);
 
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -37,6 +45,15 @@ namespace caf
                       const detinfo::DetectorClocksData &clockData,
                       caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
                       bool allowEmpty = false);
+
+  void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
+                         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const cheat::ParticleInventoryService &inventory_service,
+                         const detinfo::DetectorClocksData &clockData,
+                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
 
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -47,6 +64,9 @@ namespace caf
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle);
+
+  void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                        caf::SRMeVPrtl &srtruth);
 
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const simb::MCFlux &mcflux, 
@@ -60,6 +80,12 @@ namespace caf
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
+
+  void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<caf::SRTrueParticle> &particles,
+                     const detinfo::DetectorClocksData &clockData,
+                     caf::SRStub& srstub,
+                     bool allowEmpty = false);
 
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,

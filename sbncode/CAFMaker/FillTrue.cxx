@@ -7,11 +7,6 @@
 #include <algorithm>
 
 // helper function declarations
-caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-caf::g4_process_ GetG4ProcessID(const std::string &name);
 
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
@@ -86,6 +81,15 @@ namespace caf {
   }//FillShowerTruth
 
 
+  void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<caf::SRTrueParticle> &particles,
+                     const detinfo::DetectorClocksData &clockData,
+                     caf::SRStub& srstub,
+                     bool allowEmpty) {
+    srstub.truth = MatchTrack2Truth(clockData, particles, hits);
+  }
+
+
   //------------------------------------------------
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
@@ -108,6 +112,56 @@ namespace caf {
         << " with match frac: " << tmatch.pur << std::endl;
 
   }//FillSliceTruth
+
+
+ void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                       caf::SRMeVPrtl &srtruth) {
+   // Fill stuff!!
+   srtruth.dcy.x = truth.decay_pos.X();
+   srtruth.dcy.y = truth.decay_pos.Y();
+   srtruth.dcy.z = truth.decay_pos.Z();
+   srtruth.dcyT  = truth.decay_pos.T();
+
+   srtruth.mom.x = truth.mevprtl_mom.X();
+   srtruth.mom.y = truth.mevprtl_mom.Y();
+   srtruth.mom.z = truth.mevprtl_mom.Z();
+   srtruth.E     = truth.mevprtl_mom.E();
+
+   srtruth.M = truth.mass;
+   srtruth.flux_weight = truth.flux_weight;
+   srtruth.ray_weight = truth.ray_weight;
+   srtruth.decay_weight = truth.decay_weight;
+   srtruth.C1 = truth.C1;
+   srtruth.C2 = truth.C2;
+   srtruth.C3 = truth.C3;
+   srtruth.C4 = truth.C4;
+   srtruth.C5 = truth.C5;
+
+   switch(truth.gen) {
+     case evgen::ldm::kDissonantHiggs:
+       srtruth.gen = caf::kMeVPrtlHiggs;
+       break;
+     case evgen::ldm::kHNL:
+       srtruth.gen = caf::kMeVPrtlHNL;
+       break;
+     default:
+       break;
+   }
+ }
+
+ void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
+                         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const cheat::ParticleInventoryService &inventory_service,
+                         const detinfo::DetectorClocksData &clockData,
+                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
+                         const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
+  {
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
+    if(tmatch.index >= 0) FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
+  }//FillSliceFakeReco
+
 
   //------------------------------------------------
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth,
@@ -527,6 +581,8 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   float contained_length_cut = 50.; // cm
   float exiting_length_cut = 100.; // cm
 
+  fakereco.filled = false;
+
   // first check if neutrino exists
   if (!mctruth.NeutrinoSet()) return false;
 
@@ -652,11 +708,12 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
     fakereco.wgt = 1.;
   }
   fakereco.nhad = fakereco.hadrons.size();
+  fakereco.filled = true;
 
   return true;
 }
 
-caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
+caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
@@ -698,7 +755,7 @@ caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, co
 
 //------------------------------------------
 
-caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
+caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
 #define MATCH_PROCESS(name) if (process_name == #name) {return caf::kG4 ## name;}
 #define MATCH_PROCESS_NAMED(strname, id) if (process_name == #strname) {return caf::kG4 ## id;}
   MATCH_PROCESS(primary)
