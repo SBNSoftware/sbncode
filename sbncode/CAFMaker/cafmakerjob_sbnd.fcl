@@ -26,6 +26,7 @@
 #include "pmtflashtrigger_producer.fcl"
 
 #include "flashmatch_sbnd.fcl"
+#include "sbn_stub.fcl"
 
 
 process_name: CAFmaker
@@ -52,6 +53,7 @@ services:
   DetectorPropertiesService: @local::sbnd_detproperties
   ParticleInventoryService:  @local::standard_particleinventoryservice
   BackTrackerService:        @local::standard_backtrackerservice
+  SpaceCharge:               @local::sbnd_spacecharge
   NuRandomService: {
     policy: perEvent
   }
@@ -90,6 +92,8 @@ physics:
    pandoraTrackCRTHit:          @local::crthitmatch_sbnd
    pandoraTrackCRTTrack:  @local::crttrackmatch_sbnd
 
+   vertexCharge: @local::vertex_charge_sbnd
+   vertexStub: @local::vertex_stub_sbnd
    pandoraTrackClosestApproach:          @local::trackscatterclosestapproach_sbn
    pandoraTrackStoppingChi2: @local::trackstoppingchi2fitter_sbn
    pandoraTrackDazzle:       @local::dazzle_sbnd
@@ -109,7 +113,7 @@ physics:
 #    metadata: @local::standard_metadata            #prod
   }
  runprod: [ pandoraTrackMCS, pandoraTrackRange, pandoraShowerSelectionVars,
-            pandoraTrackCRTHit, pandoraTrackCRTTrack,
+            pandoraTrackCRTHit, pandoraTrackCRTTrack, vertexCharge, vertexStub,
             pandoraTrackClosestApproach, pandoraTrackStoppingChi2, pandoraTrackDazzle,
             pandoraShowerCosmicDist, pandoraShowerRazzle,
             mycafmaker ]
@@ -122,8 +126,10 @@ physics:
 
 }
 
+physics.producers.vertexCharge.CaloAlg: @local::sbnd_calorimetryalgmc
+physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
+
 physics.producers.mycafmaker: @local::standard_cafmaker
-physics.producers.mycafmaker.CalorimetryConstants: @local::sbnd_calorimetryalgmc.CalAreaConstants
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 
 # This job doesn't run the genie weights, and we assume they won't be in the

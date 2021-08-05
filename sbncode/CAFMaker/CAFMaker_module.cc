@@ -59,6 +59,8 @@
 #include "art/Framework/Services/System/TriggerNamesService.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -91,6 +93,7 @@
 
 #include "fhiclcpp/ParameterSetRegistry.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
@@ -657,6 +660,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     mctype = caf::kMCParticleGun;
   }
 
+  // Lookup the MeV-Portal info if it is there
+  //
+  // Don't be "strict" because this will only be true for a subset of MC
+  art::Handle<std::vector<evgen::ldm::MeVPrtlTruth>> mevprtltruth_handle;
+  evt.getByLabel(fParams.GenLabel(), mevprtltruth_handle);
+
+  std::vector<art::Ptr<evgen::ldm::MeVPrtlTruth>> mevprtl_truths;
+  if (mevprtltruth_handle.isValid()) art::fill_ptr_vector(mevprtl_truths, mevprtltruth_handle);
+
   // prepare map of track ID's to energy depositions
   art::Handle<std::vector<sim::SimChannel>> simchannel_handle;
   GetByLabelStrict(evt, fParams.SimChannelLabel(), simchannel_handle);
@@ -691,6 +703,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
   art::ServiceHandle<cheat::BackTrackerService> bt_serv;
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const dprop =
+    art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // Collect the input TPC reco tags
@@ -796,6 +810,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+
+  // Fill the MeVPrtl stuff
+  for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
+    srtruthbranch.prtl.emplace_back();
+    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], srtruthbranch.prtl.back());
+    srtruthbranch.nprtl = srtruthbranch.prtl.size();
+  } 
 
   //#######################################################
   // Fill detector & reco
@@ -948,6 +969,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
+    // Get the stubs!
+    art::FindManyP<sbn::Stub> fmSlcStubs =
+      FindManyPStrict<sbn::Stub>(sliceList, evt,
+          fParams.StubLabel() + slice_tag_suff);
+
+    std::vector<art::Ptr<sbn::Stub>> fmStubs;
+    if (fmSlcStubs.isValid()) {
+      fmStubs = fmSlcStubs.at(0);
+    } 
+
+    // Lookup stubs to overlaid PFP
+    art::FindManyP<recob::PFParticle> fmStubPFPs =
+      FindManyPStrict<recob::PFParticle>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
+    // and get the stub hits for truth matching
+    art::FindManyP<recob::Hit> fmStubHits =
+      FindManyPStrict<recob::Hit>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
+
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
            fParams.TrackCaloLabel() + slice_tag_suff);
@@ -1044,6 +1084,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
+    // Whether Pandora thinks this slice is a neutrino
+    //
+    // This requirement is used to determine whether to save additional
+    // per-hit information about the slice.
+    bool NeutrinoSlice = !recslc.is_clear_cosmic;
+
     // Fill truth info after decision on selection is made
     FillSliceTruth(slcHits, mctruths, srneutrinos,
        *pi_serv.get(), clock_data, recslc, rec.mc);
@@ -1061,7 +1107,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // }
 
     //#######################################################
-    // Add reconstructed objects.
+    // Add stub reconstructed objects.
+    //#######################################################
+    for (size_t iStub = 0; iStub < fmStubs.size(); iStub++) {
+      const sbn::Stub &thisStub = *fmStubs[iStub];
+
+      art::Ptr<recob::PFParticle> thisStubPFP;
+      if (!fmStubPFPs.at(iStub).empty()) thisStubPFP = fmStubPFPs.at(iStub).at(0);
+
+      rec.reco.stub.emplace_back();
+      FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
+      FillStubTruth(fmStubHits.at(iStub), true_particles, clock_data, rec.reco.stub.back());
+      rec.reco.nstub = rec.reco.stub.size();
+
+      // Duplicate stub reco info in the srslice
+      recslc.reco.stub.push_back(rec.reco.stub.back());
+      recslc.reco.nstub = recslc.reco.stub.size();
+    }
+
+    //#######################################################
+    // Add track/shower reconstructed objects.
     //#######################################################
     // Reco objects have assns to the slice PFParticles
     // This depends on the findMany object created above.
@@ -1126,7 +1191,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
         }
         if (fmCalo.isValid()) {
-          FillTrackCalo(fmCalo.at(iPart), lar::providerFrom<geo::Geometry>(), fParams.CalorimetryConstants(), rec.reco.trk.back());
+          FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
+              (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
+              fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
+              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
           FillTrackTruth(fmTrackHit.at(iPart), true_particles, clock_data, rec.reco.trk.back());
@@ -1291,11 +1359,13 @@ void CAFMaker::endJob() {
 
     std::map<std::string, std::string> strs;
     std::map<std::string, int> ints;
+    std::map<std::string, double> doubles;
     std::map<std::string, std::string> objs;
-    meta->GetMetadataMaps(strs, ints, objs);
+    meta->GetMetadataMaps(strs, ints, doubles, objs);
 
     for(auto it: strs) metamap[it.first] = "\""+it.second+"\"";
     for(auto it: ints) metamap[it.first] = std::to_string(it.second);
+    for(auto it: doubles) metamap[it.first] = std::to_string(it.second);
     for(auto it: objs) metamap[it.first] = it.second;
   }
   catch(art::Exception& e){//(art::errors::ServiceNotFound)

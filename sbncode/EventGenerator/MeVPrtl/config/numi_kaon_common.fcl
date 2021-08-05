@@ -4,6 +4,13 @@ empty_kaon: {
   tool_type: EmptyKaonGen
 }
 
+# Taken from: https://github.com/SBNSoftware/icaruscode/blob/develop/fcl/gen/numi/GNuMIFlux.xml#L765
+icarus_numi_beam2detector_rotation: [   0.921228671,    0.0226872648,   0.388359401,
+				        0.00136256111,  0.998103714,   -0.061539578,
+				       -0.389019125,    0.0572211871,   0.919450845  ]
+
+icarus_numi_beam_origin: [0, 0, 0, 4.8195e2, 79.5800e2, 794.3955e2] # cm
+
 numi_kaon: {
   tool_type: NuMiKaonGen
   SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
@@ -28,7 +35,7 @@ rethrow_ray_trace_box: {
 
   # weight computation
   #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
-  #ReferenceKaonEnergy: 50 # GeV
+  #ReferenceKaonEnergy: 15 # GeV
 
   ReferenceLabSolidAngle: 1e-4
   ReferenceKaonEnergy: 7.5 # GeV

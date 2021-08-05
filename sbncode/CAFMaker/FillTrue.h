@@ -23,14 +23,24 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
+
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
+#include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
 namespace caf
 {
+  // Helpers
+  caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
+        const TVector3 p0,
+        const TVector3 p1);
+
+  caf::g4_process_ GetG4ProcessID(const std::string &name);
+  
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
                     caf::SRGlobal& srglobal,
                     std::map<std::string, unsigned int>& weightPSetIndex);
@@ -62,6 +72,9 @@ namespace caf
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                           caf::SRTrueParticle &srparticle);
 
+  void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                        caf::SRMeVPrtl &srtruth);
+
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
 			const simb::MCFlux &mcflux, 
                         const simb::GTruth& gtruth,
@@ -78,6 +91,12 @@ namespace caf
                       const detinfo::DetectorClocksData &clockData,
 		      caf::SRTrack& srtrack,
 		      bool allowEmpty = false);
+
+  void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<caf::SRTrueParticle> &particles,
+                     const detinfo::DetectorClocksData &clockData,
+                     caf::SRStub& srstub,
+                     bool allowEmpty = false);
 
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
