@@ -90,6 +90,7 @@ namespace caf
     srshower.dEdx_plane2 = (shower.dEdx())[2];
     // We need to convert the energy from MeV to GeV
     // Also convert -999 -> -5 for consistency with other defaults in the CAFs
+    srshower.energy.clear();
     std::transform(shower.Energy().begin(), shower.Energy().end(), std::back_inserter(srshower.energy),
         [] (float e) {return e > 0 ? e / 1000.f : -5.f;});
     srshower.energy_plane0 = srshower.energy[0];
