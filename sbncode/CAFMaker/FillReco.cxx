@@ -130,10 +130,11 @@ namespace caf
 
     // We need to convert the energy from MeV to GeV
     // Also convert -999 -> -5 for consistency with other defaults in the CAFs
-    srshower.energy.clear();
-    std::transform(shower.Energy().begin(), shower.Energy().end(), std::back_inserter(srshower.energy),
-        [] (float e) {return e > 0 ? e / 1000.f : -5.f;});
-    srshower.dEdx   = double_to_float_vector( shower.dEdx() );
+    for(int i = 0; i < 3; ++i){
+      const float e = shower.Energy()[i];
+      srshower.energy[i] = e > 0 ? e / 1000.f : -5.f;
+      srshower.dEdx[i] = shower.dEdx()[i];
+    }
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
 
@@ -143,8 +144,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.dEdx.at(shower.best_plane());
-      srshower.bestplane_energy = srshower.energy.at(shower.best_plane());
+      srshower.bestplane_dEdx   = srshower.dEdx[shower.best_plane()];
+      srshower.bestplane_energy = srshower.energy[shower.best_plane()];
     }
 
     if(shower.has_open_angle())
@@ -168,12 +169,8 @@ namespace caf
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
 
-    srshower.nHits.clear();
-    srshower.nHits.resize(3);
+    for(int i = 0; i < 3; ++i) srshower.nHits[i] = 0;
     for (auto const& hit:hits) ++srshower.nHits[hit->WireID().Plane];
-
-    srshower.wirePitch.clear();
-    srshower.wirePitch.resize(3);
 
     for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
 
@@ -405,7 +402,6 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty)
   {
-    srtrack.chi2pid.resize(3);
     // get the particle ID's
     for (unsigned i = 0; i < particleIDs.size(); i++) {
       const anab::ParticleID &particle_id = *particleIDs[i];
@@ -521,7 +517,6 @@ namespace caf
     // ignore any charge with a deposition > 1000 MeV/cm
     // TODO: ignore first and last hit???
     //    assert(calos.size() == 0 || calos == 3);
-    srtrack.calo.resize(3);
     for (unsigned i = 0; i < calos.size(); i++) {
       const anab::Calorimetry &calo = *calos[i];
       if (calo.PlaneID()) {
