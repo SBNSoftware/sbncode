@@ -19,11 +19,14 @@
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
+#include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "lardataobj/MCBase/MCTrack.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
+#include "sbnanaobj/StandardRecord/SRGlobal.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
@@ -37,6 +40,10 @@ namespace caf
         const TVector3 p1);
 
   caf::g4_process_ GetG4ProcessID(const std::string &name);
+  
+  void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
+                    caf::SRGlobal& srglobal,
+                    std::map<std::string, unsigned int>& weightPSetIndex);
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -74,6 +81,10 @@ namespace caf
 			const std::vector<caf::SRTrueParticle> &srparticles,
                         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
 			caf::SRTrueInteraction &srneutrino, size_t i);
+
+  void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
+                       caf::SRTrueInteraction& srint,
+                       const std::map<std::string, unsigned int>& weightPSetIndex);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
