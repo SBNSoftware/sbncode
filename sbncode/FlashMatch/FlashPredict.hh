@@ -369,6 +369,7 @@ private:
   static constexpr int kQNoOpHScr = -1;
   static constexpr int kNoChrgScr = -2;
   static constexpr int k0VUVPEScr = -3;
+  static constexpr int kNotANuScr = -4;
   static constexpr int kNoOpHInEvt = -11;
   static constexpr int kNoPFPInEvt = -12;
   static constexpr int kNoSlcInEvt = -13;
@@ -379,7 +380,7 @@ private:
 
     int pfp_bookkeeping, scored_pfp;
     unsigned pfp_to_score, no_charge, no_oph_hits,
-      no_flash_pe;
+      no_flash_pe, no_nu_candidate;
   };
   BookKeeping bk;
 };

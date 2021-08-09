@@ -52,9 +52,45 @@ double PDGMass(int pdg) {
   }
 }
 
-
+//......................................................................
+void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
+{
+  const double& start = m(0, 0);
+  v.insert(v.end(), &start, &start + m.GetNoElements());
+}
 
 namespace caf {
+
+  //------------------------------------------------
+
+  void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
+                    caf::SRGlobal& srglobal,
+                    std::map<std::string, unsigned int>& weightPSetIndex)
+  {
+    SRWeightPSet& cafpset = srglobal.wgts.emplace_back();
+
+    cafpset.name = pset.fName;
+    cafpset.type = caf::ReweightType_t(pset.fRWType);
+    cafpset.nuniv = pset.fNuniverses;
+    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    weightPSetIndex[cafpset.name] = srglobal.wgts.size()-1;
+
+    for(const auto& it: pset.fParameterMap){
+      const sbn::evwgh::EventWeightParameter& param = it.first;
+      const std::vector<float>& vals = it.second;
+
+      SRWeightParam cafparam;
+      cafparam.name = param.fName;
+      cafparam.mean = param.fMean;
+      cafparam.width = param.fWidth;
+      cafparam.covidx = param.fCovIndex;
+
+      cafpset.map.emplace_back(cafparam, vals);
+    } // end for it
+  }
+
+  //------------------------------------------------
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
@@ -66,6 +102,8 @@ namespace caf {
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
 
   }//FillTrackTruth
+
+  //------------------------------------------------
 
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
@@ -293,6 +331,26 @@ namespace caf {
     }
 
 
+  }
+
+  //------------------------------------------------
+
+  void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
+                       caf::SRTrueInteraction& srint,
+                       const std::map<std::string, unsigned int>& weightPSetIndex)
+  {
+    for(auto& it: wgtmap){
+      if(weightPSetIndex.count(it.first) == 0){
+        std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+        std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+        for(auto k: weightPSetIndex) std::cout << "  " << k.first << std::endl;
+        abort();
+      }
+
+      const unsigned int idx = weightPSetIndex.at(it.first);
+      if(idx >= srint.wgt.size()) srint.wgt.resize(idx+1);
+      srint.wgt[idx].univ = it.second;
+    }
   }
 
   //------------------------------------------------

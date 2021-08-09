@@ -284,6 +284,16 @@ void FlashPredict::produce(art::Event& evt)
     const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
     const auto& qClusters = chargeDigest.second.qClusters;
     const auto& tpcWithHits = chargeDigest.second.tpcWithHits;
+    bk.pfp_to_score++;
+    if(chargeDigest.first < 0.){
+      mf::LogInfo("FlashPredict") << "Not a nu candidate slice. Skipping...";
+      bk.no_nu_candidate++;
+      mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                              Flash(kNoScrPE), Score(kNotANuScr)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      continue;
+    }
 
     unsigned hitsInVolume = 0;
     bool in_right = false, in_left = false;
@@ -1030,8 +1040,11 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
     unsigned pfpPDGC = std::abs(pfp_ptr->PdgCode());
     if(fSelectNeutrino &&
-       (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16)) continue;
-    bk.pfp_to_score++;
+       (pfpPDGC != 12) && (pfpPDGC != 14) && (pfpPDGC != 16)){
+      chargeDigestMap[-10.-pId] =
+	ChargeDigest(pId, pfpPDGC, pfp_ptr, flashmatch::QCluster_t{}, std::set<unsigned>{}, -9999.);
+      continue;
+    }
     std::set<unsigned> tpcWithHits;
 
     std::vector<art::Ptr<recob::PFParticle>> particles_in_slice;
@@ -1562,6 +1575,10 @@ void FlashPredict::printBookKeeping(Stream&& out)
     m << "\tNo VUV PE:      \t -" << bk.no_flash_pe
       << ", scored as: " << k0VUVPEScr << " ERROR!\n";
   }
+  if(bk.no_nu_candidate) {
+    m << "\tNo Nu Candidate:\t -" << bk.no_nu_candidate
+      << ", scored as: " << kNotANuScr << "\n";
+  }
   m << "\t----------------------\n";
   if(bk.pfp_bookkeeping != bk.scored_pfp)
     m << "\tPFP Bookkeeping: \t" << bk.pfp_bookkeeping << " ERROR!\n";
@@ -1581,7 +1598,7 @@ void FlashPredict::updateBookKeeping()
   // account for the reasons that a particle might lack
   bk.pfp_bookkeeping = bk.pfp_to_score
     - bk.no_oph_hits - bk.no_charge
-    - bk.no_flash_pe;
+    - bk.no_flash_pe - bk.no_nu_candidate;
 
   if(1-std::abs(bk.events_processed-bk.job_bookkeeping) == 0 ||
      1-std::abs(bk.scored_pfp-bk.pfp_bookkeeping) == 0)
