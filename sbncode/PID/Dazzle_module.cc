@@ -66,6 +66,7 @@
 
 #include <iostream>
 #include <vector>
+#include <numeric> // std::accumulate
 
 namespace sbn {
 class Dazzle : public art::EDProducer {
