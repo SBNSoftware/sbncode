@@ -781,6 +781,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // For each of the sources of systematic weights
     for(auto& fm: fmpewm){
+      if (!fm.isValid()) continue; // Don't crash if StrictMode==false
+
       // Find the weights associated with this particular interaction
       const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fm.at(i);
 
