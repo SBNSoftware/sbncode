@@ -7,7 +7,6 @@
 
 // ---------------- TO DO ----------------
 //
-// - Give real fDet values
 // - Add in cycle and batch to params
 // - Move this list some place useful
 // - Add reco.CRT branch
@@ -341,8 +340,33 @@ void CAFMaker::beginJob() {
 
 //......................................................................
 void CAFMaker::beginRun(art::Run& run) {
-  // fDetID = geom->DetId();
-  fDet = (Det_t)1;//(Det_t)fDetID;
+  // Heuristic method to determine the detector ID
+  const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
+
+  std::string gdml = geom->GDMLFile();
+  gdml = basename(gdml.c_str()); // strip directory part
+  std::cout << "CAFMaker: Attempting to deduce detector from GDML file name: '" << gdml
+            << "' and configured detector name: '" << geom->DetectorName() << "'. ";
+  // Do we find the string in either of the names?
+  const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
+                        (geom->DetectorName().find("sbnd") != std::string::npos));
+  const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
+                          (geom->DetectorName().find("icarus") != std::string::npos));
+  // Either no evidence, or ambiguous evidence
+  if(hasSBND == hasIcarus){
+    std::cout << "Unable to determine detector!" << std::endl;
+    abort();
+  }
+  // Now must be one or the other
+  if(hasSBND){
+    fDet = kSBND;
+    std::cout << "Detected SBND" << std::endl;
+  }
+  if(hasIcarus){
+    fDet = kICARUS;
+    std::cout << "Detected Icarus" << std::endl;
+  }
+
 
   SRGlobal global;
 
@@ -889,6 +913,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
     // Holder for information on this slice
     caf::SRSlice recslc;
+    recslc.truth.det = fDet;
 
     art::Ptr<recob::Slice> slice = slices[sliceID];
     const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
