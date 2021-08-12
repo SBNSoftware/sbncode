@@ -4,6 +4,7 @@ process_name: SBNEventWeight
 
 source: {
   module_type: RootInput
+  maxEvents:   -1 # Number of events to create (-1 means "process all of them")
 }
 
 physics: {
