@@ -27,7 +27,7 @@ incdir  product_dir  include
 libdir  fq_dir       lib
 bindir  fq_dir       bin
 gdmldir product_dir
-fcldir  product_dir
+fcldir  product_dir fcl
 fwdir   product_dir scripts
 
 # With "product  version" table below, we now define dependencies
