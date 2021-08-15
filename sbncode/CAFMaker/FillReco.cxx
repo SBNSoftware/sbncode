@@ -130,11 +130,15 @@ namespace caf
     srshower.dEdx_plane0 = (shower.dEdx())[0];
     srshower.dEdx_plane1 = (shower.dEdx())[1];
     srshower.dEdx_plane2 = (shower.dEdx())[2];
-    srshower.energy_plane0 = (shower.Energy())[0];
-    srshower.energy_plane1 = (shower.Energy())[1];
-    srshower.energy_plane2 = (shower.Energy())[2];
+    // We need to convert the energy from MeV to GeV
+    // Also convert -999 -> -5 for consistency with other defaults in the CAFs
+    srshower.energy.clear();
+    std::transform(shower.Energy().begin(), shower.Energy().end(), std::back_inserter(srshower.energy),
+        [] (float e) {return e > 0 ? e / 1000.f : -5.f;});
+    srshower.energy_plane0 = srshower.energy[0];
+    srshower.energy_plane1 = srshower.energy[1];
+    srshower.energy_plane2 = srshower.energy[2];
     srshower.dEdx   = double_to_float_vector( shower.dEdx() );
-    srshower.energy = double_to_float_vector( shower.Energy() );
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
 
@@ -144,8 +148,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = shower.dEdx().at(shower.best_plane());
-      srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
+      srshower.bestplane_dEdx   = srshower.dEdx.at(shower.best_plane());
+      srshower.bestplane_energy = srshower.energy.at(shower.best_plane());
     }
 
     if(shower.has_open_angle())
@@ -153,8 +157,9 @@ namespace caf
     if(shower.has_length())
       srshower.len = shower.Length();
 
+    // We want density to be in MeV/cm so need to convert the energy back to MeV from GeV
     if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
-        srshower.density = srshower.bestplane_energy / srshower.len;
+        srshower.density = 1000.f * srshower.bestplane_energy / srshower.len;
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
