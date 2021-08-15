@@ -310,6 +310,7 @@ namespace caf {
       srneutrino.E = nu.Nu().EndMomentum().Energy();
       srneutrino.momentum = nu.Nu().EndMomentum().Vect();
       srneutrino.position = nu.Nu().Position().Vect();
+      srneutrino.time = nu.Nu().Position().T() / 1000. /* ns -> us */;
       srneutrino.genweight = nu.Nu().Weight();
 
       const simb::MCParticle& lepton = nu.Lepton();
