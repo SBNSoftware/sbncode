@@ -67,14 +67,168 @@
 #include "GENIE/RwCalculators/GReWeightNuXSecNC.h"
 #include "GENIE/RwCalculators/GReWeightXSecEmpiricalMEC.h"
 
+////CHECK, need GENIE from ub
+//// New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
+//#include "GENIE/RwCalculators/GReWeightXSecMEC.h"
+//
+//// New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
+//#include "GENIE/RwCalculators/GReWeightDeltaradAngle.h"
+//#include "GENIE/RwCalculators/GReWeightNuXSecCOHuB.h"
+//#include "GENIE/RwCalculators/GReWeightRESBugFix.h"
+
 
 namespace sbn {
+namespace {//Helper functions are defined in this block
+
+  // These GENIE knobs are listed in the GSyst_t enum type but are not actually implemented.
+  // They will be skipped and a warning message will be printed.
+  // Last updated 9 Dec 2019 by S. Gardiner
+  std::set< genie::rew::GSyst_t > UNIMPLEMENTED_GENIE_KNOBS = {
+    kXSecTwkDial_RnubarnuCC,  // tweak the ratio of \sigma(\bar\nu CC) / \sigma(\nu CC)
+    kXSecTwkDial_NormCCQEenu, // tweak CCQE normalization (maintains dependence on neutrino energy)
+    kXSecTwkDial_NormDISCC,   // tweak the inclusive DIS CC normalization
+    kXSecTwkDial_DISNuclMod   // unclear intent, does anyone else know? - S. Gardiner
+  };
+
+  // Some GENIE weight calculators can work with sets of knobs that should not be used simultaneously.
+  // For instance, the CCQE weight calculator can vary parameters for the dipole axial form factor model
+  // (the axial mass Ma) or for the z-expansion model, but using both together is invalid. The map below
+  // is used to check that all of the requested knobs from the FHiCL input are compatible with each
+  // other. Assuming they pass this check, the code will then configure the weight calculators to use
+  // the correct "basis" of reweighting knobs as appropriate.
+
+  // Outer keys are names of GENIE weight calculators that use sets of incompatible knobs. The names
+  // need to match those used in GenieWeightCalc::SetupWeightCalculators(), specifically in the
+  // calls to genie::rew::GReWeight::AdoptWeightCalc().
+  // Inner keys are integer codes used to represent (and configure) each of the mutually exclusive
+  // modes (i.e., to select one of the sets of incompatible knobs to use for the weight calculation).
+  // Values are GSyst_t knob labels that belong to the given mode.
+  std::map< std::string, std::map<int, std::set<genie::rew::GSyst_t> > > INCOMPATIBLE_GENIE_KNOBS = {
+    // CCQE (genie::rew::GReWeightNuXSecCCQE)
+    { "xsec_ccqe", {
+      { genie::rew::GReWeightNuXSecCCQE::kModeNormAndMaShape,
+        {
+          // Norm + shape
+          kXSecTwkDial_NormCCQE,    // tweak CCQE normalization (energy independent)
+          kXSecTwkDial_MaCCQEshape, // tweak Ma CCQE, affects dsigma(CCQE)/dQ2 in shape only (normalized to constant integral)
+          kXSecTwkDial_E0CCQEshape  // tweak E0 CCQE RunningMA, affects dsigma(CCQE)/dQ2 in shape only (normalized to constant integral)
+        }
+      },
+      { genie::rew::GReWeightNuXSecCCQE::kModeMa,
+        {
+          // Ma
+          kXSecTwkDial_MaCCQE, // tweak Ma CCQE, affects dsigma(CCQE)/dQ2 both in shape and normalization
+          kXSecTwkDial_E0CCQE, // tweak E0 CCQE RunningMA, affects dsigma(CCQE)/dQ2 both in shape and normalization
+        }
+      },
+      { genie::rew::GReWeightNuXSecCCQE::kModeZExp,
+        {
+          // Z-expansion
+          kXSecTwkDial_ZNormCCQE,  // tweak Z-expansion CCQE normalization (energy independent)
+          kXSecTwkDial_ZExpA1CCQE, // tweak Z-expansion coefficient 1, affects dsigma(CCQE)/dQ2 both in shape and normalization
+          kXSecTwkDial_ZExpA2CCQE, // tweak Z-expansion coefficient 2, affects dsigma(CCQE)/dQ2 both in shape and normalization
+          kXSecTwkDial_ZExpA3CCQE, // tweak Z-expansion coefficient 3, affects dsigma(CCQE)/dQ2 both in shape and normalization
+          kXSecTwkDial_ZExpA4CCQE  // tweak Z-expansion coefficient 4, affects dsigma(CCQE)/dQ2 both in shape and normalization
+        }
+      },
+    } },
+
+    // CCRES (genie::rew::GReWeightNuXSecCCRES)
+    { "xsec_ccres", {
+      { genie::rew::GReWeightNuXSecCCRES::kModeNormAndMaMvShape,
+        {
+          // Norm + shape
+          kXSecTwkDial_NormCCRES,    /// tweak CCRES normalization
+          kXSecTwkDial_MaCCRESshape, /// tweak Ma CCRES, affects d2sigma(CCRES)/dWdQ2 in shape only (normalized to constant integral)
+          kXSecTwkDial_MvCCRESshape  /// tweak Mv CCRES, affects d2sigma(CCRES)/dWdQ2 in shape only (normalized to constant integral)
+        }
+      },
+      { genie::rew::GReWeightNuXSecCCRES::kModeMaMv,
+        {
+          // Ma + Mv
+          kXSecTwkDial_MaCCRES, // tweak Ma CCRES, affects d2sigma(CCRES)/dWdQ2 both in shape and normalization
+          kXSecTwkDial_MvCCRES  // tweak Mv CCRES, affects d2sigma(CCRES)/dWdQ2 both in shape and normalization
+        }
+      }
+    } },
+
+    // NCRES (genie::rew::GReWeightNuXSecNCRES)
+    { "xsec_ncres", {
+      { genie::rew::GReWeightNuXSecNCRES::kModeNormAndMaMvShape,
+        {
+          // Norm + shape
+          kXSecTwkDial_NormNCRES,    /// tweak NCRES normalization
+          kXSecTwkDial_MaNCRESshape, /// tweak Ma NCRES, affects d2sigma(NCRES)/dWdQ2 in shape only (normalized to constant integral)
+          kXSecTwkDial_MvNCRESshape  /// tweak Mv NCRES, affects d2sigma(NCRES)/dWdQ2 in shape only (normalized to constant integral)
+        }
+      },
+      { genie::rew::GReWeightNuXSecNCRES::kModeMaMv,
+        {
+          // Ma + Mv
+          kXSecTwkDial_MaNCRES, // tweak Ma NCRES, affects d2sigma(NCRES)/dWdQ2 both in shape and normalization
+          kXSecTwkDial_MvNCRES  // tweak Mv NCRES, affects d2sigma(NCRES)/dWdQ2 both in shape and normalization
+        }
+      }
+    } },
+
+    // DIS (genie::rew::GReWeightNuXSecDIS)
+    { "xsec_dis", {
+      { genie::rew::GReWeightNuXSecDIS::kModeABCV12u,
+        {
+          kXSecTwkDial_AhtBY,  // tweak the Bodek-Yang model parameter A_{ht} - incl. both shape and normalization effect
+          kXSecTwkDial_BhtBY,  // tweak the Bodek-Yang model parameter B_{ht} - incl. both shape and normalization effect
+          kXSecTwkDial_CV1uBY, // tweak the Bodek-Yang model parameter CV1u - incl. both shape and normalization effect
+          kXSecTwkDial_CV2uBY  // tweak the Bodek-Yang model parameter CV2u - incl. both shape and normalization effect
+        }
+      },
+      { genie::rew::GReWeightNuXSecDIS::kModeABCV12uShape,
+        {
+          kXSecTwkDial_AhtBYshape,  // tweak the Bodek-Yang model parameter A_{ht} - shape only effect to d2sigma(DIS)/dxdy
+          kXSecTwkDial_BhtBYshape,  // tweak the Bodek-Yang model parameter B_{ht} - shape only effect to d2sigma(DIS)/dxdy
+          kXSecTwkDial_CV1uBYshape, // tweak the Bodek-Yang model parameter CV1u - shape only effect to d2sigma(DIS)/dxdy
+          kXSecTwkDial_CV2uBYshape  // tweak the Bodek-Yang model parameter CV2u - shape only effect to d2sigma(DIS)/dxdy
+        }
+      }
+    } }
+  };
+
+
+  // Helper function that checks whether a string storing a GENIE knob name is
+  // valid. Also stores the corresponding GSyst_t enum value for the knob.
+  // This grab the knob by <string> name;
+  bool valid_knob_name( const std::string& knob_name, genie::rew::GSyst_t& knob ) {
+    knob = genie::rew::GSyst::FromString( knob_name );
+    if ( knob != kNullSystematic && knob != kNTwkDials ) {
+      if ( UNIMPLEMENTED_GENIE_KNOBS.count(knob) ) {
+        MF_LOG_WARNING("GENIEWeightCalc") << "Ignoring unimplemented GENIE"
+          << " knob " << knob_name;
+        return false;
+      }
+    }
+    else {
+      throw cet::exception(__PRETTY_FUNCTION__) << "Encountered unrecognized"
+        "GENIE knob \"" << knob_name << '\"';
+      return false;
+    }
+    return true;
+  }
+
+
+  // Set of FHiCL weight calculator labels for which the tuned CV will be
+  // ignored. If the name of the weight calculator doesn't appear in this set,
+  // then variation weights will be thrown around the tuned CV.
+  std::set< std::string > CALC_NAMES_THAT_IGNORE_TUNED_CV = { "RootinoFix" };
+
+} // anonymous namespace
+
+
   namespace evwgh {
 
 class GenieWeightCalc : public WeightCalc {
 public:
   GenieWeightCalc() : WeightCalc() {}
 
+	//CHECK
   void Configure(fhicl::ParameterSet const& pset,
                  CLHEP::HepRandomEngine& engine) override;
 
@@ -92,6 +246,7 @@ private:
   std::map< std::string, int > CheckForIncompatibleSystematics(
         const std::vector<genie::rew::GSyst_t>& knob_vec);
 
+	//CHECK
   void SetupWeightCalculators(genie::rew::GReWeight& rw,
         const std::map<std::string, int>& modes_to_use);
 
@@ -103,178 +258,175 @@ private:
 
 
 void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
-                                CLHEP::HepRandomEngine& engine) {
-//  // Global config
-//  fGenieModuleLabel = p.get<std::string>("genie_module_label");
-//  const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
+		CLHEP::HepRandomEngine& engine) {
+	// Check add some messengers
+
+	// Global config
+	fGenieModuleLabel = p.get<std::string>("genie_module_label");
+
+	const fhicl::ParameterSet& param_CVs = p.get<fhicl::ParameterSet>(
+			"genie_central_values", fhicl::ParameterSet() );
+	std::vector< std::string > CV_knob_names = param_CVs.get_all_keys();
+
+	std::map< genie::rew::GSyst_t, double > gsyst_to_cv_map;
+	genie::rew::GSyst_t temp_knob;
+
+	// Check add some messengers
+
+	// Calculator config
+	const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
+	auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
+	auto const& parsigmas = pset.get<std::vector<float> >("parameter_sigma");
+
+	auto const par_mins = pset.get< std::vector<float> >( "parameter_min");
+	auto const par_maxes = pset.get< std::vector<float> >( "parameter_max");
+
+
+	if (pars.size() != parsigmas.size()) {
+		throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+			<< "parameter_list and parameter_sigma length mismatch."
+			<< std::endl;
+	}
+
+	std::string mode = pset.get<std::string>("mode");
+
+	//CHECK, add a check on sigmas_ok
+
+	// Convert the list of GENIE knob names from the input FHiCL configuration
+	// into a vector of genie::rew::GSyst_t labels
+	std::vector< genie::rew::GSyst_t > knobs_to_use;
+	for ( const auto& knob_name : pars ) {
+		if ( valid_knob_name(knob_name, temp_knob) ) knobs_to_use.push_back( temp_knob );
+	}
+
+	//check if all_knobs_vec are good
+    std::vector< genie::rew::GSyst_t > all_knobs_vec = knobs_to_use;
+    for ( const auto& pair : gsyst_to_cv_map ) {
+      genie::rew::GSyst_t cv_knob = pair.first;
+      auto begin = all_knobs_vec.cbegin();
+      auto end = all_knobs_vec.cend();
+      if ( !std::count(begin, end, cv_knob) ) all_knobs_vec.push_back( cv_knob );
+    }
+    std::map< std::string, int >
+      modes_to_use = this->CheckForIncompatibleSystematics( all_knobs_vec );
+
+	int num_universes = 1; //for "central_value" or "default" mode
+
+	 if ( mode.find("pm1sigma") != std::string::npos
+      || mode.find("minmax") != std::string::npos )
+    {
+      num_universes = 2;
+    }
+    else if ( mode.find("multisim") != std::string::npos ) {
+      num_universes = pset.get<int>( "number_of_multisims", 1 );
+
+      // Since we're in multisim mode, force retrieval of the random
+      // number seed. If it wasn't set, this will trigger an exception.
+      // We want this check because otherwise the multisim universes
+      // will not be easily reproducible.
+//      int dummy_seed = pset.get<int>( "random_seed" );
+//      MF_LOG_INFO("GENIEWeightCalc") << "GENIE weight calculator "
+//        << this->GetName() << " will generate " << num_universes
+//        << " multisim universes";// with random seed " << dummy_seed;
+    }
+
+	// Set up parameters
+	fParameterSet.Configure(GetFullName(), mode, num_universes);
+
+	for (size_t i=0; i<pars.size(); i++) {
+		//CHECK, only add the compatible knobs;
+		fParameterSet.AddParameter(pars[i], parsigmas[i]);
+		//AddParameter(name, width, mean=0, covIndex=0);
+		//Create object EventWeightParameter p(name, mean, width, covIndex)
+		//
+		//`it.second` from fParameterSet.fParameterMap 
+		//		is a vector<float> defined by the following;
+		//"multisim" gives: CLHEP::RandGaussQ::shoot(&engine, p.fMean, p.fWidth)
+		//"kPMNSigma" gives: p.fMean + p.fWidth & p.fMean + p.fWidth
+		//(CHECK), update kPMNSigma
+		//"kFixed" gives: p.fMean + p.fWidth
+		//"No other modes"
+		//
+		//CHECK, need to update sbnobj for more modes?
+		//sbnobj: mulsitims/PMNSigma/Fixed (include 3 cases); default, exit;
+		//							 (width,mean)=(0,\pm1)/(0,0)/(0,sigma);
+		//Larsim: multisim/pm1sigma/minmax/central_value; default, exact sigma;
+		//multisim gives: sigmas* CLHEP::RandGaussQ::shoot(&engine, 0., 1.); [DIFFERENT] CHECK
+	}
+
+	fParameterSet.Sample(engine);
+
+
+	//loop over parameters;
+	for (auto const& it : fParameterSet.fParameterMap) {//member of std::map<EventWeightParameter, std::vector<float> >
+	//(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
+		std::string name = it.first.fName;
+		std::cout << GetFullName() << ": Setting up " << name << std::endl;
+		// Set up reweighters
+		//rwVector.resize(fParameterSet.fNuniverses);
+		reweightVector.resize( num_universes );// Reconfigure this later in this function.
+
+		// Set up the weight calculators for each universe
+		for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
+		// Set up GENIE with the currently active tune
+		// CHCEK, not used?
+		//	evgb::SetEventGeneratorListAndTune();
+		//	fTuneName = evgb::ExpandEnvVar("${GENIE_XSEC_TUNE}");
+
+
+		//Assign knob with new values based on variation
+		//loop over universes
+		for ( size_t u = 0; u < reweightVector.size(); ++u ) {
+
+			auto& rwght = reweightVector.at( u );
+			genie::rew::GSystSet& syst = rwght.Systematics();
+
+//			for ( unsigned int k = 0; k < knobs_to_use.size(); ++k ) {
+				genie::rew::GSyst_t knob; 
+				valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
+				//genie::rew::GSyst_t knob = //knobs_to_use.at( k );
+
+				double twk_dial_value = it.second[u];//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
+				syst.Set( knob, twk_dial_value );
+
+				if ( !fQuietMode ) {
+					MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << u << ", knob name" << name // << k
+						<< " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
+						<< " the value " << twk_dial_value;
+				}
+//			} // loop over tweaked knobs
+
+			rwght.Reconfigure();
+			rwght.Print();
+		}//next universe
+	}//next parameter
+
+//	for (auto const& it : fParameterSet.fParameterMap) {
+//		std::string name = it.first.fName;
+//		std::cout << GetFullName() << ": Setting up " << name << std::endl;
 //
-//  // Calculator config
-//  auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
-//  auto const& parsigmas = pset.get<std::vector<float> >("parameter_sigma");
+//		for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
+//			rwgt::NuReweight& rw = rwVector[i];
 //
-//  if (pars.size() != parsigmas.size()) {
-//    throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-//      << "parameter_list and parameter_sigma length mismatch."
-//      << std::endl;
-//  }
-//
-//  int number_of_multisims = pset.get<int>("number_of_multisims", 1);
-//  std::string mode = pset.get<std::string>("mode");
-//
-//  // Set up parameters
-//  fParameterSet.Configure(GetFullName(), mode, number_of_multisims);
-//
-//  for (size_t i=0; i<pars.size(); i++) {
-//    fParameterSet.AddParameter(pars[i], parsigmas[i]);
-//  }
-//
-//  fParameterSet.Sample(engine);
-//
-//  // Set up GENIE with the currently active tune
-//  evgb::SetEventGeneratorListAndTune();
-//  fTuneName = evgb::ExpandEnvVar("${GENIE_XSEC_TUNE}");
-//
-//  // Set up reweighters
-//  rwVector.resize(fParameterSet.fNuniverses);
-//
-//  for (auto const& it : fParameterSet.fParameterMap) {
-//    std::string name = it.first.fName;
-//    std::cout << GetFullName() << ": Setting up " << name << std::endl;
-//
-//    for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
-//      rwgt::NuReweight& rw = rwVector[i];
-//
-//      // Axial mass for NC elastic
-//      if (name == "NCELaxial")
-//        rw.ReweightNCEL(it.second[i], 0);
-//      // Strange axial form factor for NC elastic
-//      else if (name == "NCELeta")
-//        rw.ReweightNCEL(0, it.second[i]);
-//      // Axial mass for CC quasi-elastic
-//      else if (name == "QEMA")
-//        rw.ReweightQEMA(it.second[i]);
-//      // Choice of CCQE vector form factor (0 => BBA05, 1 => Dipole)
-//      else if (name == "QEVec")
-//        rw.ReweightQEVec(it.second[i]);
-//      // Axial mass for CC resonance production
-//      else if (name == "CCResAxial")
-//        rw.ReweightCCRes(it.second[i], 0);
-//      // Vector mass for CC resonance production
-//      else if (name == "CCResVector")
-//        rw.ReweightCCRes(0, it.second[i]);
-//      // Axial mass for NC resonance production
-//      else if (name == "NCResAxial")
-//        rw.ReweightNCRes(it.second[i], 0);
-//      // Vector mass for NC resonance production
-//      else if (name == "NCResVector")
-//        rw.ReweightNCRes(0, it.second[i]);
-//      // Axial mass for CC and NC coherent pion production
-//      else if (name == "CohMA")
-//        rw.ReweightCoh(it.second[i], 0);
-//      // Nuclear size param. controlling pi absorption in Rein-Sehgal model
-//      else if (name == "CohR0")
-//        rw.ReweightCoh(0, it.second[i]);
-//      // v+p and vbar + n (1 pi) type interactions (*)
-//      else if (name == "NonResRvp1pi")
-//        rw.ReweightNonResRvp1pi(it.second[i]);
-//      // v+n and vbar + p (1 pi) type interactions (*)
-//      else if (name == "NonResRvbarp1pi")
-//        rw.ReweightNonResRvbarp1pi(it.second[i]);
-//      // v+p and vbar + n (2 pi) type interactions (*)
-//      else if (name == "NonResRvp2pi")
-//        rw.ReweightNonResRvp2pi(it.second[i]);
-//       // v+n and vbar + p (2 pi) type interactions (*)
-//      else if (name == "NonResRvbarp2pi")
-//        rw.ReweightNonResRvbarp2pi(it.second[i]);
-//      // BR for radiative resonance decay
-//      else if (name == "ResDecayGamma")
-//        rw.ReweightResDecay(it.second[i], 0, 0);
-//      // BR for single-eta resonance decay
-//      else if (name == "ResDecayEta")
-//        rw.ReweightResDecay(0, it.second[i], 0);
-//      // Pion angular distibution in Delta -> pi N (0 => isotropic, 1 => RS)
-//      else if (name == "ResDecayTheta")
-//        rw.ReweightResDecay(0, 0, it.second[i]);
-//      // NC normalization
-//      else if (name == "NC")
-//        rw.ReweightNC(it.second[i]);
-//      // Ath higher twist param in BY model scaling variable xi_w
-//      else if (name == "DISAth")
-//        rw.ReweightDIS(it.second[i], 0, 0, 0);
-//      // Bth higher twist param in BY model scaling variable xi_w
-//      else if (name == "DISBth")
-//        rw.ReweightDIS(0, it.second[i], 0, 0);
-//      // Cv1u u valence GRV98 PDF correction param in BY model
-//      else if (name == "DISCv1u")
-//        rw.ReweightDIS(0, 0, it.second[i], 0);
-//      // Cv2u u valence GRV98 PDF correction param in BY model
-//      else if (name == "DISCv2u")
-//        rw.ReweightDIS(0, 0, 0, it.second[i]);
-//      // Not implemented
-//      else if (name == "DISnucl")
-//        rw.ReweightDISnucl(it.second[i]);
-//      // Pion Feynman x for Npi states in AGKY
-//      else if (name == "AGKYxF")
-//        rw.ReweightAGKY(it.second[i], 0);
-//      // Pion transverse momentum for Npi states in AGKY
-//      else if (name == "AGKYpT")
-//        rw.ReweightAGKY(0, it.second[i]);
-//      // Hadron Formation Zone
-//      else if (name == "FormZone")
-//        rw.ReweightFormZone(it.second[i]);
-//      // CCQE Pauli Suppression via changes in Fermi level kF
-//      else if (name == "FermiGasModelKf")
-//        rw.ReweightFGM(it.second[i], 0);
-//      // Choice of model (0 => FermiGas, 1 => SF (spectral function))
-//      else if (name == "FermiGasModelSf")
-//        rw.ReweightFGM(0, it.second[i]);
-//      // Nucleon mean free path (total rescattering probability)
-//      else if (name == "IntraNukeNmfp")
-//        rw.ReweightIntraNuke(rwgt::fReweightMFP_N, it.second[i]);
-//      // Nucleon charge exchange probability
-//      else if (name == "IntraNukeNcex")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrCEx_N, it.second[i]);
-//      // Nucleon inelastic reaction probability
-//      else if (name == "IntraNukeNinel")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrInel_N, it.second[i]);
-//      // Nucleon absorption probability
-//      else if (name == "IntraNukeNabs")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrAbs_N, it.second[i]);
-//      // Nucleon pi-production probability
-//      else if (name == "IntraNukeNpi")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrPiProd_N, it.second[i]);
-//      // Pi mean free path (total rescattering probability)
-//      else if (name == "IntraNukePImfp")
-//        rw.ReweightIntraNuke(rwgt::fReweightMFP_pi, it.second[i]);
-//      // Pi charge exchange probability
-//      else if (name == "IntraNukePIcex")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrCEx_pi, it.second[i]);
-//      // Pi inelastic reaction probability
-//      else if (name == "IntraNukePIinel")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrInel_pi, it.second[i]);
-//      // Pi absorption probability
-//      else if (name == "IntraNukePIabs")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrAbs_pi, it.second[i]);
-//      // Pi pi-production probability
-//      else if (name == "IntraNukePIpi")
-//        rw.ReweightIntraNuke(rwgt::fReweightFrPiProd_pi, it.second[i]);
-//      // Unknown
-//      else {
-//        throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-//          << "Unknown GENIE parameter " << name << std::endl;
-//      }
-//    }
-//  }
-//
-//  // Configure reweight drivers
-//  for (auto& rw : rwVector) {
-//    rw.Configure();
-//  }
+//			if (name == "IntraNukePIpi")
+//				rw.ReweightIntraNuke(rwgt::fReweightFrPiProd_pi, it.second[i]);
+//			// Unknown
+//			else {
+//				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
+//					<< "Unknown GENIE parameter " << name << std::endl;
+//			}
+//		}
+//	}
+
+	// Configure reweight drivers
+//	for (auto& rw : rwVector) {
+//		rw.Configure();
+//	}
 }
 
 //Keng:
 //copied from larsim's GetWeight()
-//2d weights --> 1d weights;
+//2d weights --> 1d weights; no major modifications.
 std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
     // Get the MC generator information out of the event
     // These are both handles to MC information.
@@ -339,16 +491,38 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 }
 
 
+//CHECK, this can potentially be simplified;
 std::map< std::string, int > GenieWeightCalc::CheckForIncompatibleSystematics(
 		const std::vector<genie::rew::GSyst_t>& knob_vec){
-		
     std::map< std::string, int > modes_to_use;
-	{
-	//CHECK add something
 
-	}
+    for ( const auto& knob : knob_vec ) {
+      for ( const auto& pair1 : INCOMPATIBLE_GENIE_KNOBS ) {
+        std::string calc_name = pair1.first;
+        const auto& mode_map = pair1.second;
+        for ( const auto& pair2 : mode_map ) {
+          int mode = pair2.first;//<int> code of the variable
+          std::set<genie::rew::GSyst_t> knob_set = pair2.second;//incomp. knobs
+
+          if ( knob_set.count(knob) ) {//<string> leads to incomp. knobs
+            auto search = modes_to_use.find( calc_name );
+            if ( search != modes_to_use.end() ) {//found a incomp. knob's name
+              if ( search->second != mode ) {//if the knob is not connected to the variable?
+                auto knob_str = genie::rew::GSyst::AsString( knob );
+                throw cet::exception(__PRETTY_FUNCTION__) << this->GetName()
+                  << ": the GENIE knob " << knob_str << " is incompatible"
+                  << " with others that are already configured";
+              }
+            }
+            else modes_to_use[ calc_name ] = mode;
+          }
+        }
+      }
+    }
+
     return modes_to_use;
-		}
+  }
+
 
 void GenieWeightCalc::SetupWeightCalculators(genie::rew::GReWeight& rw,
 		const std::map<std::string, int>& modes_to_use){
