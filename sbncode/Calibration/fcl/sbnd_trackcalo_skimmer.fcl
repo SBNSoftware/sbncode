@@ -44,6 +44,9 @@ caloskim: {
   TRKproducer:  "pandoraTrack"
   T0producer: "pandora"
   PFPproducer: "pandora"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "gaushit"
   RawDigitproducers: ["daq"]
   RequireT0: true
   HitRawDigitsTickCollectWidth: 50

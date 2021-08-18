@@ -129,6 +129,18 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
 
+  // Identify which experiment
+  //TODO: add safeguard in case neither detectors are found? 
+
+  std::string gdml = geometry->GDMLFile();
+  gdml = basename(gdml.c_str()); //strip directory part
+  
+  const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
+			(geometry->DetectorName().find("sbnd") != std::string::npos));
+
+  const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
+			(geometry->DetectorName().find("icarus") != std::string::npos));
+
   // Setup the volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> TPCVols;
   std::vector<geo::BoxBoundedGeo> AVs;
@@ -289,7 +301,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     fWiresToSave.clear();
 
     // Fill the track!
-    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, calo, rawdigits, track_infos);
+    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, calo, rawdigits, track_infos, hasSBND, hasIcarus);
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
@@ -326,13 +338,21 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
 // Returns the minimum hit time for hits in either TPC E (TPCE==true)
 // or TPC W (TPCE==false)
-float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, bool TPCE) {
+float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, 
+		bool TPCE, 
+		bool hasSBND,
+		bool hasIcarus) {
   double min = -1;
+  bool hit_is_TPCE = -1;
 
   for (const sbn::TrackHitInfo &h: hits) {
-    // TODO: what about SBND?
+    
     // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    bool hit_is_TPCE = h.h.tpc <= 1;
+    if(hasIcarus) hit_is_TPCE = h.h.tpc <= 1;
+    
+    // In SBND, TPC 0 and 1
+    if(hasSBND) hit_is_TPCE = h.h.tpc <= 0;
+    
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (min < 0. || h.h.time < min) min = h.h.time;
     } 
@@ -343,13 +363,21 @@ float HitMinTime(const std::vector<sbn::TrackHitInfo> &hits, bool TPCE) {
 
 // Returns the maximum hit time for hits in either TPC E (TPCE==true)
 // or TPC W (TPCE==false)
-float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits, bool TPCE) {
+float HitMaxTime(const std::vector<sbn::TrackHitInfo> &hits, 
+		bool TPCE,
+		bool hasSBND,
+		bool hasIcarus) {
   double max = -1;
+  bool hit_is_TPCE = -1;
 
   for (const sbn::TrackHitInfo &h: hits) {
-    // TODO: what about SBND?
+    
     // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    bool hit_is_TPCE = h.h.tpc <= 1;
+    if(hasIcarus) hit_is_TPCE = h.h.tpc <= 1;
+    
+    // In SBND, TPC 0 and 1
+    if(hasSBND) hit_is_TPCE = h.h.tpc <= 0;
+    
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (max < 0. || h.h.time > max) max = h.h.time;
     } 
@@ -692,7 +720,9 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
-    const std::vector<GlobalTrackInfo> &tracks) {
+    const std::vector<GlobalTrackInfo> &tracks,
+    const bool hasSBND,
+    const bool hasIcarus) {
 
   // Fill top level stuff
   fTrack->meta = fMeta;
@@ -730,18 +760,18 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
   }
 
   // Hit summary info
-  fTrack->hit_min_time_p0_tpcE = HitMinTime(fTrack->hits0, true);
-  fTrack->hit_max_time_p0_tpcE = HitMaxTime(fTrack->hits0, true);
-  fTrack->hit_min_time_p0_tpcW = HitMinTime(fTrack->hits0, false);
-  fTrack->hit_max_time_p0_tpcW = HitMaxTime(fTrack->hits0, false);
-  fTrack->hit_min_time_p1_tpcE = HitMinTime(fTrack->hits1, true);
-  fTrack->hit_max_time_p1_tpcE = HitMaxTime(fTrack->hits1, true);
-  fTrack->hit_min_time_p1_tpcW = HitMinTime(fTrack->hits1, false);
-  fTrack->hit_max_time_p1_tpcW = HitMaxTime(fTrack->hits1, false);
-  fTrack->hit_min_time_p2_tpcE = HitMinTime(fTrack->hits2, true);
-  fTrack->hit_max_time_p2_tpcE = HitMaxTime(fTrack->hits2, true);
-  fTrack->hit_min_time_p2_tpcW = HitMinTime(fTrack->hits2, false);
-  fTrack->hit_max_time_p2_tpcW = HitMaxTime(fTrack->hits2, false);
+  fTrack->hit_min_time_p0_tpcE = HitMinTime(fTrack->hits0, true, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p0_tpcE = HitMaxTime(fTrack->hits0, true, hasSBND, hasIcarus);
+  fTrack->hit_min_time_p0_tpcW = HitMinTime(fTrack->hits0, false, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p0_tpcW = HitMaxTime(fTrack->hits0, false, hasSBND, hasIcarus);
+  fTrack->hit_min_time_p1_tpcE = HitMinTime(fTrack->hits1, true, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p1_tpcE = HitMaxTime(fTrack->hits1, true, hasSBND, hasIcarus);
+  fTrack->hit_min_time_p1_tpcW = HitMinTime(fTrack->hits1, false, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p1_tpcW = HitMaxTime(fTrack->hits1, false, hasSBND, hasIcarus);
+  fTrack->hit_min_time_p2_tpcE = HitMinTime(fTrack->hits2, true, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p2_tpcE = HitMaxTime(fTrack->hits2, true, hasSBND, hasIcarus);
+  fTrack->hit_min_time_p2_tpcW = HitMinTime(fTrack->hits2, false, hasSBND, hasIcarus);
+  fTrack->hit_max_time_p2_tpcW = HitMaxTime(fTrack->hits2, false, hasSBND, hasIcarus);
 
   // Save information on a fit to the end of the track
   if (fDoTailFit) DoTailFit();
