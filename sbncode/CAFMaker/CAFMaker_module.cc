@@ -357,6 +357,8 @@ void CAFMaker::beginRun(art::Run& run) {
   gdml = basename(gdml.c_str()); // strip directory part
   std::cout << "CAFMaker: Attempting to deduce detector from GDML file name: '" << gdml
             << "' and configured detector name: '" << geom->DetectorName() << "'. ";
+  // Lowercase filename, in case it contains "SBND" or "Icarus" etc
+  for(unsigned int i = 0; i < gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]);
   // Do we find the string in either of the names?
   const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
                         (geom->DetectorName().find("sbnd") != std::string::npos));
