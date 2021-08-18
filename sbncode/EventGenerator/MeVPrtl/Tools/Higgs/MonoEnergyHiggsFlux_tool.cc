@@ -15,7 +15,9 @@
 
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlFlux.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
+
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+
 
 // LArSoft includes
 

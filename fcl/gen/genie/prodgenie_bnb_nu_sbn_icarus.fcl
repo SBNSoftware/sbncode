@@ -11,5 +11,4 @@ physics.producers.generator.TopVolume: "volDetEnclosure"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/mastbaum/flux/icarus/zarko-expires20171031/"
 physics.producers.generator.FluxFiles: [ "converted_beammc_icarus_*.root" ]
-physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
 

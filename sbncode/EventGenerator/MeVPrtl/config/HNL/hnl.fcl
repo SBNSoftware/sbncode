@@ -1,0 +1,97 @@
+#include "numi_kaon_common.fcl"
+BEGIN_PROLOG
+
+hnlM: 0.265
+
+kaon2hnl: {
+  tool_type: Kaon2HNLFlux
+  M: @local::hnlM # GeV/c^2
+  MagUe4: 0
+  MagUm4: 1e-7
+  KDAROnly: false
+
+  Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
+  BeamOrigin: @local::icarus_numi_beam_origin
+
+  // timing config
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
+}
+
+decay_hnl: {
+  tool_type: HNLMakeDecay
+  Decays: ["mu_pi"]
+  Majorana: true
+  ReferenceUE4: 0
+  ReferenceUM4: 1e-7
+  ReferenceHNLMass: @local::hnlM
+  ReferenceRayLength: 2100 # 21m
+  ReferenceHNLEnergyFromKaonEnergy: 15. # GeV
+}
+
+# RayTrace configs
+mcraytrace: @local::rethrow_ray_trace_box
+mcraytrace.ReferencePrtlMass: @local::hnlM # GeV
+mcraytrace.ReferenceScndPDG: 13 # muon
+mcraytrace.NThrows: 100 
+
+wgtraytrace: @local::weighted_ray_trace_box
+wgtraytrace.ReferencePrtlMass: @local::hnlM # GeV
+wgtraytrace.ReferenceScndPDG: 13 # muon
+
+mxdraytrace: @local::mixedweight_ray_trace_box
+mxdraytrace.ReferencePrtlMass: @local::hnlM # GeV
+mxdraytrace.ReferenceScndPDG: 13 # muon
+
+# KDAR configs
+kaon2hnl_kdar: @local::kaon2hnl
+kaon2hnl_kdar.KDAROnly: true
+
+decay_hnl_kdar: @local::decay_hnl
+decay_hnl_kdar.ReferenceHNLEnergyFromKaonEnergy: 0.494
+
+mixedweight_ray_trace_box_kdar: @local::mixedweight_ray_trace_box
+mixedweight_ray_trace_box_kdar.ReferenceKaonEnergy: 0.494
+mixedweight_ray_trace_box_kdar.ReferenceLabSolidAngle: 1e-2
+mixedweight_ray_trace_box_kdar.MaxWeightFudge: 5
+
+hnl_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl
+  RayTrace: @local::mxdraytrace
+  Decay: @local::decay_hnl
+}
+
+hnl_gen_kdar: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl_kdar
+  RayTrace: @local::mixedweight_ray_trace_box_kdar
+  Decay: @local::decay_hnl_kdar
+
+}
+hnl_gen_kdar.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
+hnl_gen_kdar.RayTrace.ReferenceScndPDG: 13 # muon
+
+
+hnl: @local::hnl_gen
+hnl.Deweight: false
+hnl.Produce: false
+hnl.AnaOutput: true
+
+
+hnl_test_raytrace: {
+  module_type: MeVPrtlTestRayTrace
+  MesonGen: @local::numi_kaon
+  Flux: @local::kaon2hnl
+  RayTraces: [
+    @local::mcraytrace,
+    @local::wgtraytrace,
+    @local::mxdraytrace
+  ]
+}
+
+
+END_PROLOG

@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_25_00
+parent sbncode v09_28_01
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -34,10 +34,11 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_25_00
-sbnobj              v09_11_12
-sbnanaobj           v09_16_08
-sbndaq_artdaq_core  v0_07_06_01_of0
+larsoft             v09_28_01
+sbnobj              v09_11_17
+sbnanaobj           v09_16_13
+sbndaq_artdaq_core  v0_07_08_of0
+genie_xsec          v3_00_04a
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -46,11 +47,11 @@ cetbuildtools v7_17_01 - only_for_build
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core  notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug           -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof            -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug            -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof             -nq-
+qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec               notes
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s110     G1810a0211a:k250:e1000   -nq-
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s110      G1810a0211a:k250:e1000   -nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s110      G1810a0211a:k250:e1000   -nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s110       G1810a0211a:k250:e1000   -nq-
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin
@@ -60,7 +61,7 @@ table_fragment_end
 
 # Preserve tabs and formatting in emacs and vi / vim:
 
-### Local Variables:
+### Local Variables:OA
 ### tab-width: 8
 ### End:
 
