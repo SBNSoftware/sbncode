@@ -216,7 +216,8 @@ float HitMinTime(const std::vector<sbn::HitInfo> &hits, bool TPCE) {
   for (const sbn::HitInfo &h: hits) {
     // TODO: what about SBND?
     // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    bool hit_is_TPCE = h.tpc <= 1;
+    // In SBND, only 2 TPCs: 0 and 1
+    bool hit_is_TPCE = h.tpc <= 0;
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (min < 0. || h.time < min) min = h.time;
     } 
@@ -233,7 +234,8 @@ float HitMaxTime(const std::vector<sbn::HitInfo> &hits, bool TPCE) {
   for (const sbn::HitInfo &h: hits) {
     // TODO: what about SBND?
     // In ICARUS, TPC E is 0, 1 and TPC W is 2, 3
-    bool hit_is_TPCE = h.tpc <= 1;
+    // In SBND, only 2 TPCs: 0 and 1
+    bool hit_is_TPCE = h.tpc <= 0;
     if (h.oncalo && hit_is_TPCE == TPCE) {
       if (max < 0. || h.time > max) max = h.time;
     } 
