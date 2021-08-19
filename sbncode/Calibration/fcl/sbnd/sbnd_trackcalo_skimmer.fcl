@@ -40,12 +40,12 @@ caloskim_pandoraSCECalo: {
     
 caloskim: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "pandoraCalo"
+  CALOproducer: "caloskimCalorimetry"
   TRKproducer:  "pandoraTrack"
   T0producer: "pandora"
   PFPproducer: "pandora"
-  G4producer: ""
-  SimChannelproducer: ""
+  G4producer: "largeant"
+  SimChannelproducer: "largeant"
   HITproducer: "gaushit"
   RawDigitproducers: ["daq"]
   RequireT0: true
@@ -101,7 +101,6 @@ a2c_selection: {
 }
 
 caloskim_nodigits_goldentracks: @local::caloskim_nodigits
-###caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
-caloskim_nodigits_goldentracks.SelectionTools: [@local::a2c_selection]
+caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 
 END_PROLOG
