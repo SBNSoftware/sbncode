@@ -135,3 +135,5 @@ physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 # This job doesn't run the genie weights, and we assume they won't be in the
 # input art file.
 physics.producers.mycafmaker.SystWeightLabels: []
+
+services.BackTrackerService.BackTracker.SimChannelModuleLabel: "simdrift"
