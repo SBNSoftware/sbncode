@@ -89,7 +89,7 @@ class Dazzle : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fSimChannelLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
+  art::InputTag fSimChannelLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
   const float fMinTrackLength;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
@@ -156,7 +156,6 @@ class Dazzle : public art::EDProducer {
 
 Dazzle::Dazzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
-    , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fSimChannelLabel(p.get<std::string>("SimChannelLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
     , fTrackLabel(p.get<std::string>("TrackLabel"))

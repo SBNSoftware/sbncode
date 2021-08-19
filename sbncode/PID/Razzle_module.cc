@@ -83,7 +83,7 @@ class Razzle : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fSimChannelLabel, fPFPLabel, fShowerLabel, fShowerSelVarsLabel;
+  art::InputTag fSimChannelLabel, fPFPLabel, fShowerLabel, fShowerSelVarsLabel;
   const float fMinShowerEnergy;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
@@ -137,7 +137,6 @@ class Razzle : public art::EDProducer {
 
 Razzle::Razzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
-    , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
     , fSimChannelLabel(p.get<std::string>("SimChannelLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
     , fShowerLabel(p.get<std::string>("ShowerLabel"))
