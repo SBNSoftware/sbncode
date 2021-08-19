@@ -135,6 +135,7 @@ namespace caf
       srshower.energy[i] = e > 0 ? e / 1000.f : -5.f;
       srshower.dEdx[i] = shower.dEdx()[i];
     }
+
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
 
@@ -144,8 +145,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.dEdx[shower.best_plane()];
-      srshower.bestplane_energy = srshower.energy[shower.best_plane()];
+      srshower.bestplane_dEdx   = srshower.dEdx.at(shower.best_plane());
+      srshower.bestplane_energy = srshower.energy.at(shower.best_plane());
     }
 
     if(shower.has_open_angle())
@@ -383,8 +384,8 @@ namespace caf
     }
 
     if (range_results[2].size()) {
-      srtrack.rangeP.p_proton = range_results[1][0]->range_p;
-      assert(track.ID() == range_results[1][0]->trackID);
+      srtrack.rangeP.p_proton = range_results[2][0]->range_p;
+      assert(track.ID() == range_results[2][0]->trackID);
     }
   }
 
