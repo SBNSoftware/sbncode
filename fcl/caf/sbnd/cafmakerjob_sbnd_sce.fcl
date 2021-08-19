@@ -55,3 +55,4 @@ physics.runprod: [ pandoraTrackMCS, pandoraTrackRange,
 #include "enable_spacecharge_services_sbnd.fcl"
 
 services.BackTrackerService.BackTracker.SimChannelModuleLabel: "simdrift"
+physics.producers.mycafmaker.SimChannelLabel: "simdrift"
