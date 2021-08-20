@@ -45,7 +45,7 @@ caloskim: {
   T0producer: "pandora"
   PFPproducer: "pandora"
   G4producer: "largeant"
-  SimChannelproducer: "largeant"
+  SimChannelproducer: "simdrift"
   HITproducer: "gaushit"
   RawDigitproducers: ["daq"]
   RequireT0: true

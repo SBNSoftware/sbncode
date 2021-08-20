@@ -18,6 +18,9 @@
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 
+// C/C++ includes
+#include <filesystem>
+
 // Global functions / data for fitting
 const size_t MAX_N_FIT_DATA = 30;
 
@@ -131,10 +134,8 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   // Identify which detector: can only detect either sbnd or icarus
 
-  std::string gdml = geometry->GDMLFile();
-  gdml = basename(gdml.c_str()); //strip directory part
-  
-  for(unsigned int i = 0; i <gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]); //lower case file name
+  std::string gdml = std::filesystem::path(geometry->GDMLFile()).filename();
+  for(unsigned int i = 0; i <gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]); 
 
   const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
 			(geometry->DetectorName().find("sbnd") != std::string::npos));
@@ -144,7 +145,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
   if(hasSBND == hasIcarus) { 
     std::cout << "Unable to automatically determine either SBND or ICARUS!" << std::endl;
-    throw;
+    abort();
   }
 
   // Setup the volumes

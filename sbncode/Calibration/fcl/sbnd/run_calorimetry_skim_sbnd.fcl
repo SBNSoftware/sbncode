@@ -19,10 +19,8 @@ services:
 {
   TFileService: { fileName: "caloskim_out.root" }
   @table::sbnd_services
-  RandomNumberGenerator: {} #ART native random number generator
-  message:      { debugModules: ["*"] destinations: { debugmsg:{type: "cout" threshold: "INFO"} } }
-  TimeTracker:  { printSummary: true }
-  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
+  BackTrackerService: @local::standard_backtrackerservice
+  ParticleInventoryService: @local::standard_particleinventoryservice
 }
 source:
 {
@@ -42,7 +40,7 @@ outputs:
 physics:
 {
   producers:{
-    caloskimCalorimetry: @local::caloskim_pandoraCalo
+    caloskimCalorimetry: @local::caloskim_pandoraSCECalo
   }
 
   analyzers:
@@ -58,5 +56,3 @@ physics:
   stream1:       [outpid]
   end_paths:     [ana,stream1]
 }
-
-caloskim.CALOproducer: "caloskimCalorimetry"
