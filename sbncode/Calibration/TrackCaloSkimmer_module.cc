@@ -144,7 +144,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 			(geometry->DetectorName().find("icarus") != std::string::npos));
 
   if(hasSBND == hasIcarus) { 
-    std::cout << "Unable to automatically determine either SBND or ICARUS!" << std::endl;
+    std::cout << "TrackCaloSkimmer: Unable to automatically determine either SBND or ICARUS!" << std::endl;
     abort();
   }
 
