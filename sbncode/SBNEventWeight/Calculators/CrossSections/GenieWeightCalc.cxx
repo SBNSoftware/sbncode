@@ -67,15 +67,18 @@
 #include "GENIE/RwCalculators/GReWeightNuXSecNC.h"
 #include "GENIE/RwCalculators/GReWeightXSecEmpiricalMEC.h"
 
-////CHECK, need GENIE from ub
-//// New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
-//#include "GENIE/RwCalculators/GReWeightXSecMEC.h"
-//
-//// New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
-//#include "GENIE/RwCalculators/GReWeightDeltaradAngle.h"
-//#include "GENIE/RwCalculators/GReWeightNuXSecCOHuB.h"
-//#include "GENIE/RwCalculators/GReWeightRESBugFix.h"
+////Need GENIE from ub, set up via command line: 
+//`setup genie_xsec v3_00_04a -q G1810a0211a:e1000:k250`
+#ifdef GENIE_UB_PATCH
+// New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
+#include "GENIE/RwCalculators/GReWeightXSecMEC.h"
 
+// New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
+#include "GENIE/RwCalculators/GReWeightDeltaradAngle.h"
+#include "GENIE/RwCalculators/GReWeightNuXSecCOHuB.h"
+#include "GENIE/RwCalculators/GReWeightRESBugFix.h"
+
+#endif
 
 namespace sbn {
 namespace {//Helper functions are defined in this block
@@ -228,28 +231,22 @@ class GenieWeightCalc : public WeightCalc {
 public:
   GenieWeightCalc() : WeightCalc() {}
 
-	//CHECK
   void Configure(fhicl::ParameterSet const& pset,
                  CLHEP::HepRandomEngine& engine) override;
 
   std::vector<float> GetWeight(art::Event& e, size_t inu) override;
 
 private:
-//  std::vector<rwgt::NuReweight> rwVector;
-  //CHECK replace:
   std::vector< genie::rew::GReWeight > reweightVector;
 
   std::string fGenieModuleLabel;
   std::string fTuneName;
 
-  //CHECK add these
   std::map< std::string, int > CheckForIncompatibleSystematics(
         const std::vector<genie::rew::GSyst_t>& knob_vec);
 
-	//CHECK
   void SetupWeightCalculators(genie::rew::GReWeight& rw,
         const std::map<std::string, int>& modes_to_use);
-
  
   bool fQuietMode;//quiet mode
 
@@ -259,9 +256,51 @@ private:
 
 void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 		CLHEP::HepRandomEngine& engine) {
-	// Check add some messengers
+
+    genie::Messenger* messenger = genie::Messenger::Instance();
+    // By default, run GENIE reweighting in "quiet mode"
+    // (use the logging settings in the "whisper" configuration
+    // of the genie::Messenger class). The user can disable
+    // quiet mode using the boolean FHiCL parameter "quiet_mode"
+    fQuietMode = p.get<bool>( "quiet_mode", true );
+    if ( fQuietMode ) {
+      genie::utils::app_init::MesgThresholds( "Messenger_whisper.xml" );
+    }
+    else {
+      // If quiet mode isn't enabled, then print detailed debugging
+      // messages for GENIE reweighting
+      messenger->SetPriorityLevel( "ReW", log4cpp::Priority::DEBUG );
+
+      MF_LOG_INFO("GENIEWeightCalc") << "Configuring GENIE weight"
+        << " calculator " << this->GetName();
+    }
+
+    // Manually silence a couple of annoying GENIE logging messages
+    // that appear a lot when running reweighting. This is done
+    // whether or not "quiet mode" is enabled.
+    messenger->SetPriorityLevel( "TransverseEnhancementFFModel",
+      log4cpp::Priority::WARN );
+    messenger->SetPriorityLevel( "Nieves", log4cpp::Priority::WARN );
+
 
 	// Global config
+	//----Initialize the tune
+	// Configure the appropriate GENIE tune if needed (important for v3+ only)
+	// NOTE: In all normal use cases, relying on the ${GENIE_XSEC_TUNE} environment
+	// variable set by the genie_xsec package should be sufficient. Only include
+	// the "TuneName" FHiCL parameter for EventWeight if you really know what you're
+	// doing! The same goes for the "EventGeneratorList" parameter.
+	std::string genie_tune_name = p.get<std::string>("TuneName", "${GENIE_XSEC_TUNE}");
+
+	// The default empty string used here will cause the subsequent call to
+	// evgb::SetEventGeneratorListAndTune() to leave GENIE's current event generator
+	// list name (probably "Default") alone
+	std::string evgen_list_name = p.get<std::string>("EventGeneratorList", "");
+
+	// Tell GENIE about the event generator list and tune
+	evgb::SetEventGeneratorListAndTune( evgen_list_name, genie_tune_name );
+
+
 	fGenieModuleLabel = p.get<std::string>("genie_module_label");
 
 	const fhicl::ParameterSet& param_CVs = p.get<fhicl::ParameterSet>(
@@ -271,24 +310,38 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 	std::map< genie::rew::GSyst_t, double > gsyst_to_cv_map;
 	genie::rew::GSyst_t temp_knob;
 
-	// Check add some messengers
+    if ( !CV_knob_names.empty() && !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
+      << "Configuring non-default GENIE knob central values from input"
+      << " FHiCL parameter set";
+
+    for ( const auto& knob_name : CV_knob_names ) {
+      double CV_knob_value = param_CVs.get<double>( knob_name );
+      if ( valid_knob_name(knob_name, temp_knob) ) {
+        if ( gsyst_to_cv_map.count( temp_knob ) ) {
+          throw cet::exception(__PRETTY_FUNCTION__) << "Duplicate central values"
+            << " were configured for the " << knob_name << " GENIE knob.";
+        }
+        gsyst_to_cv_map[ temp_knob ] = CV_knob_value;
+        if ( !fQuietMode ) {
+          MF_LOG_INFO("GENIEWeightCalc") << "Central value for the " << knob_name
+            << " knob was set to " << CV_knob_value;
+        }
+      }
+    }
 
 	// Calculator config
 	const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
+	std::cout<<"Start configuration CHECK "<<__LINE__<<std::endl;
 	auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
-	auto const& parsigmas = pset.get<std::vector<float> >("parameter_sigma");
 
-	auto const par_mins = pset.get< std::vector<float> >( "parameter_min");
-	auto const par_maxes = pset.get< std::vector<float> >( "parameter_max");
+	std::vector<float> parsigmas;
+	std::vector<float> par_mins;
+	std::vector<float> par_maxes;
 
+	pset.get_if_present("parameter_sigma", parsigmas);
+	pset.get_if_present("parameter_min", par_mins);
+	pset.get_if_present("parameter_max", par_maxes);
 
-	if (pars.size() != parsigmas.size()) {
-		throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-			<< "parameter_list and parameter_sigma length mismatch."
-			<< std::endl;
-	}
-
-	std::string mode = pset.get<std::string>("mode");
 
 	//CHECK, add a check on sigmas_ok
 
@@ -310,53 +363,93 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     std::map< std::string, int >
       modes_to_use = this->CheckForIncompatibleSystematics( all_knobs_vec );
 
+
+	std::string mode = pset.get<std::string>("mode");
+	
 	int num_universes = 1; //for "central_value" or "default" mode
 
-	 if ( mode.find("pm1sigma") != std::string::npos
-      || mode.find("minmax") != std::string::npos )
-    {
+    std::string array_name_for_exception;
+	if(mode.find("pmNsigma") != std::string::npos){	
+//	std::cout<<"CHECK  is it pmNsigma? ans: "<< mode<<std::endl;	
+	std::cout<<"Max / min "<<par_maxes[0]<<" / "<<par_mins[0]<<std::endl;
+      if ( pars.size() != par_mins.size()
+        || pars.size() != par_maxes.size() ){
+
+        array_name_for_exception = "parameter_min and parameter_max";
+}
       num_universes = 2;
-    }
-    else if ( mode.find("multisim") != std::string::npos ) {
+
+		for (size_t i=0; i<pars.size(); i++) {
+			fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);//(name, Gauss_sigma_max, Gauss_mean, Gauss_min)
+		}
+
+	}else if(mode.find("multism") != std::string::npos){
+
       num_universes = pset.get<int>( "number_of_multisims", 1 );
 
-      // Since we're in multisim mode, force retrieval of the random
-      // number seed. If it wasn't set, this will trigger an exception.
-      // We want this check because otherwise the multisim universes
-      // will not be easily reproducible.
-//      int dummy_seed = pset.get<int>( "random_seed" );
-//      MF_LOG_INFO("GENIEWeightCalc") << "GENIE weight calculator "
-//        << this->GetName() << " will generate " << num_universes
-//        << " multisim universes";// with random seed " << dummy_seed;
-    }
+      MF_LOG_INFO("GENIEWeightCalc") << "GENIE weight calculator "
+        << this->GetName() << " will generate " << num_universes
+        << " multisim universes";// with random seed " << dummy_seed;
+
+	  if (pars.size() != parsigmas.size()) {
+		  array_name_for_exception = "parameter_sigma";
+	  }
+	  for (size_t i=0; i<pars.size(); i++) {
+		  fParameterSet.AddParameter(pars[i], parsigmas[i]);
+
+
+	  }
+
+
+	}else { //default mode is fixed/central_value
+//	if(mode.find("fixed") != std::string::npos || 
+//	mode.find("central_value") != std::string::npos)
+
+		for (size_t i=0; i<pars.size(); i++) {
+			fParameterSet.AddParameter(pars[i], 0, parsigmas[i]);//(name, Gauss_sigma, Gauss_mean);
+		}
+
+	}
+	if( array_name_for_exception.size() > 1){
+
+      throw cet::exception(__PRETTY_FUNCTION__) << GetName()
+        << "::Bad fcl configuration. parameter_list and "
+        << array_name_for_exception
+        << " need to have same number of parameters.";
+}
+
+
+
+
 
 	// Set up parameters
 	fParameterSet.Configure(GetFullName(), mode, num_universes);
 
-	for (size_t i=0; i<pars.size(); i++) {
-		//CHECK, only add the compatible knobs;
-		fParameterSet.AddParameter(pars[i], parsigmas[i]);
-		//AddParameter(name, width, mean=0, covIndex=0);
-		//Create object EventWeightParameter p(name, mean, width, covIndex)
-		//
-		//`it.second` from fParameterSet.fParameterMap 
-		//		is a vector<float> defined by the following;
-		//"multisim" gives: CLHEP::RandGaussQ::shoot(&engine, p.fMean, p.fWidth)
-		//"kPMNSigma" gives: p.fMean + p.fWidth & p.fMean + p.fWidth
-		//(CHECK), update kPMNSigma
-		//"kFixed" gives: p.fMean + p.fWidth
-		//"No other modes"
-		//
-		//CHECK, need to update sbnobj for more modes?
-		//sbnobj: mulsitims/PMNSigma/Fixed (include 3 cases); default, exit;
-		//							 (width,mean)=(0,\pm1)/(0,0)/(0,sigma);
-		//Larsim: multisim/pm1sigma/minmax/central_value; default, exact sigma;
-		//multisim gives: sigmas* CLHEP::RandGaussQ::shoot(&engine, 0., 1.); [DIFFERENT] CHECK
-	}
+//	for (size_t i=0; i<pars.size(); i++) {
+//		//CHECK, only add the compatible knobs;
+//		fParameterSet.AddParameter(pars[i], parsigmas[i]);
+//		//AddParameter(name, width, mean=0, covIndex=0);
+//		//Create object EventWeightParameter p(name, mean, width, covIndex)
+//		//
+//		//`it.second` from fParameterSet.fParameterMap 
+//		//		is a vector<float> defined by the following;
+//		//"multisim" gives: CLHEP::RandGaussQ::shoot(&engine, p.fMean, p.fWidth)
+//		//"kPMNSigma" gives: p.fMean + p.fWidth & p.fMean + p.fWidth
+//		//(CHECK), update kPMNSigma
+//		//"kFixed" gives: p.fMean + p.fWidth
+//		//"No other modes"
+//		//
+//		//CHECK, need to update sbnobj for more modes?
+//		//sbnobj: mulsitims/PMNSigma/Fixed (include 3 cases); default, exit;
+//		//							 (width,mean)=(0,\pm1)/(0,0)/(0,sigma);
+//		//Larsim: multisim/pm1sigma/minmax/central_value; default, exact sigma;
+//		//multisim gives: sigmas* CLHEP::RandGaussQ::shoot(&engine, 0., 1.); [DIFFERENT] CHECK
+//	}
 
 	fParameterSet.Sample(engine);
 
 
+	// Set up parameters
 	//loop over parameters;
 	for (auto const& it : fParameterSet.fParameterMap) {//member of std::map<EventWeightParameter, std::vector<float> >
 	//(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
@@ -369,10 +462,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 		// Set up the weight calculators for each universe
 		for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
 		// Set up GENIE with the currently active tune
-		// CHCEK, not used?
-		//	evgb::SetEventGeneratorListAndTune();
-		//	fTuneName = evgb::ExpandEnvVar("${GENIE_XSEC_TUNE}");
-
+	// Set up parameters
 
 		//Assign knob with new values based on variation
 		//loop over universes
@@ -385,8 +475,22 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 				genie::rew::GSyst_t knob; 
 				valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
 				//genie::rew::GSyst_t knob = //knobs_to_use.at( k );
-
-				double twk_dial_value = it.second[u];//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
+		  
+		double cv_shift = 0;
+		if ( mode.find("pmNsigma") == std::string::npos ) {
+			//Apply CV shift
+			auto iter = gsyst_to_cv_map.find( knob );
+			if ( iter != gsyst_to_cv_map.end() ) {
+				cv_shift =  iter->second;
+				if ( !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
+					<< "CV offset added to the "
+						<< genie::rew::GSyst::AsString( knob )
+						<< " knob. New sigma for universe #" << u << " is "
+						<< cv_shift;
+			}
+		std::cout<<"CHECK shift mode: "<<mode<< ", knob "<<name<<" at "<<cv_shift<<std::endl; 
+		}
+				double twk_dial_value = it.second[u]+cv_shift;//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
 				syst.Set( knob, twk_dial_value );
 
 				if ( !fQuietMode ) {
@@ -401,27 +505,6 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 		}//next universe
 	}//next parameter
 
-//	for (auto const& it : fParameterSet.fParameterMap) {
-//		std::string name = it.first.fName;
-//		std::cout << GetFullName() << ": Setting up " << name << std::endl;
-//
-//		for (size_t i=0; i<fParameterSet.fNuniverses; i++) {
-//			rwgt::NuReweight& rw = rwVector[i];
-//
-//			if (name == "IntraNukePIpi")
-//				rw.ReweightIntraNuke(rwgt::fReweightFrPiProd_pi, it.second[i]);
-//			// Unknown
-//			else {
-//				throw cet::exception(__PRETTY_FUNCTION__) << GetName() << ": "
-//					<< "Unknown GENIE parameter " << name << std::endl;
-//			}
-//		}
-//	}
-
-	// Configure reweight drivers
-//	for (auto& rw : rwVector) {
-//		rw.Configure();
-//	}
 }
 
 //Keng:
@@ -481,9 +564,12 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
       // All right, the event record is fully ready. Now ask the GReWeight
       // objects to compute the weights.
+	  std::cout<<"CHECK weight: ";
       for (size_t k = 0u; k < num_knobs; ++k ) {
         weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
+		std::cout<<weights[k]<<" ";
       }
+	  std::cout<<"Complete with knobs# "<<num_knobs<<std::endl;
     
     return weights;
 
@@ -526,8 +612,70 @@ std::map< std::string, int > GenieWeightCalc::CheckForIncompatibleSystematics(
 
 void GenieWeightCalc::SetupWeightCalculators(genie::rew::GReWeight& rw,
 		const std::map<std::string, int>& modes_to_use){
-		
-		}
+	// Based on the list from the GENIE command-line tool grwght1p
+	rw.AdoptWghtCalc( "xsec_ncel",       new GReWeightNuXSecNCEL      );
+	rw.AdoptWghtCalc( "xsec_ccqe",       new GReWeightNuXSecCCQE      );
+	rw.AdoptWghtCalc( "xsec_ccqe_axial", new GReWeightNuXSecCCQEaxial );
+	rw.AdoptWghtCalc( "xsec_ccqe_vec",   new GReWeightNuXSecCCQEvec   );
+	rw.AdoptWghtCalc( "xsec_ccres",      new GReWeightNuXSecCCRES     );
+	rw.AdoptWghtCalc( "xsec_ncres",      new GReWeightNuXSecNCRES     );
+	rw.AdoptWghtCalc( "xsec_nonresbkg",  new GReWeightNonResonanceBkg );
+	rw.AdoptWghtCalc( "xsec_coh",        new GReWeightNuXSecCOH       );
+	rw.AdoptWghtCalc( "xsec_dis",        new GReWeightNuXSecDIS       );
+	rw.AdoptWghtCalc( "nuclear_qe",      new GReWeightFGM             );
+	rw.AdoptWghtCalc( "hadro_res_decay", new GReWeightResonanceDecay  );
+	rw.AdoptWghtCalc( "hadro_fzone",     new GReWeightFZone           );
+	rw.AdoptWghtCalc( "hadro_intranuke", new GReWeightINuke           );
+	rw.AdoptWghtCalc( "hadro_agky",      new GReWeightAGKY            );
+	rw.AdoptWghtCalc( "xsec_nc",         new GReWeightNuXSecNC        );
+	rw.AdoptWghtCalc( "res_dk",          new GReWeightResonanceDecay  );
+	rw.AdoptWghtCalc( "xsec_empmec",     new GReWeightXSecEmpiricalMEC);
+	// GReWeightDISNuclMod::CalcWeight() is not implemented, so we won't
+	// bother to use it here. - S. Gardiner, 9 Dec 2019
+	//rw.AdoptWghtCalc( "nuclear_dis",   new GReWeightDISNuclMod );
+
+#ifdef GENIE_UB_PATCH
+
+	// New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
+	rw.AdoptWghtCalc( "xsec_mec",        new GReWeightXSecMEC );
+
+	std::cout<<"CHECK now using ubweights"<<__LINE__<<std::endl;
+	// New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
+	rw.AdoptWghtCalc( "deltarad_angle",  new GReWeightDeltaradAngle );
+	rw.AdoptWghtCalc( "xsec_coh_ub",  new GReWeightNuXSecCOHuB );
+	rw.AdoptWghtCalc( "res_bug_fix",  new GReWeightRESBugFix );
+
+#endif
+
+	// Set the modes for the weight calculators that need them to be specified
+	for ( const auto& pair : modes_to_use ) {
+		std::string calc_name = pair.first;
+		int mode = pair.second;
+
+		genie::rew::GReWeightI* calc = rw.WghtCalc( calc_name );
+		if ( !calc ) throw cet::exception(__PRETTY_FUNCTION__)
+			<< "Failed to retrieve the GENIE weight calculator labeled \""
+				<< calc_name << '\"';
+
+		// The GReWeightI base class doesn't have a SetMode(int) function,
+		// so we'll just try dynamic casting until we get the right one.
+		// If none work, then throw an exception.
+		// TODO: Add a virtual function GReWeightI::SetMode( int ) in GENIE's
+		// Reweight framework. Then we can avoid the hacky dynamic casts here.
+		auto* calc_ccqe = dynamic_cast< genie::rew::GReWeightNuXSecCCQE* >( calc );
+		auto* calc_ccres = dynamic_cast< genie::rew::GReWeightNuXSecCCRES* >( calc );
+		auto* calc_ncres = dynamic_cast< genie::rew::GReWeightNuXSecNCRES* >( calc );
+		auto* calc_dis = dynamic_cast< genie::rew::GReWeightNuXSecDIS* >( calc );
+		if ( calc_ccqe ) calc_ccqe->SetMode( mode );
+		else if ( calc_ccres ) calc_ccres->SetMode( mode );
+		else if ( calc_ncres ) calc_ncres->SetMode( mode );
+		else if ( calc_dis ) calc_dis->SetMode( mode );
+		else throw cet::exception(__PRETTY_FUNCTION__)
+			<< "Request to set the mode of an unrecognized GENIE weight calculator \""
+				<< calc_name << '\"';
+	}
+
+}
 
 
 
