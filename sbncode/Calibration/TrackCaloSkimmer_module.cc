@@ -129,17 +129,23 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
 
-  // Identify which experiment
-  //TODO: add safeguard in case neither detectors are found? 
+  // Identify which detector: can only detect either sbnd or icarus
 
   std::string gdml = geometry->GDMLFile();
   gdml = basename(gdml.c_str()); //strip directory part
   
+  for(unsigned int i = 0; i <gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]); //lower case file name
+
   const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
 			(geometry->DetectorName().find("sbnd") != std::string::npos));
 
   const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
 			(geometry->DetectorName().find("icarus") != std::string::npos));
+
+  if(hasSBND == hasIcarus) { 
+    std::cout << "Unable to automatically determine either SBND or ICARUS!" << std::endl;
+    throw;
+  }
 
   // Setup the volumes
   std::vector<std::vector<geo::BoxBoundedGeo>> TPCVols;
