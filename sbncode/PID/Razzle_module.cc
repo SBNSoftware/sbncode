@@ -83,7 +83,7 @@ class Razzle : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fPFPLabel, fShowerLabel, fShowerSelVarsLabel;
+  art::InputTag fSimChannelLabel, fPFPLabel, fShowerLabel, fShowerSelVarsLabel;
   const float fMinShowerEnergy;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
@@ -137,7 +137,7 @@ class Razzle : public art::EDProducer {
 
 Razzle::Razzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
-    , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
+    , fSimChannelLabel(p.get<std::string>("SimChannelLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
     , fShowerLabel(p.get<std::string>("ShowerLabel"))
     , fShowerSelVarsLabel(p.get<std::string>("ShowerSelVarsLabel"))
@@ -254,7 +254,7 @@ void Razzle::produce(art::Event& e)
   auto const clockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e));
 
   auto const pfpHandle(e.getValidHandle<std::vector<recob::PFParticle>>(fPFPLabel));
-  auto const simChannelHandle(e.getValidHandle<std::vector<sim::SimChannel>>(fLArGeantLabel));
+  auto const simChannelHandle(e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelLabel));
   auto const showerHandle(e.getValidHandle<std::vector<recob::Shower>>(fShowerLabel));
 
   std::vector<art::Ptr<recob::PFParticle>> pfps;
