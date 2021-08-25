@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_28_02
+parent sbncode v09_28_02_01
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -34,15 +34,15 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_28_02
-sbnobj              v09_11_18
+larsoft             v09_28_02_01
+sbnobj              v09_11_18_01
 sbnanaobj           v09_16_13_01
 sbndaq_artdaq_core  v0_07_08_of0
 genie_xsec          v3_00_04a
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v8_14_02 - only_for_build
+cetbuildtools v8_15_00 - only_for_build
 end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
