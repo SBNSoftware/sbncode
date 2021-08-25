@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_28_00
+parent sbncode v09_28_02
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -34,10 +34,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_27_00_04
-sbnobj              v09_11_16
-sbnanaobj           v09_16_12
-sbndaq_artdaq_core  v0_07_07_01
+larsoft             v09_28_02
+sbnobj              v09_11_18
+sbnanaobj           v09_16_13_01
+sbndaq_artdaq_core  v0_07_08_of0
 genie_xsec          v3_00_04a
 
 # list products required ONLY for the build
