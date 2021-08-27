@@ -132,8 +132,8 @@ namespace caf
     // Also convert -999 -> -5 for consistency with other defaults in the CAFs
     for(int i = 0; i < 3; ++i){
       const float e = shower.Energy()[i];
-      srshower.energy[i] = e > 0 ? e / 1000.f : -5.f;
-      srshower.dEdx[i] = shower.dEdx()[i];
+      srshower.plane[i].energy = e > 0 ? e / 1000.f : -5.f;
+      srshower.plane[i].dEdx = shower.dEdx()[i];
     }
 
     srshower.dir    = SRVector3D( shower.Direction() );
@@ -145,8 +145,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.dEdx[shower.best_plane()];
-      srshower.bestplane_energy = srshower.energy[shower.best_plane()];
+      srshower.bestplane_dEdx   = srshower.plane[shower.best_plane()].dEdx;
+      srshower.bestplane_energy = srshower.plane[shower.best_plane()].energy;
     }
 
     if(shower.has_open_angle())
@@ -170,15 +170,15 @@ namespace caf
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
 
-    for(int i = 0; i < 3; ++i) srshower.nHits[i] = 0;
-    for (auto const& hit:hits) ++srshower.nHits[hit->WireID().Plane];
+    for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
+    for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
     for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
 
       const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
 
-      srshower.wirePitch[plane.ID().Plane] = plane.WirePitch()/cosgamma;
+      srshower.plane[plane.ID().Plane].wirePitch = plane.WirePitch()/cosgamma;
     }
   }
 
