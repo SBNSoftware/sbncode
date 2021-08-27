@@ -383,8 +383,8 @@ namespace caf
     }
 
     if (range_results[2].size()) {
-      srtrack.rangeP.p_proton = range_results[1][0]->range_p;
-      assert(track.ID() == range_results[1][0]->trackID);
+      srtrack.rangeP.p_proton = range_results[2][0]->range_p;
+      assert(track.ID() == range_results[2][0]->trackID);
     }
   }
 

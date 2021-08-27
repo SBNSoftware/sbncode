@@ -22,6 +22,7 @@ vertex_charge_sbnd_sce.PositionsAreSCECorrected: true
 vertex_stub_sbnd: {
   module_type: VertexStubTracker
   PFPLabel: pandora
+  TrackLabel: pandoraTrack
   VertexChargeLabel: vertexCharge
   dQdxCut: 2e5 # elec/cm
   OneWiredQdxCut: 1e5 # elec/cm
@@ -36,10 +37,10 @@ vertex_stub_sbnd_sce.PFPLabel: pandoraSCE
 vertex_stub_sbnd_sce.CorrectSCE: true
 vertex_stub_sbnd_sce.PositionsAreSCECorrected: true
 
-vertex_charge_icarus_cryo0: {
+vertex_charge_icarus_cryoE: {
   module_type: VertexChargeVacuum
-  PFParticleLabel: pandoraGausCryo0
-  TrackLabel: pandoraTrackGausCryo0
+  PFParticleLabel: pandoraGausCryoE
+  TrackLabel: pandoraTrackGausCryoE
   UseTrackSPRecovery: true
   HitVacuumRadius: 5
   CaloAlg: {} # overwrite me
@@ -48,17 +49,16 @@ vertex_charge_icarus_cryo0: {
   SelectNeutrino: true
 }
 
-vertex_charge_icarus_sce_cryo0: @local::vertex_charge_icarus_cryo0
-vertex_charge_icarus_sce_cryo0.PFParticleLabel: pandoraGausSCECryo0
-vertex_charge_icarus_sce_cryo0.TrackLabel: pandoraTrackGausSCECryo0
-vertex_charge_icarus_sce_cryo0.CorrectSCE: true
-vertex_charge_icarus_sce_cryo0.PositionsAreSCECorrected: true
+vertex_charge_icarus_sce_cryoE: @local::vertex_charge_icarus_cryoE
+vertex_charge_icarus_sce_cryoE.PFParticleLabel: pandoraGausSCECryoE
+vertex_charge_icarus_sce_cryoE.TrackLabel: pandoraTrackGausSCECryoE
+vertex_charge_icarus_sce_cryoE.CorrectSCE: true
+vertex_charge_icarus_sce_cryoE.PositionsAreSCECorrected: true
 
-
-vertex_charge_icarus_cryo1: {
+vertex_charge_icarus_cryoW: {
   module_type: VertexChargeVacuum
-  PFParticleLabel: pandoraGausCryo1
-  TrackLabel: pandoraTrackGausCryo1
+  PFParticleLabel: pandoraGausCryoW
+  TrackLabel: pandoraTrackGausCryoW
   UseTrackSPRecovery: true
   HitVacuumRadius: 5
   CaloAlg: {} # overwrite me
@@ -67,16 +67,17 @@ vertex_charge_icarus_cryo1: {
   SelectNeutrino: true
 }
 
-vertex_charge_icarus_sce_cryo1: @local::vertex_charge_icarus_cryo1
-vertex_charge_icarus_sce_cryo1.PFParticleLabel: pandoraGausSCECryo1
-vertex_charge_icarus_sce_cryo1.TrackLabel: pandoraTrackGausSCECryo1
-vertex_charge_icarus_sce_cryo1.CorrectSCE: true
-vertex_charge_icarus_sce_cryo1.PositionsAreSCECorrected: true
+vertex_charge_icarus_sce_cryoW: @local::vertex_charge_icarus_cryoW
+vertex_charge_icarus_sce_cryoW.PFParticleLabel: pandoraGausSCECryoW
+vertex_charge_icarus_sce_cryoW.TrackLabel: pandoraTrackGausSCECryoW
+vertex_charge_icarus_sce_cryoW.CorrectSCE: true
+vertex_charge_icarus_sce_cryoW.PositionsAreSCECorrected: true
 
-vertex_stub_icarus_cryo0: {
+vertex_stub_icarus_cryoE: {
   module_type: VertexStubTracker
-  PFPLabel: pandoraGausCryo0
-  VertexChargeLabel: vertexChargeCryo0
+  PFPLabel: pandoraGausCryoE
+  TrackLabel: pandoraTrackGausCryoE
+  VertexChargeLabel: vertexChargeCryoE
   dQdxCut: 2e5 # elec/cm
   OneWiredQdxCut: 1e5 # elec/cm
   MergeTools: @local::stub_merge
@@ -85,15 +86,17 @@ vertex_stub_icarus_cryo0: {
   PositionsAreSCECorrected: false 
 }
 
-vertex_stub_icarus_sce_cryo0: @local::vertex_stub_icarus_cryo0
-vertex_stub_icarus_sce_cryo0.PFPLabel: pandoraGausSCECryo0
-vertex_stub_icarus_cryo0.CorrectSCE: true
-vertex_stub_icarus_cryo0.PositionsAreSCECorrected: true
+vertex_stub_icarus_sce_cryoE: @local::vertex_stub_icarus_cryoE
+vertex_stub_icarus_sce_cryoE.PFPLabel: pandoraGausSCECryoE
+vertex_stub_icarus_sce_cryoE.TrackLabel: pandoraTrackGausSCECryoE
+vertex_stub_icarus_sce_cryoE.CorrectSCE: true
+vertex_stub_icarus_sce_cryoE.PositionsAreSCECorrected: true
 
-vertex_stub_icarus_cryo1: {
+vertex_stub_icarus_cryoW: {
   module_type: VertexStubTracker
-  PFPLabel: pandoraGausCryo1
-  VertexChargeLabel: vertexChargeCryo1
+  PFPLabel: pandoraGausCryoW
+  TrackLabel: pandoraTrackGausCryoW
+  VertexChargeLabel: vertexChargeCryoW
   dQdxCut: 2e5 # elec/cm
   OneWiredQdxCut: 1e5 # elec/cm
   MergeTools: @local::stub_merge
@@ -102,10 +105,10 @@ vertex_stub_icarus_cryo1: {
   PositionsAreSCECorrected: false 
 }
 
-vertex_stub_icarus_sce_cryo1: @local::vertex_stub_icarus_cryo1
-vertex_stub_icarus_sce_cryo1.PFPLabel: pandoraGausSCECryo1
-vertex_stub_icarus_cryo1.CorrectSCE: true
-vertex_stub_icarus_cryo1.PositionsAreSCECorrected: true
-
+vertex_stub_icarus_sce_cryoW: @local::vertex_stub_icarus_cryoW
+vertex_stub_icarus_sce_cryoW.PFPLabel: pandoraGausSCECryoW
+vertex_stub_icarus_sce_cryoW.CorrectSCE: true
+vertex_stub_icarus_sce_cryoW.PositionsAreSCECorrected: true
+vertex_stub_icarus_sce_cryoW.TrackLabel: pandoraTrackGausSCECryoW
 
 END_PROLOG

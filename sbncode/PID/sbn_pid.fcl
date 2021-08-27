@@ -3,7 +3,7 @@ BEGIN_PROLOG
 dazzle:
 {
   module_type:          Dazzle
-  LArGeantLabel:        "largeant"
+  SimChannelLabel:      "simdrift"
   PFPLabel:             "pandora"
   TrackLabel:           "pandoraTrack"
   CaloLabel:            "pandoraCalo"
@@ -27,7 +27,7 @@ dazzle:
 razzle:
 {
   module_type:         Razzle
-  LArGeantLabel:       "largeant"
+  SimChannelLabel:     "simdrift"
   PFPLabel:            "pandora"
   ShowerLabel:         "pandoraShowerSBN"
   ShowerSelVarsLabel:  "pandoraShowerSelectionVars"
