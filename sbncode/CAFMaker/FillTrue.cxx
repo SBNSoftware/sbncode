@@ -211,19 +211,15 @@ namespace caf {
 
     srneutrino.index = i;
 
-    srneutrino.plane0VisE = 0.;
-    srneutrino.plane1VisE = 0.;
-    srneutrino.plane2VisE = 0.;
-    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+    for(int p = 0; p < 3; ++p) srneutrino.plane[p].visE = 0;
+
+    for(const caf::SRTrueParticle& part: srparticles){
       // save the G4 particles that came from this interaction
-      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.prim.push_back(srparticles[i_part]);
-      }
-      // total up the deposited energy
-      if (srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.plane0VisE += srparticles[i_part].plane0VisE;
-        srneutrino.plane1VisE += srparticles[i_part].plane1VisE;
-        srneutrino.plane2VisE += srparticles[i_part].plane2VisE;
+      if(part.interaction_id == (int)i) {
+        if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+
+        // total up the deposited energy
+        for(int p = 0; p < 3; ++p) srneutrino.plane[p].visE += part.plane[p].visE;
       }
     }
     srneutrino.nprim = srneutrino.prim.size();
@@ -243,9 +239,7 @@ namespace caf {
         }
       }
 
-      srneutrino.plane0nhitprim = planehitIDs[0].size();
-      srneutrino.plane1nhitprim = planehitIDs[1].size();
-      srneutrino.plane2nhitprim = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) srneutrino.plane[p].nhitprim = planehitIDs[p].size();
     }
 
     // Set of hits per-plane: all particles
@@ -263,9 +257,7 @@ namespace caf {
         }
       }
 
-      srneutrino.plane0nhit = planehitIDs[0].size();
-      srneutrino.plane1nhit = planehitIDs[1].size();
-      srneutrino.plane2nhit = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) srneutrino.plane[p].nhit = planehitIDs[p].size();
     }
 
     // Set the GTruth stuff
@@ -376,40 +368,23 @@ namespace caf {
     srparticle.crosses_tpc = false;
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
-    srparticle.plane0VisE = 0.;
-    srparticle.plane1VisE = 0.;
-    srparticle.plane2VisE = 0.;
-    srparticle.plane0nhit = 0;
-    srparticle.plane1nhit = 0;
-    srparticle.plane2nhit = 0;
+    for(int p = 0; p < 3; ++p){
+      srparticle.plane[p].visE = 0.;
+      srparticle.plane[p].nhit = 0;
+    }
     for (auto const &ide_pair: particle_ides) {
       const geo::WireID &w = ide_pair.first;
       const sim::IDE *ide = ide_pair.second;
 
-      if (w.Plane == 0) {
-        srparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      if(w.Plane >= 0 && w.Plane < 3){
+        srparticle.plane[w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
       }
     }
 
     for (const art::Ptr<recob::Hit> h: particle_hits) {
       const geo::WireID &w = h->WireID();
 
-      if (w.Plane == 0) {
-        srparticle.plane0nhit ++;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1nhit ++;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2nhit ++;
-      }
-
+      if(w.Plane >= 0 && w.Plane < 3) ++srparticle.plane[w.Plane].nhit;
     } 
 
     // if no trajectory points, then assume outside AV
@@ -1081,7 +1056,9 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
-    ret.eff = (matching_energy[index] / 1000.) / (srneutrinos[index].plane0VisE + srneutrinos[index].plane1VisE + srneutrinos[index].plane2VisE);
+    double totVisE = 0;
+    for(int p = 0; p < 3; ++p) totVisE += srneutrinos[index].plane[p].visE;
+    ret.eff = (matching_energy[index] / 1000.) / totVisE;
   }
   else {
     ret.pur = -1;

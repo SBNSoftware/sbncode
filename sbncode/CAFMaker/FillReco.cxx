@@ -145,8 +145,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = srshower.dEdx.at(shower.best_plane());
-      srshower.bestplane_energy = srshower.energy.at(shower.best_plane());
+      srshower.bestplane_dEdx   = srshower.dEdx[shower.best_plane()];
+      srshower.bestplane_energy = srshower.energy[shower.best_plane()];
     }
 
     if(shower.has_open_angle())
