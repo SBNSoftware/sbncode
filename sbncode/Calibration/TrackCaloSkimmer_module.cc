@@ -296,7 +296,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     if (fFillTrackEndHits) FillTrackEndHits(geometry, dprop, *trkPtr, allHits, allHitSPs);
 
     // Fill the truth information if configured
-    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map); 
+    if (simchannels.size()) FillTrackTruth(clock_data, trkHits, mcparticles, AVs, TPCVols, id_to_ide_map, id_to_truehit_map, geometry); 
 
     // Save?
     bool select = false;
@@ -372,7 +372,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE *>>> &id_to_ide_map,
-    const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map) {
+    const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map, 
+    const geo::GeometryCore *geo) {
 
   std::vector<std::pair<geo::WireID, const sim::IDE *>> empty;
   const std::vector<std::pair<geo::WireID, const sim::IDE *>> &particle_ides = id_to_ide_map.count(particle.TrackId()) ? id_to_ide_map.at(particle.TrackId()) : empty;
@@ -540,6 +541,65 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();
 
+  // Organize deposition info into per-wire true "Hits"
+  std::map<geo::WireID, sbn::TrueHit> truehits; 
+
+  for (auto const &ide_pair: particle_ides) {
+    const geo::WireID &w = ide_pair.first;
+    const sim::IDE *ide = ide_pair.second;
+
+    // Set stuff
+    truehits[w].cryo = w.Cryostat;
+    truehits[w].tpc = w.TPC;
+    truehits[w].plane = w.Plane;
+    truehits[w].wire = w.Wire;
+
+    // Average stuff using charge-weighting
+    float old_elec = truehits[w].nelec;
+    float new_elec = old_elec + ide->numElectrons;
+    truehits[w].p.x = (truehits[w].p.x*old_elec + ide->x*ide->numElectrons) / new_elec;
+    truehits[w].p.y = (truehits[w].p.y*old_elec + ide->y*ide->numElectrons) / new_elec;
+    truehits[w].p.z = (truehits[w].p.z*old_elec + ide->z*ide->numElectrons) / new_elec;
+    
+    // Sum stuff
+    truehits[w].nelec += ide->numElectrons;
+    truehits[w].e += ide->energy;
+    truehits[w].ndep += 1;
+  }
+
+  // Save depositions into the True Particle
+  for (auto const &hit_pair: truehits) {
+    const sbn::TrueHit &h = hit_pair.second;
+    trueparticle.truehits.push_back(h);
+  }
+
+  // Compute the pitch of each hit
+  for (sbn::TrueHit &h: trueparticle.truehits) {
+    TVector3 h_p(h.p.x, h.p.y, h.p.z);
+    TVector3 direction;
+    float closest_dist = -1.;
+    for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
+      if (closest_dist < 0. || (particle.Position(i_traj).Vect() - h_p).Mag() < closest_dist) {
+        direction = particle.Momentum(i_traj).Vect().Unit();
+        closest_dist = (particle.Position(i_traj).Vect() - h_p).Mag() < closest_dist;
+      }
+    }
+
+    // If we got a direction, get the pitch
+    //
+    // TODO: include change to pitch induced by space charge
+    if (closest_dist >= 0.) {
+      geo::PlaneID plane(h.cryo, h.tpc, h.plane);
+      float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+      float cosgamma = abs(cos(angletovert) * direction.Z() + sin(angletovert) * direction.Y());
+      float pitch = geo->WirePitch(plane) / cosgamma;
+      h.pitch = pitch;
+    }
+    else {
+      h.pitch = -1.;
+    }
+  }
+
   return trueparticle;
 }
 
@@ -616,7 +676,8 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
-    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map) {
+    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
+    const geo::GeometryCore *geo) {
 
   // Lookup the true-particle match -- use utils in CAF
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clock_data, trkHits, true);
@@ -640,7 +701,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
     for (const art::Ptr<simb::MCParticle> &p_mcp: mcparticles) {
       if (p_mcp->TrackId() == bestmatch.first) {
         if (fVerbose) std::cout << "Matched! Track ID: " << p_mcp->TrackId() << " pdg: " << p_mcp->PdgCode() << " process: " << p_mcp->EndProcess() << std::endl;
-        fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map);
+        fTrack->truth.p = TrueParticleInfo(*p_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, geo);
         fTrack->truth.eff = fTrack->truth.depE / (fTrack->truth.p.plane0VisE + fTrack->truth.p.plane1VisE + fTrack->truth.p.plane2VisE);
 
         // Lookup any Michel
@@ -649,7 +710,7 @@ void sbn::TrackCaloSkimmer::FillTrackTruth(const detinfo::DetectorClocksData &cl
               (d_mcp->Process() == "Decay" || d_mcp->Process() == "muMinusCaptureAtRest") && // correct process
               abs(d_mcp->PdgCode()) == 11) { // correct PDG code
 
-            fTrack->truth.michel = TrueParticleInfo(*d_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map);
+            fTrack->truth.michel = TrueParticleInfo(*d_mcp, active_volumes, tpc_volumes, id_to_ide_map, id_to_truehit_map, geo);
             break;
           }
         }
