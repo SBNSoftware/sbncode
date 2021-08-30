@@ -30,7 +30,9 @@ art_make(
   lardataobj_Simulation
 
   larpandora_LArPandoraInterface
+  larsim_Utils
 
+  nusimdata_SimulationBase
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${ROOT_GEOM}

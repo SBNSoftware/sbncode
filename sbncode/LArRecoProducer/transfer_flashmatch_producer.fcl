@@ -1,0 +1,23 @@
+BEGIN_PROLOG
+transfer_flashmatch_sce_sbnd: {
+  module_type: TransferPFParticleFlashMatch
+  PFParticleLabelIn: pandora
+  FlashLabel: fmatch
+  PFParticleLabelOut: pandoraSCE
+}
+
+transfer_flashmatch_sce_icarus_cryoE: {
+  module_type: TransferPFParticleFlashMatch
+  PFParticleLabelIn: pandoraGausCryoE
+  FlashLabel: fmatchCryoE
+  PFParticleLabelOut: pandoraGausSCECryoE
+}
+
+transfer_flashmatch_sce_icarus_cryoW: {
+  module_type: TransferPFParticleFlashMatch
+  PFParticleLabelIn: pandoraGausCryoW
+  FlashLabel: fmatchCryoW
+  PFParticleLabelOut: pandoraGausSCECryoW
+}
+
+END_PROLOG

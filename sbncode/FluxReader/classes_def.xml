@@ -1,0 +1,5 @@
+<lcgdict>
+  <class name="art::Wrapper<art::Ptr<bsim::Dk2Nu> >"/>
+  <class name="art::Wrapper<art::Ptr<bsim::NuChoice> >"/>
+  <class name="art::Wrapper<art::Ptr<simb::MCTruth> >"/>
+</lcgdict>

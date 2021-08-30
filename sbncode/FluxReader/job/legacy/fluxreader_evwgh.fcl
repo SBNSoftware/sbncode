@@ -1,0 +1,70 @@
+# Driver fcl file for reading in gsimple files
+# and running even weights - this one comes from MicroBooNE
+
+#include "services_microboone.fcl"
+#include "microboone_eventweight_service.fcl"
+#include "eventweight_microboone.fcl"
+#include "seedservice_microboone.fcl"
+#include "fluxfilter.fcl"
+
+process_name: FluxReader
+
+services:
+{
+  TFileService: { fileName: "flux_hist.root" }
+  RandomNumberGenerator: {} #ART native random number generator
+  NuRandomService:   @local::microboone_seedservice
+  TimeTracker:       {}
+  FileCatalogMetadata:     @local::art_file_catalog_mc
+  UBEventWeight: @local::microboone_eventweight_service
+  Geometry: @local::microboone_geo
+  ExptGeoHelperInterface: @local::microboone_geometry_helper
+  IFDH: {}
+}
+
+
+source:
+{
+  fileNames:       []
+  module_type:	   FluxReader
+  skipEvents:      0
+  maxEvents:       -1
+  inputType:       "gsimple"
+  nBins:           200
+  Elow:            0
+  Ehigh:           10
+}
+
+outputs:
+{
+ out1:
+  {
+   module_type: RootOutput
+   fileName:    "fluxreader.root"
+   compressionLevel: 1
+   dataTier:    "simulated"
+  }
+}
+
+physics:
+{
+ producers:
+ {
+   eventweight:    @local::microboone_eventweight
+   rns:            { module_type: "RandomNumberSaver" }
+ }
+ filters:
+ {
+   fluxfilter: @local::flux_filter
+ }
+
+ filter: [ rns, fluxfilter, eventweight ]
+ stream1:   [ out1 ]
+ trigger_paths: [ filter ]
+ end_paths: [ stream1 ]
+}
+
+physics.producers.eventweight.genie_module_label: flux
+physics.producers.eventweight.weight_functions: [piplus, piminus, kplus, kzero, kminus, horncurrent, pioninexsec, nucleontotxsec, nucleonqexsec, nucleoninexsec, pionqexsec, piontotxsec, expskin]
+physics.producers.eventweight.kminus.weight_calculator: "MiniBooNE"
+

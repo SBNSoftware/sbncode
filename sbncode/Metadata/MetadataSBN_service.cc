@@ -3,12 +3,24 @@
 //
 // Purpose:  generate SBN-specific sam metadata for root Tfiles (histogram or ntuple files).
 //
-// FCL parameters: dataTier: Currrently this needs to be parsed by the user
+// FCL parameters: Experiment: Experiment name ("sbnd" or "icarus").
+//	     	   JSONFileName: Name of generated .json file(s).
+//                 dataTier: Data tier(s).
 //		     	     for ntuples, dataTier = root-tuple;
 //		             for histos, dataTier = root-histogram
 //		             (default value: root-tuple)
 //	           fileFormat: This is currently specified by the user,
 //			       the fileFormat for Tfiles is "root" (default value: root)
+//                 Merge: Merge flag.
+//                         1 - Set merge.merge = 1 and merge.merged = 0
+//                         0 - Set merge.merge = 0 and merge.merged = 0
+//                        -1 - Do not generate merge parameters.
+//                 POTModuleLabel  - POTSummary module label (default "generator").
+//
+//                 Parameters JSONFileName, dataTier, and fileFormat can be single
+//                 stringss or sequences of strings.  In case of sequences of length
+//                 greater than one, multiple json files will be generated.  Sequences
+//                 must be equal length.
 //
 // Other notes: 1. This service uses the ART's standard file_catalog_metadata service
 //		to extract some of the common (common to both ART and TFile outputs)
@@ -43,15 +55,13 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <stdio.h>
 #include <string>
 #include <vector>
 
 #include "sbncode/Metadata/MetadataSBN.h"
 #include "sbncode/Metadata/FileCatalogMetadataSBN.h"
+#include "larcoreobj/SummaryData/POTSummary.h"
 
-#include "art_root_io/RootDB/SQLite3Wrapper.h"
-#include "art_root_io/RootDB/SQLErrMsg.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -71,8 +81,7 @@ using namespace std;
 
 // Constructor.
 util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
-					   art::ActivityRegistry& reg):
-  fJSONFileName{pset.get<std::string>("JSONFileName")},
+			       art::ActivityRegistry& reg):
   fFileStats{"", art::ServiceHandle<art::TriggerNamesService const>{}->getProcessName()}
 {
   // Insist on configuring Experiment from the fcl file (ideally) or the
@@ -81,14 +90,40 @@ util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
   if(expt) fExperiment = pset.get<std::string>("Experiment", expt); else fExperiment = pset.get<std::string>("Experiment");
   std::transform(fExperiment.begin(), fExperiment.end(), fExperiment.begin(), [](unsigned char c){return std::tolower(c);});
 
-  md.fdata_tier   = pset.get<std::string>("dataTier");
-  md.ffile_format = pset.get<std::string>("fileFormat");
+  // Get scalar/vector parameters.
+  if(pset.is_key_to_atom("JSONFileName"))
+    fJSONFileName.push_back(pset.get<std::string>("JSONFileName"));
+  else if(pset.is_key_to_sequence("JSONFileName"))
+    fJSONFileName = pset.get<std::vector<std::string> >("JSONFileName");
+    
+  if(pset.is_key_to_atom("dataTier"))
+    fDataTier.push_back(pset.get<std::string>("dataTier"));
+  else if(pset.is_key_to_sequence("dataTier"))
+    fDataTier = pset.get<std::vector<std::string> >("dataTier");
+  if(fDataTier.size() != fJSONFileName.size())
+    throw cet::exception("MetadataSBN") << "FCL sequence size mismatch.\n";
+
+  if(pset.is_key_to_atom("fileFormat"))
+    fFileFormat.push_back(pset.get<std::string>("fileFormat"));
+  else if(pset.is_key_to_sequence("fileFormat"))
+    fFileFormat = pset.get<std::vector<std::string> >("fileFormat");
+  if(fFileFormat.size() != fJSONFileName.size())
+    throw cet::exception("MetadataSBN") << "FCL sequence size mismatch.\n";
+
+  if(pset.has_key("Merge")) {
+    if(pset.is_key_to_atom("Merge"))
+      fMerge.push_back(pset.get<int>("Merge"));
+    else if(pset.is_key_to_sequence("Merge"))
+      fMerge = pset.get<std::vector<int> >("Merge");
+  }
+  fPOTModuleLabel = pset.get<std::string>("POTModuleLabel", "generator");
 
   reg.sPostBeginJob.watch(this, &MetadataSBN::postBeginJob);
   reg.sPostOpenFile.watch(this, &MetadataSBN::postOpenInputFile);
   reg.sPostCloseFile.watch(this, &MetadataSBN::postCloseInputFile);
   reg.sPostProcessEvent.watch(this, &MetadataSBN::postEvent);
   reg.sPostBeginSubRun.watch(this, &MetadataSBN::postBeginSubRun);
+  reg.sPostEndSubRun.watch(this, &MetadataSBN::postEndSubRun);
 
   // get metadata from the FileCatalogMetadataSBN service, which is filled on its construction
   art::ServiceHandle<util::FileCatalogMetadataSBN> paramhandle;
@@ -99,6 +134,8 @@ util::MetadataSBN::MetadataSBN(fhicl::ParameterSet const& pset,
   md.fProjectSoftware = paramhandle->GetProjectSoftware();
   md.fProductionName = paramhandle->GetProductionName();
   md.fProductionType = paramhandle->GetProductionType();
+  md.merge = -1;
+  md.fTotPOT = 0.;
 }
 
 /// Un-quote quoted strings
@@ -206,6 +243,21 @@ void util::MetadataSBN::postBeginSubRun(art::SubRun const& sr)
   }
 }
 
+//--------------------------------------------------------------------  	
+// PostEndSubRun callback.
+void util::MetadataSBN::postEndSubRun(art::SubRun const& sr)
+{
+  art::Handle< sumdata::POTSummary > potListHandle;
+  double fTotPOT = 0;
+  if(sr.getByLabel(fPOTModuleLabel,potListHandle)){
+    fTotPOT+=potListHandle->totpot;
+  }
+
+  md.fTotPOT += fTotPOT;
+}
+
+
+//--------------------------------------------------------------------
 std::string Escape(const std::string& s)
 {
   // If it's formatted as a dict or list, trust it's already formatted
@@ -256,9 +308,10 @@ std::string util::MetadataSBN::GetRunsString() const
 //--------------------------------------------------------------------
 void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs,
                                         std::map<std::string, int>& ints,
+					std::map<std::string, double>& doubles,
                                         std::map<std::string, std::string>& objs)
 {
-  strs.clear(); ints.clear(); objs.clear();
+  strs.clear(); ints.clear(); doubles.clear(); objs.clear();
 
   objs["application"] = "{\"family\": \""+std::get<0>(md.fapplication)+"\", \"name\": \""+std::get<1>(md.fapplication)+"\", \"version\": \""+std::get<2>(md.fapplication)+"\"}";
 
@@ -293,6 +346,12 @@ void util::MetadataSBN::GetMetadataMaps(std::map<std::string, std::string>& strs
 
   MaybeCopyToMap(md.fgroup, "group", strs);
   MaybeCopyToMap(md.ffile_type, "file_type", strs);
+
+  if(md.merge >= 0) {
+    ints["merge.merge"] = (md.merge==0 ? 0 : 1);
+    ints["merge.merged"] = 0;
+  }
+  doubles["mc.pot"] = md.fTotPOT;  
 }
 
 //--------------------------------------------------------------------
@@ -302,37 +361,56 @@ void util::MetadataSBN::postCloseInputFile()
   //update end time
   md.fend_time = time(0);
 
-  std::map<std::string, std::string> strs;
-  std::map<std::string, int> ints;
-  std::map<std::string, std::string> objs;
-  GetMetadataMaps(strs, ints, objs);
+  // Loop over files.
 
-  // open a json file and write everything from the struct md complying to the
-  // samweb json format. This json file holds the below information temporarily.
-  // If you submitted a grid job invoking this service, the information from
-  // this file is appended to a final json file and this file will be removed
+  for(unsigned int i=0; i<fJSONFileName.size(); ++i) {
 
-  if(!fJSONFileName.empty()){
-    std::ofstream jsonfile;
-    jsonfile.open(fJSONFileName);
-    jsonfile << "{\n";
+    // Update per-file metadata.
 
-    bool once = true;
-    for(auto& it: objs){
-      if(!once) jsonfile << ",\n";
-      once = false;
-      jsonfile << "  \"" << it.first << "\": " << it.second;
+    md.fdata_tier = fDataTier[i];
+    md.ffile_format = fFileFormat[i];
+    if(fMerge.size() > i)
+      md.merge = fMerge[i];
+    else
+      md.merge = -1;
+
+
+    std::map<std::string, std::string> strs;
+    std::map<std::string, int> ints;
+    std::map<std::string, double> doubles;
+    std::map<std::string, std::string> objs;
+    GetMetadataMaps(strs, ints, doubles, objs);
+
+    // open a json file and write everything from the struct md complying to the
+    // samweb json format. This json file holds the below information temporarily.
+    // If you submitted a grid job invoking this service, the information from
+    // this file is appended to a final json file and this file will be removed
+
+    if(!fJSONFileName[i].empty()){
+      std::ofstream jsonfile;
+      jsonfile.open(fJSONFileName[i]);
+      jsonfile << "{\n";
+
+      bool once = true;
+      for(auto& it: objs){
+	if(!once) jsonfile << ",\n";
+	once = false;
+	jsonfile << "  \"" << it.first << "\": " << it.second;
+      }
+      for(auto& it: strs){
+	// Have to escape string outputs
+	jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
+      }
+      for(auto& it: ints){
+	jsonfile << ",\n  \"" << it.first << "\": " << it.second;
+      }
+      for(auto& it: doubles){
+	jsonfile << ",\n  \"" << it.first << "\": " << it.second;
+      }
+
+      jsonfile<<"\n}\n";
+      jsonfile.close();
     }
-    for(auto& it: strs){
-      // Have to escape string outputs
-      jsonfile << ",\n  \"" << it.first << "\": \"" << it.second << "\"";
-    }
-    for(auto& it: ints){
-      jsonfile << ",\n  \"" << it.first << "\": " << it.second;
-    }
-
-    jsonfile<<"\n}\n";
-    jsonfile.close();
   }
 
   fFileStats.recordFileClose();
