@@ -66,7 +66,7 @@
 
 namespace sbn {
   class TrackCaloSkimmer;
-  enum kDET {kNOTDEFINED, kSBND, kICARUS}; 
+  enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
@@ -123,7 +123,7 @@ private:
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
-    const sbn::kDET fDET);
+    const sbn::EDet det);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
