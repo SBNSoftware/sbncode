@@ -1,24 +1,6 @@
 BEGIN_PROLOG
 
 caloskim_pandoraCalo: {
-  CaloAlg: {
-    CalAmpConstants: [ 1., 1., 1.]
-    CalAreaConstants: [ 1., 1., 1.]
-    CaloDoLifeTimeCorrection: false
-    CaloLifeTimeForm: 0
-    CaloUseModBox: true
-  }
-  CorrectSCE: false
-  FlipTrack_dQdx: false
-  SpacePointModuleLabel: "pandora"
-  T0ModuleLabel: ""
-  TrackModuleLabel: "pandoraTrack"
-  UseArea: true
-  module_type: "Calorimetry"
-}
-
-
-caloskim_pandoraSCECalo: {
   AssocHitModuleLabel: ""
   CaloAlg: {
     CalAmpConstants: [ 1., 1., 1.] 
@@ -72,7 +54,7 @@ stopping_selection: {
   FitResidualsCut: 10
   RequireFit: false
   EndMediandQdxCut: 1000
-  NumberTimeSamples: 4096
+  NumberTimeSamples: 3400
 }
 
 throughgoing_selection: {
@@ -92,7 +74,7 @@ throughgoing_selection: {
   RequireFit: false
   EndMediandQdxCut: -1
   RequireDownwards: false
-  NumberTimeSamples: 4096
+  NumberTimeSamples: 3400
 }
 
 a2c_selection: {
