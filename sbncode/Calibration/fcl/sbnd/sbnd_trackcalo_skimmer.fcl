@@ -50,7 +50,7 @@ stopping_selection: {
   FVInsetMaxZ: 15
   MinTimeTickInset: 100
   MaxTimeTickInset: 100
-  EndMediandQdxCut: 1000
+  EndMediandQdxCut: 1200
   NumberTimeSamples: 3400
 }
 
