@@ -1,0 +1,4 @@
+#include "run_calorimetry_skim_sbnd.fcl"
+
+physics.analyzers.caloskim: @local::caloskim_nodigits_goldentracks
+

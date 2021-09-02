@@ -1,0 +1,82 @@
+BEGIN_PROLOG
+
+caloskim_pandoraCalo: {
+  AssocHitModuleLabel: ""
+  CaloAlg: {
+    CalAmpConstants: [ 1., 1., 1.] 
+    CalAreaConstants: [ 1., 1., 1.]
+    CaloDoLifeTimeCorrection: false
+    CaloLifeTimeForm: 0
+    CaloUseModBox: true
+  }
+  ChargeMethod: 1
+  Cryostat: 0
+  FieldDistortion: false
+  FieldDistortionEfield: false
+  T0ModuleLabel: ""
+  TrackIsFieldDistortionCorrected: false
+  TrackModuleLabel: "pandoraTrack"
+  module_type: "GnocchiCalorimetry"
+}
+
+    
+caloskim: {
+  module_type: TrackCaloSkimmer
+  CALOproducer: "caloskimCalorimetry"
+  TRKproducer:  "pandoraTrack"
+  T0producer: "pandora"
+  PFPproducer: "pandora"
+  G4producer: "largeant"
+  SimChannelproducer: "simdrift"
+  HITproducer: "gaushit"
+  RawDigitproducers: ["daq"]
+  RequireT0: true
+  HitRawDigitsTickCollectWidth: 50
+  DoTailFit: false
+  SilenceMissingDataProducts: true
+  SelectionTools: []
+}
+
+caloskim_nodigits: @local::caloskim
+caloskim_nodigits.RawDigitproducers: []
+
+stopping_selection: {
+  tool_type: TrackCaloSkimmerSelectStoppingTrack
+  FVInsetMinX: 15
+  FVInsetMaxX: 15
+  FVInsetMinY: 25
+  FVInsetMaxY: 15
+  FVInsetMinZ: 15
+  FVInsetMaxZ: 15
+  MinTimeTickInset: 100
+  MaxTimeTickInset: 100
+  EndMediandQdxCut: 1000
+  NumberTimeSamples: 3400
+}
+
+throughgoing_selection: {
+  tool_type: TrackCaloSkimmerSelectStoppingTrack
+  Invert: true
+  PreScale: 1
+  FVInsetMinX: 5
+  FVInsetMaxX: 5
+  FVInsetMinY: 5
+  FVInsetMaxY: 5
+  FVInsetMinZ: 5
+  FVInsetMaxZ: 5
+  MinTimeTickInset: 0
+  MaxTimeTickInset: 0
+  EndMediandQdxCut: -1
+  RequireDownwards: false
+  NumberTimeSamples: 3400
+}
+
+a2c_selection: {
+  tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
+  TickCut: 2500
+}
+
+caloskim_nodigits_goldentracks: @local::caloskim_nodigits
+caloskim_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+
+END_PROLOG
