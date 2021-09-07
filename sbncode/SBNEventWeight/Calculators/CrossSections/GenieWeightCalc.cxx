@@ -82,6 +82,38 @@
 
 namespace sbn {
 namespace {//Helper functions are defined in this block
+  //Keng add a exception function that prevents crash from a weight calculation 
+  // the issue is described at https://github.com/GENIE-MC/Reweight/issues/12
+  // reference of status code https://hep.ph.liv.ac.uk/~costasa/genie_doxygen/master/html/GHepStatus_8h_source.html
+//  bool SKIP_WEIGHTS( vector< genie::rew::GSyst_t > gknob_vector,
+//       genie::EventRecord  gevent){
+//		
+//	//MaCCQE knob & lambda0 (3122) particle will crash the code, 
+//	// (only lambda0 no other baryons? Nope; need to investigate)
+//	//so skip it
+//	  GHepParticle * p = 0;
+//
+////	  TObjArrayIter piter((genie::EventRecord) genie_event);
+////	  std::cout<<"CHECK PDG"<<std::endl;
+////	  while( (p = (GHepParticle *) piter.Next()) ) {
+//		p = gevent.FindParticle(3122,kIStStableFinalState ,0 );
+////		std::cout<<p->Pdg()<<std::endl;
+////	  }
+//		//more than 7 particles are also good, i.e. the 8th particle exist
+//
+//	if(p){ 
+//	  GHepParticle * p2 = 0;
+//	  p2 = gevent.Particle(8);
+//	  if(!p2){
+//		  if( std::find(gknob_vector.begin(), gknob_vector.end(),  kXSecTwkDial_MaCCQE) != gknob_vector.end()   
+//			)//exception for MaCCQE & lambda0 (3122) & small number particles
+//			return true;
+//
+//	  }
+//	  }
+//
+//	  return false;
+//  }
 
   // These GENIE knobs are listed in the GSyst_t enum type but are not actually implemented.
   // They will be skipped and a warning message will be printed.
@@ -331,7 +363,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 
 	// Calculator config
 	const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
-	std::cout<<"Start configuration CHECK "<<__LINE__<<std::endl;
+//	std::cout<<"Start configuration CHECK "<<__LINE__<<std::endl;
 	auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
 
 	std::vector<float> parsigmas;
@@ -419,33 +451,8 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 }
 
 
-
-
-
 	// Set up parameters
 	fParameterSet.Configure(GetFullName(), mode, num_universes);
-
-//	for (size_t i=0; i<pars.size(); i++) {
-//		//CHECK, only add the compatible knobs;
-//		fParameterSet.AddParameter(pars[i], parsigmas[i]);
-//		//AddParameter(name, width, mean=0, covIndex=0);
-//		//Create object EventWeightParameter p(name, mean, width, covIndex)
-//		//
-//		//`it.second` from fParameterSet.fParameterMap 
-//		//		is a vector<float> defined by the following;
-//		//"multisim" gives: CLHEP::RandGaussQ::shoot(&engine, p.fMean, p.fWidth)
-//		//"kPMNSigma" gives: p.fMean + p.fWidth & p.fMean + p.fWidth
-//		//(CHECK), update kPMNSigma
-//		//"kFixed" gives: p.fMean + p.fWidth
-//		//"No other modes"
-//		//
-//		//CHECK, need to update sbnobj for more modes?
-//		//sbnobj: mulsitims/PMNSigma/Fixed (include 3 cases); default, exit;
-//		//							 (width,mean)=(0,\pm1)/(0,0)/(0,sigma);
-//		//Larsim: multisim/pm1sigma/minmax/central_value; default, exact sigma;
-//		//multisim gives: sigmas* CLHEP::RandGaussQ::shoot(&engine, 0., 1.); [DIFFERENT] CHECK
-//	}
-
 	fParameterSet.Sample(engine);
 
 
@@ -505,8 +512,9 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 		}//next universe
 	}//next parameter
 
+std::cout<<__LINE__<< "Done Configurations!"<<std::endl;
 }
-
+int GLOBALNUM = 0;
 //Keng:
 //copied from larsim's GetWeight()
 //2d weights --> 1d weights; no major modifications.
@@ -564,9 +572,52 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
       // All right, the event record is fully ready. Now ask the GReWeight
       // objects to compute the weights.
-	  std::cout<<"CHECK weight: ";
+//	  std::cout<<"CHECK weight: ";
+//	  auto const& fluxlist = *e.getValidHandle<std::vector<simb::MCFlux>>(fGenieModuleLabel);
+//	  std::set< genie::rew::GSyst_t > SPECIAL_KNOBS = {kXSecTwkDial_MaCCQE};//CCQE knob
+	  GLOBALNUM++;//CHECK
+//	  if(GLOBALNUM>76808 && GLOBALNUM < 76820) std::cout<<GLOBALNUM<<std::endl;
+//	  GLOBALNUM==76809
+//	  GLOBALNUM==465867
+	  if(GLOBALNUM>464000 ){ 
+	  std::cout<<GLOBALNUM<<std::endl;
+	  genie_event->Print(std::cout);
+	  }
+//	  if(GLOBALNUM> 464000 && GLOBALNUM%500 == 0) std::cout<<GLOBALNUM<<std::endl;//
+//	  genie_event->Print(std::cout);
+
+//	  GHepParticle * p = 0;
+//
+////	  TObjArrayIter piter((genie::EventRecord) genie_event);
+//	  std::cout<<"CHECK PDG"<<std::endl;
+////	  while( (p = (GHepParticle *) piter.Next()) ) {
+//		p = genie_event->FindParticle(3122,kIStHadronInTheNucleus ,0 );
+////		std::cout<<p->Pdg()<<std::endl;
+////	  }
+//		if( p ) std::cout<<"Found one"<<std::endl;
+////	  genie_event->Print(std::cout);
+////	  interaction->Print(std::cout);
+std::cout<<"CHECK weight ";	  
+
       for (size_t k = 0u; k < num_knobs; ++k ) {
-        weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
+		//Add exception to avoid "FATAL KineLimits", 
+		//	see https://github.com/GENIE-MC/Reweight/issues/12
+		vector< genie::rew::GSyst_t > ak = reweightVector.at( k ).Systematics().AllIncluded();//all konbs used
+
+//		std::cout<<"Runing at "<<fluxlist[inu].fptype<<" and "<<genie::rew::GSyst::AsString(ak[0])<<std::endl;
+//		if( std::find(ak.begin(), ak.end(),  kXSecTwkDial_MaCCQE) != ak.end()   
+//			&& 
+//			(fluxlist[inu].fptype == 3122)
+//			){//exception for MaCCQE & lambda0 (3122)}
+//		if(SKIP_WEIGHTS(ak, *genie_event)){}
+//		if(false){
+//			weights[k] = 1;
+//			std::cout<<"Catch an lambda0 at final state for MaCCQE! Skip and assign weight 1" <<std::endl;
+//
+////	  genie_event->Print(std::cout);
+//		} else{
+			weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
+//		}
 		std::cout<<weights[k]<<" ";
       }
 	  std::cout<<"Complete with knobs# "<<num_knobs<<std::endl;
