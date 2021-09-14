@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-caloskim_pandoraCalo: {
+caloskim_calorimetry: {
   AssocHitModuleLabel: ""
   CaloAlg: {
     CalAmpConstants: [ 1., 1., 1.] 

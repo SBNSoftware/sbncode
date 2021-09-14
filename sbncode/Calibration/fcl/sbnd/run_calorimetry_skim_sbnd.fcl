@@ -40,7 +40,7 @@ outputs:
 physics:
 {
   producers:{
-    caloskimCalorimetry: @local::caloskim_pandoraCalo
+    caloskimCalorimetry: @local::caloskim_calorimetry
   }
 
   analyzers:
