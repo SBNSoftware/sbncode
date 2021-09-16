@@ -1,0 +1,58 @@
+#include "simulationservices_sbnd.fcl"
+
+#include "larproperties.fcl"
+#include "detectorproperties_sbnd.fcl"
+
+#include "mcsproducer.fcl"
+#include "rangeproducer.fcl"
+#include "calorimetry_sbnd.fcl"
+#include "particleid.fcl"
+#include "trackareahit_producer.fcl"
+#include "trackhitfilter_module.fcl"
+#include "sbnd_trackcalo_skimmer.fcl"
+
+#include "rootoutput_sbnd.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  TFileService: { fileName: "caloskim_out.root" }
+  @table::sbnd_services
+  BackTrackerService: @local::standard_backtrackerservice
+  ParticleInventoryService: @local::standard_particleinventoryservice
+}
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+outputs:
+{
+  outpid:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-%p.root"
+
+    fastCloning: false
+  }
+}
+physics:
+{
+  producers:{
+    caloskimCalorimetry: @local::caloskim_pandoraCalo
+  }
+
+  analyzers:
+  {
+    caloskim: @local::caloskim_nodigits
+  }
+
+  filters: {}
+
+  runprod: [caloskimCalorimetry] 
+  ana: [caloskim]
+  trigger_paths: [runprod]
+  stream1:       [outpid]
+  end_paths:     [ana,stream1]
+}
