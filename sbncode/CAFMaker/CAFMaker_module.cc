@@ -340,6 +340,16 @@ void CAFMaker::beginJob() {
 
 //......................................................................
 void CAFMaker::beginRun(art::Run& run) {
+  fDet = kUNKNOWN;
+
+  caf::Det_t override = kUNKNOWN;
+  if(fParams.DetectorOverride() == "sbnd") override = kSBND;
+  if(fParams.DetectorOverride() == "icarus") override = kICARUS;
+  if(!fParams.DetectorOverride().empty() && override == kUNKNOWN){
+    std::cout << "CAFMaker: unrecognized value for DetectorOverride parameter: '" << fParams.DetectorOverride() << "'" << std::endl;
+    abort();
+  }
+
   // Heuristic method to determine the detector ID
   const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
 
@@ -347,15 +357,18 @@ void CAFMaker::beginRun(art::Run& run) {
   gdml = basename(gdml.c_str()); // strip directory part
   std::cout << "CAFMaker: Attempting to deduce detector from GDML file name: '" << gdml
             << "' and configured detector name: '" << geom->DetectorName() << "'. ";
+  // Lowercase filename, in case it contains "SBND" or "Icarus" etc
+  for(unsigned int i = 0; i < gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]);
   // Do we find the string in either of the names?
   const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
                         (geom->DetectorName().find("sbnd") != std::string::npos));
   const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
                           (geom->DetectorName().find("icarus") != std::string::npos));
+
   // Either no evidence, or ambiguous evidence
   if(hasSBND == hasIcarus){
-    std::cout << "Unable to determine detector!" << std::endl;
-    abort();
+    std::cout << "Unable to automatically determine detector!" << std::endl;
+    if(override == kUNKNOWN) abort();
   }
   // Now must be one or the other
   if(hasSBND){
@@ -365,6 +378,19 @@ void CAFMaker::beginRun(art::Run& run) {
   if(hasIcarus){
     fDet = kICARUS;
     std::cout << "Detected Icarus" << std::endl;
+  }
+
+  if(override != kUNKNOWN){
+    std::cout << "Detector set to ";
+    std::cout << ((override == kSBND) ? "SBND" : "Icarus");
+    std::cout << " based on user configuration." << std::endl;
+    if(fDet == override){
+      std::cout << "  This was redundant with the auto-detection. Suggest to not specify DetectorOverride" << std::endl;
+    }
+    else if(fDet != kUNKNOWN){
+      std::cout << "  This OVERRODE the auto-detection. Are you sure this is what you wanted?" << std::endl;
+    }
+    fDet = override;
   }
 
 
