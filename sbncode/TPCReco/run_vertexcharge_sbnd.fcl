@@ -17,6 +17,7 @@
 #include "detectorproperties_sbnd.fcl"
 #include "calorimetry_sbnd.fcl"
 #include "spacecharge_sbnd.fcl"
+#include "sbn_stub_merge_tools.fcl"
 
 
 process_name: CaloAna
@@ -76,7 +77,9 @@ physics:
       module_type: VertexStubTracker
       PFPLabel: pandora
       VertexChargeLabel: vertexCharge
-      dQdxCut: 1.7e5
+      dQdxCut: 2e5
+      OneWiredQdxCut: 1e5
+      MergeTools: @local::stub_merge
       CaloAlg: @local::sbnd_calorimetryalgmc
     }
   }
@@ -103,10 +106,8 @@ physics:
     }
   }
 
-  runprod: [vertexCharge, vertexStub, ana]
-  stream1:       [ ]
+  runprod: [vertexCharge, vertexStub]
+  stream1:       [ana ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
 }
-
-#include "3drift_services_sbnd.fcl"
