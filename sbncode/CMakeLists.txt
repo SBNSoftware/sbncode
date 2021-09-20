@@ -4,18 +4,18 @@ cet_find_library( BOOST_DATE_TIME     NAMES boost_date_time     PATHS ENV BOOST_
 find_ups_product(sbnanaobj)
 
 add_subdirectory(SBNEventWeight)
-add_subdirectory(NuMuSelection)
+#add_subdirectory(NuMuSelection)
 add_subdirectory(OpDet)
 add_subdirectory(OpT0Finder)
 
-add_subdirectory(CAFMaker)
+#add_subdirectory(CAFMaker)
 add_subdirectory(Metadata)
 
-add_subdirectory(Calibration)
+#add_subdirectory(Calibration)
 add_subdirectory(FlashMatch)
-add_subdirectory(LArRecoProducer)
-add_subdirectory(TPCReco)
+#add_subdirectory(LArRecoProducer)
+#add_subdirectory(TPCReco)
 
 add_subdirectory(FluxReader)
-add_subdirectory(EventGenerator)
-add_subdirectory(PID)
+#add_subdirectory(EventGenerator)
+#add_subdirectory(PID)

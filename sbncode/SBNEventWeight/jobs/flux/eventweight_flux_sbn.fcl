@@ -16,8 +16,8 @@ BEGIN_PROLOG
 sbn_eventweight_flux: {
 
   module_type: "SBNEventWeight"
-  genie_module_label: generator
-  AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
+  generator_module_label: generator
+  AllowMissingTruth: true # allow running over cosmics. The alternative approach is generator_module_label: ""
 
   weight_functions_flux: [
     horncurrent, expskin,

@@ -9,7 +9,7 @@ namespace sbn {
         CLHEP::HepRandomEngine& engine) {
       std::cout<<"SBNEventWeight Flux: configure "<< GetName() << std::endl;
 
-      fGenieModuleLabel = p.get<std::string>("genie_module_label");//use this label to get MC*Handle
+      fGeneratorModuleLabel = p.get<std::string>("generator_module_label");//use this label to get MC*Handle
       const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
 
       //0. << Reweighting Environment >>
@@ -32,7 +32,7 @@ namespace sbn {
 
       fParameterSet.Configure(GetFullName(), fMode, number_of_multisims);
       for (size_t i=0; i<pars.size(); i++) {
-        //Check, no sigma is used in this script.
+        //Note: no sigma is used in this script.
         fParameterSet.AddParameter(pars[i], parsigmas[i]);//parsigmas[i]);
       }
 
@@ -43,7 +43,7 @@ namespace sbn {
 
       fScalePos   = pset.get<double>("scale_factor_pos");
       if(!pset.get_if_present("scale_factor_neg",fScaleNeg)){
-        std::cout<<"SBNEventWeight Flux: auto-asignment: scale_factor_neg = 1."<<std::endl;
+        std::cout<<"SBNEventWeight Flux: auto-assignment: scale_factor_neg = 1."<<std::endl;
         }
 
       cet::search_path sp("FW_SEARCH_PATH");
@@ -209,20 +209,21 @@ namespace sbn {
 //      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
       //MCFlux & MCTruth
       art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
-      e.getByLabel(fGenieModuleLabel,mcFluxHandle);
+      e.getByLabel(fGeneratorModuleLabel,mcFluxHandle);
       std::vector<simb::MCFlux> const& fluxlist = *mcFluxHandle;
       //or do the above 3 lines in one line
-      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
+//      auto const& mclist = *e.getValidHandle<std::vector<simb::MCTruth>>(fGeneratorModuleLabel);
 
-      // If mo neutrinos in this event, gives 0 weight;
+      // If no neutrinos in this event, gives 0 weight;
       int NUni = fParameterSet.fNuniverses;
       std::vector<float> weights;//( mclist.size(), 0);
-      if(mclist.size() == 0){ 
+      if(fluxlist.size() == 0){ 
         std::cout<<"SBNEventWeight Flux: EMPTY WEIGHTS"<<std::endl;
         return weights;
       }
 
       //Iterate through each neutrino in the event
+	  std::cout<<"Get "<<CalcType<<std::endl;
       if( CalcType == "Unisim"){//Unisim Calculator
         weights.resize(NUni);
         //Unisim specific
@@ -250,8 +251,9 @@ namespace sbn {
           throw cet::exception(__FUNCTION__) << GetName()<<"::Unknown ntype "<<fluxlist[inu].fntype<< std::endl;
         }
 
-        // Collect neutrino energy
-        double enu= mclist[inu].GetNeutrino().Nu().E();
+        // Collect neutrino energy; mclist is replaced with fluxlist.
+//        double enu= mclist[inu].GetNeutrino().Nu().E();
+        double enu= fluxlist[inu].fnenergyn;
 
         //Let's make a weights based on the calculator you have requested 
 

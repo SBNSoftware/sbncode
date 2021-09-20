@@ -51,7 +51,7 @@ namespace sbn {
 
       private:
         //fParameterSet was prepared in `sbncode/Base/WeightManager.h`
-        std::string fGenieModuleLabel;
+        std::string fGeneratorModuleLabel;
         std::string CalcType;
 
         double fScalePos{}; 
