@@ -7,7 +7,6 @@
 
 // ---------------- TO DO ----------------
 //
-// - Give real fDet values
 // - Add in cycle and batch to params
 // - Move this list some place useful
 // - Add reco.CRT branch
@@ -93,6 +92,7 @@
 
 #include "fhiclcpp/ParameterSetRegistry.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
@@ -188,7 +188,8 @@ class CAFMaker : public art::EDProducer {
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
-  std::optional<std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
+  /// Map from parameter labels to previously seen parameter set configuration
+  std::map<std::string, std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
 
   void AddEnvToFile();
   void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
@@ -338,69 +339,96 @@ void CAFMaker::beginJob() {
 }
 
 //......................................................................
-void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
-{
-  const double& start = m(0, 0);
-  v.insert(v.end(), &start, &start + m.GetNoElements());
-}
-
-//......................................................................
 void CAFMaker::beginRun(art::Run& run) {
-  // fDetID = geom->DetId();
-  fDet = (Det_t)1;//(Det_t)fDetID;
+  fDet = kUNKNOWN;
 
-  if(fParams.SystWeightLabel().empty()) return;
-  // TODO all the below should be in a function somewhere
-  art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
-  GetByLabelStrict(run, fParams.SystWeightLabel(), wgt_params);
-
-  if(fPrevWeightPSet){
-    if(*fPrevWeightPSet != *wgt_params){
-      std::cout << "CAFMaker: Run-level EventWeightParameterSet mismatch."
-                << std::endl;
-      std::cout << "Previous parameter sets:";
-      for(const sbn::evwgh::EventWeightParameterSet& p: *fPrevWeightPSet){
-        std::cout << p << std::endl;
-      }
-      std::cout << "\nNew parameter sets:";
-      for(const sbn::evwgh::EventWeightParameterSet& p: *wgt_params){
-        std::cout << p << std::endl;
-      }
-      abort();
-    }
-    return; // Match, no need to refill into tree
+  caf::Det_t override = kUNKNOWN;
+  if(fParams.DetectorOverride() == "sbnd") override = kSBND;
+  if(fParams.DetectorOverride() == "icarus") override = kICARUS;
+  if(!fParams.DetectorOverride().empty() && override == kUNKNOWN){
+    std::cout << "CAFMaker: unrecognized value for DetectorOverride parameter: '" << fParams.DetectorOverride() << "'" << std::endl;
+    abort();
   }
 
-  // If there were no weights available, return
-  if (!wgt_params.isValid()) return;
+  // Heuristic method to determine the detector ID
+  const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
 
-  fPrevWeightPSet = *wgt_params;
+  std::string gdml = geom->GDMLFile();
+  gdml = basename(gdml.c_str()); // strip directory part
+  std::cout << "CAFMaker: Attempting to deduce detector from GDML file name: '" << gdml
+            << "' and configured detector name: '" << geom->DetectorName() << "'. ";
+  // Lowercase filename, in case it contains "SBND" or "Icarus" etc
+  for(unsigned int i = 0; i < gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]);
+  // Do we find the string in either of the names?
+  const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
+                        (geom->DetectorName().find("sbnd") != std::string::npos));
+  const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
+                          (geom->DetectorName().find("icarus") != std::string::npos));
+
+  // Either no evidence, or ambiguous evidence
+  if(hasSBND == hasIcarus){
+    std::cout << "Unable to automatically determine detector!" << std::endl;
+    if(override == kUNKNOWN) abort();
+  }
+  // Now must be one or the other
+  if(hasSBND){
+    fDet = kSBND;
+    std::cout << "Detected SBND" << std::endl;
+  }
+  if(hasIcarus){
+    fDet = kICARUS;
+    std::cout << "Detected Icarus" << std::endl;
+  }
+
+  if(override != kUNKNOWN){
+    std::cout << "Detector set to ";
+    std::cout << ((override == kSBND) ? "SBND" : "Icarus");
+    std::cout << " based on user configuration." << std::endl;
+    if(fDet == override){
+      std::cout << "  This was redundant with the auto-detection. Suggest to not specify DetectorOverride" << std::endl;
+    }
+    else if(fDet != kUNKNOWN){
+      std::cout << "  This OVERRODE the auto-detection. Are you sure this is what you wanted?" << std::endl;
+    }
+    fDet = override;
+  }
+
 
   SRGlobal global;
 
-  for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
-    SRWeightPSet& cafpset = global.wgts.emplace_back();
+  for(const std::string& label: fParams.SystWeightLabels()){
+    art::Handle<std::vector<sbn::evwgh::EventWeightParameterSet>> wgt_params;
+    GetByLabelStrict(run, label, wgt_params);
 
-    cafpset.name = pset.fName;
-    cafpset.type = caf::ReweightType_t(pset.fRWType);
-    cafpset.nuniv = pset.fNuniverses;
-    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+    if(fPrevWeightPSet.count(label)){
+      if(fPrevWeightPSet[label] != *wgt_params){
+        std::cout << "CAFMaker: Run-level EventWeightParameterSet mismatch."
+                  << std::endl;
+        std::cout << "Previous parameter sets:";
+        for(const sbn::evwgh::EventWeightParameterSet& p: fPrevWeightPSet[label]){
+          std::cout << p << std::endl;
+        }
+        std::cout << "\nNew parameter sets:";
+        for(const sbn::evwgh::EventWeightParameterSet& p: *wgt_params){
+          std::cout << p << std::endl;
+        }
+        abort();
+      }
+      return; // Match, no need to refill into tree
+    }
 
-    fWeightPSetIndex[cafpset.name] = global.wgts.size()-1;
+    // If there were no weights available, return
+    if (!wgt_params.isValid()){
+      std::cout << "CAFMaker: no EventWeightParameterSet found under label '" << label << "'" << std::endl;
+      return;
+    }
 
-    for(const auto& it: pset.fParameterMap){
-      const sbn::evwgh::EventWeightParameter& param = it.first;
-      const std::vector<float>& vals = it.second;
+    fPrevWeightPSet[label] = *wgt_params;
 
-      SRWeightParam cafparam;
-      cafparam.name = param.fName;
-      cafparam.mean = param.fMean;
-      cafparam.width = param.fWidth;
-      cafparam.covidx = param.fCovIndex;
-
-      cafpset.map.emplace_back(cafparam, vals);
-    } // end for it
-  } // end for pset
+    for(const sbn::evwgh::EventWeightParameterSet& pset: *wgt_params){
+      FillSRGlobal(pset, global, fWeightPSetIndex);
+    } // end for pset
+  } // end for label
 
   fFile->cd();
   TTree* globalTree = new TTree("globalTree", "globalTree");
@@ -682,6 +710,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     mctype = caf::kMCParticleGun;
   }
 
+  // Lookup the MeV-Portal info if it is there
+  //
+  // Don't be "strict" because this will only be true for a subset of MC
+  art::Handle<std::vector<evgen::ldm::MeVPrtlTruth>> mevprtltruth_handle;
+  evt.getByLabel(fParams.GenLabel(), mevprtltruth_handle);
+
+  std::vector<art::Ptr<evgen::ldm::MeVPrtlTruth>> mevprtl_truths;
+  if (mevprtltruth_handle.isValid()) art::fill_ptr_vector(mevprtl_truths, mevprtltruth_handle);
+
   // prepare map of track ID's to energy depositions
   art::Handle<std::vector<sim::SimChannel>> simchannel_handle;
   GetByLabelStrict(evt, fParams.SimChannelLabel(), simchannel_handle);
@@ -763,8 +800,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
-  // TODO eventually we want to handle multiple sources of weights
-  std::optional<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;
+  std::vector<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;
 
   // holder for invalid MCFlux
   simb::MCFlux badflux; // default constructor gives nonsense values
@@ -787,26 +823,24 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // corresponding to a neutrino) that could plausibly be reweighted. This
     // avoids the need for special configuration for cosmics or single particle
     // simulation, and real data.
-    if(!fmpewm && mctruth->NeutrinoSet()) fmpewm = FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, fParams.SystWeightLabel());
+    if(fmpewm.empty() && mctruth->NeutrinoSet()){
+      for(const std::string& label: fParams.SystWeightLabels()){
+        fmpewm.push_back(FindManyPStrict<sbn::evwgh::EventWeightMap>(mctruths, evt, label));
+      }
+    }
 
-    if(fmpewm && fmpewm->isValid()){
-      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fmpewm->at(i);
+    // For each of the sources of systematic weights
+    for(auto& fm: fmpewm){
+      if (!fm.isValid()) continue; // Don't crash if StrictMode==false
+
+      // Find the weights associated with this particular interaction
+      const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fm.at(i);
 
       // For all the weights associated with this MCTruth
       for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
-        for(auto& it: *wgtmap){
-          if(fWeightPSetIndex.count(it.first) == 0){
-            std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
-            std::cout << "Known names from EventWeightParameterSet:" << std::endl;
-            for(auto k: fWeightPSetIndex) std::cout << "  " << k.first << std::endl;
-            abort();
-          }
-          const unsigned int idx = fWeightPSetIndex[it.first];
-          if(idx >= srneutrinos.back().wgt.size()) srneutrinos.back().wgt.resize(idx+1);
-	  srneutrinos.back().wgt[idx].univ = it.second;
-        } // end for it
+        FillEventWeight(*wgtmap, srneutrinos.back(), fWeightPSetIndex);
       } // end for wgtmap
-    } // end if fmpewm
+    } // end for fm
 
     srtruthbranch.nu  = srneutrinos;
     srtruthbranch.nnu = srneutrinos.size();
@@ -828,6 +862,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   std::vector<caf::SRFakeReco> srfakereco;
   FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+
+  // Fill the MeVPrtl stuff
+  for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
+    srtruthbranch.prtl.emplace_back();
+    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], srtruthbranch.prtl.back());
+    srtruthbranch.nprtl = srtruthbranch.prtl.size();
+  } 
 
   //#######################################################
   // Fill detector & reco
@@ -900,6 +941,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
     // Holder for information on this slice
     caf::SRSlice recslc;
+    recslc.truth.det = fDet;
 
     art::Ptr<recob::Slice> slice = slices[sliceID];
     const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
@@ -979,6 +1021,25 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         else assert(false); // bad
       }
     }
+
+    // Get the stubs!
+    art::FindManyP<sbn::Stub> fmSlcStubs =
+      FindManyPStrict<sbn::Stub>(sliceList, evt,
+          fParams.StubLabel() + slice_tag_suff);
+
+    std::vector<art::Ptr<sbn::Stub>> fmStubs;
+    if (fmSlcStubs.isValid()) {
+      fmStubs = fmSlcStubs.at(0);
+    } 
+
+    // Lookup stubs to overlaid PFP
+    art::FindManyP<recob::PFParticle> fmStubPFPs =
+      FindManyPStrict<recob::PFParticle>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
+    // and get the stub hits for truth matching
+    art::FindManyP<recob::Hit> fmStubHits =
+      FindManyPStrict<recob::Hit>(fmStubs, evt,
+          fParams.StubLabel() + slice_tag_suff);
 
     art::FindManyP<anab::Calorimetry> fmCalo =
       FindManyPStrict<anab::Calorimetry>(slcTracks, evt,
@@ -1099,7 +1160,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // }
 
     //#######################################################
-    // Add reconstructed objects.
+    // Add stub reconstructed objects.
+    //#######################################################
+    for (size_t iStub = 0; iStub < fmStubs.size(); iStub++) {
+      const sbn::Stub &thisStub = *fmStubs[iStub];
+
+      art::Ptr<recob::PFParticle> thisStubPFP;
+      if (!fmStubPFPs.at(iStub).empty()) thisStubPFP = fmStubPFPs.at(iStub).at(0);
+
+      rec.reco.stub.emplace_back();
+      FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
+      FillStubTruth(fmStubHits.at(iStub), true_particles, clock_data, rec.reco.stub.back());
+      rec.reco.nstub = rec.reco.stub.size();
+
+      // Duplicate stub reco info in the srslice
+      recslc.reco.stub.push_back(rec.reco.stub.back());
+      recslc.reco.nstub = recslc.reco.stub.size();
+    }
+
+    //#######################################################
+    // Add track/shower reconstructed objects.
     //#######################################################
     // Reco objects have assns to the slice PFParticles
     // This depends on the findMany object created above.

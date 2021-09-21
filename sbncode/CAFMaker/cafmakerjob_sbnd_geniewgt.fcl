@@ -1,4 +1,0 @@
-#include "cafmakerjob_sbnd.fcl"
-
-physics.runprod: [rns, genieweight, @sequence::physics.runprod]
-physics.producers.mycafmaker.SystWeightLabel:   "genieweight"

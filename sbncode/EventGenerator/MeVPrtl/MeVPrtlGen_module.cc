@@ -33,14 +33,15 @@
 #include "larcoreobj/SummaryData/RunData.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+
 #include "Tools/IMesonGen.h"
 #include "Tools/IMeVPrtlFlux.h"
 #include "Tools/IRayTrace.h"
 #include "Tools/IMeVPrtlDecay.h"
-#include "Products/MeVPrtlTruth.h"
-#include "Products/MeVPrtlFlux.h"
-#include "Products/MeVPrtlDecay.h"
-#include "Products/KaonParent.h"
 
 #include "TTree.h"
 
@@ -307,7 +308,6 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
 
-
     std::cout << "PASSED!\n";
 
     // get the POT
@@ -338,10 +338,21 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     simb::MCTruth mctruth;
 
     for (unsigned i_d = 0; i_d < mevprtl_truth.daughter_mom.size(); i_d++) {
-      simb::MCParticle d(0, mevprtl_truth.daughter_pdg[i_d], "primary", -1, mevprtl_truth.daughter_mom[i_d].M());
-      d.AddTrajectoryPoint(mevprtl_truth.decay_pos, mevprtl_truth.daughter_mom[i_d]);
+      TLorentzVector daughter4p(mevprtl_truth.daughter_mom[i_d], mevprtl_truth.daughter_e[i_d]);
+      simb::MCParticle d(0, mevprtl_truth.daughter_pdg[i_d], "primary", -1, daughter4p.M());
+      d.AddTrajectoryPoint(mevprtl_truth.decay_pos, daughter4p);
       mctruth.Add(d);
     }
+
+    // TODO:
+    //
+    // Flux systematic uncertainties are often evaluated on the neutrino energy.
+    // We need to figure out how to translate this for the case of heavy particles
+    // with different production kinematics. For now, we could save the neutrino energy
+    // so that the flux uncertainties "work" at some level.
+    //
+    // However, the existing MCTruth object has no way to "just" set a neutrino energy.
+    // This is __very__ very annoying.
 
     mctruthColl->push_back(mctruth);
     mcfluxColl->push_back(kaon);

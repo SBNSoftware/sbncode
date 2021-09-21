@@ -1,5 +1,5 @@
 art_make_library(
-        SOURCE StubBuilder.cxx PlaneTransform.cxx StubMergeAlgorithms.cxx
+        SOURCE StubBuilder.cxx StubMergeAlgorithms.cxx
         LIBRARIES
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_PRINCIPAL}
@@ -117,6 +117,8 @@ simple_plugin(TwoPlaneStubMerge tool
 	lardataalg_DetectorInfo
 	sbncode_TPCReco_VertexStub
 )
+
+add_subdirectory(config)
 
 install_headers()
 install_fhicl()
