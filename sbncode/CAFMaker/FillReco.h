@@ -6,6 +6,7 @@
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
@@ -22,8 +23,12 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/RecoBase/MCSFitResult.h"
+#include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
+#include "sbnobj/Common/Reco/MVAPID.h"
+#include "sbnobj/Common/Reco/ScatterClosestApproach.h"
+#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -36,15 +41,25 @@
 namespace caf
 {
 
+  void FillStubVars(const sbn::Stub &stub,
+                    const art::Ptr<recob::PFParticle> stubpfp,
+                    caf::SRStub &srstub,
+                    bool allowEmpty = false);
+
   void FillShowerVars(const recob::Shower& shower,
-                      const recob::PFParticle &particle,
                       const recob::Vertex* vertex,
-                      const recob::PFParticle *primary,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
                       const geo::GeometryCore *geom,
                       unsigned producer,
                       caf::SRShower& srshower,
                       bool allowEmpty = false);
+
+  void FillShowerRazzle(const art::Ptr<sbn::MVAPID> razzle,
+                        caf::SRShower& srshower,
+                        bool allowEmpty = false);
+
+  void FillShowerCosmicDist(const std::vector<art::Ptr<float> >& cosmicDistVec,
+                      caf::SRShower& srshower);
 
   void FillShowerResiduals(const std::vector<art::Ptr<float> >& residuals,
                       caf::SRShower& srshower);
@@ -72,11 +87,15 @@ namespace caf
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 
   void FillTrackVars(const recob::Track& track,
-                     const recob::PFParticle& particle,
-                     const recob::PFParticle *primary,
                      unsigned producer,
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
+
+  void FillPFPVars(const recob::PFParticle &particle,
+                   const recob::PFParticle *primary,
+                   const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   caf::SRPFP& srpfp,
+                   bool allowEmpty= false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        caf::SRTrack &srtrack,
@@ -102,10 +121,28 @@ namespace caf
                         caf::SRTrack& srtrack,
                         bool allowEmpty = false);
 
-  void FillTrackPlaneCalo(const anab::Calorimetry &calo, float constant, caf::SRTrackCalo &srcalo);
+  void FillTrackPlaneCalo(const anab::Calorimetry &calo, 
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend, 
+                     const detinfo::DetectorPropertiesData &dprop,
+                     caf::SRTrackCalo &srcalo);
+
+  void FillTrackScatterClosestApproach(const art::Ptr<sbn::ScatterClosestApproach> closestapproach,
+                           caf::SRTrack& srtrack,
+                           bool allowEmpty = false);
+
+  void FillTrackStoppingChi2Fit(const art::Ptr<sbn::StoppingChi2Fit> stoppingChi2,
+                                caf::SRTrack& srtrack,
+                                bool allowEmpty = false);
+
+  void FillTrackDazzle(const art::Ptr<sbn::MVAPID> dazzle,
+                        caf::SRTrack& srtrack,
+                        bool allowEmpty = false);
+
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
-                     const geo::GeometryCore *geom,
-                     const std::array<float, 3> &calo_constants,
+                     const std::vector<art::Ptr<recob::Hit>> &hits,
+                     bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
+                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty = false);
 

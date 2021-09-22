@@ -33,14 +33,15 @@
 #include "larcoreobj/SummaryData/RunData.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+
 #include "Tools/IMesonGen.h"
 #include "Tools/IMeVPrtlFlux.h"
 #include "Tools/IRayTrace.h"
 #include "Tools/IMeVPrtlDecay.h"
-#include "Products/MeVPrtlTruth.h"
-#include "Products/MeVPrtlFlux.h"
-#include "Products/MeVPrtlDecay.h"
-#include "Products/KaonParent.h"
 
 #include "Tools/Constants.h"
 

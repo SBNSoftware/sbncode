@@ -1,0 +1,69 @@
+BEGIN_PROLOG
+
+empty_kaon: {
+  tool_type: EmptyKaonGen
+}
+
+# Taken from: https://github.com/SBNSoftware/icaruscode/blob/develop/fcl/gen/numi/GNuMIFlux.xml#L765
+icarus_numi_beam2detector_rotation: [   0.921228671,    0.0226872648,   0.388359401,
+				        0.00136256111,  0.998103714,   -0.061539578,
+				       -0.389019125,    0.0572211871,   0.919450845  ]
+
+icarus_numi_beam_origin: [0, 0, 0, 4.8195e2, 79.5800e2, 794.3955e2] # cm
+
+# icarus_detector_box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+# icarus_detector_box: [-369.63. 369.63, -224.61, 177.71, -994.950652270838, 994.950652270838]
+icarus_detector_box: [-378.49, 378.49, -191.86, 144.96, -904.950652270838, 904.950652270838]
+
+numi_kaon: {
+  tool_type: NuMiKaonGen
+  SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
+  FluxFiles: ["*.root"]
+  TreeName: "dk2nuTree"
+  MetaTreeName: "dkmetaTree"
+  MaxFluxFileMB: 8192 # 8GB
+  FluxCopyMethod: DIRECT
+  RandomizeFiles: true
+}
+
+ray_trace_box: {
+  tool_type: RayTraceBox
+  # Volume: volCryostat
+  Box: @local::icarus_detector_box
+}
+
+rethrow_ray_trace_box: {
+  tool_type: ReThrowRayTraceBox
+  # Volume: volCryostat
+  Box: @local::icarus_detector_box
+
+  # weight computation
+  #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
+  #ReferenceKaonEnergy: 15 # GeV
+
+  ReferenceLabSolidAngle: 1e-4
+  ReferenceKaonEnergy: 7.5 # GeV
+}
+
+weighted_ray_trace_box: {
+  tool_type: WeightedRayTraceBox
+  # Volume: volCryostat
+  Box: @local::icarus_detector_box
+
+  # weight computation
+  ReferenceLabSolidAngle: 1e-4
+  ReferenceKaonEnergy: 15. # GeV
+}
+
+mixedweight_ray_trace_box: {
+  tool_type: MixedWeightRayTraceBox
+  Box: @local::icarus_detector_box
+  ReferenceLabSolidAngle: 4e-4
+  MaxWeightFudge: 2.
+  ReferenceKaonEnergy: 15. # GeV
+  NThrow: 250
+  FixNSuccess: false
+}
+
+
+END_PROLOG
