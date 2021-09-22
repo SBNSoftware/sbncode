@@ -72,7 +72,7 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
-  static const double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
+  static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
 
 
@@ -358,6 +358,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
     // since sometimes devices fail to report we'll
     // allow each to throw an exception but still move forward
     // interpreting these failures will be part of the beam quality analyses 
+    mf::LogDebug("BNBRetriever")<< "Got Here!";
     try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
@@ -371,6 +372,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
     try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
     try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+    
+    mf::LogDebug("BNBRetriever")<< "cleared the block!" << std::endl;
     
     //crunch the times 
     unsigned long int time_closest_int = (int) TOR860_time;
@@ -394,13 +397,22 @@ void sbn::BNBRetriever::produce(art::Event& e)
     beamInfo.spill_time_s = time_closest_int;
     beamInfo.spill_time_ns = time_closest_ns;    
 
+    mf::LogDebug("BNBRetriever")<< "All my devices? " << std::endl;
+    mf::LogDebug("BNBRetriever")<< "unpacked_MWR.size() = " << unpacked_MWR.size() << std::endl;
+    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[0].size() = " << unpacked_MWR[0].size() << std::endl;
+    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[1].size() = " << unpacked_MWR[1].size() << std::endl;
+    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[2].size() = " << unpacked_MWR[2].size() << std::endl;
+    mf::LogDebug("BNBRetriever")<< "matched_MWR[0] = " << matched_MWR[0] << std::endl;
+    mf::LogDebug("BNBRetriever")<< "matched_MWR[1] = " << matched_MWR[1] << std::endl;
+    mf::LogDebug("BNBRetriever")<< "matched_MWR[2] = " << matched_MWR[2] << std::endl;
+
     beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
     beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - times_temps[i]);
     beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
     beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - times_temps[i]);
     beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
     beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - times_temps[i]);
-    
+    mf::LogDebug("BNBRetriever")<< "All my devices! " << std::endl;
     fOutbeamInfos.push_back(beamInfo);
     // We do not write these to the art::Events because 
     // we can filter events but want to keep all the POT 
