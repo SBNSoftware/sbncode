@@ -15,7 +15,7 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/Utilities/sparse_vector.h"
@@ -43,7 +43,59 @@ namespace sbn {
 
 class sbn::BNBRetriever : public art::EDProducer {
 public:
-  explicit BNBRetriever(fhicl::ParameterSet const& p);
+  
+  struct Config {
+    
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Atom<double> TimePadding {
+      Name{ "TimePadding" },
+      Comment{ "extension to the time window considered when collecting spills [seconds]" },
+      0.0333 // default
+      };
+    
+    fhicl::Atom<std::string> RawDataLabel {
+      Name{ "raw_data_label" },
+      Comment{ "art data product instance name for trigger information (product label is 'daq')" }
+      };
+    
+    fhicl::Atom<std::string> DeviceUsedForTiming {
+      Name{ "DeviceUsedForTiming" },
+      Comment{ "name in the IFBeam database of the device used to extract spill times" }
+      };
+    
+    fhicl::Atom<std::string> URL {
+      Name{ "URL" },
+      Comment{ "IFBeam database access URL" }
+      };
+    
+    fhicl::Atom<std::string> Bundle {
+      Name{ "Bundle" },
+      Comment{ "" } // explain what this is and which database/table it's looking for
+      };
+    
+    fhicl::Atom<double> TimeWindow {
+      Name{ "TimeWindow" },
+      Comment{ "" } // explain what this is, what's for and its unit
+      };
+    
+    fhicl::Atom<std::string> MultiWireBundle {
+      Name{ "MultiWireBundle" },
+      Comment{ "" } // explain what this is and which database/table it's looking for
+      };
+    
+    fhicl::Atom<double> MWR_TimeWindow {
+      Name{ "MWR_TimeWindow" },
+      Comment{ "" } // explain what this is, what's for and its unit
+      };
+    
+  }; // Config
+  
+  using Parameters = art::EDProducer::Table<Config>;
+  
+  
+  explicit BNBRetriever(Parameters const& params);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
@@ -78,14 +130,13 @@ private:
 
 };
 
-
-sbn::BNBRetriever::BNBRetriever(fhicl::ParameterSet const& p)
-  : EDProducer{p},
-  fTimePad{p.get<double>("TimePadding",0.0333)}, //seconds
-  raw_data_label_(p.get<std::string>("raw_data_label")),
-  fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
-  bfp(     ifbeam_handle->getBeamFolder(p.get< std::string >("Bundle"), p.get< std::string >("URL"), p.get< double >("TimeWindow"))),
-  bfp_mwr( ifbeam_handle->getBeamFolder(p.get< std::string >("MultiWireBundle"), p.get< std::string >("URL"), p.get< double >("MWR_TimeWindow")))
+sbn::BNBRetriever::BNBRetriever(Parameters const& params)
+  : EDProducer{params},
+  fTimePad(params().TimePadding()),
+  raw_data_label_(params().RawDataLabel()),
+  fDeviceUsedForTiming(params().DeviceUsedForTiming()),
+  bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
+  bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow()))
 {
   
   // Check fTimePad is positive 
