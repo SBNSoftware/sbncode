@@ -3,6 +3,21 @@
 process_name: BNBInfoGen
 
 services:{
+  
+  message: {
+      debugModules: [ "*" ]
+       destinations: {
+           LogDebugFile:{
+               type:       "file"
+               filename:   "debug.log"
+               append:     false
+               threshold:  "DEBUG"
+               categories: {
+                   default: {}
+               }
+           }
+       }
+  }
   IFBeam:{}
 }
 
