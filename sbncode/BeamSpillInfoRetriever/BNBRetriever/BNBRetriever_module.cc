@@ -124,9 +124,54 @@ private:
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp_mwr;
 
+  struct TriggerInfo_t {
+    int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
+    double t_current_event  = 0;
+    double t_previous_event = 0;
+    double number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
+  };
+  
+  struct MWRdata_t {
+    std::vector< std::vector<double> > MWR_times;
+    std::vector< std::vector< std::vector< int > > > unpacked_MWR;
+  };
+  
+
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
+  /// Returns the information of the trigger in the current event.
+  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  
+  /**
+   * @brief Determines spill times and extracts data based on multiwire devices.
+   * @param triggerInfo information from the trigger of this event
+   * @return times and unpacked data, per device (`"M875BB"`, `"M876BB"`, `"MMBTBB"`)
+   */
+  MWRdata_t extractSpillTimes(TriggerInfo_t const& triggerInfo) const;
 
+  /**
+   * @brief Matches spill times with multiwire chamber data from the database.
+   * @param triggerInfo information from the trigger of this event
+   * @param MWRdata data from multiwire chambers
+   * @param isFirstEventInRun whether we are processing the first event of the run
+   * @param[out] beamInfos container to _add_ spill information records to
+   * @return count of matched spills
+   */
+  int matchMultiWireData(
+    TriggerInfo_t const& triggerInfo,
+    MWRdata_t const& MWRdata, bool isFirstEventInRun,
+    std::vector< sbn::BNBSpillInfo >& beamInfos
+    ) const;
+
+  /**
+   * @brief Assembles and returns a spill information record.
+   * @param time time of the spill
+   * @param MWRdata all extracted data from multiwire chambers
+   * @param matched_MWR data from multiwire chambers matched with the time
+   * @return a `sbn::BNBSpillInfo` object with information on the spill at `time`
+   */
+  sbn::BNBSpillInfo makeBNBSpillInfo
+    (double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
 
 };
 
@@ -156,21 +201,44 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   TotalBeamSpills = 0;
 }
 
+
 void sbn::BNBRetriever::produce(art::Event& e)
 {
+  
+  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  
+  //We only want to process BNB gates, i.e. type 1 
+  if(triggerInfo.gate_type != 1) return;
+  // Keep track of the number of beam gates the DAQ thinks 
+  //   are in this job
+  TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
+  
+  
+  MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
+  
+  
+  int const spill_count = matchMultiWireData(triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
+  
+  
+  if(spill_count > triggerInfo.number_of_gates_since_previous_event)
+    mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
+    else
+      mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
+  
+}//end iteration over art::Events
+
+
+sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Event const& e) const {
   
   //Here we read in the artdaq Fragments and extract three pieces of information:
   // 1. The time of the current event, t_current_event
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  int gate_type = 0;
   auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
-
-  double t_current_event  = 0;
-  double t_previous_event = 0;
-  double number_of_gates_since_previous_event = 0;
   
+  TriggerInfo_t triggerInfo;
+
   for(auto raw_datum : raw_data){
    
     uint64_t artdaq_ts = raw_datum.timestamp();
@@ -178,30 +246,29 @@ void sbn::BNBRetriever::produce(art::Event& e)
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
-    gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
+    triggerInfo.gate_type = datastream_info.gate_type;
+    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
   
-    t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
-    if(gate_type == 1)
-      t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
+    triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
+    if(triggerInfo.gate_type == 1)
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
     else
-      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
     
   }
   
-  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
+  mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << triggerInfo.t_previous_event << ", Current : " << triggerInfo.t_current_event << std::endl;
 
-  //We only want to process BNB gates, i.e. type 1 
-  if(gate_type != 1) return;
-  
-  // Keep track of the number of beam gates the DAQ thinks 
-  //   are in this job
-  TotalBeamSpills += number_of_gates_since_previous_event;
+  return triggerInfo;
+}
+
+
+sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
   // These lines get everything primed within the IFBeamDB
   //   They seem redundant but they are needed
-  try{auto cur_vec_temp = bfp->GetNamedVector((t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
-  try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
+  try{auto cur_vec_temp = bfp->GetNamedVector((triggerInfo.t_previous_event)-fTimePad,"E:THCURR");} catch (WebAPIException &we) {}      
+  try{auto packed_M876BB_temp = bfp_mwr->GetNamedVector((triggerInfo.t_current_event)+fTimePad,"E:M875BB{4440:888}.RAW");} catch (WebAPIException &we) {}
   
   
   //The multiwire chambers provide their
@@ -231,7 +298,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   // match them to the closest spills in time
   // 
 
-  int t_steps = int(((t_previous_event - fTimePad) - (t_current_event + fTimePad))/0.5)+25;
+  int t_steps = int(((triggerInfo.t_previous_event - fTimePad) - (triggerInfo.t_current_event + fTimePad))/0.5)+25;
   
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
     for (std::string const& var : vars) {// Iterate through the devices
@@ -250,7 +317,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
       try{
 	//Pull the MWR data for the device
 	// these data are "packed"
-	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((t_previous_event)-fTimePad+double(0.5*t),var,&time_for_mwr);
+	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((triggerInfo.t_previous_event)-fTimePad+double(0.5*t),var,&time_for_mwr);
 
 	//We'll convert this into a format
 	// that we can unpack doubles >> strings
@@ -297,6 +364,17 @@ void sbn::BNBRetriever::produce(art::Event& e)
     }// Iterate over all the multiwire devices
   }// Iterate over all times
   
+  return { std::move(MWR_times), std::move(unpacked_MWR) };
+}
+
+
+int sbn::BNBRetriever::matchMultiWireData(
+  TriggerInfo_t const& triggerInfo,
+  MWRdata_t const& MWRdata, bool isFirstEventInRun,
+  std::vector< sbn::BNBSpillInfo >& beamInfos
+) const {
+  
+  auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
   
   //Here we will start collecting all the other beamline devices
   // First we get the times that the beamline device fired
@@ -311,14 +389,14 @@ void sbn::BNBRetriever::produce(art::Event& e)
   
   
   // Need to handle the first event in a run differently
-  if(e.event() == 1){
+  if(isFirstEventInRun){
     
     //We'll remove the spills after our event
     int spills_after_our_target = 0;
     // iterate through all the spills to find the 
     // spills that are after our triggered event
     for (size_t i = 0; i < times_temps.size(); i++) {       
-      if(times_temps[i] > (t_current_event+fTimePad)){
+      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){
 	spills_after_our_target++;
       }
     }//end loop through spill times 	 
@@ -327,7 +405,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
     times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
     
     // Remove the spills before the start of our Run
-    times_temps.erase(times_temps.begin(),times_temps.end()-number_of_gates_since_previous_event);
+    times_temps.erase(times_temps.begin(),times_temps.end()-triggerInfo.number_of_gates_since_previous_event);
     
   }//end fix for "first event"
   
@@ -338,9 +416,9 @@ void sbn::BNBRetriever::produce(art::Event& e)
     // plus or minus some time padding, currently using 3.3 ms 
     // which is half the Booster Rep Rate
     
-    if(e.event() != 1){//We already addressed the "first event" above
-      if(times_temps[i] > (t_current_event+fTimePad)){continue;}
-      if(times_temps[i] <= (t_previous_event-fTimePad)){continue;}
+    if(!isFirstEventInRun){//We already addressed the "first event" above
+      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){continue;}
+      if(times_temps[i] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
     }
 
     //Loop through the multiwire devices:
@@ -360,8 +438,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
 	  //Check for a better match...
 	  for (size_t j = 0; j < times_temps.size(); j++) {
 	    if( j == i) continue;
-	    if(times_temps[j] > (t_current_event+fTimePad)){continue;}
-	    if(times_temps[j] <= (t_previous_event-fTimePad)){continue;}
+	    if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
+	    if(times_temps[j] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
 	    
 	    //is there a better match later in the spill sequence
 	    if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
@@ -386,97 +464,99 @@ void sbn::BNBRetriever::produce(art::Event& e)
     //Great we found a matched spill! Let's count it
     spill_count++;
     
-    // initializing all of our device carriers
-    // device definitions can be found in BNBSpillInfo.h
-    
-    double TOR860 = 0; // units e12 protons
-    double TOR875 = 0; // units e12 protons
-    double LM875A = 0; // units R/s
-    double LM875B = 0; // units R/s
-    double LM875C = 0; // units R/s
-    double HP875 = 0; // units mm
-    double VP875 = 0; // units mm
-    double HPTG1 = 0; // units mm
-    double VPTG1 = 0; // units mm
-    double HPTG2 = 0; // units mm
-    double VPTG2 = 0; // units mm
-    double BTJT2 = 0; // units Deg C
-    double THCURR = 0; // units kiloAmps
-    
-    double TOR860_time = 0; // units s
-      
-    // Here we request all the devices
-    // since sometimes devices fail to report we'll
-    // allow each to throw an exception but still move forward
-    // interpreting these failures will be part of the beam quality analyses 
-    mf::LogDebug("BNBRetriever")<< "Got Here!";
-    try{bfp->GetNamedData(times_temps[i], "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    try{bfp->GetNamedData(times_temps[i], "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
-    
-    mf::LogDebug("BNBRetriever")<< "cleared the block!" << std::endl;
-    
-    //crunch the times 
-    unsigned long int time_closest_int = (int) TOR860_time;
-    double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
-    
-    //Store everything in our data-product
-    sbn::BNBSpillInfo beamInfo;
-    beamInfo.TOR860 = TOR860;
-    beamInfo.TOR875 = TOR875;
-    beamInfo.LM875A = LM875A;
-    beamInfo.LM875B = LM875B;
-    beamInfo.LM875C = LM875C;
-    beamInfo.HP875 = HP875;
-    beamInfo.VP875 = VP875;
-    beamInfo.HPTG1 = HPTG1;
-    beamInfo.VPTG1 = VPTG1;
-    beamInfo.HPTG2 = HPTG2;
-    beamInfo.VPTG2 = VPTG2;
-    beamInfo.BTJT2 = BTJT2;
-    beamInfo.THCURR = THCURR;
-    beamInfo.spill_time_s = time_closest_int;
-    beamInfo.spill_time_ns = time_closest_ns;    
+    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(times_temps[i], MWRdata, matched_MWR);
 
-    mf::LogDebug("BNBRetriever")<< "All my devices? " << std::endl;
-    mf::LogDebug("BNBRetriever")<< "unpacked_MWR.size() = " << unpacked_MWR.size() << std::endl;
-    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[0].size() = " << unpacked_MWR[0].size() << std::endl;
-    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[1].size() = " << unpacked_MWR[1].size() << std::endl;
-    mf::LogDebug("BNBRetriever")<< "unpacked_MWR[2].size() = " << unpacked_MWR[2].size() << std::endl;
-    mf::LogDebug("BNBRetriever")<< "matched_MWR[0] = " << matched_MWR[0] << std::endl;
-    mf::LogDebug("BNBRetriever")<< "matched_MWR[1] = " << matched_MWR[1] << std::endl;
-    mf::LogDebug("BNBRetriever")<< "matched_MWR[2] = " << matched_MWR[2] << std::endl;
+    beamInfos.push_back(std::move(spillInfo));
 
-    beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
-    beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - times_temps[i]);
-    beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
-    beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - times_temps[i]);
-    beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
-    beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - times_temps[i]);
-    mf::LogDebug("BNBRetriever")<< "All my devices! " << std::endl;
-    fOutbeamInfos.push_back(beamInfo);
     // We do not write these to the art::Events because 
     // we can filter events but want to keep all the POT 
     // information, so we'll write it to the SubRun
     
   }//end iteration over beam device times
   
-  if(spill_count > number_of_gates_since_previous_event)
-    mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
-    else
-      mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << number_of_gates_since_previous_event << std::endl;
+  return spill_count;
+}
+
+
+sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
+  (double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
+{
   
-}//end iteration over art::Events
+  auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
+  
+  // initializing all of our device carriers
+  // device definitions can be found in BNBSpillInfo.h
+  
+  double TOR860 = 0; // units e12 protons
+  double TOR875 = 0; // units e12 protons
+  double LM875A = 0; // units R/s
+  double LM875B = 0; // units R/s
+  double LM875C = 0; // units R/s
+  double HP875 = 0; // units mm
+  double VP875 = 0; // units mm
+  double HPTG1 = 0; // units mm
+  double VPTG1 = 0; // units mm
+  double HPTG2 = 0; // units mm
+  double VPTG2 = 0; // units mm
+  double BTJT2 = 0; // units Deg C
+  double THCURR = 0; // units kiloAmps
+  
+  double TOR860_time = 0; // units s
+    
+  // Here we request all the devices
+  // since sometimes devices fail to report we'll
+  // allow each to throw an exception but still move forward
+  // interpreting these failures will be part of the beam quality analyses 
+  try{bfp->GetNamedData(time, "E:TOR860@",&TOR860,&TOR860_time);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:TOR875",&TOR875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875A",&LM875A);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875B",&LM875B);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:LM875C",&LM875C);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HP875",&HP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VP875",&VP875);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HPTG1",&HPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VPTG1",&VPTG1);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:HPTG2",&HPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:VPTG2",&VPTG2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:BTJT2",&BTJT2);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  try{bfp->GetNamedData(time, "E:THCURR",&THCURR);}catch (WebAPIException &we) {mf::LogDebug("BNBRetriever")<< "At time : " << time << " " << "got exception: " << we.what() << "\n";}
+  
+  //crunch the times 
+  unsigned long int time_closest_int = (int) TOR860_time;
+  double time_closest_ns = (TOR860_time - time_closest_int)*1e9;
+  
+  //Store everything in our data-product
+  sbn::BNBSpillInfo beamInfo;
+  beamInfo.TOR860 = TOR860;
+  beamInfo.TOR875 = TOR875;
+  beamInfo.LM875A = LM875A;
+  beamInfo.LM875B = LM875B;
+  beamInfo.LM875C = LM875C;
+  beamInfo.HP875 = HP875;
+  beamInfo.VP875 = VP875;
+  beamInfo.HPTG1 = HPTG1;
+  beamInfo.VPTG1 = VPTG1;
+  beamInfo.HPTG2 = HPTG2;
+  beamInfo.VPTG2 = VPTG2;
+  beamInfo.BTJT2 = BTJT2;
+  beamInfo.THCURR = THCURR;
+  beamInfo.spill_time_s = time_closest_int;
+  beamInfo.spill_time_ns = time_closest_ns;    
+
+  beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
+  beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
+  beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
+  beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
+  beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
+  beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
+  
+  // We do not write these to the art::Events because 
+  // we can filter events but want to keep all the POT 
+  // information, so we'll write it to the SubRun
+  
+  return beamInfo;
+}
+
 
 void sbn::BNBRetriever::beginSubRun(art::SubRun& sr)
 {
