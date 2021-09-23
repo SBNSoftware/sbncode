@@ -36,7 +36,7 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   nusimdata_SimulationBase
                   # GENIE STUFF #####################################
                   xml2
-                  ${LOG4CPP}
+                  LOG4CPP
                   GFwEG
                   GFwAlg
                   GFwMsg
@@ -91,7 +91,7 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         ${ART_ROOT_IO_TFILE_SUPPORT}
                         # GENIE STUFF #####################################
                         xml2
-                        ${LOG4CPP}
+                        LOG4CPP
                         ${GALGORITHM}
                         ${GBASE}
                         ${GEVGCORE}

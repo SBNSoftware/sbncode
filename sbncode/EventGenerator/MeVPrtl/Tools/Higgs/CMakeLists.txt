@@ -38,7 +38,7 @@ simple_plugin( Kaon2HiggsFlux tool
 			sbnobj_Common_EventGen_MeVPrtl
 			nugen_EventGeneratorBase_GENIE
 			nurandom_RandomUtils_NuRandomService_service
-			gsl
+			GSL
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
