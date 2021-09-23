@@ -37,7 +37,7 @@ product             version
 larsoft             v09_31_00
 sbnobj              v09_12_00
 sbnanaobj           v09_17_00
-sbndaq_artdaq_core  v0_07_09_of0
+sbndaq_artdaq_core  v0_07_09of1
 genie_xsec          v3_00_04a
 
 # list products required ONLY for the build
