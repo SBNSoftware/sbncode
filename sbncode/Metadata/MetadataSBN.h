@@ -13,7 +13,7 @@
 #define TFILEMETADATASBN_H
 
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
-#include "art/Framework/Services/Registry/ServiceMacros.h"
+#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Principal/fwd.h"
 #include "art/Framework/IO/PostCloseFileRenamer.h"
 #include "art/Framework/IO/FileStatsCollector.h"

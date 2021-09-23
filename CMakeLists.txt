@@ -13,9 +13,9 @@
 # ======================================================================
 
 
-cmake_minimum_required (VERSION 3.12...3.18 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(sbncode LANGUAGES CXX)
+project(sbncode VERSION 09.28.02.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -26,8 +26,6 @@ list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Mod
 
 include(CetCMakeEnv)
 cet_cmake_env()
-
-set_install_root()
 
 # The specification of the C++ standard is required because CET macros
 # set it to C++98 by default, and then override it depending on the
@@ -45,18 +43,32 @@ cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
 find_ups_product(art)
+find_ups_product(messagefacility)
 find_ups_product(art_root_io)
 find_ups_product(gsl)
 find_ups_product(nusimdata)
 find_ups_product(nug4)
+find_ups_product(nugen)
+find_ups_product(nurandom)
+find_ups_product(nutools)
+find_ups_product(genie)
 find_ups_product(lardataobj)
+find_ups_product(larcoreobj)
 find_ups_product(larcorealg)
+find_ups_product(lardataalg)
 find_ups_product(larcore)
+find_ups_product(lardata)
+find_ups_product(larevt)
+find_ups_product(larsim)
 find_ups_product(larreco)
 find_ups_product(larpandora)
 find_ups_product(larsoft v09_00_00)
 find_ups_product(artdaq_core v3_06_01)
 find_ups_product(sbnobj v09_10_00)
+find_ups_product(ifdhc)
+find_ups_product(ifdh_art)
+find_ups_product(log4cpp)
+find_ups_root()
 #find_ups_product(sbndcode v06_67_00)
 #find_ups_product(uboonecode v06_67_00)
 

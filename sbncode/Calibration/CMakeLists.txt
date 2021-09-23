@@ -69,7 +69,7 @@ simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
 )
 
 simple_plugin ( DataSelect module
-                ${IFDH_SERVICE}
+                IFDH_SERVICE
                ${ART_FRAMEWORK_CORE}
                ${ART_FRAMEWORK_PRINCIPAL}
                ${ART_FRAMEWORK_SERVICES_REGISTRY}
