@@ -35,7 +35,7 @@ namespace sbn{
       }
     }
   } else {
-    cout <<"Bad data!"<<endl;
+    cout <<"BeamSpillInfoRetriever: MRWData: Bad data!"<<endl;
     return unpacked_data;
   }
 
