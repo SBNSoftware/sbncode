@@ -23,7 +23,7 @@ services:{
 
 
 source: {
-  module_type: RootInput
+
 }
 
 physics: {
