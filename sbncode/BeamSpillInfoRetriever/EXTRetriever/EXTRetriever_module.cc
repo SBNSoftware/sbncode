@@ -102,7 +102,7 @@ void sbn::EXTRetriever::produce(art::Event& e)
   int gate_type = 0;
   auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
 
-  double number_of_gates_since_previous_event = 0;
+  unsigned int number_of_gates_since_previous_event = 0;
   
   for(auto raw_datum : raw_data){
    
