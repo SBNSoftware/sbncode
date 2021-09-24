@@ -17,17 +17,11 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "lardata/Utilities/AssociationUtil.h"
-#include "lardataobj/Utilities/sparse_vector.h"
-#include "larcoreobj/SimpleTypesAndConstants/RawTypes.h"
 #include "larcorealg/CoreUtils/counter.h"
-#include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
 
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
 #include "IFBeam_service.h"
@@ -36,6 +30,7 @@
 
 #include <memory>
 #include <vector>
+#include <cassert>
 
 namespace sbn {
   class BNBRetriever;
@@ -116,7 +111,7 @@ private:
   double fTimePad;
   std::string fURL;
   MWRData mwrdata;
-  std::string raw_data_label_;
+  std::string raw_data_label;
   std::string fDeviceUsedForTiming;
   unsigned int TotalBeamSpills;  
   //
@@ -128,7 +123,7 @@ private:
     int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
     double t_current_event  = 0;
     double t_previous_event = 0;
-    double number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
+    unsigned int number_of_gates_since_previous_event = 0; // FIXME needs to be integral type
   };
   
   struct MWRdata_t {
@@ -178,7 +173,7 @@ private:
 sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   : EDProducer{params},
   fTimePad(params().TimePadding()),
-  raw_data_label_(params().RawDataLabel()),
+  raw_data_label(params().RawDataLabel()),
   fDeviceUsedForTiming(params().DeviceUsedForTiming()),
   bfp(     ifbeam_handle->getBeamFolder(params().Bundle(), params().URL(), params().TimeWindow())),
   bfp_mwr( ifbeam_handle->getBeamFolder(params().MultiWireBundle(), params().URL(), params().MWR_TimeWindow()))
@@ -193,10 +188,14 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   // how close in time does the spill time have to be from the DAQ time (in seconds).
   // If these are too large then it fails to capture the device 
   // If these are too small then the time jitter in devices means we miss good data 
+  //
+  // These values should likely not be changed unless authors of the IFBeam API are consulted
+  //
   bfp->set_epsilon(0.02); //20 ms, this was tuned by hand and compared to IFBeamDB times  
-  
-  bfp_mwr->set_epsilon(0.5); // TO BE TUNED!
-  bfp_mwr->setValidWindow(86400);  
+  bfp_mwr->set_epsilon(0.5);
+
+  //bfp_mwr->setValidWindow(86400);  
+  bfp_mwr->setValidWindow(3605);  
   produces< std::vector< sbn::BNBSpillInfo >, art::InSubRun >();
   TotalBeamSpills = 0;
 }
@@ -220,7 +219,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   int const spill_count = matchMultiWireData(triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
   
   
-  if(spill_count > triggerInfo.number_of_gates_since_previous_event)
+  if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
     mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << " \t \t ::: WRONG!"<< std::endl;
     else
       mf::LogDebug("BNBRetriever")<< "Event Spills : " << spill_count << ", DAQ Spills : " << triggerInfo.number_of_gates_since_previous_event << std::endl;
@@ -235,7 +234,7 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
+  auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerUDP" });
   
   TriggerInfo_t triggerInfo;
 
@@ -285,7 +284,7 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
   // memory buffer increments 
   // generally in the format: "E:<Device>.{Memory Block}"
   std::vector<std::string> vars = bfp_mwr->GetDeviceList();
-  
+  mf::LogDebug("BNBRetriever") << " Number of MWR Device Blocks Found : " << vars.size() << std::endl;
   // Tracking the time from the IFBeamDB
   double time_for_mwr;    
   
@@ -298,26 +297,32 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
   // match them to the closest spills in time
   // 
 
-  int t_steps = int(((triggerInfo.t_previous_event - fTimePad) - (triggerInfo.t_current_event + fTimePad))/0.5)+25;
-  
+  //  int t_steps = int(((triggerInfo.t_previous_event - fTimePad) - (triggerInfo.t_current_event + fTimePad))/0.5)+25;
+  int t_steps = int(((triggerInfo.t_current_event + fTimePad) - (triggerInfo.t_previous_event - fTimePad - 20.))/0.5)+25;
+  mf::LogDebug("BNBRetriever") << " t_steps " << t_steps << std::endl;
+
   for(int t = 0; t < t_steps; t++){//Iterate through time increments
     for (std::string const& var : vars) {// Iterate through the devices
       
       //Make sure we have a device
-      if(var.empty()) continue;
-      
+      if(var.empty()){ 
+	mf::LogDebug("BNBRetriever") << " NO MWR DEVICES?!" << std::endl;
+	continue;
+      }
       /// Check the device name and interate the double-vector index
       if(var.find("M875BB") != std::string::npos ) dev = 0;
       else if(var.find("M876BB") != std::string::npos ) dev = 1;
       else if(var.find("MMBTBB") != std::string::npos ) dev = 2;
-      else{continue;}
+      else{
+	mf::LogDebug("BNBRetriever") << " NOT matched to a MWR DEVICES?!" << var << std::endl;
+	continue;}
       
       time_for_mwr = 0;
       
       try{
 	//Pull the MWR data for the device
 	// these data are "packed"
-	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((triggerInfo.t_previous_event)-fTimePad+double(0.5*t),var,&time_for_mwr);
+	std::vector<double> packed_MWR = bfp_mwr->GetNamedVector((triggerInfo.t_previous_event)-20.-fTimePad+double(0.5*t),var,&time_for_mwr);
 
 	//We'll convert this into a format
 	// that we can unpack doubles >> strings
@@ -353,16 +358,22 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
 	    unpacked_MWR[dev].push_back(unpacked_MWR_temp[s]);
 	    MWR_times[dev].push_back(MWR_times_temp[s]);
 	  }//check for unique time 
-	  
 	}//Iterate through the unpacked events
 	}//try
       catch (WebAPIException &we) {
 	//Ignore when we can't find the MWR devices
 	//   they don't always report and the timing of them can be annoying
-	
+             
 	}//catch
     }// Iterate over all the multiwire devices
   }// Iterate over all times
+
+  mf::LogDebug("BNBRetriever") << " Number of MWR[0] times : " << MWR_times[0].size() << std::endl;	
+  mf::LogDebug("BNBRetriever") << " Number of MWR[0]s : " << unpacked_MWR[0].size() << std::endl;	
+  mf::LogDebug("BNBRetriever") << " Number of MWR[1] times : " << MWR_times[1].size() << std::endl;	
+  mf::LogDebug("BNBRetriever") << " Number of MWR[1]s : " << unpacked_MWR[1].size() << std::endl;	
+  mf::LogDebug("BNBRetriever") << " Number of MWR[2] times : " << MWR_times[2].size() << std::endl;	
+  mf::LogDebug("BNBRetriever") << " Number of MWR[2]s : " << unpacked_MWR[2].size() << std::endl;	
   
   return { std::move(MWR_times), std::move(unpacked_MWR) };
 }
@@ -405,7 +416,7 @@ int sbn::BNBRetriever::matchMultiWireData(
     times_temps.erase(times_temps.end()-spills_after_our_target,times_temps.end());
     
     // Remove the spills before the start of our Run
-    times_temps.erase(times_temps.begin(),times_temps.end()-triggerInfo.number_of_gates_since_previous_event);
+    times_temps.erase(times_temps.begin(), times_temps.end() - std::min(int(triggerInfo.number_of_gates_since_previous_event), int(times_temps.size())));
     
   }//end fix for "first event"
   
@@ -421,6 +432,10 @@ int sbn::BNBRetriever::matchMultiWireData(
       if(times_temps[i] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
     }
 
+    
+    //Great we found a matched spill! Let's count it
+    spill_count++;
+
     //Loop through the multiwire devices:
     
     for(int dev = 0; dev < int(MWR_times.size()); dev++){
@@ -428,41 +443,38 @@ int sbn::BNBRetriever::matchMultiWireData(
       //Loop through the multiwire times:
       double Tdiff = 1000000000.;
       matched_MWR[dev] = 0;
-      bool best_match = false;
+
       for(int mwrt = 0;  mwrt < int(MWR_times[dev].size()); mwrt++){
-	
+
 	//found a candidate match! 
-	if(fabs((MWR_times[dev][mwrt] - times_temps[i])) < Tdiff){
-	  best_match = true;
+	if(fabs((MWR_times[dev][mwrt] - times_temps[i])) >= Tdiff){continue;}
+	
+	bool best_match = true;
 	  
-	  //Check for a better match...
-	  for (size_t j = 0; j < times_temps.size(); j++) {
-	    if( j == i) continue;
-	    if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
-	    if(times_temps[j] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
-	    
-	    //is there a better match later in the spill sequence
-	    if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
-	       fabs((MWR_times[dev][mwrt] - times_temps[i]))){
-	      //we can have patience...
-	      best_match = false;
-	      break;
-	    }	     
-	  }//end better match check
+	//Check for a better match...
+	for (size_t j = 0; j < times_temps.size(); j++) {
+	  if( j == i) continue;
+	  if(times_temps[j] > (triggerInfo.t_current_event+fTimePad)){continue;}
+	  if(times_temps[j] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
 	  
-	  //Verified best match!
-	  if(best_match == true){
-	    matched_MWR[dev] = mwrt;
-	    Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
-	  }
-	}//Find matches between 
+	  //is there a better match later in the spill sequence
+	  if(fabs((MWR_times[dev][mwrt] - times_temps[j])) < 
+	     fabs((MWR_times[dev][mwrt] - times_temps[i]))){
+	    //we can have patience...
+	    best_match = false;
+	    break;
+	  }	     
+	}//end better match check
+	
+	//Verified best match!
+	if(best_match == true){
+	  matched_MWR[dev] = mwrt;
+	  Tdiff = fabs((MWR_times[dev][mwrt] - times_temps[i]));
+	}
+	
       }//end loop over MWR times 
       
     }//end loop over MWR devices
-
-    
-    //Great we found a matched spill! Let's count it
-    spill_count++;
     
     sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(times_temps[i], MWRdata, matched_MWR);
 
@@ -542,6 +554,11 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   beamInfo.THCURR = THCURR;
   beamInfo.spill_time_s = time_closest_int;
   beamInfo.spill_time_ns = time_closest_ns;    
+
+  for(auto const& MWRdata: unpacked_MWR){
+    std::ignore = MWRdata;
+    assert(!MWRdata.empty());
+  }
 
   beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
   beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
