@@ -32,8 +32,8 @@ outputs:
   outpid:
   {
     module_type: RootOutput
-    fileName:    "%ifb_%tc-%p.root"
-
+    fileName:   "%ifb_%tc-%p.root"
+    dataTier: 	"reconstructed"
     fastCloning: false
   }
 }
