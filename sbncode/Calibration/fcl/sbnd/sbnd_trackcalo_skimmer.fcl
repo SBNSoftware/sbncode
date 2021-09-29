@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-caloskim_pandoraCalo: {
+caloskim_calorimetry: {
   AssocHitModuleLabel: ""
   CaloAlg: {
     CalAmpConstants: [ 1., 1., 1.] 
@@ -44,13 +44,13 @@ stopping_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
   FVInsetMinX: 15
   FVInsetMaxX: 15
-  FVInsetMinY: 25
+  FVInsetMinY: 15
   FVInsetMaxY: 15
   FVInsetMinZ: 15
   FVInsetMaxZ: 15
   MinTimeTickInset: 100
   MaxTimeTickInset: 100
-  EndMediandQdxCut: 1200
+  EndMediandQdxCut: 1600
   NumberTimeSamples: 3400
 }
 
