@@ -1,0 +1,53 @@
+BEGIN_PROLOG
+
+# genie_all knobs are prepared for current sbnd
+# genie weight at Oct. 2020 using GENIE v3.0.6
+# --- Keng Lin
+
+sbn_genie_eventweight: {
+
+  module_type: "SBNEventWeight"
+
+  genie_module_label: "generator"
+
+  AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
+
+  genie_central_values: {
+# Off-set central value of a knob here, 
+# for example:
+#    MaCCQE: 0
+  }
+
+  weight_functions: [ 
+  genie_all
+  ]
+
+# Single function to reweight all GENIE parameters at once
+  genie_all: {
+      type: Genie
+      random_seed: 100
+      parameter_list: [
+        "QEMA", "NCELaxial", "NCELeta", "CCResAxial", "CCResVector",
+        "NCResAxial", "NCResVector",
+        "NonResRvp1pi", "NonResRvbarp1pi", "NonResRvp2pi", "NonResRvbarp2pi",
+        "NC",
+        "DISAth", "DISBth", "DISCv1u", "DISCv2u",
+        "FormZone",
+        "IntraNukeNmfp", "IntraNukeNcex",
+        "IntraNukeNinel",
+        "IntraNukeNabs", "IntraNukeNpi",
+        "IntraNukePImfp", "IntraNukePIcex",
+        "IntraNukePIinel", "IntraNukePIabs", "IntraNukePIpi"
+      ]
+      parameter_sigma: [
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1
+      ]
+      mode: multisim
+      number_of_multisims: 100
+  }
+
+}
+
+END_PROLOG

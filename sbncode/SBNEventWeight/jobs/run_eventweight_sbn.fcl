@@ -1,5 +1,4 @@
-#include "eventweight_genie3_sbn_A.fcl"
-
+#include "genie_eventweight.fcl"
 process_name: SBNEventWeight
 
 source: {
@@ -30,5 +29,5 @@ outputs: {
  }
 }
 
-physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions
 
