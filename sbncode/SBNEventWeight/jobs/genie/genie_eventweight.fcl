@@ -1,11 +1,14 @@
 BEGIN_PROLOG
 
-# genie_all knobs are prepared for current sbnd
-# genie weight at Oct. 2020 using GENIE v3.0.6
+# Update knobs name following GENIE knob names
+# "genie_ub" knobs are not yet available for GENIE v3.0.6
+#
+# NOTE: this FHiCL is subjected to be updated before PR is approved
+# knobs updates summary see the Google Sheet:
+# https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
 # --- Keng Lin
 
 sbn_genie_eventweight: {
-
   module_type: "SBNEventWeight"
 
   genie_module_label: "generator"
@@ -13,41 +16,117 @@ sbn_genie_eventweight: {
   AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
 
   genie_central_values: {
-# Off-set central value of a knob here, 
-# for example:
-#    MaCCQE: 0
+  #Off-set central value of a knob here, 
+  #for example:
+  #  MaCCQE: 0
   }
 
   weight_functions: [ 
-  genie_all
+    genie_sbnd, genie_sbnd_exclusive
+  # ,genie_ub
   ]
 
-# Single function to reweight all GENIE parameters at once
-  genie_all: {
-      type: Genie
-      random_seed: 100
-      parameter_list: [
-        "QEMA", "NCELaxial", "NCELeta", "CCResAxial", "CCResVector",
-        "NCResAxial", "NCResVector",
-        "NonResRvp1pi", "NonResRvbarp1pi", "NonResRvp2pi", "NonResRvbarp2pi",
-        "NC",
-        "DISAth", "DISBth", "DISCv1u", "DISCv2u",
-        "FormZone",
-        "IntraNukeNmfp", "IntraNukeNcex",
-        "IntraNukeNinel",
-        "IntraNukeNabs", "IntraNukeNpi",
-        "IntraNukePImfp", "IntraNukePIcex",
-        "IntraNukePIinel", "IntraNukePIabs", "IntraNukePIpi"
+  # Knobs that are used in both sbnd and ub
+  genie_sbnd: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+    #CCQE
+      "MaCCQE","VecFFCCQEshape",
+
+    #Resonance
+      "MaCCRES","MvCCRES","MaNCRES","MvNCRES",
+      "RDecBR1gamma","RDecBR1eta","Theta_Delta2Npi",
+
+
+    #Non-Resonance 
+      #Corresponding to knobs in the old version:
+        #"NonResRvp1pi", "NonResRvbarp1pi" , "NonResRvp2pi", "NonResRvbarp2pi"
+      "NonRESBGvpCC1pi","NonRESBGvbarnCC1pi","NonRESBGvpNC1pi","NonRESBGvbarnNC1pi",
+      "NonRESBGvnCC1pi","NonRESBGvbarpCC1pi","NonRESBGvnNC1pi","NonRESBGvbarpNC1pi",
+      "NonRESBGvpCC2pi","NonRESBGvbarnCC2pi","NonRESBGvpNC2pi","NonRESBGvbarpNC2pi",
+      "NonRESBGvnCC2pi","NonRESBGvbarpCC2pi","NonRESBGvnNC2pi","NonRESBGvbarnNC2pi",
+
+    #NC
+      "MaNCEL", "EtaNCEL",
+
+    #DIS
+      "AhtBY","BhtBY","CV1uBY","CV2uBY","AGKYxF1pi","AGKYpT1pi",
+
+    #FSI
+      "MFP_N","FrCEx_N","FrInel_N","FrAbs_N","FrPiProd_N",
+      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi","FrPiProd_pi"
       ]
-      parameter_sigma: [
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1
-      ]
-      mode: multisim
-      number_of_multisims: 100
+    parameter_sigma: [
+      #CCQE
+      1,1,
+      #Res
+      1,1,1,1,1,1,1,
+      #Non_Res
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+      #NC
+      1,1,
+      #DIS
+      1,1,1,1,1,1,
+      #FSI
+      1,1,1,1,1,1,1,1,1,1
+    ]
+    mode: multisim
+    number_of_multisims: 1
   }
 
+  # Knobs that are only used in sbnd
+  # It is available, but not used in ub
+  genie_sbnd_exclusive: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+    #CCQE
+      "CCQEPauliSupViaKF","CCQEMomDistroFGtoSF",
+
+    #COH
+      "MaCOHpi","R0COHpi",
+	#NC Note: the knob "NC" is removed.
+	  "NormNCRES",
+    #DIS
+      "DISNuclMod","FormZone"
+    ]
+    parameter_sigma: [
+        1, 1, 1, 1, 1, 1, 1
+    ]
+    mode: multisim
+    number_of_multisims: 1
+  }
+
+  # Knobs that required special ub package or GENIE v3.2
+  #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
+  genie_ub: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+      #CCQE
+      "RPA_CCQE","CoulombCCQE","AxFFCCQEshape",
+      #Res
+      "ThetaDelta2NRad",
+      #CC MEC
+      "NormCCMEC", "DecayAngMEC","FracPN_CCMEC",
+      "FracDelta_CCMEC","XSecShape_CCMEC",
+	  #NC MEC
+	  "NormNCMEC"
+    ]
+    parameter_sigma: [
+      #CCQE
+      1, 1, 1,
+      #Res
+      1, 
+      #CC MEC
+      1, 1, 1, 1, 1,
+	  #NC MEC
+	  1
+    ]
+    mode: multisim
+    number_of_multisims: 100
+  }
 }
 
 END_PROLOG

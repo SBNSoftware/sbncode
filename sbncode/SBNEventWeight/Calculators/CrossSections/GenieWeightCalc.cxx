@@ -456,7 +456,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 			//"genie_central_values" is applied here.
 			double twk_dial_value = it.second[u]+cv_shift;//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
 			syst.Set( knob, twk_dial_value );
-			std::cout <<" sbnd: KNob value: "<<twk_dial_value<<std::endl;
+			std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
 
 			if ( !fQuietMode ) {
 				MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << u << ", knob name" << name // << k
