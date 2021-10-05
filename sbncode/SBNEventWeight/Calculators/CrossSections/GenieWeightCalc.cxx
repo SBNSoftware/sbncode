@@ -12,9 +12,9 @@
 // Updated for merge into larsim develop branch on Feb 22 2021 by Steven Gardiner
 //
 // Ported from larsim in Oct. 2021, 
-//	Assign strange-CCQE events weight as 1 to avoid crashing
-//	ub specific packages are not ready to be used unless GENIE v3.2 is used
-//	by Keng Lin
+//  Assign strange-CCQE events weight as 1 to avoid crashing
+//  ub specific packages are not ready to be used unless GENIE v3.2 is used
+//  by Keng Lin
 //-----------------------------------------------------------
 
 // Standard library includes
@@ -252,7 +252,7 @@ private:
 
 
 void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
-		CLHEP::HepRandomEngine& engine) {
+    CLHEP::HepRandomEngine& engine) {
 
     genie::Messenger* messenger = genie::Messenger::Instance();
     // By default, run GENIE reweighting in "quiet mode"
@@ -280,32 +280,32 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     messenger->SetPriorityLevel( "Nieves", log4cpp::Priority::WARN );
 
 
-	// Global config
-	//----Initialize the tune
-	// Configure the appropriate GENIE tune if needed (important for v3+ only)
-	// NOTE: In all normal use cases, relying on the ${GENIE_XSEC_TUNE} environment
-	// variable set by the genie_xsec package should be sufficient. Only include
-	// the "TuneName" FHiCL parameter for EventWeight if you really know what you're
-	// doing! The same goes for the "EventGeneratorList" parameter.
-	std::string genie_tune_name = p.get<std::string>("TuneName", "${GENIE_XSEC_TUNE}");
+  // Global config
+  //----Initialize the tune
+  // Configure the appropriate GENIE tune if needed (important for v3+ only)
+  // NOTE: In all normal use cases, relying on the ${GENIE_XSEC_TUNE} environment
+  // variable set by the genie_xsec package should be sufficient. Only include
+  // the "TuneName" FHiCL parameter for EventWeight if you really know what you're
+  // doing! The same goes for the "EventGeneratorList" parameter.
+  std::string genie_tune_name = p.get<std::string>("TuneName", "${GENIE_XSEC_TUNE}");
 
-	// The default empty string used here will cause the subsequent call to
-	// evgb::SetEventGeneratorListAndTune() to leave GENIE's current event generator
-	// list name (probably "Default") alone
-	std::string evgen_list_name = p.get<std::string>("EventGeneratorList", "");
+  // The default empty string used here will cause the subsequent call to
+  // evgb::SetEventGeneratorListAndTune() to leave GENIE's current event generator
+  // list name (probably "Default") alone
+  std::string evgen_list_name = p.get<std::string>("EventGeneratorList", "");
 
-	// Tell GENIE about the event generator list and tune
-	evgb::SetEventGeneratorListAndTune( evgen_list_name, genie_tune_name );
+  // Tell GENIE about the event generator list and tune
+  evgb::SetEventGeneratorListAndTune( evgen_list_name, genie_tune_name );
 
 
-	fGenieModuleLabel = p.get<std::string>("genie_module_label");
+  fGenieModuleLabel = p.get<std::string>("genie_module_label");
 
-	const fhicl::ParameterSet& param_CVs = p.get<fhicl::ParameterSet>(
-			"genie_central_values", fhicl::ParameterSet() );
-	std::vector< std::string > CV_knob_names = param_CVs.get_all_keys();
+  const fhicl::ParameterSet& param_CVs = p.get<fhicl::ParameterSet>(
+      "genie_central_values", fhicl::ParameterSet() );
+  std::vector< std::string > CV_knob_names = param_CVs.get_all_keys();
 
-	std::map< genie::rew::GSyst_t, double > gsyst_to_cv_map;
-	genie::rew::GSyst_t temp_knob;
+  std::map< genie::rew::GSyst_t, double > gsyst_to_cv_map;
+  genie::rew::GSyst_t temp_knob;
 
     if ( !CV_knob_names.empty() && !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
       << "Configuring non-default GENIE knob central values from input"
@@ -326,28 +326,28 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       }
     }
 
-	// Calculator config
-	const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
+  // Calculator config
+  const fhicl::ParameterSet& pset = p.get<fhicl::ParameterSet>(GetName());
 
-	auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
+  auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
 
-	std::vector<float> parsigmas;
-	std::vector<float> par_mins;
-	std::vector<float> par_maxes;
+  std::vector<float> parsigmas;
+  std::vector<float> par_mins;
+  std::vector<float> par_maxes;
 
-	pset.get_if_present("parameter_sigma", parsigmas);
-	pset.get_if_present("parameter_min", par_mins);
-	pset.get_if_present("parameter_max", par_maxes);
+  pset.get_if_present("parameter_sigma", parsigmas);
+  pset.get_if_present("parameter_min", par_mins);
+  pset.get_if_present("parameter_max", par_maxes);
 
 
-	// Convert the list of GENIE knob names from the input FHiCL configuration
-	// into a vector of genie::rew::GSyst_t labels
-	std::vector< genie::rew::GSyst_t > knobs_to_use;
-	for ( const auto& knob_name : pars ) {
-		if ( valid_knob_name(knob_name, temp_knob) ) knobs_to_use.push_back( temp_knob );
-	}
+  // Convert the list of GENIE knob names from the input FHiCL configuration
+  // into a vector of genie::rew::GSyst_t labels
+  std::vector< genie::rew::GSyst_t > knobs_to_use;
+  for ( const auto& knob_name : pars ) {
+    if ( valid_knob_name(knob_name, temp_knob) ) knobs_to_use.push_back( temp_knob );
+  }
 
-	//check if all_knobs_vec are good
+  //check if all_knobs_vec are good
     std::vector< genie::rew::GSyst_t > all_knobs_vec = knobs_to_use;
     for ( const auto& pair : gsyst_to_cv_map ) {
       genie::rew::GSyst_t cv_knob = pair.first;
@@ -359,25 +359,25 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       modes_to_use = this->CheckForIncompatibleSystematics( all_knobs_vec );
 
 
-	std::string mode = pset.get<std::string>("mode");
-	
-	int num_universes = 1; //for "central_value" or "default" mode
+  std::string mode = pset.get<std::string>("mode");
+  
+  int num_universes = 1; //for "central_value" or "default" mode
 
     std::string array_name_for_exception;
-	if(mode.find("pmNsigma") != std::string::npos){	
+  if(mode.find("pmNsigma") != std::string::npos){  
       if ( pars.size() != par_mins.size()
         || pars.size() != par_maxes.size() ){
 
-		  array_name_for_exception = "parameter_min and parameter_max";
-	  }
-	  num_universes = 2;
+      array_name_for_exception = "parameter_min and parameter_max";
+    }
+    num_universes = 2;
 
-	  for (size_t i=0; i<pars.size(); i++) {
-		                       //(name, Gauss_sigma_max, Gauss_mean, Gauss_sigma_min)
-		  fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);
-	  }
+    for (size_t i=0; i<pars.size(); i++) {
+                           //(name, Gauss_sigma_max, Gauss_mean, Gauss_sigma_min)
+      fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);
+    }
 
-	}else if(mode.find("multisim") != std::string::npos){
+  }else if(mode.find("multisim") != std::string::npos){
 
       num_universes = pset.get<int>( "number_of_multisims", 1 );
 
@@ -385,21 +385,21 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
         << this->GetName() << " will generate " << num_universes
         << " multisim universes";
 
-	  if (pars.size() != parsigmas.size()) {
-		  array_name_for_exception = "parameter_sigma";
-	  }
-	  for (size_t i=0; i<pars.size(); i++) {
-		  fParameterSet.AddParameter(pars[i], parsigmas[i]);
-	  }
+    if (pars.size() != parsigmas.size()) {
+      array_name_for_exception = "parameter_sigma";
+    }
+    for (size_t i=0; i<pars.size(); i++) {
+      fParameterSet.AddParameter(pars[i], parsigmas[i]);
+    }
 
-	}else { //default mode is fixed, but it is called in genie_central_values session;
+  }else { //default mode is fixed, but it is called in genie_central_values session;
 
       throw cet::exception(__PRETTY_FUNCTION__) << GetName()
-	  <<":: Mode is not recognized: "<<mode;
+    <<":: Mode is not recognized: "<<mode;
 
-	}
+  }
 
-	if( array_name_for_exception.size() > 1){
+  if( array_name_for_exception.size() > 1){
 
       throw cet::exception(__PRETTY_FUNCTION__) << GetName()
         << "::Bad fcl configuration. parameter_list and "
@@ -408,67 +408,67 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 }
 
 
-	// Set up parameters
-	fParameterSet.Configure(GetFullName(), mode, num_universes);
-	fParameterSet.Sample(engine);
+  // Set up parameters
+  fParameterSet.Configure(GetFullName(), mode, num_universes);
+  fParameterSet.Sample(engine);
 
 
-	// Set up parameters
-	//loop over parameters;
-	for (auto const& it : fParameterSet.fParameterMap) {//member of std::map<EventWeightParameter, std::vector<float> >
-	//(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
-		std::string name = it.first.fName;
-		// Set up reweighters
-		//rwVector.resize(fParameterSet.fNuniverses);
-		reweightVector.resize( num_universes );// Reconfigure this later in this function.
-		std::cout << GetFullName() << ": Setting up " << name << " with "<<num_universes<<" univeres."<<std::endl;
+  // Set up parameters
+  //loop over parameters;
+  for (auto const& it : fParameterSet.fParameterMap) {//member of std::map<EventWeightParameter, std::vector<float> >
+  //(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
+    std::string name = it.first.fName;
+    // Set up reweighters
+    //rwVector.resize(fParameterSet.fNuniverses);
+    reweightVector.resize( num_universes );// Reconfigure this later in this function.
+    std::cout << GetFullName() << ": Setting up " << name << " with "<<num_universes<<" univeres."<<std::endl;
 
-		// Set up the weight calculators for each universe
-		for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
-		// Set up GENIE with the currently active tune
-	// Set up parameters
+    // Set up the weight calculators for each universe
+    for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
+    // Set up GENIE with the currently active tune
+  // Set up parameters
 
-		//Assign knob with new values based on variation
-		//loop over universes
-		for ( size_t u = 0; u < reweightVector.size(); ++u ) {
+    //Assign knob with new values based on variation
+    //loop over universes
+    for ( size_t u = 0; u < reweightVector.size(); ++u ) {
 
-			auto& rwght = reweightVector.at( u );
-			genie::rew::GSystSet& syst = rwght.Systematics();
+      auto& rwght = reweightVector.at( u );
+      genie::rew::GSystSet& syst = rwght.Systematics();
 
-			//			for ( unsigned int k = 0; k < knobs_to_use.size(); ++k ) {
-			genie::rew::GSyst_t knob; 
-			valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
-			//genie::rew::GSyst_t knob = //knobs_to_use.at( k );
+      //      for ( unsigned int k = 0; k < knobs_to_use.size(); ++k ) {
+      genie::rew::GSyst_t knob; 
+      valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
+      //genie::rew::GSyst_t knob = //knobs_to_use.at( k );
 
-			double cv_shift = 0;
-			if ( mode.find("pmNsigma") == std::string::npos ) {
-				//Apply CV shift
-				auto iter = gsyst_to_cv_map.find( knob );
-				if ( iter != gsyst_to_cv_map.end() ) {
-					cv_shift =  iter->second;
-					if ( !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
-						<< "CV offset added to the "
-							<< genie::rew::GSyst::AsString( knob )
-							<< " knob. New sigma for universe #" << u << " is "
-							<< cv_shift;
-				}
-			}
-			//"genie_central_values" is applied here.
-			double twk_dial_value = it.second[u]+cv_shift;//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
-			syst.Set( knob, twk_dial_value );
-			std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
+      double cv_shift = 0;
+      if ( mode.find("pmNsigma") == std::string::npos ) {
+        //Apply CV shift
+        auto iter = gsyst_to_cv_map.find( knob );
+        if ( iter != gsyst_to_cv_map.end() ) {
+          cv_shift =  iter->second;
+          if ( !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
+            << "CV offset added to the "
+              << genie::rew::GSyst::AsString( knob )
+              << " knob. New sigma for universe #" << u << " is "
+              << cv_shift;
+        }
+      }
+      //"genie_central_values" is applied here.
+      double twk_dial_value = it.second[u]+cv_shift;//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
+      syst.Set( knob, twk_dial_value );
+      std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
 
-			if ( !fQuietMode ) {
-				MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << u << ", knob name" << name // << k
-					<< " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
-					<< " the value " << twk_dial_value;
-			}
-			//			} // loop over tweaked knobs
+      if ( !fQuietMode ) {
+        MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << u << ", knob name" << name // << k
+          << " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
+          << " the value " << twk_dial_value;
+      }
+      //      } // loop over tweaked knobs
 
-			rwght.Reconfigure();
-			rwght.Print();
-		}//next universe
-	}//next parameter
+      rwght.Reconfigure();
+      rwght.Print();
+    }//next universe
+  }//next parameter
 
 }
 
@@ -487,7 +487,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
     std::vector< art::Ptr<simb::MCTruth> > mclist;
     art::fill_ptr_vector( mclist, mcTruthHandle );
-//	std::cout<<" # Neutrinos: "<<mclist.size();
+//  std::cout<<" # Neutrinos: "<<mclist.size();
 
     std::vector< art::Ptr<simb::GTruth > > glist;
     art::fill_ptr_vector( glist, gTruthHandle );
@@ -531,27 +531,27 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
       // All right, the event record is fully ready. Now ask the GReWeight
       // objects to compute the weights.
 
-	  for (size_t k = 0u; k < num_knobs; ++k ) {
-		  //Add exception to avoid "FATAL KineLimits", 
-		  //	see https://github.com/GENIE-MC/Reweight/issues/12
-		  std::vector< genie::rew::GSyst_t > ak = reweightVector.at( k ).Systematics().AllIncluded();//all konbs used
+    for (size_t k = 0u; k < num_knobs; ++k ) {
+      //Add exception to avoid "FATAL KineLimits", 
+      //  see https://github.com/GENIE-MC/Reweight/issues/12
+      std::vector< genie::rew::GSyst_t > ak = reweightVector.at( k ).Systematics().AllIncluded();//all konbs used
 
-		  //NOTE: this line is to skip reweighting stange-CCQE events 
-		  //Among 7500 events, 207 of them are strange events; ~3%
-		  if(glist[inu]->fIsStrange && std::find(ak.begin(), ak.end(),  kXSecTwkDial_MaCCQE) != ak.end()){
-			  weights[k] = 1;
-		  } else{
-			  weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
-			  reweightVector.at(k).Print();
-		  }
-	  }
+      //NOTE: this line is to skip reweighting stange-CCQE events 
+      //Among 7500 events, 207 of them are strange events; ~3%
+      if(glist[inu]->fIsStrange && std::find(ak.begin(), ak.end(),  kXSecTwkDial_MaCCQE) != ak.end()){
+        weights[k] = 1;
+      } else{
+        weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
+        reweightVector.at(k).Print();
+      }
+    }
     
     return weights;
 }
 
 
 std::map< std::string, int > GenieWeightCalc::CheckForIncompatibleSystematics(
-		const std::vector<genie::rew::GSyst_t>& knob_vec){
+    const std::vector<genie::rew::GSyst_t>& knob_vec){
     std::map< std::string, int > modes_to_use;
 
     for ( const auto& knob : knob_vec ) {
@@ -583,68 +583,68 @@ std::map< std::string, int > GenieWeightCalc::CheckForIncompatibleSystematics(
 
 
 void GenieWeightCalc::SetupWeightCalculators(genie::rew::GReWeight& rw,
-		const std::map<std::string, int>& modes_to_use){
-	// Based on the list from the GENIE command-line tool grwght1p
-	rw.AdoptWghtCalc( "xsec_ncel",       new GReWeightNuXSecNCEL      );
-	rw.AdoptWghtCalc( "xsec_ccqe",       new GReWeightNuXSecCCQE      );
-	rw.AdoptWghtCalc( "xsec_ccqe_axial", new GReWeightNuXSecCCQEaxial );
-	rw.AdoptWghtCalc( "xsec_ccqe_vec",   new GReWeightNuXSecCCQEvec   );
-	rw.AdoptWghtCalc( "xsec_ccres",      new GReWeightNuXSecCCRES     );
-	rw.AdoptWghtCalc( "xsec_ncres",      new GReWeightNuXSecNCRES     );
-	rw.AdoptWghtCalc( "xsec_nonresbkg",  new GReWeightNonResonanceBkg );
-	rw.AdoptWghtCalc( "xsec_coh",        new GReWeightNuXSecCOH       );
-	rw.AdoptWghtCalc( "xsec_dis",        new GReWeightNuXSecDIS       );
-	rw.AdoptWghtCalc( "nuclear_qe",      new GReWeightFGM             );
-	rw.AdoptWghtCalc( "hadro_res_decay", new GReWeightResonanceDecay  );
-	rw.AdoptWghtCalc( "hadro_fzone",     new GReWeightFZone           );
-	rw.AdoptWghtCalc( "hadro_intranuke", new GReWeightINuke           );
-	rw.AdoptWghtCalc( "hadro_agky",      new GReWeightAGKY            );
-	rw.AdoptWghtCalc( "xsec_nc",         new GReWeightNuXSecNC        );
-	rw.AdoptWghtCalc( "res_dk",          new GReWeightResonanceDecay  );
-	rw.AdoptWghtCalc( "xsec_empmec",     new GReWeightXSecEmpiricalMEC);
-	// GReWeightDISNuclMod::CalcWeight() is not implemented, so we won't
-	// bother to use it here. - S. Gardiner, 9 Dec 2019
-	//rw.AdoptWghtCalc( "nuclear_dis",   new GReWeightDISNuclMod );
+    const std::map<std::string, int>& modes_to_use){
+  // Based on the list from the GENIE command-line tool grwght1p
+  rw.AdoptWghtCalc( "xsec_ncel",       new GReWeightNuXSecNCEL      );
+  rw.AdoptWghtCalc( "xsec_ccqe",       new GReWeightNuXSecCCQE      );
+  rw.AdoptWghtCalc( "xsec_ccqe_axial", new GReWeightNuXSecCCQEaxial );
+  rw.AdoptWghtCalc( "xsec_ccqe_vec",   new GReWeightNuXSecCCQEvec   );
+  rw.AdoptWghtCalc( "xsec_ccres",      new GReWeightNuXSecCCRES     );
+  rw.AdoptWghtCalc( "xsec_ncres",      new GReWeightNuXSecNCRES     );
+  rw.AdoptWghtCalc( "xsec_nonresbkg",  new GReWeightNonResonanceBkg );
+  rw.AdoptWghtCalc( "xsec_coh",        new GReWeightNuXSecCOH       );
+  rw.AdoptWghtCalc( "xsec_dis",        new GReWeightNuXSecDIS       );
+  rw.AdoptWghtCalc( "nuclear_qe",      new GReWeightFGM             );
+  rw.AdoptWghtCalc( "hadro_res_decay", new GReWeightResonanceDecay  );
+  rw.AdoptWghtCalc( "hadro_fzone",     new GReWeightFZone           );
+  rw.AdoptWghtCalc( "hadro_intranuke", new GReWeightINuke           );
+  rw.AdoptWghtCalc( "hadro_agky",      new GReWeightAGKY            );
+  rw.AdoptWghtCalc( "xsec_nc",         new GReWeightNuXSecNC        );
+  rw.AdoptWghtCalc( "res_dk",          new GReWeightResonanceDecay  );
+  rw.AdoptWghtCalc( "xsec_empmec",     new GReWeightXSecEmpiricalMEC);
+  // GReWeightDISNuclMod::CalcWeight() is not implemented, so we won't
+  // bother to use it here. - S. Gardiner, 9 Dec 2019
+  //rw.AdoptWghtCalc( "nuclear_dis",   new GReWeightDISNuclMod );
 
 #ifdef GENIE_UB_PATCH
 
-	// New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
-	rw.AdoptWghtCalc( "xsec_mec",        new GReWeightXSecMEC );
+  // New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
+  rw.AdoptWghtCalc( "xsec_mec",        new GReWeightXSecMEC );
 
-	// New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
-	rw.AdoptWghtCalc( "deltarad_angle",  new GReWeightDeltaradAngle );
-	rw.AdoptWghtCalc( "xsec_coh_ub",  new GReWeightNuXSecCOHuB );
-	rw.AdoptWghtCalc( "res_bug_fix",  new GReWeightRESBugFix );
+  // New weight calculators in GENIE v3.0.4 MicroBooNE patch 02
+  rw.AdoptWghtCalc( "deltarad_angle",  new GReWeightDeltaradAngle );
+  rw.AdoptWghtCalc( "xsec_coh_ub",  new GReWeightNuXSecCOHuB );
+  rw.AdoptWghtCalc( "res_bug_fix",  new GReWeightRESBugFix );
 
 #endif
 
-	// Set the modes for the weight calculators that need them to be specified
-	for ( const auto& pair : modes_to_use ) {
-		std::string calc_name = pair.first;
-		int mode = pair.second;
+  // Set the modes for the weight calculators that need them to be specified
+  for ( const auto& pair : modes_to_use ) {
+    std::string calc_name = pair.first;
+    int mode = pair.second;
 
-		genie::rew::GReWeightI* calc = rw.WghtCalc( calc_name );
-		if ( !calc ) throw cet::exception(__PRETTY_FUNCTION__)
-			<< "Failed to retrieve the GENIE weight calculator labeled \""
-				<< calc_name << '\"';
+    genie::rew::GReWeightI* calc = rw.WghtCalc( calc_name );
+    if ( !calc ) throw cet::exception(__PRETTY_FUNCTION__)
+      << "Failed to retrieve the GENIE weight calculator labeled \""
+        << calc_name << '\"';
 
-		// The GReWeightI base class doesn't have a SetMode(int) function,
-		// so we'll just try dynamic casting until we get the right one.
-		// If none work, then throw an exception.
-		// TODO: Add a virtual function GReWeightI::SetMode( int ) in GENIE's
-		// Reweight framework. Then we can avoid the hacky dynamic casts here.
-		auto* calc_ccqe = dynamic_cast< genie::rew::GReWeightNuXSecCCQE* >( calc );
-		auto* calc_ccres = dynamic_cast< genie::rew::GReWeightNuXSecCCRES* >( calc );
-		auto* calc_ncres = dynamic_cast< genie::rew::GReWeightNuXSecNCRES* >( calc );
-		auto* calc_dis = dynamic_cast< genie::rew::GReWeightNuXSecDIS* >( calc );
-		if ( calc_ccqe ) calc_ccqe->SetMode( mode );
-		else if ( calc_ccres ) calc_ccres->SetMode( mode );
-		else if ( calc_ncres ) calc_ncres->SetMode( mode );
-		else if ( calc_dis ) calc_dis->SetMode( mode );
-		else throw cet::exception(__PRETTY_FUNCTION__)
-			<< "Request to set the mode of an unrecognized GENIE weight calculator \""
-				<< calc_name << '\"';
-	}
+    // The GReWeightI base class doesn't have a SetMode(int) function,
+    // so we'll just try dynamic casting until we get the right one.
+    // If none work, then throw an exception.
+    // TODO: Add a virtual function GReWeightI::SetMode( int ) in GENIE's
+    // Reweight framework. Then we can avoid the hacky dynamic casts here.
+    auto* calc_ccqe = dynamic_cast< genie::rew::GReWeightNuXSecCCQE* >( calc );
+    auto* calc_ccres = dynamic_cast< genie::rew::GReWeightNuXSecCCRES* >( calc );
+    auto* calc_ncres = dynamic_cast< genie::rew::GReWeightNuXSecNCRES* >( calc );
+    auto* calc_dis = dynamic_cast< genie::rew::GReWeightNuXSecDIS* >( calc );
+    if ( calc_ccqe ) calc_ccqe->SetMode( mode );
+    else if ( calc_ccres ) calc_ccres->SetMode( mode );
+    else if ( calc_ncres ) calc_ncres->SetMode( mode );
+    else if ( calc_dis ) calc_dis->SetMode( mode );
+    else throw cet::exception(__PRETTY_FUNCTION__)
+      << "Request to set the mode of an unrecognized GENIE weight calculator \""
+        << calc_name << '\"';
+  }
 
 }
 
