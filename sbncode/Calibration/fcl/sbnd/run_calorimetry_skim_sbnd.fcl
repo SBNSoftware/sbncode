@@ -32,15 +32,15 @@ outputs:
   outpid:
   {
     module_type: RootOutput
-    fileName:    "%ifb_%tc-%p.root"
-
+    fileName:   "%ifb_%tc-%p.root"
+    dataTier: 	"reconstructed"
     fastCloning: false
   }
 }
 physics:
 {
   producers:{
-    caloskimCalorimetry: @local::caloskim_pandoraCalo
+    caloskimCalorimetry: @local::caloskim_calorimetry
   }
 
   analyzers:
