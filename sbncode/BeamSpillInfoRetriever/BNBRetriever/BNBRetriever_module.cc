@@ -234,7 +234,7 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  auto const & raw_data = e.getByLabel< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerUDP" });
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerUDP" });
   
   TriggerInfo_t triggerInfo;
 
