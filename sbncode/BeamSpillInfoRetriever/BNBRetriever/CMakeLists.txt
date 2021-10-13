@@ -1,3 +1,5 @@
+find_ups_product(ifbeam)
+find_ups_product(ifbeam_art)
 
 include_directories( $ENV{IFBEAM_FQ_DIR}/include )
 include_directories( $ENV{LIBWDA_FQ_DIR}/include )
@@ -30,12 +32,14 @@ simple_plugin(BNBRetriever module
         ${Boost_SYSTEM_LIBRARY}
 	MF_MessageLogger
        	sbnobj_Common_POTAccounting
-	${IFBEAMSERVICE}
-	${IFBEAM}
-	sbndaq-artdaq-core_Overlays_Common
-  	sbndaq-artdaq-core_Overlays
-	sbndaq-artdaq-core_Overlays_ICARUS	
-        artdaq-core_Utilities
+	#${IFBEAMSERVICE}
+	#${IFBEAM}
+	ifbeam
+	ifdh_art::IFBeam_service
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS	
+        artdaq_core::artdaq-core_Utilities
 	sbn_BNBSpillInfoRetriever_MWRData	
 )
 

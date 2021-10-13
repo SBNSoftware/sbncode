@@ -15,10 +15,10 @@ simple_plugin(EXTRetriever module
 	cetlib cetlib_except
 	MF_MessageLogger
        	sbnobj_Common_POTAccounting
-	sbndaq-artdaq-core_Overlays_Common
-  	sbndaq-artdaq-core_Overlays
-	sbndaq-artdaq-core_Overlays_ICARUS	
-        artdaq-core_Utilities
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS	
+        artdaq_core::artdaq-core_Utilities
 )
 
 install_headers()
