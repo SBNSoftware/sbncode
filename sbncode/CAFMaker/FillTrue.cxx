@@ -302,7 +302,8 @@ namespace caf {
       srneutrino.pdg = nu.Nu().PdgCode();
       srneutrino.targetPDG = nu.Target();
       srneutrino.hitnuc = nu.HitNuc();
-      srneutrino.genie_intcode = nu.Mode();
+      srneutrino.genie_mode = (caf::genie_interaction_mode_)nu.Mode();
+      srneutrino.genie_inttype = (caf::genie_interaction_type_)nu.InteractionType();
       srneutrino.bjorkenX = nu.X();
       srneutrino.inelasticityY = nu.Y();
       srneutrino.Q2 = nu.QSqr();
