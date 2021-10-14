@@ -15,28 +15,28 @@ sbn_genie_eventweight: {
 
   AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
 
+  #Off-set central value of a knob here:
   genie_central_values: {
-  #Off-set central value of a knob here, 
-  #for example:
-  #  MaCCQE: 0
+  #example of shifting MaCCQE +1 sigma:
+  #  MaCCQE: 1
   }
 
   weight_functions: [ 
-    genie_sbnd, genie_sbnd_exclusive
-  # ,genie_ub
+    genie_sbnd_mulstisim, genie_sbnd_fixed, genie_sbnd_mulstisim_exclusive
+  # ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
 
   # Knobs that are used in both sbnd and ub
-  genie_sbnd: {
+  genie_sbnd_mulstisim: {
     type: Genie
     random_seed: 100
     parameter_list: [
     #CCQE
-      "MaCCQE","VecFFCCQEshape",
+      "MaCCQE",
 
     #Resonance
       "MaCCRES","MvCCRES","MaNCRES","MvNCRES",
-      "RDecBR1gamma","RDecBR1eta","Theta_Delta2Npi",
+      "RDecBR1gamma","RDecBR1eta",
 
 
     #Non-Resonance 
@@ -59,9 +59,9 @@ sbn_genie_eventweight: {
       ]
     parameter_sigma: [
       #CCQE
-      1,1,
+      1,
       #Res
-      1,1,1,1,1,1,1,
+      1,1,1,1,1,1,
       #Non_Res
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
       #NC
@@ -72,12 +72,19 @@ sbn_genie_eventweight: {
       1,1,1,1,1,1,1,1,1,1
     ]
     mode: multisim
-    number_of_multisims: 1
+    number_of_multisims: 100
+  }
+
+  genie_sbnd_fixed: {
+    type: Genie
+    parameter_list: [ "VecFFCCQEshape" , "Theta_Delta2Npi" ]
+    parameter_sigma: [ 1 , 1 ]
+    mode: fixed
   }
 
   # Knobs that are only used in sbnd
   # It is available, but not used in ub
-  genie_sbnd_exclusive: {
+  genie_sbnd_mulstisim_exclusive: {
     type: Genie
     random_seed: 100
     parameter_list: [
@@ -86,8 +93,8 @@ sbn_genie_eventweight: {
 
     #COH
       "MaCOHpi","R0COHpi",
-  #NC Note: the knob "NC" is removed.
-    "NormNCRES",
+    #NC Note: the knob "NC" is removed.
+      "NormNCRES",
     #DIS
       "DISNuclMod","FormZone"
     ]
@@ -95,38 +102,55 @@ sbn_genie_eventweight: {
         1, 1, 1, 1, 1, 1, 1
     ]
     mode: multisim
-    number_of_multisims: 1
+    number_of_multisims: 100
   }
 
   # Knobs that required special ub package or GENIE v3.2
   #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
-  genie_ub: {
+  genie_ub_multisim: {
     type: Genie
     random_seed: 100
-    parameter_list: [
-      #CCQE
-      "RPA_CCQE","CoulombCCQE","AxFFCCQEshape",
-      #Res
-      "ThetaDelta2NRad",
-      #CC MEC
-      "NormCCMEC", "DecayAngMEC","FracPN_CCMEC",
-      "FracDelta_CCMEC","XSecShape_CCMEC",
-    #NC MEC
-    "NormNCMEC"
-    ]
-    parameter_sigma: [
-      #CCQE
-      1, 1, 1,
-      #Res
-      1, 
-      #CC MEC
-      1, 1, 1, 1, 1,
-    #NC MEC
-    1
-    ]
+    parameter_list: [ "XSecShape_CCMEC" ]
+    parameter_sigma: [ 1 ]
     mode: multisim
     number_of_multisims: 100
   }
+
+  genie_ub_fixed: {
+    type: Genie
+    parameter_list: [ "AxFFCCQEshape" , "ThetaDelta2NRad" , "DecayAngMEC" ]
+    parameter_sigma: [ 1, 1, 1 ]
+    mode: fixed
+  }
+
+  genie_ub_pmNsigma: {
+    type: Genie
+    parameter_list: [ 
+      #CCQE
+      "RPA_CCQE","CoulombCCQE",
+    #COH
+    "NormCCCOH", "NormNCCOH",
+      #CC MEC
+      "NormCCMEC", "FracPN_CCMEC",
+      "FracDelta_CCMEC",
+      #NC MEC
+      "NormNCMEC"
+  ]
+    parameter_max: [ 
+    1, 0.3, 
+    1, 1,
+    0.56, 0.2, 0.3, 
+    1
+  ]
+    parameter_min: [ 
+    -1, -0.3, 
+    -1, -1,
+    -0.56, -0.2, -0.3, 
+    -1
+  ]
+    mode: pmNsigma
+  }
+
 }
 
 END_PROLOG
