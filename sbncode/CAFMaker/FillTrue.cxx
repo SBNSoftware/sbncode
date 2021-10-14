@@ -8,7 +8,8 @@
 
 // helper function declarations
 
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits,
+				   const std::map<int, std::pair<int, float>> &all_hits_map);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
            const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
@@ -93,38 +94,42 @@ namespace caf {
   //------------------------------------------------
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+		      const std::map<int, std::pair<int, float>> &id_hits_map,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
-          caf::SRTrack& srtrack,
-          bool allowEmpty)
+		      caf::SRTrack& srtrack,
+		      bool allowEmpty)
   {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
-
+    srtrack.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
+    
   }//FillTrackTruth
-
+  
   //------------------------------------------------
 
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::vector<caf::SRTrueParticle> &particles,
-                      const detinfo::DetectorClocksData &clockData,
-          caf::SRShower& srshower,
-          bool allowEmpty)
+		       const std::map<int, std::pair<int, float>> &id_hits_map,
+		       const std::vector<caf::SRTrueParticle> &particles,
+		       const detinfo::DetectorClocksData &clockData,
+		       caf::SRShower& srshower,
+		       bool allowEmpty)
   {
     // Truth matching
-    srshower.truth = MatchTrack2Truth(clockData, particles, hits);
-
+    srshower.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
+    
   }//FillShowerTruth
-
-
+  
+  
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+		     const std::map<int, std::pair<int, float>> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
                      const detinfo::DetectorClocksData &clockData,
                      caf::SRStub& srstub,
-                     bool allowEmpty) {
-    srstub.truth = MatchTrack2Truth(clockData, particles, hits);
+                     bool allowEmpty) 
+  {
+    srstub.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
   }
 
 
@@ -546,6 +551,18 @@ namespace caf {
 
       if (do_fill) srfakereco.push_back(this_fakereco);
     }
+  }
+
+  std::map<int, std::pair<int, float>> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits,
+    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
+    std::map<int, std::pair<int, float>> ret;
+    for (const art::Ptr<recob::Hit> h : allHits) {
+      ++ret[TruthMatchUtils::TrueParticleID(clockData, h, true)].first;
+      for (const sim::TrackIDE ide : backtracker.HitToTrackIDEs(clockData, h)) {
+	ret[ide.trackID].second += ide.energy;
+      }
+    }
+    return ret;
   }
 
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
@@ -972,11 +989,15 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 }//ContainedLength
 
 //------------------------------------------------
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits) {
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits,
+				   const std::map<int, std::pair<int, float>> &all_hits_map) {
+
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
+  std::map<int, std::pair<int, float>> track_hits_map = caf::SetupIDHitEnergyMap(hits, clockData, *bt_serv.get());
 
   caf::SRTrackTruth ret;
 
@@ -984,15 +1005,19 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 
   // setup the matches
   for (auto const &pair: matches) {
-    caf::ParticleMatch match;
+    caf::SRParticleMatch match;
     match.G4ID = pair.first;
     match.energy = pair.second / 1000. /* MeV -> GeV */;
+    match.hit_purity = (hits.size() != 0) ? (track_hits_map.find(match.G4ID)->second).first / (float) hits.size() : 0.;
+    match.energy_purity = (ret.total_deposited_energy > std::numeric_limits<float>::epsilon()) ? match.energy / ret.total_deposited_energy : 0.;
+    match.hit_completeness = ((all_hits_map.find(match.G4ID)->second).first != 0) ? (track_hits_map.find(match.G4ID)->second).first / (float) (all_hits_map.find(match.G4ID)->second).first : 0.;
+    match.energy_completeness = ((all_hits_map.find(match.G4ID)->second).second > std::numeric_limits<float>::epsilon()) ? pair.second / (all_hits_map.find(match.G4ID)->second).second : 0.;
     ret.matches.push_back(match);
   }
 
   // sort highest energy match to lowest
   std::sort(ret.matches.begin(), ret.matches.end(),
-      [](const caf::ParticleMatch &a, const caf::ParticleMatch &b) {
+      [](const caf::SRParticleMatch &a, const caf::SRParticleMatch &b) {
         return a.energy > b.energy;
       }
       );
