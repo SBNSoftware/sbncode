@@ -126,14 +126,13 @@ sbn_genie_eventweight: {
   genie_ub_pmNsigma: {
     type: Genie
     parameter_list: [ 
-      #CCQE
+    #CCQE
       "RPA_CCQE","CoulombCCQE",
     #COH
-    "NormCCCOH", "NormNCCOH",
-      #CC MEC
-      "NormCCMEC", "FracPN_CCMEC",
-      "FracDelta_CCMEC",
-      #NC MEC
+      "NormCCCOH", "NormNCCOH",
+    #CC MEC
+      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
+    #NC MEC
       "NormNCMEC"
   ]
     parameter_max: [ 
