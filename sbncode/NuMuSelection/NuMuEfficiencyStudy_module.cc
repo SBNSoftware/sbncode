@@ -53,6 +53,8 @@
 #include "TH1D.h"
 #include "sbncode/CAFMaker/RecoUtils/RecoUtils.h"
 
+#include <numeric> // std::accumulate
+
 namespace numu {
   class NuMuEfficiencyStudy;
 }

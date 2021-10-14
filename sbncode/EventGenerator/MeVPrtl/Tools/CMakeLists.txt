@@ -31,16 +31,15 @@ simple_plugin( EmptyKaonGen tool
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
-SET(ENV{IFHDC_LIB}   "$ENV{IFDHC_FQ_DIR}/lib")
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
-include_directories( $ENV{IFDHC_FQ_DIR}/inc )
-include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
+##include_directories( $ENV{IFDHC_FQ_DIR}/inc )
+##include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
 
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
 
 simple_plugin( NuMiKaonGen tool
-                            ${IFDH_SERVICE}
+                            IFDH_SERVICE
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
                             ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}

@@ -36,9 +36,6 @@ private:
 
   double fEndRR;
 
-  double fExpFitRCut;
-  double fFitResidualsCut;
-  bool fRequireFit;
   double fEndMediandQdxCut;
   unsigned fNumberTimeSamples;
   bool fRequireDownwards;
@@ -70,9 +67,6 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
   fMinTimeTickInset(p.get<double>("MinTimeTickInset")),
   fMaxTimeTickInset(p.get<double>("MaxTimeTickInset")),
   fEndRR(p.get<double>("EndRR", 5.)),
-  fExpFitRCut(p.get<double>("ExpFitRCut")),
-  fFitResidualsCut(p.get<double>("FitResidualsCut")),
-  fRequireFit(p.get<bool>("RequireFit")),
   fEndMediandQdxCut(p.get<double>("EndMediandQdxCut")),
   fNumberTimeSamples(p.get<unsigned>("NumberTimeSamples")),
   fRequireDownwards(p.get<bool>("RequireDownwards", true))
@@ -163,17 +157,7 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
 
   bool valid_med_dqdx = ((med_dqdx > 0.) && (med_dqdx > fEndMediandQdxCut)) || (fEndMediandQdxCut < 0.);
 
-  // Make sure the stopping fit worked
-  bool valid_stopping_fit = t.n_fit_point > 2 || !fRequireFit;
-
-  // Make a cut on the stopping fits
-  bool valid_stopping_expR = (t.exp_fit_R < fExpFitRCut) || (fExpFitRCut < 0.) || !fRequireFit;
-
-  double reduced_residual_offset = (t.const_fit_residuals - t.exp_fit_residuals) / t.n_fit_point;
-
-  bool valid_stopping_residuals = (reduced_residual_offset < fFitResidualsCut) || (fFitResidualsCut < 0.) || !fRequireFit;
-
-  return downwards && end_is_fid && time_is_fid && valid_med_dqdx && valid_stopping_fit && valid_stopping_expR && valid_stopping_residuals;
+  return downwards && end_is_fid && time_is_fid && valid_med_dqdx;
 }
 
 DEFINE_ART_CLASS_TOOL(TrackCaloSkimmerSelectStoppingTrack)
