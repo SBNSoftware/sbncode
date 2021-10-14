@@ -86,8 +86,8 @@ sbn_genie_eventweight: {
 
     #COH
       "MaCOHpi","R0COHpi",
-	#NC Note: the knob "NC" is removed.
-	  "NormNCRES",
+  #NC Note: the knob "NC" is removed.
+    "NormNCRES",
     #DIS
       "DISNuclMod","FormZone"
     ]
@@ -111,8 +111,8 @@ sbn_genie_eventweight: {
       #CC MEC
       "NormCCMEC", "DecayAngMEC","FracPN_CCMEC",
       "FracDelta_CCMEC","XSecShape_CCMEC",
-	  #NC MEC
-	  "NormNCMEC"
+    #NC MEC
+    "NormNCMEC"
     ]
     parameter_sigma: [
       #CCQE
@@ -121,8 +121,8 @@ sbn_genie_eventweight: {
       1, 
       #CC MEC
       1, 1, 1, 1, 1,
-	  #NC MEC
-	  1
+    #NC MEC
+    1
     ]
     mode: multisim
     number_of_multisims: 100

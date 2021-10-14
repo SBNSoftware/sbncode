@@ -392,7 +392,15 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       fParameterSet.AddParameter(pars[i], parsigmas[i]);
     }
 
-  }else { //default mode is fixed, but it is called in genie_central_values session;
+  }else if(mode.find("fixed") != std::string::npos){
+	
+	num_universes = 1;
+
+    for (size_t i=0; i<pars.size(); i++) {
+      fParameterSet.AddParameter(pars[i], parsigmas[i]);
+    }
+
+  }else { //need to identify a mode
 
       throw cet::exception(__PRETTY_FUNCTION__) << GetName()
     <<":: Mode is not recognized: "<<mode;
