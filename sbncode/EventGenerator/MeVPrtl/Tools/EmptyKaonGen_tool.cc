@@ -62,7 +62,7 @@ public:
     double GetPOT() override { return 0.; }
 
     // no weights
-    float MaxWeight() override  { return -1.; }
+    double MaxWeight() override  { return -1.; }
 };
 
 EmptyKaonGen::EmptyKaonGen(fhicl::ParameterSet const &pset):
