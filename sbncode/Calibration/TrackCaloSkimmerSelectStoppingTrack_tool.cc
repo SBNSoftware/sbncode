@@ -34,6 +34,8 @@ private:
   double fMinTimeTickInset;
   double fMaxTimeTickInset;
 
+  double fEndRR;
+
   double fExpFitRCut;
   double fFitResidualsCut;
   bool fRequireFit;
@@ -67,6 +69,7 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
   fFVInsetMaxZ(p.get<double>("FVInsetMaxZ")),
   fMinTimeTickInset(p.get<double>("MinTimeTickInset")),
   fMaxTimeTickInset(p.get<double>("MaxTimeTickInset")),
+  fEndRR(p.get<double>("EndRR", 5.)),
   fExpFitRCut(p.get<double>("ExpFitRCut")),
   fFitResidualsCut(p.get<double>("FitResidualsCut")),
   fRequireFit(p.get<bool>("RequireFit")),
@@ -139,10 +142,10 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
     (t.hit_min_time_p2_tpcW < 0. || t.hit_min_time_p2_tpcW > fFidTickMin) &&
     (t.hit_max_time_p2_tpcW < 0. || t.hit_max_time_p2_tpcW < fFidTickMax);
 
-  // compute the median dqdx of the last 5 cm
+  // compute the median dqdx of the last few cm -- using fEndRR
   std::vector<double> endp_dqdx;
   for (const sbn::TrackHitInfo &h: t.hits2) {
-    if (h.oncalo && h.rr < 5.) endp_dqdx.push_back(h.dqdx);
+    if (h.oncalo && h.rr < fEndRR) endp_dqdx.push_back(h.dqdx);
   }
   double med_dqdx = -1;
   if (endp_dqdx.size()) {

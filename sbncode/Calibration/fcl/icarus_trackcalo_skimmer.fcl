@@ -71,7 +71,7 @@ stopping_selection: {
   ExpFitRCut: 200
   FitResidualsCut: 10
   RequireFit: false
-  EndMediandQdxCut: 1000
+  EndMediandQdxCut: -1
   NumberTimeSamples: 4096
 }
 
