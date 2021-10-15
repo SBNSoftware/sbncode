@@ -310,6 +310,7 @@ namespace caf {
       srneutrino.E = nu.Nu().EndMomentum().Energy();
       srneutrino.momentum = nu.Nu().EndMomentum().Vect();
       srneutrino.position = nu.Nu().Position().Vect();
+      srneutrino.time = nu.Nu().Position().T() / 1000. /* ns -> us */;
       srneutrino.genweight = nu.Nu().Weight();
 
       const simb::MCParticle& lepton = nu.Lepton();
@@ -878,6 +879,7 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
+  MATCH_PROCESS(Transportation)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode

@@ -286,7 +286,7 @@ void FlashPredict::produce(art::Event& evt)
     const auto& tpcWithHits = chargeDigest.second.tpcWithHits;
     bk.pfp_to_score++;
     if(chargeDigest.first < 0.){
-      mf::LogInfo("FlashPredict") << "Not a nu candidate slice. Skipping...";
+      mf::LogDebug("FlashPredict") << "Not a nu candidate slice. Skipping...";
       bk.no_nu_candidate++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
       sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
@@ -756,16 +756,17 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     if(!std::isnan(flash.h_x)){
       double y_correction = 0.;
       double z_correction = 0.;
+      const double skew_threshold = 10.; // TODO: figure out best value
       if(fSBND) {
-        y_correction = (std::abs(flash.y_skew)<10) ?
+        y_correction = (std::abs(flash.y_skew)<skew_threshold) ?
           flash.y_skew * flash.h_x*flash.h_x * fYBiasSlope : 0.;
-        z_correction = (std::abs(flash.z_skew)<10) ?
+        z_correction = (std::abs(flash.z_skew)<skew_threshold) ?
           flash.z_skew * flash.h_x*flash.h_x * fZBiasSlope : 0.;
       }
       else{// fICARUS
-        y_correction = (std::abs(flash.y_skew)<10) ?
+        y_correction = (std::abs(flash.y_skew)<skew_threshold) ?
           flash.y_skew * flash.h_x * fYBiasSlope : 0.;
-        z_correction =  (std::abs(flash.z_skew)<10) ?
+        z_correction =  (std::abs(flash.z_skew)<skew_threshold) ?
           flash.z_skew * flash.h_x * fZBiasSlope : 0.;
       }
       flash.y = flash.yb - y_correction;

@@ -11,6 +11,10 @@ icarus_numi_beam2detector_rotation: [   0.921228671,    0.0226872648,   0.388359
 
 icarus_numi_beam_origin: [0, 0, 0, 4.8195e2, 79.5800e2, 794.3955e2] # cm
 
+# icarus_detector_box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+# icarus_detector_box: [-369.63. 369.63, -224.61, 177.71, -994.950652270838, 994.950652270838]
+icarus_detector_box: [-378.49, 378.49, -191.86, 144.96, -904.950652270838, 904.950652270838]
+
 numi_kaon: {
   tool_type: NuMiKaonGen
   SearchPath: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics-gputnam/numiflux/"
@@ -25,13 +29,13 @@ numi_kaon: {
 ray_trace_box: {
   tool_type: RayTraceBox
   # Volume: volCryostat
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+  Box: @local::icarus_detector_box
 }
 
 rethrow_ray_trace_box: {
   tool_type: ReThrowRayTraceBox
   # Volume: volCryostat
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+  Box: @local::icarus_detector_box
 
   # weight computation
   #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
@@ -44,7 +48,7 @@ rethrow_ray_trace_box: {
 weighted_ray_trace_box: {
   tool_type: WeightedRayTraceBox
   # Volume: volCryostat
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+  Box: @local::icarus_detector_box
 
   # weight computation
   ReferenceLabSolidAngle: 1e-4
@@ -53,7 +57,7 @@ weighted_ray_trace_box: {
 
 mixedweight_ray_trace_box: {
   tool_type: MixedWeightRayTraceBox
-  Box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
+  Box: @local::icarus_detector_box
   ReferenceLabSolidAngle: 4e-4
   MaxWeightFudge: 2.
   ReferenceKaonEnergy: 15. # GeV
