@@ -1109,7 +1109,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
     double totVisE = 0.;
     for (int p = 0; p < 3; p++) {
-      for (int c = 0; c < srmc.nu[index].plane[p].size(); c++) {
+      for (int c = 0; c < (int)srmc.nu[index].plane[p].size(); c++) {
         totVisE += srmc.nu[index].plane[p][c].visE;
       }
     }
