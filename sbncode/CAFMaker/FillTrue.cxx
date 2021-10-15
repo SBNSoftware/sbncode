@@ -223,28 +223,26 @@ namespace caf {
     int ncryo = active_volumes.size();
 
     for (int i = 0; i < ncryo; i++) {
-      srneutrino.plane0VisE.push_back(0.);
-      srneutrino.plane1VisE.push_back(0.);
-      srneutrino.plane2VisE.push_back(0.);
-      srneutrino.plane0nhit.push_back(0);
-      srneutrino.plane1nhit.push_back(0);
-      srneutrino.plane2nhit.push_back(0);
-      srneutrino.plane0nhitprim.push_back(0);
-      srneutrino.plane1nhitprim.push_back(0);
-      srneutrino.plane2nhitprim.push_back(0);
+      SRTrueInteractionPlaneInfo init;
+      init.visE = 0.;
+      init.nhit = 0;
+      init.nhitprim = 0;
+
+      for (int p = 0; p < 3; p++) {
+        srneutrino.plane[p].push_back(init);
+      }
     }
 
-    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+    for(const caf::SRTrueParticle& part: srparticles){
       // save the G4 particles that came from this interaction
-      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.prim.push_back(srparticles[i_part]);
-      }
-      // total up the deposited energy
-      if (srparticles[i_part].interaction_id == (int)i) {
-        for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
-          srneutrino.plane0VisE[i_cryo] += srparticles[i_part].plane0VisE[i_cryo];
-          srneutrino.plane1VisE[i_cryo] += srparticles[i_part].plane1VisE[i_cryo];
-          srneutrino.plane2VisE[i_cryo] += srparticles[i_part].plane2VisE[i_cryo];
+      if(part.interaction_id == (int)i) {
+        if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+
+        // total up the deposited energy
+        for(int p = 0; p < 3; ++p) { 
+          for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
+            srneutrino.plane[p][i_cryo].visE += part.plane[p][i_cryo].visE;
+          }
         }
       }
     }
@@ -265,10 +263,10 @@ namespace caf {
         }
       }
 
-      for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
-        srneutrino.plane0nhitprim[i_cryo] = planehitIDs[i_cryo][0].size();
-        srneutrino.plane1nhitprim[i_cryo] = planehitIDs[i_cryo][1].size();
-        srneutrino.plane2nhitprim[i_cryo] = planehitIDs[i_cryo][2].size();
+      for(int p = 0; p < 3; ++p) {
+        for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
+          srneutrino.plane[p][i_cryo].nhitprim = planehitIDs[i_cryo][p].size();
+        }
       }
     }
 
@@ -287,10 +285,10 @@ namespace caf {
         }
       }
 
-      for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
-        srneutrino.plane0nhit[i_cryo] = planehitIDs[i_cryo][0].size();
-        srneutrino.plane1nhit[i_cryo] = planehitIDs[i_cryo][1].size();
-        srneutrino.plane2nhit[i_cryo] = planehitIDs[i_cryo][2].size();
+      for(int p = 0; p < 3; ++p) {
+        for (int i_cryo = 0; i_cryo < ncryo; i_cryo++) {
+          srneutrino.plane[p][i_cryo].nhit = planehitIDs[i_cryo][p].size();
+        }
       }
     }
 
@@ -410,44 +408,32 @@ namespace caf {
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
 
-    // Depth equal to the number of cryostats, which is the number of active volumes
-    for (unsigned i = 0; i < active_volumes.size(); i++) {
-      srparticle.plane0VisE.push_back(0.); 
-      srparticle.plane1VisE.push_back(0.);
-      srparticle.plane2VisE.push_back(0.);
-      srparticle.plane0nhit.push_back(0);
-      srparticle.plane1nhit.push_back(0);
-      srparticle.plane2nhit.push_back(0);
+    for (unsigned c = 0; c < active_volumes.size(); c++) {
+      SRTrueParticlePlaneInfo init;
+      init.visE = 0.;
+      init.nhit = 0;
+
+      for(int p = 0; p < 3; ++p){
+        srparticle.plane[p].push_back(init);
+      }
+
     }
 
     for (auto const &ide_pair: particle_ides) {
       const geo::WireID &w = ide_pair.first;
       const sim::IDE *ide = ide_pair.second;
 
-      if (w.Plane == 0) {
-        srparticle.plane0VisE.at(w.Cryostat) += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1VisE.at(w.Cryostat) += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2VisE.at(w.Cryostat) += ide->energy / 1000. /* MeV -> GeV*/;
+      if(w.Plane >= 0 && w.Plane < 3){
+        srparticle.plane[w.Plane].at(w.Cryostat).visE += ide->energy / 1000. /* MeV -> GeV*/;
       }
     }
 
     for (const art::Ptr<recob::Hit> h: particle_hits) {
       const geo::WireID &w = h->WireID();
 
-      if (w.Plane == 0) {
-        srparticle.plane0nhit.at(w.Cryostat) ++;
+      if(w.Plane >= 0 && w.Plane < 3) {
+        srparticle.plane[w.Plane].at(w.Cryostat).nhit ++;
       }
-      else if (w.Plane == 1) {
-        srparticle.plane1nhit.at(w.Cryostat) ++;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2nhit.at(w.Cryostat) ++;
-      }
-
     } 
 
     // if no trajectory points, then assume outside AV
@@ -1120,11 +1106,15 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
-    float true_energy = std::accumulate(srmc.nu[index].plane0VisE.begin(), srmc.nu[index].plane0VisE.end(), 0.) +
-                        std::accumulate(srmc.nu[index].plane1VisE.begin(), srmc.nu[index].plane1VisE.end(), 0.) +
-                        std::accumulate(srmc.nu[index].plane2VisE.begin(), srmc.nu[index].plane2VisE.end(), 0.);
 
-    ret.eff = (matching_energy[index] / 1000.) / true_energy;
+    double totVisE = 0.;
+    for (int p = 0; p < 3; p++) {
+      for (int c = 0; c < srmc.nu[index].plane[p].size(); c++) {
+        totVisE += srmc.nu[index].plane[p][c].visE;
+      }
+    }
+
+    ret.eff = (matching_energy[index] / 1000.) / totVisE;
 
     // lookup the cryostat
     int icryo = srmc.nu[index].cryostat;
@@ -1136,11 +1126,12 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
     if (icryo >= 0) {
       ret.eff_cryo = (matching_energy[index] / 1000.) / 
-          (srmc.nu[index].plane0VisE.at(icryo) + srmc.nu[index].plane1VisE.at(icryo) + srmc.nu[index].plane2VisE.at(icryo));
+          (srmc.nu[index].plane[0].at(icryo).visE + srmc.nu[index].plane[1].at(icryo).visE + srmc.nu[index].plane[2].at(icryo).visE);
     }
     else {
       ret.eff_cryo = -1;
     }
+
   }
   else {
     ret.pur = -1;
