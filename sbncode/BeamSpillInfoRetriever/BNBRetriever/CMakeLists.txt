@@ -8,6 +8,8 @@ include_directories( $ENV{IFDH_ART_INC} )
 cet_find_library( IFBEAMSERVICE        NAMES IFBeam_service    PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
 cet_find_library( IFBEAM               NAMES ifbeam            PATHS ENV IFBEAM_LIB   NO_DEFAULT_PATH )
 
+link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
+
 art_make_library(
 	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
 	SOURCE MWRData.cpp
