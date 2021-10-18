@@ -94,36 +94,36 @@ namespace caf {
   //------------------------------------------------
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-		      const std::map<int, std::pair<int, float>> &id_hits_map,
+                      const std::map<int, std::pair<int, float>> &id_hits_map,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
-		      caf::SRTrack& srtrack,
-		      bool allowEmpty)
+                      caf::SRTrack& srtrack,
+                      bool allowEmpty)
   {
     // Truth matching
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
-    
+
   }//FillTrackTruth
-  
+
   //------------------------------------------------
 
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-		       const std::map<int, std::pair<int, float>> &id_hits_map,
-		       const std::vector<caf::SRTrueParticle> &particles,
-		       const detinfo::DetectorClocksData &clockData,
-		       caf::SRShower& srshower,
-		       bool allowEmpty)
+                       const std::map<int, std::pair<int, float>> &id_hits_map,
+                       const std::vector<caf::SRTrueParticle> &particles,
+                       const detinfo::DetectorClocksData &clockData,
+                       caf::SRShower& srshower,
+                       bool allowEmpty)
   {
     // Truth matching
     srshower.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
-    
+
   }//FillShowerTruth
-  
-  
+
+
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-		     const std::map<int, std::pair<int, float>> &id_hits_map,
+                     const std::map<int, std::pair<int, float>> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
                      const detinfo::DetectorClocksData &clockData,
                      caf::SRStub& srstub,
@@ -554,14 +554,17 @@ namespace caf {
   }
 
   std::map<int, std::pair<int, float>> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits,
-    const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
+                                                           const detinfo::DetectorClocksData &clockData, 
+                                                           const cheat::BackTrackerService &backtracker) {
     std::map<int, std::pair<int, float>> ret;
+
     for (const art::Ptr<recob::Hit> h : allHits) {
       const int hit_trackID = CAFRecoUtils::GetShowerPrimary(TruthMatchUtils::TrueParticleID(clockData, h, true));
       ++ret[hit_trackID].first;
+
       for (const sim::TrackIDE ide : backtracker.HitToTrackIDEs(clockData, h)) {
-	const int ide_trackID = CAFRecoUtils::GetShowerPrimary(ide.trackID);
-	ret[ide_trackID].second += ide.energy;
+        const int ide_trackID = CAFRecoUtils::GetShowerPrimary(ide.trackID);
+        ret[ide_trackID].second += ide.energy;
       }
     }
     return ret;
