@@ -557,9 +557,11 @@ namespace caf {
     const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker) {
     std::map<int, std::pair<int, float>> ret;
     for (const art::Ptr<recob::Hit> h : allHits) {
-      ++ret[TruthMatchUtils::TrueParticleID(clockData, h, true)].first;
+      const int hit_trackID = CAFRecoUtils::GetShowerPrimary(TruthMatchUtils::TrueParticleID(clockData, h, true));
+      ++ret[hit_trackID].first;
       for (const sim::TrackIDE ide : backtracker.HitToTrackIDEs(clockData, h)) {
-	ret[ide.trackID].second += ide.energy;
+	const int ide_trackID = CAFRecoUtils::GetShowerPrimary(ide.trackID);
+	ret[ide_trackID].second += ide.energy;
       }
     }
     return ret;
