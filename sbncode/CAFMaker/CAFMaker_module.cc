@@ -815,6 +815,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     srtruthbranch.nu.push_back(SRTrueInteraction());
+    srtruthbranch.nnu ++;
 
     FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
