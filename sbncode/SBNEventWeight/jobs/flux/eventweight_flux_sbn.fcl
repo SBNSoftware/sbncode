@@ -21,10 +21,10 @@ sbn_eventweight_flux: {
 
   weight_functions_flux: [
     horncurrent, expskin,
-  pioninexsec, pionqexsec, piontotxsec,
-  nucleoninexsec, nucleonqexsec, nucleontotxsec,
-  kplus, kminus, kzero,
-  piplus, piminus
+    pioninexsec, pionqexsec, piontotxsec,
+    nucleoninexsec, nucleonqexsec, nucleontotxsec,
+    kplus, kminus, kzero,
+    piplus, piminus
   ]
 
   horncurrent: {
@@ -35,7 +35,7 @@ sbn_eventweight_flux: {
     parameter_list: ["horncurrent"]
     #parameter_sigma: [1] 
 
-  calc_type: "Unisim"
+    calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
     CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
@@ -44,110 +44,110 @@ sbn_eventweight_flux: {
   }
 
   expskin: {
-  type: Flux
-  random_seed: 14
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["expskin"]
+    type: Flux
+    random_seed: 14
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["expskin"]
 
-  calc_type: "Unisim"
+    calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
   }
 
   pioninexsec: {
-  type: Flux
-  random_seed: 8
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["pioninexsec"]
+    type: Flux
+    random_seed: 8
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["pioninexsec"]
 
-  calc_type: "Unisim"
-  scale_factor_pos: 1  
-  scale_factor_neg: 1
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
+    calc_type: "Unisim"
+    scale_factor_pos: 1  
+    scale_factor_neg: 1
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
   }
 
-  pionqexsec: {
-  type: Flux
-  random_seed: 12
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["pionqexsec"]
+  pionqexsec: {	
+    type: Flux
+    random_seed: 12
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["pionqexsec"]
 
-  calc_type: "Unisim"
-  scale_factor_pos: 0.292 #From MiniBooNE  
-  scale_factor_neg: 0.585 #From MiniBooNE
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
+    calc_type: "Unisim"
+    scale_factor_pos: 0.292 #From MiniBooNE  
+    scale_factor_neg: 0.585 #From MiniBooNE
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
   }
 
   piontotxsec: {
-  type: Flux
-  random_seed: 13
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["piontotxsec"]
+    type: Flux
+    random_seed: 13
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["piontotxsec"]
 
-  calc_type: "Unisim"
-  scale_factor_pos: 1  
-  scale_factor_neg: 1
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
+    calc_type: "Unisim"
+    scale_factor_pos: 1  
+    scale_factor_neg: 1
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
   }
 
 
 
   nucleoninexsec: {
-  type: Flux
-  random_seed: 11
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["nucleoninexsec"]
+    type: Flux
+    random_seed: 11
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["nucleoninexsec"]
 
-  calc_type: "Unisim"
-  scale_factor_pos: 1  
-  scale_factor_neg: 1
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
+    calc_type: "Unisim"
+    scale_factor_pos: 1  
+    scale_factor_neg: 1
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
   }
 
   nucleonqexsec: {
-  type: Flux
-  random_seed: 10
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["nucleonqexsec"]
-  
-  calc_type: "Unisim"
-  scale_factor_pos: 0.333 #From MiniBooNE 
-  scale_factor_neg: 0.573 #From MiniBooNE
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
+    type: Flux
+    random_seed: 10
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["nucleonqexsec"]
+	
+    calc_type: "Unisim"
+    scale_factor_pos: 0.333 #From MiniBooNE 
+    scale_factor_neg: 0.573 #From MiniBooNE
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
   }
 
   nucleontotxsec: {
-  type: Flux
-  random_seed: 9
-  mode: multisim
-  number_of_multisims: 1000
-  parameter_list: ["nucleontotxsec"]
-  
-  calc_type: "Unisim"
-  scale_factor_pos: 1  
-  scale_factor_neg: 1
-  CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-  PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
-  NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
+    type: Flux
+    random_seed: 9
+    mode: multisim
+    number_of_multisims: 1000
+    parameter_list: ["nucleontotxsec"]
+	
+    calc_type: "Unisim"
+    scale_factor_pos: 1  
+    scale_factor_neg: 1
+    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
   }
 
 
@@ -174,7 +174,7 @@ sbn_eventweight_flux: {
     parameter_list: ["kminus"]
     parameter_sigma: [1]
 
-  calc_type: "PrimaryHadronNormalization"
+    calc_type: "PrimaryHadronNormalization"
     PrimaryHadronGeantCode: [-321] # geant code for particle production on Be
     scale_factor_pos: 1
    } 
