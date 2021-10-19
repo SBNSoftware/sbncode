@@ -1,15 +1,16 @@
 // Based on  ubsim / EventWeight / Calculators / FluxUnisimWeightCalc.cxx  @ UBOONE_SUITE_v08_00_00_55 
 // Ported to/adapted for SBNCode by Keng Lin July 2021
 
-#include "art/Framework/Principal/Event.h"
 #include "nugen/NuReweight/art/NuReweight.h"
 #include "nusimdata/SimulationBase/MCFlux.h" 
 #include "nusimdata/SimulationBase/MCTruth.h"
 
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
+#include "art/Framework/Principal/Event.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 #include "sbncode/SBNEventWeight/Base/SmearingUtils.h"//MultiGaussianSmearing!
-#include <sys/stat.h> //for exit(0); debugging purpose
+
+//#include <sys/stat.h> //for exit(0); debugging purpose
 
 #include "TH1F.h"
 #include "TFile.h"
@@ -23,7 +24,7 @@ namespace sbn {
         FluxWeightCalc() : WeightCalc() {}
 
         //Read FHiCL and store the settings for the reweighting environment and the calculator.
-        void Configure(fhicl::ParameterSet const& pset,
+        void Configure(fhicl::ParameterSet const& p,
             CLHEP::HepRandomEngine& engine) override;
 
 

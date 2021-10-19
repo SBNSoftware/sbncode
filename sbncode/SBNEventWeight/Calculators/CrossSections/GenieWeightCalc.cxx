@@ -17,6 +17,8 @@
 #include "sbncode/SBNEventWeight/Base/WeightCalc.h"
 #include "sbncode/SBNEventWeight/Base/WeightCalcCreator.h"
 
+#include "fhiclcpp/ParameterSet.h"
+
 namespace sbn {
   namespace evwgh {
 

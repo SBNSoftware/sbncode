@@ -1,4 +1,7 @@
 #include "FluxCalcPrep.h"
+//Need to include headers explicitly after v9_33_00
+
+#include "fhiclcpp/ParameterSet.h"
 
 
 namespace sbn {
