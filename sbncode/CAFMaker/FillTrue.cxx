@@ -1063,7 +1063,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
   caf::SRTruthMatch ret;
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
   // speed optimization: if there are no truths, all the matching energy must be cosmic
-  if (truths.size() == 0) {
+  if (truths.empty()) {
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
     ret.eff_cryo = -1.;
