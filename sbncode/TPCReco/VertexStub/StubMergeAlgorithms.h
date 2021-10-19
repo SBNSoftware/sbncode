@@ -16,8 +16,6 @@
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
 
-#include "sbncode/TPCReco/VertexStub/PlaneTransform.h"
-
 // Helper algorithms/utilities useful for merging stubs
 
 namespace sbn {
@@ -53,13 +51,13 @@ double GetPitch(
     bool correct_sce, bool track_is_sce_corrected, float xsign=1.);
 
 /// Get the location in the presence of space charge
-geo::Point_t GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, unsigned TPC, float xsign=1.);
+geo::Point_t GetLocation(const spacecharge::SpaceCharge *sce, geo::Point_t loc_w, geo::TPCID TPC, float xsign=1.);
 
 /// Get the E-Field in the presence of space charge
-double GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, unsigned TPC, bool correct_loc_sce, float xsign=1.);
+double GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacecharge::SpaceCharge *sce, geo::Point_t loc, geo::TPCID TPC, bool correct_loc_sce, float xsign=1.);
 
 /// Get the SCE-distorted location (i.e. the location "seen" by the wireplanes)
-geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, geo::Point_t loc, float xsign=1.);
+geo::Point_t GetLocationAtWires(const spacecharge::SpaceCharge *sce, const geo::GeometryCore *geo, geo::Point_t loc, geo::TPCID TPC, float xsign=1.);
 
 /// Returns whether stub `A` contains stub `B`.
 bool StubContains(const sbn::StubInfo &A, const sbn::StubInfo &B);
@@ -75,7 +73,7 @@ float StubTimeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const detinfo::DetectorPropertiesData &dprop);
 
 /// Returns an updated end position of a stub after merging across two planes
-geo::Point_t TwoStubEndPosition(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+geo::Point_t TwoStubEndPosition(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);
@@ -87,7 +85,7 @@ float StubChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B);
 float StubPeakChargeOffset(const sbn::StubInfo &A, const sbn::StubInfo &B);
 
 /// Difference of the endpoint dQ/dx between two stubs
-float StubPeakdQdxOffset(const sbn::PlaneTransform &T, const sbn::StubInfo &A, const sbn::StubInfo &B,
+float StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
     const geo::GeometryCore *geo,
     const spacecharge::SpaceCharge *sce,
     const detinfo::DetectorPropertiesData &dprop);

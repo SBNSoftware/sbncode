@@ -13,9 +13,10 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // LArSoft includes
@@ -612,7 +613,10 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   // Save the decay info
   decay.pos = TLorentzVector(decay_pos, TimeOfFlight(flux, decay_pos));
-  decay.daughter_mom = decays[idecay].mom;
+  for (const TLorentzVector &p: decays[idecay].mom) {
+    decay.daughter_mom.push_back(p.Vect());
+    decay.daughter_e.push_back(p.E());
+  }
   decay.daughter_pdg = decays[idecay].pdg;
   decay.decay_width = total_width;
   decay.mean_lifetime = lifetime_ns;

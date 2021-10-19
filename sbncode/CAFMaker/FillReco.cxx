@@ -16,6 +16,50 @@ namespace caf
            && slice.primary.size() > 0; // must have primary tracks/showers
   }
 
+  void FillStubVars(const sbn::Stub &stub,
+                    const art::Ptr<recob::PFParticle> stubpfp,
+                    caf::SRStub &srstub,
+                    bool allowEmpty) {
+
+    // allowEmpty does not (yet) matter here
+    (void) allowEmpty;
+
+    // Copy the stub object over
+    srstub.vtx.x = stub.vtx.x();
+    srstub.vtx.y = stub.vtx.y();
+    srstub.vtx.z = stub.vtx.z();
+
+    srstub.end.x = stub.end.x();
+    srstub.end.y = stub.end.y();
+    srstub.end.z = stub.end.z();
+
+    srstub.efield_vtx = stub.efield_vtx;
+    srstub.efield_end = stub.efield_end;
+
+    for (unsigned ip = 0; ip < stub.plane.size(); ip++) {
+      caf::SRStubPlane plane;
+      plane.p = (caf::Plane_t)stub.plane[ip].Plane;
+      plane.pitch = stub.pitch[ip];
+      plane.trkpitch = stub.trkpitch[ip];
+      plane.vtx_w = stub.vtx_w[ip];
+      plane.hit_w = stub.hit_w[ip];
+      for (unsigned ih = 0; ih < stub.hits[ip].size(); ih++) {
+        caf::SRStubHit hit;
+        hit.charge = stub.hits[ip][ih].charge;
+        hit.wire = stub.hits[ip][ih].wire;
+        hit.ontrack = stub.hits[ip][ih].ontrack;
+
+        plane.hits.push_back(hit);
+      }
+
+      srstub.planes.push_back(plane);     
+    }
+
+    // If there is an overlaid PFParticle, save its ID
+    if (stubpfp) srstub.pfpid = stubpfp->Self();
+
+  }
+
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
@@ -83,14 +127,15 @@ namespace caf
   {
 
     srshower.producer = producer;
-    srshower.dEdx_plane0 = (shower.dEdx())[0];
-    srshower.dEdx_plane1 = (shower.dEdx())[1];
-    srshower.dEdx_plane2 = (shower.dEdx())[2];
-    srshower.energy_plane0 = (shower.Energy())[0];
-    srshower.energy_plane1 = (shower.Energy())[1];
-    srshower.energy_plane2 = (shower.Energy())[2];
-    srshower.dEdx   = double_to_float_vector( shower.dEdx() );
-    srshower.energy = double_to_float_vector( shower.Energy() );
+
+    // We need to convert the energy from MeV to GeV
+    // Also convert -999 -> -5 for consistency with other defaults in the CAFs
+    for(int i = 0; i < 3; ++i){
+      const float e = shower.Energy()[i];
+      srshower.plane[i].energy = e > 0 ? e / 1000.f : -5.f;
+      srshower.plane[i].dEdx = shower.dEdx()[i];
+    }
+
     srshower.dir    = SRVector3D( shower.Direction() );
     srshower.start  = SRVector3D( shower.ShowerStart() );
 
@@ -100,8 +145,8 @@ namespace caf
 
     if(shower.best_plane() != -999){
       srshower.bestplane        = shower.best_plane();
-      srshower.bestplane_dEdx   = shower.dEdx().at(shower.best_plane());
-      srshower.bestplane_energy = shower.Energy().at(shower.best_plane());
+      srshower.bestplane_dEdx   = srshower.plane[shower.best_plane()].dEdx;
+      srshower.bestplane_energy = srshower.plane[shower.best_plane()].energy;
     }
 
     if(shower.has_open_angle())
@@ -109,8 +154,9 @@ namespace caf
     if(shower.has_length())
       srshower.len = shower.Length();
 
+    // We want density to be in MeV/cm so need to convert the energy back to MeV from GeV
     if(srshower.len > std::numeric_limits<float>::epsilon() && srshower.bestplane_energy > 0)
-        srshower.density = srshower.bestplane_energy / srshower.len;
+        srshower.density = 1000.f * srshower.bestplane_energy / srshower.len;
 
     if (vertex && shower.ShowerStart().Z()>-990) {
       // Need to do some rearranging to make consistent types
@@ -124,30 +170,15 @@ namespace caf
       srshower.end = shower.ShowerStart()+ (shower.Length() * shower.Direction());
     }
 
-    for (auto const& hit:hits) {
-      switch (hit->WireID().Plane) {
-        case(0):
-          srshower.nHits_plane0++;
-        case(1):
-          srshower.nHits_plane1++;
-        case(2):
-          srshower.nHits_plane2++;
-      }
-    }
+    for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
+    for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
     for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
 
       const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
 
-      switch (plane.ID().Plane) {
-        case(0):
-          srshower.wirePitch_plane0 = plane.WirePitch()/cosgamma;
-        case(1):
-          srshower.wirePitch_plane1 = plane.WirePitch()/cosgamma;
-        case(2):
-          srshower.wirePitch_plane2 = plane.WirePitch()/cosgamma;
-      }
+      srshower.plane[plane.ID().Plane].wirePitch = plane.WirePitch()/cosgamma;
     }
   }
 
@@ -353,8 +384,8 @@ namespace caf
     }
 
     if (range_results[2].size()) {
-      srtrack.rangeP.p_proton = range_results[1][0]->range_p;
-      assert(track.ID() == range_results[1][0]->trackID);
+      srtrack.rangeP.p_proton = range_results[2][0]->range_p;
+      assert(track.ID() == range_results[2][0]->trackID);
     }
   }
 
@@ -378,8 +409,7 @@ namespace caf
       if (particle_id.PlaneID()) {
         unsigned plane_id  = particle_id.PlaneID().Plane;
         assert(plane_id < 3);
-        caf::SRTrkChi2PID &this_pid = (plane_id == 0) ? srtrack.chi2pid0 : ((plane_id == 1) ? srtrack.chi2pid1 : srtrack.chi2pid2);
-        FillPlaneChi2PID(particle_id, this_pid);
+        FillPlaneChi2PID(particle_id, srtrack.chi2pid[plane_id]);
       }
     }
   }
@@ -493,8 +523,7 @@ namespace caf
       if (calo.PlaneID()) {
         unsigned plane_id = calo.PlaneID().Plane;
         assert(plane_id < 3);
-        caf::SRTrackCalo &this_calo = (plane_id == 0) ? srtrack.calo0 : ((plane_id == 1) ? srtrack.calo1 : srtrack.calo2);
-        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, this_calo);
+        FillTrackPlaneCalo(calo, hits, fill_calo_points, fillhit_rrstart, fillhit_rrend, dprop, srtrack.calo[plane_id]);
       }
     }
 
@@ -502,15 +531,14 @@ namespace caf
     //
     // We expect the noise to be lowest at planes 2 -> 0 -> 1, so use this to break ties
     caf::Plane_t bestplane = caf::kUnknown;
-    if (srtrack.calo2.nhit > 0 && srtrack.calo2.nhit >= srtrack.calo0.nhit && srtrack.calo2.nhit >=  srtrack.calo1.nhit) {
-      bestplane = (caf::Plane_t)2;
+    int bestnhit = -1;
+    for(int plane: {2, 0, 1}){
+      if(srtrack.calo[plane].nhit > bestnhit){
+        bestplane = caf::Plane_t(plane);
+        bestnhit = srtrack.calo[plane].nhit;
+      }
     }
-    else if (srtrack.calo0.nhit > 0 && srtrack.calo0.nhit >= srtrack.calo2.nhit && srtrack.calo0.nhit >=  srtrack.calo1.nhit) {
-      bestplane = (caf::Plane_t)0;
-    }
-    else if (srtrack.calo1.nhit > 1) {
-      bestplane = (caf::Plane_t)1;
-    }
+
     srtrack.bestplane = bestplane;
 
   }

@@ -7,11 +7,6 @@
 #include <algorithm>
 
 // helper function declarations
-caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
-        const TVector3 p0,
-        const TVector3 p1);
-
-caf::g4_process_ GetG4ProcessID(const std::string &name);
 
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
 
@@ -57,9 +52,45 @@ double PDGMass(int pdg) {
   }
 }
 
-
+//......................................................................
+void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
+{
+  const double& start = m(0, 0);
+  v.insert(v.end(), &start, &start + m.GetNoElements());
+}
 
 namespace caf {
+
+  //------------------------------------------------
+
+  void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
+                    caf::SRGlobal& srglobal,
+                    std::map<std::string, unsigned int>& weightPSetIndex)
+  {
+    SRWeightPSet& cafpset = srglobal.wgts.emplace_back();
+
+    cafpset.name = pset.fName;
+    cafpset.type = caf::ReweightType_t(pset.fRWType);
+    cafpset.nuniv = pset.fNuniverses;
+    if(pset.fCovarianceMatrix) CopyTMatrixDToVector(*pset.fCovarianceMatrix, cafpset.covmx);
+
+    weightPSetIndex[cafpset.name] = srglobal.wgts.size()-1;
+
+    for(const auto& it: pset.fParameterMap){
+      const sbn::evwgh::EventWeightParameter& param = it.first;
+      const std::vector<float>& vals = it.second;
+
+      SRWeightParam cafparam;
+      cafparam.name = param.fName;
+      cafparam.mean = param.fMean;
+      cafparam.width = param.fWidth;
+      cafparam.covidx = param.fCovIndex;
+
+      cafpset.map.emplace_back(cafparam, vals);
+    } // end for it
+  }
+
+  //------------------------------------------------
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<caf::SRTrueParticle> &particles,
@@ -71,6 +102,8 @@ namespace caf {
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
 
   }//FillTrackTruth
+
+  //------------------------------------------------
 
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
@@ -84,6 +117,15 @@ namespace caf {
     srshower.truth = MatchTrack2Truth(clockData, particles, hits);
 
   }//FillShowerTruth
+
+
+  void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::vector<caf::SRTrueParticle> &particles,
+                     const detinfo::DetectorClocksData &clockData,
+                     caf::SRStub& srstub,
+                     bool allowEmpty) {
+    srstub.truth = MatchTrack2Truth(clockData, particles, hits);
+  }
 
 
   //------------------------------------------------
@@ -109,6 +151,42 @@ namespace caf {
 
   }//FillSliceTruth
 
+
+ void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                       caf::SRMeVPrtl &srtruth) {
+   // Fill stuff!!
+   srtruth.dcy.x = truth.decay_pos.X();
+   srtruth.dcy.y = truth.decay_pos.Y();
+   srtruth.dcy.z = truth.decay_pos.Z();
+   srtruth.dcyT  = truth.decay_pos.T();
+
+   srtruth.mom.x = truth.mevprtl_mom.X();
+   srtruth.mom.y = truth.mevprtl_mom.Y();
+   srtruth.mom.z = truth.mevprtl_mom.Z();
+   srtruth.E     = truth.mevprtl_mom.E();
+
+   srtruth.M = truth.mass;
+   srtruth.flux_weight = truth.flux_weight;
+   srtruth.ray_weight = truth.ray_weight;
+   srtruth.decay_weight = truth.decay_weight;
+   srtruth.C1 = truth.C1;
+   srtruth.C2 = truth.C2;
+   srtruth.C3 = truth.C3;
+   srtruth.C4 = truth.C4;
+   srtruth.C5 = truth.C5;
+
+   switch(truth.gen) {
+     case evgen::ldm::kDissonantHiggs:
+       srtruth.gen = caf::kMeVPrtlHiggs;
+       break;
+     case evgen::ldm::kHNL:
+       srtruth.gen = caf::kMeVPrtlHNL;
+       break;
+     default:
+       break;
+   }
+ }
+
  void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
                          const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
                          const std::vector<caf::SRTrueInteraction> &srneutrinos,
@@ -133,19 +211,15 @@ namespace caf {
 
     srneutrino.index = i;
 
-    srneutrino.plane0VisE = 0.;
-    srneutrino.plane1VisE = 0.;
-    srneutrino.plane2VisE = 0.;
-    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
+    for(int p = 0; p < 3; ++p) srneutrino.plane[p].visE = 0;
+
+    for(const caf::SRTrueParticle& part: srparticles){
       // save the G4 particles that came from this interaction
-      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.prim.push_back(srparticles[i_part]);
-      }
-      // total up the deposited energy
-      if (srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.plane0VisE += srparticles[i_part].plane0VisE;
-        srneutrino.plane1VisE += srparticles[i_part].plane1VisE;
-        srneutrino.plane2VisE += srparticles[i_part].plane2VisE;
+      if(part.interaction_id == (int)i) {
+        if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+
+        // total up the deposited energy
+        for(int p = 0; p < 3; ++p) srneutrino.plane[p].visE += part.plane[p].visE;
       }
     }
     srneutrino.nprim = srneutrino.prim.size();
@@ -165,9 +239,7 @@ namespace caf {
         }
       }
 
-      srneutrino.plane0nhitprim = planehitIDs[0].size();
-      srneutrino.plane1nhitprim = planehitIDs[1].size();
-      srneutrino.plane2nhitprim = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) srneutrino.plane[p].nhitprim = planehitIDs[p].size();
     }
 
     // Set of hits per-plane: all particles
@@ -185,9 +257,7 @@ namespace caf {
         }
       }
 
-      srneutrino.plane0nhit = planehitIDs[0].size();
-      srneutrino.plane1nhit = planehitIDs[1].size();
-      srneutrino.plane2nhit = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) srneutrino.plane[p].nhit = planehitIDs[p].size();
     }
 
     // Set the GTruth stuff
@@ -232,6 +302,7 @@ namespace caf {
       srneutrino.E = nu.Nu().EndMomentum().Energy();
       srneutrino.momentum = nu.Nu().EndMomentum().Vect();
       srneutrino.position = nu.Nu().Position().Vect();
+      srneutrino.time = nu.Nu().Position().T() / 1000. /* ns -> us */;
       srneutrino.genweight = nu.Nu().Weight();
 
       const simb::MCParticle& lepton = nu.Lepton();
@@ -257,6 +328,26 @@ namespace caf {
 
   //------------------------------------------------
 
+  void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
+                       caf::SRTrueInteraction& srint,
+                       const std::map<std::string, unsigned int>& weightPSetIndex)
+  {
+    for(auto& it: wgtmap){
+      if(weightPSetIndex.count(it.first) == 0){
+        std::cout << "CAFMaker: Unknown EventWeightMap name '" << it.first << "'" << std::endl;
+        std::cout << "Known names from EventWeightParameterSet:" << std::endl;
+        for(auto k: weightPSetIndex) std::cout << "  " << k.first << std::endl;
+        abort();
+      }
+
+      const unsigned int idx = weightPSetIndex.at(it.first);
+      if(idx >= srint.wgt.size()) srint.wgt.resize(idx+1);
+      srint.wgt[idx].univ = it.second;
+    }
+  }
+
+  //------------------------------------------------
+
   void FillTrueG4Particle(const simb::MCParticle &particle,
         const std::vector<geo::BoxBoundedGeo> &active_volumes,
         const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
@@ -277,40 +368,23 @@ namespace caf {
     srparticle.crosses_tpc = false;
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
-    srparticle.plane0VisE = 0.;
-    srparticle.plane1VisE = 0.;
-    srparticle.plane2VisE = 0.;
-    srparticle.plane0nhit = 0;
-    srparticle.plane1nhit = 0;
-    srparticle.plane2nhit = 0;
+    for(int p = 0; p < 3; ++p){
+      srparticle.plane[p].visE = 0.;
+      srparticle.plane[p].nhit = 0;
+    }
     for (auto const &ide_pair: particle_ides) {
       const geo::WireID &w = ide_pair.first;
       const sim::IDE *ide = ide_pair.second;
 
-      if (w.Plane == 0) {
-        srparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      if(w.Plane >= 0 && w.Plane < 3){
+        srparticle.plane[w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
       }
     }
 
     for (const art::Ptr<recob::Hit> h: particle_hits) {
       const geo::WireID &w = h->WireID();
 
-      if (w.Plane == 0) {
-        srparticle.plane0nhit ++;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1nhit ++;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2nhit ++;
-      }
-
+      if(w.Plane >= 0 && w.Plane < 3) ++srparticle.plane[w.Plane].nhit;
     } 
 
     // if no trajectory points, then assume outside AV
@@ -673,7 +747,7 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   return true;
 }
 
-caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
+caf::Wall_t caf::GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, const TVector3 p1) {
   TVector3 direction = (p1 - p0) * ( 1. / (p1 - p0).Mag());
   std::vector<TVector3> intersections = volume.GetIntersections(p0, direction);
 
@@ -715,7 +789,7 @@ caf::Wall_t GetWallCross(const geo::BoxBoundedGeo &volume, const TVector3 p0, co
 
 //------------------------------------------
 
-caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
+caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
 #define MATCH_PROCESS(name) if (process_name == #name) {return caf::kG4 ## name;}
 #define MATCH_PROCESS_NAMED(strname, id) if (process_name == #strname) {return caf::kG4 ## id;}
   MATCH_PROCESS(primary)
@@ -780,6 +854,7 @@ caf::g4_process_ GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
+  MATCH_PROCESS(Transportation)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode
@@ -981,7 +1056,9 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
-    ret.eff = (matching_energy[index] / 1000.) / (srneutrinos[index].plane0VisE + srneutrinos[index].plane1VisE + srneutrinos[index].plane2VisE);
+    double totVisE = 0;
+    for(int p = 0; p < 3; ++p) totVisE += srneutrinos[index].plane[p].visE;
+    ret.eff = (matching_energy[index] / 1000.) / totVisE;
   }
   else {
     ret.pur = -1;

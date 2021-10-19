@@ -10,6 +10,7 @@
 // Ported to/adapted for SBNCode, Dec 2020, A. Mastbaum
 
 #include "art/Framework/Principal/Event.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "nugen/NuReweight/art/NuReweight.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/GTruth.h"

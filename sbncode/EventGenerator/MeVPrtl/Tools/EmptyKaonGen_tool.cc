@@ -19,7 +19,7 @@
 
 // local includes
 #include "IMesonGen.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
 // LArSoft includes
 #include "dk2nu/tree/dk2nu.h"

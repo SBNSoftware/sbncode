@@ -35,10 +35,10 @@ simple_plugin( Kaon2HiggsFlux tool
                             ${ROOT_BASIC_LIB_LIST}
 			EGPythia6
 			${CLHEP}
-			sbncode_EventGenerator_MeVPrtl_Products
+			sbnobj_Common_EventGen_MeVPrtl
 			nugen_EventGeneratorBase_GENIE
 			nurandom_RandomUtils_NuRandomService_service
-			gsl
+			GSL
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 

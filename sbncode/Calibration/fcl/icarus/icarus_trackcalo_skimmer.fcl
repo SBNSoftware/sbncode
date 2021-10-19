@@ -1,0 +1,102 @@
+BEGIN_PROLOG
+
+caloskim_calorimetry: {
+  AssocHitModuleLabel: ""
+  CaloAlg: {
+    CalAmpConstants: [1., 1., 1.]
+    CalAreaConstants: [1., 1., 1.]
+    CaloDoLifeTimeCorrection: false
+    CaloLifeTimeForm: 0
+    CaloUseModBox: true
+  }
+  ChargeMethod: 1
+  Cryostat: 0
+  FieldDistortion: false
+  FieldDistortionEfield: false
+  T0ModuleLabel: ""
+  TrackIsFieldDistortionCorrected: false
+  TrackModuleLabel: "tracks"
+  module_type: "GnocchiCalorimetry"
+}
+    
+caloskim_cryoe: {
+  module_type: TrackCaloSkimmer
+  CALOproducer: "calorimetryCryoE"
+  TRKproducer:  "pandoraTrackGausCryoE"
+  T0producer: "pandoraGausCryoE"
+  PFPproducer: "pandoraGausCryoE"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3DCryoE"
+  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCEW", "daqTPC:PHYSCRATEDATATPCEE"]
+  RequireT0: true
+  HitRawDigitsTickCollectWidth: 50
+  DoTailFit: false
+  SilenceMissingDataProducts: true
+  SelectionTools: []
+}
+
+caloskim_cryow: {
+  module_type: TrackCaloSkimmer
+  CALOproducer: "calorimetryCryoW"
+  TRKproducer:  "pandoraTrackGausCryoW"
+  T0producer: "pandoraGausCryoW"
+  PFPproducer: "pandoraGausCryoW"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3DCryoE"
+  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCWW", "daqTPC:PHYSCRATEDATATPCWE"]
+  RequireT0: true
+  HitRawDigitsTickCollectWidth: 50
+  DoTailFit: false
+  SilenceMissingDataProducts: true
+  SelectionTools: []
+}
+
+caloskim_cryow_nodigits: @local::caloskim_cryow
+caloskim_cryow_nodigits.RawDigitproducers: []
+caloskim_cryoe_nodigits: @local::caloskim_cryoe
+caloskim_cryoe_nodigits.RawDigitproducers: []
+
+stopping_selection: {
+  tool_type: TrackCaloSkimmerSelectStoppingTrack
+  FVInsetMinX: 15
+  FVInsetMaxX: 15
+  FVInsetMinY: 25
+  FVInsetMaxY: 15
+  FVInsetMinZ: 15
+  FVInsetMaxZ: 15
+  MinTimeTickInset: 100
+  MaxTimeTickInset: 100
+  EndMediandQdxCut: 1000
+  NumberTimeSamples: 4096
+}
+
+throughgoing_selection: {
+  tool_type: TrackCaloSkimmerSelectStoppingTrack
+  Invert: true
+  PreScale: 1
+  FVInsetMinX: 5
+  FVInsetMaxX: 5
+  FVInsetMinY: 5
+  FVInsetMaxY: 5
+  FVInsetMinZ: 5
+  FVInsetMaxZ: 5
+  MinTimeTickInset: 0
+  MaxTimeTickInset: 0
+  EndMediandQdxCut: -1
+  RequireDownwards: false
+  NumberTimeSamples: 4096
+}
+
+a2c_selection: {
+  tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
+  TickCut: 2300
+}
+
+caloskim_cryow_nodigits_goldentracks: @local::caloskim_cryow_nodigits
+caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+caloskim_cryoe_nodigits_goldentracks: @local::caloskim_cryoe_nodigits
+caloskim_cryoe_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+
+END_PROLOG

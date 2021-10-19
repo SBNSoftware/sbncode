@@ -57,11 +57,16 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
+
 #include "sbnobj/Common/Calibration/TrackCaloSkimmerObj.h"
 #include "ITCSSelectionTool.h"
 
 namespace sbn {
   class TrackCaloSkimmer;
+  enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
@@ -117,9 +122,29 @@ private:
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
-    const std::vector<GlobalTrackInfo> &tracks);
+    const std::vector<GlobalTrackInfo> &tracks,
+    const sbn::EDet det);
 
-  HitInfo MakeHit(const recob::Hit &hit,
+  void FillTrackDaughterRays(const recob::Track &trk,
+    const recob::PFParticle &pfp, 
+    const std::vector<art::Ptr<recob::PFParticle>> &PFParticleList, 
+    const art::FindManyP<recob::SpacePoint> &PFParticleSPs);
+
+  void FillTrackEndHits(const geo::GeometryCore *geometry,
+    const detinfo::DetectorPropertiesData &dprop,
+    const recob::Track &track,
+    const std::vector<art::Ptr<recob::Hit>> &allHits,
+    const art::FindManyP<recob::SpacePoint> &allHitSPs);
+
+  void FillTrackTruth(const detinfo::DetectorClocksData &clock_data,
+    const std::vector<art::Ptr<recob::Hit>> &trkHits,
+    const std::vector<art::Ptr<simb::MCParticle>> &mcparticles,
+    const std::vector<geo::BoxBoundedGeo> &active_volumes,
+    const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
+    const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
+    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map);
+
+  TrackHitInfo MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
@@ -134,7 +159,10 @@ private:
   art::InputTag fT0Producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
+  art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
+  std::string fG4producer;
+  std::string fSimChannelproducer;
   bool fRequireT0;
   bool fDoTailFit;
   bool fVerbose;
@@ -142,6 +170,9 @@ private:
   double fHitRawDigitsTickCollectWidth;
   double fTailFitResidualRange;
   int fHitRawDigitsWireCollectWidth;
+  bool fFillTrackEndHits;
+  float fTrackEndHitWireBox;
+  float fTrackEndHitTimeBox;
 
   // tools
   std::vector<std::unique_ptr<sbn::ITCSSelectionTool>> fSelectionTools;

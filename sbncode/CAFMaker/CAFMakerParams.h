@@ -13,6 +13,7 @@ namespace caf
   struct CAFMakerParams
   {
     template<class T> using Atom = fhicl::Atom<T>;
+    template<class T> using Sequence = fhicl::Sequence<T>;
     template<class T> using Table = fhicl::Table<T>;
     using Comment  = fhicl::Comment;
     using Name     = fhicl::Name;
@@ -27,6 +28,11 @@ namespace caf
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
       Comment("Provide a string to override the automatic filename.")
+    };
+
+    Atom<std::string> DetectorOverride { Name("DetectorOverride"),
+      Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
+      ""
     };
 
     Atom<string> DataTier        { Name("DataTier") };
@@ -82,6 +88,12 @@ namespace caf
       Name("PFParticleLabel"),
       Comment("Base label of PFParticle producer."),
       "pandora"
+    };
+
+    Atom<string> StubLabel {
+      Name("StubLabel"),
+      Comment("Base label of Stub producer."),
+      "vertexStub"
     };
 
     Atom<string> FlashMatchLabel {
@@ -217,9 +229,9 @@ namespace caf
       true
     };
 
-    Atom<std::string> SystWeightLabel {
-      Name("SystWeightLabel"),
-      Comment("Label for EventWeightMap objects for mc.nu.wgt")
+    Sequence<std::string> SystWeightLabels {
+      Name("SystWeightLabels"),
+      Comment("Labels for EventWeightMap objects for mc.nu.wgt")
     };
 
     Atom<bool> FillHitsAllSlices {
