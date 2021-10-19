@@ -228,9 +228,7 @@ namespace caf {
       init.nhit = 0;
       init.nhitprim = 0;
 
-      for (int p = 0; p < 3; p++) {
-        srneutrino.plane[p].push_back(init);
-      }
+      srneutrino.plane[p].resize(3, init);
     }
 
     for(const caf::SRTrueParticle& part: srparticles){
