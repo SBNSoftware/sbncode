@@ -411,9 +411,7 @@ namespace caf {
       init.visE = 0.;
       init.nhit = 0;
 
-      for(int p = 0; p < 3; ++p){
-        srparticle.plane[p].push_back(init);
-      }
+      srparticle.plane[p].resize(3, init);
 
     }
 
