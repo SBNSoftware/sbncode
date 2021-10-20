@@ -560,6 +560,17 @@ namespace caf {
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother();
 
+    // Set the initial cryostat
+    srparticle.cryostat = -1;
+    if (entry_point >= 0) {
+      for (unsigned c = 0; c < active_volumes.size(); c++) {
+        if (active_volumes[c].ContainsPosition(particle.Position(entry_point).Vect())) {
+          srparticle.cryostat = c;
+          break;
+        }
+      }
+    }
+
     // Save the daughter particles
     for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
       srparticle.daughters.push_back(particle.Daughter(i_d));
