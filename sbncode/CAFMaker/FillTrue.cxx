@@ -1018,9 +1018,9 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
     caf::HitsEnergy all_matched_hits = all_hits_map.find(match.G4ID)->second;
 
     match.hit_purity = (hits.size() != 0) ? track_matched_hits.nHits / (float) hits.size() : 0.;
-    match.energy_purity = (ret.total_deposited_energy > std::numeric_limits<float>::epsilon()) ? match.energy / ret.total_deposited_energy : 0.;
+    match.energy_purity = (ret.total_deposited_energy > 0) ? match.energy / ret.total_deposited_energy : 0.;
     match.hit_completeness = (all_matched_hits.nHits != 0) ? track_matched_hits.nHits / (float) all_matched_hits.nHits : 0.;
-    match.energy_completeness = (all_matched_hits.totE > std::numeric_limits<float>::epsilon()) ? pair.second / all_matched_hits.totE : 0.;
+    match.energy_completeness = (all_matched_hits.totE > 0) ? pair.second / all_matched_hits.totE : 0.;
     
     ret.matches.push_back(match);
   }
