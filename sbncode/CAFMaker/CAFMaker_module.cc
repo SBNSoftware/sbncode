@@ -776,7 +776,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Prep truth-to-reco-matching info
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
-  std::map<int, std::pair<int, float>> id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv.get());
+  std::map<int, caf::HitsEnergy> id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv.get());
 
   //#######################################################
   // Fill truths & fake reco

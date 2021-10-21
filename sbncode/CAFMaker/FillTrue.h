@@ -37,6 +37,11 @@
 
 namespace caf
 {
+  struct HitsEnergy {
+    int nHits;
+    float totE;
+  };
+
   // Helpers
   caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
         const TVector3 p0,
@@ -90,21 +95,21 @@ namespace caf
                        const std::map<std::string, unsigned int>& weightPSetIndex);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::map<int, std::pair<int, float>> &id_hits_map,
+                      const std::map<int, caf::HitsEnergy> &id_hits_map,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
 
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                     const std::map<int, std::pair<int, float>> &id_hits_map,
+                     const std::map<int, caf::HitsEnergy> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
                      const detinfo::DetectorClocksData &clockData,
                      caf::SRStub& srstub,
                      bool allowEmpty = false);
 
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                       const std::map<int, std::pair<int, float>> &id_hits_map,
+                       const std::map<int, caf::HitsEnergy> &id_hits_map,
                        const std::vector<caf::SRTrueParticle> &particles,
                        const detinfo::DetectorClocksData &clockData,
                        caf::SRShower& srshower,
@@ -119,7 +124,7 @@ namespace caf
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo);
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
     const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
-  std::map<int, std::pair<int, float>> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData, 
+  std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData, 
     const cheat::BackTrackerService &backtracker);
 
 }
