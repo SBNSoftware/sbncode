@@ -630,7 +630,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
       if (closest_dist < 0. || (particle.Position(i_traj).Vect() - h_p).Mag() < closest_dist) {
         direction = particle.Momentum(i_traj).Vect().Unit();
-        closest_dist = (particle.Position(i_traj).Vect() - h_p).Mag() < closest_dist;
+        closest_dist = (particle.Position(i_traj).Vect() - h_p).Mag();
         traj_index = i_traj;
       }
     }
@@ -656,7 +656,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
     h.rr = 0.;
     if (traj_index >= 0) {
       for (int i_traj = traj_index+1; i_traj < (int)particle.NumberTrajectoryPoints(); i_traj++) {
-        h.rr += (particle.Position(i_traj) - particle.Position(i_traj-1)).Mag();
+        h.rr += (particle.Position(i_traj).Vect() - particle.Position(i_traj-1).Vect()).Mag();
       }
     }
   }
