@@ -53,7 +53,7 @@ public:
     bool IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &intersection, double &weight) override;
 
     // no weights
-    float MaxWeight() override { return -1.; }
+    double MaxWeight() override { return -1.; }
 
 private:
   geo::BoxBoundedGeo fBox;

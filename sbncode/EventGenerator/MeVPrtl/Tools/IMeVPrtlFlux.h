@@ -105,12 +105,12 @@ protected:
   std::string fSpillTimeConfig;
 
   TLorentzVector BeamOrigin() {
-    float toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
+    double toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
 
     // TODO: what to do here? For now -- don't shift time at all
     //
     // subtract out the delay of neutrinos reaching the beam
-    // float neutrino_tif = fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns;
+    // double neutrino_tif = fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns;
     // toff -= neutrino_tif;
     return TLorentzVector(fBeamOrigin, toff);
   }
