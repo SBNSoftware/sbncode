@@ -1,0 +1,16 @@
+
+BEGIN_PROLOG
+
+bnbspillinfo: {
+
+    module_type: "BNBRetriever"    
+    TimePadding: 0.0333 #unit seconds, Booster Rep Rate is 15 Hz, so the closest spill could be 66ms away
+    URL: "" #keep this blank and we're good
+    Bundle: "BoosterNeutrinoBeam_read"
+    MultiWireBundle: "BNBMultiWire"
+    TimeWindow: "500" #seconds
+    MWR_TimeWindow: "3601" #seconds
+    raw_data_label: "daq"
+    DeviceUsedForTiming: "E:TOR860"
+}
+END_PROLOG
