@@ -221,7 +221,7 @@ namespace caf {
 
     srneutrino.index = i;
 
-    for (int c = 0; c < 2; i++) {
+    for (int c = 0; c < 2; c++) {
       SRTrueInteractionPlaneInfo init;
       init.visE = 0.;
       init.nhit = 0;
