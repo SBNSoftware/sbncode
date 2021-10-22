@@ -69,7 +69,7 @@ public:
     bool Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) override;
 
     // returns the max weight of configured
-    float MaxWeight() override { 
+    double MaxWeight() override { 
       return fMaxWeight; 
     }
 
@@ -95,7 +95,7 @@ private:
 
   // Internal struct for holding decay information
   struct DecayFinalState {
-    float width;
+    double width;
     std::vector<TLorentzVector> mom;
     std::vector<int> pdg;
   };
@@ -111,7 +111,7 @@ private:
   typedef DecayFinalState(HNLMakeDecay::*HNLDecayFunction)(const MeVPrtlFlux &flux);
 
   std::map<std::string, HNLDecayFunction> fAvailableDecays;
-  std::map<std::string, float> fAvailableDecayMasses;
+  std::map<std::string, double> fAvailableDecayMasses;
   std::vector<std::string> fDecayConfig;
   std::vector<HNLDecayFunction> fSelectedDecays;
 
@@ -431,7 +431,7 @@ double HNLMakeDecay::CalculateKDARDecayLength() {
   }
 
   double lifetime_ns = Constants::Instance().hbar / width;
-  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  double mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   return mean_dist;
 }
@@ -478,7 +478,7 @@ double HNLMakeDecay::CalculateMaxWeight() {
   std::cout << "REFERENCE WIDTH: " << width << std::endl;
 
   double lifetime_ns = Constants::Instance().hbar / width;
-  float mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  double mean_dist = lifetime_ns * hnl.mom.Gamma() * hnl.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   std::cout << "REFERENCE DECAY LENGTH: " << mean_dist << std::endl;
 
@@ -530,8 +530,8 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceHNLMass = pset.get<double>("ReferenceHNLMass");
   fReferenceRayLength = pset.get<double>("ReferenceRayLength");
 
-  fReferenceHNLEnergy = pset.get<float>("ReferenceHNLEnergy", -1);
-  fReferenceHNLKaonEnergy = pset.get<float>("ReferenceHNLEnergyFromKaonEnergy", -1.);
+  fReferenceHNLEnergy = pset.get<double>("ReferenceHNLEnergy", -1);
+  fReferenceHNLKaonEnergy = pset.get<double>("ReferenceHNLEnergyFromKaonEnergy", -1.);
   if (fReferenceHNLEnergy < 0. && fReferenceHNLKaonEnergy > 0.) {
     double lep_mass = (fReferenceUE4 > 0) ? Constants::Instance().elec_mass : Constants::Instance().muon_mass;
     fReferenceHNLEnergy = forwardPrtlEnergy(Constants::Instance().kplus_mass, lep_mass, fReferenceHNLMass, fReferenceHNLKaonEnergy);
@@ -598,7 +598,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double lifetime_ns = Constants::Instance().hbar / total_width;
 
   // multiply by gamma*v to get the length
-  float mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  double mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   // Get the weight (NOTE: this negelects the probability that the HNL decays before the detector)
   // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)
