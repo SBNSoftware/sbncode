@@ -27,6 +27,9 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "sbncode/SBNEventWeight/Base/WeightManager.h"
 
+#include "canvas/Persistency/Common/Assns.h"
+#include "art/Framework/Principal/Run.h"
+
 namespace sbn {
   namespace evwgh {
 
