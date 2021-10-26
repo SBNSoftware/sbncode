@@ -163,7 +163,7 @@ private:
   art::InputTag fT0Producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
-  std::string fTRKHMproducer;
+  art::InputTag fTRKHMproducer;
   art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
   std::string fG4producer;

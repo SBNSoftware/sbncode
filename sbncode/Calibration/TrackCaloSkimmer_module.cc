@@ -66,7 +66,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
   fT0Producer   = p.get< art::InputTag > ("T0producer", "pandoraGausCryo0");
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
-  fTRKHMproducer= p.get< std::string   > ("TRKHMproducer", "");
+  fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
   fHITproducer  = p.get< art::InputTag > ("HITproducer" );
   fG4producer  = p.get< std::string > ("G4producer" );
   fSimChannelproducer  = p.get< std::string > ("SimChannelproducer" );
@@ -218,7 +218,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   // Track - associated data
   art::FindManyP<recob::Track> fmTracks(PFParticleList, e, fTRKproducer);
 
-  art::InputTag thm_label = (fTRKHMproducer.size() ? art::InputTag(fTRKHMproducer) : fTRKproducer);
+  art::InputTag thm_label = fTRKHMproducer.empty() ? fTRKproducer : fTRKHMproducer;
   art::FindManyP<recob::Hit, recob::TrackHitMeta> fmtrkHits(tracks, e, thm_label);
   art::FindManyP<anab::Calorimetry> fmCalo(tracks, e, fCALOproducer);
 
@@ -582,7 +582,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   trueparticle.G4ID = particle.TrackId();
   trueparticle.parent = particle.Mother();
 
-  // Organize deposition info into per-wire true "Hits"
+  // Organize deposition info into per-wire true "Hits" -- key is the Channel Number
   std::map<unsigned, sbn::TrueHit> truehits; 
 
   for (auto const &ide_pair: particle_ides) {
@@ -679,9 +679,6 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
       trueparticle.truehits2.push_back(h);
     }
   }
-
-
-  // Sort the true hits by plane then trajectory
 
   return trueparticle;
 }
