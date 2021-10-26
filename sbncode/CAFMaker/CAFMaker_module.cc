@@ -782,7 +782,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
 
   caf::SRTruthBranch                  srtruthbranch;
-  std::vector<caf::SRTrueInteraction> srneutrinos;
 
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
@@ -815,9 +814,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::cout << "Failed to get GTruth object!" << std::endl;
     }
 
-    srneutrinos.push_back(SRTrueInteraction());
+    srtruthbranch.nu.push_back(SRTrueInteraction());
+    srtruthbranch.nnu ++;
 
-    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -838,12 +838,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       // For all the weights associated with this MCTruth
       for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
-        FillEventWeight(*wgtmap, srneutrinos.back(), fWeightPSetIndex);
+        FillEventWeight(*wgtmap, srtruthbranch.nu.back(), fWeightPSetIndex);
       } // end for wgtmap
     } // end for fm
-
-    srtruthbranch.nu  = srneutrinos;
-    srtruthbranch.nnu = srneutrinos.size();
   } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
@@ -866,7 +863,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
     srtruthbranch.prtl.emplace_back();
-    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], srtruthbranch.prtl.back());
+    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], fActiveVolumes, srtruthbranch.prtl.back());
     srtruthbranch.nprtl = srtruthbranch.prtl.size();
   } 
 
@@ -1144,11 +1141,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     bool NeutrinoSlice = !recslc.is_clear_cosmic;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, mctruths, srneutrinos,
-       *pi_serv.get(), clock_data, recslc, rec.mc);
+    FillSliceTruth(slcHits, mctruths, srtruthbranch,
+       *pi_serv.get(), clock_data, recslc);
 
-    FillSliceFakeReco(slcHits, mctruths, srneutrinos,
-       *pi_serv.get(), clock_data, recslc, rec.mc, mctracks, fActiveVolumes,
+    FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
+       *pi_serv.get(), clock_data, recslc, mctracks, fActiveVolumes,
        *fFakeRecoTRandom);
 
     //#######################################################
@@ -1365,9 +1362,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // reset
   fFirstInFile = false;
   fFirstInSubRun = false;
-
-  // calculate information that needs information from all of the slices
-  // SetNuMuCCPrimary(recs, srneutrinos);
 
   // Save the standard-record
   StandardRecord* prec = &rec;

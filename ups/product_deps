@@ -1,7 +1,6 @@
 # This @product_deps@ file defines dependencies for this package.
 
-# The *parent* line must the first non-commented line and defines this product and version
-# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
+# The *parent* line must the first non-commented line and defines this product
 parent sbncode
 defaultqual e20
 
@@ -31,18 +30,19 @@ fcldir  product_dir fcl
 fwdir   product_dir scripts
 
 # With "product  version" table below, we now define dependencies
+# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
 # Add the dependent product and version
 
 product             version
-larsoft             v09_32_01
-sbnobj              v09_12_03
-sbnanaobj           v09_17_01
-sbndaq_artdaq_core  v0_07_09of2
+larsoft             v09_34_00
+sbnobj              v09_12_05
+sbnanaobj           v09_17_03
+sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v8_17_03 - only_for_build
+cetbuildtools v8_18_05 - only_for_build
 end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.

@@ -60,7 +60,7 @@ public:
     bool IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &intersection, double &weight) override;
 
     // always thrown at least once
-    float MaxWeight() override { 
+    double MaxWeight() override { 
       return fMaxWeight;
     }
 

@@ -43,12 +43,12 @@ namespace fluxr {
       std::vector<double> rotmat=ps.get<std::vector<double> >("rotmatrix");
       TVector3 newX,newY,newZ;
       if (rotmat.size()==9) {
-	std::cout<<"Matrix defined with new axis values"<<std::endl;
+	std::cout<<"FluxReader: Matrix defined with new axis values"<<std::endl;
 	newX=TVector3(rotmat[0], rotmat[1], rotmat[2]);
 	newY=TVector3(rotmat[3], rotmat[4], rotmat[5]);
 	newZ=TVector3(rotmat[6], rotmat[7], rotmat[8]);
       } else if (rotmat.size()==6) {
-	  std::cout<<"Matrix defined with theta phi rotations"<<std::endl;
+	  std::cout<<"FluxReader: Matrix defined with theta phi rotations"<<std::endl;
 	  newX = AnglesToAxis(rotmat[0],rotmat[1]);
 	  newY = AnglesToAxis(rotmat[2],rotmat[3]);
 	  newZ = AnglesToAxis(rotmat[4],rotmat[5]);
@@ -60,8 +60,9 @@ namespace fluxr {
       fBeamRot    = TLorentzRotation(fBeamRotXML);
       fBeamRotInv = fBeamRot.Inverse();
     } catch (std::exception& e) {
-      std::cout<<e.what()<<std::endl;
-      std::cout<<"These are not numbers"<<std::endl;
+      std::cout<<"FluxReader: "<<e.what()<<std::endl;
+      std::cout<<"FluxReader: These are not numbers"<<std::endl;
+	  abort();
     }
 
     try {
@@ -73,18 +74,18 @@ namespace fluxr {
       fTempRot.RotateY(yrot);
       fTempRot.RotateZ(zrot);
 
-      std::cout<<"Matrix defined with series of rotations"<<std::endl;
+      std::cout<<"FluxReader: Matrix defined with series of rotations"<<std::endl;
       fBeamRotXML = fTempRot.Inverse();
       fBeamRot    = TLorentzRotation(fBeamRotXML);
       fBeamRotInv = fBeamRot.Inverse();
     } catch (std::exception& e) {
-      std::cout<<e.what()<<std::endl;
-      std::cout<<"Looks like it was numbers"<<std::endl;
+      std::cout<<"FluxReader: "<<e.what()<<std::endl;
+      std::cout<<"FluxReader: Looks like it was numbers"<<std::endl;
     }
 
     int w=10, p=6;
-    std::cout << " fBeamRotXML: " << std::setprecision(p) << std::endl;
-    std::cout << " [ "
+    std::cout << "FluxReader:  fBeamRotXML: " << std::setprecision(p) << std::endl;
+    std::cout << "FluxReader:  [ "
               << std::setw(w) << fBeamRotXML.XX() << " "
               << std::setw(w) << fBeamRotXML.XY() << " "
               << std::setw(w) << fBeamRotXML.XZ() << std::endl
@@ -107,13 +108,13 @@ namespace fluxr {
       userpos=TVector3(detxyz[0], detxyz[1], detxyz[2]);
       beampos=TVector3(detxyz[3], detxyz[4], detxyz[5]);
     } else {
-      std::cout<<"userbeam needs 3 or 6 numbers to be properly defined"<<std::endl;
+      std::cout<<"FluxReader: userbeam needs 3 or 6 numbers to be properly defined"<<std::endl;
     }
     fBeamPosXML = userpos - fBeamRotXML*beampos;
     fBeamZero=TLorentzVector(fBeamPosXML,0);
 
     w=16; p=10;
-    std::cout << " fBeamPosXML: [ " << std::setprecision(p)
+    std::cout << "FluxReader:  fBeamPosXML: [ " << std::setprecision(p)
               << std::setw(w) << fBeamPosXML.X() << " , "
               << std::setw(w) << fBeamPosXML.Y() << " , "
               << std::setw(w) << fBeamPosXML.Z() << " ] "
@@ -148,7 +149,7 @@ namespace fluxr {
 
     double dot = fFluxWindowDir1.Dot(fFluxWindowDir2);
     if ( TMath::Abs(dot) > 1.0e-8 )
-      std::cout << "Dot product between window direction vectors was "
+      std::cout << "FluxReader: Dot product between window direction vectors was "
 		<< dot << "; please check for orthoganality"<<std::endl;
 
     //overwrite dkmeta
@@ -163,7 +164,7 @@ namespace fluxr {
     fDkMeta->location[1].y=detVec.Vect().Y();
     fDkMeta->location[1].z=detVec.Vect().Z();
 
-    std::cout<<"Locations "<<std::endl;
+    std::cout<<"FluxReader: Locations "<<std::endl;
     for (unsigned int i=0;i<fDkMeta->location.size();i++) {
       std::cout<<i<<"\t"<<fDkMeta->location[i].x<<"\t"
 	       <<fDkMeta->location[i].y<<"\t"
@@ -226,7 +227,7 @@ namespace fluxr {
     double tiltwgt = p3beam.Unit().Dot( fWindowNormal );
     wgt*=tiltwgt;
     //weight for the window area and divide by pi (since wgt returned by calcEnuWgt function is flux/(pi*m^2)
-    wgt*=fWindowArea/3.14159;
+    wgt*=fWindowArea/TMath::Pi();//3.14159;
 
     bsim::NuRay anuray(p3beam.x(), p3beam.y(), p3beam.z(), enu, wgt);
     fDk2Nu->nuray.push_back(rndnuray);
