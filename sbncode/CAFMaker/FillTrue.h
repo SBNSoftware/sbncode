@@ -13,7 +13,6 @@
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
-#include "larsim/Utils/TruthMatchUtils.h"
 
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -23,25 +22,18 @@
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "lardataobj/MCBase/MCTrack.h"
-#include "lardataobj/Simulation/SimChannel.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 
 #include "sbnanaobj/StandardRecord/SRFakeReco.h"
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
 #include "sbnanaobj/StandardRecord/SRTrueParticle.h"
-#include "sbnanaobj/StandardRecord/SRParticleMatch.h"
 #include "sbnanaobj/StandardRecord/SRTruthMatch.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 #include "sbnanaobj/StandardRecord/SRMeVPrtl.h"
 
 namespace caf
 {
-  struct HitsEnergy {
-    int nHits;
-    float totE;
-  };
-
   // Helpers
   caf::Wall_t GetWallCross( const geo::BoxBoundedGeo &volume,
         const TVector3 p0,
@@ -78,7 +70,7 @@ namespace caf
         const cheat::BackTrackerService &backtracker,
         const cheat::ParticleInventoryService &inventory_service,
         const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-        caf::SRTrueParticle &srparticle);
+                          caf::SRTrueParticle &srparticle);
 
   void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
                         const std::vector<geo::BoxBoundedGeo> &active_volumes,
@@ -97,25 +89,22 @@ namespace caf
                        const std::map<std::string, unsigned int>& weightPSetIndex);
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::map<int, caf::HitsEnergy> &id_hits_map,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
-                      caf::SRTrack& srtrack,
-                      bool allowEmpty = false);
+		      caf::SRTrack& srtrack,
+		      bool allowEmpty = false);
 
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                     const std::map<int, caf::HitsEnergy> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
                      const detinfo::DetectorClocksData &clockData,
                      caf::SRStub& srstub,
                      bool allowEmpty = false);
 
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                       const std::map<int, caf::HitsEnergy> &id_hits_map,
-                       const std::vector<caf::SRTrueParticle> &particles,
-                       const detinfo::DetectorClocksData &clockData,
-                       caf::SRShower& srshower,
-                       bool allowEmpty = false);
+                      const std::vector<caf::SRTrueParticle> &particles,
+                      const detinfo::DetectorClocksData &clockData,
+		      caf::SRShower& srshower,
+		      bool allowEmpty = false);
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
@@ -126,8 +115,6 @@ namespace caf
   std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> PrepSimChannels(const std::vector<art::Ptr<sim::SimChannel>> &simchannels, const geo::GeometryCore &geo);
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
     const detinfo::DetectorClocksData &clockData, const cheat::BackTrackerService &backtracker);
-  std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits, const detinfo::DetectorClocksData &clockData, 
-    const cheat::BackTrackerService &backtracker);
 
 }
 
