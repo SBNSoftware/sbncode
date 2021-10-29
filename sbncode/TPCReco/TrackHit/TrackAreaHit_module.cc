@@ -73,6 +73,7 @@ private:
   bool fAppendExtraHit;
   bool fPrependExtraHit;
   bool fUseWires;
+  unsigned fCryostat;
 
 };
 
@@ -87,7 +88,8 @@ sbn::TrackAreaHit::TrackAreaHit(fhicl::ParameterSet const& p)
     fLongitudinalDiffusionScale(p.get<float>("LongitudinalDiffusionScale")),
     fAppendExtraHit(p.get<bool>("AppendExtraHit", false)),
     fPrependExtraHit(p.get<bool>("PrependExtraHit", false)),
-    fUseWires(p.get<bool>("UseWires", true))
+    fUseWires(p.get<bool>("UseWires", true)),
+    fCryostat(p.get<unsigned>("Cryostat", 0))
 {
   produces<std::vector<recob::Hit>>();
   produces<art::Assns<recob::Track, recob::Hit, recob::TrackHitMeta>>();
@@ -301,8 +303,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
     }
 
     // get the cryostat
-    geo::CryostatID cid;
-    geo->GetBeginID(cid);
+    geo::CryostatID cid(fCryostat);
     for (auto const &planeID: geo->IteratePlaneIDs(cid)) {
       int lastWire = -100000;
       for (size_t j = 0; j < track.NumberTrajectoryPoints()-1; j++) {
