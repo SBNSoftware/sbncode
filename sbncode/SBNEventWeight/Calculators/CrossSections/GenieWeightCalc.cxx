@@ -332,12 +332,8 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
   auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
 
   std::vector<float> parsigmas;
-  std::vector<float> par_mins;
-  std::vector<float> par_maxes;
 
   pset.get_if_present("parameter_sigma", parsigmas);
-  pset.get_if_present("parameter_min", par_mins);
-  pset.get_if_present("parameter_max", par_maxes);
 
 
   // Convert the list of GENIE knob names from the input FHiCL configuration
@@ -365,16 +361,17 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 
     std::string array_name_for_exception;
   if(mode.find("pmNsigma") != std::string::npos){  
-      if ( pars.size() != par_mins.size()
-        || pars.size() != par_maxes.size() ){
-
-      array_name_for_exception = "parameter_min and parameter_max";
-    }
+//      if ( pars.size() != par_mins.size()
+//        || pars.size() != par_maxes.size() ){
+//
+//      array_name_for_exception = "parameter_min and parameter_max";
+//    }
     num_universes = 2;
 
     for (size_t i=0; i<pars.size(); i++) {
                            //(name, Gauss_sigma_max, Gauss_mean, Gauss_sigma_min)
-      fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);
+      fParameterSet.AddParameter(pars[i], parsigmas[i]);
+//      fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);
     }
 
   }else if(mode.find("multisim") != std::string::npos){

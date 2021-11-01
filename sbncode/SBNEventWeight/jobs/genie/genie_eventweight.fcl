@@ -123,33 +123,34 @@ sbn_genie_eventweight: {
     mode: fixed
   }
 
-  genie_ub_pmNsigma: {
-    type: Genie
-    parameter_list: [ 
-    #CCQE
-      "RPA_CCQE","CoulombCCQE",
-    #COH
-      "NormCCCOH", "NormNCCOH",
-    #CC MEC
-      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
-    #NC MEC
-      "NormNCMEC"
-  ]
-    parameter_max: [ 
-    1, 0.3, 
-    1, 1,
-    0.56, 0.2, 0.3, 
-    1
-  ]
-    parameter_min: [ 
-    -1, -0.3, 
-    -1, -1,
-    -0.56, -0.2, -0.3, 
-    -1
-  ]
-    mode: pmNsigma
-  }
-
-}
+#  pmNsigma mode will be updated in next version.
+#  genie_ub_pmNsigma: {
+#    type: Genie
+#    parameter_list: [ 
+#    #CCQE
+#      "RPA_CCQE","CoulombCCQE",
+#    #COH
+#      "NormCCCOH", "NormNCCOH",
+#    #CC MEC
+#      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
+#    #NC MEC
+#      "NormNCMEC"
+#  ]
+#    parameter_max: [ 
+#    1, 0.3, 
+#    1, 1,
+#    0.56, 0.2, 0.3, 
+#    1
+#  ]
+#    parameter_min: [ 
+#    -1, -0.3, 
+#    -1, -1,
+#    -0.56, -0.2, -0.3, 
+#    -1
+#  ]
+#    mode: pmNsigma
+#  }
+#
+#}
 
 END_PROLOG
