@@ -12,6 +12,5 @@ physics.producers.generator.RandomTimeOffset: 1600.
 physics.producers.generator.EventsPerSpill: 0
 physics.producers.generator.TopVolume: "volCryostat"
 physics.producers.generator.BeamName: "booster"
-physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/uboone/bnb_gsimple_fluxes_02.05.2018_463/"
 

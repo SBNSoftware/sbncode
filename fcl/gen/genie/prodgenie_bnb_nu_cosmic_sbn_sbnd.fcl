@@ -11,5 +11,4 @@ physics.producers.generator.TopVolume: "volCryostat"
 physics.producers.generator.BeamName: "booster"
 physics.producers.generator.FluxSearchPaths: "/pnfs/sbn/persistent/users/gputnam/flux/sbnd/configD-v1_april07_neutrinoMode"
 physics.producers.generator.FluxFiles: [ "gsimple_configB-v1_5e7POT*.root" ]
-physics.producers.generator.EventGeneratorList: "Default+CCMEC+NCMEC"
 

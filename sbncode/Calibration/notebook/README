@@ -1,0 +1,9 @@
+Notebooks for processing the output of the TrackCaloSkimmer module.
+
+Make a python virtualenv with libraries from requirements.txt to process
+the data.
+
+Before commiting anything, please run nbstipout to remove data/plots
+from notebooks:
+
+nbstripout *.ipynb
