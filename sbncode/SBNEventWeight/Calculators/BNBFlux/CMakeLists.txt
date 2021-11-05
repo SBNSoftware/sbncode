@@ -1,6 +1,5 @@
 include_directories($ENV{GENIE_INC}/GENIE)
 
-  cet_find_library( LOG4CPP      NAMES log4cpp      PATHS ENV LOG4CPP_LIB NO_DEFAULT_PATH )
 art_make(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_BNBFlux
   LIB_LIBRARIES
