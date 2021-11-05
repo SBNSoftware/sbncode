@@ -7,7 +7,6 @@
 
 // ---------------- TO DO ----------------
 //
-// - Give real fDet values
 // - Add in cycle and batch to params
 // - Move this list some place useful
 // - Add reco.CRT branch
@@ -341,8 +340,59 @@ void CAFMaker::beginJob() {
 
 //......................................................................
 void CAFMaker::beginRun(art::Run& run) {
-  // fDetID = geom->DetId();
-  fDet = (Det_t)1;//(Det_t)fDetID;
+  fDet = kUNKNOWN;
+
+  caf::Det_t override = kUNKNOWN;
+  if(fParams.DetectorOverride() == "sbnd") override = kSBND;
+  if(fParams.DetectorOverride() == "icarus") override = kICARUS;
+  if(!fParams.DetectorOverride().empty() && override == kUNKNOWN){
+    std::cout << "CAFMaker: unrecognized value for DetectorOverride parameter: '" << fParams.DetectorOverride() << "'" << std::endl;
+    abort();
+  }
+
+  // Heuristic method to determine the detector ID
+  const geo::GeometryCore* geom = lar::providerFrom<geo::Geometry>();
+
+  std::string gdml = geom->GDMLFile();
+  gdml = basename(gdml.c_str()); // strip directory part
+  std::cout << "CAFMaker: Attempting to deduce detector from GDML file name: '" << gdml
+            << "' and configured detector name: '" << geom->DetectorName() << "'. ";
+  // Lowercase filename, in case it contains "SBND" or "Icarus" etc
+  for(unsigned int i = 0; i < gdml.size(); ++i) gdml[i] = std::tolower(gdml[i]);
+  // Do we find the string in either of the names?
+  const bool hasSBND = ((gdml.find("sbnd") != std::string::npos) ||
+                        (geom->DetectorName().find("sbnd") != std::string::npos));
+  const bool hasIcarus = ((gdml.find("icarus") != std::string::npos) ||
+                          (geom->DetectorName().find("icarus") != std::string::npos));
+
+  // Either no evidence, or ambiguous evidence
+  if(hasSBND == hasIcarus){
+    std::cout << "Unable to automatically determine detector!" << std::endl;
+    if(override == kUNKNOWN) abort();
+  }
+  // Now must be one or the other
+  if(hasSBND){
+    fDet = kSBND;
+    std::cout << "Detected SBND" << std::endl;
+  }
+  if(hasIcarus){
+    fDet = kICARUS;
+    std::cout << "Detected Icarus" << std::endl;
+  }
+
+  if(override != kUNKNOWN){
+    std::cout << "Detector set to ";
+    std::cout << ((override == kSBND) ? "SBND" : "Icarus");
+    std::cout << " based on user configuration." << std::endl;
+    if(fDet == override){
+      std::cout << "  This was redundant with the auto-detection. Suggest to not specify DetectorOverride" << std::endl;
+    }
+    else if(fDet != kUNKNOWN){
+      std::cout << "  This OVERRODE the auto-detection. Are you sure this is what you wanted?" << std::endl;
+    }
+    fDet = override;
+  }
+
 
   SRGlobal global;
 
@@ -732,7 +782,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
 
   caf::SRTruthBranch                  srtruthbranch;
-  std::vector<caf::SRTrueInteraction> srneutrinos;
 
   if (mc_particles.isValid()) {
     for (const simb::MCParticle part: *mc_particles) {
@@ -765,9 +814,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       std::cout << "Failed to get GTruth object!" << std::endl;
     }
 
-    srneutrinos.push_back(SRTrueInteraction());
+    srtruthbranch.nu.push_back(SRTrueInteraction());
+    srtruthbranch.nnu ++;
 
-    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srneutrinos.back(), i);
+    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -781,17 +831,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
     // For each of the sources of systematic weights
     for(auto& fm: fmpewm){
+      if (!fm.isValid()) continue; // Don't crash if StrictMode==false
+
       // Find the weights associated with this particular interaction
       const std::vector<art::Ptr<sbn::evwgh::EventWeightMap>> wgts = fm.at(i);
 
       // For all the weights associated with this MCTruth
       for(const art::Ptr<sbn::evwgh::EventWeightMap>& wgtmap: wgts){
-        FillEventWeight(*wgtmap, srneutrinos.back(), fWeightPSetIndex);
+        FillEventWeight(*wgtmap, srtruthbranch.nu.back(), fWeightPSetIndex);
       } // end for wgtmap
     } // end for fm
-
-    srtruthbranch.nu  = srneutrinos;
-    srtruthbranch.nnu = srneutrinos.size();
   } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
@@ -814,7 +863,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
     srtruthbranch.prtl.emplace_back();
-    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], srtruthbranch.prtl.back());
+    FillMeVPrtlTruth(*mevprtl_truths[i_prtl], fActiveVolumes, srtruthbranch.prtl.back());
     srtruthbranch.nprtl = srtruthbranch.prtl.size();
   } 
 
@@ -889,6 +938,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   for (unsigned sliceID = 0; sliceID < slices.size(); sliceID++) {
     // Holder for information on this slice
     caf::SRSlice recslc;
+    recslc.truth.det = fDet;
 
     art::Ptr<recob::Slice> slice = slices[sliceID];
     const std::string &slice_tag_suff = slice_tag_suffixes[sliceID];
@@ -1091,11 +1141,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     bool NeutrinoSlice = !recslc.is_clear_cosmic;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, mctruths, srneutrinos,
-       *pi_serv.get(), clock_data, recslc, rec.mc);
+    FillSliceTruth(slcHits, mctruths, srtruthbranch,
+       *pi_serv.get(), clock_data, recslc);
 
-    FillSliceFakeReco(slcHits, mctruths, srneutrinos,
-       *pi_serv.get(), clock_data, recslc, rec.mc, mctracks, fActiveVolumes,
+    FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
+       *pi_serv.get(), clock_data, recslc, mctracks, fActiveVolumes,
        *fFakeRecoTRandom);
 
     //#######################################################
@@ -1312,9 +1362,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // reset
   fFirstInFile = false;
   fFirstInSubRun = false;
-
-  // calculate information that needs information from all of the slices
-  // SetNuMuCCPrimary(recs, srneutrinos);
 
   // Save the standard-record
   StandardRecord* prec = &rec;

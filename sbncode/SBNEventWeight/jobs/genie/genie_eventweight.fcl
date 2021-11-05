@@ -48,7 +48,7 @@ sbn_genie_eventweight: {
       "NonRESBGvnCC2pi","NonRESBGvbarpCC2pi","NonRESBGvnNC2pi","NonRESBGvbarnNC2pi",
 
     #NC
-      "MaNCEL", "EtaNCEL", "NC",
+      "MaNCEL", "EtaNCEL", #"NC", 
 
     #DIS
       "AhtBY","BhtBY","CV1uBY","CV2uBY","AGKYxF1pi","AGKYpT1pi",
@@ -65,7 +65,7 @@ sbn_genie_eventweight: {
       #Non_Res
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
       #NC
-      1,1,1,
+      1,1, #1,
       #DIS
       1,1,1,1,1,1,
       #FSI
@@ -136,21 +136,23 @@ sbn_genie_eventweight: {
 #    #NC MEC
 #      "NormNCMEC"
 #  ]
-#    parameter_max: [ 
-#    1, 0.3, 
-#    1, 1,
-#    0.56, 0.2, 0.3, 
-#    1
-#  ]
-#    parameter_min: [ 
-#    -1, -0.3, 
-#    -1, -1,
-#    -0.56, -0.2, -0.3, 
-#    -1
-#  ]
-#    mode: pmNsigma
+## Now can only make +- same sigma:
+#     parameter_sigma: [ 1,1,1,1,1,1,1,1]
+##    parameter_max: [ 
+##    1, 0.3, 
+##    1, 1,
+##    0.56, 0.2, 0.3, 
+##    1
+##  ]
+##    parameter_min: [ 
+##    -1, -0.3, 
+##    -1, -1,
+##    -0.56, -0.2, -0.3, 
+##    -1
+##  ]
+##    mode: pmNsigma
 #  }
-#
-#}
+
+}
 
 END_PROLOG

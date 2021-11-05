@@ -61,12 +61,12 @@ public:
     bool MakeFlux(const simb::MCFlux &flux, MeVPrtlFlux &higgs, double &weight) override;
     void configure(const fhicl::ParameterSet&) override;
 
-    float MaxWeight() override; 
+    double MaxWeight() override; 
 
 private:
   // config
-  float fM; //!< Mass of Higgs [GeV]
-  float fMixingAngle; //!< Mixing angle of dark higgs
+  double fM; //!< Mass of Higgs [GeV]
+  double fMixingAngle; //!< Mixing angle of dark higgs
   bool fKDAROnly;
   bool fIgnoreParentDecayTime;
 
@@ -178,8 +178,8 @@ int PionPdg(int kaon_pdg) {
 //------------------------------------------------------------------------------------------------------------------------------------------
 void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
 {
-  fM = pset.get<float>("M");
-  fMixingAngle = pset.get<float>("MixingAngle");
+  fM = pset.get<double>("M");
+  fMixingAngle = pset.get<double>("MixingAngle");
   fIgnoreParentDecayTime = pset.get<bool>("IgnoreParentDecayTime");
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
@@ -199,7 +199,7 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
 
 }
 
-float Kaon2HiggsFlux::MaxWeight() {
+double Kaon2HiggsFlux::MaxWeight() {
   // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon) 
   //
   // Also get the max BR
@@ -227,9 +227,9 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   if (fIgnoreParentDecayTime) higgs.pos.SetT(Beam4.T());
 
   // get the momentum direction in the kaon parent rest frame
-  float kaon_mass = kaon.mom.M();  
-  float higs_mass = fM;
-  float pion_mass = TDatabasePDG::Instance()->GetParticle(PionPdg(kaon.kaon_pdg))->Mass();
+  double kaon_mass = kaon.mom.M();  
+  double higs_mass = fM;
+  double pion_mass = TDatabasePDG::Instance()->GetParticle(PionPdg(kaon.kaon_pdg))->Mass();
 
   // ignore if we can't make this higgs
   if (kaon_mass - pion_mass < higs_mass) return false;

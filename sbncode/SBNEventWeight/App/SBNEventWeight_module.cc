@@ -18,13 +18,18 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
+#include "art/Framework/Principal/Run.h"
 #include "art/Persistency/Common/PtrMaker.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "fhiclcpp/ParameterSet.h"
 
 #include "sbnobj/Common/SBNEventWeight/EventWeightMap.h"
 #include "sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h"
 #include "sbncode/SBNEventWeight/Base/WeightManager.h"
+
+#include "canvas/Persistency/Common/Assns.h"
+#include "art/Framework/Principal/Run.h"
 
 namespace sbn {
   namespace evwgh {
@@ -51,10 +56,9 @@ private:
 
 SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fGenieModuleLabel(p.get<std::string>("genie_module_label", "generator")),
+  fGenieModuleLabel(p.get<std::string>("generator_module_label", "generator")),
   fAllowMissingTruth(p.get<bool>("AllowMissingTruth"))
 {
-
   const size_t n_func = fWeightManager.Configure(p, *this);
   if (n_func > 0) {
     produces<std::vector<sbn::evwgh::EventWeightMap> >();

@@ -47,18 +47,18 @@ namespace caf
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                      const caf::SRTruthBranch &srmc,
                       const cheat::ParticleInventoryService &inventory_service,
                       const detinfo::DetectorClocksData &clockData,
-                      caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                      caf::SRSlice &srslice, 
                       bool allowEmpty = false);
 
   void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
                          const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const caf::SRTruthBranch &srmc,
                          const cheat::ParticleInventoryService &inventory_service,
                          const detinfo::DetectorClocksData &clockData,
-                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         caf::SRSlice &srslice, 
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                          const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
 
@@ -73,6 +73,7 @@ namespace caf
                           caf::SRTrueParticle &srparticle);
 
   void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                        const std::vector<geo::BoxBoundedGeo> &active_volumes,
                         caf::SRMeVPrtl &srtruth);
 
   void FillTrueNeutrino(const art::Ptr<simb::MCTruth> mctruth, 
@@ -80,7 +81,8 @@ namespace caf
                         const simb::GTruth& gtruth,
 			const std::vector<caf::SRTrueParticle> &srparticles,
                         const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
-			caf::SRTrueInteraction &srneutrino, size_t i);
+			caf::SRTrueInteraction &srneutrino, size_t i,
+                        const std::vector<geo::BoxBoundedGeo> &active_volumes);
 
   void FillEventWeight(const sbn::evwgh::EventWeightMap& wgtmap,
                        caf::SRTrueInteraction& srint,

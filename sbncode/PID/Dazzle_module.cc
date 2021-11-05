@@ -66,6 +66,7 @@
 
 #include <iostream>
 #include <vector>
+#include <numeric> // std::accumulate
 
 namespace sbn {
 class Dazzle : public art::EDProducer {
@@ -89,7 +90,7 @@ class Dazzle : public art::EDProducer {
   art::ServiceHandle<art::TFileService> tfs;
   art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
 
-  art::InputTag fLArGeantLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
+  art::InputTag fSimChannelLabel, fPFPLabel, fTrackLabel, fCaloLabel, fMCSLabel, fChi2Label, fRangeLabel, fClosestApproachLabel, fStoppingChi2Label;
   const float fMinTrackLength;
   const bool fMakeTree, fRunMVA;
   const std::string fMethodName, fWeightFile;
@@ -156,7 +157,7 @@ class Dazzle : public art::EDProducer {
 
 Dazzle::Dazzle(fhicl::ParameterSet const& p)
     : EDProducer { p }
-    , fLArGeantLabel(p.get<std::string>("LArGeantLabel"))
+    , fSimChannelLabel(p.get<std::string>("SimChannelLabel"))
     , fPFPLabel(p.get<std::string>("PFPLabel"))
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fCaloLabel(p.get<std::string>("CaloLabel"))
@@ -321,7 +322,7 @@ void Dazzle::produce(art::Event& e)
 
   auto const pfpHandle(e.getValidHandle<std::vector<recob::PFParticle>>(fPFPLabel));
   auto const clusterHandle(e.getValidHandle<std::vector<recob::Cluster>>(fPFPLabel));
-  auto const simChannelHandle(e.getValidHandle<std::vector<sim::SimChannel>>(fLArGeantLabel));
+  auto const simChannelHandle(e.getValidHandle<std::vector<sim::SimChannel>>(fSimChannelLabel));
   auto const trackHandle(e.getValidHandle<std::vector<recob::Track>>(fTrackLabel));
 
   std::vector<art::Ptr<recob::PFParticle>> pfps;

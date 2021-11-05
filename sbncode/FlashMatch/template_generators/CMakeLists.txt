@@ -14,6 +14,6 @@ LIST(APPEND exes generate_simple_weighted_template.py )
 message(STATUS "Executable python modules ${exes}")
 # message(STATUS "Non-executable python modules ${nonexes}")
 
-install(PROGRAMS ${exes} DESTINATION ${product}/${version}/python)
-# install(FILES ${nonexes} DESTINATION ${product}/${version}/python)
+install(PROGRAMS ${exes} DESTINATION python)
+# install(FILES ${nonexes} DESTINATION python)
 install_scripts(LIST ${exes})

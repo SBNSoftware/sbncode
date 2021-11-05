@@ -58,13 +58,13 @@ public:
     bool MakeFlux(const simb::MCFlux &flux, MeVPrtlFlux &hnl, double &weight) override;
     void configure(const fhicl::ParameterSet&) override;
 
-    float MaxWeight() override;
+    double MaxWeight() override;
 
 private:
   // config
-  float fM; //!< Mass of HNL [GeV]
-  float fMagUe4;
-  float fMagUm4;
+  double fM; //!< Mass of HNL [GeV]
+  double fMagUe4;
+  double fMagUm4;
   bool fKDAROnly;
 };
 
@@ -152,13 +152,13 @@ std::pair<double, bool> Branch(double hnl_mass, double ue4, double um4, double r
 //------------------------------------------------------------------------------------------------------------------------------------------
 void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
 {
-  fM = pset.get<float>("M");
-  fMagUm4 = pset.get<float>("MagUm4");
-  fMagUe4 = pset.get<float>("MagUe4");
+  fM = pset.get<double>("M");
+  fMagUm4 = pset.get<double>("MagUm4");
+  fMagUe4 = pset.get<double>("MagUe4");
 
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
-  float max_mass = (fMagUe4 > 0.) ? (Constants::Instance().kplus_mass - Constants::Instance().elec_mass) : 
+  double max_mass = (fMagUe4 > 0.) ? (Constants::Instance().kplus_mass - Constants::Instance().elec_mass) : 
       (Constants::Instance().kplus_mass - Constants::Instance().muon_mass);
 
   if (fM > max_mass) {
@@ -168,7 +168,7 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
 
 }
 
-float Kaon2HNLFlux::MaxWeight() { 
+double Kaon2HNLFlux::MaxWeight() { 
   // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon)
   // Scale by the branching ratios here
   return 100.0001 * std::max(BranchingRatio(fM, fMagUe4, false) / SMKaonBR(321), BranchingRatio(fM, fMagUm4, true) / SMKaonBR(321));
@@ -192,11 +192,11 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.pos += Beam4;
 
   // Branch the parent Kaon Decay
-  float hnl_mass = fM;
+  double hnl_mass = fM;
   std::pair<double, bool> decay = Branch(hnl_mass, fMagUe4, fMagUm4, GetRandom());
   double br = decay.first;
   bool is_muon = decay.second;
-  float lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+  double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
 
   std::cout << "BR: " << br << std::endl;
 

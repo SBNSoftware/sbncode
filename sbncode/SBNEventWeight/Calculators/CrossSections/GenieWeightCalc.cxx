@@ -36,6 +36,8 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
+#include "fhiclcpp/ParameterSet.h"
+
 //GENIE includes
 #include "GENIE/Framework/Conventions/KineVar.h"
 #include "GENIE/Framework/EventGen/EventRecord.h"
@@ -66,6 +68,7 @@
 #include "GENIE/RwCalculators/GReWeightNuXSecNC.h"
 #include "GENIE/RwCalculators/GReWeightXSecEmpiricalMEC.h"
 
+
 #ifdef GENIE_UB_PATCH
 // New weight calculator in GENIE v3.0.4 MicroBooNE patch 01
 #include "GENIE/RwCalculators/GReWeightXSecMEC.h"
@@ -76,7 +79,6 @@
 #include "GENIE/RwCalculators/GReWeightRESBugFix.h"
 
 #endif
-
 namespace sbn {
 namespace {//Helper functions are defined in this block
  
@@ -331,9 +333,9 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
 
   auto const& pars = pset.get<std::vector<std::string> >("parameter_list");
 
-  std::vector<float> parsigmas;
+  std::vector<float> parsigmas = pset.get<std::vector<float> >("parameter_sigma", std::vector<float>() );
 
-  pset.get_if_present("parameter_sigma", parsigmas);
+//  pset.get_if_present("parameter_sigma", parsigmas);
 
 
   // Convert the list of GENIE knob names from the input FHiCL configuration
@@ -360,18 +362,18 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
   int num_universes = 1; //for "central_value" or "default" mode
 
     std::string array_name_for_exception;
+
+    if (pars.size() != parsigmas.size()) {
+      array_name_for_exception = "parameter_sigma";
+    }
+
   if(mode.find("pmNsigma") != std::string::npos){  
-//      if ( pars.size() != par_mins.size()
-//        || pars.size() != par_maxes.size() ){
-//
-//      array_name_for_exception = "parameter_min and parameter_max";
-//    }
+  //This mode will be updated and replaced with a more useful one.
+
     num_universes = 2;
 
-    for (size_t i=0; i<pars.size(); i++) {
-                           //(name, Gauss_sigma_max, Gauss_mean, Gauss_sigma_min)
+    for (size_t i=0; i<pars.size(); i++){ 
       fParameterSet.AddParameter(pars[i], parsigmas[i]);
-//      fParameterSet.AddParameter(pars[i], par_maxes[i], 0, par_mins[i]);
     }
 
   }else if(mode.find("multisim") != std::string::npos){
@@ -382,9 +384,6 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
         << this->GetName() << " will generate " << num_universes
         << " multisim universes";
 
-    if (pars.size() != parsigmas.size()) {
-      array_name_for_exception = "parameter_sigma";
-    }
     for (size_t i=0; i<pars.size(); i++) {
       fParameterSet.AddParameter(pars[i], parsigmas[i]);
     }
@@ -410,7 +409,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
         << "::Bad fcl configuration. parameter_list and "
         << array_name_for_exception
         << " need to have same number of parameters.";
-}
+  }
 
 
   // Set up parameters
@@ -440,7 +439,6 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       auto& rwght = reweightVector.at( u );
       genie::rew::GSystSet& syst = rwght.Systematics();
 
-      //      for ( unsigned int k = 0; k < knobs_to_use.size(); ++k ) {
       genie::rew::GSyst_t knob; 
       valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
       //genie::rew::GSyst_t knob = //knobs_to_use.at( k );
@@ -468,13 +466,11 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
           << " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
           << " the value " << twk_dial_value;
       }
-      //      } // loop over tweaked knobs
 
       rwght.Reconfigure();
       rwght.Print();
     }//next universe
   }//next parameter
-
 }
 
 //Keng:
@@ -492,12 +488,10 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
 
     std::vector< art::Ptr<simb::MCTruth> > mclist;
     art::fill_ptr_vector( mclist, mcTruthHandle );
-//  std::cout<<" # Neutrinos: "<<mclist.size();
 
     std::vector< art::Ptr<simb::GTruth > > glist;
     art::fill_ptr_vector( glist, gTruthHandle );
 
-//    size_t num_neutrinos = mclist.size();
     size_t num_knobs = reweightVector.size();
 
     // Calculate weight(s) here
@@ -550,7 +544,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
         reweightVector.at(k).Print();
       }
     }
-    
+
     return weights;
 }
 
