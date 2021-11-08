@@ -89,6 +89,8 @@ cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH)
 cet_find_library( IFBEAMSERVICE NAMES IFBeam_service PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
 
+# alternate path for GENIE headers
+include_directories($ENV{GENIE_INC}/GENIE)
 
 add_subdirectory(sbncode)
 add_subdirectory(ups)
