@@ -1,4 +1,3 @@
-find_ups_product(ifbeam)
 
 art_make_library(
 	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
