@@ -1,6 +1,3 @@
-#link_directories(
-# $ENV{ROOTSYS}/lib
-#)
 
 add_subdirectory(LArReco)
 art_make( MODULE_LIBRARIES
@@ -18,7 +15,6 @@ art_make( MODULE_LIBRARIES
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
-
 	sbn_LArReco	    
 	sbnobj_Common_CRT
 	sbnobj_Common_Reco
