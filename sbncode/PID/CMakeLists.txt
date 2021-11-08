@@ -1,6 +1,3 @@
-#link_directories(
-# $ENV{ROOTSYS}/lib
-#)
 
 art_make( MODULE_LIBRARIES
   ${ART_FRAMEWORK_CORE}
@@ -22,9 +19,7 @@ art_make( MODULE_LIBRARIES
   ${ROOT_BASIC_LIB_LIST}
   ${ROOT_GEOM}
   ROOT::TMVA
-
   MF_MessageLogger
-
   sbn_LArReco
   sbnobj_Common_CRT
   sbnobj_Common_Reco
@@ -36,7 +31,6 @@ art_make( MODULE_LIBRARIES
   larsim_MCCheater_BackTrackerService_service
   larsim_MCCheater_ParticleInventoryService_service
   nusimdata_SimulationBase
-
   caf_RecoUtils
 )
 
