@@ -1,0 +1,157 @@
+BEGIN_PROLOG
+
+# please use genie_eventweight.fcl; 
+# This FHiCL is identical to genie_eventweight.fcl; 
+# The purpose of this file is to avoid errors from 
+# missing outdated FHiCL file;
+#
+# --- Keng Lin Nov. 2021
+
+sbn_genie_eventweight: {
+  module_type: "SBNEventWeight"
+
+  genie_module_label: "generator"
+
+  AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
+
+  #Off-set central value of a knob here:
+  genie_central_values: {
+  #example of shifting MaCCQE +1 sigma:
+  #  MaCCQE: 1
+  }
+
+  weight_functions: [ 
+    genie_sbnd_mulstisim, genie_sbnd_fixed, genie_sbnd_mulstisim_exclusive
+  # ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
+  ]
+
+  # Knobs that are used in both sbnd and ub
+  genie_sbnd_mulstisim: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+    #CCQE
+      "MaCCQE",
+
+    #Resonance
+      "MaCCRES","MvCCRES","MaNCRES","MvNCRES",
+      "RDecBR1gamma","RDecBR1eta",
+
+
+    #Non-Resonance 
+      #Corresponding to knobs in the old version:
+        #"NonResRvp1pi", "NonResRvbarp1pi" , "NonResRvp2pi", "NonResRvbarp2pi"
+      "NonRESBGvpCC1pi","NonRESBGvbarnCC1pi","NonRESBGvpNC1pi","NonRESBGvbarnNC1pi",
+      "NonRESBGvnCC1pi","NonRESBGvbarpCC1pi","NonRESBGvnNC1pi","NonRESBGvbarpNC1pi",
+      "NonRESBGvpCC2pi","NonRESBGvbarnCC2pi","NonRESBGvpNC2pi","NonRESBGvbarpNC2pi",
+      "NonRESBGvnCC2pi","NonRESBGvbarpCC2pi","NonRESBGvnNC2pi","NonRESBGvbarnNC2pi",
+
+    #NC
+      "MaNCEL", "EtaNCEL", #"NC", 
+
+    #DIS
+      "AhtBY","BhtBY","CV1uBY","CV2uBY","AGKYxF1pi","AGKYpT1pi",
+
+    #FSI
+      "MFP_N","FrCEx_N","FrInel_N","FrAbs_N","FrPiProd_N",
+      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi","FrPiProd_pi"
+      ]
+    parameter_sigma: [
+      #CCQE
+      1,
+      #Res
+      1,1,1,1,1,1,
+      #Non_Res
+      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+      #NC
+      1,1, #1,
+      #DIS
+      1,1,1,1,1,1,
+      #FSI
+      1,1,1,1,1,1,1,1,1,1
+    ]
+    mode: multisim
+    number_of_multisims: 100
+  }
+
+  genie_sbnd_fixed: {
+    type: Genie
+    parameter_list: [ "VecFFCCQEshape" , "Theta_Delta2Npi" ]
+    parameter_sigma: [ 1 , 1 ]
+    mode: fixed
+  }
+
+  # Knobs that are only used in sbnd
+  # It is available, but not used in ub
+  genie_sbnd_mulstisim_exclusive: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [
+    #CCQE
+      "CCQEPauliSupViaKF","CCQEMomDistroFGtoSF",
+
+    #COH
+      "MaCOHpi","R0COHpi",
+    #NC Note: the knob "NC" is removed.
+      "NormNCRES",
+    #DIS
+      "DISNuclMod","FormZone"
+    ]
+    parameter_sigma: [
+        1, 1, 1, 1, 1, 1, 1
+    ]
+    mode: multisim
+    number_of_multisims: 100
+  }
+
+  # Knobs that required special ub package or GENIE v3.2
+  #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
+  genie_ub_multisim: {
+    type: Genie
+    random_seed: 100
+    parameter_list: [ "XSecShape_CCMEC" ]
+    parameter_sigma: [ 1 ]
+    mode: multisim
+    number_of_multisims: 100
+  }
+
+  genie_ub_fixed: {
+    type: Genie
+    parameter_list: [ "AxFFCCQEshape" , "ThetaDelta2NRad" , "DecayAngMEC" ]
+    parameter_sigma: [ 1, 1, 1 ]
+    mode: fixed
+  }
+
+#  pmNsigma mode will be updated in next version.
+#  genie_ub_pmNsigma: {
+#    type: Genie
+#    parameter_list: [ 
+#    #CCQE
+#      "RPA_CCQE","CoulombCCQE",
+#    #COH
+#      "NormCCCOH", "NormNCCOH",
+#    #CC MEC
+#      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
+#    #NC MEC
+#      "NormNCMEC"
+#  ]
+## Now can only make +- same sigma:
+#     parameter_sigma: [ 1,1,1,1,1,1,1,1]
+##    parameter_max: [ 
+##    1, 0.3, 
+##    1, 1,
+##    0.56, 0.2, 0.3, 
+##    1
+##  ]
+##    parameter_min: [ 
+##    -1, -0.3, 
+##    -1, -1,
+##    -0.56, -0.2, -0.3, 
+##    -1
+##  ]
+##    mode: pmNsigma
+#  }
+
+}
+
+END_PROLOG
