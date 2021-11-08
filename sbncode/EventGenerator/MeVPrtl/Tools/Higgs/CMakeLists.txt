@@ -33,7 +33,7 @@ simple_plugin( Kaon2HiggsFlux tool
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
-			EGPythia6
+			ROOT::EGPythia6
 			${CLHEP}
 			sbnobj_Common_EventGen_MeVPrtl
 			nugen_EventGeneratorBase_GENIE
