@@ -1,9 +1,4 @@
 
-include_directories( $ENV{IFBEAM_FQ_DIR}/include )
-include_directories( $ENV{LIBWDA_FQ_DIR}/include )
-include_directories( $ENV{IFDHC_FQ_DIR}/inc )
-include_directories( $ENV{IFDH_ART_INC} )
-
 simple_plugin(EXTRetriever module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
