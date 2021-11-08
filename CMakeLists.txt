@@ -77,11 +77,15 @@ find_ups_root()
 #find_ups_product(sbndcode v06_67_00)
 #find_ups_product(uboonecode v06_67_00)
 find_ups_product( sbndaq_artdaq_core )
+find_ups_product(sbnanaobj)
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
 include(ArtMake)
 include(BuildPlugins)
+
+cet_find_library( IFBEAM NAMES ifbeam PATHS ENV IFBEAM_LIB NO_DEFAULT_PATH )
+cet_find_library( WDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH )
 
 add_subdirectory(sbncode)
 add_subdirectory(ups)
