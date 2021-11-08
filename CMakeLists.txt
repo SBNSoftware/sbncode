@@ -73,10 +73,10 @@ find_ups_product(ifdh_art)
 find_ups_product(log4cpp)
 find_ups_boost()
 find_ups_root()
-#find_ups_product(sbndcode v06_67_00)
-#find_ups_product(uboonecode v06_67_00)
 find_ups_product( sbndaq_artdaq_core )
 find_ups_product(sbnanaobj)
+find_ups_product(dk2nudata)
+find_ups_product(dk2nugenie)
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
