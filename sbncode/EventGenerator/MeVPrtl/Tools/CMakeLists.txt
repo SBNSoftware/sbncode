@@ -46,7 +46,7 @@ simple_plugin( NuMiKaonGen tool
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			ifdh
-			dk2nuTree
+			DK2NU_TREE
 			nurandom_RandomUtils_NuRandomService_service
 			nusimdata_SimulationBase
 			sbncode_EventGenerator_MeVPrtl_Constants
@@ -69,8 +69,8 @@ simple_plugin( WeightedRayTraceBox tool
 			${CLHEP}
 			larcorealg_Geometry
 			nurandom_RandomUtils_NuRandomService_service
-			dk2nuGenie
-			dk2nuTree
+			DK2NU_GENIE
+			DK2NU_TREE
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
@@ -91,7 +91,7 @@ simple_plugin( MixedWeightRayTraceBox tool
 			${CLHEP}
 			larcorealg_Geometry
 			nurandom_RandomUtils_NuRandomService_service
-			dk2nuTree
+			DK2NU_TREE
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 

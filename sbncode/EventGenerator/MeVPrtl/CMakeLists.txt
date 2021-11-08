@@ -1,6 +1,6 @@
 
-link_directories( $ENV{DK2NUDATA_LIB} )
-link_directories( $ENV{DK2NUGENIE_LIB} )
+#link_directories( $ENV{DK2NUDATA_LIB} )
+#link_directories( $ENV{DK2NUGENIE_LIB} )
 
 add_subdirectory(Tools)
 add_subdirectory(config)
