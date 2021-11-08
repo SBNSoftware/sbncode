@@ -10,7 +10,6 @@ simple_plugin(TrackAreaHit module
         ${FHICLCPP}
         cetlib cetlib_except
         ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
         ${ROOT_BASIC_LIB_LIST}
         MF_MessageLogger
         lardataobj_RecoBase_AssnsDicts_dict
@@ -36,7 +35,6 @@ simple_plugin(TrackHitFilter module
         ${FHICLCPP}
         cetlib cetlib_except
         ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
         ${ROOT_BASIC_LIB_LIST}
         MF_MessageLogger
         lardataobj_RecoBase_AssnsDicts_dict
@@ -59,7 +57,6 @@ simple_plugin(TrackHitDumper module
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 	lardataobj_RecoBase_AssnsDicts_dict

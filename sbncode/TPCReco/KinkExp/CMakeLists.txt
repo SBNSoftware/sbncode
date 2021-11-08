@@ -21,7 +21,6 @@ simple_plugin(PCAnglePlaneMaker module
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 
@@ -44,7 +43,6 @@ simple_plugin(PCAngleKinkFinder module
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 	ROOT::Minuit
@@ -67,7 +65,6 @@ simple_plugin(PCAngleKinkTree module
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 

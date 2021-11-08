@@ -10,7 +10,6 @@ simple_plugin( CalorimetryAnalysis module
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 	art_root_io_tfile_support
 	art_root_io

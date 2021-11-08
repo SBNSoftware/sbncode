@@ -15,7 +15,6 @@ simple_plugin(NuVertexChargeTree module
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 	sbnobj_Common_Reco
@@ -46,7 +45,6 @@ simple_plugin ( EventSelect module
                ${FHICLCPP}
                cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 )
 

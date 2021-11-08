@@ -3,7 +3,6 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Dalitz
           LIBRARIES
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_EVE_LIB_LIST}
-                        ${ROOT_X3d}
 			sbncode_EventGenerator_MeVPrtl_Constants
         )
 
@@ -19,7 +18,6 @@ simple_plugin( Kaon2HNLFlux tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			ROOT::EGPythia6
 			${CLHEP}
@@ -42,7 +40,6 @@ simple_plugin( HNLMakeDecay tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service

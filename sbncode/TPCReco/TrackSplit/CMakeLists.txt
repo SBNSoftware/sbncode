@@ -10,7 +10,6 @@ simple_plugin(TrackSplitter module
   ${FHICLCPP}
   cetlib cetlib_except
   ${ROOT_EVE_LIB_LIST}
-  ${ROOT_X3d}
   ${ROOT_BASIC_LIB_LIST}
   MF_MessageLogger
   larcorealg_Geometry
@@ -35,7 +34,6 @@ simple_plugin(MergedTrackIdentifier module
   ${FHICLCPP}
   cetlib cetlib_except
   ${ROOT_EVE_LIB_LIST}
-  ${ROOT_X3d}
   ${ROOT_BASIC_LIB_LIST}
   MF_MessageLogger
   larcorealg_Geometry

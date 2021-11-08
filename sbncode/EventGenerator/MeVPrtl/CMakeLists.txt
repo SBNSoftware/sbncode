@@ -23,7 +23,6 @@ simple_plugin( MeVPrtlGen module
               ${FHICLCPP}
               cetlib cetlib_except
               ${ROOT_EVE_LIB_LIST}
-              ${ROOT_X3d}
               ${ROOT_CORE}
               ${ROOT_BASIC_LIB_LIST}
         			${ROOT_XMLIO}
@@ -51,7 +50,6 @@ simple_plugin( MeVPrtlTestRayTrace module
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_CORE}
                             ${ROOT_BASIC_LIB_LIST}
 			${ROOT_XMLIO}

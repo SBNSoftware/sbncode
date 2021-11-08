@@ -20,7 +20,6 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ${FHICLCPP}
                   cetlib cetlib_except
                   ${ROOT_EVE_LIB_LIST}
-                  ${ROOT_X3d}
                   ${ROOT_BASIC_LIB_LIST}
                   caf_RecoUtils
                   lardataobj_AnalysisBase

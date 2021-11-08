@@ -12,7 +12,6 @@ simple_plugin( TrackCaloSkimmer module
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 	art_root_io_tfile_support
 	art_root_io
@@ -43,7 +42,6 @@ simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
         larcorealg_Geometry
 	larcorealg_GeoAlgo
@@ -64,7 +62,6 @@ simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 )
 
@@ -81,7 +78,6 @@ simple_plugin ( DataSelect module
                ${FHICLCPP}
                cetlib cetlib_except
         ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
         ${ROOT_BASIC_LIB_LIST}
 )
 

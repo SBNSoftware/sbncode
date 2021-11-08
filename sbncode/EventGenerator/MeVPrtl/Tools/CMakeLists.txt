@@ -4,7 +4,6 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
           LIBRARIES
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_EVE_LIB_LIST}
-                        ${ROOT_X3d}
                             ${FHICLCPP}
                             cetlib cetlib_except
         )
@@ -23,7 +22,6 @@ simple_plugin( EmptyKaonGen tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service
@@ -49,7 +47,6 @@ simple_plugin( NuMiKaonGen tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			ifdh
@@ -72,7 +69,6 @@ simple_plugin( WeightedRayTraceBox tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			larcorealg_Geometry
@@ -95,7 +91,6 @@ simple_plugin( MixedWeightRayTraceBox tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			larcorealg_Geometry
@@ -120,7 +115,6 @@ simple_plugin( ReThrowRayTraceBox tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			larcorealg_Geometry
@@ -141,7 +135,6 @@ simple_plugin( RayTraceBox tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			larcorealg_Geometry

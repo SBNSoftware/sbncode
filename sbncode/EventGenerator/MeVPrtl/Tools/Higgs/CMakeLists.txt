@@ -10,7 +10,6 @@ simple_plugin( MonoEnergyHiggsFlux tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			nugen_EventGeneratorBase_GENIE
@@ -31,7 +30,6 @@ simple_plugin( Kaon2HiggsFlux tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			ROOT::EGPythia6
 			${CLHEP}
@@ -54,7 +52,6 @@ simple_plugin( HiggsMakeDecay tool
                             ${FHICLCPP}
                             cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
                             ${ROOT_BASIC_LIB_LIST}
 			${CLHEP}
 			nurandom_RandomUtils_NuRandomService_service

@@ -12,7 +12,6 @@ art_make( MODULE_LIBRARIES
 	${FHICLCPP}
 	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
 	sbn_LArReco	    
