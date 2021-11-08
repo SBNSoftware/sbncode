@@ -1,6 +1,4 @@
 # for classes_def.xml!!
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-# include_directories( $ENV{NUTOOLS_INC} )
 
 art_make(
     LIB_LIBRARIES

@@ -1,3 +1,4 @@
+# alternate path for GENIE headers
 include_directories($ENV{GENIE_INC}/GENIE)
 
 art_make(

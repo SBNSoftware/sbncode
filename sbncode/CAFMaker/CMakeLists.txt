@@ -1,6 +1,4 @@
 # for classes_def.xml
-include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
-#set( PACKAGE CAFMaker )
 FILE( GLOB src_files *.cxx )
 
 add_subdirectory(RecoUtils)

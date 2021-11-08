@@ -1,8 +1,9 @@
 cet_enable_asserts()
+link_directories( $ENV{DK2NUDATA_LIB})
+# alternate path for GENIE headers
 include_directories ( $ENV{GENIE_INC}/GENIE )
 include_directories ( $ENV{DK2NUDATA_INC} )
-include_directories ( $ENV{DK2NUGENIE_INC} )
-link_directories( $ENV{DK2NUDATA_LIB})
+
 
 file(GLOB INTERFACEFILES *Interface* )
 
