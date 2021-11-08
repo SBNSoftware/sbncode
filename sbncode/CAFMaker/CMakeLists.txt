@@ -38,9 +38,6 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbncode_Metadata_MetadataSBN_service
                   )
 
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
-cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
-
 simple_plugin ( CAFMaker module
                sbncode_CAFMaker
                sbnanaobj_StandardRecord

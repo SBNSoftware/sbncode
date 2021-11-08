@@ -65,7 +65,6 @@ find_ups_product(larpandora)
 find_ups_product(larsoft v09_00_00)
 find_ups_product(artdaq_core v3_06_01)
 find_ups_product(ifbeam)
-find_ups_product(ifbeam_art)
 find_ups_product(libwda) 
 find_ups_product(sbnobj v09_10_00)
 find_ups_product(sbndata v01_00)
@@ -86,6 +85,10 @@ include(BuildPlugins)
 
 cet_find_library( IFBEAM NAMES ifbeam PATHS ENV IFBEAM_LIB NO_DEFAULT_PATH )
 cet_find_library( WDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH )
+cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
+cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH)
+cet_find_library( IFBEAMSERVICE NAMES IFBeam_service PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
+
 
 add_subdirectory(sbncode)
 add_subdirectory(ups)

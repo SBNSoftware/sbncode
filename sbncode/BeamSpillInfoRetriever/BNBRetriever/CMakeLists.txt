@@ -1,8 +1,5 @@
 find_ups_product(ifbeam)
 
-cet_find_library( IFBEAMSERVICE        NAMES IFBeam_service    PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
-cet_find_library( IFBEAM               NAMES ifbeam            PATHS ENV IFBEAM_LIB   NO_DEFAULT_PATH )
-
 art_make_library(
 	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
 	SOURCE MWRData.cpp
