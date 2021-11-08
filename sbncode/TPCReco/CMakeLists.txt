@@ -3,10 +3,6 @@ add_subdirectory(TrackSplit)
 add_subdirectory(VertexStub)
 add_subdirectory(CalorimetryAnalysis)
 
-link_directories(
- $ENV{ROOTSYS}/lib
-)
-
 simple_plugin(NuVertexChargeTree module
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -22,10 +18,8 @@ simple_plugin(NuVertexChargeTree module
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
-
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
-        
         art_root_io_tfile_support
         art_root_io
         art_root_io_dict

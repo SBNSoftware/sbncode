@@ -1,11 +1,9 @@
-link_directories(
- $ENV{ROOTSYS}/lib
-)
 
 simple_plugin( TrackCaloSkimmer module
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -28,14 +26,15 @@ simple_plugin( TrackCaloSkimmer module
 	larcorealg_GeoAlgo
 	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
 	lardataalg_DetectorInfo
-	Minuit
+	ROOT::Minuit
 	sbncode_CAFMaker
 )
 
 simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -55,7 +54,8 @@ simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
 simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas

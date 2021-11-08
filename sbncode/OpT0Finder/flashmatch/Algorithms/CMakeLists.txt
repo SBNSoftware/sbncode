@@ -1,6 +1,3 @@
-set( ROOTLIB -L$ENV{ROOTSYS}/lib -lCore -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lMathCore -lThread -lMinuit -pthread -lm -ldl)
-
-link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
 
 art_make(
     LIB_LIBRARIES
@@ -19,6 +16,7 @@ art_make(
         ${ART_PERSISTENCY_PROVENANCE}
         ${ART_UTILITIES}
         ${ROOT_BASIC_LIB_LIST}
+        ROOT::Minuit
         ${FHICLCPP}
         ${CETLIB}
 )

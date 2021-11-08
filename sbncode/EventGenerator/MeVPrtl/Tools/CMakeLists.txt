@@ -1,4 +1,3 @@
-link_directories( $ENV{ROOTSYS}/lib )
 
 art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
           SOURCE Constants.cpp
@@ -14,7 +13,8 @@ art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
 simple_plugin( EmptyKaonGen tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -39,7 +39,8 @@ simple_plugin( NuMiKaonGen tool
                             IFDH_SERVICE
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -61,7 +62,8 @@ simple_plugin( NuMiKaonGen tool
 simple_plugin( WeightedRayTraceBox tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -83,7 +85,8 @@ simple_plugin( WeightedRayTraceBox tool
 simple_plugin( MixedWeightRayTraceBox tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -107,7 +110,8 @@ simple_plugin( MixedWeightRayTraceBox tool
 simple_plugin( ReThrowRayTraceBox tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas
@@ -127,7 +131,8 @@ simple_plugin( ReThrowRayTraceBox tool
 simple_plugin( RayTraceBox tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
                             ${ART_FRAMEWORK_PRINCIPAL}
                             art_Persistency_Common
                             art_Utilities canvas

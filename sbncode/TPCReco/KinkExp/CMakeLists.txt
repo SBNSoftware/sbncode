@@ -1,6 +1,3 @@
-link_directories(
- $ENV{ROOTSYS}/lib
-)
 
 art_make_library(
 	LIBRARY_NAME sbn_LArReco_PCA
@@ -50,7 +47,7 @@ simple_plugin(PCAngleKinkFinder module
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
 	MF_MessageLogger
-	Minuit
+	ROOT::Minuit
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase

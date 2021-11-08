@@ -2,7 +2,6 @@ find_ups_product(ifdhc)
 find_ups_product(dk2nudata)
 find_ups_product(dk2nugenie)
 
-link_directories( $ENV{ROOTSYS}/lib )
 link_directories( $ENV{DK2NUDATA_LIB} )
 link_directories( $ENV{DK2NUGENIE_LIB} )
 
@@ -40,7 +39,8 @@ simple_plugin( MeVPrtlGen module
 simple_plugin( MeVPrtlTestRayTrace module
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                            ${ART_FRAMEWORK_SERVICES}
 				${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
 				${ART_ROOT_IO_TFILE_SUPPORT}
                             ${ART_FRAMEWORK_PRINCIPAL}
