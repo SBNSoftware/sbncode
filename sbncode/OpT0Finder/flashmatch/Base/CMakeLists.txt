@@ -1,5 +1,3 @@
-set( ROOTLIB -L$ENV{ROOTSYS}/lib -lCore  -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lMathCore -lThread -pthread -lm -ldl)
-link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} ${ROOTLIB} )
 art_make(
     LIB_LIBRARIES
         sbncode_OpT0Finder_flashmatch_GeoAlgo
@@ -26,8 +24,6 @@ art_make(
         ${MF_UTILITIES}
         ${CETLIB}
         ${CLHEP}
-        ${BOOST_LIB}
-        ${Boost_SYSTEM_LIBRARY}
         ${ROOT_BASIC_LIB_LIST}
         ${FHICLCPP}
         cetlib cetlib_except
