@@ -1,6 +1,4 @@
 cet_enable_asserts()
-link_directories( $ENV{DK2NUDATA_LIB})
-include_directories ( $ENV{DK2NUDATA_INC} )
 
 simple_plugin( FluxReader
                "source"
@@ -38,9 +36,7 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   GFwMsg
                   GFwGHEP
                   GTlFlx
-                  dk2nuTree
-                  #${DK2NUDATA}
-                  ${DK2NUGENIE}
+                  DK2NU_TREE
                   ####################################################
                   cetlib cetlib_except
 
@@ -96,8 +92,6 @@ art_make( EXCLUDE FluxReader_source.cc DK2NuInterface.cxx GSimpleInterface.cxx F
                         ${GINTERACTION}
                         ${GMESSENGER}
                         ${GHEP}
-                        ${DK2NUDATA}
-                        ${DK2NUGENIE}
                         ####################################################
                         ${MF_MESSAGELOGGER}
                         ${MF_UTILITIES}
