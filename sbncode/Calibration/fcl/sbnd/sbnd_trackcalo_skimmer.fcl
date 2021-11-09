@@ -52,6 +52,7 @@ stopping_selection: {
   MaxTimeTickInset: 100
   EndMediandQdxCut: 1600
   NumberTimeSamples: 3400
+  MediandQdxRRMax: 5.
 }
 
 throughgoing_selection: {

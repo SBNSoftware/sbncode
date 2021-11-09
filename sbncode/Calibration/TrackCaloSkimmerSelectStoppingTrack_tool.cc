@@ -51,7 +51,7 @@ private:
   // Fiducial time
   double fFidTickMin;
   double fFidTickMax;
-
+  double fMediandQdxRRMax;
 };
 
 TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const fhicl::ParameterSet &p):
@@ -66,7 +66,8 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
   fMaxTimeTickInset(p.get<double>("MaxTimeTickInset")),
   fEndMediandQdxCut(p.get<double>("EndMediandQdxCut")),
   fNumberTimeSamples(p.get<unsigned>("NumberTimeSamples")),
-  fRequireDownwards(p.get<bool>("RequireDownwards", true))
+  fRequireDownwards(p.get<bool>("RequireDownwards", true)),
+  fMediandQdxRRMax(p.get<double>("MediandQdxRRMax", 5.))
 {
   // Get the fiducial volume info
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
@@ -136,7 +137,7 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
   // compute the median dqdx of the last 5 cm
   std::vector<double> endp_dqdx;
   for (const sbn::TrackHitInfo &h: t.hits2) {
-    if (h.oncalo && h.rr < 5.) endp_dqdx.push_back(h.dqdx);
+    if (h.oncalo && h.rr < fMediandQdxRRMax) endp_dqdx.push_back(h.dqdx);
   }
   double med_dqdx = -1;
   if (endp_dqdx.size()) {
