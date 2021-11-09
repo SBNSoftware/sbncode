@@ -2,9 +2,6 @@ cet_enable_asserts()
 link_directories( $ENV{DK2NUDATA_LIB})
 include_directories ( $ENV{DK2NUDATA_INC} )
 
-
-file(GLOB INTERFACEFILES *Interface* )
-
 simple_plugin( FluxReader
                "source"
                sbncode_FluxReader
@@ -30,7 +27,7 @@ simple_plugin ( FluxGeoFilter "module"
 )
 
 art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
-                  SOURCE	${INTERFACEFILES}
+                  SOURCE       DK2NuInterface.cxx GSimpleInterface.cxx
                   LIBRARIES
                   nusimdata_SimulationBase
                   # GENIE STUFF #####################################
@@ -54,7 +51,7 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   ${Boost_SYSTEM_LIBRARY}
 )
 
-art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
+art_make( EXCLUDE FluxReader_source.cc DK2NuInterface.cxx GSimpleInterface.cxx FluxGeoFilter_module.cc
           LIB_LIBRARIES	nusimdata_SimulationBase
                         sbncode_FluxReader_FluxInterface
                         larcoreobj_SummaryData
