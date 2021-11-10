@@ -10,7 +10,7 @@ source: {
 
 physics: {
  producers: {
-   genieweight: @local::sbn_genie_eventweight
+   genieweight: @local::sbn_eventweight_genie
    fluxweight:  @local::sbn_eventweight_flux
    rns: {
      module_type: "RandomNumberSaver"

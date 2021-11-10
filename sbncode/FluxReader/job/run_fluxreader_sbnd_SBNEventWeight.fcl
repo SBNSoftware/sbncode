@@ -3,7 +3,12 @@
 # Add SBNEventWeight -- Keng Lin June 2021
 
 #include "simulationservices_sbnd.fcl"
-#include "fluxfilter.fcl"
+#include "fluxfilter_sbnd.fcl"
+#
+#include "seedservice.fcl"
+#include "services_sbnd.fcl"
+#include "eventweight_flux_sbn.fcl"
+#include "eventweight_genie_sbn.fcl"
 
 process_name: FluxReader
 
@@ -48,7 +53,7 @@ physics:
 {
  producers:
  {
-   genieweight: @local::sbn_genie_eventweight
+#   genieweight: @local::sbn_eventweight_genie
    fluxweight:  @local::sbn_eventweight_flux
    rns: {
      module_type: "RandomNumberSaver"
@@ -59,7 +64,7 @@ physics:
    fluxfilter: @local::flux_filter
  }
 
- filter: [ rns, fluxfilter, fluxweight, genieweight ]
+ filter: [ rns, fluxfilter, fluxweight] #, genieweight ]
  stream1: [ out1 ]
  trigger_paths: [ filter ]
  end_paths: [ stream1 ]

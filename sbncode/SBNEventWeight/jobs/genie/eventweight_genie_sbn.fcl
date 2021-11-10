@@ -8,7 +8,7 @@ BEGIN_PROLOG
 # https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
 # --- Keng Lin
 
-sbn_genie_eventweight: {
+sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
 
   genie_module_label: "generator"
