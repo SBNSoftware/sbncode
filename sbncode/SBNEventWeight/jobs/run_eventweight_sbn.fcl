@@ -32,5 +32,5 @@ outputs: {
  }
 }
 
-physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
 physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux

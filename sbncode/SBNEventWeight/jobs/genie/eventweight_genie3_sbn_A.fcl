@@ -20,7 +20,7 @@ sbn_eventweight_genie: {
   #  MaCCQE: 1
   }
 
-  weight_functions: [ 
+  weight_functions_genie: [ 
     genie_sbnd_mulstisim, genie_sbnd_fixed, genie_sbnd_mulstisim_exclusive
   # ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
