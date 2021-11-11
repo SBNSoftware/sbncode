@@ -71,5 +71,10 @@ physics:
 }
 
 #physics.filters.fluxfilter.volumes: ["volWorld"]
+
 physics.producers.fluxweight.generator_module_label: flux
+# Customize what kind of weights we need, i.e. define weight_functions_flux:
 physics.producers.fluxweight.weight_functions_flux: [horncurrent, expskin, pioninexsec, pionqexsec, piontotxsec, nucleoninexsec, nucleonqexsec, nucleontotxsec,kplus,kminus,kzero,piplus, piminus]
+
+#Need to overwrite the parameter weight_functions as weight_functions_flux;
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux

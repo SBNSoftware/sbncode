@@ -134,7 +134,10 @@ physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 
-# This job doesn't run the genie weights, and we assume they won't be in the
+# Overwrite weight_functions label:
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
+
 # input art file.
 physics.producers.mycafmaker.SystWeightLabels: []
 
