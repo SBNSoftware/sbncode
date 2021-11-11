@@ -22,7 +22,8 @@ sbn_genie_eventweight: {
   }
 
   weight_functions_genie: [ 
-    genie_sbnd_multisim, genie_sbnd_fixed, genie_sbnd_multisim_exclusive
+   # genie_sbnd_multisim, genie_sbnd_fixed, 
+	genie_sbnd_multisim_exclusive
   # ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
 
@@ -102,7 +103,7 @@ sbn_genie_eventweight: {
         1, 1, 1, 1, 1, 1, 1
     ]
     mode: multisim
-    number_of_multisims: 100
+    number_of_multisims: 2
   }
 
   # Knobs that required special ub package or GENIE v3.2
