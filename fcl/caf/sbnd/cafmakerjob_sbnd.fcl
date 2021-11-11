@@ -105,6 +105,7 @@ physics:
 
    rns: { module_type: "RandomNumberSaver" }
    genieweight: @local::sbn_genie_eventweight
+   fluxweight: @local::sbn_eventweight_flux
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
