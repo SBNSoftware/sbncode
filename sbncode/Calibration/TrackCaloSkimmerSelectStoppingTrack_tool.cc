@@ -134,7 +134,7 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
     (t.hit_min_time_p2_tpcW < 0. || t.hit_min_time_p2_tpcW > fFidTickMin) &&
     (t.hit_max_time_p2_tpcW < 0. || t.hit_max_time_p2_tpcW < fFidTickMax);
 
-  // compute the median dqdx of the last 5 cm
+  // compute the median dqdx of the last few cm -- using fMediandQdxRRMax
   std::vector<double> endp_dqdx;
   for (const sbn::TrackHitInfo &h: t.hits2) {
     if (h.oncalo && h.rr < fMediandQdxRRMax) endp_dqdx.push_back(h.dqdx);
