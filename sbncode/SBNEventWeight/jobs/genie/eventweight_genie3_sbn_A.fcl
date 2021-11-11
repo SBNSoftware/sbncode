@@ -7,7 +7,7 @@ BEGIN_PROLOG
 #
 # --- Keng Lin Nov. 2021
 
-sbn_eventweight_genie: {
+sbn_genie_eventweigh: {
   module_type: "SBNEventWeight"
 
   genie_module_label: "generator"
