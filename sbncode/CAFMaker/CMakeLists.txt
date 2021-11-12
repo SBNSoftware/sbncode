@@ -39,11 +39,15 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
 		  lardataalg_DetectorInfo
                   art_Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
+                  FlatMaker # TODO can't depend on sbnana
                   )
 
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
 ##include_directories( $ENV{IFDHC_FQ_DIR}/inc )
 ##include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
+
+# TODO sbncode doesn't (and shouldn't?) depend on srproxy
+include_directories( $ENV{SRPROXY_INC} )
 
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
