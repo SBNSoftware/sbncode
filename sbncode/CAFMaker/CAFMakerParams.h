@@ -48,8 +48,8 @@ namespace caf
     };
 
     Atom<string> DataTier        { Name("DataTier") };
-    Atom<string> FileExtension   { Name("FileExtension"), "caf.root" };
-    Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), "flat.caf.root" };
+    Atom<string> FileExtension   { Name("FileExtension"), ".caf.root" };
+    Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), ".flat.caf.root" };
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
 
     Atom<bool> StrictMode        { Name("StrictMode"),

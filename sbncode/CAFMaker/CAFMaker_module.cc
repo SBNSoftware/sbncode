@@ -182,10 +182,6 @@ class CAFMaker : public art::EDProducer {
 
   flat::Flat<caf::StandardRecord>* fFlatRecord;
 
-  TH1D* hPOT;
-  TH1D* hSinglePOT;
-  TH1D* hEvents;
-
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
   // volumes
@@ -206,6 +202,8 @@ class CAFMaker : public art::EDProducer {
   void AddEnvToFile(TFile* f);
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
+  void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
+  void AddHistogramsToFile(TFile* outfile) const;
 
   void InitializeOutfiles();
 
@@ -323,7 +321,17 @@ void CAFMaker::InitVolumes() {
 }
 
 //......................................................................
-CAFMaker::~CAFMaker() {}
+CAFMaker::~CAFMaker()
+{
+  delete fRecTree;
+  delete fFile;
+
+  delete fFlatRecord;
+  delete fFlatTree;
+  delete fFlatFile;
+
+  delete fFakeRecoTRandom;
+}
 
 //......................................................................
 std::string CAFMaker::DeriveFilename(const std::string& inname,
@@ -332,6 +340,7 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
   char* temp = new char[inname.size()+1];
   std::strcpy(temp, inname.c_str());
   std::string ret = basename(temp);
+  delete[] temp;
   const size_t dotpos = ret.rfind('.'); // Find last dot
   assert(dotpos != std::string::npos);  // Must have a dot, surely?
   ret.resize(dotpos); // Truncate everything after dot
@@ -363,6 +372,19 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 //......................................................................
 void CAFMaker::beginJob()
 {
+}
+
+//......................................................................
+void CAFMaker::AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const
+{
+  outfile->cd();
+
+  TTree* globalTree = new TTree("globalTree", "globalTree");
+  SRGlobal* pglobal = &global;
+  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
+  if(!br) abort();
+  globalTree->Fill();
+  globalTree->Write();
 }
 
 //......................................................................
@@ -457,21 +479,8 @@ void CAFMaker::beginRun(art::Run& run) {
     } // end for pset
   } // end for label
 
-  TTree* globalTree = new TTree("globalTree", "globalTree");
-  SRGlobal* pglobal = &global;
-  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
-  if(!br) abort();
-  globalTree->Fill();
-
-  if(fFile){
-    fFile->cd();
-    globalTree->Write();
-  }
-
-  if(fFlatFile){
-    fFlatFile->cd();
-    globalTree->Write();
-  }
+  if(fFile) AddGlobalTreeToFile(fFile, global);
+  if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
 }
 
 //......................................................................
@@ -573,11 +582,6 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 //......................................................................
 void CAFMaker::InitializeOutfiles()
 {
-  hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
-  hSinglePOT =
-    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
-  hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
-
   if(fParams.CreateCAF()){
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
 
@@ -1412,12 +1416,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   fFirstInFile = false;
   fFirstInSubRun = false;
 
-  // Save the standard-record
-  StandardRecord* prec = &rec;
-  fRecTree->SetBranchAddress("rec", &prec);
-  fRecTree->Fill();
+  if(fRecTree){
+    // Save the standard-record
+    StandardRecord* prec = &rec;
+    fRecTree->SetBranchAddress("rec", &prec);
+    fRecTree->Fill();
+  }
 
-  if(fFlatRecord){
+  if(fFlatTree){
     fFlatRecord->Clear();
     fFlatRecord->Fill(rec);
     fFlatTree->Fill();
@@ -1432,6 +1438,23 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
+void CAFMaker::AddHistogramsToFile(TFile* outfile) const
+{
+  outfile->cd();
+
+  TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
+  //  TH1* hSinglePOT =
+  //    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
+  TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+
+  hPOT->Fill(.5, fTotalPOT);
+  hEvents->Fill(.5, fTotalEvents);
+
+  hPOT->Write();
+  hEvents->Write();
+}
+
+//......................................................................
 void CAFMaker::endJob() {
   if (fTotalEvents == 0) {
 
@@ -1443,28 +1466,20 @@ void CAFMaker::endJob() {
     return;
   }
 
-  hPOT->Fill(.5, fTotalPOT);
-  hEvents->Fill(.5, fTotalEvents);
 
   if(fFile){
     // Make sure the recTree is in the file before filling other items
     // for debugging.
     fFile->Write();
 
-    fFile->cd();
-
-    hPOT->Write();
-    hEvents->Write();
+    AddHistogramsToFile(fFile);
     fFile->Write();
   }
 
   if(fFlatFile){
     fFlatFile->Write();
 
-    fFlatFile->cd();
-
-    hPOT->Write();
-    hEvents->Write();
+    AddHistogramsToFile(fFlatFile);
     fFlatFile->Write();
   }
 
