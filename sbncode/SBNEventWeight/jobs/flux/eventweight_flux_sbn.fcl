@@ -225,8 +225,5 @@ sbn_eventweight_flux: {
    }
 }
 
-  sbn_eventweight_flux.weight_functions: [
-  @sequence::sbn_eventweight_flux.weight_functions_flux
-  ]
 
 END_PROLOG

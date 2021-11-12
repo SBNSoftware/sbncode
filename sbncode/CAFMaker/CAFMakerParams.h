@@ -219,7 +219,7 @@ namespace caf
     Atom<string> SimChannelLabel {
       Name("SimChannelLabel"),
       Comment("Label of input sim::SimChannel objects."),
-      "largeant"
+      "simdrift"
     };
 
     Atom<bool> FillTrueParticles {
