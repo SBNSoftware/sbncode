@@ -37,13 +37,13 @@ std::vector<std::vector<double> > MultiGaussianSmearing(
 std::vector<double>  MultiGaussianSmearing(
   std::vector<double> const& centralValue,
   TMatrixD* const& inputCovarianceMatrix,
-  std::vector<double> rand);
+  std::vector<float> rand);
 
 std::vector<double> MultiGaussianSmearing(
   std::vector<double> const& centralValue,
   TMatrixD* const& LowerTriangleCovarianceMatrix,
   bool isDecomposed,
-  std::vector<double> rand);
+  std::vector<float> rand);
 
   }  // namespace evwgh
 }  // namespace sbn

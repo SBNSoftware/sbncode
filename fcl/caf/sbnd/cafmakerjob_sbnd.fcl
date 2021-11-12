@@ -2,7 +2,8 @@
 
 #include "services_sbnd.fcl"
 #include "geometry_sbnd.fcl"
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
+#include "eventweight_flux_sbn.fcl"
 
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
@@ -104,6 +105,7 @@ physics:
 
    rns: { module_type: "RandomNumberSaver" }
    genieweight: @local::sbn_genie_eventweight
+   fluxweight: @local::sbn_eventweight_flux
 }
   filters:{
     flashtrigfilter: @local::pmtflashtrigfilter_sbnd
@@ -132,7 +134,10 @@ physics.producers.vertexStub.CaloAlg: @local::sbnd_calorimetryalgmc
 physics.producers.mycafmaker: @local::standard_cafmaker
 physics.producers.mycafmaker.CosmicGenLabel: "corsika"
 
-# This job doesn't run the genie weights, and we assume they won't be in the
+# Overwrite weight_functions label:
+physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
+
 # input art file.
 physics.producers.mycafmaker.SystWeightLabels: []
 
