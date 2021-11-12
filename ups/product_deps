@@ -34,11 +34,12 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_35_01
+larsoft             v09_36_00
 sbnobj              v09_12_06
-sbnanaobj           v09_17_04
+sbnanaobj           v09_17_05
 sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
+sbndata		    v01_02
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
@@ -48,11 +49,11 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec			notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000	-nq-	
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000   	-nq-	
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq-	
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000   	-nq-	
+qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec			sbndata	notes
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000	-nq-	-nq-	
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000   	-nq-	-nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq-	-nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000   	-nq-	-nq-
 end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:

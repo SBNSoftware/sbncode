@@ -9,6 +9,7 @@
 // Ported from uboonecode to larsim on Feb 14 2018 by Marco Del Tutto
 //
 // Ported from larsim to sbncode on Dec 22 2020 by A. Mastbaum
+//
 ////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
@@ -55,10 +56,9 @@ private:
 
 SBNEventWeight::SBNEventWeight(fhicl::ParameterSet const& p)
   : EDProducer{p},
-  fGenieModuleLabel(p.get<std::string>("genie_module_label", "generator")),
+  fGenieModuleLabel(p.get<std::string>("generator_module_label", "generator")),
   fAllowMissingTruth(p.get<bool>("AllowMissingTruth"))
 {
-
   const size_t n_func = fWeightManager.Configure(p, *this);
   if (n_func > 0) {
     produces<std::vector<sbn::evwgh::EventWeightMap> >();

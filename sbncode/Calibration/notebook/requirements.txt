@@ -6,4 +6,8 @@ scipy
 pandas
 pylandau
 nbstripout
+tqdm
+ipywidgets
+tables
+dill
 git+https://github.com/gputnam/landau.git

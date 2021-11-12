@@ -1,10 +1,11 @@
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
 #include "eventweight_flux_sbn.fcl"
 
 process_name: SBNEventWeight
 
 source: {
   module_type: RootInput
+  maxEvents:   -1 # Number of events to create (-1 means "process all of them")
 }
 
 physics: {
@@ -31,5 +32,6 @@ outputs: {
  }
 }
 
+# Need to overwrite the parameter `weight_functions` to get recongnized
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
 physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
