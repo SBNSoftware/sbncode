@@ -9,6 +9,7 @@ std::vector<std::pair<int, float>> CAFRecoUtils::AllTrueParticleIDEnergyMatches(
     for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
       int id = trackIDs[idIt].trackID;
       if (rollup_unsaved_ids) id = std::abs(id);
+      id = GetShowerPrimary(id);
       trackIDToEDepMap[id] += trackIDs[idIt].energy;
     }
   }
@@ -87,3 +88,22 @@ float CAFRecoUtils::TrackCompletion(const detinfo::DetectorClocksData &clockData
   return matched_reco_energy / mcparticle_energy;
 }
 
+int CAFRecoUtils::GetShowerPrimary(const int g4ID)
+{
+  art::ServiceHandle<cheat::ParticleInventoryService> particleInventory;
+  const sim::ParticleList& particles = particleInventory->ParticleList();
+  const sim::ParticleList::const_iterator part_iter = particles.find(g4ID);
+  if(part_iter == particles.end()) return g4ID;
+
+  auto temp_iter = part_iter;
+  int primary_id = part_iter->second->TrackId();
+
+  while (std::abs(temp_iter->second->PdgCode()) == 11 || temp_iter->second->PdgCode() == 22)
+    {
+      primary_id = temp_iter->second->TrackId();
+      temp_iter = particles.find(temp_iter->second->Mother());
+      if(temp_iter == particles.end()) break;
+    }
+
+  return primary_id;
+}

@@ -66,6 +66,7 @@
 
 namespace sbn {
   class TrackCaloSkimmer;
+  enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
@@ -121,7 +122,9 @@ private:
     const std::vector<const recob::TrackHitMeta*> &thms,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
-    const std::vector<GlobalTrackInfo> &tracks);
+    const std::vector<GlobalTrackInfo> &tracks,
+    const geo::GeometryCore *geo,
+    const sbn::EDet det);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
@@ -140,13 +143,16 @@ private:
     const std::vector<geo::BoxBoundedGeo> &active_volumes,
     const std::vector<std::vector<geo::BoxBoundedGeo>> &tpc_volumes,
     const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map,
-    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map);
+    const std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map,
+    const detinfo::DetectorPropertiesData &dprop,
+    const geo::GeometryCore *geo);
 
   TrackHitInfo MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
-    const std::vector<art::Ptr<anab::Calorimetry>> &calo);
+    const std::vector<art::Ptr<anab::Calorimetry>> &calo,
+    const geo::GeometryCore *geo);
 
   void DoTailFit();
 
@@ -157,6 +163,7 @@ private:
   art::InputTag fT0Producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
+  art::InputTag fTRKHMproducer;
   art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
   std::string fG4producer;
