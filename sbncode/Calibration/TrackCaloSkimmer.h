@@ -66,6 +66,7 @@
 
 namespace sbn {
   class TrackCaloSkimmer;
+  enum EDet {kNOTDEFINED, kSBND, kICARUS}; 
 }
 
 class sbn::TrackCaloSkimmer : public art::EDAnalyzer {
@@ -124,7 +125,8 @@ private:
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
     const detinfo::DetectorClocksData &clock_data,
-    const cheat::BackTrackerService *bt_serv);
+    const cheat::BackTrackerService *bt_serv,
+    const sbn::EDet det);
 
   void FillTrackDaughterRays(const recob::Track &trk,
     const recob::PFParticle &pfp, 
@@ -165,7 +167,7 @@ private:
   art::InputTag fT0Producer;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
-  std::string fTRKHMproducer;
+  art::InputTag fTRKHMproducer;
   art::InputTag fHITproducer;
   std::vector<art::InputTag> fRawDigitproducers;
   std::string fG4producer;

@@ -40,7 +40,7 @@ simple_plugin(NuVertexChargeTree module
 	sbncode_TPCReco_VertexStub
 )
 simple_plugin ( EventSelect module
-                ${IFDH_SERVICE}
+                IFDH_SERVICE
                ${ART_FRAMEWORK_CORE}
                ${ART_FRAMEWORK_PRINCIPAL}
                ${ART_FRAMEWORK_SERVICES_REGISTRY}

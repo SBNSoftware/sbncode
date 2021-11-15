@@ -30,6 +30,11 @@ namespace caf
       Comment("Provide a string to override the automatic filename.")
     };
 
+    Atom<std::string> DetectorOverride { Name("DetectorOverride"),
+      Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
+      ""
+    };
+
     Atom<string> DataTier        { Name("DataTier") };
     Atom<string> FileExtension   { Name("FileExtension") };
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
@@ -214,7 +219,7 @@ namespace caf
     Atom<string> SimChannelLabel {
       Name("SimChannelLabel"),
       Comment("Label of input sim::SimChannel objects."),
-      "largeant"
+      "simdrift"
     };
 
     Atom<bool> FillTrueParticles {

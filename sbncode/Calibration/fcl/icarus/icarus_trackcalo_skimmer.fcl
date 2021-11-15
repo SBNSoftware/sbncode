@@ -68,11 +68,9 @@ stopping_selection: {
   FVInsetMaxZ: 15
   MinTimeTickInset: 100
   MaxTimeTickInset: 100
-  ExpFitRCut: 200
-  FitResidualsCut: 10
-  RequireFit: false
-  EndMediandQdxCut: -1
+  EndMediandQdxCut: 1000
   NumberTimeSamples: 4096
+  MediandQdxRRMax: 2.
 }
 
 throughgoing_selection: {
@@ -87,9 +85,6 @@ throughgoing_selection: {
   FVInsetMaxZ: 5
   MinTimeTickInset: 0
   MaxTimeTickInset: 0
-  ExpFitRCut: -1
-  FitResidualsCut: -1
-  RequireFit: false
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 4096
