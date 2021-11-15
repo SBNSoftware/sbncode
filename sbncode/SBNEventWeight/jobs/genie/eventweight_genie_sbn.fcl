@@ -102,8 +102,7 @@ sbn_genie_eventweight: {
         1, 1, 1, 1, 1, 1, 1
     ]
     mode: multisim
-    number_of_multisims: 2
-  }
+    number_of_multisims: 100
 
   # Knobs that required special ub package or GENIE v3.2
   #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
