@@ -1086,7 +1086,7 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
     caf::HitsEnergy all_matched_hits = all_hits_map.find(match.G4ID)->second;
 
     match.hit_purity = (hits.size() != 0) ? track_matched_hits.nHits / (float) hits.size() : 0.;
-    match.energy_purity = (ret.total_deposited_energy > 0) ? match.energy / ret.total_deposited_energy : 0.;
+    match.energy_purity = (ret.visEintrk > 0) ? match.energy / ret.visEintrk : 0.;
     match.hit_completeness = (all_matched_hits.nHits != 0) ? track_matched_hits.nHits / (float) all_matched_hits.nHits : 0.;
     match.energy_completeness = (all_matched_hits.totE > 0) ? pair.second / all_matched_hits.totE : 0.;
     
@@ -1114,9 +1114,12 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 
   // Calculate efficiency / purity
   if (found_bestmatch) {
-    float match_total_energy = std::accumulate(ret.p.plane0VisE.begin(), ret.p.plane0VisE.end(), 0.) +\
-        std::accumulate(ret.p.plane1VisE.begin(), ret.p.plane1VisE.end(), 0.) +\
-        std::accumulate(ret.p.plane2VisE.begin(), ret.p.plane2VisE.end(), 0.);
+    double match_total_energy = 0.;
+    for (int p = 0; p < 3; p++) {
+      for (int c = 0; c < 2; c++) {
+        match_total_energy += ret.p.plane[c][p].visE;
+      }
+    }
 
     ret.eff = ret.matches[0].energy / match_total_energy; 
     ret.pur = ret.matches[0].energy / ret.visEintrk;
@@ -1126,8 +1129,8 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
       icryo = hits[0]->WireID().Cryostat;
     }
 
-    if (icryo >= 0) {
-      float match_cryo_energy = ret.p.plane0VisE.at(icryo) + ret.p.plane1VisE.at(icryo) + ret.p.plane2VisE.at(icryo);
+    if (icryo >= 0 && icryo < 2) {
+      float match_cryo_energy = ret.p.plane[icryo][0].visE + ret.p.plane[icryo][1].visE + ret.p.plane[icryo][2].visE;
       ret.eff_cryo = ret.matches[0].energy / match_cryo_energy;
     }
     else {
