@@ -39,7 +39,7 @@ sbnobj              v09_12_07
 sbnanaobj           v09_17_05
 sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
-sbndata		    v01_02
+sbndata             v01_03
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
