@@ -8,10 +8,12 @@
 ##
 ## Maintainer: J. Zennamo (jaz8600@fnal.gov)
 ##
-## updated July 2021 by K. Lin;
-##########################################################
+## updated Nov. 2021 by Keng Lin (keng.lin@rutgers.edu
+ ##########################################################
 BEGIN_PROLOG
 
+# Choose the desired uiverses number for multisim mode
+n_universes: 1000
 
 sbn_eventweight_flux: {
 
@@ -31,7 +33,7 @@ sbn_eventweight_flux: {
     type: Flux #no need parameter_sigma, because variations are prepared separatedly
     random_seed: 7
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["horncurrent"]
     #parameter_sigma: [1] 
 
@@ -47,7 +49,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 14
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["expskin"]
 
     calc_type: "Unisim"
@@ -62,7 +64,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 8
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["pioninexsec"]
 
     calc_type: "Unisim"
@@ -77,7 +79,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 12
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["pionqexsec"]
 
     calc_type: "Unisim"
@@ -92,7 +94,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 13
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["piontotxsec"]
 
     calc_type: "Unisim"
@@ -109,7 +111,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 11
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["nucleoninexsec"]
 
     calc_type: "Unisim"
@@ -124,7 +126,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 10
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["nucleonqexsec"]
 	
     calc_type: "Unisim"
@@ -139,7 +141,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 9
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["nucleontotxsec"]
 	
     calc_type: "Unisim"
@@ -155,7 +157,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 4
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["kplus"]
     parameter_sigma: [1] 
 
@@ -170,7 +172,7 @@ sbn_eventweight_flux: {
     type: Flux 
     random_seed: 6
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["kminus"]
     parameter_sigma: [1]
 
@@ -183,7 +185,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 5
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["kzero"]
     parameter_sigma: [1]
 
@@ -198,7 +200,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 2
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["piplus"]
     parameter_sigma: [1]
 
@@ -213,7 +215,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 3
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: @local::n_universes
     parameter_list: ["piminus"]
     parameter_sigma: [1]
 

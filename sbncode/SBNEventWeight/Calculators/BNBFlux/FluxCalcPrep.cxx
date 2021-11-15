@@ -204,11 +204,12 @@ namespace sbn {
         }//end of special Hadron calculator configurations
 
       } else  validC = false; //the calculator name is way too off.
-      std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
+//      std::cout<<"SBNEventWeight : finish configuration."<<std::endl;
     }//End of Configure() function
 
 
     std::vector<float> FluxWeightCalc::GetWeight(art::Event& e, size_t inu) {
+      bool count_weights = false;
 //      std::cout<<"SBNEventWeight : getweight for the "<<inu<<" th particles of an event"<< std::endl;
       //MCFlux & MCTruth
       art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
@@ -226,7 +227,7 @@ namespace sbn {
       }
 
       //Iterate through each neutrino in the event
-	  std::cout<<"Get "<<CalcType<<std::endl;
+    std::cout<<"SBNEventWeight Flux: Get calculator "<<CalcType<<std::endl;
       if( CalcType == "Unisim"){//Unisim Calculator
         weights.resize(NUni);
         //Unisim specific
@@ -266,17 +267,19 @@ namespace sbn {
             double randomN = (fParameterSet.fParameterMap.begin())->second[i];
             weights[i]=UnisimWeightCalc(enu, ptype, ntype, randomN , PosOnly);//AddParameter result does not work here;
 
-            if(weights[i]<0){
-              wcn++;
-            }else if((weights[i]-0)<1e-30){
-              wc0++;
-            }else if(fabs(weights[i]-30) < 1e-30){
-              wc30++;
-            } else if(fabs(weights[i]-1)<1e-30){
-              wc1++;
-            } else {
-              wc++;
-            }
+      if(count_weights){
+        if(weights[i]<0){
+          wcn++;
+        }else if((weights[i]-0)<1e-30){
+          wc0++;
+        }else if(fabs(weights[i]-30) < 1e-30){
+          wc30++;
+        } else if(fabs(weights[i]-1)<1e-30){
+          wc1++;
+        } else {
+          wc++;
+        }
+      }
           }//Iterate through the number of universes      
         }
       } else{//then this must be PrimaryHadron
@@ -318,26 +321,30 @@ namespace sbn {
               weights.push_back(test_weight.second);
               double tmp_weight = test_weight.second;
 //              std::cout<<i<<" ("<<tmp_weight<<") ";
-              if(tmp_weight<0){
-                wcn++;
-              }else if((tmp_weight-0)<1e-30){
-                wc0++;
-              }else if(fabs(tmp_weight-30) < 1e-30){
-                wc30++;
-              } else if(fabs(tmp_weight-1)<1e-30){
-                wc1++;
-              } else {
-                wc++;
-              }
-            
+        if(count_weights){
+          if(tmp_weight<0){
+            wcn++;
+          }else if((tmp_weight-0)<1e-30){
+            wc0++;
+          }else if(fabs(tmp_weight-30) < 1e-30){
+            wc30++;
+          } else if(fabs(tmp_weight-1)<1e-30){
+            wc1++;
+          } else {
+            wc++;
+          }
+        }
+
             };
 
           }//Iterate through the number of universes      
         }//Yes, Multisim
       }
 
-      std::cout<<"SBNEventWeight Flux: Weights counter: (normal, <0, ==0, 1, 30)= ";
-      std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
+      if(count_weights){
+        std::cout<<"SBNEventWeight Flux: Weights counter: (normal, <0, ==0, 1, 30)= ";
+        std::cout<<wc<<", "<<wcn<<", "<<wc0<<", "<<wc1<<", "<<wc30<<std::endl;
+      }
 //      std::cout<<"Next partile/event\n"<<std::endl;
 
       return weights;
