@@ -31,7 +31,7 @@ sbn_eventweight_flux: {
     type: Flux #no need parameter_sigma, because variations are prepared separatedly
     random_seed: 7
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["horncurrent"]
     #parameter_sigma: [1] 
 
@@ -47,7 +47,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 14
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["expskin"]
 
     calc_type: "Unisim"
@@ -62,7 +62,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 8
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["pioninexsec"]
 
     calc_type: "Unisim"
@@ -77,7 +77,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 12
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["pionqexsec"]
 
     calc_type: "Unisim"
@@ -92,7 +92,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 13
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["piontotxsec"]
 
     calc_type: "Unisim"
@@ -109,7 +109,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 11
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["nucleoninexsec"]
 
     calc_type: "Unisim"
@@ -124,7 +124,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 10
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["nucleonqexsec"]
 	
     calc_type: "Unisim"
@@ -139,7 +139,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 9
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["nucleontotxsec"]
 	
     calc_type: "Unisim"
@@ -155,7 +155,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 4
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["kplus"]
     parameter_sigma: [1] 
 
@@ -170,7 +170,7 @@ sbn_eventweight_flux: {
     type: Flux 
     random_seed: 6
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["kminus"]
     parameter_sigma: [1]
 
@@ -183,7 +183,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 5
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["kzero"]
     parameter_sigma: [1]
 
@@ -198,7 +198,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 2
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["piplus"]
     parameter_sigma: [1]
 
@@ -213,7 +213,7 @@ sbn_eventweight_flux: {
     type: Flux
     random_seed: 3
     mode: multisim
-    number_of_multisims: 1000
+    number_of_multisims: 2
     parameter_list: ["piminus"]
     parameter_sigma: [1]
 
