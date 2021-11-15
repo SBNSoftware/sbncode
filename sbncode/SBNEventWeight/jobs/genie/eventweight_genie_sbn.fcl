@@ -23,7 +23,7 @@ sbn_genie_eventweight: {
 
   weight_functions_genie: [ 
    genie_sbnd_multisim, genie_sbnd_fixed, genie_sbnd_multisim_exclusive
-   ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
+   #,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
 
   # Knobs that are used in both sbnd and ub
