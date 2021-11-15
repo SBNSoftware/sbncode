@@ -1043,7 +1043,7 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
 
   caf::SRTrackTruth ret;
 
-  ret.total_deposited_energy = total_energy / 1000. /* MeV -> GeV */;
+  ret.visEintrk = total_energy / 1000. /* MeV -> GeV */;
 
   // setup the matches
   for (auto const &pair: matches) {
@@ -1060,14 +1060,47 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
       }
       );
 
+  bool found_bestmatch = false;
   if (ret.matches.size()) {
     ret.bestmatch = ret.matches.at(0);
     for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
       if (particles[i_part].G4ID == ret.bestmatch.G4ID) {
         ret.p = particles[i_part];
+        found_bestmatch = true;
+        break;
       }
     }
   }
+
+  // Calculate efficiency / purity
+  if (found_bestmatch) {
+    float match_total_energy = std::accumulate(ret.p.plane0VisE.begin(), ret.p.plane0VisE.end(), 0.) +\
+        std::accumulate(ret.p.plane1VisE.begin(), ret.p.plane1VisE.end(), 0.) +\
+        std::accumulate(ret.p.plane2VisE.begin(), ret.p.plane2VisE.end(), 0.);
+
+    ret.eff = ret.matches[0].energy / match_total_energy; 
+    ret.pur = ret.matches[0].energy / ret.visEintrk;
+
+    int icryo = -1;
+    if (hits.size()) {
+      icryo = hits[0]->WireID().Cryostat;
+    }
+
+    if (icryo >= 0) {
+      float match_cryo_energy = ret.p.plane0VisE.at(icryo) + ret.p.plane1VisE.at(icryo) + ret.p.plane2VisE.at(icryo);
+      ret.eff_cryo = ret.matches[0].energy / match_cryo_energy;
+    }
+    else {
+      ret.eff_cryo = -1;
+    }
+
+  }
+  else {
+    ret.eff = -1.;
+    ret.pur = -1.;
+    ret.eff_cryo = -1.;
+  }
+
   ret.nmatches = ret.matches.size();
 
   return ret;
@@ -1126,12 +1159,10 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
     ret.eff = (matching_energy[index] / 1000.) / true_energy;
 
-    // lookup the cryostat
-    int icryo = srmc.nu[index].cryostat;
-
-    // also check in the Prtl object if present
-    if (icryo < 0 && (int)srmc.prtl.size() > index) {
-      icryo = srmc.prtl[index].cryostat;
+    // Lookup the cryostat
+    int icryo = -1;
+    if (hits.size()) {
+      icryo = hits[0]->WireID().Cryostat;
     }
 
     if (icryo >= 0) {
