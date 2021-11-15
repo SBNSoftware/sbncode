@@ -38,9 +38,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_horn175ka_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_horn173ka_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_horn175ka_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_horn173ka_rgen610.6_flux.root"
   }
 
   expskin: {
@@ -53,9 +53,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/expskin_nrtd1000_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/expskin_nrtd1000_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/expskin_nrtd1000_flux.root"
   }
 
   pioninexsec: {
@@ -68,9 +68,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_pioninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_pioninexsec_down_rgen610.6_flux.root"
   }
 
   pionqexsec: {	
@@ -83,9 +83,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 0.292 #From MiniBooNE  
     scale_factor_neg: 0.585 #From MiniBooNE
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_pionqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_pionqexsec_down_rgen610.6_flux.root"
   }
 
   piontotxsec: {
@@ -98,9 +98,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_piontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_piontotxsec_down_rgen610.6_flux.root"
   }
 
 
@@ -115,9 +115,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleoninexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleoninexsec_down_rgen610.6_flux.root"
   }
 
   nucleonqexsec: {
@@ -130,9 +130,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 0.333 #From MiniBooNE 
     scale_factor_neg: 0.573 #From MiniBooNE
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleonqexsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleonqexsec_down_rgen610.6_flux.root"
   }
 
   nucleontotxsec: {
@@ -145,9 +145,9 @@ sbn_eventweight_flux: {
     calc_type: "Unisim"
     scale_factor_pos: 1  
     scale_factor_neg: 1
-    CentralValue_hist_file: "beamData/UnisimHists/may06_10kpot_ntrd1000_flux.root"
-    PositiveSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
-    NegativeSystematicVariation_hist_file: "beamData/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
+    CentralValue_hist_file: "beamData/BNBdata/UnisimHists/may06_10kpot_ntrd1000_flux.root"
+    PositiveSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleontotxsec_up_rgen610.6_flux.root"
+    NegativeSystematicVariation_hist_file: "beamData/BNBdata/UnisimHists/may06_nucleontotxsec_down_rgen610.6_flux.root"
   }
 
 
@@ -162,7 +162,7 @@ sbn_eventweight_flux: {
     calc_type: "PrimaryHadronFeynmanScaling"
     PrimaryHadronGeantCode: [321] # geant code for particle production on Be
     scale_factor_pos: 1
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    ExternalData: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE.root"
     #ExternalFit: "empty"
    }
 
@@ -190,7 +190,7 @@ sbn_eventweight_flux: {
     calc_type: "PrimaryHadronSanfordWang"
     PrimaryHadronGeantCode: [130, 310, 311] # geant code for particle production on Be
     scale_factor_pos: 1
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    ExternalData: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE.root"
    }
 
 
@@ -205,8 +205,8 @@ sbn_eventweight_flux: {
     calc_type: "PrimaryHadronSWCentralSplineVariation"
     PrimaryHadronGeantCode: [211] # geant code for particle production on Be
     scale_factor_pos: 1
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
-    ExternalFit: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    ExternalData: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE.root"
    }
 
   piminus: {
@@ -220,8 +220,8 @@ sbn_eventweight_flux: {
     calc_type: "PrimaryHadronSWCentralSplineVariation"
     PrimaryHadronGeantCode: [-211] # geant code for particle production on Be
     scale_factor_pos: 1
-    ExternalData: "beamData/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
-    ExternalFit: "beamData/ExternalData/BNBExternalData_uBooNE.root"
+    ExternalData: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE_SplinesHARP.root"
+    ExternalFit: "beamData/BNBdata/ExternalData/BNBExternalData_uBooNE.root"
    }
 }
 
