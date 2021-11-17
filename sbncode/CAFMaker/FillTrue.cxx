@@ -1125,7 +1125,7 @@ caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData,
     ret.pur = ret.matches[0].energy / ret.visEintrk;
 
     int icryo = -1;
-    if (hits.size()) {
+    if (!hits.empty()) {
       icryo = hits[0]->WireID().Cryostat;
     }
 
