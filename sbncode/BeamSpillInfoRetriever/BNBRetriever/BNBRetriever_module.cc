@@ -560,9 +560,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
     assert(!MWRdata.empty());
   }
 
-  if(unpacked_MWR[0].size() == 0){
-    std::vector<int> empty;
-    beamInfo.M875BB = empty;
+  if(unpacked_MWR[0].empty()){
+    beamInfo.M875BB.clear();
     beamInfo.M875BB_spill_time_diff = -999;//units in seconds
   }
   else{
