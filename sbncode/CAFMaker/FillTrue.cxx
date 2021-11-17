@@ -1208,7 +1208,7 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
 
     // Lookup the cryostat
     int icryo = -1;
-    if (hits.size()) {
+    if (!hits.empty()) {
       icryo = hits[0]->WireID().Cryostat;
     }
 
