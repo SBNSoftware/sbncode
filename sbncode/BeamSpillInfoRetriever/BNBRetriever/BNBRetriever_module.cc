@@ -578,9 +578,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
    beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
  }
 
- if(unpacked_MWR[2].size() == 0){
-    std::vector<int> empty;
-    beamInfo.MMBTBB = empty;
+ if(unpacked_MWR[2].empty()){
+    beamInfo.MMBTBB.clear();
     beamInfo.MMBTBB_spill_time_diff = -999;//units in seconds
   }
  else{
