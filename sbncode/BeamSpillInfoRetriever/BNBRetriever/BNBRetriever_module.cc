@@ -562,9 +562,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
 
   if(unpacked_MWR[0].size() == 0){
     std::vector<int> empty;
-    empty.push_back(0);
     beamInfo.M875BB = empty;
-    beamInfo.M875BB_spill_time_diff = -999;
+    beamInfo.M875BB_spill_time_diff = -999;//units in seconds
   }
   else{
     beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
@@ -573,9 +572,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
 
  if(unpacked_MWR[1].size() == 0){
     std::vector<int> empty;
-    empty.push_back(0);
     beamInfo.M876BB = empty;
-    beamInfo.M876BB_spill_time_diff = -999;
+    beamInfo.M876BB_spill_time_diff = -999;//units in seconds
  }
  else{
    beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
@@ -584,9 +582,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
 
  if(unpacked_MWR[2].size() == 0){
     std::vector<int> empty;
-    empty.push_back(0);
     beamInfo.MMBTBB = empty;
-    beamInfo.MMBTBB_spill_time_diff = -999;
+    beamInfo.MMBTBB_spill_time_diff = -999;//units in seconds
   }
  else{
    beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
