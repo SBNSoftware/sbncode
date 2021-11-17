@@ -560,13 +560,38 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
     assert(!MWRdata.empty());
   }
 
-  beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
-  beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
-  beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
-  beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
-  beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
-  beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
-  
+  if(unpacked_MWR[0].size() == 0){
+    std::vector<int> empty;
+    empty.push_back(0);
+    beamInfo.M875BB = empty;
+    beamInfo.M875BB_spill_time_diff = -999;
+  }
+  else{
+    beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
+    beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
+  }
+
+ if(unpacked_MWR[1].size() == 0){
+    std::vector<int> empty;
+    empty.push_back(0);
+    beamInfo.M876BB = empty;
+    beamInfo.M876BB_spill_time_diff = -999;
+ }
+ else{
+   beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
+   beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
+ }
+
+ if(unpacked_MWR[2].size() == 0){
+    std::vector<int> empty;
+    empty.push_back(0);
+    beamInfo.MMBTBB = empty;
+    beamInfo.MMBTBB_spill_time_diff = -999;
+  }
+ else{
+   beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
+   beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
+ }
   // We do not write these to the art::Events because 
   // we can filter events but want to keep all the POT 
   // information, so we'll write it to the SubRun
