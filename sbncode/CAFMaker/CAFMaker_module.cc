@@ -1343,6 +1343,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   rec.hdr = SRHeader();
 
+  // Get the Process and Cluser number
+  const char *process_str = std::getenv("PROCESS");
+  if (process_str) {
+    try {
+      rec.hdr.proc = std::stoi(process_str);
+    }
+    catch (...) {}
+  }
+
+  const char *cluster_str = std::getenv("CLUSTER");
+  if (cluster_str) {
+    try {
+      rec.hdr.cluster = std::stoi(cluster_str);
+    }
+    catch (...) {}
+  }
+
   rec.hdr.run     = run;
   rec.hdr.subrun  = subrun;
   rec.hdr.evt     = evtID;
