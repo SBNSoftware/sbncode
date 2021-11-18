@@ -83,7 +83,7 @@ sbn_eventweight_genie: {
   genie_sbnd_fixed: {
     type: Genie
     parameter_list: [ "VecFFCCQEshape" , "Theta_Delta2Npi" ]
-    parameter_sigma: [ 1 , 1 ]
+    parameter_sigma: [ 0 , 1 ]
     mode: fixed
   }
 
