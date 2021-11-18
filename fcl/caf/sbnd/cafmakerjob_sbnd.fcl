@@ -104,7 +104,7 @@ physics:
    pandoraShowerRazzle:         @local::razzle_sbnd
 
    rns: { module_type: "RandomNumberSaver" }
-   genieweight: @local::sbn_genie_eventweight
+   genieweight: @local::sbn_eventweight_genie
    fluxweight: @local::sbn_eventweight_flux
 }
   filters:{
