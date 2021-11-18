@@ -6,7 +6,7 @@ empty_kaon: {
 
 # Taken from: https://github.com/SBNSoftware/icaruscode/blob/develop/fcl/gen/numi/GNuMIFlux.xml#L765
 icarus_numi_beam2detector_rotation: [ 0.921035925, 0.022715103,  0.388814672,
-                                                0, 0.998297825, -0.058321970
+                                                0, 0.998297825, -0.058321970,
                                      -0.389477631, 0.053716629,  0.919468161]
 
 icarus_numi_beam_origin: [0, 0, 0, 4.503730e2, 80.153901e2, 795.112945e2] # cm
