@@ -4,6 +4,8 @@
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
 
+BEGIN_PROLOG
+
 # This file if a place to define things which are common
 # between the SBND and ICARUS cafmaker configurations.
 # For now this just means a few producers listed below.
@@ -14,3 +16,5 @@ cafmaker_common_producers: {
   genieweight: @local::sbn_genie_eventweight
   fluxweight: @local::sbn_eventweight_flux  
 }
+
+END_PROLOG
