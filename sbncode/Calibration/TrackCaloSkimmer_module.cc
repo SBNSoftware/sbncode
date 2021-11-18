@@ -420,11 +420,13 @@ geo::Point_t TrajectoryToWirePosition(const geo::Point_t &loc, const geo::TPCID 
   // Returned X is the drift -- multiply by the drift direction to undo this
   int corr = geom->TPC(tpc.TPC).DriftDir()[0];
   
-  geo::Vector_t offset = sce->GetPosOffsets(ret);
+  if (sce && sce->EnableSimSpatialSCE()) {
+    geo::Vector_t offset = sce->GetPosOffsets(ret);
   
-  ret.SetX(ret.X() + corr * offset.X());
-  ret.SetY(ret.Y() + offset.Y());
-  ret.SetZ(ret.Z() + offset.Z());
+    ret.SetX(ret.X() + corr * offset.X());
+    ret.SetY(ret.Y() + offset.Y());
+    ret.SetZ(ret.Z() + offset.Z());
+  }
 
   return ret;
 }
@@ -435,11 +437,13 @@ geo::Point_t WireToTrajectoryPosition(const geo::Point_t &loc, const geo::TPCID 
 
   geo::Point_t ret = loc;
 
-  geo::Vector_t offset = sce->GetCalPosOffsets(ret, tpc.TPC);
+  if (sce && sce->EnableSimSpatialSCE()) {
+    geo::Vector_t offset = sce->GetCalPosOffsets(ret, tpc.TPC);
 
-  ret.SetX(ret.X() + offset.X());
-  ret.SetY(ret.Y() + offset.Y());
-  ret.SetZ(ret.Z() + offset.Z());
+    ret.SetX(ret.X() + offset.X());
+    ret.SetY(ret.Y() + offset.Y());
+    ret.SetZ(ret.Z() + offset.Z());
+  }
 
   return ret;
   
