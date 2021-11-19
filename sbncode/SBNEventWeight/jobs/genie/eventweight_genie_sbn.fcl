@@ -11,7 +11,7 @@ BEGIN_PROLOG
 
 
 # Choose the desired uiverses number for multisim mode
-n_universes: 100
+n_universes: 20
 
 sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
