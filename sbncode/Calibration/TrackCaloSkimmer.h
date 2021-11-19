@@ -124,6 +124,8 @@ private:
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
     const geo::GeometryCore *geo,
+    const detinfo::DetectorClocksData &clock_data,
+    const cheat::BackTrackerService *bt_serv,
     const sbn::EDet det);
 
   void FillTrackDaughterRays(const recob::Track &trk,
@@ -152,7 +154,9 @@ private:
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
-    const geo::GeometryCore *geo);
+    const geo::GeometryCore *geo,
+    const detinfo::DetectorClocksData &dclock,
+    const cheat::BackTrackerService *bt_serv);
 
   void DoTailFit();
 
