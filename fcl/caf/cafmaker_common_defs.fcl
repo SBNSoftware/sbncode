@@ -13,7 +13,7 @@ cafmaker_common_producers: {
   pandoraTrackMCS:   @local::mcs_sbn
   pandoraTrackRange:   @local::range_sbn
   rns: { module_type: "RandomNumberSaver" }
-  genieweight: @local::sbn_genie_eventweight
+  genieweight: @local::sbn_eventweight_genie
   fluxweight: @local::sbn_eventweight_flux  
 }
 
