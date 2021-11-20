@@ -19,9 +19,6 @@
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/Utils.h"
 
-// TODO this totally violates the dependency structure between the products
-#include "sbnana/FlatMaker/FlatRecord.h"
-
 // C/C++ includes
 #include <fenv.h>
 #include <time.h>
@@ -108,8 +105,9 @@
 
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
-
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
+
+#include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
