@@ -5,15 +5,14 @@ empty_kaon: {
 }
 
 # Taken from: https://github.com/SBNSoftware/icaruscode/blob/develop/fcl/gen/numi/GNuMIFlux.xml#L765
-icarus_numi_beam2detector_rotation: [   0.921228671,    0.0226872648,   0.388359401,
-				        0.00136256111,  0.998103714,   -0.061539578,
-				       -0.389019125,    0.0572211871,   0.919450845  ]
+icarus_numi_beam2detector_rotation: [ 0.921035925, 0.022715103,  0.388814672,
+                                                0, 0.998297825, -0.058321970,
+                                     -0.389477631, 0.053716629,  0.919468161]
 
-icarus_numi_beam_origin: [0, 0, 0, 4.8195e2, 79.5800e2, 794.3955e2] # cm
+icarus_numi_beam_origin: [0, 0, 0, 4.503730e2, 80.153901e2, 795.112945e2] # cm
 
-# icarus_detector_box: [-364.49, 364.49, -173.41, 143.41, -909.951, 879.951]
-# icarus_detector_box: [-369.63. 369.63, -224.61, 177.71, -994.950652270838, 994.950652270838]
-icarus_detector_box: [-378.49, 378.49, -191.86, 144.96, -904.950652270838, 904.950652270838]
+# 10cm around the "Active-Bounding-Box"
+icarus_detector_box: [-368.49, 368.49, -191.86, 144.96, -904.950652270838, 904.950652270838]
 
 numi_kaon: {
   tool_type: NuMiKaonGen

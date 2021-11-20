@@ -560,13 +560,32 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
     assert(!MWRdata.empty());
   }
 
-  beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
-  beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
-  beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
-  beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
-  beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
-  beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
-  
+  if(unpacked_MWR[0].empty()){
+    beamInfo.M875BB.clear();
+    beamInfo.M875BB_spill_time_diff = -999;//units in seconds
+  }
+  else{
+    beamInfo.M875BB = unpacked_MWR[0][matched_MWR[0]];
+    beamInfo.M875BB_spill_time_diff = (MWR_times[0][matched_MWR[0]] - time);
+  }
+
+ if(unpacked_MWR[1].empty()){
+    beamInfo.M876BB.clear();
+    beamInfo.M876BB_spill_time_diff = -999;//units in seconds
+ }
+ else{
+   beamInfo.M876BB = unpacked_MWR[1][matched_MWR[1]];
+   beamInfo.M876BB_spill_time_diff = (MWR_times[1][matched_MWR[1]] - time);
+ }
+
+ if(unpacked_MWR[2].empty()){
+    beamInfo.MMBTBB.clear();
+    beamInfo.MMBTBB_spill_time_diff = -999;//units in seconds
+  }
+ else{
+   beamInfo.MMBTBB = unpacked_MWR[2][matched_MWR[2]];
+   beamInfo.MMBTBB_spill_time_diff = (MWR_times[2][matched_MWR[2]] - time);
+ }
   // We do not write these to the art::Events because 
   // we can filter events but want to keep all the POT 
   // information, so we'll write it to the SubRun
