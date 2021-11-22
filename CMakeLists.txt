@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(sbncode VERSION 09.36.00.01 LANGUAGES CXX)
+project(sbncode VERSION 09.37.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -68,7 +68,7 @@ find_ups_product(ifbeam)
 find_ups_product(ifbeam_art)
 find_ups_product(libwda) 
 find_ups_product(sbnobj v09_10_00)
-find_ups_product(sbndata v01_00)
+find_ups_product(sbndata v01_03)
 find_ups_product(ifdhc)
 find_ups_product(ifdh_art)
 find_ups_product(log4cpp)

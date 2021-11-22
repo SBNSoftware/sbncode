@@ -1,14 +1,19 @@
+# Update (old) knobs name following GENIE knob names
+# "genie_ub*" knobs are not yet available for GENIE v3.0.6
+#
+# NOTE: 
+# See what's new for the knobs in the Google Sheet:
+# https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
+# --- Keng Lin (keng.lin@rutgers.edu)
+ ##########################################################
+
 BEGIN_PROLOG
 
-# Update knobs name following GENIE knob names
-# "genie_ub" knobs are not yet available for GENIE v3.0.6
-#
-# NOTE: this FHiCL is subjected to be updated before PR is approved
-# knobs updates summary see the Google Sheet:
-# https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
-# --- Keng Lin
 
-sbn_genie_eventweight: {
+# Choose the desired uiverses number for multisim mode
+n_universes: 20
+
+sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
 
   genie_module_label: "generator"
@@ -23,7 +28,7 @@ sbn_genie_eventweight: {
 
   weight_functions_genie: [ 
    genie_sbnd_multisim, genie_sbnd_fixed, genie_sbnd_multisim_exclusive
-   ,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
+   #,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
 
   # Knobs that are used in both sbnd and ub
@@ -72,13 +77,13 @@ sbn_genie_eventweight: {
       1,1,1,1,1,1,1,1,1,1
     ]
     mode: multisim
-    number_of_multisims: 100
+    number_of_multisims: @local::n_universes
   }
 
   genie_sbnd_fixed: {
     type: Genie
     parameter_list: [ "VecFFCCQEshape" , "Theta_Delta2Npi" ]
-    parameter_sigma: [ 1 , 1 ]
+    parameter_sigma: [ 0 , 1 ]
     mode: fixed
   }
 
@@ -95,14 +100,14 @@ sbn_genie_eventweight: {
       "MaCOHpi","R0COHpi",
     #NC Note: the knob "NC" is removed.
       "NormNCRES",
-    #DIS
+    #DIS, note DISNuclMod is unimplemented and will be ignored;
       "DISNuclMod","FormZone"
     ]
     parameter_sigma: [
         1, 1, 1, 1, 1, 1, 1
     ]
     mode: multisim
-    number_of_multisims: 2
+    number_of_multisims: @local::n_universes
   }
 
   # Knobs that required special ub package or GENIE v3.2
@@ -113,7 +118,7 @@ sbn_genie_eventweight: {
     parameter_list: [ "XSecShape_CCMEC" ]
     parameter_sigma: [ 1 ]
     mode: multisim
-    number_of_multisims: 100
+    number_of_multisims: @local::n_universes
   }
 
   genie_ub_fixed: {
