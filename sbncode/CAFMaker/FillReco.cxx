@@ -390,12 +390,45 @@ namespace caf
   }
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid) {
-    srpid.chi2_muon = particle_id.Chi2Muon();
-    srpid.chi2_pion = particle_id.Chi2Pion();
-    srpid.chi2_kaon = particle_id.Chi2Kaon();
-    srpid.chi2_proton = particle_id.Chi2Proton();
-    srpid.pid_ndof = particle_id.Ndf();
-    srpid.pida = particle_id.PIDA();
+
+    // Assign dummy values.
+
+    srpid.chi2_muon = 99999.;
+    srpid.chi2_pion = 99999.;
+    srpid.chi2_kaon = 99999.;
+    srpid.chi2_proton = 99999.;
+    srpid.pid_ndof = 0;
+    srpid.pida = 99999.;
+
+    // Loop over algorithm scores and extract the ones we want.
+    // Get the ndof from any algorithm
+
+    std::vector<anab::sParticleIDAlgScores> AlgScoresVec = particle_id.ParticleIDAlgScores();
+    for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
+      anab::sParticleIDAlgScores AlgScore = AlgScoresVec.at(i_algscore);
+      if (AlgScore.fAlgName == "Chi2"){
+        if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // chi2mu
+          srpid.chi2_muon = AlgScore.fValue;
+          srpid.pid_ndof = AlgScore.fNdf;
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // chi2pi
+          srpid.chi2_pion = AlgScore.fValue;
+          srpid.pid_ndof = AlgScore.fNdf;
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 321) { // chi2ka
+          srpid.chi2_kaon = AlgScore.fValue;
+          srpid.pid_ndof = AlgScore.fNdf;
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // chi2pr
+          srpid.chi2_proton = AlgScore.fValue;
+          srpid.pid_ndof = AlgScore.fNdf;
+        }
+      }
+      else if (AlgScore.fVariableType==anab::kPIDA){
+        srpid.pida = AlgScore.fValue;
+        srpid.pid_ndof = AlgScore.fNdf;
+      }
+    }
   }
 
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
