@@ -42,6 +42,7 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   GFwMsg
                   GFwGHEP
                   GTlFlx
+                  GFwParDat
                   dk2nuTree
                   #${DK2NUDATA}
                   ${DK2NUGENIE}
