@@ -56,22 +56,19 @@ namespace fluxr {
       bool FillMCFlux(Long64_t ientry, simb::MCFlux& mcflux);
 
     private:
-      TTree*                        fBNBtree;
-      TTree*                        fWindowtree;
-      BooNENtuple fBooneNtp;
-      BeamNtuple fBeamNtp;
-      double fMaxWeight;
-      double fMinWeight;
-      double fSumWeights;
-      // genie::flux::GSimpleNtpEntry* fGSimpleEntry;
-      // genie::flux::GSimpleNtpNuMI*  fGSimpleNuMI;
-      // genie::flux::GSimpleNtpAux*   fGSimpleAux;
-      // genie::flux::GSimpleNtpMeta*  fGSimpleMeta;
-      Long64_t                      fNEntries;
-      int                           fRun;
-      float                         fPOT;
-      TLorentzVector                fNuPos;
-      TLorentzVector                fNuMom;
+      TTree*         fBNBtree;
+      TTree*         fWindowtree;
+      BooNENtuple    fBooneNtp;
+      BeamNtuple     fBeamNtp;
+      double         fMaxWeight;
+      double         fMinWeight;
+      double         fSumWeights;
+
+      Long64_t       fNEntries;
+      int            fRun;
+      float          fPOT;
+      TLorentzVector fNuPos;
+      TLorentzVector fNuMom;
   };
 
 }
