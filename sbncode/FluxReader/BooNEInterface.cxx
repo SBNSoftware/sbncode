@@ -83,18 +83,8 @@ namespace fluxr {
     std::cout << "Min Weight : " << fMinWeight << std::endl;
 
 
-    // fFluxTree->GetEntry(0);
-    // fRun=fGSimpleNuMI->run;
-    // fMetaTree->GetEntry(0);
-    // fPOT=fGSimpleMeta->protons;
-
-    // Double_t* window_base = fGSimpleMeta->windowBase;
-    // Double_t* window_dir_1 = fGSimpleMeta->windowDir1;
-    // Double_t* window_dir_2 = fGSimpleMeta->windowDir2;
-    // std::cout << "GSimple Window:" << std::endl;
-    // std::cout << "\tBase: " << window_base[0] << ", " << window_base[1] << ", " << window_base[2] << std::endl;
-    // std::cout << "\tDir 1: " << window_dir_1[0] << ", " << window_dir_1[1] << ", " << window_dir_1[2] << std::endl;
-    // std::cout << "\tDir 2: " << window_dir_2[0] << ", " << window_dir_2[1] << ", " << window_dir_2[2] << std::endl;
+    fWindowtree->GetEntry(0);
+    fPOT = fBeamNtp.pot;
   }
 
   bool BooNEInterface::FillMCFlux(Long64_t ientry, simb::MCFlux& flux)
