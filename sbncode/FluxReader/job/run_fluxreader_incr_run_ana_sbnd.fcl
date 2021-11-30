@@ -1,0 +1,8 @@
+# Driver fcl file for reading in gsimple files
+# for SBND. It increase the run number sequentially,
+# in case all gsimple files have the same run number
+
+#include "run_fluxreader_ana_sbnd.fcl"
+
+source.SelfIncrementRun: true
+
