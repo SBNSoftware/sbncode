@@ -394,6 +394,8 @@ void CAFMaker::beginRun(art::Run& run) {
   }
 
 
+  if(fParams.SystWeightLabels().empty()) return; // no need for globalTree
+
   SRGlobal global;
 
   for(const std::string& label: fParams.SystWeightLabels()){
