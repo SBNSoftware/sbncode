@@ -401,7 +401,7 @@ namespace caf
     srpid.pida = 99999.;
 
     // Loop over algorithm scores and extract the ones we want.
-    // Get the ndof from any algorithm
+    // Get the ndof from any chi2 algorithm
 
     std::vector<anab::sParticleIDAlgScores> AlgScoresVec = particle_id.ParticleIDAlgScores();
     for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
@@ -426,7 +426,6 @@ namespace caf
       }
       else if (AlgScore.fVariableType==anab::kPIDA){
         srpid.pida = AlgScore.fValue;
-        srpid.pid_ndof = AlgScore.fNdf;
       }
     }
   }
