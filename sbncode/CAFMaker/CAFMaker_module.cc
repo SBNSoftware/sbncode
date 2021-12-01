@@ -260,9 +260,11 @@ class CAFMaker : public art::EDProducer {
 //.......................................................................
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0)
+    fParams(params()), fFile(0)
   {
   fCafFilename = fParams.CAFFilename();
+
+  fIsRealData = fParams.IsRealData();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
@@ -750,8 +752,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.G4Label(), mc_particles);
 
   // collect services
-  art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
-  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+  // Moved ParticleInventory and BackTracker services definition as needed elsewhere (BH)
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
@@ -774,9 +775,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // Prep truth-to-reco-matching info
-  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map = PrepSimChannels(simchannels, *geometry);
-  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
-  std::map<int, caf::HitsEnergy> id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv.get());
+  std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> id_to_ide_map;
+  std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
+  std::map<int, caf::HitsEnergy> id_to_hit_energy_map;
+
+  if ( !fIsRealData ) {
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
+    id_to_ide_map = PrepSimChannels(simchannels, *geometry);
+    id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
+    id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv.get());
+  }
 
   //#######################################################
   // Fill truths & fake reco
@@ -785,6 +794,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   caf::SRTruthBranch                  srtruthbranch;
 
   if (mc_particles.isValid()) {
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
     for (const simb::MCParticle part: *mc_particles) {
       true_particles.emplace_back();
 
@@ -818,7 +830,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtruthbranch.nu.push_back(SRTrueInteraction());
     srtruthbranch.nnu ++;
 
-    FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+    if ( !fIsRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1142,12 +1154,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     bool NeutrinoSlice = !recslc.is_clear_cosmic;
 
     // Fill truth info after decision on selection is made
-    FillSliceTruth(slcHits, mctruths, srtruthbranch,
-       *pi_serv.get(), clock_data, recslc);
+    if ( !fIsRealData ) {
+      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
-    FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-       *pi_serv.get(), clock_data, recslc, mctracks, fActiveVolumes,
-       *fFakeRecoTRandom);
+      FillSliceTruth(slcHits, mctruths, srtruthbranch,
+		     *pi_serv.get(), clock_data, recslc);
+
+      FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
+			*pi_serv.get(), clock_data, recslc, mctracks, fActiveVolumes,
+			*fFakeRecoTRandom);
+    }
 
     //#######################################################
     // Add detector dependent slice info.
@@ -1168,7 +1184,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       rec.reco.stub.emplace_back();
       FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
-      FillStubTruth(fmStubHits.at(iStub), id_to_hit_energy_map, true_particles, clock_data, rec.reco.stub.back());
+      if ( !fIsRealData ) FillStubTruth(fmStubHits.at(iStub), id_to_hit_energy_map, true_particles, clock_data, rec.reco.stub.back());
       rec.reco.nstub = rec.reco.stub.size();
 
       // Duplicate stub reco info in the srslice
@@ -1248,7 +1264,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
-          FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
+          if ( !fIsRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
@@ -1290,7 +1306,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
         }
         if (fmShowerHit.isValid()) {
-          FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
+          if ( !fIsRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
         }
         // Duplicate track reco info in the srslice
         recslc.reco.shw.push_back(rec.reco.shw.back());

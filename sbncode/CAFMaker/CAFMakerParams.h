@@ -258,6 +258,14 @@ namespace caf
       25.
     };
 
+    // TODO: may need to be thought more about for overlays. For now using this otherwise unused parameter as a hacky way 
+    //       of ignoring some of the truth info for data files (BH).
+    Atom<bool> IsRealData {
+      Name("IsRealData"),
+      Comment("Set true for a data file."),
+      false
+    };
+
   };
 }
 
