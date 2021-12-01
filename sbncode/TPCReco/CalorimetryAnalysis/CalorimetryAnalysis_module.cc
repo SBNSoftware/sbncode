@@ -2135,11 +2135,11 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 
     // Assign dummy values.
 
-    double chi2_muon = 99999.;
-    double chi2_pion = 99999.;
-    double chi2_kaon = 99999.;
-    double chi2_proton = 99999.;
-    double pida = 99999.;
+    double chi2_muon = 0.;
+    double chi2_pion = 0.;
+    double chi2_kaon = 0.;
+    double chi2_proton = 0.;
+    double pida = 0.;
     auto plane = pid->PlaneID().Plane;
 
     // Loop over algorithm scores and extract the ones we want.
