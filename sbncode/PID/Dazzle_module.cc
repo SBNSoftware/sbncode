@@ -741,11 +741,11 @@ void Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
 {
   // Assign dummy values.
 
-  chi2PIDMuon = 99999.;
-  chi2PIDPion = 99999.;
-  chi2PIDKaon = 99999.;
-  chi2PIDProton = 99999.;
-  double chi2PIDBest = 99999.;
+  chi2PIDMuon = 0.;
+  chi2PIDPion = 0.;
+  chi2PIDKaon = 0.;
+  chi2PIDProton = 0.;
+  double chi2PIDBest = 0.;
   chi2PIDPDG = 0;
 
   // Loop over algorithm scores and extract the ones we want.
@@ -757,28 +757,28 @@ void Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
     if (AlgScore.fAlgName == "Chi2"){
       if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // chi2mu
         chi2PIDMuon = AlgScore.fValue;
-        if(AlgScore.fValue < chi2PIDBest) {
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
           chi2PIDBest = AlgScore.fValue;
           chi2PIDPDG = 13;
         }
       }
       else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // chi2pi
 	chi2PIDPion = AlgScore.fValue;
-        if(AlgScore.fValue < chi2PIDBest) {
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
           chi2PIDBest = AlgScore.fValue;
           chi2PIDPDG = 211;
         }
       }
       else if (TMath::Abs(AlgScore.fAssumedPdg) == 321) { // chi2ka
 	chi2PIDKaon = AlgScore.fValue;
-        if(AlgScore.fValue < chi2PIDBest) {
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
           chi2PIDBest = AlgScore.fValue;
           chi2PIDPDG = 321;
         }
       }
       else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // chi2pr
 	chi2PIDProton = AlgScore.fValue;
-        if(AlgScore.fValue < chi2PIDBest) {
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
           chi2PIDBest = AlgScore.fValue;
           chi2PIDPDG = 2212;
         }
