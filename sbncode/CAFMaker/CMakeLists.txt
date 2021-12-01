@@ -10,6 +10,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   SOURCE ${src_files}
                   LIBRARIES
                   sbnanaobj_StandardRecord
+                  sbnanaobj_StandardRecordFlat
                   ${ART_FRAMEWORK_CORE}
                   ${ART_FRAMEWORK_SERVICES_REGISTRY}
                   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
@@ -45,6 +46,8 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
 ##include_directories( $ENV{IFDHC_FQ_DIR}/inc )
 ##include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
+
+include_directories( $ENV{SRPROXY_INC} )
 
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 

@@ -105,8 +105,9 @@
 
 // StandardRecord
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
-
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
+
+#include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -156,6 +157,7 @@ class CAFMaker : public art::EDProducer {
   CAFMakerParams fParams;
 
   std::string fCafFilename;
+  std::string fFlatCafFilename;
 
   bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
                      // produce(evt)
@@ -173,9 +175,10 @@ class CAFMaker : public art::EDProducer {
   TFile* fFile;
   TTree* fRecTree;
 
-  TH1D* hPOT;
-  TH1D* hSinglePOT;
-  TH1D* hEvents;
+  TFile* fFlatFile;
+  TTree* fFlatTree;
+
+  flat::Flat<caf::StandardRecord>* fFlatRecord;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
@@ -191,10 +194,16 @@ class CAFMaker : public art::EDProducer {
   /// Map from parameter labels to previously seen parameter set configuration
   std::map<std::string, std::vector<sbn::evwgh::EventWeightParameterSet>> fPrevWeightPSet;
 
-  void AddEnvToFile();
-  void AddMetadataToFile(const std::map<std::string, std::string>& metadata);
+  std::string DeriveFilename(const std::string& inname,
+                             const std::string& ext) const;
 
-  void InitializeOutfile();
+  void AddEnvToFile(TFile* f);
+  void AddMetadataToFile(TFile* f,
+                         const std::map<std::string, std::string>& metadata);
+  void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
+  void AddHistogramsToFile(TFile* outfile) const;
+
+  void InitializeOutfiles();
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
@@ -258,11 +267,12 @@ class CAFMaker : public art::EDProducer {
 }; //Producer
 
 //.......................................................................
-  CAFMaker::CAFMaker(const Parameters& params)
-  : art::EDProducer{params},
-    fParams(params()), fIsRealData(false), fFile(0)
-  {
+CAFMaker::CAFMaker(const Parameters& params)
+  : art::EDProducer(params), fParams(params()), fIsRealData(false),
+    fFile(0), fRecTree(0), fFlatFile(0), fFlatTree(0), fFlatRecord(0)
+{
   fCafFilename = fParams.CAFFilename();
+  fFlatCafFilename = fParams.FlatCAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
@@ -309,23 +319,47 @@ void CAFMaker::InitVolumes() {
 }
 
 //......................................................................
-CAFMaker::~CAFMaker() {}
+CAFMaker::~CAFMaker()
+{
+  delete fRecTree;
+  delete fFile;
+
+  delete fFlatRecord;
+  delete fFlatTree;
+  delete fFlatFile;
+
+  delete fFakeRecoTRandom;
+}
+
+//......................................................................
+std::string CAFMaker::DeriveFilename(const std::string& inname,
+                                     const std::string& ext) const
+{
+  char* temp = new char[inname.size()+1];
+  std::strcpy(temp, inname.c_str());
+  std::string ret = basename(temp);
+  delete[] temp;
+  const size_t dotpos = ret.rfind('.'); // Find last dot
+  assert(dotpos != std::string::npos);  // Must have a dot, surely?
+  ret.resize(dotpos); // Truncate everything after dot
+  ret += ext;
+  return ret;
+}
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
-  if (!fFile) {
+  if ((fParams.CreateCAF() && !fFile) ||
+      (fParams.CreateFlatCAF() && !fFlatFile)) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
-    const int sizef = fb.fileName().size() + 1;
-    char* temp  = new char[sizef];
-    std::strcpy(temp, fb.fileName().c_str());
-    fCafFilename = basename(temp);
-    const size_t dotpos = fCafFilename.find('.');
-    assert(dotpos != std::string::npos);  // Must have a dot, surely?
-    fCafFilename.resize(dotpos);
-    fCafFilename += fParams.FileExtension();
+    if(fParams.CreateCAF() && fCafFilename.empty()){
+      fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+    }
+    if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
+      fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+    }
 
-    InitializeOutfile();
+    InitializeOutfiles();
   }
 
   fFileNumber ++;
@@ -334,8 +368,21 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 }
 
 //......................................................................
-void CAFMaker::beginJob() {
-  if (!fCafFilename.empty()) InitializeOutfile();
+void CAFMaker::beginJob()
+{
+}
+
+//......................................................................
+void CAFMaker::AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const
+{
+  outfile->cd();
+
+  TTree* globalTree = new TTree("globalTree", "globalTree");
+  SRGlobal* pglobal = &global;
+  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
+  if(!br) abort();
+  globalTree->Fill();
+  globalTree->Write();
 }
 
 //......................................................................
@@ -430,13 +477,8 @@ void CAFMaker::beginRun(art::Run& run) {
     } // end for pset
   } // end for label
 
-  fFile->cd();
-  TTree* globalTree = new TTree("globalTree", "globalTree");
-  SRGlobal* pglobal = &global;
-  TBranch* br = globalTree->Branch("global", "caf::SRGlobal", &pglobal);
-  if(!br) abort();
-  globalTree->Fill();
-  globalTree->Write();
+  if(fFile) AddGlobalTreeToFile(fFile, global);
+  if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
 }
 
 //......................................................................
@@ -458,7 +500,7 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-void CAFMaker::AddEnvToFile()
+void CAFMaker::AddEnvToFile(TFile* outfile)
 {
   // Global information about the processing details:
   std::map<std::string, std::string> envmap;
@@ -504,7 +546,7 @@ void CAFMaker::AddEnvToFile()
 
   envmap["cmd"] = cmd;
 
-  fFile->mkdir("env")->cd();
+  outfile->mkdir("env")->cd();
 
   TTree* trenv = new TTree("envtree", "envtree");
   std::string key, value;
@@ -519,11 +561,9 @@ void CAFMaker::AddEnvToFile()
 }
 
 //......................................................................
-void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metadata)
+void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std::string>& metadata)
 {
-  assert(fFile && "CAFMaker: Trying to add metadata to an uninitialized file");
-
-  fFile->mkdir("metadata")->cd();
+  outfile->mkdir("metadata")->cd();
 
   TTree* trmeta = new TTree("metatree", "metatree");
   std::string key, value;
@@ -538,24 +578,36 @@ void CAFMaker::AddMetadataToFile(const std::map<std::string, std::string>& metad
 }
 
 //......................................................................
-void CAFMaker::InitializeOutfile() {
-  assert(!fFile);
-  assert(!fCafFilename.empty());
+void CAFMaker::InitializeOutfiles()
+{
+  if(fParams.CreateCAF()){
+    mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
 
-  mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
+    fFile = new TFile(fCafFilename.c_str(), "RECREATE");
 
-  fFile = new TFile(fCafFilename.c_str(), "RECREATE");
+    fRecTree = new TTree("recTree", "records");
 
-  hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
-  hSinglePOT =
-      new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
-  hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+    // Tell the tree it's expecting StandardRecord objects
+    StandardRecord* rec = 0;
+    fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
-  fRecTree = new TTree("recTree", "records");
+    AddEnvToFile(fFile);
+  }
 
-  // Tell the tree it's expecting StandardRecord objects
-  StandardRecord* rec = 0;
-  fRecTree->Branch("rec", "caf::StandardRecord", &rec);
+  if(fParams.CreateFlatCAF()){
+    mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
+
+    // LZ4 is the fastest format to decompress. I get 3x faster loading with
+    // this compared to the default, and the files are only slightly larger.
+    fFlatFile = new TFile(fFlatCafFilename.c_str(), "RECREATE", "",
+                          ROOT::CompressionSettings(ROOT::kLZ4, 1));
+
+    fFlatTree = new TTree("recTree", "recTree");
+
+    fFlatRecord = new flat::Flat<caf::StandardRecord>(fFlatTree, "rec", "", 0);
+
+    AddEnvToFile(fFlatFile);
+  }
 
   fFileNumber = -1;
   fTotalPOT = 0;
@@ -566,8 +618,6 @@ void CAFMaker::InitializeOutfile() {
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
-
-  AddEnvToFile();
 }
 
 //......................................................................
@@ -1381,16 +1431,42 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   fFirstInFile = false;
   fFirstInSubRun = false;
 
-  // Save the standard-record
-  StandardRecord* prec = &rec;
-  fRecTree->SetBranchAddress("rec", &prec);
-  fRecTree->Fill();
+  if(fRecTree){
+    // Save the standard-record
+    StandardRecord* prec = &rec;
+    fRecTree->SetBranchAddress("rec", &prec);
+    fRecTree->Fill();
+  }
+
+  if(fFlatTree){
+    fFlatRecord->Clear();
+    fFlatRecord->Fill(rec);
+    fFlatTree->Fill();
+  }
+
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
 
+}
+
+//......................................................................
+void CAFMaker::AddHistogramsToFile(TFile* outfile) const
+{
+  outfile->cd();
+
+  TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
+  //  TH1* hSinglePOT =
+  //    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
+  TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+
+  hPOT->Fill(.5, fTotalPOT);
+  hEvents->Fill(.5, fTotalEvents);
+
+  hPOT->Write();
+  hEvents->Write();
 }
 
 //......................................................................
@@ -1405,17 +1481,22 @@ void CAFMaker::endJob() {
     return;
   }
 
-  // Make sure the recTree is in the file before filling other items
-  // for debugging.
-  fFile->Write();
 
-  fFile->cd();
-  hPOT->Fill(.5, fTotalPOT);
-  hEvents->Fill(.5, fTotalEvents);
+  if(fFile){
+    // Make sure the recTree is in the file before filling other items
+    // for debugging.
+    fFile->Write();
 
-  hPOT->Write();
-  hEvents->Write();
-  fFile->Write();
+    AddHistogramsToFile(fFile);
+    fFile->Write();
+  }
+
+  if(fFlatFile){
+    fFlatFile->Write();
+
+    AddHistogramsToFile(fFlatFile);
+    fFlatFile->Write();
+  }
 
   std::map<std::string, std::string> metamap;
 
@@ -1438,7 +1519,8 @@ void CAFMaker::endJob() {
     std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
   }
 
-  AddMetadataToFile(metamap);
+  if(fFile) AddMetadataToFile(fFile, metamap);
+  if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
 }
 
 
