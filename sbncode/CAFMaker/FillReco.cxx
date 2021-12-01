@@ -393,12 +393,12 @@ namespace caf
 
     // Assign dummy values.
 
-    srpid.chi2_muon = 99999.;
-    srpid.chi2_pion = 99999.;
-    srpid.chi2_kaon = 99999.;
-    srpid.chi2_proton = 99999.;
+    srpid.chi2_muon = 0.;
+    srpid.chi2_pion = 0.;
+    srpid.chi2_kaon = 0.;
+    srpid.chi2_proton = 0.;
     srpid.pid_ndof = 0;
-    srpid.pida = 99999.;
+    srpid.pida = 0.;
 
     // Loop over algorithm scores and extract the ones we want.
     // Get the ndof from any chi2 algorithm
