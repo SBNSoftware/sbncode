@@ -609,7 +609,8 @@ void sbn::BNBRetriever::endSubRun(art::SubRun& sr)
 mf::LogDebug("BNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
 mf::LogDebug("BNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
 
-  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >(fOutbeamInfos);
+  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+  std::swap(*p, fOutbeamInfos);
 
   sr.put(std::move(p), art::subRunFragment());
 
