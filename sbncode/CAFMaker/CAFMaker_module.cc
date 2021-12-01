@@ -783,8 +783,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
     id_to_ide_map = PrepSimChannels(simchannels, *geometry);
-    id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv.get());
-    id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv.get());
+    id_to_truehit_map = PrepTrueHits(hits, clock_data, *bt_serv);
+    id_to_hit_energy_map = SetupIDHitEnergyMap(hits, clock_data, *bt_serv);
   }
 
   //#######################################################
@@ -805,8 +805,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          fTPCVolumes,
                          id_to_ide_map,
                          id_to_truehit_map,
-                         *bt_serv.get(),
-                         *pi_serv.get(),
+                         *bt_serv,
+                         *pi_serv,
                          mctruths,
                          true_particles.back());
     }
@@ -1158,10 +1158,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillSliceTruth(slcHits, mctruths, srtruthbranch,
-		     *pi_serv.get(), clock_data, recslc);
+		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-			*pi_serv.get(), clock_data, recslc, mctracks, fActiveVolumes,
+			*pi_serv, clock_data, recslc, mctracks, fActiveVolumes,
 			*fFakeRecoTRandom);
     }
 
