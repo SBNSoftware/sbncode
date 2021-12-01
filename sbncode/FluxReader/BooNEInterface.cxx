@@ -85,12 +85,20 @@ namespace fluxr {
 
     fWindowtree->GetEntry(0);
     fPOT = fBeamNtp.pot;
+
+
+    std::cout << "Window:" << std::endl;
+    std::cout << "\tBase: " << fBeamNtp.windowbase[0] << ", " << fBeamNtp.windowbase[1] << ", " << fBeamNtp.windowbase[2] << std::endl;
+    std::cout << "\tDir 1: " << fBeamNtp.windowdir1[0] << ", " << fBeamNtp.windowdir1[1] << ", " << fBeamNtp.windowdir1[2] << std::endl;
+    std::cout << "\tDir 2: " << fBeamNtp.windowdir2[0] << ", " << fBeamNtp.windowdir2[1] << ", " << fBeamNtp.windowdir2[2] << std::endl;
   }
 
   bool BooNEInterface::FillMCFlux(Long64_t ientry, simb::MCFlux& flux)
   {
     if (!fBNBtree->GetEntry(ientry))
       return false;
+
+    // std::cout << "[BooNEInterface] At entry: " << ientry << std::endl;
 
     fWindowtree->GetEntry(0);
 
@@ -116,7 +124,9 @@ namespace fluxr {
     }
 
     flux.fnimpwt = fBooneNtp.beamwgt;
+    // std::cout << "[BooNEInterface] flux.fnimpwt: " << flux.fnimpwt << std::endl;
 
+    // Convert to meters
     double nu_x = fBooneNtp.ini_pos[0][0]/100;
     double nu_y = fBooneNtp.ini_pos[0][1]/100;
     double nu_z = fBooneNtp.ini_pos[0][2]/100;
@@ -140,7 +150,11 @@ namespace fluxr {
                             std::pow(nu_z-tank_z,2));
     flux.fdk2gen = dist;
 
-    float nu_time = fBooneNtp.ini_t[0]; // + dist / c;
+    float nu_time = fBooneNtp.ini_t[0]; // ns
+    nu_time += dist / 0.299792; // 0.299792 is c in m/ns
+    // std::cout << "[BooNEInterface] nu time: " << nu_time << std::endl;
+    // std::cout << "[BooNEInterface] nu energy: " << fBooneNtp.ini_eng[0] << std::endl;
+    // std::cout << "[BooNEInterface] dist: " << dist << std::endl;
 
     fNuPos=TLorentzVector(gsimple_vtxx*100, gsimple_vtxy*100, gsimple_vtxz*100, nu_time);
     fNuMom=TLorentzVector(fBooneNtp.ini_mom[0][0], fBooneNtp.ini_mom[0][1], fBooneNtp.ini_mom[0][2],
@@ -313,6 +327,8 @@ namespace fluxr {
     flux.fmuparpy = muparpy;
     flux.fmuparpz = muparpz;
     flux.fmupare = mupare;
+
+    flux.fnwtnear = flux.fnwtfar = 1;
 
     // anything useful stuffed into vdbl or vint?
     // need to check the metadata  auxintname, auxdblname

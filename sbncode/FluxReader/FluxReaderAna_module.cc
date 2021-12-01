@@ -22,6 +22,7 @@
 #include "TGeoManager.h"
 #include "TVector3.h"
 #include "TTree.h"
+#include "TDatabasePDG.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
@@ -46,7 +47,9 @@ public:
 
 private:
 
-  float _x_shift = 45.7; // cm
+  const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
+
+  float _x_shift = -73.78; // cm
   float _baseline = 11000; // cm
   float _baseline_icarus = 60000; // cm
 
@@ -56,18 +59,22 @@ private:
   TTree* _tree;
   bool _nu_hit; /// True if the neutrino hit the requested volumes
   int _nu_pdg; /// PDG of neutrino
-  float _nu_e; /// Energy of neutrino
+  float _nu_e; /// Energy of the neutrino
+  float _nu_t; /// Time of the neutrino
+  float _nu_w; /// Neutrino weight
   float _nu_x; /// X poisition of neutrino at the front face of the TPC
   float _nu_y; /// Y poisition of neutrino at the front face of the TPC
   float _nu_z; /// Z poisition of neutrino at the front face of the TPC
   float _nu_px; /// X momentum of neutrino
   float _nu_py; /// Y momentum of neutrino
   float _nu_pz; /// Z momentum of neutrino
+  float _nu_decay; /// Neutrino parent decay code
   float _nu_p_angle; /// Angle between neutrino and parent direction
   int _nu_p_type; /// Neutrino parent pdg
   float _nu_p_dpx; /// Neutrino parent momentum x
   float _nu_p_dpy; /// Neutrino parent momentum x
   float _nu_p_dpz; /// Neutrino parent momentum x
+  float _nu_p_e; /// Neutrino parent energy
   float _nu_r; /// Neutrino r
   float _nu_oaa; /// Neutrino off axis angle
 
@@ -90,17 +97,21 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_hit", &_nu_hit, "nu_hit/O");
   _tree->Branch("nu_pdg", &_nu_pdg, "nu_pdg/I");
   _tree->Branch("nu_e", &_nu_e, "nu_e/F");
+  _tree->Branch("nu_t", &_nu_t, "nu_t/F");
+  _tree->Branch("nu_w", &_nu_w, "nu_w/F");
   _tree->Branch("nu_x", &_nu_x, "nu_x/F");
   _tree->Branch("nu_y", &_nu_y, "nu_y/F");
   _tree->Branch("nu_z", &_nu_z, "nu_z/F");
   _tree->Branch("nu_px", &_nu_px, "nu_px/F");
   _tree->Branch("nu_py", &_nu_py, "nu_py/F");
   _tree->Branch("nu_pz", &_nu_pz, "nu_pz/F");
+  _tree->Branch("nu_decay", &_nu_decay, "nu_decay/F");
   _tree->Branch("nu_p_angle", &_nu_p_angle, "nu_p_angle/F");
   _tree->Branch("nu_p_type", &_nu_p_type, "nu_p_type/I");
   _tree->Branch("nu_p_dpx", &_nu_p_dpx, "nu_p_dpx/F");
   _tree->Branch("nu_p_dpy", &_nu_p_dpy, "nu_p_dpy/F");
   _tree->Branch("nu_p_dpz", &_nu_p_dpz, "nu_p_dpz/F");
+  _tree->Branch("nu_p_e", &_nu_p_e, "nu_p_e/F");
   _tree->Branch("nu_r", &_nu_r, "nu_r/F");
   _tree->Branch("nu_oaa", &_nu_oaa, "nu_oaa/F");
 
@@ -137,16 +148,23 @@ void FluxReaderAna::analyze(art::Event const& e)
 
     _nu_pdg = nu.PdgCode();
     _nu_e = nu.E();
+    _nu_t = nu.T();
+    _nu_w = flux.fnimpwt;
     _nu_x = intersection.X();
     _nu_y = intersection.Y();
     _nu_z = intersection.Z();
     _nu_px = nu.Px();
     _nu_py = nu.Py();
     _nu_pz = nu.Pz();
+    _nu_decay = flux.fndecay;
     _nu_p_type = flux.fptype;
     _nu_p_dpx = flux.fpdpx;
     _nu_p_dpy = flux.fpdpy;
     _nu_p_dpz = flux.fpdpz;
+    _nu_p_e = std::sqrt(flux.fpdpx * flux.fpdpx +
+                        flux.fpdpy * flux.fpdpy +
+                        flux.fpdpz * flux.fpdpz +
+                        _pdg_database->GetParticle(_nu_p_type)->Mass());
     _nu_p_angle = TVector3(_nu_px, _nu_py, _nu_pz).Angle(TVector3(_nu_p_dpx, _nu_p_dpy, _nu_p_dpz));
     _nu_r = std::sqrt((_nu_x - _x_shift) * (_nu_x - _x_shift) + _nu_y * _nu_y);
     _nu_oaa = std::atan(_nu_r * _nu_r / _baseline);
