@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 
 <!-- Production Project -->
-<!-- Takes about 2.5 minues to run on a signle gsimple file -->
+<!-- Takes about 2.5 minues to run on a single gsimple file -->
 
 <!DOCTYPE project [
-<!ENTITY release "v09_32_01">
+<!ENTITY release "v09_37_01_01">
 <!ENTITY releasetag "e20:prof">
 <!ENTITY my_version "v1">
 <!ENTITY my_run "1">
-<!ENTITY flux_config "I-Z">
-<!ENTITY name "mdeltutt_fluxreader">
+<!ENTITY flux_config "H">
+<!ENTITY name "mdeltutt_fluxreader_boone">
 <!ENTITY file_type "data">
 <!ENTITY run_type "physics">
 <!ENTITY PNFSpath "/pnfs/sbnd/resilient/users/mdeltutt/">
@@ -31,27 +31,20 @@
   <larsoft>
     <tag>&release;</tag>
     <qual>&releasetag;</qual>
-    <local>&PNFSpath;Tarballs/sbndcode_v09_32_01_fluxreader__&my_version;.tgz</local>
+    <local>&PNFSpath;Tarballs/sbndcode_v09_37_01_01_fluxreader__&my_version;.tgz</local>
   </larsoft>
 
   <!-- Project stages -->
 
   <stage name="gen">
-    <!-- for flux f-->
-    <!-- <fcl>run_fluxreader_sbnd.fcl</fcl>  -->
-    <!-- for flux h-->
     <fcl>run_fluxreader_incr_run_ana_sbnd.fcl</fcl>
-    <!-- <inputlist>/pnfs/sbnd/resilient/users/mdeltutt/Filelists/gsimple_flux_configF-v1.list</inputlist> -->
-    <!-- <inputlist>/pnfs/sbnd/resilient/users/mdeltutt/Filelists/gsimple_flux_configG-v1.list</inputlist> -->
-    <inputlist>/pnfs/sbnd/resilient/users/mdeltutt/Filelists/gsimple_flux_config&flux_config;.list</inputlist>
-    <!-- configI has 1300 files: 260 jobs with 5 files each -->
+    <!-- <inputlist>/pnfs/sbnd/resilient/users/mdeltutt/Filelists/gsimple_flux_config&flux_config;.list</inputlist> -->
+    <inputlist>/pnfs/sbnd/resilient/users/mdeltutt/Filelists/boonetuple_configH.list</inputlist>
     <!-- <defname>&name;_&tag;_gen</defname> -->
-    <!-- <maxfilesperjob>50</maxfilesperjob> -->
-    <maxfilesperjob>5</maxfilesperjob>
     <outdir>/pnfs/sbnd/scratch/users/mdeltutt/&release;/fluxreader_config&flux_config;_&my_version;_&my_run;</outdir>
     <workdir>&PNFSpath;grid_workdir_sbnd/fluxreader_config&flux_config;</workdir>
-    <numjobs>260</numjobs>
-    <!-- <numjobs>5</numjobs> -->
+    <maxfilesperjob>5</maxfilesperjob>
+    <numjobs>200</numjobs>
     <datatier>generated</datatier>
     <memory>2000</memory>
     <jobsub> --expected-lifetime=24h -Q --generate-email-summary -l +SingularityImage=\"/cvmfs/singularity.opensciencegrid.org/fermilab/fnal-wn-sl7:latest\" --append_condor_requirements='(TARGET.HAS_SINGULARITY=?=true)' </jobsub>
