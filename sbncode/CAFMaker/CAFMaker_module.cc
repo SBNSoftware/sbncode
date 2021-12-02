@@ -157,8 +157,7 @@ class CAFMaker : public art::EDProducer {
 
   std::string fCafFilename;
 
-  bool   fIsRealData;  // use this instead of evt.isRealData(), see init in
-                     // produce(evt)
+  bool   fIsRealData;
 
   bool fFirstInSubRun;
   bool fFirstInFile;
@@ -262,9 +261,9 @@ class CAFMaker : public art::EDProducer {
   : art::EDProducer{params},
     fParams(params()), fFile(0)
   {
-  fCafFilename = fParams.CAFFilename();
+  // Note: we will define fIsRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
-  fIsRealData = fParams.IsRealData();
+  fCafFilename = fParams.CAFFilename();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
@@ -670,6 +669,9 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
+
+  // is this event real data?
+  fIsRealData = evt.isRealData();
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);

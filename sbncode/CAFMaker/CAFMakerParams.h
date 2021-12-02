@@ -257,15 +257,6 @@ namespace caf
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
     };
-
-    // TODO: may need to be thought more about for overlays. For now using this otherwise unused parameter as a hacky way 
-    //       of ignoring some of the truth info for data files (BH).
-    Atom<bool> IsRealData {
-      Name("IsRealData"),
-      Comment("Set true for a data file."),
-      false
-    };
-
   };
 }
 
