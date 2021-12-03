@@ -46,6 +46,7 @@ physics:
 {
   producers:
   {
+    rns: { module_type: "RandomNumberSaver" }
   }
 
   filters:
@@ -58,7 +59,7 @@ physics:
     fluxana: { module_type: "FluxReaderAna" }
   }
 
-  filter: [ fluxfilter ]
+  filter: [ rns, fluxfilter ]
   ana: [ fluxana ]
   stream1: [ out1 ]
   trigger_paths: [ filter ]
