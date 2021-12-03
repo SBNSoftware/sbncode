@@ -73,6 +73,12 @@ namespace caf
       Comment("List of suffixes to add to TPC reco tag names (e.g. cryo0 cryo1)")
     };
 
+    Atom<string> POTDataLabel {
+      Name("POTDataLabel"),
+      Comment("Label of BNBRetriever module"),
+      "bnbinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),
