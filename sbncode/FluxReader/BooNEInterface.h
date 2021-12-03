@@ -1,15 +1,22 @@
+/**
+ * @file BooNEInterface.h
+ * @author Marco Del Tutto
+ * @author Zarko Pavlovic
+ * @date 3 Dec 2021
+ * @brief Interface to read flux files in BooNE tuple format.
+ */
+
 #ifndef _BOONEINTERFACE_H_
 #define _BOONEINTERFACE_H_
 
 #include "FluxInterface.h"
 
-// #include "Tools/Flux/GNuMIFlux.h"
-// #include "Tools/Flux/GSimpleNtpFlux.h"
-
-//boone ntuple structure
+//
+// boone ntuple structure
+//
 struct BooNENtuple {
-  float beamwgt;          /// Magic Weight : CrossSect * BooBeamNT
-  int ntp;                /// 1,2,3,4 : nue, nuebar, numu, numubar
+  float beamwgt;          /// Magic Weight: CrossSect * BooBeamNT
+  int ntp;                /// 1,2,3,4: nue, nuebar, numu, numubar
   int npart;              /// number of particles in the chain
                           ///    npart-1 == proton
                           ///    0 == neutrino
@@ -24,15 +31,17 @@ struct BooNENtuple {
 
 };
 
-//boone beam ntuple structure
+//
+// boone beam ntuple structure
+//
 struct BeamNtuple {
   float tank_pos_beam[3]; /// 3-position of the flux window;
   float targ_pos_beam[3]; /// Frame conversion from beam to flux frame
   float pot;              /// pot in the file
 
-  float windowbase[3];
-  float windowdir1[3];
-  float windowdir2[3];
+  float windowbase[3];    /// Flux window base vector
+  float windowdir1[3];    /// Flux window direction vector 1
+  float windowdir2[3];    /// Flux window direction vector 2
 };
 
 class TTree;
@@ -45,12 +54,12 @@ namespace fluxr {
       BooNEInterface();
       ~BooNEInterface();
 
-      const Long64_t GetEntries()                    {return fNEntries;};
-      const int      GetRun()                        {return fRun;};
-      const void     SetRun(int run)                 {fRun = run;};
-      const float    GetPOT()                        {return fPOT;};
-      const TLorentzVector GetNuPosition()           {return fNuPos;};
-      const TLorentzVector GetNuMomentum()           {return fNuMom;};
+      const Long64_t GetEntries()          {return fNEntries;};
+      const int      GetRun()              {return fRun;};
+      const void     SetRun(int run)       {fRun = run;};
+      const float    GetPOT()              {return fPOT;};
+      const TLorentzVector GetNuPosition() {return fNuPos;};
+      const TLorentzVector GetNuMomentum() {return fNuMom;};
 
       void SetRootFile(TFile* rootFileName);
       bool FillMCFlux(Long64_t ientry, simb::MCFlux& mcflux);
@@ -70,7 +79,6 @@ namespace fluxr {
       TLorentzVector fNuPos;
       TLorentzVector fNuMom;
   };
-
 }
 
 #endif // _BOONEINTERFACE_H_
