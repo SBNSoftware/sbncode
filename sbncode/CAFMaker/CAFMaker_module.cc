@@ -157,8 +157,6 @@ class CAFMaker : public art::EDProducer {
 
   std::string fCafFilename;
 
-  bool   fIsRealData;
-
   bool fFirstInSubRun;
   bool fFirstInFile;
   int fFileNumber;
@@ -261,7 +259,7 @@ class CAFMaker : public art::EDProducer {
   : art::EDProducer{params},
     fParams(params()), fFile(0)
   {
-  // Note: we will define fIsRealData on a per event basis in produce function [using event.isRealData()], at least for now.
+  // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
   fCafFilename = fParams.CAFFilename();
 
@@ -671,7 +669,7 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 void CAFMaker::produce(art::Event& evt) noexcept {
 
   // is this event real data?
-  fIsRealData = evt.isRealData();
+  bool isRealData = evt.isRealData();
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);
@@ -781,7 +779,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   std::map<int, std::vector<art::Ptr<recob::Hit>>> id_to_truehit_map;
   std::map<int, caf::HitsEnergy> id_to_hit_energy_map;
 
-  if ( !fIsRealData ) {
+  if ( !isRealData ) {
     art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
     id_to_ide_map = PrepSimChannels(simchannels, *geometry);
@@ -832,7 +830,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtruthbranch.nu.push_back(SRTrueInteraction());
     srtruthbranch.nnu ++;
 
-    if ( !fIsRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+    if ( !isRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1156,7 +1154,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     bool NeutrinoSlice = !recslc.is_clear_cosmic;
 
     // Fill truth info after decision on selection is made
-    if ( !fIsRealData ) {
+    if ( !isRealData ) {
       art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
 
       FillSliceTruth(slcHits, mctruths, srtruthbranch,
@@ -1186,7 +1184,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       rec.reco.stub.emplace_back();
       FillStubVars(thisStub, thisStubPFP, rec.reco.stub.back());
-      if ( !fIsRealData ) FillStubTruth(fmStubHits.at(iStub), id_to_hit_energy_map, true_particles, clock_data, rec.reco.stub.back());
+      if ( !isRealData ) FillStubTruth(fmStubHits.at(iStub), id_to_hit_energy_map, true_particles, clock_data, rec.reco.stub.back());
       rec.reco.nstub = rec.reco.stub.size();
 
       // Duplicate stub reco info in the srslice
@@ -1266,7 +1264,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
         }
         if (fmTrackHit.isValid()) {
-          if ( !fIsRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
@@ -1308,7 +1306,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
         }
         if (fmShowerHit.isValid()) {
-          if ( !fIsRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
+          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
         }
         // Duplicate track reco info in the srslice
         recslc.reco.shw.push_back(rec.reco.shw.back());
@@ -1382,7 +1380,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.subrun  = subrun;
   rec.hdr.evt     = evtID;
   // rec.hdr.subevt = sliceID;
-  rec.hdr.ismc    = !fIsRealData;
+  rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
   rec.hdr.pot     = fSubRunPOT;
