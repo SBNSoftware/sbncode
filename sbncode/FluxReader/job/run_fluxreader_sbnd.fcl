@@ -27,34 +27,41 @@ source:
   nBins:            200
   Elow:             0
   Ehigh:            10
-  SelfIncrementRun: false
+  SelfIncrementRun: true
 }
 
 outputs:
 {
  out1:
   {
-   module_type: RootOutput
-   fileName:    "fluxreader.root"
-   compressionLevel: 1
-   dataTier:    "simulated"
-   SelectEvents: [ filter ]
+    module_type: RootOutput
+    fileName:    "fluxreader.root"
+    compressionLevel: 1
+    dataTier:    "simulated"
+    SelectEvents: [ filter ]
   }
 }
 
 physics:
 {
- producers:
- {
- }
- filters:
- {
-   fluxfilter: @local::flux_filter
- }
+  producers:
+  {
+  }
 
- filter: [ fluxfilter ]
- stream1: [ out1 ]
- trigger_paths: [ filter ]
- end_paths: [ stream1 ]
+  filters:
+  {
+    fluxfilter: @local::flux_filter
+  }
+
+  analyzers:
+  {
+    fluxana: { module_type: "FluxReaderAna" }
+  }
+
+  filter: [ fluxfilter ]
+  ana: [ fluxana ]
+  stream1: [ out1 ]
+  trigger_paths: [ filter ]
+  end_paths: [ ana, stream1 ]
 }
 
