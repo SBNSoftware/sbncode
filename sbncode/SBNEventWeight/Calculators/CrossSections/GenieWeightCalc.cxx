@@ -450,8 +450,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       double twk_dial_value = it.second[univ]+cv_shift;
       syst.Set( knob, twk_dial_value ); //Assign knob with new values based on variation
 
-      std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
-//      std::cout <<"CHECK "<<__LINE__<<" knob name "<< genie::rew::GSyst::AsString( knob )<<std::endl;
+      std::cout << GetFullName() << ": "<<genie::rew::GSyst::AsString( knob )<<" Knob value: "<<twk_dial_value<<std::endl;
 
       if ( !fQuietMode ) {
         MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << univ << ", knob name" << name // << k
