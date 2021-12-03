@@ -17,6 +17,7 @@
 #include "sbncode/CAFMaker/FillFlashMatch.h"
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
+#include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -168,7 +169,7 @@ class CAFMaker : public art::EDProducer {
   double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
-  std::vector<caf::SRBNBInfo> bnb_info_store;
+  std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   // int fCycle;
   // int fBatch;
 
@@ -445,51 +446,23 @@ void CAFMaker::beginRun(art::Run& run) {
 void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get the POT
   // get POT information
-  fIsRealData = true;
   if(fIsRealData)
   {
-    bnb_info_store.clear();
+    fBNBInfo.clear();
     fSubRunPOT = 0;
     art::Handle<std::vector<sbn::BNBSpillInfo> > bnb_spill;
-    sr.getByLabel("bnbinfo", bnb_spill);
+    sr.getByLabel(fParams.POTDataLabel(), bnb_spill);
     std::vector<art::Ptr<sbn::BNBSpillInfo> >  bnb_spill_info;
     if (bnb_spill.isValid()) {
       art::fill_ptr_vector(bnb_spill_info, bnb_spill);
-      for(unsigned int i = 0; i < bnb_spill_info.size(); ++i)
-      {
-	caf::SRBNBInfo single_store;
-	fSubRunPOT += bnb_spill_info[i]->TOR875;
-	fTotalPOT += bnb_spill_info[i]->TOR875;
-	single_store.spill_time_sec = bnb_spill_info[i]->spill_time_s;
-	single_store.spill_time_nsec = bnb_spill_info[i]->spill_time_ns;
-	single_store.event = bnb_spill_info[i]->event;
-	single_store.TOR860 = bnb_spill_info[i]->TOR860;
-	single_store.TOR875 = bnb_spill_info[i]->TOR875;
-	single_store.LM875A = bnb_spill_info[i]->LM875A;
-	single_store.LM875B = bnb_spill_info[i]->LM875B;
-	single_store.LM875C = bnb_spill_info[i]->LM875C;
-	single_store.HP875 = bnb_spill_info[i]->HP875;
-	single_store.VP875 = bnb_spill_info[i]->VP875;
-	single_store.HPTG1 = bnb_spill_info[i]->HPTG1;
-	single_store.VPTG1 = bnb_spill_info[i]->VPTG1;
-	single_store.HPTG2 = bnb_spill_info[i]->HPTG2;
-	single_store.VPTG2 = bnb_spill_info[i]->VPTG2;
-	single_store.BTJT2 = bnb_spill_info[i]->BTJT2;
-	single_store.THCURR = bnb_spill_info[i]->THCURR;
-	single_store.M875BB = bnb_spill_info[i]->M875BB;
-	single_store.M876BB = bnb_spill_info[i]->M876BB;
-	single_store.MMBTBB = bnb_spill_info[i]->MMBTBB;
-	single_store.M875BB_spill_time_diff = bnb_spill_info[i]->M875BB_spill_time_diff;
-	single_store.M876BB_spill_time_diff = bnb_spill_info[i]->M876BB_spill_time_diff;
-	single_store.MMBTBB_spill_time_diff = bnb_spill_info[i]->MMBTBB_spill_time_diff;
-	bnb_info_store.push_back(single_store);
-      }
+      FillExposure(bnb_spill_info, fBNBInfo, fSubRunPOT);
+      fTotalPOT += fSubRunPOT;
     }
   }
   else
   {
     art::Handle<sumdata::POTSummary> pot_handle;
-    sr.getByLabel("generator", pot_handle);
+    sr.getByLabel(fParams.GenLabel(), pot_handle);
     
     if (pot_handle.isValid()) {
       fSubRunPOT = pot_handle->totgoodpot;
@@ -1413,9 +1386,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !fIsRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  rec.hdr.pot     = fSubRunPOT;
-  if(fIsRealData)
-    rec.hdr.bnbinfo = bnb_info_store;
+  if(fFirstInFile)
+  {
+    rec.hdr.pot   = fSubRunPOT;
+    if(fIsRealData)
+      rec.hdr.bnbinfo = fBNBInfo;
+  }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
@@ -1433,6 +1409,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   StandardRecord* prec = &rec;
   fRecTree->SetBranchAddress("rec", &prec);
   fRecTree->Fill();
+  fBNBInfo.clear();
+  rec.hdr.pot = 0;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 }
