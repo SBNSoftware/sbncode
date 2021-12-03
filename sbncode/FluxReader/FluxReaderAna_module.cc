@@ -1,3 +1,11 @@
+/**
+ * @file FluxReaderAna_module.cc
+ * @author Marco Del Tutto
+ * @date 3 Dec 2021
+ * @brief An analyzer module to make flux histograms
+ *
+ */
+
 ////////////////////////////////////////////////////////////////////////
 // Class:       FluxReaderAna
 // Plugin Type: analyzer (Unknown Unknown)
@@ -47,11 +55,18 @@ public:
 
 private:
 
-  const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
+  std::string _flux_label; ///< Label for flux dataproduct (to be set via fcl)
+  float _x_shift; // cm (to be set via fcl)
+  float _baseline; // cm (to be set via fcl)
+  float _nu_intersection_z; ///< Z position where to evaluate the flux (to be set via fcl)
+  float _nu_other_intersection_z; ///< Additional Z position where to evaluate the flux (to be set via fcl)
 
-  float _x_shift = -73.78; // cm
-  float _baseline = 11000; // cm
-  float _baseline_icarus = 60000; // cm
+  bool _apply_position_cuts; // wheter or not to apply position cuts (to be set via fcl)
+  float _x_cut; // cm, only saves neutrinos with x in [-_xcut, +_xcut] (to be set via fcl)
+  float _y_cut; // cm, only saves neutrinos with y in [-_ycut, +_ycut] (to be set via fcl)
+
+
+  const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
 
   /// Returns the intersection point with the front face of the TPC
   TVector3 GetIntersection(TVector3 nu_pos, TVector3 nu_dir, float z_location=0);
@@ -68,7 +83,8 @@ private:
   float _nu_px; /// X momentum of neutrino
   float _nu_py; /// Y momentum of neutrino
   float _nu_pz; /// Z momentum of neutrino
-  float _nu_decay; /// Neutrino parent decay code
+  int _nu_decay; /// Neutrino parent decay code
+  float _nu_dk2gen; /// Distance from decay to ray origin
   float _nu_p_angle; /// Angle between neutrino and parent direction
   int _nu_p_type; /// Neutrino parent pdg
   float _nu_p_dpx; /// Neutrino parent momentum x
@@ -78,19 +94,30 @@ private:
   float _nu_r; /// Neutrino r
   float _nu_oaa; /// Neutrino off axis angle
 
-  float _nu_icarus_x; /// X poisition of neutrino at the front face of the TPC (ICARUS)
-  float _nu_icarus_y; /// Y poisition of neutrino at the front face of the TPC (ICARUS)
-  float _nu_icarus_z; /// Z poisition of neutrino at the front face of the TPC (ICARUS)
-  float _nu_icarus_r; /// Neutrino r (ICARUS)
-  float _nu_icarus_oaa; /// Neutrino off axis angle (ICARUS)
-
+  float _nu_other_x; /// X poisition of neutrino at the front face of the TPC (other)
+  float _nu_other_y; /// Y poisition of neutrino at the front face of the TPC (other)
+  float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
+  float _nu_other_t; /// Time of the neutrino (other)
 };
 
 
 FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
-  : EDAnalyzer{p}  // ,
-  // More initializers here.
+  : EDAnalyzer{p}
 {
+
+  _flux_label = p.get<std::string>("FluxLabel", "flux");
+
+  _baseline = p.get<float>("Baseline", 11000); // cm
+  _x_shift = p.get<float>("XShift", -73.78); // cm
+
+  _nu_intersection_z = p.get(float)("NuIntersectionZ", 0.);
+  _nu_other_intersection_z = p.get(float)("NuOtherIntersectionZ", 49000.);
+  // 49000 is ICARUS location in SBND coordinate system (600 - 110)
+
+  _apply_position_cuts = p.get<bool>("ApplyPositionCuts", true);
+  _x_cut = p.get<float>("XCut", 200); // cm
+  _y_cut = p.get<float>("YCut", 200); // cm
+
 
   art::ServiceHandle<art::TFileService> fs;
   _tree = fs->make<TTree>("tree", "");
@@ -105,7 +132,8 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_px", &_nu_px, "nu_px/F");
   _tree->Branch("nu_py", &_nu_py, "nu_py/F");
   _tree->Branch("nu_pz", &_nu_pz, "nu_pz/F");
-  _tree->Branch("nu_decay", &_nu_decay, "nu_decay/F");
+  _tree->Branch("nu_decay", &_nu_decay, "nu_decay/I");
+  _tree->Branch("nu_dk2gen", &_nu_dk2gen, "nu_dk2gen/F");
   _tree->Branch("nu_p_angle", &_nu_p_angle, "nu_p_angle/F");
   _tree->Branch("nu_p_type", &_nu_p_type, "nu_p_type/I");
   _tree->Branch("nu_p_dpx", &_nu_p_dpx, "nu_p_dpx/F");
@@ -115,22 +143,21 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_r", &_nu_r, "nu_r/F");
   _tree->Branch("nu_oaa", &_nu_oaa, "nu_oaa/F");
 
-  _tree->Branch("nu_icarus_x", &_nu_icarus_x, "nu_icarus_x/F");
-  _tree->Branch("nu_icarus_y", &_nu_icarus_y, "nu_icarus_y/F");
-  _tree->Branch("nu_icarus_z", &_nu_icarus_z, "nu_icarus_z/F");
-  _tree->Branch("nu_icarus_r", &_nu_icarus_r, "nu_icarus_r/F");
-  _tree->Branch("nu_icarus_oaa", &_nu_icarus_oaa, "nu_icarus_oaa/F");
+  _tree->Branch("nu_other_x", &_nu_other_x, "nu_other_x/F");
+  _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
+  _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
+  _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
 {
 
   art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
-  e.getByLabel("flux",mcFluxHandle);
+  e.getByLabel(_flux_label, mcFluxHandle);
   std::vector<simb::MCFlux> const& fluxlist = *mcFluxHandle;
 
   art::Handle< std::vector<simb::MCTruth> > mctruthHandle;
-  e.getByLabel("flux",mctruthHandle);
+  e.getByLabel(_flux_label, mctruthHandle);
   std::vector<simb::MCTruth> const& mclist = *mctruthHandle;
 
   for(unsigned int inu = 0; inu < mclist.size(); inu++) {
@@ -139,16 +166,25 @@ void FluxReaderAna::analyze(art::Event const& e)
 
     // std::cout << "This neutrino has vtx " << nu.Vx() << ", " << nu.Vy() << ", " << nu.Vz() << std::endl;
     // std::cout << "This neutrino has dir " << nu.Px() << ", " << nu.Py() << ", " << nu.Pz() << std::endl;
-    TVector3 intersection = GetIntersection(TVector3(nu.Vx(),nu.Vy(),nu.Vz()),
-                                            TVector3(nu.Px(),nu.Py(),nu.Pz()));
 
-    TVector3 intersection_icarus = GetIntersection(TVector3(nu.Vx(),nu.Vy(),nu.Vz()),
-                                                   TVector3(nu.Px(),nu.Py(),nu.Pz()),
-                                                   49000.); // 600 - 110
+    // Calculate the position of the neutrino at Z = _nu_intersection_z
+    TVector3 intersection = GetIntersection(TVector3(nu.Vx(),nu.Vy(),nu.Vz()),
+                                            TVector3(nu.Px(),nu.Py(),nu.Pz()),
+                                            _nu_intersection_z);
+    // Calculate the distance from the original to the new position
+    float dist = (TVector3(nu.Vx(),nu.Vy(),nu.Vz()) - intersection).Mag();
+
+    // Do the same for an additional Z
+    TVector3 intersection_other = GetIntersection(TVector3(nu.Vx(),nu.Vy(),nu.Vz()),
+                                                  TVector3(nu.Px(),nu.Py(),nu.Pz()),
+                                                  _nu_other_intersection_z);
+    float other_dist = (TVector3(nu.Vx(),nu.Vy(),nu.Vz()) - intersection_other).Mag();
+
+    float light_speed = TMath::C() / 1e7; // cm / ns
 
     _nu_pdg = nu.PdgCode();
     _nu_e = nu.E();
-    _nu_t = nu.T();
+    _nu_t = nu.T() + dist / light_speed;
     _nu_w = flux.fnimpwt;
     _nu_x = intersection.X();
     _nu_y = intersection.Y();
@@ -157,27 +193,32 @@ void FluxReaderAna::analyze(art::Event const& e)
     _nu_py = nu.Py();
     _nu_pz = nu.Pz();
     _nu_decay = flux.fndecay;
+    _nu_dk2gen = flux.fdk2gen;
     _nu_p_type = flux.fptype;
     _nu_p_dpx = flux.fpdpx;
     _nu_p_dpy = flux.fpdpy;
     _nu_p_dpz = flux.fpdpz;
+    float parent_mass = _pdg_database->GetParticle(_nu_p_type)->Mass();
     _nu_p_e = std::sqrt(flux.fpdpx * flux.fpdpx +
                         flux.fpdpy * flux.fpdpy +
                         flux.fpdpz * flux.fpdpz +
-                        _pdg_database->GetParticle(_nu_p_type)->Mass());
+                        parent_mass * parent_mass);
     _nu_p_angle = TVector3(_nu_px, _nu_py, _nu_pz).Angle(TVector3(_nu_p_dpx, _nu_p_dpy, _nu_p_dpz));
     _nu_r = std::sqrt((_nu_x - _x_shift) * (_nu_x - _x_shift) + _nu_y * _nu_y);
     _nu_oaa = std::atan(_nu_r * _nu_r / _baseline);
 
-    _nu_icarus_x = intersection_icarus.X();
-    _nu_icarus_y = intersection_icarus.Y();
-    _nu_icarus_z = intersection_icarus.Z();
-    _nu_icarus_r = std::sqrt((_nu_icarus_x - _x_shift) * (_nu_icarus_x - _x_shift) + _nu_icarus_y * _nu_icarus_y);
-    _nu_icarus_oaa = std::atan(_nu_icarus_r * _nu_icarus_r / _baseline_icarus);
+    _nu_other_x = intersection_other.X();
+    _nu_other_y = intersection_other.Y();
+    _nu_other_z = intersection_other.Z();
+    _nu_other_t = nu.T() + other_dist / light_speed;
 
-    if (_nu_x >= -200 && _nu_x <= 200 && _nu_y >= -200 && _nu_y <= 200) {
-      _tree->Fill();
+    if (_apply_position_cuts) {
+      if (_nu_x < -_x_cut || _nu_x > _x_cut || _nu_y < -_y_cut || _nu_y > _y_cut) {
+       continue;
+      }
     }
+
+    _tree->Fill();
   }
 }
 
