@@ -11,7 +11,7 @@ BEGIN_PROLOG
 
 
 # Choose the desired uiverses number for multisim mode
-n_universes: 2
+n_universes: 20
 
 sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
@@ -29,7 +29,6 @@ sbn_eventweight_genie: {
 
   weight_functions_genie: [ 
    genie_sbnd_multisim
-   #,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
   ]
  
   # Knobs that are used in both sbnd and ub
@@ -76,55 +75,6 @@ sbn_eventweight_genie: {
     mode: multisim
     number_of_multisims: @local::n_universes
   }
-
-
-  # Knobs that required special ub package or GENIE v3.2
-  #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
-  genie_ub_multisim: {
-    type: Genie
-    random_seed: 100
-    parameter_list: [ "XSecShape_CCMEC" ]
-    parameter_sigma: [ 1 ]
-    mode: multisim
-    number_of_multisims: @local::n_universes
-  }
-
-  genie_ub_fixed: {
-    type: Genie
-    parameter_list: [ "AxFFCCQEshape" , "ThetaDelta2NRad" , "DecayAngMEC" ]
-    parameter_sigma: [ 1, 1, 1 ]
-    mode: fixed
-  }
-
-#  pmNsigma mode will be updated in next version.
-#  genie_ub_pmNsigma: {
-#    type: Genie
-#    parameter_list: [ 
-#    #CCQE
-#      "RPA_CCQE","CoulombCCQE",
-#    #COH
-#      "NormCCCOH", "NormNCCOH",
-#    #CC MEC
-#      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
-#    #NC MEC
-#      "NormNCMEC"
-#  ]
-## Now can only make +- same sigma:
-#     parameter_sigma: [ 1,1,1,1,1,1,1,1]
-##    parameter_max: [ 
-##    1, 0.3, 
-##    1, 1,
-##    0.56, 0.2, 0.3, 
-##    1
-##  ]
-##    parameter_min: [ 
-##    -1, -0.3, 
-##    -1, -1,
-##    -0.56, -0.2, -0.3, 
-##    -1
-##  ]
-##    mode: pmNsigma
-#  }
 
 }
 
