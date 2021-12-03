@@ -1,7 +1,7 @@
 # Driver fcl file for reading in BooNE files
 # for SBND
 
-#include "run_fluxreader_incr_run_sbnd.fcl"
+#include "run_fluxreader_sbnd.fcl"
 
 source.inputType: "boone"
 
