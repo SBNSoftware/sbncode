@@ -110,8 +110,8 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _baseline = p.get<float>("Baseline", 11000); // cm
   _x_shift = p.get<float>("XShift", -73.78); // cm
 
-  _nu_intersection_z = p.get(float)("NuIntersectionZ", 0.);
-  _nu_other_intersection_z = p.get(float)("NuOtherIntersectionZ", 49000.);
+  _nu_intersection_z = p.get<float>("NuIntersectionZ", 0.);
+  _nu_other_intersection_z = p.get<float>("NuOtherIntersectionZ", 49000.);
   // 49000 is ICARUS location in SBND coordinate system (600 - 110)
 
   _apply_position_cuts = p.get<bool>("ApplyPositionCuts", true);
