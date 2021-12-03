@@ -366,7 +366,8 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     if (pars.size() != parsigmas.size()) {
       array_name_for_exception = "parameter_sigma";
     }
-
+//One fParameterSet gives one set of weights; 
+//Different fParameterSet's are independent.
   if(mode.find("pmNsigma") != std::string::npos){  
   //This mode will be updated and replaced with a more useful one.
 
@@ -411,66 +412,56 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
         << " need to have same number of parameters.";
   }
 
-
   // Set up parameters
   fParameterSet.Configure(GetFullName(), mode, num_universes);
   fParameterSet.Sample(engine);
 
+  //Initialize  genie::rew::GReWeight's
+  reweightVector.resize( num_universes );// Reconfigure this later in this function.
+  std::cout << GetFullName() << ": Initialize WeightCalculators with "<<num_universes<<" univeres."<<std::endl;
+
+  // Initialize weight calculators for all universes;
+  for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
 
   // Set up parameters
-  //loop over parameters;
-  for (auto const& it : fParameterSet.fParameterMap) {//member of std::map<EventWeightParameter, std::vector<float> >
-  //(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
-    std::string name = it.first.fName;
-    // Set up reweighters
-    //rwVector.resize(fParameterSet.fNuniverses);
-    reweightVector.resize( num_universes );// Reconfigure this later in this function.
-    std::cout << GetFullName() << ": Setting up " << name << " with "<<num_universes<<" univeres."<<std::endl;
+  for ( size_t univ = 0; univ < reweightVector.size(); ++univ ) {//loop over universes
 
-    // Set up the weight calculators for each universe
-    for ( auto& rwght : reweightVector ){ this->SetupWeightCalculators( rwght, modes_to_use );}
-    // Set up GENIE with the currently active tune
-  // Set up parameters
+	  auto& rwght = reweightVector.at( univ );
+	  genie::rew::GSystSet& syst = rwght.Systematics();
+	  //loop over parameters;
+	  for (auto const& it : fParameterSet.fParameterMap) {//loop over knobs
+		  //member of std::map<EventWeightParameter, std::vector<float> >
+		  //(see line 41 of sbnobj/Common/SBNEventWeight/EventWeightParameterSet.h)
+		  std::string name = it.first.fName;
+		  genie::rew::GSyst_t knob = genie::rew::GSyst::FromString( name );
 
-    //Assign knob with new values based on variation
-    //loop over universes
-    for ( size_t u = 0; u < reweightVector.size(); ++u ) {
+		  double cv_shift = 0;
+		  auto iter = gsyst_to_cv_map.find( knob ); //Apply CV shift, if required
+		  if ( iter != gsyst_to_cv_map.end() ) {
+			  cv_shift =  iter->second;
+			  if ( !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
+				  << "CV offset added to the "
+					  << genie::rew::GSyst::AsString( knob )
+					  << " knob. New sigma for universe #" << univ << " is "
+					  << cv_shift;
+		  }
 
-      auto& rwght = reweightVector.at( u );
-      genie::rew::GSystSet& syst = rwght.Systematics();
+		  double twk_dial_value = it.second[univ]+cv_shift;
+		  syst.Set( knob, twk_dial_value ); //Assign knob with new values based on variation
 
-      genie::rew::GSyst_t knob; 
-      valid_knob_name(name, knob);//= valid_knob_nameknobs_to_use.at( k );
-      //genie::rew::GSyst_t knob = //knobs_to_use.at( k );
+		  std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
+		  std::cout <<"CHECK "<<__LINE__<<" knob name "<< genie::rew::GSyst::AsString( knob )<<std::endl;
 
-      double cv_shift = 0;
-      if ( mode.find("pmNsigma") == std::string::npos ) {
-        //Apply CV shift
-        auto iter = gsyst_to_cv_map.find( knob );
-        if ( iter != gsyst_to_cv_map.end() ) {
-          cv_shift =  iter->second;
-          if ( !fQuietMode ) MF_LOG_INFO("GENIEWeightCalc")
-            << "CV offset added to the "
-              << genie::rew::GSyst::AsString( knob )
-              << " knob. New sigma for universe #" << u << " is "
-              << cv_shift;
-        }
-      }
-      //"genie_central_values" is applied here.
-      double twk_dial_value = it.second[u]+cv_shift;//reweightingSigmas.at( k ).at( u );//kth knob, uth universe
-      syst.Set( knob, twk_dial_value );
-      std::cout << GetFullName() << ": Knob value: "<<twk_dial_value<<std::endl;
+		  if ( !fQuietMode ) {
+			  MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << univ << ", knob name" << name // << k
+				  << " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
+				  << " the value " << twk_dial_value << " with shift "<<cv_shift;
+		  }
 
-      if ( !fQuietMode ) {
-        MF_LOG_INFO("GENIEWeightCalc") << "In universe #" << u << ", knob name" << name // << k
-          << " (" << genie::rew::GSyst::AsString( knob ) << ") was set to"
-          << " the value " << twk_dial_value;
-      }
-
-      rwght.Reconfigure();
-      rwght.Print();
-    }//next universe
-  }//next parameter
+	  }//next knob
+	  rwght.Reconfigure();//Apply all set knobs, i.e. use the updated syst.
+	  rwght.Print();
+  }//next universe
 }
 
 //Keng:
@@ -530,7 +521,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
       // All right, the event record is fully ready. Now ask the GReWeight
       // objects to compute the weights.
 
-    for (size_t k = 0u; k < num_knobs; ++k ) {
+    for (size_t k = 0u; k < num_knobs; ++k ) {//one "knob" for one universe;
       //Add exception to avoid "FATAL KineLimits", 
       //  see https://github.com/GENIE-MC/Reweight/issues/12
       std::vector< genie::rew::GSyst_t > ak = reweightVector.at( k ).Systematics().AllIncluded();//all konbs used
@@ -543,7 +534,9 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
         weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
         reweightVector.at(k).Print();
       }
+	std::cout<<"CHECK "<<k<<" universe weight "<<weights[k]<<std::endl;
     }
+	std::cout<<"Finish Event # "<<e.event()<<std::endl;
 
     return weights;
 }
