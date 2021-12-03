@@ -495,9 +495,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fBNBInfo.clear();
     fSubRunPOT = 0;
     art::Handle<std::vector<sbn::BNBSpillInfo> > bnb_spill;
-    sr.getByLabel(fParams.POTDataLabel(), bnb_spill);
-    std::vector<art::Ptr<sbn::BNBSpillInfo> >  bnb_spill_info;
+    sr.getByLabel(fParams.BNBPOTDataLabel(), bnb_spill);
     if (bnb_spill.isValid()) {
+      std::vector<art::Ptr<sbn::BNBSpillInfo> >  bnb_spill_info;
       art::fill_ptr_vector(bnb_spill_info, bnb_spill);
       FillExposure(bnb_spill_info, fBNBInfo, fSubRunPOT);
       fTotalPOT += fSubRunPOT;
@@ -1487,11 +1487,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     fFlatTree->Fill();
   }
 
-  fBNBInfo.clear();
-  rec.hdr.pot = 0;
-
   srcol->push_back(rec);
   evt.put(std::move(srcol));
+
+  fBNBInfo.clear();
+  rec.hdr.pot = 0;
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
