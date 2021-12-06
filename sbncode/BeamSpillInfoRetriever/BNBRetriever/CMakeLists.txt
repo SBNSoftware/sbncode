@@ -36,7 +36,7 @@ simple_plugin(BNBRetriever module
 	messagefacility::MF_MessageLogger
        	sbnobj_Common_POTAccounting
 	#${IFBEAMSERVICE}
-	#${IFBEAM}
+	#ifbeam::ifbeam
 	ifbeam
 	ifdh_art::IFBeam_service
 	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
