@@ -21,40 +21,40 @@ art_make(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_CrossSection
   LIB_LIBRARIES
     sbncode_SBNEventWeight_Base
-    nugen_EventGeneratorBase_GENIE
-    nurandom_RandomUtils_NuRandomService_service
-    ${ART_FRAMEWORK_PRINCIPAL}
-    ${ART_PERSISTENCY_PROVENANCE}
-    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-    ${FHICLCPP}
+    nugen::EventGeneratorBase_GENIE
+    nurandom::RandomUtils_NuRandomService_service
+    art::Framework_Principal
+    art::Persistency_Provenance
+    art::Framework_Services_Registry
+    fhiclcpp::fhiclcpp
 
    #GENIE_LIB_LIST is explicitly listed below:
-    LOG4CPP
-    GFWMSG
-    GFWREG
-    GFWALG
-    GFWINT
-    GFWGHEP
-    GFWNUM
-    GFWUTL
-    GFWPARDAT
-    GFWEG
+    log4cpp::log4cpp
+    GENIE::GFwMsg
+    GENIE::GFwReg
+    GENIE::GFwAlg
+    GENIE::GFwInt
+    GENIE::GFwGHEP
+    GENIE::GFwNum
+    GENIE::GFwUtl
+    GENIE::GFwParDat
+    GENIE::GFwEG
     GFWNTP
-    GPHXSIG
-    GPHPDF
-    GPHNUCLST
-    GPHCMN
-    GPHDCY
+    GENIE::GPhXSIg
+    GENIE::GPhPDF
+    GENIE::GPhNuclSt
+    GENIE::GPhCmn
+    GENIE::GPhDcy
     GPHHADTRANSP
-    GPHHADNZ
+    GENIE::GPhHadnz
     GPHDEEX
     GPHAMNGXS
     GPHAMNGEG
     GPHCHMXS
     GPHCOHXS
     GPHCOHEG
-    GPHDISXS
-    GPHDISEG
+    GENIE::GPhDISXS
+    GENIE::GPhDISEG
     GPHDFRCXS
     GPHDFRCEG
     GPHGLWRESXS
@@ -74,14 +74,14 @@ art_make(
     GPHSTREG
     GPHNDCY
     GTLGEO
-    GTLFLX
+    GENIE::GTlFlx
     GRWFWK
     GRWIO
     GRWCLC
 	GSL
     #GENIE libraries are above
-    ${MF_MESSAGELOGGER}
-    cetlib_except
+    messagefacility::MF_MessageLogger
+    cetlib_except::cetlib_except
 )
 
 install_headers()
