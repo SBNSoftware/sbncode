@@ -39,45 +39,45 @@ art_make(
     GENIE::GFwUtl
     GENIE::GFwParDat
     GENIE::GFwEG
-    GFWNTP
+    GENIE::GFwNtp
     GENIE::GPhXSIg
     GENIE::GPhPDF
     GENIE::GPhNuclSt
     GENIE::GPhCmn
     GENIE::GPhDcy
-    GPHHADTRANSP
+    GENIE::GPhHadTransp
     GENIE::GPhHadnz
-    GPHDEEX
-    GPHAMNGXS
-    GPHAMNGEG
-    GPHCHMXS
-    GPHCOHXS
-    GPHCOHEG
+    GENIE::GPhDeEx
+    GENIE::GPhAMNGXS
+    GENIE::GPhAMNGEG
+    GENIE::GPhChmXS
+    GENIE::GPhCohXS
+    GENIE::GPhCohEG
     GENIE::GPhDISXS
     GENIE::GPhDISEG
-    GPHDFRCXS
-    GPHDFRCEG
-    GPHGLWRESXS
-    GPHGLWRESEG
-    GPHIBDXS
-    GPHIBDEG
-    GPHMNUCXS
-    GPHMNUCEG
-    GPHMEL
-    GPHNUELXS
-    GPHNUELEG
-    GPHQELXS
-    GPHQELEG
-    GPHRESXS
-    GPHRESEG
-    GPHSTRXS
-    GPHSTREG
-    GPHNDCY
-    GTLGEO
+    GENIE::GPhDfrcXS
+    GENIE::GPhDfrcEG
+    GENIE::GPhGlwResXS
+    GENIE::GPhGlwResEG
+    GENIE::GPhIBDXS
+    GENIE::GPhIBDEG
+    GENIE::GPhMNucXS
+    GENIE::GPhMNucEG
+    GENIE::GPhMEL
+    GENIE::GPhNuElXS
+    GENIE::GPhNuElEG
+    GENIE::GPhQELXS
+    GENIE::GPhQELEG
+    GENIE::GPhResXS
+    GENIE::GPhResEG
+    GENIE::GPhStrXS
+    GENIE::GPhStrEG
+    GENIE::GPhNDcy
+    GENIE::GTlGeo
     GENIE::GTlFlx
-    GRWFWK
-    GRWIO
-    GRWCLC
+    GENIE::GRwFwk
+    GENIE::GRwIO
+    GENIE::GRwClc
 	GSL
     #GENIE libraries are above
     messagefacility::MF_MessageLogger

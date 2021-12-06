@@ -37,11 +37,11 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   # GENIE STUFF #####################################
                   xml2
                   log4cpp::log4cpp
-                  GFwEG
-                  GFwAlg
-                  GFwMsg
-                  GFwGHEP
-                  GTlFlx
+                  GENIE::GFwEG
+                  GENIE::GFwAlg
+                  GENIE::GFwMsg
+                  GENIE::GFwGHEP
+                  GENIE::GTlFlx
                   dk2nuTree
                   #${DK2NUDATA}
                   ${DK2NUGENIE}
