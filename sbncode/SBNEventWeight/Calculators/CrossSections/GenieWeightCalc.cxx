@@ -427,7 +427,7 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     auto& rwght = reweightVector.at( univ );
     genie::rew::GSystSet& syst = rwght.Systematics();
 
-    rwght.Reconfigure();//Redundant, but it avoids "cushion error":
+//    rwght.Reconfigure();//Redundant, but it avoids "cushion error":
     //1638551728 FATAL ReW : [n] <GReWeightINukeParams.cxx::AddCushionTerms (583)> : There must be at least one cushion term (0 were set)
     //loop over parameters;
     for (auto const& it : fParameterSet.fParameterMap) {//loop over knobs
