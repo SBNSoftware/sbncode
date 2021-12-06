@@ -490,16 +490,14 @@ void CAFMaker::beginRun(art::Run& run) {
 void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get the POT
   // get POT information
+  fBNBInfo.clear();
+  fSubRunPOT = 0;
+  auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
+  fIsRealData = bnb_spill.isValid();
   if(fIsRealData)
-  {
-    fBNBInfo.clear();
-    fSubRunPOT = 0;
-    art::Handle<std::vector<sbn::BNBSpillInfo> > bnb_spill;
-    sr.getByLabel(fParams.BNBPOTDataLabel(), bnb_spill);
+    {
     if (bnb_spill.isValid()) {
-      std::vector<art::Ptr<sbn::BNBSpillInfo> >  bnb_spill_info;
-      art::fill_ptr_vector(bnb_spill_info, bnb_spill);
-      FillExposure(bnb_spill_info, fBNBInfo, fSubRunPOT);
+      FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
       fTotalPOT += fSubRunPOT;
     }
   }
