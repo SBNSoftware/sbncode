@@ -35,7 +35,7 @@ fwdir   product_dir scripts
 
 product             version
 larsoft             v09_38_00
-sbnobj              v09_12_08
+sbnobj              v09_12_10
 sbnanaobj           v09_17_06
 sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
