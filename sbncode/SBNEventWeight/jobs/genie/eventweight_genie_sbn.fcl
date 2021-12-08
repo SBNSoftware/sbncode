@@ -11,7 +11,7 @@ BEGIN_PROLOG
 
 
 # Choose the desired uiverses number for multisim mode
-n_universes: 20
+n_universes: 1000
 
 sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
@@ -54,7 +54,7 @@ sbn_eventweight_genie: {
     #DIS
       "AhtBY","BhtBY","CV1uBY","CV2uBY","FormZone",
 
-    #FSI
+    #FSI remove one of the FrPiProd* knobs to avoid cushion errors.
       "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" , #"FrPiProd_N",
       "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #,"FrPiProd_pi"
       ]
