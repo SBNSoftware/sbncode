@@ -10,53 +10,53 @@ add_subdirectory(Tools)
 add_subdirectory(config)
 
 simple_plugin( MeVPrtlGen module
-              ${ART_FRAMEWORK_CORE}
-              ${ART_FRAMEWORK_SERVICES_REGISTRY}
-              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+              art::Framework_Core
+              art::Framework_Services_Registry
+              art_root_io::TFileService_service
               ${ART_FRAMEWORK_SERVICES}
-				      ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-				      ${ART_ROOT_IO_TFILE_SUPPORT}
-              ${ART_FRAMEWORK_PRINCIPAL}
-              art_Persistency_Common
-              art_Utilities canvas
-              ${MF_MESSAGELOGGER}
-              ${MF_UTILITIES}
-              ${FHICLCPP}
-              cetlib cetlib_except
+				      
+				      art_root_io::tfile_support
+              art::Framework_Principal
+              art::Persistency_Common
+              art::Utilities canvas::canvas
+              messagefacility::MF_MessageLogger
+              
+              fhiclcpp::fhiclcpp
+              cetlib::cetlib cetlib_except
               ${ROOT_EVE_LIB_LIST}
               ${ROOT_X3d}
-              ${ROOT_CORE}
+              ROOT::Core
               ${ROOT_BASIC_LIB_LIST}
-        			${ROOT_XMLIO}
-        			${CLHEP}
-		nusimdata_SimulationBase
+        			ROOT::XMLIO
+        			CLHEP::CLHEP
+		nusimdata::SimulationBase
               larcorealg_Geometry
-        			nurandom_RandomUtils_NuRandomService_service
+        			nurandom::RandomUtils_NuRandomService_service
         			larcoreobj_SummaryData
         			sbnobj_Common_EventGen_MeVPrtl
         			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 simple_plugin( MeVPrtlTestRayTrace module
-                            ${ART_FRAMEWORK_CORE}
-                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-				${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-				${ART_ROOT_IO_TFILE_SUPPORT}
-                            ${ART_FRAMEWORK_PRINCIPAL}
-                            art_Persistency_Common
-                            art_Utilities canvas
-                            ${MF_MESSAGELOGGER}
-                            ${MF_UTILITIES}
-                            ${FHICLCPP}
-                            cetlib cetlib_except
+                            art::Framework_Core
+                            art::Framework_Services_Registry
+                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+				
+				art_root_io::tfile_support
+                            art::Framework_Principal
+                            art::Persistency_Common
+                            art::Utilities canvas::canvas
+                            messagefacility::MF_MessageLogger
+                            
+                            fhiclcpp::fhiclcpp
+                            cetlib::cetlib cetlib_except
                             ${ROOT_EVE_LIB_LIST}
                             ${ROOT_X3d}
-                            ${ROOT_CORE}
+                            ROOT::Core
                             ${ROOT_BASIC_LIB_LIST}
-			${ROOT_XMLIO}
-			${CLHEP}
-			nurandom_RandomUtils_NuRandomService_service
+			ROOT::XMLIO
+			CLHEP::CLHEP
+			nurandom::RandomUtils_NuRandomService_service
 			larcoreobj_SummaryData
         		sbnobj_Common_EventGen_MeVPrtl
 			sbncode_EventGenerator_MeVPrtl_Constants
