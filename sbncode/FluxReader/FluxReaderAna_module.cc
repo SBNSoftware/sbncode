@@ -107,16 +107,17 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
 
   _flux_label = p.get<std::string>("FluxLabel", "flux");
 
-  _baseline = p.get<float>("Baseline", 11000); // cm
-  _x_shift = p.get<float>("XShift", -73.78); // cm
+  _baseline = p.get<float>("Baseline"); // cm
+  _x_shift = p.get<float>("XShift"); // cm
 
   _nu_intersection_z = p.get<float>("NuIntersectionZ", 0.);
-  _nu_other_intersection_z = p.get<float>("NuOtherIntersectionZ", 49000.);
+  _nu_other_intersection_z = p.get<float>("NuOtherIntersectionZ");
   // 49000 is ICARUS location in SBND coordinate system (600 - 110)
+  // 36000 is MicroBooNE location in SBND coordinate system (470 - 110)
 
-  _apply_position_cuts = p.get<bool>("ApplyPositionCuts", true);
-  _x_cut = p.get<float>("XCut", 200); // cm
-  _y_cut = p.get<float>("YCut", 200); // cm
+  _apply_position_cuts = p.get<bool>("ApplyPositionCuts");
+  _x_cut = p.get<float>("XCut"); // cm
+  _y_cut = p.get<float>("YCut"); // cm
 
 
   art::ServiceHandle<art::TFileService> fs;
