@@ -110,15 +110,15 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
 
   _flux_label = p.get<std::string>("FluxLabel", "flux");
 
-  _baseline = p.get<float>("Baseline"); // cm
-  _x_shift = p.get<float>("XShift"); // cm
+  _baseline = p.get<float>("Baseline"); // cm, distance from detector to target position
+  _x_shift = p.get<float>("XShift", 0.); // cm, detector shift along X w.r.t. beamline coordinate system
 
   _nu_intersection_z = p.get<float>("NuIntersectionZ", 0.);
   _nu_other_intersection_z = p.get<float>("NuOtherIntersectionZ");
   // 49000 is ICARUS location in SBND coordinate system (600 - 110)
   // 36000 is MicroBooNE location in SBND coordinate system (470 - 110)
 
-  _apply_position_cuts = p.get<bool>("ApplyPositionCuts");
+  _apply_position_cuts = p.get<bool>("ApplyPositionCuts", false);
   _x_cut = p.get<float>("XCut"); // cm
   _y_cut = p.get<float>("YCut"); // cm
 
