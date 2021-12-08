@@ -427,8 +427,6 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     auto& rwght = reweightVector.at( univ );
     genie::rew::GSystSet& syst = rwght.Systematics();
 
-//    rwght.Reconfigure();//Redundant, but it avoids "cushion error":
-    //1638551728 FATAL ReW : [n] <GReWeightINukeParams.cxx::AddCushionTerms (583)> : There must be at least one cushion term (0 were set)
     //loop over parameters;
     for (auto const& it : fParameterSet.fParameterMap) {//loop over knobs
       //member of std::map<EventWeightParameter, std::vector<float> >
@@ -534,9 +532,7 @@ std::vector<float> GenieWeightCalc::GetWeight(art::Event& e, size_t inu) {
         weights[k] = reweightVector.at( k ).CalcWeight( *genie_event );
         reweightVector.at(k).Print();
       }
-//  std::cout<<"CHECK "<<k<<" universe weight "<<weights[k]<<std::endl;
     }
-//  std::cout<<"Finish Event # "<<e.event()<<std::endl;
 
     return weights;
 }
