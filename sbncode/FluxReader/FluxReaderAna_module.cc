@@ -80,6 +80,9 @@ private:
   float _nu_x; /// X poisition of neutrino at the front face of the TPC
   float _nu_y; /// Y poisition of neutrino at the front face of the TPC
   float _nu_z; /// Z poisition of neutrino at the front face of the TPC
+  float _nu_vx; /// X poisition of neutrino at neutrino production point
+  float _nu_vy; /// Y poisition of neutrino at neutrino production point
+  float _nu_vz; /// Z poisition of neutrino at neutrino production point
   float _nu_px; /// X momentum of neutrino
   float _nu_py; /// Y momentum of neutrino
   float _nu_pz; /// Z momentum of neutrino
@@ -130,6 +133,9 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _tree->Branch("nu_x", &_nu_x, "nu_x/F");
   _tree->Branch("nu_y", &_nu_y, "nu_y/F");
   _tree->Branch("nu_z", &_nu_z, "nu_z/F");
+  _tree->Branch("nu_vx", &_nu_vx, "nu_vx/F");
+  _tree->Branch("nu_vy", &_nu_vy, "nu_vy/F");
+  _tree->Branch("nu_vz", &_nu_vz, "nu_vz/F");
   _tree->Branch("nu_px", &_nu_px, "nu_px/F");
   _tree->Branch("nu_py", &_nu_py, "nu_py/F");
   _tree->Branch("nu_pz", &_nu_pz, "nu_pz/F");
@@ -190,6 +196,9 @@ void FluxReaderAna::analyze(art::Event const& e)
     _nu_x = intersection.X();
     _nu_y = intersection.Y();
     _nu_z = intersection.Z();
+    _nu_x = flux.fvx;
+    _nu_y = flux.fvy;
+    _nu_z = flux.fvz;
     _nu_px = nu.Px();
     _nu_py = nu.Py();
     _nu_pz = nu.Pz();
