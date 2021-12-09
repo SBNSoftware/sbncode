@@ -38,7 +38,7 @@ namespace caf
   {
     for(const sbn::BNBSpillInfo& info: bnb_spill_info)
       {
-	subRunPOT += info.TOR875;
+	subRunPOT += info.POT();
         BNBInfo.push_back(makeSRBNBInfo(info));
       }
   }
