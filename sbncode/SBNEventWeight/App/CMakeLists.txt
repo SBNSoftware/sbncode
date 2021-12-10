@@ -11,9 +11,9 @@ art_make(
     sbncode_SBNEventWeight_Base
     sbncode_SBNEventWeight_Calculators_CrossSection
     sbncode_SBNEventWeight_Calculators_BNBFlux
-    nusimdata_SimulationBase
-    ${MF_MESSAGELOGGER}
-    ${ROOT_GEOM}
+    nusimdata::SimulationBase
+    messagefacility::MF_MessageLogger
+    ROOT::Geom
     ${LXML2}
     GSL
 )
