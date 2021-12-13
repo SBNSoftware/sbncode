@@ -270,7 +270,6 @@ namespace caf
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
     };
-
   };
 }
 
