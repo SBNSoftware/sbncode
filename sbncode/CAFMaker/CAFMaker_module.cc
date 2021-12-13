@@ -264,19 +264,13 @@ class CAFMaker : public art::EDProducer {
 }; //Producer
 
 //.......................................................................
-<<<<<<< HEAD
-CAFMaker::CAFMaker(const Parameters& params)
-  : art::EDProducer(params), fParams(params()), fIsRealData(false),
-    fFile(0), fRecTree(0), fFlatFile(0), fFlatTree(0), fFlatRecord(0)
-{
-=======
+
   CAFMaker::CAFMaker(const Parameters& params)
   : art::EDProducer{params},
     fParams(params()), fFile(0)
   {
   // Note: we will define isRealData on a per event basis in produce function [using event.isRealData()], at least for now.
 
->>>>>>> origin/feature/howard_cafmaker_fixBackTrackParticleInventory
   fCafFilename = fParams.CAFFilename();
   fFlatCafFilename = fParams.FlatCAFFilename();
 
