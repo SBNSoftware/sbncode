@@ -146,6 +146,7 @@ private:
 
   /**
    * @brief Matches spill times with multiwire chamber data from the database.
+   * @param eventID ID of the event the information is associated to
    * @param triggerInfo information from the trigger of this event
    * @param MWRdata data from multiwire chambers
    * @param isFirstEventInRun whether we are processing the first event of the run
@@ -153,6 +154,7 @@ private:
    * @return count of matched spills
    */
   int matchMultiWireData(
+    art::EventID const& eventID, 
     TriggerInfo_t const& triggerInfo,
     MWRdata_t const& MWRdata, bool isFirstEventInRun,
     std::vector< sbn::BNBSpillInfo >& beamInfos
@@ -160,13 +162,14 @@ private:
 
   /**
    * @brief Assembles and returns a spill information record.
+   * @param eventID ID of the event the information is associated to
    * @param time time of the spill
    * @param MWRdata all extracted data from multiwire chambers
    * @param matched_MWR data from multiwire chambers matched with the time
    * @return a `sbn::BNBSpillInfo` object with information on the spill at `time`
    */
   sbn::BNBSpillInfo makeBNBSpillInfo
-    (double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
+    (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
 
 };
 
@@ -216,7 +219,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   MWRdata_t const MWRdata = extractSpillTimes(triggerInfo);
   
   
-  int const spill_count = matchMultiWireData(triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
+  int const spill_count = matchMultiWireData(e.id(), triggerInfo, MWRdata, e.event() == 1, fOutbeamInfos);
   
   
   if(spill_count > int(triggerInfo.number_of_gates_since_previous_event))
@@ -380,6 +383,7 @@ sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t 
 
 
 int sbn::BNBRetriever::matchMultiWireData(
+  art::EventID const& eventID,
   TriggerInfo_t const& triggerInfo,
   MWRdata_t const& MWRdata, bool isFirstEventInRun,
   std::vector< sbn::BNBSpillInfo >& beamInfos
@@ -476,7 +480,7 @@ int sbn::BNBRetriever::matchMultiWireData(
       
     }//end loop over MWR devices
     
-    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(times_temps[i], MWRdata, matched_MWR);
+    sbn::BNBSpillInfo spillInfo = makeBNBSpillInfo(eventID, times_temps[i], MWRdata, matched_MWR);
 
     beamInfos.push_back(std::move(spillInfo));
 
@@ -491,7 +495,7 @@ int sbn::BNBRetriever::matchMultiWireData(
 
 
 sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
-  (double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
+  (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const
 {
   
   auto const& [ MWR_times, unpacked_MWR ] = MWRdata; // alias
@@ -590,6 +594,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   // we can filter events but want to keep all the POT 
   // information, so we'll write it to the SubRun
   
+  beamInfo.event = eventID.event(); // the rest of ID is known by art::SubRun
+  
   return beamInfo;
 }
 
@@ -609,7 +615,8 @@ void sbn::BNBRetriever::endSubRun(art::SubRun& sr)
 mf::LogDebug("BNBRetriever")<< "Total number of DAQ Spills : " << TotalBeamSpills << std::endl;
 mf::LogDebug("BNBRetriever")<< "Total number of Selected Spills : " << fOutbeamInfos.size() << std::endl;
 
-  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >(fOutbeamInfos);
+  auto p =  std::make_unique< std::vector< sbn::BNBSpillInfo > >();
+  std::swap(*p, fOutbeamInfos);
 
   sr.put(std::move(p), art::subRunFragment());
 
