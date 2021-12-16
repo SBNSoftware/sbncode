@@ -15,13 +15,12 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ${ART_FRAMEWORK_SERVICES_REGISTRY}
                   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                   ${ART_FRAMEWORK_SERVICES}
-                  ${ART_FRAMEWORK_PRINCIPAL}
-                  art_Persistency_Common
-                  art_Utilities canvas
-                  ${MF_MESSAGELOGGER}
-                  ${MF_UTILITIES}
-                  ${FHICLCPP}
-                  cetlib cetlib_except
+                  art::Framework_Principal
+                  art::Persistency_Common
+                  art::Utilities canvas::canvas
+                  messagefacility::MF_MessageLogger
+                  fhiclcpp::fhiclcpp
+                  cetlib::cetlib cetlib_except
                   ${ROOT_EVE_LIB_LIST}
                   ${ROOT_X3d}
                   ${ROOT_BASIC_LIB_LIST}
@@ -33,7 +32,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   larcorealg_GeoAlgo
                   larsim_MCCheater_BackTrackerService_service
                   larsim_Utils
-                  nusimdata_SimulationBase
+                  nusimdata::SimulationBase
                   larsim_MCCheater_ParticleInventoryService_service
                   sbnobj_Common_CRT
                   sbnobj_Common_Reco
@@ -54,21 +53,20 @@ cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 simple_plugin ( CAFMaker module
                sbncode_CAFMaker
                sbnanaobj_StandardRecord
-               IFDH_SERVICE
-               ${ART_FRAMEWORK_CORE}
-               ${ART_FRAMEWORK_PRINCIPAL}
-               ${ART_FRAMEWORK_SERVICES_REGISTRY}
+               ifdh_art::IFDH_service
+               art::Framework_Core
+               art::Framework_Principal
+               art::Framework_Services_Registry
                ${ART_FRAMEWORK_SERVICES_BASIC}
                ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-               art_Utilities canvas
-               ${MF_MESSAGELOGGER}
-               ${MF_UTILITIES}
-               ${FHICLCPP}
-               cetlib cetlib_except
+               art::Utilities canvas::canvas
+               messagefacility::MF_MessageLogger
+               fhiclcpp::fhiclcpp
+               cetlib::cetlib cetlib_except
                ${ROOT_BASIC_LIB_LIST}
                art_root_io_RootDB
                hep_concurrency
-               nurandom_RandomUtils_NuRandomService_service
+               nurandom::RandomUtils_NuRandomService_service
                BASENAME_ONLY
             )
 
@@ -76,14 +74,14 @@ build_dictionary( CAFMaker
                   DICTIONARY_LIBRARIES
                   sbnanaobj_StandardRecord
                   sbnanaobj_StandardRecord_dict
-                  ${ART_FRAMEWORK_CORE}
-                  ${ART_FRAMEWORK_PRINCIPAL}
-                  art_Persistency_Common
-                  art_Persistency_Provenance
-                  art_Utilities canvas
-                  cetlib cetlib_except
-                  ${MF_MESSAGELOGGER}
-                  ${MF_UTILITIES}
+                  art::Framework_Core
+                  art::Framework_Principal
+                  art::Persistency_Common
+                  art::Persistency_Provenance
+                  art::Utilities canvas::canvas
+                  cetlib::cetlib cetlib_except
+                  messagefacility::MF_MessageLogger
+                  
                   )
 
 

@@ -1,18 +1,18 @@
 simple_plugin(TrackSplitter module
-  ${ART_FRAMEWORK_CORE}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  art_Persistency_Common
-  art_Utilities canvas
-  ${MF_MESSAGELOGGER}
-  ${MF_UTILITIES}
-  ${FHICLCPP}
-  cetlib cetlib_except
+  art::Framework_Core
+  art::Framework_Services_Registry
+  art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+  art::Framework_Principal
+  art::Persistency_Common
+  art::Utilities canvas::canvas
+  messagefacility::MF_MessageLogger
+  
+  fhiclcpp::fhiclcpp
+  cetlib::cetlib cetlib_except
   ${ROOT_EVE_LIB_LIST}
   ${ROOT_X3d}
   ${ROOT_BASIC_LIB_LIST}
-  MF_MessageLogger
+  messagefacility::MF_MessageLogger
   larcorealg_Geometry
   larcore_Geometry_Geometry_service
   lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
@@ -24,20 +24,20 @@ simple_plugin(TrackSplitter module
 )
 
 simple_plugin(MergedTrackIdentifier module
-  ${ART_FRAMEWORK_CORE}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  art_Persistency_Common
-  art_Utilities canvas
-  ${MF_MESSAGELOGGER}
-  ${MF_UTILITIES}
-  ${FHICLCPP}
-  cetlib cetlib_except
+  art::Framework_Core
+  art::Framework_Services_Registry
+  art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+  art::Framework_Principal
+  art::Persistency_Common
+  art::Utilities canvas::canvas
+  messagefacility::MF_MessageLogger
+  
+  fhiclcpp::fhiclcpp
+  cetlib::cetlib cetlib_except
   ${ROOT_EVE_LIB_LIST}
   ${ROOT_X3d}
   ${ROOT_BASIC_LIB_LIST}
-  MF_MessageLogger
+  messagefacility::MF_MessageLogger
   larcorealg_Geometry
   larcore_Geometry_Geometry_service
   larpandora_LArPandoraInterface
