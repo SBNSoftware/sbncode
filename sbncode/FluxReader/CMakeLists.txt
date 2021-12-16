@@ -93,14 +93,12 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         # GENIE STUFF #####################################
                         xml2
                         log4cpp::log4cpp
-                        ${GALGORITHM}
-                        ${GBASE}
-                        ${GEVGCORE}
-                        ${GEVGDRIVERS}
-                        ${GFLUXDRIVERS}
-                        ${GINTERACTION}
-                        ${GMESSENGER}
-                        ${GHEP}
+                        GENIE::GFwEG
+                        GENIE::GFwAlg
+                        GENIE::GFwMsg
+                        GENIE::GFwGHEP
+                        GENIE::GTlFlx
+                        GENIE::GFwParDat
                         ${DK2NUDATA}
                         ${DK2NUGENIE}
                         ####################################################
@@ -108,6 +106,7 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         
                         fhiclcpp::fhiclcpp
                         
+                        ${ROOT_EVE_LIB_LIST}
                         ${ROOT_BASIC_LIB_LIST}
 )
 
