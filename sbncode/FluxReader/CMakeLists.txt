@@ -53,7 +53,7 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   messagefacility::MF_MessageLogger
                   CLHEP::CLHEP
                   ${ROOT_BASIC_LIB_LIST}
-                  
+
 )
 
 art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
@@ -65,16 +65,16 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         art::Framework_Principal
                         art::Framework_Services_Registry
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                        
+
                         art_root_io::TFileService_service
                         art_root_io::tfile_support
                         art::Persistency_Common canvas::canvas
                         art::Persistency_Provenance canvas::canvas
                         art::Utilities canvas::canvas
                         messagefacility::MF_MessageLogger
-                        
+
                         fhiclcpp::fhiclcpp
-                        
+
                         ${ROOT_BASIC_LIB_LIST}
                         cetlib::cetlib cetlib_except
 
@@ -87,9 +87,9 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         art::Framework_Principal
                         art::Framework_Services_Registry
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                        
                         art_root_io::TFileService_service
                         art_root_io::tfile_support
+                        fhiclcpp::fhiclcpp
                         # GENIE STUFF #####################################
                         xml2
                         log4cpp::log4cpp
@@ -102,10 +102,6 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         ${DK2NUDATA}
                         ${DK2NUGENIE}
                         ####################################################
-                        messagefacility::MF_MessageLogger
-                        
-                        fhiclcpp::fhiclcpp
-                        
                         ${ROOT_EVE_LIB_LIST}
                         ${ROOT_BASIC_LIB_LIST}
 )
