@@ -31,6 +31,7 @@
 #include "FluxReader.h"
 #include "GSimpleInterface.h"
 #include "DK2NuInterface.h"
+#include "BooNEInterface.h"
 
 #include "GENIE/Framework/EventGen/EventRecord.h"
 //#include "nutools/EventGeneratorBase/GENIE/EVGBAssociationUtil.h"
@@ -146,6 +147,9 @@ namespace fluxr {
       fFluxDriver=new DK2NuInterface();
       ((DK2NuInterface*)fFluxDriver)->SetRootFile(fFluxInputFile);
       ((DK2NuInterface*)fFluxDriver)->Init(fConfigPS);
+    } else if (fInputType=="boone") {
+      fFluxDriver=new BooNEInterface();
+      ((BooNEInterface*)fFluxDriver)->SetRootFile(fFluxInputFile);
     } else {
       throw cet::exception(__PRETTY_FUNCTION__) << "Ntuple format "<<fInputType<<" not supported"<<std::endl;
     }
