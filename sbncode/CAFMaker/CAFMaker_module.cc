@@ -169,13 +169,13 @@ class CAFMaker : public art::EDProducer {
   // int fCycle;
   // int fBatch;
 
-  TFile* fFile;
-  TTree* fRecTree;
+  TFile* fFile = 0;
+  TTree* fRecTree = 0;
 
-  TFile* fFlatFile;
-  TTree* fFlatTree;
+  TFile* fFlatFile = 0;
+  TTree* fFlatTree = 0;
 
-  flat::Flat<caf::StandardRecord>* fFlatRecord;
+  flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
