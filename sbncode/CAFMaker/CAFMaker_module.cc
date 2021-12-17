@@ -321,12 +321,18 @@ void CAFMaker::InitVolumes() {
 //......................................................................
 CAFMaker::~CAFMaker()
 {
-  delete fRecTree;
-  delete fFile;
+  if(fParams.CreateCAF())
+    {
+      delete fRecTree;
+      delete fFile;
+    }
 
-  delete fFlatRecord;
-  delete fFlatTree;
-  delete fFlatFile;
+  if(fParams.CreateFlatCAF())
+    {
+      delete fFlatRecord;
+      delete fFlatTree;
+      delete fFlatFile;
+    }
 
   delete fFakeRecoTRandom;
 }
