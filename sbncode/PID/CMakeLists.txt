@@ -3,28 +3,22 @@
 #)
 
 art_make( MODULE_LIBRARIES
-  ${ART_FRAMEWORK_CORE}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_FRAMEWORK_SERVICES}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  art_Persistency_Common
-  art_Utilities canvas
-  ${MF_MESSAGELOGGER}
-  ${MF_UTILITIES}
-  ${FHICLCPP}
-  cetlib cetlib_except
+  art::Framework_Core
+  art::Framework_Services_Registry
+  art_root_io::tfile_support
+  art_root_io::TFileService_service
+  art::Framework_Principal
+  art::Persistency_Common
+  art::Utilities canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib::cetlib cetlib_except
   ${ROOT_EVE_LIB_LIST}
   ${ROOT_X3d}
   ${ROOT_BASIC_LIB_LIST}
-  ${ROOT_GEOM}
+  ROOT::Geom
   ROOT::TMVA
-
-  MF_MessageLogger
-
+  messagefacility::MF_MessageLogger
   sbn_LArReco
   sbnobj_Common_CRT
   sbnobj_Common_Reco
@@ -35,8 +29,7 @@ art_make( MODULE_LIBRARIES
   larsim_Simulation
   larsim_MCCheater_BackTrackerService_service
   larsim_MCCheater_ParticleInventoryService_service
-  nusimdata_SimulationBase
-
+  nusimdata::SimulationBase
   caf_RecoUtils
 )
 
