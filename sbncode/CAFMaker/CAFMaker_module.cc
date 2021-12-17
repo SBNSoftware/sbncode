@@ -17,7 +17,6 @@
 #include "sbncode/CAFMaker/FillFlashMatch.h"
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
-#include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -100,7 +99,6 @@
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
-#include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -168,7 +166,6 @@ class CAFMaker : public art::EDProducer {
   double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
-  std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   // int fCycle;
   // int fBatch;
 
@@ -490,26 +487,12 @@ void CAFMaker::beginRun(art::Run& run) {
 void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get the POT
   // get POT information
-  fBNBInfo.clear();
-  fSubRunPOT = 0;
-  auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
-  fIsRealData = bnb_spill.isValid();
-  if(fIsRealData)
-    {
-    if (bnb_spill.isValid()) {
-      FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
-      fTotalPOT += fSubRunPOT;
-    }
-  }
-  else
-  {
-    art::Handle<sumdata::POTSummary> pot_handle;
-    sr.getByLabel(fParams.GenLabel(), pot_handle);
-    
-    if (pot_handle.isValid()) {
-      fSubRunPOT = pot_handle->totgoodpot;
-      fTotalPOT += fSubRunPOT;
-    }
+  art::Handle<sumdata::POTSummary> pot_handle;
+  sr.getByLabel("generator", pot_handle);
+
+  if (pot_handle.isValid()) {
+    fSubRunPOT = pot_handle->totgoodpot;
+    fTotalPOT += fSubRunPOT;
   }
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
@@ -1453,12 +1436,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  if(fFirstInFile)
-  {
-    rec.hdr.pot   = fSubRunPOT;
-    if(fIsRealData)
-      rec.hdr.bnbinfo = fBNBInfo;
-  }
+  rec.hdr.pot     = fSubRunPOT;
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
@@ -1487,8 +1465,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   srcol->push_back(rec);
   evt.put(std::move(srcol));
-  fBNBInfo.clear();
-  rec.hdr.pot = 0;
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
