@@ -479,8 +479,8 @@ void CAFMaker::beginRun(art::Run& run) {
     } // end for pset
   } // end for label
 
-  if(fFile) AddGlobalTreeToFile(fFile, global);
-  if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
+  if(fParams.CreateCAF()) AddGlobalTreeToFile(fFile, global);
+  if(fParams.CreateFlatCAF()) AddGlobalTreeToFile(fFlatFile, global);
 }
 
 //......................................................................
@@ -1450,14 +1450,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   fFirstInFile = false;
   fFirstInSubRun = false;
 
-  if(fRecTree){
+  if(fParams.CreateCAF()){
     // Save the standard-record
     StandardRecord* prec = &rec;
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
   }
 
-  if(fFlatTree){
+  if(fParams.CreateFlatCAF()){
     fFlatRecord->Clear();
     fFlatRecord->Fill(rec);
     fFlatTree->Fill();
@@ -1501,7 +1501,7 @@ void CAFMaker::endJob() {
   }
 
 
-  if(fFile){
+  if(fParams.CreateCAF()){
     // Make sure the recTree is in the file before filling other items
     // for debugging.
     fFile->Write();
@@ -1510,7 +1510,7 @@ void CAFMaker::endJob() {
     fFile->Write();
   }
 
-  if(fFlatFile){
+  if(fParams.CreateFlatCAF()){
     fFlatFile->Write();
 
     AddHistogramsToFile(fFlatFile);
@@ -1538,8 +1538,8 @@ void CAFMaker::endJob() {
     std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
   }
 
-  if(fFile) AddMetadataToFile(fFile, metamap);
-  if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
+  if(fParams.CreateCAF()) AddMetadataToFile(fFile, metamap);
+  if(fParams.CreateFlatCAF()) AddMetadataToFile(fFlatFile, metamap);
 }
 
 
