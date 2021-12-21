@@ -488,34 +488,35 @@ void CAFMaker::beginRun(art::Run& run) {
 
 //......................................................................
 void CAFMaker::beginSubRun(art::SubRun& sr) {
-  // get the POT
+
   // get POT information
   fBNBInfo.clear();
   fSubRunPOT = 0;
-  auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel());
-  fIsRealData = bnb_spill.isValid();
-  if(fIsRealData)
-    {
-    if (bnb_spill.isValid()) {
-      FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
-      fTotalPOT += fSubRunPOT;
-    }
+
+  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    fTotalPOT += fSubRunPOT;
   }
-  else
-  {
-    art::Handle<sumdata::POTSummary> pot_handle;
-    sr.getByLabel(fParams.GenLabel(), pot_handle);
-    
-    if (pot_handle.isValid()) {
-      fSubRunPOT = pot_handle->totgoodpot;
-      fTotalPOT += fSubRunPOT;
-    }
+  else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+    fSubRunPOT = pot_handle->totgoodpot;
+    fTotalPOT += fSubRunPOT;
   }
+  else{
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty()){
+      std::cout << "Found neither data POT info under '"
+                << fParams.BNBPOTDataLabel()
+                << "' nor MC POT info under '"
+                << fParams.GenLabel() << "'"
+                << std::endl;
+      abort();
+    }
+
+    // Otherwise, if one label is blank, maybe no POT was the expected result
+  }
+
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
-
-
 }
 
 //......................................................................
@@ -1456,8 +1457,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(fFirstInFile)
   {
     rec.hdr.pot   = fSubRunPOT;
-    if(fIsRealData)
-      rec.hdr.bnbinfo = fBNBInfo;
+    rec.hdr.bnbinfo = fBNBInfo;
   }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
