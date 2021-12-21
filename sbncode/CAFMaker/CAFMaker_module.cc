@@ -508,7 +508,7 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
-      abort();
+      if(fParams.StrictMode()) abort();
     }
 
     // Otherwise, if one label is blank, maybe no POT was the expected result
