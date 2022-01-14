@@ -13,7 +13,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "CLHEP/Random/RandFlat.h"
-#include "ifdh_art/IFDHService/IFDH_service.h"
+#include "IFDH_service.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
 

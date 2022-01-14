@@ -13,85 +13,85 @@ simple_plugin( FluxReader
 )
 
 simple_plugin ( FluxGeoFilter "module"
-                art::Framework_Core
-                art::Framework_Principal
-                art::Framework_Services_Registry
+                ${ART_FRAMEWORK_CORE}
+                ${ART_FRAMEWORK_PRINCIPAL}
+                ${ART_FRAMEWORK_SERVICES_REGISTRY}
                 ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                art_root_io::TFileService_service
-                art_root_io::tfile_support
-                art::Persistency_Common canvas::canvas
-                art::Persistency_Provenance canvas::canvas
-                art::Utilities canvas::canvas
-                messagefacility::MF_MessageLogger
-                nusimdata::SimulationBase
+                ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                ${ART_ROOT_IO_TFILE_SUPPORT}
+                art_Persistency_Common canvas
+                art_Persistency_Provenance canvas
+                art_Utilities canvas
+                ${MF_MESSAGELOGGER}
+                nusimdata_SimulationBase
                 larcore_Geometry_Geometry_service
                 larcorealg_Geometry
-                ROOT::Geom
+                ${ROOT_GEOM}
                 ${ROOT_BASIC_LIB_LIST}
 )
 
 art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   SOURCE	${INTERFACEFILES}
                   LIBRARIES
-                  nusimdata::SimulationBase
+                  nusimdata_SimulationBase
                   # GENIE STUFF #####################################
                   xml2
-                  log4cpp::log4cpp
-                  GENIE::GFwEG
-                  GENIE::GFwAlg
-                  GENIE::GFwMsg
-                  GENIE::GFwGHEP
-                  GENIE::GTlFlx
+                  LOG4CPP
+                  GFwEG
+                  GFwAlg
+                  GFwMsg
+                  GFwGHEP
+                  GTlFlx
                   dk2nuTree
                   #${DK2NUDATA}
                   ${DK2NUGENIE}
                   ####################################################
-                  cetlib::cetlib cetlib_except
+                  cetlib cetlib_except
 
-                  fhiclcpp::fhiclcpp
-                  messagefacility::MF_MessageLogger
-                  CLHEP::CLHEP
+                  ${FHICLCPP}
+                  ${MF_MESSAGELOGGER}
+                  ${CLHEP}
                   ${ROOT_BASIC_LIB_LIST}
-                  
+                  ${Boost_SYSTEM_LIBRARY}
 )
 
 art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
-          LIB_LIBRARIES	nusimdata::SimulationBase
+          LIB_LIBRARIES	nusimdata_SimulationBase
                         sbncode_FluxReader_FluxInterface
                         larcoreobj_SummaryData
-                        art::Framework_Core
-                        art::Framework_IO_Sources
-                        art::Framework_Principal
-                        art::Framework_Services_Registry
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_IO_SOURCES}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                        
-                        art_root_io::TFileService_service
-                        art_root_io::tfile_support
-                        art::Persistency_Common canvas::canvas
-                        art::Persistency_Provenance canvas::canvas
-                        art::Utilities canvas::canvas
-                        messagefacility::MF_MessageLogger
-                        
-                        fhiclcpp::fhiclcpp
-                        
+                        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILE_SUPPORT}
+                        art_Persistency_Common canvas
+                        art_Persistency_Provenance canvas
+                        art_Utilities canvas
+                        ${MF_MESSAGELOGGER}
+                        ${MF_UTILITIES}
+                        ${FHICLCPP}
+                        ${Boost_SYSTEM_LIBRARY}
                         ${ROOT_BASIC_LIB_LIST}
-                        cetlib::cetlib cetlib_except
+                        cetlib cetlib_except
 
           MODULE_LIBRARIES sbncode_FluxReader
                         sbncode_FluxReader_FluxInterface
-                        nusimdata::SimulationBase
+                        nusimdata_SimulationBase
                         larcoreobj_SummaryData
-                        art::Framework_Core
-                        art::Framework_IO_Sources
-                        art::Framework_Principal
-                        art::Framework_Services_Registry
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_IO_SOURCES}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                        
-                        art_root_io::TFileService_service
-                        art_root_io::tfile_support
+                        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILE_SUPPORT}
                         # GENIE STUFF #####################################
                         xml2
-                        log4cpp::log4cpp
+                        LOG4CPP
                         ${GALGORITHM}
                         ${GBASE}
                         ${GEVGCORE}
@@ -103,10 +103,10 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         ${DK2NUDATA}
                         ${DK2NUGENIE}
                         ####################################################
-                        messagefacility::MF_MessageLogger
-                        
-                        fhiclcpp::fhiclcpp
-                        
+                        ${MF_MESSAGELOGGER}
+                        ${MF_UTILITIES}
+                        ${FHICLCPP}
+                        ${Boost_SYSTEM_LIBRARY}
                         ${ROOT_BASIC_LIB_LIST}
 )
 
