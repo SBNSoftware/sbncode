@@ -34,8 +34,8 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_41_00
-sbnobj              v09_13_01
+larsoft             v09_42_00
+sbnobj              v09_13_02
 sbnanaobj           v09_17_09
 sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
