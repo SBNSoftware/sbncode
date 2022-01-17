@@ -24,10 +24,10 @@
 #include "flashmatch/Base/CustomAlgoFactory.h"
 #include "flashmatch/GeoAlgo/GeoTrajectory.h"
 #else
-#include "sbncode/OpT0Finder/flashmatch/GeoAlgo/GeoTrajectory.h"
+#include "larcorealg/GeoAlgo/GeoTrajectory.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/BaseAlgorithm.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/CustomAlgoFactory.h"
-#include "sbncode/OpT0Finder/flashmatch/GeoAlgo/GeoTrajectory.h"
+#include "larcorealg/GeoAlgo/GeoTrajectory.h"
 #endif
 
 #include <iostream>
