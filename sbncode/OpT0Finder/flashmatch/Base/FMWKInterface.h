@@ -5,6 +5,9 @@
 #define USING_LARSOFT 1
 #endif
 
+#include <unordered_map>
+#include <boost/functional/hash.hpp>
+
 #if USING_LARSOFT == 0
 #include "FMWKTools/ConfigManager.h"
 #include "flashmatch/GeoAlgo/GeoAABox.h"
@@ -76,7 +79,7 @@ namespace flashmatch {
     static DetectorSpecs* _me;
     std::vector<geoalgo::Point_t> _pmt_v;
     geoalgo::AABox _bbox;
-    std::map<std::pair<int, int>, geoalgo::AABox> _bbox_map; ///< A bbox map (cryo,tpc) -> bbox
+    std::unordered_map<std::pair<int, int>, geoalgo::AABox, boost::hash<std::pair<int, int>>> _bbox_map; ///< A bbox map (cryo,tpc) -> bbox
     double _drift_velocity;
     #if USING_LARSOFT == 0
     sim::PhotonVoxelDef _voxel_def;
