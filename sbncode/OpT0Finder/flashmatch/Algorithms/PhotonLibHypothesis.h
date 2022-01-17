@@ -29,7 +29,6 @@
 #include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/FlashHypothesisFactory.h"
-#include "larsim/LegacyLArG4/OpFastScintillation.hh"
 #endif
 
 #include <iostream>
@@ -70,7 +69,6 @@ namespace flashmatch {
     std::vector<double> _qe_v;     ///< PMT-wise relative QE
     bool _use_semi_analytical;     ///< If the semi-analytical approach should be used
     #if USING_LARSOFT == 1
-    larg4::OpFastScintillation* _opfast_scintillation; ///< For SBND semi-analytical
     phot::PhotonVisibilityService const* const _vis;
     #endif
   };
