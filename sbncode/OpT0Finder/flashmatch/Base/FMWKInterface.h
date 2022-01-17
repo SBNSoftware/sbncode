@@ -17,7 +17,8 @@ namespace flashmatch {
   using Config_t = flashmatch::PSet;
 }
 #else
-#include "sbncode/OpT0Finder/flashmatch/GeoAlgo/GeoAABox.h"
+// #include "sbncode/OpT0Finder/flashmatch/GeoAlgo/GeoAABox.h"
+#include "larcorealg/GeoAlgo/GeoAABox.h"
 #include "OpT0FinderException.h"
 #include "OpT0FinderLogger.h"
 #include "fhiclcpp/ParameterSet.h"
