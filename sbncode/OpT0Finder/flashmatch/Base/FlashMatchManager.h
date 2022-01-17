@@ -102,6 +102,10 @@ namespace flashmatch {
     /// Sets the channels sensitive to visible light
     void SetUncoatedPMTs(std::vector<int> ch_uncoated);
 
+    #if USING_LARSOFT == 1
+    void SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model);
+    #endif
+
   private:
 
     void AddCustomAlgo(BaseAlgorithm* alg);
