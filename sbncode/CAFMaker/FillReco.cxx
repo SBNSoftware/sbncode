@@ -255,6 +255,16 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
+    srslice.nuid_nuNFinalStatePfos = -9999.f;
+    srslice.nuid_nuNHitsTotal = 0;
+    srslice.nuid_nuVertexY = -9999.f;
+    srslice.nuid_nuWeightedDirZ = -9999.f;
+    srslice.nuid_nuNSpacePointsInSphere = -9999.f;
+    srslice.nuid_nuEigenRatioInSphere = -9999.f;
+    srslice.nuid_crLongestTrackDirY =-9999.f;
+    srslice.nuid_crLongestTrackDeflection = -9999.f;
+    srslice.nuid_crFracHitsInLongestTrack = -9999.f;
+    srslice.nuid_nCRHitsMax = 0;
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -275,43 +285,33 @@ namespace caf
       }
       // NeutrinoID (SliceID) features
       if (properties.count("nuNFinalStatePfos")) {
-	std::cout << properties.at("nuNFinalStatePfos") << std::endl;
         srslice.nuid_nuNFinalStatePfos = properties.at("nuNFinalStatePfos");
       }
       if (properties.count("nuNHitsTotal")) {
-	std::cout << properties.at("nuNHitsTotal") <<std::endl;
         srslice.nuid_nuNHitsTotal = properties.at("nuNHitsTotal");
       }
       if (properties.count("nuVertexY")) {
-	std::cout << properties.at("nuVertexY") <<std::endl;
 	srslice.nuid_nuVertexY = properties.at("nuVertexY");
       }
       if (properties.count("nuWeightedDirZ")) {
-	std::cout << properties.at("nuWeightedDirZ") <<std::endl;
 	srslice.nuid_nuWeightedDirZ = properties.at("nuWeightedDirZ");
       }
       if (properties.count("nuNSpacePointsInSphere")) {
-	std::cout << properties.at("nuNSpacePointsInSphere") <<std::endl;
 	srslice.nuid_nuNSpacePointsInSphere = properties.at("nuNSpacePointsInSphere");
       }
       if (properties.count("nuEigenRatioInSphere")) {
-	std::cout << properties.at("nuEigenRatioInSphere") <<std::endl;
         srslice.nuid_nuEigenRatioInSphere = properties.at("nuEigenRatioInSphere");
       }
       if (properties.count("crLongestTrackDirY")) {
-	std::cout << properties.at("crLongestTrackDirY") <<std::endl;
         srslice.nuid_crLongestTrackDirY = properties.at("crLongestTrackDirY");
       }
       if (properties.count("crLongestTrackDeflection")) {
-	std::cout << properties.at("crLongestTrackDeflection") <<std::endl;
         srslice.nuid_crLongestTrackDeflection = properties.at("crLongestTrackDeflection");
       }
       if (properties.count("crFracHitsInLongestTrack")) {
-	std::cout << properties.at("crFracHitsInLongestTrack") <<std::endl;
         srslice.nuid_crFracHitsInLongestTrack = properties.at("crFracHitsInLongestTrack");
       }
       if (properties.count("nCRHitsMax")) {
-	std::cout << properties.at("nCRHitsMax") <<std::endl;
         srslice.nuid_nCRHitsMax = properties.at("nCRHitsMax");
       }
 
