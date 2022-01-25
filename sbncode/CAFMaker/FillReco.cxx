@@ -284,35 +284,35 @@ namespace caf
         srslice.nu_score = -1;
       }
       // NeutrinoID (SliceID) features
-      if (properties.count("nuNFinalStatePfos")) {
-        srslice.nuid_nuNFinalStatePfos = properties.at("nuNFinalStatePfos");
+      if (properties.count("NuNFinalStatePfos")) {
+        srslice.nuid_nuNFinalStatePfos = properties.at("NuNFinalStatePfos");
       }
-      if (properties.count("nuNHitsTotal")) {
-        srslice.nuid_nuNHitsTotal = properties.at("nuNHitsTotal");
+      if (properties.count("NuNHitsTotal")) {
+        srslice.nuid_nuNHitsTotal = properties.at("NuNHitsTotal");
       }
-      if (properties.count("nuVertexY")) {
-	srslice.nuid_nuVertexY = properties.at("nuVertexY");
+      if (properties.count("NuVertexY")) {
+	srslice.nuid_nuVertexY = properties.at("NuVertexY");
       }
-      if (properties.count("nuWeightedDirZ")) {
-	srslice.nuid_nuWeightedDirZ = properties.at("nuWeightedDirZ");
+      if (properties.count("NuWeightedDirZ")) {
+	srslice.nuid_nuWeightedDirZ = properties.at("NuWeightedDirZ");
       }
-      if (properties.count("nuNSpacePointsInSphere")) {
-	srslice.nuid_nuNSpacePointsInSphere = properties.at("nuNSpacePointsInSphere");
+      if (properties.count("NuNSpacePointsInSphere")) {
+	srslice.nuid_nuNSpacePointsInSphere = properties.at("NuNSpacePointsInSphere");
       }
-      if (properties.count("nuEigenRatioInSphere")) {
-        srslice.nuid_nuEigenRatioInSphere = properties.at("nuEigenRatioInSphere");
+      if (properties.count("NuEigenRatioInSphere")) {
+        srslice.nuid_nuEigenRatioInSphere = properties.at("NuEigenRatioInSphere");
       }
-      if (properties.count("crLongestTrackDirY")) {
-        srslice.nuid_crLongestTrackDirY = properties.at("crLongestTrackDirY");
+      if (properties.count("CRLongestTrackDirY")) {
+        srslice.nuid_crLongestTrackDirY = properties.at("CRLongestTrackDirY");
       }
-      if (properties.count("crLongestTrackDeflection")) {
-        srslice.nuid_crLongestTrackDeflection = properties.at("crLongestTrackDeflection");
+      if (properties.count("CRLongestTrackDeflection")) {
+        srslice.nuid_crLongestTrackDeflection = properties.at("CRLongestTrackDeflection");
       }
-      if (properties.count("crFracHitsInLongestTrack")) {
-        srslice.nuid_crFracHitsInLongestTrack = properties.at("crFracHitsInLongestTrack");
+      if (properties.count("CRFracHitsInLongestTrack")) {
+        srslice.nuid_crFracHitsInLongestTrack = properties.at("CRFracHitsInLongestTrack");
       }
-      if (properties.count("nCRHitsMax")) {
-        srslice.nuid_nCRHitsMax = properties.at("nCRHitsMax");
+      if (properties.count("CRNHitsMax")) {
+        srslice.nuid_nCRHitsMax = properties.at("CRNHitsMax");
       }
 
     }
