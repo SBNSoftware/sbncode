@@ -255,16 +255,16 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
-    srslice.nuid_nuNFinalStatePfos = -9999.f;
-    srslice.nuid_nuNHitsTotal = 0;
-    srslice.nuid_nuVertexY = -9999.f;
-    srslice.nuid_nuWeightedDirZ = -9999.f;
-    srslice.nuid_nuNSpacePointsInSphere = -9999.f;
-    srslice.nuid_nuEigenRatioInSphere = -9999.f;
-    srslice.nuid_crLongestTrackDirY =-9999.f;
-    srslice.nuid_crLongestTrackDeflection = -9999.f;
-    srslice.nuid_crFracHitsInLongestTrack = -9999.f;
-    srslice.nuid_crNHitsMax = 0;
+    srslice.nuid.NuNFinalStatePfos = -9999.f;
+    srslice.nuid.NuNHitsTotal = 0;
+    srslice.nuid.NuVertexY = -9999.f;
+    srslice.nuid.NuWeightedDirZ = -9999.f;
+    srslice.nuid.NuNSpacePointsInSphere = -9999.f;
+    srslice.nuid.NuEigenRatioInSphere = -9999.f;
+    srslice.nuid.CRLongestTrackDirY =-9999.f;
+    srslice.nuid.CRLongestTrackDeflection = -9999.f;
+    srslice.nuid.CRFracHitsInLongestTrack = -9999.f;
+    srslice.nuid.CRNHitsMax = 0;
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -285,34 +285,34 @@ namespace caf
       }
       // NeutrinoID (SliceID) features
       if (properties.count("NuNFinalStatePfos")) {
-        srslice.nuid_nuNFinalStatePfos = properties.at("NuNFinalStatePfos");
+        srslice.nuid.NuNFinalStatePfos = properties.at("NuNFinalStatePfos");
       }
       if (properties.count("NuNHitsTotal")) {
-        srslice.nuid_nuNHitsTotal = properties.at("NuNHitsTotal");
+        srslice.nuid.NuNHitsTotal = properties.at("NuNHitsTotal");
       }
       if (properties.count("NuVertexY")) {
-	srslice.nuid_nuVertexY = properties.at("NuVertexY");
+	srslice.nuid.NuVertexY = properties.at("NuVertexY");
       }
       if (properties.count("NuWeightedDirZ")) {
-	srslice.nuid_nuWeightedDirZ = properties.at("NuWeightedDirZ");
+	srslice.nuid.NuWeightedDirZ = properties.at("NuWeightedDirZ");
       }
       if (properties.count("NuNSpacePointsInSphere")) {
-	srslice.nuid_nuNSpacePointsInSphere = properties.at("NuNSpacePointsInSphere");
+	srslice.nuid.NuNSpacePointsInSphere = properties.at("NuNSpacePointsInSphere");
       }
       if (properties.count("NuEigenRatioInSphere")) {
-        srslice.nuid_nuEigenRatioInSphere = properties.at("NuEigenRatioInSphere");
+        srslice.nuid.NuEigenRatioInSphere = properties.at("NuEigenRatioInSphere");
       }
       if (properties.count("CRLongestTrackDirY")) {
-        srslice.nuid_crLongestTrackDirY = properties.at("CRLongestTrackDirY");
+        srslice.nuid.CRLongestTrackDirY = properties.at("CRLongestTrackDirY");
       }
       if (properties.count("CRLongestTrackDeflection")) {
-        srslice.nuid_crLongestTrackDeflection = properties.at("CRLongestTrackDeflection");
+        srslice.nuid.CRLongestTrackDeflection = properties.at("CRLongestTrackDeflection");
       }
       if (properties.count("CRFracHitsInLongestTrack")) {
-        srslice.nuid_crFracHitsInLongestTrack = properties.at("CRFracHitsInLongestTrack");
+        srslice.nuid.CRFracHitsInLongestTrack = properties.at("CRFracHitsInLongestTrack");
       }
       if (properties.count("CRNHitsMax")) {
-        srslice.nuid_crNHitsMax = properties.at("CRNHitsMax");
+        srslice.nuid.CRNHitsMax = properties.at("CRNHitsMax");
       }
 
     }
