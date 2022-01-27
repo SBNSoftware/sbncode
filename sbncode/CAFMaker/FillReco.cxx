@@ -264,7 +264,7 @@ namespace caf
     srslice.nuid_crLongestTrackDirY =-9999.f;
     srslice.nuid_crLongestTrackDeflection = -9999.f;
     srslice.nuid_crFracHitsInLongestTrack = -9999.f;
-    srslice.nuid_nCRHitsMax = 0;
+    srslice.nuid_crNHitsMax = 0;
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -312,7 +312,7 @@ namespace caf
         srslice.nuid_crFracHitsInLongestTrack = properties.at("CRFracHitsInLongestTrack");
       }
       if (properties.count("CRNHitsMax")) {
-        srslice.nuid_nCRHitsMax = properties.at("CRNHitsMax");
+        srslice.nuid_crNHitsMax = properties.at("CRNHitsMax");
       }
 
     }
