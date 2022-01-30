@@ -68,7 +68,7 @@ physics:
       ApplyPositionCuts: true
       XCut: 200 # cm
       YCut: 200 # cm
-      # RequestedNuPDGs: [] # Keep neutrinos with these PDGs
+      RequestedNuPDGs: [12, -12] # Keep neutrinos with these PDGs
     }
   }
 
