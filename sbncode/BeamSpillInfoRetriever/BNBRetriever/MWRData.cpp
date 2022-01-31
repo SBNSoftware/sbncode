@@ -10,7 +10,7 @@ using namespace std;
 
 namespace sbn{
 
-  std::vector< std::vector < int > > MWRData::unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset)
+  std::vector< std::vector < int > > MWRData::unpackMWR(std::string packed_data, std::vector<double> &time_stamp, double timeoffset) const
 {
 
   std::vector<std::vector<int> > unpacked_data;
@@ -35,14 +35,14 @@ namespace sbn{
       }
     }
   } else {
-    cout <<"Bad data!"<<endl;
+    cout <<"BeamSpillInfoRetriever: MRWData: Bad data!"<<endl;
     return unpacked_data;
   }
 
   return unpacked_data;
 }
 
-MWRData::mwrpulse_t MWRData::getMWRdata(short* data, int nblock) 
+MWRData::mwrpulse_t MWRData::getMWRdata(short* data, int nblock) const
 {
   mwrpulse_t mwrdata;
 

@@ -3,12 +3,27 @@
 process_name: BNBInfoGen
 
 services:{
+  
+  message: {
+      debugModules: [ "*" ]
+       destinations: {
+           LogDebugFile:{
+               type:       "file"
+               filename:   "debug.log"
+               append:     false
+               threshold:  "DEBUG"
+               categories: {
+                   default: {}
+               }
+           }
+       }
+  }
   IFBeam:{}
 }
 
 
 source: {
-  module_type: RootInput
+
 }
 
 physics: {
@@ -18,8 +33,6 @@ physics: {
 
  simulate: [bnbinfo ]
  stream1: [ out1 ]
- trigger_paths: [ simulate ]
- end_paths: [ stream1 ]
 }
 
 outputs: {

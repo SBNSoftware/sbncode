@@ -1,0 +1,43 @@
+BEGIN_PROLOG
+
+MultiPartVertex : {
+    module_type  : "MultiPartVertex"
+    DebugMode    : 0
+    G4Time       : 3925.0
+    G4TimeJitter : 800
+    TPCRange     : [0,1,2,3]
+    XRange       : [10]
+    YRange       : [10]
+    ZRange       : [10]
+    MultiMax     : 6
+    MultiMin     : 1
+    ParticleParameter: {
+        PDGCode      : [   [11,13],      [22], [211,-211],   [2212]]
+        MinMulti     : [         0,         0,          0,        0]
+        MaxMulti     : [         1,         4,          3,        3]
+        ProbWeight   : [         3,         2,          3,        3]
+        KERange      : [ [40,1500], [40,1500],  [40,1500], [50,700]]
+    }
+}
+
+MultiPartRain : {
+    module_type  : "MultiPartRain"
+    DebugMode    : 0
+    G4Time       : 3925.0
+    G4TimeJitter : 800
+    TPCRange     : [0,1,2,3]
+    XRange       : [10]
+    YRange       : [10]
+    ZRange       : [10]
+    MultiMax     : 6
+    MultiMin     : 1
+    ParticleParameter: {
+        PDGCode      : [   [11,13],      [22], [211,-211],   [2212]]
+        MinMulti     : [         0,         0,          0,        0]
+        MaxMulti     : [         1,         4,          3,        3]
+        ProbWeight   : [         3,         2,          3,        3]
+        KERange      : [ [40,1500], [40,1500],  [40,1500], [50,700]]
+    }
+}
+
+END_PROLOG

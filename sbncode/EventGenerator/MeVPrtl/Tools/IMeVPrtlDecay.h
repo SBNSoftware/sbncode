@@ -14,8 +14,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Principal/Event.h"
 
-#include "../Products/MeVPrtlFlux.h"
-#include "../Products/MeVPrtlDecay.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
 
 #include "IMeVPrtlStage.h"
 #include "Constants.h"
@@ -46,7 +46,9 @@ public:
 protected:
     double TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay) {
       // TODO: should the neutrino TOF be subtracted here to get the correct T0?
-      return flux.pos.T() + (flux.pos.Vect() - decay).Mag() * (1. / flux.mom.Beta()) / Constants::Instance().c_cm_per_ns;
+      //
+      // TODO: implement time of flight
+      return 0.;
     }
 };
 

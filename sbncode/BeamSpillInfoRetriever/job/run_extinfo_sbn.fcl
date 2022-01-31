@@ -8,7 +8,7 @@ services:{
 
 
 source: {
-  module_type: RootInput
+
 }
 
 physics: {
@@ -18,8 +18,7 @@ physics: {
 
  simulate: [extinfo ]
  stream1: [ out1 ]
- trigger_paths: [ simulate ]
- end_paths: [ stream1 ]
+
 }
 
 outputs: {

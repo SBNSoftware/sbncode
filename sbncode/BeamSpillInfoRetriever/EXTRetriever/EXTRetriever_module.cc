@@ -14,7 +14,7 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardataobj/Utilities/sparse_vector.h"
@@ -41,7 +41,23 @@ namespace sbn {
 
 class sbn::EXTRetriever : public art::EDProducer {
 public:
-  explicit EXTRetriever(fhicl::ParameterSet const& p);
+  
+  struct Config {
+    
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Atom<std::string> RawDataLabel {
+      Name{ "raw_data_label" },
+      Comment{ "art data product instance name for trigger information (product label is 'daq')" }
+      };
+    
+  }; // Config
+  
+  using Parameters = art::EDProducer::Table<Config>;
+  
+  
+  explicit EXTRetriever(Parameters const& params);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
@@ -53,8 +69,8 @@ public:
 
   // Required functions.
   void produce(art::Event& e) override;
-  void beginSubRun(art::SubRun& sr);
-  void endSubRun(art::SubRun& sr);
+  void beginSubRun(art::SubRun& sr) override;
+  void endSubRun(art::SubRun& sr) override;
 
 private:
   std::vector< sbn::EXTCountInfo > fOutExtInfos;
@@ -66,9 +82,9 @@ private:
 };
 
 
-sbn::EXTRetriever::EXTRetriever(fhicl::ParameterSet const& p)
-  : EDProducer{p},
-  raw_data_label_(p.get<std::string>("raw_data_label"))
+sbn::EXTRetriever::EXTRetriever(Parameters const& params)
+  : EDProducer{params},
+  raw_data_label_(params().RawDataLabel())
 {
  
   produces< std::vector< sbn::EXTCountInfo >, art::InSubRun >();
@@ -84,11 +100,9 @@ void sbn::EXTRetriever::produce(art::Event& e)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
   int gate_type = 0;
-  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
-  auto const & raw_data = (*raw_data_ptr);
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
 
-  double number_of_gates_since_previous_event = 0;
+  unsigned int number_of_gates_since_previous_event = 0;
   
   for(auto raw_datum : raw_data){
    

@@ -1,20 +1,23 @@
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
+#include "eventweight_flux_sbn.fcl"
 
 process_name: SBNEventWeight
 
 source: {
   module_type: RootInput
+  maxEvents:   -1 # Number of events to create (-1 means "process all of them")
 }
 
 physics: {
  producers: {
-   genieweight: @local::sbn_genie_eventweight
+   genieweight: @local::sbn_eventweight_genie
+   fluxweight:  @local::sbn_eventweight_flux
    rns: {
      module_type: "RandomNumberSaver"
    }
  }
 
- simulate: [ rns, genieweight ]
+ simulate: [ rns, genieweight, fluxweight ]
  stream1: [ out1 ]
  trigger_paths: [ simulate ]
  end_paths: [ stream1 ]
@@ -29,5 +32,6 @@ outputs: {
  }
 }
 
+# Need to overwrite the parameter `weight_functions` to get recongnized
 physics.producers.genieweight.weight_functions: @local::physics.producers.genieweight.weight_functions_genie
-
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux

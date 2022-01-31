@@ -1,0 +1,12 @@
+# Configuration fhicl file for filter module FluxGeoFilter
+
+BEGIN_PROLOG
+flux_filter: {
+  module_type: "FluxGeoFilter"
+
+  #volWorld, volDetEnclosure, volCryostat, volTPC, volTPCActive, ...
+  volumes: [ "volTPCActive" ]
+
+}
+END_PROLOG
+

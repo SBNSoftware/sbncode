@@ -14,7 +14,7 @@
 
 // local includes
 #include "IRayTrace.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 // LArSoft includes
@@ -56,7 +56,7 @@ public:
     TLorentzVector ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux);
 
     // always thrown at least once
-    float MaxWeight() override { 
+    double MaxWeight() override { 
       return fMaxWeight;
     }
 

@@ -19,7 +19,7 @@
 
 // local includes
 #include "IMesonGen.h"
-#include "../Products/MeVPrtlFlux.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
 // LArSoft includes
 #include "dk2nu/tree/dk2nu.h"
@@ -62,7 +62,7 @@ public:
     double GetPOT() override { return 0.; }
 
     // no weights
-    float MaxWeight() override  { return -1.; }
+    double MaxWeight() override  { return -1.; }
 };
 
 EmptyKaonGen::EmptyKaonGen(fhicl::ParameterSet const &pset):

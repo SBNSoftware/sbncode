@@ -1,3 +1,5 @@
+find_ups_product(ifbeam)
+find_ups_product(ifbeam_art)
 
 include_directories( $ENV{IFBEAM_FQ_DIR}/include )
 include_directories( $ENV{LIBWDA_FQ_DIR}/include )
@@ -5,6 +7,8 @@ include_directories( $ENV{IFDHC_FQ_DIR}/inc )
 include_directories( $ENV{IFDH_ART_INC} )
 cet_find_library( IFBEAMSERVICE        NAMES IFBeam_service    PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
 cet_find_library( IFBEAM               NAMES ifbeam            PATHS ENV IFBEAM_LIB   NO_DEFAULT_PATH )
+
+link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
 
 art_make_library(
 	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
@@ -30,12 +34,14 @@ simple_plugin(BNBRetriever module
         ${Boost_SYSTEM_LIBRARY}
 	MF_MessageLogger
        	sbnobj_Common_POTAccounting
-	${IFBEAMSERVICE}
-	${IFBEAM}
-	sbndaq-artdaq-core_Overlays_Common
-  	sbndaq-artdaq-core_Overlays
-	sbndaq-artdaq-core_Overlays_ICARUS	
-        artdaq-core_Utilities
+	#${IFBEAMSERVICE}
+	#${IFBEAM}
+	ifbeam
+	ifdh_art::IFBeam_service
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS	
+        artdaq_core::artdaq-core_Utilities
 	sbn_BNBSpillInfoRetriever_MWRData	
 )
 

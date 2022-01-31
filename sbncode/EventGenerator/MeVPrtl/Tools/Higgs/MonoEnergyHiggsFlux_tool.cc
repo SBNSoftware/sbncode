@@ -15,7 +15,9 @@
 
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlFlux.h"
-#include "sbncode/EventGenerator/MeVPrtl/Products/MeVPrtlFlux.h"
+
+#include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
+
 
 // LArSoft includes
 
@@ -52,15 +54,15 @@ public:
     void configure(const fhicl::ParameterSet&) override;
 
     // no weights
-    float MaxWeight() override { return -1.; }
+    double MaxWeight() override { return -1.; }
 
 private:
   TVector3 fStart; //!< Start of Higgs ray in detector coordinates [cm]
   TVector3 fDir; //!< Direction of Higgs ray (unit vector)
-  float fE; //!< Energy of Higgs [GeV]
-  float fM; //!< Mass of Higgs [GeV]
+  double fE; //!< Energy of Higgs [GeV]
+  double fM; //!< Mass of Higgs [GeV]
   double fMixingAngle;
-  float fStartTime; //!< Start time of Higgs in detector time [us]
+  double fStartTime; //!< Start time of Higgs in detector time [us]
 };
 
 MonoEnergyHiggsFlux::MonoEnergyHiggsFlux(fhicl::ParameterSet const &pset):
@@ -79,13 +81,13 @@ MonoEnergyHiggsFlux::~MonoEnergyHiggsFlux()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void MonoEnergyHiggsFlux::configure(fhicl::ParameterSet const &pset)
 {
-  fStart = TVector3(pset.get<float>("X"), pset.get<float>("Y"), pset.get<float>("Z")); 
-  fDir = TVector3(pset.get<float>("Xdir"), pset.get<float>("Ydir"), pset.get<float>("Zdir"));
+  fStart = TVector3(pset.get<double>("X"), pset.get<double>("Y"), pset.get<double>("Z")); 
+  fDir = TVector3(pset.get<double>("Xdir"), pset.get<double>("Ydir"), pset.get<double>("Zdir"));
 
-  fE = pset.get<float>("E");
-  fM = pset.get<float>("M");
-  fMixingAngle = pset.get<float>("MixingAngle");
-  fStartTime = pset.get<float>("T", 0.);
+  fE = pset.get<double>("E");
+  fM = pset.get<double>("M");
+  fMixingAngle = pset.get<double>("MixingAngle");
+  fStartTime = pset.get<double>("T", 0.);
 
 }
 
