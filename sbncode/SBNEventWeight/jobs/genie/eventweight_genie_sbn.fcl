@@ -46,7 +46,7 @@ sbn_eventweight_genie: {
   # Define each knob
   genie_MaCCQE_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 1
       parameter_list: ["MaCCQE"]
       parameter_sigma: [1]
       mode: multisim
@@ -54,7 +54,7 @@ sbn_eventweight_genie: {
   }
   genie_MaCCRES_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 2
       parameter_list: ["MaCCRES"]
       parameter_sigma: [1]
       mode: multisim
@@ -62,7 +62,7 @@ sbn_eventweight_genie: {
   }
   genie_MvCCRES_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 3
       parameter_list: ["MvCCRES"]
       parameter_sigma: [1]
       mode: multisim
@@ -70,7 +70,7 @@ sbn_eventweight_genie: {
   }
   genie_MaNCRES_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 4
       parameter_list: ["MaNCRES"]
       parameter_sigma: [1]
       mode: multisim
@@ -78,7 +78,7 @@ sbn_eventweight_genie: {
   }
   genie_MvNCRES_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 5
       parameter_list: ["MvNCRES"]
       parameter_sigma: [1]
       mode: multisim
@@ -86,7 +86,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvpCC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 6
       parameter_list: ["NonRESBGvpCC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -94,7 +94,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarnCC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 7
       parameter_list: ["NonRESBGvbarnCC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -102,7 +102,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvpNC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 8
       parameter_list: ["NonRESBGvpNC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -110,7 +110,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarnNC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 9
       parameter_list: ["NonRESBGvbarnNC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -118,7 +118,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvnCC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 10
       parameter_list: ["NonRESBGvnCC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -126,7 +126,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarpCC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 11
       parameter_list: ["NonRESBGvbarpCC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -134,7 +134,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvnNC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 12
       parameter_list: ["NonRESBGvnNC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -142,7 +142,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarpNC1pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 13
       parameter_list: ["NonRESBGvbarpNC1pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -150,7 +150,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvpCC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 14
       parameter_list: ["NonRESBGvpCC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -158,7 +158,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarnCC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 15
       parameter_list: ["NonRESBGvbarnCC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -166,7 +166,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvpNC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 16
       parameter_list: ["NonRESBGvpNC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -174,7 +174,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarpNC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 17
       parameter_list: ["NonRESBGvbarpNC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -182,7 +182,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvnCC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 18
       parameter_list: ["NonRESBGvnCC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -190,7 +190,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarpCC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 19
       parameter_list: ["NonRESBGvbarpCC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -198,7 +198,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvnNC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 20
       parameter_list: ["NonRESBGvnNC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -206,7 +206,7 @@ sbn_eventweight_genie: {
   }
   genie_NonRESBGvbarnNC2pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 21
       parameter_list: ["NonRESBGvbarnNC2pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -214,7 +214,7 @@ sbn_eventweight_genie: {
   }
   genie_MaNCEL_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 22
       parameter_list: ["MaNCEL"]
       parameter_sigma: [1]
       mode: multisim
@@ -222,7 +222,7 @@ sbn_eventweight_genie: {
   }
   genie_EtaNCEL_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 23
       parameter_list: ["EtaNCEL"]
       parameter_sigma: [1]
       mode: multisim
@@ -230,7 +230,7 @@ sbn_eventweight_genie: {
   }
   genie_AhtBY_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 24
       parameter_list: ["AhtBY"]
       parameter_sigma: [1]
       mode: multisim
@@ -238,7 +238,7 @@ sbn_eventweight_genie: {
   }
   genie_BhtBY_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 25
       parameter_list: ["BhtBY"]
       parameter_sigma: [1]
       mode: multisim
@@ -246,7 +246,7 @@ sbn_eventweight_genie: {
   }
   genie_CV1uBY_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 26
       parameter_list: ["CV1uBY"]
       parameter_sigma: [1]
       mode: multisim
@@ -254,7 +254,7 @@ sbn_eventweight_genie: {
   }
   genie_CV2uBY_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 27
       parameter_list: ["CV2uBY"]
       parameter_sigma: [1]
       mode: multisim
@@ -262,7 +262,7 @@ sbn_eventweight_genie: {
   }
   genie_FormZone_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 28
       parameter_list: ["FormZone"]
       parameter_sigma: [1]
       mode: multisim
@@ -270,7 +270,7 @@ sbn_eventweight_genie: {
   }
   genie_MFP_N_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 29
       parameter_list: ["MFP_N"]
       parameter_sigma: [1]
       mode: multisim
@@ -278,7 +278,7 @@ sbn_eventweight_genie: {
   }
   genie_FrCEx_N_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 30
       parameter_list: ["FrCEx_N"]
       parameter_sigma: [1]
       mode: multisim
@@ -286,7 +286,7 @@ sbn_eventweight_genie: {
   }
   genie_FrInel_N_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 31
       parameter_list: ["FrInel_N"]
       parameter_sigma: [1]
       mode: multisim
@@ -294,7 +294,7 @@ sbn_eventweight_genie: {
   }
   genie_FrAbs_N_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 32
       parameter_list: ["FrAbs_N"]
       parameter_sigma: [1]
       mode: multisim
@@ -302,7 +302,7 @@ sbn_eventweight_genie: {
   }
   genie_FrPiProd_N_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 33
       parameter_list: ["FrPiProd_N"]
       parameter_sigma: [1]
       mode: multisim
@@ -310,7 +310,7 @@ sbn_eventweight_genie: {
   }
   genie_MFP_pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 34
       parameter_list: ["MFP_pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -318,7 +318,7 @@ sbn_eventweight_genie: {
   }
   genie_FrCEx_pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 35
       parameter_list: ["FrCEx_pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -326,7 +326,7 @@ sbn_eventweight_genie: {
   }
   genie_FrInel_pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 36
       parameter_list: ["FrInel_pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -334,7 +334,7 @@ sbn_eventweight_genie: {
   }
   genie_FrAbs_pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 37
       parameter_list: ["FrAbs_pi"]
       parameter_sigma: [1]
       mode: multisim
@@ -342,7 +342,7 @@ sbn_eventweight_genie: {
   }
   genie_FrPiProd_pi_multisim: {
       type: Genie
-      random_seed: 100
+      random_seed: 38
       parameter_list: ["FrPiProd_pi"]
       parameter_sigma: [1]
       mode: multisim
