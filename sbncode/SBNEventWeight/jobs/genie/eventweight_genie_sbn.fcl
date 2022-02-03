@@ -1,3 +1,12 @@
+# Update (old) knobs name following GENIE knob names
+# "genie_ub*" knobs are not yet available for GENIE v3.0.6
+#
+# NOTE: 
+# See what's new for the knobs in the Google Sheet:
+# https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
+# --- Keng Lin (keng.lin@rutgers.edu) Dec. 2021
+ ##########################################################
+
 BEGIN_PROLOG
 
 
