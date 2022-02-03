@@ -1,19 +1,11 @@
-# Update (old) knobs name following GENIE knob names
-# "genie_ub*" knobs are not yet available for GENIE v3.0.6
-#
-# NOTE: 
-# See what's new for the knobs in the Google Sheet:
-# https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
-# --- Keng Lin (keng.lin@rutgers.edu) Dec. 2021
- ##########################################################
-
 BEGIN_PROLOG
 
 
 # Choose the desired uiverses number for multisim mode
-n_universes: 1000
+n_universes: 100
 
 sbn_eventweight_genie: {
+
   module_type: "SBNEventWeight"
 
   genie_module_label: "generator"
@@ -27,55 +19,326 @@ sbn_eventweight_genie: {
   # MaCCRES : 1
   }
 
-  weight_functions_genie: [ 
-   genie_sbnd_multisim
+  weight_functions_genie: [
+    # CCQE
+    genie_MaCCQE_multisim,
+    # Resonance
+    genie_MaCCRES_multisim, genie_MvCCRES_multisim, genie_MaNCRES_multisim, genie_MvNCRES_multisim,
+    # Non-Resonance
+    genie_NonRESBGvpCC1pi_multisim, genie_NonRESBGvbarnCC1pi_multisim, genie_NonRESBGvpNC1pi_multisim, genie_NonRESBGvbarnNC1pi_multisim, genie_NonRESBGvnCC1pi_multisim, genie_NonRESBGvbarpCC1pi_multisim, genie_NonRESBGvnNC1pi_multisim, genie_NonRESBGvbarpNC1pi_multisim, genie_NonRESBGvpCC2pi_multisim, genie_NonRESBGvbarnCC2pi_multisim, genie_NonRESBGvpNC2pi_multisim, genie_NonRESBGvbarpNC2pi_multisim, genie_NonRESBGvnCC2pi_multisim, genie_NonRESBGvbarpCC2pi_multisim, genie_NonRESBGvnNC2pi_multisim, genie_NonRESBGvbarnNC2pi_multisim,
+    # NC
+    genie_MaNCEL_multisim, genie_EtaNCEL_multisim,
+    # DIS
+    genie_AhtBY_multisim, genie_BhtBY_multisim, genie_CV1uBY_multisim, genie_CV2uBY_multisim, genie_FormZone_multisim,
+    # FSI
+    genie_MFP_N_multisim, genie_FrCEx_N_multisim, genie_FrInel_N_multisim, genie_FrAbs_N_multisim, genie_FrPiProd_N_multisim, genie_MFP_pi_multisim, genie_FrCEx_pi_multisim, genie_FrInel_pi_multisim, genie_FrAbs_pi_multisim, genie_FrPiProd_pi_multisim
   ]
- 
-  # Knobs that are used in both sbnd and ub
-  genie_sbnd_multisim: {
-    type: Genie
-    random_seed: 100
-    parameter_list: [
-    #CCQE
-      "MaCCQE",
 
-    #Resonance
-      "MaCCRES","MvCCRES","MaNCRES","MvNCRES",
-
-    #Non-Resonance
-      "NonRESBGvpCC1pi","NonRESBGvbarnCC1pi","NonRESBGvpNC1pi","NonRESBGvbarnNC1pi",
-      "NonRESBGvnCC1pi","NonRESBGvbarpCC1pi","NonRESBGvnNC1pi","NonRESBGvbarpNC1pi",
-      "NonRESBGvpCC2pi","NonRESBGvbarnCC2pi","NonRESBGvpNC2pi","NonRESBGvbarpNC2pi",
-      "NonRESBGvnCC2pi","NonRESBGvbarpCC2pi","NonRESBGvnNC2pi","NonRESBGvbarnNC2pi",
-
-    #NC
-      "MaNCEL", "EtaNCEL", #"NC", 
-
-    #DIS
-      "AhtBY","BhtBY","CV1uBY","CV2uBY","FormZone",
-
-    #FSI
-      "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" ,"FrPiProd_N",
-      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi","FrPiProd_pi"
-      ]
-    parameter_sigma: [
-      #CCQE
-      1,
-      #Res
-      1,1,1,1,
-      #Non_Res
-      1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-      #NC
-      1,1, #1,
-      #DIS
-      1,1,1,1,1,
-      #FSI
-      1,1,1,1,1,1,1,1,1,1
-    ]
-    mode: multisim
-    number_of_multisims: @local::n_universes
+  # Define each knob
+  genie_MaCCQE_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MaCCQE"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
   }
-
+  genie_MaCCRES_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MaCCRES"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MvCCRES_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MvCCRES"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MaNCRES_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MaNCRES"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MvNCRES_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MvNCRES"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvpCC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvpCC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarnCC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarnCC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvpNC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvpNC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarnNC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarnNC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvnCC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvnCC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarpCC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarpCC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvnNC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvnNC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarpNC1pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarpNC1pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvpCC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvpCC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarnCC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarnCC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvpNC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvpNC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarpNC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarpNC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvnCC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvnCC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarpCC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarpCC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvnNC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvnNC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_NonRESBGvbarnNC2pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["NonRESBGvbarnNC2pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MaNCEL_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MaNCEL"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_EtaNCEL_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["EtaNCEL"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_AhtBY_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["AhtBY"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_BhtBY_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["BhtBY"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_CV1uBY_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["CV1uBY"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_CV2uBY_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["CV2uBY"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FormZone_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FormZone"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MFP_N_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MFP_N"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrCEx_N_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrCEx_N"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrInel_N_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrInel_N"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrAbs_N_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrAbs_N"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrPiProd_N_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrPiProd_N"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_MFP_pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["MFP_pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrCEx_pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrCEx_pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrInel_pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrInel_pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrAbs_pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrAbs_pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
+  genie_FrPiProd_pi_multisim: {
+      type: Genie
+      random_seed: 100
+      parameter_list: ["FrPiProd_pi"]
+      parameter_sigma: [1]
+      mode: multisim
+      number_of_multisims: @local::n_universes
+  }
 }
 
 END_PROLOG
