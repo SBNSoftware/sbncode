@@ -1,0 +1,80 @@
+# Driver fcl file for reading in gsimple files
+# for SBND
+# Add SBNEventWeight -- Keng Lin June 2021
+
+#include "simulationservices_sbnd.fcl"
+#include "fluxfilter_sbnd.fcl"
+#
+#include "seedservice.fcl"
+#include "services_sbnd.fcl"
+#include "eventweight_flux_sbn.fcl"
+#include "eventweight_genie_sbn.fcl"
+
+process_name: FluxReader
+
+services:
+{
+  TFileService: { fileName: "flux_hist.root" }
+  RandomNumberGenerator: {}
+  NuRandomService: @local::random_NuRandomService
+  TimeTracker:       {}
+  FileCatalogMetadata:     @local::art_file_catalog_mc
+  @table::sbnd_basic_services
+  @table::sbnd_random_services
+}
+
+
+source:
+{
+  fileNames:        []
+  module_type:	    FluxReader
+  skipEvents:       0
+  maxEvents:        -1
+  inputType:        "gsimple"
+  nBins:            200
+  Elow:             0
+  Ehigh:            10
+  SelfIncrementRun: false
+}
+
+outputs:
+{
+ out1:
+  {
+   module_type: RootOutput
+   fileName:    "fluxreader.root"
+   compressionLevel: 1
+   dataTier:    "simulated"
+   SelectEvents: [ filter ]
+  }
+}
+
+physics:
+{
+ producers:
+ {
+#   genieweight: @local::sbn_eventweight_genie
+   fluxweight:  @local::sbn_eventweight_flux
+   rns: {
+     module_type: "RandomNumberSaver"
+   }
+ }
+ filters:
+ {
+   fluxfilter: @local::flux_filter
+ }
+
+ filter: [ rns, fluxfilter, fluxweight] #, genieweight ]
+ stream1: [ out1 ]
+ trigger_paths: [ filter ]
+ end_paths: [ stream1 ]
+}
+
+#physics.filters.fluxfilter.volumes: ["volWorld"]
+
+physics.producers.fluxweight.generator_module_label: flux
+# Customize what kind of weights we need, i.e. define weight_functions_flux:
+physics.producers.fluxweight.weight_functions_flux: [horncurrent, expskin, pioninexsec, pionqexsec, piontotxsec, nucleoninexsec, nucleonqexsec, nucleontotxsec,kplus,kminus,kzero,piplus, piminus]
+
+#Need to overwrite the parameter weight_functions as weight_functions_flux;
+physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux

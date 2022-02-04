@@ -1,8 +1,7 @@
 # This @product_deps@ file defines dependencies for this package.
 
-# The *parent* line must the first non-commented line and defines this product and version
-# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
-parent sbncode v09_28_01
+# The *parent* line must the first non-commented line and defines this product
+parent sbncode
 defaultqual e20
 
 # These optional lines define the installed directories where headers,
@@ -27,31 +26,35 @@ incdir  product_dir  include
 libdir  fq_dir       lib
 bindir  fq_dir       bin
 gdmldir product_dir
-fcldir  product_dir
+fcldir  product_dir fcl
 fwdir   product_dir scripts
 
 # With "product  version" table below, we now define dependencies
+# The version should be of the form vxx_yy_zz (e.g. v01_02_03)
 # Add the dependent product and version
 
 product             version
-larsoft             v09_28_01
-sbnobj              v09_11_17
-sbnanaobj           v09_16_13
-sbndaq_artdaq_core  v0_07_08_of0
+larsoft             v09_37_01_01
+sbnobj              v09_12_09
+sbnanaobj           v09_17_06_01
+sbndaq_artdaq_core  v1_00_00of0
 genie_xsec          v3_00_04a
+sbndata             v01_03
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v7_17_01 - only_for_build
+cetbuildtools v8_18_05 - only_for_build
+end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec               notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s110     G1810a0211a:k250:e1000   -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s110      G1810a0211a:k250:e1000   -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s110      G1810a0211a:k250:e1000   -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s110       G1810a0211a:k250:e1000   -nq-
+qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec			sbndata	notes
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000	-nq-	-nq-	
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000   	-nq-	-nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq-	-nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000   	-nq-	-nq-
+end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
 table_fragment_begin

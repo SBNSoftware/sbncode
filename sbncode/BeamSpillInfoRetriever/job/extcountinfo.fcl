@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+
+extcountinfo: {
+
+    module_type: "EXTRetriever"    
+    raw_data_label: "daq"
+
+}
+END_PROLOG

@@ -1,4 +1,0 @@
-#include "cafmakerjob_sbnd.fcl"
-
-physics.producers.fmatch: @local::sbnd_simple_flashmatch
-physics.runprod: [fmatch, @sequence::physics.runprod]

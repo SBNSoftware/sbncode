@@ -8,12 +8,13 @@
 
 // helper function declarations
 
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits);
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits,
+				   const std::map<int, caf::HitsEnergy> &all_hits_map);
 
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-           const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
-           const cheat::ParticleInventoryService &inventory_service,
+                                   const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
+                                   const caf::SRTruthBranch &srtruth,
+                                   const cheat::ParticleInventoryService &inventory_service,
                                    const detinfo::DetectorClocksData &clockData);
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
@@ -93,13 +94,14 @@ namespace caf {
   //------------------------------------------------
 
   void FillTrackTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                      const std::map<int, caf::HitsEnergy> &id_hits_map,
                       const std::vector<caf::SRTrueParticle> &particles,
                       const detinfo::DetectorClocksData &clockData,
-          caf::SRTrack& srtrack,
-          bool allowEmpty)
+                      caf::SRTrack& srtrack,
+                      bool allowEmpty)
   {
     // Truth matching
-    srtrack.truth = MatchTrack2Truth(clockData, particles, hits);
+    srtrack.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
 
   }//FillTrackTruth
 
@@ -108,23 +110,26 @@ namespace caf {
   // TODO: write trith matching for shower. Currently uses track truth matching
   // N.B. this will only work if showers are rolled up
   void FillShowerTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const std::vector<caf::SRTrueParticle> &particles,
-                      const detinfo::DetectorClocksData &clockData,
-          caf::SRShower& srshower,
-          bool allowEmpty)
+                       const std::map<int, caf::HitsEnergy> &id_hits_map,
+                       const std::vector<caf::SRTrueParticle> &particles,
+                       const detinfo::DetectorClocksData &clockData,
+                       caf::SRShower& srshower,
+                       bool allowEmpty)
   {
     // Truth matching
-    srshower.truth = MatchTrack2Truth(clockData, particles, hits);
+    srshower.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
 
   }//FillShowerTruth
 
 
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
+                     const std::map<int, caf::HitsEnergy> &id_hits_map,
                      const std::vector<caf::SRTrueParticle> &particles,
                      const detinfo::DetectorClocksData &clockData,
                      caf::SRStub& srstub,
-                     bool allowEmpty) {
-    srstub.truth = MatchTrack2Truth(clockData, particles, hits);
+                     bool allowEmpty) 
+  {
+    srstub.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
   }
 
 
@@ -132,17 +137,17 @@ namespace caf {
 
   void FillSliceTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                       const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                      const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                      const caf::SRTruthBranch &srmc,
                       const cheat::ParticleInventoryService &inventory_service,
                       const detinfo::DetectorClocksData &clockData,
-                      caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                      caf::SRSlice &srslice, 
                       bool allowEmpty)
   {
 
-    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
 
     if (tmatch.index >= 0) {
-      srslice.truth = srneutrinos[tmatch.index];
+      srslice.truth = srmc.nu[tmatch.index];
       srslice.tmatch = tmatch;
     }
 
@@ -153,22 +158,40 @@ namespace caf {
 
 
  void FillMeVPrtlTruth(const evgen::ldm::MeVPrtlTruth &truth,
+                       const std::vector<geo::BoxBoundedGeo> &active_volumes,
                        caf::SRMeVPrtl &srtruth) {
    // Fill stuff!!
-   srtruth.dcy.x = truth.decay_pos.X();
-   srtruth.dcy.y = truth.decay_pos.Y();
-   srtruth.dcy.z = truth.decay_pos.Z();
-   srtruth.dcyT  = truth.decay_pos.T();
+   srtruth.position.x = truth.decay_pos.X();
+   srtruth.position.y = truth.decay_pos.Y();
+   srtruth.position.z = truth.decay_pos.Z();
+   srtruth.time = truth.decay_pos.T();
 
-   srtruth.mom.x = truth.mevprtl_mom.X();
-   srtruth.mom.y = truth.mevprtl_mom.Y();
-   srtruth.mom.z = truth.mevprtl_mom.Z();
+   srtruth.momentum.x = truth.mevprtl_mom.X();
+   srtruth.momentum.y = truth.mevprtl_mom.Y();
+   srtruth.momentum.z = truth.mevprtl_mom.Z();
    srtruth.E     = truth.mevprtl_mom.E();
+
+    // Set the cryostat of the position
+    for (int icryo = 0; icryo < (int)active_volumes.size(); icryo++) {
+      if (active_volumes[icryo].ContainsPosition(truth.decay_pos.Vect())) {
+        srtruth.cryostat = icryo;
+        break;
+      }
+    }
 
    srtruth.M = truth.mass;
    srtruth.flux_weight = truth.flux_weight;
    srtruth.ray_weight = truth.ray_weight;
    srtruth.decay_weight = truth.decay_weight;
+   srtruth.decay_length = truth.mean_distance;
+
+   srtruth.enter.x = truth.mevprtl_enter.X();
+   srtruth.enter.y = truth.mevprtl_enter.Y();
+   srtruth.enter.z = truth.mevprtl_enter.Z();
+   srtruth.exit.x = truth.mevprtl_exit.X();
+   srtruth.exit.y = truth.mevprtl_exit.Y();
+   srtruth.exit.z = truth.mevprtl_exit.Z();
+
    srtruth.C1 = truth.C1;
    srtruth.C2 = truth.C2;
    srtruth.C3 = truth.C3;
@@ -189,14 +212,14 @@ namespace caf {
 
  void FillSliceFakeReco(const std::vector<art::Ptr<recob::Hit>> &hits,
                          const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                         const std::vector<caf::SRTrueInteraction> &srneutrinos,
+                         const caf::SRTruthBranch &srmc,
                          const cheat::ParticleInventoryService &inventory_service,
                          const detinfo::DetectorClocksData &clockData,
-                         caf::SRSlice &srslice, caf::SRTruthBranch &srmc,
+                         caf::SRSlice &srslice,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                          const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
   {
-    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srneutrinos, inventory_service, clockData);
+    caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
     if(tmatch.index >= 0) FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
   }//FillSliceFakeReco
 
@@ -207,30 +230,40 @@ namespace caf {
       const simb::GTruth& gtruth,
       const std::vector<caf::SRTrueParticle> &srparticles,
       const std::map<int, std::vector<art::Ptr<recob::Hit>>> &id_to_truehit_map,
-      caf::SRTrueInteraction &srneutrino, size_t i) {
+      caf::SRTrueInteraction &srneutrino, size_t i,
+      const std::vector<geo::BoxBoundedGeo> &active_volumes) {
 
     srneutrino.index = i;
 
-    srneutrino.plane0VisE = 0.;
-    srneutrino.plane1VisE = 0.;
-    srneutrino.plane2VisE = 0.;
-    for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
-      // save the G4 particles that came from this interaction
-      if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.prim.push_back(srparticles[i_part]);
+    for (int c = 0; c < 2; c++) {
+      SRTrueInteractionPlaneInfo init;
+      init.visE = 0.;
+      init.nhit = 0;
+      init.nhitprim = 0;
+
+      for (int p = 0; p < 3; p++) {
+        srneutrino.plane[c][p] = init;
       }
-      // total up the deposited energy
-      if (srparticles[i_part].interaction_id == (int)i) {
-        srneutrino.plane0VisE += srparticles[i_part].plane0VisE;
-        srneutrino.plane1VisE += srparticles[i_part].plane1VisE;
-        srneutrino.plane2VisE += srparticles[i_part].plane2VisE;
+    }
+
+    for(const caf::SRTrueParticle& part: srparticles){
+      // save the G4 particles that came from this interaction
+      if(part.interaction_id == (int)i) {
+        if(part.start_process == caf::kG4primary) srneutrino.prim.push_back(part);
+
+        // total up the deposited energy
+        for(int p = 0; p < 3; ++p) { 
+          for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+            srneutrino.plane[i_cryo][p].visE += part.plane[i_cryo][p].visE;
+          }
+        }
       }
     }
     srneutrino.nprim = srneutrino.prim.size();
 
     // Set of hits per-plane: primary particles
     {
-      std::array<std::set<unsigned>, 3> planehitIDs;
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].start_process == caf::kG4primary && srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
@@ -238,19 +271,21 @@ namespace caf {
           if (!id_to_truehit_map.count(track_id)) continue;
           for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
             if (!h->WireID()) continue;
-            planehitIDs[h->WireID().Plane].insert(h.key());
+            planehitIDs[h->WireID().Cryostat][h->WireID().Plane].insert(h.key());
           }
         }
       }
 
-      srneutrino.plane0nhitprim = planehitIDs[0].size();
-      srneutrino.plane1nhitprim = planehitIDs[1].size();
-      srneutrino.plane2nhitprim = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) {
+        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+          srneutrino.plane[i_cryo][p].nhitprim = planehitIDs[i_cryo][p].size();
+        }
+      }
     }
 
     // Set of hits per-plane: all particles
     {
-      std::array<std::set<unsigned>, 3> planehitIDs;
+      std::vector<std::array<std::set<unsigned>, 3>> planehitIDs(2);
       for (unsigned i_part = 0; i_part < srparticles.size(); i_part++) {
         if (srparticles[i_part].interaction_id == (int)i) {
           int track_id = srparticles[i_part].G4ID;
@@ -258,14 +293,16 @@ namespace caf {
           if (!id_to_truehit_map.count(track_id)) continue;
           for (const art::Ptr<recob::Hit> &h: id_to_truehit_map.at(track_id)) {
             if (!h->WireID()) continue;
-            planehitIDs[h->WireID().Plane].insert(h.key());
+            planehitIDs[h->WireID().Cryostat][h->WireID().Plane].insert(h.key());
           }
         }
       }
 
-      srneutrino.plane0nhit = planehitIDs[0].size();
-      srneutrino.plane1nhit = planehitIDs[1].size();
-      srneutrino.plane2nhit = planehitIDs[2].size();
+      for(int p = 0; p < 3; ++p) {
+        for (int i_cryo = 0; i_cryo < 2; i_cryo++) {
+          srneutrino.plane[i_cryo][p].nhit = planehitIDs[i_cryo][p].size();
+        }
+      }
     }
 
     // Set the GTruth stuff
@@ -302,7 +339,8 @@ namespace caf {
       srneutrino.pdg = nu.Nu().PdgCode();
       srneutrino.targetPDG = nu.Target();
       srneutrino.hitnuc = nu.HitNuc();
-      srneutrino.genie_intcode = nu.Mode();
+      srneutrino.genie_mode = (caf::genie_interaction_mode_)nu.Mode();
+      srneutrino.genie_inttype = (caf::genie_interaction_type_)nu.InteractionType();
       srneutrino.bjorkenX = nu.X();
       srneutrino.inelasticityY = nu.Y();
       srneutrino.Q2 = nu.QSqr();
@@ -329,8 +367,15 @@ namespace caf {
           break;
         }
       }
-    }
 
+      // Set the cryostat of the position
+      for (int icryo = 0; icryo < 2; icryo++) {
+        if (active_volumes[icryo].ContainsPosition(nu.Nu().Position().Vect())) {
+          srneutrino.cryostat = icryo;
+          break;
+        }
+      }
+    }
 
   }
 
@@ -376,40 +421,32 @@ namespace caf {
     srparticle.crosses_tpc = false;
     srparticle.wallin = caf::kWallNone;
     srparticle.wallout = caf::kWallNone;
-    srparticle.plane0VisE = 0.;
-    srparticle.plane1VisE = 0.;
-    srparticle.plane2VisE = 0.;
-    srparticle.plane0nhit = 0;
-    srparticle.plane1nhit = 0;
-    srparticle.plane2nhit = 0;
+
+    for (unsigned c = 0; c < 2; c++) {
+      SRTrueParticlePlaneInfo init;
+      init.visE = 0.;
+      init.nhit = 0;
+
+      for (int p = 0; p < 3; p++) {
+        srparticle.plane[c][p] = init;
+      }
+    }
+
     for (auto const &ide_pair: particle_ides) {
       const geo::WireID &w = ide_pair.first;
       const sim::IDE *ide = ide_pair.second;
 
-      if (w.Plane == 0) {
-        srparticle.plane0VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 1) {
-        srparticle.plane1VisE += ide->energy / 1000. /* MeV -> GeV*/;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2VisE += ide->energy / 1000. /* MeV -> GeV*/;
+      if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2){
+        srparticle.plane[w.Cryostat][w.Plane].visE += ide->energy / 1000. /* MeV -> GeV*/;
       }
     }
 
     for (const art::Ptr<recob::Hit> h: particle_hits) {
       const geo::WireID &w = h->WireID();
 
-      if (w.Plane == 0) {
-        srparticle.plane0nhit ++;
+      if(w.Plane >= 0 && w.Plane < 3 && w.Cryostat < 2) {
+        srparticle.plane[w.Cryostat][w.Plane].nhit ++;
       }
-      else if (w.Plane == 1) {
-        srparticle.plane1nhit ++;
-      }
-      else if (w.Plane == 2) {
-        srparticle.plane2nhit ++;
-      }
-
     } 
 
     // if no trajectory points, then assume outside AV
@@ -538,6 +575,17 @@ namespace caf {
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother();
 
+    // Set the initial cryostat
+    srparticle.cryostat = -1;
+    if (entry_point >= 0) {
+      for (unsigned c = 0; c < active_volumes.size(); c++) {
+        if (active_volumes[c].ContainsPosition(particle.Position(entry_point).Vect())) {
+          srparticle.cryostat = c;
+          break;
+        }
+      }
+    }
+
     // Save the daughter particles
     for (int i_d = 0; i_d < particle.NumberDaughters(); i_d++) {
       srparticle.daughters.push_back(particle.Daughter(i_d));
@@ -571,6 +619,23 @@ namespace caf {
 
       if (do_fill) srfakereco.push_back(this_fakereco);
     }
+  }
+
+  std::map<int, caf::HitsEnergy> SetupIDHitEnergyMap(const std::vector<art::Ptr<recob::Hit>> &allHits,
+                                                           const detinfo::DetectorClocksData &clockData, 
+                                                           const cheat::BackTrackerService &backtracker) {
+    std::map<int, caf::HitsEnergy> ret;
+
+    for (const art::Ptr<recob::Hit> h : allHits) {
+      const int hit_trackID = CAFRecoUtils::GetShowerPrimary(TruthMatchUtils::TrueParticleID(clockData, h, true));
+      ++ret[hit_trackID].nHits;
+
+      for (const sim::TrackIDE ide : backtracker.HitToTrackIDEs(clockData, h)) {
+        const int ide_trackID = CAFRecoUtils::GetShowerPrimary(ide.trackID);
+        ret[ide_trackID].totE += ide.energy;
+      }
+    }
+    return ret;
   }
 
   std::map<int, std::vector<art::Ptr<recob::Hit>>> PrepTrueHits(const std::vector<art::Ptr<recob::Hit>> &allHits, 
@@ -879,6 +944,9 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(muPairProd)
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
+  MATCH_PROCESS(Transportation)
+  MATCH_PROCESS(msc)
+  MATCH_PROCESS(StepLimiter)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode
@@ -996,62 +1064,113 @@ float ContainedLength(const TVector3 &v0, const TVector3 &v1,
 }//ContainedLength
 
 //------------------------------------------------
-caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits) {
+caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits,
+				   const std::map<int, caf::HitsEnergy> &all_hits_map) {
+
+  art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
   // this id is the same as the mcparticle ID as long as we got it from geant4
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
+  std::map<int, caf::HitsEnergy> track_hits_map = caf::SetupIDHitEnergyMap(hits, clockData, *bt_serv.get());
 
   caf::SRTrackTruth ret;
 
-  ret.total_deposited_energy = total_energy / 1000. /* MeV -> GeV */;
+  ret.visEintrk = total_energy / 1000. /* MeV -> GeV */;
 
   // setup the matches
   for (auto const &pair: matches) {
-    caf::ParticleMatch match;
+    caf::SRParticleMatch match;
     match.G4ID = pair.first;
     match.energy = pair.second / 1000. /* MeV -> GeV */;
+
+    caf::HitsEnergy track_matched_hits = track_hits_map.find(match.G4ID)->second;
+    caf::HitsEnergy all_matched_hits = all_hits_map.find(match.G4ID)->second;
+
+    match.hit_purity = (hits.size() != 0) ? track_matched_hits.nHits / (float) hits.size() : 0.;
+    match.energy_purity = (ret.visEintrk > 0) ? match.energy / ret.visEintrk : 0.;
+    match.hit_completeness = (all_matched_hits.nHits != 0) ? track_matched_hits.nHits / (float) all_matched_hits.nHits : 0.;
+    match.energy_completeness = (all_matched_hits.totE > 0) ? pair.second / all_matched_hits.totE : 0.;
+    
     ret.matches.push_back(match);
   }
 
   // sort highest energy match to lowest
   std::sort(ret.matches.begin(), ret.matches.end(),
-      [](const caf::ParticleMatch &a, const caf::ParticleMatch &b) {
+      [](const caf::SRParticleMatch &a, const caf::SRParticleMatch &b) {
         return a.energy > b.energy;
       }
       );
 
+  bool found_bestmatch = false;
   if (ret.matches.size()) {
     ret.bestmatch = ret.matches.at(0);
     for (unsigned i_part = 0; i_part < particles.size(); i_part++) {
       if (particles[i_part].G4ID == ret.bestmatch.G4ID) {
         ret.p = particles[i_part];
+        found_bestmatch = true;
+        break;
       }
     }
   }
+
+  // Calculate efficiency / purity
+  if (found_bestmatch) {
+    double match_total_energy = 0.;
+    for (int p = 0; p < 3; p++) {
+      for (int c = 0; c < 2; c++) {
+        match_total_energy += ret.p.plane[c][p].visE;
+      }
+    }
+
+    ret.eff = ret.matches[0].energy / match_total_energy; 
+    ret.pur = ret.matches[0].energy / ret.visEintrk;
+
+    int icryo = -1;
+    if (!hits.empty()) {
+      icryo = hits[0]->WireID().Cryostat;
+    }
+
+    assert(icryo < 2);
+    if (icryo >= 0 && icryo < 2) {
+      float match_cryo_energy = ret.p.plane[icryo][0].visE + ret.p.plane[icryo][1].visE + ret.p.plane[icryo][2].visE;
+      ret.eff_cryo = ret.matches[0].energy / match_cryo_energy;
+    }
+    else {
+      ret.eff_cryo = -1;
+    }
+
+  }
+  else {
+    ret.eff = -1.;
+    ret.pur = -1.;
+    ret.eff_cryo = -1.;
+  }
+
   ret.nmatches = ret.matches.size();
 
   return ret;
 }//MatchTrack2Truth
 //------------------------------------------------
 caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits,
-           const std::vector<art::Ptr<simb::MCTruth>> &neutrinos,
-                                   const std::vector<caf::SRTrueInteraction> &srneutrinos,
-           const cheat::ParticleInventoryService &inventory_service,
+                                   const std::vector<art::Ptr<simb::MCTruth>> &truths,
+                                   const caf::SRTruthBranch &srmc,
+                                   const cheat::ParticleInventoryService &inventory_service,
                                    const detinfo::DetectorClocksData &clockData) {
   caf::SRTruthMatch ret;
   float total_energy = CAFRecoUtils::TotalHitEnergy(clockData, hits);
-  // speed optimization: if there are no neutrinos, all the matching energy must be cosmic
-  if (neutrinos.size() == 0) {
+  // speed optimization: if there are no truths, all the matching energy must be cosmic
+  if (truths.empty()) {
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = total_energy / 1000. /* MeV -> GeV */;
+    ret.eff_cryo = -1.;
     ret.eff = -1;
     ret.pur = -1;
     ret.index = -1;
     return ret;
   }
   std::vector<std::pair<int, float>> matches = CAFRecoUtils::AllTrueParticleIDEnergyMatches(clockData, hits, true);
-  std::vector<float> matching_energy(neutrinos.size(), 0.);
+  std::vector<float> matching_energy(truths.size(), 0.);
   for (auto const &pair: matches) {
     art::Ptr<simb::MCTruth> truth;
     try {
@@ -1061,8 +1180,8 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     catch(...) {
       continue;
     }
-    for (unsigned ind = 0; ind < neutrinos.size(); ind++) {
-      if (truth == neutrinos[ind]) {
+    for (unsigned ind = 0; ind < truths.size(); ind++) {
+      if (truth == truths[ind]) {
         matching_energy[ind] += pair.second;
         break;
       }
@@ -1080,11 +1199,35 @@ caf::SRTruthMatch MatchSlice2Truth(const std::vector<art::Ptr<recob::Hit>> &hits
     ret.visEinslc = total_energy / 1000. /* MeV -> GeV */;
     ret.visEcosmic = cosmic_energy / 1000. /* MeV -> GeV */;
     ret.pur = matching_energy[index] / total_energy;
-    ret.eff = (matching_energy[index] / 1000.) / (srneutrinos[index].plane0VisE + srneutrinos[index].plane1VisE + srneutrinos[index].plane2VisE);
+
+    double totVisE = 0.;
+    for (int p = 0; p < 3; p++) {
+      for (int c = 0; c < 2; c++) {
+        totVisE += srmc.nu[index].plane[c][p].visE;
+      }
+    }
+
+    ret.eff = (matching_energy[index] / 1000.) / totVisE;
+
+    // Lookup the cryostat
+    int icryo = -1;
+    if (!hits.empty()) {
+      icryo = hits[0]->WireID().Cryostat;
+    }
+
+    if (icryo >= 0) {
+      ret.eff_cryo = (matching_energy[index] / 1000.) / 
+          (srmc.nu[index].plane[icryo][0].visE + srmc.nu[index].plane[icryo][1].visE + srmc.nu[index].plane[icryo][2].visE);
+    }
+    else {
+      ret.eff_cryo = -1;
+    }
+
   }
   else {
     ret.pur = -1;
     ret.eff = -1;
+    ret.eff_cryo = -1;
   }
   return ret;
 }//Slc2Truth

@@ -69,7 +69,7 @@ public:
     double LoadPOT();
 
     // no weights
-    float MaxWeight() override { return -1.; }
+    double MaxWeight() override { return -1.; }
 
 private:
   // config
