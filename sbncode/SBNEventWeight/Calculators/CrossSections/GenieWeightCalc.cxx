@@ -375,6 +375,30 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
       fParameterSet.AddParameter(pars[i], parsigmas[i]);
     }
 
+  }else if(mode.find("pmMultiNsigma") != std::string::npos){
+
+    //==== pars.size()==1 is supported
+    array_name_for_exception = "";
+    if(pars.size()!=1){
+      array_name_for_exception = "pmMultiNsigma";
+      throw cet::exception(__PRETTY_FUNCTION__) << GetName()
+        << "::Bad fcl configuration. pmMultiNsigma only supports one parameter_list";
+    }
+
+    num_universes = 2 * pars.size() * parsigmas.size();
+    std::vector<float> withds;
+
+    for (size_t i=0; i<pars.size(); i++){
+      num_universes = 2 * pars.size() * parsigmas.size();
+      std::vector<float> withds;
+      for (size_t j=0; j<parsigmas.size(); j++){
+        MF_LOG_INFO("GENIEWeightCalc") << "GENIE weight calculator "
+        << this->GetName() << " will vary " << pars[i] << " by +- " << parsigmas[j] << " sigma";
+        withds.push_back(parsigmas[j]);
+      }
+      fParameterSet.AddParameter(pars[i], withds);
+    }
+
   }else if(mode.find("multisim") != std::string::npos){
 
     num_universes = pset.get<int>( "number_of_multisims", 1 );

@@ -27,11 +27,24 @@ sbn_eventweight_genie: {
   # MaCCRES : 1
   }
 
-  weight_functions_genie: [ 
-   genie_sbnd_multisim
+  weight_functions_genie: [
+    # multisim
+    genie_sbnd_multisim,
+    # CCQE
+    genie_MaCCQE_pmMultiNsigma,
+    # Resonance
+    genie_MaCCRES_pmMultiNsigma, genie_MvCCRES_pmMultiNsigma, genie_MaNCRES_pmMultiNsigma, genie_MvNCRES_pmMultiNsigma,
+    # Non-Resonance
+    genie_NonRESBGvpCC1pi_pmMultiNsigma, genie_NonRESBGvbarnCC1pi_pmMultiNsigma, genie_NonRESBGvpNC1pi_pmMultiNsigma, genie_NonRESBGvbarnNC1pi_pmMultiNsigma, genie_NonRESBGvnCC1pi_pmMultiNsigma, genie_NonRESBGvbarpCC1pi_pmMultiNsigma, genie_NonRESBGvnNC1pi_pmMultiNsigma, genie_NonRESBGvbarpNC1pi_pmMultiNsigma, genie_NonRESBGvpCC2pi_pmMultiNsigma, genie_NonRESBGvbarnCC2pi_pmMultiNsigma, genie_NonRESBGvpNC2pi_pmMultiNsigma, genie_NonRESBGvbarpNC2pi_pmMultiNsigma, genie_NonRESBGvnCC2pi_pmMultiNsigma, genie_NonRESBGvbarpCC2pi_pmMultiNsigma, genie_NonRESBGvnNC2pi_pmMultiNsigma, genie_NonRESBGvbarnNC2pi_pmMultiNsigma,
+    # NC
+    genie_MaNCEL_pmMultiNsigma, genie_EtaNCEL_pmMultiNsigma,
+    # DIS
+    genie_AhtBY_pmMultiNsigma, genie_BhtBY_pmMultiNsigma, genie_CV1uBY_pmMultiNsigma, genie_CV2uBY_pmMultiNsigma, genie_FormZone_pmMultiNsigma,
+    # FSI
+    genie_MFP_N_pmMultiNsigma, genie_FrCEx_N_pmMultiNsigma, genie_FrInel_N_pmMultiNsigma, genie_FrAbs_N_pmMultiNsigma, genie_FrPiProd_N_pmMultiNsigma, genie_MFP_pi_pmMultiNsigma, genie_FrCEx_pi_pmMultiNsigma, genie_FrInel_pi_pmMultiNsigma, genie_FrAbs_pi_pmMultiNsigma, genie_FrPiProd_pi_pmMultiNsigma
   ]
- 
-  # Knobs that are used in both sbnd and ub
+
+  # Define each knob
   genie_sbnd_multisim: {
     type: Genie
     random_seed: 100
@@ -75,7 +88,234 @@ sbn_eventweight_genie: {
     mode: multisim
     number_of_multisims: @local::n_universes
   }
-
+  genie_MaCCQE_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MaCCQE"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MaCCRES_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MaCCRES"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MvCCRES_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MvCCRES"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MaNCRES_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MaNCRES"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MvNCRES_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MvNCRES"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvpCC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpCC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarnCC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnCC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvpNC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpNC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarnNC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnNC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvnCC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnCC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarpCC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpCC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvnNC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnNC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarpNC1pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpNC1pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvpCC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpCC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarnCC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnCC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvpNC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpNC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarpNC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpNC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvnCC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnCC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarpCC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpCC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvnNC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnNC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_NonRESBGvbarnNC2pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnNC2pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MaNCEL_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MaNCEL"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_EtaNCEL_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["EtaNCEL"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_AhtBY_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["AhtBY"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_BhtBY_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["BhtBY"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_CV1uBY_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["CV1uBY"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_CV2uBY_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["CV2uBY"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FormZone_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FormZone"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MFP_N_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MFP_N"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrCEx_N_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrCEx_N"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrInel_N_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrInel_N"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrAbs_N_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrAbs_N"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrPiProd_N_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrPiProd_N"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_MFP_pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["MFP_pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrCEx_pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrCEx_pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrInel_pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrInel_pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrAbs_pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrAbs_pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
+  genie_FrPiProd_pi_pmMultiNsigma: {
+      type: Genie
+      parameter_list: ["FrPiProd_pi"]
+      parameter_sigma: [1,2,3]
+      mode: pmMultiNsigma
+  }
 }
 
 END_PROLOG
