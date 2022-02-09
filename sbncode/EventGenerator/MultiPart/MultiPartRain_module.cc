@@ -19,9 +19,12 @@
 
 #include <memory>
 #include <vector>
+#include <cmath>
 
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandGeneral.h"
+
 #include "TRandom.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "larcore/Geometry/Geometry.h"
@@ -75,6 +78,7 @@ private:
     CLHEP::HepRandomEngine& fFlatEngine;
     CLHEP::RandFlat *fFlatRandom;
 		CLHEP::RandGauss *fNormalRandom;
+		CLHEP::RandGeneral *fGeneralRandom;
 
     // exception thrower
     void abort(const std::string msg) const;
@@ -90,6 +94,9 @@ private:
     std::array<double,2> _xrange;
     std::array<double,2> _yrange;
     std::array<double,2> _zrange;
+
+		// Whether to use uniform or cosmic-like angle distribution
+		bool _cosmic_distribution;
 
     // TPC array
     std::vector<std::vector<unsigned short> > _tpc_v;
@@ -109,7 +116,7 @@ void MultiPartRain::abort(const std::string msg) const
 }
 
 MultiPartRain::~MultiPartRain()
-{ delete fFlatRandom; delete fNormalRandom; }
+{ delete fFlatRandom; delete fNormalRandom; delete fGeneralRandom; }
 
 MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 : EDProducer(p)
@@ -125,6 +132,13 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
     fFlatRandom = new CLHEP::RandFlat(fFlatEngine,0,1);
     fNormalRandom = new CLHEP::RandGauss(fFlatEngine);
 
+		const int nbins(100);
+		double parent[nbins];
+		for (size_t idx = 0; idx < nbins; ++idx) {
+			parent[idx] = pow(cos(idx/100. * 3.141592653589793238), 2);
+		}
+		fGeneralRandom = new CLHEP::RandGeneral(fFlatEngine, parent, nbins);
+
     produces< std::vector<simb::MCTruth>   >();
     produces< sumdata::RunData, art::InRun >();
 
@@ -136,6 +150,7 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 
     _multi_min = p.get<size_t>("MultiMin");
     _multi_max = p.get<size_t>("MultiMax");
+		_cosmic_distribution = p.get<bool>("CosmicDistribution", false);
 
     _tpc_v = p.get<std::vector<std::vector<unsigned short> > >("TPCRange");
     auto const xrange = p.get<std::vector<double> > ("XRange");
@@ -367,13 +382,21 @@ void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, d
     if(!param.direct_inward) {
       std::cout<<"No inward directioning..."<<std::endl;
 
-			px = fNormalRandom->fire(0, 1);
-			py = fNormalRandom->fire(0, 1);
-			pz = fNormalRandom->fire(0, 1);
-			double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
-			px = px / p;
-			py = py / p;
-			pz = pz / p;
+			if (_cosmic_distribution) {
+				double phi   = fFlatRandom->fire(0, 2 * 3.141592653589793238);
+				double theta = fGeneralRandom->fire() * 3.141592653589793238;
+				pz = cos(phi) * sin(theta);
+				px = sin(phi) * sin(theta);
+				py = cos(theta);
+			} else {
+				px = fNormalRandom->fire(0, 1);
+				py = fNormalRandom->fire(0, 1);
+				pz = fNormalRandom->fire(0, 1);
+				double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
+				px = px / p;
+				py = py / p;
+				pz = pz / p;
+			}
 
     }else{
       double sign_x = ( (x - _xrange[0]) < (_xrange[1] - x) ? 1.0 : -1.0 );
@@ -390,13 +413,21 @@ void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, d
 
       while(1) {
 
-				px = fNormalRandom->fire(0, 1);
-				py = fNormalRandom->fire(0, 1);
-				pz = fNormalRandom->fire(0, 1);
-				double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
-				px = px / p;
-				py = py / p;
-				pz = pz / p;
+				if (_cosmic_distribution) {
+					double phi   = fFlatRandom->fire(0, 2 * 3.141592653589793238);
+					double theta = fGeneralRandom->fire() * 3.141592653589793238;
+					pz = cos(phi) * sin(theta);
+					px = sin(phi) * sin(theta);
+					py = cos(theta);
+				} else {
+					px = fNormalRandom->fire(0, 1);
+					py = fNormalRandom->fire(0, 1);
+					pz = fNormalRandom->fire(0, 1);
+					double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
+					px = px / p;
+					py = py / p;
+					pz = pz / p;
+				}
 
 				if( (px * sign_x) >= 0. &&
 						(py * sign_y) >= 0. &&
@@ -405,7 +436,6 @@ void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, d
       }
 
     }
-    //std::cout<<"LOGME,"<<phi<<","<<theta<<","<<px<<","<<py<<","<<pz<<std::endl;
 
     if(_debug>1)
         std::cout << "    Direction : (" << px << "," << py << "," << pz << ")" << std::endl
