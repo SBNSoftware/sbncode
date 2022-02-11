@@ -298,8 +298,24 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     std::vector<art::Ptr<recob::Hit>> emptyHitVector;
     const std::vector<art::Ptr<recob::Hit>> &trkHits  = fmtrkHits.isValid() ? fmtrkHits.at(trkPtr.key()) : emptyHitVector;
 
+    art::FindManyP<recob::SpacePoint> fmtrkHitSPs(trkHits, e, fPFPproducer);
+
     std::vector<const recob::TrackHitMeta*> emptyTHMVector;
     const std::vector<const recob::TrackHitMeta*> &trkHitMetas = fmtrkHits.isValid() ? fmtrkHits.data(trkPtr.key()) : emptyTHMVector;
+
+    art::Ptr<recob::SpacePoint> nullSP;
+    std::vector<art::Ptr<recob::SpacePoint>> trkHitSPs;
+    if (fmtrkHitSPs.isValid()) {
+      for (unsigned i_hit = 0; i_hit < trkHits.size(); i_hit++) {
+        const std::vector<art::Ptr<recob::SpacePoint>> &h_sp = fmtrkHitSPs.at(i_hit);
+        if (h_sp.size()) {
+          trkHitSPs.push_back(h_sp.at(0));
+        }
+        else {
+          trkHitSPs.push_back(nullSP);
+        }
+      }
+    }
 
     float t0 = std::numeric_limits<float>::signaling_NaN();
     if (fmT0.isValid() && fmT0.at(p_pfp.key()).size()) t0 = fmT0.at(p_pfp.key()).at(0)->Time();
@@ -318,7 +334,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
     fWiresToSave.clear();
 
     // Fill the track!
-    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, calo, rawdigits, track_infos, geometry, clock_data, bt, det);
+    FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, clock_data, bt, det);
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
@@ -857,9 +873,14 @@ void sbn::TrackCaloSkimmer::FillTrackEndHits(const geo::GeometryCore *geometry,
       const std::vector<art::Ptr<recob::SpacePoint>> &h_sp = allHitSPs.at(hit.key());
       if (h_sp.size()) {
         const recob::SpacePoint &sp = *h_sp[0];
-        hinfo.p.x = sp.position().x();
-        hinfo.p.y = sp.position().y();
-        hinfo.p.z = sp.position().z();
+        hinfo.sp.x = sp.position().x();
+        hinfo.sp.y = sp.position().y();
+        hinfo.sp.z = sp.position().z();
+
+        hinfo.hasSP = true;
+      }
+      else {
+        hinfo.hasSP = false;
       }
 
       fTrack->endhits.push_back(hinfo);
@@ -951,6 +972,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
     const recob::PFParticle &pfp, float t0, 
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
+    const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
@@ -982,7 +1004,7 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // Fill each hit
   for (unsigned i_hit = 0; i_hit < hits.size(); i_hit++) {
-    sbn::TrackHitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, calo, geo, clock_data, bt_serv);
+    sbn::TrackHitInfo hinfo = MakeHit(*hits[i_hit], hits[i_hit].key(), *thms[i_hit], track, sps[i_hit], calo, geo, clock_data, bt_serv);
     if (hinfo.h.plane == 0) {
       fTrack->hits0.push_back(hinfo);
     }
@@ -1129,6 +1151,7 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
+    const art::Ptr<recob::SpacePoint> &sp,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const geo::GeometryCore *geo,
     const detinfo::DetectorClocksData &dclock,
@@ -1202,9 +1225,9 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
   // Save trajectory information if we can
   if (!badhit) {
     geo::Point_t loc = trk.LocationAtPoint(thm.Index());
-    hinfo.h.p.x = loc.X();
-    hinfo.h.p.y = loc.Y();
-    hinfo.h.p.z = loc.Z();
+    hinfo.tp.x = loc.X();
+    hinfo.tp.y = loc.Y();
+    hinfo.tp.z = loc.Z();
 
     geo::Vector_t dir = trk.DirectionAtPoint(thm.Index());
     hinfo.dir.x = dir.X();
@@ -1228,6 +1251,18 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
       }
       break;
     }
+  }
+
+  // Save SpacePoint information
+  if (sp) {
+    hinfo.h.sp.x = sp->position().x();
+    hinfo.h.sp.y = sp->position().y();
+    hinfo.h.sp.z = sp->position().z();
+
+    hinfo.h.hasSP = true;
+  }
+  else {
+    hinfo.h.hasSP = false;
   }
 
   return hinfo;
