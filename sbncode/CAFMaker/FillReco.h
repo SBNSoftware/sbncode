@@ -161,6 +161,9 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
+
+  template<class T, class U, class V>
+  void CopyPropertyIfSet( std::map<U,V> map, std::string search, T &value );
 }
 
 #endif
