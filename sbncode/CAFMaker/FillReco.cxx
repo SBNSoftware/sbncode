@@ -256,7 +256,7 @@ namespace caf
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
     srslice.nuid.nufspfos = -9999.f;
-    srslice.nuid.nutothits = 0;
+    srslice.nuid.nutothits = -1;
     srslice.nuid.nuvtxy = -9999.f;
     srslice.nuid.nuwgtdirz = -9999.f;
     srslice.nuid.nusps = -9999.f;
@@ -264,7 +264,7 @@ namespace caf
     srslice.nuid.crlongtrkdiry =-9999.f;
     srslice.nuid.crlongtrkdef = -9999.f;
     srslice.nuid.crlongtrkhitfrac = -9999.f;
-    srslice.nuid.crmaxhits = 0;
+    srslice.nuid.crmaxhits = -1;
 
     // collect the properties
     if (primary_meta != NULL) {
