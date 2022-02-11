@@ -284,37 +284,16 @@ namespace caf
         srslice.nu_score = -1;
       }
       // NeutrinoID (SliceID) features
-      if (properties.count("NuNFinalStatePfos")) {
-        srslice.nuid.nufspfos = properties.at("NuNFinalStatePfos");
-      }
-      if (properties.count("NuNHitsTotal")) {
-        srslice.nuid.nutothits = properties.at("NuNHitsTotal");
-      }
-      if (properties.count("NuVertexY")) {
-	srslice.nuid.nuvtxy = properties.at("NuVertexY");
-      }
-      if (properties.count("NuWeightedDirZ")) {
-	srslice.nuid.nuwgtdirz = properties.at("NuWeightedDirZ");
-      }
-      if (properties.count("NuNSpacePointsInSphere")) {
-	srslice.nuid.nusps = properties.at("NuNSpacePointsInSphere");
-      }
-      if (properties.count("NuEigenRatioInSphere")) {
-        srslice.nuid.nueigen = properties.at("NuEigenRatioInSphere");
-      }
-      if (properties.count("CRLongestTrackDirY")) {
-        srslice.nuid.crlongtrkdiry = properties.at("CRLongestTrackDirY");
-      }
-      if (properties.count("CRLongestTrackDeflection")) {
-        srslice.nuid.crlongtrkdef = properties.at("CRLongestTrackDeflection");
-      }
-      if (properties.count("CRFracHitsInLongestTrack")) {
-        srslice.nuid.crlongtrkhitfrac = properties.at("CRFracHitsInLongestTrack");
-      }
-      if (properties.count("CRNHitsMax")) {
-        srslice.nuid.crmaxhits = properties.at("CRNHitsMax");
-      }
-
+      CopyPropertyIfSet(properties, "NuNFinalStatePfos",        srslice.nuid.nufspfos);
+      CopyPropertyIfSet(properties, "NuNHitsTotal",             srslice.nuid.nutothits);
+      CopyPropertyIfSet(properties, "NuVertexY",                srslice.nuid.nuvtxy);
+      CopyPropertyIfSet(properties, "NuWeightedDirZ",           srslice.nuid.nuwgtdirz);
+      CopyPropertyIfSet(properties, "NuNSpacePointsInSphere",   srslice.nuid.nusps);
+      CopyPropertyIfSet(properties, "NuEigenRatioInSphere",     srslice.nuid.nueigen);
+      CopyPropertyIfSet(properties, "CRLongestTrackDirY",       srslice.nuid.crlongtrkdiry);
+      CopyPropertyIfSet(properties, "CRLongestTrackDeflection", srslice.nuid.crlongtrkdef);
+      CopyPropertyIfSet(properties, "CRFracHitsInLongestTrack", srslice.nuid.crlongtrkhitfrac);
+      CopyPropertyIfSet(properties, "CRNHitsMax",               srslice.nuid.crmaxhits);
     }
 
   }
@@ -780,5 +759,11 @@ namespace caf
     return;
   }
 
+  //......................................................................
+  template<class T, class U, class V>
+  void CopyPropertyIfSet( std::map<U,V> map, std::string search, T &value )
+  {
+    if (map.count(search)) value = map.at(search);
+  }
 
 } // end namespace
