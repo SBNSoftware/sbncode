@@ -49,6 +49,7 @@
 #include "GENIE/RwFramework/GSystSet.h"
 #include "GENIE/RwFramework/GSyst.h"
 #include "GENIE/RwFramework/GReWeight.h"
+#include "GENIE/RwFramework/GSystUncertainty.h"
 #include "GENIE/RwCalculators/GReWeightNuXSecNCEL.h"
 #include "GENIE/RwCalculators/GReWeightNuXSecCCQE.h"
 #include "GENIE/RwCalculators/GReWeightNuXSecCCRES.h"
@@ -461,6 +462,23 @@ void GenieWeightCalc::Configure(fhicl::ParameterSet const& p,
     }//next knob
     rwght.Reconfigure();//Apply all set knobs, i.e. use the updated syst.
     rwght.Print();
+
+    // MARCO starts
+    std::cout << "-------------------------------------------------------" << std::endl;
+    std::vector<genie::rew::GSyst_t> syst_vec = rwght.Systematics().AllIncluded();
+    int vec_size = syst_vec.size();
+
+    for(int i = 0 ; i < vec_size ; i ++){
+      std::cout << " --o "  << GSyst::AsString(syst_vec[i])
+                << " is set at " << rwght.Systematics().Info(syst_vec[i])->CurValue << std::endl;
+    }
+
+    std::cout << "-------------------------------------------------------" << std::endl;
+    genie::rew::GSystUncertainty * fracerr = genie::rew::GSystUncertainty::Instance();
+    std::cout << "MaCCQE +1 sigma: " << fracerr->OneSigmaErr(kXSecTwkDial_MaCCQE, +1) << std::endl;
+    std::cout << "MaCCQE -1 sigma: " << fracerr->OneSigmaErr(kXSecTwkDial_MaCCQE, -1) << std::endl;
+    std::cout << "-------------------------------------------------------" << std::endl;
+    // MARCO ends
   }//next universe
 }
 

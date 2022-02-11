@@ -83,5 +83,19 @@ physics:
 physics.producers.fluxweight.generator_module_label: "flux"
 physics.producers.fluxweight.weight_functions: @local::physics.producers.fluxweight.weight_functions_flux
 
+physics.producers.fluxweight.expskin.number_of_multisims: 100
+physics.producers.fluxweight.horncurrent.number_of_multisims: 100
+physics.producers.fluxweight.kminus.number_of_multisims: 100
+physics.producers.fluxweight.kplus.number_of_multisims: 100
+physics.producers.fluxweight.kzero.number_of_multisims: 100
+physics.producers.fluxweight.nucleoninexsec.number_of_multisims: 100
+physics.producers.fluxweight.nucleonqexsec.number_of_multisims: 100
+physics.producers.fluxweight.nucleontotxsec.number_of_multisims: 100
+physics.producers.fluxweight.piminus.number_of_multisims: 100
+physics.producers.fluxweight.pioninexsec.number_of_multisims: 100
+physics.producers.fluxweight.pionqexsec.number_of_multisims: 100
+physics.producers.fluxweight.piontotxsec.number_of_multisims: 100
+physics.producers.fluxweight.piplus.number_of_multisims: 100
+
 
 
