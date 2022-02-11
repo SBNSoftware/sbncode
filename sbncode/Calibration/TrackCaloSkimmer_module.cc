@@ -1176,7 +1176,20 @@ sbn::TrackHitInfo sbn::TrackCaloSkimmer::MakeHit(const recob::Hit &hit,
 
   // Do back-tracking on each hit
   if (bt_serv) {
-    std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(dclock, hit);
+    // The default BackTracking function goes from (peak - width, peak + width).
+    //
+    // This time range does not match well hits with a non-Gaussian shape where
+    // the Gaussian-fit-width does not replicate the width of the pulse. 
+    //
+    // Instead, we use the Hit (start, end) time range. This is also more relevant
+    // for (e.g.) the SummedADC charge extraction method.
+    //
+    // Don't use this:
+    // std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(dclock, hit);
+    //
+    // Use this:
+    std::vector<sim::TrackIDE> ides = bt_serv->ChannelToTrackIDEs(dclock, hit.Channel(), hit.StartTick(), hit.EndTick());
+
     hinfo.h.truth.e = 0.;
     hinfo.h.truth.nelec = 0.;
 
