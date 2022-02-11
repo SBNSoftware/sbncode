@@ -52,11 +52,11 @@ sbn_eventweight_genie: {
       "MaNCEL", "EtaNCEL", #"NC", 
 
     #DIS
-      "AhtBY","BhtBY","CV1uBY","CV2uBY","FormZone",
+      "AhtBY","BhtBY","CV1uBY","CV2uBY", #"FormZone",
 
     #FSI
-      "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" ,"FrPiProd_N",
-      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi","FrPiProd_pi"
+      "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" , #"FrPiProd_N",
+      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #,"FrPiProd_pi"
       ]
     parameter_sigma: [
       #CCQE
@@ -68,9 +68,9 @@ sbn_eventweight_genie: {
       #NC
       1,1, #1,
       #DIS
-      1,1,1,1,1,
+      1,1,1,1, #1,
       #FSI
-      1,1,1,1,1,1,1,1,1,1
+      1,1,1,1,1,1,1,1 #,1,1
     ]
     mode: multisim
     number_of_multisims: @local::n_universes
