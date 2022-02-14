@@ -35,7 +35,6 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 
 #include "sbnanaobj/StandardRecord/SRSlice.h"
-#include "sbnanaobj/StandardRecord/SRNuID.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
 
@@ -163,7 +162,7 @@ namespace caf
                   bool allowEmpty = false);
 
   template<class T, class U>
-  void CopyPropertyIfSet( const std::map<std::string, T> map, const std::string search, U &value );
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
 }
 
 #endif

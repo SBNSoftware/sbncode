@@ -761,9 +761,10 @@ namespace caf
 
   //......................................................................
   template<class T, class U>
-  void CopyPropertyIfSet( const std::map<std::string, T> map, const std::string search, U &value )
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value )
   {
-    if (map.count(search)) value = map.at(search);
+    auto it = props.find(search);
+    if ( it != props.end() ) value = it->second;
   }
 
 } // end namespace
