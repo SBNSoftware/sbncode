@@ -85,7 +85,7 @@ sbn_eventweight_genie: {
       #DIS
       1,1,1,1, #1,
       #FSI
-      1,1,1,1,1,1,1,1, #1,1
+      1,1,1,1,1,1,1,1 #,1,1
     ]
     mode: multisim
     number_of_multisims: @local::n_universes
