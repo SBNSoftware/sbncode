@@ -630,6 +630,29 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+
+      // Pfo Characterisation features
+      srpfp.pfochar.chgendfrac = -9999.f;
+      srpfp.pfochar.chgfracspread = -9999.f;
+      srpfp.pfochar.linfitdiff = -9999.f;
+      srpfp.pfochar.linfitlen = -9999.f;
+      srpfp.pfochar.linfitgaplen = -9999.f;
+      srpfp.pfochar.linfitrms = -9999.f;
+      srpfp.pfochar.openanglediff = -9999.f;
+      srpfp.pfochar.pca2ratio = -9999.f;
+      srpfp.pfochar.pca3ratio = -9999.f;
+      srpfp.pfochar.vtxdist = -9999.f;
+
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
     }
   }
 
@@ -770,5 +793,12 @@ namespace caf
     return;
   }
 
+  //......................................................................
+  template<class T, class U>
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value )
+  {
+    auto it = props.find(search);
+    if ( it != props.end() ) value = it->second;
+  }
 
 } // end namespace
