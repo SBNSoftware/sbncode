@@ -17,19 +17,22 @@ namespace single_photon
     //Constructor from .fcl parameters
     SinglePhoton::SinglePhoton(fhicl::ParameterSet const &pset) : art::EDFilter(pset)
     {
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
         this->reconfigure(pset);
         //Set up some detector, timing, spacecharge and geometry services
-//        CHECK
+		//Keng, grab theDetector and detClocks in each event.
 //        theDetector = lar::providerFrom<detinfo::DetectorPropertiesService>();
 //        detClocks   = lar::providerFrom<detinfo::DetectorClocksService>();
-        SCE = lar::providerFrom<spacecharge::SpaceChargeService>();
+        SCE = lar::providerFrom<spacecharge::SpaceChargeService>();//Get space charge service
         geom = lar::providerFrom<geo::Geometry>();
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
 
     }
 
     //Reconfigure the internal class parameters from .fcl parameters
     void SinglePhoton::reconfigure(fhicl::ParameterSet const &pset)
     {
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
         //input parameters for what file/mode were running in
         m_print_out_event = pset.get<bool>("PrintOut", false);
         m_is_verbose = pset.get<bool>("Verbose",false);
@@ -178,6 +181,7 @@ namespace single_photon
                 exit(0);
             }
         }
+		std::cout<<">>>> CHECK finish reconfigure() at line"<<__LINE__<<std::endl;
 
         // Depreciated SSV run inline
         //std::vector<std::string> inputVars = { "sss_candidate_num_hits", "sss_candidate_num_wires", "sss_candidate_num_ticks", "sss_candidate_PCA", "log10(sss_candidate_impact_parameter)", "log10(sss_candidate_min_dist)", "sss_candidate_impact_parameter/sss_candidate_min_dist", "sss_candidate_energy*0.001", "cos(sss_candidate_angle_to_shower)", "sss_candidate_fit_slope", "sss_candidate_fit_constant", "sss_candidate_plane", "sss_reco_shower_energy*0.001", "2*0.001*0.001*sss_reco_shower_energy*sss_candidate_energy*(1-cos(sss_candidate_angle_to_shower))", "log10(2*0.001*0.001*sss_reco_shower_energy*sss_candidate_energy*(1-cos(sss_candidate_angle_to_shower)))", "sss_candidate_energy*0.001/(sss_reco_shower_energy*0.001)", "sss_candidate_closest_neighbour" };
@@ -193,58 +197,62 @@ namespace single_photon
     // Runs over every artroot event
     bool SinglePhoton::filter(art::Event &evt)
     {
+        std::cout<<"---------------------------------------------------------------------------------"<<std::endl;
+        std::cout<<"SinglePhoton::analyze()\t||\t On entry: "<<m_number_of_events<<std::endl;
+
+//		//Grab services 
+//CHECK ATTEMPTS		
+        auto detClocks = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+		auto theDetector = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, detClocks);
+
+        //Clear all output branches 
+        this->ClearVertex();
+
+        //Some event based properties
+        m_subrun_counts++;
+        m_number_of_events++;
+        m_run_number = evt.run();
+        m_subrun_number = evt.subRun();
+        m_event_number = evt.id().event();
+
+
+        //if module is run in selected-event mode, and current event is not in the list, skip it
+        if(m_runSelectedEvent && !IsEventInList(m_run_number, m_subrun_number, m_event_number)){
+            std::cout << "SinglePhoton::analyze()\t||\t event " << m_run_number << "/" << m_subrun_number << "/" << m_event_number << " is not in the list, skip it" << std::endl;
+            return true;
+        }
+
+        //Timing and TPC info
+        auto const TPC = (*geom).begin_TPC();
+        auto ID = TPC.ID();
+        m_Cryostat = ID.Cryostat;
+        m_TPC = ID.TPC;
+
+        _time2cm = sampling_rate(detClocks) / 1000.0 * theDetector.DriftVelocity( theDetector.Efield(), theDetector.Temperature() );//found in ProtoShowerPandora_tool.cc
+
+
+        //******************************Setup*****************Setup**************************************/
+        //******************************Setup*****************Setup**************************************/
+        // OK in this section we will get a bunch of stuff we need later, general associations and maps. These are either from pandora helper stuff or from direct associations. 
+        // Make sure under the hood you understand this!
+        // ------------------------
+        // The basic idea is that here we get every possible vector of data products we might need, along with all maps. e.g 
+        // tracks->pfparticles->hits
+        // tracks->pfparticles->spacepoints ..etc..
+        // And then later we just write pseudo-independant code assuming you have every objecets you want (see analyze_Tracks.h) and assume you have access to everything. 
+        //TODO: Think about making these class members, we can access them in the pseudo-indepenant code without passing messy maps.
+
+
+        // Collect all the hits. We will need these. Lets grab both the handle as well as a vector of art::Ptr as I like both. 
+        art::ValidHandle<std::vector<recob::Hit>> const & hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(m_hitfinderLabel); 
+        std::vector<art::Ptr<recob::Hit>> hitVector;
+        art::fill_ptr_vector(hitVector,hitHandle);
+
+        //Lets do "THE EXACT SAME STUFF" for Optical Flashes
+        art::ValidHandle<std::vector<recob::OpFlash>> const & flashHandle  = evt.getValidHandle<std::vector<recob::OpFlash>>(m_flashLabel);
+        std::vector<art::Ptr<recob::OpFlash>> flashVector;
+        art::fill_ptr_vector(flashVector,flashHandle);
 //CHECK
-//        std::cout<<"---------------------------------------------------------------------------------"<<std::endl;
-//        std::cout<<"SinglePhoton::analyze()\t||\t On entry: "<<m_number_of_events<<std::endl;
-//
-//        //Clear all output branches 
-//        this->ClearVertex();
-//
-//        //Some event based properties
-//        m_subrun_counts++;
-//        m_number_of_events++;
-//        m_run_number = evt.run();
-//        m_subrun_number = evt.subRun();
-//        m_event_number = evt.id().event();
-//
-//
-//        //if module is run in selected-event mode, and current event is not in the list, skip it
-//        if(m_runSelectedEvent && !IsEventInList(m_run_number, m_subrun_number, m_event_number)){
-//            std::cout << "SinglePhoton::analyze()\t||\t event " << m_run_number << "/" << m_subrun_number << "/" << m_event_number << " is not in the list, skip it" << std::endl;
-//            return true;
-//        }
-//
-//        //Timing and TPC info
-//        auto const TPC = (*geom).begin_TPC();
-//        auto ID = TPC.ID();
-//        m_Cryostat = ID.Cryostat;
-//        m_TPC = ID.TPC;
-////CHECK
-////        _time2cm = theDetector->SamplingRate() / 1000.0 * theDetector->DriftVelocity( theDetector->Efield(), theDetector->Temperature() );//found in ProtoShowerPandora_tool.cc
-//
-//
-//        //******************************Setup*****************Setup**************************************/
-//        //******************************Setup*****************Setup**************************************/
-//        // OK in this section we will get a bunch of stuff we need later, general associations and maps. These are either from pandora helper stuff or from direct associations. 
-//        // Make sure under the hood you understand this!
-//        // ------------------------
-//        // The basic idea is that here we get every possible vector of data products we might need, along with all maps. e.g 
-//        // tracks->pfparticles->hits
-//        // tracks->pfparticles->spacepoints ..etc..
-//        // And then later we just write pseudo-independant code assuming you have every objecets you want (see analyze_Tracks.h) and assume you have access to everything. 
-//        //TODO: Think about making these class members, we can access them in the pseudo-indepenant code without passing messy maps.
-//
-//
-//        // Collect all the hits. We will need these. Lets grab both the handle as well as a vector of art::Ptr as I like both. 
-//        art::ValidHandle<std::vector<recob::Hit>> const & hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(m_hitfinderLabel); 
-//        std::vector<art::Ptr<recob::Hit>> hitVector;
-//        art::fill_ptr_vector(hitVector,hitHandle);
-//
-//        //Lets do "THE EXACT SAME STUFF" for Optical Flashes
-//        art::ValidHandle<std::vector<recob::OpFlash>> const & flashHandle  = evt.getValidHandle<std::vector<recob::OpFlash>>(m_flashLabel);
-//        std::vector<art::Ptr<recob::OpFlash>> flashVector;
-//        art::fill_ptr_vector(flashVector,flashHandle);
-//
 //        //tracks
 //        art::ValidHandle<std::vector<recob::Track>> const & trackHandle  = evt.getValidHandle<std::vector<recob::Track>>(m_trackLabel);
 //        std::vector<art::Ptr<recob::Track>> trackVector;
@@ -769,7 +777,7 @@ namespace single_photon
 //        std::cout<<"SinglePhoton::analyze \t||\t Start on Shower Analysis "<<std::endl;
 //
 //        //found in analyze_Showers.h
-//        this->AnalyzeShowers(showers,showerToNuPFParticleMap, pfParticleToHitsMap, pfParticleToClustersMap, clusterToHitsMap,sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap,pfParticleMap,pfParticlesToShowerReco3DMap); 
+//        this->AnalyzeShowers(showers,showerToNuPFParticleMap, pfParticleToHitsMap, pfParticleToClustersMap, clusterToHitsMap,sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap,pfParticleMap,pfParticlesToShowerReco3DMap); //CHECK, add theDetector
 //        this->AnalyzeKalmanShowers(showers,showerToNuPFParticleMap,pfParticlesToShowerKalmanMap, kalmanTrackToCaloMap, pfParticleToHitsMap);
 //
 //
@@ -1476,19 +1484,11 @@ namespace single_photon
 
 
     //-------------------------------------------------------------------------------------------
-    void SinglePhoton::endJob()
-    {
-        if (m_print_out_event){
-            out_stream.close();
-        }
-        pot_tree->Fill();
-    }
-
-    //-------------------------------------------------------------------------------------------
 
     //This runs ONCE at the start of the job and sets up all the necessary services and TTrees
     void SinglePhoton::beginJob()
     {
+		std::cout<<">>>> CHECK "<<" "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
         mf::LogDebug("SinglePhoton") << " *** beginJob() *** " << "\n";
 //CHECK
 //        art::ServiceHandle<art::TFileService> tfs;
@@ -1657,12 +1657,70 @@ namespace single_photon
 //            }
 //        }
 
-        std::cout<<"SinglePhoton \t||\t beginJob() is complete"<<std::endl;
-
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
     }
 
 
 
+    bool SinglePhoton::beginSubRun(art::SubRun& sr) {
+
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
+
+        m_run = sr.run();
+        m_subrun = sr.subRun();
+
+        double this_pot = 0;
+
+        //reset subrun count 
+        m_subrun_counts = 0;
+
+
+        if(m_potLabel != ""){
+            if(m_potLabel == "generator"){
+
+                art::Handle<sumdata::POTSummary> gen_pot_hand;
+                if(sr.getByLabel(m_potLabel,gen_pot_hand)){
+                    this_pot =  gen_pot_hand->totgoodpot;
+                    m_pot_count += this_pot;
+                    std::cout<<"SinglePhoton::beginSubRun()\t||\t SubRun POT: "<<this_pot<<" . Current total POT this file: "<<m_pot_count<<" (label) "<<m_potLabel<<std::endl;
+                }
+            }else{
+
+                art::Handle<sumdata::POTSummary> potSummaryHandlebnbETOR875;
+                if (sr.getByLabel("beamdata","bnbETOR875",potSummaryHandlebnbETOR875)){
+                    this_pot =potSummaryHandlebnbETOR875->totpot; 
+                    m_pot_count += this_pot;
+                    std::cout<<"SinglePhoton::beginSubRun()\t||\t SubRun POT: "<<potSummaryHandlebnbETOR875->totpot<<" . Current total POT this file: "<<m_pot_count<<" (label) "<<m_potLabel<<std::endl;
+                }
+            }
+        }
+
+        m_subrun_pot = this_pot; 
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
+
+        return true;
+
+    }
+
+
+    bool SinglePhoton::endSubRun(art::SubRun&sr){
+
+		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
+
+        run_subrun_tree->Fill();
+        return true;
+    }
+
+    void SinglePhoton::endJob()
+    {
+		std::cout<<">>>> CHECK "<<" "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
+        if (m_print_out_event){
+            out_stream.close();
+        }
+        pot_tree->Fill();
+
+		std::cout<<">>>> CHECK "<<" "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
+    }
 
     //-------------------------------------------------------------------------------------------
     void SinglePhoton::ClearVertex(){
@@ -1712,58 +1770,7 @@ namespace single_photon
         this->ClearGeant4Branches();
         this->ClearSlices();
 
-
     }
-
-
-    bool SinglePhoton::beginSubRun(art::SubRun& sr) {
-
-
-        m_run = sr.run();
-        m_subrun = sr.subRun();
-
-        double this_pot = 0;
-
-        //reset subrun count 
-        m_subrun_counts = 0;
-
-
-        if(m_potLabel != ""){
-            if(m_potLabel == "generator"){
-
-                art::Handle<sumdata::POTSummary> gen_pot_hand;
-                if(sr.getByLabel(m_potLabel,gen_pot_hand)){
-                    this_pot =  gen_pot_hand->totgoodpot;
-                    m_pot_count += this_pot;
-                    std::cout<<"SinglePhoton::beginSubRun()\t||\t SubRun POT: "<<this_pot<<" . Current total POT this file: "<<m_pot_count<<" (label) "<<m_potLabel<<std::endl;
-                }
-            }else{
-
-                art::Handle<sumdata::POTSummary> potSummaryHandlebnbETOR875;
-                if (sr.getByLabel("beamdata","bnbETOR875",potSummaryHandlebnbETOR875)){
-                    this_pot =potSummaryHandlebnbETOR875->totpot; 
-                    m_pot_count += this_pot;
-                    std::cout<<"SinglePhoton::beginSubRun()\t||\t SubRun POT: "<<potSummaryHandlebnbETOR875->totpot<<" . Current total POT this file: "<<m_pot_count<<" (label) "<<m_potLabel<<std::endl;
-                }
-            }
-        }
-
-        m_subrun_pot = this_pot; 
-
-        return true;
-
-    }
-
-
-    bool SinglePhoton::endSubRun(art::SubRun&sr){
-
-
-        run_subrun_tree->Fill();
-        return true;
-    }
-
-
-
 
 
 
@@ -2054,27 +2061,27 @@ namespace single_photon
     int SinglePhoton::spacecharge_correction(const art::Ptr<simb::MCParticle> & mcparticle, std::vector<double> & corrected, std::vector<double> & input){
         corrected.resize(3);
 
-        double kx = input[0];
+//CHECK        double kx = input[0];
         double ky = input[1];
         double kz = input[2];
-
-        auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));
+//CHECK
+//        auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));
 	   // CHECK
-       // double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle->T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->TriggerOffset();
+       // double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle->T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->trigger_offset();
 
-       double xtimeoffset = 0;//CHECK  theDetector->ConvertTicksToX(g4Ticks,0,0,0);
+//CHECK       double xtimeoffset = 0;//CHECK  theDetector->ConvertTicksToX(g4Ticks,0,0,0);
 
         //        double xOffset = -scecorr.X() +xtimeoffset+0.6;
-        double yOffset = scecorr.Y();
-        double zOffset = scecorr.Z();
+        double yOffset = 0;//CHECK scecorr.Y();
+        double zOffset = 0;//CHECK scecorr.Z();
 
-        corrected[0]=kx - scecorr.X() + xtimeoffset + 0.6; //due to sim/wirecell differences  Seev https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/MCC9_Tutorials 
+        corrected[0]=0;//CHECK kx - scecorr.X() + xtimeoffset + 0.6; //due to sim/wirecell differences  Seev https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/MCC9_Tutorials 
         corrected[1]=ky+yOffset;
         corrected[2]=kz+zOffset;
 
         //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: "<<kx<<" "<<xOffset<<" "<<theDetector->ConvertTicksToX(g4Ticks, 0, 0, 0)<<" "<<scecorr.X()<<std::endl;
         //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: "<<xOffset<<" "<<yOffset<<" "<<zOffset<<std::endl;
-        //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: mcp->T(): "<<mcparticle->T()<<" TPCG4Time2Tick(): "<<detClocks->TPCG4Time2Tick(mcparticle->T())<<". "<<theDetector->GetXTicksOffset(0,0,0)<<" "<<theDetector->TriggerOffset()<<std::endl;
+        //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: mcp->T(): "<<mcparticle->T()<<" TPCG4Time2Tick(): "<<detClocks->TPCG4Time2Tick(mcparticle->T())<<". "<<theDetector->GetXTicksOffset(0,0,0)<<" "<<theDetector->trigger_offset()<<std::endl;
         return 0;
     }
 
@@ -2089,22 +2096,22 @@ namespace single_photon
         double ky = mcparticle->Vy();
         double kz = mcparticle->Vz();
 
-        auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));  // to get position offsets to be used in ionization electron drift
-//CHECK         double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle->T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->TriggerOffset();
+//CHECK        auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));  // to get position offsets to be used in ionization electron drift
+//CHECK         double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle->T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->trigger_offset();
 
-        double xtimeoffset = 0;//CHECK theDetector->ConvertTicksToX(g4Ticks,0,0,0);
+//CHECK        double xtimeoffset =  theDetector->ConvertTicksToX(g4Ticks,0,0,0);
 
         //double xOffset = -scecorr.X() +xtimeoffset+0.6;
-        double yOffset = scecorr.Y();
-        double zOffset = scecorr.Z();
+        double yOffset = 0;//CHECK scecorr.Y();
+        double zOffset = 0;//CHECK scecorr.Z();
 
-        corrected[0]=kx - scecorr.X() + xtimeoffset + 0.6; //due to sim/wirecell differences  Seev https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/MCC9_Tutorials 
+        corrected[0]= kx;//CHECK- scecorr.X() + xtimeoffset + 0.6; //due to sim/wirecell differences  Seev https://cdcvs.fnal.gov/redmine/projects/uboone-physics-analysis/wiki/MCC9_Tutorials 
         corrected[1]=ky+yOffset;
         corrected[2]=kz+zOffset;
 
         //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: "<<kx<<" "<<xOffset<<" "<<theDetector->ConvertTicksToX(g4Ticks, 0, 0, 0)<<" "<<scecorr.X()<<std::endl;
         //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: "<<xOffset<<" "<<yOffset<<" "<<zOffset<<std::endl;
-        //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: mcp->T(): "<<mcparticle->T()<<" TPCG4Time2Tick(): "<<detClocks->TPCG4Time2Tick(mcparticle->T())<<". "<<theDetector->GetXTicksOffset(0,0,0)<<" "<<theDetector->TriggerOffset()<<std::endl;
+        //std::cout<<"SinglePhoton\t||\tTRIGGER_OFF: mcp->T(): "<<mcparticle->T()<<" TPCG4Time2Tick(): "<<detClocks->TPCG4Time2Tick(mcparticle->T())<<". "<<theDetector->GetXTicksOffset(0,0,0)<<" "<<theDetector->trigger_offset()<<std::endl;
         return 0;
     }
 
@@ -2118,14 +2125,14 @@ namespace single_photon
         double kx = mcparticle.Vx();
         double ky = mcparticle.Vy();
         double kz = mcparticle.Vz();
-        auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));
-//CHECK        double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle.T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->TriggerOffset();
+//CHECK         auto scecorr = SCE->GetPosOffsets( geo::Point_t(kx,ky,kz));
+//CHECK        double g4Ticks =  detClocks->TPCG4Time2Tick(mcparticle.T())+theDetector->GetXTicksOffset(0,0,0)-theDetector->trigger_offset();
 
-        double xtimeoffset = 0;//CHECK theDetector->ConvertTicksToX(g4Ticks,0,0,0);
+//CHECK        double xtimeoffset = 0;//CHECK theDetector->ConvertTicksToX(g4Ticks,0,0,0);
 
-        corrected[0]=kx - scecorr.X() +xtimeoffset+0.6;
-        corrected[1]=ky + scecorr.Y();
-        corrected[2]=kz + scecorr.Z();
+        corrected[0]=kx;//CHECK  - scecorr.X() +xtimeoffset+0.6;
+        corrected[1]=ky;//CHECK  + scecorr.Y();
+        corrected[2]=kz;//CHECK  + scecorr.Z();
         return 0;
     }
 

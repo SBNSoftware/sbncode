@@ -570,8 +570,7 @@ namespace single_photon
             std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
             std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
             PFParticleIdMap &pfParticleMap,
-            std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>>& PFPtoShowerReco3DMap
-            ){
+            std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>>& PFPtoShowerReco3DMap){
 
         if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
 
@@ -1008,7 +1007,8 @@ namespace single_photon
         if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t Finished."<<std::endl;;
     }
 
-    void SinglePhoton::AnalyzeKalmanShowers( const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> &showerToPFParticleMap,                         std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> &  pfParticlesToShowerKalmanMap, std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>>&  kalmanTrackToCaloMap, std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap){
+    void SinglePhoton::AnalyzeKalmanShowers( const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> &showerToPFParticleMap,                         std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> &  pfParticlesToShowerKalmanMap, std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>>&  kalmanTrackToCaloMap, std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,
+	 detinfo::DetectorPropertiesService const & theDetector){
 
         std::cout<<"Singlephoton::AnalyzeKalmanShowerrs\t||\tStarting to Analyze Showers ("<<showers.size()<<") via Kalman "<<std::endl;
 
@@ -1116,7 +1116,7 @@ namespace single_photon
                     pts_x.push_back(calo[p]->ResidualRange().back()-calo[p]->ResidualRange()[ix]);
 
                     double wire = (double)calcWire(kal_pts[ix].Y(), kal_pts[ix].Z(), plane, m_TPC, m_Cryostat, *geom);
-                    double time = calcTime(kal_pts[ix].X(), plane, m_TPC,m_Cryostat, *theDetector);
+                    double time = calcTime(kal_pts[ix].X(), plane, m_TPC,m_Cryostat, theDetector);
 
                     //loop over all hits  
                     for(auto &hit: hitz){
@@ -1387,8 +1387,8 @@ namespace single_photon
 
             //convert the cluster start and end positions to time and wire coordinates
 			std::cout<<" CHECK "<<__LINE__<<" at "<<__FILE__<<" segmen fault warning"<<std::endl;
-            std::vector<double> cluster_start = {0};//CHECK {thiscluster->StartWire() * m_wire_spacing,(thiscluster->StartTick() - theDetector->TriggerOffset())* _time2cm};
-            std::vector<double> cluster_end = {0};//CHECK{thiscluster->EndWire() * m_wire_spacing,(thiscluster->EndTick() - theDetector->TriggerOffset())* _time2cm };
+            std::vector<double> cluster_start = {0};//CHECK {thiscluster->StartWire() * m_wire_spacing,(thiscluster->StartTick() - theDetector->trigger_offset())* _time2cm};
+            std::vector<double> cluster_end = {0};//CHECK{thiscluster->EndWire() * m_wire_spacing,(thiscluster->EndTick() - theDetector->trigger_offset())* _time2cm };
 
             //check that the cluster has non-zero length
             double length = sqrt(pow(cluster_end[0] - cluster_start[0], 2) + pow(cluster_end[1] - cluster_start[1], 2));
@@ -1408,7 +1408,7 @@ namespace single_photon
             //for each hit in the cluster
             for (art::Ptr<recob::Hit> &thishit: hits){	
                 //get the hit position in cm from the wire and time
-                std::vector<double> thishit_pos ={0};//CHECK {thishit->WireID().Wire * m_wire_spacing, (thishit->PeakTime() - theDetector->TriggerOffset())* _time2cm};
+                std::vector<double> thishit_pos ={0};//CHECK {thishit->WireID().Wire * m_wire_spacing, (thishit->PeakTime() - theDetector->trigger_offset())* _time2cm};
 
                 //check if inside the box
                 bool v2 = isInsidev2(thishit_pos, rectangle);
