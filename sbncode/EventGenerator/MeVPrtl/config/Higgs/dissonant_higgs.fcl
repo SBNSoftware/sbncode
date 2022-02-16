@@ -9,7 +9,7 @@ kaon2higgs: {
   M: @local::higgsM
   MixingAngle: 1e-5
   KDAROnly: false
-  KDIFOnly: false //JD
+  KDIFOnly: false
 
   Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
   BeamOrigin: @local::icarus_numi_beam_origin
