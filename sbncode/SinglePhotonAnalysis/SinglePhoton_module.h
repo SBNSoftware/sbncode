@@ -150,7 +150,8 @@ namespace single_photon
 
         public:
 
-            cluster(int ID, int plane, std::vector<std::vector<double>> &pts, std::vector<art::Ptr<recob::Hit>> &hits) :f_ID(ID), f_plane(plane), f_pts(pts), f_hits(hits) {
+            cluster(int ID, int plane, std::vector<std::vector<double>> &pts, std::vector<art::Ptr<recob::Hit>> &hits) 
+				:f_ID(ID), f_plane(plane), f_pts(pts), f_hits(hits) {
 
                 f_npts = f_pts.size();
                 if(pts.size() != hits.size()){
@@ -454,7 +455,9 @@ namespace single_photon
                     art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
                     std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
                     std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
-                    std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap);
+                    std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
+					detinfo::DetectorPropertiesService const & theDetector
+					);
 
 
             /* brief: analyze hits (second shower), find out which primary MCParticle is the best-match for these hits
@@ -492,7 +495,9 @@ namespace single_photon
                     const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap,
                     const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
                     const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
-                    const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap);
+                    const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
+					detinfo::DetectorPropertiesService const & theDetector
+					);
 
 
 
@@ -545,15 +550,15 @@ namespace single_photon
                     std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
                     std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
                     PFParticleIdMap &pfParticleMap,
-                    std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> &PFPtoShowerReco3DMap
-                    );
+                    std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> &PFPtoShowerReco3DMap);
             void ClearShowers();  /* clear and reset shower related vectors/variables, for reco, and sim shower */
             void ResizeShowers(size_t);   /* resize vectors related to reco, and sim showers */
             void CreateShowerBranches();  /* create branches for shower-related vec/vars in vertex_tree */
             void AnalyzeKalmanShowers(const std::vector<art::Ptr<recob::Shower>>& showers,  std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
                     std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> & pfptotrkmap,
                     std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>> & trktocalomap,
-                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap
+                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,
+					detinfo::DetectorPropertiesService const & theDetector
                     );
 
             void RecoMCShowers(const std::vector<art::Ptr<recob::Shower>>& showers,  std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap, std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,  std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
@@ -810,6 +815,7 @@ namespace single_photon
             int delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area); /* given hits, calc number of hits, Delaunay triangles and total areas on each plane */
 
             // given a MCParticle, get its corrected vertex
+			//CHECK can merge three in one?
             int spacecharge_correction(const art::Ptr<simb::MCParticle> & mcparticle, std::vector<double> & corrected);
             int spacecharge_correction(const simb::MCParticle & mcparticle, std::vector<double> & corrected);
             // given a particle, and input location calculate its corrected true position, so we can compare it to reco
@@ -909,8 +915,9 @@ namespace single_photon
             double m_track_calo_min_dEdx_hits;
             double m_track_calo_trunc_fraction;
 
-            detinfo::DetectorProperties const * theDetector ;// = lar::providerFrom<detinfo::DetectorPropertiesService>();
-            detinfo::DetectorClocks    const *  detClocks   ;//= lar::providerFrom<detinfo::DetectorClocksService>();
+			//Keng, DetectorClocks now is declared in each event
+//            detinfo::DetectorProperties const * theDetector;// = lar::providerFrom<detinfo::DetectorPropertiesService>();
+//            detinfo::DetectorClocks    const *  detClocks ;//= lar::providerFrom<detinfo::DetectorClocksService>();
             spacecharge::SpaceCharge const * SCE;
             geo::GeometryCore const * geom;
             double m_work_function;  //value provided by pset

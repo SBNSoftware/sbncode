@@ -84,7 +84,8 @@ void SinglePhoton::IsolationStudy(
 	const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap,
 	const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
         const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
-        const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap)
+        const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
+					detinfo::DetectorPropertiesService const & theDetector)
 {
 
         int total_track_hits =0;
@@ -497,7 +498,7 @@ std::cout << "Isolation: Acquiring unassociated hits coordinates and comparing w
                 if(i==0 ) pader->SetLeftMargin(0.1);
 
                 std::vector<double> wire = {(double)calcWire(m_vertex_pos_y, m_vertex_pos_z, i, fTPC, fCryostat, *geom)};
-                std::vector<double> time = {calcTime(m_vertex_pos_x, i, fTPC,fCryostat, *theDetector)};
+                std::vector<double> time = {calcTime(m_vertex_pos_x, i, fTPC,fCryostat, theDetector)};
 
                 vertex_time[i] = time[0];
                 vertex_wire[i] = wire[0];

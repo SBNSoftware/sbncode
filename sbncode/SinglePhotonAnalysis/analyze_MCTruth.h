@@ -281,6 +281,7 @@ namespace single_photon
                 if(m_is_verbose) std::cout<<"Getting SC corrected vertex position"<<std::endl;
                 std::vector<double> corrected(3);
 	        // get corrected lepton position
+			// CHECK, turn simb::mcparticle to art::Ptr<simb::MCParticle, then it can remove one unnecessary spacecharge_correction() function.
                 this->spacecharge_correction( truth->GetNeutrino().Lepton(),corrected);
 
                 m_mctruth_nu_vertex_x = corrected[0];

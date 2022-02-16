@@ -162,8 +162,9 @@ namespace single_photon
     }
 
 
-    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorProperties const& detprop){
-        double time = 0;//CHECK detprop.ConvertXToTicks(X, plane, fTPC,fCryostat);
+    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesService const& detprop){
+		
+        double time = (detprop.DataForJob()).ConvertXToTicks(X, plane, fTPC,fCryostat);
         return time;
     }
 
