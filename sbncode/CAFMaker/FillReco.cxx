@@ -255,16 +255,7 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
-    srslice.nuid.nufspfos = -9999.f;
-    srslice.nuid.nutothits = -1;
-    srslice.nuid.nuvtxy = -9999.f;
-    srslice.nuid.nuwgtdirz = -9999.f;
-    srslice.nuid.nusps = -9999.f;
-    srslice.nuid.nueigen = -9999.f;
-    srslice.nuid.crlongtrkdiry =-9999.f;
-    srslice.nuid.crlongtrkdef = -9999.f;
-    srslice.nuid.crlongtrkhitfrac = -9999.f;
-    srslice.nuid.crmaxhits = -1;
+    srslice.nuid.setDefault();
 
     // collect the properties
     if (primary_meta != NULL) {
