@@ -7,6 +7,7 @@ art_make( LIB_LIBRARIES
 		fhiclcpp::fhiclcpp
 		art::Persistency_Provenance canvas
 		${ROOT_BASIC_LIB_LIST}
+		sbncode_GeoWrappers
 
 	  MODULE_LIBRARIES
 		art::Framework_Core
