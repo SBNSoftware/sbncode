@@ -45,8 +45,7 @@ class TrackStoppingChi2Fitter : public art::EDProducer {
   private:
   // Declare member data here.
   const art::InputTag fTrackLabel, fCaloLabel;
-  const float fMinTrackLength, fFitRange, fMaxdEdx;
-  const unsigned int fMinHits;
+  const float fMinTrackLength;
 
   sbn::TrackStoppingChi2Alg fTrackStoppingChi2Alg;
 };
@@ -56,9 +55,6 @@ TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
     , fTrackLabel(p.get<std::string>("TrackLabel"))
     , fCaloLabel(p.get<std::string>("CaloLabel"))
     , fMinTrackLength(p.get<float>("MinTrackLength"))
-    , fFitRange(p.get<float>("FitRange"))
-    , fMaxdEdx(p.get<float>("MaxdEdx"))
-    , fMinHits(p.get<unsigned int>("MinHits"))
     , fTrackStoppingChi2Alg(p)
 {
   produces<std::vector<StoppingChi2Fit>>();

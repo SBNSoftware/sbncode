@@ -5,10 +5,7 @@
 
 
 sbn::TrackStoppingChi2Alg::TrackStoppingChi2Alg(fhicl::ParameterSet const& p) :
-  fTrackLabel(p.get<std::string>("TrackLabel"))
-  , fCaloLabel(p.get<std::string>("CaloLabel"))
-  , fMinTrackLength(p.get<float>("MinTrackLength"))
-  , fFitRange(p.get<float>("FitRange"))
+  fFitRange(p.get<float>("FitRange"))
   , fMaxdEdx(p.get<float>("MaxdEdx"))
   , fMinHits(p.get<unsigned int>("MinHits"))
 {
