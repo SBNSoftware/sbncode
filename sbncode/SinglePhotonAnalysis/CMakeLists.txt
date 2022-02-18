@@ -67,6 +67,8 @@ art_make( BASENAME_ONLY
                       
 #add_subdirectory(SEAview)
 add_subdirectory(job)
+add_subdirectory(Libraries)
+add_subdirectory(HelperFunctions)
 install_headers()
 install_fhicl()
 install_source()

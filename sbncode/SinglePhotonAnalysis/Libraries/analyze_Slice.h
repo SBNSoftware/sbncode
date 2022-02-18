@@ -266,7 +266,7 @@ namespace single_photon
         //std::cout<<"looking at all PFP's"<<std::endl;
         //std::map<int, std::vector<art::Ptr<recob::PFParticle>>> sliceIdToPFPMap;
 
-        //for (unsigned int i = 0; i< pfParticleVector.size(); i++){
+        //for (unsigned int i = 0; i< pfParticleVector.size(); i++){}
         for(auto item: pfParticleMap){
             art::Ptr<recob::PFParticle> start_pfp = item.second;
             //no longer skipping pfp's that are clear cosmics
@@ -378,7 +378,7 @@ namespace single_photon
         // }
     }
 
-    //  void  SinglePhoton::GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, std::vector<int> &sliceIdToNumPFPsvec){
+    //  void  SinglePhoton::GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, std::vector<int> &sliceIdToNumPFPsvec){}
     std::vector<int>  SinglePhoton::GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
         std::vector<int> sliceIdToNumPFPsvec(m_reco_slice_num, 0);
         //return sliceIdToNumPFPsvec;

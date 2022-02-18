@@ -95,10 +95,10 @@
 #include <set>
 #include <sys/stat.h>
 
-#include "HelperFunctions/helper_functions.h"
+#include "helper_functions.h"
 
-#include "Libraries/bad_channel_matching.h"
-#include "Libraries/DBSCAN.h"
+#include "bad_channel_matching.h"
+#include "DBSCAN.h"
 
 #include "SEAview/SEAviewer.h"
 

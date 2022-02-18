@@ -1,15 +1,16 @@
 #include "SinglePhoton_module.h"
-#include "analyze_OpFlashes.h"
-#include "analyze_Tracks.h"
-#include "analyze_Showers.h"
+#include "Libraries/analyze_OpFlashes.h"
+#include "Libraries/analyze_Tracks.h"
+#include "Libraries/analyze_Showers.h"
 //#include "analyze_Template.h"
-#include "analyze_MCTruth.h"
-#include "analyze_EventWeight.h"
-#include "analyze_Slice.h"
-#include "analyze_Geant4.h"
-#include "fiducial_volume.h"
-#include "second_shower_search.h"
-#include "isolation.h"
+#include "Libraries/analyze_MCTruth.h"
+#include "Libraries/analyze_EventWeight.h"
+#include "Libraries/analyze_Slice.h"
+#include "Libraries/analyze_Geant4.h"
+#include "Libraries/fiducial_volume.h"
+#include "Libraries/second_shower_search.h"
+#include "Libraries/isolation.h"
+
 
 namespace single_photon
 {
@@ -202,8 +203,8 @@ namespace single_photon
 
 //		//Grab services 
 //CHECK ATTEMPTS		
-        auto detClocks = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
-		auto theDetector = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, detClocks);
+        auto detClocks = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);//it is detinfo::DetectorClocksData 
+		auto theDetector = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, detClocks);//it is detinfo::DetectorPropertiesData 
 
         //Clear all output branches 
         this->ClearVertex();
@@ -723,27 +724,31 @@ namespace single_photon
             }
         }
 
+        art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h; //only filled when there are hits, otherwise empty
+		//CHECK
+        //art::Handle<raw::DAQHeaderTimeUBooNE> rawHandle_DAQHeader;//Keng, this is to track CRT hit time;
+        double evt_timeGPS_nsec = -999 ;
+        if(m_runCRT){
+//CHECK            evt.getByLabel(m_DAQHeaderProducer, rawHandle_DAQHeader);
+
 //CHECK
-//        art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h; //only filled when there are hits, otherwise empty
-//        art::Handle<raw::DAQHeaderTimeUBooNE> rawHandle_DAQHeader;
-//        double evt_timeGPS_nsec = -999 ;
-//        if(m_runCRT){
-//            evt.getByLabel(m_DAQHeaderProducer, rawHandle_DAQHeader);
-//            evt.getByLabel(m_CRTHitProducer, crthit_h);
 //            raw::DAQHeaderTimeUBooNE const& my_DAQHeader(*rawHandle_DAQHeader);
-//            art::Timestamp evtTimeGPS = my_DAQHeader.gps_time();
-//            evt_timeGPS_nsec = evtTimeGPS.timeLow(); 
-//            std::cout<<"SinglePhoton::analyze \t||\t Got CRT hits"<<std::endl;
-//        }
-//
-//        //Analize the CRT flashes. Found in analyze_OpFlashes.h
-//        this->AnalyzeFlashes(flashVector, crthit_h, evt_timeGPS_nsec, crtvetoToFlashMap);
-//
-//
-//
-//        //******************************* Common Optical Filter **************************************************************/
-//        //******************************* Common Optical Filter **************************************************************/
-//        //Raw Optical fltr
+			//Keng, time() is set to the trigger time.
+            art::Timestamp evtTimeGPS = evt.time();//CHECK = my_DAQHeader.gps_time();
+            evt_timeGPS_nsec = evtTimeGPS.timeLow();
+
+            evt.getByLabel(m_CRTHitProducer, crthit_h);
+            std::cout<<"SinglePhoton::analyze \t||\t Got CRT hits"<<std::endl;
+        }
+
+        //Analize the CRT flashes. Found in analyze_OpFlashes.h
+        this->AnalyzeFlashes(flashVector, crthit_h, evt_timeGPS_nsec, crtvetoToFlashMap);
+
+
+        //******************************* Common Optical Filter **************************************************************/
+        //******************************* Common Optical Filter **************************************************************/
+        //Raw Optical fltr
+//CHECK now Optical Filter
 //        art::Handle<uboone::UbooneOpticalFilter> uBooNE_common_optFltr;
 //        if(evt.getByLabel("opfiltercommon", uBooNE_common_optFltr)){
 //            m_flash_optfltr_pe_beam     = uBooNE_common_optFltr->PE_Beam();
@@ -757,279 +762,279 @@ namespace single_photon
 //            m_flash_optfltr_pe_veto_tot = -999;
 //            std::cout<<"No opfiltercommon product:"<<std::endl;
 //        }
-//
-//
-//
-//        //*******************************  Tracks **************************************************************/
-//        //*******************************  Tracks **************************************************************/
-//        std::cout<<"SinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
-//
-//        //found in analyze_Tracks.h
-//        this->AnalyzeTracks(tracks, trackToNuPFParticleMap, pfParticleToHitsMap,  pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,  PFPToTrackScoreMap, PFPToNuSliceMap,pfParticleMap);
-//        this->AnalyzeTrackCalo(tracks,   trackToCalorimetryMap);
-//
-//        //Run over PID?
-//        if(m_use_PID_algorithms)  this->CollectPID(tracks, trackToPIDMap);
-//
-//
-//        //*******************************  Showers **************************************************************/
-//        //*******************************  Showers **************************************************************/
-//        std::cout<<"SinglePhoton::analyze \t||\t Start on Shower Analysis "<<std::endl;
-//
-//        //found in analyze_Showers.h
-//        this->AnalyzeShowers(showers,showerToNuPFParticleMap, pfParticleToHitsMap, pfParticleToClustersMap, clusterToHitsMap,sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap,pfParticleMap,pfParticlesToShowerReco3DMap); //CHECK, add theDetector
-//        this->AnalyzeKalmanShowers(showers,showerToNuPFParticleMap,pfParticlesToShowerKalmanMap, kalmanTrackToCaloMap, pfParticleToHitsMap);
-//
-//
-//        //Some misc things thrown in here rather than in a proper helper function. TODO. fix
-//        //Calc a fake shower "end" distance. How to define an end distance? good question
-//        for(size_t i_shr = 0; i_shr<showers.size();i_shr++){
-//            const art::Ptr<recob::Shower> s = showers[i_shr];
-//            const art::Ptr<recob::PFParticle> pfp = showerToNuPFParticleMap[s];
-//            const std::vector< art::Ptr<recob::SpacePoint> > shr_spacepoints = pfParticleToSpacePointsMap[pfp];
-//
-//            m_reco_shower_end_dist_to_active_TPC[i_shr] = 99999;
-//            m_reco_shower_end_dist_to_SCB[i_shr] = 99999;
-//
-//            for(auto &sp: shr_spacepoints){
-//                std::vector<double> tmp_spt = {sp->XYZ()[0],sp->XYZ()[1] , sp->XYZ()[2]};
-//                m_reco_shower_end_dist_to_active_TPC[i_shr] = std::min(m_reco_shower_end_dist_to_active_TPC[i_shr], distToTPCActive(tmp_spt));
-//                double tmo;
-//                this->distToSCB(tmo,tmp_spt);
-//                m_reco_shower_end_dist_to_SCB[i_shr] = std::min(m_reco_shower_end_dist_to_SCB[i_shr],tmo);
-//
-//                //This section runs for only 1 shower events for purpose of testing delta specifics 
-//                if(showers.size()==1){
-//                    m_reco_shower_spacepoint_x.push_back(sp->XYZ()[0]);
-//                    m_reco_shower_spacepoint_y.push_back(sp->XYZ()[1]);
-//                    m_reco_shower_spacepoint_z.push_back(sp->XYZ()[2]);
-//                }
-//
-//            }
-//        }
-//
-//
-//        //*******************************   MCTruth  **************************************************************/
-//        //*******************************   MCTruth  **************************************************************/
-//
-//        //Grab the backtracker info for MCTruth Matching
-//        art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData> mcparticles_per_hit(hitHandle, evt, m_hitMCParticleAssnsLabel);
-//
-//        // MCTruth, MCParticle, MCNeutrino information all comes directly from GENIE.
-//        // MCShower and MCTrack come from energy depositions in GEANT4
-//
-//        //Only run if its not data :)
-//        if(!m_is_data){
-//
-//            std::vector<art::Ptr<simb::GTruth>> gTruthVector;
-//            if(!m_is_textgen){
-//
-//                // if Text is in the generator label, skip it. TODO this is a bit simple but works, maybe add a boolean
-//                art::ValidHandle<std::vector<simb::GTruth>> const & gTruthHandle= evt.getValidHandle<std::vector<simb::GTruth>>(m_generatorLabel);
-//                art::fill_ptr_vector(gTruthVector,gTruthHandle);
-//                if(m_is_verbose){
-//                    for(size_t p=0; p< gTruthVector.size();p++) std::cout<<gTruthVector[p]<<" "<<*gTruthVector[p]<<std::endl;
-//                }
-//            }
-//
-//            //get MCTruth (GENIE)
-//            art::ValidHandle<std::vector<simb::MCTruth>> const & mcTruthHandle= evt.getValidHandle<std::vector<simb::MCTruth>>(m_generatorLabel);
-//            art::fill_ptr_vector(mcTruthVector,mcTruthHandle);
-//
-//            //get MCPartilces (GEANT4)
-//            art::ValidHandle<std::vector<simb::MCParticle>> const & mcParticleHandle= evt.getValidHandle<std::vector<simb::MCParticle>>(m_geantModuleLabel);
-//            art::fill_ptr_vector(mcParticleVector,mcParticleHandle);
-//
-//            //Found inanalyze_Geant4.h
-//            //Currently just saves first 2 particles. TODO have a input list of things to save. Dont want to save everything!!
-//            this->AnalyzeGeant4(mcParticleVector);
-//
-//
-//            //Get the MCParticles (move to do this ourselves later)
-//            this->CollectMCParticles(evt, m_geantModuleLabel, MCTruthToMCParticlesMap, MCParticleToMCTruthMap, MCParticleToTrackIdMap);
-//
-//
-//            //mcc9 march miniretreat fix
-//            std::vector<art::Ptr<simb::MCParticle>> particle_vec; //vector of all MCParticles associated with a given hit in the reco PFP
-//            std::vector<anab::BackTrackerHitMatchingData const *> match_vec; //vector of some backtracker thing
-//            m_test_matched_hits = 0;
-//
-//            for(size_t j=0; j<hitVector.size();j++){
-//                const art::Ptr<recob::Hit> hit = hitVector[j];
-//
-//                particle_vec.clear(); match_vec.clear(); //only store per hit
-//                mcparticles_per_hit.get(hit.key(), particle_vec, match_vec);
-//                if(particle_vec.size() > 0){
-//                    m_test_matched_hits++;
-//                }
-//            }
-//
-//
-//            //Important map, given a MCparticle, whats the "hits" associated
-//            this->BuildMCParticleHitMaps(evt, m_geantModuleLabel, hitVector,  mcParticleToHitsMap, hitToMCParticleMap, lar_pandora::LArPandoraHelper::kAddDaughters,  MCParticleToTrackIdMap);
-//
-//
-//            //The recoMC was originally templated for any track shower, but sufficient differences in showers emerged to have stand alone sadly
-//            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::track"<<std::endl;
-//            std::vector<double> trk_overlay_vec = recoMCmatching<art::Ptr<recob::Track>>( tracks, trackToMCParticleMap, trackToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector);
-//            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::shower"<<std::endl;
-//            this->showerRecoMCmatching(showers, showerToMCParticleMap, showerToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap);
-//
-//            //photoNuclearTesting(matchedMCParticleVector);
-//
-//            std::cout<<"Starting outside RecoMCTracks "<<std::endl;
-//            this->RecoMCTracks(tracks, trackToNuPFParticleMap, trackToMCParticleMap, MCParticleToMCTruthMap,mcParticleVector, MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,trk_overlay_vec);
-//
-//            std::cout<<"Starting outside AnalyzeMCTruths "<<std::endl;
-//            this->AnalyzeMCTruths(mcTruthVector, mcParticleVector);
-//
-//
-//            std::cout<<"Starting AnalyzeEventWeight"<<std::endl;
-//            if(!m_is_textgen){// if Text is in the generator label, skip it. wont contain any
-//
-//                //This is important for rebuilding MCFlux and GTruth to do eventweight 
-//                this->AnalyzeEventWeight(evt);
-//
-//
-//                //added since last time?
-//                std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
-//
-//                /*   std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
-//                     std::map<int, std::vector<art::Ptr<recob::PFParticle>>> sliceIdToPFPMap; //this is an alternative, stores all the PFP's but organized by slice ID
-//                     std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t Starting"<<std::endl;
-//                     this->AnalyzeSlices( pfParticleToMetadataMap, pfParticleMap, allPFPSliceIdVec, sliceIdToPFPMap);
-//                     std::cout<<"There are "<< allPFPSliceIdVec.size()<<" pfp-slice id matches stored in the vector"<<std::endl;
-//                     if (showers.size()>0){
-//                     std::cout<<"the shower at 0 is in slice "<<this->GetShowerSlice(showers[0], showerToNuPFParticleMap, allPFPSliceIdVec)<<std::endl;
-//                     }
-//                     */
-//
-//                //this one was for testing, leaving out for now
-//                // this->FindSignalSlice( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap);
-//
-//                //if(!m_run_pi0_filter){
-//                //    this->SecondShowerSearch(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap,mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap);
-//                //}
-//
-//                std::cout<<"filling info in ncdelta slice tree"<<std::endl;
-//                this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
-//
-//                if (m_print_out_event){
-//                    if (m_matched_signal_shower_num != 1 || m_matched_signal_track_num != 1){
-//                        out_stream <<"run subrunevent "<<m_run_number<<" "<<m_subrun_number<<" "<<m_event_number<<"\n";
-//                    }
-//                }
-//
-//                //This section gets some important splines and weights 
-//                std::cout<<"Going to grab eventweightSplines for CCQE genie fix, won't be necessary long term"<<std::endl;
-//                //Mark: It was long term....
-//                art::Handle<std::vector<evwgh::MCEventWeight>>  ev_evw ;
-//                if(    evt.getByLabel(m_Spline_CV_label,ev_evw)){
-//
-//                    std::map<std::string, std::vector<double>> const & weight_map = ev_evw->front().fWeight;
-//                    if(ev_evw->size() > 1) std::cout << __LINE__ << " " << __PRETTY_FUNCTION__ << "\n"<< "WARNING: eventweight slice genie fix has more than one entry\n";
-//
-//                    for (auto const& x : weight_map){
-//                        std::cout << x.first  // string (key)
-//                            << ':' 
-//                            << x.second.size() << std::endl ;
-//                        if(x.second.size()==1 && x.first == "splines_general_Spline"){
-//                            m_genie_spline_weight = x.second.front();
-//                            std::cout<<"Its a spline fix, value: "<<m_genie_spline_weight<<std::endl;
-//                        }
-//                        if(x.second.size()==1 && ( x.first == "TunedCentralValue_Genie" || x.first == "TunedCentralValue_UBGenie")){
-//                            m_genie_CV_tune_weight = x.second.front();
-//                            std::cout<<"Its a CV fix, value:  "<<m_genie_CV_tune_weight<<std::endl;
-//                        }
-//                    }
-//
-//                }else{
-//                    std::cout<<"WARNING!!  No data product called eventweightSplines. Setting them to 1. Make sure this is what you want ok."<<std::endl;
-//                    m_genie_spline_weight =1.0;
-//                    m_genie_CV_tune_weight =1.0;
-//                }
-//
-//
-//
-//                //*******************************   PhotoNuclear Absorption  **************************************************************/
-//                //*******************************   PhotoNuclear Absorption  **************************************************************/
-//                m_photonu_weight_low = -999;
-//                m_photonu_weight_high = -999;
-//                if(m_runPhotoNuTruth){
-//                    art::Handle<std::vector<evwgh::MCEventWeight>>  ev_evw_ph ;
-//                    if(    evt.getByLabel("eventweight",ev_evw_ph)){
-//                        std::map<std::string, std::vector<double>> const & weight_map = ev_evw_ph->front().fWeight;
-//                        for (auto const& x : weight_map){
-//                            std::cout << x.first  // string (key)
-//                                << ':' 
-//                                << x.second.size() << std::endl ;
-//                            if(x.first == "photonuclear_photon_PhotoNuclear"){
-//                                auto vec  = x.second;
-//                                double ph_low = vec[1];
-//                                double ph_high = vec[0];
-//                                std::cout<<"PhotoNuBit: "<<ph_low<<" "<<ph_high<<std::endl;
-//                                m_photonu_weight_low = ph_low;
-//                                m_photonu_weight_high = ph_high;
-//                            }
-//                        }
-//
-//                    }
-//                }
-//
-//
-//                //*******************************   True EventWeight  **************************************************************/
-//                //*******************************   True EventWeight  **************************************************************/
-//
-//                if(m_runTrueEventweight){
-//
-//                    art::ValidHandle<std::vector<evwgh::MCEventWeight>> const & ev_evw_true =  evt.getValidHandle<std::vector<evwgh::MCEventWeight>>(m_true_eventweight_label);
-//                    std::map<std::string, std::vector<double>> const & weight_map = ev_evw_true->front().fWeight;
-//                    if(ev_evw_true->size() > 1) {
-//                        std::cout << __LINE__ << " " << __PRETTY_FUNCTION__ << "\n"
-//                            << "WARNING: eventweight has more than one entry\n";
-//                    }
-//                    fmcweight=weight_map;
-//                }
-//
-//            }//end NOT textgen 
-//
-//
-//
-//            std::cout<<"SinglePhoton::analyze\t||\t finnished loop for this event"<<std::endl;
-//        }//end data loop
-//
-//
-//
-//        //*******************************   Isolation (SSV precursor)  **************************************************************/
-//        //*******************************   Isolation (SSV precursor)  **************************************************************/
-//        if(!m_run_all_pfps && ! m_run_pi0_filter) this-> IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap);
-//
-//
-//
-//
-//        // ################################################### SEAview SEAview #########################################################
-//        // ################################################### SEAview SEAview #########################################################
-//
-//
-//        // ################################################### Proton Stub ###########################################
-//        // ------------- stub clustering ---------------------------
-//        std::cout << "----------------- Stub clustering --------------------------- " << std::endl;
-//        std::cout << "SEAview Stub formation: " << (m_runSEAviewStub ? "true" : "false" ) << " nshower requirement: " << m_SEAviewStubNumRecoShower << ", actual num shower: " << showers.size() << " | ntrack requirement: " << m_SEAviewStubNumRecoTrack << ", actual num track: " << tracks.size() << std::endl;
-//
-//        if(!m_run_pi0_filter && m_runSEAviewStub && (m_SEAviewStubNumRecoShower == -1 || (int)showers.size()== m_SEAviewStubNumRecoShower) && (m_SEAviewStubNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewStubNumRecoTrack)){    
-//
-//            // grab all hits in the slice of the reco shower
-//            art::Ptr<recob::Shower> p_shr = showers.front();
-//            art::Ptr<recob::PFParticle> p_pfp = showerToNuPFParticleMap[p_shr];
-//            std::vector<art::Ptr<recob::Hit>> p_hits = pfParticleToHitsMap[p_pfp];
-//
-//            int p_sliceid = PFPToSliceIdMap[p_pfp];
-//            auto p_slice_hits =    sliceIDToHitsMap[p_sliceid];
-//
-//            std::string uniq_tag = "HitThres_"+ std::to_string(static_cast<int>(m_SEAviewStubHitThreshold)) + "_" + std::to_string(m_run_number)+"_"+std::to_string(m_subrun_number)+"_"+std::to_string(m_event_number);
-//
-//            //Setup seaviewr object
-//            seaview::SEAviewer sevd("Stub_"+uniq_tag, geom, theDetector );
+
+
+
+        //*******************************  Tracks **************************************************************/
+        //*******************************  Tracks **************************************************************/
+        std::cout<<"SinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
+
+        //found in analyze_Tracks.h
+        this->AnalyzeTracks(tracks, trackToNuPFParticleMap, pfParticleToHitsMap,  pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,  PFPToTrackScoreMap, PFPToNuSliceMap,pfParticleMap);
+        this->AnalyzeTrackCalo(tracks,   trackToCalorimetryMap);
+
+        //Run over PID?
+        if(m_use_PID_algorithms)  this->CollectPID(tracks, trackToPIDMap);
+
+
+        //*******************************  Showers **************************************************************/
+        //*******************************  Showers **************************************************************/
+        std::cout<<"SinglePhoton::analyze \t||\t Start on Shower Analysis "<<std::endl;
+
+        //found in analyze_Showers.h
+        this->AnalyzeShowers(showers,showerToNuPFParticleMap, pfParticleToHitsMap, pfParticleToClustersMap, clusterToHitsMap,sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap,pfParticleMap,pfParticlesToShowerReco3DMap); //CHECK, add theDetector
+		
+        this->AnalyzeKalmanShowers(showers,showerToNuPFParticleMap,pfParticlesToShowerKalmanMap, kalmanTrackToCaloMap, pfParticleToHitsMap, theDetector);
+
+
+        //Some misc things thrown in here rather than in a proper helper function. TODO. fix
+        //Calc a fake shower "end" distance. How to define an end distance? good question
+        for(size_t i_shr = 0; i_shr<showers.size();i_shr++){
+            const art::Ptr<recob::Shower> s = showers[i_shr];
+            const art::Ptr<recob::PFParticle> pfp = showerToNuPFParticleMap[s];
+            const std::vector< art::Ptr<recob::SpacePoint> > shr_spacepoints = pfParticleToSpacePointsMap[pfp];
+
+            m_reco_shower_end_dist_to_active_TPC[i_shr] = 99999;
+            m_reco_shower_end_dist_to_SCB[i_shr] = 99999;
+
+            for(auto &sp: shr_spacepoints){
+                std::vector<double> tmp_spt = {sp->XYZ()[0],sp->XYZ()[1] , sp->XYZ()[2]};
+                m_reco_shower_end_dist_to_active_TPC[i_shr] = std::min(m_reco_shower_end_dist_to_active_TPC[i_shr], distToTPCActive(tmp_spt));
+                double tmo;
+                this->distToSCB(tmo,tmp_spt);
+                m_reco_shower_end_dist_to_SCB[i_shr] = std::min(m_reco_shower_end_dist_to_SCB[i_shr],tmo);
+
+                //This section runs for only 1 shower events for purpose of testing delta specifics 
+                if(showers.size()==1){
+                    m_reco_shower_spacepoint_x.push_back(sp->XYZ()[0]);
+                    m_reco_shower_spacepoint_y.push_back(sp->XYZ()[1]);
+                    m_reco_shower_spacepoint_z.push_back(sp->XYZ()[2]);
+                }
+
+            }
+        }
+
+        //*******************************   MCTruth  **************************************************************/
+        //*******************************   MCTruth  **************************************************************/
+
+        //Grab the backtracker info for MCTruth Matching
+        art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData> mcparticles_per_hit(hitHandle, evt, m_hitMCParticleAssnsLabel);
+
+        // MCTruth, MCParticle, MCNeutrino information all comes directly from GENIE.
+        // MCShower and MCTrack come from energy depositions in GEANT4
+
+        //Only run if its not data :)
+        if(!m_is_data){
+
+            std::vector<art::Ptr<simb::GTruth>> gTruthVector;
+            if(!m_is_textgen){
+
+                // if Text is in the generator label, skip it. TODO this is a bit simple but works, maybe add a boolean
+                art::ValidHandle<std::vector<simb::GTruth>> const & gTruthHandle= evt.getValidHandle<std::vector<simb::GTruth>>(m_generatorLabel);
+                art::fill_ptr_vector(gTruthVector,gTruthHandle);
+                if(m_is_verbose){
+                    for(size_t p=0; p< gTruthVector.size();p++) std::cout<<gTruthVector[p]<<" "<<*gTruthVector[p]<<std::endl;
+                }
+            }
+
+            //get MCTruth (GENIE)
+            art::ValidHandle<std::vector<simb::MCTruth>> const & mcTruthHandle= evt.getValidHandle<std::vector<simb::MCTruth>>(m_generatorLabel);
+            art::fill_ptr_vector(mcTruthVector,mcTruthHandle);
+
+            //get MCPartilces (GEANT4)
+            art::ValidHandle<std::vector<simb::MCParticle>> const & mcParticleHandle= evt.getValidHandle<std::vector<simb::MCParticle>>(m_geantModuleLabel);
+            art::fill_ptr_vector(mcParticleVector,mcParticleHandle);
+
+            //Found inanalyze_Geant4.h
+            //Currently just saves first 2 particles. TODO have a input list of things to save. Dont want to save everything!!
+            this->AnalyzeGeant4(mcParticleVector);
+
+
+            //Get the MCParticles (move to do this ourselves later)
+            this->CollectMCParticles(evt, m_geantModuleLabel, MCTruthToMCParticlesMap, MCParticleToMCTruthMap, MCParticleToTrackIdMap);
+
+
+            //mcc9 march miniretreat fix
+            std::vector<art::Ptr<simb::MCParticle>> particle_vec; //vector of all MCParticles associated with a given hit in the reco PFP
+            std::vector<anab::BackTrackerHitMatchingData const *> match_vec; //vector of some backtracker thing
+            m_test_matched_hits = 0;
+
+            for(size_t j=0; j<hitVector.size();j++){
+                const art::Ptr<recob::Hit> hit = hitVector[j];
+
+                particle_vec.clear(); match_vec.clear(); //only store per hit
+                mcparticles_per_hit.get(hit.key(), particle_vec, match_vec);
+                if(particle_vec.size() > 0){
+                    m_test_matched_hits++;
+                }
+            }
+
+
+            //Important map, given a MCparticle, whats the "hits" associated
+            this->BuildMCParticleHitMaps(evt, m_geantModuleLabel, hitVector,  mcParticleToHitsMap, hitToMCParticleMap, lar_pandora::LArPandoraHelper::kAddDaughters,  MCParticleToTrackIdMap);
+
+
+            //The recoMC was originally templated for any track shower, but sufficient differences in showers emerged to have stand alone sadly
+            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::track"<<std::endl;
+            std::vector<double> trk_overlay_vec = recoMCmatching<art::Ptr<recob::Track>>( tracks, trackToMCParticleMap, trackToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector);
+            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::shower"<<std::endl;
+            this->showerRecoMCmatching(showers, showerToMCParticleMap, showerToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap);
+
+            //photoNuclearTesting(matchedMCParticleVector);
+
+            std::cout<<"Starting outside RecoMCTracks "<<std::endl;
+            this->RecoMCTracks(tracks, trackToNuPFParticleMap, trackToMCParticleMap, MCParticleToMCTruthMap,mcParticleVector, MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,trk_overlay_vec);
+
+            std::cout<<"Starting outside AnalyzeMCTruths "<<std::endl;
+            this->AnalyzeMCTruths(mcTruthVector, mcParticleVector);
+
+
+            std::cout<<"Starting AnalyzeEventWeight"<<std::endl;
+            if(!m_is_textgen){// if Text is in the generator label, skip it. wont contain any
+
+                //This is important for rebuilding MCFlux and GTruth to do eventweight 
+                this->AnalyzeEventWeight(evt);
+
+
+                //added since last time?
+                std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
+
+                /*   std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
+                     std::map<int, std::vector<art::Ptr<recob::PFParticle>>> sliceIdToPFPMap; //this is an alternative, stores all the PFP's but organized by slice ID
+                     std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t Starting"<<std::endl;
+                     this->AnalyzeSlices( pfParticleToMetadataMap, pfParticleMap, allPFPSliceIdVec, sliceIdToPFPMap);
+                     std::cout<<"There are "<< allPFPSliceIdVec.size()<<" pfp-slice id matches stored in the vector"<<std::endl;
+                     if (showers.size()>0){
+                     std::cout<<"the shower at 0 is in slice "<<this->GetShowerSlice(showers[0], showerToNuPFParticleMap, allPFPSliceIdVec)<<std::endl;
+                     }
+                     */
+
+                //this one was for testing, leaving out for now
+                // this->FindSignalSlice( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap);
+
+                //if(!m_run_pi0_filter){
+                //    this->SecondShowerSearch(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap,mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap);
+                //}
+
+                std::cout<<"filling info in ncdelta slice tree"<<std::endl;
+                this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
+
+                if (m_print_out_event){
+                    if (m_matched_signal_shower_num != 1 || m_matched_signal_track_num != 1){
+                        out_stream <<"run subrunevent "<<m_run_number<<" "<<m_subrun_number<<" "<<m_event_number<<"\n";
+                    }
+                }
+
+                //This section gets some important splines and weights 
+                std::cout<<"Going to grab eventweightSplines for CCQE genie fix, won't be necessary long term"<<std::endl;
+                //Mark: It was long term....
+                art::Handle<std::vector<evwgh::MCEventWeight>>  ev_evw ;
+                if(    evt.getByLabel(m_Spline_CV_label,ev_evw)){
+
+                    std::map<std::string, std::vector<double>> const & weight_map = ev_evw->front().fWeight;
+                    if(ev_evw->size() > 1) std::cout << __LINE__ << " " << __PRETTY_FUNCTION__ << "\n"<< "WARNING: eventweight slice genie fix has more than one entry\n";
+
+                    for (auto const& x : weight_map){
+                        std::cout << x.first  // string (key)
+                            << ':' 
+                            << x.second.size() << std::endl ;
+                        if(x.second.size()==1 && x.first == "splines_general_Spline"){
+                            m_genie_spline_weight = x.second.front();
+                            std::cout<<"Its a spline fix, value: "<<m_genie_spline_weight<<std::endl;
+                        }
+                        if(x.second.size()==1 && ( x.first == "TunedCentralValue_Genie" || x.first == "TunedCentralValue_UBGenie")){
+                            m_genie_CV_tune_weight = x.second.front();
+                            std::cout<<"Its a CV fix, value:  "<<m_genie_CV_tune_weight<<std::endl;
+                        }
+                    }
+
+                }else{
+                    std::cout<<"WARNING!!  No data product called eventweightSplines. Setting them to 1. Make sure this is what you want ok."<<std::endl;
+                    m_genie_spline_weight =1.0;
+                    m_genie_CV_tune_weight =1.0;
+                }
+
+
+
+                //*******************************   PhotoNuclear Absorption  **************************************************************/
+                //*******************************   PhotoNuclear Absorption  **************************************************************/
+                m_photonu_weight_low = -999;
+                m_photonu_weight_high = -999;
+                if(m_runPhotoNuTruth){
+                    art::Handle<std::vector<evwgh::MCEventWeight>>  ev_evw_ph ;
+                    if(    evt.getByLabel("eventweight",ev_evw_ph)){
+                        std::map<std::string, std::vector<double>> const & weight_map = ev_evw_ph->front().fWeight;
+                        for (auto const& x : weight_map){
+                            std::cout << x.first  // string (key)
+                                << ':' 
+                                << x.second.size() << std::endl ;
+                            if(x.first == "photonuclear_photon_PhotoNuclear"){
+                                auto vec  = x.second;
+                                double ph_low = vec[1];
+                                double ph_high = vec[0];
+                                std::cout<<"PhotoNuBit: "<<ph_low<<" "<<ph_high<<std::endl;
+                                m_photonu_weight_low = ph_low;
+                                m_photonu_weight_high = ph_high;
+                            }
+                        }
+
+                    }
+                }
+
+
+                //*******************************   True EventWeight  **************************************************************/
+                //*******************************   True EventWeight  **************************************************************/
+
+                if(m_runTrueEventweight){
+
+                    art::ValidHandle<std::vector<evwgh::MCEventWeight>> const & ev_evw_true =  evt.getValidHandle<std::vector<evwgh::MCEventWeight>>(m_true_eventweight_label);
+                    std::map<std::string, std::vector<double>> const & weight_map = ev_evw_true->front().fWeight;
+                    if(ev_evw_true->size() > 1) {
+                        std::cout << __LINE__ << " " << __PRETTY_FUNCTION__ << "\n"
+                            << "WARNING: eventweight has more than one entry\n";
+                    }
+                    fmcweight=weight_map;
+                }
+
+            }//end NOT textgen 
+
+
+
+            std::cout<<"SinglePhoton::analyze\t||\t finnished loop for this event"<<std::endl;
+        }//end data loop
+
+
+
+        //*******************************   Isolation (SSV precursor)  **************************************************************/
+        //*******************************   Isolation (SSV precursor)  **************************************************************/
+        if(!m_run_all_pfps && ! m_run_pi0_filter) this-> IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector);
+
+
+
+        // ################################################### SEAview SEAview #########################################################
+        // ################################################### SEAview SEAview #########################################################
+
+
+        // ################################################### Proton Stub ###########################################
+        // ------------- stub clustering ---------------------------
+        std::cout << "----------------- Stub clustering --------------------------- " << std::endl;
+        std::cout << "SEAview Stub formation: " << (m_runSEAviewStub ? "true" : "false" ) << " nshower requirement: " << m_SEAviewStubNumRecoShower << ", actual num shower: " << showers.size() << " | ntrack requirement: " << m_SEAviewStubNumRecoTrack << ", actual num track: " << tracks.size() << std::endl;
+
+        if(!m_run_pi0_filter && m_runSEAviewStub && (m_SEAviewStubNumRecoShower == -1 || (int)showers.size()== m_SEAviewStubNumRecoShower) && (m_SEAviewStubNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewStubNumRecoTrack)){
+
+            // grab all hits in the slice of the reco shower
+            art::Ptr<recob::Shower> p_shr = showers.front();
+            art::Ptr<recob::PFParticle> p_pfp = showerToNuPFParticleMap[p_shr];
+            std::vector<art::Ptr<recob::Hit>> p_hits = pfParticleToHitsMap[p_pfp];
+
+            int p_sliceid = PFPToSliceIdMap[p_pfp];
+            auto p_slice_hits =    sliceIDToHitsMap[p_sliceid];
+
+            std::string uniq_tag = "HitThres_"+ std::to_string(static_cast<int>(m_SEAviewStubHitThreshold)) + "_" + std::to_string(m_run_number)+"_"+std::to_string(m_subrun_number)+"_"+std::to_string(m_event_number);
+
+            //Setup seaviewr object
+////CHECK undefined reference? Found in header, but not defined;
+//            seaview::SEAviewer sevd("Stub_"+uniq_tag, geom, theDetector);
 //            //Pass in any bad channels you like
 //            sevd.setBadChannelList(bad_channel_list_fixed_mcc9);
 //            //Give it a vertex to center around
@@ -1061,8 +1066,8 @@ namespace single_photon
 //                sevd.addTrack(trk);
 //                ++i_trk;
 //            }
-//
-//            //Add all cosmic-relatd PFP
+
+            //Add all cosmic-relatd PFP
 //            for(auto &cr: crParticles){
 //                std::vector<art::Ptr<recob::Hit>> p_hits_cr = cr_pfParticleToHitsMap[cr];
 //                sevd.addPFParticleHits(p_hits_cr,"cosmic");
@@ -1085,11 +1090,11 @@ namespace single_photon
 //            //Analyze formed clusters and save info
 //            std::vector<seaview::cluster> vec_SEAclusters ;
 //            sevd.analyzeTrackLikeClusters(m_SEAviewStubDbscanEps, showerToNuPFParticleMap, pfParticleToHitsMap, vec_SEAclusters);
-//
-//
-//            //And save to file.
+
+
+            //And save to file.
 //            std::cout<<"After SEAview we have "<<vec_SEAclusters.size()<<" Stub clusters to chat about"<<std::endl;
-//
+
 //            m_trackstub_num_candidates = 0;
 //            for(size_t c=0; c< vec_SEAclusters.size(); c++){
 //                auto& clu = vec_SEAclusters.at(c); //type: seaview::cluster
@@ -1170,7 +1175,7 @@ namespace single_photon
 //                    std::cout << "Cluster is matched: " << m_trackstub_candidate_matched.back() << ", matched PDG: " << m_trackstub_candidate_pdg.back() << " track ID: " << m_trackstub_candidate_trackid.back() << " overlay fraction: " << m_trackstub_candidate_overlay_fraction.back() << std::endl; 
 //                    std::cout << "===============================================================" << std::endl;
 //                }
-//
+//CHECK sevd?
 //                sevd.SetClusterLegend(c, m_trackstub_candidate_energy.back(),  m_trackstub_candidate_matched.back(), m_trackstub_candidate_pdg.back() , m_trackstub_candidate_overlay_fraction.back() );
 //
 //
@@ -1180,20 +1185,20 @@ namespace single_photon
 //            if(m_SEAviewStubMakePDF){
 //                sevd.Print(m_SEAviewStubPlotDistance);
 //            }
-//
-//            //group clusters HERE
-//            std::pair<int, std::pair<std::vector<std::vector<double>>, std::vector<double>> > group_result = GroupClusterCandidate(m_trackstub_num_candidates,  m_trackstub_candidate_plane, m_trackstub_candidate_max_tick, m_trackstub_candidate_min_tick);
-//            m_trackstub_num_candidate_groups = group_result.first;
-//            m_grouped_trackstub_candidate_indices = group_result.second.first;
-//            m_trackstub_candidate_group_timeoverlap_fraction = group_result.second.second;
-//        }
-//
+
+            //group clusters HERE
+            std::pair<int, std::pair<std::vector<std::vector<double>>, std::vector<double>> > group_result = GroupClusterCandidate(m_trackstub_num_candidates,  m_trackstub_candidate_plane, m_trackstub_candidate_max_tick, m_trackstub_candidate_min_tick);
+            m_trackstub_num_candidate_groups = group_result.first;
+            m_grouped_trackstub_candidate_indices = group_result.second.first;
+            m_trackstub_candidate_group_timeoverlap_fraction = group_result.second.second;
+        }
+//CHECK
 //
 //        // --------------- shower clustering --------------------------
 //        std::cout << "------------- Shower clustering --------------------" << std::endl;
 //        std::cout << "SEAview Shower cluster formation: " << (m_runSEAview ? "true" : "false" ) << " nshower requirement: " << m_SEAviewNumRecoShower << ", actual num shower: " << showers.size() << " | ntrack requirement: " << m_SEAviewNumRecoTrack << ", actual num track: " << tracks.size() << std::endl;
 //
-//        if(!m_run_pi0_filter &&  m_runSEAview && (m_SEAviewNumRecoShower == -1 || (int)showers.size()== m_SEAviewNumRecoShower) && (m_SEAviewNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewNumRecoTrack) ){    
+//        if(!m_run_pi0_filter &&  m_runSEAview && (m_SEAviewNumRecoShower == -1 || (int)showers.size()== m_SEAviewNumRecoShower) && (m_SEAviewNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewNumRecoTrack) ){
 //
 //            art::Ptr<recob::Shower> p_shr = showers.front();
 //            art::Ptr<recob::PFParticle> p_pfp = showerToNuPFParticleMap[p_shr];
@@ -1376,7 +1381,7 @@ namespace single_photon
 //            //And cluster the 2d and 3d second showers. Very simple TODO
 //            this->SimpleSecondShowerCluster();
 //
-//        }        
+//        }
 //
 //
 //        // ################################################### Some info for Slice outside of Neutrino Slices #########################################################
@@ -1450,33 +1455,33 @@ namespace single_photon
 //
 //            }
 //        }
-//
-//
-//
-//
-//        //---------------------- END OF LOOP, fill vertex ---------------------
-//
-//
-//
-//        bool filter_pass_2g1p = Pi0PreselectionFilter();
-//        bool filter_pass_2g0p = Pi0PreselectionFilter2g0p();
-//
-//        if (m_fill_trees &&  (  (filter_pass_2g1p && m_run_pi0_filter_2g1p) || (filter_pass_2g0p && m_run_pi0_filter_2g0p) || !m_run_pi0_filter ) ) {
-//            vertex_tree->Fill();
-//            ncdelta_slice_tree->Fill();
-//            eventweight_tree->Fill();
-//            true_eventweight_tree->Fill();
-//            geant4_tree->Fill();
-//        }
-//
-//
-//        //Rest the vertex after filling
-//        this->ClearVertex();
-//
-//        if(m_run_pi0_filter_2g1p)  return filter_pass_2g1p;
-//        else if(m_run_pi0_filter_2g0p)  return filter_pass_2g0p;
-//
-//        //if not in filter mode pass all
+
+
+
+
+        //---------------------- END OF LOOP, fill vertex ---------------------
+
+
+
+        bool filter_pass_2g1p = Pi0PreselectionFilter();
+        bool filter_pass_2g0p = Pi0PreselectionFilter2g0p();
+
+        if (m_fill_trees &&  (  (filter_pass_2g1p && m_run_pi0_filter_2g1p) || (filter_pass_2g0p && m_run_pi0_filter_2g0p) || !m_run_pi0_filter ) ) {
+            vertex_tree->Fill();
+            ncdelta_slice_tree->Fill();
+            eventweight_tree->Fill();
+            true_eventweight_tree->Fill();
+            geant4_tree->Fill();
+        }
+
+
+        //Rest the vertex after filling
+        this->ClearVertex();
+
+        if(m_run_pi0_filter_2g1p)  return filter_pass_2g1p;
+        else if(m_run_pi0_filter_2g0p)  return filter_pass_2g0p;
+
+        //if not in filter mode pass all
         return true;
 
     }// end filter_module main class

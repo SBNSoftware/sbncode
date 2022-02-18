@@ -1008,7 +1008,7 @@ namespace single_photon
     }
 
     void SinglePhoton::AnalyzeKalmanShowers( const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> &showerToPFParticleMap,                         std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> &  pfParticlesToShowerKalmanMap, std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>>&  kalmanTrackToCaloMap, std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,
-	 detinfo::DetectorPropertiesService const & theDetector){
+	 detinfo::DetectorPropertiesData const & theDetector){
 
         std::cout<<"Singlephoton::AnalyzeKalmanShowerrs\t||\tStarting to Analyze Showers ("<<showers.size()<<") via Kalman "<<std::endl;
 

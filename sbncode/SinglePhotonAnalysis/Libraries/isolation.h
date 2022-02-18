@@ -85,7 +85,7 @@ void SinglePhoton::IsolationStudy(
 	const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
         const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
         const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
-					detinfo::DetectorPropertiesService const & theDetector)
+					detinfo::DetectorPropertiesData const & theDetector)
 {
 
         int total_track_hits =0;
