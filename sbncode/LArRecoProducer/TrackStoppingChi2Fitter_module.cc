@@ -21,12 +21,8 @@
 #include "lardata/Utilities/AssociationUtil.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/RecoBase/Track.h"
-#include "sbnobj/Common/Reco/StoppingChi2Fit.h"
-
-#include "TF1.h"
-#include "TGraph.h"
+#include "sbncode/LArRecoProducer/TrackStoppingChi2Alg.h"
 
 #include <memory>
 
@@ -52,7 +48,7 @@ class TrackStoppingChi2Fitter : public art::EDProducer {
   const float fMinTrackLength, fFitRange, fMaxdEdx;
   const unsigned int fMinHits;
 
-  StoppingChi2Fit RunFit(const anab::Calorimetry& calo) const;
+  sbn::TrackStoppingChi2Alg fTrackStoppingChi2Alg;
 };
 
 TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
@@ -63,6 +59,7 @@ TrackStoppingChi2Fitter::TrackStoppingChi2Fitter(fhicl::ParameterSet const& p)
     , fFitRange(p.get<float>("FitRange"))
     , fMaxdEdx(p.get<float>("MaxdEdx"))
     , fMinHits(p.get<unsigned int>("MinHits"))
+    , fTrackStoppingChi2Alg(p)
 {
   produces<std::vector<StoppingChi2Fit>>();
   produces<art::Assns<recob::Track, StoppingChi2Fit>>();
@@ -100,7 +97,7 @@ void TrackStoppingChi2Fitter::produce(art::Event& e)
     if (bestPlane == -1)
       continue;
 
-    StoppingChi2Fit thisFit(this->RunFit(*caloVec.at(bestPlane)));
+    StoppingChi2Fit thisFit(fTrackStoppingChi2Alg.RunFit(*caloVec.at(bestPlane)));
 
     if (thisFit.pol0Chi2 < 0.f || thisFit.expChi2 < 0.f)
       continue;
@@ -113,43 +110,6 @@ void TrackStoppingChi2Fitter::produce(art::Event& e)
   e.put(std::move(fitVec));
   e.put(std::move(trackAssns));
   e.put(std::move(caloAssns));
-}
-
-StoppingChi2Fit TrackStoppingChi2Fitter::RunFit(const anab::Calorimetry& calo) const
-{
-
-  std::vector<float> dEdxVec, resRangeVec;
-  // Fill the dEdx vs res range vectors, ignoring the first/last points
-  for (size_t i = 1; i < calo.dEdx().size() - 1; i++) {
-    const float thisdEdx(calo.dEdx()[i]);
-    const float thisResRange(calo.ResidualRange()[i]);
-    if (thisResRange > fFitRange || thisdEdx > fMaxdEdx)
-      continue;
-
-    dEdxVec.push_back(thisdEdx);
-    resRangeVec.push_back(thisResRange);
-  }
-
-  if (dEdxVec.size() != resRangeVec.size())
-    throw cet::exception("TrachStoppingChi2Fitter") << "dEdx and Res Range do not have same length: " << dEdxVec.size() << " and " << resRangeVec.size() << std::endl;
-
-  if (dEdxVec.size() < fMinHits)
-    return StoppingChi2Fit();
-
-  const auto graph(std::make_unique<TGraph>(dEdxVec.size(), &resRangeVec[0], &dEdxVec[0]));
-
-  // Try and fit a flat polynomial
-  graph->Fit("pol0", "Q");
-  const TF1* polFit = graph->GetFunction("pol0");
-  const float pol0Chi2(polFit ? polFit->GetChisquare() : -5.f);
-  const float pol0Fit(polFit ? polFit->GetParameter(0) : -5.f);
-
-  // Try to fit an exponential
-  graph->Fit("expo", "Q");
-  const TF1* expFit = graph->GetFunction("expo");
-  const float expChi2(expFit ? expFit->GetChisquare() : -5.f);
-
-  return StoppingChi2Fit(pol0Chi2, expChi2, pol0Fit);
 }
 }
 
