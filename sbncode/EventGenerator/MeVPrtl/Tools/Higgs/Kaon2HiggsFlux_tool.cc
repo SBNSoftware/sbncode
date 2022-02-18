@@ -216,11 +216,13 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   if (!kaon.kaon_pdg) return false; // parent wasn't a kaon
 
   // select on the kaon
-  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false;
+  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false; //selects KDAR from absorber only.
   if (fKDAROnly) std::cout << "FOUND KDAR\n";
-  if (fKDIFOnly && (kaon.mom.P() <= 1e-3 && kaon.pos.Z() >= 72000.)) return false;
-  if (fKDIFOnly) std::cout << "FOUND KDIF\n";
-
+  //if (fKDIFOnly && (kaon.mom.P() <= 1e-3 && kaon.pos.Z() >= 72000.)) return false; //allows for KDAR from decay-pipe
+  if (fKDIFOnly && (kaon.mom.P() <= 1e-3)){ // no KDAR allowed (from anywhere)
+    std::cout << "found KDAR, skipping to next event\n";
+    return false;
+  }
 
   TLorentzVector Beam4 = BeamOrigin();
   // get position in detector frame
