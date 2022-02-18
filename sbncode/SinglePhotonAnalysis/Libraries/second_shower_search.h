@@ -252,7 +252,7 @@ namespace single_photon
             std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
             std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
             std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
-					detinfo::DetectorPropertiesService const & theDetector
+					detinfo::DetectorPropertiesData const & theDetector
 			){
 
 
