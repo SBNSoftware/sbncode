@@ -30,8 +30,7 @@ namespace sbn {
     
   private:
   
-    const std::string fTrackLabel, fCaloLabel;
-    const float fMinTrackLength, fFitRange, fMaxdEdx;
+    const float fFitRange, fMaxdEdx;
     const unsigned int fMinHits;
 
   };
