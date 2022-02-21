@@ -55,8 +55,11 @@ sbn::StoppingChi2Fit sbn::TrackStoppingChi2Alg::RunFit(const anab::Calorimetry& 
 
 sbn::StoppingChi2Fit sbn::TrackStoppingChi2Alg::RunFitForCosmicID(const anab::Calorimetry& calo) const
 {
-  geo::Point_t start(calo.XYZ()[0]);
-  geo::Point_t end(calo.XYZ()[calo.XYZ().size()]);
+  if(calo.XYZ().size() == 0)
+    return StoppingChi2Fit();
+
+  geo::Point_t start(calo.XYZ().front());
+  geo::Point_t end(calo.XYZ().back());
 
   std::vector<float> dEdxVec, resRangeVec;
   // Fill the dEdx vs res range vectors, ignoring the first/last points
