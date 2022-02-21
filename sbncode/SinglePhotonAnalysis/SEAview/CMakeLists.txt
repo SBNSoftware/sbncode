@@ -1,4 +1,5 @@
 link_libraries( -L$ENV{BOOST_LIB} -lboost_system -lboost_filesystem)
+find_package(larpandora)
 
 art_make( BASENAME_ONLY
     LIB_LIBRARIES
@@ -13,8 +14,6 @@ art_make( BASENAME_ONLY
     larsim_MCCheater_BackTrackerService_service
     larsim_MCCheater_ParticleInventoryService_service
     larpandora_LArPandoraInterface
-    ${PANDORASDK}
-    ${PANDORAMONITORING}
     LArPandoraContent 
     nusimdata_SimulationBase
     ${UB_DATA_TYPES}
@@ -62,7 +61,6 @@ art_make( BASENAME_ONLY
     art_Persistency_Provenance canvas
     art_Utilities canvas
     ${MF_MESSAGELOGGER}
-
     ${FHICLCPP}
     cetlib cetlib_except
     ${CLHEP}
