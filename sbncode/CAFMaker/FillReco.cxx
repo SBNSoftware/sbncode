@@ -289,6 +289,14 @@ namespace caf
   }
 
 
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (crumbs != NULL)
+      slice.crumbs_result = crumbs->score;
+  }
+
+
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
