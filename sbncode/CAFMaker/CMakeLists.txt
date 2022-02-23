@@ -4,6 +4,7 @@ include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 FILE( GLOB src_files *.cxx )
 
 add_subdirectory(RecoUtils)
+add_subdirectory(FoldEMDaughters)
 add_subdirectory(bin)
 
 art_make_library( LIBRARY_NAME sbncode_CAFMaker
@@ -25,6 +26,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   ${ROOT_X3d}
                   ${ROOT_BASIC_LIB_LIST}
                   caf_RecoUtils
+		  caf_FoldEMDaughters
                   lardataobj_AnalysisBase
                   lardataobj_RecoBase
                   larcorealg_Geometry

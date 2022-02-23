@@ -258,6 +258,12 @@ namespace caf
       25.
     };
 
+    Atom<bool> FoldEMShowerDaughters {
+      Name("FoldEMShowerDaughters"),
+      Comment("Whether to fold EM Shower Daughters into the parent true particle."),
+      true
+    };
+
   };
 }
 

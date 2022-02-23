@@ -18,6 +18,7 @@
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/Utils.h"
+#include "sbncode/CAFMaker/FoldEMDaughters/FoldEMDaughters.h"
 
 // C/C++ includes
 #include <fenv.h>
@@ -798,6 +799,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                          mctruths,
                          true_particles.back());
     }
+  }
+
+  if (fParams.FoldEMShowerDaughters()) {
+    true_particles = caf::FoldEMShowerDaughters(true_particles);
   }
 
   std::vector<art::FindManyP<sbn::evwgh::EventWeightMap>> fmpewm;
