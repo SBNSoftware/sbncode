@@ -1,0 +1,33 @@
+BEGIN_PROLOG
+
+crumbs_sbnd:
+{
+  module_type:     "CRUMBS"
+
+  MCParticleModuleLabel:		"largeant"
+  GeneratorModuleLabel:			"generator"
+  CosmicModuleLabel:			"corsika"
+
+  PFParticleModuleLabel:		"pandora"
+  HitModuleLabel:			"gaushit"
+  TrackModuleLabel:			"pandoraTrack"
+  SliceModuleLabel:			"pandora"
+  FlashMatchModuleLabel:		"fmatch"
+  CRTTrackMatchModuleLabel:		"crttrackt0"
+  CRTHitMatchModuleLabel:		"crthitt0"
+  CalorimetryModuleLabel:		"pandoraCalo"
+  
+  MVAName:				"BDT Method"
+  MVAFileName:				"CRUMBS_SBND.weights.xml"
+    
+  Chi2FitParams: {
+    TrackLabel: pandoraTrack
+    CaloLabel: pandoraCalo
+    MinTrackLength: 10
+    FitRange: 30
+    MaxdEdx: 30
+    MinHits: 30
+  }
+}
+
+END_PROLOG
