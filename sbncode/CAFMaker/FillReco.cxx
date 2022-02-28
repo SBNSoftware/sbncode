@@ -292,8 +292,25 @@ namespace caf
   void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
                        caf::SRSlice& slice,
                        bool allowEmpty) {
-    if (crumbs != NULL)
-      slice.crumbs_result = crumbs->score;
+    if (crumbs != NULL) {
+      slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.tpc_CRFracHitsInLongestTrack = crumbs->tpc_CRFracHitsInLongestTrack;
+      slice.crumbs_result.tpc_CRLongestTrackDeflection = crumbs->tpc_CRLongestTrackDeflection;
+      slice.crumbs_result.tpc_CRLongestTrackDirY = crumbs->tpc_CRLongestTrackDirY;
+      slice.crumbs_result.tpc_CRNHitsMax = crumbs->tpc_CRNHitsMax;
+      slice.crumbs_result.tpc_NuEigenRatioInSphere = crumbs->tpc_NuEigenRatioInSphere;
+      slice.crumbs_result.tpc_NuNFinalStatePfos = crumbs->tpc_NuNFinalStatePfos;
+      slice.crumbs_result.tpc_NuNHitsTotal = crumbs->tpc_NuNHitsTotal;
+      slice.crumbs_result.tpc_NuNSpacePointsInSphere = crumbs->tpc_NuNSpacePointsInSphere;
+      slice.crumbs_result.tpc_NuVertexY = crumbs->tpc_NuVertexY;
+      slice.crumbs_result.tpc_NuWeightedDirZ = crumbs->tpc_NuWeightedDirZ;
+      slice.crumbs_result.tpc_StoppingChi2CosmicRatio = crumbs->tpc_StoppingChi2CosmicRatio;
+      slice.crumbs_result.pds_FMTotalScore = crumbs->pds_FMTotalScore;
+      slice.crumbs_result.pds_FMPE = crumbs->pds_FMPE;
+      slice.crumbs_result.pds_FMTime = crumbs->pds_FMTime;
+      slice.crumbs_result.crt_TrackScore = crumbs->crt_TrackScore;
+      slice.crumbs_result.crt_HitScore = crumbs->crt_HitScore;
+    }
   }
 
 

@@ -343,7 +343,9 @@ namespace sbn {
 
 	const float score = fMVAReader->EvaluateMVA(fMVAName);
 
-	CRUMBSResult thisResult(score);
+	CRUMBSResult thisResult(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, tpc_CRNHitsMax,
+				tpc_NuEigenRatioInSphere, tpc_NuNFinalStatePfos, tpc_NuNHitsTotal, tpc_NuNSpacePointsInSphere, tpc_NuVertexY, 
+				tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore);
 
 	resultsVec->push_back(thisResult);
 	util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
