@@ -7,7 +7,7 @@ higgsM: 0.240 # GeV/c^2
 kaon2higgs: {
   tool_type: Kaon2HiggsFlux
   M: @local::higgsM
-  MixingAngle: 1e-5
+  MixingAngle: 5e-5
   KDAROnly: false
 
   Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
@@ -23,7 +23,7 @@ mono_energy_flux: {
   tool_type: MonoEnergyHiggsFlux
   E: 0.3 # GeV
   M: @local::higgsM
-  MixingAngle: 1e-5
+  MixingAngle: 5e-5
 
   X: 0 # cm
   Y: 0
@@ -38,7 +38,7 @@ decay_higgs: {
   tool_type: HiggsMakeDecay
   ReferenceRayLength: 2100 # 21m
   ReferenceHiggsMass: @local::higgsM
-  ReferenceHiggsMixing: 1e-5
+  ReferenceHiggsMixing: 5e-5
   ReferenceRayDistance: 10400 # 104m
   ReferenceHiggsEnergyFromKaonEnergy: 15. # GeV
 }
