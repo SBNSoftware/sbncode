@@ -162,11 +162,11 @@ namespace single_photon
     }
 
 
-    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detpropdata){
-		
-        double time = detpropdata.ConvertXToTicks(X, plane, fTPC,fCryostat);
-        return time;
-    }
+//    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detpropdata){
+//		
+//        double time = detpropdata.ConvertXToTicks(X, plane, fTPC,fCryostat);
+//        return time;
+//    }
 
 
 //----------- END OF HELPER FUNCTIONS -----------

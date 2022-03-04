@@ -84,7 +84,8 @@ void SinglePhoton::IsolationStudy(
 	const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap,
 	const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
         const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
-        const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
+        const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, 
+		const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
 					detinfo::DetectorPropertiesData const & theDetector)
 {
 
@@ -113,8 +114,9 @@ void SinglePhoton::IsolationStudy(
             std::cout << "*SSS: track "<< t <<" is in slice "<< sliceid <<" which has "<< slicehits.size() <<" hits. This track has  "<< trackhits.size() <<" of them. " << std::endl;
             total_track_hits += trackhits.size();
 
+//CHECK  nu_slice_id is updated? Oh, tracks[0] and tracks[1] have different slide IDs, need to fix this;
             if(nu_slice_id !=  sliceid && nu_slice_id != -999){
-                std::cout<<"*ERROR!! In Second Shower Search, the neutrino slice ID changed? this: "<<sliceid<<", last: "<<nu_slice_id<<std::endl;
+                std::cout<<"*ERROR!! In Second Shower Search (Isolation Study), the neutrino slice ID changed? this: "<<sliceid<<", last: "<<nu_slice_id<<std::endl;
                 exit(EXIT_FAILURE);
             }   
             nu_slice_id = sliceid;
@@ -127,12 +129,16 @@ void SinglePhoton::IsolationStudy(
         }
 // END FOR LOOPING TRACKS
 
+		std::cout<<"CHECK "<<__LINE__<<" look at shower with size "<<showers.size()<<std::endl;
 // BEGIN FOR LOOPING SHOWERS TO COUNT SHOWER HITS AND PUSH INTO ASSOC HITS
         for(size_t s =0; s< showers.size(); s++){
             art::Ptr<recob::Shower> shower = showers[s];
             art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap.at(shower);
             
 	    int sliceid = pfParticleToSliceIDMap.at(pfp);
+		if(sliceid<0) continue; //negative sliceid is bad CHECK
+		//CHECK ID not found?
+		std::cout<<"CHECK "<<__LINE__<<" find hits at ID "<<sliceid<<std::endl;
             
 	    auto slicehits = sliceIDToHitsMap.at(sliceid);
             auto showerhits = pfParticleToHitsMap.at(pfp);
@@ -140,6 +146,7 @@ void SinglePhoton::IsolationStudy(
             std::cout<<"*SSS: shower "<< s <<" is in slice "<< sliceid <<" which has "<< slicehits.size() <<" hits. This shower has  "<< showerhits.size() <<" of them. "<< std::endl;
             total_shower_hits+=showerhits.size();
 
+//CHECK how nu_slice_id is updated?
             if(nu_slice_id !=  sliceid && nu_slice_id!=-999){
                 std::cout<<"*ERROR!! In Second Shower Search, the neutrino slice ID changed? this: "<<sliceid<<", last: "<<nu_slice_id<<std::endl;
                 exit(EXIT_FAILURE);
@@ -159,6 +166,8 @@ void SinglePhoton::IsolationStudy(
 // IF VALID SLICE
         if(nu_slice_id >= 0){
             std::cout<<"*SSS: So that leaves "<<sliceIDToHitsMap.at(nu_slice_id).size()-total_shower_hits-total_track_hits<<" hits not included in tracks and showers"<<std::endl;
+			std::cout<<"CHECK "<<__LINE__<<" Shower: "<<total_shower_hits<<std::endl;
+			std::cout<<"CHECK "<<__LINE__<<" Track: "<<total_track_hits<<std::endl;
             m_sss_num_unassociated_hits = sliceIDToHitsMap.at(nu_slice_id).size()-total_shower_hits-total_track_hits;
 
             if(m_sss_num_unassociated_hits < 0){
@@ -498,7 +507,7 @@ std::cout << "Isolation: Acquiring unassociated hits coordinates and comparing w
                 if(i==0 ) pader->SetLeftMargin(0.1);
 
                 std::vector<double> wire = {(double)calcWire(m_vertex_pos_y, m_vertex_pos_z, i, fTPC, fCryostat, *geom)};
-                std::vector<double> time = {calcTime(m_vertex_pos_x, i, fTPC,fCryostat, theDetector)};
+                std::vector<double> time = {theDetector.ConvertXToTicks(m_vertex_pos_x, i, fTPC,fCryostat)};
 
                 vertex_time[i] = time[0];
                 vertex_wire[i] = wire[0];
@@ -645,19 +654,9 @@ std::cout << "Isolation: Acquiring unassociated hits coordinates and comparing w
             std::cout<<"*PRINTING"<<std::endl;
 
             delete can;
-
-
-
             }
-
-
         }
-
-
-
-
         return;
     }
-
 }
 

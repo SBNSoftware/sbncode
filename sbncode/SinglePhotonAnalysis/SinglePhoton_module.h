@@ -96,8 +96,9 @@
 #include <sys/stat.h>
 
 #include "HelperFunctions/helper_functions.h"
+//#include "Libraries/Atlas.h" PENDING IN USE CHECK
 
-#include "Libraries/bad_channel_matching.h"
+//#include "Libraries/bad_channel_matching.h"
 #include "Libraries/DBSCAN.h"
 
 #include "SEAview/SEAviewer.h"
@@ -270,7 +271,10 @@ namespace single_photon
              *  @param  crParticles a vector to hold the top-level PFParticles reconstructed under the cosmic hypothesis
              *  @param  nuParticles a vector to hold the final-states of the reconstruced neutrino
              */
-            void GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap,const lar_pandora::PFParticlesToVertices &particlesToVertices, PFParticleVector &crParticles, PFParticleVector &nuParticles);
+            void GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap,
+			const lar_pandora::PFParticlesToVertices &particlesToVertices, 
+			PFParticleVector &crParticles, 
+			PFParticleVector &nuParticles);
 
             /**
              *  @brief  Collect associated tracks and showers to particles in an input particle vector
@@ -356,7 +360,9 @@ namespace single_photon
             std::vector<double> CalcdQdxShower(
                     const art::Ptr<recob::Shower>& shower,
                     const std::vector<art::Ptr<recob::Cluster>> & clusters, 
-                    std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,int plane);
+                    std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,int plane,
+					double triggeroffset,
+					detinfo::DetectorPropertiesData const & theDetector);
             /**
              *@brief Gets the pitch between the 3D reconstructed shower direction and the wires for a given plane (the dx in dQdx)
              *@param shower_dir - the 3D shower direction
@@ -450,18 +456,6 @@ namespace single_photon
             void SecondShowerSearch3D(std::vector<art::Ptr<recob::Shower>> & showers,std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  std::vector<art::Ptr<recob::Track>> & tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & normaltrkmap,art::Event const & evt);
 
 
-            /* this function is now redundant, not in use anymore */
-            void SecondShowerSearch(
-                    const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap,
-                    const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
-                    const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
-                    const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
-                    art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
-                    std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-                    std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
-                    std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
-					detinfo::DetectorPropertiesData const & theDetector);
-
 
             /* brief: analyze hits (second shower), find out which primary MCParticle is the best-match for these hits
              * and return a vector of 7 elements: 
@@ -552,7 +546,9 @@ namespace single_photon
                     std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
                     std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
                     PFParticleIdMap &pfParticleMap,
-                    std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> &PFPtoShowerReco3DMap);
+                    std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> &PFPtoShowerReco3DMap,
+					double samplerate,
+					detinfo::DetectorPropertiesData const & theDetector);
             void ClearShowers();  /* clear and reset shower related vectors/variables, for reco, and sim shower */
             void ResizeShowers(size_t);   /* resize vectors related to reco, and sim showers */
             void CreateShowerBranches();  /* create branches for shower-related vec/vars in vertex_tree */
@@ -836,20 +832,20 @@ namespace single_photon
             std::string m_showerKalmanCaloLabel;
             std::string m_pandoraLabel;         ///< The label for the pandora producer
             std::string m_trackLabel;           ///< The label for the track producer from PFParticles
-            std::string m_sliceLabel;          
+//            std::string m_sliceLabel;          
             std::string m_showerLabel;          ///< The label for the shower producer from PFParticles
             std::string m_caloLabel;            ///< The label for calorimetry associations producer
             std::string m_flashLabel;
             std::string m_geantModuleLabel;
-            std::string m_backtrackerLabel;
+//            std::string m_backtrackerLabel;
             std::string m_hitfinderLabel;
             std::string m_hitMCParticleAssnsLabel;
             std::string m_potLabel;
             std::string m_generatorLabel;
-            std::string m_badChannelLabel;
-            std::string m_badChannelProducer;
-            std::string m_mcTrackLabel;
-            std::string m_mcShowerLabel;
+//            std::string m_badChannelLabel;
+//            std::string m_badChannelProducer;
+//            std::string m_mcTrackLabel;
+//            std::string m_mcShowerLabel;
             std::string m_pidLabel;            ///< For PID stuff
             std::string m_CRTVetoLabel;
             std::string m_CRTTzeroLabel;
