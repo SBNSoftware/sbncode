@@ -315,6 +315,7 @@ namespace single_photon
                 allPFPSliceIdVec.push_back(std::pair(start_pfp,slice_id));
                 // PFPToSliceIdMap[start_pfp] = slice_id; 
             }
+			//std::cout<<"CHECK "<<__LINE__<<" work on slice ID: "<<slice_id<<std::endl;
 
             PFPToSliceIdMap[start_pfp] = slice_id;
             //std::cout<<"storing PFP with id "<<start_pfp->Self()<<" and slice id "<<slice_id<<" in  PFPToSliceIdMap"<<std::endl; 
@@ -332,7 +333,7 @@ namespace single_photon
             if(pair.second == true){
                 std::cout<<"stored in PFPToNuSliceMap for pfp "<<pair.first->Self()<<", isNeutrino = "<<pair.second<<std::endl;
             }
-        } 
+        }
 
         /*
          * store stuff in the output tree

@@ -239,6 +239,7 @@ namespace single_photon
         vertex_tree->Branch("mctruth_exiting_pi0_pz",&m_mctruth_exiting_pi0_pz);
     }
 
+	//CHECK how is this different from MCReco matching?
     void SinglePhoton::AnalyzeMCTruths(std::vector<art::Ptr<simb::MCTruth>> & mcTruthVector , std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector){
         m_mctruth_num = mcTruthVector.size();
         

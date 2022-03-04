@@ -36,6 +36,7 @@ art_make( BASENAME_ONLY
                         ${ROOT_BASIC_LIB_LIST}
                         ${ROOT_GEOM} 
           MODULE_LIBRARIES
+                        sbncode_SinglePhotonAnalysis_SEAview
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
@@ -66,7 +67,7 @@ art_make( BASENAME_ONLY
                         ${ROOT_GEOM} )
                       
 add_subdirectory(SEAview)
-add_subdirectory(job)
+add_subdirectory(jobs)
 add_subdirectory(Libraries)
 add_subdirectory(HelperFunctions)
 install_headers()
