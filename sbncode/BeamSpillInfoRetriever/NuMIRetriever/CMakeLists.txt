@@ -24,12 +24,14 @@ simple_plugin(NuMIRetriever module
         ${Boost_SYSTEM_LIBRARY}
         MF_MessageLogger
         sbnobj_Common_POTAccounting
-        ${IFBEAMSERVICE}
-        ${IFBEAM}
-        sbndaq-artdaq-core_Overlays_Common
-        sbndaq-artdaq-core_Overlays
-        sbndaq-artdaq-core_Overlays_ICARUS
-        artdaq-core_Utilities
+        #${IFBEAMSERVICE}
+        #${IFBEAM}
+	ifbeam
+	ifdh_art::IFBeam_service
+        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
+        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
+        artdaq_core::artdaq-core_Utilities
 )
 
 install_headers()
