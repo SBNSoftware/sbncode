@@ -8,8 +8,9 @@ kaon2higgs: {
   tool_type: Kaon2HiggsFlux
   M: @local::higgsM
   MixingAngle: 1e-5
-  KDAROnly: false
-  KDIFOnly: false
+  KDAROnly: false //as written this only includes KDAR from absorber (not all KDAR)
+  KDIFOnly: false //includes KDIF (from absorber or beamline)
+  KDIFandBeamline: false //inlcudes KDIF from beamline, KDIF from absorber, and KDAR from beamline (this option orthogonal to "KDAROnly")
 
   Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
   BeamOrigin: @local::icarus_numi_beam_origin
