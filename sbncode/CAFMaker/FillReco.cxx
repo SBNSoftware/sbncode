@@ -310,6 +310,8 @@ namespace caf
       slice.crumbs_result.pds_FMTime = crumbs->pds_FMTime;
       slice.crumbs_result.crt_TrackScore = crumbs->crt_TrackScore;
       slice.crumbs_result.crt_HitScore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt_TrackTime = crumbs->crt_TrackTime;
+      slice.crumbs_result.crt_HitTime = crumbs->crt_HitTime;
     }
   }
 

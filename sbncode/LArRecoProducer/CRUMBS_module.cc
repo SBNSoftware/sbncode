@@ -102,7 +102,7 @@ namespace sbn {
 
     float tpc_NuScore, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, tpc_CRNHitsMax,
       tpc_NuEigenRatioInSphere, tpc_NuNFinalStatePfos, tpc_NuNHitsTotal, tpc_NuNSpacePointsInSphere, tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, 
-      pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore;
+      pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, crt_TrackTime, crt_HitTime;
 
     unsigned eventID, subRunID, runID, slicePDG, matchedIndex;
     std::string matchedType;
@@ -160,6 +160,8 @@ namespace sbn {
 
       fMVAReader->AddVariable("crt_TrackScore",&crt_TrackScore);
       fMVAReader->AddVariable("crt_HitScore",&crt_HitScore);
+      fMVAReader->AddVariable("crt_TrackTime",&crt_TrackTime);
+      fMVAReader->AddVariable("crt_HitTime",&crt_HitTime);
 
       cet::search_path searchPath("FW_SEARCH_PATH");
       std::string weightFileFullPath;
@@ -190,6 +192,8 @@ namespace sbn {
 
       fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
       fSliceTree->Branch("crt_HitScore",&crt_HitScore);
+      fSliceTree->Branch("crt_TrackTime",&crt_TrackTime);
+      fSliceTree->Branch("crt_HitTime",&crt_HitTime);
 
       fSliceTree->Branch("eventID",&eventID);
       fSliceTree->Branch("subRunID",&subRunID);
@@ -215,12 +219,11 @@ namespace sbn {
 
     pds_FMTotalScore = -999999.; pds_FMPE = -999999.; pds_FMTime = -500.;
 
-    crt_TrackScore = -4.; crt_HitScore = -4.;
+    crt_TrackScore = -4.; crt_HitScore = -4.; crt_TrackTime = -3000; crt_HitTime = -3000;
 
     slicePDG = 999999; matchedIndex = 999999;
     matchedType = "";
     matchedPurity = -999999.; matchedCompleteness = -999999.;
-
   }
 
   void CRUMBS::SetupMaps(art::Event const& e)
@@ -345,7 +348,8 @@ namespace sbn {
 
 	CRUMBSResult thisResult(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, tpc_CRNHitsMax,
 				tpc_NuEigenRatioInSphere, tpc_NuNFinalStatePfos, tpc_NuNHitsTotal, tpc_NuNSpacePointsInSphere, tpc_NuVertexY, 
-				tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore);
+				tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
+				crt_TrackTime, crt_HitTime);
 
 	resultsVec->push_back(thisResult);
 	util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
@@ -376,7 +380,10 @@ namespace sbn {
       for(auto const crttrackmatcht0 : trackT0s)
 	{
 	  if(crttrackmatcht0->TriggerConfidence() < crt_TrackScore)
-	    crt_TrackScore = crttrackmatcht0->TriggerConfidence();
+	    {
+	      crt_TrackScore = crttrackmatcht0->TriggerConfidence();
+	      crt_TrackTime = crttrackmatcht0->Time() * 1e-3;
+	    }
 	}
     }
   
@@ -385,7 +392,10 @@ namespace sbn {
       for(auto const crthitmatcht0 : hitT0s)
 	{
 	  if(crthitmatcht0->TriggerConfidence() < crt_HitScore)
-	    crt_HitScore = crthitmatcht0->TriggerConfidence();
+	    {
+	      crt_HitScore = crthitmatcht0->TriggerConfidence();
+	      crt_HitTime = crthitmatcht0->Time() * 1e-3;
+	    }
 	}
     }
   }
