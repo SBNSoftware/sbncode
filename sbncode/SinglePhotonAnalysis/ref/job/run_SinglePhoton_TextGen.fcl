@@ -1,0 +1,6 @@
+#include "run_SinglePhoton.fcl"
+physics.filters.singlephotonana.beamgateStartTime: 3.16
+physics.filters.singlephotonana.beamgateEndTime: 4.84
+
+physics.filters.singlephotonana.isTextGen: "true"
+

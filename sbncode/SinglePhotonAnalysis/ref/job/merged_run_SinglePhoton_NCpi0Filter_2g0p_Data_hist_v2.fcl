@@ -1,0 +1,147 @@
+#include "services_microboone.fcl"
+#include "detectorclocks.fcl" 
+#include "detectorproperties.fcl" 
+#include "geometry.fcl" 
+#include "larproperties.fcl" 
+#include "services_microboone_basic.fcl"
+#include "config_particle_identification.fcl"
+#include "config_particle_identification_fiducialvolume.fcl"
+#include "config_particle_identification_braggalgo.fcl"
+#include "config_particle_identification_producerlabels.fcl"
+#include "shrreco3d.fcl"
+
+singlephoton_analyzer:{
+
+    module_type:    SinglePhoton
+    PandoraLabel:   "pandora"
+    TrackLabel:     "pandora"
+    ShowerLabel:    "pandora"
+    #ShowerLabel: "showerreco3dpandora"
+    ParticleIDLabel:"pid"
+    CaloLabel:      "pandoracaliSCE"
+    FlashLabel:     "simpleFlashBeam"
+    POTLabel:       "generator"
+    input_param:    "optional" 
+
+    FillTrees: true
+    RunPi0Filter: false
+    FilterMode2g1p: false
+    FilterMode2g0p: false
+ 
+    usePID:         "true" 
+    work_function: 23
+    recombination_factor: 0.62
+    #gain : 197
+    gain_mc: [235.5, 249.7, 237.6] #DocDB 20227-v7 using dE/dx calibration method for all planes, updated on 9/13/19
+    gain_data: [230.3, 237.6, 243.7] #see above docdb
+    wire_spacing : 0.3 
+    width_box : 1.
+    length_box : 4.
+    truthmatching_signaldef : "ncdelta"
+    runAllPFPs: "false"
+    exiting_photon_energy: 0.02
+    exiting_proton_energy: 0.978  #40Mev + proton mass 
+
+    runCRT: "false"
+    DTOffset: 68600.0 #us, taken from ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+    Resolution: 1.0 #same as above
+    DAQHeaderProducer: "daq" #ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+
+    }
+
+singlephoton_filter: @local::singlephoton_analyzer
+singlephoton_filter.FillTrees: false
+singlephoton_filter.RunPi0Filter: true
+singlephoton_filter.FilterMode2g1p: true
+singlephoton_filter.FilterMode2g0p: false
+singlephoton_filter.isData: true
+singlephoton_filter.usePID: false
+
+singlephoton_filter_2g0p: @local::singlephoton_filter
+singlephoton_filter_2g0p.FilterMode2g1p: false
+singlephoton_filter_2g0p.FilterMode2g0p: true
+
+process_name : SinglePhotonFilter      #The process name must NOT contain any underscores
+
+source : {
+    module_type : RootInput
+    maxEvents   : -1
+}
+
+services :
+{
+    #  scheduler:               { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+    TFileService: { fileName: "vertexed_singlephoton_%tc_hist.root" }
+    ExptGeoHelperInterface:    @local::standard_geometry_helper
+    Geometry:                  @local::standard_geo
+    LArPropertiesService:      @local::standard_properties
+    DetectorClocksService:     @local::standard_detectorclocks
+    DetectorPropertiesService: @local::standard_detproperties
+    FileCatalogMetadata: @local::art_file_catalog_data # or @local::art_file_catalog_mc
+    @table::microboone_services
+}
+
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName: "%ifb_%tc_NCpi0filter.root"
+    SelectEvents: [ filtering ]
+    dataTier:    "reconstructed"
+    compressionLevel: 1
+    outputCommands: ["keep *_*_*_*"]
+  }
+}
+
+physics: {
+
+ producers : {
+     # ParameterSets for zero or more producer modules
+     #pidcalibration: @local::microboone_calibrationdedx
+     #dedxcalibration: @local::simulation_calibration
+     pid: @local::particleidconfig
+     #pid: @local::producerlabels_mcc9
+     #showerreco3dpandora : @local::ShrReco3DPandora
+  }
+
+ analyzers: {}
+ filters : {
+        singlephotonfil: @local::singlephoton_filter_2g0p   #run in 2g0p
+        #singlephotonfil: @local::singlephoton_filter   #run in 2g1p
+        #singlephotonana: @local::singlephoton_analyzer #run in analyzing mode
+  }
+
+  stream1: [ out1 ]
+  filtering: [pid, singlephotonfil ]
+ 
+  trigger_paths: [ filtering ]
+  end_paths: [ stream1 ]
+
+}
+
+
+#physics.producers.showerreco3dpandora.BacktrackTag: "gaushitTruthMatch"
+#physics.producers.showerreco3dpandora.ADCtoE: [240,240,240] # e-/ADC
+#physics.producers.showerreco3dpandora.NeutrinoEvent: true
+
+services.SpaceCharge.EnableCorrSCE: true
+services.SpaceCharge.EnableSimEfieldSCE: true
+services.SpaceCharge.EnableSimSpatialSCE: true
+
+services.DetectorPropertiesService.NumberTimeSamples:        6400
+services.DetectorPropertiesService.ReadOutWindowSize:        6400
+services.DetectorClocksService.InheritClockConfig:           false
+services.DetectorClocksService.TriggerOffsetTPC:             -0.400e3
+services.DetectorClocksService.TrigModuleName:               "daq"
+services.DetectorClocksService.InheritClockConfig: false
+
+# PID stuff
+physics.producers.pid.ProducerLabels.TrackLabel: "pandora"
+physics.producers.pid.ProducerLabels.CalorimetryLabel: "pandoracaliSCE"
+
+physics.filters.singlephotonfil.isData: "true"
+physics.filters.singlephotonfil.POTLabel: "beamdata"
+physics.filters.singlephotonfil.beamgateStartTime: 3.3
+physics.filters.singlephotonfil.beamgateEndTime: 4.9
+physics.filters.singlephotonfil.BadChannelProducer: "nfspl1"

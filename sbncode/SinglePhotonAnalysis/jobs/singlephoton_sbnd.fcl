@@ -1,0 +1,84 @@
+BEGIN_PROLOG
+
+singlephoton_analyzer:{
+
+    module_type:    SinglePhoton
+
+    PandoraLabel:   "pandora"
+    TrackLabel:     "pandoraTrack"
+    ShowerLabel:    "pandoraShower"
+    ParticleIDLabel:"pandoraSCEPid"
+    CaloLabel:      "pandoraSCECalo"
+    FlashLabel:     "opflashtpc0"
+    POTLabel:       "generator"
+
+	ShowerTrackFitter: "pandoraTrack"
+	ShowerTrackFitterCalo: "pandoraCalo"
+	Shower3DLabel:	"pandoraShower"
+
+    input_param:    "optional" 
+
+    Verbose: false
+
+    runSEAviewShower: true
+    SEAviewShowerHitThreshold: 25
+    SEAviewShowerDBSCANMinPts: 8
+    SEAviewShowerDBSCANEps: 4
+    SEAviewShowerPlotDistance: 80
+    SEAviewShowerMaxHitsLinFit: 20.0
+    SEAviewShowerMakePDF: false 
+    SEAviewShowerNumRecoShower: 1
+    SEAviewShowerNumRecoTrack: -1
+
+    runSEAviewStub: true
+    SEAviewStubHitThreshold: 25
+    SEAviewStubDBSCANMinPts: 1
+    SEAviewStubDBSCANEps: 1
+    SEAviewStubPlotDistance: 80
+    SEAviewStubMakePDF: false 
+    SEAviewStubNumRecoShower: 1
+    SEAviewStubNumRecoTrack: 0
+
+    FillTrees: true
+    RunPi0Filter: false
+    FilterMode2g1p: false
+    FilterMode2g0p: false
+ 
+    SelectEvent: false
+    SelectEventList:""
+
+    usePID: true 
+    work_function: 23.6
+    recombination_factor: 0.62
+    gain_mc: [235.5, 249.7, 237.6] #ubDocDB 20227-v7 using dE/dx calibration method for all planes, updated on 9/13/19
+    gain_data: [230.3, 237.6, 243.7] #see above docdb
+    wire_spacing : 0.3 
+    width_box : 1.
+    length_box : 4.
+    
+    truthmatching_signaldef : "ncdelta"
+    runAllPFPs: "false"
+    exiting_photon_energy: 0.02
+    exiting_proton_energy: 0.978  #40Mev + proton mass 
+
+    runCRT: "false"
+    DTOffset: 68600.0 #us, taken from ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+    Resolution: 1.0 #same as above
+    DAQHeaderProducer: "daq" #ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+
+    }
+
+singlephoton_filter: @local::singlephoton_analyzer
+singlephoton_filter.FillTrees: false
+singlephoton_filter.RunPi0Filter: true
+singlephoton_filter.FilterMode2g1p: true
+singlephoton_filter.FilterMode2g0p: false
+singlephoton_filter.isData: true
+singlephoton_filter.usePID: false
+singlephoton_filter.work_function: 23
+
+singlephoton_filter_2g0p: @local::singlephoton_filter
+singlephoton_filter_2g0p.FilterMode2g1p: false
+singlephoton_filter_2g0p.FilterMode2g0p: true
+
+END_PROLOG

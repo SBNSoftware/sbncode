@@ -1,0 +1,7 @@
+#include "run_SinglePhoton.fcl"
+
+physics.analyzers.singlephoton.isData: "true"
+physics.analyzers.singlephoton.POTLabel: "beamdata"
+physics.analyzers.singlephoton.beamgateStartTime: 3.65
+physics.analyzers.singlephoton.beamgateEndTime: 5.25
+physics.analyzers.singlephoton.BadChannelProducer: "nfspl1"
