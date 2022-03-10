@@ -721,7 +721,6 @@ namespace single_photon
         //******************************* CRT CRT***************************************************************/
         //******************************* CRT CRT***************************************************************/
 
-//CHECK, use sbn::SimpleFlashMatch object via a label instead 
         std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap;
 
         if(m_runCRT){

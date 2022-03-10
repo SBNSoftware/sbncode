@@ -253,6 +253,7 @@ namespace single_photon
         //one mctruth per event.  contains list of all particles 
         for(int i=0; i<std::min(1,m_mctruth_num); i++){
             const art::Ptr<simb::MCTruth> truth = mcTruthVector[i];
+			std::cout<<"\nCHECK THIS MCTruth!! "<<*truth<<std::endl;
 
 
             m_mctruth_origin = truth->Origin();
