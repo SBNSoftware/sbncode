@@ -34,16 +34,16 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_42_00
-sbnobj              v09_13_02
-sbnanaobj           v09_17_09
-sbndaq_artdaq_core  v1_00_00of0
+larsoft             v09_44_00
+sbnobj              v09_13_06
+sbnanaobj           v09_17_12
+sbndaq_artdaq_core  v1_00_00of2
 genie_xsec          v3_00_04a
 sbndata             v01_03
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v8_18_09 - only_for_build
+cetbuildtools v8_19_02 - only_for_build
 end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.

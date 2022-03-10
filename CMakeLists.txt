@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(sbncode VERSION 09.42.00 LANGUAGES CXX)
+project(sbncode VERSION 09.44.00.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -52,9 +52,9 @@ find_ups_product(nugen)
 find_ups_product(nurandom)
 find_ups_product(nutools)
 find_ups_product(genie)
-find_ups_product(lardataobj)
 find_ups_product(larcoreobj)
 find_ups_product(larcorealg)
+find_ups_product(lardataobj)
 find_ups_product(lardataalg)
 find_ups_product(larcore)
 find_ups_product(lardata)
