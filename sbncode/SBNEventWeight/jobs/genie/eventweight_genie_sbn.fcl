@@ -4,14 +4,14 @@
 # NOTE: 
 # See what's new for the knobs in the Google Sheet:
 # https://docs.google.com/spreadsheets/d/1G3dgVru-o4cUEHRWfnCUixhXGmjGPob1K5f--3GEcHc/edit?usp=sharing
-# --- Keng Lin (keng.lin@rutgers.edu)
+# --- Keng Lin (keng.lin@rutgers.edu) Dec. 2021
  ##########################################################
 
 BEGIN_PROLOG
 
 
 # Choose the desired uiverses number for multisim mode
-n_universes: 20
+n_universes: 1000
 
 sbn_eventweight_genie: {
   module_type: "SBNEventWeight"
@@ -20,17 +20,17 @@ sbn_eventweight_genie: {
 
   AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
 
-  #Off-set central value of a knob here:
+  #Off-set central value of knobs here:
   genie_central_values: {
-  #example of shifting MaCCQE +1 sigma:
-  #  MaCCQE: 1
+  # Example of shifting below two knobs 1 sigma
+  # MaCCQE : 1
+  # MaCCRES : 1
   }
 
   weight_functions_genie: [ 
-   genie_sbnd_multisim, genie_sbnd_fixed, genie_sbnd_multisim_exclusive
-   #,genie_ub_multisim, genie_ub_fixed, genie_ub_pmNsigma
+   genie_sbnd_multisim
   ]
-
+ 
   # Knobs that are used in both sbnd and ub
   genie_sbnd_multisim: {
     type: Genie
@@ -41,12 +41,8 @@ sbn_eventweight_genie: {
 
     #Resonance
       "MaCCRES","MvCCRES","MaNCRES","MvNCRES",
-      "RDecBR1gamma","RDecBR1eta",
 
-
-    #Non-Resonance 
-      #Corresponding to knobs in the old version:
-        #"NonResRvp1pi", "NonResRvbarp1pi" , "NonResRvp2pi", "NonResRvbarp2pi"
+    #Non-Resonance
       "NonRESBGvpCC1pi","NonRESBGvbarnCC1pi","NonRESBGvpNC1pi","NonRESBGvbarnNC1pi",
       "NonRESBGvnCC1pi","NonRESBGvbarpCC1pi","NonRESBGvnNC1pi","NonRESBGvbarpNC1pi",
       "NonRESBGvpCC2pi","NonRESBGvbarnCC2pi","NonRESBGvpNC2pi","NonRESBGvbarpNC2pi",
@@ -56,107 +52,29 @@ sbn_eventweight_genie: {
       "MaNCEL", "EtaNCEL", #"NC", 
 
     #DIS
-      "AhtBY","BhtBY","CV1uBY","CV2uBY","AGKYxF1pi","AGKYpT1pi",
+      "AhtBY","BhtBY","CV1uBY","CV2uBY","FormZone",
 
     #FSI
-      "MFP_N","FrCEx_N","FrInel_N","FrAbs_N","FrPiProd_N",
+      "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" ,"FrPiProd_N",
       "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi","FrPiProd_pi"
       ]
     parameter_sigma: [
       #CCQE
       1,
       #Res
-      1,1,1,1,1,1,
+      1,1,1,1,
       #Non_Res
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
       #NC
       1,1, #1,
       #DIS
-      1,1,1,1,1,1,
+      1,1,1,1,1,
       #FSI
       1,1,1,1,1,1,1,1,1,1
     ]
     mode: multisim
     number_of_multisims: @local::n_universes
   }
-
-  genie_sbnd_fixed: {
-    type: Genie
-    parameter_list: [ "VecFFCCQEshape" , "Theta_Delta2Npi" ]
-    parameter_sigma: [ 0 , 1 ]
-    mode: fixed
-  }
-
-  # Knobs that are only used in sbnd
-  # It is available, but not used in ub
-  genie_sbnd_multisim_exclusive: {
-    type: Genie
-    random_seed: 100
-    parameter_list: [
-    #CCQE
-      "CCQEPauliSupViaKF","CCQEMomDistroFGtoSF",
-
-    #COH
-      "MaCOHpi","R0COHpi",
-    #NC Note: the knob "NC" is removed.
-      "NormNCRES",
-    #DIS, note DISNuclMod is unimplemented and will be ignored;
-      "DISNuclMod","FormZone"
-    ]
-    parameter_sigma: [
-        1, 1, 1, 1, 1, 1, 1
-    ]
-    mode: multisim
-    number_of_multisims: @local::n_universes
-  }
-
-  # Knobs that required special ub package or GENIE v3.2
-  #  exceptions: "AxFFCCQEshape" is available in GENIE v3.0.6
-  genie_ub_multisim: {
-    type: Genie
-    random_seed: 100
-    parameter_list: [ "XSecShape_CCMEC" ]
-    parameter_sigma: [ 1 ]
-    mode: multisim
-    number_of_multisims: @local::n_universes
-  }
-
-  genie_ub_fixed: {
-    type: Genie
-    parameter_list: [ "AxFFCCQEshape" , "ThetaDelta2NRad" , "DecayAngMEC" ]
-    parameter_sigma: [ 1, 1, 1 ]
-    mode: fixed
-  }
-
-#  pmNsigma mode will be updated in next version.
-#  genie_ub_pmNsigma: {
-#    type: Genie
-#    parameter_list: [ 
-#    #CCQE
-#      "RPA_CCQE","CoulombCCQE",
-#    #COH
-#      "NormCCCOH", "NormNCCOH",
-#    #CC MEC
-#      "NormCCMEC", "FracPN_CCMEC", "FracDelta_CCMEC",
-#    #NC MEC
-#      "NormNCMEC"
-#  ]
-## Now can only make +- same sigma:
-#     parameter_sigma: [ 1,1,1,1,1,1,1,1]
-##    parameter_max: [ 
-##    1, 0.3, 
-##    1, 1,
-##    0.56, 0.2, 0.3, 
-##    1
-##  ]
-##    parameter_min: [ 
-##    -1, -0.3, 
-##    -1, -1,
-##    -0.56, -0.2, -0.3, 
-##    -1
-##  ]
-##    mode: pmNsigma
-#  }
 
 }
 

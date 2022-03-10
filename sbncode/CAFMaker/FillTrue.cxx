@@ -945,6 +945,8 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
   MATCH_PROCESS(hPairProd)
   MATCH_PROCESS(LArVoxelReadoutScoringProcess)
   MATCH_PROCESS(Transportation)
+  MATCH_PROCESS(msc)
+  MATCH_PROCESS(StepLimiter)
   std::cerr << "Error: Process name with no match (" << process_name << ")\n";
   assert(false);
   return caf::kG4UNKNOWN; // unreachable in debug mode

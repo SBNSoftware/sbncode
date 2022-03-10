@@ -26,8 +26,20 @@ namespace caf
     /*   Comment("true = hide sensitive info, false = include full record") */
     /* }; */
 
+    Atom<bool> CreateCAF { Name("CreateCAF"),
+      Comment("Whether to produce an output file in CAF format"), true
+    };
+
+    Atom<bool> CreateFlatCAF { Name("CreateFlatCAF"),
+      Comment("Whether to produce an output file in FlatCAF format"), false
+    };
+
     Atom<std::string> CAFFilename { Name("CAFFilename"),
-      Comment("Provide a string to override the automatic filename.")
+      Comment("Provide a string to override the automatic filename."), ""
+    };
+
+    Atom<std::string> FlatCAFFilename { Name("FlatCAFFilename"),
+      Comment("Provide a string to override the automatic filename."), ""
     };
 
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
@@ -36,7 +48,8 @@ namespace caf
     };
 
     Atom<string> DataTier        { Name("DataTier") };
-    Atom<string> FileExtension   { Name("FileExtension") };
+    Atom<string> FileExtension   { Name("FileExtension"), ".caf.root" };
+    Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), ".flat.caf.root" };
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
 
     Atom<bool> StrictMode        { Name("StrictMode"),
@@ -58,6 +71,12 @@ namespace caf
     fhicl::OptionalSequence<std::string> PandoraTagSuffixes {
       Name("PandoraTagSuffixes"),
       Comment("List of suffixes to add to TPC reco tag names (e.g. cryo0 cryo1)")
+    };
+
+    Atom<string> BNBPOTDataLabel {
+      Name("BNBPOTDataLabel"),
+      Comment("Label of BNBRetriever module"),
+      "bnbinfo"
     };
 
     Atom<string> G4Label {
@@ -257,7 +276,6 @@ namespace caf
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
     };
-
   };
 }
 
