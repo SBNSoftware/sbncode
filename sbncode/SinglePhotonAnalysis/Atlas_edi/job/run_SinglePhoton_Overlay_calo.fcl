@@ -1,0 +1,11 @@
+#include "run_SinglePhoton.fcl"
+physics.analyzers.singlephoton.isData: "false"
+physics.analyzers.singlephoton.BadChannelProducer: "nfspl1"
+physics.analyzers.singlephoton.isOverlayed: "true"
+physics.analyzers.singlephoton.beamgateStartTime: 3.6
+physics.analyzers.singlephoton.beamgateEndTime: 5.2
+
+physics.analyzers.singlephoton.CaloLabel:      "pandoracalo"
+
+#This is needed in order to help with wierd offset (4049.969 us)   
+services.DetectorClocksService.TrigModuleName:               "triggersim"

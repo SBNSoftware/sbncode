@@ -1,0 +1,3 @@
+#include "run_SinglePhoton_Overlay_FullSys.fcl"
+physics.filters.singlephotonana.runCRT: "true"
+
