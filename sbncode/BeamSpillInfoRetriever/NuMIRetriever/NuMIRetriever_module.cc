@@ -126,12 +126,10 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     
     // These lines get everything primed within the IFBeamDB
     //   They seem redundant but they are needed
-    std::cout << "Trying beam info" << std::endl;
     try{auto cur_vec_temp = bfp->GetNamedVector((t_previous_event)-fTimePad,"E:HP121[]");} catch (WebAPIException &we) {}
     
     try{auto cur_vec_temp_2 = bfp->GetNamedVector((t_current_event)+fTimePad,"E:VP121[]");} catch (WebAPIException &we) {}
     try{auto packed_MTGTDS_temp = bfp->GetNamedVector((t_current_event)+fTimePad, "E:MTGTDS[]");} catch(WebAPIException &we) {}
-    std::cout << "IFBeam test succeeded" << std::endl;
     std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
 
     int spill_count = 0;
