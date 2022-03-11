@@ -70,9 +70,6 @@ else:
         print('This doesn\'t appear to be an ART or CAF file. Aborting.')
         exit(1)
 
-    if f.Get('nuTree'):
-        treeNames += ['nuTree']
-
 
 nodes = {}
 
