@@ -108,11 +108,11 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     gate_type = datastream_info.gate_type;
     number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
 
-    t_current_event = static_cast<double>(artdaq_ts)/(1000000000); //check this offset... 
+    t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
     if(gate_type == 2)
-      t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000);
+      t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
     else
-      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000);
+      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
 
   }
 
