@@ -68,6 +68,8 @@ private:
   double fM; //!< Mass of Higgs [GeV]
   double fMixingAngle; //!< Mixing angle of dark higgs
   bool fKDAROnly;
+  bool fKDIFOnly;
+  bool fKDIFandBeamline;
   bool fIgnoreParentDecayTime;
 
   // branching ratios
@@ -182,6 +184,8 @@ void Kaon2HiggsFlux::configure(fhicl::ParameterSet const &pset)
   fMixingAngle = pset.get<double>("MixingAngle");
   fIgnoreParentDecayTime = pset.get<bool>("IgnoreParentDecayTime");
   fKDAROnly = pset.get<bool>("KDAROnly", false);
+  fKDIFOnly = pset.get<bool>("KDIFOnly", false);
+  fKDIFandBeamline = pset.get<bool>("KDIFandBeamline", false);
 
   // Throw exception for a bad mass value
   if (fM > Constants::Instance().kplus_mass - Constants::Instance().piplus_mass && 
@@ -214,8 +218,13 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   if (!kaon.kaon_pdg) return false; // parent wasn't a kaon
 
   // select on the kaon
-  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false;
+  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false; //selects KDAR from absorber only.
   if (fKDAROnly) std::cout << "FOUND KDAR\n";
+  if (fKDIFOnly && (kaon.mom.P() <= 1e-3)){ // no KDAR allowed (from anywhere). Accepts KDIF from beamline or absorber.
+    std::cout << "found KDAR, skipping to next event\n";
+    return false;
+  }
+  if (fKDIFandBeamline && (kaon.mom.P() <= 1e-3 && kaon.pos.Z() >= 72000.)) return false; //allows for KDAR from decay-pipe, and any KDIF. This option is exactly orthogonal to "KDAROnly" option. 
 
   TLorentzVector Beam4 = BeamOrigin();
   // get position in detector frame
