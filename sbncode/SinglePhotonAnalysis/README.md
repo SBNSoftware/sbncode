@@ -16,7 +16,7 @@ The code can be found here: (https://cdcvs.fnal.gov/redmine/projects/ubana/repos
 Header structure
 
 ```mermaid
-	Flowchart TD;
+	flowchart TD;
 	A--first formost-->C;
 	A[SinglePhoton_module.cc]--contains-->B[analyze*.h that look like *.cxx];
 	C[SinglePhoton_module.h]-->D[helper_functions.h];
