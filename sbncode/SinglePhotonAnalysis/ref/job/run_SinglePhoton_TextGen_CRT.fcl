@@ -1,3 +1,0 @@
-#include "run_SinglePhoton_TextGen.fcl"
-physics.filters.singlephotonana.runCRT: "true"
-

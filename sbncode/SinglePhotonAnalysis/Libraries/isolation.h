@@ -1,19 +1,3 @@
-#include "SinglePhoton_module.h"
-#include "TCanvas.h"
-#include "TGraph.h"
-#include "TFile.h"
-#include "TAxis.h"
-#include "TLine.h"
-#include "TLatex.h"
-#include "TLegend.h"
-#include "TPrincipal.h"
-#include "TVectorD.h"
-#include "TMatrixD.h"
-#include "TF1.h"
-#include "TEllipse.h"
-
-#include "TH1.h"
-
 // override function of sorts for max_element function comparison
 bool  map_max_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pair<art::Ptr<recob::Hit>,  double> p2){
 	return (p1.second < p2.second);

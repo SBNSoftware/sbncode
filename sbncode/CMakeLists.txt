@@ -6,9 +6,9 @@ cet_find_library( WDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH )
 find_ups_product(sbnanaobj)
 
 add_subdirectory(SinglePhotonAnalysis)
-add_subdirectory(SBNEventWeight)
-add_subdirectory(NuMuSelection)
-add_subdirectory(OpDet)
+#add_subdirectory(SBNEventWeight)
+#add_subdirectory(NuMuSelection)
+#add_subdirectory(OpDet)
 add_subdirectory(OpT0Finder)
 
 add_subdirectory(CAFMaker)

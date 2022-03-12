@@ -1,6 +1,3 @@
-#include "SinglePhoton_module.h"
-#include "reco_truth_matching.h"
-
 namespace single_photon
 {
     void SinglePhoton::ClearShowers(){

@@ -1,4 +1,0 @@
-#include "run_SinglePhoton.fcl"
-physics.analyzers.singlephoton.beamgateStartTime: 3.2
-physics.analyzers.singlephoton.beamgateEndTime: 4.8
-
