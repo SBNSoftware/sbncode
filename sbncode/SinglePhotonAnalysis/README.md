@@ -5,12 +5,21 @@ The code can be found here: (https://cdcvs.fnal.gov/redmine/projects/ubana/repos
 
 
 ## Whats in the directories
-`App` contains the main code.
-
 `Libraries` contains essential headers for this module.
 
 `SEAview` is an additional module runs inside this module.
 
 `job` contains jobs for running the module.
 
-`Utilities` contains helper functions for simple calculations.
+`HelperFunctions` contains helper functions for simple calculations.
+
+Header structure
+```mermaid
+	Flowchart TB
+	A--first formost-->C;
+	A[SinglePhoton_module.cc]--contains-->B[analyze*.h that look like *.cxx];
+	C[SinglePhoton_module.h]-->D[helper_functions.h];
+	C-->E[Atlas.h];
+	C-->F[SBSCAN.h];
+	C-->G[SEAviewer.h];
+```
