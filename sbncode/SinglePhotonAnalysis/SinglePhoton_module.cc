@@ -1,8 +1,9 @@
 #include "SinglePhoton_module.h"
+#include "Libraries/reco_truth_matching.h"
+//#include "analyze_Template.h"
 #include "Libraries/analyze_OpFlashes.h"
 #include "Libraries/analyze_Tracks.h"
 #include "Libraries/analyze_Showers.h"
-//#include "analyze_Template.h"
 #include "Libraries/analyze_MCTruth.h"
 #include "Libraries/analyze_EventWeight.h"
 #include "Libraries/analyze_Slice.h"
@@ -373,18 +374,16 @@ namespace single_photon
         // Produce two PFParticle vectors containing final-state particles:
         // 1. Particles identified as cosmic-rays - recontructed under cosmic-hypothesis
         // 2. Daughters of the neutrino PFParticle - reconstructed under the neutrino hypothesis
-        std::vector< art::Ptr<recob::PFParticle> > crParticles;
         std::vector< art::Ptr<recob::PFParticle> > nuParticles;
-		std::cout<<"CHECK "<<__LINE__<<" sort out neutrinos among PFParticles"<<std::endl;
+        std::vector< art::Ptr<recob::PFParticle> > crParticles;
         this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles);
 		//CHECK potential upgrade:
 		// LOOP over pfParticleMap, and fill in crParticles/nuParticles here?
 
 
         //if not running over neutrino slice only, use all pfp's in event
-        if (m_run_all_pfps ==true){
-            nuParticles = pfParticleVector;
-        }
+        if (m_run_all_pfps ==true) nuParticles = pfParticleVector;
+        
 
         if(m_is_verbose) std::cout<<"SinglePhoton::analyze() \t||\t Get Spacepoints"<<std::endl;
         //Spacepoint associaitions
@@ -517,7 +516,7 @@ namespace single_photon
 
         //  Test ground for some slice stuff, dont have it run automatically, ignore for now, mark
 
-        if(true){
+        if(false){
             std::cout<<"SliceTest: there are "<<sliceVector.size()<<" slices in this event"<<std::endl;
             for(size_t s =0; s<sliceVector.size(); s++){
                 auto slice = sliceVector[s];
@@ -587,6 +586,7 @@ namespace single_photon
         this->CollectTracksAndShowers(nuParticles, pfParticleMap,  pfParticleHandle, evt, tracks, showers, trackToNuPFParticleMap, showerToNuPFParticleMap);
 
         //Track Calorimetry. Bit odd here but bear with me, good to match and fill here
+		//Keng, use pandoraCalo to get the correct Calorimetry;
         art::FindManyP<anab::Calorimetry> calo_per_track(trackHandle, evt, m_caloLabel);
         std::map<art::Ptr<recob::Track>, std::vector<art::Ptr<anab::Calorimetry>> > trackToCalorimetryMap;
         //So a cross check
@@ -681,14 +681,15 @@ namespace single_photon
         std::map<art::Ptr<recob::PFParticle>,double> PFPToTrackScoreMap;
         std::map<int, int> sliceIdToNumPFPsMap;
 
-        std::cout<<"\nSinglePhoton::analyze::AnalyzeSlice()\t||\t Starting"<<std::endl;
+        if(m_is_verbose) std::cout<<"\nSinglePhoton::AnalyzeSlice()\t||\t Starting"<<std::endl;
         //Slice helper found in analyze_Slice.h
         this->AnalyzeSlices(pfParticleToMetadataMap, pfParticleMap,  primaryPFPSliceIdVec, sliceIdToNuScoreMap, PFPToClearCosmicMap, PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap);
+		std::cout<<"Finish AnalyzeSlices.\n"<<std::endl;
 
 
         if (PFPToSliceIdMap.size() < 1)  std::cout<<"ERROR, not storing PFP's in PFPToSliceIdMap"<<std::endl;
         if(m_is_verbose){
-
+			std::cout<<"---- sub-summary ---"<<std::endl;
             std::cout<<"SinglePhoton::analyze\t||\tthe number of PPF's with stored clear cosmic info is "<<PFPToClearCosmicMap.size()<<std::endl;
             std::cout<<"SinglePhoton::analyze\t||\tthe number of PFP's stored in the PFPToSliceIdMap is "<<PFPToSliceIdMap.size()<<std::endl;
 
@@ -696,7 +697,7 @@ namespace single_photon
                 auto pfp = pair.first;
                 auto is_nuslice = pair.second;
                 if (is_nuslice){
-                    std::cout<<"pfp in nuslice "<<pfp->Self()<<std::endl;
+                    std::cout<<"SinglePhoton::analyze\t||\t"<<pfp->Self()<<"th pfp in nuslice w. Pdgcode "<<pfp->PdgCode()<<std::endl;
                 }
 
             }
@@ -775,7 +776,7 @@ namespace single_photon
 
         //*******************************  Tracks **************************************************************/
         //*******************************  Tracks **************************************************************/
-        std::cout<<"SinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
+        std::cout<<"\nSinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
 
         //found in analyze_Tracks.h
         this->AnalyzeTracks(tracks, trackToNuPFParticleMap, pfParticleToHitsMap,  pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,  PFPToTrackScoreMap, PFPToNuSliceMap,pfParticleMap);
@@ -788,7 +789,7 @@ namespace single_photon
 
         //*******************************  Showers **************************************************************/
         //*******************************  Showers **************************************************************/
-        std::cout<<"SinglePhoton::analyze \t||\t Start on Shower Analysis "<<std::endl;
+        std::cout<<"\nSinglePhoton::analyze \t||\t Start on Shower Analysis "<<std::endl;
 
         //found in analyze_Showers.h
         this->AnalyzeShowers(showers,showerToNuPFParticleMap, pfParticleToHitsMap, pfParticleToClustersMap, clusterToHitsMap,sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap,pfParticleMap,pfParticlesToShowerReco3DMap, trigger_offset(detClocks), theDetector);
@@ -885,17 +886,17 @@ namespace single_photon
 
 
             //The recoMC was originally templated for any track shower, but sufficient differences in showers emerged to have stand alone sadly
-            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::track"<<std::endl;
+            std::cout<<"\nSinglePhoton\t||\t Starting backtracker on recob::track"<<std::endl;
             std::vector<double> trk_overlay_vec = recoMCmatching<art::Ptr<recob::Track>>( tracks, trackToMCParticleMap, trackToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector);
-            std::cout<<"SinglePhoton\t||\t Starting backtracker on recob::shower"<<std::endl;
+            std::cout<<"\nSinglePhoton\t||\t Starting backtracker on recob::shower"<<std::endl;
             this->showerRecoMCmatching(showers, showerToMCParticleMap, showerToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap);
 
             //photoNuclearTesting(matchedMCParticleVector);
 
-            std::cout<<"Starting outside RecoMCTracks "<<std::endl;
+            std::cout<<"\nStarting outside RecoMCTracks "<<std::endl;
             this->RecoMCTracks(tracks, trackToNuPFParticleMap, trackToMCParticleMap, MCParticleToMCTruthMap,mcParticleVector, MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,trk_overlay_vec);
 
-            std::cout<<"Starting outside AnalyzeMCTruths "<<std::endl;
+            std::cout<<"\nStarting outside AnalyzeMCTruths "<<std::endl;
             this->AnalyzeMCTruths(mcTruthVector, mcParticleVector);
 
 
@@ -928,6 +929,7 @@ namespace single_photon
 
                 std::cout<<"filling info in ncdelta slice tree"<<std::endl;
                 this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
+        this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles);
 
                 if (m_print_out_event){
                     if (m_matched_signal_shower_num != 1 || m_matched_signal_track_num != 1){
@@ -1016,7 +1018,6 @@ namespace single_photon
 
 
         //*******************************   Isolation (SSV precursor)  **************************************************************/
-        //*******************************   Isolation (SSV precursor)  **************************************************************/
         if(!m_run_all_pfps && ! m_run_pi0_filter) this->IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector);
 
 		std::cout<<"CHECK "<<__LINE__<<" for a finished isolation study"<<std::endl;
@@ -1024,9 +1025,6 @@ namespace single_photon
 
 
         // ################################################### SEAview SEAview #########################################################
-        // ################################################### SEAview SEAview #########################################################
-
-
         // ################################################### Proton Stub ###########################################
         // ------------- stub clustering ---------------------------
         std::cout << "----------------- Stub clustering --------------------------- " << std::endl;
@@ -1409,7 +1407,7 @@ namespace single_photon
             int found = 0;
             //std::cout<<"Starting a loop over "<<pfps.size()<<" pfparticles"<<std::endl;
             for(auto &pfp: pfps){
-                std::cout<<" CHECK "<<pfp->Self()<<" Primary: "<<pfp->IsPrimary()<<" PDG "<<pfp->PdgCode()<<" NDau: "<<pfp->NumDaughters()<<" Parent: "<<pfp->Parent()<<std::endl;
+//                std::cout<<" CHECK "<<pfp->Self()<<" Primary: "<<pfp->IsPrimary()<<" PDG "<<pfp->PdgCode()<<" NDau: "<<pfp->NumDaughters()<<" Parent: "<<pfp->Parent()<<std::endl;
 
                 if (!pfp->IsPrimary()) continue;
                 // Check if this particle is identified as the neutrino
@@ -1815,15 +1813,14 @@ namespace single_photon
                 vertex->XYZ(xyz);
 
                 n_vert++;
-                //std::cout<<"Vertex!"<<"\t "<<xyz[0]<<" "<<xyz[1]<<" "<<xyz[2]<<"\n";
 
                 m_vertex_pos_x = xyz[0];
                 m_vertex_pos_y = xyz[1];
                 m_vertex_pos_z = xyz[2];
 				std::cout<<"CHECK Vertex position: ("<<xyz[0]<<","<<xyz[1]<<","<<xyz[2]<<")"<<std::endl;
                 std::vector<double> tmp = {xyz[0],xyz[1],xyz[2]};
-                m_reco_vertex_in_SCB = 0;//CHECK this->distToSCB(m_reco_vertex_dist_to_SCB,tmp);
-                m_reco_vertex_dist_to_active_TPC = 0;//CHECK this->distToTPCActive(tmp);
+                m_reco_vertex_in_SCB = this->distToSCB(m_reco_vertex_dist_to_SCB,tmp);
+                m_reco_vertex_dist_to_active_TPC =  this->distToTPCActive(tmp);
 //CHECK
 //                if(!m_run_pi0_filter){
 //                    m_reco_vertex_to_nearest_dead_wire_plane0 = distanceToNearestDeadWire(0, m_vertex_pos_y, m_vertex_pos_z,geom,bad_channel_list_fixed_mcc9);
@@ -1858,12 +1855,16 @@ namespace single_photon
     }
 
 
+
+	//Classify PFParticles into crParticles or nuParticles.
     void SinglePhoton::GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, PFParticleVector &crParticles, PFParticleVector &nuParticles )
     {
+		if(m_is_verbose) std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\tSort out PFPParticles."<<std::endl;
 
         int found = 0;
         int primaries = 0;
         int full = 0;
+//CHECK		PFParticleIdMap::const_iterator best_nu = NULL;//only take the PFParticle with best nu score
         for (PFParticleIdMap::const_iterator it = pfParticleMap.begin(); it != pfParticleMap.end(); ++it)
         {
             const art::Ptr<recob::PFParticle> pParticle(it->second);
@@ -1877,18 +1878,18 @@ namespace single_photon
             // Check if this particle is identified as the neutrino
             const int pdg(pParticle->PdgCode());
 //            const bool isNeutrino =  (std::abs(pdg) ==  pandora::NU_E || std::abs(pdg) == pandora::NU_MU || std::abs(pdg) == pandora::NU_TAU);
-            const bool isNeutrino =  (std::abs(pdg) ==  12 || std::abs(pdg) == 14 || std::abs(pdg) == 16);
+			 //CHECK
+             bool isNeutrino =  (std::abs(pdg) ==  12 || std::abs(pdg) == 14 || std::abs(pdg) == 16);
             //const bool isNeutrino =  (std::abs(pdg) ==   14 );
 
 
             // If it is, lets get the vertex position
             if(isNeutrino){
-				if(found>0){ 
-				std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not good but ok."<<std::endl;
-				break;//CHECK we take 1 neutrino so far.
+				if(found>0){
+					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not good but ok."<<std::endl;
 				}
                 found++;
-				std::cout<<"CHECK "<<__LINE__<<" get vertex for neutrino w. pdg: "<<pdg<<std::endl;
+				std::cout<<"CHECK "<<pParticle->Self()<<"th PFParticle is reco. as neutrino w. pdg: "<<pdg<<std::endl;
                 this->GetVertex(pfParticlesToVerticesMap, pParticle );
             }
 
@@ -1915,7 +1916,8 @@ namespace single_photon
                 nuParticles.push_back(pfParticleMap.at(daughterId));
             }
         }
-        std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\t Found "<<primaries<<" primary PFParticles (out of "<<full<<") of which: "<<found<<" were neutrinos."<<std::endl;
+        std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\t Found "<<primaries<<" primary PFParticles (out of "<<full<<") of which: "<<found<<" were neutrinos.\n"<<std::endl;
+        std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\t Found "<<primaries<<" primary PFParticles (out of "<<pfParticleMap.size()<<") of which: "<<found<<" were neutrinos.\n"<<std::endl;
         m_reco_vertex_size = found;
 
     }
@@ -2226,8 +2228,10 @@ namespace single_photon
         this->CollectSimChannels(evt, label, simChannelVector);
         this->CollectMCParticles(evt, label, truthToParticles, particlesToTruth, MCParticleToTrackIdMap);
 //        CHECK
-//        lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(hitVector, simChannelVector, hitsToTrackIDEs);
-//        lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(hitsToTrackIDEs, truthToParticles, particlesToHits, hitsToParticles, daughterMode);
+		//Collect the links from reconstructed hits to their true energy deposits.
+        lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(evt, hitVector, simChannelVector, hitsToTrackIDEs);
+		//Build mapping between Hits and MCParticles, starting from Hit/TrackIDE/MCParticle information
+        lar_pandora::LArPandoraHelper::BuildMCParticleHitMaps(hitsToTrackIDEs, truthToParticles, particlesToHits, hitsToParticles, daughterMode);
 
 
     }

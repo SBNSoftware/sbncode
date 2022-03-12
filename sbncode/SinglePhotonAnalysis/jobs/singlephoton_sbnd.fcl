@@ -8,7 +8,7 @@ singlephoton_analyzer:{
     TrackLabel:     "pandoraTrack"
     ShowerLabel:    "pandoraShower"
     ParticleIDLabel:"pandoraSCEPid"
-    CaloLabel:      "pandoraSCECalo"
+    CaloLabel:      "pandoraCalo"
     FlashLabel:     "opflashtpc0"
     POTLabel:       "generator"
 
@@ -18,7 +18,7 @@ singlephoton_analyzer:{
 
     input_param:    "optional" 
 
-    Verbose: false
+    Verbose: true
 
     runSEAviewShower: true
     SEAviewShowerHitThreshold: 25

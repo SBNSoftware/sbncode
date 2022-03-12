@@ -1,5 +1,3 @@
-#include "SinglePhoton_module.h"
-
 namespace single_photon
 {
     void SinglePhoton::ClearMCTruths(){
@@ -242,8 +240,7 @@ namespace single_photon
 	//CHECK how is this different from MCReco matching?
     void SinglePhoton::AnalyzeMCTruths(std::vector<art::Ptr<simb::MCTruth>> & mcTruthVector , std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector){
         m_mctruth_num = mcTruthVector.size();
-        
-        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeMCTruths()\t||\t Starting to analyze "<<m_mctruth_num<<" simb::MCTruth's."<<std::endl;
+        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeMCTruths()\t||\tTotal  "<<m_mctruth_num<<" simb::MCTruth's."<<std::endl;
         if(m_mctruth_num >1){
             std::cout<<"SinglePhoton::AnalyzeMCTruths()\t||\t WARNING There is more than 1 MCTruth neutrino interaction. Just running over the first simb::MCTruth."<<std::endl;
         }else if(m_mctruth_num==0){
@@ -257,30 +254,30 @@ namespace single_photon
 
 
             m_mctruth_origin = truth->Origin();
-            if(m_is_verbose) std::cout<<"Getting origin "<<truth->Origin()<<std::endl;
+//            if(m_is_verbose) std::cout<<"Getting origin "<<truth->Origin()<<std::endl;
 
             if(!truth->NeutrinoSet()){
                 if(m_is_verbose) std::cout<<"Warning, no neutrino set skipping. "<<std::endl;
             }else{
-                if(m_is_verbose) std::cout<<"Getting origin "<<truth->Origin()<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting origin "<<truth->Origin()<<std::endl;
                 m_mctruth_ccnc = truth->GetNeutrino().CCNC();
-                if(m_is_verbose) std::cout<<"Getting ccnc "<<truth->GetNeutrino().CCNC()<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting ccnc "<<truth->GetNeutrino().CCNC()<<std::endl;
                 m_mctruth_mode = truth->GetNeutrino().Mode();
-                if(m_is_verbose) std::cout<<"Getting Mode"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting Mode"<<std::endl;
                 m_mctruth_interaction_type = truth->GetNeutrino().InteractionType();
-                if(m_is_verbose) std::cout<<"Getting Type"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting Type"<<std::endl;
                 m_mctruth_qsqr = truth->GetNeutrino().QSqr();
-                if(m_is_verbose) std::cout<<"Getting Q"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting Q"<<std::endl;
                 m_mctruth_nu_pdg = truth->GetNeutrino().Nu().PdgCode();
-                if(m_is_verbose) std::cout<<"Getting E"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting E"<<std::endl;
                 m_mctruth_nu_E = truth->GetNeutrino().Nu().E();
-                if(m_is_verbose) std::cout<<"Getting pdg"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting pdg"<<std::endl;
                 m_mctruth_lepton_pdg = truth->GetNeutrino().Lepton().PdgCode();
-                if(m_is_verbose) std::cout<<"Getting pdg lepton"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting pdg lepton"<<std::endl;
                 m_mctruth_lepton_E = truth->GetNeutrino().Lepton().E();
-                if(m_is_verbose) std::cout<<"Getting lepton E"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting lepton E"<<std::endl;
             
-                if(m_is_verbose) std::cout<<"Getting SC corrected vertex position"<<std::endl;
+//                if(m_is_verbose) std::cout<<"Getting SC corrected vertex position"<<std::endl;
                 std::vector<double> corrected(3);
 	        // get corrected lepton position
 			// CHECK, turn simb::mcparticle to art::Ptr<simb::MCParticle, then it can remove one unnecessary spacecharge_correction() function.
@@ -295,9 +292,10 @@ namespace single_photon
 
 
 
-            if(m_is_verbose) std::cout<<"We are working with : ";
             m_mctruth_num_daughter_particles = truth->NParticles(); //MCTruth_NParticles
-            if(m_is_verbose) std::cout<<m_mctruth_num_daughter_particles<<" m_mctruth_num_daugher_particles "<<std::endl;
+			if(m_is_verbose){
+				std::cout<<"We are working with :"<<m_mctruth_num_daughter_particles<<" m_mctruth_num_daugher_particles "<<std::endl;
+			}
             this->ResizeMCTruths(m_mctruth_num_daughter_particles);
 
 

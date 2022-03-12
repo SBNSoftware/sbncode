@@ -41,7 +41,9 @@
 
 
 /*
- * Get Labels & prepare vector maps
+ *
+ * Construct vectors and maps from Labels;
+ *
  */
 
 namespace single_photon
@@ -92,33 +94,34 @@ namespace single_photon
 		std::vector<art::Ptr<simb::MCTruth>>   mcTruthVector;
 		std::vector<art::Ptr<simb::MCParticle>> matchedMCParticleVector;
 
-/*
- * The overload constructor 1 takes care of the following maps.
- *
- */
-		std::map< size_t, art::Ptr<recob::PFParticle>>	IDToPFParticleMap;
+		/*
+		 * The overload constructor 1 takes care of the following maps.
+		 *
+		 */
+		std::map< size_t						, art::Ptr<recob::PFParticle>>	IDToPFParticleMap;
 //		std::map< art::Ptr<recob::PFParticle, size_t>>	PFParticleToIDMap;//This makse more consistant, but it needs works!
-		std::map< art::Ptr<recob::PFParticle> , std::vector<art::Ptr<recob::Vertex>> > PFParticlesToVerticesMap;//old name pfParticlesToVerticesMap;
-		std::map< art::Ptr<recob::PFParticle> , std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> > PFParticleToMetadataMap;//old name pfParticleToMetadataMap;
-		std::map< art::Ptr<recob::PFParticle> , std::vector<art::Ptr<recob::SpacePoint>> > PFParticleToSpacePointsMap;
-		std::map< art::Ptr<recob::PFParticle> , std::vector<art::Ptr<recob::Cluster>> > PFParticleToClustersMap;
-		std::map< art::Ptr<recob::Cluster>	  , std::vector<art::Ptr<recob::Hit>> > ClusterToHitsMap;
-        std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> PFParticlesToShowerReco3DMap;
-        std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Track>> PFParticlesToShowerKalmanMap;
-        std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>> kalmanTrackToCaloMap;
-		std::map< art::Ptr<recob::Slice>, std::vector<art::Ptr<recob::PFParticle>> > sliceToPFParticlesMap;
-		std::map< art::Ptr<recob::Slice>, std::vector<art::Ptr<recob::Hit>> > sliceToHitsMap;
-		std::map<int, std::vector<art::Ptr<recob::PFParticle>> > sliceIDToPFParticlesMap;
-		std::map<int, std::vector<art::Ptr<recob::Hit>> > sliceIDToHitsMap;
+		std::map< art::Ptr<recob::PFParticle>	, std::vector<art::Ptr<recob::Vertex>> > PFParticlesToVerticesMap;//old name pfParticlesToVerticesMap;
+		std::map< art::Ptr<recob::PFParticle>	, std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> > 
+																								PFParticleToMetadataMap;//old name pfParticleToMetadataMap;
+		std::map< art::Ptr<recob::PFParticle>	, std::vector<art::Ptr<recob::SpacePoint>> >	PFParticleToSpacePointsMap;
+		std::map< art::Ptr<recob::PFParticle>	, std::vector<art::Ptr<recob::Cluster>> >		PFParticleToClustersMap;
+		std::map< art::Ptr<recob::Cluster>		, std::vector<art::Ptr<recob::Hit>> >			ClusterToHitsMap;
+        std::map<art::Ptr<recob::PFParticle>	, art::Ptr<recob::Shower>>						PFParticlesToShowerReco3DMap;
+        std::map<art::Ptr<recob::PFParticle>	, art::Ptr<recob::Track>>						PFParticlesToShowerKalmanMap;
+        std::map<art::Ptr<recob::Track>			, std::vector<art::Ptr<anab::Calorimetry>>>		kalmanTrackToCaloMap;
+		std::map< art::Ptr<recob::Slice>		, std::vector<art::Ptr<recob::PFParticle>> >	sliceToPFParticlesMap;
+		std::map< art::Ptr<recob::Slice>		, std::vector<art::Ptr<recob::Hit>> >			sliceToHitsMap;
+		std::map<							int	, std::vector<art::Ptr<recob::PFParticle>> >	sliceIDToPFParticlesMap;
+		std::map<							int	, std::vector<art::Ptr<recob::Hit>> >			sliceIDToHitsMap;
 /*
  * Initially empty variables to be filled from other parts of the code.
  *
  */
 //The followings are taken care by the CollectTracksAndShowers_v2() in BobbyVertexBuilder.h
-		std::vector< art::Ptr<recob::Track> >							selected_tracks;
-		std::vector< art::Ptr<recob::Shower> >							selected_showers;
-		std::vector< art::Ptr<recob::Track> >							more_tracks;//non-cosmic objects, but not selected nu objects.
-		std::vector< art::Ptr<recob::Shower> >							more_showers;
+		std::vector< art::Ptr<recob::Track> >	selected_tracks;
+		std::vector< art::Ptr<recob::Shower> >	selected_showers;
+		std::vector< art::Ptr<recob::Track> >	more_tracks;//non-cosmic objects, but not selected nu objects.
+		std::vector< art::Ptr<recob::Shower> >	more_showers;
 		//Maps for more pandora objects.
 		std::map< art::Ptr<recob::Track>  , art::Ptr<recob::PFParticle>> trackToNuPFParticleMap;
 		std::map< art::Ptr<recob::Shower> , art::Ptr<recob::PFParticle>> showerToNuPFParticleMap;

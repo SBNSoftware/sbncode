@@ -1,4 +1,3 @@
-#include "SinglePhoton_module.h"
 #include "TPrincipal.h"
 #include "TVectorD.h"
 #include "TruncMean.h"

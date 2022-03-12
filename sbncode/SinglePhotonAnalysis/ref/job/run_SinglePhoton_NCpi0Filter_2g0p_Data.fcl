@@ -1,7 +1,0 @@
-#include "run_SinglePhoton_NCpi0Filter_2g0p.fcl"
-
-physics.filters.singlephotonfil.isData: "true"
-physics.filters.singlephotonfil.POTLabel: "beamdata"
-physics.filters.singlephotonfil.beamgateStartTime: 3.3
-physics.filters.singlephotonfil.beamgateEndTime: 4.9
-physics.filters.singlephotonfil.BadChannelProducer: "nfspl1"
