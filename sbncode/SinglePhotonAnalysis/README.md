@@ -14,8 +14,9 @@ The code can be found here: (https://cdcvs.fnal.gov/redmine/projects/ubana/repos
 `HelperFunctions` contains helper functions for simple calculations.
 
 Header structure
+
 ```mermaid
-	Flowchart TB
+	Flowchart TD;
 	A--first formost-->C;
 	A[SinglePhoton_module.cc]--contains-->B[analyze*.h that look like *.cxx];
 	C[SinglePhoton_module.h]-->D[helper_functions.h];
