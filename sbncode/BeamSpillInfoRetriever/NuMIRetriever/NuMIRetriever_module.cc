@@ -74,6 +74,7 @@ sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
 {
 
   bfp->set_epsilon(fBFPEpsilion);
+  bfp->setValidWindow(500.);
   produces<std::vector<sbn::NuMISpillInfo>, art::InSubRun>();
   TotalBeamSpills = 0;
 }
@@ -148,13 +149,15 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       spill_count++;
 
       //initialize all devices found in NuMISpillInfo.h in sbnobj
-      double HRNDIR;
-      double NSLINA;
-      double NSLINB;
-      double NSLINC;
-      double NSLIND;
-      double TR101D;
-      double TRTGTD;
+      double HRNDIR = -1.;
+      double NSLINA = -1.;
+      double NSLINB = -1.;
+      double NSLINC = -1.;
+      double NSLIND = -1.;
+      double TOR101 = -1.;
+      double TORTGT = -1.;
+      double TR101D = -1.;
+      double TRTGTD = -1.;
       std::vector< double > HP121;
       std::vector< double > VP121;
       std::vector< double > HPTGT;
@@ -162,7 +165,7 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       std::vector< double > HITGT;
       std::vector< double > VITGT;
       std::vector< double > MTGTDS;
-      double TRTGTD_time;
+      double TRTGTD_time = -1.;
       std::cout << "Grabbing IFBeam info!" << std::endl;
       try{bfp->GetNamedData(times_temps[i], "E:TRTGTD@",&TRTGTD,&TRTGTD_time);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       try{bfp->GetNamedData(times_temps[i], "E:TR101D",&TR101D);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
@@ -171,23 +174,28 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       try{bfp->GetNamedData(times_temps[i], "E:NSLINB",&NSLINB);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       try{bfp->GetNamedData(times_temps[i], "E:NSLINC",&NSLINC);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       try{bfp->GetNamedData(times_temps[i], "E:NSLIND",&NSLIND);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:TOR101",&TOR101);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
+      try{bfp->GetNamedData(times_temps[i], "E:TORTGT",&TORTGT);}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       // BPM Positions and Intensities - they each have 7 elements
       // First is an average value of a few batches (often 2,3,4)
       // used for auto-tuning, so we should disregard it
       
       try{HP121 = bfp->GetNamedVector(times_temps[i], "E:HP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " << "got exception: " << we.what() << "\n";}
       try{VP121 = bfp->GetNamedVector(times_temps[i], "E:VP121[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{HPTGT = bfp->GetNamedVector(times_temps[i], "E:HPTGT");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{VPTGT = bfp->GetNamedVector(times_temps[i], "E:VPTGT");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{HITGT = bfp->GetNamedVector(times_temps[i], "E:HITGT");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
-      try{VITGT = bfp->GetNamedVector(times_temps[i], "E:VITGT");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+      try{HPTGT = bfp->GetNamedVector(times_temps[i], "E:HPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+      try{VPTGT = bfp->GetNamedVector(times_temps[i], "E:VPTGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+      try{HITGT = bfp->GetNamedVector(times_temps[i], "E:HITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+      try{VITGT = bfp->GetNamedVector(times_temps[i], "E:VITGT[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
+      try{MTGTDS = bfp->GetNamedVector(times_temps[i], "E:MTGTDS[]");}catch (WebAPIException &we) {std::cout << "At time : " << times_temps[i] << " " <<"got exception: " << we.what() << "\n";}
       
       std::cout << "Finished getting IFBeam info" << std::endl;
-      std::cout << "BFP Time: " << times_temps[i] << " TOROID Time: " << TRTGTD_time << std::endl;
+      std::cout << "BFP Time: " << times_temps[i] << " TOROID Time: " << TRTGTD_time << " TOROID COUNT: " << TRTGTD << std::endl;
       unsigned long int time_closest_int = (int) TRTGTD_time;
       double time_closest_ns = (TRTGTD_time - time_closest_int)*1000000000;
 
       sbn::NuMISpillInfo NuMIbeamInfo;
+      NuMIbeamInfo.TORTGT = TORTGT;
+      NuMIbeamInfo.TOR101 = TOR101;
       NuMIbeamInfo.TRTGTD = TRTGTD;
       NuMIbeamInfo.TR101D = TR101D;
       NuMIbeamInfo.HRNDIR = HRNDIR;
@@ -202,7 +210,9 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       NuMIbeamInfo.VPTGT = VPTGT;
       NuMIbeamInfo.HITGT = HITGT;
       NuMIbeamInfo.VITGT = VITGT;
+      NuMIbeamInfo.MTGTDS = MTGTDS;
 
+      NuMIbeamInfo.time = times_temps[i];
       NuMIbeamInfo.event = e.event();
       NuMIbeamInfo.spill_time_s = time_closest_int;
       NuMIbeamInfo.spill_time_ns = time_closest_ns;

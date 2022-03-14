@@ -64,6 +64,9 @@ namespace caf
       NuMIInfo.back().NSLIND = info.NSLIND;
       NuMIInfo.back().TRTGTD = info.TRTGTD;
       NuMIInfo.back().TR101D = info.TR101D;
+      NuMIInfo.back().TORTGT = info.TORTGT;
+      NuMIInfo.back().TOR101 = info.TOR101;
+      NuMIInfo.back().time = info.time;
       NuMIInfo.back().spill_time_s = info.spill_time_s;
       NuMIInfo.back().spill_time_ns = info.spill_time_ns;
       NuMIInfo.back().event = info.event;
