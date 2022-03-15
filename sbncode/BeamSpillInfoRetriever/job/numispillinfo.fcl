@@ -9,6 +9,7 @@ numispillinfo: {
     Bundle: "NuMI_Physics_A9"
     MultiWireBundle: "BNBMultiWire"
     TimeWindow: "600" #seconds
+    BFPEpsilon: 0.2 # 200 ms
     MWR_TimeWindow: "3601" #seconds
     raw_data_label: "daq"
     DeviceUsedForTiming: "E:TRTGTD"
