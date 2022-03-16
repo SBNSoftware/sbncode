@@ -7,20 +7,21 @@ art_make(
         larsim_PhotonPropagation
         larsim_PhotonPropagation_PhotonVisibilityService_service
         larsim_LegacyLArG4
-        sbncode_OpT0Finder_flashmatch_GeoAlgo
+        larcorealg_GeoAlgo
+        # sbncode_OpT0Finder_flashmatch_GeoAlgo
         sbncode_OpT0Finder_flashmatch_Base
-        ${ART_FRAMEWORK_CORE}
-        ${ART_FRAMEWORK_PRINCIPAL}
+        art::Framework_Core
+        art::Framework_Principal
         ${ART_FRAMEWORK_BASIC}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        art::Framework_Services_Registry
         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-        ${ART_PERSISTENCY_COMMON}
-        ${ART_PERSISTENCY_PROVENANCE}
-        ${ART_UTILITIES}
+        
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities
         ${ROOT_BASIC_LIB_LIST}
-        ${FHICLCPP}
-        ${CETLIB}
+        fhiclcpp::fhiclcpp
+        cetlib::cetlib
 )
 
 install_headers()

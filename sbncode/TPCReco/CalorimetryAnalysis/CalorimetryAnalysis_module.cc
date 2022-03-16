@@ -2132,7 +2132,65 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
 
   // fill other particle ID
   for (const art::Ptr<anab::ParticleID> pid: pids) {
-    auto const &plane = pid->PlaneID().Plane;
+
+    // Assign dummy values.
+
+    double chi2_muon = 0.;
+    double chi2_pion = 0.;
+    double chi2_kaon = 0.;
+    double chi2_proton = 0.;
+    double pida = 0.;
+    auto plane = pid->PlaneID().Plane;
+
+    // Loop over algorithm scores and extract the ones we want.
+    // Extract the plane from any matching algorithm.
+
+    std::vector<anab::sParticleIDAlgScores> AlgScoresVec = pid->ParticleIDAlgScores();
+    for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
+      anab::sParticleIDAlgScores AlgScore = AlgScoresVec.at(i_algscore);
+      if (AlgScore.fAlgName == "Chi2"){
+        if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // chi2mu
+          chi2_muon = AlgScore.fValue;
+          if (AlgScore.fPlaneMask.count() == 1) {
+            if (AlgScore.fPlaneMask.test(0)) plane = 0;
+            if (AlgScore.fPlaneMask.test(1)) plane = 1;
+            if (AlgScore.fPlaneMask.test(2)) plane = 2;
+          }
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // chi2pi
+          chi2_pion = AlgScore.fValue;
+          if (AlgScore.fPlaneMask.count() == 1) {
+            if (AlgScore.fPlaneMask.test(0)) plane = 0;
+            if (AlgScore.fPlaneMask.test(1)) plane = 1;
+            if (AlgScore.fPlaneMask.test(2)) plane = 2;
+          }
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 321) { // chi2ka
+          chi2_kaon = AlgScore.fValue;
+          if (AlgScore.fPlaneMask.count() == 1) {
+            if (AlgScore.fPlaneMask.test(0)) plane = 0;
+            if (AlgScore.fPlaneMask.test(1)) plane = 1;
+            if (AlgScore.fPlaneMask.test(2)) plane = 2;
+          }
+        }
+        else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // chi2pr
+          chi2_proton = AlgScore.fValue;
+          if (AlgScore.fPlaneMask.count() == 1) {
+            if (AlgScore.fPlaneMask.test(0)) plane = 0;
+            if (AlgScore.fPlaneMask.test(1)) plane = 1;
+            if (AlgScore.fPlaneMask.test(2)) plane = 2;
+          }
+        }
+      }
+      else if (AlgScore.fVariableType==anab::kPIDA){
+        pida = AlgScore.fValue;
+        if (AlgScore.fPlaneMask.count() == 1) {
+          if (AlgScore.fPlaneMask.test(0)) plane = 0;
+          if (AlgScore.fPlaneMask.test(1)) plane = 1;
+          if (AlgScore.fPlaneMask.test(2)) plane = 2;
+        }
+      }
+    }
     if (plane > 2) continue;
 
     if (plane == 0) {
@@ -2141,11 +2199,11 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _trk_bragg_mu_u = -1;
       _trk_bragg_mip_u = -1;
 
-      _trk_pid_chipr_u = pid->Chi2Proton();
-      _trk_pid_chika_u = pid->Chi2Kaon();
-      _trk_pid_chipi_u = pid->Chi2Pion();
-      _trk_pid_chimu_u = pid->Chi2Muon();
-      _trk_pida_u = pid->PIDA();
+      _trk_pid_chipr_u = chi2_proton;
+      _trk_pid_chika_u = chi2_kaon;
+      _trk_pid_chipi_u = chi2_pion;
+      _trk_pid_chimu_u = chi2_muon;
+      _trk_pida_u = pida;
     }
     else if (plane == 1) {
        // TODO: bragg variable??
@@ -2153,11 +2211,11 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _trk_bragg_mu_v = -1;
       _trk_bragg_mip_v = -1;
 
-      _trk_pid_chipr_v = pid->Chi2Proton();
-      _trk_pid_chika_v = pid->Chi2Kaon();
-      _trk_pid_chipi_v = pid->Chi2Pion();
-      _trk_pid_chimu_v = pid->Chi2Muon();
-      _trk_pida_v = pid->PIDA();
+      _trk_pid_chipr_v = chi2_proton;
+      _trk_pid_chika_v = chi2_kaon;
+      _trk_pid_chipi_v = chi2_pion;
+      _trk_pid_chimu_v = chi2_muon;
+      _trk_pida_v = pida;
     }
     else if (plane == 2) {
        // TODO: bragg variable??
@@ -2165,10 +2223,11 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
       _trk_bragg_mu_y = -1;
       _trk_bragg_mip_y = -1;
 
-      _trk_pid_chipr_y = pid->Chi2Proton();
-      _trk_pid_chika_y = pid->Chi2Kaon();
-      _trk_pid_chipi_y = pid->Chi2Pion();
-      _trk_pid_chimu_y = pid->Chi2Muon();
+      _trk_pid_chipr_y = chi2_proton;
+      _trk_pid_chika_y = chi2_kaon;
+      _trk_pid_chipi_y = chi2_pion;
+      _trk_pid_chimu_y = chi2_muon;
+      _trk_pida_y = pida;
     }
   }
 

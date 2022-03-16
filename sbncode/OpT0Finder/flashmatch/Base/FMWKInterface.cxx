@@ -76,7 +76,7 @@ namespace flashmatch{
     _drift_velocity = det_prop.DriftVelocity();
     _pmt_v.clear();
 
-    _pmt_v.reserve(geo->NOpDets());
+    _pmt_v.resize(geo->NOpDets());
 
     for (size_t opdet = 0; opdet < geo->NOpDets(); opdet++) {
 
@@ -84,12 +84,14 @@ namespace flashmatch{
       geo->OpDetGeoFromOpDet(opdet).GetCenter(&pos[0]);
 
       geoalgo::Point_t pmt(pos);
-      _pmt_v.push_back(pmt);
+      _pmt_v[opdet] = pmt;
     }
 
     double global_x_min = 1e9, global_x_max = -1e9;
     double global_y_min = 1e9, global_y_max = -1e9;
     double global_z_min = 1e9, global_z_max = -1e9;
+
+    _bbox_map.reserve(geo->Ncryostats() * geo->NTPC());
 
     for (size_t cryo = 0; cryo < geo->Ncryostats(); cryo++) {
       for (size_t tpc = 0; tpc < geo->NTPC(cryo); tpc++) {
@@ -110,8 +112,7 @@ namespace flashmatch{
         if (z_min < global_z_min) global_z_min = z_min;
         if (z_max > global_z_max) global_z_max = z_max;
 
-        auto pair = std::pair<int,int>(tpc, cryo);
-        _bbox_map[pair] = geoalgo::AABox(x_min, y_min, z_min, x_max, y_max, z_max);
+        _bbox_map.emplace(std::make_pair(tpc, cryo), geoalgo::AABox(x_min, y_min, z_min, x_max, y_max, z_max));
       }
 
       _bbox = geoalgo::AABox(global_x_min, global_y_min, global_z_min,

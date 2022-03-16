@@ -1,9 +1,9 @@
 cet_enable_asserts()
 
 art_make(   TOOL_LIBRARIES
-	    art_Utilities
-	    ${FHICLCPP}
-	    ${CETLIB}
+	    art::Utilities
+	    fhiclcpp::fhiclcpp
+	    cetlib::cetlib
 )
 
 install_headers()

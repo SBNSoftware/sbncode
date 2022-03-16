@@ -17,6 +17,7 @@
 #include "sbncode/CAFMaker/FillFlashMatch.h"
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
+#include "sbncode/CAFMaker/FillExposure.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -37,7 +38,7 @@
 #include <libgen.h>
 #endif
 
-#include <IFDH_service.h>
+#include <ifdh_art/IFDHService/IFDH_service.h>
 
 // ROOT includes
 #include "TFile.h"
@@ -99,6 +100,7 @@
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
+#include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -166,16 +168,17 @@ class CAFMaker : public art::EDProducer {
   double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
+  std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   // int fCycle;
   // int fBatch;
 
-  TFile* fFile;
-  TTree* fRecTree;
+  TFile* fFile = 0;
+  TTree* fRecTree = 0;
 
-  TFile* fFlatFile;
-  TTree* fFlatTree;
+  TFile* fFlatFile = 0;
+  TTree* fFlatTree = 0;
 
-  flat::Flat<caf::StandardRecord>* fFlatRecord;
+  flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
@@ -485,20 +488,35 @@ void CAFMaker::beginRun(art::Run& run) {
 
 //......................................................................
 void CAFMaker::beginSubRun(art::SubRun& sr) {
-  // get the POT
-  // get POT information
-  art::Handle<sumdata::POTSummary> pot_handle;
-  sr.getByLabel("generator", pot_handle);
 
-  if (pot_handle.isValid()) {
+  // get POT information
+  fBNBInfo.clear();
+  fSubRunPOT = 0;
+
+  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    fTotalPOT += fSubRunPOT;
+  }
+  else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
   }
+  else{
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty()){
+      std::cout << "Found neither data POT info under '"
+                << fParams.BNBPOTDataLabel()
+                << "' nor MC POT info under '"
+                << fParams.GenLabel() << "'"
+                << std::endl;
+      if(fParams.StrictMode()) abort();
+    }
+
+    // Otherwise, if one label is blank, maybe no POT was the expected result
+  }
+
   std::cout << "POT: " << fSubRunPOT << std::endl;
 
   fFirstInSubRun = true;
-
-
 }
 
 //......................................................................
@@ -1436,7 +1454,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.ismc    = !isRealData;
   rec.hdr.det     = fDet;
   rec.hdr.fno     = fFileNumber;
-  rec.hdr.pot     = fSubRunPOT;
+  if(fFirstInFile)
+  {
+    rec.hdr.pot   = fSubRunPOT;
+    rec.hdr.bnbinfo = fBNBInfo;
+  }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
@@ -1465,6 +1487,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   srcol->push_back(rec);
   evt.put(std::move(srcol));
+
+  fBNBInfo.clear();
+  rec.hdr.pot = 0;
 }
 
 void CAFMaker::endSubRun(art::SubRun& sr) {
