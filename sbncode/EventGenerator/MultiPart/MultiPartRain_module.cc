@@ -20,6 +20,7 @@
 #include <memory>
 #include <vector>
 #include <cmath>
+#include "cetlib/pow.h"
 
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
@@ -30,6 +31,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SummaryData/RunData.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -69,17 +71,18 @@ public:
 
   void GenPosition(double& x, double& y, double& z);
 
+  std::array<double, 3U> extractDirection() const;
   void GenMomentum(const PartGenParam& param, const double& mass, double& px, double& py, double& pz,
-		   const double x, const double y, const double z);
+           const double x, const double y, const double z);
 
-    std::vector<size_t> GenParticles() const;
+  std::vector<size_t> GenParticles() const;
 
 private:
 
     CLHEP::HepRandomEngine& fFlatEngine;
-    CLHEP::RandFlat *fFlatRandom;
-		CLHEP::RandGauss *fNormalRandom;
-		CLHEP::RandGeneral *fGeneralRandom;
+    std::unique_ptr<CLHEP::RandFlat> fFlatRandom;
+    std::unique_ptr<CLHEP::RandGauss> fNormalRandom;
+    std::unique_ptr<CLHEP::RandGeneral> fCosmicAngleRandom;
 
     // exception thrower
     void abort(const std::string msg) const;
@@ -96,8 +99,8 @@ private:
     std::array<double,2> _yrange;
     std::array<double,2> _zrange;
 
-		// Whether to use uniform or cosmic-like angle distribution
-		bool _cosmic_distribution;
+    // Whether to use uniform or cosmic-like angle distribution
+    bool _cosmic_distribution;
 
     // TPC array
     std::vector<std::vector<unsigned short> > _tpc_v;
@@ -117,7 +120,7 @@ void MultiPartRain::abort(const std::string msg) const
 }
 
 MultiPartRain::~MultiPartRain()
-{ delete fFlatRandom; delete fNormalRandom; delete fGeneralRandom; }
+{ }
 
 MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 : EDProducer(p)
@@ -130,15 +133,15 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
     //
     // Random engine initialization
     //
-    fFlatRandom = new CLHEP::RandFlat(fFlatEngine,0,1);
-    fNormalRandom = new CLHEP::RandGauss(fFlatEngine);
+    fFlatRandom = std::make_unique<CLHEP::RandFlat>(fFlatEngine,0,1);
+    fNormalRandom = std::make_unique<CLHEP::RandGauss>(fFlatEngine);
 
-		const int nbins(100);
-		double parent[nbins];
-		for (size_t idx = 0; idx < nbins; ++idx) {
-			parent[idx] = pow(cos(idx/100. * 3.141592653589793238), 2);
-		}
-		fGeneralRandom = new CLHEP::RandGeneral(fFlatEngine, parent, nbins);
+    const int nbins(100);
+    double parent[nbins];
+    for (size_t idx = 0; idx < nbins; ++idx) {
+        parent[idx] = cet::square(cos(((float) idx)/nbins * util::pi()));
+    }
+    fCosmicAngleRandom = std::make_unique<CLHEP::RandGeneral>(fFlatEngine, parent, nbins);
 
     produces< std::vector<simb::MCTruth>   >();
     produces< sumdata::RunData, art::InRun >();
@@ -151,7 +154,7 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 
     _multi_min = p.get<size_t>("MultiMin");
     _multi_max = p.get<size_t>("MultiMax");
-		_cosmic_distribution = p.get<bool>("CosmicDistribution", false);
+    _cosmic_distribution = p.get<bool>("CosmicDistribution", false);
 
     _tpc_v = p.get<std::vector<std::vector<unsigned short> > >("TPCRange");
     auto const xrange = p.get<std::vector<double> > ("XRange");
@@ -224,11 +227,11 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
       zmax = std::max(tpcabox.MaxZ(), zmax);
 
       if(_debug) {
-	std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
-		  << " ... X " << xmin << " => " << xmax
-		  << " ... Y " << ymin << " => " << ymax
-		  << " ... Z " << zmin << " => " << zmax
-		  << std::endl;
+    std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
+          << " ... X " << xmin << " => " << xmax
+          << " ... Y " << ymin << " => " << ymax
+          << " ... Z " << zmin << " => " << zmax
+          << std::endl;
       }
     }
 
@@ -254,9 +257,9 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 
     if(_debug>0) {
       std::cout<<"Particle generation world boundaries..."<<std::endl
-	       <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
-	       <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
-	       <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
+           <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
+           <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
+           <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
     }
 
 
@@ -267,7 +270,7 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
         auto const& pdg     = pdg_v[idx];
         auto const& kerange = kerange_v[idx];
         PartGenParam param;
-	param.direct_inward = p.get<bool>("DirectInward",true);
+        param.direct_inward = p.get<bool>("DirectInward",true);
         param.use_mom    = use_mom;
         param.pdg        = pdg;
         param.kerange[0] = kerange[0];
@@ -356,87 +359,89 @@ void MultiPartRain::GenPosition(double& x, double& y, double& z) {
 
   if(_debug>0) {
     std::cout << "Generating a rain particle at ("
-	      << x << "," << y << "," << z << ")" << std::endl;
+          << x << "," << y << "," << z << ")" << std::endl;
   }
 }
 
+std::array<double, 3U> MultiPartRain::extractDirection() const {
+    double px, py, pz;
+    if (_cosmic_distribution) {
+        double phi   = fFlatRandom->fire(0, 2 * util::pi());
+        double theta = fCosmicAngleRandom->fire() * util::pi();
+        pz = cos(phi) * sin(theta);
+        px = sin(phi) * sin(theta);
+        py = cos(theta);
+    } else {
+        px = fNormalRandom->fire(0, 1);
+        py = fNormalRandom->fire(0, 1);
+        pz = fNormalRandom->fire(0, 1);
+        double p = std::hypot(px, py, pz);
+        px = px / p;
+        py = py / p;
+        pz = pz / p;
+    }
+
+    std::array<double, 3U> result = {px, py, pz};
+    return result;
+}
+
 void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, double& px, double& py, double& pz,
-				const double x, const double y, const double z) {
+    const double x, const double y, const double z) {
 
     double tot_energy = 0;
     if(param.use_mom)
-      tot_energy = sqrt(pow(fFlatRandom->fire(param.kerange[0],param.kerange[1]),2) + pow(mass,2));
+      tot_energy = sqrt(cet::square(fFlatRandom->fire(param.kerange[0],param.kerange[1])) + cet::square(mass));
     else
       tot_energy = fFlatRandom->fire(param.kerange[0],param.kerange[1]) + mass;
 
-    double mom_mag = sqrt(pow(tot_energy,2) - pow(mass,2));
+    double mom_mag = sqrt(cet::square(tot_energy) - cet::square(mass));
 
-		/* Generating unit vector with uniform distribution
-		 * in direction = over the sphere.
-		 *
-		 * It is sufficient to draw a normal variable in
-		 * each direction and normalize.
-		 *
-		 * https://mathworld.wolfram.com/SpherePointPicking.html
-		 */
+        /* Generating unit vector with uniform distribution
+         * in direction = over the sphere.
+         *
+         * It is sufficient to draw a normal variable in
+         * each direction and normalize.
+         *
+         * https://mathworld.wolfram.com/SpherePointPicking.html
+         */
+
+    /* Generating unit vector with uniform distribution
+     * in direction = over the sphere.
+     *
+     * It is sufficient to draw a normal variable in
+     * each direction and normalize.
+     *
+     * https://mathworld.wolfram.com/SpherePointPicking.html
+     */
 
     if(!param.direct_inward) {
       std::cout<<"No inward directioning..."<<std::endl;
-
-			if (_cosmic_distribution) {
-				double phi   = fFlatRandom->fire(0, 2 * 3.141592653589793238);
-				double theta = fGeneralRandom->fire() * 3.141592653589793238;
-				pz = cos(phi) * sin(theta);
-				px = sin(phi) * sin(theta);
-				py = cos(theta);
-			} else {
-				px = fNormalRandom->fire(0, 1);
-				py = fNormalRandom->fire(0, 1);
-				pz = fNormalRandom->fire(0, 1);
-				double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
-				px = px / p;
-				py = py / p;
-				pz = pz / p;
-			}
-
+      std::array<double, 3U> p = extractDirection();
+      px = p[0]; py = p[1]; pz = p[2];
     }else{
       double sign_x = ( (x - _xrange[0]) < (_xrange[1] - x) ? 1.0 : -1.0 );
       double sign_y = ( (y - _yrange[0]) < (_yrange[1] - y) ? 1.0 : -1.0 );
       double sign_z = ( (z - _zrange[0]) < (_zrange[1] - z) ? 1.0 : -1.0 );
 
       if(_debug) {
-	std::cout<<"Generating XYZ direction sign for a particle at (" << x << "," << y << "," << z << ")" << std::endl
-		 <<"X: " << _xrange[0] << " => " << _xrange[1] << " ... " << sign_x << std::endl
-		 <<"Y: " << _yrange[0] << " => " << _yrange[1] << " ... " << sign_y << std::endl
-		 <<"Z: " << _zrange[0] << " => " << _zrange[1] << " ... " << sign_z << std::endl
-		 << std::endl;
+    std::cout<<"Generating XYZ direction sign for a particle at (" << x << "," << y << "," << z << ")" << std::endl
+         <<"X: " << _xrange[0] << " => " << _xrange[1] << " ... " << sign_x << std::endl
+         <<"Y: " << _yrange[0] << " => " << _yrange[1] << " ... " << sign_y << std::endl
+         <<"Z: " << _zrange[0] << " => " << _zrange[1] << " ... " << sign_z << std::endl
+         << std::endl;
       }
 
       while(1) {
-
-				if (_cosmic_distribution) {
-					double phi   = fFlatRandom->fire(0, 2 * 3.141592653589793238);
-					double theta = fGeneralRandom->fire() * 3.141592653589793238;
-					pz = cos(phi) * sin(theta);
-					px = sin(phi) * sin(theta);
-					py = cos(theta);
-				} else {
-					px = fNormalRandom->fire(0, 1);
-					py = fNormalRandom->fire(0, 1);
-					pz = fNormalRandom->fire(0, 1);
-					double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
-					px = px / p;
-					py = py / p;
-					pz = pz / p;
-				}
-
-				if( (px * sign_x) >= 0. &&
-						(py * sign_y) >= 0. &&
-						(pz * sign_z) >= 0. )
-					break;
+        std::array<double, 3U> p = extractDirection();
+        px = p[0]; py = p[1]; pz = p[2];
+        if( (px * sign_x) >= 0. &&
+                (py * sign_y) >= 0. &&
+                (pz * sign_z) >= 0. )
+            break;
       }
 
     }
+    //std::cout<<"LOGME,"<<phi<<","<<theta<<","<<px<<","<<py<<","<<pz<<std::endl;
 
     if(_debug>1)
         std::cout << "    Direction : (" << px << "," << py << "," << pz << ")" << std::endl
@@ -474,12 +479,12 @@ void MultiPartRain::produce(art::Event & e)
         if(_debug) std::cout << "  " << idx << "th instance PDG " << pdg << std::endl;
         double x, y, z;
         GenPosition(x,y,z);
-	double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
+    double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
         TLorentzVector pos(x,y,z,g4_time);
-	std::cout<<"Generating momentum..."<<std::endl;
+    std::cout<<"Generating momentum..."<<std::endl;
         GenMomentum(param,mass,px,py,pz,x,y,z);
-	std::cout<<"done"<<std::endl;
-        TLorentzVector mom(px,py,pz,sqrt(pow(px,2)+pow(py,2)+pow(pz,2)+pow(mass,2)));
+    std::cout<<"done"<<std::endl;
+        TLorentzVector mom(px,py,pz,sqrt(cet::square(px)+cet::square(py)+cet::square(pz)+cet::square(mass)));
         simb::MCParticle part(part_v.size(), pdg, "primary", 0, mass, 1);
         part.AddTrajectoryPoint(pos,mom);
         part_v.emplace_back(std::move(part));
