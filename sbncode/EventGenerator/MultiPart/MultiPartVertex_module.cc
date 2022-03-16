@@ -19,6 +19,7 @@
 
 #include <memory>
 #include <vector>
+#include "cetlib/pow.h"
 
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
@@ -26,6 +27,7 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcoreobj/SummaryData/RunData.h"
+#include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -64,6 +66,7 @@ public:
 
     void GenPosition(double& x, double& y, double& z);
 
+    std::array<double, 3U> extractDirection() const;
     void GenMomentum(const PartGenParam& param, const double& mass, double& px, double& py, double& pz);
 
     std::vector<size_t> GenParticles() const;
@@ -71,8 +74,8 @@ public:
 private:
 
     CLHEP::HepRandomEngine& fFlatEngine;
-    CLHEP::RandFlat *fFlatRandom;
-		CLHEP::RandGauss *fNormalRandom;
+    std::unique_ptr<CLHEP::RandFlat> fFlatRandom;
+    std::unique_ptr<CLHEP::RandGauss> fNormalRandom;
 
     // exception thrower
     void abort(const std::string msg) const;
@@ -107,7 +110,7 @@ void MultiPartVertex::abort(const std::string msg) const
 }
 
 MultiPartVertex::~MultiPartVertex()
-{ delete fFlatRandom; delete fNormalRandom; }
+{ }
 
 MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
 : EDProducer(p)
@@ -119,8 +122,8 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     //
     // Random engine initialization
     //
-    fFlatRandom = new CLHEP::RandFlat(fFlatEngine,0,1);
-    fNormalRandom = new CLHEP::RandGauss(fFlatEngine);
+    fFlatRandom = std::make_unique<CLHEP::RandFlat>(fFlatEngine,0,1);
+    fNormalRandom = std::make_unique<CLHEP::RandGauss>(fFlatEngine);
 
     produces< std::vector<simb::MCTruth>   >();
     produces< sumdata::RunData, art::InRun >();
@@ -175,7 +178,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     for(size_t idx=0; idx<minmult_v.size(); ++idx) {
         if(minmult_v[idx] > maxmult_v[idx]) this->abort("Particle MinMulti > Particle MaxMulti!");
         if(minmult_v[idx] > _multi_max) this->abort("Particle MinMulti > overall MultiMax!");
-	multi_min += minmult_v[idx];
+    multi_min += minmult_v[idx];
     }
     _multi_min = std::max(_multi_min, multi_min);
     if(_multi_max < _multi_min) this->abort("Overall MultiMax <= overall MultiMin!");
@@ -221,11 +224,11 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
       zmax = std::max(tpcabox.MaxZ(), zmax);
 
       if(_debug) {
-	std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
-		  << " ... X " << xmin << " => " << xmax
-		  << " ... Y " << ymin << " => " << ymax
-		  << " ... Z " << zmin << " => " << zmax
-		  << std::endl;
+    std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
+          << " ... X " << xmin << " => " << xmax
+          << " ... Y " << ymin << " => " << ymax
+          << " ... Z " << zmin << " => " << zmax
+          << std::endl;
       }
     }
 
@@ -251,9 +254,9 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
 
     if(_debug>0) {
       std::cout<<"Particle generation world boundaries..."<<std::endl
-	       <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
-	       <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
-	       <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
+           <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
+           <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
+           <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
     }
 
 
@@ -319,12 +322,12 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
     for(size_t idx=0; idx<_param_v.size(); ++idx) {
       weight_v[idx] = _param_v[idx].weight;
       for(size_t ctr=0; ctr<_param_v[idx].multi[0]; ++ctr) {
-	result.push_back(idx);
-	gen_count_v[idx] += 1;
-	num_part -= 1;
+    result.push_back(idx);
+    gen_count_v[idx] += 1;
+    num_part -= 1;
       }
       if(gen_count_v[idx] >= _param_v[idx].multi[1])
-	weight_v[idx] = 0.;
+    weight_v[idx] = 0.;
     }
 
     assert(num_part >= 0);
@@ -365,7 +368,7 @@ void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
 
   if(_debug>0) {
     std::cout << "Generating a rain particle at ("
-	      << x << "," << y << "," << z << ")" << std::endl;
+          << x << "," << y << "," << z << ")" << std::endl;
   }
 }
 /*
@@ -396,31 +399,41 @@ void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
 
 }
 */
+
+std::array<double, 3U> MultiPartVertex::extractDirection() const {
+    double px, py, pz;
+    px = fNormalRandom->fire(0, 1);
+    py = fNormalRandom->fire(0, 1);
+    pz = fNormalRandom->fire(0, 1);
+    double p = std::hypot(px, py, pz);
+    px = px / p;
+    py = py / p;
+    pz = pz / p;
+    std::array<double, 3U> result = { px, py, pz };
+    return result;
+}
+
 void MultiPartVertex::GenMomentum(const PartGenParam& param, const double& mass, double& px, double& py, double& pz) {
 
     double tot_energy = 0;
     if(param.use_mom)
-        tot_energy = sqrt(pow(fFlatRandom->fire(param.kerange[0],param.kerange[1]),2) + pow(mass,2));
+        tot_energy = sqrt(cet::square(fFlatRandom->fire(param.kerange[0],param.kerange[1])) + cet::square(mass));
     else
         tot_energy = fFlatRandom->fire(param.kerange[0],param.kerange[1]) + mass;
 
-    double mom_mag = sqrt(pow(tot_energy,2) - pow(mass,2));
+    double mom_mag = sqrt(cet::square(tot_energy) - cet::square(mass));
 
-		/* Generating unit vector with uniform distribution
-		 * in direction = over the sphere.
-		 *
-		 * It is sufficient to draw a normal variable in
-		 * each direction and normalize.
-		 *
-		 * https://mathworld.wolfram.com/SpherePointPicking.html
-		 */
-		px = fNormalRandom->fire(0, 1);
-		py = fNormalRandom->fire(0, 1);
-		pz = fNormalRandom->fire(0, 1);
-		double p = std::sqrt( std::pow(px, 2) + std::pow(py, 2) + std::pow(pz, 2) );
-		px = px / p;
-		py = py / p;
-		pz = pz / p;
+        /* Generating unit vector with uniform distribution
+         * in direction = over the sphere.
+         *
+         * It is sufficient to draw a normal variable in
+         * each direction and normalize.
+         *
+         * https://mathworld.wolfram.com/SpherePointPicking.html
+         */
+
+        std::array<double, 3U> p = extractDirection();
+        px = p[0]; py = p[1]; pz = p[2];
 
     if(_debug>1)
         std::cout << "    Direction : (" << px << "," << py << "," << pz << ")" << std::endl
@@ -463,7 +476,7 @@ void MultiPartVertex::produce(art::Event & e)
         auto const& mass = param.mass[pdg_index];
         if(_debug) std::cout << "  " << idx << "th instance PDG " << pdg << std::endl;
         GenMomentum(param,mass,px,py,pz);
-        TLorentzVector mom(px,py,pz,sqrt(pow(px,2)+pow(py,2)+pow(pz,2)+pow(mass,2)));
+        TLorentzVector mom(px,py,pz,sqrt(cet::square(px)+cet::square(py)+cet::square(pz)+cet::square(mass)));
         //simb::MCParticle part(mct.NParticles(), pdg, "primary", 0, mass, 1);
         simb::MCParticle part(part_v.size(), pdg, "primary", 0, mass, 1);
         part.AddTrajectoryPoint(pos,mom);
