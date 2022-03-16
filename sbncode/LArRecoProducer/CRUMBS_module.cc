@@ -67,22 +67,38 @@ namespace sbn {
     void ResetVars();
     void SetupMaps(art::Event const& e);
 
-    art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, const art::Ptr<recob::Slice> slice, const art::ValidHandle<std::vector<recob::Slice> > handleSlices);
+    art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, 
+						const art::Ptr<recob::Slice> &slice, 
+						const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::vector<art::Ptr<anab::T0> > GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-						    art::ValidHandle<std::vector<recob::Slice> > handleSlices);
-    std::vector<art::Ptr<anab::T0> > GetCRTHitT0s(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-						  art::ValidHandle<std::vector<recob::Slice> > handleSlices);
-    float GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-					   art::ValidHandle<std::vector<recob::Slice> > handleSlices);
+    std::vector<art::Ptr<anab::T0> > GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
+						    const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+						    const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    void FillCRTVars(std::vector<art::Ptr<anab::T0> > trackT0s, std::vector<art::Ptr<anab::T0> > hitT0s);
-    void FillPandoraNuScoreVars(std::map<std::string, float> propertiesMap);
+    std::vector<art::Ptr<anab::T0> > GetCRTHitT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
+						  const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+						  const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::vector<art::Ptr<recob::Hit> > GetAllSliceHits(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::Slice> > handleSlices);
-    std::map<int,float> SlicePurity(art::Event const& e, std::vector<art::Ptr<recob::Hit> > sliceHits);
-    float SliceCompleteness(art::Event const& e, std::vector<art::Ptr<recob::Hit> > sliceHits, std::vector<art::Ptr<recob::Hit> > allHits, const int matchedGenID);
-    int SliceTruthId(std::map<int, float> purities);
+    float GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
+					   const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+					   const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
+
+    void FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &hitT0s);
+
+    void FillPandoraNuScoreVars(std::map<std::string, float> &propertiesMap);
+
+    std::vector<art::Ptr<recob::Hit> > GetAllSliceHits(art::Event const& e, 
+						       const art::Ptr<recob::Slice> &slice, 
+						       const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
+
+    std::map<int,float> SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits);
+
+    float SliceCompleteness(art::Event const& e, 
+			    const std::vector<art::Ptr<recob::Hit> > &sliceHits, 
+			    const std::vector<art::Ptr<recob::Hit> > &allHits, 
+			    const int matchedGenID);
+
+    int SliceTruthId(std::map<int, float> &purities);
 
   private:
 
@@ -171,38 +187,41 @@ namespace sbn {
       fMVAReader->BookMVA(fMVAName, weightFileFullPath);
 
       art::ServiceHandle<art::TFileService> tfs;
-      fSliceTree = tfs->make<TTree>("SliceTree","Slice data TTree");
+      if(fTrainingMode)
+	{
+	  fSliceTree = tfs->make<TTree>("SliceTree","Slice data TTree");
 
-      fSliceTree->Branch("tpc_NuScore",&tpc_NuScore);
-      fSliceTree->Branch("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
-      fSliceTree->Branch("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
-      fSliceTree->Branch("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
-      fSliceTree->Branch("tpc_CRNHitsMax",&tpc_CRNHitsMax);
-      fSliceTree->Branch("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
-      fSliceTree->Branch("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
-      fSliceTree->Branch("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
-      fSliceTree->Branch("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
-      fSliceTree->Branch("tpc_NuVertexY",&tpc_NuVertexY);
-      fSliceTree->Branch("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
-      fSliceTree->Branch("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
+	  fSliceTree->Branch("tpc_NuScore",&tpc_NuScore);
+	  fSliceTree->Branch("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
+	  fSliceTree->Branch("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
+	  fSliceTree->Branch("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
+	  fSliceTree->Branch("tpc_CRNHitsMax",&tpc_CRNHitsMax);
+	  fSliceTree->Branch("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
+	  fSliceTree->Branch("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
+	  fSliceTree->Branch("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
+	  fSliceTree->Branch("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
+	  fSliceTree->Branch("tpc_NuVertexY",&tpc_NuVertexY);
+	  fSliceTree->Branch("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
+	  fSliceTree->Branch("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
 
-      fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
-      fSliceTree->Branch("pds_FMPE",&pds_FMPE);
-      fSliceTree->Branch("pds_FMTime",&pds_FMTime);
+	  fSliceTree->Branch("pds_FMTotalScore",&pds_FMTotalScore);
+	  fSliceTree->Branch("pds_FMPE",&pds_FMPE);
+	  fSliceTree->Branch("pds_FMTime",&pds_FMTime);
 
-      fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
-      fSliceTree->Branch("crt_HitScore",&crt_HitScore);
-      fSliceTree->Branch("crt_TrackTime",&crt_TrackTime);
-      fSliceTree->Branch("crt_HitTime",&crt_HitTime);
+	  fSliceTree->Branch("crt_TrackScore",&crt_TrackScore);
+	  fSliceTree->Branch("crt_HitScore",&crt_HitScore);
+	  fSliceTree->Branch("crt_TrackTime",&crt_TrackTime);
+	  fSliceTree->Branch("crt_HitTime",&crt_HitTime);
 
-      fSliceTree->Branch("eventID",&eventID);
-      fSliceTree->Branch("subRunID",&subRunID);
-      fSliceTree->Branch("runID",&runID);
-      fSliceTree->Branch("slicePDG",&slicePDG);
-      fSliceTree->Branch("matchedIndex",&matchedIndex);
-      fSliceTree->Branch("matchedType",&matchedType);
-      fSliceTree->Branch("matchedPurity",&matchedPurity);
-      fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
+	  fSliceTree->Branch("eventID",&eventID);
+	  fSliceTree->Branch("subRunID",&subRunID);
+	  fSliceTree->Branch("runID",&runID);
+	  fSliceTree->Branch("slicePDG",&slicePDG);
+	  fSliceTree->Branch("matchedIndex",&matchedIndex);
+	  fSliceTree->Branch("matchedType",&matchedType);
+	  fSliceTree->Branch("matchedPurity",&matchedPurity);
+	  fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
+	}
     }
 
   void CRUMBS::ClearMaps() 
@@ -339,11 +358,8 @@ namespace sbn {
 	const art::Ptr<sbn::SimpleFlashMatch> flashmatch = pfpFMVec.front();
 	pds_FMTotalScore = flashmatch->score.total;
 	pds_FMPE = flashmatch->light.pe;
-	pds_FMTime = flashmatch->time;
+	pds_FMTime = std::max(flashmatch->time, -100.);
       
-	if(pds_FMTime == -9999)
-	  pds_FMTime = -100;
-
 	const float score = fMVAReader->EvaluateMVA(fMVAName);
 
 	CRUMBSResult thisResult(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, tpc_CRNHitsMax,
@@ -373,10 +389,10 @@ namespace sbn {
     e.put(std::move(sliceAssns));
   }
 
-  void CRUMBS::FillCRTVars(std::vector<art::Ptr<anab::T0> > trackT0s, std::vector<art::Ptr<anab::T0> > hitT0s)
+  void CRUMBS::FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &hitT0s)
   {
-    if (trackT0s.size() != 0){
-      crt_TrackScore = 999999;
+    if (!trackT0s.empty()){
+      crt_TrackScore = std::numeric_limits<float>::max();
       for(auto const crttrackmatcht0 : trackT0s)
 	{
 	  if(crttrackmatcht0->TriggerConfidence() < crt_TrackScore)
@@ -387,8 +403,8 @@ namespace sbn {
 	}
     }
   
-    if (hitT0s.size() != 0){
-      crt_HitScore = 999999;
+    if (!hitT0s.empty()){
+      crt_HitScore = std::numeric_limits<float>::max();
       for(auto const crthitmatcht0 : hitT0s)
 	{
 	  if(crthitmatcht0->TriggerConfidence() < crt_HitScore)
@@ -400,95 +416,93 @@ namespace sbn {
     }
   }
 
-  void CRUMBS::FillPandoraNuScoreVars(std::map<std::string, float> propertiesMap)
+  void CRUMBS::FillPandoraNuScoreVars(std::map<std::string, float> &propertiesMap)
   {
     auto propertiesMapIter = propertiesMap.find("NuScore");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuScore" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuScore" << std::endl;
+      abort();
     }
     tpc_NuScore = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("CRFracHitsInLongestTrack");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- CRFracHitsInLongestTrack" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- CRFracHitsInLongestTrack" << std::endl;
+      abort();
     }
     tpc_CRFracHitsInLongestTrack = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("CRLongestTrackDeflection");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- CRLongestTrackDeflection" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- CRLongestTrackDeflection" << std::endl;
+      abort();
     }
     tpc_CRLongestTrackDeflection = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("CRLongestTrackDirY");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- CRLongestTrackDirY" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- CRLongestTrackDirY" << std::endl;
+      abort();
     }
     tpc_CRLongestTrackDirY = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("CRNHitsMax");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- CRNHitsMax" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- CRNHitsMax" << std::endl;
+      abort();
     }
     tpc_CRNHitsMax = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuEigenRatioInSphere");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuEigenRatioInSphere" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuEigenRatioInSphere" << std::endl;
+      abort();
     }
     tpc_NuEigenRatioInSphere = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuNFinalStatePfos");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuNFinalStatePfos" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuNFinalStatePfos" << std::endl;
+      abort();
     }
     tpc_NuNFinalStatePfos = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuNHitsTotal");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuNHitsTotal" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuNHitsTotal" << std::endl;
+      abort();
     }
     tpc_NuNHitsTotal = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuNSpacePointsInSphere");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuNSpacePointsInSphere" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuNSpacePointsInSphere" << std::endl;
+      abort();
     }
     tpc_NuNSpacePointsInSphere = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuVertexY");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuVertexY" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuVertexY" << std::endl;
+      abort();
     }
     tpc_NuVertexY = propertiesMapIter->second;
 
     propertiesMapIter = propertiesMap.find("NuWeightedDirZ");
     if (propertiesMapIter == propertiesMap.end()){
-      std::cout << "Error finding variable -- NuWeightedDirZ" << std::endl;
-      return;
+      std::cout << "CRUMBS_module: Error finding variable -- NuWeightedDirZ" << std::endl;
+      abort();
     }
     tpc_NuWeightedDirZ = propertiesMapIter->second;
   }
 
-  std::vector<art::Ptr<recob::Hit> > CRUMBS::GetAllSliceHits(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::Slice> > handleSlices)
+  std::vector<art::Ptr<recob::Hit> > CRUMBS::GetAllSliceHits(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
     art::FindManyP<recob::Hit> sliceHitAssn(handleSlices,e,fSliceModuleLabel);
-    const std::vector<art::Ptr<recob::Hit> > sliceHits = sliceHitAssn.at(slice.key());
-
-    return sliceHits;
+    return sliceHitAssn.at(slice.key());
   }
 
-  art::Ptr<recob::PFParticle> CRUMBS::GetSlicePrimary(art::Event const& e, const art::Ptr<recob::Slice> slice, const art::ValidHandle<std::vector<recob::Slice> > handleSlices)
+  art::Ptr<recob::PFParticle> CRUMBS::GetSlicePrimary(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
     art::FindManyP<recob::PFParticle> slicePfpAssn(handleSlices,e,fSliceModuleLabel);
     std::vector<art::Ptr<recob::PFParticle> > pfps = slicePfpAssn.at(slice.key());
@@ -503,7 +517,7 @@ namespace sbn {
     return nullReturn;
   }
 
-  std::map<int, float> CRUMBS::SlicePurity(art::Event const& e, std::vector<art::Ptr<recob::Hit> > sliceHits)
+  std::map<int, float> CRUMBS::SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits)
   {
     std::map<int, int> sliceHitMap;
     std::map<int, float> slicePurityMap;
@@ -523,7 +537,7 @@ namespace sbn {
     return slicePurityMap;
   }
 
-  float CRUMBS::SliceCompleteness(art::Event const& e, std::vector<art::Ptr<recob::Hit> > sliceHits, std::vector<art::Ptr<recob::Hit> > allHits, const int matchedGenID)
+  float CRUMBS::SliceCompleteness(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, const int matchedGenID)
   {
     int nSliceHits(0), nHits(0);
     auto clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
@@ -546,10 +560,10 @@ namespace sbn {
     return (float) nSliceHits / (float) nHits;
   }
 
-  int CRUMBS::SliceTruthId(std::map<int, float> purities)
+  int CRUMBS::SliceTruthId(std::map<int, float> &purities)
   {
     float maxPur = -1;
-    int retId = -999999;
+    int retId = -std::numeric_limits<int>::max();
 
     for (auto const& [id, purity] : purities)
       {
@@ -563,8 +577,8 @@ namespace sbn {
     return retId;
   }
 
-  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-							  art::ValidHandle<std::vector<recob::Slice> > handleSlices)
+  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+							  const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
     std::vector<art::Ptr<anab::T0> > t0Vec;
 
@@ -596,8 +610,8 @@ namespace sbn {
     return t0Vec;
   }
 
-  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTHitT0s(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-							art::ValidHandle<std::vector<recob::Slice> > handleSlices)
+  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTHitT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+							const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
     std::vector<art::Ptr<anab::T0> > t0Vec;
 
@@ -629,11 +643,11 @@ namespace sbn {
     return t0Vec;
   }
 
-  float CRUMBS::GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> slice, art::ValidHandle<std::vector<recob::PFParticle> > handlePFPs,
-						 art::ValidHandle<std::vector<recob::Slice> > handleSlices)
+  float CRUMBS::GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+						 const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
-    sbn::StoppingChi2Fit longestTrkFit;
-    float maxLength = -999999.;
+    art::Ptr<anab::Calorimetry> longestTrackCalo;
+    float maxLength = -std::numeric_limits<float>::max();
 
     art::Handle<std::vector<recob::Track> > handleTracks;
     e.getByLabel(fTrackModuleLabel, handleTracks);
@@ -667,14 +681,16 @@ namespace sbn {
 	if(track->Length() > maxLength)
 	  {
 	    maxLength = track->Length();
-	    longestTrkFit = fTrackStoppingChi2Alg.RunFitForCosmicID(*calo);
+	    longestTrackCalo = calo;
 	  }
       }
 
-    if(longestTrkFit.pol0Chi2 < 0 || longestTrkFit.expChi2 <= 0)
+    sbn::StoppingChi2Fit longestTrackFit = longestTrackCalo.isNull() ? StoppingChi2Fit() : fTrackStoppingChi2Alg.RunFitForCosmicID(*longestTrackCalo);
+
+    if(longestTrackFit.pol0Chi2 < 0 || longestTrackFit.expChi2 <= 0)
       return -4.f;
   
-    return longestTrkFit.pol0Chi2 / longestTrkFit.expChi2;
+    return longestTrackFit.pol0Chi2 / longestTrackFit.expChi2;
   }
 }
 
