@@ -18,7 +18,7 @@ crumbs_sbnd:
   CalorimetryModuleLabel:		"pandoraCalo"
   
   MVAName:				"BDT Method"
-  MVAFileName:				"CRUMBS_SBND.weights.xml"
+  MVAFileName:				"CRUMBS/CRUMBS_SBND.weights.xml"
     
   Chi2FitParams: {
     TrackLabel: pandoraTrack
