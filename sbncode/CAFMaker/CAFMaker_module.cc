@@ -1076,7 +1076,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindOneP<sbn::CRUMBSResult> foSlcCRUMBS =
       FindOnePStrict<sbn::CRUMBSResult>(sliceList, evt,
           fParams.CRUMBSLabel() + slice_tag_suff);
-    const sbn::CRUMBSResult *slcCRUMBS = NULL;
+    const sbn::CRUMBSResult *slcCRUMBS = nullptr;
     if (foSlcCRUMBS.isValid()) {
       slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
