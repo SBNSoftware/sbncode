@@ -90,13 +90,8 @@ namespace sbn {
 						       const art::Ptr<recob::Slice> &slice, 
 						       const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::map<int,float> SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, std::map<int, int> &trackIDToGenMap);
-
-    float SliceCompleteness(art::Event const& e, 
-			    const std::vector<art::Ptr<recob::Hit> > &sliceHits, 
-			    const std::vector<art::Ptr<recob::Hit> > &allHits, 
-			    std::map<int, int> &trackIDToGenMap,
-			    const int matchedGenID);
+    void GetTruthMatching(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, 
+			  std::map<int, int> &trackIDToGenMap, int &matchedID, double &purity, double &completeness);
 
     int SliceTruthId(std::map<int, float> &purities);
 
@@ -398,13 +393,12 @@ namespace sbn {
 	if(fTrainingMode)
 	  {
 	    std::vector<art::Ptr<recob::Hit> > sliceHits = this->GetAllSliceHits(e, slice, handleSlices);
-	    std::map<int, float> puritiesMap = this->SlicePurity(e, sliceHits, trackIDToGenMap);
-	    const int truthId = this->SliceTruthId(puritiesMap);
+
+	    int matchedID(-1);
+	    this->GetTruthMatching(e, sliceHits, allHits, trackIDToGenMap, matchedID, matchedPurity, matchedCompleteness);
 
 	    slicePDG = primary->PdgCode();
-	    matchedType = genTypeMap[truthId];
-	    matchedPurity = puritiesMap[truthId];
-	    matchedCompleteness = this->SliceCompleteness(e, sliceHits, allHits, trackIDToGenMap, truthId);
+	    matchedType = genTypeMap[matchedID];
       
 	    fSliceTree->Fill();
 	  }
@@ -542,7 +536,8 @@ namespace sbn {
     return nullReturn;
   }
 
-  std::map<int, float> CRUMBS::SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, std::map<int, int> &trackIDToGenMap)
+  void CRUMBS::GetTruthMatching(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, 
+				std::map<int, int> &trackIDToGenMap, int &matchedID, double &purity, double &completeness)
   {
     std::map<int, int> sliceHitMap;
     std::map<int, float> slicePurityMap;
@@ -559,48 +554,27 @@ namespace sbn {
 	slicePurityMap[id] = (float) nHits / (float) sliceHits.size();
       }
 
-    return slicePurityMap;
-  }
-
-  float CRUMBS::SliceCompleteness(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, 
-				  std::map<int, int> &trackIDToGenMap, const int matchedGenID)
-  {
-    int nSliceHits(0), nHits(0);
-    auto clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
-
-    for (auto const& hit : sliceHits)
+    for (auto const& [id, pur] : slicePurityMap)
       {
-	if(trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
-	  ++nSliceHits;
-      }
-
-    for (auto const& hit : allHits)
-      {
-	if(trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
-	  ++nHits;
-      }
-  
-    if(nHits == 0) 
-      return 0;
-
-    return (float) nSliceHits / (float) nHits;
-  }
-
-  int CRUMBS::SliceTruthId(std::map<int, float> &purities)
-  {
-    float maxPur = -1;
-    int retId = -std::numeric_limits<int>::max();
-
-    for (auto const& [id, purity] : purities)
-      {
-	if(purity > maxPur) 
+	if(pur > purity) 
 	  {
-	    retId = id;
-	    maxPur = purity;
+	    matchedID = id;
+	    purity = pur;
 	  }
       }
 
-    return retId;
+    int totalTrueHits(0);
+
+    for (auto const& hit : allHits)
+      {
+	if(trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedID)
+	  ++totalTrueHits;
+      }
+  
+    if(totalTrueHits == 0) 
+      completeness = 0;
+    else
+      completeness = sliceHitMap[matchedID] / (float) totalTrueHits;
   }
 
   std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
