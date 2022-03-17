@@ -96,7 +96,7 @@
 #include <sys/stat.h>
 
 #include "HelperFunctions/helper_functions.h"
-//#include "Libraries/Atlas.h" PENDING IN USE CHECK
+//#include "Libraries/Atlas.h"
 
 //#include "Libraries/bad_channel_matching.h"
 #include "Libraries/DBSCAN.h"
@@ -274,7 +274,8 @@ namespace single_photon
             void GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap,
 			const lar_pandora::PFParticlesToVertices &particlesToVertices, 
 			PFParticleVector &crParticles, 
-			PFParticleVector &nuParticles);
+			PFParticleVector &nuParticles,
+			size_t fpfp_w_bestnuID);
 
             /**
              *  @brief  Collect associated tracks and showers to particles in an input particle vector
@@ -493,7 +494,8 @@ namespace single_photon
                     const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
                     const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
                     const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
-					detinfo::DetectorPropertiesData const & theDetector);
+					detinfo::DetectorPropertiesData const & theDetector,
+					int slice_w_bestnuID);
 
 
 
@@ -1022,7 +1024,7 @@ namespace single_photon
             //ReadBDT * sssVetov1;
 
             int m_sss_num_candidates; /* number of unasso hit clusters which are not close enough to reco showers */
-	    std::vector<int> m_sss_candidate_in_nu_slice;
+			std::vector<int> m_sss_candidate_in_nu_slice;
             std::vector<int> m_sss_candidate_num_hits;
             std::vector<int> m_sss_candidate_num_wires; //number of wires spanned by the candidate cluster
             std::vector<int>  m_sss_candidate_num_ticks;

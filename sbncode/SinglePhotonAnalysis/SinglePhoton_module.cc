@@ -188,10 +188,6 @@ namespace single_photon
         }
 		std::cout<<">>>> CHECK finish reconfigure() at line"<<__LINE__<<std::endl;
 
-        // Depreciated SSV run inline
-        //std::vector<std::string> inputVars = { "sss_candidate_num_hits", "sss_candidate_num_wires", "sss_candidate_num_ticks", "sss_candidate_PCA", "log10(sss_candidate_impact_parameter)", "log10(sss_candidate_min_dist)", "sss_candidate_impact_parameter/sss_candidate_min_dist", "sss_candidate_energy*0.001", "cos(sss_candidate_angle_to_shower)", "sss_candidate_fit_slope", "sss_candidate_fit_constant", "sss_candidate_plane", "sss_reco_shower_energy*0.001", "2*0.001*0.001*sss_reco_shower_energy*sss_candidate_energy*(1-cos(sss_candidate_angle_to_shower))", "log10(2*0.001*0.001*sss_reco_shower_energy*sss_candidate_energy*(1-cos(sss_candidate_angle_to_shower)))", "sss_candidate_energy*0.001/(sss_reco_shower_energy*0.001)", "sss_candidate_closest_neighbour" };
-        //sssVetov1 = new ReadBDT(inputVars);
-
     }
 
     //------------------------------------------------------------------------------------------------------------------------------------------
@@ -216,9 +212,9 @@ namespace single_photon
         //Some event based properties
         m_subrun_counts++;
         m_number_of_events++;
-        m_run_number = evt.run();
+        m_run_number	= evt.run();
         m_subrun_number = evt.subRun();
-        m_event_number = evt.id().event();
+        m_event_number	= evt.id().event();
 
 
         //if module is run in selected-event mode, and current event is not in the list, skip it
@@ -236,7 +232,6 @@ namespace single_photon
         _time2cm = sampling_rate(detClocks) / 1000.0 * theDetector.DriftVelocity( theDetector.Efield(), theDetector.Temperature() );//found in ProtoShowerPandora_tool.cc
 
 
-        //******************************Setup*****************Setup**************************************/
         //******************************Setup*****************Setup**************************************/
         // OK in this section we will get a bunch of stuff we need later, general associations and maps. These are either from pandora helper stuff or from direct associations. 
         // Make sure under the hood you understand this!
@@ -368,6 +363,73 @@ namespace single_photon
                 kalmanTrackToCaloMap[trk] =cali_per_kalmantrack.at(trk.key());
             }
         }
+        //  Test ground for some slice stuff, dont have it run automatically, ignore for now, mark
+
+        if(m_is_verbose) std::cout<<"SinglePhoton::analyze() \t||\t Get PandoraMetadata"<<std::endl;
+        //add the associaton between PFP and metadata, this is important to look at the slices and scores
+        art::FindManyP< larpandoraobj::PFParticleMetadata > pfPartToMetadataAssoc(pfParticleHandle, evt,  m_pandoraLabel);
+        std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> > pfParticleToMetadataMap;
+        for(size_t i=0; i< pfParticleVector.size(); ++i){
+            const art::Ptr<recob::PFParticle> pfp = pfParticleVector[i];
+            pfParticleToMetadataMap[pfp] =  pfPartToMetadataAssoc.at(pfp.key());
+        }
+
+		size_t pfp_w_bestnuID = 0;
+		int slice_w_bestnuID = 0;
+        if(true){
+            std::cout<<"SliceTest: there are "<<sliceVector.size()<<" slices in this event"<<std::endl;
+			double ref_nuscore = 0;
+            for(size_t s =0; s<sliceVector.size(); s++){
+                auto slice = sliceVector[s];
+                auto pfps = sliceToPFParticlesMap[slice]; 
+
+                std::cout<<"SliceTest: On Slice "<<s<<" it has "<<pfps.size()<<" pfparticles ";
+                std::vector<float> nu_scores;
+                bool isSelectedSlice = false;
+                int primaries = 0;
+                int primary_pdg = 0;
+
+                for(auto &pfp: pfps){
+                    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = pfParticleToMetadataMap[pfp];
+                    for(auto &meta: metadatas){
+                        std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
+                        //for each of the things in the list
+                        if(propertiesmap.count("NuScore")==1){
+							double tmp_nuscore = propertiesmap["NuScore"];
+                            nu_scores.push_back(tmp_nuscore);
+							if( tmp_nuscore > ref_nuscore){ 
+								ref_nuscore = tmp_nuscore;
+								pfp_w_bestnuID = pfp->Self();
+								slice_w_bestnuID = s;
+							}
+                        }
+                        if(propertiesmap.count("IsNeutrino")==1){
+                            isSelectedSlice = true; 
+                        }
+                    }
+
+                    if (pfp->IsPrimary()) {
+                        primaries++;
+                        primary_pdg = (pfp->PdgCode());    
+                    }
+                }
+
+                if(nu_scores.size()>0){
+                    double mean  = std::accumulate(nu_scores.begin(), nu_scores.end(), 0.0)/(double)nu_scores.size();
+                    if(mean!=nu_scores.front()){
+                        std::cout<<"ERROR! Somehow the pfp's in this slice have different nu-scores? IMpossible."<<std::endl;
+                        exit(EXIT_FAILURE);
+                    }
+                    std::cout<<"SliceTest: -- and has a nu_score of "<<nu_scores.front()<<" (best nusore PFParticleID:"<<pfp_w_bestnuID;
+                    std::cout<<")-- "<<primaries<<" primaries: pdg last: "<<primary_pdg<<std::endl;
+                }else{
+//                    std::cout<<"SliceTest: -- and does not have a nu_score of. "<<std::endl;
+                }
+                if(isSelectedSlice) std::cout<<"SliceTest: -- -- And is the Pandora Selected Neutrino Slice"<<std::endl;
+            }
+        }// End test of slice metadata
+
+
 
         // Once we have actual verticies, lets concentrate on JUST the neutrino PFParticles for now:
         //--------------------------------
@@ -376,7 +438,7 @@ namespace single_photon
         // 2. Daughters of the neutrino PFParticle - reconstructed under the neutrino hypothesis
         std::vector< art::Ptr<recob::PFParticle> > nuParticles;
         std::vector< art::Ptr<recob::PFParticle> > crParticles;
-        this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles);
+        this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
 		//CHECK potential upgrade:
 		// LOOP over pfParticleMap, and fill in crParticles/nuParticles here?
 
@@ -392,15 +454,6 @@ namespace single_photon
         for(size_t i=0; i< nuParticles.size(); ++i){
             const art::Ptr<recob::PFParticle> pfp = nuParticles[i];
             pfParticleToSpacePointsMap[pfp] = spacePoints_per_pfparticle.at(pfp.key());
-        }
-
-        if(m_is_verbose) std::cout<<"SinglePhoton::analyze() \t||\t Get PandoraMetadata"<<std::endl;
-        //add the associaton between PFP and metadata, this is important to look at the slices and scores
-        art::FindManyP< larpandoraobj::PFParticleMetadata > pfPartToMetadataAssoc(pfParticleHandle, evt,  m_pandoraLabel);
-        std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> > pfParticleToMetadataMap;
-        for(size_t i=0; i< pfParticleVector.size(); ++i){
-            const art::Ptr<recob::PFParticle> pfp = pfParticleVector[i];
-            pfParticleToMetadataMap[pfp] =  pfPartToMetadataAssoc.at(pfp.key());
         }
 
         if(m_is_verbose) std::cout<<"SinglePhoton::analyze() \t||\t Get Clusters"<<std::endl;
@@ -512,56 +565,6 @@ namespace single_photon
          * End of SEAview: grab cosmic-related PFPaticles and recob::Hits
          *
          **************************************************************************/
-
-
-        //  Test ground for some slice stuff, dont have it run automatically, ignore for now, mark
-
-        if(false){
-            std::cout<<"SliceTest: there are "<<sliceVector.size()<<" slices in this event"<<std::endl;
-            for(size_t s =0; s<sliceVector.size(); s++){
-                auto slice = sliceVector[s];
-                auto pfps = sliceToPFParticlesMap[slice]; 
-
-                std::cout<<"SliceTest: On Slice "<<s<<" it has "<<pfps.size()<<" pfparticles ";
-                std::vector<float> nu_scores;
-                bool isSelectedSlice = false;
-                int primaries = 0;
-                int primary_pdg = 0;
-
-                for(auto &pfp: pfps){
-                    std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = pfParticleToMetadataMap[pfp];
-                    for(auto &meta: metadatas){
-                        std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
-                        //for each of the things in the list
-                        if(propertiesmap.count("NuScore")==1){
-                            nu_scores.push_back(propertiesmap["NuScore"]);
-                        }
-                        if(propertiesmap.count("IsNeutrino")==1){
-                            isSelectedSlice = true; 
-                        }
-                    }
-
-                    if (pfp->IsPrimary()) {
-                        primaries++;
-                        primary_pdg = (pfp->PdgCode());    
-                    }
-                }
-
-                if(nu_scores.size()>0){
-                    double mean  = std::accumulate(nu_scores.begin(), nu_scores.end(), 0.0)/(double)nu_scores.size();
-                    if(mean!=nu_scores.front()){
-                        std::cout<<"ERROR! Somehow the pfp's in this slice have different nu-scores? IMpossible."<<std::endl;
-                        exit(EXIT_FAILURE);
-                    }
-                    std::cout<<"SliceTest: -- and has a nu_score of "<<nu_scores.front();
-                    std::cout<<"-- with "<<primaries<<" primaries: pdg last: "<<primary_pdg<<std::endl;
-                }else{
-                    std::cout<<"SliceTest: -- and does not have a nu_score of. "<<std::endl;
-                }
-                if(isSelectedSlice) std::cout<<"SliceTest: -- -- And is the Selected Neutrino Slice"<<std::endl;
-
-            }
-        }// End test of slice metadata
 
 
 
@@ -929,7 +932,7 @@ namespace single_photon
 
                 std::cout<<"filling info in ncdelta slice tree"<<std::endl;
                 this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
-        this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles);
+				this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
 
                 if (m_print_out_event){
                     if (m_matched_signal_shower_num != 1 || m_matched_signal_track_num != 1){
@@ -1018,7 +1021,7 @@ namespace single_photon
 
 
         //*******************************   Isolation (SSV precursor)  **************************************************************/
-        if(!m_run_all_pfps && ! m_run_pi0_filter) this->IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector);
+        if(!m_run_all_pfps && ! m_run_pi0_filter) this->IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector, slice_w_bestnuID);
 
 		std::cout<<"CHECK "<<__LINE__<<" for a finished isolation study"<<std::endl;
 
@@ -1474,6 +1477,8 @@ namespace single_photon
 
 
 
+		//CHECK
+		std::cout<<"CHECK! Filling in Pi0 events with MicroBooNE TPC dimensinos "<<std::endl;
         bool filter_pass_2g1p = Pi0PreselectionFilter();
         bool filter_pass_2g0p = Pi0PreselectionFilter2g0p();
 
@@ -1857,19 +1862,17 @@ namespace single_photon
 
 
 	//Classify PFParticles into crParticles or nuParticles.
-    void SinglePhoton::GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, PFParticleVector &crParticles, PFParticleVector &nuParticles )
+    void SinglePhoton::GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, PFParticleVector &crParticles, PFParticleVector &nuParticles, size_t fpfp_w_bestnuID )
     {
 		if(m_is_verbose) std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\tSort out PFPParticles."<<std::endl;
 
         int found = 0;
         int primaries = 0;
-        int full = 0;
 //CHECK		PFParticleIdMap::const_iterator best_nu = NULL;//only take the PFParticle with best nu score
         for (PFParticleIdMap::const_iterator it = pfParticleMap.begin(); it != pfParticleMap.end(); ++it)
         {
             const art::Ptr<recob::PFParticle> pParticle(it->second);
 
-            full++;
             // Only look for primary particles
             if (!pParticle->IsPrimary()) continue;
             primaries++;
@@ -1886,11 +1889,15 @@ namespace single_photon
             // If it is, lets get the vertex position
             if(isNeutrino){
 				if(found>0){
-					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not good but ok."<<std::endl;
+					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not expected as in MicroBooNE but ok."<<std::endl;
 				}
-                found++;
+                found++,
+
 				std::cout<<"CHECK "<<pParticle->Self()<<"th PFParticle is reco. as neutrino w. pdg: "<<pdg<<std::endl;
-                this->GetVertex(pfParticlesToVerticesMap, pParticle );
+				if(pParticle->Self() == fpfp_w_bestnuID){
+					std::cout<<"Take this PFParticle's vertex as event vertex, bc of it has highest nu score"<<std::endl;
+					this->GetVertex(pfParticlesToVerticesMap, pParticle );
+				}
             }
 
             // All non-neutrino primary particles are reconstructed under the cosmic hypothesis
@@ -1916,7 +1923,6 @@ namespace single_photon
                 nuParticles.push_back(pfParticleMap.at(daughterId));
             }
         }
-        std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\t Found "<<primaries<<" primary PFParticles (out of "<<full<<") of which: "<<found<<" were neutrinos.\n"<<std::endl;
         std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\t Found "<<primaries<<" primary PFParticles (out of "<<pfParticleMap.size()<<") of which: "<<found<<" were neutrinos.\n"<<std::endl;
         m_reco_vertex_size = found;
 
@@ -2001,85 +2007,6 @@ namespace single_photon
 
 
 
-    double SinglePhoton::triangle_area(double a1, double a2, double b1, double b2, double c1, double c2){
-        double m1 = 0.3;
-        double m2 = 1.0/25.0;
-
-        return fabs((a1*m1*(b2*m2-c2*m2)+b1*m1*(c2*m2-a2*m2)+c1*m1*(a2*m2-b2*m2))/2.0);
-    }
-
-    int SinglePhoton::quick_delaunay_fit(int n, double *X, double *Y, int *num_triangles, double * area){
-
-        std::vector<double> z(n,0.0);
-
-        TGraph2D *g = new TGraph2D(n,X,Y,&z[0]);
-        TGraphDelaunay delan(g);
-        delan.SetMarginBinsContent(0);
-        delan.ComputeZ(0,0);
-        delan.FindAllTriangles();
-        (*num_triangles)=delan.GetNdt(); // number of Delaunay triangles found
-
-        //Grab the locations of all the trianges. These will be intergers referencing to position in X,Y arrays
-        Int_t *MT = delan.GetMTried();
-        Int_t *NT = delan.GetNTried();
-        Int_t *PT = delan.GetPTried();
-
-        (*area)=0.0;
-        for(int i = 0; i<delan.GetNdt(); i++){
-            (*area)+=triangle_area(X[MT[i]-1],Y[MT[i]-1],X[NT[i]-1],Y[NT[i]-1],X[PT[i]-1],Y[PT[i]-1]);
-        }
-
-        delete g;
-        return 0;
-    }
-
-    int SinglePhoton::delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area){
-
-        int n = hits.size();
-        std::vector<double> C0,T0;
-        std::vector<double> C1,T1;
-        std::vector<double> C2,T2;
-        size_t n_0=0;
-        size_t n_1=0;
-        size_t n_2=0;
-
-        for(int i=0;i<n; i++){
-            const art::Ptr<recob::Hit> hit = hits[i];
-            switch(hit->View()){
-                case 0:
-                    C0.push_back((double)hit->WireID().Wire);         
-                    T0.push_back(hit->PeakTime());         
-                    n_0++;
-                    break;
-                case 1:
-                    C1.push_back((double)hit->WireID().Wire);         
-                    T1.push_back(hit->PeakTime());         
-                    n_1++;
-                    break;
-                case 2:
-                    C2.push_back((double)hit->WireID().Wire);         
-                    T2.push_back(hit->PeakTime());         
-                    n_2++;
-                    break;
-                default:
-                    break;
-            }
-        }
-        if(m_use_delaunay){
-            if(n_0>0 && (int)n_0 < m_delaunay_max_hits) this->quick_delaunay_fit(n_0, &C0[0]  , &T0[0]  , &num_triangles[0],&area[0]);
-            if(n_1>0 && (int)n_1 < m_delaunay_max_hits) this->quick_delaunay_fit(n_1, &C1[0]  , &T1[0]  , &num_triangles[1],&area[1]);
-            if(n_2>0 && (int)n_2 < m_delaunay_max_hits) this->quick_delaunay_fit(n_2, &C2[0]  , &T2[0]  , &num_triangles[2],&area[2]);
-        }
-        num_hits[0] = n_0;
-        num_hits[1] = n_1;
-        num_hits[2] = n_2;
-
-        //std::cout<<"Plane 0: "<<n_0<<" hits with "<<num_triangles[0]<<" triangles of area: "<< area[0]<<std::endl;
-        //std::cout<<"Plane 1: "<<n_1<<" hits with "<<num_triangles[1]<<" triangles of area: "<< area[1]<<std::endl;
-        //std::cout<<"Plane 2: "<<n_2<<" hits with "<<num_triangles[2]<<" triangles of area: "<< area[2]<<std::endl;
-
-        return 0;
-    }
 
     int SinglePhoton::spacecharge_correction(const art::Ptr<simb::MCParticle> & mcparticle, std::vector<double> & corrected, std::vector<double> & input){
         corrected.resize(3);

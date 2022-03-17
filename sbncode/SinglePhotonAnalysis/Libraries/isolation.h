@@ -70,7 +70,8 @@ void SinglePhoton::IsolationStudy(
         const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
         const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, 
 		const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
-					detinfo::DetectorPropertiesData const & theDetector)
+					detinfo::DetectorPropertiesData const & theDetector, 
+					int slice_w_bestnuID)
 {
 
         int total_track_hits =0;
@@ -91,6 +92,9 @@ void SinglePhoton::IsolationStudy(
             art::Ptr<recob::PFParticle> pfp = trackToPFParticleMap[track];
             
 	    int sliceid = pfParticleToSliceIDMap.at(pfp);
+		//CHECK temp. solution only work with best nuscore slice Keng
+		std::cout<<"Looking at slice "<<sliceid<<" the good one is "<<slice_w_bestnuID<<std::endl;
+		if(sliceid != slice_w_bestnuID) continue;
             
 	    std::vector<art::Ptr<recob::Hit>> slicehits = sliceIDToHitsMap.at(sliceid);
             std::vector<art::Ptr<recob::Hit>> trackhits = pfParticleToHitsMap.at(pfp);
@@ -98,7 +102,8 @@ void SinglePhoton::IsolationStudy(
             std::cout << "*SSS: track "<< t <<" is in slice "<< sliceid <<" which has "<< slicehits.size() <<" hits. This track has  "<< trackhits.size() <<" of them. " << std::endl;
             total_track_hits += trackhits.size();
 
-//CHECK  nu_slice_id is updated? Oh, tracks[0] and tracks[1] have different slide IDs, need to fix this;
+//CHECK  nu_slice_id is updated? Oh, tracks[0] and tracks[1] have different slide IDs (both nu slice but different nu score), need to fix this;
+//CHECK temporary solution is to skip tracks[1];
             if(nu_slice_id !=  sliceid && nu_slice_id != -999){
                 std::cout<<"*ERROR!! In Second Shower Search (Isolation Study), the neutrino slice ID changed? this: "<<sliceid<<", last: "<<nu_slice_id<<std::endl;
                 exit(EXIT_FAILURE);
@@ -120,6 +125,8 @@ void SinglePhoton::IsolationStudy(
             art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap.at(shower);
             
 	    int sliceid = pfParticleToSliceIDMap.at(pfp);
+
+		if(sliceid != slice_w_bestnuID) continue;//CHECK only deal with nu slice with best nu score for now Keng
 		if(sliceid<0) continue; //negative sliceid is bad CHECK
 		//CHECK ID not found?
 		std::cout<<"CHECK "<<__LINE__<<" find hits at ID "<<sliceid<<std::endl;
