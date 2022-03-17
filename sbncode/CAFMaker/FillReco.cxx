@@ -294,24 +294,24 @@ namespace caf
                        bool allowEmpty) {
     if (crumbs != nullptr) {
       slice.crumbs_result.score = crumbs->score;
-      slice.crumbs_result.tpc_CRFracHitsInLongestTrack = crumbs->tpc_CRFracHitsInLongestTrack;
-      slice.crumbs_result.tpc_CRLongestTrackDeflection = crumbs->tpc_CRLongestTrackDeflection;
-      slice.crumbs_result.tpc_CRLongestTrackDirY = crumbs->tpc_CRLongestTrackDirY;
-      slice.crumbs_result.tpc_CRNHitsMax = crumbs->tpc_CRNHitsMax;
-      slice.crumbs_result.tpc_NuEigenRatioInSphere = crumbs->tpc_NuEigenRatioInSphere;
-      slice.crumbs_result.tpc_NuNFinalStatePfos = crumbs->tpc_NuNFinalStatePfos;
-      slice.crumbs_result.tpc_NuNHitsTotal = crumbs->tpc_NuNHitsTotal;
-      slice.crumbs_result.tpc_NuNSpacePointsInSphere = crumbs->tpc_NuNSpacePointsInSphere;
-      slice.crumbs_result.tpc_NuVertexY = crumbs->tpc_NuVertexY;
-      slice.crumbs_result.tpc_NuWeightedDirZ = crumbs->tpc_NuWeightedDirZ;
-      slice.crumbs_result.tpc_StoppingChi2CosmicRatio = crumbs->tpc_StoppingChi2CosmicRatio;
-      slice.crumbs_result.pds_FMTotalScore = crumbs->pds_FMTotalScore;
-      slice.crumbs_result.pds_FMPE = crumbs->pds_FMPE;
-      slice.crumbs_result.pds_FMTime = crumbs->pds_FMTime;
-      slice.crumbs_result.crt_TrackScore = crumbs->crt_TrackScore;
-      slice.crumbs_result.crt_HitScore = crumbs->crt_HitScore;
-      slice.crumbs_result.crt_TrackTime = crumbs->crt_TrackTime;
-      slice.crumbs_result.crt_HitTime = crumbs->crt_HitTime;
+      slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
+      slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
+      slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
+      slice.crumbs_result.tpc.crnhitsmax = crumbs->tpc_CRNHitsMax;
+      slice.crumbs_result.tpc.nusphereeigenratio = crumbs->tpc_NuEigenRatioInSphere;
+      slice.crumbs_result.tpc.nufinalstatepfos = crumbs->tpc_NuNFinalStatePfos;
+      slice.crumbs_result.tpc.nutotalhits = crumbs->tpc_NuNHitsTotal;
+      slice.crumbs_result.tpc.nuspherespacepoints = crumbs->tpc_NuNSpacePointsInSphere;
+      slice.crumbs_result.tpc.nuvertexy = crumbs->tpc_NuVertexY;
+      slice.crumbs_result.tpc.nuwgtdirz = crumbs->tpc_NuWeightedDirZ;
+      slice.crumbs_result.tpc.stoppingchi2ratio = crumbs->tpc_StoppingChi2CosmicRatio;
+      slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
+      slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
+      slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
+      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
+      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
     }
   }
 
