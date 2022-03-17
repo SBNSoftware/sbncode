@@ -22,7 +22,6 @@ art_make( LIB_LIBRARIES
 		${ROOT_EVE_LIB_LIST}
 		${ROOT_X3d}
 		${ROOT_BASIC_LIB_LIST}
-		${ROOT_TMVA}
 		messagefacility::MF_MessageLogger
 		sbn_LArReco	    
 		sbncode_LArRecoProducer
@@ -31,7 +30,6 @@ art_make( LIB_LIBRARIES
 		lardataobj_RecoBase_AssnsDicts_dict
 		lardataobj_RecoBase_dict	
 		lardataobj_RecoBase
-		larsim_Utils
 )
 
 install_headers()
