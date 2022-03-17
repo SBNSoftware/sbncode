@@ -63,9 +63,8 @@ namespace sbn {
     // Required functions.
     void produce(art::Event& e) override;
 
-    void ClearMaps();
     void ResetVars();
-    void SetupMaps(art::Event const& e);
+    void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap);
 
     art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, 
 						const art::Ptr<recob::Slice> &slice, 
@@ -91,52 +90,86 @@ namespace sbn {
 						       const art::Ptr<recob::Slice> &slice, 
 						       const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::map<int,float> SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits);
+    std::map<int,float> SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, std::map<int, int> &trackIDToGenMap);
 
     float SliceCompleteness(art::Event const& e, 
 			    const std::vector<art::Ptr<recob::Hit> > &sliceHits, 
 			    const std::vector<art::Ptr<recob::Hit> > &allHits, 
+			    std::map<int, int> &trackIDToGenMap,
 			    const int matchedGenID);
 
     int SliceTruthId(std::map<int, float> &purities);
 
   private:
 
-    // Declare member data here.
+    // Bools to control training
+    bool fTrainingMode, fProcessNeutrinos, fProcessCosmics;
 
-    bool fProcessNeutrinos, fProcessCosmics, fTrainingMode;
-
+    // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
-      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel, fMVAName, fMVAFileName;
+      fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel;
 
-    std::map<int, int> fTrackIDToGenMap;
-    std::map<int, std::string> fGenTypeMap;
+    // MVA location and type for loading
+    std::string fMVAName, fMVAFileName;
 
-    sbn::TPCGeoAlg fTpcGeo;
+    // Parameter set to pass to the stopping chi2 alg
+    fhicl::ParameterSet fChi2FitParams;
 
+    // Tree for storing training information
     TTree *fSliceTree;
+    
+    // TMVA reader for calculating CRUMBS score
+    TMVA::Reader *fMVAReader;
 
-    float tpc_NuScore, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, tpc_CRNHitsMax,
-      tpc_NuEigenRatioInSphere, tpc_NuNFinalStatePfos, tpc_NuNHitsTotal, tpc_NuNSpacePointsInSphere, tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, 
-      pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, crt_TrackTime, crt_HitTime;
-
+    // Other useful information for training tree
+    float tpc_NuScore;
     unsigned eventID, subRunID, runID, slicePDG, matchedIndex;
     std::string matchedType;
     double matchedPurity, matchedCompleteness;
 
-    fhicl::ParameterSet fChi2FitParams;
-
+    // Algorithms used for calculating variables
     sbn::TrackStoppingChi2Alg fTrackStoppingChi2Alg;
+    sbn::TPCGeoAlg fTpcGeo;
 
-    TMVA::Reader *fMVAReader;
+    // ======================== //
+    //  CRUMBS INPUT VARIABLES  //
+    // ======================== //
+
+    // Pandora Cosmic Hypothesis Variables
+    float tpc_CRFracHitsInLongestTrack;   // fraction of slice’s space points in longest track
+    float tpc_CRLongestTrackDeflection;   // 1 - the cosine of the angle between the starting and finishing directions of the longest track
+    float tpc_CRLongestTrackDirY;         // relative direction of the longest track in Y
+    float tpc_CRNHitsMax;                 // the number of space points in the largest pfp
+
+    // Pandora Neutrino Hypothesis Variables
+    float tpc_NuEigenRatioInSphere;       // the ratio between the first and second eigenvalues from a PCA of spacepoints within 10cm of the vertex
+    float tpc_NuNFinalStatePfos;          // the number of final state pfos
+    float tpc_NuNHitsTotal;               // the total number of space points
+    float tpc_NuNSpacePointsInSphere;     // the total number of space points within 10cm of the vertex
+    float tpc_NuVertexY;                  // the vertex position in Y [cm]
+    float tpc_NuWeightedDirZ;             // the Z component of the space-point weighted direction of the final state pfos
+
+    // Other TPC Variables
+    float tpc_StoppingChi2CosmicRatio;    // a ratio of chi2 values intended to find Bragg peaks in stopping muon tracks
+
+    // SBN Simple Flash Match Variables
+    float pds_FMTotalScore;               // the total score
+    float pds_FMPE;                       // the total number of photoelectrons in the associated flash
+    float pds_FMTime;                     // the time associated with the flash
+
+    // CRT Track and Hit Matching Variables
+    float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
+    float crt_HitScore;                  // the best distance from an extrapolated TPC track to a CRT hit
+    float crt_TrackTime;                 // the time associated with the matched CRT track
+    float crt_HitTime;                   // the time associated with the matched CRT hit
   };
 
 
   CRUMBS::CRUMBS(fhicl::ParameterSet const& p)
     : EDProducer{p},
+    fTrainingMode                 (p.get<bool>("TrainingMode",false)),
     fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
     fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
-    fTrainingMode                 (p.get<bool>("TrainingMode",false)),
     fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
     fGeneratorModuleLabel         (p.get<std::string>("GeneratorModuleLabel","")),
     fCosmicModuleLabel            (p.get<std::string>("CosmicModuleLabel","")),
@@ -182,7 +215,7 @@ namespace sbn {
       cet::search_path searchPath("FW_SEARCH_PATH");
       std::string weightFileFullPath;
       if (!searchPath.find_file(fMVAFileName, weightFileFullPath))
-	throw cet::exception("Dazzle") << "Unable to find weight file: " << fMVAFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
+	throw cet::exception("CRUMBS") << "Unable to find weight file: " << fMVAFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
 
       fMVAReader->BookMVA(fMVAName, weightFileFullPath);
 
@@ -224,12 +257,6 @@ namespace sbn {
 	}
     }
 
-  void CRUMBS::ClearMaps() 
-  {
-    fTrackIDToGenMap.clear();
-    fGenTypeMap.clear();
-  }
-
   void CRUMBS::ResetVars()
   {
     tpc_NuScore = -999999.; tpc_CRFracHitsInLongestTrack = -999999.; tpc_CRLongestTrackDeflection = -999999.; tpc_CRLongestTrackDirY = -999999.; tpc_CRNHitsMax = -999999.;
@@ -245,7 +272,7 @@ namespace sbn {
     matchedPurity = -999999.; matchedCompleteness = -999999.;
   }
 
-  void CRUMBS::SetupMaps(art::Event const& e)
+  void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap)
   {
 
     unsigned nNu(0), nCos(0);
@@ -261,15 +288,15 @@ namespace sbn {
 	  const simb::MCParticle nu = mcTruth->GetNeutrino().Nu();
 
 	  if(!fTpcGeo.InVolume(nu))
-	    fGenTypeMap[i] = "DirtNu";
+	    genTypeMap[i] = "DirtNu";
 	  else
-	    fGenTypeMap[i] = "Nu";
+	    genTypeMap[i] = "Nu";
     
 	  const std::vector<art::Ptr<simb::MCParticle> > particles = truthNuMCPAssn.at(mcTruth.key());
     
 	  for (auto const& particle : particles)
 	    {
-	      fTrackIDToGenMap[particle->TrackId()] = i;
+	      trackIDToGenMap[particle->TrackId()] = i;
 	    }
 	  ++nNu;
 	}
@@ -285,13 +312,13 @@ namespace sbn {
 	for (unsigned int i = 0; i < handleMCTruthCosmic->size(); ++i){
 	  const art::Ptr<simb::MCTruth> mcTruth(handleMCTruthCosmic, i);
 
-	  fGenTypeMap[i + nNu] = "Cosmic";
+	  genTypeMap[i + nNu] = "Cosmic";
     
 	  const std::vector<art::Ptr<simb::MCParticle> > particles = truthCosmicMCPAssn.at(mcTruth.key());
     
 	  for (auto const& particle : particles)
 	    {
-	      fTrackIDToGenMap[particle->TrackId()] = i + nNu;
+	      trackIDToGenMap[particle->TrackId()] = i + nNu;
 	    }
 	  ++nCos;
 	}
@@ -304,12 +331,11 @@ namespace sbn {
 
   void CRUMBS::produce(art::Event& e)
   {
-    if(fTrainingMode)
-      {
-	this->ClearMaps();
-	this->SetupMaps(e);
-      }
+    std::map<int, int> trackIDToGenMap;
+    std::map<int, std::string> genTypeMap;
 
+    if(fTrainingMode)
+      this->GetMaps(e, trackIDToGenMap, genTypeMap);
 
     auto resultsVec = std::make_unique<std::vector<CRUMBSResult>>();
     auto sliceAssns = std::make_unique<art::Assns<recob::Slice, CRUMBSResult>>();
@@ -373,13 +399,13 @@ namespace sbn {
 	if(fTrainingMode)
 	  {
 	    std::vector<art::Ptr<recob::Hit> > sliceHits = this->GetAllSliceHits(e, slice, handleSlices);
-	    std::map<int, float> puritiesMap = this->SlicePurity(e, sliceHits);
+	    std::map<int, float> puritiesMap = this->SlicePurity(e, sliceHits, trackIDToGenMap);
 	    const int truthId = this->SliceTruthId(puritiesMap);
 
 	    slicePDG = primary->PdgCode();
-	    matchedType = fGenTypeMap[truthId];
+	    matchedType = genTypeMap[truthId];
 	    matchedPurity = puritiesMap[truthId];
-	    matchedCompleteness = this->SliceCompleteness(e, sliceHits, allHits, truthId);
+	    matchedCompleteness = this->SliceCompleteness(e, sliceHits, allHits, trackIDToGenMap, truthId);
       
 	    fSliceTree->Fill();
 	  }
@@ -517,7 +543,7 @@ namespace sbn {
     return nullReturn;
   }
 
-  std::map<int, float> CRUMBS::SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits)
+  std::map<int, float> CRUMBS::SlicePurity(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, std::map<int, int> &trackIDToGenMap)
   {
     std::map<int, int> sliceHitMap;
     std::map<int, float> slicePurityMap;
@@ -526,7 +552,7 @@ namespace sbn {
 
     for (auto const& hit : sliceHits)
       {
-	++sliceHitMap[fTrackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)]];
+	++sliceHitMap[trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)]];
       }
 
     for (auto const& [id, nHits] : sliceHitMap)
@@ -537,20 +563,21 @@ namespace sbn {
     return slicePurityMap;
   }
 
-  float CRUMBS::SliceCompleteness(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, const int matchedGenID)
+  float CRUMBS::SliceCompleteness(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, 
+				  std::map<int, int> &trackIDToGenMap, const int matchedGenID)
   {
     int nSliceHits(0), nHits(0);
     auto clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
 
     for (auto const& hit : sliceHits)
       {
-	if(fTrackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
+	if(trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
 	  ++nSliceHits;
       }
 
     for (auto const& hit : allHits)
       {
-	if(fTrackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
+	if(trackIDToGenMap[TruthMatchUtils::TrueParticleID(clockData,hit,true)] == matchedGenID)
 	  ++nHits;
       }
   
