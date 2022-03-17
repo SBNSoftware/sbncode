@@ -892,9 +892,9 @@ namespace single_photon
             for(int i_flash = 0; i_flash < m_reco_num_flashes; ++i_flash) {
 
                 double const zcenter=m_reco_flash_zcenter[i_flash];
-                if(m_is_verbose) std::cout<< "SinglePhoton::AnalyzeShowers()\t||\tflash z center:" <<m_reco_flash_zcenter[i_flash]<< ""<<std::endl;;
+//                if(m_is_verbose) std::cout<< "SinglePhoton::AnalyzeShowers()\t||\tflash z center:" <<m_reco_flash_zcenter[i_flash]<< ""<<std::endl;;
                 double const ycenter=m_reco_flash_ycenter[i_flash];
-                if(m_is_verbose) std::cout<< "SinglePhoton::AnaluzeShowers()\t||\tflash y center:" <<m_reco_flash_ycenter[i_flash]<< ""<<std::endl;;
+//                if(m_is_verbose) std::cout<< "SinglePhoton::AnaluzeShowers()\t||\tflash y center:" <<m_reco_flash_ycenter[i_flash]<< ""<<std::endl;;
 
                 //z plane
                 double dist_z=DBL_MAX;
@@ -1657,4 +1657,86 @@ namespace single_photon
         return median;		
     }
 
+//CHECK below are moved from SinglePhoton_module.cc
+
+
+    double SinglePhoton::triangle_area(double a1, double a2, double b1, double b2, double c1, double c2){
+        double m1 = 0.3;
+        double m2 = 1.0/25.0;
+
+        return fabs((a1*m1*(b2*m2-c2*m2)+b1*m1*(c2*m2-a2*m2)+c1*m1*(a2*m2-b2*m2))/2.0);
+    }
+
+    int SinglePhoton::quick_delaunay_fit(int n, double *X, double *Y, int *num_triangles, double * area){
+
+        std::vector<double> z(n,0.0);
+
+        TGraph2D *g = new TGraph2D(n,X,Y,&z[0]);
+        TGraphDelaunay delan(g);
+        delan.SetMarginBinsContent(0);
+        delan.ComputeZ(0,0);
+        delan.FindAllTriangles();
+        (*num_triangles)=delan.GetNdt(); // number of Delaunay triangles found
+
+        //Grab the locations of all the trianges. These will be intergers referencing to position in X,Y arrays
+        Int_t *MT = delan.GetMTried();
+        Int_t *NT = delan.GetNTried();
+        Int_t *PT = delan.GetPTried();
+
+        (*area)=0.0;
+        for(int i = 0; i<delan.GetNdt(); i++){
+            (*area)+=triangle_area(X[MT[i]-1],Y[MT[i]-1],X[NT[i]-1],Y[NT[i]-1],X[PT[i]-1],Y[PT[i]-1]);
+        }
+
+        delete g;
+        return 0;
+    }
+
+    int SinglePhoton::delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area){
+
+        int n = hits.size();
+        std::vector<double> C0,T0;
+        std::vector<double> C1,T1;
+        std::vector<double> C2,T2;
+        size_t n_0=0;
+        size_t n_1=0;
+        size_t n_2=0;
+
+        for(int i=0;i<n; i++){
+            const art::Ptr<recob::Hit> hit = hits[i];
+            switch(hit->View()){
+                case 0:
+                    C0.push_back((double)hit->WireID().Wire);         
+                    T0.push_back(hit->PeakTime());         
+                    n_0++;
+                    break;
+                case 1:
+                    C1.push_back((double)hit->WireID().Wire);         
+                    T1.push_back(hit->PeakTime());         
+                    n_1++;
+                    break;
+                case 2:
+                    C2.push_back((double)hit->WireID().Wire);         
+                    T2.push_back(hit->PeakTime());         
+                    n_2++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        if(m_use_delaunay){
+            if(n_0>0 && (int)n_0 < m_delaunay_max_hits) this->quick_delaunay_fit(n_0, &C0[0]  , &T0[0]  , &num_triangles[0],&area[0]);
+            if(n_1>0 && (int)n_1 < m_delaunay_max_hits) this->quick_delaunay_fit(n_1, &C1[0]  , &T1[0]  , &num_triangles[1],&area[1]);
+            if(n_2>0 && (int)n_2 < m_delaunay_max_hits) this->quick_delaunay_fit(n_2, &C2[0]  , &T2[0]  , &num_triangles[2],&area[2]);
+        }
+        num_hits[0] = n_0;
+        num_hits[1] = n_1;
+        num_hits[2] = n_2;
+
+        //std::cout<<"Plane 0: "<<n_0<<" hits with "<<num_triangles[0]<<" triangles of area: "<< area[0]<<std::endl;
+        //std::cout<<"Plane 1: "<<n_1<<" hits with "<<num_triangles[1]<<" triangles of area: "<< area[1]<<std::endl;
+        //std::cout<<"Plane 2: "<<n_2<<" hits with "<<num_triangles[2]<<" triangles of area: "<< area[2]<<std::endl;
+
+        return 0;
+    }
 }

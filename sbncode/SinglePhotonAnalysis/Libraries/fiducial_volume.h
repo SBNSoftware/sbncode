@@ -1,5 +1,3 @@
-#include "SinglePhoton_module.h"
-
 namespace single_photon
 {
 

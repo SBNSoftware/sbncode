@@ -12,9 +12,9 @@ singlephoton_analyzer:{
     FlashLabel:     "opflashtpc0"
     POTLabel:       "generator"
 
-	ShowerTrackFitter: "pandoraTrack"
-	ShowerTrackFitterCalo: "pandoraCalo"
-	Shower3DLabel:	"pandoraShower"
+	ShowerTrackFitter:		"pandoraTrack"
+	ShowerTrackFitterCalo:	"pandoraCalo"
+	Shower3DLabel:			"pandoraShower"
 
     input_param:    "optional" 
 
@@ -73,7 +73,7 @@ singlephoton_filter.FillTrees: false
 singlephoton_filter.RunPi0Filter: true
 singlephoton_filter.FilterMode2g1p: true
 singlephoton_filter.FilterMode2g0p: false
-singlephoton_filter.isData: true
+singlephoton_filter.isData: false
 singlephoton_filter.usePID: false
 singlephoton_filter.work_function: 23
 

@@ -1,20 +1,5 @@
-#include "SinglePhoton_module.h"
-#include "TCanvas.h"
-#include "TGraph.h"
-#include "TFile.h"
-#include "TAxis.h"
-#include "TLine.h"
-#include "TLatex.h"
-#include "TLegend.h"
-#include "TPrincipal.h"
-#include "TVectorD.h"
-#include "TMatrixD.h"
-#include "TF1.h"
-#include "TEllipse.h"
 namespace single_photon
 {
-
-
 
     void SinglePhoton::ClearSecondShowers(){
         m_sss_num_unassociated_hits=0;

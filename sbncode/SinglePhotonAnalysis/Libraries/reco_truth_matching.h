@@ -1,4 +1,3 @@
-#include "SinglePhoton_module.h"
 #include <climits>
 //#include <typeinfo>
 
