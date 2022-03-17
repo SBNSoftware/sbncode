@@ -123,7 +123,7 @@ namespace sbn {
 
     // Other useful information for training tree
     float tpc_NuScore;
-    unsigned eventID, subRunID, runID, slicePDG, matchedIndex;
+    unsigned eventID, subRunID, runID, slicePDG;
     std::string matchedType;
     double matchedPurity, matchedCompleteness;
 
@@ -250,7 +250,6 @@ namespace sbn {
 	  fSliceTree->Branch("subRunID",&subRunID);
 	  fSliceTree->Branch("runID",&runID);
 	  fSliceTree->Branch("slicePDG",&slicePDG);
-	  fSliceTree->Branch("matchedIndex",&matchedIndex);
 	  fSliceTree->Branch("matchedType",&matchedType);
 	  fSliceTree->Branch("matchedPurity",&matchedPurity);
 	  fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
@@ -267,7 +266,7 @@ namespace sbn {
 
     crt_TrackScore = -4.; crt_HitScore = -4.; crt_TrackTime = -3000; crt_HitTime = -3000;
 
-    slicePDG = 999999; matchedIndex = 999999;
+    slicePDG = 999999;
     matchedType = "";
     matchedPurity = -999999.; matchedCompleteness = -999999.;
   }
