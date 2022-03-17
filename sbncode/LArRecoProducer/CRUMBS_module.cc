@@ -382,12 +382,11 @@ namespace sbn {
       
 	const float score = fMVAReader->EvaluateMVA(fMVAName);
 
-	CRUMBSResult thisResult(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax),
-				tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), 
-				tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
-				crt_TrackTime, crt_HitTime);
-
-	resultsVec->push_back(thisResult);
+	resultsVec->emplace_back(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax),
+				 tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), 
+				 tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
+				 crt_TrackTime, crt_HitTime);
+	
 	util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
 
 	if(fTrainingMode)
