@@ -150,13 +150,13 @@ namespace sbn {
     // SBN Simple Flash Match Variables
     float pds_FMTotalScore;               // the total score
     float pds_FMPE;                       // the total number of photoelectrons in the associated flash
-    float pds_FMTime;                     // the time associated with the flash
+    float pds_FMTime;                     // the time associated with the flash [us]
 
     // CRT Track and Hit Matching Variables
     float crt_TrackScore;                // a combination of the DCA and angle between the best matched TPC & CRT tracks
-    float crt_HitScore;                  // the best distance from an extrapolated TPC track to a CRT hit
-    float crt_TrackTime;                 // the time associated with the matched CRT track
-    float crt_HitTime;                   // the time associated with the matched CRT hit
+    float crt_HitScore;                  // the best distance from an extrapolated TPC track to a CRT hit [cm]
+    float crt_TrackTime;                 // the time associated with the matched CRT track [us]
+    float crt_HitTime;                   // the time associated with the matched CRT hit [us]
   };
 
 
