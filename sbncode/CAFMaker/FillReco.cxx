@@ -301,6 +301,33 @@ namespace caf
   }
 
 
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (crumbs != nullptr) {
+      slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
+      slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
+      slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
+      slice.crumbs_result.tpc.crnhitsmax = crumbs->tpc_CRNHitsMax;
+      slice.crumbs_result.tpc.nusphereeigenratio = crumbs->tpc_NuEigenRatioInSphere;
+      slice.crumbs_result.tpc.nufinalstatepfos = crumbs->tpc_NuNFinalStatePfos;
+      slice.crumbs_result.tpc.nutotalhits = crumbs->tpc_NuNHitsTotal;
+      slice.crumbs_result.tpc.nuspherespacepoints = crumbs->tpc_NuNSpacePointsInSphere;
+      slice.crumbs_result.tpc.nuvertexy = crumbs->tpc_NuVertexY;
+      slice.crumbs_result.tpc.nuwgtdirz = crumbs->tpc_NuWeightedDirZ;
+      slice.crumbs_result.tpc.stoppingchi2ratio = crumbs->tpc_StoppingChi2CosmicRatio;
+      slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
+      slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
+      slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
+      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
+      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
+    }
+  }
+
+
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,

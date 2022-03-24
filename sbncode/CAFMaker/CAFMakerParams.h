@@ -127,6 +127,12 @@ namespace caf
       "fmatch" // same for icarus and sbnd
     };
 
+    Atom<string> CRUMBSLabel {
+      Name("CRUMBSLabel"),
+      Comment("Base label of CRUMBS ID producer."),
+      "crumbs"
+    };
+
     Atom<string> HitLabel {
       Name("HitLabel"),
       Comment("Base label of the TPC Hit producer."),

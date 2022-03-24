@@ -64,7 +64,7 @@ namespace sbn{
     // Work out the drift limits for a collection of hits
     std::pair<double, double> XLimitsFromHits(std::vector<art::Ptr<recob::Hit>> hits);
 
-    double MinDistToWall(geo::Point_t point);
+    double MinDistToWall(geo::Point_t point) const;
 
     // Determine if a true particle is ever inside the TPC volume
     bool InVolume(const simb::MCParticle& particle);

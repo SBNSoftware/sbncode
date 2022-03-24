@@ -29,6 +29,7 @@
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
+#include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -81,6 +82,10 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
+
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
                        caf::SRSlice& slice,
                        bool allowEmpty = false);
 

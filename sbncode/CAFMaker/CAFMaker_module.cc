@@ -102,6 +102,8 @@
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnobj/Common/Reco/CRUMBSResult.h"
+
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -219,6 +221,13 @@ class CAFMaker : public art::EDProducer {
   art::FindManyP<T, D> FindManyPDStrict(const U& from,
                                         const art::Event& evt,
                                         const art::InputTag& tag) const;
+
+  /// Equivalent of FindOneP except a return that is !isValid() prints a
+  /// messsage and aborts if StrictMode is true.
+  template <class T, class U>
+  art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
+				  const art::InputTag& label) const;
+
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -688,6 +697,25 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
 }
 
 //......................................................................
+template <class T, class U>
+art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
+					  const art::Event& evt,
+					  const art::InputTag& tag) const {
+  art::FindOneP<T> ret(from, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
 template <class T>
 bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
                                     T& ret) const {
@@ -1055,6 +1083,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       slcHits = fmSlcHits.at(0);
     }
 
+    art::FindOneP<sbn::CRUMBSResult> foSlcCRUMBS =
+      FindOnePStrict<sbn::CRUMBSResult>(sliceList, evt,
+          fParams.CRUMBSLabel() + slice_tag_suff);
+    const sbn::CRUMBSResult *slcCRUMBS = nullptr;
+    if (foSlcCRUMBS.isValid()) {
+      slcCRUMBS = foSlcCRUMBS.at(0).get();
+    }
+
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
       FindManyPStrict<sbn::SimpleFlashMatch>(fmPFPart, evt,
                                              fParams.FlashMatchLabel() + slice_tag_suff);
@@ -1223,6 +1259,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatch(fmatch, recslc);
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
+    FillSliceCRUMBS(slcCRUMBS, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
