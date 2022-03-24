@@ -401,6 +401,13 @@ namespace flashmatch {
     }
   }
 
+  #if USING_LARSOFT == 1
+  void FlashMatchManager::SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model) {
+    if (_alg_flash_hypothesis) {
+      _alg_flash_hypothesis->SetSemiAnalyticalModel(std::move(model));
+    }
+  }
+  #endif
 
 }
 

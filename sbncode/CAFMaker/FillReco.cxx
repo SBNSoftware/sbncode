@@ -255,6 +255,7 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
+    srslice.nuid.setDefault();
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -273,6 +274,17 @@ namespace caf
       else {
         srslice.nu_score = -1;
       }
+      // NeutrinoID (SliceID) features
+      CopyPropertyIfSet(properties, "NuNFinalStatePfos",        srslice.nuid.nufspfos);
+      CopyPropertyIfSet(properties, "NuNHitsTotal",             srslice.nuid.nutothits);
+      CopyPropertyIfSet(properties, "NuVertexY",                srslice.nuid.nuvtxy);
+      CopyPropertyIfSet(properties, "NuWeightedDirZ",           srslice.nuid.nuwgtdirz);
+      CopyPropertyIfSet(properties, "NuNSpacePointsInSphere",   srslice.nuid.nusps);
+      CopyPropertyIfSet(properties, "NuEigenRatioInSphere",     srslice.nuid.nueigen);
+      CopyPropertyIfSet(properties, "CRLongestTrackDirY",       srslice.nuid.crlongtrkdiry);
+      CopyPropertyIfSet(properties, "CRLongestTrackDeflection", srslice.nuid.crlongtrkdef);
+      CopyPropertyIfSet(properties, "CRFracHitsInLongestTrack", srslice.nuid.crlongtrkhitfrac);
+      CopyPropertyIfSet(properties, "CRNHitsMax",               srslice.nuid.crmaxhits);
     }
 
   }
@@ -764,5 +776,12 @@ namespace caf
     return;
   }
 
+  //......................................................................
+  template<class T, class U>
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value )
+  {
+    auto it = props.find(search);
+    if ( it != props.end() ) value = it->second;
+  }
 
 } // end namespace

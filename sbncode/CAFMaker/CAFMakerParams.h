@@ -79,6 +79,12 @@ namespace caf
       "bnbinfo"
     };
 
+    Atom<string> NuMIPOTDataLabel {
+      Name("NuMIPOTDataLabel"),
+      Comment("Label of NuMIRetriever module"),
+      "numiinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),

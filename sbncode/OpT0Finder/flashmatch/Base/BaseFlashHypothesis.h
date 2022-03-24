@@ -16,6 +16,10 @@
 
 #include "BaseAlgorithm.h"
 
+#if USING_LARSOFT == 1
+#include "larsim/PhotonPropagation/SemiAnalyticalModel.h"
+#endif
+
 namespace flashmatch {
   /**
      \class FlashHypothesis
@@ -46,10 +50,19 @@ namespace flashmatch {
     /// Sets the channels sensitive to visible light
     void SetUncoatedPMTs(std::vector<int> ch_uncoated) { _uncoated_pmt_list = ch_uncoated; }
 
+    #if USING_LARSOFT == 1
+    /// Sets the semi analytical model
+    void SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model) { _semi_model = std::move(model); }
+    #endif
+
   protected:
 
     std::vector<int> _channel_mask; ///< The list of channels to use
     std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
+
+    #if USING_LARSOFT == 1
+    std::unique_ptr<SemiAnalyticalModel> _semi_model;
+    #endif
 
   };
 }

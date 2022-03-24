@@ -104,6 +104,7 @@
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
+
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 
@@ -171,6 +172,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalSinglePOT;
   double fTotalEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
+  std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   // int fCycle;
   // int fBatch;
 
@@ -500,10 +502,15 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
 
   // get POT information
   fBNBInfo.clear();
+  fNuMIInfo.clear();
   fSubRunPOT = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    fTotalPOT += fSubRunPOT;
+  }
+  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+    FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
@@ -511,9 +518,11 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fTotalPOT += fSubRunPOT;
   }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty()){
-      std::cout << "Found neither data POT info under '"
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+      std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
+                << "' not NuMIdata POT info under '"
+                << fParams.NuMIPOTDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
@@ -1495,6 +1504,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   {
     rec.hdr.pot   = fSubRunPOT;
     rec.hdr.bnbinfo = fBNBInfo;
+    rec.hdr.numiinfo = fNuMIInfo;
   }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
@@ -1526,6 +1536,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   evt.put(std::move(srcol));
 
   fBNBInfo.clear();
+  fNuMIInfo.clear();
   rec.hdr.pot = 0;
 }
 
