@@ -38,9 +38,12 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj_Common_CRT
                   sbnobj_Common_Reco
                   sbnobj_Common_Analysis
-		  lardataalg_DetectorInfo
+                  lardataalg_DetectorInfo
                   art_Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
+                  systematicstools_interface
+                  systematicstools_interpreters
+                  systematicstools_utility
                   )
 
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )

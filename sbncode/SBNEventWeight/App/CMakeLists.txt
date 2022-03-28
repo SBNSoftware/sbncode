@@ -16,6 +16,9 @@ art_make(
     ${ROOT_GEOM}
     ${LXML2}
     GSL
+    systematicstools_interface
+    systematicstools_interpreters
+    systematicstools_utility
 )
 
 install_headers()

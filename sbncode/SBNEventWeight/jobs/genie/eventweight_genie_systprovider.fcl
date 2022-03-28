@@ -1,0 +1,20 @@
+#include "ICARUSv1.ParamHeaders.fcl"
+
+BEGIN_PROLOG
+
+sbn_systproducer: {
+
+  module_type: TEMPMODULENAME
+
+  genie_module_label: "generator"
+
+  AllowMissingTruth: true # Allow running over cosmics. The alternative approach is genie_module_label: ""
+
+  debugMode: false
+
+  ## systool
+  generated_systematic_provider_configuration: @local::generated_systematic_provider_configuration
+
+}
+
+END_PROLOG
