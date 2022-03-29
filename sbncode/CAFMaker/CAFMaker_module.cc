@@ -113,6 +113,7 @@
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
 
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -1010,10 +1011,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
   if (crthits_handle.isValid()) {
+
+    //==== gate start time
+    uint64_t m_gate_start_timestamp = 0;
+    if(isRealData){
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      evt.getByLabel( fParams.TriggerLabel(), trigger_handle );
+      m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
+    }
+
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 

@@ -61,10 +61,24 @@ namespace caf
   }
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
-    srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
+
+    //srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
+
+    if(use_ts0){
+      if(gate_start_timestamp>0){
+        srhit.time = -((gate_start_timestamp-hit.ts0_ns)/1e3)+1e6; // us
+      }
+      else{
+        srhit.time = hit.ts0_ns/1e3-1600;
+      }
+    }
+    else{
+      srhit.time = hit.ts1_ns/1000.;
+    }
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;

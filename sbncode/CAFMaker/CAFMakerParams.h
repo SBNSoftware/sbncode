@@ -235,6 +235,11 @@ namespace caf
       "crttrack" // same for icarus and sbnd
     };
     
+    Atom<string> TriggerLabel {
+      Name("TriggerLabel"),
+      Comment("Label of trigger.")
+    };
+
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),
@@ -244,7 +249,7 @@ namespace caf
     Atom<bool> CRTUseTS0 {
       Name("CRTUseTS0"),
       Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit and SRCRTTrack"),
-      false
+      true
     };
 
     Atom<string> SimChannelLabel {
