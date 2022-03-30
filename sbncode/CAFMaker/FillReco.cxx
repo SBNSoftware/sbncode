@@ -70,10 +70,11 @@ namespace caf
 
     if(use_ts0){
       if(gate_start_timestamp>0){
-        srhit.time = -((gate_start_timestamp-hit.ts0_ns)/1e3)+1e6; // us
+        long long tmp_crttime = hit.ts0_ns-gate_start_timestamp; // ns
+        srhit.time = (float)tmp_crttime/1000.; // ns->us
       }
       else{
-        srhit.time = hit.ts0_ns/1e3-1600;
+        srhit.time = hit.ts0_ns/1000.-1600.;
       }
     }
     else{

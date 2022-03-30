@@ -113,7 +113,9 @@
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
 
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+#include "lardataobj/RawData/ExternalTrigger.h"
+#include "lardataobj/RawData/TriggerData.h"
+
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -1013,17 +1015,34 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (crthits_handle.isValid()) {
 
     //==== gate start time
-    uint64_t m_gate_start_timestamp = 0;
+    long long m_gate_start_timestamp = 0;
     if(isRealData){
-      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+
+      art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
+      evt.getByLabel( fParams.TriggerLabel(), externalTrigger_handle );
+      const std::vector<raw::ExternalTrigger> &externalTrgs = *externalTrigger_handle;
+
+      art::Handle< std::vector<raw::Trigger> > trigger_handle;
       evt.getByLabel( fParams.TriggerLabel(), trigger_handle );
-      m_gate_start_timestamp = trigger_handle->beamGateTimestamp;
+      const std::vector<raw::Trigger> &trgs = *trigger_handle;
+
+      if(externalTrgs.size()==1 && trgs.size()==1){
+        long long TriggerAbsoluteTime = externalTrgs.at(0).GetTrigTime(); // Absolute time of trigger
+        double BeamGateRelativeTime = trgs.at(0).BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
+        double TriggerRelativeTime = trgs.at(0).TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
+        m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
+      }
+      else{
+        std::cerr << "Size of raw::ExternalTrigger = " << externalTrgs.size() << std::endl;
+        std::cerr << "Size of raw::Trigger = " << trgs.size() << std::endl;
+      }
+
     }
 
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], uint64_t(m_gate_start_timestamp), fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 
