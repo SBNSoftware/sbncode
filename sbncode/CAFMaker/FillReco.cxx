@@ -74,11 +74,18 @@ namespace caf
         srhit.time = (float)tmp_crttime/1000.; // ns->us
       }
       else{
-        srhit.time = hit.ts0_ns/1000.-1600.;
+        //==== 03/31/22
+        //==== This must be MC case.
+        //==== Now the timing in MC (both T0 and T1) starts from 0 and peaks at 1600 us
+        //==== We are shifting the peak position to 0 to match with data T0 case above
+        srhit.time = hit.ts0_ns/1000.-1600.; // us
       }
     }
     else{
-      srhit.time = hit.ts1_ns/1000.;
+      //==== 03/31/22
+      //==== For MC, for the same reason as in T0, peak is at 1600 us
+      //==== For Data, we don't have good understanding of T1 yet, but it also starts at 0
+      srhit.time = hit.ts1_ns/1000.-1600.; //us
     }
 
     srhit.position.x = hit.x_pos;
