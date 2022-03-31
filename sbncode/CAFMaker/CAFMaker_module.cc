@@ -1015,7 +1015,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (crthits_handle.isValid()) {
 
     //==== gate start time
-    long long m_gate_start_timestamp = 1600000;
+    long long m_gate_start_timestamp = 1600000; // 03/31/22: This is current MC default shift, 1600 us
     if(isRealData){
 
       art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
