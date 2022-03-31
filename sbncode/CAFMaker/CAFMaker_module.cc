@@ -1015,7 +1015,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (crthits_handle.isValid()) {
 
     //==== gate start time
-    long long m_gate_start_timestamp = 0;
+    long long m_gate_start_timestamp = 1600000;
     if(isRealData){
 
       art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;

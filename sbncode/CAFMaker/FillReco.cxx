@@ -66,27 +66,9 @@ namespace caf
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
-    //srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
-
-    if(use_ts0){
-      if(gate_start_timestamp>0){
-        long long tmp_crttime = hit.ts0_ns-gate_start_timestamp; // ns
-        srhit.time = (float)tmp_crttime/1000.; // ns->us
-      }
-      else{
-        //==== 03/31/22
-        //==== This must be MC case.
-        //==== Now the timing in MC (both T0 and T1) starts from 0 and peaks at 1600 us
-        //==== We are shifting the peak position to 0 to match with data T0 case above
-        srhit.time = hit.ts0_ns/1000.-1600.; // us
-      }
-    }
-    else{
-      //==== 03/31/22
-      //==== For MC, for the same reason as in T0, peak is at 1600 us
-      //==== For Data, we don't have good understanding of T1 yet, but it also starts at 0
-      srhit.time = hit.ts1_ns/1000.-1600.; //us
-    }
+    srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
+    srhit.t0 = (long long)(hit.ts0_ns-gate_start_timestamp)/1000.;
+    srhit.t1 = (long long)(hit.ts1_ns-gate_start_timestamp)/1000.;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
