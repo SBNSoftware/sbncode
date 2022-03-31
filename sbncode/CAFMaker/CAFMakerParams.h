@@ -249,7 +249,7 @@ namespace caf
     Atom<bool> CRTUseTS0 {
       Name("CRTUseTS0"),
       Comment("Whether to use ts0 or ts1 to fill the time of the SRCRTHit and SRCRTTrack"),
-      true
+      false
     };
 
     Atom<string> SimChannelLabel {
