@@ -116,7 +116,6 @@
 #include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
 
-
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
 // #include "sbncode/CAFMaker/Blinding.h"
@@ -1017,7 +1016,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //==== gate start time
     //==== 03/31/22 : 1600000 ns = 1.6 ms is the default T0Offset in MC
     //==== https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
-    long long m_gate_start_timestamp = 1600000; // ns
+    uint64_t m_gate_start_timestamp = fParams.CRTSimT0Offset(); // ns
     if(isRealData){
 
       art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
@@ -1029,22 +1028,30 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const std::vector<raw::Trigger> &trgs = *trigger_handle;
 
       if(externalTrgs.size()==1 && trgs.size()==1){
-        long long TriggerAbsoluteTime = externalTrgs.at(0).GetTrigTime(); // Absolute time of trigger
-        double BeamGateRelativeTime = trgs.at(0).BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
-        double TriggerRelativeTime = trgs.at(0).TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
+        long long TriggerAbsoluteTime = externalTrgs[0].GetTrigTime(); // Absolute time of trigger
+        double BeamGateRelativeTime = trgs[0].BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
+        double TriggerRelativeTime = trgs[0].TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
         m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
       }
-      else{
-        std::cerr << "Size of raw::ExternalTrigger = " << externalTrgs.size() << std::endl;
-        std::cerr << "Size of raw::Trigger = " << trgs.size() << std::endl;
+      /*
+      04/02/22: use this when we understand the relation between trigger and event time better
+      else if(trgs.empty()){
+        //==== When trigger is not available, use the event timestamp
+        m_gate_start_timestamp = evt.time().timeHigh() * 1'000'000'000LL + evt.time().timeLow();
       }
-
+      */
+      else{
+        std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
+          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
+          << " Please contact CAFmaker maintainer." << std::endl;
+        abort();
+      }
     }
 
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], uint64_t(m_gate_start_timestamp), fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 

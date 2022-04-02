@@ -67,7 +67,7 @@ namespace caf
                   bool allowEmpty) {
 
     srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
-    srhit.t0 = (long long)(hit.ts0_ns-gate_start_timestamp)/1000.;
+    srhit.t0 = ((long long)(hit.ts0_ns)-(long long)(gate_start_timestamp))/1000.;
     srhit.t1 = hit.ts1_ns/1000.;
 
     srhit.position.x = hit.x_pos;
