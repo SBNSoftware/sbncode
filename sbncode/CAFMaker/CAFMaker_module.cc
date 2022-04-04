@@ -1033,13 +1033,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         double TriggerRelativeTime = trgs[0].TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
         m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
       }
-      /*
-      04/02/22: use this when we understand the relation between trigger and event time better
-      else if(trgs.empty()){
-        //==== When trigger is not available, use the event timestamp
-        m_gate_start_timestamp = evt.time().timeHigh() * 1'000'000'000LL + evt.time().timeLow();
-      }
-      */
       else{
         std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
           << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
