@@ -237,12 +237,14 @@ namespace caf
 
     Atom<long long> CRTSimT0Offset {
       Name("CRTSimT0Offset"),
-      Comment("start of beam gate/simulation time in the simulated CRT clock")
+      Comment("start of beam gate/simulation time in the simulated CRT clock"),
+      0,
     };
 
     Atom<art::InputTag> TriggerLabel {
       Name("TriggerLabel"),
-      Comment("Label of trigger.")
+      Comment("Label of trigger."),
+      "daqTrigger"
     };
 
     Atom<string> FlashTrigLabel {
