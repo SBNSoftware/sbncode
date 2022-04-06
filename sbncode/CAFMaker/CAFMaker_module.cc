@@ -1280,9 +1280,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         thisShower = fmShower.at(iPart);
       }
 
-      if (!thisTrack.empty())  { // it's a track!
+      if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
-        assert(thisShower.size() == 0);
         rec.reco.ntrk ++;
         rec.reco.trk.push_back(SRTrack());
 
@@ -1349,8 +1348,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
 
-      else if (!thisShower.empty()) { // it's a shower!
-        assert(thisTrack.size() == 0);
+      if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
         rec.reco.nshw ++;
         rec.reco.shw.push_back(SRShower());
