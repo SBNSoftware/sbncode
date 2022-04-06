@@ -85,6 +85,7 @@ include(BuildPlugins)
 add_subdirectory(sbncode)
 add_subdirectory(ups)
 add_subdirectory(fcl)
+add_subdirectory(fclmodule)
 
 # packaging utility
 include(UseCPack)
