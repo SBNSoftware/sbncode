@@ -18,7 +18,7 @@ singlephoton_analyzer:{
 
     input_param:    "optional" 
 
-    Verbose: true
+    Verbose: false
 
     runSEAviewShower: true
     SEAviewShowerHitThreshold: 25
