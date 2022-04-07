@@ -339,20 +339,12 @@ namespace single_photon
          * store stuff in the output tree
          */
 
-        m_reco_slice_num = nuscore_slices.size();//the number of slices also corresponds to the number of neutrino scores
+        m_reco_slice_num = nuscore_slices.size()+1;//the number of slices also corresponds to the number of neutrino scores
 
         //currently this is junk, just a placeholder
         //std::cout<<"saving the info for "<<m_reco_slice_num<<" slices"<<std::endl;
         this->ResizeSlices(m_reco_slice_num); 
         m_reco_slice_nuscore = nuscore_slices;
-        /* std::vector<int> sliceIdToNumPFPsvec(m_reco_slice_num, 1);
-        // GetPFPsPerSlice(PFPToSliceIdMap , sliceIdToNumPFPsvec);
-        m_reco_slice_num_pfps = sliceIdToNumPFPsvec; //the total number of PFP's per slice
-        m_reco_slice_num_showers; //the subset of PFP's that are showers
-        m_reco_slice_num_tracks;
-        
-        */
-
 
         std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t the number of clear cosmic PFP's in the event is "<<clearCosmicPFP.size()<<std::endl;
         std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t the number of items in the primary to slice vector is "<<primaryPFPSliceIdVec.size()<<" and in the slice to score map is "<<sliceIdToNuScoreMap.size()<<std::endl;
@@ -380,10 +372,8 @@ namespace single_photon
     }
 
 
-    //  void  SinglePhoton::GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, std::vector<int> &sliceIdToNumPFPsvec){}
     std::vector<int>  SinglePhoton::GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
         std::vector<int> sliceIdToNumPFPsvec(m_reco_slice_num, 0);
-        //return sliceIdToNumPFPsvec;
 
         //std::cout<<"starting to look at the PFP's per slice"<<std::endl;
 
@@ -393,45 +383,19 @@ namespace single_photon
             return sliceIdToNumPFPsvec;
         }
 
-        int cosmic = 0;
+//        int cosmic = 0;
 
         //for all PFP's
+		//CHECK the following block crashes the code
+		//FIXED by fixing m_reco_slice_num (add 1)
         for (auto pair:PFPToSliceIdMap ){
 
             //get the slice and increment the vector
             int slice_id = pair.second;
-            if (slice_id > -1){
-                // std::cout<<"error, invalid slice id"<<std::endl;
-
-                //    std::cout<<"looking at pfp "<<pair.first->Self()<<" in slice "<<slice_id<<std::endl;
-                int num = sliceIdToNumPFPsvec[slice_id];
-                //std::cout<<"for slice id "<<slice_id <<" current num = "<<num<<" which now should be "<< num + 1 <<std::endl;
-
-                sliceIdToNumPFPsvec[slice_id] = ++num;
-                //std::cout<<"now sliceIdToNumPFPsvec[slice_id] = "<< sliceIdToNumPFPsvec[slice_id] <<std::endl;
-            }else{
-                cosmic++;
-            }
+			if(slice_id > -1) sliceIdToNumPFPsvec[slice_id]++;
+			std::cout<<"CHECK found 1 pfp particle at slice id "<<slice_id<<"/"<<m_reco_slice_num<<std::endl;
         }
 
-        unsigned int count = 0;
-        for (auto num: sliceIdToNumPFPsvec){
-            count += num;
-
-        }
-        /*        if (count != (PFPToSliceIdMap.size()-cosmic)){
-                  std::cout<<"Error, number of neutrio pfps in sliceIdToNumPFPsvec is "<<count<<" but PFPToSliceIdMap.size() - comsics  = "<<PFPToSliceIdMap.size()-cosmic<<std::endl;
-                  }
-                  */
-
-        /* std::cout<<"so how many do we have per slice?"<<std::endl;
-           std::cout<<"The number of slices "<<m_reco_slice_num<<std::endl;
-           for(unsigned int i= 0; i<sliceIdToNumPFPsvec.size(); i++){
-           std::cout<<"The number of PFP's in slice: " << i<<std::endl;
-           std::cout<< "-- is "<<sliceIdToNumPFPsvec[i]<<std::endl;
-           }
-
-           std::cout<<"done with all the slices"<<std::endl;*/
         return sliceIdToNumPFPsvec;
 
     }
@@ -485,10 +449,6 @@ namespace single_photon
             count += numshowers;
 
         }
-        /*      if (count != (showerToPFParticleMap.size()-cosmics)){
-                std::cout<<"Error, number of showers in sliceIdToNumShowersvec is "<<count<<" but showerToPFParticleMap.size() for neutrino showers = "<<showerToPFParticleMap.size()-cosmics<<std::endl;
-                }
-                */
         return sliceIdToNumShowersvec;
     }
 
@@ -534,42 +494,6 @@ namespace single_photon
 
 
 
-    //here we put in some reco truth matching thing where given an true interaction, find the corresponding reco objects
-    //then for the given recob::shower/track(s), match it back to the primary pfp for slice
-    //can do slice score, completeness, etc. as function of shower energy, conversion lengt
-    int SinglePhoton::GetShowerSlice(art::Ptr<recob::Shower>& this_shower, std::map< art::Ptr<recob::Shower> , art::Ptr<recob::PFParticle>>& showerToPFParticleMap, std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec){
-        //for the shower, get the associated PFP 
-        art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap[this_shower];
-
-        int slice = -1;
-        //for the pfp, get the slice
-        //allPFPSliceIdVec only include PFParticles whose ancester is a primary particle that has a nu score, and their slice ID.
-        for(auto pair: allPFPSliceIdVec){
-            if(pair.first == pfp){
-                slice =  pair.second;
-            }
-        }
-
-        //return the slice or -1 if there isn't an associated slice - this means clear cosmic
-        return slice;
-    }
-
-    int SinglePhoton::GetTrackSlice(art::Ptr<recob::Track>& this_track, std::map< art::Ptr<recob::Track> , art::Ptr<recob::PFParticle>>& trackToPFParticleMap, std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec){
-        //for the track, get the associated PFP 
-        art::Ptr<recob::PFParticle> pfp = trackToPFParticleMap[this_track];
-
-        int slice = -1;
-        //for the pfp, get the slice
-        for(auto pair: allPFPSliceIdVec){
-            if(pair.first == pfp){
-                slice =  pair.second;
-            }
-        }
-
-        //return the slice or -1 if there isn't an associated slice - this means clear cosmic
-        return slice;
-    }
-
     //if 1g1p
     //is there at least 1 reco track and shower
     //if there yes, are they in the same slice
@@ -582,17 +506,18 @@ namespace single_photon
     //in a cosmic slice?
 
     //if 1g0p 
-    //id there is 1 shower
+    //if there is 1 shower
     //what is the slice id? slice score? cosmic?
     //if missing, not-recoed         
 
     //if missing atleast 1shower, not recoed
 
 
-    //for a given signal def, finds the MCParticles in event
+    //for a given signal def (`ncdelta` for now) , finds the MCParticles in event
     //loops over association between reco tracks/showers to get associated slice(s)
     //can also look at things like shower energy, conversion length, etc.
-    void SinglePhoton::AnalyzeRecoMCSlices(std::string signal_def, std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,
+    void SinglePhoton::AnalyzeRecoMCSlices(std::string signal_def, 
+			std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,
             std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle> > & showerToPFParticleMap, 
             std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec, 
             std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,
@@ -600,48 +525,14 @@ namespace single_photon
             std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap,
             std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
 
-
-        /*std::vector<double> m_matched_signal_shower_overlay_fraction;
-        //std::vector<double> m_matched_signal_shower_conversion_length;
-        std::vector<double> m_matched_signal_shower_true_E;
-        std::vector<double> m_matched_signal_shower_nuscore;
-        std::vector<int> m_matched_signal_shower_sliceId;
-        std::vector<bool> m_matched_signal_shower_is_clearcosmic;
-        int m_matched_signal_shower_num = 0;
-        // std::vector<bool> m_matched_signal_shower_is_nuslice;
-
-        std::vector<double> m_matched_signal_track_true_E;
-        std::vector<double> m_matched_signal_track_nuscore;
-        std::vector<int> m_matched_signal_track_sliceId;
-        std::vector<bool> m_matched_signal_track_is_clearcosmic;
-        //  std::vector<bool> m_matched_signal_track_is_nuslice;
-        int m_matched_signal_track_num = 0;  
-
-
-        //int m_matched_signal_total_num_slices;
-
-        bool m_reco_1g1p_is_same_slice;
-        bool m_reco_1g1p_is_multiple_slices;
-        // bool m_reco_1g1p_is_nuslice;
-        // bool m_reco_1g0p_is_nuslice;
-        double m_reco_1g1p_nuscore;
-        double  m_reco_1g0p_nuscore;
-        bool m_is_matched_1g1p;
-        bool m_is_matched_1g0p;
-        bool m_no_matched_showers;
-        bool m_multiple_matched_showers;
-        bool m_multiple_matched_tracks;
-        */
-
         m_reco_slice_num_pfps = GetPFPsPerSlice(PFPToSliceIdMap); //the total number of PFP's per slice
-        m_reco_slice_num_showers = GetNumShowersPerSlice(showerToPFParticleMap, PFPToSliceIdMap); //the subset of PFP's that are showers
+		m_reco_slice_num_showers = GetNumShowersPerSlice(showerToPFParticleMap, PFPToSliceIdMap); //the subset of PFP's that are showers
         m_reco_slice_num_tracks = GetNumTracksPerSlice(trackToNuPFParticleMap, PFPToSliceIdMap);
 
 
         //first check if in the event there's a match to a given signal
         if(signal_def == "ncdelta"){
-            //commenting out this requirement since it's different in v13
-            if(m_mctruth_is_delta_radiative || !m_mctruth_is_delta_radiative){
+			//@para updated in the AnalyzeMCTruths function @ analyze_MCTruth.h
                 std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t looking for signal def "<<signal_def<<", m_mctruth_is_delta_radiative = "<<m_mctruth_is_delta_radiative<<std::endl; 
 
                 std::vector<int> matched_shower_ids;
@@ -686,14 +577,8 @@ namespace single_photon
 
                 m_matched_signal_shower_num = m_matched_signal_shower_true_E.size();
 
-                if ( m_matched_signal_shower_num > 1){
-                    std::cout<<"found a signal event with split showers at run = "<<m_run_number <<", subrun = "<<m_subrun_number  <<", event = "<<m_event_number<<std::endl;
-
-                }
-
+				//NEXT, same procedure for tracks
                 std::vector<int> matched_track_ids;
-
-                //then repeat for sim tracks
                 for (unsigned int k = 0; k< m_sim_track_parent_pdg.size(); k++){
                     int parent= m_sim_track_parent_pdg[k];
                     int pdg =  m_sim_track_pdg[k];
@@ -725,287 +610,62 @@ namespace single_photon
                         }//if matched
                     }//if proton from neutrino interaction
                 }//for all sim tracks
-
                 m_matched_signal_track_num = m_matched_signal_track_true_E.size();
+        }//end of "ncdelta" scenario
+  	
+  	//brief summary
+        if (m_matched_signal_shower_num > 1) m_multiple_matched_showers = true;
+        if (m_matched_signal_track_num > 1) m_multiple_matched_tracks = true;
+        if (m_matched_signal_shower_num == 0)  m_no_matched_showers = true;
 
-            }
-            //std::cout<<"matched showers == "<< m_matched_signal_shower_num<<" and tracks =="<< m_matched_signal_track_num<<std::endl;
-
-        }
         //check if either 1g1p or 1g0p topology
-
-        if (m_matched_signal_shower_num ==1  && m_matched_signal_track_num ==1){
+        if (m_matched_signal_shower_num ==1  && m_matched_signal_track_num ==1){//1g1p
             //check if same slice
+                m_is_matched_1g1p = true;
             if ( m_matched_signal_track_sliceId[0] == m_matched_signal_shower_sliceId[0]){
                 m_reco_1g1p_is_same_slice = true;
-                //m_reco_1g1p_is_multiple_slices = false;
                 m_reco_1g1p_is_nuslice = m_matched_signal_shower_is_nuslice[0];
                 m_reco_1g1p_nuscore = m_matched_signal_shower_nuscore[0];
-                m_is_matched_1g1p = true;
             } else{
-                m_is_matched_1g1p = true;
                 m_reco_1g1p_is_multiple_slices = true;
             }
-        }
-
-        if (m_reco_1g1p_is_nuslice){
-            int nu_id = m_matched_signal_shower_sliceId[0];
-            for (auto pair: PFPToSliceIdMap){
-                auto pfp = pair.first;
-                auto id = pair.second;
-                if (id == nu_id){
-                    std::cout<<"the pfp in this nu slice with id "<<id <<" is "<<pfp->Self()<<" with pdg "<<pfp->PdgCode()<<std::endl;
-                }
-            }
-        }
-
-        if (m_is_verbose && m_reco_1g1p_is_nuslice && ( m_matched_signal_shower_tracks_in_slice[0]>1 ||  m_matched_signal_shower_showers_in_slice[0]>1) ){
-            std::cout<<"found reco 1g1p with "<<  m_matched_signal_shower_showers_in_slice[0]<<" showers and "<< m_matched_signal_shower_tracks_in_slice[0]<<"tracks in the same slice in run = "<<m_run_number <<", subrun = "<<m_subrun_number  <<", event = "<<m_event_number<<std::endl;
-
-        }
-
-        if (m_matched_signal_shower_num ==1  && m_matched_signal_track_num ==0){
+        }else if(m_matched_signal_shower_num ==1  && m_matched_signal_track_num ==0){//1g0p
             m_reco_1g0p_is_nuslice = m_matched_signal_shower_is_nuslice[0];
             m_reco_1g0p_nuscore =  m_matched_signal_shower_nuscore[0];
             m_is_matched_1g0p = true;
 
         }
 
-        if (m_matched_signal_shower_num > 1) m_multiple_matched_showers = true;
-        if (m_matched_signal_track_num > 1) m_multiple_matched_tracks = true;
-        if (m_matched_signal_shower_num == 0)  m_no_matched_showers = true;
+  	//CHECK, text reports
+		if(m_is_verbose){
+			if (m_reco_1g1p_is_nuslice){
+				int nu_id = m_matched_signal_shower_sliceId[0];
+				for (auto pair: PFPToSliceIdMap){
+					auto pfp = pair.first;
+					auto id = pair.second;
+					if (id == nu_id){
+						std::cout<<"the pfp in this nu slice with id "<<id <<" is "<<pfp->Self()<<" with pdg "<<pfp->PdgCode()<<std::endl;
+					}
+				}
+			}
 
-        //std::vector<int> sliceIdToNumPFPsvec(m_reco_slice_num, 1);
-        // GetPFPsPerSlice(PFPToSliceIdMap , sliceIdToNumPFPsvec);
-           for(unsigned int i= 0; i<m_reco_slice_num_pfps.size(); i++){
-           std::cout<<"The number of PFP's in slice: " << i<<std::endl;
+			if (m_reco_1g1p_is_nuslice && ( m_matched_signal_shower_tracks_in_slice[0]>1 ||  m_matched_signal_shower_showers_in_slice[0]>1) ){
+				std::cout<<"found reco 1g1p with "<<  m_matched_signal_shower_showers_in_slice[0]<<" showers and "<< m_matched_signal_shower_tracks_in_slice[0]<<"tracks in the same slice in run = "<<m_run_number <<", subrun = "<<m_subrun_number  <<", event = "<<m_event_number<<std::endl;
 
-           std::cout<< "-- is "<<m_reco_slice_num_pfps[i]<<std::endl;
-           std::cout<<"-- -- of which "<< m_reco_slice_num_showers[i]<< " are showers and "<< m_reco_slice_num_tracks[i] <<" are tracks"<<std::endl;
-           if (m_reco_slice_num_showers[i] + m_reco_slice_num_tracks[i] != m_reco_slice_num_pfps[i]){
-           std::cout<<"ERROR, mismatching numbers of PFPs"<<std::endl;
-           }
-           }
+			}
 
+			for(unsigned int i= 0; i<m_reco_slice_num_pfps.size(); i++){
+				std::cout<<"The number of PFP's in slice: " << i<<std::endl;
 
-        std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t AnalyzeRecoMCSlices is done "<<std::endl;
+				std::cout<< "-- is "<<m_reco_slice_num_pfps[i]<<std::endl;
+				std::cout<<"-- -- of which "<< m_reco_slice_num_showers[i]<< " are showers and "<< m_reco_slice_num_tracks[i] <<" are tracks"<<std::endl;
+				if (m_reco_slice_num_showers[i] + m_reco_slice_num_tracks[i] != m_reco_slice_num_pfps[i]){
+					std::cout<<"ERROR, mismatching numbers of PFPs"<<std::endl;
+				}
+			}
+		}
+        std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t "<<__FUNCTION__<<" is done "<<std::endl;
 
     }//findslice
 
-
-
-    //for a given signal def, finds the MCParticles in event
-    //loops over association between reco tracks/showers to get associated slice(s)
-    //can also look at things like shower energy, conversion length, etc.
-    void SinglePhoton::FindSignalSlice(std::string signal_def, std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,
-            std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle> > & showerToPFParticleMap, 
-            std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec, 
-            std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,
-            std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle> > & trackToNuPFParticleMap,
-            std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap){
-		std::cout<<"FUNCTION "<<__FUNCTION__<<" NOT IN USE, exit the code"<<std::endl;
-		exit(0);
-//        std::vector<double> matched_reco_slice_shower_overlay_fraction;
-//        std::vector<art::Ptr<simb::MCParticle>> matched_reco_slice_shower_MCP;
-//        //std::vector<int> matched_reco_slice_track_matched;
-//        std::vector<art::Ptr<simb::MCParticle>> matched_reco_slice_track_MCP;
-//
-//
-//        //first check if in the event there's a match to a given signal
-//        if(signal_def == "ncdelta"){
-//            //std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t looking for signal def "<<signal_def<<", m_mctruth_is_delta_radiative = "<<m_mctruth_is_delta_radiative<<std::endl; 
-//            if(m_mctruth_is_delta_radiative== true){
-//                std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t looking for signal def "<<signal_def<<", m_mctruth_is_delta_radiative = "<<m_mctruth_is_delta_radiative<<std::endl; 
-//                //collect primary particles
-//                //first look for sim showers
-//                for (unsigned int j = 0; j< m_sim_shower_parent_pdg.size(); j++){
-//                    int parent= m_sim_shower_parent_pdg[j];
-//                    int pdg =  m_sim_shower_pdg[j];
-//
-//                    //std::cout<<"found sim photon shower with pdg "<<pdg<<" and parent pdg "<<parent<<std::endl;
-//
-//                    //if this sim shower is a photon and it's primary (parent pdg is -1)
-//                    if((parent == -1 && pdg ==22) || ((parent == -1 ||parent == 12 || parent ==14 ) && pdg == 2212)){
-//                        //first check that this particle isn't alread saved
-//                        //use map from track ID to get MCP
-//                        int id = m_sim_shower_trackID[j];
-//                        art::Ptr<simb::MCParticle> mcp = MCParticleToTrackIDMap[id];
-//                        // std::cout<<"found sim photon shower with track ID "<<id<<std::endl;
-//                        if (std::find(matched_reco_slice_shower_MCP.begin(),matched_reco_slice_shower_MCP.end(),mcp) ==  matched_reco_slice_shower_MCP.end()){
-//                            //if this shower is matched to a recob:shower
-//                            if (m_sim_shower_matched[j] > 0){
-//                                //matched_reco_slice_shower_matched.push_back(m_sim_shower_matched[j]);
-//                                matched_reco_slice_shower_MCP.push_back(mcp);
-//
-//                                //save the overlay fraction and whether it's matched
-//                                matched_reco_slice_shower_overlay_fraction.push_back(m_sim_shower_overlay_fraction[j]);
-//                                //std::cout<<"saving sim photon shower with track ID "<<id<<std::endl;
-//                            }
-//                        } //if the particle isn't already stored
-//
-//                    }//if it's a photon from the neutrino interaction
-//                }//for all sim showers
-//
-//                if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t the number of sim showers-MCP matches associated to the true ncdelta is "<<matched_reco_slice_shower_MCP.size()<<std::endl;
-//
-//                m_reco_slice_shower_num_matched_signal = matched_reco_slice_shower_MCP.size();
-//                m_reco_slice_shower_matched_overlay_frac = matched_reco_slice_shower_overlay_fraction;
-//
-//                // std::cout<<"checking sim tracks"<<std::endl;
-//                //then repeat for sim tracks
-//                for (unsigned int k = 0; k< m_sim_track_parent_pdg.size(); k++){
-//                    int parent= m_sim_track_parent_pdg[k];
-//                    int pdg =  m_sim_track_pdg[k];
-//
-//                    //std::cout<<"for this track at trackID "<<m_sim_track_trackID[k]<< " and pdg "<<pdg <<" the parent is "<<parent<<std::endl;
-//                    //if this sim track is a photon and it's primary (parent pdg is -1)
-//                    if(((parent == -1 ||parent == 12 || parent ==14 ) && pdg == 2212)|| (parent == -1 && pdg ==22)){
-//                        //use map from track ID to get MCP
-//                        int id = m_sim_track_trackID[k];
-//                        art::Ptr<simb::MCParticle> mcp = MCParticleToTrackIDMap[id];
-//
-//                        if (m_sim_track_matched[k] > 0){
-//                            if(std::find(matched_reco_slice_track_MCP.begin(),matched_reco_slice_track_MCP.end(),mcp) ==  matched_reco_slice_track_MCP.end()){
-//
-//                                matched_reco_slice_track_MCP.push_back(mcp);
-//
-//                                //  std::cout<<"found a candiate proton track"<<std::endl;
-//                                //save the overlay fraction and whether it's matched
-//                                //matched_reco_slice_track_overlay_fraction.push_back(m_reco_slice_track_overlay_fraction[j]);
-//                                //std::cout<<"found sim proton track with track ID "<<id<<std::endl;
-//                            }//if not already stored
-//                            //else{
-//                            //    std::cout<<"not matched to recob track"<<std::endl;
-//                            //}
-//
-//                        }//if matched
-//                    }//if proton from neutrino interaction
-//                }//for all sim tracks
-//                m_reco_slice_track_num_matched_signal = matched_reco_slice_track_MCP.size();
-//
-//
-//                //this->ResizeMatchedSlices(m_reco_slice_shower_num_matched_signal ,m_reco_slice_track_num_matched_signal);  
-//
-//
-//                std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t the number of sim tracks-MCP matches associated to the true ncdelta is "<<matched_reco_slice_track_MCP.size()<<std::endl;
-//                //check if either 1g1p or 1g0p topology
-//                std::cout<<"Status - ";
-//                //if it's a true 1g1p event
-//                if (m_mctruth_delta_radiative_1g1p_or_1g1n == 0){
-//                    //std::cout<<"Status - ";
-//                    if ( m_reco_slice_track_num_matched_signal == 1 && m_reco_slice_shower_num_matched_signal ==1){
-//                        std::cout<<"there is one shower one track for 1g1p"<<std::endl;
-//                    }else if (m_reco_slice_track_num_matched_signal == 1 && m_reco_slice_shower_num_matched_signal == 0){
-//                        std::cout<<"error, true 1g1p but no shower, 1 track"<<std::endl;
-//                    } else if (m_reco_slice_track_num_matched_signal == 0 && m_reco_slice_shower_num_matched_signal == 1){
-//                        std::cout<<"true 1g1p with 1 shower, no track (looks like 1g0p)"<<std::endl;
-//                    } else {
-//                        std::cout<<"true 1g1p but neither track nor shower were reconstructed"<<std::endl;
-//                    }            
-//                } else{
-//                    if ( m_reco_slice_track_num_matched_signal == 1 && m_reco_slice_shower_num_matched_signal ==1){
-//                        std::cout<<"there is one shower one track for 1g0p"<<std::endl;
-//                    }else if (m_reco_slice_track_num_matched_signal == 1 && m_reco_slice_shower_num_matched_signal == 0){
-//                        std::cout<<"error, true 1g0p but no shower, 1 track"<<std::endl;
-//                    } else if (m_reco_slice_track_num_matched_signal == 0 && m_reco_slice_shower_num_matched_signal == 1){
-//                        std::cout<<"correct, true 1g0p with 1 shower, no track"<<std::endl;
-//                    } else {
-//                        std::cout<<"true 1g0p but neither track nor shower were reconstructed"<<std::endl;
-//                    } 
-//                }
-//
-//            }//for nc delta signal
-//        }//for signal def
-//
-//        //std::cout<< showerToMCParticleMap.size()<<std::endl;
-//
-//
-//        //for each MCP, associated to a reco track/shower, get the corresponding PFP and slice
-//        int i_shr =0;
-//        for(art::Ptr<simb::MCParticle> mcp: matched_reco_slice_shower_MCP){
-//            //get the recob shower
-//            art::Ptr<recob::Shower> this_shr;
-//            for(auto pair: showerToMCParticleMap){
-//                if (pair.second == mcp){
-//                    this_shr = pair.first;    
-//                }
-//            }
-//            art::Ptr<recob::PFParticle> this_pfp;
-//            if(!this_shr.isNull()){
-//                this_pfp = showerToPFParticleMap[this_shr];
-//            }
-//
-//            //get the slice
-//            if(!this_pfp.isNull()){
-//                for(auto pair :allPFPSliceIdVec){
-//                    art::Ptr<recob::PFParticle> pfp = pair.first;
-//                    if (this_pfp == pfp){
-//                        if(m_is_verbose)        std::cout<<"found recob shower - MCP at track id "<<mcp->TrackId()<<" in slice "<<pair.second <<std::endl;
-//                        m_reco_slice_shower_matched_sliceId[i_shr] = pair.second; 
-//                        m_reco_slice_shower_matched_energy[i_shr] = mcp->E();
-//                    }
-//                }
-//            } else{
-//                if(m_is_verbose)  std::cout<<"no corresponding slice found for recob shower - MCP at track id "<<mcp->TrackId()<<std::endl;
-//            }
-//            i_shr++;
-//        } 
-//
-//        int i_trk= 0;
-//        for(art::Ptr<simb::MCParticle> mcp: matched_reco_slice_track_MCP){
-//            //get the recob track
-//            art::Ptr<recob::Track> this_trk;
-//            for(auto pair: trackToMCParticleMap){
-//                if (pair.second == mcp){
-//                    this_trk = pair.first;    
-//                }
-//            }
-//            art::Ptr<recob::PFParticle> this_pfp;
-//            if(!this_trk.isNull()){
-//                this_pfp = trackToNuPFParticleMap[this_trk];
-//            }
-//
-//            //get the slice
-//            if(!this_pfp.isNull()){
-//                for(auto pair :allPFPSliceIdVec){
-//                    art::Ptr<recob::PFParticle> pfp = pair.first;
-//                    if (this_pfp == pfp){
-//                        if(m_is_verbose)        std::cout<<"found recob track - MCP at track id "<<mcp->TrackId()<<" in slice "<<pair.second <<std::endl;
-//                        m_reco_slice_track_matched_sliceId[i_trk] = pair.second;
-//                        m_reco_slice_track_matched_energy[i_trk]= mcp->E();
-//                    }
-//                }
-//            } else{
-//                if(m_is_verbose)std::cout<<"no corresponding slice found for recob track - MCP at track id "<<mcp->TrackId()<<std::endl;
-//            }
-//            i_trk++;
-//        }
-//
-//
-//        //I need to fill these
-//        /*
-//           m_reco_slice_shower_matched_conversion 
-//           */ 
-//
-//        //if there is a match, store vectors of the showers/tracks and get info like shower energy, conversion distance
-//        //if there's a partial match then some of the simb things were not reconstructed given the purity/completeness requirements?
-//        //if there's no match then ??
-//
-//
-//        //for the given showers/tracks, search for the corresponding slices
-//        //do the pandora calc for slice correctness
-//        //good purity:
-//        //correct = all simb particles in one slice + no additional
-//        //incorrect = all simb particles in one slice but some additional
-//        //incorrect = not all simb particles in one slice but good
-//        //bad purity or not matched at all:
-//        //incorrect = remaining good simb particles in one slice
-//        //incorrect = remaining good simb particles in different slices
-//
-//
-    }//findslice
-
-
-
-
-    }
+}

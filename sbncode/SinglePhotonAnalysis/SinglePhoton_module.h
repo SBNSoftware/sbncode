@@ -706,13 +706,7 @@ namespace single_photon
             //        std::map<int, int>& sliceIdToNumPFPsMap );
 
             std::vector<int>  GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap ); /* get number of PFParticles per slice */
-            //void  GetPFPsPerSlice( std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap , std::vector<int> &sliceIdToNumPFPsvec);
 
-            /* brief: returns slice index corresponding to this shower, or -1 if it's clear cosmic */
-            int GetShowerSlice(art::Ptr<recob::Shower>& this_shower, std::map< art::Ptr<recob::Shower> , art::Ptr<recob::PFParticle>>& showerToPFParticleMap, std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec);
-
-            int GetTrackSlice(art::Ptr<recob::Track>& this_track, std::map< art::Ptr<recob::Track> , art::Ptr<recob::PFParticle>>& trackToPFParticleMap, std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec);
-            //can also look at things like shower energy, conversion length, etc.
 
 
             /* returns numbr of PFParticles that correspond to showers (and not cosmic) per slice */
@@ -738,8 +732,6 @@ namespace single_photon
                     std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap,
                     std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap);
 
-
-            void FindSignalSlice(std::string signal_def, std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle> > & showerToPFParticleMap,  std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec, std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap, std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle> > & trackToNuPFParticleMap, std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap);
 
             int  m_reco_slice_num; //total number of slices in the event
             std::vector<double> m_reco_slice_nuscore; //vector of the neutrino score for each slice in an event
@@ -848,6 +840,18 @@ namespace single_photon
 //            std::string m_badChannelProducer;
 //            std::string m_mcTrackLabel;
 //            std::string m_mcShowerLabel;
+			//Geometry dimensions;
+			std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
+			std::vector<geo::BoxBoundedGeo> fActiveVolumes;
+			double m_XMin;
+			double m_YMin;
+			double m_ZMin;
+			double m_XMax;
+			double m_YMax;
+			double m_ZMax;
+
+
+
             std::string m_pidLabel;            ///< For PID stuff
             std::string m_CRTVetoLabel;
             std::string m_CRTTzeroLabel;

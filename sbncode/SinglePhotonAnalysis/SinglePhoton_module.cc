@@ -34,6 +34,34 @@ namespace single_photon
     //Reconfigure the internal class parameters from .fcl parameters
     void SinglePhoton::reconfigure(fhicl::ParameterSet const &pset)
     {
+		//Get Geometry
+		const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+		for (auto const &cryo: geometry->IterateCryostats()) {
+			geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
+				tend = geometry->end_TPC(cryo.ID());
+			std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+			while (iTPC != tend) {
+				geo::TPCGeo const& TPC = *iTPC;
+				this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+				iTPC++;
+			}
+			fTPCVolumes.push_back(std::move(this_tpc_volumes));
+		}
+
+		  // then combine them into active volumes
+		  for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
+			  m_XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+			  m_YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+			  m_ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+
+			  m_XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+			  m_YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+			  m_ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+		  std::cout<<"CHECK geo X:"<<m_XMin<<" "<<m_XMax<<std::endl;
+		  std::cout<<"CHECK geo Y:"<<m_YMin<<" "<<m_YMax<<std::endl;
+		  std::cout<<"CHECK geo Z:"<<m_ZMin<<" "<<m_ZMax<<std::endl;
+		  }
+
 		std::cout<<">>>> CHECK "<<__FUNCTION__<<" at line"<<__LINE__<<std::endl;
         //input parameters for what file/mode were running in
         m_print_out_event = pset.get<bool>("PrintOut", false);
@@ -198,13 +226,11 @@ namespace single_photon
     // Runs over every artroot event
     bool SinglePhoton::filter(art::Event &evt)
     {
-        std::cout<<"---------------------------------------------------------------------------------"<<std::endl;
-        std::cout<<"SinglePhoton::analyze()\t||\t On entry: "<<m_number_of_events<<std::endl;
-
 //		//Grab services 
 //CHECK ATTEMPTS		
         auto detClocks = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);//it is detinfo::DetectorClocksData 
 		auto theDetector = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, detClocks);//it is detinfo::DetectorPropertiesData 
+		std::cout<<"CHECK BEGINNING "<<__LINE__<<std::endl;
 
         //Clear all output branches 
         this->ClearVertex();
@@ -423,7 +449,7 @@ namespace single_photon
                     std::cout<<"SliceTest: -- and has a nu_score of "<<nu_scores.front()<<" (best nusore PFParticleID:"<<pfp_w_bestnuID;
                     std::cout<<")-- "<<primaries<<" primaries: pdg last: "<<primary_pdg<<std::endl;
                 }else{
-//                    std::cout<<"SliceTest: -- and does not have a nu_score of. "<<std::endl;
+                    std::cout<<"SliceTest: -- and does not have a nu_score of. "<<std::endl;
                 }
                 if(isSelectedSlice) std::cout<<"SliceTest: -- -- And is the Pandora Selected Neutrino Slice"<<std::endl;
             }
@@ -913,24 +939,10 @@ namespace single_photon
                 //added since last time?
                 std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
 
-                /*   std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> allPFPSliceIdVec; //stores a pair of all PFP's in the event and the slice ind
-                     std::map<int, std::vector<art::Ptr<recob::PFParticle>>> sliceIdToPFPMap; //this is an alternative, stores all the PFP's but organized by slice ID
-                     std::cout<<"SinglePhoton::AnalyzeSlice()\t||\t Starting"<<std::endl;
-                     this->AnalyzeSlices( pfParticleToMetadataMap, pfParticleMap, allPFPSliceIdVec, sliceIdToPFPMap);
-                     std::cout<<"There are "<< allPFPSliceIdVec.size()<<" pfp-slice id matches stored in the vector"<<std::endl;
-                     if (showers.size()>0){
-                     std::cout<<"the shower at 0 is in slice "<<this->GetShowerSlice(showers[0], showerToNuPFParticleMap, allPFPSliceIdVec)<<std::endl;
-                     }
-                     */
-
-                //this one was for testing, leaving out for now
-                // this->FindSignalSlice( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap);
-
-                //if(!m_run_pi0_filter){
-                //    this->SecondShowerSearch(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap,mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap);
-                //}
 
                 std::cout<<"filling info in ncdelta slice tree"<<std::endl;
+				//CHECK the following function cause a bug that crashes the code, 
+				//figure out why.
                 this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
 				this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
 
@@ -2166,9 +2178,9 @@ namespace single_photon
     bool SinglePhoton::Pi0PreselectionFilter()
     {
 
-        if(m_vertex_pos_x < 5.0 || m_vertex_pos_x > 251.) return false;
-        if(m_vertex_pos_y < -112. || m_vertex_pos_y > 112.) return false;
-        if(m_vertex_pos_z < 5.0 || m_vertex_pos_z > 1031.8) return false;
+        if(m_vertex_pos_x < m_XMin||  m_vertex_pos_x > m_XMax) return false;
+        if(m_vertex_pos_y < m_YMin || m_vertex_pos_y > m_YMax) return false;
+        if(m_vertex_pos_z < m_ZMin||  m_vertex_pos_z > m_ZMax) return false;
 
         if(m_reco_asso_showers!=2) return false;
         if(m_reco_asso_tracks!=1) return false;
@@ -2185,9 +2197,9 @@ namespace single_photon
     bool SinglePhoton::Pi0PreselectionFilter2g0p()
     {
 
-        if(m_vertex_pos_x < 5.0 || m_vertex_pos_x > 251.) return false;
-        if(m_vertex_pos_y < -112. || m_vertex_pos_y > 112.) return false;
-        if(m_vertex_pos_z < 5.0 || m_vertex_pos_z > 1031.8) return false;
+        if(m_vertex_pos_x < m_XMin||  m_vertex_pos_x > m_XMax) return false;
+        if(m_vertex_pos_y < m_YMin || m_vertex_pos_y > m_YMax) return false;
+        if(m_vertex_pos_z < m_ZMin||  m_vertex_pos_z > m_ZMax) return false;
 
         if(m_reco_asso_showers!=2) return false;
         if(m_reco_asso_tracks!=0) return false;
