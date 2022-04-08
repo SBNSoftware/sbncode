@@ -86,7 +86,8 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
-                       caf::SRSlice& slice);
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);
 

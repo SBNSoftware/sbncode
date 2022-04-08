@@ -306,7 +306,8 @@ namespace caf
 
 
   void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
-                       caf::SRSlice& slice) {
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
     if (crumbs != nullptr) {
       slice.crumbs_result.score = crumbs->score;
       slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
