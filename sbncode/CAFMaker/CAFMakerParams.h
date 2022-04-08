@@ -234,7 +234,19 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
-    
+
+    Atom<long long> CRTSimT0Offset {
+      Name("CRTSimT0Offset"),
+      Comment("start of beam gate/simulation time in the simulated CRT clock"),
+      0,
+    };
+
+    Atom<art::InputTag> TriggerLabel {
+      Name("TriggerLabel"),
+      Comment("Label of trigger."),
+      "daqTrigger"
+    };
+
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),

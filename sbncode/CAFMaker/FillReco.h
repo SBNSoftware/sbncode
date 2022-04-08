@@ -158,6 +158,7 @@ namespace caf
                            unsigned truth_ind);
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
