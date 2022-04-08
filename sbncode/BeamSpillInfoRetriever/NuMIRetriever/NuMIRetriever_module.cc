@@ -194,8 +194,8 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       double time_closest_ns = (TRTGTD_time - time_closest_int)*1000000000;
 
       sbn::NuMISpillInfo NuMIbeamInfo;
-      NuMIbeamInfo.TORTGT = TORTGT;
-      NuMIbeamInfo.TOR101 = TOR101;
+      NuMIbeamInfo.TORTGT = TORTGT*1e12; //include factor of 1e12 protons in POT calculation
+      NuMIbeamInfo.TOR101 = TOR101*1e12; //include factor of 1e12 protons in POT calculation
       NuMIbeamInfo.TRTGTD = TRTGTD;
       NuMIbeamInfo.TR101D = TR101D;
       NuMIbeamInfo.HRNDIR = HRNDIR;
