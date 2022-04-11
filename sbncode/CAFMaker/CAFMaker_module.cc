@@ -1534,7 +1534,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(fFirstInFile)
   {
     rec.hdr.pot   = fSubRunPOT;
+    rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
+    rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
   }
   rec.hdr.ngenevt = n_gen_evt;
