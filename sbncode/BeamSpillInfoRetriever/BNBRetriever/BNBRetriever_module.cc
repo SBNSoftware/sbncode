@@ -554,8 +554,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   
   //Store everything in our data-product
   sbn::BNBSpillInfo beamInfo;
-  beamInfo.TOR860 = TOR860;
-  beamInfo.TOR875 = TOR875;
+  beamInfo.TOR860 = TOR860*1e12; //add in factor of 1e12 protons to get correct POT units
+  beamInfo.TOR875 = TOR875*1e12; //add in factor of 1e12 protons to get correct POT units
   beamInfo.LM875A = LM875A;
   beamInfo.LM875B = LM875B;
   beamInfo.LM875C = LM875C;
