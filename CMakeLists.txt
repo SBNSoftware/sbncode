@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(sbncode VERSION 09.47.00 LANGUAGES CXX)
+project(sbncode VERSION 09.48.00 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -85,6 +85,7 @@ include(BuildPlugins)
 add_subdirectory(sbncode)
 add_subdirectory(ups)
 add_subdirectory(fcl)
+add_subdirectory(fclmodule)
 
 # packaging utility
 include(UseCPack)
