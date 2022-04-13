@@ -15,8 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-
-project(sbncode VERSION 09.37.02.03 LANGUAGES CXX)
+project(sbncode VERSION 09.48.00 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -37,7 +36,7 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
   WERROR
   NO_UNDEFINED
   ALLOW_DEPRECATIONS
-  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs -Wno-undefined-var-template
+  EXTRA_FLAGS -pedantic -Wno-unused-local-typedefs
 )
 
 cet_report_compiler_flags()
@@ -53,9 +52,9 @@ find_ups_product(nugen)
 find_ups_product(nurandom)
 find_ups_product(nutools)
 find_ups_product(genie)
-find_ups_product(lardataobj)
 find_ups_product(larcoreobj)
 find_ups_product(larcorealg)
+find_ups_product(lardataobj)
 find_ups_product(lardataalg)
 find_ups_product(larcore)
 find_ups_product(lardata)
@@ -195,6 +194,7 @@ include(BuildPlugins)
 add_subdirectory(sbncode)
 add_subdirectory(ups)
 add_subdirectory(fcl)
+add_subdirectory(fclmodule)
 
 # packaging utility
 include(UseCPack)

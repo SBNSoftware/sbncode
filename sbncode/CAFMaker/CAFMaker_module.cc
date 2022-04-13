@@ -175,6 +175,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+
   // int fCycle;
   // int fBatch;
 

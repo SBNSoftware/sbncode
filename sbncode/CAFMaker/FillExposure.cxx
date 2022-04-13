@@ -42,7 +42,6 @@ namespace caf
         BNBInfo.push_back(makeSRBNBInfo(info));
       }
   }
-
   void FillExposureNuMI(const std::vector<sbn::NuMISpillInfo>& numi_spill_info,
 		    std::vector<caf::SRNuMIInfo>& NuMIInfo,
 		    double& subRunPOT) {

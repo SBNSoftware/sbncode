@@ -5,6 +5,7 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnanaobj/StandardRecord/SRNuMIInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+
 #include <vector>
 
 namespace caf

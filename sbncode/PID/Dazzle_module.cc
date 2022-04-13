@@ -739,18 +739,58 @@ MVAPID Dazzle::RunMVA()
 
 void Dazzle::FillChi2PIDMetrics(const anab::ParticleID& pid)
 {
-  chi2PIDMuon = pid.Chi2Muon();
-  chi2PIDPion = pid.Chi2Pion();
-  chi2PIDKaon = pid.Chi2Kaon();
-  chi2PIDProton = pid.Chi2Proton();
+  // Assign dummy values.
 
+  chi2PIDMuon = 0.;
+  chi2PIDPion = 0.;
+  chi2PIDKaon = 0.;
+  chi2PIDProton = 0.;
+  double chi2PIDBest = 0.;
+  chi2PIDPDG = 0;
+
+  // Loop over algorithm scores and extract the ones we want.
+  // Also extract the preferred pdg.
+
+  std::vector<anab::sParticleIDAlgScores> AlgScoresVec = pid.ParticleIDAlgScores();
+  for (size_t i_algscore=0; i_algscore<AlgScoresVec.size(); i_algscore++){
+    anab::sParticleIDAlgScores AlgScore = AlgScoresVec.at(i_algscore);
+    if (AlgScore.fAlgName == "Chi2"){
+      if (TMath::Abs(AlgScore.fAssumedPdg) == 13) { // chi2mu
+        chi2PIDMuon = AlgScore.fValue;
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
+          chi2PIDBest = AlgScore.fValue;
+          chi2PIDPDG = 13;
+        }
+      }
+      else if (TMath::Abs(AlgScore.fAssumedPdg) == 211) { // chi2pi
+	chi2PIDPion = AlgScore.fValue;
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
+          chi2PIDBest = AlgScore.fValue;
+          chi2PIDPDG = 211;
+        }
+      }
+      else if (TMath::Abs(AlgScore.fAssumedPdg) == 321) { // chi2ka
+	chi2PIDKaon = AlgScore.fValue;
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
+          chi2PIDBest = AlgScore.fValue;
+          chi2PIDPDG = 321;
+        }
+      }
+      else if (TMath::Abs(AlgScore.fAssumedPdg) == 2212) { // chi2pr
+	chi2PIDProton = AlgScore.fValue;
+        if(AlgScore.fValue < chi2PIDBest || chi2PIDBest == 0.) {
+          chi2PIDBest = AlgScore.fValue;
+          chi2PIDPDG = 2212;
+        }
+      }
+    }
+  }
   chi2PIDMuonPionDiff = chi2PIDMuon - chi2PIDPion;
 
   if (!fMakeTree)
     return;
 
-  chi2PIDPDG = pid.Pdg();
-  chi2PIDType = this->PdgString(pid.Pdg());
+  chi2PIDType = this->PdgString(chi2PIDPDG);
 
   if (chi2PIDPDG != 321) {
     chi2PIDPDGNoKaon = chi2PIDPDG;
