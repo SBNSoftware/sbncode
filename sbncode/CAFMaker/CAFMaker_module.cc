@@ -38,7 +38,7 @@
 #include <libgen.h>
 #endif
 
-#include <IFDH_service.h>
+#include "ifdh_art/IFDHService/IFDH_service.h"
 
 // ROOT includes
 #include "TFile.h"
