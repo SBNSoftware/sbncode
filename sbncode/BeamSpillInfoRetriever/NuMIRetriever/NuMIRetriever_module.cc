@@ -25,7 +25,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 
-#include "IFBeam_service.h"
+#include "ifdh_art/IFBeamService/IFBeam_service.h"
 #include "ifbeam_c.h"
 //#include "MWRData.h"
 
