@@ -13,20 +13,20 @@ art_make_library(
 )
 
 simple_plugin(PCAnglePlaneMaker module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -36,20 +36,20 @@ simple_plugin(PCAnglePlaneMaker module
 )
 
 simple_plugin(PCAngleKinkFinder module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 	Minuit
 
 	sbnobj_Common_Reco
@@ -59,20 +59,20 @@ simple_plugin(PCAngleKinkFinder module
 )
 
 simple_plugin(PCAngleKinkTree module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -82,7 +82,7 @@ simple_plugin(PCAngleKinkTree module
         art_root_io_dict
         caf_RecoUtils
         larsim_MCCheater_BackTrackerService_service
-        nusimdata::SimulationBase
+        nusimdata_SimulationBase
         larcorealg_Geometry
         larcore_Geometry_Geometry_service
 	sbn_LArReco_PCA

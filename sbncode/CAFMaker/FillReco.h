@@ -29,6 +29,7 @@
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
+#include "sbnobj/Common/Reco/CRUMBSResult.h"
 #include "sbnobj/Common/CRT/CRTHit.hh"
 #include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -81,6 +82,10 @@ namespace caf
                         bool allowEmpty = false);
 
   void FillSliceVertex(const recob::Vertex *vertex,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
+
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
                        caf::SRSlice& slice,
                        bool allowEmpty = false);
 
@@ -153,6 +158,7 @@ namespace caf
                            unsigned truth_ind);
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
@@ -160,6 +166,9 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
+
+  template<class T, class U>
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
 }
 
 #endif
