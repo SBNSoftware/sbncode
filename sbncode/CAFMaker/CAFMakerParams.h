@@ -31,7 +31,7 @@ namespace caf
     };
 
     Atom<bool> CreateFlatCAF { Name("CreateFlatCAF"),
-      Comment("Whether to produce an output file in FlatCAF format"), false
+      Comment("Whether to produce an output file in FlatCAF format"), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
