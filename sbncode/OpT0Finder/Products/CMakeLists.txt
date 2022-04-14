@@ -5,7 +5,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 art_make(
     LIB_LIBRARIES
         ${ROOT_BASIC_LIB_LIST}
-        ROOT::EG
+        ${ROOT_EG}
 )
 
 install_headers()
