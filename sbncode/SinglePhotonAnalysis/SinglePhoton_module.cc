@@ -1607,53 +1607,53 @@ namespace single_photon
         this->CreateEventWeightBranches();
         this->CreateGeant4Branches();
         this->CreateTrackBranches();
-
+//CHECK, remove bad chanel related varaibles? & ub dependent path
         //hardcode some info (TODO change)
-        std::string gpvm_location ="/pnfs/uboone/resilient/users/markross/tars/";
-
-        //Get the info for length->energy conversion from PSTAR database.
-        TFile *fileconv;
-        struct stat buffer;   
-
-        //some useful input data
-        if(!m_run_pi0_filter){
-            if(stat("proton_conversion.root", &buffer) == 0){
-                fileconv = new TFile("proton_conversion.root", "read");
-            }else{
-                fileconv = new TFile((gpvm_location+"proton_conversion.root").c_str(), "read");
-            }
-
-            proton_length2energy_tgraph = *(TGraph*)fileconv->Get("Graph");
-            proton_length2energy_tgraph.GetMean();
-            fileconv->Close();
-        }
-
-        //bad channels 
-        std::string bad_channel_file = "MCC9_channel_list.txt";
-
-        if(!m_run_pi0_filter){
-            if(stat(bad_channel_file.c_str(), &buffer) != 0){
-                bad_channel_file = gpvm_location+bad_channel_file;
-            }
-
-            std::ifstream bc_file(bad_channel_file);
-
-            if (bc_file.is_open())
-            {
-                std::string line;
-                while ( getline (bc_file,line) )
-                {
-                    std::vector<int> res;
-                    std::istringstream iss(line);
-                    for(std::string s; iss >> s; )
-                        res.push_back( std::stof(s));
-
-                    std::pair<int,int> t(res[0],res[1]);
-                    bad_channel_list_fixed_mcc9.push_back(t);
-                }
-                bc_file.close();
-            }
-        }
+//        std::string gpvm_location ="/pnfs/uboone/resilient/users/markross/tars/";
+//
+//        //Get the info for length->energy conversion from PSTAR database.
+//        TFile *fileconv;
+//        struct stat buffer;   
+//
+//        //some useful input data
+//        if(!m_run_pi0_filter){
+//            if(stat("proton_conversion.root", &buffer) == 0){
+//                fileconv = new TFile("proton_conversion.root", "read");
+//            }else{
+//                fileconv = new TFile((gpvm_location+"proton_conversion.root").c_str(), "read");
+//            }
+//
+//            proton_length2energy_tgraph = *(TGraph*)fileconv->Get("Graph");
+//            proton_length2energy_tgraph.GetMean();
+//            fileconv->Close();
+//        }
+//
+//        //bad channels 
+//        std::string bad_channel_file = "MCC9_channel_list.txt";
+//
+//        if(!m_run_pi0_filter){
+//            if(stat(bad_channel_file.c_str(), &buffer) != 0){
+//                bad_channel_file = gpvm_location+bad_channel_file;
+//            }
+//
+//            std::ifstream bc_file(bad_channel_file);
+//
+//            if (bc_file.is_open())
+//            {
+//                std::string line;
+//                while ( getline (bc_file,line) )
+//                {
+//                    std::vector<int> res;
+//                    std::istringstream iss(line);
+//                    for(std::string s; iss >> s; )
+//                        res.push_back( std::stof(s));
+//
+//                    std::pair<int,int> t(res[0],res[1]);
+//                    bad_channel_list_fixed_mcc9.push_back(t);
+//                }
+//                bc_file.close();
+//            }
+//        }
 
         //------------------- List of Selected Events to run --------
         if(m_runSelectedEvent){

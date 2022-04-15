@@ -383,8 +383,6 @@ namespace single_photon
             return sliceIdToNumPFPsvec;
         }
 
-//        int cosmic = 0;
-
         //for all PFP's
 		//CHECK the following block crashes the code
 		//FIXED by fixing m_reco_slice_num (add 1)
@@ -393,7 +391,7 @@ namespace single_photon
             //get the slice and increment the vector
             int slice_id = pair.second;
 			if(slice_id > -1) sliceIdToNumPFPsvec[slice_id]++;
-			std::cout<<"CHECK found 1 pfp particle at slice id "<<slice_id<<"/"<<m_reco_slice_num<<std::endl;
+//			std::cout<<"CHECK found 1 pfp particle at slice id "<<slice_id<<"/"<<m_reco_slice_num<<std::endl;
         }
 
         return sliceIdToNumPFPsvec;
