@@ -6,6 +6,8 @@ The original code can be found [here](https://cdcvs.fnal.gov/redmine/projects/ub
 NEED INTRODUCTION HERE.
 
 ## Overview
+`NCRadiativeResonant_module.cc` provides module `NCDeltaRadiative` for NCDeltaRadiative events production
+
 `Libraries` contains essential headers for this module.
 
 `SEAview` is an additional module runs inside this module.
