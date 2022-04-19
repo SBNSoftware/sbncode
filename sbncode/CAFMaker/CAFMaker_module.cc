@@ -1163,7 +1163,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<recob::Track> fmTrack =
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
-
     // make Ptr's to tracks for track -> other object associations
     std::vector<art::Ptr<recob::Track>> slcTracks;
     if (fmTrack.isValid()) {
@@ -1345,13 +1344,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //#######################################################
     // Reco objects have assns to the slice PFParticles
     // This depends on the findMany object created above.
-    int counter = 0;
-    std::cout<<"Track assc size:"<<fmTrack.size()<<"  Shower assc size:"<<fmShower.size()<<std::endl;
     for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
-      counter++;
       std::vector<art::Ptr<recob::Track>> thisTrack;
-      std::cout<<"Track valid:"<<fmTrack.isValid()<<"  Shower valid:"<<fmShower.isValid()<<std::endl;
       if (fmTrack.isValid()) {
         thisTrack = fmTrack.at(iPart);
       }
@@ -1360,11 +1355,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         thisShower = fmShower.at(iPart);
       }
 
-      std::cout<<"Track empty:"<<thisTrack.empty()<<"  Shower empty:"<<thisShower.empty()<<std::endl;
       if (!thisTrack.empty())  { // it has a track!
-        //assert(thisTrack.size() == 1);
+        assert(thisTrack.size() == 1);
         rec.reco.ntrk ++;
-	std::cout<<"************** Track: "<<counter<<std::endl;
         rec.reco.trk.push_back(SRTrack());
 
         // collect all the stuff
@@ -1431,9 +1424,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
-        //assert(thisShower.size() == 1);
+        assert(thisShower.size() == 1);
         rec.reco.nshw ++;
-	std::cout<<"************** Shower: "<<counter<<std::endl;
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
 
