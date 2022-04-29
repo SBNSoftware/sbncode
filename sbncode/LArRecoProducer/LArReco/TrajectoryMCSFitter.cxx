@@ -5,7 +5,7 @@
 #include "TMatrixDSymEigen.h"
 
 using namespace std;
-using namespace trkf;
+using namespace trkf::sbn;
 using namespace recob::tracking;
 
 recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& traj, int pid, bool momDepConst) const {
