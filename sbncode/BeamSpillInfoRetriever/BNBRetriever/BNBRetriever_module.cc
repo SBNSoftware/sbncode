@@ -206,6 +206,14 @@ sbn::BNBRetriever::BNBRetriever(Parameters const& params)
 
 void sbn::BNBRetriever::produce(art::Event& e)
 {
+
+  // If this is the first event in the run, then ignore it
+  // We do not currently have the ability to figure out the first
+  // spill that the DAQ was sensitive to, so don't try to save any
+  // spill information
+  //
+  // TODO: long-term goal -- can we fix this?
+  if (e.event() == 1) return;
   
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
@@ -403,6 +411,11 @@ int sbn::BNBRetriever::matchMultiWireData(
   matched_MWR.resize(3);
   
   
+  // NOTE: for now, this is dead code because we don't
+  // do anything for the first event in a run. We may want to revisit 
+  // this later to understand if there is a way we can do the POT
+  // accounting in the first event.
+  //
   // Need to handle the first event in a run differently
   if(isFirstEventInRun){
     
@@ -428,12 +441,10 @@ int sbn::BNBRetriever::matchMultiWireData(
   for (size_t i = 0; i < times_temps.size(); i++) {
     
     // Only continue if these times are matched to our DAQ time
-    // plus or minus some time padding, currently using 3.3 ms 
-    // which is half the Booster Rep Rate
     
     if(!isFirstEventInRun){//We already addressed the "first event" above
-      if(times_temps[i] > (triggerInfo.t_current_event+fTimePad)){continue;}
-      if(times_temps[i] <= (triggerInfo.t_previous_event-fTimePad)){continue;}
+      if(times_temps[i] > (triggerInfo.t_current_event)){continue;}
+      if(times_temps[i] <= (triggerInfo.t_previous_event)){continue;}
     }
 
     
@@ -543,8 +554,8 @@ sbn::BNBSpillInfo sbn::BNBRetriever::makeBNBSpillInfo
   
   //Store everything in our data-product
   sbn::BNBSpillInfo beamInfo;
-  beamInfo.TOR860 = TOR860;
-  beamInfo.TOR875 = TOR875;
+  beamInfo.TOR860 = TOR860*1e12; //add in factor of 1e12 protons to get correct POT units
+  beamInfo.TOR875 = TOR875*1e12; //add in factor of 1e12 protons to get correct POT units
   beamInfo.LM875A = LM875A;
   beamInfo.LM875B = LM875B;
   beamInfo.LM875C = LM875C;

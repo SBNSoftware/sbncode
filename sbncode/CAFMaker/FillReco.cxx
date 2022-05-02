@@ -61,10 +61,14 @@ namespace caf
   }
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
+                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
+
     srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
+    srhit.t0 = ((long long)(hit.ts0_ns)-(long long)(gate_start_timestamp))/1000.;
+    srhit.t1 = hit.ts1_ns/1000.;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -255,6 +259,7 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
+    srslice.nuid.setDefault();
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -273,6 +278,17 @@ namespace caf
       else {
         srslice.nu_score = -1;
       }
+      // NeutrinoID (SliceID) features
+      CopyPropertyIfSet(properties, "NuNFinalStatePfos",        srslice.nuid.nufspfos);
+      CopyPropertyIfSet(properties, "NuNHitsTotal",             srslice.nuid.nutothits);
+      CopyPropertyIfSet(properties, "NuVertexY",                srslice.nuid.nuvtxy);
+      CopyPropertyIfSet(properties, "NuWeightedDirZ",           srslice.nuid.nuwgtdirz);
+      CopyPropertyIfSet(properties, "NuNSpacePointsInSphere",   srslice.nuid.nusps);
+      CopyPropertyIfSet(properties, "NuEigenRatioInSphere",     srslice.nuid.nueigen);
+      CopyPropertyIfSet(properties, "CRLongestTrackDirY",       srslice.nuid.crlongtrkdiry);
+      CopyPropertyIfSet(properties, "CRLongestTrackDeflection", srslice.nuid.crlongtrkdef);
+      CopyPropertyIfSet(properties, "CRFracHitsInLongestTrack", srslice.nuid.crlongtrkhitfrac);
+      CopyPropertyIfSet(properties, "CRNHitsMax",               srslice.nuid.crmaxhits);
     }
 
   }
@@ -285,6 +301,33 @@ namespace caf
       slice.vertex.x = vertex->position().X();
       slice.vertex.y = vertex->position().Y();
       slice.vertex.z = vertex->position().Z();
+    }
+  }
+
+
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (crumbs != nullptr) {
+      slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
+      slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
+      slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
+      slice.crumbs_result.tpc.crnhitsmax = crumbs->tpc_CRNHitsMax;
+      slice.crumbs_result.tpc.nusphereeigenratio = crumbs->tpc_NuEigenRatioInSphere;
+      slice.crumbs_result.tpc.nufinalstatepfos = crumbs->tpc_NuNFinalStatePfos;
+      slice.crumbs_result.tpc.nutotalhits = crumbs->tpc_NuNHitsTotal;
+      slice.crumbs_result.tpc.nuspherespacepoints = crumbs->tpc_NuNSpacePointsInSphere;
+      slice.crumbs_result.tpc.nuvertexy = crumbs->tpc_NuVertexY;
+      slice.crumbs_result.tpc.nuwgtdirz = crumbs->tpc_NuWeightedDirZ;
+      slice.crumbs_result.tpc.stoppingchi2ratio = crumbs->tpc_StoppingChi2CosmicRatio;
+      slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
+      slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
+      slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
+      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
+      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
     }
   }
 
@@ -770,5 +813,12 @@ namespace caf
     return;
   }
 
+  //......................................................................
+  template<class T, class U>
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value )
+  {
+    auto it = props.find(search);
+    if ( it != props.end() ) value = it->second;
+  }
 
 } // end namespace
