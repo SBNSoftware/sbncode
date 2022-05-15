@@ -1278,10 +1278,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         thisShower = fmShower.at(iPart);
       }
 
+      assert(thisParticle.size() == 1);
+     
+      rec.reco.pfp.push_back(SRPFP());
+      const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+      FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.pfp.back());
+
+      rec.reco.pfp.back().trk = SRTrack();
+      rec.reco.pfp.back().shw = SRShower();
+
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
-        rec.reco.ntrk ++;
-        rec.reco.trk.push_back(SRTrack());
 
         // collect all the stuff
         std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
@@ -1304,84 +1311,72 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
-        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
-        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
-
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+        FillTrackVars(*thisTrack[0], producer, rec.reco.pfp.back().trk);
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.pfp.back().trk);
+        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.pfp.back().trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.pfp.back().trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
-           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.pfp.back().trk);
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
-           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.pfp.back().trk);
         }
         if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
-           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.pfp.back().trk);
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
+              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.pfp.back().trk);
         }
         if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.pfp.back().trk);
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), rec.reco.trk.back());
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), rec.reco.pfp.back().trk);
         }
         if (fmCRTTrackMatch.isValid()) {
-          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.pfp.back().trk);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.trk.push_back(rec.reco.trk.back());
-        recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-        rec.reco.nshw ++;
-        rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
-
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.pfp.back().shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
-           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.pfp.back().shw);
         }
         if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
-          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.pfp.back().shw);
         }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
-          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
+          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.pfp.back().shw);
         }
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
-          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.pfp.back().shw);
         }
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
-          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.pfp.back().shw);
         }
         if (fmShowerHit.isValid()) {
-          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
+          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.pfp.back().shw);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.shw.push_back(rec.reco.shw.back());
-        recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
-      else {}
-
+      
+      recslc.reco.pfp.push_back(rec.reco.pfp.back());
+      recslc.reco.npfp = recslc.reco.pfp.size();
+      recslc.reco.pfp.back().trk = rec.reco.pfp.back().trk;
+      recslc.reco.pfp.back().shw = rec.reco.pfp.back().shw;
     }// end for pfparts
 
 
