@@ -196,9 +196,9 @@ void FluxReaderAna::analyze(art::Event const& e)
     _nu_x = intersection.X();
     _nu_y = intersection.Y();
     _nu_z = intersection.Z();
-    _nu_vx = nu.Vx()
-    _nu_vy = nu.Vy()
-    _nu_vz = nu.Vz()
+    _nu_vx = nu.Vx();
+    _nu_vy = nu.Vy();
+    _nu_vz = nu.Vz();
     _nu_px = nu.Px();
     _nu_py = nu.Py();
     _nu_pz = nu.Pz();
