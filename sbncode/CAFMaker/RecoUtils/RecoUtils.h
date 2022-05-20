@@ -13,6 +13,7 @@
 #include "art/Framework/Principal/Event.h"
 #include "fhiclcpp/ParameterSet.h" 
 #include "art/Framework/Principal/Handle.h" 
+#include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
 #include "canvas/Persistency/Common/FindManyP.h"
