@@ -19,7 +19,7 @@
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -92,7 +92,7 @@ void sbn::NuMIRetriever::produce(art::Event &e)
 
   int gate_type = 0;
   art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerUDP", raw_data_ptr);
+  e.getByLabel(raw_data_label_, "ICARUSTriggerV2", raw_data_ptr);
   auto const & raw_data = (*raw_data_ptr);
 
   double t_current_event  = 0;
@@ -102,10 +102,10 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   for(auto raw_datum : raw_data){
 
     uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerUDPFragment frag(raw_datum);
+    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
     gate_type = datastream_info.gate_type;
     number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
 
