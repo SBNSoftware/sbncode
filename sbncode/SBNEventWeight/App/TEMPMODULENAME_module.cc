@@ -79,9 +79,6 @@ TEMPMODULENAME::TEMPMODULENAME(fhicl::ParameterSet const& p)
 
   MF_LOG_INFO("TEMPMODULENAME") << "ISystProvider is configuered" << std::endl;
 
-  //====Test
-  produces<std::vector<float> >();
-
   produces<std::vector<sbn::evwgh::EventWeightMap> >();
   produces<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
   produces<std::vector<sbn::evwgh::EventWeightParameterSet>, art::InRun>();
@@ -192,11 +189,6 @@ void TEMPMODULENAME::produce(art::Event& e) {
   e.put(std::move(mcwghvec));
   e.put(std::move(wghassns));
 
-  auto wgtvalues = std::make_unique<std::vector<float> >();
-  wgtvalues->push_back(1.0);
-
-  e.put(std::move(wgtvalues));
-
 }
 
 
@@ -204,12 +196,10 @@ void TEMPMODULENAME::beginRun(art::Run& run) {
 
   auto p = std::make_unique<std::vector<sbn::evwgh::EventWeightParameterSet> >();
   for( auto &sp : fSystProviders ) {
-
     MF_LOG_INFO("TEMPMODULENAME") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
                                   << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
                                   << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
                                   << "Printing each SystParamHeader of this ISystProviderTool..";
-
     //==== Note: typedef std::vector<SystParamHeader> SystMetaData;
     auto smd = sp->GetSystMetaData();
     for( auto &sph : smd ){
@@ -221,10 +211,12 @@ void TEMPMODULENAME::beginRun(art::Run& run) {
       std::cout << "  rwmode = " << rwmode << std::endl;
 
       std::vector<float> withds;
+      std::cout << "    paramVariation = ";
       for(auto pV : sph.paramVariations){
-        std::cout << "    paramVariation = " << pV << std::endl;
+        std::cout << pV << " ";
         withds.push_back(pV);
       }
+      std::cout << std::endl;
 
       sbn::evwgh::EventWeightParameterSet fParameterSet;
       fParameterSet.AddParameter(sph.prettyName, withds);
