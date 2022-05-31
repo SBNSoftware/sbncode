@@ -220,7 +220,7 @@ void TEMPMODULENAME::beginRun(art::Run& run) {
       sbn::evwgh::EventWeightParameterSet fParameterSet;
       fParameterSet.AddParameter(sph.prettyName, withds);
       fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, sph.paramVariations.size());
-      fParameterSet.FillKnowValues();
+      fParameterSet.FillKnobValues();
 
       p->push_back( std::move(fParameterSet) );
 
