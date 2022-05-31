@@ -2,7 +2,7 @@
 
 BEGIN_PROLOG
 
-sbn_systproducer: {
+sbn_systtools: {
 
   module_type: TEMPMODULENAME
 
