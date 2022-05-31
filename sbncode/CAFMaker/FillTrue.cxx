@@ -150,10 +150,10 @@ namespace caf {
       srslice.truth = srmc.nu[tmatch.index];
       srslice.tmatch = tmatch;
     }
-/*
+
     std::cout << "Slice matched to index: " << tmatch.index
         << " with match frac: " << tmatch.pur << std::endl;
-*/
+
   }//FillSliceTruth
 
 
