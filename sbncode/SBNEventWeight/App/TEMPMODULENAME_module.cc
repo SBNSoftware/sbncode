@@ -113,16 +113,15 @@ void TEMPMODULENAME::produce(art::Event& e) {
       if( !syst_resp ){
         std::cout << "[ERROR]: Got nullptr systtools::EventResponse from provider "
                   << sp->GetFullyQualifiedName();
-        continue;
+        throw std::exception();
       }
 
-      //==== syst_resp->size() is (Number of MCTruth) * 2
-      //==== The first (Number of MCTruth) indices have resp.size()=0
-      //==== Next (Number of MCTruth) indices corresponds to each of MCTruth (e.g., neutrino in this event)
-      //==== See nusystematics/interface/IGENIESystProvider_tool.hh;  "er->resize(NEventUnits)" part
+      //==== syst_resp->size() is (Number of MCTruth)
+      //==== Each index corresponds to each of MCTruth
       int nMCTruthIndex(0);
       if(fDebugMode) std::cout << "[TEMPMODULENAME::produce]   syst_resp.size() (= Number of MCTruth) of this SystProvider = " << syst_resp->size() << std::endl;
 
+      //==== Looping over syst_resp is identical to looping over MCTruth
       for( systtools::EventResponse::iterator itResp = syst_resp->begin(); itResp != syst_resp->end(); ++itResp ){
 
         systtools::event_unit_response_t resp = *itResp;
