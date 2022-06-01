@@ -135,10 +135,13 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
     fFlatRandom = std::make_unique<CLHEP::RandFlat>(fFlatEngine,0,1);
     fNormalRandom = std::make_unique<CLHEP::RandGauss>(fFlatEngine);
 
+    // x^2 distribution for fCosmicAngleRandom
+    // will be used to draw cos(theta)
     const int nbins(100);
     double parent[nbins];
     for (size_t idx = 0; idx < nbins; ++idx) {
-        parent[idx] = cet::square(cos(((float) idx)/nbins * util::pi()));
+        //parent[idx] = cet::square(cos(((float) idx)/nbins * util::pi()));
+        parent[idx] = cet::square(((float) idx)/nbins);
     }
     fCosmicAngleRandom = std::make_unique<CLHEP::RandGeneral>(fFlatEngine, parent, nbins);
 
@@ -265,11 +268,16 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
     // register
     //auto db = new TDatabasePDG;
     auto db = TDatabasePDG::Instance();
+    bool direct_inward = p.get<bool>("DirectInward", true);
+    if (_cosmic_distribution && direct_inward) {
+      std::cout << "Cannot satisfy both CosmicDistribution and Inward Directioning at the same time" << std::endl;
+      throw std::exception();
+    }
     for(size_t idx=0; idx<pdg_v.size(); ++idx) {
         auto const& pdg     = pdg_v[idx];
         auto const& kerange = kerange_v[idx];
         PartGenParam param;
-        param.direct_inward = p.get<bool>("DirectInward",true);
+        param.direct_inward = direct_inward;
         param.use_mom    = use_mom;
         param.pdg        = pdg;
         param.kerange[0] = kerange[0];
@@ -366,10 +374,12 @@ std::array<double, 3U> MultiPartRain::extractDirection() const {
     double px, py, pz;
     if (_cosmic_distribution) {
         double phi   = fFlatRandom->fire(0, 2 * util::pi());
-        double theta = fCosmicAngleRandom->fire() * util::pi();
-        pz = cos(phi) * sin(theta);
-        px = sin(phi) * sin(theta);
-        py = cos(theta);
+				// Zenith Angle Theta is in [pi/2, pi]
+        double costheta = - 1. * fCosmicAngleRandom->fire();
+				double sintheta = sqrt(1 - costheta * costheta);
+        pz = cos(phi) * sintheta;
+        px = sin(phi) * sintheta;
+        py = costheta;
     } else {
         px = fNormalRandom->fire(0, 1);
         py = fNormalRandom->fire(0, 1);
