@@ -231,10 +231,10 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
 
       if(_debug) {
     std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
-          << " ... X " << xmin << " => " << xmax
-          << " ... Y " << ymin << " => " << ymax
-          << " ... Z " << zmin << " => " << zmax
-          << std::endl;
+              << " ... X " << xmin << " => " << xmax
+              << " ... Y " << ymin << " => " << ymax
+              << " ... Z " << zmin << " => " << zmax
+              << std::endl;
       }
     }
 
@@ -375,9 +375,9 @@ std::array<double, 3U> MultiPartRain::extractDirection() const {
     double px, py, pz;
     if (_cosmic_distribution) {
         double phi   = fFlatRandom->fire(0, 2 * util::pi());
-				// Zenith Angle Theta is in [pi/2, pi]
+        // Zenith Angle Theta is in [pi/2, pi]
         double costheta = - 1. * fCosmicAngleRandom->fire();
-				double sintheta = sqrt(1 - costheta * costheta);
+        double sintheta = sqrt(1 - costheta * costheta);
         pz = cos(phi) * sintheta;
         px = sin(phi) * sintheta;
         py = costheta;
@@ -435,10 +435,10 @@ void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, d
 
       if(_debug) {
     std::cout<<"Generating XYZ direction sign for a particle at (" << x << "," << y << "," << z << ")" << std::endl
-         <<"X: " << _xrange[0] << " => " << _xrange[1] << " ... " << sign_x << std::endl
-         <<"Y: " << _yrange[0] << " => " << _yrange[1] << " ... " << sign_y << std::endl
-         <<"Z: " << _zrange[0] << " => " << _zrange[1] << " ... " << sign_z << std::endl
-         << std::endl;
+             <<"X: " << _xrange[0] << " => " << _xrange[1] << " ... " << sign_x << std::endl
+             <<"Y: " << _yrange[0] << " => " << _yrange[1] << " ... " << sign_y << std::endl
+             <<"Z: " << _zrange[0] << " => " << _zrange[1] << " ... " << sign_z << std::endl
+             << std::endl;
       }
 
       while(1) {
@@ -489,11 +489,11 @@ void MultiPartRain::produce(art::Event & e)
         if(_debug) std::cout << "  " << idx << "th instance PDG " << pdg << std::endl;
         double x, y, z;
         GenPosition(x,y,z);
-    double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
+        double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
         TLorentzVector pos(x,y,z,g4_time);
-    std::cout<<"Generating momentum..."<<std::endl;
+        std::cout<<"Generating momentum..."<<std::endl;
         GenMomentum(param,mass,px,py,pz,x,y,z);
-    std::cout<<"done"<<std::endl;
+        std::cout<<"done"<<std::endl;
         TLorentzVector mom(px,py,pz,sqrt(cet::square(px)+cet::square(py)+cet::square(pz)+cet::square(mass)));
         simb::MCParticle part(part_v.size(), pdg, "primary", 0, mass, 1);
         part.AddTrajectoryPoint(pos,mom);

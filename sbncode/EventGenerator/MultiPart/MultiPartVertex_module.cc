@@ -179,7 +179,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     for(size_t idx=0; idx<minmult_v.size(); ++idx) {
         if(minmult_v[idx] > maxmult_v[idx]) this->abort("Particle MinMulti > Particle MaxMulti!");
         if(minmult_v[idx] > _multi_max) this->abort("Particle MinMulti > overall MultiMax!");
-    multi_min += minmult_v[idx];
+        multi_min += minmult_v[idx];
     }
     _multi_min = std::max(_multi_min, multi_min);
     if(_multi_max < _multi_min) this->abort("Overall MultiMax <= overall MultiMin!");
@@ -226,10 +226,10 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
 
       if(_debug) {
     std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
-          << " ... X " << xmin << " => " << xmax
-          << " ... Y " << ymin << " => " << ymax
-          << " ... Z " << zmin << " => " << zmax
-          << std::endl;
+              << " ... X " << xmin << " => " << xmax
+              << " ... Y " << ymin << " => " << ymax
+              << " ... Z " << zmin << " => " << zmax
+              << std::endl;
       }
     }
 
@@ -323,9 +323,9 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
     for(size_t idx=0; idx<_param_v.size(); ++idx) {
       weight_v[idx] = _param_v[idx].weight;
       for(size_t ctr=0; ctr<_param_v[idx].multi[0]; ++ctr) {
-    result.push_back(idx);
-    gen_count_v[idx] += 1;
-    num_part -= 1;
+        result.push_back(idx);
+        gen_count_v[idx] += 1;
+        num_part -= 1;
       }
       if(gen_count_v[idx] >= _param_v[idx].multi[1])
     weight_v[idx] = 0.;
