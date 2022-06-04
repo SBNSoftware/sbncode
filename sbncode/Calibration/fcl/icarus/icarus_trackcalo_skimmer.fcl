@@ -30,7 +30,7 @@ caloskim_cryoe: {
   HITproducer: "cluster3DCryoE"
   RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCEW", "daqTPC:PHYSCRATEDATATPCEE"]
   RequireT0: true
-  HitRawDigitsTickCollectWidth: 50
+  HitRawDigitsTickCollectWidth: 100
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []
@@ -47,7 +47,7 @@ caloskim_cryow: {
   HITproducer: "cluster3DCryoE"
   RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCWW", "daqTPC:PHYSCRATEDATATPCWE"]
   RequireT0: true
-  HitRawDigitsTickCollectWidth: 50
+  HitRawDigitsTickCollectWidth: 100
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []

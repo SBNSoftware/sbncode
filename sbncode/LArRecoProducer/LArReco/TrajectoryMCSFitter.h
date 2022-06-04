@@ -9,7 +9,7 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardata/RecoObjects/TrackState.h"
 
-namespace trkf {
+namespace trkf::sbn {
   /**
    * @file  larreco/RecoAlg/TrajectoryMCSFitter.h
    * @class trkf::TrajectoryMCSFitter

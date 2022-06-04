@@ -38,7 +38,7 @@
 #include <libgen.h>
 #endif
 
-#include <ifdh_art/IFDHService/IFDH_service.h>
+#include "ifdh_art/IFDHService/IFDH_service.h"
 
 // ROOT includes
 #include "TFile.h"
@@ -61,6 +61,7 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -101,6 +102,9 @@
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
+#include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnobj/Common/Reco/CRUMBSResult.h"
+
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -110,6 +114,8 @@
 #include "sbnanaobj/StandardRecord/SRGlobal.h"
 
 #include "sbnanaobj/StandardRecord/Flat/FlatRecord.h"
+#include "lardataobj/RawData/ExternalTrigger.h"
+#include "lardataobj/RawData/TriggerData.h"
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
@@ -169,6 +175,8 @@ class CAFMaker : public art::EDProducer {
   double fTotalSinglePOT;
   double fTotalEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
+  std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+
   // int fCycle;
   // int fBatch;
 
@@ -217,6 +225,13 @@ class CAFMaker : public art::EDProducer {
   art::FindManyP<T, D> FindManyPDStrict(const U& from,
                                         const art::Event& evt,
                                         const art::InputTag& tag) const;
+
+  /// Equivalent of FindOneP except a return that is !isValid() prints a
+  /// messsage and aborts if StrictMode is true.
+  template <class T, class U>
+  art::FindOneP<T> FindOnePStrict(const U& from, const art::Event& evt,
+				  const art::InputTag& label) const;
+
 
   /// \brief Retrieve an object from an association, with error handling
   ///
@@ -491,10 +506,15 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
 
   // get POT information
   fBNBInfo.clear();
+  fNuMIInfo.clear();
   fSubRunPOT = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+    fTotalPOT += fSubRunPOT;
+  }
+  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+    FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
@@ -502,9 +522,11 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     fTotalPOT += fSubRunPOT;
   }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty()){
-      std::cout << "Found neither data POT info under '"
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+      std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
+                << "' not NuMIdata POT info under '"
+                << fParams.NuMIPOTDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
@@ -665,6 +687,25 @@ art::FindManyP<T, D> CAFMaker::FindManyPDStrict(const U& from,
                                             const art::Event& evt,
                                             const art::InputTag& tag) const {
   art::FindManyP<T, D> ret(from, evt, tag);
+
+  if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No Assn from '"
+              << cet::demangle_symbol(typeid(from).name()) << "' to '"
+              << cet::demangle_symbol(typeid(T).name())
+              << "' found under label '" << tag << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+
+  return ret;
+}
+
+//......................................................................
+template <class T, class U>
+art::FindOneP<T> CAFMaker::FindOnePStrict(const U& from,
+					  const art::Event& evt,
+					  const art::InputTag& tag) const {
+  art::FindOneP<T> ret(from, evt, tag);
 
   if (!tag.label().empty() && !ret.isValid() && fParams.StrictMode()) {
     std::cout << "CAFMaker: No Assn from '"
@@ -973,10 +1014,39 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
   if (crthits_handle.isValid()) {
+
+    //==== gate start time
+    //==== 03/31/22 : 1600000 ns = 1.6 ms is the default T0Offset in MC
+    //==== https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
+    uint64_t m_gate_start_timestamp = fParams.CRTSimT0Offset(); // ns
+    if(isRealData){
+
+      art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
+      evt.getByLabel( fParams.TriggerLabel(), externalTrigger_handle );
+      const std::vector<raw::ExternalTrigger> &externalTrgs = *externalTrigger_handle;
+
+      art::Handle< std::vector<raw::Trigger> > trigger_handle;
+      evt.getByLabel( fParams.TriggerLabel(), trigger_handle );
+      const std::vector<raw::Trigger> &trgs = *trigger_handle;
+
+      if(externalTrgs.size()==1 && trgs.size()==1){
+        long long TriggerAbsoluteTime = externalTrgs[0].GetTrigTime(); // Absolute time of trigger
+        double BeamGateRelativeTime = trgs[0].BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
+        double TriggerRelativeTime = trgs[0].TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
+        m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
+      }
+      else{
+        std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
+          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
+          << " Please contact CAFmaker maintainer." << std::endl;
+        abort();
+      }
+    }
+
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 
@@ -1044,6 +1114,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     std::vector<art::Ptr<recob::Hit>> slcHits;
     if (fmSlcHits.isValid()) {
       slcHits = fmSlcHits.at(0);
+    }
+
+    art::FindOneP<sbn::CRUMBSResult> foSlcCRUMBS =
+      FindOnePStrict<sbn::CRUMBSResult>(sliceList, evt,
+          fParams.CRUMBSLabel() + slice_tag_suff);
+    const sbn::CRUMBSResult *slcCRUMBS = nullptr;
+    if (foSlcCRUMBS.isValid()) {
+      slcCRUMBS = foSlcCRUMBS.at(0).get();
     }
 
     art::FindManyP<sbn::SimpleFlashMatch> fm_sFM =
@@ -1214,6 +1292,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatch(fmatch, recslc);
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
+    FillSliceCRUMBS(slcCRUMBS, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
@@ -1457,7 +1536,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(fFirstInFile)
   {
     rec.hdr.pot   = fSubRunPOT;
+    rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
+    rec.hdr.nnumiinfo = fNuMIInfo.size();
+    rec.hdr.numiinfo = fNuMIInfo;
   }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
@@ -1489,6 +1571,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   evt.put(std::move(srcol));
 
   fBNBInfo.clear();
+  fNuMIInfo.clear();
   rec.hdr.pot = 0;
 }
 
