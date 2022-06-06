@@ -71,7 +71,6 @@ sbn_eventweight_genie: {
 
     #FSI
       "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" , #"FrPiProd_N",
-      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #,"FrPiProd_pi"
       "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #, "FrPiProd_pi"
       ]
     parameter_sigma: [
