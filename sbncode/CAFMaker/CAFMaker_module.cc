@@ -1064,6 +1064,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
   }
 
+  // Get all of the OpFlashes
+  std::vector<caf::SROpFlash> srflashes;
+
+  art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+  GetByLabelStrict(evt, fParams.OpFlashLabel(), flashes_handle);
+  // fill into event
+  if (flashes_handle.isValid()) {
+    const std::vector<recob::OpFlash> &opflashes = *opflashes_handle;
+    int cryostat = ( fParams.OpFlashLabel().find("W") != std::string::npos );
+    for (unsigned i = 0; i < opflahes.size(); i++) {
+      FillOpFlash(opflashes[i], cryostat, srflashes.back());
+    }
+  }
+
   // collect the TPC slices
   std::vector<art::Ptr<recob::Slice>> slices;
   std::vector<std::string> slice_tag_suffixes;
