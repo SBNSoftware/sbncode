@@ -167,6 +167,11 @@ namespace caf
                   caf::SRCRTTrack &srtrack,
                   bool allowEmpty = false);
 
+  void FillOpFlash(const recob::OpFlash &flash,
+                  int InputCryostat,
+                  caf::SROpFlash &srflash,
+                  bool allowEmpty = false);
+
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );
 }
