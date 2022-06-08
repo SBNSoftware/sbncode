@@ -116,7 +116,7 @@ namespace caf
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
 
-    srflash.SetDefault();
+    srflash.setDefault();
 
     srflash.Time = flash.Time();
     srflash.TimeWidth = flash.TimeWidth();
@@ -125,7 +125,7 @@ namespace caf
     // Sum over each wall
     float sumEast = 0.;
     float sumWest = 0.;
-    for ( int PMT = 0 : PMT < 180 : PMT++ ) {
+    for ( int PMT = 0 ; PMT < 180 ; PMT++ ) {
       if ( PMT <= 89 ) sumEast += flash.PEs.at(PMT);
       else sumWest += flash.PEs.at(PMT);
     }
