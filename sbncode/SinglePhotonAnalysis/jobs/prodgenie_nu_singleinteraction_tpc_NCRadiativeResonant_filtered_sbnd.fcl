@@ -1,0 +1,106 @@
+# Simulates GENIE neutrino interactions from the BNB beam 
+# forcing one interaction per event, inside the TPC volume
+# (with 10 cm padding on each side),
+# selecting only NC events with photons coming out from the nucleus
+
+
+#include "prodgenie_nu_singleinteraction_tpc_sbnd.fcl"
+
+#------ this could be a separated file
+#
+# services
+#
+
+#
+# modules
+#
+
+
+
+process_name: GenieGenFiltered
+
+
+#
+# services
+#
+services: {
+
+  TFileService:          { fileName: "hists_genie.root" }
+  IFDH:                  {} # required by GENIEGen
+                         @table::sbnd_basic_services   # from simulationservices_sbnd.fcl
+                         @table::sbnd_random_services  # from simulationservices_sbnd.fcl
+  FileCatalogMetadata:   @local::sbnd_file_catalog_mc  # from sam_sbnd.fcl
+
+  # since this is a configuration expected to be run pro production,
+  # we set up message configuration accordingly:
+  message:               @local::sbnd_message_services_prod
+
+} # services
+
+
+#
+# input
+#
+
+
+#
+# processing
+#
+physics:
+{
+
+  producers:
+  {
+    generator: @local::sbnd_genie_simple
+    rns:       { module_type: "RandomNumberSaver" }
+  }
+
+ filters:
+ {
+   NCDeltaRadFilter:
+   {
+     module_type: "NCRadiativeResonant"
+   }
+
+ }
+
+
+  #define the producer and filter modules for this path, order matters, 
+  simulate:  [ rns, generator, NCDeltaRadFilter]
+
+  #define the output stream, there could be more than one if using filters 
+  stream1:   [ out1 ]
+
+  #trigger_paths is a keyword and contains the paths that modify the art::event, 
+  #ie filters and producers
+  trigger_paths: [simulate] 
+
+  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
+  #ie analyzers and output streams.  these all run simultaneously
+  end_paths:     [stream1]  
+
+} # physics
+
+
+#
+# output
+#
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "prodgenie_bnb_nu_filtered_NCRadRes_sbnd_%p-%tc.root" # default file name, can override from command line with -o or --output
+	SelectEvents: [simulate]
+    dataTier:    "generated"
+    compressionLevel: 1
+  }
+} # outputs
+
+
+#
+# override
+# THIS DOES NOT WORK, CHECK! 
+physics.producers.generator.TopVolume: "volTPCActive"
+physics.producers.generator.BeamName: "booster"
+physics.producers.generator.EventGeneratorList: "NCRES"

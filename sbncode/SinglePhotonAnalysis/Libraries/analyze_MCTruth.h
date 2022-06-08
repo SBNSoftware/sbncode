@@ -435,9 +435,9 @@ namespace single_photon
                         if(par.StatusCode() == 1){  m_mctruth_num_exiting_deltapp++; }
                         break;
                     case(-2214):
-                    case(2214):
+                    case(2214)://delta +
                     case(-1114):
-                    case(1114): // if it's delta-, or delta+
+                    case(1114): // if it's delta-
                         if(par.StatusCode() == 1){ m_mctruth_num_exiting_deltapm++; }
                         break;
                     case(-2114):
