@@ -1085,7 +1085,7 @@ namespace single_photon
 
                 if(t_dEdx.size()>0) tmedian = this->getMedian(t_dEdx);
                 if(t_dEdx.size()>0) tmean = std::accumulate(t_dEdx.begin(), t_dEdx.end(), 0)/((double)t_dEdx.size());
-
+			std::cout<<"CHECK "<<__LINE__<<" in analyze_Showers.h to see why dEdx does not work"<<std::endl;
                 switch(plane){
                     case 0:
                             m_reco_shower_kalman_mean_dEdx_plane0[i_shr] = tmean ;
