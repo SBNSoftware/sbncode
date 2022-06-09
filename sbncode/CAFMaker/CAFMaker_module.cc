@@ -1071,9 +1071,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.OpFlashLabel(), flashes_handle);
   // fill into event
   if (flashes_handle.isValid()) {
-    const std::vector<recob::OpFlash> &opflashes = *opflashes_handle;
+    const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
     //int cryostat = ( fParams.OpFlashLabel().find("W") != std::string::npos );
-    for (unsigned i = 0; i < opflahes.size(); i++) {
+    for (unsigned i = 0; i < opflashes.size(); i++) {
       FillOpFlash(opflashes[i], srflashes.back());
     }
   }
