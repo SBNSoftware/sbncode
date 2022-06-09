@@ -161,6 +161,7 @@ void FlashPredict::produce(art::Event& evt)
     _hypo_x_rr     = -9999.;
     _hypo_x_ratio  = -9999.;
     _score         = -9999.;
+    _pId           = -9999;
     _mcT0          = -9999.;
   }
   bk.events++;
@@ -279,7 +280,7 @@ void FlashPredict::produce(art::Event& evt)
 
   std::map<unsigned, FlashMetrics> flashMetricsMap;
   for(auto& chargeDigest : chargeDigestMap) {
-    //const size_t pId = chargeDigest.second.pId;
+    // const size_t pId = chargeDigest.second.pId;
     const int pfpPDGC = chargeDigest.second.pfpPDGC;
     const auto& pfp_ptr = chargeDigest.second.pfp_ptr;
     const auto& qClusters = chargeDigest.second.qClusters;
@@ -387,6 +388,7 @@ void FlashPredict::produce(art::Event& evt)
        score.total < std::numeric_limits<double>::max()){
       if(fMakeTree) {
         _mcT0 = chargeDigest.second.mcT0;
+        _pId = unsigned(chargeDigest.second.pId);
         updateChargeMetrics(charge);
         updateFlashMetrics(flash);
         updateScore(score);
@@ -455,6 +457,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("y_skew", &_y_skew, "y_skew/D");
   _flashmatch_nuslice_tree->Branch("z_skew", &_z_skew, "z_skew/D");
   _flashmatch_nuslice_tree->Branch("true_nus", &_true_nus, "true_nus/I");
+  _flashmatch_nuslice_tree->Branch("pId",&_pId, "pId_/I");
   _flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
 }
 

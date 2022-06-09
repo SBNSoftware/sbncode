@@ -358,6 +358,7 @@ private:
   unsigned _evt, _run, _sub;
   unsigned _slices = -1; unsigned _true_nus = -1;
   double _mcT0 = -9999.;
+  unsigned _pId = -1;
 
   std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans;
   std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads;
