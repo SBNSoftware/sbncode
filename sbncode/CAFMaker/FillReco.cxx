@@ -120,7 +120,7 @@ namespace caf
 
     srflash.Time = flash.Time();
     srflash.TimeWidth = flash.TimeWidth();
-    srflash.PEs = flash.PEs();
+    srflash.PEs = std::vector<float> (flash.PEs().begin(), flash.PEs().end());
 
     // Identify crysostat and sum over each wall
     // Not very SBND-compliant, fix later
@@ -130,7 +130,7 @@ namespace caf
     float sumEast = 0.;
     float sumWest = 0.;
     int countingOffset = 0;
-    if ( cryostat == 1 ) PMTCountingOffset += 180;
+    if ( cryostat == 1 ) countingOffset += 180;
     for ( int PMT = 0 ; PMT < 180 ; PMT++ ) {
       if ( PMT <= 89 ) sumEast += flash.PEs().at(PMT + countingOffset);
       else sumWest += flash.PEs().at(PMT + countingOffset);
@@ -153,7 +153,7 @@ namespace caf
     srflash.YWidth = flash.YWidth();
     srflash.ZCenter = flash.ZCenter();
     srflash.ZWidth = flash.ZWidth();
-    srflash.Cryo = InputCryostat; // 0 in SBND, 0/1 for E/W in ICARUS
+    //srflash.Cryo = InputCryostat; // 0 in SBND, 0/1 for E/W in ICARUS
   }
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)
