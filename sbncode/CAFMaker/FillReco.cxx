@@ -112,7 +112,7 @@ namespace caf
   }
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  int InputCryostat, 
+                  //int InputCryostat, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
 
@@ -120,14 +120,20 @@ namespace caf
 
     srflash.Time = flash.Time();
     srflash.TimeWidth = flash.TimeWidth();
-    PEs = flash.PEs();
+    srflash.PEs = flash.PEs();
 
-    // Sum over each wall
+    // Identify crysostat and sum over each wall
+    // Not very SBND-compliant, fix later
+    int cryostat = ( flash.PEs().size() == 360 );
+    srflash.Cryo = cryostat;
+
     float sumEast = 0.;
     float sumWest = 0.;
+    int countingOffset = 0;
+    if ( cryostat == 1 ) PMTCountingOffset += 180;
     for ( int PMT = 0 ; PMT < 180 ; PMT++ ) {
-      if ( PMT <= 89 ) sumEast += flash.PEs.at(PMT);
-      else sumWest += flash.PEs.at(PMT);
+      if ( PMT <= 89 ) sumEast += flash.PEs().at(PMT + countingOffset);
+      else sumWest += flash.PEs().at(PMT + countingOffset);
     }
     srflash.PEsPerWall.push_back(sumEast);
     srflash.PEsPerWall.push_back(sumWest);
@@ -138,7 +144,7 @@ namespace caf
 
     // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
     // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
-    if ( flash.HasXCenter() ) {
+    if ( flash.hasXCenter() ) {
       srflash.XCenter = flash.XCenter();
       srflash.XWidth = flash.XWidth();
     }
