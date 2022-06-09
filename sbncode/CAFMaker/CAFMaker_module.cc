@@ -1510,6 +1510,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_hits       = srcrthits.size();
   rec.crt_tracks        = srcrttracks;
   rec.ncrt_tracks       = srcrttracks.size();
+  rec.opflashes       = srflashes;
+  rec.nopflashes      = srflashes.size();
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
   }
