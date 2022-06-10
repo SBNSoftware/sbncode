@@ -1074,6 +1074,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
     //int cryostat = ( fParams.OpFlashLabel().find("W") != std::string::npos );
     for (unsigned i = 0; i < opflashes.size(); i++) {
+      srflashes.emplace_back();
       FillOpFlash(opflashes[i], srflashes.back());
     }
   }
