@@ -12,8 +12,8 @@ singlephoton_analyzer:{
     FlashLabel:     "opflashtpc0"
     POTLabel:       "generator"
 
-	ShowerTrackFitter:		"pandoraTrack"
-	ShowerTrackFitterCalo:	"pandoraCalo"
+	#ShowerTrackFitter:		"pandoraTrack"
+	#ShowerTrackFitterCalo:	"pandoraCalo"
 	Shower3DLabel:			"pandoraShower"
 
     input_param:    "optional" 
@@ -53,12 +53,13 @@ singlephoton_analyzer:{
     gain_mc: [235.5, 249.7, 237.6] #ubDocDB 20227-v7 using dE/dx calibration method for all planes, updated on 9/13/19
     gain_data: [230.3, 237.6, 243.7] #see above docdb
     wire_spacing : 0.3 
-    width_box : 1.
+    width_box : 1. #2d dEdx is calcualted with a box of 1cmx4cm
     length_box : 4.
     
     truthmatching_signaldef : "ncdelta"
     runAllPFPs: "false"
     exiting_photon_energy: 0.02
+	convention_distance_cutoff: 80.0
     exiting_proton_energy: 0.978  #40Mev + proton mass 
 
     runCRT: "false"

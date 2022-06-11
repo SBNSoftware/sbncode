@@ -95,7 +95,7 @@
 #include <set>
 #include <sys/stat.h>
 
-#include "HelperFunctions/helper_functions.h"
+#include "HelperFunctions/helper_math.h"
 //#include "Libraries/Atlas.h"
 
 //#include "Libraries/bad_channel_matching.h"
@@ -247,7 +247,8 @@ namespace single_photon
             /**
              * @brief: reset/clear data members
              */
-            void ClearVertex();
+            void ClearMeta();
+			void CreateMetaBranches();
             /**
              *  @brief  Produce a mapping from PFParticle ID to the art ptr to the PFParticle itself for fast navigation
              *
@@ -305,19 +306,15 @@ namespace single_photon
              */
             void GetVertex(const lar_pandora::PFParticlesToVertices & particlestoVertices, const art::Ptr<recob::PFParticle> & particle );
 
-            void CollectCalo(const art::Event &evt,const art::Ptr<recob::Shower> &shower);
 
 
+            double CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int plane); /* returns energy sum of hits on a certain plane */
             /*
              *@brief Calculated the shower energy by looping over all the hits and summing the charge
              *@param hits -  an art pointer of all the hits in a shower
-             * */
+             * 
+			 */
             double CalcEShower(const std::vector<art::Ptr<recob::Hit>> &hits); /* returns max energy on any of the planes */
-            double CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int plane); /* returns energy sum of hits on a certain plane */
-
-            int getNHitsPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);
-            double getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);
-
 
             /**
              *@brief Takes a hit and multiplies the charge by the gain
@@ -326,13 +323,17 @@ namespace single_photon
              **/
             double GetQHit(art::Ptr<recob::Hit> thishitptr, int plane);
 
+
+            int getNHitsPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);
+            double getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);
+
+
             /**
              * @brief Calculate the E value in MeV for a given hit
              * @param thishit - an individual hit 
              * 
              *
              * */
-            double QtoEConversionHit(art::Ptr<recob::Hit> thishitptr, int plane);
 
             /**
              * @brief Calculate the E value in MeV from a given Q value
@@ -370,16 +371,13 @@ namespace single_photon
              *@param plane - a single plane
              * */
             double getPitch(TVector3 shower_dir, int plane);  /* distance between hit in shower direction projected on plane */
-            TVector3 getWireVec(int plane); /* unit vector orthogonal to the  wire direction of plane -- usually named as wire_dir */
-            double getCoswrtWires(TVector3 shower_dir, TVector3 wire_dir); /* dot product of wire_dir and shower direction vectors */
-            double getAnglewrtWires(TVector3 shower_dir, int plane); /* returns angles between wire direction of plane  and shower_dir) 
-                                                                      *  shower_dir needs to be unit vector */
 
-            double getAmalgamateddEdx(double angle_wrt_plane0, double angle_wrt_plane1, double angle_wrt_plane2, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); /* returns (generally) best median dEdx of all 3 												* planes, usually plane 2  */
-            int getAmalgamateddEdxNHits(double amalgamateddEdx, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); /* returns the number of hits on the plane picked by function getAmalgamateddEdx */
+			/* returns (generally) best median dEdx of all 3
+			 * planes, usually plane 2  */
+            double getAmalgamateddEdx(double angle_wrt_plane0, double angle_wrt_plane1, double angle_wrt_plane2, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); 
+			/* returns the number of hits on the plane picked by function getAmalgamateddEdx */
+            int getAmalgamateddEdxNHits(double amalgamateddEdx, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); 
 
-            double degToRad(double deg);
-            double radToDeg(double rad);
             /**
              *@brief Calculates the four corners of a rectangle of given length and width around a cluster given the start point and axis direction
              *@param cluster_start - the start position of a cluster in CM
@@ -406,14 +404,6 @@ namespace single_photon
              * */
             bool isInsidev2(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle);
 
-            double areaTriangle(double x1, double y1, double x2, double y2, double x3, double y3);
-
-            /***
-             *@brief returns the value at the median position in a vector of doubles, returns nan for vector of size <= 0
-             *@param thisvector - vector of doubles
-             *
-             * */
-            double getMedian(std::vector<double> thisvector);
 
 
             //----------------  Templatees ----------------------------
@@ -540,28 +530,35 @@ namespace single_photon
             TGraph proton_length2energy_tgraph;
 
             //----------------  Showers ----------------------------
+			void ClearShowers();  /* clear and reset shower related vectors/variables, for reco, and sim shower */
+			void ResizeShowers(size_t);   /* resize vectors related to reco, and sim showers */
+			void CreateShowerBranches();  /* create branches for shower-related vec/vars in vertex_tree */
 
-            void AnalyzeShowers(const std::vector<art::Ptr<recob::Shower>>& showers,  std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap, std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap, std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> > & clusterToHitMap,
-                    std::map<int, double> &sliceIdToNuScoreMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToClearCosmicMap,
-                    std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
-                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
-                    std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
-                    PFParticleIdMap &pfParticleMap,
-                    std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> &PFPtoShowerReco3DMap,
-					double samplerate,
-					detinfo::DetectorPropertiesData const & theDetector);
-            void ClearShowers();  /* clear and reset shower related vectors/variables, for reco, and sim shower */
-            void ResizeShowers(size_t);   /* resize vectors related to reco, and sim showers */
-            void CreateShowerBranches();  /* create branches for shower-related vec/vars in vertex_tree */
-            void AnalyzeKalmanShowers(const std::vector<art::Ptr<recob::Shower>>& showers,  std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
-                    std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> & pfptotrkmap,
-                    std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>> & trktocalomap,
-                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,
-					detinfo::DetectorPropertiesData const & theDetector);
+	void AnalyzeShowers(
+			const std::vector<art::Ptr<recob::Shower>>& showers,  
+			std::map<art::Ptr<recob::Shower>,
+			art::Ptr<recob::PFParticle>> & showerToPFParticleMap, 
+			std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap, 
+			std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap,
+			std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
+			std::map<int, double>& sliceIdToNuScoreMap,
+			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
+			std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
+			std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
+			PFParticleIdMap &pfParticleMap,
+			std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>>& PFPtoShowerReco3DMap,
+			double triggeroffset,
+			detinfo::DetectorPropertiesData const & theDetector
+			);
 
-            void RecoMCShowers(const std::vector<art::Ptr<recob::Shower>>& showers,  std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap, std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,  std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
-                    std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector);
+			void AnalyzeKalmanShowers(
+					const std::vector<art::Ptr<recob::Shower>>& showers,
+					std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> &showerToPFParticleMap,
+					std::map<art::Ptr<recob::PFParticle>,art::Ptr<recob::Track>> & pfParticlesToShowerKalmanMap,
+					std::map<art::Ptr<recob::Track>,std::vector<art::Ptr<anab::Calorimetry>>>&  kalmanTrackToCaloMap, 
+					std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap,
+					detinfo::DetectorPropertiesData const & theDetector);
 
             /**
              * @brief: match showers to MCParticles 
@@ -586,47 +583,58 @@ namespace single_photon
             /* tranverse through mcParticleVector, and print out infos for photons */
             int   photoNuclearTesting(std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector);
 
-            // ------------ Fid Volume and SCB------------------------- //
-            double m_tpc_active_x_low;
-            double m_tpc_active_x_high;
-            double m_tpc_active_y_low;
-            double m_tpc_active_y_high;
-            double m_tpc_active_z_low ;
-            double m_tpc_active_z_high;
+			//KENG Geometry dimensions; Fiducial volume and SCB (no SCB yet?)
+			std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
+			std::vector<geo::BoxBoundedGeo> fActiveVolumes;
+			double m_tpc_active_XMin;
+			double m_tpc_active_YMin;
+			double m_tpc_active_ZMin;
+			double m_tpc_active_XMax;
+			double m_tpc_active_YMax;
+			double m_tpc_active_ZMax;
 
-            double m_SCB_YX_TOP_y1_array;
-            std::vector<double> m_SCB_YX_TOP_x1_array;
-            std::vector<double> m_SCB_YX_TOP_y2_array;
-            double  m_SCB_YX_TOP_x2_array;
-            double m_SCB_YX_BOT_y1_array;
-            std::vector<double> m_SCB_YX_BOT_x1_array;
-            std::vector<double> m_SCB_YX_BOT_y2_array;
-            double m_SCB_YX_BOT_x2_array;
-
-            double m_SCB_ZX_Up_z1_array ;
-            double m_SCB_ZX_Up_x1_array ;
-            double m_SCB_ZX_Up_z2_array ;
-            double m_SCB_ZX_Up_x2_array ;
-
-            double m_SCB_ZX_Dw_z1_array;
-            std::vector<double> m_SCB_ZX_Dw_x1_array;
-            std::vector<double> m_SCB_ZX_Dw_z2_array;
-            double m_SCB_ZX_Dw_x2_array;
-
-            int isInTPCActive(std::vector<double>&); /* if point is in active TPC volume */
-            int isInTPCActive(double cut,std::vector<double>&);
+            int setTPCGeom();
+            int isInTPCActive(std::vector<double>& vec); /* if point is in active TPC volume */
             double distToTPCActive(std::vector<double>&vec); 
+            int distToSCB(double & dist, std::vector<double> &vec); 
 					/* if point in active TPC, returns distance from point to closest TPC wall
                                                               * otherwise, returns -999 */
 
-            int isInSCB(std::vector<double>&);  /* if point is inside SCB */
-            int isInSCB(double cut,std::vector<double>&);
-            int distToSCB(double & dist, std::vector<double> &vec); 
+
+            // ------------ Fid Volume and SCB------------------------- //
+//CHECK, no SCB stuff yet;
+//            double m_tpc_active_x_low;
+//            double m_tpc_active_x_high;
+//            double m_tpc_active_y_low;
+//            double m_tpc_active_y_high;
+//            double m_tpc_active_z_low ;
+//            double m_tpc_active_z_high;
+//
+//            double m_SCB_YX_TOP_y1_array;
+//            std::vector<double> m_SCB_YX_TOP_x1_array;
+//            std::vector<double> m_SCB_YX_TOP_y2_array;
+//            double  m_SCB_YX_TOP_x2_array;
+//            double m_SCB_YX_BOT_y1_array;
+//            std::vector<double> m_SCB_YX_BOT_x1_array;
+//            std::vector<double> m_SCB_YX_BOT_y2_array;
+//            double m_SCB_YX_BOT_x2_array;
+//
+//            double m_SCB_ZX_Up_z1_array ;
+//            double m_SCB_ZX_Up_x1_array ;
+//            double m_SCB_ZX_Up_z2_array ;
+//            double m_SCB_ZX_Up_x2_array ;
+//
+//            double m_SCB_ZX_Dw_z1_array;
+//            std::vector<double> m_SCB_ZX_Dw_x1_array;
+//            std::vector<double> m_SCB_ZX_Dw_z2_array;
+//            double m_SCB_ZX_Dw_x2_array;
+
+
+			//Fiducial stuff?
+//            int isInSCB(std::vector<double>&);  /* if point is inside SCB */
+//            int isInSCB(double cut,std::vector<double>&);
 		/* calc the minimum distance from point to the SC boundary,save to dist. 
                                                                      * return value (0, or 1) indicates whether the point is in SCB */
-            int setTPCGeom();
-            /* This function is wrong, and Not used */
-            bool loadSCB_YX(std::vector<TGeoPolygon*>&zpolygons);
 
             //---------------- MCTruths ----------------------------
 
@@ -683,9 +691,7 @@ namespace single_photon
             //-------------- Slices/Pandora Metadata ---------------//
             void  ClearSlices(); /* reset and clear variables/vectors related to slice */
             void  ResizeSlices(size_t size);   /* resize vectors related to slice */ 
-            //void  ResizeMatchedSlices(size_t size_shower ,size_t size_track); 
             void CreateSliceBranches();  /* create slice branches in ncdelta_slice_tree and vertex_tree */
-            //void CreateMatchedSliceBranches();
 
 
             /** 
@@ -840,16 +846,7 @@ namespace single_photon
 //            std::string m_badChannelProducer;
 //            std::string m_mcTrackLabel;
 //            std::string m_mcShowerLabel;
-			//Geometry dimensions;
-			std::vector<std::vector<geo::BoxBoundedGeo>> fTPCVolumes;
-			std::vector<geo::BoxBoundedGeo> fActiveVolumes;
-			double m_XMin;
-			double m_YMin;
-			double m_ZMin;
-			double m_XMax;
-			double m_YMax;
-			double m_ZMax;
-
+			
 
 
             std::string m_pidLabel;            ///< For PID stuff
@@ -860,7 +857,7 @@ namespace single_photon
 
             bool m_use_PID_algorithms;
             bool m_use_delaunay;
-            int     m_delaunay_max_hits;
+            int  m_delaunay_max_hits;
             bool m_is_verbose;
             bool m_print_out_event;
             bool m_is_data; // value provided by pset
@@ -908,6 +905,8 @@ namespace single_photon
             std::string  m_DAQHeaderProducer;//"daq"
             std::ofstream out_stream;
 
+			//SSS parameters
+			double m_max_conv_dist;
             double m_mass_pi0_mev;
 
             double m_exiting_photon_energy_threshold ;
