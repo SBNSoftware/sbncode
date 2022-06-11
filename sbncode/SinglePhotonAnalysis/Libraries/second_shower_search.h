@@ -1,235 +1,5 @@
 namespace single_photon
 {
-
-    void SinglePhoton::ClearSecondShowers(){
-        m_sss_num_unassociated_hits=0;
-        m_sss_num_unassociated_hits_below_threshold=0;
-        m_sss_num_associated_hits=0;
-
-        m_sss_num_candidates = 0;
-
-	m_sss_candidate_in_nu_slice.clear();
-        m_sss_candidate_num_hits.clear();
-        m_sss_candidate_num_wires.clear();
-        m_sss_candidate_num_ticks.clear();
-        m_sss_candidate_plane.clear();
-        m_sss_candidate_PCA.clear();
-        m_sss_candidate_mean_ADC.clear();
-	m_sss_candidate_ADC_RMS.clear();
-        m_sss_candidate_impact_parameter.clear();
-        m_sss_candidate_fit_slope.clear();
-        m_sss_candidate_veto_score.clear();
-        m_sss_candidate_fit_constant.clear();
-        m_sss_candidate_mean_tick.clear();
-        m_sss_candidate_max_tick.clear();
-        m_sss_candidate_min_tick.clear();
-        m_sss_candidate_min_wire.clear();
-        m_sss_candidate_max_wire.clear();
-        m_sss_candidate_mean_wire.clear();
-        m_sss_candidate_min_dist.clear();
-	m_sss_candidate_wire_tick_based_length.clear();
-        m_sss_candidate_energy.clear();
-        m_sss_candidate_angle_to_shower.clear();
-        m_sss_candidate_closest_neighbour.clear();
-        m_sss_candidate_matched.clear();
-	m_sss_candidate_matched_energy_fraction_best_plane.clear();
-        m_sss_candidate_pdg.clear();
-        m_sss_candidate_parent_pdg.clear();
-        m_sss_candidate_trackid.clear();
-	m_sss_candidate_true_energy.clear();
-        m_sss_candidate_overlay_fraction.clear();
-        m_sss_candidate_remerge.clear();
-    }
-
-    void SinglePhoton::ClearStubs(){
-	m_trackstub_num_unassociated_hits = 0; 
-        m_trackstub_unassociated_hits_below_threshold = 0; 
-        m_trackstub_associated_hits=0; 
-        m_trackstub_num_candidates=0; 
-	m_trackstub_candidate_in_nu_slice.clear();
-        m_trackstub_candidate_num_hits.clear();
-        m_trackstub_candidate_num_wires.clear(); 
-        m_trackstub_candidate_num_ticks.clear();
-        m_trackstub_candidate_plane.clear(); 
-        m_trackstub_candidate_PCA.clear();
-        m_trackstub_candidate_mean_ADC.clear();
-        m_trackstub_candidate_ADC_RMS.clear();
-        m_trackstub_candidate_veto_score.clear();
-        m_trackstub_candidate_mean_tick.clear();
-        m_trackstub_candidate_max_tick.clear();
-        m_trackstub_candidate_min_tick.clear();
-        m_trackstub_candidate_min_wire.clear();
-        m_trackstub_candidate_max_wire.clear();
-        m_trackstub_candidate_mean_wire.clear();
-        m_trackstub_candidate_min_dist.clear();  
-        m_trackstub_candidate_min_impact_parameter_to_shower.clear(); 
-        m_trackstub_candidate_min_conversion_dist_to_shower_start.clear();  
-        m_trackstub_candidate_min_ioc_to_shower_start.clear();        
-        m_trackstub_candidate_ioc_based_length.clear();         
-        m_trackstub_candidate_wire_tick_based_length.clear();           
-        m_trackstub_candidate_mean_ADC_first_half.clear();              
-        m_trackstub_candidate_mean_ADC_second_half.clear();
-        m_trackstub_candidate_mean_ADC_first_to_second_ratio.clear(); 
-        m_trackstub_candidate_track_angle_wrt_shower_direction.clear();   
-        m_trackstub_candidate_linear_fit_chi2.clear();          
-        m_trackstub_candidate_energy.clear();
-        m_trackstub_candidate_remerge.clear(); 
-        m_trackstub_candidate_matched.clear(); 
-        m_trackstub_candidate_matched_energy_fraction_best_plane.clear(); 
-        m_trackstub_candidate_pdg.clear();   
-        m_trackstub_candidate_parent_pdg.clear();
-        m_trackstub_candidate_trackid.clear(); 
-	m_trackstub_candidate_true_energy.clear();
-        m_trackstub_candidate_overlay_fraction.clear(); 
-
-        m_trackstub_num_candidate_groups = 0;                
-        m_grouped_trackstub_candidate_indices.clear(); 
-        m_trackstub_candidate_group_timeoverlap_fraction.clear();   
-    }
-
-    void SinglePhoton::ResizeSecondShowers(size_t size){
-
-    }
-
-
-    void SinglePhoton::CreateSecondShowerBranches(){
-        vertex_tree->Branch("sss_num_unassociated_hits",&m_sss_num_unassociated_hits,"sss_num_unassociated_hits/I");
-        vertex_tree->Branch("sss_num_unassociated_hits_below_threshold",&m_sss_num_unassociated_hits_below_threshold,"sss_num_unassociated_hits_below_threshold/I");
-        vertex_tree->Branch("sss_num_associated_hits",&m_sss_num_associated_hits,"sss_num_associated_hits/I");
-
-        vertex_tree->Branch("sss_num_candidates",&m_sss_num_candidates,"sss_num_candidates/I");
-        vertex_tree->Branch("sss_candidate_veto_score",&m_sss_candidate_veto_score);
-	vertex_tree->Branch("sss_candidate_in_nu_slice", &m_sss_candidate_in_nu_slice);
-        vertex_tree->Branch("sss_candidate_num_hits",&m_sss_candidate_num_hits);
-        vertex_tree->Branch("sss_candidate_num_wires",&m_sss_candidate_num_wires);
-        vertex_tree->Branch("sss_candidate_num_ticks",&m_sss_candidate_num_ticks);
-        vertex_tree->Branch("sss_candidate_plane",&m_sss_candidate_plane);
-        vertex_tree->Branch("sss_candidate_PCA",&m_sss_candidate_PCA);
-        vertex_tree->Branch("sss_candidate_mean_ADC",&m_sss_candidate_mean_ADC);
-	vertex_tree->Branch("sss_candidate_ADC_RMS", &m_sss_candidate_ADC_RMS);
-        vertex_tree->Branch("sss_candidate_impact_parameter",&m_sss_candidate_impact_parameter); 
-        vertex_tree->Branch("sss_candidate_fit_slope",&m_sss_candidate_fit_slope);
-        vertex_tree->Branch("sss_candidate_fit_constant",&m_sss_candidate_fit_constant);
-        vertex_tree->Branch("sss_candidate_mean_tick",&m_sss_candidate_mean_tick);
-        vertex_tree->Branch("sss_candidate_max_tick",&m_sss_candidate_max_tick);
-        vertex_tree->Branch("sss_candidate_min_tick",&m_sss_candidate_min_tick);
-        vertex_tree->Branch("sss_candidate_mean_wire",&m_sss_candidate_mean_wire);
-        vertex_tree->Branch("sss_candidate_max_wire",&m_sss_candidate_max_wire);
-        vertex_tree->Branch("sss_candidate_min_wire",&m_sss_candidate_min_wire);
-        vertex_tree->Branch("sss_candidate_min_dist",&m_sss_candidate_min_dist);
-	vertex_tree->Branch("sss_candidate_wire_tick_based_length", &m_sss_candidate_wire_tick_based_length);
-        vertex_tree->Branch("sss_candidate_energy",&m_sss_candidate_energy);
-        vertex_tree->Branch("sss_candidate_angle_to_shower",&m_sss_candidate_angle_to_shower);
-        vertex_tree->Branch("sss_candidate_closest_neighbour",&m_sss_candidate_closest_neighbour);
-        vertex_tree->Branch("sss_candidate_remerge",&m_sss_candidate_remerge);
-
-        vertex_tree->Branch("sss_candidate_matched",&m_sss_candidate_matched);
-        vertex_tree->Branch("sss_candidate_pdg",&m_sss_candidate_pdg);
-        vertex_tree->Branch("sss_candidate_parent_pdg",&m_sss_candidate_parent_pdg);
-        vertex_tree->Branch("sss_candidate_trackid",&m_sss_candidate_trackid);
-	vertex_tree->Branch("sss_candidate_true_energy", &m_sss_candidate_true_energy);
-        vertex_tree->Branch("sss_candidate_overlay_fraction",&m_sss_candidate_overlay_fraction);
-	vertex_tree->Branch("sss_candidate_matched_energy_fraction_best_plane", &m_sss_candidate_matched_energy_fraction_best_plane);
-
-
-        vertex_tree->Branch("sss3d_ioc_ranked_en",&m_sss3d_ioc_ranked_en);
-        vertex_tree->Branch("sss3d_ioc_ranked_conv",&m_sss3d_ioc_ranked_conv);
-        vertex_tree->Branch("sss3d_ioc_ranked_invar",&m_sss3d_ioc_ranked_invar);
-        vertex_tree->Branch("sss3d_ioc_ranked_implied_invar",&m_sss3d_ioc_ranked_implied_invar);
-        vertex_tree->Branch("sss3d_ioc_ranked_ioc",&m_sss3d_ioc_ranked_ioc);
-        vertex_tree->Branch("sss3d_ioc_ranked_opang",&m_sss3d_ioc_ranked_opang);
-        vertex_tree->Branch("sss3d_ioc_ranked_implied_opang",&m_sss3d_ioc_ranked_implied_opang);
-        vertex_tree->Branch("sss3d_ioc_ranked_id",&m_sss3d_ioc_ranked_id);
-
-        vertex_tree->Branch("sss3d_invar_ranked_en",&m_sss3d_invar_ranked_en);
-        vertex_tree->Branch("sss3d_invar_ranked_conv",&m_sss3d_invar_ranked_conv);
-        vertex_tree->Branch("sss3d_invar_ranked_invar",&m_sss3d_invar_ranked_invar);
-        vertex_tree->Branch("sss3d_invar_ranked_implied_invar",&m_sss3d_invar_ranked_implied_invar);
-        vertex_tree->Branch("sss3d_invar_ranked_ioc",&m_sss3d_invar_ranked_ioc);
-        vertex_tree->Branch("sss3d_invar_ranked_opang",&m_sss3d_invar_ranked_opang);
-        vertex_tree->Branch("sss3d_invar_ranked_implied_opang",&m_sss3d_invar_ranked_implied_opang);
-        vertex_tree->Branch("sss3d_invar_ranked_id",&m_sss3d_invar_ranked_id);
-
-
-        vertex_tree->Branch("sss2d_ioc_ranked_en",&m_sss2d_ioc_ranked_en);
-        vertex_tree->Branch("sss2d_ioc_ranked_conv",&m_sss2d_ioc_ranked_conv);
-        vertex_tree->Branch("sss2d_ioc_ranked_ioc",&m_sss2d_ioc_ranked_ioc);
-        vertex_tree->Branch("sss2d_ioc_ranked_pca",&m_sss2d_ioc_ranked_pca);
-        vertex_tree->Branch("sss2d_ioc_ranked_invar",&m_sss2d_ioc_ranked_invar);
-        vertex_tree->Branch("sss2d_ioc_ranked_angle_to_shower",&m_sss2d_ioc_ranked_angle_to_shower);
-        vertex_tree->Branch("sss2d_ioc_ranked_num_planes",&m_sss2d_ioc_ranked_num_planes);
-
-        vertex_tree->Branch("sss2d_invar_ranked_en",&m_sss2d_invar_ranked_en);
-        vertex_tree->Branch("sss2d_invar_ranked_conv",&m_sss2d_invar_ranked_conv);
-        vertex_tree->Branch("sss2d_invar_ranked_ioc",&m_sss2d_invar_ranked_ioc);
-        vertex_tree->Branch("sss2d_invar_ranked_pca",&m_sss2d_invar_ranked_pca);
-        vertex_tree->Branch("sss2d_invar_ranked_invar",&m_sss2d_invar_ranked_invar);
-        vertex_tree->Branch("sss2d_invar_ranked_angle_to_shower",&m_sss2d_invar_ranked_angle_to_shower);
-        vertex_tree->Branch("sss2d_invar_ranked_num_planes",&m_sss2d_invar_ranked_num_planes);
-
-        vertex_tree->Branch("sss2d_conv_ranked_en",&m_sss2d_conv_ranked_en);
-        vertex_tree->Branch("sss2d_conv_ranked_conv",&m_sss2d_conv_ranked_conv);
-        vertex_tree->Branch("sss2d_conv_ranked_ioc",&m_sss2d_conv_ranked_ioc);
-        vertex_tree->Branch("sss2d_conv_ranked_pca",&m_sss2d_conv_ranked_pca);
-        vertex_tree->Branch("sss2d_conv_ranked_invar",&m_sss2d_conv_ranked_invar);
-        vertex_tree->Branch("sss2d_conv_ranked_angle_to_shower",&m_sss2d_conv_ranked_angle_to_shower);
-        vertex_tree->Branch("sss2d_conv_ranked_num_planes",&m_sss2d_conv_ranked_num_planes);
-
-    }
-
-    void SinglePhoton::CreateStubBranches(){
-
-        vertex_tree->Branch("trackstub_num_unassociated_hits",&m_trackstub_num_unassociated_hits,"trackstub_num_unassociated_hits/I");
-        vertex_tree->Branch("trackstub_unassociated_hits_below_threshold",&m_trackstub_unassociated_hits_below_threshold,"trackstub_unassociated_hits_below_threshold/I");
-        vertex_tree->Branch("trackstub_associated_hits",&m_trackstub_associated_hits,"trackstub_associated_hits/I");
-	vertex_tree->Branch("trackstub_num_candidates", &m_trackstub_num_candidates, "trackstub_num_candidates/I");
-	vertex_tree->Branch("trackstub_candidate_in_nu_slice", &m_trackstub_candidate_in_nu_slice);
-	vertex_tree->Branch("trackstub_candidate_num_hits", &m_trackstub_candidate_num_hits);
-	vertex_tree->Branch("trackstub_candidate_num_wires", &m_trackstub_candidate_num_wires);
-	vertex_tree->Branch("trackstub_candidate_num_ticks", &m_trackstub_candidate_num_ticks);
-	vertex_tree->Branch("trackstub_candidate_plane", &m_trackstub_candidate_plane);
-	vertex_tree->Branch("trackstub_candidate_PCA", &m_trackstub_candidate_PCA);
-	vertex_tree->Branch("trackstub_candidate_mean_ADC", &m_trackstub_candidate_mean_ADC);
-	vertex_tree->Branch("trackstub_candidate_ADC_RMS", &m_trackstub_candidate_ADC_RMS);
-	vertex_tree->Branch("trackstub_candidate_veto_score", &m_trackstub_candidate_veto_score);
-	vertex_tree->Branch("trackstub_candidate_mean_tick", &m_trackstub_candidate_mean_tick);
-	vertex_tree->Branch("trackstub_candidate_max_tick", &m_trackstub_candidate_max_tick);
-	vertex_tree->Branch("trackstub_candidate_min_tick", &m_trackstub_candidate_min_tick);
-	vertex_tree->Branch("trackstub_candidate_min_wire", &m_trackstub_candidate_min_wire);
-	vertex_tree->Branch("trackstub_candidate_max_wire", &m_trackstub_candidate_max_wire);
-	vertex_tree->Branch("trackstub_candidate_mean_wire", &m_trackstub_candidate_mean_wire);
-	vertex_tree->Branch("trackstub_candidate_min_dist", &m_trackstub_candidate_min_dist);
-	vertex_tree->Branch("trackstub_candidate_min_impact_parameter_to_shower", &m_trackstub_candidate_min_impact_parameter_to_shower);
-	vertex_tree->Branch("trackstub_candidate_min_conversion_dist_to_shower_start", &m_trackstub_candidate_min_conversion_dist_to_shower_start);
-	vertex_tree->Branch("trackstub_candidate_min_ioc_to_shower_start", &m_trackstub_candidate_min_ioc_to_shower_start);
-	vertex_tree->Branch("trackstub_candidate_ioc_based_length", &m_trackstub_candidate_ioc_based_length);
-	vertex_tree->Branch("trackstub_candidate_wire_tick_based_length", &m_trackstub_candidate_wire_tick_based_length);
-	vertex_tree->Branch("trackstub_candidate_mean_ADC_first_half", &m_trackstub_candidate_mean_ADC_first_half);
-	vertex_tree->Branch("trackstub_candidate_mean_ADC_second_half", &m_trackstub_candidate_mean_ADC_second_half);
-	vertex_tree->Branch("trackstub_candidate_mean_ADC_first_to_second_ratio", &m_trackstub_candidate_mean_ADC_first_to_second_ratio);
-	vertex_tree->Branch("trackstub_candidate_track_angle_wrt_shower_direction", &m_trackstub_candidate_track_angle_wrt_shower_direction);
-	vertex_tree->Branch("trackstub_candidate_linear_fit_chi2", &m_trackstub_candidate_linear_fit_chi2);
-	vertex_tree->Branch("trackstub_candidate_energy", &m_trackstub_candidate_energy);
-	vertex_tree->Branch("trackstub_candidate_remerge", &m_trackstub_candidate_remerge);
-	vertex_tree->Branch("trackstub_candidate_matched", &m_trackstub_candidate_matched);
-	vertex_tree->Branch("trackstub_candidate_matched_energy_fraction_best_plane", &m_trackstub_candidate_matched_energy_fraction_best_plane);
-	vertex_tree->Branch("trackstub_candidate_pdg", &m_trackstub_candidate_pdg);
-	vertex_tree->Branch("trackstub_candidate_parent_pdg", &m_trackstub_candidate_parent_pdg);
-	vertex_tree->Branch("trackstub_candidate_trackid", &m_trackstub_candidate_trackid);
-	vertex_tree->Branch("trackstub_candidate_true_energy", &m_trackstub_candidate_true_energy);
-	vertex_tree->Branch("trackstub_candidate_overlay_fraction", &m_trackstub_candidate_overlay_fraction);
-
-
-	vertex_tree->Branch("trackstub_num_candidate_groups", &m_trackstub_num_candidate_groups, "trackstub_num_candidate_groups/I");
-	vertex_tree->Branch("grouped_trackstub_candidate_indices", &m_grouped_trackstub_candidate_indices);
-	vertex_tree->Branch("trackstub_candidate_group_timeoverlap_fraction", &m_trackstub_candidate_group_timeoverlap_fraction);
-    
-    }
-
-
-
-
-
     TGraph* SinglePhoton::GetNearestNpts(int p, int cl, std::vector<art::Ptr<recob::Hit>> &hitz, double vertex_wire, double vertex_tick, int Npts){
 
         std::vector<double>t_wire;
@@ -725,56 +495,22 @@ namespace single_photon
 
     //************************************************ Shower Search Slice Second SSS3D ********** /
 
-    void SinglePhoton::ClearSecondShowers3D(){
-
-        m_sss3d_num_showers = 0;
-        m_sss3d_shower_start_x.clear();
-        m_sss3d_shower_start_y.clear();
-        m_sss3d_shower_start_z.clear();
-        m_sss3d_shower_dir_x.clear();
-        m_sss3d_shower_dir_y.clear();
-        m_sss3d_shower_dir_z.clear();
-        m_sss3d_shower_length.clear();
-        m_sss3d_shower_conversion_dist.clear();
-        m_sss3d_shower_invariant_mass.clear();
-        m_sss3d_shower_implied_invariant_mass.clear();
-        m_sss3d_shower_impact_parameter.clear();
-        m_sss3d_shower_energy_max.clear();
-        m_sss3d_shower_score.clear();
-        m_sss3d_slice_nu.clear();
-        m_sss3d_slice_clear_cosmic.clear();
-        m_sss3d_shower_ioc_ratio.clear();
-    }
 
 
-    void SinglePhoton::CreateSecondShowerBranches3D(){
-        vertex_tree->Branch("sss3d_num_showers",&m_sss3d_num_showers,"sss3d_num_showers/I");
-
-        vertex_tree->Branch("sss3d_shower_start_x",&m_sss3d_shower_start_x);
-        vertex_tree->Branch("sss3d_shower_start_y",&m_sss3d_shower_start_y);
-        vertex_tree->Branch("sss3d_shower_start_z",&m_sss3d_shower_start_z);
-        vertex_tree->Branch("sss3d_shower_dir_x",&m_sss3d_shower_dir_x);
-        vertex_tree->Branch("sss3d_shower_dir_y",&m_sss3d_shower_dir_y);
-        vertex_tree->Branch("sss3d_shower_dir_z",&m_sss3d_shower_dir_z);
-
-        vertex_tree->Branch("sss3d_shower_length",&m_sss3d_shower_length);
-        vertex_tree->Branch("sss3d_shower_conversion_dist",&m_sss3d_shower_conversion_dist);
-        vertex_tree->Branch("sss3d_shower_invariant_mass",&m_sss3d_shower_invariant_mass);
-        vertex_tree->Branch("sss3d_shower_implied_invariant_mass",&m_sss3d_shower_implied_invariant_mass);
-        vertex_tree->Branch("sss3d_shower_impact_parameter",&m_sss3d_shower_impact_parameter);
-        vertex_tree->Branch("sss3d_shower_ioc_ratio",&m_sss3d_shower_ioc_ratio);
-        vertex_tree->Branch("sss3d_shower_energy_max",&m_sss3d_shower_energy_max);
-        vertex_tree->Branch("sss3d_shower_score",&m_sss3d_shower_score);
-        //vertex_tree->Branch("sss3d_slice_nu",&m_sss3d_slice_nu);
-        //vertex_tree->Branch("sss3d_slice_clear_cosmic",&m_sss3d_slice_clear_cosmic);
-    }
 
 
-    void SinglePhoton::SecondShowerSearch3D(std::vector<art::Ptr<recob::Shower>> & showers,std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  std::vector<art::Ptr<recob::Track>> & tracks, std::map<art::Ptr<recob::Track>,  art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, art::Event const & evt ){
+
+
+    void SinglePhoton::SecondShowerSearch3D(
+		std::vector<art::Ptr<recob::Shower>> & showers,
+		std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  
+		std::vector<art::Ptr<recob::Track>> & tracks, 
+		std::map<art::Ptr<recob::Track>,  
+		art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
+		art::Event const & evt ){
 
         std::string sss3dlabel = "pandoraShower";//"pandoraAllOutcomesShower"
 //Keng        std::string sss3dlabel = "allShr";//"pandoraAllOutcomesShower"
-        double max_conv_dist = 80.0;
 
         art::ValidHandle<std::vector<recob::Shower>> const & allShowerHandle  = evt.getValidHandle<std::vector<recob::Shower>>(sss3dlabel);
         std::vector<art::Ptr<recob::Shower>> allShowerVector;
@@ -811,7 +547,7 @@ namespace single_photon
         for(auto &shr: allShowerVector){
             //lets look at 3D distance to "vertex", and only go further with things that are within 80cm [default]
             double dist = sqrt(pow(m_vertex_pos_x - shr->ShowerStart().X(),2)+pow(m_vertex_pos_y - shr->ShowerStart().Y(),2)+pow(m_vertex_pos_z - shr->ShowerStart().Z(),2) );
-            if(dist>max_conv_dist) continue;
+            if(dist>m_max_conv_dist) continue;
 
             auto pfp = showerToPFParticleMap[shr];  
             //for(auto &prr: allPFParticleVector){

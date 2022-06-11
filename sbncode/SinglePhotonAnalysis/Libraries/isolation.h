@@ -10,51 +10,6 @@ bool  map_min_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pai
 
 namespace single_photon{
 
-void SinglePhoton::ClearIsolation(){
-    m_isolation_min_dist_trk_shr.clear();
-    m_isolation_min_dist_trk_unassoc.clear();
-
-    m_isolation_num_shr_hits_win_1cm_trk.clear();
-    m_isolation_num_shr_hits_win_2cm_trk.clear();
-    m_isolation_num_shr_hits_win_5cm_trk.clear();
-    m_isolation_num_shr_hits_win_10cm_trk.clear();
-
-    m_isolation_num_unassoc_hits_win_1cm_trk.clear();
-    m_isolation_num_unassoc_hits_win_2cm_trk.clear();
-    m_isolation_num_unassoc_hits_win_5cm_trk.clear();
-    m_isolation_num_unassoc_hits_win_10cm_trk.clear();
-
-    m_isolation_nearest_shr_hit_to_trk_wire.clear();
-    m_isolation_nearest_shr_hit_to_trk_time.clear();
-
-    m_isolation_nearest_unassoc_hit_to_trk_wire.clear();
-    m_isolation_nearest_unassoc_hit_to_trk_time.clear();
-}
-
-void SinglePhoton::CreateIsolationBranches(){
-    vertex_tree->Branch("isolation_min_dist_trk_shr", &m_isolation_min_dist_trk_shr);
-    vertex_tree->Branch("isolation_min_dist_trk_unassoc", &m_isolation_min_dist_trk_unassoc);
-
-    vertex_tree->Branch("isolation_num_shr_hits_win_1cm_trk", &m_isolation_num_shr_hits_win_1cm_trk);
-    vertex_tree->Branch("isolation_num_shr_hits_win_2cm_trk", &m_isolation_num_shr_hits_win_2cm_trk);
-    vertex_tree->Branch("isolation_num_shr_hits_win_5cm_trk", &m_isolation_num_shr_hits_win_5cm_trk);
-    vertex_tree->Branch("isolation_num_shr_hits_win_10cm_trk", &m_isolation_num_shr_hits_win_10cm_trk);
-    
-    vertex_tree->Branch("isolation_num_unassoc_hits_win_1cm_trk", &m_isolation_num_unassoc_hits_win_1cm_trk);
-    vertex_tree->Branch("isolation_num_unassoc_hits_win_2cm_trk", &m_isolation_num_unassoc_hits_win_2cm_trk);
-    vertex_tree->Branch("isolation_num_unassoc_hits_win_5cm_trk", &m_isolation_num_unassoc_hits_win_5cm_trk);
-    vertex_tree->Branch("isolation_num_unassoc_hits_win_10cm_trk", &m_isolation_num_unassoc_hits_win_10cm_trk);
-
-
-    vertex_tree->Branch("isolation_nearest_shr_hit_to_trk_wire", &m_isolation_nearest_shr_hit_to_trk_wire);
-    vertex_tree->Branch("isolation_nearest_shr_hit_to_trk_time", &m_isolation_nearest_shr_hit_to_trk_time);
-    
-    vertex_tree->Branch("isolation_nearest_unassoc_hit_to_trk_wire", &m_isolation_nearest_unassoc_hit_to_trk_wire);
-    vertex_tree->Branch("isolation_nearest_unassoc_hit_to_trk_time", &m_isolation_nearest_unassoc_hit_to_trk_time);
-
-}
-
-
 /* Arguments to Function  IsolationStudy  (all are const):
  * 1. vector named tracks 		of art ptr to recob track
  * 2. map named trackToPFPParticleMap 	of .i. art ptr to recob track		.ii. art ptr to recob pfparticle  
