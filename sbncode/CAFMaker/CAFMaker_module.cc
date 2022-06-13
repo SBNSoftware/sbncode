@@ -1067,15 +1067,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Get all of the OpFlashes
   std::vector<caf::SROpFlash> srflashes;
 
-  art::Handle<std::vector<recob::OpFlash>> flashes_handle;
-  GetByLabelStrict(evt, fParams.OpFlashLabel(), flashes_handle);
-  // fill into event
-  if (flashes_handle.isValid()) {
-    const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
-    //int cryostat = ( fParams.OpFlashLabel().find("W") != std::string::npos );
-    for (unsigned i = 0; i < opflashes.size(); i++) {
-      srflashes.emplace_back();
-      FillOpFlash(opflashes[i], srflashes.back());
+  for (unsigned i_tag = 0; i_tag < pandora_tag_suffixes.size(); i_tag++) {
+    const std::string &pandora_tag_suffix = pandora_tag_suffixes[i_tag];
+    art::Handle<std::vector<recob::OpFlash>> flashes_handle;
+    GetByLabelStrict(evt, fParams.OpFlashLabel() + pandora_tag_suffix, flashes_handle);
+    // fill into event
+    if (flashes_handle.isValid()) {
+      const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
+      //int cryostat = ( fParams.OpFlashLabel().find("W") != std::string::npos );
+      for (unsigned i = 0; i < opflashes.size(); i++) {
+        srflashes.emplace_back();
+        FillOpFlash(opflashes[i], srflashes.back());
+      }
     }
   }
 
