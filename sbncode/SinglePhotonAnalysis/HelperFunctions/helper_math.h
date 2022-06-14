@@ -204,29 +204,96 @@ namespace single_photon
 			return thisvector[len/2];
 		}
 	}
-//        //So return median if odd, average of median in even, if size==0, return the point. 
-//        
-//        //here the size corresponds to the max index
-//                
-//        int size = thisvector.size() - 1;
-//        //if no entries, return nonsense value
-//        if (size < 0) return NAN;
-//        if (size==0) return thisvector[size];
-//
-//        //find index of median location
-//        double median;
-//        if (size%2 == 0){  // if vector has odd elements
-//            int ind = size/2;
-//            median = thisvector[ind];  
-//        } else{   // if vector has even number of elements
-//            int ind1 = size/2; 
-//            int ind2 = size/2-1;
-//            median = (thisvector[ind1]+thisvector[ind2])/2.0;
-//        }
-//
-//        //return the value at median index
-//        return median;		
-//    }
+
+			/* returns (generally) best median dEdx of all 3
+			 * planes, usually plane 2  */
+	double getAmalgamateddEdx(
+			double angle_wrt_plane0, 
+			double angle_wrt_plane1, 
+			double angle_wrt_plane2, 
+			double median_plane0, 
+			double median_plane1, 
+			double median_plane2, 
+			int plane0_nhits, 
+			int plane1_nhits, 
+			int plane2_nhits){
+        //if the shower is within 10 degrees of the wires on plane 2, consider planes 1 and 0
+        if(angle_wrt_plane2< degToRad(10)){
+            //if it's too close to the wires on either of the planes, then stick with plane 2
+            if (angle_wrt_plane1> degToRad(20)|| angle_wrt_plane0>degToRad(20) ){
+                //but if it's outside of the range on plane 1, choose that
+                if(angle_wrt_plane1> angle_wrt_plane0){
+                    return median_plane1;
+                } else{
+                    return median_plane0;
+                }
+            }
+        }
+        if (plane2_nhits< 2){
+            if (plane1_nhits >=2 ){
+                return median_plane1;
+            } else if (plane0_nhits >=2 ){
+                return median_plane0;
+            }
+        }
+        return median_plane2;
+    }
+
+	/* returns the number of hits on the plane picked by function getAmalgamateddEdx */
+	int getAmalgamateddEdxNHits(
+			double amalgamateddEdx, 
+			double median_plane0, 
+			double median_plane1, 
+			double median_plane2,
+			int plane0_nhits, 
+			int plane1_nhits, 
+			int plane2_nhits){
+        if (amalgamateddEdx == median_plane0){
+            return plane0_nhits;
+        }
+        if (amalgamateddEdx == median_plane1){
+            return plane1_nhits;
+        }
+        if (amalgamateddEdx == median_plane2){
+            return plane2_nhits;
+        }
+        return -999;
+    }
+
+
+/**
+             *@brief Calculates the four corners of a rectangle of given length and width around a cluster given the start point and axis direction
+             *@param cluster_start - the start position of a cluster in CM
+             *@param cluster_axis - calculated from the cluster end minus the cluster start
+             *@param width - typically ~1cm
+             *@param length - typically a few cm
+             *
+             * */
+    std::vector<std::vector<double>> buildRectangle(std::vector<double> cluster_start, std::vector<double> cluster_axis, double width, double length){
+        std::vector<std::vector<double>> corners;
+
+        //get the axis perpedicular to the cluster axis
+        double perp_axis[2] = {-cluster_axis[1], cluster_axis[0]};
+
+        //create a vector for each corner of the rectangle on the plane
+        //c1 = bottom left corner
+        std::vector<double> c1 = {cluster_start[0] + perp_axis[0] * width / 2,  cluster_start[1] + perp_axis[1] * width / 2};
+        //c2 = top left corner
+        std::vector<double> c2 = {c1[0] + cluster_axis[0] * length, c1[1] + cluster_axis[1] * length};
+        //c3 = bottom right corner
+        std::vector<double> c3 = {cluster_start[0] - perp_axis[0] * width / 2, cluster_start[1] - perp_axis[1] * width / 2};
+        //c4 = top right corner
+        std::vector<double> c4 ={c3[0] + cluster_axis[0] * length, c3[1] + cluster_axis[1] * length}; 
+
+        //save each of the vectors
+        corners.push_back(c1);
+        corners.push_back(c2);
+        corners.push_back(c4);
+        corners.push_back(c3);
+        return corners;
+    }
+	
+
 
 //    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detpropdata){
 //		

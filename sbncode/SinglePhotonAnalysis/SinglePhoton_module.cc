@@ -351,14 +351,14 @@ namespace single_photon
 
         //------- 3D showers
         art::FindOneP<recob::Shower> showerreco3D_per_pfparticle(pfParticleHandle, evt, m_shower3dLabel);
-        std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> pfParticlesToShowerReco3DMap;
-        for(size_t i=0; i< pfParticleVector.size(); ++i){
-            auto pfp = pfParticleVector[i];
-            if(!showerreco3D_per_pfparticle.at(pfp.key()).isNull()){
-                pfParticlesToShowerReco3DMap[pfp] = showerreco3D_per_pfparticle.at(pfp.key());
-            }
-
-        }
+        std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>> pfParticlesToShowerReco3DMap;//CHECK, 3d shower object is not something stand alone; maybe hidden within some of the pandorSCEShower in SBND?
+//        for(size_t i=0; i< pfParticleVector.size(); ++i){
+//            auto pfp = pfParticleVector[i];
+//            if(!showerreco3D_per_pfparticle.at(pfp.key()).isNull()){
+//                pfParticlesToShowerReco3DMap[pfp] = showerreco3D_per_pfparticle.at(pfp.key());
+//            }
+//
+//        }
         //---------Kalman Track Showers
 //CHECK        art::FindOneP<recob::Track> showerKalman_per_pfparticle(pfParticleHandle, evt, m_showerKalmanLabel);
 		//CHECK this label is not available in sbnd? use an alternative now;

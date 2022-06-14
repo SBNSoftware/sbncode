@@ -509,6 +509,7 @@ namespace single_photon
 		art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
 		art::Event const & evt ){
 
+		//CHECK, may manually pick out "AllShr" label in sbnd; which are showers not in nu slice;
         std::string sss3dlabel = "pandoraShower";//"pandoraAllOutcomesShower"
 //Keng        std::string sss3dlabel = "allShr";//"pandoraAllOutcomesShower"
 
