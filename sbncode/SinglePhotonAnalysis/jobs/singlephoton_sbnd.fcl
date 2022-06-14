@@ -4,9 +4,9 @@ singlephoton_analyzer:{
 
     module_type:    SinglePhoton
 
-    PandoraLabel:   "pandora"
-    TrackLabel:     "pandoraTrack"
-    ShowerLabel:    "pandoraShower"
+    PandoraLabel:   "pandoraSCE"
+    TrackLabel:     "pandoraTrack" #pandoraSCETrack does not have enough objects;
+    ShowerLabel:    "pandoraSCEShower"
     ParticleIDLabel:"pandoraSCEPid"
     CaloLabel:      "pandoraCalo"
     FlashLabel:     "opflashtpc0"
@@ -14,7 +14,7 @@ singlephoton_analyzer:{
 
 	#ShowerTrackFitter:		"pandoraTrack"
 	#ShowerTrackFitterCalo:	"pandoraCalo"
-	Shower3DLabel:			"pandoraShower"
+	Shower3DLabel:			"pandoraSCEShower"
 
     input_param:    "optional" 
 

@@ -372,29 +372,6 @@ namespace single_photon
              * */
             double getPitch(TVector3 shower_dir, int plane);  /* distance between hit in shower direction projected on plane */
 
-			/* returns (generally) best median dEdx of all 3
-			 * planes, usually plane 2  */
-            double getAmalgamateddEdx(double angle_wrt_plane0, double angle_wrt_plane1, double angle_wrt_plane2, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); 
-			/* returns the number of hits on the plane picked by function getAmalgamateddEdx */
-            int getAmalgamateddEdxNHits(double amalgamateddEdx, double median_plane0, double median_plane1, double median_plane2, int plane0_nhits, int plane1_nhits, int plane2_nhits); 
-
-            /**
-             *@brief Calculates the four corners of a rectangle of given length and width around a cluster given the start point and axis direction
-             *@param cluster_start - the start position of a cluster in CM
-             *@param cluster_axis - calculated from the cluster end minus the cluster start
-             *@param width - typically ~1cm
-             *@param length - typically a few cm
-             *
-             * */
-            std::vector<std::vector<double>> buildRectangle(std::vector<double> cluster_start, std::vector<double> cluster_axis, double width, double length);
-
-            /**
-             *@brief For a 2d point on a plane in cm and a rectangle, returns true if the point is inside of the rectangle
-             *@param thishit_pos - 2d location of a hit in cm
-             *@param rectangle - vector of the positions of the four corners of the rectangle
-             *
-             * */
-            bool insideBox(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle);
 
             /**
              *

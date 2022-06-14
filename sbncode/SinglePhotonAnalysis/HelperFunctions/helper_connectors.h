@@ -449,5 +449,30 @@ namespace single_photon
 
 //----------- Above are migrated from Singlephoton_module.cc
 
+    //determines if a point is inside the rectangle by summing the areas of the four triangles made by 
+    //if the point is inside, the sum of the triangles should exactly equal the area of the rectangle
+    //also returns true if the point is on the boundary
+    bool SinglePhoton::isInsidev2(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle){
+        int n_vertices = (int)rectangle.size();
+        //bool inside = false;
+        int i, j = 0;
+        double areas = 0;
+        //for each pair of vertices
+        for (i = 0, j = n_vertices-1; i < n_vertices; j = i++) {
+            //calculate the area of a triangle with the point and two vertices
+            double this_area = 0.5*abs(rectangle[i][0]*(rectangle[j][1] - thishit_pos[1]) 
+									+ rectangle[j][0]*(thishit_pos[1] - rectangle[i][1]) 
+									+ thishit_pos[0]*(rectangle[i][1] - rectangle[j][1]));
+            areas += this_area;
+        }        
+        //calc area of the rectangle
+        double area_rectangle = m_width_dqdx_box* m_length_dqdx_box;
+
+        //check the sum of areas match
+        if (abs(areas - area_rectangle) <= 0.001 ){
+            return true;
+        }
+        return false;
+    }
 
 }

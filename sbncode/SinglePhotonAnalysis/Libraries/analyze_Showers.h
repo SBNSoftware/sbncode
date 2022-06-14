@@ -32,8 +32,8 @@ namespace single_photon
 
             art::Ptr<recob::Shower> shower3d;
             if(PFPtoShowerReco3DMap.count(pfp)==0){
-                //std::cout<<"SHOWER_3D : <<ERROR!! No shower3d in map for this pfp"<<std::endl;
-                //std::cout<<"Reverting to normal recob::Shower"<<std::endl;
+                std::cout<<"SHOWER_3D : <<ceCHECK!! No shower3d in map for this pfp"<<std::endl;
+                std::cout<<"Reverting to normal recob::Shower"<<std::endl;
                 m_reco_shower3d_exists[i_shr] = 0;
                 shower3d = shower;
             }else{
@@ -821,60 +821,6 @@ namespace single_photon
     }
 
 
-	double SinglePhoton::getAmalgamateddEdx(
-			double angle_wrt_plane0, 
-			double angle_wrt_plane1, 
-			double angle_wrt_plane2, 
-			double median_plane0, 
-			double median_plane1, 
-			double median_plane2, 
-			int plane0_nhits, 
-			int plane1_nhits, 
-			int plane2_nhits){
-        //if the shower is within 10 degrees of the wires on plane 2, consider planes 1 and 0
-        if(angle_wrt_plane2< degToRad(10)){
-            //if it's too close to the wires on either of the planes, then stick with plane 2
-            if (angle_wrt_plane1> degToRad(20)|| angle_wrt_plane0>degToRad(20) ){
-                //but if it's outside of the range on plane 1, choose that
-                if(angle_wrt_plane1> angle_wrt_plane0){
-                    return median_plane1;
-                } else{
-                    return median_plane0;
-                }
-            }
-        }
-        if (plane2_nhits< 2){
-            if (plane1_nhits >=2 ){
-                return median_plane1;
-            } else if (plane0_nhits >=2 ){
-                return median_plane0;
-            }
-        }
-        return median_plane2;
-    }
-
-
-	int SinglePhoton::getAmalgamateddEdxNHits(
-			double amalgamateddEdx, 
-			double median_plane0, 
-			double median_plane1, 
-			double median_plane2,
-			int plane0_nhits, 
-			int plane1_nhits, 
-			int plane2_nhits){
-        if (amalgamateddEdx == median_plane0){
-            return plane0_nhits;
-        }
-        if (amalgamateddEdx == median_plane1){
-            return plane1_nhits;
-        }
-        if (amalgamateddEdx == median_plane2){
-            return plane2_nhits;
-        }
-        return -999;
-    }
-
-
 
     double SinglePhoton::getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane){
         int nhits = 0;
@@ -908,75 +854,8 @@ namespace single_photon
         return nhits;
     }
 
-    std::vector<std::vector<double>> SinglePhoton::buildRectangle(std::vector<double> cluster_start, std::vector<double> cluster_axis, double width, double length){
-        std::vector<std::vector<double>> corners;
 
-        //get the axis perpedicular to the cluster axis
-        double perp_axis[2] = {-cluster_axis[1], cluster_axis[0]};
 
-        //create a vector for each corner of the rectangle on the plane
-        //c1 = bottom left corner
-        std::vector<double> c1 = {cluster_start[0] + perp_axis[0] * width / 2,  cluster_start[1] + perp_axis[1] * width / 2};
-        //c2 = top left corner
-        std::vector<double> c2 = {c1[0] + cluster_axis[0] * length, c1[1] + cluster_axis[1] * length};
-        //c3 = bottom right corner
-        std::vector<double> c3 = {cluster_start[0] - perp_axis[0] * width / 2, cluster_start[1] - perp_axis[1] * width / 2};
-        //c4 = top right corner
-        std::vector<double> c4 ={c3[0] + cluster_axis[0] * length, c3[1] + cluster_axis[1] * length}; 
-
-        //save each of the vectors
-        corners.push_back(c1);
-        corners.push_back(c2);
-        corners.push_back(c4);
-        corners.push_back(c3);
-        return corners;
-    }
-
-    bool SinglePhoton::insideBox(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle){
-        //for a rectangle this is a known value but this is the most general
-        int n_vertices = (int)rectangle.size();
-        bool inside = false;
-        int i, j = 0;
-        //for each pair of vertices
-        for (i = 0, j = n_vertices-1; i < n_vertices; j = i++) {
-            //if the hit y coordinate is between the y and x coordinates of two vertices
-            if ( ((rectangle[i][1]> thishit_pos[1]) != (rectangle[j][1]>thishit_pos[1])) 
-                    &&(thishit_pos[0] < (rectangle[j][0]-rectangle[i][0]) * (thishit_pos[1]-rectangle[i][1]) / (rectangle[j][1]-rectangle[i][1]) + rectangle[i][0]) ){   
-                if (inside == false){    
-                    inside = true;
-                } else{
-                    inside = false;
-                }
-            }
-        }
-        return inside;
-    }
-
-    //determines if a point is inside the rectangle by summing the areas of the four triangles made by 
-    //if the point is inside, the sum of the triangles should exactly equal the area of the rectangle
-    //also returns true if the point is on the boundary
-    bool SinglePhoton::isInsidev2(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle){
-        int n_vertices = (int)rectangle.size();
-        //bool inside = false;
-        int i, j = 0;
-        double areas = 0;
-        //for each pair of vertices
-        for (i = 0, j = n_vertices-1; i < n_vertices; j = i++) {
-            //calculate the area of a triangle with the point and two vertices
-            double this_area = 0.5*abs(rectangle[i][0]*(rectangle[j][1] - thishit_pos[1]) 
-									+ rectangle[j][0]*(thishit_pos[1] - rectangle[i][1]) 
-									+ thishit_pos[0]*(rectangle[i][1] - rectangle[j][1]));
-            areas += this_area;
-        }        
-        //calc area of the rectangle
-        double area_rectangle = m_width_dqdx_box* m_length_dqdx_box;
-
-        //check the sum of areas match
-        if (abs(areas - area_rectangle) <= 0.001 ){
-            return true;
-        }
-        return false;
-    }
 
     //area of a triangle given three vertices
 
