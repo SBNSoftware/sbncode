@@ -48,10 +48,13 @@ singlephoton_analyzer:{
     SelectEventList:""
 
     usePID: true 
-    work_function: 23.6
-    recombination_factor: 0.62
-    gain_mc: [235.5, 249.7, 237.6] #ubDocDB 20227-v7 using dE/dx calibration method for all planes, updated on 9/13/19
-    gain_data: [230.3, 237.6, 243.7] #see above docdb
+    work_function: 23.6  # eV, average energy needed to produce an ionization electron
+    recombination_factor: 0.62 # the electron recombination survival rate
+    gain_mc: [49.774521418, 49.9600319744, 49.6788263874]  #for SBND
+# also documented at SBN-doc-19505-v1 from Varunna Meddage
+# formula used in SBN-doc-18701-v1 NOTE:origin values are in MicroBooNE-doc-20227 with inversed units;
+#see SBN-doc-25161 for ICARUS?
+    gain_data: [230.3, 237.6, 243.7] #not used yet, to be updated;
     wire_spacing : 0.3 
     width_box : 1. #2d dEdx is calcualted with a box of 1cmx4cm
     length_box : 4.
