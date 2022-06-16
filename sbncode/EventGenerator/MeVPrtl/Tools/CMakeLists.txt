@@ -61,6 +61,38 @@ simple_plugin( NuMiKaonGen tool
 			sbncode_EventGenerator_MeVPrtl_Constants
 )
 
+simple_plugin( BNBKaonGen tool
+                            IFDH_SERVICE
+                            ${ART_FRAMEWORK_CORE}
+                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+                            ${ART_FRAMEWORK_PRINCIPAL}
+                            art_Persistency_Common
+                            art_Utilities canvas
+                            ${MF_MESSAGELOGGER}
+                            ${MF_UTILITIES}
+                            ${FHICLCPP}
+                            cetlib cetlib_except
+                            ${ROOT_EVE_LIB_LIST}
+                            ${ROOT_X3d}
+                            ${ROOT_BASIC_LIB_LIST}
+			${CLHEP}
+			ifdh
+			# GENIE STUFF #####################################
+ 	                xml2
+        	        log4cpp::log4cpp
+                	GENIE::GFwEG
+                  	GENIE::GFwAlg
+                  	GENIE::GFwMsg
+                  	GENIE::GFwGHEP
+                  	GENIE::GTlFlx
+                 	GENIE::GFwParDat
+                        ###################################################
+                        nurandom_RandomUtils_NuRandomService_service
+			nusimdata_SimulationBase
+			sbncode_EventGenerator_MeVPrtl_Constants
+)
+
 simple_plugin( WeightedRayTraceBox tool
                             ${ART_FRAMEWORK_CORE}
                             ${ART_FRAMEWORK_SERVICES_REGISTRY}
