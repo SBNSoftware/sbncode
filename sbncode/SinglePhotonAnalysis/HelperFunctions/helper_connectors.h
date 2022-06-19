@@ -92,8 +92,12 @@ namespace single_photon
 
 
 	//Classify PFParticles into crParticles or nuParticles.
-    void SinglePhoton::GetFinalStatePFParticleVectors(const PFParticleIdMap &pfParticleMap, const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, PFParticleVector &crParticles, PFParticleVector &nuParticles, size_t fpfp_w_bestnuID )
-    {
+	void SinglePhoton::GetFinalStatePFParticleVectors(
+			const PFParticleIdMap &pfParticleMap, 
+			const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, 
+			PFParticleVector &crParticles, 
+			PFParticleVector &nuParticles, 
+			size_t fpfp_w_bestnuID ) {
 		if(m_is_verbose) std::cout<<"SinglePhoton::"<<__FUNCTION__<<"\t||\tSort out PFPParticles."<<std::endl;
 
         int found = 0;
@@ -113,7 +117,6 @@ namespace single_photon
 //            const bool isNeutrino =  (std::abs(pdg) ==  pandora::NU_E || std::abs(pdg) == pandora::NU_MU || std::abs(pdg) == pandora::NU_TAU);
 			 //CHECK
              bool isNeutrino =  (std::abs(pdg) ==  12 || std::abs(pdg) == 14 || std::abs(pdg) == 16);
-            //const bool isNeutrino =  (std::abs(pdg) ==   14 );
 
 
             // If it is, lets get the vertex position
@@ -160,7 +163,16 @@ namespace single_photon
 
     //------------------------------------------------------------------------------------------------------------------------------------------
 
-    void SinglePhoton::CollectTracksAndShowers(const PFParticleVector &particles,const PFParticleIdMap pfParticleMap, const PFParticleHandle &pfParticleHandle, const art::Event &evt, TrackVector &tracks, ShowerVector &showers,  std::map< art::Ptr<recob::Track> , art::Ptr<recob::PFParticle>>  &trackToNuPFParticleMap, std::map< art::Ptr<recob::Shower> , art::Ptr<recob::PFParticle>> &showerToNuPFParticleMap)
+	void SinglePhoton::CollectTracksAndShowers(
+			const PFParticleVector &particles,
+			const PFParticleIdMap pfParticleMap, 
+			const PFParticleHandle &pfParticleHandle, 
+			const art::Event &evt, 
+			TrackVector &tracks, 
+			ShowerVector &showers,  
+			std::map< art::Ptr<recob::Track> , 
+			art::Ptr<recob::PFParticle>>  &trackToNuPFParticleMap, 
+			std::map< art::Ptr<recob::Shower> , art::Ptr<recob::PFParticle>> &showerToNuPFParticleMap)
     {
         // Get the associations between PFParticles and tracks/showers from the event
         art::FindManyP< recob::Track     > pfPartToTrackAssoc(pfParticleHandle, evt, m_trackLabel);

@@ -402,10 +402,10 @@ namespace single_photon
 
 			std::cout<<std::setw(7)<<"Slice#";
 			std::cout<<std::setw(4)<<"nu?";
-			std::cout<<std::setw(9)<<"#pfPart.";
+			std::cout<<std::setw(9)<<"#pfPart.";//pfps.size(0
 			std::cout<<std::setw(9)<<"nu_score";
-			std::cout<<std::setw(9)<<"best at ";
-			std::cout<<std::setw(14)<<"Is_primaries ";
+			std::cout<<std::setw(9)<<"best_at ";
+			std::cout<<std::setw(10)<<"#primary ";
 			std::cout<<std::setw(4)<<"pdg "<<std::endl;
 
 			double ref_nuscore = 0;
@@ -415,10 +415,10 @@ namespace single_photon
 
                 std::vector<float> nu_scores;
                 bool isSelectedSlice = false;
-                int primaries = 0;
+                int primaries_num = 0;
                 int primary_pdg = 0;
 
-                for(auto &pfp: pfps){
+                for(auto &pfp: pfps){//loop through PFparticles of a slice
                     std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = pfParticleToMetadataMap[pfp];
                     for(auto &meta: metadatas){
                         std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
@@ -438,13 +438,13 @@ namespace single_photon
                     }
 
                     if (pfp->IsPrimary()) {
-                        primaries++;
+                        primaries_num++;
 						primary_pdg = (pfp->PdgCode());    
 					}
 				}
 				std::cout<<std::setw(7)<<s;
 				if(isSelectedSlice){ std::cout<<std::setw(4)<<"Y";} else{ std::cout<<std::setw(4)<<"N";}
-				std::cout<<std::setw(9)<<pfps.size();
+				std::cout<<std::setw(9)<<pfps.size();//"#pfPart."
 
 
 
@@ -456,7 +456,7 @@ namespace single_photon
 				}
 				std::cout<<std::setw(9)<<nu_scores.front();
 				std::cout<<std::setw(9)<<pfp_w_bestnuID;
-				std::cout<<std::setw(14)<<primaries;
+				std::cout<<std::setw(10)<<primaries_num;
 				std::cout<<std::setw(4)<<primary_pdg;
 				}
 				std::cout<<std::endl;
@@ -473,6 +473,7 @@ namespace single_photon
         std::vector< art::Ptr<recob::PFParticle> > nuParticles;
         std::vector< art::Ptr<recob::PFParticle> > crParticles;
         this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
+		//CHECK pfp_w_bestnuID was calculated in the previous "test" lines above?
 		//CHECK potential upgrade:
 		// LOOP over pfParticleMap, and fill in crParticles/nuParticles here?
 
