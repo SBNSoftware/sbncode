@@ -310,8 +310,9 @@ namespace single_photon
         return sliceIdToNumShowersvec;
     }
 
-    std::vector<int> SinglePhoton::GetNumTracksPerSlice(std::map< art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>>& trackToPFParticleMap, 
-            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
+	std::vector<int> SinglePhoton::GetNumTracksPerSlice(
+			std::map< art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>>& trackToPFParticleMap, 
+			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
         std::vector<int> sliceIdToNumTracksvec(m_reco_slice_num, 0);
 
         // std::cout<<"looking at number of tracks per slice"<<std::endl;
