@@ -10,7 +10,7 @@ sbnd_bnb_beam2detector_rotation: [ 1, 0, 0,
 
 sbnd_bnb_beam_origin: [-73.78, 0, -11000] # cm in deterctor frame
 
-#sbnd detector + 10cm surrounding it
+#sbnd detector in det frame
 sbnd_detector_box: [-200, 200, -200, 200, 0, 500] #cm
 
 bnb_kaon: {
@@ -35,12 +35,9 @@ rethrow_ray_trace_box: {
   # Volume: volCryostat
   Box: @local::sbnd_detector_box
 
-  # weight computation
-  #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
-  #ReferenceKaonEnergy: 15 # GeV
-
-  ReferenceLabSolidAngle: 1e-4
-  ReferenceKaonEnergy: 7.5 # GeV
+  #weight computation
+  ReferenceLabSolidAngle: 3.306e-4 
+  ReferenceKaonEnergy: 7 # GeV
 }
 
 weighted_ray_trace_box: {
@@ -49,16 +46,16 @@ weighted_ray_trace_box: {
   Box: @local::sbnd_detector_box
 
   # weight computation
-  ReferenceLabSolidAngle: 3e-4
-  ReferenceKaonEnergy: 8. # GeV
+  ReferenceLabSolidAngle: 3.306e-4
+  ReferenceKaonEnergy: 7. # GeV
 }
 
 mixedweight_ray_trace_box: {
   tool_type: MixedWeightRayTraceBox
   Box: @local::sbnd_detector_box
-  ReferenceLabSolidAngle: 3e-4
+  ReferenceLabSolidAngle: 3.306e-4 #solid angle for SBND @BNB: front face area / distance to target^2 = 4 / 110^2
   MaxWeightFudge: 2.
-  ReferenceKaonEnergy: 8 # GeV
+  ReferenceKaonEnergy: 7 # GeV 
   NThrow: 250
   FixNSuccess: false
 }
