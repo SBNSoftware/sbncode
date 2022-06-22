@@ -113,20 +113,70 @@ BNBKaonGen::BNBKaonGen(fhicl::ParameterSet const &pset):
   configure(pset);
 
   // copy the flux files locally
-  fFluxFiles = LoadFluxFiles();
-  //@rodrigoa: seems loading is broken, load manual till proper debug:
-  fFluxFiles={
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0000.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0001.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0002.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0003.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0004.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0005.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0006.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0007.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0008.root",
-    "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0009.root"
-  };
+  // fFluxFiles = LoadFluxFiles();
+  // //@rodrigoa: seems loading is broken, load manual till proper debug:
+  // fFluxFiles={
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0000.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0001.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0002.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0003.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0004.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0005.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0006.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0007.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0008.root",
+  //   // "/sbnd/data/users/rodrigoa/HNL_generator/april07_baseline_0009.root"
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0000.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0001.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0002.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0003.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0004.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0005.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0006.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0007.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0008.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0009.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0010.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0011.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0012.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0013.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0014.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0015.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0016.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0017.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0018.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0019.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0020.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0021.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0022.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0023.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0024.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0025.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0026.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0027.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0028.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0029.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0030.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0031.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0032.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0033.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0034.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0035.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0036.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0037.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0038.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0039.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0040.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0041.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0042.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0043.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0044.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0045.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0046.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0047.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0048.root",
+  //   "/pnfs/sbnd/persistent/users/jcrespo/ForRodrigo/april07_baseline_0049.root"
+  // };
 
   // setup indices
   fFileIndex = 0;
@@ -167,6 +217,7 @@ void BNBKaonGen::configure(fhicl::ParameterSet const &pset)
   std::cout << "With patterns:\n";
   for (const std::string &s: fSearchPatterns) std::cout << s << std::endl;
   std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
+  fFluxFiles = pset.get<std::vector<std::string>>("FluxFilesFullPath");
 }
 
 std::vector<std::string> BNBKaonGen::LoadFluxFiles() {
