@@ -1,0 +1,33 @@
+#include "numispillinfo.fcl"
+
+process_name: NuMIInfoGen
+
+services:{
+  IFBeam:{}
+}
+
+
+source: {
+  module_type: RootInput
+}
+
+physics: {
+ producers: {
+   numiinfo: @local::numispillinfo
+ }
+
+ simulate: [numiinfo ]
+ stream1: [ out1 ]
+ trigger_paths: [ simulate ]
+ end_paths: [ stream1 ]
+}
+
+outputs: {
+ out1: {
+   module_type: RootOutput
+   fileName: "%ifb_%tc_numiinfo.root"
+   dataTier: "raw"
+   compressionLevel: 1
+ }
+}
+
