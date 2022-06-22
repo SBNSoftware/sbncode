@@ -15,6 +15,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fSpacePointProducer(p.get<std::string>("SpacePointProducer"))
   , fOpHitProducer(p.get<std::string>("OpHitProducer"))
   , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
+  , fOpFlashProducer(p.get<std::vector<std::string>>("OpFlashProducer"))
+  , fOpFlashHitProducer(p.get<std::vector<std::string>>("OpFlashHitProducer"))
     // , fCaloProducer(p.get<std::string>("CaloProducer"))
     // , fTrackProducer(p.get<std::string>("TrackProducer"))
   , fClockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob())
@@ -29,6 +31,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
+  , fUseOpFlashes(p.get<bool>("UseOpFlashes", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
   , fStoreTrueNus(p.get<bool>("StoreTrueNus", false))
   , fStoreCheatMCT0(p.get<bool>("StoreCheatMCT0", false))
@@ -131,6 +134,10 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   consumes<std::vector<recob::SpacePoint>>(fSpacePointProducer);
   consumes<art::Assns<recob::Hit, recob::SpacePoint>>(fSpacePointProducer);
   consumes<std::vector<recob::OpHit>>(fOpHitProducer);
+  // if(fUseOpFlashes){
+  //   consumes<std::vector<recob::OpFlash>>(fOpFlashProducer);
+  //   consumes<art::Assn<recob::OpHit, recob::OpFlash>>(fOpFlashProducer);
+  // }
   if(fUseARAPUCAS && !fOpHitARAProducer.empty())
     consumes<std::vector<recob::OpHit>>(fOpHitARAProducer);
 } // FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
@@ -213,68 +220,71 @@ void FlashPredict::produce(art::Event& evt)
   }
 
   // load OpHits previously created
-  art::Handle<std::vector<recob::OpHit>> ophits_h;
-  evt.getByLabel(fOpHitProducer, ophits_h);
-  if(!ophits_h.isValid()) {
-    mf::LogError("FlashPredict")
-      << "No optical hits from producer module "
-      << fOpHitProducer;
-    bk.nonvalidophit++;
-    updateBookKeeping();
-    for(size_t pId=0; pId<pfps_h->size(); pId++) {
-      if(!pfps_h->at(pId).IsPrimary()) continue;
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                              Flash(kNoScrPE), Score(kNoOpHInEvt)));
-      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-    }
-    evt.put(std::move(sFM_v));
-    evt.put(std::move(pfp_sFM_assn_v));
-    return;
-  }
-
-  std::vector<recob::OpHit> opHits(ophits_h->size());
-  copyOpHitsInBeamWindow(opHits, ophits_h);
-
-  if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
-    art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
-    evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
-    if(!ophits_ara_h.isValid()) {
+  // const std::vector<SimpleFlash> simpleFlashes; 
+  std::vector<SimpleFlash> simpleFlashes; 
+  if (!fUseOpFlashes){
+    art::Handle<std::vector<recob::OpHit>> ophits_h;
+    evt.getByLabel(fOpHitProducer, ophits_h);
+    if(!ophits_h.isValid()) {
       mf::LogError("FlashPredict")
-        << "Non valid ophits from ARAPUCAS"
-        << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
-        << "\nfOpHitARAProducer: " << fOpHitARAProducer;
+        << "No optical hits from producer module "
+        << fOpHitProducer;
+      bk.nonvalidophit++;
+      updateBookKeeping();
+      for(size_t pId=0; pId<pfps_h->size(); pId++) {
+        if(!pfps_h->at(pId).IsPrimary()) continue;
+        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                                Flash(kNoScrPE), Score(kNoOpHInEvt)));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      }
+      evt.put(std::move(sFM_v));
+      evt.put(std::move(pfp_sFM_assn_v));
+      return;
     }
-    else{
-      std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
-      copyOpHitsInBeamWindow(opHitsARA, ophits_ara_h);
-      opHits.insert(opHits.end(),
-                    opHitsARA.begin(), opHitsARA.end());
-    }
-  }
 
+    std::vector<recob::OpHit> opHits(ophits_h->size());
+    copyOpHitsInBeamWindow(opHits, ophits_h);
 
-  std::vector<recob::OpHit> opHitsRght, opHitsLeft;
-  const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
-    makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
-  if(simpleFlashes.empty()){
-    mf::LogWarning("FlashPredict")
-      << "\nNo OpHits in beam window,"
-      << "\nor the integral is less or equal to " << fMinFlashPE << " or 0."
-      << "\nSkipping...";
-    bk.nullophittime++;
-    updateBookKeeping();
-    for(size_t pId=0; pId<pfps_h->size(); pId++) {
-      if(!pfps_h->at(pId).IsPrimary()) continue;
-      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                              Flash(kNoScrPE), Score(kNoOpHInEvt)));
-      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
+      art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
+      evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
+      if(!ophits_ara_h.isValid()) {
+        mf::LogError("FlashPredict")
+          << "Non valid ophits from ARAPUCAS"
+          << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
+          << "\nfOpHitARAProducer: " << fOpHitARAProducer;
+      }
+      else{
+        std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
+        copyOpHitsInBeamWindow(opHitsARA, ophits_ara_h);
+        opHits.insert(opHits.end(),
+                      opHitsARA.begin(), opHitsARA.end());
+      }
     }
-    evt.put(std::move(sFM_v));
-    evt.put(std::move(pfp_sFM_assn_v));
-    return;
-  }
+
+    std::vector<recob::OpHit> opHitsRght, opHitsLeft;
+    simpleFlashes = (fSBND) ? makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
+
+    if(simpleFlashes.empty()){
+      mf::LogWarning("FlashPredict")
+        << "\nNo OpHits in beam window,"
+        << "\nor the integral is less or equal to " << fMinFlashPE << " or 0."
+        << "\nSkipping...";
+      bk.nullophittime++;
+      updateBookKeeping();
+      for(size_t pId=0; pId<pfps_h->size(); pId++) {
+        if(!pfps_h->at(pId).IsPrimary()) continue;
+        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                                Flash(kNoScrPE), Score(kNoOpHInEvt)));
+        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      }
+      evt.put(std::move(sFM_v));
+      evt.put(std::move(pfp_sFM_assn_v));
+      return;
+    }
+  } // if UseOpFlash == false 
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
@@ -321,48 +331,96 @@ void FlashPredict::produce(art::Event& evt)
       continue;
     }
 
+    unsigned flashInVolume = 0;
+    // int nOpFlashes = 0; 
+    if (fUseOpFlashes){
+      art::Handle<std::vector<recob::OpFlash>> flash_tpc0_h, flash_tpc1_h; 
+      evt.getByLabel(fOpFlashProducer[0],flash_tpc0_h);
+      evt.getByLabel(fOpFlashProducer[1],flash_tpc1_h);
+      bool flash_in_tpc0 = !(flash_tpc0_h->empty());
+      bool flash_in_tpc1 = !(flash_tpc1_h->empty());
+      if (flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInBoth;
+      else if(flash_in_tpc0 && !flash_in_tpc1) flashInVolume = kActivityInRght;
+      else if(!flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInLeft; 
+      // nOpFlashes = flash_tpc0_h.size() + flash_tpc1_h.size(); 
+    }
+
     FlashMetrics flash = {};
     Score score = {std::numeric_limits<double>::max()};
     bool hits_ophits_concurrence = false;
-    for(auto& simpleFlash : simpleFlashes) {
-      unsigned ophsInVolume = simpleFlash.ophsInVolume;
-      if(hitsInVolume != ophsInVolume){
-        if(fSBND){
-          if(fForceConcurrence) continue;
-          else if((hitsInVolume < kActivityInBoth) &&
-                  (ophsInVolume < kActivityInBoth)) {
+    // bool hits_flash_concurrence = false;
+    if (!fUseOpFlashes){
+      for(auto& simpleFlash : simpleFlashes) {
+        unsigned ophsInVolume = simpleFlash.ophsInVolume;
+        if(hitsInVolume != ophsInVolume){
+          if(fSBND){
+            if(fForceConcurrence) continue;
+            else if((hitsInVolume < kActivityInBoth) &&
+                    (ophsInVolume < kActivityInBoth)) {
+              continue;
+            }
+          }
+          else if(fICARUS){
+            if((hitsInVolume < kActivityInBoth) &&
+              (ophsInVolume < kActivityInBoth)) {
+              continue;
+            }
+            else if(fForceConcurrence && hitsInVolume == kActivityInBoth) continue;
+          }
+        }
+        hits_ophits_concurrence = true;
+
+        unsigned flashUId = simpleFlash.ophsInVolume * 10 + simpleFlash.flashId;
+        bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
+        FlashMetrics flash_tmp = (mets_in_map) ?
+          flashMetricsMap[flashUId] : computeFlashMetrics(simpleFlash);
+        if(mets_in_map){
+          mf::LogDebug("FlashPredict")
+            << "Reusing metrics previously computed, for flashUId " << flashUId;
+        }
+        else
+          flashMetricsMap[flashUId] = flash_tmp;
+
+        Score score_tmp = computeScore(charge, flash_tmp, tpcWithHits, pfpPDGC);
+        if(score_tmp.total > 0. && score_tmp.total < score.total
+          && flash_tmp.metric_ok){
+          score = score_tmp;
+          flash = flash_tmp;
+        }
+      } // for simpleFlashes
+    }
+    else{
+      if (hitsInVolume != flashInVolume){
+        if (fSBND){
+          if (fForceConcurrence) continue;
+          else if ((hitsInVolume < kActivityInBoth) && 
+                   (flashInVolume < kActivityInBoth)) {
             continue;
           }
         }
-        else if(fICARUS){
-          if((hitsInVolume < kActivityInBoth) &&
-             (ophsInVolume < kActivityInBoth)) {
-            continue;
+      }
+      // hits_flash_concurrence = true;
+      int flash_counter = 0;
+      for (size_t i_tpc=0; i_tpc < 2; i_tpc++){
+        art::Handle<std::vector<recob::OpFlash>> flash_h;
+        evt.getByLabel(fOpFlashProducer[i_tpc], flash_h);
+        art::FindManyP<recob::OpHit> OpFlashToOpHitAssns(flash_h, evt, fOpFlashHitProducer[i_tpc]);
+        for (size_t i_flash = 0; i_flash < flash_h->size(); i_flash++){
+          flash_counter++; 
+          auto const& opflash = (*flash_h)[i_flash];
+          std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(i_flash);
+          FlashMetrics flash_tmp = computeOpFlashMetrics(opflash, ophit_v);
+          Score score_tmp = computeScore(charge, flash_tmp, tpcWithHits, pfpPDGC);
+          if(score_tmp.total > 0. && score_tmp.total < score.total
+            && flash_tmp.metric_ok){
+            score = score_tmp;
+            flash = flash_tmp;
           }
-          else if(fForceConcurrence && hitsInVolume == kActivityInBoth) continue;
-        }
-      }
-      hits_ophits_concurrence = true;
-
-      unsigned flashUId = simpleFlash.ophsInVolume * 10 + simpleFlash.flashId;
-      bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
-      FlashMetrics flash_tmp = (mets_in_map) ?
-        flashMetricsMap[flashUId] : computeFlashMetrics(simpleFlash);
-      if(mets_in_map){
-        mf::LogDebug("FlashPredict")
-          << "Reusing metrics previously computed, for flashUId " << flashUId;
-      }
-      else
-        flashMetricsMap[flashUId] = flash_tmp;
-
-      Score score_tmp = computeScore(charge, flash_tmp, tpcWithHits, pfpPDGC);
-      if(score_tmp.total > 0. && score_tmp.total < score.total
-         && flash_tmp.metric_ok){
-        score = score_tmp;
-        flash = flash_tmp;
-      }
-    } // for simpleFlashes
-    if(!hits_ophits_concurrence) {
+        } // opflash (per tpc) loop 
+      } // tpc loop 
+    } // using OpFlashes 
+    
+    if(!hits_ophits_concurrence && !fUseOpFlashes) {
       std::string extra_message = (!fForceConcurrence) ? "" :
         "\nConsider setting ForceConcurrence to false to lower requirements";
       mf::LogInfo("FlashPredict")
@@ -790,6 +848,152 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
       << "sum_unPE:     \t" << sum_unPE << "\n"
       // << "tpcWithHits:  \t" << tpcs << "\n"
       << "opHits size:  \t" << std::distance(opH_beg, opH_end) << "\n"
+      << "channels:     \t" << channels << std::endl;
+    return {};
+  }
+}
+
+FlashPredict::FlashMetrics FlashPredict::computeOpFlashMetrics(
+  const recob::OpFlash &opflash,
+  std::vector<art::Ptr<recob::OpHit>> ophit_v) const
+{
+  std::unique_ptr<TH1F> ophY = std::make_unique<TH1F>("ophY", "", fYBins, fYLow, fYHigh);
+  std::unique_ptr<TH1F> ophZ = std::make_unique<TH1F>("ophZ", "", fZBins, fZLow, fZHigh);
+
+  double peSumMax_wallX = 0; 
+
+  double sum = 0.;
+  double sum_PE = 0.;
+  double sum_PE2 = 0.;
+  double sum_unPE = 0.;
+  double sum_visARA_PE = 0.;
+  double sum_PE2Y  = 0.; double sum_PE2Z  = 0.;
+  double sum_PE2Y2 = 0.; double sum_PE2Z2 = 0.;
+
+  std::map<double, double> opdetX_PE {{-99999., 0.}};
+
+  for(auto oph : ophit_v){
+    int opChannel = oph->OpChannel();
+    auto& opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
+    auto opDetXYZ = opDet.GetCenter();
+
+    bool is_pmt_vis = false, is_ara_vis = false;
+    if(fSBND){// because VIS light
+      auto op_type = fPDMapAlgPtr->pdType(opChannel);
+      if(op_type == "pmt_uncoated") {
+        if(!fUseUncoatedPMT) continue;
+        is_pmt_vis = true, is_ara_vis = false;
+      }
+      else if(op_type == "xarapuca_vis" || op_type == "arapuca_vis") {
+        is_pmt_vis = false, is_ara_vis = true;
+        // if !fUseArapucas, they weren't loaded at all
+      }
+    }
+
+    double ophPE  = oph->PE();
+    double ophPE2 = ophPE * ophPE;
+    sum       += 1.0;
+    sum_PE    += ophPE;
+    sum_PE2   += ophPE2;
+    sum_PE2Y  += ophPE2 * opDetXYZ.Y();
+    sum_PE2Z  += ophPE2 * opDetXYZ.Z();
+    sum_PE2Y2 += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
+    sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
+
+    ophY->Fill(opDetXYZ.Y(), ophPE);
+    ophZ->Fill(opDetXYZ.Z(), ophPE);
+
+    if(fICARUS){
+      if(fUseOppVolMetric &&
+         std::abs(peSumMax_wallX-opDetXYZ.X()) > 5.) sum_unPE += ophPE;
+    }
+    else {// fSBND
+      if(fUseUncoatedPMT && is_pmt_vis) {
+        sum_unPE += ophPE;
+      }
+      else if(fUseARAPUCAS && is_ara_vis) {
+        sum_visARA_PE += ophPE;
+      }
+    }
+
+    double opdetX = fGeometry->OpDetGeoFromOpChannel(
+    oph->OpChannel()).GetCenter().X();
+    bool stored = false;
+    for(auto& m : opdetX_PE){
+      if(std::abs(m.first - opdetX) < 5.) {
+        m.second += ophPE2;
+        stored = true;
+        break;
+      }
+    }
+    if(!stored) opdetX_PE[opdetX] = ophPE2;
+  } // for opHits
+  auto maxIt = std::max_element(
+  opdetX_PE.begin(), opdetX_PE.end(),
+  [] (const auto& a, const auto& b) ->bool{return a.second < b.second;});
+  peSumMax_wallX = maxIt->first;
+
+  if (sum_PE > 0.) {
+    FlashMetrics flash;
+    flash.metric_ok = true;
+    flash.pe    = sum_PE;
+    flash.unpe  = sum_unPE;
+    flash.ratio = fOpDetNormalizer * flash.unpe / flash.pe;
+    if(fUseARAPUCAS) {
+      flash.unpe  += sum_visARA_PE;
+      flash.ratio = (fOpDetNormalizer * sum_unPE  + sum_visARA_PE ) / flash.pe;
+    }
+    flash.yb  = sum_PE2Y / sum_PE2;
+    flash.zb  = sum_PE2Z / sum_PE2;
+    flash.rr = std::sqrt(
+      std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (flash.yb * flash.yb + flash.zb * flash.zb)
+               - 2.0 * (flash.yb * sum_PE2Y + flash.zb * sum_PE2Z) ) / sum_PE2);
+    std::tie(flash.h_x, flash.h_xerr, flash.h_xrr, flash.h_xratio) =
+      hypoFlashX_H2(flash.rr, flash.ratio);
+
+    // TODO: using _hypo_x make further corrections to _flash_time to
+    // account for light transport time and/or rising edge
+    // double flash_time = timeCorrections(simpleFlash.maxpeak_time, hypo_x);
+    flash.time = opflash.AbsTime();
+    flash.x = peSumMax_wallX;
+    flash.x_gl = flashXGl(flash.h_x, flash.x);
+
+    flash.y_skew = ophY->GetSkewness();
+    flash.z_skew = ophZ->GetSkewness();
+    if(!std::isnan(flash.h_x)){
+      double y_correction = 0.;
+      double z_correction = 0.;
+      const double skew_threshold = 10.; // TODO: figure out best value
+      if(fSBND) {
+        y_correction = (std::abs(flash.y_skew)<skew_threshold) ?
+          flash.y_skew * flash.h_x*flash.h_x * fYBiasSlope : 0.;
+        z_correction = (std::abs(flash.z_skew)<skew_threshold) ?
+          flash.z_skew * flash.h_x*flash.h_x * fZBiasSlope : 0.;
+      }
+      else{// fICARUS
+        y_correction = (std::abs(flash.y_skew)<skew_threshold) ?
+          flash.y_skew * flash.h_x * fYBiasSlope : 0.;
+        z_correction =  (std::abs(flash.z_skew)<skew_threshold) ?
+          flash.z_skew * flash.h_x * fZBiasSlope : 0.;
+      }
+      flash.y = flash.yb - y_correction;
+      flash.z = flash.zb - z_correction;
+    }
+
+    return flash;
+  }
+  else {
+    std::string channels;
+    for(auto oph : ophit_v) channels += std::to_string(oph->OpChannel()) + ' ';
+    // std::string tpcs;
+    // for(auto itpc: tpcWithHits) tpcs += std::to_string(itpc) + ' ';
+    mf::LogError("FlashPredict")
+      << "Really odd that I landed here, this shouldn't had happen.\n"
+      << "sum:          \t" << sum << "\n"
+      << "sum_PE:       \t" << sum_PE << "\n"
+      << "sum_unPE:     \t" << sum_unPE << "\n"
+      // << "tpcWithHits:  \t" << tpcs << "\n"
+      // << "opHits size:  \t" << std::distance(opH_beg, opH_end) << "\n"
       << "channels:     \t" << channels << std::endl;
     return {};
   }
