@@ -332,7 +332,6 @@ void FlashPredict::produce(art::Event& evt)
     }
 
     unsigned flashInVolume = 0;
-    // int nOpFlashes = 0; 
     if (fUseOpFlashes){
       art::Handle<std::vector<recob::OpFlash>> flash_tpc0_h, flash_tpc1_h; 
       evt.getByLabel(fOpFlashProducer[0],flash_tpc0_h);
@@ -342,7 +341,6 @@ void FlashPredict::produce(art::Event& evt)
       if (flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInBoth;
       else if(flash_in_tpc0 && !flash_in_tpc1) flashInVolume = kActivityInRght;
       else if(!flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInLeft; 
-      // nOpFlashes = flash_tpc0_h.size() + flash_tpc1_h.size(); 
     }
 
     FlashMetrics flash = {};
@@ -399,7 +397,7 @@ void FlashPredict::produce(art::Event& evt)
           }
         }
       }
-      // hits_flash_concurrence = true;
+      hits_flash_concurrence = true;
       int flash_counter = 0;
       for (size_t i_tpc=0; i_tpc < 2; i_tpc++){
         art::Handle<std::vector<recob::OpFlash>> flash_h;
@@ -430,6 +428,18 @@ void FlashPredict::produce(art::Event& evt)
       sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
                               Flash(kNoScrPE), Score(kQNoOpHScr)));
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+      continue;
+    }
+    if(!hits_flash_concurrence && fUseOpFlashes) {
+      std::string extra_message = (!fForceConcurrence) ? "" :
+        "\nConsider setting ForceConcurrence to false to lower requirements";
+      mf::LogInfo("FlashPredict")
+        << "No OpFlash where there's charge. Skipping..." << extra_message;
+      // bk.no_oph_hits++;
+      // mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
+      // sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+      //                         Flash(kNoScrPE), Score(kQNoOpHScr)));
+      // util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
     else if(!flash.metric_ok){
