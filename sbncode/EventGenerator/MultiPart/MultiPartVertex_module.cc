@@ -209,28 +209,28 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     // Implementation of required member function here.
     auto geop = lar::providerFrom<geo::Geometry>();
     for(auto const& tpc_id : _tpc_v) {
-      assert(tpc_id.size() == 2);
-      size_t cid = tpc_id[0];
-      size_t tid = tpc_id[1];
-      auto const& cryostat = geop->Cryostat(cid);
-      assert(cryostat.HasTPC(tid));
+        assert(tpc_id.size() == 2);
+        size_t cid = tpc_id[0];
+        size_t tid = tpc_id[1];
+        auto const& cryostat = geop->Cryostat(cid);
+        assert(cryostat.HasTPC(tid));
 
-      auto const& tpc = cryostat.TPC(tid);
-      auto const& tpcabox = tpc.ActiveBoundingBox();
-      xmin = std::min(tpcabox.MinX(), xmin);
-      ymin = std::min(tpcabox.MinY(), ymin);
-      zmin = std::min(tpcabox.MinZ(), zmin);
-      xmax = std::max(tpcabox.MaxX(), xmax);
-      ymax = std::max(tpcabox.MaxY(), ymax);
-      zmax = std::max(tpcabox.MaxZ(), zmax);
+        auto const& tpc = cryostat.TPC(tid);
+        auto const& tpcabox = tpc.ActiveBoundingBox();
+        xmin = std::min(tpcabox.MinX(), xmin);
+        ymin = std::min(tpcabox.MinY(), ymin);
+        zmin = std::min(tpcabox.MinZ(), zmin);
+        xmax = std::max(tpcabox.MaxX(), xmax);
+        ymax = std::max(tpcabox.MaxY(), ymax);
+        zmax = std::max(tpcabox.MaxZ(), zmax);
 
-      if(_debug) {
-    std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
-              << " ... X " << xmin << " => " << xmax
-              << " ... Y " << ymin << " => " << ymax
-              << " ... Z " << zmin << " => " << zmax
-              << std::endl;
-      }
+        if(_debug) {
+            std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
+                      << " ... X " << xmin << " => " << xmax
+                      << " ... Y " << ymin << " => " << ymax
+                      << " ... Z " << zmin << " => " << zmax
+                      << std::endl;
+        }
     }
 
     // range register
@@ -254,10 +254,10 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     assert(_zrange[0] <= _zrange[1]);
 
     if(_debug>0) {
-      std::cout<<"Particle generation world boundaries..."<<std::endl
-           <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
-           <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
-           <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
+        std::cout<<"Particle generation world boundaries..."<<std::endl
+                <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
+                <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
+                <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
     }
 
 
@@ -321,14 +321,14 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
     // generate min multiplicity first
     std::vector<double> weight_v(_param_v.size(),0);
     for(size_t idx=0; idx<_param_v.size(); ++idx) {
-      weight_v[idx] = _param_v[idx].weight;
-      for(size_t ctr=0; ctr<_param_v[idx].multi[0]; ++ctr) {
-        result.push_back(idx);
-        gen_count_v[idx] += 1;
-        num_part -= 1;
-      }
-      if(gen_count_v[idx] >= _param_v[idx].multi[1])
-    weight_v[idx] = 0.;
+        weight_v[idx] = _param_v[idx].weight;
+        for(size_t ctr=0; ctr<_param_v[idx].multi[0]; ++ctr) {
+            result.push_back(idx);
+            gen_count_v[idx] += 1;
+            num_part -= 1;
+        }
+        if(gen_count_v[idx] >= _param_v[idx].multi[1])
+        weight_v[idx] = 0.;
     }
 
     assert(num_part >= 0);
@@ -363,14 +363,14 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
 
 void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
 
-  x = fFlatRandom->fire(_xrange[0],_xrange[1]);
-  y = fFlatRandom->fire(_yrange[0],_yrange[1]);
-  z = fFlatRandom->fire(_zrange[0],_zrange[1]);
+    x = fFlatRandom->fire(_xrange[0],_xrange[1]);
+    y = fFlatRandom->fire(_yrange[0],_yrange[1]);
+    z = fFlatRandom->fire(_zrange[0],_zrange[1]);
 
-  if(_debug>0) {
-    std::cout << "Generating a rain particle at ("
-          << x << "," << y << "," << z << ")" << std::endl;
-  }
+    if(_debug>0) {
+        std::cout << "Generating a rain particle at ("
+            << x << "," << y << "," << z << ")" << std::endl;
+    }
 }
 /*
 void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
@@ -424,17 +424,17 @@ void MultiPartVertex::GenMomentum(const PartGenParam& param, const double& mass,
 
     double mom_mag = sqrt(cet::square(tot_energy) - cet::square(mass));
 
-        /* Generating unit vector with uniform distribution
-         * in direction = over the sphere.
-         *
-         * It is sufficient to draw a normal variable in
-         * each direction and normalize.
-         *
-         * https://mathworld.wolfram.com/SpherePointPicking.html
-         */
+    /* Generating unit vector with uniform distribution
+     * in direction = over the sphere.
+     *
+     * It is sufficient to draw a normal variable in
+     * each direction and normalize.
+     *
+     * https://mathworld.wolfram.com/SpherePointPicking.html
+     */
 
-        std::array<double, 3U> p = extractDirection();
-        px = p[0]; py = p[1]; pz = p[2];
+    std::array<double, 3U> p = extractDirection();
+    px = p[0]; py = p[1]; pz = p[2];
 
     if(_debug>1)
         std::cout << "    Direction : (" << px << "," << py << "," << pz << ")" << std::endl
