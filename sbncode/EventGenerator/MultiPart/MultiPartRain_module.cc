@@ -415,15 +415,6 @@ void MultiPartRain::GenMomentum(const PartGenParam& param, const double& mass, d
      * https://mathworld.wolfram.com/SpherePointPicking.html
      */
 
-    /* Generating unit vector with uniform distribution
-     * in direction = over the sphere.
-     *
-     * It is sufficient to draw a normal variable in
-     * each direction and normalize.
-     *
-     * https://mathworld.wolfram.com/SpherePointPicking.html
-     */
-
     if(!param.direct_inward) {
       std::cout<<"No inward directioning..."<<std::endl;
       std::array<double, 3U> p = extractDirection();
