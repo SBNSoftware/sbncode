@@ -120,7 +120,6 @@ namespace caf
 
     srflash.time = flash.Time();
     srflash.timewidth = flash.TimeWidth();
-    srflash.PEs = std::vector<float> (flash.PEs().begin(), flash.PEs().end());
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
     // Sum over each wall, not very SBND-compliant
@@ -132,8 +131,8 @@ namespace caf
       if ( PMT <= 89 ) sumEast += flash.PEs().at(PMT + countingOffset);
       else sumWest += flash.PEs().at(PMT + countingOffset);
     }
-    srflash.chargeperwall[0] = sumEast;
-    srflash.chargeperwall[1] = sumWest;
+    srflash.peperwall[0] = sumEast;
+    srflash.peperwall[1] = sumWest;
 
     srflash.totalpe = flash.TotalPE();
     srflash.fasttototal = flash.FastToTotal();
