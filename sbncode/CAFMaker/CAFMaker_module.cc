@@ -1065,6 +1065,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   // Get all of the OpFlashes
+  std::vector<caf::SROpFlash> srflashes;
 
   for (const std::string& pandora_tag_suffix : pandora_tag_suffixes) {
     art::Handle<std::vector<recob::OpFlash>> flashes_handle;
@@ -1074,9 +1075,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
       int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
       for (const recob::OpFlash& flash : opflashes) {
-        rec.opflashes.emplace_back();
-        FillOpFlash(flash, cryostat, rec.opflashes.back());
-        rec.nopflashes++;
+        srflashes.emplace_back();
+        FillOpFlash(flash, cryostat, srflashes.back());
       }
     }
   }
@@ -1513,6 +1513,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.ncrt_hits       = srcrthits.size();
   rec.crt_tracks        = srcrttracks;
   rec.ncrt_tracks       = srcrttracks.size();
+  rec.opflashes       = srflashes;
+  rec.nopflashes      = srflashes.size();
   if (fParams.FillTrueParticles()) {
     rec.true_particles  = true_particles;
   }
