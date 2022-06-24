@@ -112,44 +112,42 @@ namespace caf
   }
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  int InputCryostat, 
+                  int cryo, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
 
     srflash.setDefault();
 
-    srflash.Time = flash.Time();
-    srflash.TimeWidth = flash.TimeWidth();
+    srflash.time = flash.Time();
+    srflash.timewidth = flash.TimeWidth();
     srflash.PEs = std::vector<float> (flash.PEs().begin(), flash.PEs().end());
-    srflash.Cryo = InputCryostat; // 0 in SBND, 0/1 for E/W in ICARUS
+    srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
     // Sum over each wall, not very SBND-compliant
     float sumEast = 0.;
     float sumWest = 0.;
     int countingOffset = 0;
-    if ( InputCryostat == 1 ) countingOffset += 180;
+    if ( cryo == 1 ) countingOffset += 180;
     for ( int PMT = 0 ; PMT < 180 ; PMT++ ) {
       if ( PMT <= 89 ) sumEast += flash.PEs().at(PMT + countingOffset);
       else sumWest += flash.PEs().at(PMT + countingOffset);
     }
-    srflash.PEsPerWall.push_back(sumEast);
-    srflash.PEsPerWall.push_back(sumWest);
+    srflash.chargeperwall[0] = sumEast;
+    srflash.chargeperwall[1] = sumWest;
 
-    srflash.TotalPE = flash.TotalPE();
-    srflash.FastToTotal = flash.FastToTotal();
-    srflash.OnBeamTime = flash.OnBeamTime();
+    srflash.totalpe = flash.TotalPE();
+    srflash.fasttototal = flash.FastToTotal();
+    srflash.onbeamtime = flash.OnBeamTime();
+
+    srflash.center.SetXYZ( -9999.f, flash.YCenter(), flash.ZCenter() );
+    srflash.width.SetXYZ( -9999.f, flash.YWidth(), flash.ZWidth() );
 
     // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
     // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
     if ( flash.hasXCenter() ) {
-      srflash.XCenter = flash.XCenter();
-      srflash.XWidth = flash.XWidth();
+      srflash.center.SetX( flash.XCenter() );
+      srflash.width.SetX( flash.XWidth() );
     }
-
-    srflash.YCenter = flash.YCenter();
-    srflash.YWidth = flash.YWidth();
-    srflash.ZCenter = flash.ZCenter();
-    srflash.ZWidth = flash.ZWidth();
   }
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)

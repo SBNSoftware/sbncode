@@ -169,7 +169,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  int InputCryostat,
+                  int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
 
