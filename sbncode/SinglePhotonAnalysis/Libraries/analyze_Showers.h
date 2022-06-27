@@ -1,24 +1,25 @@
 namespace single_photon
 {
 	void SinglePhoton::AnalyzeShowers(
+			std::vector<PandoraPFParticle> all_PPFPs,
 			const std::vector<art::Ptr<recob::Shower>>& showers,  
-			std::map<art::Ptr<recob::Shower>,
-			art::Ptr<recob::PFParticle>> & showerToPFParticleMap, 
-			std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap, 
-			std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap,
+//			std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap, 
+//			std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap, 
+//			std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap,
 			std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
-			std::map<int, double>& sliceIdToNuScoreMap,
-			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
-			std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
-			std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
-			PFParticleIdMap &pfParticleMap,
+//			std::map<int, double>& sliceIdToNuScoreMap,
+//			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+//			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
+//			std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
+//			std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
+//			PFParticleIdMap &pfParticleMap,
 			std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>>& PFPtoShowerReco3DMap,
 			double triggeroffset,
 			detinfo::DetectorPropertiesData const & theDetector
 			){
-
-        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
+//CHECK try to use all_PPFPs to get the correct nu score.
+		m_is_verbose= true;
+//        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
 
         m_reco_asso_showers=showers.size();
         int i_shr = 0;
@@ -28,11 +29,16 @@ namespace single_photon
         {
 
             const art::Ptr<recob::Shower> shower = *iter;
-            const art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap[shower];
+//            const art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap[shower];
+			//CHECK I think I can take care of all pfpmaps here;
+			PandoraPFParticle* ppfp = PPFP_GetPPFPFromShower(all_PPFPs, shower);
+
+			const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
+//			std::cout<<"CHECK SHower pfparticle "<<pfp->Self()<<" and "<<pfp2->Self()<<std::endl;
 
             art::Ptr<recob::Shower> shower3d;
             if(PFPtoShowerReco3DMap.count(pfp)==0){
-                std::cout<<"SHOWER_3D : <<ceCHECK!! No shower3d in map for this pfp"<<std::endl;
+                std::cout<<"SHOWER_3D : <<CHECK!! No shower3d in map for this pfp"<<std::endl;
                 std::cout<<"Reverting to normal recob::Shower"<<std::endl;
                 m_reco_shower3d_exists[i_shr] = 0;
                 shower3d = shower;
@@ -40,9 +46,11 @@ namespace single_photon
                 shower3d   = PFPtoShowerReco3DMap[pfp];
                 m_reco_shower3d_exists[i_shr] = 1;
             }
-            const std::vector<art::Ptr<recob::Hit>> hits =  pfParticleToHitMap[pfp];
-            const std::vector<art::Ptr<recob::Cluster>> clusters = pfParticleToClusterMap[pfp];
+//            const std::vector<art::Ptr<recob::Hit>> hits =  pfParticleToHitMap[pfp];
+//			const std::vector<art::Ptr<recob::Cluster>> clusters = pfParticleToClusterMap[pfp];
 
+            const std::vector<art::Ptr<recob::Hit>> hits =  ppfp->pHits;
+			const std::vector<art::Ptr<recob::Cluster>> clusters = ppfp->pClusters;
 
             //int m_shrid = shower->ID(); This is an used variable, always -999
             double m_length = shower->Length();
@@ -425,28 +433,40 @@ namespace single_photon
 
 
             m_reco_shower_num_daughters[i_shr] = pfp->NumDaughters();  //corresponding PFParticle
+			std::cout<<" CHECK numebr "<<m_reco_shower_num_daughters[i_shr]<<std::endl;
             if(m_reco_shower_num_daughters[i_shr]>0){
                 //currently just look at 1 daughter
-                m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+                //m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+				int pfp_size = all_PPFPs.size();
+				for(int index = 0; index < pfp_size; index++){
+					std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
+					" "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
+					if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
+					m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].pTrackScore;
+					break;
+				}
             }
 
 
             //------------and finally some slice info-----------------
 
-            m_reco_shower_sliceId[i_shr] = PFPToSliceIdMap[pfp];
-            m_reco_shower_nuscore[i_shr] = sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
-            m_reco_shower_isclearcosmic[i_shr] = PFPToClearCosmicMap[pfp];
-            m_reco_shower_is_nuslice[i_shr] = PFPToNuSliceMap[pfp];
-            //m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
-            //std::cout<<"m_reco_shower_is_nuslice[i_shr] = "<<m_reco_shower_is_nuslice[i_shr]<<" for shr with pfp "<<pfp->Self()<<std::endl; 
+            m_reco_shower_sliceId[i_shr] = ppfp->pSliceID;//PFPToSliceIdMap[pfp];
+            m_reco_shower_nuscore[i_shr] = ppfp->pNuScore;//sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
+            m_reco_shower_isclearcosmic[i_shr] = ppfp->pIsClearCosmic;//PFPToClearCosmicMap[pfp];
+            m_reco_shower_is_nuslice[i_shr] = ppfp->pIsNuSlice;//PFPToNuSliceMap[pfp];
+			//m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
+			//std::cout<<"m_reco_shower_is_nuslice[i_shr] = "<<m_reco_shower_is_nuslice[i_shr]<<" for shr with pfp "<<pfp->Self()<<std::endl; 
 
-            if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
-                m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
-                m_reco_shower_pfparticle_pdg[i_shr] = pfp->PdgCode();
-            } else{
-                m_reco_shower_trackscore[i_shr] = -999; 
-                m_reco_shower_pfparticle_pdg[i_shr] = -999;
-            }
+
+			m_reco_shower_trackscore[i_shr] = ppfp->pTrackScore;
+			m_reco_shower_pfparticle_pdg[i_shr] = ppfp->pPdgCode;
+           // if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
+           //     m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
+           //     m_reco_shower_pfparticle_pdg[i_shr] = pfp->PdgCode();
+           // } else{
+           //     m_reco_shower_trackscore[i_shr] = -999; 
+           //     m_reco_shower_pfparticle_pdg[i_shr] = -999;
+           // }
 
             if ( m_reco_shower_sliceId[i_shr] >0) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t On Shower: "<<i_shr<<". Pfp id = "<< pfp->Self()<<". The slice id for this shower is "<< m_reco_shower_sliceId[i_shr]<<", the neutrino score for this slice is "<< m_reco_shower_nuscore[i_shr]<<", and is_nuslice = "<<  m_reco_shower_is_nuslice[i_shr]<<". The track score is : "<< m_reco_shower_trackscore[i_shr]<<std::endl;
 
@@ -455,8 +475,6 @@ namespace single_photon
 
         //Lets sort and order the showers
         m_reco_shower_ordered_energy_index = sort_indexes(m_reco_shower_energy_max);
-
-        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers()\t||\t Finished."<<std::endl;;
     }
 
 

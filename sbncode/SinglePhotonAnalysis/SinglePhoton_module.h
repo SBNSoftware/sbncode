@@ -96,6 +96,7 @@
 #include <sys/stat.h>
 
 #include "HelperFunctions/helper_math.h"
+#include "HelperFunctions/helper_gadget.h"
 //#include "Libraries/Atlas.h"
 
 //#include "Libraries/bad_channel_matching.h"
@@ -109,6 +110,103 @@
 namespace single_photon
 {
 
+	//Create a class based on PFParticle, connected to other Pandora objects
+	//CHECK, blending this to the code; not active yet;
+	class PandoraPFParticle{
+
+	public:
+		//constructor:
+		PandoraPFParticle( 
+				art::Ptr<recob::PFParticle> input_PFParticle,
+				std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > input_MetaData,
+				std::vector< art::Ptr<recob::Vertex > > input_Vertex,
+				std::vector< art::Ptr<recob::Cluster> > input_Clusters,
+				std::vector< art::Ptr<recob::Shower > > input_Showers,
+				std::vector< art::Ptr<recob::Track  > > input_Tracks
+		)
+		:
+		pPFParticle(input_PFParticle),
+		pMetaData(input_MetaData),
+		pVertex(input_Vertex),
+		pClusters(input_Clusters)
+		{
+			pPFParticleID = pPFParticle->Self();
+			pPdgCode = pPFParticle->PdgCode();
+
+			//Get recob::Shower/Track
+			const unsigned int nShowers(input_Showers.size());
+			const unsigned int nTracks(input_Tracks.size());
+			if(nShowers+nTracks != 1) mf::LogDebug("SinglePhoton") << "  No just one shower/track is associated to PFParticle " << pPFParticleID << "\n";
+
+			pHasShower = nShowers;
+			pHasTrack = nTracks;
+			if(pHasShower == 1) pShower=input_Showers.front();
+			if(pHasTrack == 1)  pTrack=input_Tracks.front();
+
+			//set vertex
+			if (!pVertex.empty()){
+				const art::Ptr<recob::Vertex> vertex = * (pVertex.begin());
+				vertex->XYZ(pVertex_pos);
+			} 
+			//else{
+			//	throw art::Exception(art::errors::StdException)
+			//		<< " Pandor did not have an associated vertex for a particle. ";
+			//}
+
+
+			//(pVertex.begin()).XYZ(pVertex_pos);
+//			std::cout<<"CHECK Vertex position: ("<<pVertex_pos[0]<<","<<pVertex_pos[1]<<","<<pVertex_pos[2]<<")"<<std::endl;
+	
+			//get ancestor for a 1st generation PFParticle
+			if(pPFParticle->IsPrimary()){ 
+				pAncestor = pPFParticle;
+				pAncestorID = -1;
+			}
+
+			//fill in some booleans
+			for(auto &meta: pMetaData){
+				std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
+				if(propertiesmap.count("NuScore")==1) pNuScore = propertiesmap["NuScore"];
+				if(propertiesmap.count("TrackScore")==1) pTrackScore = propertiesmap["TrackScore"];
+				if(propertiesmap.count("IsNeutrino")==1) pIsNeutrino = true; 
+				if(propertiesmap.count("IsClearCosmic")==1) pIsClearCosmic = true; 
+			}
+
+		};
+
+		art::Ptr< recob::PFParticle > pPFParticle;//d
+		art::Ptr< recob::Shower>	pShower;//d with 0 or 1 element
+		art::Ptr< recob::Track >	pTrack;//d with 0 or 1 element
+		art::Ptr< recob::Slice >	pSlice;//d in helper_connector.h get the id from pSlice->key()
+		art::Ptr< recob::PFParticle > pAncestor;//d found by tracing Parent()
+		art::Ptr< simb::MCTruth >	pMCTruth;
+
+		std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > pMetaData;//d
+		std::vector< art::Ptr< recob::Vertex > > pVertex;//d
+		std::vector< art::Ptr< recob::Hit > >	pHits;//d
+		std::vector< art::Ptr< recob::Cluster > > pClusters;//d
+		std::vector< art::Ptr< recob::SpacePoint > > pSpacePoints;
+		std::vector< art::Ptr< simb::MCParticle > > pMCParticles;
+		
+		double pVertex_pos[3] = {-9999,-9999,-9999};//d
+
+		double pNuScore = -999 ;//d
+		double pTrackScore = -999;//d
+
+		bool pIsNeutrino = false;//d
+		bool pIsClearCosmic = false;//d
+		bool pIsNuSlice = false;//d
+		
+		int pHasShower = 0;//d
+		int pHasTrack = 0;//d
+		int pPdgCode = -999;//d
+		int pPFParticleID = -9;//d
+		int pAncestorID = -9;//d
+		int pSliceID = -9;//d
+	};
+
+
+	//this is for second_shower_search.h
     struct sss_score{
         int plane;
         int cluster_label;
@@ -151,13 +249,15 @@ namespace single_photon
         sss_score(int ip, int cl): plane(ip), cluster_label(cl){};
     }; //end of class sss_score
 
+	//this works with SEAview/SEAviewer.h
     class cluster {
 
         public:
 
             cluster(int ID, int plane, std::vector<std::vector<double>> &pts, std::vector<art::Ptr<recob::Hit>> &hits) 
 				:f_ID(ID), f_plane(plane), f_pts(pts), f_hits(hits) {
-
+				
+				std::cout<<"\n\n\nCHECK !! Do we need this?"<<std::endl;
                 f_npts = f_pts.size();
                 if(pts.size() != hits.size()){
                     std::cerr<<"seaviewer::cluster, input hits and pts not alligned"<<std::endl;
@@ -173,22 +273,22 @@ namespace single_photon
 
             };
 
-            int getID() {return f_ID;}
-            int getN() {return f_npts;}
-            int getPlane(){ return f_plane;}
-            TGraph * getGraph(){ return &f_graph;}
-            std::vector<art::Ptr<recob::Hit>>  getHits(){return f_hits;}
-            int setSSScore(sss_score & scorein){ f_SSScore = &scorein; return 0;}
-            sss_score * getSSScore(){return f_SSScore;}
-        private:
-
+//            int getID() {return f_ID;}
+//            int getN() {return f_npts;}
+//            int getPlane(){ return f_plane;}
+//            TGraph * getGraph(){ return &f_graph;}
+//            std::vector<art::Ptr<recob::Hit>>  getHits(){return f_hits;}
+//            int setSSScore(sss_score & scorein){ f_SSScore = &scorein; return 0;}
+//            sss_score * getSSScore(){return f_SSScore;}
+//        private:
+//
             int f_ID;
             int f_npts;
             int f_plane;
             std::vector<std::vector<double>> f_pts;
             std::vector<art::Ptr<recob::Hit>> f_hits;
             TGraph f_graph;
-            sss_score *f_SSScore;
+//            sss_score *f_SSScore;
     }; // end of class cluster
 
 
@@ -512,18 +612,18 @@ namespace single_photon
 			void CreateShowerBranches();  /* create branches for shower-related vec/vars in vertex_tree */
 
 	void AnalyzeShowers(
+			std::vector<PandoraPFParticle> all_PPFPs,
 			const std::vector<art::Ptr<recob::Shower>>& showers,  
-			std::map<art::Ptr<recob::Shower>,
-			art::Ptr<recob::PFParticle>> & showerToPFParticleMap, 
-			std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap, 
-			std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap,
+//			std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>> & showerToPFParticleMap, 
+//			std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitMap, 
+//			std::map<art::Ptr<recob::PFParticle>,  std::vector<art::Ptr<recob::Cluster>> > & pfParticleToClusterMap,
 			std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
-			std::map<int, double>& sliceIdToNuScoreMap,
-			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
-			std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
-			std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
-			PFParticleIdMap &pfParticleMap,
+//			std::map<int, double>& sliceIdToNuScoreMap,
+//			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+//			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap, 
+//			std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap, 
+//			std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
+//			PFParticleIdMap &pfParticleMap,
 			std::map<art::Ptr<recob::PFParticle>, art::Ptr<recob::Shower>>& PFPtoShowerReco3DMap,
 			double triggeroffset,
 			detinfo::DetectorPropertiesData const & theDetector

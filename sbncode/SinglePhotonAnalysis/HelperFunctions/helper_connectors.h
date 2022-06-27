@@ -27,6 +27,120 @@ namespace single_photon
 	//-------- Only use this once for now, potentially 13+ more lines can be saved --------
 
 
+
+	//of each PandoraPFParticle
+	//find pAncestor & pAncesotrID
+	void PPFP_FindAncestor ( std::vector< PandoraPFParticle > & PPFPs){
+
+		std::map< size_t, art::Ptr<recob::PFParticle>> pfParticleMap;
+		int pfp_size = PPFPs.size();
+		//build ID-PFParticle map;
+		for(int index = 0; index < pfp_size; index++){
+			PandoraPFParticle temp_pfp = PPFPs[index];
+			if (!pfParticleMap.insert(std::map< size_t, art::Ptr<recob::PFParticle>>::value_type((temp_pfp.pPFParticle)->Self(), temp_pfp.pPFParticle)).second){
+				throw cet::exception("SinglePhoton") << "  Unable to get PFParticle ID map, the input PFParticle collection has repeat IDs!";
+			}
+		}
+
+		//trace up parents
+		for(int jndex = 0; jndex < pfp_size; jndex++){
+			PandoraPFParticle temp_ppfp = PPFPs[jndex];
+			art::Ptr< recob::PFParticle > temp_pfp = PPFPs[jndex].pPFParticle;
+
+			temp_ppfp.pAncestorID = temp_pfp->Self();
+			temp_ppfp.pAncestor  = pfParticleMap[temp_pfp->Self()];
+			if(temp_pfp->IsPrimary()) continue;//skip PFP without parent is a parent of itself
+
+			while(!(temp_ppfp.pAncestor)->IsPrimary()){//1+ gen. parent
+
+				int temp_parent_id = temp_ppfp.pAncestor->Parent();
+				temp_ppfp.pAncestorID = temp_parent_id;
+				temp_ppfp.pAncestor  = pfParticleMap[temp_parent_id];
+				//			std::cout<<PPFPs[jndex].pPFParticleID<<" Trace up a generation parent "<<temp_parent_id<<std::endl;
+
+			}
+		}
+	}
+
+	//Fill pSlice, pHits, pSliceID
+	void PPFP_FindSliceIDandHits(std::vector< PandoraPFParticle > & PPFPs, art::Ptr< recob::Slice >  slice, const std::vector<art::Ptr<recob::PFParticle> > PFP_in_slice, const std::vector<art::Ptr<recob::Hit> > Hit_inslice){
+
+		int pfp_size = PPFPs.size();
+		for( auto pfp : PFP_in_slice){
+			for(int index = 0; index < pfp_size; index++){
+				//std::cout<<"CHECK slice match"<<(PPFPs[index].pPFParticle)->Self()<< " and "<<pfp->Self()<<std::endl;
+				if(PPFPs[index].pSliceID > -1 ) continue;//slice# is found already
+				if( (PPFPs[index].pPFParticle)->Self() == pfp->Self() ){
+					PPFPs[index].pSlice = slice;
+					PPFPs[index].pHits = Hit_inslice;
+					PPFPs[index].pSliceID = slice.key();
+					break;
+				}
+			}
+		}
+	}
+
+
+
+	PandoraPFParticle *PPFP_GetPPFPFromShower( std::vector< PandoraPFParticle > & PPFPs, art::Ptr<recob::Shower> pShower){
+		int pfp_size = PPFPs.size();
+		for(int index = 0; index < pfp_size; index++){
+			if(PPFPs[index].pHasShower != 1 ) continue;
+//			std::cout<<"CHECK Shower start "<<pShower->ShowerStart().X()<<" vs "<<PPFPs[index].pShower->ShowerStart().X()<<std::endl;
+			//CHECK, this works, but there maybe a better way;
+			if(pShower->ShowerStart() == PPFPs[index].pShower->ShowerStart()){
+				return &PPFPs[index];
+			}
+		}
+		std::cout<<"Error, no PFParticle matched to shower, returning the first element"<<std::endl;
+		return &PPFPs[0];
+	}
+
+	void DefineNuSlice(std::vector< PandoraPFParticle > & PPFPs){
+
+		int pfp_size = PPFPs.size();
+		std::map< int, double > temp_ID_nuscore_map;
+		double best_nuscore = 0;
+		int best_nuscore_SliceID = 0;
+
+		for(int index = 0; index < pfp_size; index++){
+			PandoraPFParticle temp_p = PPFPs[index];
+			if(temp_p.pIsNeutrino){
+
+				temp_ID_nuscore_map[ temp_p.pSliceID] = temp_p.pNuScore;
+				if(best_nuscore < temp_p.pNuScore){
+					best_nuscore = temp_p.pNuScore;
+					best_nuscore_SliceID = temp_p.pSliceID;
+					std::cout<<"CHECK Best nu score "<< best_nuscore<<std::endl;
+				}
+			}
+		}
+		//now markdown all particles in slice with best ID;
+		
+		for(int index = 0; index < pfp_size; index++){
+			PandoraPFParticle temp_p = PPFPs[index];
+			if( temp_p.pSliceID == best_nuscore_SliceID){
+				temp_p.pIsNuSlice = true;
+				std::cout<<"CHECK Set nu slice "<<temp_p.pSliceID<<std::endl;
+			}
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //----------- Below are migrated from Singlephoton_module.cc
     void SinglePhoton::GetVertex(const lar_pandora::PFParticlesToVertices &pfParticlesToVerticesMap, const art::Ptr<recob::PFParticle> & particle ){
 
@@ -124,9 +238,9 @@ namespace single_photon
 				if(found>0){
 					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not expected as in MicroBooNE but ok."<<std::endl;
 				}
-                found++,
+                found++;
 
-				std::cout<<"CHECK "<<pParticle->Self()<<"th PFParticle is reco. as neutrino w. pdg: "<<pdg<<std::endl;
+//				std::cout<<"CHECK "<<pParticle->Self()<<"th PFParticle is reco. as neutrino w. pdg: "<<pdg<<std::endl;
 				if(pParticle->Self() == fpfp_w_bestnuID){
 					std::cout<<"Take this PFParticle's vertex as event vertex, bc of it has highest nu score"<<std::endl;
 					this->GetVertex(pfParticlesToVerticesMap, pParticle );

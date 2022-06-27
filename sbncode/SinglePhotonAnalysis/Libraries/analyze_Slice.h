@@ -64,12 +64,13 @@ namespace single_photon
                         // std::cout << "  - " << it.first << " = " << it.second << std::endl;
                         if (it.first == "SliceIndex"){
                             temp_ind = it.second;
-                            // std::cout << "  - " << it.first << " = " << it.second << std::endl;
+                             std::cout << "  - SiceID " << it.first << " = " << it.second << std::endl;
                         }
                         //store the neutrino score for each slice
                         if (it.first == "NuScore"){
                             nuscore_slices.push_back(it.second);
                             temp_score = it.second;
+							std::cout<<__LINE__<<" CHECK !! "<<it.second<<std::endl;
                             //std::cout << "  - " << it.first << " = " << it.second << std::endl;
                             //if it's the neutrino score it also means it's the primary particle so save the pfp
                             //primary_pfps.push_back(pfp);
