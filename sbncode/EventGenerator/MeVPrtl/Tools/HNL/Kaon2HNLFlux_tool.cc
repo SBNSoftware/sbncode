@@ -66,6 +66,7 @@ private:
   double fMagUe4;
   double fMagUm4;
   double fTarget2Absorber;
+  double fMaxImportanceWeight;
   bool fKDAROnly;
 };
 
@@ -157,6 +158,7 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
   fMagUm4 = pset.get<double>("MagUm4");
   fMagUe4 = pset.get<double>("MagUe4");
   fTarget2Absorber = pset.get<double>("Target2Absorber", 72000);
+  fMaxImportanceWeight = pset.get<double>("MaxImportanceWeight", 100);
 
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
@@ -171,9 +173,9 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
 }
 
 double Kaon2HNLFlux::MaxWeight() { 
-  // Weight comes from the NuMi importance weight -- max is 100 (add in an epsilon)
+  // Weight comes from the flux file importance weight: Numi max is 100 (add in an epsilon), BNB gsimple flat at 1
   // Scale by the branching ratios here
-  return 100.0001 * std::max(BranchingRatio(fM, fMagUe4, false) / SMKaonBR(321), BranchingRatio(fM, fMagUm4, true) / SMKaonBR(321));
+  return fMaxImportanceWeight * std::max(BranchingRatio(fM, fMagUe4, false) / SMKaonBR(321), BranchingRatio(fM, fMagUm4, true) / SMKaonBR(321));
 }
 
 bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hnl, double &weight) {

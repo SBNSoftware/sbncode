@@ -9,19 +9,25 @@ sbnd_bnb_beam2detector_rotation: [ 1, 0, 0,
                                    0, 0, 1] #bnb to sbnd is in z-direction, only need a translation.
 
 sbnd_bnb_beam_origin: [-73.78, 0, -11000] # cm in deterctor frame
+#sbnd_bnb_beam_origin: [0, 0, 0, 73.78, 0, 11000] # cm in beam frame
 
 #sbnd detector in det frame
 sbnd_detector_box: [-200, 200, -200, 200, 0, 500] #cm
 
+sbnd_bnb_solid_angle_box: 1.3223e-3 #front face / detector distance ^2 = 4*4/110^2
+sbnd_bnb_solid_angle_cryostat: 0.0133 
+
+kaon_energy: 6 #GeV Max energy from kaon 
+
 bnb_kaon: {
   tool_type: BNBKaonGen
-  SearchPath: "/cvmfs/sbnd.osgstorage.org/pnfs/fnal.gov/usr/sbnd/persistent/stash/fluxFiles/bnb/BooNEtoGSimple/configH-v1/march2021/neutrinoMode/"
+  SearchPath: "/cvmfs/sbnd.osgstorage.org/pnfs/fnal.gov/usr/sbnd/persistent/stash/fluxFiles/bnb/BooNEtoGSimple/configI-v1/march2021/neutrinoMode/"
   FluxFiles: ["*.root"]
   TreeName: "flux"
   MetaTreeName: "meta"
   MaxFluxFileMB: 8192 # 8GB
   FluxCopyMethod: DIRECT
-  RandomizeFiles: true
+  RandomizeFiles: false
 }
 
 ray_trace_box: {
@@ -32,30 +38,24 @@ ray_trace_box: {
 
 rethrow_ray_trace_box: {
   tool_type: ReThrowRayTraceBox
-  # Volume: volCryostat
   Box: @local::sbnd_detector_box
-
-  #weight computation
-  ReferenceLabSolidAngle: 3.306e-4 
-  ReferenceKaonEnergy: 7 # GeV
+  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
+  ReferenceKaonEnergy: @local::kaon_energy
 }
 
 weighted_ray_trace_box: {
   tool_type: WeightedRayTraceBox
-  # Volume: volCryostat
   Box: @local::sbnd_detector_box
-
-  # weight computation
-  ReferenceLabSolidAngle: 3.306e-4
-  ReferenceKaonEnergy: 7. # GeV
+  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
+  ReferenceKaonEnergy: @local::kaon_energy 
 }
 
 mixedweight_ray_trace_box: {
   tool_type: MixedWeightRayTraceBox
   Box: @local::sbnd_detector_box
-  ReferenceLabSolidAngle: 3.306e-4 #solid angle for SBND @BNB: front face area / distance to target^2 = 4 / 110^2
+  ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_box
+  ReferenceKaonEnergy: @local::kaon_energy
   MaxWeightFudge: 2.
-  ReferenceKaonEnergy: 7 # GeV 
   NThrow: 250
   FixNSuccess: false
 }

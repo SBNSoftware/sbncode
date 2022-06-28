@@ -71,6 +71,7 @@ public:
 
   // Required functions.
   void analyze(const art::Event& e) override;
+  void endJob() override;
 
   ~MeVPrtlTestRayTrace() noexcept {}
 
@@ -119,6 +120,7 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
     simb::MCFlux kaon = fGenTool->GetNext();
 
     evgen::ldm::KaonParent kaonp(kaon);
+
     bool is_kaon = kaonp.kaon_pdg != 0;
 
     // (void) is_kaon;
@@ -188,5 +190,10 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
     break;
   }
 }
+
+void evgen::ldm::MeVPrtlTestRayTrace::endJob()
+{
+}
+
 
 DEFINE_ART_MODULE(evgen::ldm::MeVPrtlTestRayTrace)

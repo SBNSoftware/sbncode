@@ -3,6 +3,7 @@ BEGIN_PROLOG
 
 hnlM: 0.265
 
+#FLUX CONFIGS
 kaon2hnl: {
   tool_type: Kaon2HNLFlux
   M: @local::hnlM # GeV/c^2
@@ -10,6 +11,7 @@ kaon2hnl: {
   MagUm4: 1e-7
   KDAROnly: false
   Target2Absorber: 5000 #m decay horn length
+  MaxImportanceWeight: 1 #BNB gsimple flat weight at 1
 
   Beam2DetectorRotation: @local::sbnd_bnb_beam2detector_rotation
   BeamOrigin: @local::sbnd_bnb_beam_origin
@@ -18,31 +20,7 @@ kaon2hnl: {
   SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset  
 }
 
-decay_hnl: {
-  tool_type: HNLMakeDecay
-  Decays: ["mu_pi"]
-  Majorana: true
-  ReferenceUE4: 0
-  ReferenceUM4: 1e-7
-  ReferenceHNLMass: @local::hnlM
-  ReferenceRayLength: 7.549834e2 # sqrt(57) = 7.549834 = diagonal length of detector
-  ReferenceHNLEnergyFromKaonEnergy: 7. # GeV
-  MinDetectorDistance: 110e2 #110m
-}
-
-decay_hnl_dirac: {
-  tool_type: HNLMakeDecay
-  Decays: ["mu_pi"]
-  Majorana: true
-  ReferenceUE4: 0
-  ReferenceUM4: 1e-7
-  ReferenceHNLMass: @local::hnlM
-  ReferenceRayLength: 7.549834e2 # sqrt(57) = 7.549834 = diagonal length of detector
-  ReferenceHNLEnergyFromKaonEnergy: 7. # GeV
-  MinDetectorDistance: 110e2 #110m
-}
-
-# RayTrace configs
+# RAY TRACE CONFIGS
 mcraytrace: @local::rethrow_ray_trace_box
 mcraytrace.ReferencePrtlMass: @local::hnlM # GeV
 mcraytrace.ReferenceScndPDG: 13 # muon
@@ -56,61 +34,59 @@ mxdraytrace: @local::mixedweight_ray_trace_box
 mxdraytrace.ReferencePrtlMass: @local::hnlM # GeV
 mxdraytrace.ReferenceScndPDG: 13 # muon
 
-# KDAR configs
+
+#DECAY CONFIGS
+decay_hnl: {
+  tool_type: HNLMakeDecay
+  Decays: ["mu_pi"]
+  Majorana: true
+  ReferenceUE4: 0
+  ReferenceUM4: 1e-7
+  ReferenceHNLMass: @local::hnlM
+  ReferenceRayLength: 7.549834e2 # sqrt(57) = 7.549834 = diagonal length of detector
+  ReferenceHNLEnergyFromKaonEnergy: @local::kaon_energy
+  MinDetectorDistance: 110e2 #110m
+}
+
+# KDAR CONFIGS
 kaon2hnl_kdar: @local::kaon2hnl
 kaon2hnl_kdar.KDAROnly: true
 
 decay_hnl_kdar: @local::decay_hnl
 decay_hnl_kdar.ReferenceHNLEnergyFromKaonEnergy: 0.494
 
-mixedweight_ray_trace_box_kdar: @local::mixedweight_ray_trace_box
-mixedweight_ray_trace_box_kdar.ReferenceKaonEnergy: 0.494
+mxdraytrace_kdar: @local::mixedweight_ray_trace_box
+mxdraytrace_kdar.ReferenceKaonEnergy: 0.494
+mxdraytrace_kdar.ReferencePrtlMass: @local::hnlM # GeV
+mxdraytrace_kdar.ReferenceScndPDG: 13 # muon
 
+#FULL GEN CONFIGS
 hnl_gen: {
   module_type: MeVPrtlGen
   Deweight: false
-  Produce: true
+  Produce: false
   AnaOutput: true
   MesonGen: @local::bnb_kaon
   Flux: @local::kaon2hnl
   RayTrace: @local::mxdraytrace
+//  RayTrace: @local::wgtraytrace
   Decay: @local::decay_hnl
 }
-
-hnl_gen_dirac: {
-  module_type: MeVPrtlGen
-  Deweight: false
-  Produce: true
-  AnaOutput: true
-  MesonGen: @local::bnb_kaon
-  Flux: @local::kaon2hnl
-  RayTrace: @local::mxdraytrace
-  Decay: @local::decay_hnl_dirac
-}
+hnl_gen.MesonGen.SearchPath: "/cvmfs/sbnd.osgstorage.org/pnfs/fnal.gov/usr/sbnd/persistent/stash/fluxFiles/bnb/BooNEtoGSimple/configI-v1/october2021/neutrinoMode" #Bigger window than config H
+hnl_gen.RayTrace.Volume: "volCryostat" #Use Geometry Service instead 
+hnl_gen.RayTrace.Box: @erase
+hnl_gen.RayTrace.ReferenceLabSolidAngle: @local::sbnd_bnb_solid_angle_cryostat
 
 hnl_gen_kdar: {
   module_type: MeVPrtlGen
   Deweight: false
+  Produce: true
+  AnaOutput: true
   MesonGen: @local::bnb_kaon
   Flux: @local::kaon2hnl_kdar
-  RayTrace: @local::mixedweight_ray_trace_box_kdar
+  RayTrace: @local::mxdraytrace_kdar
   Decay: @local::decay_hnl_kdar
 }
-
-hnl_gen_kdar.RayTrace.ReferencePrtlMass: @local::hnlM # GeV
-hnl_gen_kdar.RayTrace.ReferenceScndPDG: 13 # muon
-
-
-hnl: @local::hnl_gen
-hnl.Deweight: false
-hnl.Produce: false
-hnl.AnaOutput: true
-
-hnl_dirac: @local::hnl_gen_dirac
-hnl.Deweight: false
-hnl.Produce: false
-hnl.AnaOutput: true
-
 
 hnl_test_raytrace: {
   module_type: MeVPrtlTestRayTrace
