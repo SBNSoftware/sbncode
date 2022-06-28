@@ -44,18 +44,17 @@ namespace single_photon
 
 		//trace up parents
 		for(int jndex = 0; jndex < pfp_size; jndex++){
-			PandoraPFParticle temp_ppfp = PPFPs[jndex];
 			art::Ptr< recob::PFParticle > temp_pfp = PPFPs[jndex].pPFParticle;
 
-			temp_ppfp.pAncestorID = temp_pfp->Self();
-			temp_ppfp.pAncestor  = pfParticleMap[temp_pfp->Self()];
+			PPFPs[jndex].pAncestorID = temp_pfp->Self();
+			PPFPs[jndex].pAncestor  = pfParticleMap[temp_pfp->Self()];
 			if(temp_pfp->IsPrimary()) continue;//skip PFP without parent is a parent of itself
 
-			while(!(temp_ppfp.pAncestor)->IsPrimary()){//1+ gen. parent
+			while(!(PPFPs[jndex].pAncestor)->IsPrimary()){//1+ gen. parent
 
-				int temp_parent_id = temp_ppfp.pAncestor->Parent();
-				temp_ppfp.pAncestorID = temp_parent_id;
-				temp_ppfp.pAncestor  = pfParticleMap[temp_parent_id];
+				int temp_parent_id = PPFPs[jndex].pAncestor->Parent();
+				PPFPs[jndex].pAncestorID = temp_parent_id;
+				PPFPs[jndex].pAncestor  = pfParticleMap[temp_parent_id];
 				//			std::cout<<PPFPs[jndex].pPFParticleID<<" Trace up a generation parent "<<temp_parent_id<<std::endl;
 
 			}
@@ -96,6 +95,7 @@ namespace single_photon
 		return &PPFPs[0];
 	}
 
+	//refill pNuScore and pIsNuSlice
 	void DefineNuSlice(std::vector< PandoraPFParticle > & PPFPs){
 
 		int pfp_size = PPFPs.size();
@@ -115,14 +115,15 @@ namespace single_photon
 				}
 			}
 		}
+
 		//now markdown all particles in slice with best ID;
-		
+		//re-set pNuScore and pIsNuSlice
 		for(int index = 0; index < pfp_size; index++){
-			PandoraPFParticle temp_p = PPFPs[index];
-			if( temp_p.pSliceID == best_nuscore_SliceID){
-				temp_p.pIsNuSlice = true;
-				std::cout<<"CHECK Set nu slice "<<temp_p.pSliceID<<std::endl;
-			}
+			if( PPFPs[index].pSliceID == best_nuscore_SliceID){
+				PPFPs[index].pIsNuSlice = true;
+				PPFPs[index].pNuScore = best_nuscore;//CHECK over-write the original score, if there is any;
+				std::cout<<"CHECK Set nu slice "<<PPFPs[index].pSliceID<<" with score "<<PPFPs[index].pNuScore<<std::endl;
+			}//CHECK, same event, different slices, still different score.
 		}
 	}
 
