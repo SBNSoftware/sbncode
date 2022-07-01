@@ -5,17 +5,20 @@
 
 namespace single_photon
 {
-    void SinglePhoton::AnalyzeTracks(const std::vector<art::Ptr<recob::Track>>& tracks,
-            std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToNuPFParticleMap,
-            std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitsMap, 
+    void SinglePhoton::AnalyzeTracks(
+			std::vector<PandoraPFParticle> all_PPFPs,
+			const std::vector<art::Ptr<recob::Track>>& tracks,
+//            std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToNuPFParticleMap,
+//            std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitsMap, 
             std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::SpacePoint>>> & pfParticleToSpacePointsMap, 
             std::map<int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap,
-            std::map<int, double> &sliceIdToNuScoreMap,
-            std::map<art::Ptr<recob::PFParticle>,bool> &PFPToClearCosmicMap,
-            std::map<art::Ptr<recob::PFParticle>, int> &PFPToSliceIdMap,
-            std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
-            std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
-            PFParticleIdMap &pfParticleMap){
+            std::map<int, double> &sliceIdToNuScoreMap
+//            std::map<art::Ptr<recob::PFParticle>,bool> &PFPToClearCosmicMap,
+//            std::map<art::Ptr<recob::PFParticle>, int> &PFPToSliceIdMap,
+//            std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
+//            std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
+//            PFParticleIdMap &pfParticleMap
+			){
 
 
         if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
@@ -38,9 +41,12 @@ namespace single_photon
         {
 
             const art::Ptr<recob::Track> track = *iter;
-            const art::Ptr<recob::PFParticle> pfp = trackToNuPFParticleMap[track];
+//            const art::Ptr<recob::PFParticle> pfp = trackToNuPFParticleMap[track];
+			PandoraPFParticle* ppfp = PPFP_GetPPFPFromTrack(all_PPFPs, track);
+			const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
+
             const std::vector< art::Ptr<recob::SpacePoint> > trk_spacepoints = pfParticleToSpacePointsMap[pfp];
-            const std::vector<art::Ptr<recob::Hit>> trk_hits  = pfParticleToHitsMap[pfp];
+            const std::vector<art::Ptr<recob::Hit>> trk_hits  = ppfp->pHits;//pfParticleToHitsMap[pfp];
 
             int m_trkid = track->ID();
             double m_length = track->Length();
@@ -132,31 +138,40 @@ namespace single_photon
             m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
             m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
 
-            m_reco_track_sliceId[i_trk] = PFPToSliceIdMap[pfp];
+            m_reco_track_sliceId[i_trk] = ppfp->pSliceID;//PFPToSliceIdMap[pfp];
 	    // Guanqun: how do you make sure the sliceId is positive, not -1, as for cosmic tracks?
 	    // sliceIdToNuScoreMap seems to only have sliceID:nuScore pairs for these with actual nuScores.
             m_reco_track_nuscore[i_trk] = sliceIdToNuScoreMap[ m_reco_track_sliceId[i_trk]] ;
-            m_reco_track_isclearcosmic[i_trk] = PFPToClearCosmicMap[pfp];
+            m_reco_track_isclearcosmic[i_trk] = ppfp->pIsClearCosmic;//PFPToClearCosmicMap[pfp];
 
             //std::cout<<"checking track nuslice"<<std::endl;
            // std::cout<<"is nuslice for track with pfp "<<pfp->Self()<<" is: "<<PFPToNuSliceMap[pfp]<<std::endl;
-            m_reco_track_is_nuslice[i_trk] = PFPToNuSliceMap[pfp];
+            m_reco_track_is_nuslice[i_trk] = ppfp->pIsNuSlice;//PFPToNuSliceMap[pfp];
 
             m_reco_track_num_daughters[i_trk] = pfp->NumDaughters();
             if(m_reco_track_num_daughters[i_trk]>0){
                 //currently just look at 1 daughter
-                m_reco_track_daughter_trackscore[i_trk] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+//                m_reco_track_daughter_trackscore[i_trk] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+				int pfp_size = all_PPFPs.size();
+				for(int index = 0; index < pfp_size; index++){
+					if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
+					m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].pTrackScore;
+					break;
+				}
+
             }
 
+			m_reco_track_trackscore[i_trk] = ppfp->pTrackScore;
+			m_reco_track_pfparticle_pdg[i_trk] = ppfp->pPdgCode;
 
           //  m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
-            if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
-                m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
-                m_reco_track_pfparticle_pdg[i_trk] = pfp->PdgCode();
-            } else{
-                m_reco_track_trackscore[i_trk] = -999; 
-                m_reco_track_pfparticle_pdg[i_trk] = -999; 
-            }
+//            if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
+//                m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
+//                m_reco_track_pfparticle_pdg[i_trk] = pfp->PdgCode();
+//            } else{
+//                m_reco_track_trackscore[i_trk] = -999; 
+//                m_reco_track_pfparticle_pdg[i_trk] = -999; 
+//            }
 
             //A loop over the trajectory points
             size_t const traj_size = track->CountValidPoints();

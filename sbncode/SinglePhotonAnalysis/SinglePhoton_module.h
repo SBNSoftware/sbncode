@@ -143,19 +143,12 @@ namespace single_photon
 			if(pHasShower == 1) pShower=input_Showers.front();
 			if(pHasTrack == 1)  pTrack=input_Tracks.front();
 
-			//set vertex
+			//fill the vertex info.
 			if (!pVertex.empty()){
 				const art::Ptr<recob::Vertex> vertex = * (pVertex.begin());
 				vertex->XYZ(pVertex_pos);
 			} 
-			//else{
-			//	throw art::Exception(art::errors::StdException)
-			//		<< " Pandor did not have an associated vertex for a particle. ";
-			//}
 
-
-			//(pVertex.begin()).XYZ(pVertex_pos);
-//			std::cout<<"CHECK Vertex position: ("<<pVertex_pos[0]<<","<<pVertex_pos[1]<<","<<pVertex_pos[2]<<")"<<std::endl;
 	
 			//get ancestor for a 1st generation PFParticle
 			if(pPFParticle->IsPrimary()){ 
@@ -576,14 +569,19 @@ namespace single_photon
 
             //----------------  Tracks ----------------------------
             /* @brief: analyze each reco track in vector 'tracks', and save info to track-related data members */
-            void AnalyzeTracks(const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & tracktopfparticlemap,
-                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitsMap,
-                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::SpacePoint>>> & pfparticletospacepointmap , std::map<int, art::Ptr<simb::MCParticle> > &  MCParticleToTrackIdMap, std::map<int, double> &sliceIdToNuScoreMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToClearCosmicMap,
-                    std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-                    std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
-                    PFParticleIdMap &pfParticleMap
+            void AnalyzeTracks(
+					std::vector<PandoraPFParticle> all_PPFPs,
+					const std::vector<art::Ptr<recob::Track>>& tracks, 
+//					std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & tracktopfparticlemap,
+//                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>>> & pfParticleToHitsMap,
+                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::SpacePoint>>> & pfparticletospacepointmap , 
+					std::map<int, art::Ptr<simb::MCParticle> > &  MCParticleToTrackIdMap, 
+					std::map<int, double> &sliceIdToNuScoreMap
+//                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToClearCosmicMap,
+//                    std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
+//                    std::map<art::Ptr<recob::PFParticle>,double> &PFPToTrackScoreMap,
+//                    std::map<art::Ptr<recob::PFParticle>,bool> &PFPToNuSliceMap,
+//                    PFParticleIdMap &pfParticleMap
                     );
 
             void ClearTracks();  /* clear track related variable and vectors */

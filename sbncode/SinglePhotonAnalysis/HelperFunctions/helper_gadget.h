@@ -5,8 +5,8 @@ namespace single_photon
 
 		std::vector<int> spacers;
 		for( size_t index = 0; index < headings.size(); index++){
-			std::cout<<headings[index]<<" ";
-			spacers.push_back( headings[index].size()+1 );
+			std::cout<<headings[index];
+			spacers.push_back( headings[index].size());
 		}
 		std::cout<<std::endl;
 		return spacers;

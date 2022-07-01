@@ -1,5 +1,5 @@
 #include "SinglePhoton_module.h"
-#include "HelperFunctions/helper_connectors.h" //now it can use variables defined in singlephoton.h
+#include "HelperFunctions/helper_processors.h" //now it can use variables defined in singlephoton.h
 #include "Libraries/init_branches.h"
 #include "Libraries/reco_truth_matching.h"
 //#include "analyze_Template.h"
@@ -375,7 +375,6 @@ namespace single_photon
         }
 
 		//CHECK, try the new class, Keng
-		std::vector<int> spacers = Printer_header({"pfpID", "Parent                ", "prim?","Vertex(x,  ","   y,      ",",      z  )", "    nu_score","nu?","cosmic?"});
 
 		std::vector<PandoraPFParticle> allPFParticles;
 		for(size_t index=0; index< pfParticleVector.size(); ++index){
@@ -405,17 +404,6 @@ namespace single_photon
 //					(temp_pf.pIsClearCosmic)?	std::cout<<"T"<<std::endl:std::cout<<"F"<<std::endl;
 					
 
-			Printer_content( 
-					{std::to_string(pfp->Self()), 
-					std::to_string(pfp->Parent()) , 
-					(pfp->IsPrimary())?"T":"F", 
-					std::to_string(temp_pf.pVertex_pos[0]),
-					std::to_string(temp_pf.pVertex_pos[1]),
-					std::to_string(temp_pf.pVertex_pos[2]),
-					std::to_string(temp_pf.pNuScore),
-					(temp_pf.pIsNeutrino)?"T":"F",
-					(temp_pf.pIsClearCosmic)?"T":"F" 
-					}, spacers);
 			allPFParticles.push_back(temp_pf);
 		}
 		PPFP_FindAncestor(allPFParticles);
@@ -874,7 +862,13 @@ namespace single_photon
         std::cout<<"\nSinglePhoton::analyze \t||\t Start on Track Analysis "<<std::endl;
 
         //found in analyze_Tracks.h
-        this->AnalyzeTracks(tracks, trackToNuPFParticleMap, pfParticleToHitsMap,  pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,  PFPToTrackScoreMap, PFPToNuSliceMap,pfParticleMap);
+        this->AnalyzeTracks(
+			allPFParticles, 
+			tracks, 
+//			trackToNuPFParticleMap, pfParticleToHitsMap,  
+			pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap
+//			PFPToClearCosmicMap,  PFPToSliceIdMap,  PFPToTrackScoreMap, PFPToNuSliceMap,pfParticleMap
+			);
         this->AnalyzeTrackCalo(tracks,   trackToCalorimetryMap);
 		
 
@@ -904,6 +898,32 @@ namespace single_photon
 		theDetector);
 
         std::cout<<"\nSinglePhoton::analyze \t||\t Finish Shower Analysis "<<std::endl;
+
+		std::cout<<std::endl;
+		std::cout<<"CHECK do a summary"<<std::endl;
+		std::vector<int> spacers = Printer_header({"pfpID", "Parent                ", "Vertex(x,  ","   y,      ",",      z  )", "slice","    nu_score","  trk_score"," prim?"," nu?"," cos?"," S#"," T#"});
+		for(size_t jndex=0; jndex< allPFParticles.size(); ++jndex){
+			PandoraPFParticle temp_pf = allPFParticles[jndex];
+			art::Ptr<recob::PFParticle> pfp = temp_pf.pPFParticle;
+
+			Printer_content( 
+					{std::to_string(pfp->Self()), 
+					std::to_string(pfp->Parent()) , 
+					std::to_string(temp_pf.pVertex_pos[0]),
+					std::to_string(temp_pf.pVertex_pos[1]),
+					std::to_string(temp_pf.pVertex_pos[2]),
+					std::to_string(temp_pf.pSliceID),
+					std::to_string(temp_pf.pNuScore),
+					std::to_string(temp_pf.pTrackScore),
+					(pfp->IsPrimary())?			"T":" ", 
+					(temp_pf.pIsNeutrino)?		"T":" ",
+					(temp_pf.pIsClearCosmic)?	"T":" ", 
+					(temp_pf.pHasShower>0)?		"1":" ",
+					(temp_pf.pHasTrack>0)?		"1":" "
+					}, spacers);
+
+		}
+
 //KENG no KalmanShowers in SBND?
 //		this->AnalyzeKalmanShowers(showers,showerToNuPFParticleMap,pfParticlesToShowerKalmanMap, kalmanTrackToCaloMap, pfParticleToHitsMap, theDetector);
 
@@ -949,7 +969,7 @@ namespace single_photon
 
             std::vector<art::Ptr<simb::GTruth>> gTruthVector;
             if(!m_is_textgen){
-
+				std::cout<<"CHECK Get some GTruth info."<<std::endl;
                 // if Text is in the generator label, skip it. TODO this is a bit simple but works, maybe add a boolean
                 art::ValidHandle<std::vector<simb::GTruth>> const & gTruthHandle= evt.getValidHandle<std::vector<simb::GTruth>>(m_generatorLabel);
                 art::fill_ptr_vector(gTruthVector,gTruthHandle);
