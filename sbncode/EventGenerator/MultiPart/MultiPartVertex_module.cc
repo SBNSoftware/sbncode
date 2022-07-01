@@ -26,6 +26,7 @@
 #include "TRandom.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SummaryData/RunData.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 
