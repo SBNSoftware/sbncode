@@ -27,13 +27,13 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
     linearRegression(traj, breakpoints[p], breakpoints[p+1], pcdir1);
     if (p>0) {
       if (segradlengths[p]<-100. || segradlengths[p-1]<-100.) {
-	dtheta.push_back(-999.);
-      } else { 
-	const double cosval = pcdir0.X()*pcdir1.X()+pcdir0.Y()*pcdir1.Y()+pcdir0.Z()*pcdir1.Z();
-	//assert(std::abs(cosval)<=1);
-	//units are mrad
-	double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
-	dtheta.push_back(dt);
+        dtheta.push_back(-999.);
+            } else { 
+        const double cosval = pcdir0.X()*pcdir1.X()+pcdir0.Y()*pcdir1.Y()+pcdir0.Z()*pcdir1.Z();
+        //assert(std::abs(cosval)<=1);
+        //units are mrad
+        double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
+        dtheta.push_back(dt);
       }
     }
     pcdir0 = pcdir1;
@@ -51,9 +51,9 @@ recob::MCSFitResult TrajectoryMCSFitter::fitMcs(const recob::TrackTrajectory& tr
   const ScanResult bwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenBwd, false, momDepConst, pid);
   //
   return recob::MCSFitResult(pid,
-			     fwdResult.p,fwdResult.pUnc,fwdResult.logL,
-			     bwdResult.p,bwdResult.pUnc,bwdResult.logL,
-			     segradlengths,dtheta);
+                            fwdResult.p,fwdResult.pUnc,fwdResult.logL,
+                            bwdResult.p,bwdResult.pUnc,bwdResult.logL,
+                            segradlengths,dtheta);
 }
 
 void TrajectoryMCSFitter::breakTrajInSegments(const recob::TrackTrajectory& traj, vector<size_t>& breakpoints, vector<float>& segradlengths, vector<float>& cumseglens) const {
@@ -116,7 +116,7 @@ const TrajectoryMCSFitter::ScanResult TrajectoryMCSFitter::doLikelihoodScan(std:
     for (int j=best_idx-1;j>=0;j--) {
       double dLL = vlogL[j]-vlogL[best_idx];
       if ( dLL<0.5 ) {
-	lunc = (best_idx-j)*pStep_;
+        lunc = (best_idx-j)*pStep_;
       } else break;
     }
   }
@@ -126,7 +126,7 @@ const TrajectoryMCSFitter::ScanResult TrajectoryMCSFitter::doLikelihoodScan(std:
     for (unsigned int j=best_idx+1;j<vlogL.size();j++) {
       double dLL = vlogL[j]-vlogL[best_idx];
       if ( dLL<0.5 ) {
-	runc = (j-best_idx)*pStep_;
+        runc = (j-best_idx)*pStep_;
       } else break;
     }
   }
