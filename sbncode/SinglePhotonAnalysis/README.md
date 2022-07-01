@@ -10,9 +10,12 @@ NEED INTRODUCTION HERE.
 * [Overview](#overview)
 * [Glossary](#glossary)
 
+---
 ## Quick Start
-`mrb i -j4` 
-`lar -c run_singlephoton_ub.fcl -s <input_reco2_sbnd_ROOT_FILE>`
+```
+mrb i -j4
+lar -c run_singlephoton_ub.fcl -s <input_reco2_sbnd_ROOT_FILE>
+```
 
 ## Update Log
 The module does not work out of the box, so there are some modifications to make it fit into the SBND.
@@ -29,12 +32,7 @@ The module does not work out of the box, so there are some modifications to make
 |3dShowers| Available | Unavailable|
 
 
-
-
-
-### Code adjustments
-
-
+---
 ## Overview
 
 Three sub-modules are included in the Single Photon Analysis Module:
@@ -149,8 +147,16 @@ Below alias auto-configured by default
 |Shower3DLabel|`recob::Shower`(`art::FindOneP`)|pandoraShower|
 
 
+---
 ## Glossary
 
-### Parameters in FHiCl
+### Parameters in FHiCL
 
 ### Variables
+
+In `TTree vertex_tree`, variables prefix have the following meaning:
+- `sss_*` 
+- `trackstub_*` 
+- `reco_*` 
+- `sim_*` 
+- `mctruth_*` 
