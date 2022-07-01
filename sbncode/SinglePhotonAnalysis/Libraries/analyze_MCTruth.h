@@ -12,6 +12,9 @@ namespace single_photon
         }
 
         //one mctruth per event.  contains list of all particles 
+
+		std::cout<<std::endl;
+		std::vector<int> spacers = Printer_header({"NuPdg","CC=0","TruthVertex(x,","   y,      ",",      z  )"});
         for(int i=0; i<std::min(1,m_mctruth_num); i++){
             const art::Ptr<simb::MCTruth> truth = mcTruthVector[i];
 //			std::cout<<"\nCHECK THIS MCTruth!! "<<*truth<<std::endl;
@@ -51,7 +54,16 @@ namespace single_photon
                 m_mctruth_nu_vertex_y = corrected[1];
                 m_mctruth_nu_vertex_z = corrected[2];
                 m_mctruth_reco_vertex_dist = sqrt(pow (m_mctruth_nu_vertex_x-m_vertex_pos_x,2)+pow (m_mctruth_nu_vertex_y-m_vertex_pos_y,2)+pow (m_mctruth_nu_vertex_z-m_vertex_pos_z,2));
-            
+
+		//std::vector<int> spacers = Printer_header({"NuPdg","CC=0","TruthVertex(x,","   y,      ",",      z  )"});
+				Printer_content(
+					{std::to_string(m_mctruth_nu_pdg),
+					std::to_string(m_mctruth_ccnc),
+					std::to_string(corrected[0]),
+					std::to_string(corrected[1]),
+					std::to_string(corrected[2])
+					},spacers);
+
             }
 
 

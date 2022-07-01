@@ -87,13 +87,29 @@ namespace single_photon
 			if(PPFPs[index].pHasShower != 1 ) continue;
 //			std::cout<<"CHECK Shower start "<<pShower->ShowerStart().X()<<" vs "<<PPFPs[index].pShower->ShowerStart().X()<<std::endl;
 			//CHECK, this works, but there maybe a better way;
-			if(pShower->ShowerStart() == PPFPs[index].pShower->ShowerStart()){
+			if((pShower->ShowerStart() == PPFPs[index].pShower->ShowerStart())
+			&& (pShower->Direction() == PPFPs[index].pShower->Direction())){
 				return &PPFPs[index];
 			}
 		}
 		std::cout<<"Error, no PFParticle matched to shower, returning the first element"<<std::endl;
 		return &PPFPs[0];
 	}
+
+	PandoraPFParticle *PPFP_GetPPFPFromTrack( std::vector< PandoraPFParticle > & PPFPs, art::Ptr<recob::Track> pTrack){
+		int pfp_size = PPFPs.size();
+		for(int index = 0; index < pfp_size; index++){
+			if(PPFPs[index].pHasTrack != 1 ) continue;
+			if((pTrack->StartDirection() == PPFPs[index].pTrack->StartDirection())
+			&& (pTrack->EndDirection() == PPFPs[index].pTrack->EndDirection())){
+				return &PPFPs[index];
+			}
+		}
+		std::cout<<"Error, no PFParticle matched to track, returning the first element"<<std::endl;
+		return &PPFPs[0];
+	}
+
+
 
 	//refill pNuScore and pIsNuSlice
 	void DefineNuSlice(std::vector< PandoraPFParticle > & PPFPs){
@@ -111,7 +127,7 @@ namespace single_photon
 				if(best_nuscore < temp_p.pNuScore){
 					best_nuscore = temp_p.pNuScore;
 					best_nuscore_SliceID = temp_p.pSliceID;
-					std::cout<<"CHECK Best nu score "<< best_nuscore<<std::endl;
+					std::cout<<__FUNCTION__<<"CHECK Best nu score "<< best_nuscore<<" at slice "<<temp_p.pSliceID<<std::endl;
 				}
 			}
 		}
@@ -122,7 +138,7 @@ namespace single_photon
 			if( PPFPs[index].pSliceID == best_nuscore_SliceID){
 				PPFPs[index].pIsNuSlice = true;
 				PPFPs[index].pNuScore = best_nuscore;//CHECK over-write the original score, if there is any;
-				std::cout<<"CHECK Set nu slice "<<PPFPs[index].pSliceID<<" with score "<<PPFPs[index].pNuScore<<std::endl;
+				std::cout<<__FUNCTION__<<" CHECK Set nu slice "<<PPFPs[index].pSliceID<<" with score "<<PPFPs[index].pNuScore<<std::endl;
 			}//CHECK, same event, different slices, still different score.
 		}
 	}
@@ -168,7 +184,7 @@ namespace single_photon
                 m_vertex_pos_x = xyz[0];
                 m_vertex_pos_y = xyz[1];
                 m_vertex_pos_z = xyz[2];
-				std::cout<<"CHECK Vertex position: ("<<xyz[0]<<","<<xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+//				std::cout<<"CHECK Vertex position: ("<<xyz[0]<<","<<xyz[1]<<","<<xyz[2]<<")"<<std::endl;
                 std::vector<double> tmp = {xyz[0],xyz[1],xyz[2]};
                 m_reco_vertex_in_SCB = this->distToSCB(m_reco_vertex_dist_to_SCB,tmp);
                 m_reco_vertex_dist_to_active_TPC =  this->distToTPCActive(tmp);
@@ -237,7 +253,7 @@ namespace single_photon
             // If it is, lets get the vertex position
             if(isNeutrino){
 				if(found>0){
-					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not expected as in MicroBooNE but ok."<<std::endl;
+//					std::cout<<"CHECK WARNING we have more than 1 neutrinos here, not expected as in MicroBooNE but ok."<<std::endl;
 				}
                 found++;
 
