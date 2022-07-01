@@ -1,7 +1,7 @@
 # SinglePhotonModule 
 Ported from `ubana` in suite `uboonecode v08_00_00_43 e17:prof` in Mar. 2022
 
-The original code can be found [here](https://cdcvs.fnal.gov/redmine/projects/ubana/repository?utf8=%E2%9C%93&rev=feature%2Fmarkross_Nov2021_merge)
+The original code can be found at [ubana](https://cdcvs.fnal.gov/redmine/projects/ubana/repository?utf8=%E2%9C%93&rev=feature%2Fmarkross_Nov2021_merge)
 
 NEED INTRODUCTION HERE.
 
@@ -14,14 +14,16 @@ NEED INTRODUCTION HERE.
 ## Quick Start
 ```
 mrb i -j4
-lar -c run_singlephoton_ub.fcl -s <input_reco2_sbnd_ROOT_FILE>
+lar -c run_singlephoton_sbnd.fcl -s <input_reco2_sbnd_ROOT_FILE>
 ```
 
 ## Update Log
 The module does not work out of the box, so there are some modifications to make it fit into the SBND.
 
-- New electric gains for SBND MC, see SBN-doc-19505-v1;
--  
+- New electric gains for SBND MC at `singlephoton_sbnd.fcl`, see SBN-doc-19505-v1;
+- Update on geometry variables such as ...
+- Disable Kalman dEdx variables
+- Disable Second Shower Search 3D (`sss3d`) variables
 
 
 ### Pandora features updates
@@ -29,7 +31,8 @@ The module does not work out of the box, so there are some modifications to make
 |---|---|---|
 |Neutrino Slice|One nu slice in each event | Multiple nu slices in each event|
 |Kalman Fitter| In-use | Not in-use|
-|3dShowers| Available | Unavailable|
+|3dShowers Objects| Available | Unavailable|
+|MVA Method|Support Vector Machines|Boosted Decision Trees|
 
 
 ---
@@ -47,7 +50,7 @@ Three sub-modules are included in the Single Photon Analysis Module:
 
 - `jobs/` contains FHiCL files for running these modules
 
-- `HelperFunctions` contains some useful functions to simplify the code
+- `HelperFunctions/` contains some useful functions to simplify the code
 
 ### Headers structure
 
