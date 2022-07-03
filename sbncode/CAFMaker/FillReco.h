@@ -18,6 +18,7 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Vertex.h"
 #include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -165,6 +166,11 @@ namespace caf
   void FillCRTTrack(const sbn::crt::CRTTrack &track,
                   bool use_ts0,
                   caf::SRCRTTrack &srtrack,
+                  bool allowEmpty = false);
+
+  void FillOpFlash(const recob::OpFlash &flash,
+                  int cryo,
+                  caf::SROpFlash &srflash,
                   bool allowEmpty = false);
 
   template<class T, class U>
