@@ -14,9 +14,6 @@ namespace single_photon
 
 	void Printer_content( std::vector< std::string > nums, std::vector<int> spacers){
 
-		//		std::cout<<"CHECK "<<std::endl;
-		//		std::cout<<"CHECK size "<<nums.size()<<std::endl;
-		//		std::cout<<"CHECK size2 "<<spacers.size()<<std::endl;
 		if(nums.size() != spacers.size()) {
 			std::cout<<"CANNOT PRINT!"<<std::endl;
 			return;
@@ -27,6 +24,5 @@ namespace single_photon
 		}
 		std::cout<<std::endl;
 	}
-
 
 }

@@ -447,7 +447,7 @@ namespace single_photon
 //					std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
 //					" "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
 					if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-					m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].pTrackScore;
+					m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
 					break;
 				}
             }
@@ -455,16 +455,16 @@ namespace single_photon
 
             //------------and finally some slice info-----------------
 
-            m_reco_shower_sliceId[i_shr] = ppfp->pSliceID;//PFPToSliceIdMap[pfp];
-            m_reco_shower_nuscore[i_shr] = ppfp->pNuScore;//sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
-            m_reco_shower_isclearcosmic[i_shr] = ppfp->pIsClearCosmic;//PFPToClearCosmicMap[pfp];
-            m_reco_shower_is_nuslice[i_shr] = ppfp->pIsNuSlice;//PFPToNuSliceMap[pfp];
+            m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+            m_reco_shower_nuscore[i_shr] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
+            m_reco_shower_isclearcosmic[i_shr] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
+            m_reco_shower_is_nuslice[i_shr] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 			//m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
 			//std::cout<<"m_reco_shower_is_nuslice[i_shr] = "<<m_reco_shower_is_nuslice[i_shr]<<" for shr with pfp "<<pfp->Self()<<std::endl; 
 
 
-			m_reco_shower_trackscore[i_shr] = ppfp->pTrackScore;
-			m_reco_shower_pfparticle_pdg[i_shr] = ppfp->pPdgCode;
+			m_reco_shower_trackscore[i_shr] = ppfp->get_TrackScore();
+			m_reco_shower_pfparticle_pdg[i_shr] = ppfp->get_PdgCode();
            // if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
            //     m_reco_shower_trackscore[i_shr] = PFPToTrackScoreMap[pfp];
            //     m_reco_shower_pfparticle_pdg[i_shr] = pfp->PdgCode();

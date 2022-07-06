@@ -1,7 +1,7 @@
 # SinglePhotonModule 
 Ported from `ubana` in suite `uboonecode v08_00_00_43 e17:prof` in Mar. 2022
 
-The original code can be found at [ubana](https://cdcvs.fnal.gov/redmine/projects/ubana/repository?utf8=%E2%9C%93&rev=feature%2Fmarkross_Nov2021_merge)
+The original code can be found at [Fermilab Readmine](https://cdcvs.fnal.gov/redmine/projects/ubana/repository?utf8=%E2%9C%93&rev=feature%2Fmarkross_Nov2021_merge)
 
 NEED INTRODUCTION HERE.
 
@@ -20,11 +20,15 @@ lar -c run_singlephoton_sbnd.fcl -s <input_reco2_sbnd_ROOT_FILE>
 ## Update Log
 The module does not work out of the box, so there are some modifications to make it fit into the SBND.
 
-- New electric gains for SBND MC at `singlephoton_sbnd.fcl`, see SBN-doc-19505-v1;
-- Update on geometry variables such as ...
-- Disable Kalman dEdx variables
-- Disable Second Shower Search 3D (`sss3d`) variables
+- June 2022
+	- New electric gains for SBND MC at `singlephoton_sbnd.fcl`, see SBN-doc-19505-v1;
+	- Update the neutrino slice definition in the `Single Photon` module.
+	- Update on geometry variables such as, `reco_*_dist_to_CathodePlane`
+	- Disable Kalman dEdx variables
+	- Disable Second Shower Search 3D (`sss3d`) variables
+	- Adapate SBND FHiCLs for filters: `NCRadiativeResonant` and `NCDeltaRadiative`
 
+These updates are to accommodate the change of Pandora features listed below:
 
 ### Pandora features updates
 |Items|Pandora @ MicroBooNE|Pandora @ SBND|
@@ -32,7 +36,7 @@ The module does not work out of the box, so there are some modifications to make
 |Neutrino Slice|One nu slice in each event | Multiple nu slices in each event|
 |Kalman Fitter| In-use | Not in-use|
 |3dShowers Objects| Available | Unavailable|
-|MVA Method|Support Vector Machines|Boosted Decision Trees|
+|MVA Method (for track/neutrino scores)|Support Vector Machines|Boosted Decision Trees|
 
 
 ---

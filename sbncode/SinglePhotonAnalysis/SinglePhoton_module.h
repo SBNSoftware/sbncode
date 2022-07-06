@@ -97,7 +97,6 @@
 
 #include "HelperFunctions/helper_math.h"
 #include "HelperFunctions/helper_gadget.h"
-//#include "Libraries/Atlas.h"
 
 //#include "Libraries/bad_channel_matching.h"
 #include "Libraries/DBSCAN.h"
@@ -114,21 +113,39 @@ namespace single_photon
 	//CHECK, blending this to the code; not active yet;
 	class PandoraPFParticle{
 
-	public:
-		//constructor:
-		PandoraPFParticle( 
-				art::Ptr<recob::PFParticle> input_PFParticle,
-				std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > input_MetaData,
-				std::vector< art::Ptr<recob::Vertex > > input_Vertex,
-				std::vector< art::Ptr<recob::Cluster> > input_Clusters,
-				std::vector< art::Ptr<recob::Shower > > input_Showers,
-				std::vector< art::Ptr<recob::Track  > > input_Tracks
-		)
-		:
-		pPFParticle(input_PFParticle),
-		pMetaData(input_MetaData),
-		pVertex(input_Vertex),
-		pClusters(input_Clusters)
+		private:
+			double pVertex_pos[3] = {-9999,-9999,-9999};//d
+
+			double pNuScore = -999 ;//d
+			double pTrackScore = -999;//d
+
+			bool pIsNeutrino = false;//d
+			bool pIsClearCosmic = false;//d
+			bool pIsNuSlice = false;//d it is defined in the DefineNuSlice() function.
+
+			int pHasShower = 0;//d
+			int pHasTrack = 0;//d
+			int pPdgCode = -999;//d
+			int pPFParticleID = -9;//d
+			int pAncestorID = -9;//d
+			int pSliceID = -9;//d
+
+
+		public:
+			//constructor:
+			PandoraPFParticle( 
+					art::Ptr<recob::PFParticle> input_PFParticle,
+					std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > input_MetaData,
+					std::vector< art::Ptr<recob::Vertex > > input_Vertex,
+					std::vector< art::Ptr<recob::Cluster> > input_Clusters,
+					std::vector< art::Ptr<recob::Shower > > input_Showers,
+					std::vector< art::Ptr<recob::Track  > > input_Tracks
+					)
+				:
+					pPFParticle(input_PFParticle),
+					pMetaData(input_MetaData),
+					pVertex(input_Vertex),
+					pClusters(input_Clusters)
 		{
 			pPFParticleID = pPFParticle->Self();
 			pPdgCode = pPFParticle->PdgCode();
@@ -149,7 +166,7 @@ namespace single_photon
 				vertex->XYZ(pVertex_pos);
 			} 
 
-	
+
 			//get ancestor for a 1st generation PFParticle
 			if(pPFParticle->IsPrimary()){ 
 				pAncestor = pPFParticle;
@@ -167,36 +184,68 @@ namespace single_photon
 
 		};
 
-		art::Ptr< recob::PFParticle > pPFParticle;//d
-		art::Ptr< recob::Shower>	pShower;//d with 0 or 1 element
-		art::Ptr< recob::Track >	pTrack;//d with 0 or 1 element
-		art::Ptr< recob::Slice >	pSlice;//d in helper_connector.h get the id from pSlice->key()
-		art::Ptr< recob::PFParticle > pAncestor;//d found by tracing Parent()
-		art::Ptr< simb::MCTruth >	pMCTruth;
+			art::Ptr< recob::PFParticle > pPFParticle;//d
+			art::Ptr< recob::Shower>	pShower;//d with 0 or 1 element
+			art::Ptr< recob::Track >	pTrack;//d with 0 or 1 element
+			art::Ptr< recob::Slice >	pSlice;//d in helper_connector.h get the id from pSlice->key()
+			art::Ptr< recob::PFParticle > pAncestor;//d found by tracing Parent()
+			art::Ptr< simb::MCTruth >	pMCTruth;
 
-		std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > pMetaData;//d
-		std::vector< art::Ptr< recob::Vertex > > pVertex;//d
-		std::vector< art::Ptr< recob::Hit > >	pHits;//d
-		std::vector< art::Ptr< recob::Cluster > > pClusters;//d
-		std::vector< art::Ptr< recob::SpacePoint > > pSpacePoints;
-		std::vector< art::Ptr< simb::MCParticle > > pMCParticles;
-		
-		double pVertex_pos[3] = {-9999,-9999,-9999};//d
+			std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > pMetaData;//d
+			std::vector< art::Ptr< recob::Vertex > > pVertex;//d
+			std::vector< art::Ptr< recob::Hit > >	pHits;//d
+			std::vector< art::Ptr< recob::Cluster > > pClusters;//d
+			std::vector< art::Ptr< recob::SpacePoint > > pSpacePoints;
+			std::vector< art::Ptr< simb::MCParticle > > pMCParticles;
 
-		double pNuScore = -999 ;//d
-		double pTrackScore = -999;//d
 
-		bool pIsNeutrino = false;//d
-		bool pIsClearCosmic = false;//d
-		bool pIsNuSlice = false;//d
-		
-		int pHasShower = 0;//d
-		int pHasTrack = 0;//d
-		int pPdgCode = -999;//d
-		int pPFParticleID = -9;//d
-		int pAncestorID = -9;//d
-		int pSliceID = -9;//d
+			//set methods
+			void set_NuScore (const double input_score){ pNuScore = input_score; }
+			void set_TrackScore (const double input_score){ pTrackScore = input_score; }
+
+			void set_IsNeutrino (const bool input_bool){ pIsNeutrino = input_bool; }
+			void set_IsClearCosmic (const bool input_bool){ pIsClearCosmic = input_bool; }
+			void set_IsNuSlice (const bool input_bool){ pIsNuSlice = input_bool; }
+
+			void set_HasShower (const int input_number){ pHasShower = input_number; }
+			void set_HasTrack (const int input_number){ pHasTrack = input_number; }
+			void set_PdgCode (const int input_number){ pPdgCode = input_number; }
+			void set_PFParticleID (const int input_number){ pPFParticleID = input_number; }
+			void set_AncestorID (const int input_number){ pAncestorID = input_number; }
+			void set_SliceID (const int input_number){ pSliceID = input_number; }
+
+			//call method
+			const double*get_Vertex_pos()    const;
+
+			const double get_NuScore()        const;
+			const double get_TrackScore ()    const;
+
+			const bool   get_IsNeutrino ()    const;
+			const bool   get_IsClearCosmic () const;
+			const bool   get_IsNuSlice ()     const;
+
+			const int    get_HasShower ()     const;
+			const int    get_HasTrack ()      const;
+			const int    get_PdgCode()        const;
+			const int    get_PFParticleID()   const;
+			const int    get_AncestorID()     const;
+			const int    get_SliceID ()       const;
 	};
+		inline const double* PandoraPFParticle::get_Vertex_pos()    const { return pVertex_pos; }
+
+		inline const double PandoraPFParticle::get_NuScore()        const { return pNuScore; }
+		inline const double PandoraPFParticle::get_TrackScore ()    const { return pTrackScore; }
+		
+		inline const bool   PandoraPFParticle::get_IsNeutrino ()    const { return pIsNeutrino; }
+		inline const bool   PandoraPFParticle::get_IsClearCosmic () const { return pIsClearCosmic; }
+		inline const bool   PandoraPFParticle::get_IsNuSlice ()     const { return pIsNuSlice; }
+
+		inline const int    PandoraPFParticle::get_HasShower ()     const { return pHasShower; }
+		inline const int    PandoraPFParticle::get_HasTrack ()      const { return pHasTrack; }
+		inline const int    PandoraPFParticle::get_PdgCode()        const { return pPdgCode; }
+		inline const int    PandoraPFParticle::get_PFParticleID()   const { return pPFParticleID; }
+		inline const int    PandoraPFParticle::get_AncestorID()     const { return pAncestorID; }
+		inline const int    PandoraPFParticle::get_SliceID ()       const { return pSliceID; }
 
 
 	//this is for second_shower_search.h
@@ -550,12 +599,12 @@ namespace single_photon
 
             /* for a slice, study the min distance between track hits, shower hits, and unassociated hits */
             void IsolationStudy(
+					std::vector<PandoraPFParticle> all_PPFPs,
                     const std::vector<art::Ptr<recob::Track>>& tracks, std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap,
                     const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>, art::Ptr<recob::PFParticle>> & showerToPFParticleMap,
                     const std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,  
                     const std::map<art::Ptr<recob::PFParticle>, int> & pfParticleToSliceIDMap, const std::map<int, std::vector<art::Ptr<recob::Hit>>>& sliceIDToHitsMap,
-					detinfo::DetectorPropertiesData const & theDetector,
-					int slice_w_bestnuID);
+					detinfo::DetectorPropertiesData const & theDetector);
 
 
 
@@ -593,11 +642,18 @@ namespace single_photon
             /* @brief: analyze MCParticle related to recob::Track if it has one 
              * variables starting with 'm_sim_track_' will be updated
              * */
-            void RecoMCTracks(const std::vector<art::Ptr<recob::Track>>& tracks,  std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>> & trackToPFParticleMap, std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > & trackToMCParticleMap,  std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector, std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
-                    std::map<int, double>& sliceIdToNuScoreMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-                    std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-                    std::vector<double>& vec);
+            void RecoMCTracks(
+					std::vector<PandoraPFParticle> all_PPFPs,
+					const std::vector<art::Ptr<recob::Track>>& tracks,  
+					//std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>> & trackToPFParticleMap, 
+					std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > & trackToMCParticleMap,  
+					std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
+					std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector, 
+					std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
+					//std::map<int, double>& sliceIdToNuScoreMap,
+					//std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+					//std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
+					std::vector<double>& vec);
 
 
             /* collect information from anab::sParticleIDAlgScores of reco track */
@@ -641,18 +697,20 @@ namespace single_photon
              * 		mcParticleVector: vector of mother particles of showers
              * 		objectToMCParticleMap: map of shower to its mother particle
              */
-            void showerRecoMCmatching(std::vector<art::Ptr<recob::Shower>>& objectVector,
+			void showerRecoMCmatching(
+					std::vector<PandoraPFParticle> all_PPFPs,
+					std::vector<art::Ptr<recob::Shower>>& objectVector,
                     std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& objectToMCParticleMap,
-                    std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>>& objectToPFParticleMap,
-                    std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
+                    //std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>>& objectToPFParticleMap,
+                    //std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
                     art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
                     std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-                    std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
-                    std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
-                    std::map<int, double> & sliceIdToNuScoreMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-                    std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-                    std::map<art::Ptr<recob::PFParticle>,bool>& PFPToNuSliceMap);
+                    //std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
+                    std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap);
+                    //(std::map<int, double> & sliceIdToNuScoreMap,
+                    //std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+                    //std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
+                    //std::map<art::Ptr<recob::PFParticle>,bool>& PFPToNuSliceMap);
 
 
             /* tranverse through mcParticleVector, and print out infos for photons */
