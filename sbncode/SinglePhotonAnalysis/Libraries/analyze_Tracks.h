@@ -138,15 +138,15 @@ namespace single_photon
             m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
             m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
 
-            m_reco_track_sliceId[i_trk] = ppfp->pSliceID;//PFPToSliceIdMap[pfp];
+            m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
 	    // Guanqun: how do you make sure the sliceId is positive, not -1, as for cosmic tracks?
 	    // sliceIdToNuScoreMap seems to only have sliceID:nuScore pairs for these with actual nuScores.
             m_reco_track_nuscore[i_trk] = sliceIdToNuScoreMap[ m_reco_track_sliceId[i_trk]] ;
-            m_reco_track_isclearcosmic[i_trk] = ppfp->pIsClearCosmic;//PFPToClearCosmicMap[pfp];
+            m_reco_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
 
             //std::cout<<"checking track nuslice"<<std::endl;
            // std::cout<<"is nuslice for track with pfp "<<pfp->Self()<<" is: "<<PFPToNuSliceMap[pfp]<<std::endl;
-            m_reco_track_is_nuslice[i_trk] = ppfp->pIsNuSlice;//PFPToNuSliceMap[pfp];
+            m_reco_track_is_nuslice[i_trk] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
             m_reco_track_num_daughters[i_trk] = pfp->NumDaughters();
             if(m_reco_track_num_daughters[i_trk]>0){
@@ -155,14 +155,14 @@ namespace single_photon
 				int pfp_size = all_PPFPs.size();
 				for(int index = 0; index < pfp_size; index++){
 					if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-					m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].pTrackScore;
+					m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].get_TrackScore();
 					break;
 				}
 
             }
 
-			m_reco_track_trackscore[i_trk] = ppfp->pTrackScore;
-			m_reco_track_pfparticle_pdg[i_trk] = ppfp->pPdgCode;
+			m_reco_track_trackscore[i_trk] = ppfp->get_TrackScore();
+			m_reco_track_pfparticle_pdg[i_trk] = ppfp->get_PdgCode();
 
           //  m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
 //            if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
@@ -197,17 +197,19 @@ namespace single_photon
         if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Finished."<<std::endl;;
     }
 
-    void SinglePhoton::RecoMCTracks(const std::vector<art::Ptr<recob::Track>>& tracks,  
-            std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap, 
-            std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > & trackToMCParticleMap,
-            std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
-            std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,  
-            std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
-            std::map<int, double>& sliceIdToNuScoreMap,
-            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-            std::vector<double> & vfrac
-            ){
+    void SinglePhoton::RecoMCTracks(
+			std::vector<PandoraPFParticle> all_PPFPs,
+			const std::vector<art::Ptr<recob::Track>>& tracks,  
+//			std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap, 
+			std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > & trackToMCParticleMap,
+			std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
+			std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,  
+			std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
+//			std::map<int, double>& sliceIdToNuScoreMap,
+//			std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+//			std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
+			std::vector<double> & vfrac
+			){
 
 
         //if(m_is_verbose)           
@@ -219,62 +221,63 @@ namespace single_photon
             const art::Ptr<recob::Track> track = tracks[k];
             m_sim_track_matched[i_trk] = 0;
 
-            if(trackToMCParticleMap.count(track)>0){
+			if(trackToMCParticleMap.count(track)>0){
 
-                const art::Ptr<simb::MCParticle> mcparticle = trackToMCParticleMap[track];
-                std::cout<<"count2: "<<MCParticleToMCTruthMap.count(mcparticle)<<std::endl;
-                const art::Ptr<simb::MCTruth> mctruth = MCParticleToMCTruthMap[mcparticle];
-                const art::Ptr<recob::PFParticle> pfp = trackToPFParticleMap[track];
+				const art::Ptr<simb::MCParticle> mcparticle = trackToMCParticleMap[track];
+				std::cout<<"count2: "<<MCParticleToMCTruthMap.count(mcparticle)<<std::endl;
+				const art::Ptr<simb::MCTruth> mctruth = MCParticleToMCTruthMap[mcparticle];
 
-                std::vector<double> correctedstart(3);
-                std::vector<double> correctedend(3);
-                std::vector<double> raw_End  ={mcparticle->EndX(), mcparticle->EndY(), mcparticle->EndZ()};
-               // std::cout<<"the raw end of this mcparticle is "<<raw_End[0]<<", "<<raw_End[1]<<", "<<raw_End[2]<<std::endl;
-                this->spacecharge_correction(mcparticle, correctedstart);
-                this->spacecharge_correction(mcparticle, correctedend, raw_End);
-                
-                //std::cout<<"the corrected end of this mcparticle is "<<correctedend[0]<<", "<<correctedend[1]<<", "<<correctedend[2]<<std::endl;
+				PandoraPFParticle* ppfp = PPFP_GetPPFPFromTrack(all_PPFPs, track);
+//				const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
+				//    const art::Ptr<recob::PFParticle> pfp = //trackToPFParticleMap[track];
 
-           
-                m_sim_track_matched[i_trk] = 1;
-                m_sim_track_energy[i_trk] = mcparticle->E();
-                m_sim_track_mass[i_trk] = mcparticle->Mass();
-                m_sim_track_kinetic_energy[i_trk] = m_sim_track_energy[i_trk]-m_sim_track_mass[i_trk];
-                m_sim_track_pdg[i_trk] = mcparticle->PdgCode();
-                m_sim_track_process[i_trk] = mcparticle->Process();
-                m_sim_track_startx[i_trk] = correctedstart[0];
-                m_sim_track_starty[i_trk] = correctedstart[1];
-                m_sim_track_startz[i_trk] = correctedstart[2];
-              
-                m_sim_track_endx[i_trk]= correctedend[0];
-                m_sim_track_endy[i_trk]= correctedend[1];
-                m_sim_track_endz[i_trk]= correctedend[2];
-            
-                m_sim_track_length[i_trk]= sqrt(pow( m_sim_track_endx[i_trk] -  m_sim_track_startx[i_trk], 2)+ pow( m_sim_track_endy[i_trk] -  m_sim_track_starty[i_trk], 2) + pow( m_sim_track_endz[i_trk] -  m_sim_track_startz[i_trk], 2));
-             
-                m_sim_track_px[i_trk]=  mcparticle->Px();
-                m_sim_track_py[i_trk]=  mcparticle->Py();
-                m_sim_track_pz[i_trk]=  mcparticle->Pz();
-             
+				std::vector<double> correctedstart(3);
+				std::vector<double> correctedend(3);
+				std::vector<double> raw_End  ={mcparticle->EndX(), mcparticle->EndY(), mcparticle->EndZ()};
+				// std::cout<<"the raw end of this mcparticle is "<<raw_End[0]<<", "<<raw_End[1]<<", "<<raw_End[2]<<std::endl;
+				this->spacecharge_correction(mcparticle, correctedstart);
+				this->spacecharge_correction(mcparticle, correctedend, raw_End);
 
-                m_sim_track_origin[i_trk] = mctruth->Origin();
-                m_sim_track_trackID[i_trk] = mcparticle->TrackId();
-                m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
-
-                m_sim_track_sliceId[i_trk] = PFPToSliceIdMap[pfp];
-                m_sim_track_nuscore[i_trk] = sliceIdToNuScoreMap[ m_sim_track_sliceId[i_trk]] ;
-                m_sim_track_isclearcosmic[i_trk] = PFPToClearCosmicMap[pfp]; 
+				//std::cout<<"the corrected end of this mcparticle is "<<correctedend[0]<<", "<<correctedend[1]<<", "<<correctedend[2]<<std::endl;
 
 
-                if(mcparticle->Mother()>=(int)mcParticleVector.size()){
-                    m_sim_track_parent_pdg[i_trk] = -1;
-                }else{
-                    m_sim_track_parent_pdg[i_trk] = mcParticleVector[mcparticle->Mother()]->PdgCode();
-                }
+				m_sim_track_matched[i_trk] = 1;
+				m_sim_track_energy[i_trk] = mcparticle->E();
+				m_sim_track_mass[i_trk] = mcparticle->Mass();
+				m_sim_track_kinetic_energy[i_trk] = m_sim_track_energy[i_trk]-m_sim_track_mass[i_trk];
+				m_sim_track_pdg[i_trk] = mcparticle->PdgCode();
+				m_sim_track_process[i_trk] = mcparticle->Process();
+				m_sim_track_startx[i_trk] = correctedstart[0];
+				m_sim_track_starty[i_trk] = correctedstart[1];
+				m_sim_track_startz[i_trk] = correctedstart[2];
+
+				m_sim_track_endx[i_trk]= correctedend[0];
+				m_sim_track_endy[i_trk]= correctedend[1];
+				m_sim_track_endz[i_trk]= correctedend[2];
+
+				m_sim_track_length[i_trk]= sqrt(pow( m_sim_track_endx[i_trk] -  m_sim_track_startx[i_trk], 2)+ pow( m_sim_track_endy[i_trk] -  m_sim_track_starty[i_trk], 2) + pow( m_sim_track_endz[i_trk] -  m_sim_track_startz[i_trk], 2));
+
+				m_sim_track_px[i_trk]=  mcparticle->Px();
+				m_sim_track_py[i_trk]=  mcparticle->Py();
+				m_sim_track_pz[i_trk]=  mcparticle->Pz();
 
 
+				m_sim_track_origin[i_trk] = mctruth->Origin();
+				m_sim_track_trackID[i_trk] = mcparticle->TrackId();
+				m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
 
-                }
+				m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+				m_sim_track_nuscore[i_trk] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_track_sliceId[i_trk]] ;
+				m_sim_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp]; 
+
+
+				if(mcparticle->Mother()>=(int)mcParticleVector.size()){
+					m_sim_track_parent_pdg[i_trk] = -1;
+				}else{
+					m_sim_track_parent_pdg[i_trk] = mcParticleVector[mcparticle->Mother()]->PdgCode();
+				}
+
+			}
                 i_trk++;
             }
 

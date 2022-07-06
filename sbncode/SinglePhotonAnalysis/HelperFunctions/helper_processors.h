@@ -28,120 +28,13 @@ namespace single_photon
 
 
 
-	//of each PandoraPFParticle
-	//find pAncestor & pAncesotrID
-	void PPFP_FindAncestor ( std::vector< PandoraPFParticle > & PPFPs){
-
-		std::map< size_t, art::Ptr<recob::PFParticle>> pfParticleMap;
-		int pfp_size = PPFPs.size();
-		//build ID-PFParticle map;
-		for(int index = 0; index < pfp_size; index++){
-			PandoraPFParticle temp_pfp = PPFPs[index];
-			if (!pfParticleMap.insert(std::map< size_t, art::Ptr<recob::PFParticle>>::value_type((temp_pfp.pPFParticle)->Self(), temp_pfp.pPFParticle)).second){
-				throw cet::exception("SinglePhoton") << "  Unable to get PFParticle ID map, the input PFParticle collection has repeat IDs!";
-			}
-		}
-
-		//trace up parents
-		for(int jndex = 0; jndex < pfp_size; jndex++){
-			art::Ptr< recob::PFParticle > temp_pfp = PPFPs[jndex].pPFParticle;
-
-			PPFPs[jndex].pAncestorID = temp_pfp->Self();
-			PPFPs[jndex].pAncestor  = pfParticleMap[temp_pfp->Self()];
-			if(temp_pfp->IsPrimary()) continue;//skip PFP without parent is a parent of itself
-
-			while(!(PPFPs[jndex].pAncestor)->IsPrimary()){//1+ gen. parent
-
-				int temp_parent_id = PPFPs[jndex].pAncestor->Parent();
-				PPFPs[jndex].pAncestorID = temp_parent_id;
-				PPFPs[jndex].pAncestor  = pfParticleMap[temp_parent_id];
-				//			std::cout<<PPFPs[jndex].pPFParticleID<<" Trace up a generation parent "<<temp_parent_id<<std::endl;
-
-			}
-		}
-	}
-
-	//Fill pSlice, pHits, pSliceID
-	void PPFP_FindSliceIDandHits(std::vector< PandoraPFParticle > & PPFPs, art::Ptr< recob::Slice >  slice, const std::vector<art::Ptr<recob::PFParticle> > PFP_in_slice, const std::vector<art::Ptr<recob::Hit> > Hit_inslice){
-
-		int pfp_size = PPFPs.size();
-		for( auto pfp : PFP_in_slice){
-			for(int index = 0; index < pfp_size; index++){
-				//std::cout<<"CHECK slice match"<<(PPFPs[index].pPFParticle)->Self()<< " and "<<pfp->Self()<<std::endl;
-				if(PPFPs[index].pSliceID > -1 ) continue;//slice# is found already
-				if( (PPFPs[index].pPFParticle)->Self() == pfp->Self() ){
-					PPFPs[index].pSlice = slice;
-					PPFPs[index].pHits = Hit_inslice;
-					PPFPs[index].pSliceID = slice.key();
-					break;
-				}
-			}
-		}
-	}
 
 
 
-	PandoraPFParticle *PPFP_GetPPFPFromShower( std::vector< PandoraPFParticle > & PPFPs, art::Ptr<recob::Shower> pShower){
-		int pfp_size = PPFPs.size();
-		for(int index = 0; index < pfp_size; index++){
-			if(PPFPs[index].pHasShower != 1 ) continue;
-//			std::cout<<"CHECK Shower start "<<pShower->ShowerStart().X()<<" vs "<<PPFPs[index].pShower->ShowerStart().X()<<std::endl;
-			//CHECK, this works, but there maybe a better way;
-			if((pShower->ShowerStart() == PPFPs[index].pShower->ShowerStart())
-			&& (pShower->Direction() == PPFPs[index].pShower->Direction())){
-				return &PPFPs[index];
-			}
-		}
-		std::cout<<"Error, no PFParticle matched to shower, returning the first element"<<std::endl;
-		return &PPFPs[0];
-	}
-
-	PandoraPFParticle *PPFP_GetPPFPFromTrack( std::vector< PandoraPFParticle > & PPFPs, art::Ptr<recob::Track> pTrack){
-		int pfp_size = PPFPs.size();
-		for(int index = 0; index < pfp_size; index++){
-			if(PPFPs[index].pHasTrack != 1 ) continue;
-			if((pTrack->StartDirection() == PPFPs[index].pTrack->StartDirection())
-			&& (pTrack->EndDirection() == PPFPs[index].pTrack->EndDirection())){
-				return &PPFPs[index];
-			}
-		}
-		std::cout<<"Error, no PFParticle matched to track, returning the first element"<<std::endl;
-		return &PPFPs[0];
-	}
 
 
 
-	//refill pNuScore and pIsNuSlice
-	void DefineNuSlice(std::vector< PandoraPFParticle > & PPFPs){
 
-		int pfp_size = PPFPs.size();
-		std::map< int, double > temp_ID_nuscore_map;
-		double best_nuscore = 0;
-		int best_nuscore_SliceID = 0;
-
-		for(int index = 0; index < pfp_size; index++){
-			PandoraPFParticle temp_p = PPFPs[index];
-			if(temp_p.pIsNeutrino){
-
-				temp_ID_nuscore_map[ temp_p.pSliceID] = temp_p.pNuScore;
-				if(best_nuscore < temp_p.pNuScore){
-					best_nuscore = temp_p.pNuScore;
-					best_nuscore_SliceID = temp_p.pSliceID;
-					std::cout<<__FUNCTION__<<"CHECK Best nu score "<< best_nuscore<<" at slice "<<temp_p.pSliceID<<std::endl;
-				}
-			}
-		}
-
-		//now markdown all particles in slice with best ID;
-		//re-set pNuScore and pIsNuSlice
-		for(int index = 0; index < pfp_size; index++){
-			if( PPFPs[index].pSliceID == best_nuscore_SliceID){
-				PPFPs[index].pIsNuSlice = true;
-				PPFPs[index].pNuScore = best_nuscore;//CHECK over-write the original score, if there is any;
-				std::cout<<__FUNCTION__<<" CHECK Set nu slice "<<PPFPs[index].pSliceID<<" with score "<<PPFPs[index].pNuScore<<std::endl;
-			}//CHECK, same event, different slices, still different score.
-		}
-	}
 
 
 

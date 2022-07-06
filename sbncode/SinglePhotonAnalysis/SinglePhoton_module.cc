@@ -1,5 +1,6 @@
 #include "SinglePhoton_module.h"
 #include "HelperFunctions/helper_processors.h" //now it can use variables defined in singlephoton.h
+#include "HelperFunctions/helper_PandoraPFParticles.h" //now it can use variables defined in singlephoton.h
 #include "Libraries/init_branches.h"
 #include "Libraries/reco_truth_matching.h"
 //#include "analyze_Template.h"
@@ -376,7 +377,7 @@ namespace single_photon
 
 		//CHECK, try the new class, Keng
 
-		std::vector<PandoraPFParticle> allPFParticles;
+		std::vector<PandoraPFParticle> allPPFParticles;
 		for(size_t index=0; index< pfParticleVector.size(); ++index){
 //					std::cout<<"CHECKING"<<__LINE__<<std::endl;
 			auto pfp = pfParticleVector[index];
@@ -404,9 +405,9 @@ namespace single_photon
 //					(temp_pf.pIsClearCosmic)?	std::cout<<"T"<<std::endl:std::cout<<"F"<<std::endl;
 					
 
-			allPFParticles.push_back(temp_pf);
+			allPPFParticles.push_back(temp_pf);
 		}
-		PPFP_FindAncestor(allPFParticles);
+		PPFP_FindAncestor(allPPFParticles);
 
 
 		//Add slices & hits info.
@@ -424,13 +425,14 @@ namespace single_photon
         std::map<int, std::vector<art::Ptr<recob::PFParticle>> > sliceIDToPFParticlesMap;
         for(size_t i=0; i< sliceVector.size(); ++i){
             auto slice = sliceVector[i];
-			PPFP_FindSliceIDandHits(allPFParticles, slice, pfparticles_per_slice.at(slice.key()), hits_per_slice.at(slice.key()) );
+			PPFP_FindSliceIDandHits(allPPFParticles, slice, pfparticles_per_slice.at(slice.key()), hits_per_slice.at(slice.key()) );
             sliceToPFParticlesMap[slice] =pfparticles_per_slice.at(slice.key());
             sliceIDToPFParticlesMap[slice->ID()] = pfparticles_per_slice.at(slice.key());
         }
-		DefineNuSlice(allPFParticles);
+		//Mark all Pandora neutrino slices as neutrino slices and assign the highes neutrino score.
+		double pfp_w_bestnuID = DefineNuSlice(allPPFParticles);
 
-		std::cout<<"\nFinish preparing PandoraPFParticles at Line "<<__LINE__<<" CHECK! Now we have "<<allPFParticles.size()<<" PFParticles in total"<<std::endl;
+		std::cout<<"\nFinish preparing PandoraPFParticles at Line "<<__LINE__<<" CHECK! Now we have "<<allPPFParticles.size()<<" PFParticles in total"<<std::endl;
 
         //Slice to Hits
 //Keng  std::map< art::Ptr<recob::Slice>, std::vector<art::Ptr<recob::Hit>> > sliceToHitsMap;
@@ -444,74 +446,74 @@ namespace single_photon
             sliceIDToHitsMap[slice->ID()] = hits_per_slice.at(slice.key());
         }
 
-		size_t pfp_w_bestnuID = 0;
-		int slice_w_bestnuID = 0;
-        if(true){
-            std::cout<<"SliceTest: there are "<<sliceVector.size()<<" slices in this event, summary:"<<std::endl;
-
-			std::vector<int> spacers2 = Printer_header({
-					"Slice#",
-					"nu?",
-					"#pfPart.",
-					"nu_score  ",
-					"best_at",
-					"#primary",
-					"prim_pdg"});
-
-			double ref_nuscore = 0;
-			for(size_t s_index =0; s_index<sliceVector.size(); s_index++){
-				auto slice = sliceVector[s_index];
-				auto pfps = sliceToPFParticlesMap[slice]; 
-
-				std::vector<float> nu_scores;
-				bool isSelectedSlice = false;
-				int primaries_num = 0;
-				int primary_pdg = 0;
-
-				for(auto &pfp: pfps){//loop through PFparticles of a slice
-					std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = pfParticleToMetadataMap[pfp];
-					for(auto &meta: metadatas){
-						std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
-						//for each of the things in the list
-						if(propertiesmap.count("NuScore")==1){
-							double tmp_nuscore = propertiesmap["NuScore"];
-							nu_scores.push_back(tmp_nuscore);
-							if( tmp_nuscore > ref_nuscore){ 
-								ref_nuscore = tmp_nuscore;
-								pfp_w_bestnuID = pfp->Self();
-								slice_w_bestnuID = s_index;
-							}
-						}
-						if(propertiesmap.count("IsNeutrino")==1){
-							isSelectedSlice = true; 
-						}
-					}
-
-					if (pfp->IsPrimary()) {
-						primaries_num++;
-						primary_pdg = (pfp->PdgCode());    
-					}
-				}
-
-				if(nu_scores.size()>0){
-					double mean  = std::accumulate(nu_scores.begin(), nu_scores.end(), 0.0)/(double)nu_scores.size();
-					if(mean!=nu_scores.front()){
-						std::cout<<"ERROR! Somehow the pfp's in this slice have different nu-scores? IMpossible."<<std::endl;
-						exit(EXIT_FAILURE);
-					}
-				}
-
-				Printer_content({
-						std::to_string(s_index),
-						(isSelectedSlice)?"Y":"F",
-						std::to_string(pfps.size()),
-						std::to_string((nu_scores.size()>0)?nu_scores.front():-9),
-						std::to_string(pfp_w_bestnuID),
-						std::to_string(primaries_num),
-						std::to_string(primary_pdg)
-						}, spacers2);
-			}
-        }// End test of slice metadata
+//		size_t pfp_w_bestnuID = 0;
+////		int slice_w_bestnuID = 0;
+//        if(true){
+//            std::cout<<"SliceTest: there are "<<sliceVector.size()<<" slices in this event, summary:"<<std::endl;
+//
+//			std::vector<int> spacers2 = Printer_header({
+//					"Slice#",
+//					"nu?",
+//					"#pfPart.",
+//					"nu_score  ",
+//					"best_at",
+//					"#primary",
+//					"prim_pdg"});
+//
+//			double ref_nuscore = 0;
+//			for(size_t s_index =0; s_index<sliceVector.size(); s_index++){
+//				auto slice = sliceVector[s_index];
+//				auto pfps = sliceToPFParticlesMap[slice]; 
+//
+//				std::vector<float> nu_scores;
+//				bool isSelectedSlice = false;
+//				int primaries_num = 0;
+//				int primary_pdg = 0;
+//
+//				for(auto &pfp: pfps){//loop through PFparticles of a slice
+//					std::vector<art::Ptr<larpandoraobj::PFParticleMetadata>> metadatas = pfParticleToMetadataMap[pfp];
+//					for(auto &meta: metadatas){
+//						std::map<std::string, float> propertiesmap  = meta->GetPropertiesMap();
+//						//for each of the things in the list
+//						if(propertiesmap.count("NuScore")==1){
+//							double tmp_nuscore = propertiesmap["NuScore"];
+//							nu_scores.push_back(tmp_nuscore);
+//							if( tmp_nuscore > ref_nuscore){ 
+//								ref_nuscore = tmp_nuscore;
+//								pfp_w_bestnuID = pfp->Self();
+////								slice_w_bestnuID = s_index;
+//							}
+//						}
+//						if(propertiesmap.count("IsNeutrino")==1){
+//							isSelectedSlice = true; 
+//						}
+//					}
+//
+//					if (pfp->IsPrimary()) {
+//						primaries_num++;
+//						primary_pdg = (pfp->PdgCode());    
+//					}
+//				}
+//
+//				if(nu_scores.size()>0){
+//					double mean  = std::accumulate(nu_scores.begin(), nu_scores.end(), 0.0)/(double)nu_scores.size();
+//					if(mean!=nu_scores.front()){
+//						std::cout<<"ERROR! Somehow the pfp's in this slice have different nu-scores? IMpossible."<<std::endl;
+//						exit(EXIT_FAILURE);
+//					}
+//				}
+//
+//				Printer_content({
+//						std::to_string(s_index),
+//						(isSelectedSlice)?"Y":"F",
+//						std::to_string(pfps.size()),
+//						std::to_string((nu_scores.size()>0)?nu_scores.front():-9),
+//						std::to_string(pfp_w_bestnuID),
+//						std::to_string(primaries_num),
+//						std::to_string(primary_pdg)
+//						}, spacers2);
+//			}
+//        }// End test of slice metadata
 
 
 
@@ -766,43 +768,43 @@ namespace single_photon
 
         if(m_is_verbose) std::cout<<"\nSinglePhoton::AnalyzeSlice()\t||\t Starting"<<std::endl;
         //Slice helper found in analyze_Slice.h
+		//Can be re moved?
         this->AnalyzeSlices(pfParticleToMetadataMap, pfParticleMap,  primaryPFPSliceIdVec, sliceIdToNuScoreMap, PFPToClearCosmicMap, PFPToSliceIdMap, PFPToNuSliceMap, PFPToTrackScoreMap);
 		std::cout<<"Finish AnalyzeSlices.\n"<<std::endl;
 
 
-        if (PFPToSliceIdMap.size() < 1)  std::cout<<"ERROR, not storing PFP's in PFPToSliceIdMap"<<std::endl;
-        if(m_is_verbose){
-			std::cout<<"---- sub-summary ---"<<std::endl;
-            std::cout<<"SinglePhoton::analyze\t||\tthe number of PPF's with stored clear cosmic info is "<<PFPToClearCosmicMap.size()<<std::endl;
-            std::cout<<"SinglePhoton::analyze\t||\tthe number of PFP's stored in the PFPToSliceIdMap is "<<PFPToSliceIdMap.size()<<std::endl;
+//        if (PFPToSliceIdMap.size() < 1)  std::cout<<"ERROR, not storing PFP's in PFPToSliceIdMap"<<std::endl;
+//        if(m_is_verbose){
+//			std::cout<<"---- sub-summary ---"<<std::endl;
+//            std::cout<<"SinglePhoton::analyze\t||\tthe number of PPF's with stored clear cosmic info is "<<PFPToClearCosmicMap.size()<<std::endl;
+//            std::cout<<"SinglePhoton::analyze\t||\tthe number of PFP's stored in the PFPToSliceIdMap is "<<PFPToSliceIdMap.size()<<std::endl;
+//
+//            for (auto pair:PFPToNuSliceMap){
+//                auto pfp = pair.first;
+//                auto is_nuslice = pair.second;
+//                if (is_nuslice){
+//                    std::cout<<"SinglePhoton::analyze\t||\t"<<pfp->Self()<<"th pfp in nuslice w. Pdgcode "<<pfp->PdgCode()<<std::endl;
+//                }
+//
+//            }
+//
+//
+//            for (auto pair:sliceIDToPFParticlesMap){ 
+//                std::vector<art::Ptr<recob::PFParticle>> pfp_vec = pair.second;
+//                int slice_id = pair.first;
+//                //if (slice_vec[0]->Slice() != PFPToSliceIdMap[pfp] )
+//                for(auto pfp: pfp_vec){
+//                    if (slice_id != PFPToSliceIdMap[pfp] && PFPToSliceIdMap[pfp]>=0){
+//                        std::cout<<"sliceIDToPFParticlesMap[slice->ID()] for pfp "<<pfp->Self()<<" is slice "<< slice_id<< "but PFPToSliceIdMap[pfp] = "<<PFPToSliceIdMap[pfp]<<std::endl;
+//                    }
+//                }
+//
+//            }
+//
+//        }//end verbose
 
-            for (auto pair:PFPToNuSliceMap){
-                auto pfp = pair.first;
-                auto is_nuslice = pair.second;
-                if (is_nuslice){
-                    std::cout<<"SinglePhoton::analyze\t||\t"<<pfp->Self()<<"th pfp in nuslice w. Pdgcode "<<pfp->PdgCode()<<std::endl;
-                }
-
-            }
 
 
-            for (auto pair:sliceIDToPFParticlesMap){ 
-                std::vector<art::Ptr<recob::PFParticle>> pfp_vec = pair.second;
-                int slice_id = pair.first;
-                //if (slice_vec[0]->Slice() != PFPToSliceIdMap[pfp] )
-                for(auto pfp: pfp_vec){
-                    if (slice_id != PFPToSliceIdMap[pfp] && PFPToSliceIdMap[pfp]>=0){
-                        std::cout<<"sliceIDToPFParticlesMap[slice->ID()] for pfp "<<pfp->Self()<<" is slice "<< slice_id<< "but PFPToSliceIdMap[pfp] = "<<PFPToSliceIdMap[pfp]<<std::endl;
-                    }
-                }
-
-            }
-
-        }//end verbose
-
-
-
-        //******************************* CRT CRT***************************************************************/
         //******************************* CRT CRT***************************************************************/
 
         std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap;
@@ -863,7 +865,7 @@ namespace single_photon
 
         //found in analyze_Tracks.h
         this->AnalyzeTracks(
-			allPFParticles, 
+			allPPFParticles, 
 			tracks, 
 //			trackToNuPFParticleMap, pfParticleToHitsMap,  
 			pfParticleToSpacePointsMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap
@@ -882,7 +884,7 @@ namespace single_photon
 
 
         //found in analyze_Showers.h
-        this->AnalyzeShowers(allPFParticles, showers,
+        this->AnalyzeShowers(allPPFParticles, showers,
 	//	showerToNuPFParticleMap, 
 	//	pfParticleToHitsMap, 
 	//	pfParticleToClustersMap, 
@@ -901,25 +903,25 @@ namespace single_photon
 
 		std::cout<<std::endl;
 		std::cout<<"CHECK do a summary"<<std::endl;
-		std::vector<int> spacers = Printer_header({"pfpID", "Parent                ", "Vertex(x,  ","   y,      ",",      z  )", "slice","    nu_score","  trk_score"," prim?"," nu?"," cos?"," S#"," T#"});
-		for(size_t jndex=0; jndex< allPFParticles.size(); ++jndex){
-			PandoraPFParticle temp_pf = allPFParticles[jndex];
+		std::vector<int> spacers = Printer_header({" pfpID", "  Parent                ", "Vertex(x,  ","   y,      ",",      z  )", "slice ","    nu_score","  trk_score "," prim? "," nu? "," cos? "," S# "," T# "});
+		for(size_t jndex=0; jndex< allPPFParticles.size(); ++jndex){
+			PandoraPFParticle temp_pf = allPPFParticles[jndex];
 			art::Ptr<recob::PFParticle> pfp = temp_pf.pPFParticle;
 
 			Printer_content( 
 					{std::to_string(pfp->Self()), 
 					std::to_string(pfp->Parent()) , 
-					std::to_string(temp_pf.pVertex_pos[0]),
-					std::to_string(temp_pf.pVertex_pos[1]),
-					std::to_string(temp_pf.pVertex_pos[2]),
-					std::to_string(temp_pf.pSliceID),
-					std::to_string(temp_pf.pNuScore),
-					std::to_string(temp_pf.pTrackScore),
+					std::to_string(temp_pf.get_Vertex_pos()[0]),
+					std::to_string(temp_pf.get_Vertex_pos()[1]),
+					std::to_string(temp_pf.get_Vertex_pos()[2]),
+					std::to_string(temp_pf.get_SliceID()),
+					std::to_string(temp_pf.get_NuScore()),
+					std::to_string(temp_pf.get_TrackScore()),
 					(pfp->IsPrimary())?			"T":" ", 
-					(temp_pf.pIsNeutrino)?		"T":" ",
-					(temp_pf.pIsClearCosmic)?	"T":" ", 
-					(temp_pf.pHasShower>0)?		"1":" ",
-					(temp_pf.pHasTrack>0)?		"1":" "
+					(temp_pf.get_IsNeutrino() )?		"T":" ",
+					(temp_pf.get_IsClearCosmic() )?	"T":" ", 
+					(temp_pf.get_HasShower() >0)?		"1":" ",
+					(temp_pf.get_HasTrack() >0)?		"1":" "
 					}, spacers);
 
 		}
@@ -964,7 +966,7 @@ namespace single_photon
         // MCTruth, MCParticle, MCNeutrino information all comes directly from GENIE.
         // MCShower and MCTrack come from energy depositions in GEANT4
 
-        //Only run if its not data :)
+        //Only run if its not data, i.e. MC events :)
         if(!m_is_data){
 
             std::vector<art::Ptr<simb::GTruth>> gTruthVector;
@@ -976,6 +978,7 @@ namespace single_photon
                 if(m_is_verbose){
                     for(size_t p=0; p< gTruthVector.size();p++) std::cout<<gTruthVector[p]<<" "<<*gTruthVector[p]<<std::endl;
                 }
+				std::cout<<"CHECK done"<<std::endl;
             }
 
             //get MCTruth (GENIE)
@@ -1018,13 +1021,38 @@ namespace single_photon
             //The recoMC was originally templated for any track shower, but sufficient differences in showers emerged to have stand alone sadly
             std::cout<<"\nSinglePhoton\t||\t Starting backtracker on recob::track"<<std::endl;
             std::vector<double> trk_overlay_vec = recoMCmatching<art::Ptr<recob::Track>>( tracks, trackToMCParticleMap, trackToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector);
+
             std::cout<<"\nSinglePhoton\t||\t Starting backtracker on recob::shower"<<std::endl;
-            this->showerRecoMCmatching(showers, showerToMCParticleMap, showerToNuPFParticleMap, pfParticleToHitsMap, mcparticles_per_hit, matchedMCParticleVector, pfParticleMap,  MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap, PFPToNuSliceMap);
+            this->showerRecoMCmatching(
+				allPPFParticles,
+				showers, 
+				showerToMCParticleMap, 
+//				showerToNuPFParticleMap, 
+//				pfParticleToHitsMap, 
+				mcparticles_per_hit, 
+				matchedMCParticleVector, 
+//				pfParticleMap, 
+				MCParticleToTrackIdMap);
+//				(sliceIdToNuScoreMap, 
+//				PFPToClearCosmicMap,  
+//				PFPToSliceIdMap, 
+//				PFPToNuSliceMap);
 
             //photoNuclearTesting(matchedMCParticleVector);
 
             std::cout<<"\nStarting outside RecoMCTracks "<<std::endl;
-            this->RecoMCTracks(tracks, trackToNuPFParticleMap, trackToMCParticleMap, MCParticleToMCTruthMap,mcParticleVector, MCParticleToTrackIdMap, sliceIdToNuScoreMap, PFPToClearCosmicMap,  PFPToSliceIdMap,trk_overlay_vec);
+            this->RecoMCTracks(
+					allPPFParticles,
+					tracks, 
+					//trackToNuPFParticleMap, 
+					trackToMCParticleMap, 
+					MCParticleToMCTruthMap,
+					mcParticleVector, 
+					MCParticleToTrackIdMap, 
+					//sliceIdToNuScoreMap, 
+					//PFPToClearCosmicMap,  
+					//PFPToSliceIdMap,
+					trk_overlay_vec);
 
             std::cout<<"\nStarting outside AnalyzeMCTruths "<<std::endl;
             this->AnalyzeMCTruths(mcTruthVector, mcParticleVector);
@@ -1045,7 +1073,6 @@ namespace single_photon
 				//CHECK the following function cause a bug that crashes the code, 
 				//figure out why.
                 this->AnalyzeRecoMCSlices( m_truthmatching_signaldef, MCParticleToTrackIdMap, showerToNuPFParticleMap , allPFPSliceIdVec, showerToMCParticleMap, trackToNuPFParticleMap, trackToMCParticleMap,  PFPToSliceIdMap);
-				this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
 
                 if (m_print_out_event){
                     if (m_matched_signal_shower_num != 1 || m_matched_signal_track_num != 1){
@@ -1129,15 +1156,14 @@ namespace single_photon
 
 
             std::cout<<"SinglePhoton::analyze\t||\t finnished loop for this event"<<std::endl;
-        }//end data loop
+        }//end MC loop
 
 
 
         //*******************************   Isolation (SSV precursor)  **************************************************************/
-        if(!m_run_all_pfps && ! m_run_pi0_filter) this->IsolationStudy(tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector, slice_w_bestnuID);
+        if(!m_run_all_pfps && ! m_run_pi0_filter) this->IsolationStudy(allPPFParticles, tracks,  trackToNuPFParticleMap, showers, showerToNuPFParticleMap, pfParticleToHitsMap, PFPToSliceIdMap, sliceIDToHitsMap, theDetector);
 
 		std::cout<<"CHECK "<<__LINE__<<" for a finished isolation study"<<std::endl;
-
 
 
         // ################################################### SEAview SEAview #########################################################
@@ -1146,7 +1172,10 @@ namespace single_photon
         std::cout << "----------------- Stub clustering --------------------------- " << std::endl;
         std::cout << "SEAview Stub formation: " << (m_runSEAviewStub ? "true" : "false" ) << " nshower requirement: " << m_SEAviewStubNumRecoShower << ", actual num shower: " << showers.size() << " | ntrack requirement: " << m_SEAviewStubNumRecoTrack << ", actual num track: " << tracks.size() << std::endl;
 
-        if(!m_run_pi0_filter && m_runSEAviewStub && (m_SEAviewStubNumRecoShower == -1 || (int)showers.size()== m_SEAviewStubNumRecoShower) && (m_SEAviewStubNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewStubNumRecoTrack)){
+        if(	!m_run_pi0_filter && 
+			m_runSEAviewStub && 
+			(m_SEAviewStubNumRecoShower== -1 || (int)showers.size()== m_SEAviewStubNumRecoShower) && 
+			(m_SEAviewStubNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewStubNumRecoTrack)){
 
             // grab all hits in the slice of the reco shower
             art::Ptr<recob::Shower> p_shr = showers.front();
@@ -1323,7 +1352,10 @@ namespace single_photon
         std::cout << "------------- Shower clustering --------------------" << std::endl;
         std::cout << "SEAview Shower cluster formation: " << (m_runSEAview ? "true" : "false" ) << " nshower requirement: " << m_SEAviewNumRecoShower << ", actual num shower: " << showers.size() << " | ntrack requirement: " << m_SEAviewNumRecoTrack << ", actual num track: " << tracks.size() << std::endl;
 
-        if(!m_run_pi0_filter &&  m_runSEAview && (m_SEAviewNumRecoShower == -1 || (int)showers.size()== m_SEAviewNumRecoShower) && (m_SEAviewNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewNumRecoTrack) ){
+		if(!m_run_pi0_filter &&  
+				m_runSEAview && 
+				(m_SEAviewNumRecoShower == -1 || (int)showers.size()== m_SEAviewNumRecoShower) && 
+				(m_SEAviewNumRecoTrack == -1 || (int)tracks.size() == m_SEAviewNumRecoTrack) ){
 
             art::Ptr<recob::Shower> p_shr = showers.front();
             art::Ptr<recob::PFParticle> p_pfp = showerToNuPFParticleMap[p_shr];

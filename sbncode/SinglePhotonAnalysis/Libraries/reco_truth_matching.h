@@ -5,34 +5,39 @@ namespace single_photon
 {
 
     //recoMCmatching but specifically for recob::showers
-    void SinglePhoton::showerRecoMCmatching(std::vector<art::Ptr<recob::Shower>>& objectVector,
-            std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& objectToMCParticleMap,
-            std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>>& objectToPFParticleMap,
-            std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
+    void SinglePhoton::showerRecoMCmatching(
+			std::vector<PandoraPFParticle> all_PPFPs,
+			std::vector<art::Ptr<recob::Shower>>& showerVector,
+            std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& showerToMCParticleMap,
+//            std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>>& showerToPFParticleMap,
+//            std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
             art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
             std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-            std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
-            std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap ,
-            std::map<int, double>& sliceIdToNuScoreMap,
-            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToNuSliceMap){
+//            std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
+            std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap
+//            std::map<int, double>& sliceIdToNuScoreMap
+//            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
+//            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
+//            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToNuSliceMap
+			){
 
         std::vector<double> vec_fraction_matched;
         std::map<std::string,bool> map_is_shower_process = {{"compt",true},{"FastScintillation",true},{"eBrem",true},{"phot",true},{"eIoni",true},{"conv",true},{"annihil",true}};
         bool reco_verbose = false;
         
-        if(reco_verbose) std::cout<<"Strting "<<objectVector.size()<<" things"<<std::endl;
+        if(reco_verbose) std::cout<<"Strting "<<showerVector.size()<<" things"<<std::endl;
 
         //for each recob::track/shower in the event
-        for(size_t i=0; i<objectVector.size();++i){
-            auto object = objectVector[i];
+        for(size_t i=0; i<showerVector.size();++i){
+            auto shower = showerVector[i];
 
             //get the associated reco PFP
-            if(reco_verbose)std::cout<<"We have "<<objectToPFParticleMap.count(object)<<" matches in map"<<std::endl;
-            const art::Ptr<recob::PFParticle> pfp = objectToPFParticleMap[object];
+//            if(reco_verbose)std::cout<<"We have "<<showerToPFParticleMap.count(shower)<<" matches in map"<<std::endl;
 
-            if (reco_verbose) std::cout<<"SinglePhoton::recoMC()\t||\t looking for a shower match to pfp "<< pfp->Self()<<" which is in slice "<<  PFPToSliceIdMap[pfp]<<std::endl;
+			PandoraPFParticle* ppfp = PPFP_GetPPFPFromShower(all_PPFPs, shower);
+            const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
+
+//            if (reco_verbose) std::cout<<"SinglePhoton::recoMC()\t||\t looking for a shower match to pfp "<< pfp->Self()<<" which is in slice "<<  PFPToSliceIdMap[pfp]<<std::endl;
 
             //this was some checks on the PFP side
             /*
@@ -70,7 +75,7 @@ namespace single_photon
             //putting in the PFP pdg code as a check
 
             //and get the hits associated to the reco PFP
-            std::vector< art::Ptr<recob::Hit> > obj_hits_ptrs = pfParticleToHitsMap[pfp];
+            std::vector< art::Ptr<recob::Hit> > obj_hits_ptrs = ppfp->pHits; //pfParticleToHitsMap[pfp];
 
             /**
              * 
@@ -103,7 +108,7 @@ namespace single_photon
 
             bool found_a_match = false;
 
-            //std::cout<<"SinglePhoton::RecoMC()\t||\t On object: "<<i<<" with pfp "<< pfp->Self() <<"and slice id "<<PFPToSliceIdMap[pfp]<<". This object has "<<obj_hits_ptrs.size()<<" hits associated with it"<<std::endl;
+            //std::cout<<"SinglePhoton::RecoMC()\t||\t On shower: "<<i<<" with pfp "<< pfp->Self() <<"and slice id "<<PFPToSliceIdMap[pfp]<<". This shower has "<<obj_hits_ptrs.size()<<" hits associated with it"<<std::endl;
 
             //loop only over hits associated to this reco PFP
             for(size_t i_h=0; i_h < obj_hits_ptrs.size(); ++i_h){
@@ -166,7 +171,7 @@ namespace single_photon
 
 
             if(n_associated_mcparticle_hits == 0){
-                //This will only occur if the whole recob::PFParticle is PURELY associated with an overlay object
+                //This will only occur if the whole recob::PFParticle is PURELY associated with an overlay shower
                 found_a_match =false;
                 if(!found_a_match){
                 }
@@ -426,15 +431,15 @@ namespace single_photon
             m_sim_shower_overlay_fraction[i] = fraction_num_hits_overlay;
 
             mcParticleVector.push_back(match);
-            objectToMCParticleMap[object] = mcParticleVector.back();
+            showerToMCParticleMap[shower] = mcParticleVector.back();
 
-            m_sim_shower_sliceId[i] = PFPToSliceIdMap[pfp];
-            m_sim_shower_nuscore[i] = sliceIdToNuScoreMap[ m_sim_shower_sliceId[i]] ;
-            m_sim_shower_isclearcosmic[i] = PFPToClearCosmicMap[pfp];
+            m_sim_shower_sliceId[i] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+            m_sim_shower_nuscore[i] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_shower_sliceId[i]] ;
+            m_sim_shower_isclearcosmic[i] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
             if (m_sim_shower_isclearcosmic[i]== false){
                 std::cout<<"sim shower is matched to non-clear cosmic PFP "<<pfp->Self()<<std::endl;
             }
-            m_sim_shower_is_nuslice[i] = PFPToNuSliceMap[pfp];
+            m_sim_shower_is_nuslice[i] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
             // if (PFPToNuSliceMap[pfp] ==true){
             //     std::cout<<"m_sim_shower_is_nuslice is true for sim shower matched to reco pfp id "<<pfp->Self()<<std::endl;

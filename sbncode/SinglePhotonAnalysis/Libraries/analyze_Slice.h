@@ -62,7 +62,7 @@ namespace single_photon
                     //for each of the things in the list
                     for (auto it:propertiesmap ){
                         // std::cout << "  - " << it.first << " = " << it.second << std::endl;
-                        if (it.first == "SliceIndex"){
+                        if (it.first == "SliceIndex"){//primary nu slice.key()
                             temp_ind = it.second;
                              std::cout << "  - SiceID " << it.first << " = " << it.second << std::endl;
                         }
