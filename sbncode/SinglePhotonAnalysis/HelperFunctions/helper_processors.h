@@ -7,21 +7,21 @@ namespace single_photon
 	//		recob::Hit dummy_hit;//This is to specify the template;
 	//		std::vector<art::Ptr<recob::Hit>> hitVector = VectorFromLabel(dummy_hit, evt, m_hitfinderLabel);
 
-	template <typename recob_object>//A helper template that allows you to make compliated types.
-		struct temporary_types{ 
-			using type1 = std::vector<art::Ptr<recob_object>>;
-			using type2 = art::ValidHandle<std::vector<recob_object>>;
-			using type3 = std::vector<recob_object>;
-		};
-
-	template <class recob_object>//ref_type is only used to identify the temporary_types late.
-		typename temporary_types<recob_object>::type1 VectorFromLabel(recob_object ref_type, const art::Event &evt, std::string &label){
-
-			typename temporary_types<recob_object>::type2 const & Handle = evt.getValidHandle<typename temporary_types<recob_object>::type3>(label);
-			typename temporary_types<recob_object>::type1 Vector;
-			art::fill_ptr_vector(Vector,Handle);
-			return Vector;
-		}
+//	template <typename recob_object>//A helper template that allows you to make compliated types.
+//		struct temporary_types{ 
+//			using type1 = std::vector<art::Ptr<recob_object>>;
+//			using type2 = art::ValidHandle<std::vector<recob_object>>;
+//			using type3 = std::vector<recob_object>;
+//		};
+//
+//	template <class recob_object>//ref_type is only used to identify the temporary_types late.
+//		typename temporary_types<recob_object>::type1 VectorFromLabel(recob_object ref_type, const art::Event &evt, std::string &label){
+//
+//			typename temporary_types<recob_object>::type2 const & Handle = evt.getValidHandle<typename temporary_types<recob_object>::type3>(label);
+//			typename temporary_types<recob_object>::type1 Vector;
+//			art::fill_ptr_vector(Vector,Handle);
+//			return Vector;
+//		}
 
 	//--------------------- a template to get vectors from labels -------------------------
 	//-------- Only use this once for now, potentially 13+ more lines can be saved --------
@@ -384,7 +384,7 @@ namespace single_photon
             MCParticleToTrackIdMap[particle->TrackId()] = particle;
         }
 
-        std::cout<<"SinglePhoton::CollectMCParticles() \t||\t the number of MCParticles in the event is "<<theParticles->size()<<std::endl;
+//        std::cout<<"SinglePhoton::CollectMCParticles() \t||\t the number of MCParticles in the event is "<<theParticles->size()<<std::endl;
     }
 
     void SinglePhoton::CollectSimChannels(const art::Event &evt, const std::string &label,  std::vector< art::Ptr<sim::SimChannel> >  &simChannelVector)
@@ -509,6 +509,315 @@ namespace single_photon
             return true;
         }
         return false;
+    }
+
+
+	//helpers for calculating calometry
+    double SinglePhoton::CalcEShower(const std::vector<art::Ptr<recob::Hit>> &hits){
+        double energy[3] = {0., 0., 0.};
+
+        //std::cout<<"SinglePhoton::AnalyzeShowers() \t||\t Looking at shower with "<<hits.size() <<" hits on all planes"<<std::endl;
+
+        //for each hit in the shower
+        for (auto &thishitptr : hits){
+            //check the plane
+            int plane= thishitptr->View();
+
+            //skip invalid planes     	
+            if (plane > 2 || plane < 0)	continue;
+
+            //calc the energy of the hit
+            double E = QtoEConversion(GetQHit(thishitptr, plane));
+
+            //add the energy to the plane
+            energy[plane] += E;
+        }//for each hiti
+
+        //find the max energy on a single plane
+        double max = energy[0];
+        for (double en: energy){
+            if( en > max){
+                max = en;
+            }
+        }
+        // std::cout<<"SinglePhoton::AnalyzeShowers() \t||\t The energy on each plane for this shower is "<<energy[0]<<", "<<energy[1]<<", "<<energy[2]<<std::endl;
+
+        //return the highest energy on any of the planes
+        return max;
+
+    }
+
+    double SinglePhoton::CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int this_plane){
+        double energy = 0.;
+
+        //for each hit in the shower
+        for (auto &thishitptr : hits){
+            //check the plane
+            int plane= thishitptr->View();
+
+            //skip invalid planes     	
+            if (plane != this_plane )	continue;
+
+            //calc the energy of the hit
+            double E = QtoEConversion(GetQHit(thishitptr, plane));
+            //add the energy to the plane
+            energy += E;
+        }//for each hit
+
+        return energy;
+
+    }
+
+
+
+
+    double SinglePhoton::GetQHit(art::Ptr<recob::Hit> thishitptr, int plane){
+        double gain;
+        //choose gain based on whether data/mc and by plane
+        if (m_is_data == false &&  m_is_overlayed == false){
+            gain = m_gain_mc[plane] ;
+            //if (m_is_verbose) std::cout<<"the gain for mc on plane "<<plane<<" is "<<gain<<std::endl;
+        } if (m_is_data == true ||  m_is_overlayed == true){
+            gain = m_gain_data[plane] ;
+            //if (m_is_verbose) std::cout<<"the gain for data on plane "<<plane<<" is "<<gain<<std::endl;
+
+        }
+
+        double Q = thishitptr->Integral()*gain;
+        return Q;
+    }
+
+
+    double SinglePhoton::QtoEConversion(double Q){
+        //return the energy value converted to MeV (the factor of 1e-6)
+        double E = Q* m_work_function *1e-6 /m_recombination_factor;
+        return E;
+
+    }
+
+
+    std::vector<double> SinglePhoton::CalcdEdxFromdQdx(std::vector<double> dqdx){
+        int n = dqdx.size();
+        std::vector<double> dedx(n,0.0);
+        for (int i = 0; i < n; i++){
+            //std::cout<<"The dQ/dx is "<<dqdx[i]<<std::endl;
+            dedx[i] = QtoEConversion(dqdx[i]);
+            //std::cout<<"The dE/dx is "<<dedx[i]<<std::endl;
+        }
+        return dedx;
+    }
+
+
+    std::vector<double> SinglePhoton::CalcdQdxShower(
+            const art::Ptr<recob::Shower>& shower,
+            const std::vector<art::Ptr<recob::Cluster>> & clusters, 
+            std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,int plane,
+			double triggeroffset,
+			detinfo::DetectorPropertiesData const & theDetector){
+        //if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers() \t||\t The number of clusters in this shower is "<<clusters.size()<<std::endl;
+        std::vector<double> dqdx;
+
+        //get the 3D shower direction
+        //note: in previous versions of the code there was a check to fix cases where the shower direction was inverted - this hasn't been implemented
+        TVector3 shower_dir(shower->Direction().X(), shower->Direction().Y(),shower->Direction().Z());
+
+        //calculate the pitch for this plane
+        double pitch = getPitch(shower_dir, plane);	
+        //if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
+
+        //for all the clusters in the shower
+        for (const art::Ptr<recob::Cluster> &thiscluster: clusters){
+            //keep only clusters on the plane
+            if(thiscluster->View() != plane) continue;
+
+            //calculate the cluster direction
+            std::vector<double> cluster_axis = {cos(thiscluster->StartAngle()), sin(thiscluster->StartAngle())};		
+
+            //get the cluster start and and in CM
+            //std::cout<<"for plane/tpc/cryo:"<<plane<<"/"<<m_TPC<<"/"<<m_Cryostat<<", fXTicksOffset: "<<theDetector->GetXTicksOffset(plane, m_TPC, m_Cryostat)<<" fXTicksCoefficient: "<<theDetector->GetXTicksCoefficient(m_TPC, m_Cryostat)<<std::endl;
+
+            //convert the cluster start and end positions to time and wire coordinates
+            std::vector<double> cluster_start = {thiscluster->StartWire() * m_wire_spacing,(thiscluster->StartTick() - triggeroffset)* _time2cm};
+            std::vector<double> cluster_end = {thiscluster->EndWire() * m_wire_spacing,(thiscluster->EndTick() - triggeroffset)* _time2cm };
+
+            //check that the cluster has non-zero length
+            double length = sqrt(pow(cluster_end[0] - cluster_start[0], 2) + pow(cluster_end[1] - cluster_start[1], 2));
+            //if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeShowers() \t||\t The cluster length is "<<length<<std::endl;
+            if (length <= 0){ 
+                std::cout<<"skipping cluster on plane "<<plane<<", length = "<<length<<std::endl;
+                continue;
+            }
+
+
+            //draw a rectangle around the cluster axis 
+            std::vector<std::vector<double>> rectangle = buildRectangle(cluster_start, cluster_axis, m_width_dqdx_box, m_length_dqdx_box);	
+
+            //get all the hits for this cluster
+            std::vector<art::Ptr<recob::Hit>> hits =  clusterToHitMap[thiscluster];
+
+            //for each hit in the cluster
+            for (art::Ptr<recob::Hit> &thishit: hits){	
+                //get the hit position in cm from the wire and time
+                std::vector<double> thishit_pos ={thishit->WireID().Wire * m_wire_spacing, (thishit->PeakTime() - triggeroffset)* _time2cm};
+
+                //check if inside the box
+                bool v2 = isInsidev2(thishit_pos, rectangle);
+                if (v2){
+                    double q = GetQHit(thishit, plane); 
+                    double this_dqdx = q/pitch; 
+                    dqdx.push_back(this_dqdx);
+                }//if hit falls inside the box
+
+            }//for each hit inthe cluster
+        }//for each cluster
+        return dqdx;
+    }
+
+    double SinglePhoton::getPitch(TVector3 shower_dir, int plane){
+        //get the wire direction for this plane - values are hardcoded which isn't great but the TPC geom object gave weird values
+        TVector3 wire_dir = getWireVec(plane);
+
+        //take dot product of shower and wire dir
+        double cos = getCoswrtWires(shower_dir, wire_dir);
+
+        //want only positive values so take abs, normalize by the lengths of the shower and wire
+        cos = abs(cos)/(wire_dir.Mag() * shower_dir.Mag());	
+
+        //If the cos is 0 shower is perpendicular and therefore get infinite distance 
+        if (cos == 0){ return std::numeric_limits<double>::max(); }
+
+        //output is always >= the wire spacing
+        return m_wire_spacing/cos;
+    }
+
+
+
+    double SinglePhoton::getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane){
+        int nhits = 0;
+        double widths = 0;
+        for (art::Ptr<recob::Hit> thishitptr : hits){
+            //check the plane
+            int plane= thishitptr->View();
+
+            //skip invalid planes       
+            if (plane != this_plane) continue;
+
+            widths += thishitptr->RMS(); // recob::Hit->RMS() returns RMS of the hit shape in tick units
+            nhits++;
+        }//for each hiti
+        return   widths/(double)nhits;
+    }
+
+
+
+    int SinglePhoton::getNHitsPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane){
+        int nhits = 0;
+        for (art::Ptr<recob::Hit> thishitptr : hits){
+            //check the plane
+            int plane= thishitptr->View();
+
+            //skip invalid planes       
+            if (plane != this_plane) continue;
+
+            nhits++;
+        }//for each hiti
+        return nhits;
+    }
+
+
+
+
+    //area of a triangle given three vertices
+
+//	double this_area = areaTriangle(rectangle[i][0], rectangle[i][1], rectangle[j][0], rectangle[j][1], thishit_pos[0], thishit_pos[1]);
+//    double SinglePhoton::areaTriangle(double x1, double y1, double x2, double y2, double x3, double y3){
+//        double num = x1*(y2 - y3) + x2*(y3 - y1) + x3*(y1 - y2);
+//        return abs(num)/2;
+//    }
+
+
+
+//CHECK below are moved from SinglePhoton_module.cc
+
+
+    double SinglePhoton::triangle_area(double a1, double a2, double b1, double b2, double c1, double c2){
+        double m1 = 0.3;
+        double m2 = 1.0/25.0;
+
+        return fabs((a1*m1*(b2*m2-c2*m2)+b1*m1*(c2*m2-a2*m2)+c1*m1*(a2*m2-b2*m2))/2.0);
+    }
+
+    int SinglePhoton::quick_delaunay_fit(int n, double *X, double *Y, int *num_triangles, double * area){
+
+        std::vector<double> z(n,0.0);
+
+        TGraph2D *g = new TGraph2D(n,X,Y,&z[0]);
+        TGraphDelaunay delan(g);
+        delan.SetMarginBinsContent(0);
+        delan.ComputeZ(0,0);
+        delan.FindAllTriangles();
+        (*num_triangles)=delan.GetNdt(); // number of Delaunay triangles found
+
+        //Grab the locations of all the trianges. These will be intergers referencing to position in X,Y arrays
+        Int_t *MT = delan.GetMTried();
+        Int_t *NT = delan.GetNTried();
+        Int_t *PT = delan.GetPTried();
+
+        (*area)=0.0;
+        for(int i = 0; i<delan.GetNdt(); i++){
+            (*area)+=triangle_area(X[MT[i]-1],Y[MT[i]-1],X[NT[i]-1],Y[NT[i]-1],X[PT[i]-1],Y[PT[i]-1]);
+        }
+
+        delete g;
+        return 0;
+    }
+
+    int SinglePhoton::delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area){
+
+        int n = hits.size();
+        std::vector<double> C0,T0;
+        std::vector<double> C1,T1;
+        std::vector<double> C2,T2;
+        size_t n_0=0;
+        size_t n_1=0;
+        size_t n_2=0;
+
+        for(int i=0;i<n; i++){
+            const art::Ptr<recob::Hit> hit = hits[i];
+            switch(hit->View()){
+                case 0:
+                    C0.push_back((double)hit->WireID().Wire);         
+                    T0.push_back(hit->PeakTime());         
+                    n_0++;
+                    break;
+                case 1:
+                    C1.push_back((double)hit->WireID().Wire);         
+                    T1.push_back(hit->PeakTime());         
+                    n_1++;
+                    break;
+                case 2:
+                    C2.push_back((double)hit->WireID().Wire);         
+                    T2.push_back(hit->PeakTime());         
+                    n_2++;
+                    break;
+                default:
+                    break;
+            }
+        }
+        if(m_use_delaunay){
+            if(n_0>0 && (int)n_0 < m_delaunay_max_hits) this->quick_delaunay_fit(n_0, &C0[0]  , &T0[0]  , &num_triangles[0],&area[0]);
+            if(n_1>0 && (int)n_1 < m_delaunay_max_hits) this->quick_delaunay_fit(n_1, &C1[0]  , &T1[0]  , &num_triangles[1],&area[1]);
+            if(n_2>0 && (int)n_2 < m_delaunay_max_hits) this->quick_delaunay_fit(n_2, &C2[0]  , &T2[0]  , &num_triangles[2],&area[2]);
+        }
+        num_hits[0] = n_0;
+        num_hits[1] = n_1;
+        num_hits[2] = n_2;
+
+        //std::cout<<"Plane 0: "<<n_0<<" hits with "<<num_triangles[0]<<" triangles of area: "<< area[0]<<std::endl;
+        //std::cout<<"Plane 1: "<<n_1<<" hits with "<<num_triangles[1]<<" triangles of area: "<< area[1]<<std::endl;
+        //std::cout<<"Plane 2: "<<n_2<<" hits with "<<num_triangles[2]<<" triangles of area: "<< area[2]<<std::endl;
+
+        return 0;
     }
 
 }

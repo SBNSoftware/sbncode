@@ -4,13 +4,28 @@ namespace single_photon
 
     void SinglePhoton::AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector){    
 
-        if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeGeant4s()\t||\t Begininning recob::Geant4 analysis suite"<<std::endl;;
 
-
+		std::vector<int> spacers = Printer_header({"#MCP","   pdg", " Status"," trkID"," Mother"," Process", "            Process_End","     Energy", "      Vertex(x,  ","       y,      ",",      z     )"});
         for(size_t j=0;j< mcParticleVector.size();j++){
 
             const art::Ptr<simb::MCParticle> mcp = mcParticleVector[j];
-            std::cout<<"PARG: "<<j<<" PDG "<<mcp->PdgCode()<<" Status "<<mcp->StatusCode()<<" trackid: "<<mcp->TrackId()<<" Mothe "<<mcp->Mother()<<" Process "<<mcp->Process()<<" EndProcess "<<mcp->EndProcess()<<" Energy "<<mcp->E()<<" start ("<<mcp->Vx()<<","<<mcp->Vy()<<","<<mcp->Vz()<<")"<<std::endl;
+//            std::cout<<"PARG: "<<j<<" PDG "<<mcp->PdgCode()<<" Status "<<mcp->StatusCode()<<" trackid: "<<mcp->TrackId()<<" Mothe "<<mcp->Mother()<<" Process "<<mcp->Process()<<" EndProcess "<<mcp->EndProcess()<<" Energy "<<mcp->E()<<" start ("<<mcp->Vx()<<","<<mcp->Vy()<<","<<mcp->Vz()<<")"<<std::endl;
+
+			Printer_content({
+					std::to_string(j),
+					std::to_string(mcp->PdgCode()),
+					std::to_string(mcp->StatusCode()),
+					std::to_string(mcp->TrackId()),
+					std::to_string(mcp->Mother()),
+					mcp->Process(),
+					mcp->EndProcess(),
+					std::to_string(mcp->E()),
+					std::to_string(mcp->Vx()),
+					std::to_string(mcp->Vy()),
+					std::to_string(mcp->Vz())
+					},
+					spacers);
+
             m_geant4_pdg.push_back(mcp->PdgCode());
             m_geant4_trackid.push_back(mcp->TrackId());
             m_geant4_statuscode.push_back(mcp->StatusCode());
