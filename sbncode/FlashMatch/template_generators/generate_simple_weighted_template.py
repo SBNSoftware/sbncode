@@ -49,6 +49,10 @@ class dotDict(dict):
         return self[val]
 
 
+def sig_fig_round(number, digits=3):
+    power = "{:e}".format(number).split('e')[1]
+    return round(number, -(int(power) - digits))
+
 # Globally turn off root warnings.
 # Don't let root see our command line options.
 myargv = sys.argv
@@ -57,6 +61,14 @@ if 'TERM' in os.environ:
     del os.environ['TERM']
 ROOT.gErrorIgnoreLevel = ROOT.kError
 sys.argv = myargv
+
+# TODO: work out the best values for these
+ROOT.gStyle.SetStatX(0.4)
+ROOT.gStyle.SetStatY(0.88)
+ROOT.gStyle.SetStatW(0.15)
+# ROOT.gStyle.SetStatH(0.2)
+ROOT.gStyle.SetOptStat(1111)
+ROOT.gStyle.SetOptFit(1111)
 
 detector = "experiment"
 # # Print help
@@ -94,22 +106,22 @@ def hypo_flashx_from_H2(flash_rr, rr_h2, flash_ratio, ratio_h2):
 def x_estimate_and_rms(metric_value, metric_h2):
     kMinEntriesInProjection = 100
     fXBinWidth = 5.
-    bin = metric_h2.GetYaxis().FindBin(metric_value);
+    bin_ = metric_h2.GetYaxis().FindBin(metric_value);
     bins = metric_h2.GetNbinsY();
     metric_hypoX = -1.;
     metric_hypoXWgt = 0.;
     bin_buff = 0;
-    while 0 < bin-bin_buff or bin+bin_buff <= bins :
-        low_bin = bin-bin_buff if 0 < bin-bin_buff else 0
-        high_bin = bin+bin_buff if bin+bin_buff <= bins else -1
+    while 0 < bin_-bin_buff or bin_+bin_buff <= bins :
+        low_bin = bin_-bin_buff if 0 < bin_-bin_buff else 0
+        high_bin = bin_+bin_buff if bin_+bin_buff <= bins else -1
         metric_px = metric_h2.ProjectionX("metric_px", low_bin, high_bin);
         if metric_px.GetEntries() > kMinEntriesInProjection :
             metric_hypoX = metric_px.GetRandom();
             metric_rmsX = metric_px.GetRMS();
             if metric_rmsX < fXBinWidth: # something went wrong
-                print(f"metric_h2 projected on metric_value: {metric_value}, bin: {bin}, "
-                      f"bin_buff: {bin_buff}; has {metric_px.GetEntries()} entries.")
-                print(f"metric_hypoX: {metric_hypoX}, metric_rmsX: {metric_rmsX}")
+                print(f"{metric_h2.GetName()} projected on metric_value: {metric_value}, "
+                      f"bin: {bin_}, bin_buff: {bin_buff}; has {metric_px.GetEntries()} entries.")
+                print(f"  metric_hypoX: {metric_hypoX}, metric_rmsX: {metric_rmsX}")
                 return (-1., 0.); # no estimate
             metric_hypoXWgt = 1/(metric_rmsX*metric_rmsX);
             return (metric_hypoX, metric_hypoXWgt);
@@ -117,18 +129,51 @@ def x_estimate_and_rms(metric_value, metric_h2):
     return (-1., 0.); # no estimate
 
 
-def y_bias(y_skew, hypo_x, y_bias_slope):
-      if detector == "sbnd":
-          return y_skew * hypo_x * hypo_x * y_bias_slope
-      elif detector == "icarus":
-          return y_skew * hypo_x * y_bias_slope
+def quality_checks(e):
+    if e.slices != 1: return False
+    if e.true_nus != 1: return False
+    if e.mcT0 < 0. or 1.6 < e.mcT0 : return False # TODO: unhardcode
+    if e.charge_x < 0.: return False
+    return True
 
 
-def z_bias(z_skew, hypo_x, z_bias_slope):
-    if detector == "sbnd":
-          return z_skew * hypo_x * z_bias_slope;
-    elif detector == "icarus":
-          return z_skew * hypo_x * z_bias_slope;
+def polinomial_correction(skew, hypo_x, pol_coefs, skew_high_limit=10.):
+    # TODO: maybe some other condition to prevent corrections?
+    if np.abs(skew) > skew_high_limit or np.isnan(hypo_x):
+        return 0.
+    correction = 0.
+    exponent = 1.
+    for coef in pol_coefs:
+        correction += coef * exponent
+        exponent *= hypo_x
+    return correction * skew
+
+
+def parameters_correction_fitter(nuslice_tree, var, profile_bins,
+                                 dist_to_anode_low, dist_to_anode_up,
+                                 skew_high_limit=10., skew_low_limit=0.05):
+    fit_prof = TProfile(f"fit_prof_{var}", "", profile_bins,
+                        dist_to_anode_low, dist_to_anode_up)
+    draw_expression = (f"((flash_{var}b-charge_{var})/{var}_skew):new_hypo_x"
+                       f">>fit_prof_{var}")
+    draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
+                    f"abs({var}_skew)<{skew_high_limit} && "
+                    f"true_nus==1 && slices==1 && "
+                    f"0.<mcT0 && mcT0<1.6")
+    draw_option = "prof" # TODO: maybe better to use "profs"
+    print(draw_expression, draw_filters, draw_option)
+    can = TCanvas("can")
+    nuslice_tree.Draw(draw_expression, draw_filters, draw_option)
+    fit_result = fit_prof.Fit("pol2", "S")
+    fit_prof.Write()
+    fit_result.Print("V")
+    can.Print(f"{var}_correction_fit.pdf")
+    params = []
+    for p in fit_result.Parameters():
+        params.append(sig_fig_round(p, 3))
+    print("The fitted and rounded correction parameters for ", var, " are: ", params)
+    print("Please update the fcl files with these values")
+    return params
 
 
 def generator(nuslice_tree, rootfile, pset):
@@ -136,8 +181,6 @@ def generator(nuslice_tree, rootfile, pset):
     x_bins = pset.XBins
     xbin_width = drift_distance/x_bins
     half_bin_width = xbin_width/2.
-    y_bias_slope = pset.YBiasSlope
-    z_bias_slope = pset.ZBiasSlope
 
     xvals = np.arange(half_bin_width, drift_distance, xbin_width)
     xerrs = np.array([half_bin_width] * len(xvals))
@@ -226,6 +269,40 @@ def generator(nuslice_tree, rootfile, pset):
     ratio_h1.GetXaxis().SetTitle("distance from anode (cm)")
     ratio_h1.GetYaxis().SetTitle("ratio")
 
+    slope_spreads = [None] * x_bins
+    slope_means = [None] * x_bins
+    slope_h2 = TH2D("slope_h2", "Z/Y Slope",
+                    dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
+                    pset.slope_bins, pset.slope_low, pset.slope_up)
+    slope_h2.GetXaxis().SetTitle("distance from anode (cm)")
+    slope_h2.GetYaxis().SetTitle("slope")
+    slope_prof = TProfile("slope_prof", "Profile of Z/Y Slope",
+                          profile_bins, dist_to_anode_low, dist_to_anode_up,
+                          pset.slope_low, pset.slope_up, profile_option)
+    slope_prof.GetXaxis().SetTitle("distance from anode (cm)")
+    slope_prof.GetYaxis().SetTitle("slope")
+    slope_h1 = TH1D("slope_h1", "",
+                    profile_bins, dist_to_anode_low, dist_to_anode_up)
+    slope_h1.GetXaxis().SetTitle("distance from anode (cm)")
+    slope_h1.GetYaxis().SetTitle("slope")
+
+    petoq_spreads = [None] * x_bins
+    petoq_means = [None] * x_bins
+    petoq_h2 = TH2D("petoq_h2", "PE to Q Ratio",
+                    dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
+                    pset.petoq_bins, pset.petoq_low, pset.petoq_up)
+    petoq_h2.GetXaxis().SetTitle("distance from anode (cm)")
+    petoq_h2.GetYaxis().SetTitle("petoq")
+    petoq_prof = TProfile("petoq_prof", "Profile of PE to Q Ratio",
+                          profile_bins, dist_to_anode_low, dist_to_anode_up,
+                          pset.petoq_low, pset.petoq_up, profile_option)
+    petoq_prof.GetXaxis().SetTitle("distance from anode (cm)")
+    petoq_prof.GetYaxis().SetTitle("petoq")
+    petoq_h1 = TH1D("petoq_h1", "",
+                    profile_bins, dist_to_anode_low, dist_to_anode_up)
+    petoq_h1.GetXaxis().SetTitle("distance from anode (cm)")
+    petoq_h1.GetYaxis().SetTitle("petoq")
+
     unfolded_score_scatter = TH2D("unfolded_score_scatter", "Scatter plot of match scores",
                                   2*dist_to_anode_bins, x_gl_low, x_gl_up,
                                   pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
@@ -245,27 +322,52 @@ def generator(nuslice_tree, rootfile, pset):
                           pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up)
     match_score_h1.GetXaxis().SetTitle("match score (arbitrary)")
 
+    metrics_filename = 'fm_metrics_' + detector + '.root'
+    hfile = gROOT.FindObject(metrics_filename)
+    if hfile:
+        hfile.Close()
+    hfile = TFile(metrics_filename, 'RECREATE',
+                  'Simple flash matching metrics for ' + detector.upper())
+
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
-        if e.slices > e.true_nus: continue
+        if not quality_checks(e): continue
         qX = e.charge_x
         rr_h2.Fill(qX, e.flash_rr)
         rr_prof.Fill(qX, e.flash_rr)
         ratio_h2.Fill(qX, e.flash_ratio)
         ratio_prof.Fill(qX, e.flash_ratio)
+    # store the new hypothesis of the flash x position hypo_x
+    new_hypo_x = array('d',[0])
+    new_hypo_x_branch = nuslice_tree.Branch("new_hypo_x", new_hypo_x, "new_hypo_x/D");
+    for e in nuslice_tree:
+        new_hypo_x[0] = hypo_flashx_from_H2(e.flash_rr, rr_h2,
+                                            e.flash_ratio, ratio_h2)
+        new_hypo_x_branch.Fill()
+    y_pol_coefs = parameters_correction_fitter(nuslice_tree, "y", profile_bins,
+                                               dist_to_anode_low, dist_to_anode_up,
+                                               pset.SkewLimitY)
+    z_pol_coefs = parameters_correction_fitter(nuslice_tree, "z", profile_bins,
+                                               dist_to_anode_low, dist_to_anode_up,
+                                               pset.SkewLimitZ)
+
     # use rr_h2 and ratio_h2 to compute hypo_x
     for e in nuslice_tree:
-        if e.slices > e.true_nus: continue
+        if not quality_checks(e): continue
         qX = e.charge_x
-        hypo_x = hypo_flashx_from_H2(e.flash_rr, rr_h2, e.flash_ratio, ratio_h2)
-        corr_flash_y = e.flash_yb - y_bias(e.y_skew, hypo_x, y_bias_slope)
-        corr_flash_z = e.flash_zb - z_bias(e.z_skew, hypo_x, z_bias_slope)
-
+        corr_flash_y = e.flash_yb - polinomial_correction(e.y_skew, e.new_hypo_x,
+                                                          y_pol_coefs)
+        corr_flash_z = e.flash_zb - polinomial_correction(e.z_skew, e.new_hypo_x,
+                                                          z_pol_coefs)
         dy_h2.Fill(qX, corr_flash_y - e.charge_y)
         dy_prof.Fill(qX, corr_flash_y - e.charge_y)
         dz_h2.Fill(qX, corr_flash_z - e.charge_z)
         dz_prof.Fill(qX, corr_flash_z - e.charge_z)
 
+        slope_h2.Fill(qX, e.flash_slope - e.charge_slope)
+        slope_prof.Fill(qX, e.flash_slope - e.charge_slope)
+        petoq_h2.Fill(qX, e.petoq)
+        petoq_prof.Fill(qX, e.petoq)
 
     # fill histograms for match score calculation from profile histograms
     for ib in list(range(0, profile_bins)):
@@ -286,9 +388,17 @@ def generator(nuslice_tree, rootfile, pset):
         ratio_h1.SetBinError(ibp, ratio_prof.GetBinError(ibp))
         ratio_means[int(ib)] = ratio_prof.GetBinContent(ibp)
         ratio_spreads[int(ib)] = ratio_prof.GetBinError(ibp)
+        slope_h1.SetBinContent(ibp, slope_prof.GetBinContent(ibp))
+        slope_h1.SetBinError(ibp, slope_prof.GetBinError(ibp))
+        slope_means[int(ib)] = slope_prof.GetBinContent(ibp)
+        slope_spreads[int(ib)] = slope_prof.GetBinError(ibp)
+        petoq_h1.SetBinContent(ibp, petoq_prof.GetBinContent(ibp))
+        petoq_h1.SetBinError(ibp, petoq_prof.GetBinError(ibp))
+        petoq_means[int(ib)] = petoq_prof.GetBinContent(ibp)
+        petoq_spreads[int(ib)] = petoq_prof.GetBinError(ibp)
 
     for e in nuslice_tree:
-        if e.slices > e.true_nus: continue
+        if not quality_checks(e): continue
         qX = e.charge_x
         qXGl = e.charge_x_gl
         # calculate match score
@@ -310,29 +420,32 @@ def generator(nuslice_tree, rootfile, pset):
             print("Warning zero spread.\n",
                   f"qX: {qX}. isl: {isl}. ratio_spreads[isl]: {ratio_spreads[isl]} ")
             ratio_spreads[isl] = ratio_spreads[isl+1]
-            # ratio_spreads[isl] = ratio_spreads[isl-1]
-        hypo_x = hypo_flashx_from_H2(e.flash_rr, rr_h2, e.flash_ratio, ratio_h2)
-        corr_flash_y = e.flash_yb - y_bias(e.y_skew, hypo_x, y_bias_slope)
-        corr_flash_z = e.flash_zb - z_bias(e.z_skew, hypo_x, z_bias_slope)
+        if slope_spreads[isl] <= 1.e-8:
+            print("Warning zero spread.\n",
+                  f"qX: {qX}. isl: {isl}. slope_spreads[isl]: {slope_spreads[isl]} ")
+            slope_spreads[isl] = slope_spreads[isl+1]
+        if petoq_spreads[isl] <= 1.e-8:
+            print("Warning zero spread.\n",
+                  f"qX: {qX}. isl: {isl}. petoq_spreads[isl]: {petoq_spreads[isl]} ")
+            petoq_spreads[isl] = petoq_spreads[isl+1]
+        corr_flash_y = e.flash_yb - polinomial_correction(e.y_skew, e.new_hypo_x,
+                                                          y_pol_coefs)
+        corr_flash_z = e.flash_zb - polinomial_correction(e.z_skew, e.new_hypo_x,
+                                                          z_pol_coefs)
 
-        score += abs(abs(corr_flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
-        score += abs(abs(corr_flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
+        score += abs((corr_flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
+        score += abs((corr_flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_rr-rr_means[isl])/rr_spreads[isl]
         if (detector == "sbnd" and pset.UseUncoatedPMT) or \
            (detector == "icarus" and pset.UseOppVolMetric) :
             score += abs(e.flash_ratio-ratio_means[isl])/ratio_spreads[isl]
+        score += abs((e.flash_slope - e.charge_slope) - slope_means[isl])/slope_spreads[isl]
+        score += abs(e.petoq-petoq_means[isl])/petoq_spreads[isl]
 
         oldunfolded_score_scatter.Fill(qXGl, e.score)
         unfolded_score_scatter.Fill(qXGl, score)
         match_score_scatter.Fill(qX, score)
         match_score_h1.Fill(score)
-
-    metrics_filename = 'fm_metrics_' + detector + '.root'
-    hfile = gROOT.FindObject(metrics_filename)
-    if hfile:
-        hfile.Close()
-    hfile = TFile(metrics_filename, 'RECREATE',
-                  'Simple flash matching metrics for ' + detector.upper())
 
     dy_h2.Write()
     dy_prof.Write()
@@ -371,6 +484,12 @@ def generator(nuslice_tree, rootfile, pset):
         graph.Fit(f)
         f.Write()
         ratio_fit_funcs.append(f)
+    slope_h2.Write()
+    slope_prof.Write()
+    slope_h1.Write()
+    petoq_h2.Write()
+    petoq_prof.Write()
+    petoq_h1.Write()
     match_score_scatter.Write()
     oldunfolded_score_scatter.Write()
     unfolded_score_scatter.Write()
@@ -425,6 +544,26 @@ def generator(nuslice_tree, rootfile, pset):
     canv.Print("ratio.pdf")
     canv.Update()
 
+    slope_h2.Draw()
+    crosses = TGraphErrors(x_bins,
+                           array('f', xvals), array('f', slope_means),
+                           array('f', xerrs), array('f', slope_spreads))
+    crosses.SetLineColor(ROOT.kAzure+9)
+    crosses.SetLineWidth(3)
+    crosses.Draw("Psame")
+    canv.Print("slope.pdf")
+    canv.Update()
+
+    petoq_h2.Draw()
+    crosses = TGraphErrors(x_bins,
+                           array('f', xvals), array('f', petoq_means),
+                           array('f', xerrs), array('f', petoq_spreads))
+    crosses.SetLineColor(ROOT.kAzure+9)
+    crosses.SetLineWidth(3)
+    crosses.Draw("Psame")
+    canv.Print("petoq.pdf")
+    canv.Update()
+
     oldunfolded_score_scatter.Draw()
     canv.Print("oldunfolded_score_scatter.pdf")
     canv.Update()
@@ -470,8 +609,9 @@ def main():
         print('Input file %s does not exist.' % args.file)
         return 1
 
+    # TODO: better not modify the original file: open and read it, make a copy and then modify the copy
     print('\nOpening %s' % args.file)
-    rootfile = TFile.Open(args.file)
+    rootfile = TFile.Open(args.file, 'update')
     if not rootfile.IsOpen() or rootfile.IsZombie():
         print('Failed to open %s' % args.file)
         return 1
