@@ -58,14 +58,12 @@ physics:
   {
     fluxana: {
       module_type: "FluxReaderAna"
-      Baseline: 11000 # cm, distance from detector to target position
-      XShift: -73.78 # cm, detector shift along X w.r.t. beamline coordinate system
-      NuOtherIntersectionZ: 36000 # cm
-      # 49000 cm is ICARUS location in SBND coordinate system (600 - 110) m
-      # 36000 cm is MicroBooNE location in SBND coordinate system (470 - 110) m
+      Baseline: 47000 # cm, distance from detector to target position
+      XShift: 0 # cm, detector shift along X w.r.t. beamline coordinate system
+      NuOtherIntersectionZ: 0 # cm
       ApplyPositionCuts: true
-      XCut: 200 # cm
-      YCut: 200 # cm
+      XCut: 128 # cm
+      YCut: 116.5 # cm
     }
   }
 
