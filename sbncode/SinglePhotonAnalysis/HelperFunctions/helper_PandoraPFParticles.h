@@ -44,7 +44,7 @@ namespace single_photon
 				if(PPFPs[index].get_SliceID() > -1 ) continue;//slice# is found already
 				if( (PPFPs[index].pPFParticle)->Self() == pfp->Self() ){
 					PPFPs[index].pSlice = slice;
-					PPFPs[index].pHits = Hit_inslice;
+					PPFPs[index].pSliceHits = Hit_inslice;
 					PPFPs[index].set_SliceID( slice.key() );
 					break;
 				}
@@ -56,31 +56,36 @@ namespace single_photon
 	int DefineNuSlice(std::vector< PandoraPFParticle > & PPFPs){
 
 		int pfp_size = PPFPs.size();
-		std::map< int, double > temp_ID_nuscore_map;
+//		std::map< int, double > temp_ID_nuscore_map;
 		double best_nuscore = 0;
 		int best_nuscore_SliceID = 0;
+		std::vector< int > IDs;
 
 		for(int index = 0; index < pfp_size; index++){
-			PandoraPFParticle temp_p = PPFPs[index];
-			if(temp_p.get_IsNeutrino()){
-
-				temp_ID_nuscore_map[ temp_p.get_SliceID()] = temp_p.get_NuScore();
-				if(best_nuscore < temp_p.get_NuScore() ){
-					best_nuscore = temp_p.get_NuScore();
-					best_nuscore_SliceID = temp_p.get_SliceID();
-					std::cout<<__FUNCTION__<<"CHECK Best nu score "<< best_nuscore<<" at slice "<<temp_p.get_SliceID()<<std::endl;
+			PandoraPFParticle* temp_p = &PPFPs[index];
+			if(temp_p->get_IsNeutrino()){
+				int temp_sliceID = temp_p->get_SliceID();
+				//add one if not found;
+				if(!std::count(IDs.begin(), IDs.end(), temp_sliceID) ) IDs.push_back(temp_sliceID);
+//				temp_ID_nuscore_map[ temp_p.get_SliceID()] = temp_p.get_NuScore();
+				if(best_nuscore < temp_p->get_NuScore() ){
+					best_nuscore = temp_p->get_NuScore();
+					best_nuscore_SliceID = temp_p->get_SliceID();
+////					std::cout<<__FUNCTION__<<"CHECK Best nu score "<< best_nuscore<<" at slice "<<temp_p.get_SliceID()<<std::endl;
 				}
 			}
 		}
 
-		//now markdown all particles in slice with best ID;
+		//now markdown all pfparticles in slice
 		//re-set pNuScore and pIsNuSlice
 		for(int index = 0; index < pfp_size; index++){
-			if( PPFPs[index].get_SliceID() == best_nuscore_SliceID){
-				PPFPs[index].set_IsNuSlice( true );
-				PPFPs[index].set_NuScore( best_nuscore );//CHECK over-write the original score, if there is any;
-				std::cout<<__FUNCTION__<<" CHECK Set nu slice "<<PPFPs[index].get_SliceID()<<" with score "<<PPFPs[index].get_NuScore()<<std::endl;
-			}//CHECK, same event, different slices, still different score.
+			PandoraPFParticle* ppfp = &PPFPs[index];
+			if( std::count(IDs.begin(), IDs.end(), ppfp->get_SliceID()) ) ppfp->set_IsNuSlice(true);
+//			if( PPFPs[index].get_SliceID() == best_nuscore_SliceID){
+//				PPFPs[index].set_IsNuSlice( true );
+//				PPFPs[index].set_NuScore( best_nuscore );//CHECK over-write the original score, if there is any;
+//				std::cout<<__FUNCTION__<<" CHECK Set nu slice "<<PPFPs[index].get_SliceID()<<" with score "<<PPFPs[index].get_NuScore()<<std::endl;
+//			}//CHECK, same event, different slices, still different score.
 		}
 
 		return best_nuscore_SliceID;

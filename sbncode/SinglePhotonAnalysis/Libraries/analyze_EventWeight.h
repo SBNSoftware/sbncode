@@ -2,7 +2,7 @@ namespace single_photon
 {
 
   void SinglePhoton::AnalyzeEventWeight(art::Event const & e){
-    std::cout<<"SinglePhoton::AnalyzeEventWeight- starting"<<std::endl;
+
     art::Handle< std::vector<simb::MCFlux> > mcFluxHandle;
     e.getByLabel("generator", mcFluxHandle);
     if (!mcFluxHandle.isValid()) return;

@@ -2140,9 +2140,9 @@ namespace single_photon
 	}
 
 	void SinglePhoton::ResizeSlices(size_t size){
-		m_reco_slice_nuscore.resize(size);
-		m_reco_slice_num_pfps.resize(size);
-		m_reco_slice_num_showers.resize(size);
-		m_reco_slice_num_tracks.resize(size);
+		m_reco_slice_nuscore.resize(size,-999);
+		m_reco_slice_num_pfps.resize(size,0);
+		m_reco_slice_num_showers.resize(size,0);
+		m_reco_slice_num_tracks.resize(size,0);
 	}
 }

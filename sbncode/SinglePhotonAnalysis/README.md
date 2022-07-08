@@ -1,9 +1,9 @@
-# SinglePhotonModule 
+# SinglePhotonAnalysis Module 
 Ported from `ubana` in suite `uboonecode v08_00_00_43 e17:prof` in Mar. 2022
 
 The original code can be found at [Fermilab Readmine](https://cdcvs.fnal.gov/redmine/projects/ubana/repository?utf8=%E2%9C%93&rev=feature%2Fmarkross_Nov2021_merge)
 
-NEED INTRODUCTION HERE.
+The SinglePhotonAnalysis Module is originally developed in MicroBooNE that aids [NCDeltaRadiative singlephoton search](https://arxiv.org/abs/2110.00409).
 
 * [Quick Start](#quick-start)
 * [Update Log](#update-log)
@@ -12,9 +12,9 @@ NEED INTRODUCTION HERE.
 
 ---
 ## Quick Start
+Use a reco2 stage artROOT file as input:
 ```
-mrb i -j4
-lar -c run_singlephoton_sbnd.fcl -s <input_reco2_sbnd_ROOT_FILE>
+lar -c run_singlephoton_sbnd.fcl -s <input_reco2_sbnd_artROOT>
 ```
 
 ## Update Log
@@ -47,7 +47,7 @@ Three sub-modules are included in the Single Photon Analysis Module:
 - `NCRadiativeResonant_module.cc`  implements the `NCRadiativeResonant` filter to select events with photons coming out from the nucleus.
 - `NCDeltaRadiative_module.cc` implements the `NCDeltaRadiative` filter for NCDeltaRadiative events
 
-### Code Structure
+### File Structure
 - `Libraries/` contains essential headers for the `SinglePhoton` module.
 
 - `SEAview/` is an additional module runs inside the `SinglePhoton` module.
@@ -55,6 +55,16 @@ Three sub-modules are included in the Single Photon Analysis Module:
 - `jobs/` contains FHiCL files for running these modules
 
 - `HelperFunctions/` contains some useful functions to simplify the code
+
+Header goes like
+```mermaid
+flowchart TB
+A--first formost-->C;
+A[SinglePhoton_module.cc]--contains-->B[analyze*.h that works like *.cxx];
+C[SinglePhoton_module.h]-->D[helper_*.h];
+C-->F[DBSCAN.h];
+C-->G[SEAviewer.h];
+```
 
 ### Headers structure
 
@@ -67,70 +77,97 @@ C-->F[DBSCAN.h];
 C-->G[SEAviewer.h];
 ```
 
-### Flows of the `SinglePhoton` module
+### The flow of the `SinglePhoton` module
+
+The main flow
+```mermaid
+graph TD
+A[art::EDFilter]-->B[beginJob];
+B-->C[beginSubRun];
+C-->F[filter: Loop over events];
+F-->F;
+F-->D[endSubRun];
+D-->E[endJob];
+```
+
+In each event loop:
 
 ```mermaid
 flowchart TB
-A[ClearVertex & prepare PFParticles objects]-->AA;
-subgraph AA[1. Gather Objects]
+
+subgraph AA[1. Collect Pandora Reco. Objects]
 direction TB
 B[AnalyzeSlices]-->C;
-C[AnalyzeFlashes]-->D;
-D[AnalyzeTracks]-->E;
-E[AnalyzeShowers]-->F;
-F[AnalyzeGeant4]-->G;
-G[BuildParticleHitMaps];
+C[AnalyzeFlashes, a trivial function]-->D;
+D[AnalyzeTracks]-->E[AnalyzeShowers];
 end  
 
-subgraph BB[2. Reco MC Matching]
+subgraph BB[2. Reco. MC Matching, non-data treatment]
 direction TB
-H[Match Reco. Showers to MCParticles]-->I;
-I[Match Reco. Tracks to MCParticles]-->J;
-J[CollectMCTruth Information];
+F[Geant4 Info.]---H;
+H[Match Reco. Showers and MCParticles]---I;
+I[Match Reco. Tracks and MCParticles];
+J[MCTruth Info.]---K;
+K[Flux Info. AnalyzeEventWeight]---L;
+L[Match RecoSlices and MCParticles];
 end
 
-subgraph CC[3. Gather Other Info. ]
+subgraph DD[3. 2nd Shower search]
 direction TB
-K[AnalyzeEventWeight]-->L;
-L[AnalyzeRecoSlices];
+N[Track stub study]
+O[Shower cluster study]
+M[Isolation Study for Second Shower Veto]-->N;
+M-->O;
 end
 
-subgraph DD[4. 2nd Shower earch]
+subgraph THIS[The Flow]
 direction TB
-M[Isolation Study for 2nd Shower Veto]-->N;
-N[Match 2nd Shower]-->O[Search 2nd Shower];
+A[Prepare branches]-->AA;
+AA-->BB;
+BB-->DD;
+DD-->End[Output singlephoton ntuple];
 end
-
-subgraph THIS[flow chart]
-direction LR
-AA-->BB
-CC-->DD;
-end
-DD-->End[Output ROOT];
 ```
 
-
 ### Pandora Dependency
-Objects are obtained from Pandora reconstruction, and they are connected  via the following:
+Objects are obtained from Pandora reconstruction, and they are connected with the following relation:
+
 ```mermaid
 graph TD
-PF[PFParticle];T[Track];Sh[Shower];
-H[Hit]; C[Cluster]; S[Slice];MCT[MCTruth];MCP[MCParticle];ID[ID#'s];M[Metadata];SP[SpacePoint];
-PF-->ID;
+PF[recob::PFParticle];
+M[larpandoraobj::Metadata];
+T[recob::Track];
+Sh[recob::Shower];
+H[recob::Hit's]; 
+C[recob::Cluster's];   
+S[recob::Slice];
+MCT[simb::MCTruth];
+MCP[simb::MCParticle];
+PID[anab::ParticleID];
+Cal[anab::Calorimetry];
+SP[recob::SpacePoint];
+ID[others];
 PF-->M;
 PF-->SP;
+PF-->ID;
 PF-->C;
 C-->H;
 PF-->Sh;
 PF-->T;
+T-->PID;
+T-->Cal;
 PF-->S;
 S-->H;
 Sh-->MCP;
 T-->MCP;
 MCP-->MCT;
+Sh-->H;
+T-->H;
 ```
 
-These objects are connected via labels shown as the following:
+These objects are accessible via labels:
+
+Labels configured in `singlephoton_sbnd.fcl`
 |Alias|Objects|Label|
 |---|---|---|
 |PandoraLabel|`std::vector<recob::PFParticle>`<br>`std::vector<recob::Cluster>`<br>`std::vector<recob::Slice>`<br>`std::vector<recob::Vertex>`|pandora|
@@ -141,7 +178,7 @@ These objects are connected via labels shown as the following:
 |FlashLabel|`std::vector<recob::OpFlash>`|opflashtpc0|
 |POTLabel|`sumdata::POTSummary`|generator|
 
-Below alias auto-configured by default
+Below alias auto-configured inside the code as a default
 |Alias|Objects|Label|
 |---|---|---|
 |HitFinderModule|`std::vector<recob::Hit>`|gaushit|
@@ -158,12 +195,15 @@ Below alias auto-configured by default
 ## Glossary
 
 ### Parameters in FHiCL
+Summarization in progress.
 
 ### Variables
 
 In `TTree vertex_tree`, variables prefix have the following meaning:
-- `sss_*` 
-- `trackstub_*` 
-- `reco_*` 
-- `sim_*` 
-- `mctruth_*` 
+- Reconstructed variables valid for all types of events
+	- `reco_*` are reconstructed variables provided by Pandora
+	- `sss_*` are second shower search varaibles targeting hits/clusters that are not considered as tracks or showers by Pandora
+	- `trackstub_*` are track stub varaibles targeting track-like hits/clusters that are not considered as tracks or showers by Pandora
+- MC variables from simulations
+	- `mctruth_*` are MCTruth variables provided by the event genrator GEANT4
+	- `sim_*` are MCTruth variables matched to Pandora reconstructed objects

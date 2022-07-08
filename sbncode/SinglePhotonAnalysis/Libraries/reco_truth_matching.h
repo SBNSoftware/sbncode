@@ -9,73 +9,37 @@ namespace single_photon
 			std::vector<PandoraPFParticle> all_PPFPs,
 			std::vector<art::Ptr<recob::Shower>>& showerVector,
             std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& showerToMCParticleMap,
-//            std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle>>& showerToPFParticleMap,
-//            std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
             art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
             std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-//            std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
-            std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap
-//            std::map<int, double>& sliceIdToNuScoreMap
-//            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-//            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-//            std::map<art::Ptr<recob::PFParticle>,bool>& PFPToNuSliceMap
-			){
+            std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap){
 
         std::vector<double> vec_fraction_matched;
-        std::map<std::string,bool> map_is_shower_process = {{"compt",true},{"FastScintillation",true},{"eBrem",true},{"phot",true},{"eIoni",true},{"conv",true},{"annihil",true}};
-        bool reco_verbose = false;
-        
-        if(reco_verbose) std::cout<<"Strting "<<showerVector.size()<<" things"<<std::endl;
+		//processes that are "showery"
+        std::map<std::string,bool> map_is_shower_process = {{"compt",true},
+			{"FastScintillation",true},
+			{"eBrem",true},
+			{"phot",true},
+			{"eIoni",true},
+			{"conv",true},
+			{"annihil",true}};
 
+		std::vector<int> spacers = Printer_header({"pfpID", " matched_#simb", " pdg","    E_plane0","    E_plane1","    E_plane2"," cosmic?"});
         //for each recob::track/shower in the event
+		bool default_verbose = m_is_verbose;
+		m_is_verbose = false;
         for(size_t i=0; i<showerVector.size();++i){
             auto shower = showerVector[i];
 
             //get the associated reco PFP
-//            if(reco_verbose)std::cout<<"We have "<<showerToPFParticleMap.count(shower)<<" matches in map"<<std::endl;
+//            if(m_is_verbose)std::cout<<"We have "<<showerToPFParticleMap.count(shower)<<" matches in map"<<std::endl;
 
 			PandoraPFParticle* ppfp = PPFP_GetPPFPFromShower(all_PPFPs, shower);
             const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
-
-//            if (reco_verbose) std::cout<<"SinglePhoton::recoMC()\t||\t looking for a shower match to pfp "<< pfp->Self()<<" which is in slice "<<  PFPToSliceIdMap[pfp]<<std::endl;
-
-            //this was some checks on the PFP side
-            /*
-            //check to see where the PFP is in the chain
-            // If the particle is primary, it doesn't have a parent
-            if (pfp->IsPrimary()){std::cout<<"this is the primary particle"<<std::endl;}
-            //else get the parent
-            else{
-            const auto parentIterator = pfParticleIdMap.find(pfp->Parent());
-            if (parentIterator == pfParticleIdMap.end()){
-            std::cout<<"error: no parent but not primary"<<std::endl;
-            }
-
-            const int parentPDG = parentIterator->second->PdgCode();
-            std::cout<<"the parent pdg code is "<<parentPDG<<std::endl;
-
-            auto daughers_vec = pfp->Daughters();
-            //std::cout<<"the number of daugter particles is "<<daughers_vec.size() <<std::endl;
-
-            for (auto const daughterpfp: daughers_vec){
-            const auto daughterIterator = pfParticleIdMap.find(daughterpfp);
-            if (daughterIterator == pfParticleIdMap.end()){
-            //       std::cout<<"error: didn't find that daughter"<<std::endl;
-            } else {
-            art::Ptr<recob::PFParticle> daughters = daughterIterator->second;
-            //       std::cout<<"the daughter pdg code is "<<daughters->PdgCode()<<std::endl;
-            }
-            }               
-
-            //const int parentPDG = parentIterator->second->PdgCode();
-            //std::cout<<"the parent pdg code is "<<parentPDG<<std::endl;
-            }
-            */
-
+	
             //putting in the PFP pdg code as a check
 
             //and get the hits associated to the reco PFP
-            std::vector< art::Ptr<recob::Hit> > obj_hits_ptrs = ppfp->pHits; //pfParticleToHitsMap[pfp];
+            std::vector< art::Ptr<recob::Hit> > obj_hits_ptrs = ppfp->pPFPHits; //pfParticleToHitsMap[pfp];
 
             /**
              * 
@@ -166,8 +130,8 @@ namespace single_photon
 
             double fraction_num_hits_overlay = (double)n_not_associated_hits/(double)obj_hits_ptrs.size();
 
-            if(reco_verbose)std::cout << "SinglePhoton::recoMC()\t||\t On Object "<<i<<". The number of MCParticles associated with this PFP is "<<objide.size()<<std::endl;       
-            if(reco_verbose) std::cout<<"SinglePhoton::recoMC()\t||\t the fraction of hits from overlay is is "<<fraction_num_hits_overlay<<" ("<<n_not_associated_hits<<"/"<<obj_hits_ptrs.size()<<")"<<std::endl;
+            if(m_is_verbose)std::cout << "SinglePhoton::recoMC()\t||\t On Object "<<i<<". The number of MCParticles associated with this PFP is "<<objide.size()<<std::endl;       
+            if(m_is_verbose) std::cout<<"SinglePhoton::recoMC()\t||\t the fraction of hits from overlay is is "<<fraction_num_hits_overlay<<" ("<<n_not_associated_hits<<"/"<<obj_hits_ptrs.size()<<")"<<std::endl;
 
 
             if(n_associated_mcparticle_hits == 0){
@@ -212,7 +176,7 @@ namespace single_photon
 
 
                 continue;
-            }//
+            }
 
 
 	    /*  ********** if shower has been matched to MCParticle ************************* */
@@ -234,13 +198,13 @@ namespace single_photon
 
             int num_bt_mothers =0;  // number of associated MCP that has mothers
 
-            //reco_verbose = false;
+            //m_is_verbose = false;
             //for each MCP that's associated to the reco shower
             for(auto mcp:asso_mcparticles_vec){
 
-                if(reco_verbose) std::cout<<"-----------------------------Start L1 Loop --------------------------------------------------"<<std::endl;
-                if(reco_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Start by Looking at an MCP with pdg code "<<mcp->PdgCode()<<" and status code "<<mcp->StatusCode()<<" TrackID: "<<mcp->TrackId()<<std::endl;
-                if(reco_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") This MCP gave "<<   map_asso_mcparticles_energy[mcp][0] <<" | "<<map_asso_mcparticles_energy[mcp][1]<<" | "<<map_asso_mcparticles_energy[mcp][2]<<" energy to the recob::Object on each plane"<<std::endl;
+                if(m_is_verbose) std::cout<<"-----------------------------Start L1 Loop --------------------------------------------------"<<std::endl;
+                if(m_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Start by Looking at an MCP with pdg code "<<mcp->PdgCode()<<" and status code "<<mcp->StatusCode()<<" TrackID: "<<mcp->TrackId()<<std::endl;
+                if(m_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") This MCP gave "<<   map_asso_mcparticles_energy[mcp][0] <<" | "<<map_asso_mcparticles_energy[mcp][1]<<" | "<<map_asso_mcparticles_energy[mcp][2]<<" energy to the recob::Object on each plane"<<std::endl;
                 //                std::cout<<"L1: the mother of this MCP is track id "<<mcp->Mother()<<" and there are "<<mcp->NumberDaughters()<<" daughters"<<std::endl;
 
                 //get the track ID for the current MCP
@@ -256,13 +220,13 @@ namespace single_photon
 
                     //check if it's a valid MCP
                     if (this_mcp.isNull()){
-                        if(reco_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  null pointer at id "<<this_mcp_id<<std::endl;
+                        if(m_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  null pointer at id "<<this_mcp_id<<std::endl;
                         this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
                         break;
                     }
 
                     //If primary particle will have process "primary"
-                    if(reco_verbose)    std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  going up the tree at an MCP with track id  "<<this_mcp_id<<", pdg code "<<this_mcp->PdgCode()<<", and status code "<<this_mcp->StatusCode()<<" and Mother: "<<this_mcp->Mother()<<" Process: "<<this_mcp->Process()<<" EndProcess: "<<this_mcp->EndProcess()<<std::endl;
+                    if(m_is_verbose)    std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  going up the tree at an MCP with track id  "<<this_mcp_id<<", pdg code "<<this_mcp->PdgCode()<<", and status code "<<this_mcp->StatusCode()<<" and Mother: "<<this_mcp->Mother()<<" Process: "<<this_mcp->Process()<<" EndProcess: "<<this_mcp->EndProcess()<<std::endl;
 
                     //if it is a valid particle, iterate forward to the mother
                     last_mcp_id = this_mcp_id;
@@ -274,11 +238,11 @@ namespace single_photon
 
                     }else if(this_mcp->Process()=="primary"){
                         //if its primary, great! Note it.
-                        if(reco_verbose)  std::cout<<"L1: Backtracked to primary! breaking"<<std::endl;
+                        if(m_is_verbose)  std::cout<<"L1: Backtracked to primary! breaking"<<std::endl;
                         this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
                         break;
                     }else{
-                        if(reco_verbose) std::cout<<"L1: Backtracked to a particle created in "<<this_mcp->EndProcess()<<"! breaking"<<std::endl;
+                        if(m_is_verbose) std::cout<<"L1: Backtracked to a particle created in "<<this_mcp->EndProcess()<<"! breaking"<<std::endl;
                         this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
                         break;
                     }
@@ -288,7 +252,7 @@ namespace single_photon
                 if (this_mcp_id >= 0){
 
 		    //Guanqun: this line here doesn't really cosider other break cases than finding primary particle
-                    if(reco_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Storing the mother mother particle with track id "<<this_mcp_id<<" and pdg code "<<MCParticleToTrackIdMap[this_mcp_id]->PdgCode()<<" and status code "<<MCParticleToTrackIdMap[this_mcp_id]->StatusCode()<<std::endl;
+                    if(m_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Storing the mother mother particle with track id "<<this_mcp_id<<" and pdg code "<<MCParticleToTrackIdMap[this_mcp_id]->PdgCode()<<" and status code "<<MCParticleToTrackIdMap[this_mcp_id]->StatusCode()<<std::endl;
 
                     mother_MCP_map[this_mcp_id] = MCParticleToTrackIdMap[this_mcp_id];//putting it in a map allows for multiple contributing MCP's in the reco shower to have the same mother MCP
 
@@ -315,62 +279,54 @@ namespace single_photon
 
                     num_bt_mothers++;
                 } else{
-                    if(reco_verbose)  std::cout<<"L1: error, the mother mother id was "<<this_mcp_id <<std::endl;
+                    if(m_is_verbose)  std::cout<<"L1: error, the mother mother id was "<<this_mcp_id <<std::endl;
 
                 }
 
-                if(reco_verbose)  std::cout<<"-----------------------------End L1 Loop --------------------------------------------------"<<std::endl;
+                if(m_is_verbose)  std::cout<<"-----------------------------End L1 Loop --------------------------------------------------"<<std::endl;
                 i_mcp++;
             }//for each MCParticle that's associated to a the recob::Shower
 
-            //reco_verbose = true;
+            //m_is_verbose = true;
             //there should be at least 1 mother MCP
-            if(reco_verbose)           std::cout<<"SinglePhoton::recoMC()\t||\t the number of source mother particles is "<<mother_MCP_map.size()<<" of which : "<<marks_mother_vector.size()<<" are unique!"<<std::endl;
+            if(m_is_verbose)           std::cout<<"SinglePhoton::recoMC()\t||\t the number of source mother particles is "<<mother_MCP_map.size()<<" of which : "<<marks_mother_vector.size()<<" are unique!"<<std::endl;
 
-            if(reco_verbose)       std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
+            if(m_is_verbose)       std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
 
             double best_mother_index = 0;
             double best_mother_energy = -9999;
-            int best_mother_plane = -99;
+//            int best_mother_plane = -99;
 
             for(size_t p=0; p< marks_mother_vector.size(); p++){
                 art::Ptr<simb::MCParticle> mother = marks_mother_vector[p];
                 std::vector<double> mother_energy_recod = marks_mother_energy_fraction_map[mother];
-                if(reco_verbose)    std::cout<<"L2: Mother candidate "<<p<<" TrackID "<<mother->TrackId()<<" Process: "<<mother->Process()<<" EndProcess: "<<mother->EndProcess()<<std::endl;
-                if(reco_verbose)   std::cout<<"L2: Mother candidate "<<p<<" Energy "<<mother->E()<<" Reco'd Energy: "<<mother_energy_recod[0]<<" | "<<mother_energy_recod[1]<<" | "<<mother_energy_recod[2]<<" Fraction: ("<<mother_energy_recod[0]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[1]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[2]/(1000*mother->E())*100.0<<"% )"<<std::endl;
+                if(m_is_verbose)    std::cout<<"L2: Mother candidate "<<p<<" TrackID "<<mother->TrackId()<<" Process: "<<mother->Process()<<" EndProcess: "<<mother->EndProcess()<<std::endl;
+                if(m_is_verbose)   std::cout<<"L2: Mother candidate "<<p<<" Energy "<<mother->E()<<" Reco'd Energy: "<<mother_energy_recod[0]<<" | "<<mother_energy_recod[1]<<" | "<<mother_energy_recod[2]<<" Fraction: ("<<mother_energy_recod[0]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[1]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[2]/(1000*mother->E())*100.0<<"% )"<<std::endl;
 
                 if( mother_energy_recod[0] > best_mother_energy){
                     best_mother_index = p;
                     best_mother_energy = mother_energy_recod[0];
-                    best_mother_plane = 0;
+//                    best_mother_plane = 0;
                 }
 
                 if( mother_energy_recod[1] > best_mother_energy){
                     best_mother_index = p;
                     best_mother_energy = mother_energy_recod[1];
-                    best_mother_plane = 1;
+//                    best_mother_plane = 1;
                 }
 
                 if( mother_energy_recod[2] > best_mother_energy){
                     best_mother_index = p;
                     best_mother_energy = mother_energy_recod[2];
-                    best_mother_plane = 2;
+//                    best_mother_plane = 2;
                 }
 
-            }
-
-            if(marks_mother_vector.size()!=0){
-                //if(reco_verbose)  std::cout<<"SinglePhoton::recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
-                std::cout<<"SinglePhoton::recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
-                for(int l=0; l<3; l++){
-                    std::cout<<"SinglePhoton::recoMC()\t||\t It represents "<<marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][l]/total_energy_on_plane[l]*100.0<<"% of the energy on plane: "<<l<<" which is "<<total_energy_on_plane[l] <<std::endl;
-                }
             }
 
 
 
 	    // now have found the best mother of the shower
-            if(reco_verbose) std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
+            if(m_is_verbose) std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
             const art::Ptr<simb::MCParticle> match = marks_mother_vector[best_mother_index];
 
             std::vector<double> corrected_vertex(3), corrected_start(3);
@@ -423,7 +379,7 @@ namespace single_photon
             m_sim_shower_pz[i] = match->Pz();
 
             // should've use 'best_mother_plane' here
-	    m_sim_shower_best_matched_plane[i] = best_mother_index;
+			m_sim_shower_best_matched_plane[i] = best_mother_index;
             m_sim_shower_matched_energy_fraction_plane0[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][0]/total_energy_on_plane[0];
             m_sim_shower_matched_energy_fraction_plane1[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][1]/total_energy_on_plane[1];
             m_sim_shower_matched_energy_fraction_plane2[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][2]/total_energy_on_plane[2];
@@ -436,146 +392,34 @@ namespace single_photon
             m_sim_shower_sliceId[i] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
             m_sim_shower_nuscore[i] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_shower_sliceId[i]] ;
             m_sim_shower_isclearcosmic[i] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
-            if (m_sim_shower_isclearcosmic[i]== false){
-                std::cout<<"sim shower is matched to non-clear cosmic PFP "<<pfp->Self()<<std::endl;
-            }
             m_sim_shower_is_nuslice[i] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
-            // if (PFPToNuSliceMap[pfp] ==true){
-            //     std::cout<<"m_sim_shower_is_nuslice is true for sim shower matched to reco pfp id "<<pfp->Self()<<std::endl;
+//            if(marks_mother_vector.size()!=0){
+//                //if(m_is_verbose)  std::cout<<"SinglePhoton::recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
+//		//std::vector<int> spacers = Printer_header({"pfpID", " matched_#simb", " pdg","    E_plane0","    E_plane1","    E_plane2"," cosmic?"});
+//                std::cout<<"SinglePhoton::recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
+//                for(int l=0; l<3; l++){
+//                    std::cout<<"SinglePhoton::recoMC()\t||\t It represents "<<marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][l]/total_energy_on_plane[l]*100.0<<"% of the energy on plane: "<<l<<" which is "<<total_energy_on_plane[l] <<std::endl;
+//                }
+//            }
+//
+//
+//            if (m_sim_shower_isclearcosmic[i]== false){
+//                std::cout<<"sim shower is matched to non-clear cosmic PFP "<<pfp->Self()<<std::endl;
+//            }
+			Printer_content({std::to_string(pfp->Self()),
+					std::to_string(best_mother_index),
+					std::to_string(marks_mother_vector[best_mother_index]->PdgCode()),
+					std::to_string(total_energy_on_plane[0]),
+					std::to_string(total_energy_on_plane[1]),
+					std::to_string(total_energy_on_plane[2]),
+					std::to_string(ppfp->get_IsClearCosmic())
+					},spacers);
 
-            // }
-            //
-            //  if (m_sim_shower_pdg[i]==22){
-          if (reco_verbose)  std::cout<<"looking at pfp "<< pfp->Self()<<" with is matched to true particle with pdg  m_sim_shower_pdg[i]= "<<  m_sim_shower_pdg[i]<< ". is_nuslice = "<< m_sim_shower_is_nuslice[i]<<" in slice "<< m_sim_shower_sliceId[i]<<". The matched energy for this shower from mark's mother particle with pdg "<<marks_mother_vector[best_mother_index]->PdgCode()<< " is "<<m_sim_shower_matched_energy_fraction_plane0[i]<<"/"<<m_sim_shower_matched_energy_fraction_plane1[i]<<"/" <<m_sim_shower_matched_energy_fraction_plane2[i]<<std::endl;
-           // std::cout<<"The best plane is "<< best_mother_plane<<std::endl;
-
-            //  }
-
-
-
-
-
-
-            //OLD OLD OLD
-
-            /*
-             *
-             *For each source particle in the event, follow down through daughters to accumulate all the particles below the mother in the parent tree
-             *
-             */
-
-
-
-            /*
-
-            //for each source mother particle, if it's a photon, follow the chain and sum the hits
-            std::vector<std::vector<int>> mother_contributing_MCP; //stores all the MCP's in the chain for all mothers-> this can probably be modified to only store ones which contribute to the reco shower
-            std::vector<int> all_contributing_MCP; //all the MCP's in the chain for this mother
-
-            //for each of the mother particles
-            for(auto pair: mother_MCP_map){
-            all_contributing_MCP.clear();
-            art::Ptr<simb::MCParticle> particle = pair.second;//get the mother MCP
-            all_contributing_MCP.push_back(pair.first);//save the MCP track id 
-            int numDaughters = -1;//the number of daughters for the current generation
-            std::vector<int> current_ids; //the track id's for the current generation
-            std::vector<int> next_ids;//the track id's for the next generation (daughters of current generatiob)
-
-            //std::cout<<"starting from mother particle at head of chain with pdg code "<<particle->PdgCode()<<" and track id "<<pair.first<<std::endl;
-
-            numDaughters = particle->NumberDaughters();//start with the number of daughters for the mother mother particle
-
-            //std::cout<<"this particle has "<<numDaughters<<" daughters"<<std::endl;
-
-            //for each of the particles in the first daughter generation
-            for(int i = 0; i < numDaughters; i++){
-            int id = particle->Daughter(i); //get the track id of the MCP
-            current_ids.push_back(id);//save the id to the list of the current generation
-            all_contributing_MCP.push_back(id);//save it to the list of all of the MCP's in the chain
-            }
-
-
-            //while there are more generations of daughter particles (not at the end of the chain)
-            while(numDaughters>0){
-            //for each MCP in the current generation
-            for(int id:current_ids){
-            //get the particle and check it's valid
-            art::Ptr<simb::MCParticle> particle = MCParticleToTrackIdMap[id];
-            if (particle.isNull()) continue;
-
-            //get the number of daughters
-            int n = particle->NumberDaughters();
-
-            //loop over the daughters
-            for (int i = 0; i < n; i++){
-            int daughterId = particle->Daughter(i);
-
-            //save daughters to list of all contributing mcps
-            all_contributing_MCP.push_back(daughterId);
-
-            //add daughters to list for next gen
-            next_ids.push_back(daughterId);
-
-            }   
-            }
-
-            numDaughters = current_ids.size(); //update the number of daughters in the next generation
-
-            //std::cout<<"num daughters after this generation is "<<numDaughters<<std::endl;
-
-            current_ids = next_ids; //update the track id's to the next generation
-            next_ids.clear(); //clear the list for the next next generation
-            }//while there are further daughters
-
-
-            //save the vector of MCP's from this mother
-            mother_contributing_MCP.push_back(all_contributing_MCP);
-            }//for each mother mother particle
-
-            std::cout<<"SinglePhoton::recoMC()\t||\t all candidate MCParticles number is "<<all_contributing_MCP.size()<<std::endl;
-
-            //
-            //Compare the list of all of the MCP's from the mother MCP(s) and the list of all MCP's which contribute to the reco shower
-            //
-
-
-            std::vector<int> count_vec(mother_contributing_MCP.size()); //stores the number of MCP's in the chain from each mother which match to the reco shower
-            std::vector<double> energy_contributing_MCP(mother_contributing_MCP.size()); //the total energy of all the MCP's in the chain from the mother which contribute to the shower
-            //for each MCP from the chain of mother mother particle and daughters, check how much it overlaps with the MCP's that contribute to the shower
-            for (unsigned int i = 0; i< mother_contributing_MCP.size(); i++){
-                std::vector<int> mcp_vec =  mother_contributing_MCP[i];
-                int count = 0;     
-
-                std::cout<<"SinglePhoton::recoMC()\t||\t on mother_contributing_MCP: "<<i<<std::endl;
-
-                for (int track_id:mcp_vec){
-                    //check if it's in the map of MCP's in the reco shower
-                    auto iter = objide.find(track_id);
-                    if (iter != objide.end()){
-                        count++;//count the number of MCP
-
-                        //add the energy to the total for this chain
-                        energy_contributing_MCP[i] += objide[track_id];
-                    }//if the MCP contributes to the shower
-
-                }//for each MCP in the chain from this mother
-                count_vec[i] = count;
-            }//for each mother/source MCP
-
-
-            if(count_vec.size()>0){
-                //check the total number of contributing MCP
-                std::cout<<"SinglePhoton::recoMC()\t||\t the number of MCP associated with the first mother mother particle that also deposit hits in the recob::shower is "<<count_vec[0]<<" and the summed energy is "<<energy_contributing_MCP[0]<<std::endl;  
-            }else{
-                std::cout<<"SinglePhoton::recoMC()\t||\t Well this failed then."<<std::endl;
-            }
-
-            */
+          if (m_is_verbose)  std::cout<<"looking at pfp "<< pfp->Self()<<" with is matched to true particle with pdg  m_sim_shower_pdg[i]= "<<  m_sim_shower_pdg[i]<< ". is_nuslice = "<< m_sim_shower_is_nuslice[i]<<" in slice "<< m_sim_shower_sliceId[i]<<". The matched energy for this shower from mark's mother particle with pdg "<<marks_mother_vector[best_mother_index]->PdgCode()<< " is "<<m_sim_shower_matched_energy_fraction_plane0[i]<<"/"<<m_sim_shower_matched_energy_fraction_plane1[i]<<"/" <<m_sim_shower_matched_energy_fraction_plane2[i]<<std::endl;
 
         }//end vector loop.
-
-        return ;
+		m_is_verbose = default_verbose;
     }//end showerRecoMCmatching
 
 
@@ -713,83 +557,83 @@ namespace single_photon
         }
 
 
-    //Typenamed for simb::MCTrack and sim::MCShower
-    /* @brief: tranverse through mcParticleVector, for each mcParticle, if an mcObject is found with same track ID
-     *		put the particle and object in the mcParticleToMCObjectMap as a pair
-     */
-    template<typename T>
-        void perfectRecoMatching(
-                std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-                std::vector<T>& mcObjectVector,
-                std::map<art::Ptr<simb::MCParticle>,T>& mcParticleToMCObjectMap
-                ){
-
-
-            for(size_t io=0; io<mcObjectVector.size(); ++io){
-
-                const T object = mcObjectVector[io];
-                int object_trackID =object->TrackID(); 
-                int object_mother_trackID =object->MotherTrackID(); 
-                int object_ancestor_trackID =object->AncestorTrackID();
-                const std::vector< unsigned int > object_daughters_trackID = object->DaughterTrackID();
-                std::cout<<"KRANK: "<<io<<" "<<object_trackID<<" "<<object_mother_trackID<<" "<<object_ancestor_trackID<<std::endl;
-                std::cout<<"KRANK: "<<object_daughters_trackID.size()<<std::endl;
-            }
-
-
-
-
-            return;
-
-            for(size_t ip=0; ip<mcParticleVector.size(); ++ip){
-                const art::Ptr<simb::MCParticle> particle = mcParticleVector[ip];
-                int particle_trackID = particle->TrackId();
-
-                std::vector<int> id_matches;
-                std::vector<int> mother_id_matches;
-                std::vector<int> ancestor_id_matches;
-
-                for(size_t io=0; io<mcObjectVector.size(); ++io){
-
-                    const T object = mcObjectVector[io];
-                    int object_trackID =object->TrackID(); 
-                    int object_mother_trackID =object->MotherTrackID(); 
-                    int object_ancestor_trackID =object->AncestorTrackID();
-
-                    if(object_trackID == particle_trackID ) id_matches.push_back(io);
-                    if(object_mother_trackID == particle_trackID ) mother_id_matches.push_back(io);
-                    if(object_ancestor_trackID == particle_trackID ) ancestor_id_matches.push_back(io);
-                }
-
-                int num_id_matches=id_matches.size();
-                int num_mother_id_matches=mother_id_matches.size();
-                int num_ancestor_id_matches=ancestor_id_matches.size();
-
-                //So im not sure how this works but something like this
-                if(num_id_matches > 1){
-                    std::cout<<"Well hot saussage.. more than 1 id match "<<num_id_matches<<std::endl;
-                }else if(num_id_matches == 1){
-                    //We have a direct match?
-                    mcParticleToMCObjectMap[particle] = mcObjectVector[id_matches.front()];
-                }else if(num_mother_id_matches == 1){
-                    //We have a mother match? I guess this is like "Photon?->e+e-"
-                    //mcParticleToMCObjectMap[particle] = mcObjectVector[mother_id_matches.front()];
-                }else if(num_ancestor_id_matches == 1){
-                    //We have a mother match? I guess this is like Neutron->photon->e+e-"
-                    //mcParticleToMCObjectMap[particle] = mcObjectVector[ancestor_id_matches.front()];
-                }else if(num_ancestor_id_matches >1 || num_mother_id_matches >1){
-                    std::cout<<"Well hot saussage.. more than 1 mother or ancestor. Actually thats very reasonable hehe."<<num_mother_id_matches<<" "<<num_ancestor_id_matches<<std::endl;
-                }else if(num_id_matches == 0 && num_ancestor_id_matches == 0 && num_mother_id_matches ==0){
-                    std::cout<<"NO matches for trackid, mother trackid or ancestor trackid. Hmm"<<num_mother_id_matches<<" "<<num_ancestor_id_matches<<std::endl;
-                }
-
-                //What if multiple mothers matches?! no idea.
-
-
-            }//MCParticleLoop
-
-            return;
-        }
+//    //Typenamed for simb::MCTrack and sim::MCShower
+//    /* @brief: tranverse through mcParticleVector, for each mcParticle, if an mcObject is found with same track ID
+//     *		put the particle and object in the mcParticleToMCObjectMap as a pair
+//     */
+//    template<typename T>
+//        void perfectRecoMatching(
+//                std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
+//                std::vector<T>& mcObjectVector,
+//                std::map<art::Ptr<simb::MCParticle>,T>& mcParticleToMCObjectMap
+//                ){
+//
+//
+//            for(size_t io=0; io<mcObjectVector.size(); ++io){
+//
+//                const T object = mcObjectVector[io];
+//                int object_trackID =object->TrackID(); 
+//                int object_mother_trackID =object->MotherTrackID(); 
+//                int object_ancestor_trackID =object->AncestorTrackID();
+//                const std::vector< unsigned int > object_daughters_trackID = object->DaughterTrackID();
+//                std::cout<<"KRANK: "<<io<<" "<<object_trackID<<" "<<object_mother_trackID<<" "<<object_ancestor_trackID<<std::endl;
+//                std::cout<<"KRANK: "<<object_daughters_trackID.size()<<std::endl;
+//            }
+//
+//
+//
+//
+//            return;
+//
+//            for(size_t ip=0; ip<mcParticleVector.size(); ++ip){
+//                const art::Ptr<simb::MCParticle> particle = mcParticleVector[ip];
+//                int particle_trackID = particle->TrackId();
+//
+//                std::vector<int> id_matches;
+//                std::vector<int> mother_id_matches;
+//                std::vector<int> ancestor_id_matches;
+//
+//                for(size_t io=0; io<mcObjectVector.size(); ++io){
+//
+//                    const T object = mcObjectVector[io];
+//                    int object_trackID =object->TrackID(); 
+//                    int object_mother_trackID =object->MotherTrackID(); 
+//                    int object_ancestor_trackID =object->AncestorTrackID();
+//
+//                    if(object_trackID == particle_trackID ) id_matches.push_back(io);
+//                    if(object_mother_trackID == particle_trackID ) mother_id_matches.push_back(io);
+//                    if(object_ancestor_trackID == particle_trackID ) ancestor_id_matches.push_back(io);
+//                }
+//
+//                int num_id_matches=id_matches.size();
+//                int num_mother_id_matches=mother_id_matches.size();
+//                int num_ancestor_id_matches=ancestor_id_matches.size();
+//
+//                //So im not sure how this works but something like this
+//                if(num_id_matches > 1){
+//                    std::cout<<"Well hot saussage.. more than 1 id match "<<num_id_matches<<std::endl;
+//                }else if(num_id_matches == 1){
+//                    //We have a direct match?
+//                    mcParticleToMCObjectMap[particle] = mcObjectVector[id_matches.front()];
+//                }else if(num_mother_id_matches == 1){
+//                    //We have a mother match? I guess this is like "Photon?->e+e-"
+//                    //mcParticleToMCObjectMap[particle] = mcObjectVector[mother_id_matches.front()];
+//                }else if(num_ancestor_id_matches == 1){
+//                    //We have a mother match? I guess this is like Neutron->photon->e+e-"
+//                    //mcParticleToMCObjectMap[particle] = mcObjectVector[ancestor_id_matches.front()];
+//                }else if(num_ancestor_id_matches >1 || num_mother_id_matches >1){
+//                    std::cout<<"Well hot saussage.. more than 1 mother or ancestor. Actually thats very reasonable hehe."<<num_mother_id_matches<<" "<<num_ancestor_id_matches<<std::endl;
+//                }else if(num_id_matches == 0 && num_ancestor_id_matches == 0 && num_mother_id_matches ==0){
+//                    std::cout<<"NO matches for trackid, mother trackid or ancestor trackid. Hmm"<<num_mother_id_matches<<" "<<num_ancestor_id_matches<<std::endl;
+//                }
+//
+//                //What if multiple mothers matches?! no idea.
+//
+//
+//            }//MCParticleLoop
+//
+//            return;
+//        }
 
 
 int    SinglePhoton::photoNuclearTesting(std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector){
