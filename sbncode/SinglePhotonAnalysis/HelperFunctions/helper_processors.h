@@ -74,13 +74,14 @@ namespace single_photon
 
                 n_vert++;
 
-                m_vertex_pos_x = xyz[0];
-                m_vertex_pos_y = xyz[1];
-                m_vertex_pos_z = xyz[2];
-//				std::cout<<"CHECK Vertex position: ("<<xyz[0]<<","<<xyz[1]<<","<<xyz[2]<<")"<<std::endl;
-                std::vector<double> tmp = {xyz[0],xyz[1],xyz[2]};
-                m_reco_vertex_in_SCB = this->distToSCB(m_reco_vertex_dist_to_SCB,tmp);
-                m_reco_vertex_dist_to_active_TPC =  this->distToTPCActive(tmp);
+                //m_vertex_pos_x = xyz[0];
+                //m_vertex_pos_y = xyz[1];
+                //m_vertex_pos_z = xyz[2];
+				std::cout<<"CHECK Vertex position: ("<<xyz[0]<<","<<xyz[1]<<","<<xyz[2]<<")"<<std::endl;
+                //std::vector<double> tmp = {xyz[0],xyz[1],xyz[2]};
+                //m_reco_vertex_in_SCB = this->distToSCB(m_reco_vertex_dist_to_SCB,tmp);
+                //m_reco_vertex_dist_to_active_TPC =  this->distToTPCActive(tmp);
+                //m_reco_vertex_dist_to_CPA =  this->distToCPA(tmp);
 //CHECK
 //                if(!m_run_pi0_filter){
 //                    m_reco_vertex_to_nearest_dead_wire_plane0 = distanceToNearestDeadWire(0, m_vertex_pos_y, m_vertex_pos_z,geom,bad_channel_list_fixed_mcc9);

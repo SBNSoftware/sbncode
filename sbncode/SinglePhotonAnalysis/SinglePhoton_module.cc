@@ -14,6 +14,8 @@
 #include "Libraries/fiducial_volume.h"
 #include "Libraries/second_shower_search.h"
 #include "Libraries/isolation.h"
+#include "Libraries/output_ntuple.h"
+
 
 namespace single_photon
 {
@@ -263,9 +265,6 @@ namespace single_photon
         art::ValidHandle<std::vector<recob::Hit>> const & hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(m_hitfinderLabel); 
         std::vector<art::Ptr<recob::Hit>> hitVector;
         art::fill_ptr_vector(hitVector,hitHandle);
-//		recob::Hit dummy_hit;
-//        std::vector<art::Ptr<recob::Hit>> hitVector = VectorFromLabel( dummy_hit, evt, m_hitfinderLabel);
-		//CHECK, how useful are the above lines?
 
 
         //Lets do "THE EXACT SAME STUFF" for Optical Flashes
@@ -419,9 +418,11 @@ namespace single_photon
             sliceIDToPFParticlesMap[slice->ID()] = pfparticles_per_slice.at(slice.key());
         }
 		//Mark all Pandora neutrino slices as neutrino slices and assign the highes neutrino score.
-		double pfp_w_bestnuID = DefineNuSlice(allPPFParticles);
+		pfp_w_bestnuID = DefineNuSlice(allPPFParticles);
 
 		std::cout<<"\nFinish preparing PandoraPFParticles at Line "<<__LINE__<<" CHECK! Now we have "<<allPPFParticles.size()<<" PFParticles in total"<<std::endl;
+		
+		Output_PFParticleInfo( allPPFParticles);
 
         //Slice to Hits
 //Keng  std::map< art::Ptr<recob::Slice>, std::vector<art::Ptr<recob::Hit>> > sliceToHitsMap;
@@ -514,8 +515,6 @@ namespace single_photon
         std::vector< art::Ptr<recob::PFParticle> > nuParticles;
         std::vector< art::Ptr<recob::PFParticle> > crParticles;
         this->GetFinalStatePFParticleVectors(pfParticleMap, pfParticlesToVerticesMap, crParticles, nuParticles, pfp_w_bestnuID);
-		//CHECK pfp_w_bestnuID was calculated in the previous "test" lines above?
-		//CHECK potential upgrade:
 		// LOOP over pfParticleMap, and fill in crParticles/nuParticles here?
 
 

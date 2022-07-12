@@ -475,6 +475,8 @@ namespace single_photon
              */
             void GetVertex(const lar_pandora::PFParticlesToVertices & particlestoVertices, const art::Ptr<recob::PFParticle> & particle );
 
+			void Output_PFParticleInfo( std::vector<PandoraPFParticle> all_PPFPs);
+
 
 
             double CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int plane); /* returns energy sum of hits on a certain plane */
@@ -763,6 +765,7 @@ namespace single_photon
             int setTPCGeom();
             int isInTPCActive(std::vector<double>& vec); /* if point is in active TPC volume */
             double distToTPCActive(std::vector<double>&vec); 
+			double distToCPA(std::vector<double>&vec);
             int distToSCB(double & dist, std::vector<double> &vec); 
 					/* if point in active TPC, returns distance from point to closest TPC wall
                                                               * otherwise, returns -999 */
@@ -1329,6 +1332,7 @@ namespace single_photon
             int m_reco_vertex_in_SCB; /* is vertex in SCB: 0- No, 1- Yes */
             double m_reco_vertex_dist_to_SCB; /* dist between vertex to SCB */
             double m_reco_vertex_dist_to_active_TPC; /* dist from vertex to closest active TPC wall, -999 if not in active TPC */
+            double m_reco_vertex_dist_to_CPA;
 
 
             int m_reco_asso_showers;
@@ -1509,6 +1513,8 @@ namespace single_photon
             std::vector<double> m_reco_track_endz;
             std::vector<double> m_reco_track_end_dist_to_active_TPC;  /* min distance from track end to TPC active volume boundaries */
             std::vector<double> m_reco_track_start_dist_to_active_TPC; /* min dist from trk start to TPC active boundaries */
+            std::vector<double> m_reco_track_end_dist_to_CPA;
+            std::vector<double> m_reco_track_start_dist_to_CPA;
             std::vector<double> m_reco_track_end_dist_to_SCB;          /* min dist from track end to SCB */
             std::vector<double> m_reco_track_start_dist_to_SCB;
             std::vector<int> m_reco_track_end_in_SCB;   /* if track end is in SCB boundary, 1- yes, 0- no */
@@ -1720,6 +1726,7 @@ namespace single_photon
             std::vector<double>   m_reco_shower_starty;
             std::vector<double>   m_reco_shower_startz;
             std::vector<double> m_reco_shower_start_dist_to_active_TPC; /* distance from shower start to closest TPC wall */
+            std::vector<double> m_reco_shower_start_dist_to_CPA; /* distance from shower start to closest TPC wall */
             std::vector<double> m_reco_shower_start_dist_to_SCB;
             std::vector<int> m_reco_shower_start_in_SCB;
             std::vector<double> m_reco_shower_end_dist_to_active_TPC;
@@ -2069,6 +2076,8 @@ namespace single_photon
 
             bool Pi0PreselectionFilter(); /* returns whether the event pass pi0 pre-selection for 2g1p */
             bool Pi0PreselectionFilter2g0p(); /* returns whether the event pass pre-selction for 2g0p */
+
+			int pfp_w_bestnuID;
     };
 
     DEFINE_ART_MODULE(SinglePhoton)

@@ -26,7 +26,7 @@ The module does not work out of the box, so there are some modifications to make
 	- Update on geometry variables such as, `reco_*_dist_to_CathodePlane`
 	- Disable Kalman dEdx variables
 	- Disable Second Shower Search 3D (`sss3d`) variables
-	- Adapate SBND FHiCLs for filters: `NCRadiativeResonant` and `NCDeltaRadiative`
+	- Update FHiCLs for filtering events in SBND: `NCRadiativeResonant` and `NCDeltaRadiative`
 
 These updates are to accommodate the change of Pandora features listed below:
 
@@ -66,22 +66,11 @@ C-->F[DBSCAN.h];
 C-->G[SEAviewer.h];
 ```
 
-### Headers structure
-
-```mermaid
-flowchart TD;
-A--first formost-->C;
-A[SinglePhoton_module.cc]--contains-->B[analyze*.h that look like *.cxx];
-C[SinglePhoton_module.h]-->D[helper_*.h];
-C-->F[DBSCAN.h];
-C-->G[SEAviewer.h];
-```
-
 ### The flow of the `SinglePhoton` module
 
 The main flow
 ```mermaid
-graph TD
+graph LR
 A[art::EDFilter]-->B[beginJob];
 B-->C[beginSubRun];
 C-->F[filter: Loop over events];
@@ -197,7 +186,7 @@ Below alias auto-configured inside the code as a default
 ### Parameters in FHiCL
 Summarization in progress.
 
-### Variables
+### Output Variables
 
 In `TTree vertex_tree`, variables prefix have the following meaning:
 - Reconstructed variables valid for all types of events

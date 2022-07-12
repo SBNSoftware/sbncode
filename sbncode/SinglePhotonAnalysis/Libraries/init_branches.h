@@ -29,6 +29,7 @@ namespace single_photon
 		m_reco_vertex_in_SCB = -9999;
 		m_reco_vertex_dist_to_SCB = -9999;
 		m_reco_vertex_dist_to_active_TPC= -9999;
+		m_reco_vertex_dist_to_CPA= -9999;
 
 		m_reco_vertex_to_nearest_dead_wire_plane0=-99999;
 		m_reco_vertex_to_nearest_dead_wire_plane1=-99999;
@@ -81,6 +82,7 @@ namespace single_photon
 		vertex_tree->Branch("reco_vertex_in_SCB", &m_reco_vertex_in_SCB);
 		vertex_tree->Branch("reco_vertex_dist_to_SCB",&m_reco_vertex_dist_to_SCB);
 		vertex_tree->Branch("reco_vertex_dist_to_active_TPC",&m_reco_vertex_dist_to_active_TPC);
+		vertex_tree->Branch("reco_vertex_dist_to_CPA",&m_reco_vertex_dist_to_CPA);
 		vertex_tree->Branch("reco_vertex_to_nearest_dead_wire_plane0",&m_reco_vertex_to_nearest_dead_wire_plane0);
 		vertex_tree->Branch("reco_vertex_to_nearest_dead_wire_plane1",&m_reco_vertex_to_nearest_dead_wire_plane1);
 		vertex_tree->Branch("reco_vertex_to_nearest_dead_wire_plane2",&m_reco_vertex_to_nearest_dead_wire_plane2);
@@ -511,6 +513,8 @@ namespace single_photon
 		m_reco_track_endz.clear();
 		m_reco_track_end_dist_to_active_TPC.clear();
 		m_reco_track_start_dist_to_active_TPC.clear();
+		m_reco_track_end_dist_to_CPA.clear();
+		m_reco_track_start_dist_to_CPA.clear();
 		m_reco_track_end_dist_to_SCB.clear();
 		m_reco_track_start_dist_to_SCB.clear();
 		m_reco_track_end_in_SCB.clear();
@@ -668,6 +672,8 @@ namespace single_photon
 		vertex_tree->Branch("reco_track_endz", &m_reco_track_endz);
 		vertex_tree->Branch("reco_track_end_dist_to_active_TPC", &m_reco_track_end_dist_to_active_TPC);
 		vertex_tree->Branch("reco_track_start_dist_to_active_TPC", &m_reco_track_start_dist_to_active_TPC);
+		vertex_tree->Branch("reco_track_end_dist_to_CPA", &m_reco_track_end_dist_to_CPA);
+		vertex_tree->Branch("reco_track_start_dist_to_CPA", &m_reco_track_start_dist_to_CPA);
 		vertex_tree->Branch("reco_track_end_dist_to_SCB", &m_reco_track_end_dist_to_SCB);
 		vertex_tree->Branch("reco_track_start_dist_to_SCB", &m_reco_track_start_dist_to_SCB);
 		vertex_tree->Branch("reco_track_end_in_SCB", &m_reco_track_end_in_SCB);
@@ -830,6 +836,8 @@ namespace single_photon
 		m_reco_track_endz.resize(size);
 		m_reco_track_end_dist_to_active_TPC.resize(size);
 		m_reco_track_start_dist_to_active_TPC.resize(size);
+		m_reco_track_end_dist_to_CPA.resize(size);
+		m_reco_track_start_dist_to_CPA.resize(size);
 		m_reco_track_end_dist_to_SCB.resize(size);
 		m_reco_track_start_dist_to_SCB.resize(size);
 		m_reco_track_end_in_SCB.resize(size);
@@ -1012,6 +1020,7 @@ namespace single_photon
 		m_reco_shower_startx.clear();
 		m_reco_shower_starty.clear();
 		m_reco_shower_start_dist_to_active_TPC.clear();
+		m_reco_shower_start_dist_to_CPA.clear();
 		m_reco_shower_start_dist_to_SCB.clear();
 		m_reco_shower_start_in_SCB.clear();
 		m_reco_shower_end_dist_to_active_TPC.clear();
@@ -1178,6 +1187,7 @@ namespace single_photon
 		vertex_tree->Branch("reco_shower_starty", &m_reco_shower_starty);
 		vertex_tree->Branch("reco_shower_startz", &m_reco_shower_startz);
 		vertex_tree->Branch("reco_shower_start_dist_to_active_TPC", &m_reco_shower_start_dist_to_active_TPC);
+		vertex_tree->Branch("reco_shower_start_dist_to_CPA", &m_reco_shower_start_dist_to_CPA);
 		vertex_tree->Branch("reco_shower_start_dist_to_SCB",  &m_reco_shower_start_dist_to_SCB);
 		vertex_tree->Branch("reco_shower_start_in_SCB",   &m_reco_shower_start_in_SCB);
 		vertex_tree->Branch("reco_shower_end_dist_to_active_TPC", &m_reco_shower_end_dist_to_active_TPC);
@@ -1393,6 +1403,7 @@ namespace single_photon
 		m_reco_shower3d_dEdx_plane2.resize(size);
 
 		m_reco_shower_start_dist_to_active_TPC.resize(size);
+		m_reco_shower_start_dist_to_CPA.resize(size);
 		m_reco_shower_start_dist_to_SCB.resize(size);
 		m_reco_shower_start_in_SCB.resize(size);
 
