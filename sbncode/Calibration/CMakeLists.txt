@@ -86,6 +86,29 @@ simple_plugin ( DataSelect module
 )
 
 
+simple_plugin ( AnodeCrossT0 module
+                IFDH_SERVICE
+               ${ART_FRAMEWORK_CORE}
+               ${ART_FRAMEWORK_PRINCIPAL}
+               ${ART_FRAMEWORK_SERVICES_REGISTRY}
+               ${ART_FRAMEWORK_SERVICES_BASIC}
+               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+               art_Utilities canvas
+               ${MF_MESSAGELOGGER}
+               ${MF_UTILITIES}
+               ${FHICLCPP}
+               cetlib cetlib_except
+        ${ROOT_EVE_LIB_LIST}
+        ${ROOT_X3d}
+        ${ROOT_BASIC_LIB_LIST}
+        lardataobj_AnalysisBase
+        lardataobj_RecoBase
+        larcorealg_Geometry
+	larcorealg_GeoAlgo
+	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
+	lardataalg_DetectorInfo
+)
+
 add_subdirectory(fcl)
 
 install_headers()

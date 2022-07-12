@@ -54,6 +54,7 @@ stopping_selection: {
   EndMediandQdxCut: 1600
   NumberTimeSamples: 3400
   MediandQdxRRMax: 5.
+  CheckFiducialX: false
 }
 
 throughgoing_selection: {
@@ -71,6 +72,7 @@ throughgoing_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 3400
+  CheckFiducialX: false
 }
 
 a2c_selection: {

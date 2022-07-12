@@ -1,5 +1,27 @@
 BEGIN_PROLOG
 
+anodeCrossT0CryoE: {
+  module_type: AnodeCrossT0
+  PFPproducer: pandoraGausCryoE
+  TRKproducer: pandoraTrackGausCryoE
+  MinTimeTickInset: 100
+  MaxTimeTickInset: 100
+  LengthCut: 100
+  InsetY: 25
+  InsetZ: 25
+}
+
+anodeCrossT0CryoW: {
+  module_type: AnodeCrossT0
+  PFPproducer: pandoraGausCryoW
+  TRKproducer: pandoraTrackGausCryoW
+  MinTimeTickInset: 100
+  MaxTimeTickInset: 100
+  LengthCut: 100
+  InsetY: 25
+  InsetZ: 25
+}
+
 caloskim_calorimetry: {
   AssocHitModuleLabel: ""
   CaloAlg: {
@@ -24,7 +46,7 @@ caloskim_cryoe: {
   module_type: TrackCaloSkimmer
   CALOproducer: "calorimetryCryoE"
   TRKproducer:  "pandoraTrackGausCryoE"
-  T0producer: "pandoraGausCryoE"
+  T0producers: ["pandoraGausCryoE", "anodeCrossT0CryoE"]
   PFPproducer: "pandoraGausCryoE"
   G4producer: ""
   SimChannelproducer: ""
@@ -35,13 +57,14 @@ caloskim_cryoe: {
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []
+  Verbose: true
 }
 
 caloskim_cryow: {
   module_type: TrackCaloSkimmer
   CALOproducer: "calorimetryCryoW"
   TRKproducer:  "pandoraTrackGausCryoW"
-  T0producer: "pandoraGausCryoW"
+  T0producers: ["pandoraGausCryoW", "anodeCrossT0CryoW"]
   PFPproducer: "pandoraGausCryoW"
   G4producer: ""
   SimChannelproducer: ""
@@ -61,6 +84,8 @@ caloskim_cryoe_nodigits.RawDigitproducers: []
 
 stopping_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
+  AllowT0: [true, true]
+
   FVInsetMinX: 15
   FVInsetMaxX: 15
   FVInsetMinY: 25
@@ -72,10 +97,13 @@ stopping_selection: {
   EndMediandQdxCut: 1000
   NumberTimeSamples: 4096
   MediandQdxRRMax: 2.
+  CheckFiducialX: false
 }
 
 throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
+  AllowT0: [true, false]
+
   Invert: true
   PreScale: 1
   FVInsetMinX: 5
@@ -89,10 +117,13 @@ throughgoing_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 4096
+  CheckFiducialX: false
 }
 
 a2c_selection: {
   tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
+  AllowT0: [true, false]
+
   TickCut: 2300
 }
 
