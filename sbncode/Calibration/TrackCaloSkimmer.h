@@ -98,6 +98,7 @@ private:
     geo::Point_t end;
     geo::Vector_t dir;
     geo::Vector_t enddir;
+    int ID;
   };
 
 
@@ -167,7 +168,7 @@ private:
 
   // tags
   art::InputTag fPFPproducer;
-  art::InputTag fT0Producer;
+  std::vector<art::InputTag> fT0producers;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;
