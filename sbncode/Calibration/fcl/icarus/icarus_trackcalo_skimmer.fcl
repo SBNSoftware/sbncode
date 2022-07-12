@@ -1,27 +1,5 @@
 BEGIN_PROLOG
 
-anodeCrossT0CryoE: {
-  module_type: AnodeCrossT0
-  PFPproducer: pandoraGausCryoE
-  TRKproducer: pandoraTrackGausCryoE
-  MinTimeTickInset: 100
-  MaxTimeTickInset: 100
-  LengthCut: 100
-  InsetY: 25
-  InsetZ: 25
-}
-
-anodeCrossT0CryoW: {
-  module_type: AnodeCrossT0
-  PFPproducer: pandoraGausCryoW
-  TRKproducer: pandoraTrackGausCryoW
-  MinTimeTickInset: 100
-  MaxTimeTickInset: 100
-  LengthCut: 100
-  InsetY: 25
-  InsetZ: 25
-}
-
 caloskim_calorimetry: {
   AssocHitModuleLabel: ""
   CaloAlg: {
@@ -46,7 +24,7 @@ caloskim_cryoe: {
   module_type: TrackCaloSkimmer
   CALOproducer: "calorimetryCryoE"
   TRKproducer:  "pandoraTrackGausCryoE"
-  T0producers: ["pandoraGausCryoE", "anodeCrossT0CryoE"]
+  T0producers: ["pandoraGausCryoE"]
   PFPproducer: "pandoraGausCryoE"
   G4producer: ""
   SimChannelproducer: ""
@@ -57,14 +35,13 @@ caloskim_cryoe: {
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []
-  Verbose: true
 }
 
 caloskim_cryow: {
   module_type: TrackCaloSkimmer
   CALOproducer: "calorimetryCryoW"
   TRKproducer:  "pandoraTrackGausCryoW"
-  T0producers: ["pandoraGausCryoW", "anodeCrossT0CryoW"]
+  T0producers: ["pandoraGausCryoW"]
   PFPproducer: "pandoraGausCryoW"
   G4producer: ""
   SimChannelproducer: ""
