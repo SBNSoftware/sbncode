@@ -4,7 +4,7 @@
 #include "NPtFilter.h"
 
 namespace flashmatch {
-
+  
   static NPtFilterFactory __global_NPtFilterFactory__;
 
   NPtFilter::NPtFilter(const std::string name)
@@ -15,7 +15,7 @@ namespace flashmatch {
   {
     _min_num_pt = pset.get<double>("MinNumPoint");
   }
-
+  
   IDArray_t NPtFilter::Filter(const QClusterArray_t& tpc_obj_v) {
 
     IDArray_t res;
@@ -26,13 +26,13 @@ namespace flashmatch {
       auto const& tpc_obj = tpc_obj_v[id]; // retrieve
 
       // if more # of QPoint_t than threshold, accept
-      if(tpc_obj.size() >= _min_num_pt) res.push_back(id);
+      if(tpc_obj.size() >= _min_num_pt) res.push_back(id); 
 
     }
 
     return res;
   }
-
+  
 
 }
 

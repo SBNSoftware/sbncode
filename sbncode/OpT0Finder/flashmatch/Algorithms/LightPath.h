@@ -22,13 +22,16 @@
 #include "flashmatch/GeoAlgo/GeoTrajectory.h"
 #include "flashmatch/Base/BaseAlgorithm.h"
 #include "flashmatch/Base/CustomAlgoFactory.h"
-#include "flashmatch/GeoAlgo/GeoTrajectory.h"
+#include "flashmatch/Base/FMWKInterface.h"
+#include "flashmatch/Base/OpT0FinderException.h"
 #else
-#include "larcorealg/GeoAlgo/GeoTrajectory.h"
+#include "sbncode/OpT0Finder/flashmatch/GeoAlgo/GeoTrajectory.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/BaseAlgorithm.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/CustomAlgoFactory.h"
-#include "larcorealg/GeoAlgo/GeoTrajectory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
 #endif
+
 
 #include <iostream>
 #include <numeric>

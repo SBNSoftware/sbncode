@@ -13,25 +13,26 @@
 
 //#include "art/Framework/Services/Registry/ActivityRegistry.h"
 //#include "art/Framework/Services/Registry/ServiceHandle.h"
-//#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
+//#include "art/Framework/Services/Registry/ServiceMacros.h"
 #include "PhotonLibrary.h"
 #include "PhotonVoxels.h"
 #include <cassert>
 
 ///General LArSoft Utilities
 namespace phot{
-  
+
   class PhotonVisibilityService {
   public:
-   
+
     //PhotonVisibilityService(fhicl::ParameterSet const& pset, art::ActivityRegistry& reg);
     //PhotonVisibilityService(const std::string library="uboone_photon_library_v5.root");
-    PhotonVisibilityService(const std::string library="PhotonLibrary-20180801.root");
-    
+    //PhotonVisibilityService(const std::string library="PhotonLibrary-20180801.root");
+    PhotonVisibilityService(const std::string library="PhotonLibrary-20201209.root");
+
     //void reconfigure(fhicl::ParameterSet const& p);
-    
+
     //double GetQuenchingFactor(double dQdx);
-    
+
     //double DistanceToOpDet(                 double* xyz, unsigned int OpDet );
     //double SolidAngleFactor(                double* xyz, unsigned int OpDet );
     float GetVisibility(double* xyz, unsigned int OpChannel ) const;
@@ -56,32 +57,43 @@ namespace phot{
     inline int    GetNZ() const { return fNz; }
     inline size_t GetNOpChannels() const { return fNOpDetChannels; }
 
+    inline void SetMaxX(float x) { fXmax = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetMaxY(float x) { fYmax = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetMaxZ(float x) { fZmax = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetMinX(float x) { fXmin = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetMinY(float x) { fYmin = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetMinZ(float x) { fZmin = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetNvoxelsX(int x) { fNx = x; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetNvoxelsY(int y) { fNy = y; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetNvoxelsZ(int z) { fNz = z; fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz); }
+    inline void SetNOpDetChannels(int x) { fNOpDetChannels = x; }
+
     const std::vector<float>* GetAllVisibilities( double* xyz ) const;
 
     inline const std::vector<std::vector<float> >& GetLibraryData() const
     { if(!fTheLibrary) LoadLibrary(); return fTheLibrary->GetData(); }
-    
+
     void LoadLibrary() const;
     void StoreLibrary();
-    
-    
+
+
     void StoreLightProd(    int  VoxID,  double  N );
     void RetrieveLightProd( int& VoxID,  double& N ) const;
-    
+
     void SetLibraryEntry(   int VoxID, int OpChannel, float N);
     float GetLibraryEntry( int VoxID, int OpChannel) const;
     const std::vector<float>* GetLibraryEntries( int VoxID ) const;
 
-    
+
     bool IsBuildJob() const { return fLibraryBuildJob; }
     bool UseParameterization() const {return fParameterization;}
 
-    sim::PhotonVoxelDef GetVoxelDef() const {return fVoxelDef; }
+    const sim::PhotonVoxelDef& GetVoxelDef() const {return fVoxelDef; }
     int NOpChannels() const { return fNOpDetChannels; }
 
     const std::string& GetLibraryFilename() { return fLibraryFile; }; // Allows one to check loaded filename
 
-    static PhotonVisibilityService& GetME(std::string filename="PhotonLibrary-20180801.root")
+    static PhotonVisibilityService& GetME(std::string filename="PhotonLibrary-20201209.root")
     {
       // argument allows user to choose file loaded
       // if relative, searches for file in designated folder
@@ -90,29 +102,29 @@ namespace phot{
       if(!_me) _me = new PhotonVisibilityService(filename);
       return *_me;
     }
-    
+
   private:
 
     static PhotonVisibilityService* _me;
-    
+
     int    fCurrentVoxel;
     double fCurrentValue;
-    
+
     float  fXmin, fXmax;
     float  fYmin, fYmax;
     float  fZmin, fZmax;
     int    fNx, fNy, fNz;
     size_t fNOpDetChannels;
     bool fUseCryoBoundary;
-    
+
     bool                 fLibraryBuildJob;
     bool                 fDoNotLoadLibrary;
     bool                 fParameterization;
-    std::string          fLibraryFile;      
+    std::string          fLibraryFile;
     mutable PhotonLibrary* fTheLibrary;
     sim::PhotonVoxelDef  fVoxelDef;
-    
-    
+
+
   }; // class PhotonVisibilityService
 } //namespace utils
 //DECLARE_ART_SERVICE(phot::PhotonVisibilityService, LEGACY)

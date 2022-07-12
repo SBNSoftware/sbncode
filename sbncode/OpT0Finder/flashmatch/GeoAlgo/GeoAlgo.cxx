@@ -2,18 +2,19 @@
 #define BASICTOOL_GEOALGO_CXX
 
 #include "GeoAlgo.h"
+#include <cassert>
 
 namespace geoalgo {
 
   // Ref. RTCD 5.3.2 p. 177
   // Intersection of a HalfLine w/ AABox
-  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box, 
-					     const HalfLine_t& line, 
+  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box,
+					     const HalfLine_t& line,
 					     bool back) const
   {
     // Result container
     std::vector<Point_t> result;
-    Point_t xs1(3); // Only 2 points max possible 
+    Point_t xs1(3); // Only 2 points max possible
     Point_t xs2(3); // Create in advance for early termination checks
     // One-time only initialization for unit vectors
     static std::vector<Point_t> min_plane_n;
@@ -30,7 +31,7 @@ namespace geoalgo {
     }
     // min/max points of the AABox
     auto const& min_pt = box.Min();
-    auto const& max_pt = box.Max();    
+    auto const& max_pt = box.Max();
     // start/dir of the line
     auto const& start = line.Start();
     auto        dir   = line.Dir();
@@ -38,7 +39,7 @@ namespace geoalgo {
     // Inspect the case of parallel line
     for(size_t i=0; i<min_pt.size(); ++i) {
       if ( dir[i] == 0 &&
-	   (start[i] <= min_pt[i] ||  max_pt[i] <= start[i]) ) 
+	   (start[i] <= min_pt[i] ||  max_pt[i] <= start[i]) )
 	return result;
     }
     // Look for xs w/ 3 planes
@@ -109,7 +110,7 @@ namespace geoalgo {
   }
 
   // AABox_t & LineSegment_t intersection search. Make a use of AABox_t & HalfLine_t function
-  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box, 
+  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box,
 					     const LineSegment_t& line) const
   {
     auto const& st = line.Start();
@@ -118,7 +119,6 @@ namespace geoalgo {
     static HalfLine_t hline(st,ed-st);
     hline.Start(st[0],st[1],st[2]);
     hline.Dir(ed[0]-st[0],ed[1]-st[1],ed[2]-st[2]);
-
     auto hline_result = Intersection(box,hline);
 
     if(!hline_result.size()) return hline_result;
@@ -132,10 +132,10 @@ namespace geoalgo {
   }
 
   // AABox_t & Trajectory_t intersection search. Make a use of AABox_t & HalfLine_t function
-  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box, 
+  std::vector<Point_t> GeoAlgo::Intersection(const AABox_t& box,
 					     const Trajectory_t& trj) const
   {
-    
+
     std::vector<Point_t> result;
     if(trj.size() < 2) return result; // If only 1 point, return
     // Check compat
@@ -152,8 +152,8 @@ namespace geoalgo {
       auto hline_result = Intersection(box,hline);
 
       if(!hline_result.size()) continue;
-      
-      // Check if the length makes sense 
+
+      // Check if the length makes sense
       auto length = st._SqDist_(ed);
       for(auto const& pt : hline_result)
 	if(st._SqDist_(pt) < length) result.push_back(pt);
@@ -180,11 +180,63 @@ namespace geoalgo {
   Trajectory_t GeoAlgo::BoxOverlap(const AABox_t& box, const Trajectory_t& trj) const
   {
 
+    // if empty, return as is
+    if(trj.empty()) return trj;
     // if first & last points inside, then return full trajectory
-    if ( box.Contain(trj[0]) and box.Contain(trj.back()) )
+    if ( box.Contain(trj[0]) && box.Contain(trj.back()) )
       return trj;
 
-    return trj;
+    Trajectory_t result;
+    result.reserve(trj.size());
+    // This assumes points are ordered along the trajectory.
+    for(size_t i=0; (i+1)<trj.size(); ++i) {
+      auto const& pt0 = trj[i];
+      auto const& pt1 = trj[i+1];
+      if(box.Contain(pt0)) result.push_back(pt0);
+      // Are we stepping through the boundary
+      // need to account for both directions of trajectory
+      if ((box.Contain(pt0) && !box.Contain(pt1)) || (!box.Contain(pt0) && box.Contain(pt1))) {
+            // to make sure we find the intersection even if one of the points is exactly
+            // at the boundary, displace a little bit both points along the direction
+            geoalgo::Vector ptA(pt0[0], pt0[1], pt0[2]);
+            geoalgo::Vector ptB(pt1[0], pt1[1], pt1[2]);
+            geoalgo::Vector unit = (ptB - ptA).Dir();
+            geoalgo::Vector small_unit(unit[0]*0.0001, unit[1]*0.0001, unit[2]*0.0001);
+            ptA = ptA - small_unit;
+            ptB = ptB + small_unit;
+            // std::cout << ptA << ptB << std::endl;
+            geoalgo::LineSegment seg(ptA[0], ptA[1], ptA[2], ptB[0], ptB[1], ptB[2]);
+
+            // now find intersecting point
+        	auto crossing_pts = this->Intersection(box,seg);
+
+            for (auto pt : crossing_pts) {
+                // std::cout << pt << " " << box.Contain(pt) << std::endl;
+                if (box.Contain(pt)) result.push_back(pt);
+            }
+            // std::cout << crossing_pts.size() << std::endl;
+            // There can be 2 intersection points in very rare cases....
+            // Pt (-368.490041,129.954320,-587.387966) Pt (-366.214146,134.960090,-588.246902)
+            // this segment intersects both x and y planes
+        	// assert(crossing_pts.size()==1);
+        	// result.push_back(crossing_pts[0]);
+    }
+    }
+
+    if(box.Contain(trj.back()))
+      result.push_back(trj.back());
+    // else if(trj.size()>1) {
+    //   auto const& pt0 = trj[trj.size()-2];
+    //   auto const& pt1 = trj.back();
+    //   if(box.Contain(pt0)) {
+	// geoalgo::LineSegment seg(pt0,pt1);
+	// auto crossing_pts = this->Intersection(box,seg);
+	// assert(crossing_pts.size()==1);
+	// result.push_back(crossing_pts[0]);
+    //   }
+    // }
+
+    return result;
   }
 
   // Ref. RTCD 5.1.8 p. 146
@@ -194,7 +246,7 @@ namespace geoalgo {
 
     // closest approach when segment connecting the two lines
     // is perpendicular to both lines
-    
+
     // L1 = P1 + s(Q1-P1)
     // L1 = P2 + t(Q2-P2)
     // L1(s) and L2(t) are the closest approach points
@@ -222,14 +274,14 @@ namespace geoalgo {
       L2 = _ClosestPt_(l1.Pt1(),l2);
       return L1._SqDist_(L2);
     }
-    
+
     double s = (b*f-c*e)/d;
     double t = (a*f-b*c)/d;
 
     // s & t represent the paramteric points on the lines
     // for the closest approach point
     // now find the Point_t object at those locations
-    
+
     L1 = l1.Pt1() + ( l1.Pt2()-l1.Pt1() )*s;
     L2 = l2.Pt1() + ( l2.Pt2()-l2.Pt1() )*t;
 
@@ -273,7 +325,7 @@ namespace geoalgo {
       L2 = _ClosestPt_(L1,l2);
       return L1._SqDist_(L2);
     }
-    
+
     double s = (b*f-c*e)/d;
     double t = (a*f-b*c)/d;
 
@@ -284,7 +336,7 @@ namespace geoalgo {
     // s & t represent the paramteric points on the lines
     // for the closest approach point
     // now find the Point_t object at those locations
-    
+
     L1 = l1.Start() + l1.Dir()*s;
     L2 = l2.Start() + l2.Dir()*t;
 
@@ -318,7 +370,7 @@ namespace geoalgo {
     double f = d2*r;
 
     double d = a*e-b*b;
-    
+
     // if parallel then d == 0
     if (d == 0){
       // distance is smallest quantity between:
@@ -350,14 +402,14 @@ namespace geoalgo {
       L2 = _ClosestPt_(L1,seg);
       return L1._SqDist_(L2);
     }
-    
+
     // if closest point is not beyond half-line
     // it could be due to an intersection between half-line
     // and segment projection.
     // check value of t
-    double t = (a*f-b*c)/d;      
+    double t = (a*f-b*c)/d;
     // if t > 0 && < 1 then the two lines intersect. We are good!
-    if ( (t < 1) and (t > 0) ){
+    if ( (t < 1) && (t > 0) ){
       L1 = hline.Start() + hline.Dir()*s;
       L2 = seg.Start() + (seg.End()-seg.Start())*t;
       return L1._SqDist_(L2);
@@ -386,7 +438,7 @@ namespace geoalgo {
   // Ref. RTCD Ch 5.1 p. 128-129
   Point_t GeoAlgo::_ClosestPt_(const Point_t& pt, const LineSegment_t& line) const
   {
-    
+
     auto const& ab = line.Dir();
     // Project pt on line (ab), but deferring divide by ab * ab
     auto t = ((pt - line.Start()) * ab);
@@ -400,7 +452,7 @@ namespace geoalgo {
       else return (line.Start() + ab * (t/denom));
     }
   }
-  
+
   // Ref. RTCD Ch 5.1 p. 130
   double GeoAlgo::_SqDist_(const Point_t& pt, const HalfLine_t& line) const
   {
@@ -462,22 +514,22 @@ namespace geoalgo {
       // (1) Compute the distance to the YZ wall
       double dist_to_yz = pt[0] - pt_min[0];
       if( dist_to_yz > (pt_max[0] - pt[0]) ) dist_to_yz = pt_max[0] - pt[0];
-      
+
       // (2) Compute the distance to the XZ wall
       double dist_to_zx = pt[1] - pt_min[1];
       if( dist_to_zx > (pt_max[1] - pt[1]) ) dist_to_zx = pt_max[1] - pt[1];
-      
+
       // (3) Compute the distance to the XY wall
       double dist_to_xy = pt[2] - pt_min[2];
       if( dist_to_xy > (pt_max[2] - pt[2]) ) dist_to_xy = pt_max[2] - pt[2];
-      
+
       // (4) Compute the minimum of (3), (4), and (5)
       dist = ( dist_to_yz < dist_to_zx ? dist_to_yz : dist_to_zx );
       dist = ( dist < dist_to_xy ? dist : dist_to_xy );
       dist *= dist;
 
     }
-    
+
     else{
       // This refers to Ref. RTCD 5.1.3.1
       // re-set distance
@@ -495,7 +547,7 @@ namespace geoalgo {
     return dist;
   }
 
-  // Ref. RTCD Ch 5.1 p. 130-131 ... modified to consider a point on the surface 
+  // Ref. RTCD Ch 5.1 p. 130-131 ... modified to consider a point on the surface
   Point_t GeoAlgo::_ClosestPt_(const Point_t& pt, const AABox_t& box) const
   {
     // Result
@@ -512,7 +564,7 @@ namespace geoalgo {
     }
     return res;
   }
-  
+
 
 
   // Distance between a Trajectory_t and a Point_t
@@ -525,7 +577,7 @@ namespace geoalgo {
     // Make sure trajectory object is properly defined
     if (!trj.size())
       throw GeoAlgoException("Trajectory object not properly set...");
-    
+
     // Check dimensionality compatibility between point and trajectory
     trj.compat(pt);
 
@@ -552,7 +604,7 @@ namespace geoalgo {
 
     // loop over trajectories
     for (size_t t=0; t < trj.size(); t++){
-      
+
       // trajectory & point dimensionality will be checked in next function
       // now calculate distance w.r.t. this track
       double tmpDist = SqDist(pt, trj[t]);
@@ -561,7 +613,7 @@ namespace geoalgo {
 	trackIdx = t;
       }
     }// for all tracks
-      
+
     return minDist;
   }
 
@@ -577,7 +629,7 @@ namespace geoalgo {
     // Make sure trajectory object is properly defined
     if (!trj.size())
       throw GeoAlgoException("Trajectory object not properly set...");
-    
+
     // Check dimensionality compatibility between point and trajectory
     trj.compat(pt);
 
@@ -594,7 +646,7 @@ namespace geoalgo {
     LineSegment_t segMin(trj[idx], trj[idx+1]);
     return _ClosestPt_(pt,segMin);
   }
-  
+
 
   // Closest point between a vector of trajectories and a point
   // Loop over segments that make up the trajectory and keep track
@@ -611,7 +663,7 @@ namespace geoalgo {
 
       // holder for smallest distance
       double minDist = kINVALID_DOUBLE;
-      
+
       // track & point dimensionality will be checked per-track by next function
       // now calculate distance w.r.t. this track
       double tmpDist = SqDist(pt, trj[t]);
@@ -636,7 +688,7 @@ namespace geoalgo {
     // Make sure trajectory object is properly defined
     if (!trj.size())
       throw GeoAlgoException("Trajectory object not properly set...");
-    
+
     // Check dimensionality compatibility between point and trajectory
     trj.compat(seg.Start());
 
@@ -661,7 +713,7 @@ namespace geoalgo {
 
 
   // Closest Approach between a Trajectory and a Trajectory
-  // loop over segments in trajectory1 and those in 
+  // loop over segments in trajectory1 and those in
   // trahectory2 and find the best point
   double GeoAlgo::SqDist(const Trajectory_t& trj1, const Trajectory_t& trj2, Point_t& c1, Point_t& c2) const
   {
@@ -669,7 +721,7 @@ namespace geoalgo {
     // Make sure trajectory object is properly defined
     if ( !trj1.size() or !trj2.size() )
       throw GeoAlgoException("Trajectory object not properly set...");
-    
+
     // Check dimensionality compatibility between point and trajectory
     trj1.compat(trj2[0]);
 
@@ -691,7 +743,7 @@ namespace geoalgo {
 	}
       }// for segments in trajectory 2
     }//for all segments in trajectory 1
-    
+
     return distMin;
   }
 
@@ -704,7 +756,7 @@ namespace geoalgo {
     // Make sure trajectory object is properly defined
     if (!trj.size())
       throw GeoAlgoException("Trajectory object not properly set...");
-    
+
     // Check dimensionality compatibility between point and trajectory
     trj.compat(hline.Start());
 
@@ -749,7 +801,7 @@ namespace geoalgo {
 
       // now calculate closest approach
       double tmpDist = SqDist(seg, trj[t], c1min, c2min);
-      
+
       // is this the best yet?
       if (tmpDist < minDist){
 	minDist = tmpDist;
@@ -757,7 +809,7 @@ namespace geoalgo {
 	c2 = c2min;
 	trackIdx = t;
       }
-      
+
     }// for all tracks in vector
 
     return minDist;
@@ -784,7 +836,7 @@ namespace geoalgo {
     double f    = d2 * r;
 
     // check if segment is too short
-    if ( (a <= 0) and (e <= 0) ){
+    if ( (a <= 0) && (e <= 0) ){
       //both segments are too short
       t1 = t2 = 0.;
       c1 = s1;
@@ -809,14 +861,14 @@ namespace geoalgo {
 	// the general case...no degeneracies
 	double b = d1 * d2;
 	double denom = (a*e)-(b*b);
-	
+
 	if (denom != 0.)
 	  t1 = _Clamp_((b*f-c*e)/denom, 0., 1.);
 	else
 	  t1 = 0.;
-	
+
 	t2 = (b*t1+f)/e;
-	
+
 	if (t2 < 0.){
 	  t2 = 0.;
 	  t1 = _Clamp_(-c/a, 0., 1.);
@@ -825,16 +877,16 @@ namespace geoalgo {
 	  t2 = 1.;
 	  t1 = _Clamp_((b-c)/a, 0., 1.);
 	}
-	
+
       }
     }
-    
+
     c1 = s1 + d1 * t1;
     c2 = s2 + d2 * t2;
-    
+
     Vector_t distVector = c2 - c1;
     return distVector.SqLength();
-    
+
   }
 
 
@@ -938,7 +990,7 @@ namespace geoalgo {
     Point_t pt1(lin1.Start().size());
     Point_t pt2(lin2.Start().size());
 
-    // double IP = _SqDist_(lin1Back, lin2Back, pt1, pt2);
+    _SqDist_(lin1Back, lin2Back, pt1, pt2);
     origin = (pt1+pt2)/2.;
 
     // If origin coincides with lin1 start
@@ -999,7 +1051,7 @@ namespace geoalgo {
     HalfLine_t lin2(seg.Start(), seg.Dir());
     return _commonOrigin_(lin1, lin2, origin, backwards);
   }
-  
+
   /// Common origin: Trajectory & Half Line. Keep track of origin
   double GeoAlgo::_commonOrigin_(const Trajectory_t& trj, const HalfLine_t& lin, Point_t& origin, bool backwards) const
   {
@@ -1037,7 +1089,7 @@ namespace geoalgo {
     copyPts.pop_back();
     Sphere_t tmpSphere = Sphere(points4);
     return _RemainingPoints_(copyPts,tmpSphere);
-    
+
     // too many points to call simple constructor! find minimally bounding sphere
     // compute sphere for first 4 points
     //Sphere_t tmpSphere(copyPts[0],copyPts[1],copyPts[2],copyPts[3]);
@@ -1058,7 +1110,7 @@ namespace geoalgo {
     //std::cout << "Remaining points: " << remaining.size() << std::endl;
 
     auto const& lastPoint = remaining.back();
-   
+
     // if this point is bounded by the already constructed sphere, continue
     if ( thisSphere.Contain(lastPoint) ){
       remaining.pop_back();
@@ -1067,7 +1119,7 @@ namespace geoalgo {
     // if not, need to adjust so that the new point is also bound
     // get distance from lastPoint and center
     double dist = lastPoint.Dist(thisSphere.Center());
-    //std::cout << "point does not fit: " << lastPoint << std::endl; 
+    //std::cout << "point does not fit: " << lastPoint << std::endl;
     //std::cout << "distance: " << dist << std::endl;
     //std::cout << "center  : " << thisSphere.Center() << std::endl;
     //std::cout << "radius  : " << thisSphere.Radius() << std::endl;
@@ -1091,7 +1143,7 @@ namespace geoalgo {
 
     return _RemainingPoints_(remaining,newsphere);
   }
-  
+
   Sphere_t GeoAlgo::_WelzlSphere_(const std::vector<Point_t>& pts,
 				  int numPts,
 				  std::vector<Point_t> sosPts) const
@@ -1110,6 +1162,6 @@ namespace geoalgo {
     sosPts.push_back(pts[index]);
     return _WelzlSphere_(pts, numPts-1, sosPts);
   }
-  
+
 }
 #endif

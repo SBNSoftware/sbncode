@@ -17,6 +17,7 @@
 #pragma link C++ function flashmatch::as_ndarray(const flashmatch::QCluster_t&)+;
 #pragma link C++ function flashmatch::as_ndarray(const flashmatch::Flash_t&)+;
 #pragma link C++ function flashmatch::as_ndarray(const ::geoalgo::Trajectory&)+;
+#pragma link C++ function flashmatch::as_geoalgo_trajectory(PyObject*)+;
 
 #pragma link C++ function flashmatch::copy_array(PyObject*, const std::vector< short              > &)+;
 #pragma link C++ function flashmatch::copy_array(PyObject*, const std::vector< unsigned short     > &)+;

@@ -107,7 +107,7 @@ namespace phot{
 	if(!f) {
 	  std::cerr<<"\033[95m<<"<<__FUNCTION__<<">>\033[00m " << "Failed to open a ROOT file: " << LibraryFile.c_str()<<std::endl;
 	  std::cerr<<"If you don't have photon library data file, download from below URL..."<<std::endl;
-	  std::cerr<<"/cvmfs/icarus.opensciencegrid.org/products/icarus/icarus_data/v08_28_00/icarus_data/PhotonLibrary/PhotonLibrary-20180801.root"<<std::endl<<std::endl;
+	  std::cerr<<"/cvmfs/icarus.opensciencegrid.org/products/icarus/icarus_data/v09_25_00/icarus_data/PhotonLibrary/PhotonLibrary-20201209.root"<<std::endl<<std::endl;
 	  throw std::exception();
 	}
 	tt =  (TTree*)f->Get("PhotonLibraryData");
@@ -188,7 +188,7 @@ namespace phot{
     //if(/*(Voxel<0)||*/(Voxel>=fNVoxels)||/*(OpChannel<0)||*/(OpChannel>=fNOpChannels))
     //  return 0;
     //else
-      return fLookupTable[Voxel][OpChannel]; 
+      return fLookupTable[Voxel][OpChannel];
   }
 
   //----------------------------------------------------

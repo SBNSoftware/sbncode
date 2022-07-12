@@ -2,6 +2,7 @@
 #define CHARGEANALYTICAL_CXX
 
 #include "ChargeAnalytical.h"
+#include <math.h>
 
 namespace flashmatch {
 

@@ -1,9 +1,9 @@
 /**
- * \file FlashMatchFactory.h
+ * \file MatchSelectionFactory.h
  *
  * \ingroup Base
  * 
- * \brief Class def header for a class FlashMatchFactory
+ * \brief Class def header for a class MatchSelectionFactory
  *
  * @author kazuhiro
  */
@@ -11,47 +11,47 @@
 /** \addtogroup Base
 
     @{*/
-#ifndef FLASHMATCHFACTORY_H
-#define FLASHMATCHFACTORY_H
+#ifndef MatchSelectionFACTORY_H
+#define MatchSelectionFACTORY_H
 
 #include <iostream>
 #include <map>
-#include "BaseFlashMatch.h"
+#include "BaseMatchSelection.h"
 namespace flashmatch {
 
   /**
-     \class FlashMatchFactoryBase
+     \class MatchSelectionFactoryBase
      \brief Abstract base class for factory (to be implemented per flash)
   */
-  class FlashMatchFactoryBase {
+  class MatchSelectionFactoryBase {
   public:
     /// Default ctor
-    FlashMatchFactoryBase(){}
+    MatchSelectionFactoryBase(){}
     /// Default dtor (virtual)
-    virtual ~FlashMatchFactoryBase(){}
+    virtual ~MatchSelectionFactoryBase(){}
     /// Abstract constructor method
-    virtual BaseFlashMatch* create(const std::string instance_name) = 0;
+    virtual BaseMatchSelection* create(const std::string instance_name) = 0;
   };
 
   /**
-     \class FlashMatchFactory
+     \class MatchSelectionFactory
      \brief Factory class for instantiating flash algorithm instance
   */
-  class FlashMatchFactory {
+  class MatchSelectionFactory {
   private:
     /// Default ctor, shouldn't be used
-    FlashMatchFactory() {}
+    MatchSelectionFactory() {}
   public:
     /// Default dtor
-    ~FlashMatchFactory() {_factory_map.clear();}
+    ~MatchSelectionFactory() {_factory_map.clear();}
     /// Static sharable instance getter
-    static FlashMatchFactory& get()
-    { if(!_me) _me = new FlashMatchFactory; return *_me; }
+    static MatchSelectionFactory& get()
+    { if(!_me) _me = new MatchSelectionFactory; return *_me; }
     /// Factory registration method (should be called by global factory instance in algorithm header)
-    void add_factory(const std::string name, flashmatch::FlashMatchFactoryBase* factory)
+    void add_factory(const std::string name, flashmatch::MatchSelectionFactoryBase* factory)
     { _factory_map[name] = factory; }
     /// Factory creation method (should be called by clients, possibly you!)
-    BaseFlashMatch* create(const std::string name, const std::string instance_name) {
+    BaseMatchSelection* create(const std::string name, const std::string instance_name) {
       auto iter = _factory_map.find(name);
       if(iter == _factory_map.end() || !((*iter).second)) {
       	std::cerr << "Found no registered class " << name << std::endl;
@@ -63,9 +63,9 @@ namespace flashmatch {
 
   private:
     /// Static factory container
-    std::map<std::string,flashmatch::FlashMatchFactoryBase*> _factory_map;
+    std::map<std::string,flashmatch::MatchSelectionFactoryBase*> _factory_map;
     /// Static self
-    static FlashMatchFactory* _me;
+    static MatchSelectionFactory* _me;
   };
 }
 #endif

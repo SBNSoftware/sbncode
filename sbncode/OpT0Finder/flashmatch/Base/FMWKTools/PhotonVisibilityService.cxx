@@ -34,7 +34,7 @@
 //#include "Geometry/CryostatGeo.h"
 //#include "Geometry/OpDetGeo.h"
 #include <chrono>
-
+//#include "flashmatch/Base/FMWKInterface.h"
 using namespace std::chrono;
 namespace phot{
 
@@ -71,14 +71,14 @@ namespace phot{
     fCurrentVoxel(0),
     fCurrentValue(0.),
     fXmin( -395.0 ),
-    fXmax(  -45.0 ),
-    fYmin( -215.2 ),
-    fYmax(  174.8 ),
-    fZmin( -995.0 ),
-    fZmax(  965.0 ),
-    fNx(70),
-    fNy(78),
-    fNz(392),
+    fXmax(  -25.0 ),
+    fYmin( -215.0 ),
+    fYmax(  170.0 ),
+    fZmin( -985.0 ),
+    fZmax(  985.0 ),
+    fNx(74),
+    fNy(77),
+    fNz(394),
     fNOpDetChannels(180),
     fUseCryoBoundary(true),
     fLibraryBuildJob(false),
@@ -87,6 +87,15 @@ namespace phot{
     fLibraryFile(library),
     fTheLibrary(nullptr)
   {
+    // Get Photon Library Volume from detector specs
+    // auto const& bbox = DetectorSpecs::GetME().PhotonLibraryVolume();
+    // fXmax = bbox.Max()[0];
+    // fXmin = bbox.Min()[0];
+    // fYmax = bbox.Max()[1];
+    // fYmin = bbox.Min()[1];
+    // fZmax = bbox.Max()[2];
+    // fZmin = bbox.Min()[2];
+
     fVoxelDef = sim::PhotonVoxelDef(fXmin, fXmax, fNx, fYmin, fYmax, fNy, fZmin, fZmax, fNz);
     return;
   }

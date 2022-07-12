@@ -4,7 +4,7 @@
 #include "BaseFlashMatch.h"
 
 namespace flashmatch {
-  
+
   Flash_t BaseFlashMatch::GetEstimate(const QCluster_t& tpc) const
   {
     return _flash_hypothesis->GetEstimate(tpc);

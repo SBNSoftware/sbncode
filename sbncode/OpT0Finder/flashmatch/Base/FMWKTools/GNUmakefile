@@ -12,6 +12,7 @@ HEADERS_DEST = flashmatch/Base/$(PACKAGE_NAME)
 
 # include options for this package
 INCFLAGS  = -I.                       #Include itself
+INCFLAGS += $(shell flashmatch-config --includes)
 
 # platform-specific options
 OSNAME          = $(shell uname -s)
@@ -25,4 +26,3 @@ include $(FMATCH_BASEDIR)/Makefile/GNUmakefile.CORE
 
 pkg_build: # nothing extra to do in this package
 pkg_clean: # nothing extra to do in this package
-

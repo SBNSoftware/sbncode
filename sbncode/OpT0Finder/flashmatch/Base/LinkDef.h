@@ -17,6 +17,7 @@
 #pragma link C++ class flashmatch::Flash_t+;
 #pragma link C++ class flashmatch::QPoint_t+;
 #pragma link C++ class flashmatch::QCluster_t+;
+#pragma link C++ enum  flashmatch::TouchMatch_t+;
 #pragma link C++ class flashmatch::FlashMatch_t+;
 #pragma link C++ class std::vector<flashmatch::Flash_t>+;
 #pragma link C++ class std::vector<flashmatch::QPoint_t>+;
@@ -31,6 +32,8 @@
 #pragma link C++ class flashmatch::BaseFlashFilter+;
 #pragma link C++ class flashmatch::BaseFlashMatch+;
 #pragma link C++ class flashmatch::BaseFlashHypothesis+;
+#pragma link C++ class flashmatch::FlashHypothesisFactory+;
+#pragma link C++ class flashmatch::CustomAlgoFactory+;
 //ADD_NEW_CLASS ... do not change this line
 #endif
 

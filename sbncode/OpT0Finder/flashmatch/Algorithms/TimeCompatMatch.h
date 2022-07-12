@@ -19,6 +19,7 @@
 #endif
 
 #if USING_LARSOFT == 0
+
 #include "flashmatch/Base/BaseProhibitAlgo.h"
 #include "flashmatch/Base/FlashProhibitFactory.h"
 #include "flashmatch/Base/FMWKInterface.h"
@@ -32,6 +33,7 @@
 
 #include <cmath>
 #include <sstream>
+
 
 namespace flashmatch {
   
@@ -60,7 +62,9 @@ namespace flashmatch {
   private:
 
     /// Buffer time to allow some uncertainty [us]
-    double _time_buffer;
+    double _time_window;
+    /// Shift in beam timing w.r.t. flash's time reference =0
+    double _time_shift;
 
   };
 

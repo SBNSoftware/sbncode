@@ -15,6 +15,7 @@ namespace flashmatch {
   /// Utility function: call one-time-only numpy module initialization (you don't have to call)
   void SetPyUtil();
 
+  ::geoalgo::Trajectory as_geoalgo_trajectory(PyObject* pyarray);
   PyObject* as_ndarray(const QCluster_t& traj);
   PyObject* as_ndarray(const Flash_t& traj);
   PyObject* as_ndarray(const ::geoalgo::Trajectory& traj);

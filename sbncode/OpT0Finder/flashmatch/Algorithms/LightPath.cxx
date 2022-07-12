@@ -17,8 +17,8 @@ namespace flashmatch {
   void LightPath::_Configure_(const Config_t &pset)
   {
     _gap          = pset.get< double > ( "SegmentSize" );
-    _light_yield  = pset.get< double > ( "LightYield"  );
-    _dEdxMIP      = pset.get< double > ( "MIPdEdx"     );
+    _light_yield  = DetectorSpecs::GetME().LightYield();
+    _dEdxMIP      = DetectorSpecs::GetME().MIPdEdx();
   }
 
   void LightPath::MakeQCluster(const ::geoalgo::Vector& pt_1,
@@ -47,7 +47,6 @@ namespace flashmatch {
     int num_div = int(dist / _gap);
 
     ::geoalgo::Vector direct = (pt_1 - pt_2).Dir();
-
     Q_cluster.reserve(Q_cluster.size() + num_div);
 
     for (int div_index = 0; div_index < num_div + 1; div_index++) {
@@ -78,33 +77,42 @@ namespace flashmatch {
     QCluster_t result;
     result.clear();
 
+    // Add first point of trajectory
+    QPoint_t q_pt(trj[0][0], trj[0][1], trj[0][2], 0.);
+    result.emplace_back(q_pt);
+
     for (size_t i = 0; i < trj.size() - 1; i++) {
       auto const& this_loc(trj[i]);
       auto const& last_loc(trj[i + 1]);
       LightPath::MakeQCluster(this_loc, last_loc, result);
     }
 
+    // Add last point of trajectory
+    size_t last = trj.size() - 1;
+    QPoint_t q_pt2(trj[last][0], trj[last][1], trj[last][2], 0.);
+    result.emplace_back(q_pt2);
+
+    FLASH_INFO() << result << std::endl;
+    return result;
+    /*
     // Trimming Q_cluster
     auto const& bbox = DetectorSpecs::GetME().ActiveVolume();
-    double _vol_xmax = bbox.Max()[0];
-    double _vol_ymax = bbox.Max()[1];
-    double _vol_zmax = bbox.Max()[2];
+    ::geoalgo::Vector pt(3);
 
-    double _vol_xmin = bbox.Min()[0];
-    double _vol_ymin = bbox.Min()[1];
-    double _vol_zmin = bbox.Min()[2];
-    FLASH_INFO() << result << std::endl;
     QCluster_t final_result;
     final_result.clear();
+    final_result.reserve(result.size());
     for (size_t idx = 0; idx < result.size(); ++idx) {
+      pt[0] = result[idx].x;
+      pt[1] = result[idx].y;
+      pt[2] = result[idx].z;
+      if(bbox.Contains(pt)) final_result.push_back(pt);
         auto pt = result[idx];
-        if (pt.x >= _vol_xmin && pt.x <= _vol_xmax && pt.y >= _vol_ymin && pt.y <= _vol_ymax && pt.z >= _vol_zmin && pt.z <= _vol_zmax) {
-            final_result.push_back(pt);
-        }
     }
     FLASH_INFO() << final_result << std::endl;
 
     return final_result;
+    */
   }
 
 }

@@ -16,11 +16,13 @@
 #pragma link C++ class flashmatch::TimeRange+;
 #pragma link C++ class flashmatch::TimeRangeSet+;
 //#pragma link C++ class flashmatch::FilterArray+;
-//#pragma link C++ class flashmatch::NPtFilter+;
+#pragma link C++ class flashmatch::NPtFilter+;
 #pragma link C++ class flashmatch::QLLMatch+;
 
 #pragma link C++ class flashmatch::PhotonLibHypothesis+;
+#pragma link C++ class flashmatch::SemiAnalyticalHypothesis+;
 //#pragma link C++ class flashmatch::ChargeAnalytical+;
 #pragma link C++ class flashmatch::LightPath+;
+#pragma link C++ class flashmatch::NPEFlashFilter+;
 //ADD_NEW_CLASS ... do not change this line
 #endif

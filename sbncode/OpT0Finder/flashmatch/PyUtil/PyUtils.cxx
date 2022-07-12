@@ -19,6 +19,25 @@ namespace flashmatch {
     }
   }
 
+  geoalgo::Trajectory as_geoalgo_trajectory(PyObject* pyarray) {
+    ::flashmatch::SetPyUtil();
+    double **carray;
+    const int dtype = NPY_DOUBLE;
+    PyArray_Descr *descr = PyArray_DescrFromType(dtype);
+    npy_intp dims[2];
+    if (PyArray_AsCArray(&pyarray, (void *)&carray, dims, 2, descr) < 0) {
+      std::cerr<<"ERROR: cannot convert pyarray to 2D C-array"<<std::endl;
+      throw std::exception();
+    }
+    geoalgo::Trajectory trj(dims[0],dims[1]);
+    for(int i=0; i<dims[0]; ++i) {
+      for(int j=0; j<dims[1]; ++j)
+	trj[i][j] = carray[i][j];
+    }
+    PyArray_Free(pyarray, (void*)carray);
+    return trj;
+  }  
+
   PyObject* as_ndarray(const QCluster_t& traj) {
     SetPyUtil();
     std::vector<size_t> dims(2,0);

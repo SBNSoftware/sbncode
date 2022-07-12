@@ -12,9 +12,11 @@
 #include "FlashHypothesisFactory.h"
 #include "FlashProhibitFactory.h"
 #include "CustomAlgoFactory.h"
+#include "TouchMatchFactory.h"
+#include "MatchSelectionFactory.h"
 #include <chrono>
 
-using namespace std::chrono;
+//using namespace std::chrono;
 namespace flashmatch {
 
   FlashMatchManager::FlashMatchManager(const std::string name)
@@ -24,60 +26,14 @@ namespace flashmatch {
     , _alg_match_prohibit(nullptr)
     , _alg_flash_match(nullptr)
     , _alg_flash_hypothesis(nullptr)
+    , _alg_touch_match(nullptr)
+    , _alg_match_select(nullptr)
     , _configured(false)
     , _name(name)
-  {
-    _allow_reuse_flash = true;
-  }
+  {}
 
   const std::string& FlashMatchManager::Name() const
   { return _name; }
-
-  /*
-  void FlashMatchManager::SetAlgo(BaseAlgorithm* alg)
-  {
-    _configured = false;
-    // Figure out the type of a provided algorithm
-    switch (alg->AlgorithmType()) {
-
-    // TPC filter
-    case kTPCFilter:
-      _alg_tpc_filter   = (BaseTPCFilter*)alg; break;
-
-    // Flash filter
-    case kFlashFilter:
-      _alg_flash_filter = (BaseFlashFilter*)alg; break;
-
-    // Match prohibit algo
-    case kMatchProhibit:
-      _alg_match_prohibit = (BaseProhibitAlgo*)alg; break;
-
-    // Flash matching
-    case kFlashMatch:
-      _alg_flash_match  = (BaseFlashMatch*)alg; break;
-
-    // Flash hypothesis
-    case kFlashHypothesis:
-      _alg_flash_hypothesis = (BaseFlashHypothesis*)alg; break;
-
-    // Other algorithms
-    case kCustomAlgo:
-      if(_custom_alg_m.find(alg->AlgorithmName()) != _custom_alg_m.end()) {
-	std::stringstream ss;
-	ss << "Duplicate name: " << alg->AlgorithmName() << std::endl;
-	throw OpT0FinderException(ss.str());
-      }
-      _custom_alg_m[alg->AlgorithmName()] = alg;
-      break;
-    // Fuck it
-    default:
-      std::stringstream ss;
-      ss << "Unsupported algorithm type: " << alg->AlgorithmType();
-      throw OpT0FinderException(ss.str());
-    }
-  }
-
-  */
 
   void FlashMatchManager::AddCustomAlgo(BaseAlgorithm* alg)
   {
@@ -91,24 +47,19 @@ namespace flashmatch {
 
   void FlashMatchManager::Configure(const Config_t& main_cfg)
   {
-    /*
-    ::fcllite::ConfigManager cfg_mgr("FlashMatchManager");
-
-    cfg_mgr.AddCfgFile(_config_file);
-
-    auto const& main_cfg = cfg_mgr.Config();
-    */
+    
     auto const& mgr_cfg = main_cfg.get<flashmatch::Config_t>(Name());
 
-    _allow_reuse_flash = mgr_cfg.get<bool>("AllowReuseFlash");
     this->set_verbosity((msg::Level_t)(mgr_cfg.get<unsigned int>("Verbosity")));
     _store_full = mgr_cfg.get<bool>("StoreFullResult");
 
     auto const flash_filter_name = mgr_cfg.get<std::string>("FlashFilterAlgo","");
-    auto const tpc_filter_name   = mgr_cfg.get<std::string>("TPCFilterAlgo","");
-    auto const prohibit_name     = mgr_cfg.get<std::string>("ProhibitAlgo","");
-    auto const hypothesis_name   = mgr_cfg.get<std::string>("HypothesisAlgo","");
-    auto const match_name        = mgr_cfg.get<std::string>("MatchAlgo","");
+    auto const tpc_filter_name   = mgr_cfg.get<std::string>("TPCFilterAlgo",  "");
+    auto const prohibit_name     = mgr_cfg.get<std::string>("ProhibitAlgo",   "");
+    auto const hypothesis_name   = mgr_cfg.get<std::string>("HypothesisAlgo"    ); // required
+    auto const match_name        = mgr_cfg.get<std::string>("MatchAlgo"         ); // required
+    auto const touch_match_name  = mgr_cfg.get<std::string>("TouchMatchAlgo", "");
+    auto const match_select_name = mgr_cfg.get<std::string>("MatchSelectionAlgo"); // required
     std::vector<std::string> custom_algo_v;
     custom_algo_v = mgr_cfg.get<std::vector<std::string> >("CustomAlgo",custom_algo_v);
 
@@ -117,25 +68,58 @@ namespace flashmatch {
     if(!prohibit_name.empty()    ) _alg_match_prohibit   = FlashProhibitFactory::get().create(prohibit_name,prohibit_name);
     if(!hypothesis_name.empty()  ) _alg_flash_hypothesis = FlashHypothesisFactory::get().create(hypothesis_name,hypothesis_name);
     if(!match_name.empty()       ) _alg_flash_match      = FlashMatchFactory::get().create(match_name,match_name);
+    if(!touch_match_name.empty() ) _alg_touch_match      = TouchMatchFactory::get().create(touch_match_name,touch_match_name);
+    if(!match_select_name.empty()) _alg_match_select     = MatchSelectionFactory::get().create(match_select_name,match_select_name);
     for(auto const& name : custom_algo_v)
       if(!name.empty()) AddCustomAlgo(CustomAlgoFactory::get().create(name,name));
 
     // checks
-    if (_alg_match_prohibit)
-      _alg_match_prohibit->Configure(main_cfg.get<flashmatch::Config_t>(_alg_match_prohibit->AlgorithmName()));
 
-    if (_alg_flash_hypothesis)
+    if (_alg_flash_filter) {
+      FLASH_INFO() << "Configuring FlashFilter " << _alg_flash_filter->AlgorithmName() << std::endl;
+      _alg_flash_filter->Configure(main_cfg.get<flashmatch::Config_t>(_alg_flash_filter->AlgorithmName()));
+    }
+
+    if (_alg_tpc_filter) {
+      FLASH_INFO() << "Configuring TPCFilter " << _alg_tpc_filter->AlgorithmName() << std::endl;
+      _alg_tpc_filter->Configure(main_cfg.get<flashmatch::Config_t>(_alg_tpc_filter->AlgorithmName()));
+    }
+
+    if (_alg_match_prohibit) {
+      FLASH_INFO() << "Configuring MatchProhibit " << _alg_match_prohibit->AlgorithmName() << std::endl;
+      _alg_match_prohibit->Configure(main_cfg.get<flashmatch::Config_t>(_alg_match_prohibit->AlgorithmName()));
+    }
+
+    if (_alg_flash_hypothesis) {
+      FLASH_INFO() << "Configuring Hypothesis " << _alg_flash_hypothesis->AlgorithmName() << std::endl;
       _alg_flash_hypothesis->Configure(main_cfg.get<flashmatch::Config_t>(_alg_flash_hypothesis->AlgorithmName()));
+    }
+
+    for (auto& name_ptr : _custom_alg_m) {
+      FLASH_INFO() << "Configuring CustomAlgo " << name_ptr.first << std::endl;
+      name_ptr.second->Configure(main_cfg.get<flashmatch::Config_t>(name_ptr.first));
+    }
 
     if (_alg_flash_match) {
+      FLASH_INFO() << "Configuring FlashMatch " << _alg_flash_match->AlgorithmName() << std::endl;
       _alg_flash_match->SetFlashHypothesis(_alg_flash_hypothesis);
       _alg_flash_match->Configure(main_cfg.get<flashmatch::Config_t>(_alg_flash_match->AlgorithmName()));
     }
 
-    for (auto& name_ptr : _custom_alg_m)
-      name_ptr.second->Configure(main_cfg.get<flashmatch::Config_t>(name_ptr.first));
+    if (_alg_touch_match) {
+      FLASH_INFO() << "Configuring TouchMatch " << _alg_touch_match->AlgorithmName() << std::endl;
+      _alg_touch_match->Configure(main_cfg.get<flashmatch::Config_t>(_alg_touch_match->AlgorithmName()));
+    }
+
+    if(_alg_match_select) {
+      FLASH_INFO() << "Configuring MatchSelect " << _alg_match_select->AlgorithmName() << std::endl;
+      _alg_match_select->Configure(main_cfg.get<flashmatch::Config_t>(_alg_match_select->AlgorithmName()));
+    }
 
     _configured = true;
+
+    this->PrintConfig();
+
   }
 
   BaseAlgorithm* FlashMatchManager::GetAlgo(flashmatch::Algorithm_t type)
@@ -166,6 +150,14 @@ namespace flashmatch {
     case kFlashHypothesis:
       return _alg_flash_hypothesis;
 
+    // Touch match
+    case kTouchMatch:
+      return _alg_touch_match;
+
+    // Match select
+    case kMatchSelect:
+      return _alg_match_select;
+
     // Fuck it
     default:
       std::stringstream ss;
@@ -184,13 +176,13 @@ namespace flashmatch {
     return _custom_alg_m[name];
   }
 
-  void FlashMatchManager::Add(flashmatch::QCluster_t& obj)
+  void FlashMatchManager::Add(flashmatch::QCluster_t obj)
   { _tpc_object_v.push_back(obj); }
 
   void FlashMatchManager::Emplace(flashmatch::QCluster_t&& obj)
   { _tpc_object_v.emplace_back(std::move(obj)); }
 
-  void FlashMatchManager::Add(flashmatch::Flash_t& obj)
+  void FlashMatchManager::Add(flashmatch::Flash_t obj)
   {
     if(!obj.Valid()) throw OpT0FinderException("Invalid Flash_t object cannot be registered!");
     _flash_v.push_back(obj);
@@ -257,95 +249,109 @@ namespace flashmatch {
     // Flash matching stage
     //
 
+    // Report what's put into matching
+    if(this->logger().level() == flashmatch::msg::kINFO) {
+      for(size_t idx=0; idx<tpc_index_v.size(); ++idx) {
+        auto const& tpc_index = tpc_index_v[idx];
+        auto const& qcluster = _tpc_object_v[tpc_index];
+        FLASH_INFO() << "Input QCluster " << idx << " (ID=" << tpc_index << ") ... "
+        << qcluster.size() << " pts ... point qsum " << qcluster.sum()
+        << " ... X span " << qcluster.min_x() << " => " << qcluster.max_x() << std::endl << std::endl; 
+      }
+
+      for(size_t idx=0; idx<flash_index_v.size(); ++idx) {
+        auto const& flash_index = flash_index_v[idx];
+        auto const& flash = _flash_v[flash_index];
+        FLASH_INFO() << "Input Flash " << idx << " (ID=" << flash_index << ") ... "
+        << "Reco " << flash.time << " [us] " << flash.TotalPE() << " p.e. "
+        << "... True " << flash.time_true << " [us] " << flash.TotalTruePE() << " p.e. " << std::endl << std::endl;
+      }
+    }
+
     // use multi-map for possible equally-scored matches
-    std::multimap<double, FlashMatch_t> score_map;
+    std::vector<std::vector<FlashMatch_t> > match_result;
+    match_result.resize(tpc_index_v.size());
+    for(auto& match_v : match_result) match_v.resize(flash_index_v.size());
 
     // Double loop over a list of tpc object & flash
     // Call matching function to inspect the compatibility.
+
     for (size_t tpc_index = 0; tpc_index < tpc_index_v.size(); ++tpc_index) {
+
+      auto const& tpc = _tpc_object_v[tpc_index_v[tpc_index]]; // Retrieve TPC object
+
       // Loop over flash list
-      for (auto const& flash_index : flash_index_v) {
-        FLASH_INFO() << "TPC index " << tpc_index << ", Flash index " << flash_index << std::endl;
-        auto const& tpc   = _tpc_object_v[tpc_index_v[tpc_index]]; // Retrieve TPC object
-        auto const& flash = _flash_v[flash_index];    // Retrieve flash
+      for (size_t flash_index=0; flash_index < flash_index_v.size(); ++flash_index) {
+
+        FLASH_INFO() << "TPC/Flash index " << tpc_index << "/" << flash_index
+          << " ID " << tpc_index_v[tpc_index] << "/" << flash_index_v[flash_index] << std::endl;
+        auto const& flash = _flash_v[flash_index_v[flash_index]];    // Retrieve flash
+
+        auto& match = match_result[tpc_index][flash_index];
+        match.tpc_id = tpc_index_v[tpc_index];
+        match.flash_id = flash_index_v[flash_index];
 
         if (tpc.size() == 0 )
           continue;
 
         // run the match-prohibit algo first
         if (_alg_match_prohibit) {
-          bool compat = _alg_match_prohibit->MatchCompatible( tpc, flash);
-          if (compat == false) {
-            FLASH_INFO() << "Match not compatible. " << std::endl;
+          if(! _alg_match_prohibit->MatchCompatible( tpc, flash) )
             continue;
-          }
         }
-        auto start = high_resolution_clock::now();
-        auto res = _alg_flash_match->Match( tpc, flash ); // Run matching
-        auto end = high_resolution_clock::now();
-        auto duration = duration_cast<nanoseconds>(end - start);
+
+        // run touch match algorithm
+        if (_alg_touch_match)
+          _alg_touch_match->Match(tpc,flash,match);
+
+        if(match.tpc_id != tpc_index_v[tpc_index]){
+          FLASH_CRITICAL() << "TPC ID changed by FlashMatch algorithm. Not supposed to happen..." << std::endl;
+          throw OpT0FinderException();
+        }
+        if(match.flash_id != flash_index_v[flash_index]){
+          FLASH_CRITICAL() << "Flash ID changed by FlashMatch algorithm. Not supposed to happen..." << std::endl;
+          throw OpT0FinderException();
+        }
+        auto start = std::chrono::high_resolution_clock::now();
+        _alg_flash_match->Match( tpc, flash, match ); // Run matching
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         FLASH_INFO() << "Match duration = " << duration.count() << "ns" << std::endl;
 
-        // ignore this match if the score is <= 0
-        if (res.score <= 0) continue;
-
-        // Else we store this match. Assign TPC & flash index info
-        res.tpc_id = tpc_index_v[tpc_index];//_index;
-        res.flash_id = flash_index;//_index;
-        res.duration = duration.count();
-
+        match.duration = duration.count();
 
         if(_store_full) {
-          _res_tpc_flash_v[res.tpc_id][res.flash_id] = res;
-          _res_flash_tpc_v[res.flash_id][res.tpc_id] = res;
-        }
-        // For ordering purpose, take an inverse of the score for sorting
-        score_map.emplace( 1. / res.score, res);
+          _res_tpc_flash_v[match.tpc_id][match.flash_id] = match;
+          _res_flash_tpc_v[match.flash_id][match.tpc_id] = match;
+      	}
 
         FLASH_DEBUG() << "Candidate Match: "
-		      << " TPC=" << tpc_index << " (" << tpc.min_x() << " min x)" << " @ " << tpc.time
-		      << " with Flash=" << flash_index << " @ " << flash.time
-		      << " ... Score=" << res.score
-		      << " ... PE=" << flash.TotalPE()
-		      << std::endl;
+          << " TPC=" << tpc_index_v[tpc_index] << " @ " << tpc.time
+          << " with Flash=" << flash_index << " @ " << flash.time
+          << " ... Score=" << match.score
+          << " ... PE=" << flash.TotalPE()
+          << " /hyp. PE=" << std::accumulate(match.hypothesis.begin(), match.hypothesis.end(), 0)
+          << std::endl;
       }
     }
 
     // We have a score-ordered list of match information at this point.
-    // Prepare return match information by respecting a score of each possible match.
-    // Note _allow_reuse_flash becomes relevant here as well.
 
-    // Create a std::set of tpc/flash IDs to keep track of already-matched tpc/flash input.
-    std::set<ID_t> tpc_used, flash_used;
-    result.reserve(tpc_index_v.size());
-    // Loop over score map created with matching algorithm
-    for (auto& score_info : score_map) {
+    result = _alg_match_select->Select(match_result);
 
-      auto&       match_info  = score_info.second;   // match information
-      auto const& tpc_index   = match_info.tpc_id;   // matched tpc original id
-      auto const& flash_index = match_info.flash_id; // matched flash original id
+    for(size_t idx=0; idx < result.size(); ++idx) {
+      auto const& match = result[idx];
+      auto const& tpc   = _tpc_object_v[match.tpc_id];
+      auto const& flash = _flash_v[match.flash_id];
 
-//      std::cout<<"tpc_index and flash_index : "<<tpc_index<<", "<<flash_index<<std::endl ;
-
-      // If this tpc object is already assigned (=better match found), ignore
-      if (tpc_used.find(tpc_index) != tpc_used.end()) continue;
-
-      // If this flash object is already assigned + re-use is not allowed, ignore
-      if (!_allow_reuse_flash && flash_used.find(flash_index) != flash_used.end()) continue;
-
-      // Reaching this point means a new match. Yay!
-      FLASH_INFO () << "Concrete Match: " << " TPC=" << tpc_index << " Flash=" << flash_index
-		    << " Score=" << match_info.score
-		    << std::endl;
-
-      // Register to a list of a "used" flash and tpc info
-      tpc_used.insert(tpc_index);
-      flash_used.insert(flash_index);
-
-      // std::move matched info from the map to result vector
-      result.emplace_back( match_info );
-
+      FLASH_INFO() << "Match " << idx << " ... TPC " << match.tpc_id << " with PMT " << match.flash_id << std::endl
+      << "  Match score       : " << match.score << " touch? " << match.touch_match << " (" << match.touch_score << ")" << std::endl 
+      << "  X position        : true " << tpc.min_x_true << " hypo " << match.tpc_point.x << " touch " << match.touch_point.x << std::endl
+      << "  Time              : true " << tpc.time_true << " flash " << flash.time << std::endl
+      << "  PEs               : true " << flash.TotalTruePE() << " hypo " << std::accumulate(match.hypothesis.begin(),match.hypothesis.end(),0.) << " flash " << flash.TotalPE() << std::endl
+      << std::endl;
     }
+
     // Return result
     return result;
 
@@ -354,7 +360,6 @@ namespace flashmatch {
   void FlashMatchManager::PrintConfig() {
 
     std::cout << "---- FLASH MATCH MANAGER PRINTING CONFIG     ----" << std::endl
-	      << "_allow_reuse_flash = " << _allow_reuse_flash << std::endl
 	      << "_name = " << _name << std::endl
 	      << "_alg_flash_filter?" << std::endl;
     if (_alg_flash_filter)
@@ -376,39 +381,6 @@ namespace flashmatch {
       std::cout << "\t" << name_ptr.first << std::endl;
     std::cout << "---- END FLASH MATCH MANAGER PRINTING CONFIG ----" << std::endl;
   }
-
-  void FlashMatchManager::SetChannelMask(std::vector<int> ch_mask) {
-
-    if (!_alg_flash_hypothesis) {
-      throw OpT0FinderException("Flash hypothesis algorithm is required to set channel mask!");
-    }
-
-    _alg_flash_hypothesis->SetChannelMask(ch_mask);
-  }
-
-  void FlashMatchManager::SetTPCCryo(int tpc, int cryo) {
-    _tpc = tpc;
-    _cryo = cryo;
-
-    if (_alg_flash_match) {
-      _alg_flash_match->SetTPCCryo(_tpc, _cryo);
-    }
-  }
-
-  void FlashMatchManager::SetUncoatedPMTs(std::vector<int> ch_uncoated) {
-    if (_alg_flash_hypothesis) {
-      _alg_flash_hypothesis->SetUncoatedPMTs(ch_uncoated);
-    }
-  }
-
-  #if USING_LARSOFT == 1
-  void FlashMatchManager::SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model) {
-    if (_alg_flash_hypothesis) {
-      _alg_flash_hypothesis->SetSemiAnalyticalModel(std::move(model));
-    }
-  }
-  #endif
-
 }
 
 #endif

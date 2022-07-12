@@ -1,9 +1,9 @@
 /**
- * \file FlashMatchFactory.h
+ * \file TouchMatchFactory.h
  *
  * \ingroup Base
  * 
- * \brief Class def header for a class FlashMatchFactory
+ * \brief Class def header for a class TouchMatchFactory
  *
  * @author kazuhiro
  */
@@ -11,47 +11,47 @@
 /** \addtogroup Base
 
     @{*/
-#ifndef FLASHMATCHFACTORY_H
-#define FLASHMATCHFACTORY_H
+#ifndef TouchMatchFACTORY_H
+#define TouchMatchFACTORY_H
 
 #include <iostream>
 #include <map>
-#include "BaseFlashMatch.h"
+#include "BaseTouchMatch.h"
 namespace flashmatch {
 
   /**
-     \class FlashMatchFactoryBase
+     \class TouchMatchFactoryBase
      \brief Abstract base class for factory (to be implemented per flash)
   */
-  class FlashMatchFactoryBase {
+  class TouchMatchFactoryBase {
   public:
     /// Default ctor
-    FlashMatchFactoryBase(){}
+    TouchMatchFactoryBase(){}
     /// Default dtor (virtual)
-    virtual ~FlashMatchFactoryBase(){}
+    virtual ~TouchMatchFactoryBase(){}
     /// Abstract constructor method
-    virtual BaseFlashMatch* create(const std::string instance_name) = 0;
+    virtual BaseTouchMatch* create(const std::string instance_name) = 0;
   };
 
   /**
-     \class FlashMatchFactory
+     \class TouchMatchFactory
      \brief Factory class for instantiating flash algorithm instance
   */
-  class FlashMatchFactory {
+  class TouchMatchFactory {
   private:
     /// Default ctor, shouldn't be used
-    FlashMatchFactory() {}
+    TouchMatchFactory() {}
   public:
     /// Default dtor
-    ~FlashMatchFactory() {_factory_map.clear();}
+    ~TouchMatchFactory() {_factory_map.clear();}
     /// Static sharable instance getter
-    static FlashMatchFactory& get()
-    { if(!_me) _me = new FlashMatchFactory; return *_me; }
+    static TouchMatchFactory& get()
+    { if(!_me) _me = new TouchMatchFactory; return *_me; }
     /// Factory registration method (should be called by global factory instance in algorithm header)
-    void add_factory(const std::string name, flashmatch::FlashMatchFactoryBase* factory)
+    void add_factory(const std::string name, flashmatch::TouchMatchFactoryBase* factory)
     { _factory_map[name] = factory; }
     /// Factory creation method (should be called by clients, possibly you!)
-    BaseFlashMatch* create(const std::string name, const std::string instance_name) {
+    BaseTouchMatch* create(const std::string name, const std::string instance_name) {
       auto iter = _factory_map.find(name);
       if(iter == _factory_map.end() || !((*iter).second)) {
       	std::cerr << "Found no registered class " << name << std::endl;
@@ -63,9 +63,9 @@ namespace flashmatch {
 
   private:
     /// Static factory container
-    std::map<std::string,flashmatch::FlashMatchFactoryBase*> _factory_map;
+    std::map<std::string,flashmatch::TouchMatchFactoryBase*> _factory_map;
     /// Static self
-    static FlashMatchFactory* _me;
+    static TouchMatchFactory* _me;
   };
 }
 #endif

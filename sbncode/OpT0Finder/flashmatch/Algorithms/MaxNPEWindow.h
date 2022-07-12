@@ -21,10 +21,15 @@
 #if USING_LARSOFT == 0
 #include "flashmatch/Base/BaseFlashFilter.h"
 #include "flashmatch/Base/FlashFilterFactory.h"
+#include "flashmatch/Base/FMWKInterface.h"
+#include "flashmatch/Base/OpT0FinderException.h"
 #else
 #include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/FlashFilterFactory.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
 #endif
+
 
 namespace flashmatch {
   /**

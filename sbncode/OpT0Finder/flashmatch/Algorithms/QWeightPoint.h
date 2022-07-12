@@ -2,7 +2,7 @@
  * \file QWeightPoint.h
  *
  * \ingroup Algorithms
- * 
+ *
  * \brief Class def header for a class QWeightPoint
  *
  * @author kazuhiro
@@ -19,24 +19,19 @@
 #endif
 
 #if USING_LARSOFT == 0
-#include "flashmatch/Base/BaseFlashFilter.h"
+#include "flashmatch/Base/BaseFlashMatch.h"
 #include "flashmatch/Base/FlashMatchFactory.h"
 #include "flashmatch/Base/FMWKInterface.h"
 #include "flashmatch/Base/OpT0FinderException.h"
 #else
-#include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashFilter.h"
+#include "sbncode/OpT0Finder/flashmatch/Base/BaseFlashMatch.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/FlashMatchFactory.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/FMWKInterface.h"
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderException.h"
 #endif
 
-#include <cmath>
-#include <sstream>
-#include <numeric>
-
-
 namespace flashmatch {
-  
+
   /**
      \class QWeightPoint
      Implementation of flashmatch::BaseFlashHypothesis algorithm class. \n
@@ -49,18 +44,16 @@ namespace flashmatch {
      to compute possible flash hypothesis points.\n
   */
   class QWeightPoint : public BaseFlashMatch {
-    
+
   public:
-    
+
     /// Default constructor
     QWeightPoint(const std::string name="QWeightPoint");
-    
+
     /// Default destructor
     ~QWeightPoint(){}
 
-    FlashMatch_t Match(const QCluster_t&, const Flash_t&);
-
-    void SetTPCCryo(int tpc, int cryo) {};
+    void Match(const QCluster_t&, const Flash_t&, FlashMatch_t& match);
 
   protected:
 
@@ -85,8 +78,7 @@ namespace flashmatch {
     /// creation method
     BaseFlashMatch* create(const std::string instance_name) { return new QWeightPoint(instance_name); }
   };
-  
+
 }
 #endif
-/** @} */ // end of doxygen group 
-
+/** @} */ // end of doxygen group
