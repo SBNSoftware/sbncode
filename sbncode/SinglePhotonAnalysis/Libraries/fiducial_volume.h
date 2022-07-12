@@ -92,6 +92,15 @@ namespace single_photon
     }
 
 
+    /* returns minimum distance to the TPCActive boundary around the Cathode Plane Assemble; returns -999 if the point is not in TPC active volume */
+    double SinglePhoton::distToCPA(std::vector<double>&vec){
+        if(isInTPCActive(vec)==0) return -999;
+        double dx = std::min( fabs(vec[0] - (-0.45)) ,  fabs(vec[0] - 0.45));
+
+        return dx;
+    }
+
+
 
 
 //    int SinglePhoton::isInSCB(std::vector<double> & vec){

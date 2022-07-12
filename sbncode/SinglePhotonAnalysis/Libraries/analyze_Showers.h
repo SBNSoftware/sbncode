@@ -63,6 +63,7 @@ namespace single_photon
 
 			std::vector<double> hstart = {m_reco_shower_startx[i_shr],m_reco_shower_starty[i_shr],m_reco_shower_startz[i_shr]};
 			m_reco_shower_start_dist_to_active_TPC[i_shr] = distToTPCActive(hstart);
+			m_reco_shower_start_dist_to_CPA[i_shr] = distToCPA(hstart);
 			m_reco_shower_start_in_SCB[i_shr] = this->distToSCB(m_reco_shower_start_dist_to_SCB[i_shr],hstart);
 
 			m_reco_shower_dirx[i_shr] = shr_dir.X();

@@ -74,6 +74,9 @@ namespace single_photon
 			m_reco_track_end_dist_to_active_TPC[i_trk] = distToTPCActive(hend);
 			m_reco_track_start_dist_to_active_TPC[i_trk] = distToTPCActive(hstart);
 
+			m_reco_track_end_dist_to_CPA[i_trk] = distToCPA(hend);
+			m_reco_track_start_dist_to_CPA[i_trk] = distToCPA(hstart);
+
 			m_reco_track_end_in_SCB[i_trk] = this->distToSCB(m_reco_track_end_dist_to_SCB[i_trk],hend);
 			m_reco_track_start_in_SCB[i_trk] = this->distToSCB(m_reco_track_start_dist_to_SCB[i_trk],hstart);
 

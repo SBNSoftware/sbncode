@@ -70,7 +70,9 @@ namespace single_photon
 //				temp_ID_nuscore_map[ temp_p.get_SliceID()] = temp_p.get_NuScore();
 				if(best_nuscore < temp_p->get_NuScore() ){
 					best_nuscore = temp_p->get_NuScore();
+
 					best_nuscore_SliceID = temp_p->get_SliceID();
+
 ////					std::cout<<__FUNCTION__<<"CHECK Best nu score "<< best_nuscore<<" at slice "<<temp_p.get_SliceID()<<std::endl;
 				}
 			}
