@@ -21,7 +21,7 @@ caloskim_calorimetry: {
     
 caloskim_cryoe: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "caloskimCalorimetryCryoE,"
+  CALOproducer: "caloskimCalorimetryCryoE"
   TRKproducer:  "pandoraTrackGausCryoE"
   T0producers: ["pandoraGausCryoE"]
   PFPproducer: "pandoraGausCryoE"
