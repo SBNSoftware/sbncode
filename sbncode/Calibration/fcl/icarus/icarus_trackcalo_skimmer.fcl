@@ -21,7 +21,7 @@ caloskim_calorimetry: {
     
 caloskim_cryoe: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "calorimetryCryoE"
+  CALOproducer: "caloskimCalorimetryCryoE,"
   TRKproducer:  "pandoraTrackGausCryoE"
   T0producers: ["pandoraGausCryoE"]
   PFPproducer: "pandoraGausCryoE"
@@ -38,7 +38,7 @@ caloskim_cryoe: {
 
 caloskim_cryow: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "calorimetryCryoW"
+  CALOproducer: "caloskimCalorimetryCryoW"
   TRKproducer:  "pandoraTrackGausCryoW"
   T0producers: ["pandoraGausCryoW"]
   PFPproducer: "pandoraGausCryoW"
@@ -121,17 +121,17 @@ caloskim_cryoe_goldentracks.SelectionTools: [@local::stopping_selection, @local:
 # Don't require T0 tag, do save raw waveforms
 caloskim_cryow_goldentracks_not0: @local::caloskim_cryow
 caloskim_cryow_goldentracks_not0.RequireT0: false
-caloskim_cryow_goldentracks.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryow_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
 caloskim_cryoe_goldentracks_not0: @local::caloskim_cryoe
 caloskim_cryoe_goldentracks_not0.RequireT0: false
-caloskim_cryoe_goldentracks.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryoe_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
 
 # Don't require T0 tag, don't save raw waveforms
 caloskim_cryow_nodigits_goldentracks_not0: @local::caloskim_cryow_nodigits
 caloskim_cryow_nodigits_goldentracks_not0.RequireT0: false
-caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryow_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
 caloskim_cryoe_nodigits_goldentracks_not0: @local::caloskim_cryoe_nodigits
 caloskim_cryoe_nodigits_goldentracks_not0.RequireT0: false
-caloskim_cryoe_nodigits_goldentracks.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryoe_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
 
 END_PROLOG
