@@ -1,0 +1,94 @@
+#include "services_common_icarus.fcl"
+#include "calorimetry_icarus.fcl"
+
+#include "larproperties.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "detectorproperties_icarus.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+#include "spacecharge.fcl"
+
+#include "calorimetry_icarus.fcl"
+#include "particleid.fcl"
+#include "correctionservices_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+# #include "services_common_icarus.fcl"
+
+process_name: CaloAna
+
+services:
+{
+  @table::icarus_basic_services 
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+  SpaceChargeService: @local::icarus_spacecharge
+
+}
+#have SpaceCharge off by default
+services.SpaceCharge.EnableCalEfieldSCE: false
+services.SpaceCharge.EnableCalSpatialSCE: false
+services.SpaceCharge.EnableSimEfield: false
+services.SpaceCharge.EnableSimEfieldSCE: false
+services.SpaceCharge.EnableSimSpatialSCE: false
+services.SpaceCharge.InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+services.SpaceCharge.RepresentationType: "Voxelized_TH3"
+services.SpaceCharge.service_provider: SpaceChargeServiceICARUS
+services.PhotonBackTrackerService: @erase
+
+# services.IFBeam: {}
+# services.BackTracker: @local::standard_backtracker
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{
+    anodeT0CryoE: {
+      module_type: AnodeCrossT0
+      PFPproducer: pandoraGausCryoE
+      TRKproducer: pandoraTrackGausCryoE
+      MinTimeTickInset: 100
+      MaxTimeTickInset: 100
+      LengthCut: 100
+      InsetY: 25
+      InsetZ: 20
+    }
+
+    anodeT0CryoW: {
+      module_type: AnodeCrossT0
+      PFPproducer: pandoraGausCryoW
+      TRKproducer: pandoraTrackGausCryoW
+      MinTimeTickInset: 100
+      MaxTimeTickInset: 100
+      LengthCut: 100
+      InsetY: 25
+      InsetZ: 20
+    }
+  }
+
+  filters: {}
+
+  analyzers: {}
+
+  runprod: [anodeT0CryoE, anodeT0CryoW]
+  stream1:       [ ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+
