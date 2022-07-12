@@ -16,7 +16,6 @@ caloskim_calorimetry: {
   T0ModuleLabel: ""
   TrackIsFieldDistortionCorrected: false
   TrackModuleLabel: "tracks"
-  NormTools: []
   module_type: "GnocchiCalorimetry"
 }
     
