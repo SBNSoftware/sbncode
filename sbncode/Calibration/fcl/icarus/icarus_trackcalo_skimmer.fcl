@@ -61,7 +61,7 @@ caloskim_cryoe_nodigits.RawDigitproducers: []
 
 stopping_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
-  AllowT0: [true, true]
+  AllowT0: [true]
 
   FVInsetMinX: 15
   FVInsetMaxX: 15
@@ -79,7 +79,7 @@ stopping_selection: {
 
 throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
-  AllowT0: [true, false]
+  AllowT0: [true]
 
   Invert: true
   PreScale: 1
@@ -94,12 +94,12 @@ throughgoing_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 4096
-  CheckFiducialX: false
+  CheckFiducialX: true
 }
 
 a2c_selection: {
   tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
-  AllowT0: [true, false]
+  AllowT0: [true]
 
   TickCut: 2300
 }
