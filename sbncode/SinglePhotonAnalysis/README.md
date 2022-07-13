@@ -23,7 +23,7 @@ The module does not work out of the box, so there are some modifications to make
 - June 2022
 	- New electric gains for SBND MC at `singlephoton_sbnd.fcl`, see SBN-doc-19505-v1;
 	- Update the neutrino slice definition in the `Single Photon` module.
-	- Update on geometry variables such as, `reco_*_dist_to_CathodePlane`
+	- Update add new geometry variable repsected to Cathode Plane Assemble in SBND: `reco_*_dist_to_CPA`
 	- Disable Kalman dEdx variables
 	- Disable Second Shower Search 3D (`sss3d`) variables
 	- Update FHiCLs for filtering events in SBND: `NCRadiativeResonant` and `NCDeltaRadiative`
@@ -35,7 +35,7 @@ These updates are to accommodate the change of Pandora features listed below:
 |---|---|---|
 |Neutrino Slice|One nu slice in each event | Multiple nu slices in each event|
 |Kalman Fitter| In-use | Not in-use|
-|3dShowers Objects| Available | Unavailable|
+|3dShower Objects| Available | Unavailable|
 |MVA Method (for track/neutrino scores)|Support Vector Machines|Boosted Decision Trees|
 
 
