@@ -31,51 +31,51 @@ namespace single_photon
 //        m_SCB_ZX_Dw_z2_array = {0., 1029.00, 1029.12, 1027.21, 1026.01, 1024.91, 1025.27, 1025.32, 1027.61, 1026.00, 1026.00};
 //        m_SCB_ZX_Dw_x2_array     = 256.;//downstream
 
-		//copy these from CAFMaker/CAFMaker_module.c
-		const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
-		for (auto const &cryo: geometry->IterateCryostats()) {
-			geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
-											tend = geometry->end_TPC(cryo.ID());
+    //copy these from CAFMaker/CAFMaker_module.c
+    const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
+    for (auto const &cryo: geometry->IterateCryostats()) {
+      geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
+                      tend = geometry->end_TPC(cryo.ID());
 
-			std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-			while (iTPC != tend) {
-				geo::TPCGeo const& TPC = *iTPC;
-				this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
-				iTPC++;
-			}
-			fTPCVolumes.push_back(std::move(this_tpc_volumes));
-		}
+      std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
+      while (iTPC != tend) {
+        geo::TPCGeo const& TPC = *iTPC;
+        this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
+        iTPC++;
+      }
+      fTPCVolumes.push_back(std::move(this_tpc_volumes));
+    }
 
-		  // then combine them into active volumes
-		  for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
-			  m_tpc_active_XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
-			  m_tpc_active_YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
-			  m_tpc_active_ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+      // then combine them into active volumes
+      for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
+        m_tpc_active_XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+        m_tpc_active_YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+        m_tpc_active_ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
 
-			  m_tpc_active_XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
-			  m_tpc_active_YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
-			  m_tpc_active_ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
-			  if(m_is_verbose){
-				  std::cout<<"SinglePhoton::"<<__FUNCTION__<<" || Active TPC info: X:("<<m_tpc_active_XMin<<","<<m_tpc_active_XMax<<")";
-				  std::cout<<" Y:("<<m_tpc_active_YMin<<","<<m_tpc_active_YMax<<")";
-				  std::cout<<" Z:("<<m_tpc_active_ZMin<<","<<m_tpc_active_ZMax<<")"<<std::endl;
-			  }
-		  }
+        m_tpc_active_XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+        m_tpc_active_YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+        m_tpc_active_ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+        if(m_is_verbose){
+          std::cout<<"SinglePhoton::"<<__FUNCTION__<<" || Active TPC info: X:("<<m_tpc_active_XMin<<","<<m_tpc_active_XMax<<")";
+          std::cout<<" Y:("<<m_tpc_active_YMin<<","<<m_tpc_active_YMax<<")";
+          std::cout<<" Z:("<<m_tpc_active_ZMin<<","<<m_tpc_active_ZMax<<")"<<std::endl;
+        }
+      }
 
         return 0;
     }
 
 
-	/* inside TPC or not? */
+  /* inside TPC or not? */
     int SinglePhoton::isInTPCActive(std::vector<double> & vec){
-		 if( vec.size() != 3){
-			 throw cet::exception("SinglePhoton") << " The coordinate dimension is not 3!";
-		 }
+     if( vec.size() != 3){
+       throw cet::exception("SinglePhoton") << " The coordinate dimension is not 3!";
+     }
 
         bool is_x = (vec[0] > m_tpc_active_XMin && vec[0]< m_tpc_active_XMax );
         bool is_y = (vec[1] > m_tpc_active_YMin && vec[1]< m_tpc_active_YMax );
         bool is_z = (vec[2] > m_tpc_active_ZMin && vec[2]< m_tpc_active_ZMax );
-		bool inside = is_x&&is_y&&is_z;
+    bool inside = is_x&&is_y&&is_z;
 
         return inside;
     }
@@ -108,10 +108,10 @@ namespace single_photon
 //    }
 
     int SinglePhoton::distToSCB(double & dist, std::vector<double> &vec){
-		//CHECK!
-		dist = distToTPCActive( vec );
-		return isInTPCActive( vec);
-		//NOT USE SCB YET, bring it back later!
+    //CHECK!
+    dist = distToTPCActive( vec );
+    return isInTPCActive( vec);
+    //NOT USE SCB YET, bring it back later!
 //
 //        //this one returns the distance to the boundary
 //        bool ans = false;

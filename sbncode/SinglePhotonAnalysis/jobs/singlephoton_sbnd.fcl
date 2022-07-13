@@ -12,9 +12,9 @@ singlephoton_analyzer:{
     FlashLabel:     "opflashtpc0"
     POTLabel:       "generator"
 
-	#ShowerTrackFitter:		"pandoraTrack"
-	#ShowerTrackFitterCalo:	"pandoraCalo"
-	Shower3DLabel:			"pandoraSCEShower"
+  #ShowerTrackFitter:    "pandoraTrack"
+  #ShowerTrackFitterCalo:  "pandoraCalo"
+  Shower3DLabel:      "pandoraSCEShower"
 
     input_param:    "optional" 
 
@@ -62,7 +62,7 @@ singlephoton_analyzer:{
     truthmatching_signaldef : "ncdelta"
     runAllPFPs: "false"
     exiting_photon_energy: 0.02
-	convention_distance_cutoff: 80.0
+  convention_distance_cutoff: 80.0
     exiting_proton_energy: 0.978  #40Mev + proton mass 
 
     runCRT: "false"
