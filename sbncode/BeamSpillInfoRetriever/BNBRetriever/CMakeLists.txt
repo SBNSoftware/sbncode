@@ -17,26 +17,25 @@ art_make_library(
 
 
 simple_plugin(BNBRetriever module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-        Boost::program_options
-        Boost::filesystem
-        Boost::date_time
-        Boost::serialization
-	messagefacility::MF_MessageLogger
+        ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_SERIALIZATION_LIBRARY}
+        ${Boost_SYSTEM_LIBRARY}
+	MF_MessageLogger
        	sbnobj_Common_POTAccounting
 	#${IFBEAMSERVICE}
-	#ifbeam::ifbeam
+	#${IFBEAM}
 	ifbeam
 	ifdh_art::IFBeam_service
 	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common

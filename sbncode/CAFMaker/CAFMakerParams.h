@@ -31,7 +31,7 @@ namespace caf
     };
 
     Atom<bool> CreateFlatCAF { Name("CreateFlatCAF"),
-      Comment("Whether to produce an output file in FlatCAF format"), false
+      Comment("Whether to produce an output file in FlatCAF format"), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
@@ -79,6 +79,12 @@ namespace caf
       "bnbinfo"
     };
 
+    Atom<string> NuMIPOTDataLabel {
+      Name("NuMIPOTDataLabel"),
+      Comment("Label of NuMIRetriever module"),
+      "numiinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),
@@ -119,6 +125,12 @@ namespace caf
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
       "fmatch" // same for icarus and sbnd
+    };
+
+    Atom<string> CRUMBSLabel {
+      Name("CRUMBSLabel"),
+      Comment("Base label of CRUMBS ID producer."),
+      "crumbs"
     };
 
     Atom<string> HitLabel {
@@ -222,7 +234,25 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
-    
+
+    Atom<string> OpFlashLabel {
+      Name("OpFlashLabel"),
+      Comment("Label of PMT flash."),
+      "OpFlash"
+    };
+
+    Atom<long long> CRTSimT0Offset {
+      Name("CRTSimT0Offset"),
+      Comment("start of beam gate/simulation time in the simulated CRT clock"),
+      0,
+    };
+
+    Atom<art::InputTag> TriggerLabel {
+      Name("TriggerLabel"),
+      Comment("Label of trigger."),
+      "daqTrigger"
+    };
+
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),

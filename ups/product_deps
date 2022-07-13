@@ -34,16 +34,16 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_48_01
-sbnobj              v09_13_11
-sbnanaobj           v09_18_02
-sbndaq_artdaq_core  v1_00_00of2
+larsoft             v09_54_00
+sbnobj              v09_14_03
+sbnanaobj           v09_18_05
+sbndaq_artdaq_core  v1_01_00of0
 genie_xsec          v3_00_04a
 sbndata             v01_03
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
-cetbuildtools v8_19_02 - only_for_build
+cetbuildtools v8_20_00 - only_for_build
 end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
@@ -57,9 +57,11 @@ c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k
 end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
+# Add library path to PYTHONPATH (fcl.so).
 table_fragment_begin
     # currently, XML pandora files are installed in 'scripts':
     pathPrepend(FW_SEARCH_PATH, ${SBNCODE_DIR}/scripts)
+    pathPrepend(PYTHONPATH, ${SBNCODE_FQ_DIR}/lib)
 table_fragment_end
 
 # Preserve tabs and formatting in emacs and vi / vim:
