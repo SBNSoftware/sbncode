@@ -231,12 +231,12 @@ namespace single_photon
 
 
     std::vector<double>SinglePhoton::SecondShowerMatching(
-	    std::vector<art::Ptr<recob::Hit>>& hitz,
+      std::vector<art::Ptr<recob::Hit>>& hitz,
             art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
             std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-            std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
+//            std::map< size_t, art::Ptr<recob::PFParticle>> & pfParticleIdMap,
             std::map< int ,art::Ptr<simb::MCParticle>>  & MCParticleToTrackIdMap
-	){
+  ){
 
 
         std::vector<double> ans; //matched,pdg,parentpdg,trkid
@@ -502,16 +502,14 @@ namespace single_photon
 
 
     void SinglePhoton::SecondShowerSearch3D(
-		std::vector<art::Ptr<recob::Shower>> & showers,
-		std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  
-		std::vector<art::Ptr<recob::Track>> & tracks, 
-		std::map<art::Ptr<recob::Track>,  
-		art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
-		art::Event const & evt ){
+    std::vector<art::Ptr<recob::Shower>> & showers,
+    std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  
+    std::vector<art::Ptr<recob::Track>> & tracks, 
+    std::map<art::Ptr<recob::Track>,  
+    art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
+    art::Event const & evt ){
 
-		//CHECK, may manually pick out "AllShr" label in sbnd; which are showers not in nu slice;
-        std::string sss3dlabel = "pandoraShower";//"pandoraAllOutcomesShower"
-//Keng        std::string sss3dlabel = "allShr";//"pandoraAllOutcomesShower"
+        std::string sss3dlabel = "pandoraShower";//"pandoraAllOutcomesShower" WARNING, should check this!
 
         art::ValidHandle<std::vector<recob::Shower>> const & allShowerHandle  = evt.getValidHandle<std::vector<recob::Shower>>(sss3dlabel);
         std::vector<art::Ptr<recob::Shower>> allShowerVector;
@@ -750,7 +748,7 @@ namespace single_photon
 
                 // std::cout<<"Best invar "<<"--"<<ranked_invar[0]<<" ioc: "<<sss3d_shower_ioc_ratio.at( ranked_invar[0] )<<" invar: "<<sss3d_shower_implied_invariant_mass.at(ranked_invar[0])<<" en: "<<sss3d_shower_energy_max.at(ranked_invar[0])<<" conv: "<<sss3d_shower_conversion_dist.at(ranked_invar[0])<<std::endl;
 
-		// minimum discrepancy between implied invariant mass and pi0 mass
+    // minimum discrepancy between implied invariant mass and pi0 mass
                 m_sss3d_invar_ranked_en = m_sss3d_shower_energy_max.at(ranked_invar[0]);            
                 m_sss3d_invar_ranked_conv = m_sss3d_shower_conversion_dist.at(ranked_invar[0]);            
                 m_sss3d_invar_ranked_invar = m_sss3d_shower_invariant_mass.at(ranked_invar[0]);            
@@ -979,12 +977,12 @@ namespace single_photon
     std::pair<bool, std::vector<double>> SinglePhoton::clusterCandidateOverlap(const std::vector<int> & candidate_indices, const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks){
 
         size_t size = candidate_indices.size();
-	if(size == 0){
-	    throw std::runtime_error("SinglePhoton::clusterCandidateOverlap: No cluster candidates to analyze time overlap for..");
-	}
+  if(size == 0){
+      throw std::runtime_error("SinglePhoton::clusterCandidateOverlap: No cluster candidates to analyze time overlap for..");
+  }
 
-	// at most 3 cluster indices (for 3 planes)
-	std::vector<int> planes;
+  // at most 3 cluster indices (for 3 planes)
+  std::vector<int> planes;
         std::vector<double> max_ticks;
         std::vector<double> min_ticks;
         std::vector<double> tick_length;
@@ -998,74 +996,74 @@ namespace single_photon
         }
 
 
-	//if candidates are not on different planes
-	if( size == 2 && planes[0] == planes[1])
+  //if candidates are not on different planes
+  if( size == 2 && planes[0] == planes[1])
             return {false, std::vector<double>(2, -1.0)};
         if( size == 3 && (planes[0] == planes[1] || planes[1] == planes[2] || planes[0] == planes[2]))
             return {false, std::vector<double>(3, -1.0)};
 
-	//calculate the overlapping tick-span
-	double tick_overlap = DBL_MAX;
+  //calculate the overlapping tick-span
+  double tick_overlap = DBL_MAX;
 
-	//can be simplied as picking the minimum max_tick and maximum min_tick and do the subtraction
+  //can be simplied as picking the minimum max_tick and maximum min_tick and do the subtraction
         for(auto max_e : max_ticks)
             for(auto min_e : min_ticks)
                 if(max_e - min_e < tick_overlap)
                     tick_overlap = max_e - min_e;
  
-	// if tick overlap is negative, meaning these clusters are not overlapping
-   	if(tick_overlap < 0)
+  // if tick overlap is negative, meaning these clusters are not overlapping
+     if(tick_overlap < 0)
             return {false, std::vector<double>(size, -1.0)};
         else{
             std::vector<double> overlap_fraction;
             for(auto l: tick_length){
                 overlap_fraction.push_back( l==0? 1.0 : tick_overlap/l);
-	    }
+      }
             return {true, overlap_fraction};
         }
     }
 
    
-    std::pair<int, std::pair<std::vector<std::vector<double>>, std::vector<double>>> SinglePhoton::GroupClusterCandidate(int num_clusters,  const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks){
-	std::cout << "SinglePhoton::group_cluster_candidate\t|| Total of " << num_clusters << " to be grouped" << std::endl;
+  std::pair<int, std::pair<std::vector<std::vector<double>>, std::vector<double>>> SinglePhoton::GroupClusterCandidate(int num_clusters,  const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks){
+    std::cout << "SinglePhoton::group_cluster_candidate\t|| Total of " << num_clusters << " to be grouped" << std::endl;
 
-	int num_cluster_groups=0; // number of matched cluster groups in total
-	std::vector<std::vector<double>> grouped_cluster_indices;
-	std::vector<double> cluster_group_timeoverlap_fraction;
-	if(num_clusters <= 1)
-	    return {num_cluster_groups, {grouped_cluster_indices, cluster_group_timeoverlap_fraction}};
+    int num_cluster_groups=0; // number of matched cluster groups in total
+    std::vector<std::vector<double>> grouped_cluster_indices;
+    std::vector<double> cluster_group_timeoverlap_fraction;
+    if(num_clusters <= 1)
+      return {num_cluster_groups, {grouped_cluster_indices, cluster_group_timeoverlap_fraction}};
 
-        for(int i = 0; i != num_clusters -1; ++i){
-            for(int j = i+1; j != num_clusters; ++j){
+    for(int i = 0; i != num_clusters -1; ++i){
+      for(int j = i+1; j != num_clusters; ++j){
 
-		//first, look at candidate pairs
-                auto pair_result = clusterCandidateOverlap({i,j}, cluster_planes, cluster_max_ticks, cluster_min_ticks);
-                if( pair_result.first){
+        //first, look at candidate pairs
+        auto pair_result = clusterCandidateOverlap({i,j}, cluster_planes, cluster_max_ticks, cluster_min_ticks);
+        if( pair_result.first){
 
-		    ++num_cluster_groups;
-		    grouped_cluster_indices.push_back({(double)i,(double)j});
-                    double min_frac = *std::min_element(pair_result.second.cbegin(), pair_result.second.cend());
-		    cluster_group_timeoverlap_fraction.push_back(min_frac);
-		    std::cout << "Grouped cluster candidate: (" << i  << ", " << j << ") | Minimum time tick overlap fraction: " << min_frac << std::endl;
+          ++num_cluster_groups;
+          grouped_cluster_indices.push_back({(double)i,(double)j});
+          double min_frac = *std::min_element(pair_result.second.cbegin(), pair_result.second.cend());
+          cluster_group_timeoverlap_fraction.push_back(min_frac);
+          std::cout << "Grouped cluster candidate: (" << i  << ", " << j << ") | Minimum time tick overlap fraction: " << min_frac << std::endl;
 
-		    // if the pair is succefully grouped, look at possible trios
-                    for(int k = j+1; k!= num_clusters; ++k){
-                        auto tri_result = clusterCandidateOverlap({i,j,k}, cluster_planes, cluster_max_ticks, cluster_min_ticks);
-                        if(tri_result.first){
-			    ++num_cluster_groups;
-                    	    grouped_cluster_indices.push_back({(double)i,(double)j,(double)k});
-                            min_frac = *std::min_element(tri_result.second.cbegin(), tri_result.second.cend());
-			    cluster_group_timeoverlap_fraction.push_back(min_frac);
-			    std::cout << "Grouped cluster candidate: (" << i  << ", " << j << ", " << k << ") | Minimum time tick overlap fraction: " << min_frac << std::endl;
-                        }
-                    } //k loop
-                }
-            }//j loop
-        }//i loop
+          // if the pair is succefully grouped, look at possible trios
+          for(int k = j+1; k!= num_clusters; ++k){
+            auto tri_result = clusterCandidateOverlap({i,j,k}, cluster_planes, cluster_max_ticks, cluster_min_ticks);
+            if(tri_result.first){
+              ++num_cluster_groups;
+              grouped_cluster_indices.push_back({(double)i,(double)j,(double)k});
+              min_frac = *std::min_element(tri_result.second.cbegin(), tri_result.second.cend());
+              cluster_group_timeoverlap_fraction.push_back(min_frac);
+              std::cout << "Grouped cluster candidate: (" << i  << ", " << j << ", " << k << ") | Minimum time tick overlap fraction: " << min_frac << std::endl;
+            }
+          } //k loop
+        }
+      }//j loop
+    }//i loop
 
-	std::cout << "SinglePhoton::GroupClusterCandidate\t|| Formed " << num_cluster_groups << " cluster groups" << std::endl;
+    std::cout << "SinglePhoton::GroupClusterCandidate\t|| Formed " << num_cluster_groups << " cluster groups" << std::endl;
 
-	return {num_cluster_groups, {grouped_cluster_indices, cluster_group_timeoverlap_fraction}};
-    } 
+    return {num_cluster_groups, {grouped_cluster_indices, cluster_group_timeoverlap_fraction}};
+  } 
 
 }

@@ -1,8 +1,7 @@
 namespace single_photon
 {
 //-----------------HELPER FUNCTIONS -----------
-	//CHECK Copy from bad_channel_matching.h    
-	////line between x1 and x2, point x0;
+  ////line between x1 and x2, point x0;
     double dist_line_point( std::vector<double>&X1, std::vector<double>& X2, std::vector<double>& point){
         double x1 =X1.at(0);
         double y1 =X1.at(1);
@@ -26,7 +25,7 @@ namespace single_photon
 
         double t = -(x10*x21+y10*y21+z10*z21)/fabs(x21*x21+y21*y21+z21*z21 );
 
-	// right, but can be simplified
+  // right, but can be simplified
         double d2 = pow(x1-x0,2)+pow(y1-y0,2)+pow(z1-z0,2)+2*t*((x2-x1)*(x1-x0)+(y2-y1)*(y1-y0)+(z2-z1)*(z1-z0))+t*t*( pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 
         return sqrt(d2);
@@ -51,7 +50,7 @@ namespace single_photon
 //                    std::cout<<wireids[0].Plane<<" "<<result.start().X()<<std::endl;
                     if(plane != (int)wireids[0].Plane) continue;
 
-		    // for the dead wires on the same plane 
+        // for the dead wires on the same plane 
                     std::vector<double> start = {0.0,result.start().Y(),result.start().Z()};
                     std::vector<double> end = {0.0,result.end().Y(),result.end().Z()};
                     std::vector<double> point = {0.0,Ypoint,Zpoint};
@@ -160,7 +159,7 @@ namespace single_photon
     }
 
 /* unit vector orthogonal to the  wire direction of plane -- usually named as wire_dir */
-	TVector3 getWireVec(int plane){
+  TVector3 getWireVec(int plane){
         TVector3 wire_dir;
         if (plane == 0){
             wire_dir = {0., -sqrt(3) / 2., 1 / 2.};
@@ -173,50 +172,50 @@ namespace single_photon
     }
 
      /* dot product of wire_dir and shower direction vectors */
-	double getCoswrtWires(TVector3 shower_dir, TVector3 wire_dir){
-		return wire_dir.Dot(shower_dir);
-	}
+  double getCoswrtWires(TVector3 shower_dir, TVector3 wire_dir){
+    return wire_dir.Dot(shower_dir);
+  }
 
-	/* returns angles between wire direction of plane  and shower_dir) 
-	 *  shower_dir needs to be unit vector */
-	double getAnglewrtWires(TVector3 shower_dir,int plane){
+  /* returns angles between wire direction of plane  and shower_dir) 
+   *  shower_dir needs to be unit vector */
+  double getAnglewrtWires(TVector3 shower_dir,int plane){
 
-		TVector3 wire_dir = getWireVec(plane);
-		double cos_theta =  getCoswrtWires(shower_dir, wire_dir);
+    TVector3 wire_dir = getWireVec(plane);
+    double cos_theta =  getCoswrtWires(shower_dir, wire_dir);
 
-		double theta = acos(cos_theta);
-		// return abs(theta);
-		return abs(M_PI/2 - theta);
+    double theta = acos(cos_theta);
+    // return abs(theta);
+    return abs(M_PI/2 - theta);
 
-	}
+  }
 
     double degToRad(double deg){ return deg * M_PI/180; }
     double radToDeg(double rad){ return rad * 180/M_PI; }
 
-	double getMedian(std::vector<double> thisvector){
-		size_t len = thisvector.size();
-		if(len < 1) return NAN;
+  double getMedian(std::vector<double> thisvector){
+    size_t len = thisvector.size();
+    if(len < 1) return NAN;
 
-		std::sort(thisvector.begin(), thisvector.end());
-		if(len % 2 != 0){//even - return average of two at median
-			return 0.5*(thisvector[len/2]+thisvector[len/2+1]);
-		}else{//odd - return the median
-			return thisvector[len/2];
-		}
-	}
+    std::sort(thisvector.begin(), thisvector.end());
+    if(len % 2 != 0){//even - return average of two at median
+      return 0.5*(thisvector[len/2]+thisvector[len/2+1]);
+    }else{//odd - return the median
+      return thisvector[len/2];
+    }
+  }
 
-			/* returns (generally) best median dEdx of all 3
-			 * planes, usually plane 2  */
-	double getAmalgamateddEdx(
-			double angle_wrt_plane0, 
-			double angle_wrt_plane1, 
-			double angle_wrt_plane2, 
-			double median_plane0, 
-			double median_plane1, 
-			double median_plane2, 
-			int plane0_nhits, 
-			int plane1_nhits, 
-			int plane2_nhits){
+      /* returns (generally) best median dEdx of all 3
+       * planes, usually plane 2  */
+  double getAmalgamateddEdx(
+      double angle_wrt_plane0, 
+      double angle_wrt_plane1, 
+      double angle_wrt_plane2, 
+      double median_plane0, 
+      double median_plane1, 
+      double median_plane2, 
+      int plane0_nhits, 
+      int plane1_nhits, 
+      int plane2_nhits){
         //if the shower is within 10 degrees of the wires on plane 2, consider planes 1 and 0
         if(angle_wrt_plane2< degToRad(10)){
             //if it's too close to the wires on either of the planes, then stick with plane 2
@@ -239,15 +238,15 @@ namespace single_photon
         return median_plane2;
     }
 
-	/* returns the number of hits on the plane picked by function getAmalgamateddEdx */
-	int getAmalgamateddEdxNHits(
-			double amalgamateddEdx, 
-			double median_plane0, 
-			double median_plane1, 
-			double median_plane2,
-			int plane0_nhits, 
-			int plane1_nhits, 
-			int plane2_nhits){
+  /* returns the number of hits on the plane picked by function getAmalgamateddEdx */
+  int getAmalgamateddEdxNHits(
+      double amalgamateddEdx, 
+      double median_plane0, 
+      double median_plane1, 
+      double median_plane2,
+      int plane0_nhits, 
+      int plane1_nhits, 
+      int plane2_nhits){
         if (amalgamateddEdx == median_plane0){
             return plane0_nhits;
         }
@@ -292,15 +291,5 @@ namespace single_photon
         corners.push_back(c3);
         return corners;
     }
-	
 
-
-//    double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detpropdata){
-//		
-//        double time = detpropdata.ConvertXToTicks(X, plane, fTPC,fCryostat);
-//        return time;
-//    }
-
-
-//----------- END OF HELPER FUNCTIONS -----------
 }

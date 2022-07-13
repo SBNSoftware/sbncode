@@ -39,7 +39,7 @@ namespace single_photon
             m_reco_flash_zcenter[i]=flash->ZCenter();
             m_reco_flash_zwidth[i]=flash->ZWidth();
 
-	    // m_beamgate_flash_end/m_beamgate_flash_start are read from pset
+      // m_beamgate_flash_end/m_beamgate_flash_start are read from pset
             if(m_reco_flash_time[i] <= m_beamgate_flash_end && m_reco_flash_time[i] >= m_beamgate_flash_start){
                 m_reco_num_flashes_in_beamgate++;
                 m_reco_flash_total_pe_in_beamgate[i]=(flash->TotalPE());

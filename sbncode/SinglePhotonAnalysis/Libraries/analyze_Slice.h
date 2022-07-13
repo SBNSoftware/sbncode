@@ -200,10 +200,10 @@ namespace single_photon
          * store stuff in the output tree
          */
 
-        m_reco_slice_num = nuscore_slices.size()+1;//the number of slices also corresponds to the number of neutrino scores
 
         //currently this is junk, just a placeholder
         //std::cout<<"saving the info for "<<m_reco_slice_num<<" slices"<<std::endl;
+        m_reco_slice_num = nuscore_slices.size()+1;//the number of slices also corresponds to the number of neutrino scores
         this->ResizeSlices(m_reco_slice_num); 
         m_reco_slice_nuscore = nuscore_slices;
 
@@ -379,13 +379,8 @@ namespace single_photon
     void SinglePhoton::AnalyzeRecoMCSlices(std::string signal_def, 
 			std::vector<PandoraPFParticle> all_PPFPs,
 			std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,
-            std::map<art::Ptr<recob::Shower>,art::Ptr<recob::PFParticle> > & showerToPFParticleMap, 
-            std::vector<std::pair<art::Ptr<recob::PFParticle>,int>> & allPFPSliceIdVec, 
             std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,
-            std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle> > & trackToNuPFParticleMap,
-            std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap,
-            std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap){
-
+            std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap){
 
 		for(size_t index=0; index< all_PPFPs.size(); ++index){
 			PandoraPFParticle* temp_ppfp = &all_PPFPs[index];
@@ -501,36 +496,6 @@ namespace single_photon
             m_is_matched_1g0p = true;
 
         }
-
-  	//CHECK, text reports
-//		if(m_is_verbose){
-//			if (m_reco_1g1p_is_nuslice){
-//				int nu_id = m_matched_signal_shower_sliceId[0];
-//				for (auto pair: PFPToSliceIdMap){
-//					auto pfp = pair.first;
-//					auto id = pair.second;
-//					if (id == nu_id){
-//						std::cout<<"the pfp in this nu slice with id "<<id <<" is "<<pfp->Self()<<" with pdg "<<pfp->PdgCode()<<std::endl;
-//					}
-//				}
-//			}
-//
-//			if (m_reco_1g1p_is_nuslice && ( m_matched_signal_shower_tracks_in_slice[0]>1 ||  m_matched_signal_shower_showers_in_slice[0]>1) ){
-//				std::cout<<"found reco 1g1p with "<<  m_matched_signal_shower_showers_in_slice[0]<<" showers and "<< m_matched_signal_shower_tracks_in_slice[0]<<"tracks in the same slice in run = "<<m_run_number <<", subrun = "<<m_subrun_number  <<", event = "<<m_event_number<<std::endl;
-//
-//			}
-//
-//			for(unsigned int i= 0; i<m_reco_slice_num_pfps.size(); i++){
-//				std::cout<<"The number of PFP's in slice: " << i<<std::endl;
-//
-//				std::cout<< "-- is "<<m_reco_slice_num_pfps[i]<<std::endl;
-//				std::cout<<"-- -- of which "<< m_reco_slice_num_showers[i]<< " are showers and "<< m_reco_slice_num_tracks[i] <<" are tracks"<<std::endl;
-//				if (m_reco_slice_num_showers[i] + m_reco_slice_num_tracks[i] != m_reco_slice_num_pfps[i]){
-//					std::cout<<"ERROR, mismatching numbers of PFPs"<<std::endl;
-//				}
-//			}
-//		}
-
     }//findslice
 
 }

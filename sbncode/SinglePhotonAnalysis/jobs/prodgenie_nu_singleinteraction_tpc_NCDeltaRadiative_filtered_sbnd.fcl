@@ -97,7 +97,7 @@ outputs:
   {
     module_type: RootOutput
     fileName:    "prodgenie_bnb_nu_filtered_NCDeltaRad_sbnd_%p-%tc.root" # default file name, can override from command line with -o or --output
-	SelectEvents: [simulate]
+  SelectEvents: [simulate]
     dataTier:    "generated"
     compressionLevel: 1
   }

@@ -26,8 +26,8 @@ services :
     DetectorClocksService:     @local::sbnd_detectorclocks
     DetectorPropertiesService: @local::sbnd_detproperties
 
-	TimeTracker: { printSummary: true }
-	SpaceCharge: @local::sbnd_spacecharge
+  TimeTracker: { printSummary: true }
+  SpaceCharge: @local::sbnd_spacecharge
 }
 
 outputs: {

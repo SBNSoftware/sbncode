@@ -52,15 +52,15 @@ public:
 
   void cout_stuff(art::Event & e, bool passed);
   void FillTree(art::Event & e, 
-		size_t const mct_index,
-		size_t const parent_index,
-		bool const is_nc_delta_radiative);
+    size_t const mct_index,
+    size_t const parent_index,
+    bool const is_nc_delta_radiative);
   void Reset();
   bool filter(art::Event & e) override;
 
 };
 
-//CHECK modified
+//modified
 NCDeltaRadiative::NCDeltaRadiative(fhicl::ParameterSet const & p) :
   art::EDFilter(p),
   ftree(nullptr) {
@@ -91,7 +91,7 @@ void NCDeltaRadiative::cout_stuff(art::Event & e, bool passed = false) {
     e.getValidHandle<std::vector<simb::MCTruth>>("generator");
 
   std::cout << passed << "\n"
-	    << "==========================\n";
+      << "==========================\n";
   for(simb::MCTruth const & mct : *ev_mct) {
     std::cout << "----------------------------\n";
     for(int i = 0; i < mct.NParticles(); ++i) {
@@ -120,9 +120,9 @@ void NCDeltaRadiative::Reset() {
 
 
 void NCDeltaRadiative::FillTree(art::Event & e, 
-				size_t mct_index,
-				size_t const parent_index,
-				bool const is_nc_delta_radiative) {
+        size_t mct_index,
+        size_t const parent_index,
+        bool const is_nc_delta_radiative) {
 
   Reset();
 
@@ -164,8 +164,8 @@ bool NCDeltaRadiative::filter(art::Event & e) {
     for(int i = 0; i < mct.NParticles(); ++i) {
       simb::MCParticle const & mcp = mct.GetParticle(i);
       if(mcp.TrackId() != i) {
-	std::cout << "ERROR: " << __LINE__ << " " << __PRETTY_FUNCTION__ << "\nTrackId does not match index\n";
-	exit(1);
+  std::cout << "ERROR: " << __LINE__ << " " << __PRETTY_FUNCTION__ << "\nTrackId does not match index\n";
+  exit(1);
       }
       if(!(mcp.StatusCode() == 1 && mcp.PdgCode() == 22)) continue;
       exiting_photon_parents.push_back(mcp.Mother());
@@ -174,25 +174,25 @@ bool NCDeltaRadiative::filter(art::Event & e) {
     std::vector<size_t> in_nucleus_photons;
     for(size_t const s : exiting_photon_parents) {
       simb::MCParticle const & mcp = mct.GetParticle(s);
-	  //CHEKC hardcode, TPC filter:
-	  if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1){
-		  std::cout<<"OUTSIDE TPC x y z ="<<mcp.Vx()<<" "<<mcp.Vy()<<" "<<mcp.Vz()<<std::endl;
-		  exit(0);
-	  }
-	  if(abs(mcp.PdgCode()) == 2114 || abs(mcp.PdgCode()) == 2214) {
-	if(ftree) FillTree(e, i, mcp.PdgCode(), true);
-	return true;
+    //CHEKC hardcode, TPC filter:
+    if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1){
+      std::cout<<"OUTSIDE TPC x y z ="<<mcp.Vx()<<" "<<mcp.Vy()<<" "<<mcp.Vz()<<std::endl;
+      exit(0);
+    }
+    if(abs(mcp.PdgCode()) == 2114 || abs(mcp.PdgCode()) == 2214) {
+  if(ftree) FillTree(e, i, mcp.PdgCode(), true);
+  return true;
       }
       else if(mcp.PdgCode() == 22) {
-	in_nucleus_photons.push_back(mcp.Mother());
+  in_nucleus_photons.push_back(mcp.Mother());
       }
     }
 
     for(size_t const s : in_nucleus_photons) {
       simb::MCParticle const & mcp = mct.GetParticle(s);
       if(abs(mcp.PdgCode()) == 2114 || abs(mcp.PdgCode()) == 2214) {
-	if(ftree) FillTree(e, i, s, true);
-	return true;
+  if(ftree) FillTree(e, i, s, true);
+  return true;
       }
     }
 

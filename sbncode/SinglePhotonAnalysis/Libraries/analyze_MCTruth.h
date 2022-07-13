@@ -1,7 +1,7 @@
 namespace single_photon
 {
 
-	//This only look at MCTruch info. Reco matching create sim_shower/track for pairing up MCTruth to Reco objects;
+  //This only look at MCTruch info. Reco matching create sim_shower/track for pairing up MCTruth to Reco objects;
     void SinglePhoton::AnalyzeMCTruths(std::vector<art::Ptr<simb::MCTruth>> & mcTruthVector , std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector){
         m_mctruth_num = mcTruthVector.size();
         if(m_is_verbose) std::cout<<"# of simb::MCTruth: "<<m_mctruth_num<<std::endl;
@@ -13,11 +13,10 @@ namespace single_photon
 
         //one mctruth per event.  contains list of all particles 
 
-		std::cout<<std::endl;
-		std::vector<int> spacers = Printer_header({" NuPdg"," CC=0"," TruthVertex(x,","    y,      ",",       z  )"});
+    std::cout<<std::endl;
+    std::vector<int> spacers = Printer_header({" NuPdg"," CC=0"," TruthVertex(x,","    y,      ",",       z  )"});
         for(int i=0; i<std::min(1,m_mctruth_num); i++){
             const art::Ptr<simb::MCTruth> truth = mcTruthVector[i];
-//			std::cout<<"\nCHECK THIS MCTruth!! "<<*truth<<std::endl;
 
 
             m_mctruth_origin = truth->Origin();
@@ -46,8 +45,7 @@ namespace single_photon
             
 //                if(m_is_verbose) std::cout<<"Getting SC corrected vertex position"<<std::endl;
                 std::vector<double> corrected(3);
-	        // get corrected lepton position
-			// CHECK, turn simb::mcparticle to art::Ptr<simb::MCParticle, then it can remove one unnecessary spacecharge_correction() function.
+          // get corrected lepton position
                 this->spacecharge_correction( truth->GetNeutrino().Lepton(),corrected);
 
                 m_mctruth_nu_vertex_x = corrected[0];
@@ -55,14 +53,14 @@ namespace single_photon
                 m_mctruth_nu_vertex_z = corrected[2];
                 m_mctruth_reco_vertex_dist = sqrt(pow (m_mctruth_nu_vertex_x-m_vertex_pos_x,2)+pow (m_mctruth_nu_vertex_y-m_vertex_pos_y,2)+pow (m_mctruth_nu_vertex_z-m_vertex_pos_z,2));
 
-		//std::vector<int> spacers = Printer_header({"NuPdg","CC=0","TruthVertex(x,","   y,      ",",      z  )"});
-				Printer_content(
-					{std::to_string(m_mctruth_nu_pdg),
-					std::to_string(m_mctruth_ccnc),
-					std::to_string(corrected[0]),
-					std::to_string(corrected[1]),
-					std::to_string(corrected[2])
-					},spacers);
+    //std::vector<int> spacers = Printer_header({"NuPdg","CC=0","TruthVertex(x,","   y,      ",",      z  )"});
+        Printer_content(
+          {std::to_string(m_mctruth_nu_pdg),
+          std::to_string(m_mctruth_ccnc),
+          std::to_string(corrected[0]),
+          std::to_string(corrected[1]),
+          std::to_string(corrected[2])
+          },spacers);
 
             }
 
@@ -71,10 +69,10 @@ namespace single_photon
             m_mctruth_num_daughter_particles = truth->NParticles(); //MCTruth_NParticles
 
 
-			if(m_is_verbose) std::cout<<"\nThis MCTruth has "<<truth->NParticles()<<" daughters "<<std::endl;
-			std::vector<int> spacers = Printer_header({"           pdg"," TrkID"," MotherID","         Status","        Energy"});
+      if(m_is_verbose) std::cout<<"\nThis MCTruth has "<<truth->NParticles()<<" daughters "<<std::endl;
+      std::vector<int> spacers = Printer_header({"           pdg"," TrkID"," MotherID","         Status","        Energy"});
 
-			
+      
             this->ResizeMCTruths(m_mctruth_num_daughter_particles);
 
 
@@ -231,14 +229,14 @@ namespace single_photon
                         break;
                 }
 
-//			if(m_is_verbose)      std::cout<<"SingleProton::AnalyzeMCTruths()\t||\t Neutron "<<par.PdgCode()<<" (id: "<<par.TrackId()<<") with mother trackID: "<<par.Mother()<<". Status Code: "<<par.StatusCode()<<" and neutron energy "<<par.E()<<std::endl;
-			Printer_content(
-					{std::to_string(par.PdgCode()),
-					std::to_string(par.TrackId()),
-					std::to_string(par.Mother()),
-					std::to_string(par.StatusCode()),
-					std::to_string(par.E())
-					},spacers);
+//      if(m_is_verbose)      std::cout<<"SingleProton::AnalyzeMCTruths()\t||\t Neutron "<<par.PdgCode()<<" (id: "<<par.TrackId()<<") with mother trackID: "<<par.Mother()<<". Status Code: "<<par.StatusCode()<<" and neutron energy "<<par.E()<<std::endl;
+      Printer_content(
+          {std::to_string(par.PdgCode()),
+          std::to_string(par.TrackId()),
+          std::to_string(par.Mother()),
+          std::to_string(par.StatusCode()),
+          std::to_string(par.E())
+          },spacers);
             } // end of m_mctruth_num_daughter_particles loop
 
             if(m_is_textgen) continue; //quick hack, fix in files
@@ -251,7 +249,7 @@ namespace single_photon
 
 
 
-			std::cout<<"SinglePhoton::AnalyzeMCTruths()\t||\t This event is  ";
+      std::cout<<"SinglePhoton::AnalyzeMCTruths()\t||\t This event is  ";
             if(tmp_n_photons_from_delta==1 && tmp_n_protons_from_delta==1){
                 m_mctruth_delta_radiative_1g1p_or_1g1n = 1;
                 std::cout<<"a 1g1p delta radiative event"<<std::endl;
@@ -280,11 +278,11 @@ namespace single_photon
             //first we loop over all 14's to see which have a direct mother delta. [done above]
             //so first we loop over all state 1 (exiting) to see what a LArTPC sees (post FSI)
                 for (unsigned int p = 0; p <  m_mctruth_exiting_photon_energy.size(); p++){
-		    // m_exiting_photon_energy_threshold is read from pset
-		    if ( m_mctruth_exiting_photon_energy[p] > m_exiting_photon_energy_threshold){
-				m_mctruth_num_reconstructable_protons++;
+        // m_exiting_photon_energy_threshold is read from pset
+        if ( m_mctruth_exiting_photon_energy[p] > m_exiting_photon_energy_threshold){
+        m_mctruth_num_reconstructable_protons++;
 
-		    }//if g above threshold
+        }//if g above threshold
                 }
 
             //if it's a true delta radiative event, check the energies
@@ -327,8 +325,8 @@ namespace single_photon
                 simb::MCParticle nth_mother = mother;
                 int n_generation = 2;
 
-		// Guanqun: why not consider its first-generation mother?
-		// for a photon exiting nucleus, its first mother is always also a photon (photon exits the nucleus, it becomes another photon..)
+    // Guanqun: why not consider its first-generation mother?
+    // for a photon exiting nucleus, its first mother is always also a photon (photon exits the nucleus, it becomes another photon..)
                 while(nth_mother.StatusCode() != 0 || n_generation < 4){
 
                     if(nth_mother.Mother()<0) break;
@@ -390,10 +388,10 @@ namespace single_photon
 
             if(false) std::cout << k << " Mother:"<< mcp->Mother() << " pdgcode: " << mcp->PdgCode() << " trkid: " << mcp->TrackId() << " statuscode: " << mcp->StatusCode() << std::endl;
 
-	    // if it's a pi0, its mother trackID is 0 and it has two daughters
+      // if it's a pi0, its mother trackID is 0 and it has two daughters
             if(mcp->PdgCode() == 111 && mcp->Mother() == 0 && mcp->NumberDaughters()==2 ){
                 npi0check++;
-		// get its two daughters
+    // get its two daughters
                 const art::Ptr<simb::MCParticle> dau1 = mcParticleVector[mymap[mcp->Daughter(0)]];
                 const art::Ptr<simb::MCParticle> dau2 = mcParticleVector[mymap[mcp->Daughter(1)]];
 
@@ -440,7 +438,7 @@ namespace single_photon
                     m_mctruth_pi0_leading_photon_end = corrected_1_end;
                     m_mctruth_pi0_subleading_photon_start = corrected_2_start;
                     m_mctruth_pi0_subleading_photon_end = corrected_2_end;
-         		    //note: the order of subleading/leading photon is reversed// Fixed as of 2022 reprocess!
+                 //note: the order of subleading/leading photon is reversed// Fixed as of 2022 reprocess!
                     m_mctruth_pi0_leading_photon_exiting_TPC =exit1; 
                     m_mctruth_pi0_subleading_photon_exiting_TPC = exit2;
                     m_mctruth_pi0_leading_photon_mom = {dau1->Px(),dau1->Py(),dau1->Pz()};
