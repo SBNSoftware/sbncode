@@ -61,7 +61,7 @@ physics:
       Baseline: 60000 # cm, distance from detector to target position
       XShift: 0 # cm, detector shift along X w.r.t. beamline coordinate system
       NuOtherIntersectionZ: 0 # cm
-      ApplyPositionCuts: true
+      ApplyPositionCuts: false
       XCut: 300 # cm
       YCut: 158 # cm
     }

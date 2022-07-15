@@ -66,6 +66,9 @@ physics:
       ApplyPositionCuts: true
       XCut: 200 # cm
       YCut: 200 # cm
+      nBins: 200
+      Elow: 0
+      Ehigh: 10
     }
   }
 

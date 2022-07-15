@@ -30,6 +30,7 @@
 #include "TGeoManager.h"
 #include "TVector3.h"
 #include "TTree.h"
+#include "TH1D.h"
 #include "TDatabasePDG.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -64,6 +65,8 @@ private:
   bool _apply_position_cuts; // wheter or not to apply position cuts (to be set via fcl)
   float _x_cut; // cm, only saves neutrinos with x in [-_xcut, +_xcut] (to be set via fcl)
   float _y_cut; // cm, only saves neutrinos with y in [-_ycut, +_ycut] (to be set via fcl)
+
+  bool _make_tree; // If true, makes a TTree with all neutrinos
 
 
   const TDatabasePDG *_pdg_database = TDatabasePDG::Instance();
@@ -101,6 +104,8 @@ private:
   float _nu_other_y; /// Y poisition of neutrino at the front face of the TPC (other)
   float _nu_other_z; /// Z poisition of neutrino at the front face of the TPC (other)
   float _nu_other_t; /// Time of the neutrino (other)
+
+  TH1D* _flux_h[4]; /// Flux histograms
 };
 
 
@@ -122,38 +127,59 @@ FluxReaderAna::FluxReaderAna(fhicl::ParameterSet const& p)
   _x_cut = p.get<float>("XCut"); // cm
   _y_cut = p.get<float>("YCut"); // cm
 
-
   art::ServiceHandle<art::TFileService> fs;
-  _tree = fs->make<TTree>("tree", "");
-  _tree->Branch("nu_hit", &_nu_hit, "nu_hit/O");
-  _tree->Branch("nu_pdg", &_nu_pdg, "nu_pdg/I");
-  _tree->Branch("nu_e", &_nu_e, "nu_e/F");
-  _tree->Branch("nu_t", &_nu_t, "nu_t/F");
-  _tree->Branch("nu_w", &_nu_w, "nu_w/F");
-  _tree->Branch("nu_x", &_nu_x, "nu_x/F");
-  _tree->Branch("nu_y", &_nu_y, "nu_y/F");
-  _tree->Branch("nu_z", &_nu_z, "nu_z/F");
-  _tree->Branch("nu_vx", &_nu_vx, "nu_vx/F");
-  _tree->Branch("nu_vy", &_nu_vy, "nu_vy/F");
-  _tree->Branch("nu_vz", &_nu_vz, "nu_vz/F");
-  _tree->Branch("nu_px", &_nu_px, "nu_px/F");
-  _tree->Branch("nu_py", &_nu_py, "nu_py/F");
-  _tree->Branch("nu_pz", &_nu_pz, "nu_pz/F");
-  _tree->Branch("nu_decay", &_nu_decay, "nu_decay/I");
-  _tree->Branch("nu_dk2gen", &_nu_dk2gen, "nu_dk2gen/F");
-  _tree->Branch("nu_p_angle", &_nu_p_angle, "nu_p_angle/F");
-  _tree->Branch("nu_p_type", &_nu_p_type, "nu_p_type/I");
-  _tree->Branch("nu_p_dpx", &_nu_p_dpx, "nu_p_dpx/F");
-  _tree->Branch("nu_p_dpy", &_nu_p_dpy, "nu_p_dpy/F");
-  _tree->Branch("nu_p_dpz", &_nu_p_dpz, "nu_p_dpz/F");
-  _tree->Branch("nu_p_e", &_nu_p_e, "nu_p_e/F");
-  _tree->Branch("nu_r", &_nu_r, "nu_r/F");
-  _tree->Branch("nu_oaa", &_nu_oaa, "nu_oaa/F");
 
-  _tree->Branch("nu_other_x", &_nu_other_x, "nu_other_x/F");
-  _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
-  _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
-  _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
+  _make_tree = p.get<bool>("MakeTree", false);
+
+  if (_make_tree) {
+    _tree = fs->make<TTree>("tree", "");
+    _tree->Branch("nu_hit", &_nu_hit, "nu_hit/O");
+    _tree->Branch("nu_pdg", &_nu_pdg, "nu_pdg/I");
+    _tree->Branch("nu_e", &_nu_e, "nu_e/F");
+    _tree->Branch("nu_t", &_nu_t, "nu_t/F");
+    _tree->Branch("nu_w", &_nu_w, "nu_w/F");
+    _tree->Branch("nu_x", &_nu_x, "nu_x/F");
+    _tree->Branch("nu_y", &_nu_y, "nu_y/F");
+    _tree->Branch("nu_z", &_nu_z, "nu_z/F");
+    _tree->Branch("nu_vx", &_nu_vx, "nu_vx/F");
+    _tree->Branch("nu_vy", &_nu_vy, "nu_vy/F");
+    _tree->Branch("nu_vz", &_nu_vz, "nu_vz/F");
+    _tree->Branch("nu_px", &_nu_px, "nu_px/F");
+    _tree->Branch("nu_py", &_nu_py, "nu_py/F");
+    _tree->Branch("nu_pz", &_nu_pz, "nu_pz/F");
+    _tree->Branch("nu_decay", &_nu_decay, "nu_decay/I");
+    _tree->Branch("nu_dk2gen", &_nu_dk2gen, "nu_dk2gen/F");
+    _tree->Branch("nu_p_angle", &_nu_p_angle, "nu_p_angle/F");
+    _tree->Branch("nu_p_type", &_nu_p_type, "nu_p_type/I");
+    _tree->Branch("nu_p_dpx", &_nu_p_dpx, "nu_p_dpx/F");
+    _tree->Branch("nu_p_dpy", &_nu_p_dpy, "nu_p_dpy/F");
+    _tree->Branch("nu_p_dpz", &_nu_p_dpz, "nu_p_dpz/F");
+    _tree->Branch("nu_p_e", &_nu_p_e, "nu_p_e/F");
+    _tree->Branch("nu_r", &_nu_r, "nu_r/F");
+    _tree->Branch("nu_oaa", &_nu_oaa, "nu_oaa/F");
+
+    _tree->Branch("nu_other_x", &_nu_other_x, "nu_other_x/F");
+    _tree->Branch("nu_other_y", &_nu_other_y, "nu_other_y/F");
+    _tree->Branch("nu_other_z", &_nu_other_z, "nu_other_z/F");
+    _tree->Branch("nu_other_t", &_nu_other_t, "nu_other_t/F");
+  }
+
+
+  art::TFileDirectory tffluxdir = fs->mkdir("flux_histo");
+  std::string nultx[] = {"#nu_{e}", "#bar{#nu}_{e}", "#nu_{#mu}", "#bar{#nu}_{#mu}"};
+
+  int nbins = p.get<int>("nBins", 200);
+  int Elow = p.get<float>("Elow",0);
+  int Ehigh = p.get<float>("Ehigh",10);
+
+  for (int i=0;i<4;i++) {
+    _flux_h[i] = tffluxdir.make<TH1D>(Form("h50%i", i+1),
+                                      Form("%s (all);Energy %s (GeV);#phi(%s)/50MeV/POT",
+                                           nultx[i].c_str(), nultx[i].c_str(), nultx[i].c_str()),
+                                      nbins, Elow, Ehigh);
+    _flux_h[i]->Sumw2();
+  }
+
 }
 
 void FluxReaderAna::analyze(art::Event const& e)
@@ -228,7 +254,17 @@ void FluxReaderAna::analyze(art::Event const& e)
       }
     }
 
-    _tree->Fill();
+    int ipdg=0;
+    if (_nu_pdg==12)       ipdg=0;
+    else if (_nu_pdg==-12) ipdg=1;
+    else if (_nu_pdg==14)  ipdg=2;
+    else if (_nu_pdg==-14) ipdg=3;
+    _flux_h[ipdg]->Fill(_nu_e, 1.);
+
+    if (_make_tree) {
+      _tree->Fill();
+    }
+
   }
 }
 

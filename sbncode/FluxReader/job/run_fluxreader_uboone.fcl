@@ -27,7 +27,7 @@ source:
   nBins:            200
   Elow:             0
   Ehigh:            10
-  SelfIncrementRun: true
+  SelfIncrementRun: false
 }
 
 outputs:
