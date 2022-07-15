@@ -103,6 +103,8 @@
 
 #include "SEAview/SEAviewer.h"
 
+//This is used to save some error messegae in fiducial_volume.h
+#include "larcore/CoreUtils/ServiceUtil.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
