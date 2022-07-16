@@ -28,7 +28,7 @@ caloskim_cryoe: {
   G4producer: ""
   SimChannelproducer: ""
   HITproducer: "cluster3DCryoE"
-  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCEW", "daqTPC:PHYSCRATEDATATPCEE"]
+  RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCEW", "daqTPCROI:PHYSCRATEDATATPCEE"]
   RequireT0: true
   HitRawDigitsTickCollectWidth: 200
   DoTailFit: false
@@ -45,7 +45,7 @@ caloskim_cryow: {
   G4producer: ""
   SimChannelproducer: ""
   HITproducer: "cluster3DCryoW"
-  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCWW", "daqTPC:PHYSCRATEDATATPCWE"]
+  RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCWW", "daqTPCROI:PHYSCRATEDATATPCWE"]
   RequireT0: true
   HitRawDigitsTickCollectWidth: 200
   DoTailFit: false
@@ -97,16 +97,16 @@ throughgoing_selection: {
   CheckFiducialX: true
 }
 
-throughgoing_selection_not0: @local::throughgoing_selection
-throughgoing_selection.CheckFiducialX: false
-
 a2c_selection: {
   tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
-
   TickCut: 2300
 }
 
-# Require T0 tag, don't save raw waveforms
+selectall: {
+  tool_type: TrackCaloSkimmerSelectAllTrack
+}
+
+# Require T0 tag, don't save raw waveforms, 
 caloskim_cryow_nodigits_goldentracks: @local::caloskim_cryow_nodigits
 caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 caloskim_cryoe_nodigits_goldentracks: @local::caloskim_cryoe_nodigits
@@ -118,20 +118,20 @@ caloskim_cryow_goldentracks.SelectionTools: [@local::stopping_selection, @local:
 caloskim_cryoe_goldentracks: @local::caloskim_cryoe
 caloskim_cryoe_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 
-# Don't require T0 tag, do save raw waveforms
+# Don't require T0 tag, save all tracks, do save raw waveforms
 caloskim_cryow_goldentracks_not0: @local::caloskim_cryow
 caloskim_cryow_goldentracks_not0.RequireT0: false
-caloskim_cryow_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryow_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::selectall]
 caloskim_cryoe_goldentracks_not0: @local::caloskim_cryoe
 caloskim_cryoe_goldentracks_not0.RequireT0: false
-caloskim_cryoe_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryoe_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::selectall]
 
-# Don't require T0 tag, don't save raw waveforms
+# Don't require T0 tag, save all tracks don't save raw waveforms
 caloskim_cryow_nodigits_goldentracks_not0: @local::caloskim_cryow_nodigits
 caloskim_cryow_nodigits_goldentracks_not0.RequireT0: false
-caloskim_cryow_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryow_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::selectall]
 caloskim_cryoe_nodigits_goldentracks_not0: @local::caloskim_cryoe_nodigits
 caloskim_cryoe_nodigits_goldentracks_not0.RequireT0: false
-caloskim_cryoe_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::throughgoing_selection_not0]
+caloskim_cryoe_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection_not0, @local::a2c_selection, @local::selectall]
 
 END_PROLOG
