@@ -1,5 +1,7 @@
+FILE( GLOB local_src_files *.cxx )
+
 art_make_library( LIBRARY_NAME HelperFunctions
-                  SOURCE  helper_PandoraPFParticles.cxx
+                  SOURCE  ${local_src_files}
                   LIBRARIES 
                     ${ART_FRAMEWORK_CORE}
                     ${ART_FRAMEWORK_SERVICES_REGISTRY}
