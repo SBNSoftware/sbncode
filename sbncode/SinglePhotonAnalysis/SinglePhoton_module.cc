@@ -1,6 +1,5 @@
 #include "SinglePhoton_module.h"
 #include "HelperFunctions/helper_processors.h" //now it can use variables defined in singlephoton.h
-#include "HelperFunctions/helper_PandoraPFParticles.h" //now it can use variables defined in singlephoton.h
 #include "Libraries/init_branches.h"
 #include "Libraries/reco_truth_matching.h"
 //#include "analyze_Template.h"
