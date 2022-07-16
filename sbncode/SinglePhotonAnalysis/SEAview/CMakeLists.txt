@@ -35,7 +35,7 @@ art_make(
       ${CLHEP}
       ${ROOT_BASIC_LIB_LIST}
       ${ROOT_GEOM} 
-      MODULE_LIBRARIES
+    MODULE_LIBRARIES
       larcorealg_Geometry
       larcore_Geometry_Geometry_service
       lardata_Utilities
@@ -65,7 +65,3 @@ art_make(
       ${CLHEP}
       ${ROOT_BASIC_LIB_LIST}
       ${ROOT_GEOM} )
-
-install_headers()
-install_fhicl()
-install_source()
