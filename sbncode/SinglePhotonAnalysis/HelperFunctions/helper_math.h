@@ -80,7 +80,7 @@ namespace single_photon
         double s1x = s1->ShowerStart().X()-vx;
         double s1y = s1->ShowerStart().Y()-vy;
         double s1z = s1->ShowerStart().Z()-vz;
-        double norm1  = sqrt(pow(s1x,2)+pow(s1y,2)+pow(s1z,2));
+        double norm1  = std::hypot(s1x,s1y,s1z);
         s1x = s1x/norm1; //unit vector pointing to shower start from point (vx, vy,vz)
         s1y = s1y/norm1;
         s1z = s1z/norm1;
@@ -88,7 +88,7 @@ namespace single_photon
         double s2x = s2->ShowerStart().X()-vx;
         double s2y = s2->ShowerStart().Y()-vy;
         double s2z = s2->ShowerStart().Z()-vz;
-        double norm2  = sqrt(pow(s2x,2)+pow(s2y,2)+pow(s2z,2));
+        double norm2  = std::hypot(s2x,s2y,s2z);
         s2x = s2x/norm2; // unit vector pointing to shower start from point (vx, vy, vz)
         s2y = s2y/norm2;
         s2z = s2z/norm2;

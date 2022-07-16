@@ -65,8 +65,6 @@ NCDeltaRadiative::NCDeltaRadiative(fhicl::ParameterSet const & p) :
   art::EDFilter(p),
   ftree(nullptr) {
 
-  if(true) {
-
     art::ServiceHandle<art::TFileService> tfs;
     ftree = tfs->make<TTree>("NCDeltaRadiativeFilter", "");
 
@@ -79,8 +77,6 @@ NCDeltaRadiative::NCDeltaRadiative(fhicl::ParameterSet const & p) :
     ftree->Branch("is_nc_delta_radiative", &fis_nc_delta_radiative, "is_nc_delta_radiative/I");
     ftree->Branch("parent_status_code", &fparent_status_code, "parent_status_code/I");
     ftree->Branch("parent_pdg", &fparent_pdg, "parent_pdg/I");
-
-  }
 
 }
 

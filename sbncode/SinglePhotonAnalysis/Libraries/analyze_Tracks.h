@@ -2,7 +2,6 @@
 #include "TVectorD.h"
 #include "TruncMean.h"
 
-
 namespace single_photon
 {
   void SinglePhoton::AnalyzeTracks(
