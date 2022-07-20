@@ -676,6 +676,31 @@ namespace caf
     }
   }
 
+  void FillHitVars(const recob::Hit& hit,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle &particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty = false)
+  {
+    srhit.startTick = hit.StartTick();
+    srhit.endTick = hit.endTick();  
+
+    srhit.RMS = hit.RMS();
+
+    srhit.peakAmplitude = hit.PeakAmplitude();
+    srhit.summedADC = hit.PeakAmplitude();
+    srhit.integral = hit.Integral();
+
+    const geo::WireID wire = hit.Wire();
+    srhit.cryoID = wire.CryoID_t;
+    srhit.tpcID = wire.TPCID_t;
+    srhit.planeID = wire.PlaneID_t;
+    srhit.wireID = wire.WireID_t;
+
+    srhit.spacepoint.XYZ = {XYZ[0],XYZ[1],XYZ[2]};
+    srhit.spacepoint.chisq = spacepoint.Chisq();
+    srhit.spacepoint.pfpID = particle.Self();
+  }
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,

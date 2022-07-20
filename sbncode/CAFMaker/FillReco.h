@@ -96,6 +96,12 @@ namespace caf
                      caf::SRTrack& srtrk,
                      bool allowEmpty = false);
 
+  void FillHitVars(const recob::Hit& hit,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle& particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty = false);
+
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
