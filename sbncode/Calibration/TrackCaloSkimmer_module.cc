@@ -375,7 +375,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     // Save!
     if (select) {
-      if (fVerbose) std::cout << "Track Selected!\n";
+      if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
   }
