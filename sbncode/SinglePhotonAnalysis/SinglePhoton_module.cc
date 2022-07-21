@@ -20,8 +20,6 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/OpFlash.h"
-//KENG
-#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "lardataobj/MCBase/MCTrack.h"
 #include "lardataobj/MCBase/MCShower.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
@@ -30,10 +28,12 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+
 #include "larsim/EventWeight/Base/MCEventWeight.h"
-
 #include "larevt/SpaceChargeServices/SpaceChargeService.h" 
-
 #include "larcoreobj/SummaryData/POTSummary.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -42,9 +42,6 @@
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/GTruth.h"
 
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/LArPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 #include "larcore/Geometry/Geometry.h"
 
@@ -62,6 +59,8 @@
 
 // Helper function for PID stuff
 //#include "ubana/ParticleID/Algorithms/uB_PlaneIDBitsetHelperFunctions.h"
+
+#include "sbnobj/Common/CRT/CRTHit.hh"
 
 #include "TCanvas.h"
 #include "TTree.h"
@@ -86,8 +85,6 @@
 #include <set>
 #include <sys/stat.h>
 
-#include "SEAview/SEAviewer.h"
-
 #include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_gadget.h"
 #include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_PandoraPFParticles.h"
 #include "sbncode/SinglePhotonAnalysis/Libraries/init_branches.h"
@@ -98,7 +95,7 @@
 #include "sbncode/SinglePhotonAnalysis/Libraries/fiducial_volume.h"
 #include "sbncode/SinglePhotonAnalysis/Libraries/second_shower_search.h"
 #include "sbncode/SinglePhotonAnalysis/Libraries/DBSCAN.h"
-
+#include "sbncode/SinglePhotonAnalysis/SEAview/SEAviewer.h"
 
 namespace single_photon
 {

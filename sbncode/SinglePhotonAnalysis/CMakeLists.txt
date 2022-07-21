@@ -36,11 +36,11 @@ art_make( BASENAME_ONLY
           ${ROOT_CORE}
           ${ART_ROOT_IO_TFILE_SUPPORT} 
         MODULE_LIBRARIES
-          sbncode_SinglePhotonAnalysis_HelperFunctions
           sbncode_SinglePhotonAnalysis_Libraries
           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
           sbncode_SinglePhotonAnalysis_SEAview
           )
+
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
 
 include_directories( $ENV{SRPROXY_INC} )

@@ -181,13 +181,13 @@ bool NCRadiativeResonant::filter(art::Event & e) {
     std::vector<size_t> exiting_photon_parents;
     for(int jth = 0; jth < mct.NParticles(); ++jth) {//loop through MCParticles
       simb::MCParticle const & mcp = mct.GetParticle(jth);
-      
+
       //CHEKC hardcode, TPC filter:
       if(abs(mcp.Vx())>210 ||  abs(mcp.Vy())>210||mcp.Vz()>510 || mcp.Vz()<-1){
       std::cout<<"OUTSIDE TPC x y z ="<<mcp.Vx()<<" "<<mcp.Vy()<<" "<<mcp.Vz()<<std::endl;
       exit(0);
       }
-      
+
       if(mcp.TrackId() != jth) {
         std::cout << "ERROR: " << __LINE__ << " " << __PRETTY_FUNCTION__ << "\nTrackId does not match index\n";
         exit(1);
@@ -195,7 +195,7 @@ bool NCRadiativeResonant::filter(art::Event & e) {
       if(!(mcp.StatusCode() == 1 && mcp.PdgCode() == 22)) continue;//next, if this is not a photon with StatusCode 1
       exiting_photon_parents.push_back(mcp.Mother());//collect photon's parents
     }
-    
+
     //looking for delta radiative decay, i.e. mother is a delta with statuscode 3 & daughter is a photon. We don't need exiting deltas.
     std::vector<size_t> in_nucleus_photons;
     for(size_t const s : exiting_photon_parents) {
