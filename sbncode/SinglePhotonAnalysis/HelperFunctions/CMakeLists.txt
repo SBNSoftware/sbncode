@@ -1,7 +1,7 @@
-FILE( GLOB local_src_files *.cxx )
+FILE( GLOB local_src_helpers *.cxx )
 
-art_make_library( LIBRARY_NAME HelperFunctions
-                  SOURCE  ${local_src_files}
+art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_HelperFunctions
+                  SOURCE  ${local_src_helpers}
                   LIBRARIES 
                     ${ART_FRAMEWORK_CORE}
                     ${ART_FRAMEWORK_SERVICES_REGISTRY}

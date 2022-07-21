@@ -48,23 +48,14 @@ Three sub-modules are included in the Single Photon Analysis Module:
 - `NCDeltaRadiative_module.cc` implements the `NCDeltaRadiative` filter for NCDeltaRadiative events
 
 ### File Structure
-- `Libraries/` contains essential headers for the `SinglePhoton` module.
+- `Libraries/` contains essential headers for the `SinglePhoton` module; most of the variables are assigned in these functions.
 
 - `SEAview/` is an additional module runs inside the `SinglePhoton` module.
 
 - `jobs/` contains FHiCL files for running these modules
 
-- `HelperFunctions/` contains some useful functions to simplify the code
+- `HelperFunctions/` contains functions that are independent to output variables & they function as helpers to process simple operations.
 
-Header goes like
-```mermaid
-flowchart TB
-A--first formost-->C;
-A[SinglePhoton_module.cc]--contains-->B[analyze*.h that works like *.cxx];
-C[SinglePhoton_module.h]-->D[helper_*.h];
-C-->F[DBSCAN.h];
-C-->G[SEAviewer.h];
-```
 
 ### The flow of the `SinglePhoton` module
 
@@ -84,10 +75,9 @@ In each event loop:
 ```mermaid
 flowchart TB
 
-subgraph AA[1. Collect Pandora Reco. Objects]
+subgraph AA[1. Analyze Pandora Reco. Objects]
 direction TB
-B[AnalyzeSlices]-->C;
-C[AnalyzeFlashes, a trivial function]-->D;
+C[AnalyzeFlashes]-->D;
 D[AnalyzeTracks]-->E[AnalyzeShowers];
 end  
 
