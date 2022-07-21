@@ -2,7 +2,7 @@ link_libraries( -L$ENV{BOOST_LIB} -lboost_system -lboost_filesystem)
 find_package(larpandora)
 
 art_make( 
-	LIBRARY_NAME sbncode_SinglePhotonAnalysis_SEAview
+    LIBRARY_NAME sbncode_SinglePhotonAnalysis_SEAview
     LIB_LIBRARIES
       larcorealg_Geometry
       larcore_Geometry_Geometry_service
@@ -43,7 +43,7 @@ art_make(
       lardataobj_RawData
       lardataobj_RecoBase
       lardataobj_MCBase
-      larcoreobj_SummaryData	
+      larcoreobj_SummaryData
       larsim_MCCheater_BackTrackerService_service
       larpandora_LArPandoraInterface
       SignalShapingServiceMicroBooNE_service

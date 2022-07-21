@@ -138,7 +138,7 @@ namespace single_photon
         // assume this track is a proton track, get its energy
         m_reco_track_proton_kinetic_energy[i_trk] = -9999;
       }else{
-	  //WARNING, extra input is needed for the proton track energy;
+    //WARNING, extra input is needed for the proton track energy;
 //        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
       }
 
@@ -746,7 +746,7 @@ namespace single_photon
 
     if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
 
-	size_t flash_size = flashes.size();
+  size_t flash_size = flashes.size();
     for(size_t i = 0; i < flash_size; ++i) {
 
 
