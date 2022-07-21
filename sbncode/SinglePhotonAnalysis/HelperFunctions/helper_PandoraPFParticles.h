@@ -26,18 +26,12 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "lardataobj/Simulation/GeneratedParticleInfo.h"
 
-#include "larevt/SpaceChargeServices/SpaceChargeService.h" 
-
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/simb.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
-#include  "nusimdata/SimulationBase/GTruth.h"
+#include "nusimdata/SimulationBase/GTruth.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
-
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/LArPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 #include "canvas/Utilities/ensurePointer.h"
 #include "canvas/Persistency/Common/FindManyP.h"
@@ -45,25 +39,15 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 #include "canvas/Persistency/Common/FindOne.h"
 
-#include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib_except/exception.h"
 
-//#include "ubobj/Optical/UbooneOpticalFilter.h"
-
-
-//#include "Pandora/PdgTable.h"
-#include <chrono>
 
 #include <utility>
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <numeric>
 #include <algorithm>
-#include <map>
 #include <vector>
-#include <set>
 #include <sys/stat.h>
 
 
@@ -109,7 +93,7 @@ namespace single_photon
     art::Ptr< recob::PFParticle > pAncestor; //found by tracing Parent()
 
     art::Ptr<anab::ParticleID>  pParticleID; //for track only;
-    art::Ptr< simb::MCTruth >  pMCTruth;//WARNNING NOT USED YET
+    art::Ptr< simb::MCTruth >  pMCTruth;//WARNING NOT USED YET
 
     std::vector< art::Ptr< larpandoraobj::PFParticleMetadata > > pMetaData;
     std::vector< art::Ptr< recob::Vertex > > pVertex;
@@ -117,8 +101,8 @@ namespace single_photon
     std::vector< art::Ptr< recob::Hit > >  pPFPHits;
     std::vector< art::Ptr< recob::Cluster > > pClusters;
     std::vector<art::Ptr<anab::Calorimetry>> pCalorimetries;
-    std::vector< art::Ptr< recob::SpacePoint > > pSpacePoints;//WARNNING NOT USED YET
-    std::vector< art::Ptr< simb::MCParticle > > pMCParticles;//WARNNING NOT USED YET
+    std::vector< art::Ptr< recob::SpacePoint > > pSpacePoints;//WARNING NOT USED YET
+    std::vector< art::Ptr< simb::MCParticle > > pMCParticles;//WARNING NOT USED YET
 
 
     //set methods

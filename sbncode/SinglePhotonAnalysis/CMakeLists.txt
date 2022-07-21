@@ -1,4 +1,3 @@
-link_libraries( -L$ENV{BOOST_LIB} -lboost_system -lboost_filesystem)
 
 art_make( BASENAME_ONLY
         LIB_LIBRARIES
@@ -34,10 +33,11 @@ art_make( BASENAME_ONLY
           ${CLHEP}
           ${ROOT_BASIC_LIB_LIST}
           ${ROOT_GEOM} 
-		  ${ROOT_CORE}
+          ${ROOT_CORE}
           ${ART_ROOT_IO_TFILE_SUPPORT} 
         MODULE_LIBRARIES
-		  HelperFunctions
+          sbncode_SinglePhotonAnalysis_HelperFunctions
+          sbncode_SinglePhotonAnalysis_Libraries
           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
           sbncode_SinglePhotonAnalysis_SEAview
           )

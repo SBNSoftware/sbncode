@@ -1,10 +1,27 @@
+#include <numeric>
+
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+
 #include "TPrincipal.h"
-#include "TVectorD.h"
-#include "TruncMean.h"
+
+#include "sbncode/SinglePhotonAnalysis/Libraries/variables.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/analyze_PandoraReco.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/fiducial_volume.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/TruncMean.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/Processors.h"
+#include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_math.h"
+#include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_gadget.h"
+
 
 namespace single_photon
 {
-  void SinglePhoton::AnalyzeTracks(
+
+
+
+  //Analyze Tracks
+  void AnalyzeTracks(
       std::vector<PandoraPFParticle> all_PPFPs,
       const std::vector<art::Ptr<recob::Track>>& tracks,
       std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::SpacePoint>>> & pfParticleToSpacePointsMap, 
@@ -12,12 +29,10 @@ namespace single_photon
       std::map<int, double> &sliceIdToNuScoreMap){
 
 
-    if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
+    if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
 
-    m_reco_asso_tracks = tracks.size();
     int i_trk=0;
 
-    this->ResizeTracks(m_reco_asso_tracks);
 
     //const double adc2eU(5.1e-3);
     //const double adc2eV(5.2e-3);
@@ -44,11 +59,11 @@ namespace single_photon
       auto m_trk_dir = track->Direction(); // type of m_trk_dir: a std::pair of two 3D vector
       //first: direction of first point, second: direction of the end of track
 
-      if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<m_length<<""<<std::endl;;
+      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<m_length<<""<<std::endl;;
 
-      m_reco_track_calo_energy_plane0[i_trk] = this->CalcEShowerPlane(trk_hits, 0);
-      m_reco_track_calo_energy_plane1[i_trk] = this->CalcEShowerPlane(trk_hits, 1);
-      m_reco_track_calo_energy_plane2[i_trk] = this->CalcEShowerPlane(trk_hits, 2);
+      m_reco_track_calo_energy_plane0[i_trk] = CalcEShowerPlane(trk_hits, 0);
+      m_reco_track_calo_energy_plane1[i_trk] = CalcEShowerPlane(trk_hits, 1);
+      m_reco_track_calo_energy_plane2[i_trk] = CalcEShowerPlane(trk_hits, 2);
       m_reco_track_calo_energy_max[i_trk] = std::max( m_reco_track_calo_energy_plane2[i_trk],  std::max(m_reco_track_calo_energy_plane0[i_trk],m_reco_track_calo_energy_plane1[i_trk]));
 
       m_reco_track_num_spacepoints[i_trk] = (int)trk_spacepoints.size();
@@ -76,8 +91,8 @@ namespace single_photon
       m_reco_track_end_dist_to_CPA[i_trk] = distToCPA(hend);
       m_reco_track_start_dist_to_CPA[i_trk] = distToCPA(hstart);
 
-      m_reco_track_end_in_SCB[i_trk] = this->distToSCB(m_reco_track_end_dist_to_SCB[i_trk],hend);
-      m_reco_track_start_in_SCB[i_trk] = this->distToSCB(m_reco_track_start_dist_to_SCB[i_trk],hstart);
+      m_reco_track_end_in_SCB[i_trk] = distToSCB(m_reco_track_end_dist_to_SCB[i_trk],hend);
+      m_reco_track_start_in_SCB[i_trk] = distToSCB(m_reco_track_start_dist_to_SCB[i_trk],hstart);
 
 
       m_reco_track_theta_yz[i_trk] = atan2(m_reco_track_diry[i_trk],m_reco_track_dirz[i_trk]);
@@ -90,9 +105,10 @@ namespace single_photon
       m_reco_track_spacepoint_chi[i_trk] = 0.0;
       //Principal componant analysis of SPACEPOINTS and not trajectory points. Will add a few things here in future.
 
-      if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Beginining PCA analysis of track"<<std::endl;;
+      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Beginining PCA analysis of track"<<std::endl;;
 
-      TPrincipal* principal = new TPrincipal(3,"ND");
+      TPrincipal* principal;
+      principal = new TPrincipal(3,"ND");
       for(int x = 0; x < m_reco_track_num_spacepoints[i_trk]; x++){
         // get the position of spacepoint in xyz
         std::vector<double> tmp_spacepoints = {trk_spacepoints[x]->XYZ()[0],trk_spacepoints[x]->XYZ()[1] , trk_spacepoints[x]->XYZ()[2]};
@@ -114,23 +130,24 @@ namespace single_photon
 
       delete principal;
 
-      if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Completed PCA analysis of track. Primary componant: "<<m_reco_track_spacepoint_principal0.back()<<""<<std::endl;;
+      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Completed PCA analysis of track. Primary componant: "<<m_reco_track_spacepoint_principal0.back()<<""<<std::endl;;
 
       //range based energy calculation assuming
 
-      if(!m_run_pi0_filter){
+      if(m_run_pi0_filter){
         // assume this track is a proton track, get its energy
-        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
-      }else{
         m_reco_track_proton_kinetic_energy[i_trk] = -9999;
+      }else{
+	  //WARNING, extra input is needed for the proton track energy;
+//        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
       }
 
       if(m_length == 0.0) m_reco_track_proton_kinetic_energy[i_trk]=0.0;
 
       // Dead Wire Approximity
-      m_reco_track_end_to_nearest_dead_wire_plane0[i_trk] = distanceToNearestDeadWire(0, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
-      m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
-      m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      m_reco_track_end_to_nearest_dead_wire_plane0[i_trk] = distanceToNearestDeadWire(0, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
 
       m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
       // Guanqun: how do you make sure the sliceId is positive, not -1, as for cosmic tracks?
@@ -188,103 +205,14 @@ namespace single_photon
     m_reco_track_ordered_displacement_index = sort_indexes(m_reco_track_length);
 
 
-    if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeTracks()\t||\t Finished."<<std::endl;;
-  }
-
-  void SinglePhoton::RecoMCTracks(
-      std::vector<PandoraPFParticle> all_PPFPs,
-      const std::vector<art::Ptr<recob::Track>>& tracks,  
-      //      std::map<art::Ptr<recob::Track>, art::Ptr<recob::PFParticle>> & trackToPFParticleMap, 
-      std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > & trackToMCParticleMap,
-      std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
-      std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,  
-      std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
-      //      std::map<int, double>& sliceIdToNuScoreMap,
-      //      std::map<art::Ptr<recob::PFParticle>,bool>& PFPToClearCosmicMap,
-      //      std::map<art::Ptr<recob::PFParticle>, int>& PFPToSliceIdMap,
-      std::vector<double> & vfrac
-      ){
-
-
-    //if(m_is_verbose)           
-    std::cout<<"SinglePhoton::RecoMCTracks()\t||\t Begininning recob::Track Reco-MC suite on: "<<tracks.size()<<" tracks."<<std::endl;
-
-    int i_trk = 0;
-
-    for(size_t k =0; k< tracks.size();++k){
-      const art::Ptr<recob::Track> track = tracks[k];
-      m_sim_track_matched[i_trk] = 0;
-
-      if(trackToMCParticleMap.count(track)>0){
-
-        const art::Ptr<simb::MCParticle> mcparticle = trackToMCParticleMap[track];
-        std::cout<<"count2: "<<MCParticleToMCTruthMap.count(mcparticle)<<std::endl;
-        const art::Ptr<simb::MCTruth> mctruth = MCParticleToMCTruthMap[mcparticle];
-
-        PandoraPFParticle* ppfp = PPFP_GetPPFPFromTrack(all_PPFPs, track);
-        //        const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
-        //    const art::Ptr<recob::PFParticle> pfp = //trackToPFParticleMap[track];
-
-        std::vector<double> correctedstart(3);
-        std::vector<double> correctedend(3);
-        std::vector<double> raw_End  ={mcparticle->EndX(), mcparticle->EndY(), mcparticle->EndZ()};
-        // std::cout<<"the raw end of this mcparticle is "<<raw_End[0]<<", "<<raw_End[1]<<", "<<raw_End[2]<<std::endl;
-        this->spacecharge_correction(mcparticle, correctedstart);
-        this->spacecharge_correction(mcparticle, correctedend, raw_End);
-
-        //std::cout<<"the corrected end of this mcparticle is "<<correctedend[0]<<", "<<correctedend[1]<<", "<<correctedend[2]<<std::endl;
-
-
-        m_sim_track_matched[i_trk] = 1;
-        m_sim_track_energy[i_trk] = mcparticle->E();
-        m_sim_track_mass[i_trk] = mcparticle->Mass();
-        m_sim_track_kinetic_energy[i_trk] = m_sim_track_energy[i_trk]-m_sim_track_mass[i_trk];
-        m_sim_track_pdg[i_trk] = mcparticle->PdgCode();
-        m_sim_track_process[i_trk] = mcparticle->Process();
-        m_sim_track_startx[i_trk] = correctedstart[0];
-        m_sim_track_starty[i_trk] = correctedstart[1];
-        m_sim_track_startz[i_trk] = correctedstart[2];
-
-        m_sim_track_endx[i_trk]= correctedend[0];
-        m_sim_track_endy[i_trk]= correctedend[1];
-        m_sim_track_endz[i_trk]= correctedend[2];
-
-        m_sim_track_length[i_trk]= sqrt(pow( m_sim_track_endx[i_trk] -  m_sim_track_startx[i_trk], 2)+ pow( m_sim_track_endy[i_trk] -  m_sim_track_starty[i_trk], 2) + pow( m_sim_track_endz[i_trk] -  m_sim_track_startz[i_trk], 2));
-
-        m_sim_track_px[i_trk]=  mcparticle->Px();
-        m_sim_track_py[i_trk]=  mcparticle->Py();
-        m_sim_track_pz[i_trk]=  mcparticle->Pz();
-
-
-        m_sim_track_origin[i_trk] = mctruth->Origin();
-        m_sim_track_trackID[i_trk] = mcparticle->TrackId();
-        m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
-
-        m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
-        m_sim_track_nuscore[i_trk] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_track_sliceId[i_trk]] ;
-        m_sim_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp]; 
-
-
-        if(mcparticle->Mother()>=(int)mcParticleVector.size()){
-          m_sim_track_parent_pdg[i_trk] = -1;
-        }else{
-          m_sim_track_parent_pdg[i_trk] = mcParticleVector[mcparticle->Mother()]->PdgCode();
-        }
-
-      }
-      i_trk++;
-    }
-
-    return;
+    if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Finished."<<std::endl;;
   }
 
 
 
+  void AnalyzeTrackCalo(const std::vector<art::Ptr<recob::Track>> &tracks, std::vector<PandoraPFParticle> all_PPFPs){
 
-
-  void SinglePhoton::AnalyzeTrackCalo(const std::vector<art::Ptr<recob::Track>> &tracks, std::vector<PandoraPFParticle> all_PPFPs){
-
-    if(m_is_verbose) std::cout<<"SinglePhoton::CollectCalo(recob::Track)\t||\t Starting calo module for recob::Track"<<std::endl;;
+    if(m_is_verbose) std::cout<<"CollectCalo(recob::Track)\t||\t Starting calo module for recob::Track"<<std::endl;;
 
     for(size_t i_trk = 0; i_trk<tracks.size(); ++i_trk){
       const art::Ptr<recob::Track>      track = tracks[i_trk];
@@ -681,7 +609,7 @@ namespace single_photon
 
 
 
-  void SinglePhoton::CollectPID(std::vector<art::Ptr<recob::Track>> & tracks,
+  void CollectPID(std::vector<art::Ptr<recob::Track>> & tracks,
       std::vector<PandoraPFParticle> all_PPFPs){
 
     for(size_t i_trk=0; i_trk<tracks.size(); ++i_trk){
@@ -797,4 +725,553 @@ namespace single_photon
     return;
   }
 
+
+
+  //Analyze falshes
+  void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap){
+
+
+    for(auto pair: crtvetoToFlashMap){
+      std::cout<<"for flash at time "<< pair.first->Time()<<" has "<< pair.second.size() << " associated  CRT hits "<<std::endl;
+      if(pair.second.size() > 0){
+        for (auto hit: pair.second){
+          std::cout<<"---- associated CRT hit at time "<<hit->ts0_ns/1000. <<" with PE "<<hit->peshit<<std::endl;
+          m_CRT_veto_hit_PE.push_back(hit->peshit);
+        }
+
+      }
+      m_CRT_veto_nhits =  pair.second.size();//save the number of associated CRT veto hits
+    }
+
+
+    if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
+
+	size_t flash_size = flashes.size();
+    for(size_t i = 0; i < flash_size; ++i) {
+
+
+      art::Ptr<recob::OpFlash> const & flash = flashes[i];
+
+      m_reco_flash_total_pe[i]=(flash->TotalPE());
+      m_reco_flash_time[i]=(flash->Time());
+      m_reco_flash_time_width[i]=flash->TimeWidth();
+      m_reco_flash_abs_time[i]=flash->AbsTime();
+      m_reco_flash_frame[i]=flash->Frame();
+      m_reco_flash_ycenter[i]=flash->YCenter();
+      m_reco_flash_ywidth[i]=flash->YWidth();
+      m_reco_flash_zcenter[i]=flash->ZCenter();
+      m_reco_flash_zwidth[i]=flash->ZWidth();
+
+      // m_beamgate_flash_end/m_beamgate_flash_start are read from pset
+      if(m_reco_flash_time[i] <= m_beamgate_flash_end && m_reco_flash_time[i] >= m_beamgate_flash_start){
+        m_reco_num_flashes_in_beamgate++;
+        m_reco_flash_total_pe_in_beamgate[i]=(flash->TotalPE());
+        m_reco_flash_time_in_beamgate[i]=(flash->Time());
+        m_reco_flash_ycenter_in_beamgate[i] = flash->YCenter();
+        m_reco_flash_zcenter_in_beamgate[i] = flash->ZCenter();
+      }
+
+
+
+    }
+
+    if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Finished. There was "<<flash_size<<" flashes with: "<<m_reco_num_flashes_in_beamgate<<" in the beamgate defined by: "<<m_beamgate_flash_start<<" <-> "<<m_beamgate_flash_end<<std::endl;
+
+    //fill these values only for events that have CRT information - run3 G and later
+    //code taken from ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter_module.cc
+    if(m_runCRT){
+      if (m_reco_num_flashes_in_beamgate == 1){ //fill only if there's a flash in the beamgate
+
+        int  _nCRThits_in_event = crthit_h->size();
+
+        double _dt_abs   = 100000.0;
+        //  double  _within_resolution = 0;
+        double _beam_flash_time  =  m_reco_flash_time_in_beamgate[0];  // Guanqun: why use index 0?
+
+        // Loop over the CRT hits.
+        for (int j = 0; j < _nCRThits_in_event; j++)
+        {
+          /*
+             if (verbose)
+             std::cout << "\t Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
+             */
+          double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + m_DTOffset) / 1000.);
+
+          // Fill the vector variables.
+          m_CRT_hits_time.push_back(_crt_time_temp);
+          m_CRT_hits_PE.push_back(crthit_h->at(j).peshit);
+          m_CRT_hits_x.push_back(crthit_h->at(j).x_pos);
+          m_CRT_hits_y.push_back(crthit_h->at(j).y_pos);
+          m_CRT_hits_z.push_back(crthit_h->at(j).z_pos);
+
+          if (fabs(_beam_flash_time - _crt_time_temp) < _dt_abs)
+          {
+            _dt_abs = fabs(_beam_flash_time - _crt_time_temp);
+            m_CRT_dt = _beam_flash_time - _crt_time_temp;
+            m_CRT_min_hit_time = _crt_time_temp;
+            // set 'within_resolution' to 'true' and break the loop if 'closest_crt_diff' is less than fResolution.
+            if (_dt_abs < m_Resolution)
+            {
+              //_within_resolution = 1;
+              // Set the position information and the intensity of the CRT hit.
+              m_CRT_min_hit_PE = crthit_h->at(j).peshit;
+              m_CRT_min_hit_x = crthit_h->at(j).x_pos;
+              m_CRT_min_hit_y = crthit_h->at(j).y_pos;
+              m_CRT_min_hit_z = crthit_h->at(j).z_pos;
+
+
+              // if (verbose)
+              // {
+              std::cout << "CRT hit PE = " << m_CRT_min_hit_PE << " PEs." << std::endl;
+              std::cout << "CRT hit x = " << m_CRT_min_hit_x << " cm." << std::endl;
+              std::cout << "CRT hit y = " << m_CRT_min_hit_y << " cm." << std::endl;
+              std::cout << "CRT hit z = " << m_CRT_min_hit_z << " cm." << std::endl;
+              // }
+              break;
+            }
+          } // End of conditional for closest CRT hit time.
+        } // End of loop over CRT hits.
+      } //if there is 1 flash in beamgate
+    }//if runCRT
+  }//analyze flashes
+
+
+
+
+  //Analyze Showers
+  void AnalyzeShowers(
+      std::vector<PandoraPFParticle> all_PPFPs,
+      const std::vector<art::Ptr<recob::Shower>>& showers,  
+      std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
+      double triggeroffset,
+      detinfo::DetectorPropertiesData const & theDetector
+    ){
+    //        if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
+
+    int i_shr = 0;
+
+    std::vector<int> spacers = Printer_header({"Slice"," pfpID"," Start(x,    ","   y,      ","       z  )"," trackscore"," pdg"});
+    for (ShowerVector::const_iterator iter = showers.begin(), iterEnd = showers.end(); iter != iterEnd; ++iter)
+    {
+
+
+      const art::Ptr<recob::Shower> shower = *iter;
+      //            const art::Ptr<recob::PFParticle> pfp = showerToPFParticleMap[shower];
+      PandoraPFParticle* ppfp = PPFP_GetPPFPFromShower(all_PPFPs, shower);
+
+      const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
+
+      art::Ptr<recob::Shower> shower3d;
+      m_reco_shower3d_exists[i_shr] = 0;
+      shower3d = shower;
+
+      const std::vector<art::Ptr<recob::Hit>> hits =  ppfp->pPFPHits;
+      const std::vector<art::Ptr<recob::Cluster>> clusters = ppfp->pClusters;
+
+      //int m_shrid = shower->ID(); This is an used variable, always -999
+      double m_length = shower->Length();
+      double m_open_angle = shower->OpenAngle();
+
+      TVector3 shr_start = shower->ShowerStart();
+      TVector3 shr_dir = shower->Direction();
+
+      TVector3 shr3d_start = shower3d->ShowerStart();
+      TVector3 shr3d_dir = shower3d->Direction();
+
+      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<" which has length: "<<m_length<<""<<std::endl;;
+
+      m_reco_shower_startx[i_shr] = shr_start.X();
+      m_reco_shower_starty[i_shr] = shr_start.Y();
+      m_reco_shower_startz[i_shr] = shr_start.Z();
+
+
+      std::vector<double> hstart = {m_reco_shower_startx[i_shr],m_reco_shower_starty[i_shr],m_reco_shower_startz[i_shr]};
+      m_reco_shower_start_dist_to_active_TPC[i_shr] = distToTPCActive(hstart);
+      m_reco_shower_start_dist_to_CPA[i_shr] = distToCPA(hstart);
+      m_reco_shower_start_in_SCB[i_shr] = distToSCB(m_reco_shower_start_dist_to_SCB[i_shr],hstart);
+
+      m_reco_shower_dirx[i_shr] = shr_dir.X();
+      m_reco_shower_diry[i_shr] = shr_dir.Y();
+      m_reco_shower_dirz[i_shr] = shr_dir.Z();
+      m_reco_shower_length[i_shr] = m_length;
+      m_reco_shower_openingangle[i_shr] = m_open_angle;
+
+      m_reco_shower3d_startx[i_shr] = shr3d_start.X();
+      m_reco_shower3d_starty[i_shr] = shr3d_start.Y();
+      m_reco_shower3d_startz[i_shr] = shr3d_start.Z();
+      m_reco_shower3d_dirx[i_shr] = shr3d_dir.X();
+      m_reco_shower3d_diry[i_shr] = shr3d_dir.Y();
+      m_reco_shower3d_dirz[i_shr] = shr3d_dir.Z();
+      m_reco_shower3d_length[i_shr] = shower3d->Length();
+      m_reco_shower3d_openingangle[i_shr] = shower3d->OpenAngle();
+
+
+      m_reco_shower_conversion_distance[i_shr] = sqrt( pow(shr_start.X()-m_vertex_pos_x,2)+pow(shr_start.Y()-m_vertex_pos_y,2)+ pow(shr_start.Z()-m_vertex_pos_z,2)  );
+      m_reco_shower3d_conversion_distance[i_shr] = sqrt( pow(shr3d_start.X()-m_vertex_pos_x,2)+pow(shr3d_start.Y()-m_vertex_pos_y,2)+ pow(shr3d_start.Z()-m_vertex_pos_z,2)  );
+
+      //pandroa shower
+      std::vector<double> shr_ts = {shr_start.X(), shr_start.Y(), shr_start.Z()};
+      std::vector<double> shr_te = {shr_start.X()-shr_dir.X(),shr_start.Y()-shr_dir.Y(),shr_start.Z()-shr_dir.Z()};
+      std::vector<double> shr_tv = {m_vertex_pos_x,m_vertex_pos_y,m_vertex_pos_z};
+
+      m_reco_shower_impact_parameter[i_shr] = dist_line_point(shr_ts,shr_te,shr_tv );
+      m_reco_shower_implied_dirx[i_shr] = shr_start.X()-m_vertex_pos_x;;
+      m_reco_shower_implied_diry[i_shr] = shr_start.Y()-m_vertex_pos_y;
+      m_reco_shower_implied_dirz[i_shr] = shr_start.Z()-m_vertex_pos_z;
+
+      double norm = sqrt(pow(m_reco_shower_implied_dirx[i_shr],2)+pow(m_reco_shower_implied_diry[i_shr],2)+pow(m_reco_shower_implied_dirz[i_shr],2));
+      m_reco_shower_implied_dirx[i_shr] = m_reco_shower_implied_dirx[i_shr]/norm;
+      m_reco_shower_implied_diry[i_shr] = m_reco_shower_implied_diry[i_shr]/norm;
+      m_reco_shower_implied_dirz[i_shr] = m_reco_shower_implied_dirz[i_shr]/norm;
+
+      //now 3D shower
+      std::vector<double> shr3d_ts = {shr3d_start.X(), shr3d_start.Y(), shr3d_start.Z()};
+      std::vector<double> shr3d_te = {shr3d_start.X()-shr3d_dir.X(),shr3d_start.Y()-shr3d_dir.Y(),shr3d_start.Z()-shr3d_dir.Z()};
+      std::vector<double> shr3d_tv = {m_vertex_pos_x,m_vertex_pos_y,m_vertex_pos_z};
+
+      m_reco_shower3d_impact_parameter[i_shr] = dist_line_point(shr3d_ts,shr3d_te,shr3d_tv );
+      m_reco_shower3d_implied_dirx[i_shr] = shr3d_start.X()-m_vertex_pos_x;;
+      m_reco_shower3d_implied_diry[i_shr] = shr3d_start.Y()-m_vertex_pos_y;
+      m_reco_shower3d_implied_dirz[i_shr] = shr3d_start.Z()-m_vertex_pos_z;
+
+      double shr3d_norm = sqrt(pow(m_reco_shower3d_implied_dirx[i_shr],2)+pow(m_reco_shower3d_implied_diry[i_shr],2)+pow(m_reco_shower3d_implied_dirz[i_shr],2));
+      m_reco_shower3d_implied_dirx[i_shr] = m_reco_shower3d_implied_dirx[i_shr]/shr3d_norm;
+      m_reco_shower3d_implied_diry[i_shr] = m_reco_shower3d_implied_diry[i_shr]/shr3d_norm;
+      m_reco_shower3d_implied_dirz[i_shr] = m_reco_shower3d_implied_dirz[i_shr]/shr3d_norm;
+
+
+      m_reco_shower_theta_yz[i_shr] = atan2(m_reco_shower_diry[i_shr],m_reco_shower_dirz[i_shr]);
+      m_reco_shower_phi_yx[i_shr] = atan2(m_reco_shower_diry[i_shr],m_reco_shower_dirx[i_shr]);
+
+      m_reco_shower3d_theta_yz[i_shr] = atan2(m_reco_shower3d_diry[i_shr],m_reco_shower3d_dirz[i_shr]);
+      m_reco_shower3d_phi_yx[i_shr] = atan2(m_reco_shower3d_diry[i_shr],m_reco_shower3d_dirx[i_shr]);
+
+
+      //      m_reco_shower_start_to_nearest_dead_wire_plane0[i_shr] = distanceToNearestDeadWire(0, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      //      m_reco_shower_start_to_nearest_dead_wire_plane1[i_shr] = distanceToNearestDeadWire(1, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      //      m_reco_shower_start_to_nearest_dead_wire_plane2[i_shr] = distanceToNearestDeadWire(2, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      std::vector<int> t_num(3,0);   // num of triangles on each plane
+      std::vector<int> t_numhits(3,0);  // num of hits on each plane
+      std::vector<double> t_area(3,0.0);
+
+      //Right, this basically loops over all hits in all planes and for each plane forms the Delaunay triangilization of it and calculates the 2D area inscribed by the convex hull
+      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Starting Delaunay Triangleization"<<std::endl;;
+
+      //auto start = std::chrono::high_resolution_clock::now();
+      delaunay_hit_wrapper(hits, t_numhits, t_num, t_area);
+
+      //auto finish = std::chrono::high_resolution_clock::now();
+      //auto microseconds = std::chrono::duration_cast<std::chrono::milliseconds>(finish-start);
+      //if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Finished Delaunay Triangleization. It took "<< microseconds.count() << "ms and found "<<t_num[0]+t_num[1]+t_num[2]<<" triangles"<<std::endl;;
+
+      m_reco_shower_delaunay_num_triangles_plane0[i_shr] = t_num[0];
+      m_reco_shower_delaunay_num_triangles_plane1[i_shr] = t_num[1];
+      m_reco_shower_delaunay_num_triangles_plane2[i_shr] = t_num[2];
+
+      m_reco_shower_delaunay_area_plane0[i_shr] = t_area[0];
+      m_reco_shower_delaunay_area_plane1[i_shr] = t_area[1];
+      m_reco_shower_delaunay_area_plane2[i_shr] = t_area[2];
+
+      m_reco_shower_num_hits_plane0[i_shr] = t_numhits[0];
+      m_reco_shower_num_hits_plane1[i_shr] = t_numhits[1];
+      m_reco_shower_num_hits_plane2[i_shr] = t_numhits[2];
+      //-------------- Calorimetry 3D --------------------
+
+
+      const std::vector< double > shr3d_energy = shower3d->Energy();
+      const std::vector< double > shr3d_dEdx = shower3d->dEdx();
+      //const int shr3d_bestplane = shower3d->best_plane();
+
+      //           std::cout<<"SHOWER3D_ENERGY: best plane: "<<shr3d_bestplane<<std::endl;
+      //for(auto &en:shr3d_energy){
+      //    std::cout<<en<<" ";
+      //}
+      if(shr3d_energy.size()==3){
+        m_reco_shower3d_energy_plane0[i_shr] = shr3d_energy[0];
+        m_reco_shower3d_energy_plane1[i_shr] = shr3d_energy[1];
+        m_reco_shower3d_energy_plane2[i_shr] = shr3d_energy[2];
+      }else{
+        m_reco_shower3d_energy_plane0[i_shr] =-99;
+        m_reco_shower3d_energy_plane1[i_shr] =-99;
+        m_reco_shower3d_energy_plane2[i_shr] =-999;
+      }
+
+      //         std::cout<<std::endl<<"SHOWER3D_DEDX: "<<std::endl;
+      //for(auto &dedx: shr3d_dEdx){
+      //    std::cout<<dedx<<" ";
+      //}
+      if(shr3d_dEdx.size()==3){
+        m_reco_shower3d_dEdx_plane0[i_shr] = shr3d_dEdx[0];
+        m_reco_shower3d_dEdx_plane1[i_shr] = shr3d_dEdx[1];
+        m_reco_shower3d_dEdx_plane2[i_shr] = shr3d_dEdx[2];
+      }else{
+        m_reco_shower3d_dEdx_plane0[i_shr] =-99;
+        m_reco_shower3d_dEdx_plane1[i_shr] =-99;
+        m_reco_shower3d_dEdx_plane2[i_shr] =-999;
+      }
+
+
+      //------------- calorimetry ------------
+
+      m_reco_shower_energy_max[i_shr] = CalcEShower(hits);
+      m_reco_shower_energy_plane0[i_shr] = CalcEShowerPlane(hits, 0);
+      m_reco_shower_energy_plane1[i_shr] = CalcEShowerPlane(hits, 1);
+      m_reco_shower_energy_plane2[i_shr] = CalcEShowerPlane(hits, 2);
+
+      m_reco_shower_plane0_nhits[i_shr] = getNHitsPlane(hits, 0);
+      m_reco_shower_plane1_nhits[i_shr] = getNHitsPlane(hits, 1);
+      m_reco_shower_plane2_nhits[i_shr] = getNHitsPlane(hits, 2);
+
+      m_reco_shower_plane0_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 0);
+      m_reco_shower_plane1_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 1);
+      m_reco_shower_plane2_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 2);
+
+
+      //currently only run on 1 shower events
+      if(showers.size()==1){
+        for(auto &h: hits){ 
+
+          int plane= h->View();
+          int wire = h->WireID().Wire;
+          int tick = h->PeakTime();
+
+          m_reco_shower_hit_tick.push_back(tick);
+          m_reco_shower_hit_plane.push_back(plane);
+          m_reco_shower_hit_wire.push_back(wire);
+        }
+      }
+
+
+      //std::cout<<"The energy on each plane is 0: "<< m_reco_shower_energy_plane0[i_shr]<<", 1: "<< m_reco_shower_energy_plane1[i_shr]<<", 2: "<<  m_reco_shower_energy_plane2[i_shr]<<std::endl;
+
+
+      m_reco_shower_dQdx_plane0[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 0 , triggeroffset, theDetector);
+      m_reco_shower_dQdx_plane1[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 1 , triggeroffset, theDetector);
+      m_reco_shower_dQdx_plane2[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 2 , triggeroffset, theDetector);
+      m_reco_shower_dEdx_plane0[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane0[i_shr]);
+      m_reco_shower_dEdx_plane1[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane1[i_shr]);
+
+      m_reco_shower_dEdx_plane2[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane2[i_shr]);
+
+      m_reco_shower_dEdx_plane0_median[i_shr] = getMedian(m_reco_shower_dEdx_plane0[i_shr]);
+      m_reco_shower_dEdx_plane1_median[i_shr] = getMedian(m_reco_shower_dEdx_plane1[i_shr]);
+      m_reco_shower_dEdx_plane2_median[i_shr] = getMedian(m_reco_shower_dEdx_plane2[i_shr]);
+
+      m_reco_shower_angle_wrt_wires_plane0[i_shr] = getAnglewrtWires(shr_dir,0);
+      m_reco_shower_angle_wrt_wires_plane1[i_shr] = getAnglewrtWires(shr_dir,1);
+      m_reco_shower_angle_wrt_wires_plane2[i_shr] = getAnglewrtWires(shr_dir,2);
+
+
+      m_reco_shower_dQdx_plane0_median[i_shr] = getMedian(m_reco_shower_dQdx_plane0[i_shr]);
+      m_reco_shower_dQdx_plane1_median[i_shr] = getMedian(m_reco_shower_dQdx_plane1[i_shr]);
+      m_reco_shower_dQdx_plane2_median[i_shr] = getMedian(m_reco_shower_dQdx_plane2[i_shr]);
+
+
+
+      m_reco_shower_dEdx_plane0_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane0[i_shr].size()); 
+      m_reco_shower_dEdx_plane1_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane1[i_shr].size()); 
+      m_reco_shower_dEdx_plane2_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane2[i_shr].size()); 
+
+      auto maxp0 = std::max_element(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end());
+      auto maxp1 = std::max_element(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end());
+      auto maxp2 = std::max_element(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end());
+      auto minp0 = std::min_element(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end());
+      auto minp1 = std::min_element(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end());
+      auto minp2 = std::min_element(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end());
+
+
+      if(maxp0 == m_reco_shower_dEdx_plane0[i_shr].end()){
+        m_reco_shower_dEdx_plane0_max[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane0_max[i_shr] = *maxp0; 
+      }
+
+      if(maxp1 == m_reco_shower_dEdx_plane1[i_shr].end()){
+        m_reco_shower_dEdx_plane1_max[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane1_max[i_shr] = *maxp1; 
+      }
+
+      if(maxp2 == m_reco_shower_dEdx_plane2[i_shr].end()){
+        m_reco_shower_dEdx_plane2_max[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane2_max[i_shr] = *maxp2; 
+      }
+
+
+      if(minp0 == m_reco_shower_dEdx_plane0[i_shr].end()){
+        m_reco_shower_dEdx_plane0_min[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane0_min[i_shr] = *minp0; 
+      }
+
+      if(minp1 == m_reco_shower_dEdx_plane1[i_shr].end()){
+        m_reco_shower_dEdx_plane1_min[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane1_min[i_shr] = *minp1; 
+      }
+
+      if(minp2 == m_reco_shower_dEdx_plane2[i_shr].end()){
+        m_reco_shower_dEdx_plane2_min[i_shr] = -999; 
+      }else{
+        m_reco_shower_dEdx_plane2_min[i_shr] = *minp2; 
+      }
+
+
+      m_reco_shower_dEdx_plane0_nhits[i_shr] = m_reco_shower_dEdx_plane0[i_shr].size();
+      m_reco_shower_dEdx_plane1_nhits[i_shr] = m_reco_shower_dEdx_plane1[i_shr].size();
+      m_reco_shower_dEdx_plane2_nhits[i_shr] = m_reco_shower_dEdx_plane2[i_shr].size();
+
+      m_reco_shower_dEdx_amalgamated[i_shr] = getAmalgamateddEdx( 
+          m_reco_shower_angle_wrt_wires_plane0[i_shr],  
+          m_reco_shower_angle_wrt_wires_plane1[i_shr],  
+          m_reco_shower_angle_wrt_wires_plane2[i_shr], 
+          m_reco_shower_dEdx_plane0_median[i_shr], 
+          m_reco_shower_dEdx_plane1_median[i_shr], 
+          m_reco_shower_dEdx_plane2_median[i_shr],
+          m_reco_shower_dEdx_plane0_nhits[i_shr], 
+          m_reco_shower_dEdx_plane1_nhits[i_shr], 
+          m_reco_shower_dEdx_plane2_nhits[i_shr] );
+
+      m_reco_shower_dEdx_amalgamated_nhits[i_shr] = getAmalgamateddEdxNHits(
+          m_reco_shower_dEdx_amalgamated[i_shr], 
+          m_reco_shower_dEdx_plane0_median[i_shr], 
+          m_reco_shower_dEdx_plane1_median[i_shr], 
+          m_reco_shower_dEdx_plane2_median[i_shr],
+          m_reco_shower_dEdx_plane0_nhits[i_shr], 
+          m_reco_shower_dEdx_plane1_nhits[i_shr], 
+          m_reco_shower_dEdx_plane2_nhits[i_shr] );
+
+      //-------------- Flashes : Was there a flash in the beam_time and if so was it near in Z? --------------------
+      double zmin = m_reco_shower_startz[i_shr];
+      double zmax = zmin + m_reco_shower_dirz[i_shr]*m_reco_shower_length[i_shr];
+      if(zmin > zmax) std::swap(zmin, zmax);
+
+      double ymin = m_reco_shower_starty[i_shr];
+      double ymax = zmin + m_reco_shower_diry[i_shr]*m_reco_shower_length[i_shr];
+      if(ymin > ymax) std::swap(ymin, ymax);
+
+      //Code property of Gray Yarbrough (all rights reserved)
+      //int optical_flash_in_beamgate_counter=0;
+      double shortest_dist_to_flash_z=DBL_MAX;
+      double shortest_dist_to_flash_y=DBL_MAX;
+      double shortest_dist_to_flash_yz=DBL_MAX;
+      //-999 my nonsenese int can change
+      int shortest_dist_to_flash_index_z=-999;
+      int shortest_dist_to_flash_index_y=-999;
+      int shortest_dist_to_flash_index_yz=-999;
+
+      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\tnumber of flashes: "<< m_reco_num_flashes<< ""<<std::endl;;
+      for(int i_flash = 0; i_flash < m_reco_num_flashes; ++i_flash) {
+
+        double const zcenter=m_reco_flash_zcenter[i_flash];
+        //                if(m_is_verbose) std::cout<< "AnalyzeShowers()\t||\tflash z center:" <<m_reco_flash_zcenter[i_flash]<< ""<<std::endl;;
+        double const ycenter=m_reco_flash_ycenter[i_flash];
+        //                if(m_is_verbose) std::cout<< "AnaluzeShowers()\t||\tflash y center:" <<m_reco_flash_ycenter[i_flash]<< ""<<std::endl;;
+
+        //z plane
+        double dist_z=DBL_MAX;
+        if(zcenter < zmin) {
+          dist_z = zmin - zcenter;
+        }
+        else if(zcenter > zmax) {
+          dist_z = zcenter - zmax;
+        }
+        else {
+          dist_z = 0;
+        }      
+        if(dist_z < shortest_dist_to_flash_z){
+          shortest_dist_to_flash_z = dist_z;
+          shortest_dist_to_flash_index_z=i_flash;
+        }
+
+
+        //y plane
+
+        double dist_y=DBL_MAX;
+        if(ycenter < ymin) {
+          dist_y = ymin - ycenter;
+        }
+        else if(ycenter > ymax) {
+          dist_y = ycenter - ymax;
+        }
+        else {
+          dist_y= 0;
+        }      
+        if(dist_y < shortest_dist_to_flash_y){
+          shortest_dist_to_flash_y = dist_y;
+          shortest_dist_to_flash_index_y=i_flash;
+        }
+
+        double dist_yz=DBL_MAX;
+        dist_yz=std::sqrt(dist_y*dist_y+dist_z*dist_z);
+        if(dist_yz<shortest_dist_to_flash_yz){
+          shortest_dist_to_flash_yz = dist_yz;
+          shortest_dist_to_flash_index_yz=i_flash;
+        }
+
+      }
+
+
+      //assume setting to nonsense value
+      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_z = -2;
+      m_reco_shower_flash_shortest_distz[i_shr]=shortest_dist_to_flash_z;
+      m_reco_shower_flash_shortest_index_z[i_shr]=shortest_dist_to_flash_index_z;
+
+      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_y = -2;
+      m_reco_shower_flash_shortest_disty[i_shr]=shortest_dist_to_flash_y;
+      m_reco_shower_flash_shortest_index_y[i_shr]=shortest_dist_to_flash_index_y;
+      m_reco_shower_flash_shortest_distyz[i_shr]=shortest_dist_to_flash_yz;
+      m_reco_shower_flash_shortest_index_yz[i_shr]=shortest_dist_to_flash_index_yz;
+      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_yz = -2;
+
+      //end optical flash code
+
+
+      m_reco_shower_num_daughters[i_shr] = pfp->NumDaughters();  //corresponding PFParticle
+      //      std::cout<<" CHECK numebr "<<m_reco_shower_num_daughters[i_shr]<<std::endl;
+      if(m_reco_shower_num_daughters[i_shr]>0){
+        //currently just look at 1 daughter
+        //m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+        int pfp_size = all_PPFPs.size();
+        for(int index = 0; index < pfp_size; index++){
+          //          std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
+          //          " "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
+          if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
+          m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
+          break;
+        }
+      }
+
+
+      //------------and finally some slice info-----------------
+
+      m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      m_reco_shower_nuscore[i_shr] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
+      m_reco_shower_isclearcosmic[i_shr] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
+      m_reco_shower_is_nuslice[i_shr] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
+
+      m_reco_shower_trackscore[i_shr] = ppfp->get_TrackScore();
+      m_reco_shower_pfparticle_pdg[i_shr] = ppfp->get_PdgCode();
+
+      //            if ( m_reco_shower_sliceId[i_shr] >0) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<". Pfp id = "<< pfp->Self()<<". The slice id for this shower is "<< m_reco_shower_sliceId[i_shr]<<", the neutrino score for this slice is "<< m_reco_shower_nuscore[i_shr]<<", and is_nuslice = "<<  m_reco_shower_is_nuslice[i_shr]<<". The track score is : "<< m_reco_shower_trackscore[i_shr]<<std::endl;
+
+      i_shr++;
+
+      //std::vector<int> spacers = Printer_header({"Slice","pfpID","Start(x,  ","   y,      ",",      z  )", "trackScore", "Pdg"});
+      Printer_content(
+          {std::to_string(ppfp->get_SliceID()),
+          std::to_string(ppfp->get_PFParticleID()),
+          std::to_string(shr_start.X()),
+          std::to_string(shr_start.Y()),
+          std::to_string(shr_start.Z()),
+          std::to_string(ppfp->get_TrackScore()),
+          std::to_string(ppfp->get_PdgCode())
+          },spacers);
+
+    }
+
+    //Lets sort and order the showers
+    m_reco_shower_ordered_energy_index = sort_indexes(m_reco_shower_energy_max);
+  }
 }
