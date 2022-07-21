@@ -1,7 +1,6 @@
 #ifndef HELPER_PANDORAPFPARTICLES_H
 #define HELPER_PANDORAPFPARTICLES_H
 
-
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 

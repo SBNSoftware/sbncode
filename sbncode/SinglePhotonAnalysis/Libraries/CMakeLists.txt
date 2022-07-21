@@ -3,6 +3,7 @@ FILE( GLOB local_src_libs *.cxx )
 art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                   SOURCE ${local_src_libs}
                   LIBRARIES
+                    sbncode_SinglePhotonAnalysis_HelperFunctions
                     larcorealg_Geometry
                     larcore_Geometry_Geometry_service
                     lardata_Utilities
@@ -36,7 +37,6 @@ art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                     ${ROOT_GEOM} 
                     ${ROOT_CORE}
                     ${ART_ROOT_IO_TFILE_SUPPORT}
-                    sbncode_SinglePhotonAnalysis_HelperFunctions
                     )
 
 cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
