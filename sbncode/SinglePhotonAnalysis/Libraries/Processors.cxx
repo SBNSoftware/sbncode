@@ -366,6 +366,7 @@ namespace single_photon
     TVector3 shower_dir(shower->Direction().X(), shower->Direction().Y(),shower->Direction().Z());
 
     //calculate the pitch for this plane
+	//CHECK upgradable, see ./Calibration/TrackCaloSkimmer_module.cc line 746
     double pitch = getPitch(shower_dir, plane);  
     //if(m_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
 

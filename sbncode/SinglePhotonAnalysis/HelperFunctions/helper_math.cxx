@@ -27,7 +27,6 @@ namespace single_photon
     double z21 = z2-z1;
 
     double t = -(x10*x21+y10*y21+z10*z21)/fabs(x21*x21+y21*y21+z21*z21 );
-
     // right, but can be simplified
     double d2 = pow(x1-x0,2)+pow(y1-y0,2)+pow(z1-z0,2)+2*t*((x2-x1)*(x1-x0)+(y2-y1)*(y1-y0)+(z2-z1)*(z1-z0))+t*t*( pow(x2-x1,2)+pow(y2-y1,2)+pow(z2-z1,2));
 
@@ -53,7 +52,7 @@ namespace single_photon
     double s1x = s1->ShowerStart().X()-vx;
     double s1y = s1->ShowerStart().Y()-vy;
     double s1z = s1->ShowerStart().Z()-vz;
-    double norm1  = std::hypot(s1x,s1y,s1z);
+    double norm1  = std::hypot(s1x,s1y,s1z);//distance btw two points with coordinate difference s1x, s1y, s1z
     s1x = s1x/norm1; //unit vector pointing to shower start from point (vx, vy,vz)
     s1y = s1y/norm1;
     s1z = s1z/norm1;
