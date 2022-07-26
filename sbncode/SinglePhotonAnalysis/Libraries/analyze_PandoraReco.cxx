@@ -138,8 +138,8 @@ namespace single_photon
         // assume this track is a proton track, get its energy
         m_reco_track_proton_kinetic_energy[i_trk] = -9999;
       }else{
-    //WARNING, extra input is needed for the proton track energy;
-//        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
+        //WARNING, extra input is needed for the proton track energy;
+        //        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
       }
 
       if(m_length == 0.0) m_reco_track_proton_kinetic_energy[i_trk]=0.0;
@@ -746,7 +746,7 @@ namespace single_photon
 
     if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
 
-  size_t flash_size = flashes.size();
+    size_t flash_size = flashes.size();
     for(size_t i = 0; i < flash_size; ++i) {
 
 
@@ -845,7 +845,7 @@ namespace single_photon
       std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
       double triggeroffset,
       detinfo::DetectorPropertiesData const & theDetector
-    ){
+      ){
     //        if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
 
     int i_shr = 0;
@@ -1057,10 +1057,31 @@ namespace single_photon
       m_reco_shower_dEdx_plane1_median[i_shr] = getMedian(m_reco_shower_dEdx_plane1[i_shr]);
       m_reco_shower_dEdx_plane2_median[i_shr] = getMedian(m_reco_shower_dEdx_plane2[i_shr]);
 
-      m_reco_shower_angle_wrt_wires_plane0[i_shr] = getAnglewrtWires(shr_dir,0);
-      m_reco_shower_angle_wrt_wires_plane1[i_shr] = getAnglewrtWires(shr_dir,1);
-      m_reco_shower_angle_wrt_wires_plane2[i_shr] = getAnglewrtWires(shr_dir,2);
 
+      std::vector< double > reco_shr_angles_wrt_wires;
+      for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+        //6 planes in SBND
+        //WireAngleToVertical  : 30 ,150,90,150,30 ,90
+        //ub wire angles    : 30 ,150,90  (respected to beam,z)
+        //Pitch        : 0.3,0.3,0.3,0.3,0.3,0.3
+
+        const double angToVert(geom->WireAngleToVertical(plane.View(), plane.ID())+0.5*M_PI);//wire angle respected to z + pi/2
+
+        TVector3 wire_vector;  
+        if(abs(angToVert) < 1e-9 ){
+          wire_vector = {0,0,1};
+        } else{
+          wire_vector = { 0 , sin(angToVert) ,cos(angToVert) };
+        }
+
+        //    std::cout<<" Angle "<<angToVert<<" Get Vec y="<<wire_vector[1]<< " z= "<<wire_vector[2]<<std::endl;
+        reco_shr_angles_wrt_wires.push_back( abs(0.5*M_PI-acos(wire_vector.Dot(shr_dir))) );
+
+        if(reco_shr_angles_wrt_wires.size()==3) break;
+      }
+      m_reco_shower_angle_wrt_wires_plane0[i_shr] = reco_shr_angles_wrt_wires[0];
+      m_reco_shower_angle_wrt_wires_plane1[i_shr] = reco_shr_angles_wrt_wires[1];
+      m_reco_shower_angle_wrt_wires_plane2[i_shr] = reco_shr_angles_wrt_wires[2];
 
       m_reco_shower_dQdx_plane0_median[i_shr] = getMedian(m_reco_shower_dQdx_plane0[i_shr]);
       m_reco_shower_dQdx_plane1_median[i_shr] = getMedian(m_reco_shower_dQdx_plane1[i_shr]);

@@ -78,18 +78,6 @@ namespace single_photon
   // invariant mass of two showers, calculated directly from shower directions
   double  invar_mass(art::Ptr<recob::Shower> & s1, double E1,  art::Ptr<recob::Shower> &s2, double E2);
 
-
-
-
-
-  /* unit vector orthogonal to the  wire direction of plane -- usually named as wire_dir */
-  TVector3 getWireVec(int plane);
-
-
-  /* returns angles between wire direction of plane  and shower_dir) 
-   *  shower_dir needs to be unit vector */
-  double getAnglewrtWires(TVector3 shower_dir,int plane);
-
   double getMedian(std::vector<double> thisvector);
 
   /* returns (generally) best median dEdx of all 3
