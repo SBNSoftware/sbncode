@@ -677,27 +677,27 @@ namespace caf
   }
 
   void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
                    const recob::SpacePoint& spacepoint,
-                   const recob::PFParticle &particle,
+                   const recob::PFParticle& particle,
                    caf::SRHit& srhit,
-                   bool allowEmpty = false)
+                   bool allowEmpty)
   {
+    srhit.producer = producer;
     srhit.startTick = hit.StartTick();
-    srhit.endTick = hit.endTick();  
-
+    srhit.endTick = hit.EndTick();  
     srhit.RMS = hit.RMS();
 
     srhit.peakAmplitude = hit.PeakAmplitude();
     srhit.summedADC = hit.PeakAmplitude();
     srhit.integral = hit.Integral();
 
-    const geo::WireID wire = hit.Wire();
-    srhit.cryoID = wire.CryoID_t;
-    srhit.tpcID = wire.TPCID_t;
-    srhit.planeID = wire.PlaneID_t;
-    srhit.wireID = wire.WireID_t;
-
-    srhit.spacepoint.XYZ = {XYZ[0],XYZ[1],XYZ[2]};
+    const geo::WireID wire = hit.WireID();
+    srhit.cryoID = wire.Cryostat;
+    srhit.tpcID = wire.TPC;
+    srhit.planeID = wire.Plane;
+    srhit.wireID = wire.Wire;
+    srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
     srhit.spacepoint.chisq = spacepoint.Chisq();
     srhit.spacepoint.pfpID = particle.Self();
   }
