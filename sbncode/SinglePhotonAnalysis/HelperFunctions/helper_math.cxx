@@ -85,39 +85,6 @@ namespace single_photon
 
   }
 
-
-
-
-
-
-  /* unit vector orthogonal to the  wire direction of plane -- usually named as wire_dir */
-  TVector3 getWireVec(int plane){
-    TVector3 wire_dir;
-    if (plane == 0){
-      wire_dir = {0., -sqrt(3) / 2., 1 / 2.};
-    } else if (plane == 1){
-      wire_dir = {0., sqrt(3) / 2., 1 / 2.};
-    } else if (plane == 2) {
-      wire_dir = {0., 0., 1.};
-    }
-    return wire_dir;
-  }
-
-
-  /* returns angles between wire direction of plane  and shower_dir) 
-   *  shower_dir needs to be unit vector */
-  double getAnglewrtWires(TVector3 shower_dir,int plane){
-
-    TVector3 wire_dir = getWireVec(plane);
-    double cos_theta =  getCoswrtWires(shower_dir, wire_dir);
-
-    double theta = acos(cos_theta);
-    // return abs(theta);
-    return abs(M_PI/2 - theta);
-
-  }
-
-
   double getMedian(std::vector<double> thisvector){
     size_t len = thisvector.size();
     if(len < 1) return NAN;

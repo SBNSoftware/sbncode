@@ -355,7 +355,8 @@ namespace single_photon
   std::vector<double> CalcdQdxShower(
       const art::Ptr<recob::Shower>& shower,
       const std::vector<art::Ptr<recob::Cluster>> & clusters, 
-      std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,int plane,
+      std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,
+      int plane,
       double triggeroffset,
       detinfo::DetectorPropertiesData const & theDetector){
     //if(m_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The number of clusters in this shower is "<<clusters.size()<<std::endl;
@@ -366,9 +367,10 @@ namespace single_photon
     TVector3 shower_dir(shower->Direction().X(), shower->Direction().Y(),shower->Direction().Z());
 
     //calculate the pitch for this plane
-	//CHECK upgradable, see ./Calibration/TrackCaloSkimmer_module.cc line 746
-    double pitch = getPitch(shower_dir, plane);  
-    //if(m_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
+    //CHECK upgradable, see ./Calibration/TrackCaloSkimmer_module.cc line 746
+    double pitch = getPitch(shower_dir)[plane];  
+
+    if(m_is_verbose) std::cout<<"AnalyzeShowers() \t||\t The pitch between the shower and plane "<<plane<<" is "<<pitch<<std::endl;
 
     //for all the clusters in the shower
     for (const art::Ptr<recob::Cluster> &thiscluster: clusters){
@@ -418,21 +420,47 @@ namespace single_photon
     return dqdx;
   }
 
-  double getPitch(TVector3 shower_dir, int plane){
+  std::vector<double> getPitch(TVector3 shower_dir){
+		
+	std::vector<double> pitches;
+	  for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+        //6 planes in SBND
+        //WireAngleToVertical  : 30 ,150,90,150,30 ,90
+        //ub wire angles    : 30 ,150,90  (respected to beam,z)
+        //Pitch        : 0.3,0.3,0.3,0.3,0.3,0.3
+
+        const double angToVert(geom->WireAngleToVertical(plane.View(), plane.ID())+0.5*M_PI);//wire angle respected to z + pi/2
+
+        TVector3 wire_vector;  
+        if(abs(angToVert) < 1e-9 ){
+          wire_vector = {0,0,1};
+        } else{
+          wire_vector = { 0 , sin(angToVert) ,cos(angToVert) };
+        }
+
+        //    std::cout<<" Angle "<<angToVert<<" Get Vec y="<<wire_vector[1]<< " z= "<<wire_vector[2]<<std::endl;
+		double cos = abs(wire_vector.Dot(shower_dir))/(wire_vector.Mag()*shower_dir.Mag());
+
+		pitches.push_back((cos==0)? std::numeric_limits<double>::max() : m_wire_spacing/cos );
+
+        if(pitches.size()==3) break;
+      }
+	  return pitches;
+
     //get the wire direction for this plane - values are hardcoded which isn't great but the TPC geom object gave weird values
-    TVector3 wire_dir = getWireVec(plane);
-
-    //take dot product of shower and wire dir
-    double cos = getCoswrtWires(shower_dir, wire_dir);
-
-    //want only positive values so take abs, normalize by the lengths of the shower and wire
-    cos = abs(cos)/(wire_dir.Mag() * shower_dir.Mag());  
+//    TVector3 wire_dir = getWireVec(plane);
+//
+//    //take dot product of shower and wire dir
+//    double cos = getCoswrtWires(shower_dir, wire_dir);
+//
+//    //want only positive values so take abs, normalize by the lengths of the shower and wire
+//    cos = abs(cos)/(wire_dir.Mag() * shower_dir.Mag());  
 
     //If the cos is 0 shower is perpendicular and therefore get infinite distance 
-    if (cos == 0){ return std::numeric_limits<double>::max(); }
+//    if (cos == 0){ return std::numeric_limits<double>::max(); }
 
     //output is always >= the wire spacing
-    return m_wire_spacing/cos;
+//    return m_wire_spacing/cos;
   }
 
 

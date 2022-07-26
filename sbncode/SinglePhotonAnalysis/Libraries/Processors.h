@@ -71,7 +71,7 @@ namespace single_photon
       double triggeroffset,
       detinfo::DetectorPropertiesData const & theDetector);
 
-    double getPitch(TVector3 shower_dir, int plane);
+  std::vector<double> getPitch(TVector3 shower_dir);
 
 
     double getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);

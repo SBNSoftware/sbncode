@@ -34,16 +34,16 @@
 
 #include "larsim/EventWeight/Base/MCEventWeight.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h" 
+
 #include "larcoreobj/SummaryData/POTSummary.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcore/Geometry/Geometry.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/simb.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
 #include "nusimdata/SimulationBase/GTruth.h"
-
-
-#include "larcore/Geometry/Geometry.h"
 
 #include "canvas/Utilities/ensurePointer.h"
 #include "canvas/Persistency/Common/FindManyP.h"
@@ -593,7 +593,7 @@ namespace single_photon
 //        theDetector = lar::providerFrom<detinfo::DetectorPropertiesService>();
 //        detClocks   = lar::providerFrom<detinfo::DetectorClocksService>();
 //        SCE = lar::providerFrom<spacecharge::SpaceChargeService>();//Get space charge service
-//        geom =  lar::providerFrom<geo::Geometry>();
+        geom =  lar::providerFrom<geo::Geometry>();
     std::cout<<"SinglePhoton::"<<__FUNCTION__<<" now can start jobs --------------------"<<std::endl;
 
     }
@@ -1082,8 +1082,21 @@ namespace single_photon
 
         if(m_is_verbose) std::cout<<"SinglePhoton::analyze() \t||\t Get Tracks and Showers"<<std::endl;
 
+    for(size_t jndex=0; jndex< allPPFParticles.size(); ++jndex){
+      PandoraPFParticle* temp_pf = &allPPFParticles[jndex];
+	  if(!temp_pf->get_IsNuSlice() ) continue;//pass slice not defined as nu-slice in above lines
+	  if(temp_pf->get_HasTrack()){
+		  tracks.push_back(temp_pf->pTrack);
+		  trackToNuPFParticleMap[temp_pf->pTrack] = temp_pf->pPFParticle;
+	  }
+	  if(temp_pf->get_HasShower()){ 
+	  showers.push_back(temp_pf->pShower);
+	  showerToNuPFParticleMap[temp_pf->pShower] = temp_pf->pPFParticle;
+	  }
+	}
+
         //Helper function (can be found below) to collect tracks and showers in neutrino slice
-//        this->CollectTracksAndShowers(nuParticles, pfParticleMap,  pfParticleHandle, evt, tracks, showers, trackToNuPFParticleMap, showerToNuPFParticleMap);
+        //this->CollectTracksAndShowers(nuParticles, pfParticleMap,  pfParticleHandle, evt, tracks, showers, trackToNuPFParticleMap, showerToNuPFParticleMap);
 
         //Track Calorimetry. Bit odd here but bear with me, good to match and fill here
 
