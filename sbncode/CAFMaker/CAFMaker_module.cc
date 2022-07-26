@@ -1132,6 +1132,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
 
+    art::FindManyP<recob::SpacePoint> fmSpacePoint =
+      FindManyPStrict<recob::SpacePoint>(hits, evt, fParams.SpacePointLabel() + slice_tag_suff);
+
+    // make Ptr's to spacepoints for spacepoint -> other object associations
+    std::vector<art::Ptr<recob::SpacePoint>> slcSpacePoints;
+    if (fmSpacePoint.isValid()) {
+      for (unsigned i = 0; i < fmSpacePoint.size(); i++) {
+        const std::vector<art::Ptr<recob::SpacePoint>> &thisSpacePoints = fmSpacePoint.at(i);
+        if (thisSpacePoints.size() == 0) {
+          slcSpacePoints.emplace_back(); // nullptr
+        }
+        else if (thisSpacePoints.size() == 1) {
+          slcSpacePoints.push_back(fmSpacePoint.at(i).at(0));
+        }
+        else assert(false); // bad
+      }
+    }
+
+    art::FindManyP<recob::PFParticle> fmSpacePointPFP =
+      FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.ClusterPFParticleLabel() + slice_tag_suff);
+
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
 
@@ -1340,6 +1361,35 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       // Duplicate stub reco info in the srslice
       recslc.reco.stub.push_back(rec.reco.stub.back());
       recslc.reco.nstub = recslc.reco.stub.size();
+    }
+    for ( size_t iHit = 0; iHit < hits.size(); ++iHit ) {
+      const recob::Hit &thisHit = *hits[iHit];
+      std::vector<art::Ptr<recob::SpacePoint>> thisSpacePoint;
+      if (fmSpacePoint.isValid()) {
+        thisSpacePoint = fmSpacePoint.at(iHit);
+      }
+      std::vector<art::Ptr<recob::PFParticle>> thisParticle;
+      if (fmSpacePointPFP.isValid() && iHit < fmSpacePointPFP.size()) {
+        thisParticle = fmSpacePointPFP.at(iHit);
+      }
+        assert(thisSpacePoint.size() == 1);
+        assert(thisParticle.size() == 1);
+
+        rec.reco.nhit++;
+        rec.reco.hit.push_back(SRHit());
+
+        recob::SpacePoint point;
+        recob::PFParticle particle;
+        if (!thisSpacePoint.empty()) { 
+          point = *thisSpacePoint[0];
+        }
+        if (!thisParticle.empty()) { 
+          particle = *thisParticle[0];
+        }
+
+        FillHitVars(thisHit, producer, point, particle, rec.reco.hit.back());
+        recslc.reco.hit.push_back(rec.reco.hit.back());
+        recslc.reco.nhit = recslc.reco.hit.size();
     }
 
     //#######################################################
