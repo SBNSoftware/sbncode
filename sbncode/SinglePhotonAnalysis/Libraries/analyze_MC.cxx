@@ -8,7 +8,7 @@ namespace single_photon
 {
 
   //analyze_Geant4.h
-  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector){    
+  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector, var_geant4 m_collection_geant4){    
 
 
     std::vector<int> spacers = Printer_header({"#MCP","   pdg", " Status"," trkID"," Mother"," Process", "            Process_End","     Energy", "      Vertex(x,  ","       y,      ",",      z     )"});
@@ -32,24 +32,24 @@ namespace single_photon
           },
           spacers);
 
-      m_geant4_pdg.push_back(mcp->PdgCode());
-      m_geant4_trackid.push_back(mcp->TrackId());
-      m_geant4_statuscode.push_back(mcp->StatusCode());
-      m_geant4_mother.push_back(mcp->Mother());
-      m_geant4_E.push_back(mcp->E());
-      m_geant4_mass.push_back(mcp->Mass());
-      m_geant4_px.push_back(mcp->Px());
-      m_geant4_py.push_back(mcp->Py());
-      m_geant4_pz.push_back(mcp->Pz());
-      m_geant4_vx.push_back(mcp->Vx());
-      m_geant4_vy.push_back(mcp->Vy());
-      m_geant4_vz.push_back(mcp->Vz());
-      m_geant4_end_process.push_back(mcp->EndProcess());
-      m_geant4_process.push_back(mcp->Process());
-      m_geant4_costheta.push_back(m_geant4_pz.back()/sqrt(pow(m_geant4_pz.back(),2)+pow(m_geant4_px.back(),2)+pow(m_geant4_py.back(),2)));
-      m_geant4_dx.push_back(mcp->Px()/sqrt(pow(m_geant4_pz.back(),2)+pow(m_geant4_px.back(),2)+pow(m_geant4_py.back(),2)));
-      m_geant4_dy.push_back(mcp->Py()/sqrt(pow(m_geant4_pz.back(),2)+pow(m_geant4_px.back(),2)+pow(m_geant4_py.back(),2)));
-      m_geant4_dz.push_back(mcp->Pz()/sqrt(pow(m_geant4_pz.back(),2)+pow(m_geant4_px.back(),2)+pow(m_geant4_py.back(),2)));
+      m_collection_geant4.m_geant4_pdg.push_back(mcp->PdgCode());
+      m_collection_geant4.m_geant4_trackid.push_back(mcp->TrackId());
+      m_collection_geant4.m_geant4_statuscode.push_back(mcp->StatusCode());
+      m_collection_geant4.m_geant4_mother.push_back(mcp->Mother());
+      m_collection_geant4.m_geant4_E.push_back(mcp->E());
+      m_collection_geant4.m_geant4_mass.push_back(mcp->Mass());
+      m_collection_geant4.m_geant4_px.push_back(mcp->Px());
+      m_collection_geant4.m_geant4_py.push_back(mcp->Py());
+      m_collection_geant4.m_geant4_pz.push_back(mcp->Pz());
+      m_collection_geant4.m_geant4_vx.push_back(mcp->Vx());
+      m_collection_geant4.m_geant4_vy.push_back(mcp->Vy());
+      m_collection_geant4.m_geant4_vz.push_back(mcp->Vz());
+      m_collection_geant4.m_geant4_end_process.push_back(mcp->EndProcess());
+      m_collection_geant4.m_geant4_process.push_back(mcp->Process());
+      m_collection_geant4.m_geant4_costheta.push_back(m_collection_geant4.m_geant4_pz.back()/sqrt(pow(m_collection_geant4.m_geant4_pz.back(),2)+pow(m_collection_geant4.m_geant4_px.back(),2)+pow(m_collection_geant4.m_geant4_py.back(),2)));
+      m_collection_geant4.m_geant4_dx.push_back(mcp->Px()/sqrt(pow(m_collection_geant4.m_geant4_pz.back(),2)+pow(m_collection_geant4.m_geant4_px.back(),2)+pow(m_collection_geant4.m_geant4_py.back(),2)));
+      m_collection_geant4.m_geant4_dy.push_back(mcp->Py()/sqrt(pow(m_collection_geant4.m_geant4_pz.back(),2)+pow(m_collection_geant4.m_geant4_px.back(),2)+pow(m_collection_geant4.m_geant4_py.back(),2)));
+      m_collection_geant4.m_geant4_dz.push_back(mcp->Pz()/sqrt(pow(m_collection_geant4.m_geant4_pz.back(),2)+pow(m_collection_geant4.m_geant4_px.back(),2)+pow(m_collection_geant4.m_geant4_py.back(),2)));
 
       if(j>2)break;
     }

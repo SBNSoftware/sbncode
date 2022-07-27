@@ -1050,24 +1050,45 @@ namespace single_photon
       extern std::vector<double> m_reco_track_pid_three_plane_proton_pid;
 
       //Geant4
-      extern std::vector<int> m_geant4_pdg;
-      extern std::vector<int>          m_geant4_trackid;
-      extern std::vector<int>          m_geant4_mother;
-      extern std::vector<int>         m_geant4_statuscode;
-      extern std::vector<double>          m_geant4_E;
-      extern std::vector<double>          m_geant4_mass;
-      extern std::vector<double>          m_geant4_px;
-      extern std::vector<double>          m_geant4_py;
-      extern std::vector<double>          m_geant4_pz;
-      extern std::vector<double>          m_geant4_vx;
-      extern std::vector<double>          m_geant4_vy;
-      extern std::vector<double>          m_geant4_vz;
-      extern std::vector<double>          m_geant4_dx;
-      extern std::vector<double>          m_geant4_dy;
-      extern std::vector<double>          m_geant4_dz;
-      extern std::vector<std::string>          m_geant4_process;
-      extern std::vector<std::string>          m_geant4_end_process;
-      extern std::vector<double>          m_geant4_costheta;
+  struct var_geant4{
+	  std::vector<int> m_geant4_pdg;
+	  std::vector<int>          m_geant4_trackid;
+	  std::vector<int>          m_geant4_mother;
+	  std::vector<int>         m_geant4_statuscode;
+	  std::vector<double>          m_geant4_E;
+	  std::vector<double>          m_geant4_mass;
+	  std::vector<double>          m_geant4_px;
+	  std::vector<double>          m_geant4_py;
+	  std::vector<double>          m_geant4_pz;
+	  std::vector<double>          m_geant4_vx;
+	  std::vector<double>          m_geant4_vy;
+	  std::vector<double>          m_geant4_vz;
+	  std::vector<double>          m_geant4_dx;
+	  std::vector<double>          m_geant4_dy;
+	  std::vector<double>          m_geant4_dz;
+	  std::vector<std::string>          m_geant4_process;
+	  std::vector<std::string>          m_geant4_end_process;
+
+	  std::vector<double>          m_geant4_costheta;
+  };
+//      extern std::vector<int> m_geant4_pdg;
+//      extern std::vector<int>          m_geant4_trackid;
+//      extern std::vector<int>          m_geant4_mother;
+//      extern std::vector<int>         m_geant4_statuscode;
+//      extern std::vector<double>          m_geant4_E;
+//      extern std::vector<double>          m_geant4_mass;
+//      extern std::vector<double>          m_geant4_px;
+//      extern std::vector<double>          m_geant4_py;
+//      extern std::vector<double>          m_geant4_pz;
+//      extern std::vector<double>          m_geant4_vx;
+//      extern std::vector<double>          m_geant4_vy;
+//      extern std::vector<double>          m_geant4_vz;
+//      extern std::vector<double>          m_geant4_dx;
+//      extern std::vector<double>          m_geant4_dy;
+//      extern std::vector<double>          m_geant4_dz;
+//      extern std::vector<std::string>          m_geant4_process;
+//      extern std::vector<std::string>          m_geant4_end_process;
+//      extern std::vector<double>          m_geant4_costheta;
 
       //matching variables
       extern int  m_reco_slice_num; //total number of slices in the event
