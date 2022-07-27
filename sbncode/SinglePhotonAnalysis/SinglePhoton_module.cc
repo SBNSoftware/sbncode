@@ -106,6 +106,7 @@ namespace single_photon
   class SinglePhoton : public art::EDFilter
   {
     public:
+		var_geant4 m_collection_geant4;
       /**
        *  @brief  Constructor
        *
@@ -786,7 +787,7 @@ namespace single_photon
         ClearMCTruths();
         ClearEventWeightBranches();
         fmcweight.clear();
-        ClearGeant4Branches();
+        ClearGeant4Branches(m_collection_geant4);
         ClearSlices();
 
     Output_EventMeta( evt );
@@ -1394,7 +1395,7 @@ namespace single_photon
             //Currently just saves first 2 particles. TODO have a input list of things to save. Dont want to save everything!!
 
       if(m_is_verbose) std::cout<<"SinglePhoton::AnalyzeGeant4s()\t||\t Begininning recob::Geant4 analysis suite"<<std::endl;;
-            AnalyzeGeant4(mcParticleVector);
+            AnalyzeGeant4(mcParticleVector, m_collection_geant4);
 
 
             //Get the MCParticles (move to do this ourselves later)
@@ -2011,7 +2012,7 @@ namespace single_photon
 
         CreateEventWeightBranches();
         CreateSliceBranches();
-        CreateGeant4Branches();
+        CreateGeant4Branches(m_collection_geant4);
 
 
         //------------------- List of Selected Events to run --------

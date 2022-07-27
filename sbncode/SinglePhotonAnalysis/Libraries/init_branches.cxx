@@ -1998,52 +1998,52 @@ namespace single_photon
   }
 
   //analyze_Geant4.h
-  void ClearGeant4Branches(){
+  void ClearGeant4Branches(var_geant4 m_collection_geant4){
 
-    m_geant4_pdg.clear();
-    m_geant4_trackid.clear();
-    m_geant4_mother.clear();
-    m_geant4_statuscode.clear();
-    m_geant4_E.clear();
-    m_geant4_mass.clear();
-    m_geant4_px.clear();
-    m_geant4_py.clear();
-    m_geant4_pz.clear();
-    m_geant4_dx.clear();
-    m_geant4_dy.clear();
-    m_geant4_dz.clear();
+    m_collection_geant4.m_geant4_pdg.clear();
+    m_collection_geant4.m_geant4_trackid.clear();
+    m_collection_geant4.m_geant4_mother.clear();
+    m_collection_geant4.m_geant4_statuscode.clear();
+    m_collection_geant4.m_geant4_E.clear();
+    m_collection_geant4.m_geant4_mass.clear();
+    m_collection_geant4.m_geant4_px.clear();
+    m_collection_geant4.m_geant4_py.clear();
+    m_collection_geant4.m_geant4_pz.clear();
+    m_collection_geant4.m_geant4_dx.clear();
+    m_collection_geant4.m_geant4_dy.clear();
+    m_collection_geant4.m_geant4_dz.clear();
 
-    m_geant4_vx.clear();
-    m_geant4_vy.clear();
-    m_geant4_vz.clear();
-    m_geant4_process.clear();
-    m_geant4_end_process.clear();
+    m_collection_geant4.m_geant4_vx.clear();
+    m_collection_geant4.m_geant4_vy.clear();
+    m_collection_geant4.m_geant4_vz.clear();
+    m_collection_geant4.m_geant4_process.clear();
+    m_collection_geant4.m_geant4_end_process.clear();
 
-    m_geant4_costheta.clear();
+    m_collection_geant4.m_geant4_costheta.clear();
   }
 
-  void CreateGeant4Branches(){
-    geant4_tree->Branch("geant4_pdg",&m_geant4_pdg);
-    geant4_tree->Branch("geant4_trackid",&m_geant4_trackid);
-    geant4_tree->Branch("geant4_mother",&m_geant4_mother);
-    geant4_tree->Branch("geant4_statuscode",&m_geant4_statuscode);
-    geant4_tree->Branch("geant4_E",&m_geant4_E);
-    geant4_tree->Branch("geant4_mass",&m_geant4_mass);
-    geant4_tree->Branch("geant4_px", &m_geant4_px);
-    geant4_tree->Branch("geant4_py", &m_geant4_py);
-    geant4_tree->Branch("geant4_pz", &m_geant4_pz);
+  void CreateGeant4Branches(var_geant4 m_collection_geant4){
+    geant4_tree->Branch("geant4_pdg",&m_collection_geant4.m_geant4_pdg);
+    geant4_tree->Branch("geant4_trackid",&m_collection_geant4.m_geant4_trackid);
+    geant4_tree->Branch("geant4_mother",&m_collection_geant4.m_geant4_mother);
+    geant4_tree->Branch("geant4_statuscode",&m_collection_geant4.m_geant4_statuscode);
+    geant4_tree->Branch("geant4_E",&m_collection_geant4.m_geant4_E);
+    geant4_tree->Branch("geant4_mass",&m_collection_geant4.m_geant4_mass);
+    geant4_tree->Branch("geant4_px", &m_collection_geant4.m_geant4_px);
+    geant4_tree->Branch("geant4_py", &m_collection_geant4.m_geant4_py);
+    geant4_tree->Branch("geant4_pz", &m_collection_geant4.m_geant4_pz);
 
-    geant4_tree->Branch("geant4_dx", &m_geant4_dx);
-    geant4_tree->Branch("geant4_dy", &m_geant4_dy);
-    geant4_tree->Branch("geant4_dz", &m_geant4_dz);
+    geant4_tree->Branch("geant4_dx", &m_collection_geant4.m_geant4_dx);
+    geant4_tree->Branch("geant4_dy", &m_collection_geant4.m_geant4_dy);
+    geant4_tree->Branch("geant4_dz", &m_collection_geant4.m_geant4_dz);
 
-    geant4_tree->Branch("geant4_vx", &m_geant4_vx);
-    geant4_tree->Branch("geant4_vy", &m_geant4_vy);
-    geant4_tree->Branch("geant4_vz", &m_geant4_vz);
-    geant4_tree->Branch("geant4_costheta",&m_geant4_costheta);
+    geant4_tree->Branch("geant4_vx", &m_collection_geant4.m_geant4_vx);
+    geant4_tree->Branch("geant4_vy", &m_collection_geant4.m_geant4_vy);
+    geant4_tree->Branch("geant4_vz", &m_collection_geant4.m_geant4_vz);
+    geant4_tree->Branch("geant4_costheta",&m_collection_geant4.m_geant4_costheta);
 
-    geant4_tree->Branch("geant4_end_process", &m_geant4_end_process);
-    geant4_tree->Branch("geant4_process", &m_geant4_process);
+    geant4_tree->Branch("geant4_end_process", &m_collection_geant4.m_geant4_end_process);
+    geant4_tree->Branch("geant4_process", &m_collection_geant4.m_geant4_process);
   }
 
   //analyze_Slice.h

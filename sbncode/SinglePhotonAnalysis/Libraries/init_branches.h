@@ -1015,25 +1015,7 @@ namespace single_photon
   std::vector<double> m_reco_track_pid_chi2_p_plane2;
   std::vector<double> m_reco_track_pid_three_plane_proton_pid;
 
-  std::vector<int> m_geant4_pdg;
-  std::vector<int>          m_geant4_trackid;
-  std::vector<int>          m_geant4_mother;
-  std::vector<int>         m_geant4_statuscode;
-  std::vector<double>          m_geant4_E;
-  std::vector<double>          m_geant4_mass;
-  std::vector<double>          m_geant4_px;
-  std::vector<double>          m_geant4_py;
-  std::vector<double>          m_geant4_pz;
-  std::vector<double>          m_geant4_vx;
-  std::vector<double>          m_geant4_vy;
-  std::vector<double>          m_geant4_vz;
-  std::vector<double>          m_geant4_dx;
-  std::vector<double>          m_geant4_dy;
-  std::vector<double>          m_geant4_dz;
-  std::vector<std::string>          m_geant4_process;
-  std::vector<std::string>          m_geant4_end_process;
 
-  std::vector<double>          m_geant4_costheta;
   //matching variables
   int  m_reco_slice_num; //total number of slices in the event
   std::vector<double> m_reco_slice_nuscore; //vector of the neutrino score for each slice in an event
@@ -1140,9 +1122,9 @@ namespace single_photon
 
   /**
    * @brief: fill event weight related variables */
-  void ClearGeant4Branches();  /* reset eventweight related variable */
-  void CreateGeant4Branches();  /* create branches for eventweight related variable in eventweight_tree */
-  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector);    
+  void ClearGeant4Branches(var_geant4 m_collection_geant4);  /* reset eventweight related variable */
+  void CreateGeant4Branches(var_geant4 m_collection_geant4);  /* create branches for eventweight related variable in eventweight_tree */
+  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector,var_geant4 m_collection_geant4);    
 
 
   void  ClearSlices(); /* reset and clear variables/vectors related to slice */
