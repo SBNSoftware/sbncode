@@ -1109,8 +1109,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     art::FindManyP<recob::Hit> fmSlcHits =
-      FindManyPStrict<recob::Hit>(sliceList, evt,
-          fParams.PFParticleLabel() + slice_tag_suff);
+      FindManyPStrict<recob::Hit>(sliceList, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
     std::vector<art::Ptr<recob::Hit>> slcHits;
     if (fmSlcHits.isValid()) {
       slcHits = fmSlcHits.at(0);
@@ -1133,9 +1133,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
                fParams.PFParticleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::SpacePoint> fmSpacePoint =
-      FindManyPStrict<recob::SpacePoint>(hits, evt, fParams.SpacePointLabel() + slice_tag_suff);
+      FindManyPStrict<recob::SpacePoint>(slcHits, evt, fParams.PFParticleLabel() + slice_tag_suff);
 
-    // make Ptr's to spacepoints for spacepoint -> other object associations
     std::vector<art::Ptr<recob::SpacePoint>> slcSpacePoints;
     if (fmSpacePoint.isValid()) {
       for (unsigned i = 0; i < fmSpacePoint.size(); i++) {
@@ -1150,8 +1149,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-    art::FindManyP<recob::PFParticle> fmSpacePointPFP =
-      FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.ClusterPFParticleLabel() + slice_tag_suff);
+    art::FindManyP<recob::PFParticle> fmSpacePointPFPs =
+      FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.PFParticleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
@@ -1362,34 +1361,35 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       recslc.reco.stub.push_back(rec.reco.stub.back());
       recslc.reco.nstub = recslc.reco.stub.size();
     }
-    for ( size_t iHit = 0; iHit < hits.size(); ++iHit ) {
-      const recob::Hit &thisHit = *hits[iHit];
-      std::vector<art::Ptr<recob::SpacePoint>> thisSpacePoint;
-      if (fmSpacePoint.isValid()) {
-        thisSpacePoint = fmSpacePoint.at(iHit);
-      }
+
+    for ( size_t iHit = 0; iHit < slcHits.size(); ++iHit ) {
+      const recob::Hit &thisHit = *slcHits[iHit];
+      
       std::vector<art::Ptr<recob::PFParticle>> thisParticle;
-      if (fmSpacePointPFP.isValid() && iHit < fmSpacePointPFP.size()) {
-        thisParticle = fmSpacePointPFP.at(iHit);
+      if (fmSpacePointPFPs.isValid() && iHit < fmSpacePointPFPs.size()) {
+        thisParticle = fmSpacePointPFPs.at(iHit);
       }
-        assert(thisSpacePoint.size() == 1);
-        assert(thisParticle.size() == 1);
+      std::vector<art::Ptr<recob::SpacePoint>> thisPoint;
+      if (fmSpacePoint.isValid() && iHit < fmSpacePoint.size()) {
+        thisPoint = fmSpacePoint.at(iHit); 
+      }
+      assert(thisParticle.size() == 1);
+      assert(thisPoint.size() == 1);
+      rec.reco.nhit++;
+      rec.reco.hit.push_back(SRHit());
 
-        rec.reco.nhit++;
-        rec.reco.hit.push_back(SRHit());
+      recob::SpacePoint point;
+      recob::PFParticle particle;
+      if (!thisPoint.empty()) { 
+        point = *thisPoint[0];
+      }
+      if (!thisParticle.empty()) { 
+        particle = *thisParticle[0];
+      }
 
-        recob::SpacePoint point;
-        recob::PFParticle particle;
-        if (!thisSpacePoint.empty()) { 
-          point = *thisSpacePoint[0];
-        }
-        if (!thisParticle.empty()) { 
-          particle = *thisParticle[0];
-        }
-
-        FillHitVars(thisHit, producer, point, particle, rec.reco.hit.back());
-        recslc.reco.hit.push_back(rec.reco.hit.back());
-        recslc.reco.nhit = recslc.reco.hit.size();
+      FillHitVars(thisHit, producer, point, particle, rec.reco.hit.back());
+      recslc.reco.hit.push_back(rec.reco.hit.back());
+      recslc.reco.nhit = recslc.reco.hit.size();
     }
 
     //#######################################################
@@ -1408,7 +1408,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-
+      std::vector<art::Ptr<recob::Hit>> thisHit;
       if (!thisTrack.empty())  { // it's a track!
         assert(thisTrack.size() == 1);
         assert(thisShower.size() == 0);
