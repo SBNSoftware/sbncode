@@ -139,22 +139,10 @@ namespace caf
       "gaushit"
     };
 
-    Atom<string> RecobHitLabel {
-      Name("RecobHitLabel"),
-      Comment("Base label of the TPC Hit producer."),
-      "pandora"
-    };
-
-    Atom<string> SpacePointLabel {
-      Name("SpacePointLabel"),
-      Comment("Base label of the SpacePoint producer."),
-      "cluster3D"
-    };
-
     Atom<string> ClusterPFParticleLabel {
       Name("ClusterPFParticleLabel"),
       Comment("Base label of the SpacePoint producer."),
-      "cluster3D"
+      "pandora"
     };
 
     Atom<string> RecoTrackLabel {
