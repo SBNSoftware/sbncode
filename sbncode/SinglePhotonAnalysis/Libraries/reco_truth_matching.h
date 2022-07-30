@@ -10,6 +10,7 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 
+#include "sbncode/SinglePhotonAnalysis/Libraries/variables.h"
 #include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_PandoraPFParticles.h"
 
 
@@ -24,7 +25,8 @@ namespace single_photon
       std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
       std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,  
       std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
-      std::vector<double> & vfrac
+      std::vector<double> & vfrac,
+		var_all& vars
       );
 
   //recoMCmatching but specifically for recob::showers
@@ -34,7 +36,9 @@ namespace single_photon
       std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& showerToMCParticleMap,
       art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
       std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-      std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap);
+      std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
+		var_all& vars
+	  );
 
 
 
@@ -50,7 +54,9 @@ namespace single_photon
         std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>>& objectToPFParticleMap,
         std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
         art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
-        std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector);
+        std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
+		var_all& vars
+		);
 
 
   int    photoNuclearTesting(std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector);

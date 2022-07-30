@@ -11,26 +11,29 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Shower.h"
 
+#include "sbncode/SinglePhotonAnalysis/Libraries/variables.h"
 #include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_PandoraPFParticles.h"
 
 namespace single_photon
 {
 
-//analyze_Geant4.h
-  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector);
+  //analyze_Geant4.h
+  void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector, var_all& vars );
 
-//analyze_EventWeight.h
-  void AnalyzeEventWeight(art::Event const & e);
+  //analyze_EventWeight.h
+  void AnalyzeEventWeight(art::Event const & e,var_all& vars);
 
-//analyze_MCTruth.h
+  //analyze_MCTruth.h
   void AnalyzeRecoMCSlices(std::string signal_def, 
       std::vector<PandoraPFParticle> all_PPFPs,
       std::map<int, art::Ptr<simb::MCParticle>> & MCParticleToTrackIDMap,
       std::map<art::Ptr<recob::Shower>, art::Ptr<simb::MCParticle> > & showerToMCParticleMap,
-      std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap);
+      std::map<art::Ptr<recob::Track>, art::Ptr<simb::MCParticle> > &trackToMCParticleMap,
+      var_all& vars,
+      para_all& paras);
 
   //This only look at MCTruch info. Reco matching create sim_shower/track for pairing up MCTruth to Reco objects;
-  void AnalyzeMCTruths(std::vector<art::Ptr<simb::MCTruth>> & mcTruthVector , std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector);
+  void AnalyzeMCTruths(std::vector<art::Ptr<simb::MCTruth>> & mcTruthVector , std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,var_all& vars, para_all& paras);
 
 
 }

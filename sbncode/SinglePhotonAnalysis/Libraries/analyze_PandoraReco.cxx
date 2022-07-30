@@ -26,10 +26,12 @@ namespace single_photon
       const std::vector<art::Ptr<recob::Track>>& tracks,
       std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::SpacePoint>>> & pfParticleToSpacePointsMap, 
       std::map<int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap,
-      std::map<int, double> &sliceIdToNuScoreMap){
+      std::map<int, double> &sliceIdToNuScoreMap,
+      var_all& vars,
+	  para_all& paras){
 
 
-    if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
+    if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
 
     int i_trk=0;
 
@@ -55,61 +57,61 @@ namespace single_photon
       const std::vector<art::Ptr<recob::Hit>> trk_hits  = ppfp->pPFPHits;//pfParticleToHitsMap[pfp];
 
       int m_trkid = track->ID();
-      double m_length = track->Length();
-      auto m_trk_dir = track->Direction(); // type of m_trk_dir: a std::pair of two 3D vector
+      double tem_length = track->Length();
+      auto tem_trk_dir = track->Direction(); // type of vars.m_trk_dir: a std::pair of two 3D vector
       //first: direction of first point, second: direction of the end of track
 
-      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<m_length<<""<<std::endl;;
+      if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t On Track: "<<i_trk<<" with TrackID: "<<m_trkid<<" and length: "<<tem_length<<""<<std::endl;;
 
-      m_reco_track_calo_energy_plane0[i_trk] = CalcEShowerPlane(trk_hits, 0);
-      m_reco_track_calo_energy_plane1[i_trk] = CalcEShowerPlane(trk_hits, 1);
-      m_reco_track_calo_energy_plane2[i_trk] = CalcEShowerPlane(trk_hits, 2);
-      m_reco_track_calo_energy_max[i_trk] = std::max( m_reco_track_calo_energy_plane2[i_trk],  std::max(m_reco_track_calo_energy_plane0[i_trk],m_reco_track_calo_energy_plane1[i_trk]));
+      vars.m_reco_track_calo_energy_plane0[i_trk] = CalcEShowerPlane(trk_hits, 0, paras);
+      vars.m_reco_track_calo_energy_plane1[i_trk] = CalcEShowerPlane(trk_hits, 1, paras);
+      vars.m_reco_track_calo_energy_plane2[i_trk] = CalcEShowerPlane(trk_hits, 2, paras);
+      vars.m_reco_track_calo_energy_max[i_trk] = std::max( vars.m_reco_track_calo_energy_plane2[i_trk],  std::max(vars.m_reco_track_calo_energy_plane0[i_trk],vars.m_reco_track_calo_energy_plane1[i_trk]));
 
-      m_reco_track_num_spacepoints[i_trk] = (int)trk_spacepoints.size();
-
-
-      m_reco_track_startx[i_trk]= track->Start().X();   
-      m_reco_track_starty[i_trk]= track->Start().Y();   
-      m_reco_track_startz[i_trk]= track->Start().Z();   
-
-      m_reco_track_length[i_trk] =m_length;
-      m_reco_track_dirx[i_trk] = m_trk_dir.first.X();   
-      m_reco_track_diry[i_trk] = m_trk_dir.first.Y();   
-      m_reco_track_dirz[i_trk] = m_trk_dir.first.Z();   
-
-      m_reco_track_endx[i_trk] = track->End().X();   
-      m_reco_track_endy[i_trk]= track->End().Y();   
-      m_reco_track_endz[i_trk]= track->End().Z();   
-
-      std::vector<double> hend = {m_reco_track_endx[i_trk],m_reco_track_endy[i_trk],m_reco_track_endz[i_trk]};
-      std::vector<double> hstart = {m_reco_track_startx[i_trk],m_reco_track_starty[i_trk],m_reco_track_startz[i_trk]};
-
-      m_reco_track_end_dist_to_active_TPC[i_trk] = distToTPCActive(hend);
-      m_reco_track_start_dist_to_active_TPC[i_trk] = distToTPCActive(hstart);
-
-      m_reco_track_end_dist_to_CPA[i_trk] = distToCPA(hend);
-      m_reco_track_start_dist_to_CPA[i_trk] = distToCPA(hstart);
-
-      m_reco_track_end_in_SCB[i_trk] = distToSCB(m_reco_track_end_dist_to_SCB[i_trk],hend);
-      m_reco_track_start_in_SCB[i_trk] = distToSCB(m_reco_track_start_dist_to_SCB[i_trk],hstart);
+      vars.m_reco_track_num_spacepoints[i_trk] = (int)trk_spacepoints.size();
 
 
-      m_reco_track_theta_yz[i_trk] = atan2(m_reco_track_diry[i_trk],m_reco_track_dirz[i_trk]);
-      m_reco_track_phi_yx[i_trk] = atan2(m_reco_track_diry[i_trk],m_reco_track_dirx[i_trk]);
+      vars.m_reco_track_startx[i_trk]= track->Start().X();
+      vars.m_reco_track_starty[i_trk]= track->Start().Y();
+      vars.m_reco_track_startz[i_trk]= track->Start().Z();
 
-      std::vector<double> tmp_trk_start = {m_reco_track_startx[i_trk],m_reco_track_starty[i_trk],m_reco_track_startz[i_trk]};
-      std::vector<double> tmp_trk_end = {m_reco_track_endx[i_trk],m_reco_track_endy[i_trk],m_reco_track_endz[i_trk]};
+      vars.m_reco_track_length[i_trk] =tem_length;
+      vars.m_reco_track_dirx[i_trk] = tem_trk_dir.first.X();
+      vars.m_reco_track_diry[i_trk] = tem_trk_dir.first.Y();
+      vars.m_reco_track_dirz[i_trk] = tem_trk_dir.first.Z();
+
+      vars.m_reco_track_endx[i_trk] = track->End().X();
+      vars.m_reco_track_endy[i_trk]= track->End().Y();
+      vars.m_reco_track_endz[i_trk]= track->End().Z();
+
+      std::vector<double> hend = {vars.m_reco_track_endx[i_trk],vars.m_reco_track_endy[i_trk],vars.m_reco_track_endz[i_trk]};
+      std::vector<double> hstart = {vars.m_reco_track_startx[i_trk],vars.m_reco_track_starty[i_trk],vars.m_reco_track_startz[i_trk]};
+
+      vars.m_reco_track_end_dist_to_active_TPC[i_trk] =   distToTPCActive(hend, paras);
+      vars.m_reco_track_start_dist_to_active_TPC[i_trk] = distToTPCActive(hstart, paras);
+
+      vars.m_reco_track_end_dist_to_CPA[i_trk] = distToCPA(hend, paras);
+      vars.m_reco_track_start_dist_to_CPA[i_trk] = distToCPA(hstart, paras);
+
+      vars.m_reco_track_end_in_SCB[i_trk] = distToSCB(vars.m_reco_track_end_dist_to_SCB[i_trk],hend, paras);
+      vars.m_reco_track_start_in_SCB[i_trk] = distToSCB(vars.m_reco_track_start_dist_to_SCB[i_trk],hstart, paras);
+
+
+      vars.m_reco_track_theta_yz[i_trk] = atan2(vars.m_reco_track_diry[i_trk],vars.m_reco_track_dirz[i_trk]);
+      vars.m_reco_track_phi_yx[i_trk] = atan2(vars.m_reco_track_diry[i_trk],vars.m_reco_track_dirx[i_trk]);
+
+      std::vector<double> tmp_trk_start = {vars.m_reco_track_startx[i_trk],vars.m_reco_track_starty[i_trk],vars.m_reco_track_startz[i_trk]};
+      std::vector<double> tmp_trk_end = {vars.m_reco_track_endx[i_trk],vars.m_reco_track_endy[i_trk],vars.m_reco_track_endz[i_trk]};
       double max_dist_from_line = -9999999;
 
-      m_reco_track_spacepoint_chi[i_trk] = 0.0;
+      vars.m_reco_track_spacepoint_chi[i_trk] = 0.0;
       //Principal componant analysis of SPACEPOINTS and not trajectory points. Will add a few things here in future.
 
-      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Beginining PCA analysis of track"<<std::endl;;
+      if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Beginining PCA analysis of track"<<std::endl;;
 
       TPrincipal* principal;
       principal = new TPrincipal(3,"ND");
-      for(int x = 0; x < m_reco_track_num_spacepoints[i_trk]; x++){
+      for(int x = 0; x < vars.m_reco_track_num_spacepoints[i_trk]; x++){
         // get the position of spacepoint in xyz
         std::vector<double> tmp_spacepoints = {trk_spacepoints[x]->XYZ()[0],trk_spacepoints[x]->XYZ()[1] , trk_spacepoints[x]->XYZ()[2]};
         principal->AddRow(&tmp_spacepoints[0]);
@@ -117,76 +119,76 @@ namespace single_photon
         // distance between track direction and spacepoint
         double dist = dist_line_point(tmp_trk_start,tmp_trk_end,tmp_spacepoints);
         if(dist> max_dist_from_line) max_dist_from_line = dist;
-        m_reco_track_spacepoint_chi[i_trk] += dist*dist;
+        vars.m_reco_track_spacepoint_chi[i_trk] += dist*dist;
       }
-      m_reco_track_spacepoint_max_dist[i_trk]= max_dist_from_line;
+      vars.m_reco_track_spacepoint_max_dist[i_trk]= max_dist_from_line;
 
       principal->MakePrincipals();
       TVectorD * eigen = (TVectorD*) principal->GetEigenValues();
 
-      m_reco_track_spacepoint_principal0[i_trk]=(*eigen)(0);
-      m_reco_track_spacepoint_principal1[i_trk]=(*eigen)(1);
-      m_reco_track_spacepoint_principal2[i_trk]=(*eigen)(2);
+      vars.m_reco_track_spacepoint_principal0[i_trk]=(*eigen)(0);
+      vars.m_reco_track_spacepoint_principal1[i_trk]=(*eigen)(1);
+      vars.m_reco_track_spacepoint_principal2[i_trk]=(*eigen)(2);
 
       delete principal;
 
-      if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Completed PCA analysis of track. Primary componant: "<<m_reco_track_spacepoint_principal0.back()<<""<<std::endl;;
+      if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Completed PCA analysis of track. Primary componant: "<<vars.m_reco_track_spacepoint_principal0.back()<<""<<std::endl;;
 
       //range based energy calculation assuming
 
-      if(m_run_pi0_filter){
+      if(paras.s_run_pi0_filter){
         // assume this track is a proton track, get its energy
-        m_reco_track_proton_kinetic_energy[i_trk] = -9999;
+        vars.m_reco_track_proton_kinetic_energy[i_trk] = -9999;
       }else{
         //WARNING, extra input is needed for the proton track energy;
-        //        m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(m_length)/1000.0; 
+        //        vars.m_reco_track_proton_kinetic_energy[i_trk] = proton_length2energy_tgraph.Eval(tem_length)/1000.0; 
       }
 
-      if(m_length == 0.0) m_reco_track_proton_kinetic_energy[i_trk]=0.0;
+      if(tem_length == 0.0) vars.m_reco_track_proton_kinetic_energy[i_trk]=0.0;
 
       // Dead Wire Approximity
-      //      m_reco_track_end_to_nearest_dead_wire_plane0[i_trk] = distanceToNearestDeadWire(0, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
-      //      m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
-      //      m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, m_reco_track_endy[i_trk], m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      vars.m_reco_track_end_to_nearest_dead_wire_plane0[i_trk] = distanceToNearestDeadWire(0, vars.m_reco_track_endy[i_trk], vars.m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      vars.m_reco_track_end_to_nearest_dead_wire_plane1[i_trk] = distanceToNearestDeadWire(1, vars.m_reco_track_endy[i_trk], vars.m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
+      //      vars.m_reco_track_end_to_nearest_dead_wire_plane2[i_trk] = distanceToNearestDeadWire(2, vars.m_reco_track_endy[i_trk], vars.m_reco_track_endz[i_trk],geom,bad_channel_list_fixed_mcc9);
 
-      m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_reco_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
       // Guanqun: how do you make sure the sliceId is positive, not -1, as for cosmic tracks?
       // sliceIdToNuScoreMap seems to only have sliceID:nuScore pairs for these with actual nuScores.
-      m_reco_track_nuscore[i_trk] = sliceIdToNuScoreMap[ m_reco_track_sliceId[i_trk]] ;
-      m_reco_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
+      vars.m_reco_track_nuscore[i_trk] = sliceIdToNuScoreMap[ vars.m_reco_track_sliceId[i_trk]] ;
+      vars.m_reco_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
 
       //std::cout<<"checking track nuslice"<<std::endl;
       // std::cout<<"is nuslice for track with pfp "<<pfp->Self()<<" is: "<<PFPToNuSliceMap[pfp]<<std::endl;
-      m_reco_track_is_nuslice[i_trk] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
+      vars.m_reco_track_is_nuslice[i_trk] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
-      m_reco_track_num_daughters[i_trk] = pfp->NumDaughters();
-      if(m_reco_track_num_daughters[i_trk]>0){
+      vars.m_reco_track_num_daughters[i_trk] = pfp->NumDaughters();
+      if(vars.m_reco_track_num_daughters[i_trk]>0){
         //currently just look at 1 daughter
-        //                m_reco_track_daughter_trackscore[i_trk] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+        //                vars.m_reco_track_daughter_trackscore[i_trk] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
         int pfp_size = all_PPFPs.size();
         for(int index = 0; index < pfp_size; index++){
           if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-          m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].get_TrackScore();
+          vars.m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].get_TrackScore();
           break;
         }
 
       }
 
-      m_reco_track_trackscore[i_trk] = ppfp->get_TrackScore();
-      m_reco_track_pfparticle_pdg[i_trk] = ppfp->get_PdgCode();
+      vars.m_reco_track_trackscore[i_trk] = ppfp->get_TrackScore();
+      vars.m_reco_track_pfparticle_pdg[i_trk] = ppfp->get_PdgCode();
 
-      //  m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
+      //  vars.m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
       //            if ( PFPToTrackScoreMap.find(pfp) != PFPToTrackScoreMap.end() ) {
-      //                m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
-      //                m_reco_track_pfparticle_pdg[i_trk] = pfp->PdgCode();
+      //                vars.m_reco_track_trackscore[i_trk] = PFPToTrackScoreMap[pfp];
+      //                vars.m_reco_track_pfparticle_pdg[i_trk] = pfp->PdgCode();
       //            } else{
-      //                m_reco_track_trackscore[i_trk] = -999; 
-      //                m_reco_track_pfparticle_pdg[i_trk] = -999; 
+      //                vars.m_reco_track_trackscore[i_trk] = -999; 
+      //                vars.m_reco_track_pfparticle_pdg[i_trk] = -999; 
       //            }
 
       //A loop over the trajectory points
       size_t const traj_size = track->CountValidPoints();
-      m_reco_track_num_trajpoints[i_trk] = (int)traj_size;
+      vars.m_reco_track_num_trajpoints[i_trk] = (int)traj_size;
 
       for(unsigned int  p = 0; p < traj_size; ++p) {
         //recob::Track::TrajectoryPoint_t const & trajp = track->TrajectoryPoint(j);
@@ -201,18 +203,18 @@ namespace single_photon
     } // end of recob::Track loop
 
     //Lets sort and order the showers
-    m_reco_track_ordered_energy_index = sort_indexes(m_reco_track_proton_kinetic_energy);
-    m_reco_track_ordered_displacement_index = sort_indexes(m_reco_track_length);
+    vars.m_reco_track_ordered_energy_index = sort_indexes(vars.m_reco_track_proton_kinetic_energy);
+    vars.m_reco_track_ordered_displacement_index = sort_indexes(vars.m_reco_track_length);
 
 
-    if(m_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Finished."<<std::endl;;
+    if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Finished."<<std::endl;;
   }
 
 
 
-  void AnalyzeTrackCalo(const std::vector<art::Ptr<recob::Track>> &tracks, std::vector<PandoraPFParticle> all_PPFPs){
+  void AnalyzeTrackCalo(const std::vector<art::Ptr<recob::Track>> &tracks, std::vector<PandoraPFParticle> all_PPFPs,var_all& vars, para_all& paras){
 
-    if(m_is_verbose) std::cout<<"CollectCalo(recob::Track)\t||\t Starting calo module for recob::Track"<<std::endl;;
+    if(g_is_verbose) std::cout<<"CollectCalo(recob::Track)\t||\t Starting calo module for recob::Track"<<std::endl;;
 
     for(size_t i_trk = 0; i_trk<tracks.size(); ++i_trk){
       const art::Ptr<recob::Track>      track = tracks[i_trk];
@@ -253,39 +255,39 @@ namespace single_photon
       std::vector<double> res_range_good_p2;
       std::vector<double> dEdx_good_p2;
 
-      m_reco_track_num_calo_hits_p0[i_trk] = (int)calo_length_p0;
-      m_reco_track_num_calo_hits_p1[i_trk] = (int)calo_length_p1;
-      m_reco_track_num_calo_hits_p2[i_trk] = (int)calo_length_p2;
+      vars.m_reco_track_num_calo_hits_p0[i_trk] = (int)calo_length_p0;
+      vars.m_reco_track_num_calo_hits_p1[i_trk] = (int)calo_length_p1;
+      vars.m_reco_track_num_calo_hits_p2[i_trk] = (int)calo_length_p2;
 
-      m_reco_track_best_calo_plane[i_trk]=-1;
+      vars.m_reco_track_best_calo_plane[i_trk]=-1;
 
       // guanqun: vectors have been clear and resized, so probably not need to reset their values?
-      m_reco_track_good_calo_p0[i_trk] =  0;
-      m_reco_track_mean_dEdx_p0[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_start_half_p0[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_end_half_p0[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_p0[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk] =  0.0;
-      m_reco_track_trunc_PIDA_p0[i_trk] =  0.0;
+      vars.m_reco_track_good_calo_p0[i_trk] =  0;
+      vars.m_reco_track_mean_dEdx_p0[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_start_half_p0[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_end_half_p0[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_p0[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk] =  0.0;
+      vars.m_reco_track_trunc_PIDA_p0[i_trk] =  0.0;
 
-      m_reco_track_good_calo_p1[i_trk] =  0;
-      m_reco_track_mean_dEdx_p1[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_start_half_p1[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_end_half_p1[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_p1[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk] =  0.0;
-      m_reco_track_trunc_PIDA_p1[i_trk] =  0.0;
+      vars.m_reco_track_good_calo_p1[i_trk] =  0;
+      vars.m_reco_track_mean_dEdx_p1[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_start_half_p1[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_end_half_p1[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_p1[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk] =  0.0;
+      vars.m_reco_track_trunc_PIDA_p1[i_trk] =  0.0;
 
-      m_reco_track_good_calo_p2[i_trk] =  0;
-      m_reco_track_mean_dEdx_p2[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_start_half_p2[i_trk] =  0.0;
-      m_reco_track_mean_dEdx_end_half_p2[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_p2[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk] =  0.0;
-      m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk] =  0.0;
-      m_reco_track_trunc_PIDA_p2[i_trk] =  0.0;
+      vars.m_reco_track_good_calo_p2[i_trk] =  0;
+      vars.m_reco_track_mean_dEdx_p2[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_start_half_p2[i_trk] =  0.0;
+      vars.m_reco_track_mean_dEdx_end_half_p2[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_p2[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk] =  0.0;
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk] =  0.0;
+      vars.m_reco_track_trunc_PIDA_p2[i_trk] =  0.0;
 
 
 
@@ -295,17 +297,17 @@ namespace single_photon
         double res_range =    calo_p0->ResidualRange()[k];  //ResidualRange() returns range from end of track
         double dEdx =         calo_p0->dEdx()[k];
 
-        m_reco_track_mean_dEdx_p0[i_trk] += dEdx;
+        vars.m_reco_track_mean_dEdx_p0[i_trk] += dEdx;
         if(k <= calo_length_p0/2){ 
-          m_reco_track_mean_dEdx_start_half_p0[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_start_half_p0[i_trk]+=dEdx;
         }else{
-          m_reco_track_mean_dEdx_end_half_p0[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_end_half_p0[i_trk]+=dEdx;
         }
 
-        bool is_sensible = dEdx < m_track_calo_max_dEdx; 
+        bool is_sensible = dEdx < paras.s_track_calo_max_dEdx; 
         bool is_nan =dEdx != dEdx; // != has higher precedence than = 
         bool is_inf = std::isinf(dEdx);
-        bool is_nonzero = dEdx> m_track_calo_min_dEdx;
+        bool is_nonzero = dEdx> paras.s_track_calo_min_dEdx;
 
         if(is_sensible && !is_nan && !is_inf && is_nonzero && k != 0 && k != calo_length_p0-1){
           res_range_good_p0.push_back(res_range);
@@ -315,12 +317,12 @@ namespace single_photon
         //    std::cout<<"\t"<<k<<" "<<calo->dEdx()[k]<<" "<<calo->ResidualRange()[k]<<" "<< ""<<std::endl;;
       }// End of first loop.
 
-      m_reco_track_good_calo_p0[i_trk] = 0;
-      if(res_range_good_p0.size() >= m_track_calo_min_dEdx_hits){
-        m_reco_track_good_calo_p0[i_trk] = res_range_good_p0.size();
+      vars.m_reco_track_good_calo_p0[i_trk] = 0;
+      if(res_range_good_p0.size() >= paras.s_track_calo_min_dEdx_hits){
+        vars.m_reco_track_good_calo_p0[i_trk] = res_range_good_p0.size();
 
-        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimum_dx in the res_range
-        double tenth_track = std::max(res_range_good_p0.front(), res_range_good_p0.back())/m_track_calo_trunc_fraction;
+        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimuvars.m_dx in the res_range
+        double tenth_track = std::max(res_range_good_p0.front(), res_range_good_p0.back())/paras.s_track_calo_trunc_fraction;
         double min_dx = 999;
         for(int j = res_range_good_p0.size()-1; j>1; j--){
           double dx = fabs(res_range_good_p0[j]-res_range_good_p0[j-1]);
@@ -336,11 +338,11 @@ namespace single_photon
         //Calculate the mean truncated mean dEdx
         for(size_t k=0; k< trunc_dEdx_p0.size(); k++){
           double dEdx = trunc_dEdx_p0[k];
-          m_reco_track_mean_trunc_dEdx_p0[i_trk] += dEdx;
+          vars.m_reco_track_mean_trunc_dEdx_p0[i_trk] += dEdx;
           if(k <= trunc_dEdx_p0.size()/2){ 
-            m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk]+=dEdx;
           }else{
-            m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk]+=dEdx;
           }
 
 
@@ -353,27 +355,27 @@ namespace single_photon
             //}
             std::cout<<"Using Radius: "<<rad<<std::endl;
             //exit(EXIT_FAILURE);
-            m_reco_track_good_calo_p0[i_trk] = 0; 
+            vars.m_reco_track_good_calo_p0[i_trk] = 0; 
           }
 
           // dEdx/pow(residual_range, -0.42) is the constant A in residual range formula
           pida_sum_trunc += trunc_dEdx_p0[k]/(pow(res_range_good_p0[k],-0.42));
         }
-        m_reco_track_trunc_PIDA_p0[i_trk] = pida_sum_trunc;           
-        m_reco_track_resrange_p0[i_trk] = res_range_good_p0;
-        m_reco_track_trunc_dEdx_p0[i_trk] = trunc_dEdx_p0;
-        m_reco_track_dEdx_p0[i_trk] = dEdx_good_p0;
+        vars.m_reco_track_trunc_PIDA_p0[i_trk] = pida_sum_trunc;           
+        vars.m_reco_track_resrange_p0[i_trk] = res_range_good_p0;
+        vars.m_reco_track_trunc_dEdx_p0[i_trk] = trunc_dEdx_p0;
+        vars.m_reco_track_dEdx_p0[i_trk] = dEdx_good_p0;
 
         //std::cout<<"the residual range at the start is "<<res_range_good[0]<<std::endl;
       }
 
-      m_reco_track_mean_dEdx_p0[i_trk]            *=1.0/((double)calo_length_p0);
-      m_reco_track_mean_dEdx_start_half_p0[i_trk] *=2.0/((double)calo_length_p0);
-      m_reco_track_mean_dEdx_end_half_p0[i_trk]   *=2.0/((double)calo_length_p0);
-      m_reco_track_mean_trunc_dEdx_p0[i_trk]            *=1.0/((double)trunc_dEdx_p0.size());
-      m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk] *=2.0/((double)trunc_dEdx_p0.size());
-      m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk]   *=2.0/((double)trunc_dEdx_p0.size());
-      m_reco_track_trunc_PIDA_p0[i_trk]  *=1.0/((double)trunc_dEdx_p0.size());
+      vars.m_reco_track_mean_dEdx_p0[i_trk]            *=1.0/((double)calo_length_p0);
+      vars.m_reco_track_mean_dEdx_start_half_p0[i_trk] *=2.0/((double)calo_length_p0);
+      vars.m_reco_track_mean_dEdx_end_half_p0[i_trk]   *=2.0/((double)calo_length_p0);
+      vars.m_reco_track_mean_trunc_dEdx_p0[i_trk]            *=1.0/((double)trunc_dEdx_p0.size());
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk] *=2.0/((double)trunc_dEdx_p0.size());
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk]   *=2.0/((double)trunc_dEdx_p0.size());
+      vars.m_reco_track_trunc_PIDA_p0[i_trk]  *=1.0/((double)trunc_dEdx_p0.size());
 
       //First off look over ALL points
       //--------------------------------- plane 1 ----------- Induction
@@ -381,17 +383,17 @@ namespace single_photon
         double res_range =    calo_p1->ResidualRange()[k];
         double dEdx =         calo_p1->dEdx()[k];
 
-        m_reco_track_mean_dEdx_p1[i_trk] += dEdx;
+        vars.m_reco_track_mean_dEdx_p1[i_trk] += dEdx;
         if(k <= calo_length_p1/2){ 
-          m_reco_track_mean_dEdx_start_half_p1[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_start_half_p1[i_trk]+=dEdx;
         }else{
-          m_reco_track_mean_dEdx_end_half_p1[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_end_half_p1[i_trk]+=dEdx;
         }
 
-        bool is_sensible = dEdx < m_track_calo_max_dEdx; 
+        bool is_sensible = dEdx < paras.s_track_calo_max_dEdx; 
         bool is_nan =dEdx != dEdx; 
         bool is_inf = std::isinf(dEdx);
-        bool is_nonzero = dEdx> m_track_calo_min_dEdx;
+        bool is_nonzero = dEdx> paras.s_track_calo_min_dEdx;
 
         if(is_sensible && !is_nan && !is_inf && is_nonzero && k != 0 && k != calo_length_p1-1){
           res_range_good_p1.push_back(res_range);
@@ -401,12 +403,12 @@ namespace single_photon
         //    std::cout<<"\t"<<k<<" "<<calo->dEdx()[k]<<" "<<calo->ResidualRange()[k]<<" "<< ""<<std::endl;;
       }// End of first loop.
 
-      m_reco_track_good_calo_p1[i_trk] = 0;
-      if(res_range_good_p1.size() >= m_track_calo_min_dEdx_hits){
-        m_reco_track_good_calo_p1[i_trk] = res_range_good_p1.size();
+      vars.m_reco_track_good_calo_p1[i_trk] = 0;
+      if(res_range_good_p1.size() >= paras.s_track_calo_min_dEdx_hits){
+        vars.m_reco_track_good_calo_p1[i_trk] = res_range_good_p1.size();
 
-        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimum_dx in the res_range
-        double tenth_track = std::max(res_range_good_p1.front(), res_range_good_p1.back())/m_track_calo_trunc_fraction;
+        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimuvars.m_dx in the res_range
+        double tenth_track = std::max(res_range_good_p1.front(), res_range_good_p1.back())/paras.s_track_calo_trunc_fraction;
         double min_dx = 999;
         for(int j = res_range_good_p1.size()-1; j>1; j--){
           double dx = fabs(res_range_good_p1[j]-res_range_good_p1[j-1]);
@@ -422,11 +424,11 @@ namespace single_photon
         //Calculate the mean truncated mean dEdx
         for(size_t k=0; k< trunc_dEdx_p1.size(); k++){
           double dEdx = trunc_dEdx_p1[k];
-          m_reco_track_mean_trunc_dEdx_p1[i_trk] += dEdx;
+          vars.m_reco_track_mean_trunc_dEdx_p1[i_trk] += dEdx;
           if(k <= trunc_dEdx_p1.size()/2){ 
-            m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk]+=dEdx;
           }else{
-            m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk]+=dEdx;
           }
 
 
@@ -439,26 +441,26 @@ namespace single_photon
             //}
             std::cout<<"Using Radius: "<<rad<<std::endl;
             //exit(EXIT_FAILURE);
-            m_reco_track_good_calo_p1[i_trk] = 0; 
+            vars.m_reco_track_good_calo_p1[i_trk] = 0; 
           }
 
           pida_sum_trunc += trunc_dEdx_p1[k]/(pow(res_range_good_p1[k],-0.42));
         }
-        m_reco_track_trunc_PIDA_p1[i_trk] = pida_sum_trunc;           
-        m_reco_track_resrange_p1[i_trk] = res_range_good_p1;
-        m_reco_track_trunc_dEdx_p1[i_trk] = trunc_dEdx_p1;
-        m_reco_track_dEdx_p1[i_trk] = dEdx_good_p1;
+        vars.m_reco_track_trunc_PIDA_p1[i_trk] = pida_sum_trunc;           
+        vars.m_reco_track_resrange_p1[i_trk] = res_range_good_p1;
+        vars.m_reco_track_trunc_dEdx_p1[i_trk] = trunc_dEdx_p1;
+        vars.m_reco_track_dEdx_p1[i_trk] = dEdx_good_p1;
 
         //std::cout<<"the residual range at the start is "<<res_range_good[0]<<std::endl;
       }
 
-      m_reco_track_mean_dEdx_p1[i_trk]            *=1.0/((double)calo_length_p1);
-      m_reco_track_mean_dEdx_start_half_p1[i_trk] *=2.0/((double)calo_length_p1);
-      m_reco_track_mean_dEdx_end_half_p1[i_trk]   *=2.0/((double)calo_length_p1);
-      m_reco_track_mean_trunc_dEdx_p1[i_trk]            *=1.0/((double)trunc_dEdx_p1.size());
-      m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk] *=2.0/((double)trunc_dEdx_p1.size());
-      m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk]   *=2.0/((double)trunc_dEdx_p1.size());
-      m_reco_track_trunc_PIDA_p1[i_trk]  *=1.0/((double)trunc_dEdx_p1.size());
+      vars.m_reco_track_mean_dEdx_p1[i_trk]            *=1.0/((double)calo_length_p1);
+      vars.m_reco_track_mean_dEdx_start_half_p1[i_trk] *=2.0/((double)calo_length_p1);
+      vars.m_reco_track_mean_dEdx_end_half_p1[i_trk]   *=2.0/((double)calo_length_p1);
+      vars.m_reco_track_mean_trunc_dEdx_p1[i_trk]            *=1.0/((double)trunc_dEdx_p1.size());
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk] *=2.0/((double)trunc_dEdx_p1.size());
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk]   *=2.0/((double)trunc_dEdx_p1.size());
+      vars.m_reco_track_trunc_PIDA_p1[i_trk]  *=1.0/((double)trunc_dEdx_p1.size());
 
       //First off look over ALL points
       //--------------------------------- plane 2 ----------- Collection
@@ -466,17 +468,17 @@ namespace single_photon
         double res_range =    calo_p2->ResidualRange()[k];
         double dEdx =         calo_p2->dEdx()[k];
 
-        m_reco_track_mean_dEdx_p2[i_trk] += dEdx;
+        vars.m_reco_track_mean_dEdx_p2[i_trk] += dEdx;
         if(k <= calo_length_p2/2){ 
-          m_reco_track_mean_dEdx_start_half_p2[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_start_half_p2[i_trk]+=dEdx;
         }else{
-          m_reco_track_mean_dEdx_end_half_p2[i_trk]+=dEdx;
+          vars.m_reco_track_mean_dEdx_end_half_p2[i_trk]+=dEdx;
         }
 
-        bool is_sensible = dEdx < m_track_calo_max_dEdx; 
+        bool is_sensible = dEdx < paras.s_track_calo_max_dEdx; 
         bool is_nan =dEdx != dEdx; 
         bool is_inf = std::isinf(dEdx);
-        bool is_nonzero = dEdx> m_track_calo_min_dEdx;
+        bool is_nonzero = dEdx> paras.s_track_calo_min_dEdx;
 
         if(is_sensible && !is_nan && !is_inf && is_nonzero && k != 0 && k != calo_length_p2-1){
           res_range_good_p2.push_back(res_range);
@@ -486,12 +488,12 @@ namespace single_photon
         //    std::cout<<"\t"<<k<<" "<<calo->dEdx()[k]<<" "<<calo->ResidualRange()[k]<<" "<< ""<<std::endl;;
       }// End of first loop.
 
-      m_reco_track_good_calo_p2[i_trk] = 0;
-      if(res_range_good_p2.size() >= m_track_calo_min_dEdx_hits){
-        m_reco_track_good_calo_p2[i_trk] = res_range_good_p2.size();
+      vars.m_reco_track_good_calo_p2[i_trk] = 0;
+      if(res_range_good_p2.size() >= paras.s_track_calo_min_dEdx_hits){
+        vars.m_reco_track_good_calo_p2[i_trk] = res_range_good_p2.size();
 
-        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimum_dx in the res_range
-        double tenth_track = std::max(res_range_good_p2.front(), res_range_good_p2.back())/m_track_calo_trunc_fraction;
+        //The radius we truncate over is going to be the max of either 1/frac of a track or 2x the minimuvars.m_dx in the res_range
+        double tenth_track = std::max(res_range_good_p2.front(), res_range_good_p2.back())/paras.s_track_calo_trunc_fraction;
         double min_dx = 999;
         for(int j = res_range_good_p2.size()-1; j>1; j--){
           double dx = fabs(res_range_good_p2[j]-res_range_good_p2[j-1]);
@@ -507,11 +509,11 @@ namespace single_photon
         //Calculate the mean truncated mean dEdx
         for(size_t k=0; k< trunc_dEdx_p2.size(); k++){
           double dEdx = trunc_dEdx_p2[k];
-          m_reco_track_mean_trunc_dEdx_p2[i_trk] += dEdx;
+          vars.m_reco_track_mean_trunc_dEdx_p2[i_trk] += dEdx;
           if(k <= trunc_dEdx_p2.size()/2){ 
-            m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk]+=dEdx;
           }else{
-            m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk]+=dEdx;
+            vars.m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk]+=dEdx;
           }
 
 
@@ -524,83 +526,81 @@ namespace single_photon
             //}
             std::cout<<"Using Radius: "<<rad<<std::endl;
             //exit(EXIT_FAILURE);
-            m_reco_track_good_calo_p2[i_trk] = 0; 
+            vars.m_reco_track_good_calo_p2[i_trk] = 0; 
           }
 
           pida_sum_trunc += trunc_dEdx_p2[k]/(pow(res_range_good_p2[k],-0.42));
         }
-        m_reco_track_trunc_PIDA_p2[i_trk] = pida_sum_trunc;           
-        m_reco_track_resrange_p2[i_trk] = res_range_good_p2;
-        m_reco_track_trunc_dEdx_p2[i_trk] = trunc_dEdx_p2;
-        m_reco_track_dEdx_p2[i_trk] = dEdx_good_p2;
+        vars.m_reco_track_trunc_PIDA_p2[i_trk] = pida_sum_trunc;           
+        vars.m_reco_track_resrange_p2[i_trk] = res_range_good_p2;
+        vars.m_reco_track_trunc_dEdx_p2[i_trk] = trunc_dEdx_p2;
+        vars.m_reco_track_dEdx_p2[i_trk] = dEdx_good_p2;
 
         //std::cout<<"the residual range at the start is "<<res_range_good[0]<<std::endl;
       }
 
-      m_reco_track_mean_dEdx_p2[i_trk]            *=1.0/((double)calo_length_p2);
-      m_reco_track_mean_dEdx_start_half_p2[i_trk] *=2.0/((double)calo_length_p2);
-      m_reco_track_mean_dEdx_end_half_p2[i_trk]   *=2.0/((double)calo_length_p2);
-      m_reco_track_mean_trunc_dEdx_p2[i_trk]            *=1.0/((double)trunc_dEdx_p2.size());
-      m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk] *=2.0/((double)trunc_dEdx_p2.size());
-      m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk]   *=2.0/((double)trunc_dEdx_p2.size());
-      m_reco_track_trunc_PIDA_p2[i_trk]  *=1.0/((double)trunc_dEdx_p2.size());
+      vars.m_reco_track_mean_dEdx_p2[i_trk]            *=1.0/((double)calo_length_p2);
+      vars.m_reco_track_mean_dEdx_start_half_p2[i_trk] *=2.0/((double)calo_length_p2);
+      vars.m_reco_track_mean_dEdx_end_half_p2[i_trk]   *=2.0/((double)calo_length_p2);
+      vars.m_reco_track_mean_trunc_dEdx_p2[i_trk]            *=1.0/((double)trunc_dEdx_p2.size());
+      vars.m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk] *=2.0/((double)trunc_dEdx_p2.size());
+      vars.m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk]   *=2.0/((double)trunc_dEdx_p2.size());
+      vars.m_reco_track_trunc_PIDA_p2[i_trk]  *=1.0/((double)trunc_dEdx_p2.size());
 
 
       //************************ Now
       //lets pick one as a default?
 
-      if(m_reco_track_good_calo_p2[i_trk]!=0){
-        m_reco_track_best_calo_plane[i_trk] = 2;
+      if(vars.m_reco_track_good_calo_p2[i_trk]!=0){
+        vars.m_reco_track_best_calo_plane[i_trk] = 2;
 
-        m_reco_track_mean_dEdx_best_plane[i_trk] = m_reco_track_mean_dEdx_p2[i_trk];
-        m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_dEdx_start_half_p2[i_trk];
-        m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_dEdx_end_half_p2[i_trk];
-        m_reco_track_good_calo_best_plane[i_trk] = m_reco_track_good_calo_p2[i_trk];
-        m_reco_track_trunc_dEdx_best_plane[i_trk] = m_reco_track_trunc_dEdx_p2[i_trk];
-        m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_p2[i_trk];
-        m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk];
-        m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk];
-        m_reco_track_trunc_PIDA_best_plane[i_trk] = m_reco_track_trunc_PIDA_p2[i_trk];
-        m_reco_track_resrange_best_plane[i_trk] = m_reco_track_resrange_p2[i_trk];
-        m_reco_track_dEdx_best_plane [i_trk] = m_reco_track_dEdx_p2[i_trk];
+        vars.m_reco_track_mean_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_p2[i_trk];
+        vars.m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_start_half_p2[i_trk];
+        vars.m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_end_half_p2[i_trk];
+        vars.m_reco_track_good_calo_best_plane[i_trk] = vars.m_reco_track_good_calo_p2[i_trk];
+        vars.m_reco_track_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_trunc_dEdx_p2[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_p2[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_start_half_p2[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_end_half_p2[i_trk];
+        vars.m_reco_track_trunc_PIDA_best_plane[i_trk] = vars.m_reco_track_trunc_PIDA_p2[i_trk];
+        vars.m_reco_track_resrange_best_plane[i_trk] = vars.m_reco_track_resrange_p2[i_trk];
+        vars.m_reco_track_dEdx_best_plane [i_trk] = vars.m_reco_track_dEdx_p2[i_trk];
 
+      }else if(vars.m_reco_track_good_calo_p0[i_trk] > vars.m_reco_track_good_calo_p1[i_trk] ){
+        vars.m_reco_track_best_calo_plane[i_trk] = 0;
 
-
-      }else if(m_reco_track_good_calo_p0[i_trk] > m_reco_track_good_calo_p1[i_trk] ){
-        m_reco_track_best_calo_plane[i_trk] = 0;
-
-        m_reco_track_mean_dEdx_best_plane[i_trk] = m_reco_track_mean_dEdx_p0[i_trk];
-        m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_dEdx_start_half_p0[i_trk];
-        m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_dEdx_end_half_p0[i_trk];
-        m_reco_track_good_calo_best_plane[i_trk] = m_reco_track_good_calo_p0[i_trk];
-        m_reco_track_trunc_dEdx_best_plane[i_trk] = m_reco_track_trunc_dEdx_p0[i_trk];
-        m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_p0[i_trk];
-        m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk];
-        m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk];
-        m_reco_track_trunc_PIDA_best_plane[i_trk] = m_reco_track_trunc_PIDA_p0[i_trk];
-        m_reco_track_resrange_best_plane[i_trk] = m_reco_track_resrange_p0[i_trk];
-        m_reco_track_dEdx_best_plane [i_trk] = m_reco_track_dEdx_p0[i_trk];
+        vars.m_reco_track_mean_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_p0[i_trk];
+        vars.m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_start_half_p0[i_trk];
+        vars.m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_end_half_p0[i_trk];
+        vars.m_reco_track_good_calo_best_plane[i_trk] = vars.m_reco_track_good_calo_p0[i_trk];
+        vars.m_reco_track_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_trunc_dEdx_p0[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_p0[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_start_half_p0[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_end_half_p0[i_trk];
+        vars.m_reco_track_trunc_PIDA_best_plane[i_trk] = vars.m_reco_track_trunc_PIDA_p0[i_trk];
+        vars.m_reco_track_resrange_best_plane[i_trk] = vars.m_reco_track_resrange_p0[i_trk];
+        vars.m_reco_track_dEdx_best_plane [i_trk] = vars.m_reco_track_dEdx_p0[i_trk];
 
 
-      }else if(m_reco_track_good_calo_p1[i_trk]!=0){
-        m_reco_track_best_calo_plane[i_trk] = 1;
+      }else if(vars.m_reco_track_good_calo_p1[i_trk]!=0){
+        vars.m_reco_track_best_calo_plane[i_trk] = 1;
 
-        m_reco_track_mean_dEdx_best_plane[i_trk] = m_reco_track_mean_dEdx_p1[i_trk];
-        m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_dEdx_start_half_p1[i_trk];
-        m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_dEdx_end_half_p1[i_trk];
-        m_reco_track_good_calo_best_plane[i_trk] = m_reco_track_good_calo_p1[i_trk];
-        m_reco_track_trunc_dEdx_best_plane[i_trk] = m_reco_track_trunc_dEdx_p1[i_trk];
-        m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_p1[i_trk];
-        m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk];
-        m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk];
-        m_reco_track_trunc_PIDA_best_plane[i_trk] = m_reco_track_trunc_PIDA_p1[i_trk];
-        m_reco_track_resrange_best_plane[i_trk] = m_reco_track_resrange_p1[i_trk];
-        m_reco_track_dEdx_best_plane [i_trk] = m_reco_track_dEdx_p1[i_trk];
+        vars.m_reco_track_mean_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_p1[i_trk];
+        vars.m_reco_track_mean_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_start_half_p1[i_trk];
+        vars.m_reco_track_mean_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_dEdx_end_half_p1[i_trk];
+        vars.m_reco_track_good_calo_best_plane[i_trk] = vars.m_reco_track_good_calo_p1[i_trk];
+        vars.m_reco_track_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_trunc_dEdx_p1[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_p1[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_start_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_start_half_p1[i_trk];
+        vars.m_reco_track_mean_trunc_dEdx_end_half_best_plane[i_trk] = vars.m_reco_track_mean_trunc_dEdx_end_half_p1[i_trk];
+        vars.m_reco_track_trunc_PIDA_best_plane[i_trk] = vars.m_reco_track_trunc_PIDA_p1[i_trk];
+        vars.m_reco_track_resrange_best_plane[i_trk] = vars.m_reco_track_resrange_p1[i_trk];
+        vars.m_reco_track_dEdx_best_plane [i_trk] = vars.m_reco_track_dEdx_p1[i_trk];
 
 
 
       }else{
-        m_reco_track_best_calo_plane[i_trk] = -1; 
+        vars.m_reco_track_best_calo_plane[i_trk] = -1; 
       }
 
 
@@ -610,7 +610,7 @@ namespace single_photon
 
 
   void CollectPID(std::vector<art::Ptr<recob::Track>> & tracks,
-      std::vector<PandoraPFParticle> all_PPFPs){
+      std::vector<PandoraPFParticle> all_PPFPs,var_all& vars){
 
     for(size_t i_trk=0; i_trk<tracks.size(); ++i_trk){
       art::Ptr<recob::Track> track = tracks[i_trk];
@@ -701,25 +701,25 @@ namespace single_photon
         }
       }  // end looping over AlgScoresVec
 
-      m_reco_track_pid_bragg_likelihood_mu_plane0[i_trk] = pidScore_BL_mu_plane0;
-      m_reco_track_pid_bragg_likelihood_mu_plane1[i_trk] = pidScore_BL_mu_plane1;
-      m_reco_track_pid_bragg_likelihood_mu_plane2[i_trk] = pidScore_BL_mu_plane2;
-      m_reco_track_pid_bragg_likelihood_p_plane0[i_trk] = pidScore_BL_p_plane0;
-      m_reco_track_pid_bragg_likelihood_p_plane1[i_trk] = pidScore_BL_p_plane1;
-      m_reco_track_pid_bragg_likelihood_p_plane2[i_trk] = pidScore_BL_p_plane2;
-      m_reco_track_pid_bragg_likelihood_mip_plane0[i_trk] = pidScore_BL_mip_plane0;
-      m_reco_track_pid_bragg_likelihood_mip_plane1[i_trk] = pidScore_BL_mip_plane1;
-      m_reco_track_pid_bragg_likelihood_mip_plane2[i_trk] = pidScore_BL_mip_plane2;
-      m_reco_track_pid_chi2_mu_plane0[i_trk] = pidScore_chi2_mu_plane0;
-      m_reco_track_pid_chi2_mu_plane1[i_trk] = pidScore_chi2_mu_plane1;
-      m_reco_track_pid_chi2_mu_plane2[i_trk] = pidScore_chi2_mu_plane2;
-      m_reco_track_pid_chi2_p_plane0[i_trk] = pidScore_chi2_p_plane0;
-      m_reco_track_pid_chi2_p_plane1[i_trk] = pidScore_chi2_p_plane1;
-      m_reco_track_pid_chi2_p_plane2[i_trk] = pidScore_chi2_p_plane2;
-      m_reco_track_pid_pida_plane0[i_trk] = pidScore_PIDA_plane0;
-      m_reco_track_pid_pida_plane1[i_trk] = pidScore_PIDA_plane1;
-      m_reco_track_pid_pida_plane2[i_trk] = pidScore_PIDA_plane2;
-      m_reco_track_pid_three_plane_proton_pid[i_trk] = pidScore_three_plane_proton;
+      vars.m_reco_track_pid_bragg_likelihood_mu_plane0[i_trk] = pidScore_BL_mu_plane0;
+      vars.m_reco_track_pid_bragg_likelihood_mu_plane1[i_trk] = pidScore_BL_mu_plane1;
+      vars.m_reco_track_pid_bragg_likelihood_mu_plane2[i_trk] = pidScore_BL_mu_plane2;
+      vars.m_reco_track_pid_bragg_likelihood_p_plane0[i_trk] = pidScore_BL_p_plane0;
+      vars.m_reco_track_pid_bragg_likelihood_p_plane1[i_trk] = pidScore_BL_p_plane1;
+      vars.m_reco_track_pid_bragg_likelihood_p_plane2[i_trk] = pidScore_BL_p_plane2;
+      vars.m_reco_track_pid_bragg_likelihood_mip_plane0[i_trk] = pidScore_BL_mip_plane0;
+      vars.m_reco_track_pid_bragg_likelihood_mip_plane1[i_trk] = pidScore_BL_mip_plane1;
+      vars.m_reco_track_pid_bragg_likelihood_mip_plane2[i_trk] = pidScore_BL_mip_plane2;
+      vars.m_reco_track_pid_chi2_mu_plane0[i_trk] = pidScore_chi2_mu_plane0;
+      vars.m_reco_track_pid_chi2_mu_plane1[i_trk] = pidScore_chi2_mu_plane1;
+      vars.m_reco_track_pid_chi2_mu_plane2[i_trk] = pidScore_chi2_mu_plane2;
+      vars.m_reco_track_pid_chi2_p_plane0[i_trk] = pidScore_chi2_p_plane0;
+      vars.m_reco_track_pid_chi2_p_plane1[i_trk] = pidScore_chi2_p_plane1;
+      vars.m_reco_track_pid_chi2_p_plane2[i_trk] = pidScore_chi2_p_plane2;
+      vars.m_reco_track_pid_pida_plane0[i_trk] = pidScore_PIDA_plane0;
+      vars.m_reco_track_pid_pida_plane1[i_trk] = pidScore_PIDA_plane1;
+      vars.m_reco_track_pid_pida_plane2[i_trk] = pidScore_PIDA_plane2;
+      vars.m_reco_track_pid_three_plane_proton_pid[i_trk] = pidScore_three_plane_proton;
 
     }
     return;
@@ -728,7 +728,8 @@ namespace single_photon
 
 
   //Analyze falshes
-  void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap){
+  void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap,
+var_all& vars, para_all& paras){
 
 
     for(auto pair: crtvetoToFlashMap){
@@ -736,57 +737,54 @@ namespace single_photon
       if(pair.second.size() > 0){
         for (auto hit: pair.second){
           std::cout<<"---- associated CRT hit at time "<<hit->ts0_ns/1000. <<" with PE "<<hit->peshit<<std::endl;
-          m_CRT_veto_hit_PE.push_back(hit->peshit);
+          vars.m_CRT_veto_hit_PE.push_back(hit->peshit);
         }
 
       }
-      m_CRT_veto_nhits =  pair.second.size();//save the number of associated CRT veto hits
+      vars.m_CRT_veto_nhits =  pair.second.size();//save the number of associated CRT veto hits
     }
 
 
-    if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
+    if(g_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Beginning analysis of recob::OpFlash\n";
 
     size_t flash_size = flashes.size();
     for(size_t i = 0; i < flash_size; ++i) {
 
-
       art::Ptr<recob::OpFlash> const & flash = flashes[i];
 
-      m_reco_flash_total_pe[i]=(flash->TotalPE());
-      m_reco_flash_time[i]=(flash->Time());
-      m_reco_flash_time_width[i]=flash->TimeWidth();
-      m_reco_flash_abs_time[i]=flash->AbsTime();
-      m_reco_flash_frame[i]=flash->Frame();
-      m_reco_flash_ycenter[i]=flash->YCenter();
-      m_reco_flash_ywidth[i]=flash->YWidth();
-      m_reco_flash_zcenter[i]=flash->ZCenter();
-      m_reco_flash_zwidth[i]=flash->ZWidth();
+      vars.m_reco_flash_total_pe[i]=(flash->TotalPE());
+      vars.m_reco_flash_time[i]=(flash->Time());
+      vars.m_reco_flash_time_width[i]=flash->TimeWidth();
+      vars.m_reco_flash_abs_time[i]=flash->AbsTime();
+      vars.m_reco_flash_frame[i]=flash->Frame();
+      vars.m_reco_flash_ycenter[i]=flash->YCenter();
+      vars.m_reco_flash_ywidth[i]=flash->YWidth();
+      vars.m_reco_flash_zcenter[i]=flash->ZCenter();
+      vars.m_reco_flash_zwidth[i]=flash->ZWidth();
 
-      // m_beamgate_flash_end/m_beamgate_flash_start are read from pset
-      if(m_reco_flash_time[i] <= m_beamgate_flash_end && m_reco_flash_time[i] >= m_beamgate_flash_start){
-        m_reco_num_flashes_in_beamgate++;
-        m_reco_flash_total_pe_in_beamgate[i]=(flash->TotalPE());
-        m_reco_flash_time_in_beamgate[i]=(flash->Time());
-        m_reco_flash_ycenter_in_beamgate[i] = flash->YCenter();
-        m_reco_flash_zcenter_in_beamgate[i] = flash->ZCenter();
+      // paras.s_beamgate_flash_end/paras.s_beamgate_flash_start are read from pset
+      if(vars.m_reco_flash_time[i] <= paras.s_beamgate_flash_end && vars.m_reco_flash_time[i] >= paras.s_beamgate_flash_start){
+        vars.m_reco_num_flashes_in_beamgate++;
+        vars.m_reco_flash_total_pe_in_beamgate[i]=(flash->TotalPE());
+        vars.m_reco_flash_time_in_beamgate[i]=(flash->Time());
+        vars.m_reco_flash_ycenter_in_beamgate[i] = flash->YCenter();
+        vars.m_reco_flash_zcenter_in_beamgate[i] = flash->ZCenter();
       }
-
-
 
     }
 
-    if(m_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Finished. There was "<<flash_size<<" flashes with: "<<m_reco_num_flashes_in_beamgate<<" in the beamgate defined by: "<<m_beamgate_flash_start<<" <-> "<<m_beamgate_flash_end<<std::endl;
+    if(g_is_verbose) std::cout<<"AnalyzeFlashes()\t||\t Finished. There was "<<flash_size<<" flashes with: "<<vars.m_reco_num_flashes_in_beamgate<<" in the beamgate defined by: "<<paras.s_beamgate_flash_start<<" <-> "<<paras.s_beamgate_flash_end<<std::endl;
 
     //fill these values only for events that have CRT information - run3 G and later
     //code taken from ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter_module.cc
-    if(m_runCRT){
-      if (m_reco_num_flashes_in_beamgate == 1){ //fill only if there's a flash in the beamgate
+    if(paras.s_runCRT){
+      if (vars.m_reco_num_flashes_in_beamgate == 1){ //fill only if there's a flash in the beamgate
 
         int  _nCRThits_in_event = crthit_h->size();
 
         double _dt_abs   = 100000.0;
         //  double  _within_resolution = 0;
-        double _beam_flash_time  =  m_reco_flash_time_in_beamgate[0];  // Guanqun: why use index 0?
+        double _beam_flash_time  =  vars.m_reco_flash_time_in_beamgate[0];  // Guanqun: why use index 0?
 
         // Loop over the CRT hits.
         for (int j = 0; j < _nCRThits_in_event; j++)
@@ -795,37 +793,37 @@ namespace single_photon
              if (verbose)
              std::cout << "\t Time of the CRT Hit wrt the event timestamp = " << ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + fDTOffset) / 1000.) << " us." << std::endl;
              */
-          double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + m_DTOffset) / 1000.);
+          double _crt_time_temp = ((crthit_h->at(j).ts0_ns - evt_timeGPS_nsec + paras.s_DTOffset) / 1000.);
 
           // Fill the vector variables.
-          m_CRT_hits_time.push_back(_crt_time_temp);
-          m_CRT_hits_PE.push_back(crthit_h->at(j).peshit);
-          m_CRT_hits_x.push_back(crthit_h->at(j).x_pos);
-          m_CRT_hits_y.push_back(crthit_h->at(j).y_pos);
-          m_CRT_hits_z.push_back(crthit_h->at(j).z_pos);
+          vars.m_CRT_hits_time.push_back(_crt_time_temp);
+          vars.m_CRT_hits_PE.push_back(crthit_h->at(j).peshit);
+          vars.m_CRT_hits_x.push_back(crthit_h->at(j).x_pos);
+          vars.m_CRT_hits_y.push_back(crthit_h->at(j).y_pos);
+          vars.m_CRT_hits_z.push_back(crthit_h->at(j).z_pos);
 
           if (fabs(_beam_flash_time - _crt_time_temp) < _dt_abs)
           {
             _dt_abs = fabs(_beam_flash_time - _crt_time_temp);
-            m_CRT_dt = _beam_flash_time - _crt_time_temp;
-            m_CRT_min_hit_time = _crt_time_temp;
+            vars.m_CRT_dt = _beam_flash_time - _crt_time_temp;
+            vars.m_CRT_min_hit_time = _crt_time_temp;
             // set 'within_resolution' to 'true' and break the loop if 'closest_crt_diff' is less than fResolution.
-            if (_dt_abs < m_Resolution)
+            if (_dt_abs < paras.s_Resolution)
             {
               //_within_resolution = 1;
               // Set the position information and the intensity of the CRT hit.
-              m_CRT_min_hit_PE = crthit_h->at(j).peshit;
-              m_CRT_min_hit_x = crthit_h->at(j).x_pos;
-              m_CRT_min_hit_y = crthit_h->at(j).y_pos;
-              m_CRT_min_hit_z = crthit_h->at(j).z_pos;
+              vars.m_CRT_min_hit_PE = crthit_h->at(j).peshit;
+              vars.m_CRT_min_hit_x = crthit_h->at(j).x_pos;
+              vars.m_CRT_min_hit_y = crthit_h->at(j).y_pos;
+              vars.m_CRT_min_hit_z = crthit_h->at(j).z_pos;
 
 
               // if (verbose)
               // {
-              std::cout << "CRT hit PE = " << m_CRT_min_hit_PE << " PEs." << std::endl;
-              std::cout << "CRT hit x = " << m_CRT_min_hit_x << " cm." << std::endl;
-              std::cout << "CRT hit y = " << m_CRT_min_hit_y << " cm." << std::endl;
-              std::cout << "CRT hit z = " << m_CRT_min_hit_z << " cm." << std::endl;
+              std::cout << "CRT hit PE = " << vars.m_CRT_min_hit_PE << " PEs." << std::endl;
+              std::cout << "CRT hit x = " << vars.m_CRT_min_hit_x << " cm." << std::endl;
+              std::cout << "CRT hit y = " << vars.m_CRT_min_hit_y << " cm." << std::endl;
+              std::cout << "CRT hit z = " << vars.m_CRT_min_hit_z << " cm." << std::endl;
               // }
               break;
             }
@@ -844,9 +842,10 @@ namespace single_photon
       const std::vector<art::Ptr<recob::Shower>>& showers,  
       std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
       double triggeroffset,
-      detinfo::DetectorPropertiesData const & theDetector
-      ){
-    //        if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
+      detinfo::DetectorPropertiesData const & theDetector,
+	  var_all& vars,
+	  para_all& paras){
+    //        if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
 
     int i_shr = 0;
 
@@ -862,15 +861,15 @@ namespace single_photon
       const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
 
       art::Ptr<recob::Shower> shower3d;
-      m_reco_shower3d_exists[i_shr] = 0;
+      vars.m_reco_shower3d_exists[i_shr] = 0;
       shower3d = shower;
 
       const std::vector<art::Ptr<recob::Hit>> hits =  ppfp->pPFPHits;
       const std::vector<art::Ptr<recob::Cluster>> clusters = ppfp->pClusters;
 
-      //int m_shrid = shower->ID(); This is an used variable, always -999
-      double m_length = shower->Length();
-      double m_open_angle = shower->OpenAngle();
+      //int vars.m_shrid = shower->ID(); This is an used variable, always -999
+      double tem_length = shower->Length();
+      double tem_open_angle = shower->OpenAngle();
 
       TVector3 shr_start = shower->ShowerStart();
       TVector3 shr_dir = shower->Direction();
@@ -878,103 +877,103 @@ namespace single_photon
       TVector3 shr3d_start = shower3d->ShowerStart();
       TVector3 shr3d_dir = shower3d->Direction();
 
-      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<" which has length: "<<m_length<<""<<std::endl;;
+      //            if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<" which has length: "<<tem_length<<""<<std::endl;;
 
-      m_reco_shower_startx[i_shr] = shr_start.X();
-      m_reco_shower_starty[i_shr] = shr_start.Y();
-      m_reco_shower_startz[i_shr] = shr_start.Z();
-
-
-      std::vector<double> hstart = {m_reco_shower_startx[i_shr],m_reco_shower_starty[i_shr],m_reco_shower_startz[i_shr]};
-      m_reco_shower_start_dist_to_active_TPC[i_shr] = distToTPCActive(hstart);
-      m_reco_shower_start_dist_to_CPA[i_shr] = distToCPA(hstart);
-      m_reco_shower_start_in_SCB[i_shr] = distToSCB(m_reco_shower_start_dist_to_SCB[i_shr],hstart);
-
-      m_reco_shower_dirx[i_shr] = shr_dir.X();
-      m_reco_shower_diry[i_shr] = shr_dir.Y();
-      m_reco_shower_dirz[i_shr] = shr_dir.Z();
-      m_reco_shower_length[i_shr] = m_length;
-      m_reco_shower_openingangle[i_shr] = m_open_angle;
-
-      m_reco_shower3d_startx[i_shr] = shr3d_start.X();
-      m_reco_shower3d_starty[i_shr] = shr3d_start.Y();
-      m_reco_shower3d_startz[i_shr] = shr3d_start.Z();
-      m_reco_shower3d_dirx[i_shr] = shr3d_dir.X();
-      m_reco_shower3d_diry[i_shr] = shr3d_dir.Y();
-      m_reco_shower3d_dirz[i_shr] = shr3d_dir.Z();
-      m_reco_shower3d_length[i_shr] = shower3d->Length();
-      m_reco_shower3d_openingangle[i_shr] = shower3d->OpenAngle();
+      vars.m_reco_shower_startx[i_shr] = shr_start.X();
+      vars.m_reco_shower_starty[i_shr] = shr_start.Y();
+      vars.m_reco_shower_startz[i_shr] = shr_start.Z();
 
 
-      m_reco_shower_conversion_distance[i_shr] = sqrt( pow(shr_start.X()-m_vertex_pos_x,2)+pow(shr_start.Y()-m_vertex_pos_y,2)+ pow(shr_start.Z()-m_vertex_pos_z,2)  );
-      m_reco_shower3d_conversion_distance[i_shr] = sqrt( pow(shr3d_start.X()-m_vertex_pos_x,2)+pow(shr3d_start.Y()-m_vertex_pos_y,2)+ pow(shr3d_start.Z()-m_vertex_pos_z,2)  );
+      std::vector<double> hstart = {vars.m_reco_shower_startx[i_shr],vars.m_reco_shower_starty[i_shr],vars.m_reco_shower_startz[i_shr]};
+      vars.m_reco_shower_start_dist_to_active_TPC[i_shr] = distToTPCActive(hstart, paras);
+      vars.m_reco_shower_start_dist_to_CPA[i_shr]        = distToCPA(hstart, paras);
+      vars.m_reco_shower_start_in_SCB[i_shr] = distToSCB(vars.m_reco_shower_start_dist_to_SCB[i_shr],hstart, paras);
+
+      vars.m_reco_shower_dirx[i_shr] = shr_dir.X();
+      vars.m_reco_shower_diry[i_shr] = shr_dir.Y();
+      vars.m_reco_shower_dirz[i_shr] = shr_dir.Z();
+      vars.m_reco_shower_length[i_shr] = tem_length;
+      vars.m_reco_shower_openingangle[i_shr] = tem_open_angle;
+
+      vars.m_reco_shower3d_startx[i_shr] = shr3d_start.X();
+      vars.m_reco_shower3d_starty[i_shr] = shr3d_start.Y();
+      vars.m_reco_shower3d_startz[i_shr] = shr3d_start.Z();
+      vars.m_reco_shower3d_dirx[i_shr] = shr3d_dir.X();
+      vars.m_reco_shower3d_diry[i_shr] = shr3d_dir.Y();
+      vars.m_reco_shower3d_dirz[i_shr] = shr3d_dir.Z();
+      vars.m_reco_shower3d_length[i_shr] = shower3d->Length();
+      vars.m_reco_shower3d_openingangle[i_shr] = shower3d->OpenAngle();
+
+
+      vars.m_reco_shower_conversion_distance[i_shr] = sqrt( pow(shr_start.X()-vars.m_vertex_pos_x,2)+pow(shr_start.Y()-vars.m_vertex_pos_y,2)+ pow(shr_start.Z()-vars.m_vertex_pos_z,2)  );
+      vars.m_reco_shower3d_conversion_distance[i_shr] = sqrt( pow(shr3d_start.X()-vars.m_vertex_pos_x,2)+pow(shr3d_start.Y()-vars.m_vertex_pos_y,2)+ pow(shr3d_start.Z()-vars.m_vertex_pos_z,2)  );
 
       //pandroa shower
       std::vector<double> shr_ts = {shr_start.X(), shr_start.Y(), shr_start.Z()};
       std::vector<double> shr_te = {shr_start.X()-shr_dir.X(),shr_start.Y()-shr_dir.Y(),shr_start.Z()-shr_dir.Z()};
-      std::vector<double> shr_tv = {m_vertex_pos_x,m_vertex_pos_y,m_vertex_pos_z};
+      std::vector<double> shr_tv = {vars.m_vertex_pos_x,vars.m_vertex_pos_y,vars.m_vertex_pos_z};
 
-      m_reco_shower_impact_parameter[i_shr] = dist_line_point(shr_ts,shr_te,shr_tv );
-      m_reco_shower_implied_dirx[i_shr] = shr_start.X()-m_vertex_pos_x;;
-      m_reco_shower_implied_diry[i_shr] = shr_start.Y()-m_vertex_pos_y;
-      m_reco_shower_implied_dirz[i_shr] = shr_start.Z()-m_vertex_pos_z;
+      vars.m_reco_shower_impact_parameter[i_shr] = dist_line_point(shr_ts,shr_te,shr_tv );
+      vars.m_reco_shower_implied_dirx[i_shr] = shr_start.X()-vars.m_vertex_pos_x;;
+      vars.m_reco_shower_implied_diry[i_shr] = shr_start.Y()-vars.m_vertex_pos_y;
+      vars.m_reco_shower_implied_dirz[i_shr] = shr_start.Z()-vars.m_vertex_pos_z;
 
-      double norm = sqrt(pow(m_reco_shower_implied_dirx[i_shr],2)+pow(m_reco_shower_implied_diry[i_shr],2)+pow(m_reco_shower_implied_dirz[i_shr],2));
-      m_reco_shower_implied_dirx[i_shr] = m_reco_shower_implied_dirx[i_shr]/norm;
-      m_reco_shower_implied_diry[i_shr] = m_reco_shower_implied_diry[i_shr]/norm;
-      m_reco_shower_implied_dirz[i_shr] = m_reco_shower_implied_dirz[i_shr]/norm;
+      double norm = sqrt(pow(vars.m_reco_shower_implied_dirx[i_shr],2)+pow(vars.m_reco_shower_implied_diry[i_shr],2)+pow(vars.m_reco_shower_implied_dirz[i_shr],2));
+      vars.m_reco_shower_implied_dirx[i_shr] = vars.m_reco_shower_implied_dirx[i_shr]/norm;
+      vars.m_reco_shower_implied_diry[i_shr] = vars.m_reco_shower_implied_diry[i_shr]/norm;
+      vars.m_reco_shower_implied_dirz[i_shr] = vars.m_reco_shower_implied_dirz[i_shr]/norm;
 
       //now 3D shower
       std::vector<double> shr3d_ts = {shr3d_start.X(), shr3d_start.Y(), shr3d_start.Z()};
       std::vector<double> shr3d_te = {shr3d_start.X()-shr3d_dir.X(),shr3d_start.Y()-shr3d_dir.Y(),shr3d_start.Z()-shr3d_dir.Z()};
-      std::vector<double> shr3d_tv = {m_vertex_pos_x,m_vertex_pos_y,m_vertex_pos_z};
+      std::vector<double> shr3d_tv = {vars.m_vertex_pos_x,vars.m_vertex_pos_y,vars.m_vertex_pos_z};
 
-      m_reco_shower3d_impact_parameter[i_shr] = dist_line_point(shr3d_ts,shr3d_te,shr3d_tv );
-      m_reco_shower3d_implied_dirx[i_shr] = shr3d_start.X()-m_vertex_pos_x;;
-      m_reco_shower3d_implied_diry[i_shr] = shr3d_start.Y()-m_vertex_pos_y;
-      m_reco_shower3d_implied_dirz[i_shr] = shr3d_start.Z()-m_vertex_pos_z;
+      vars.m_reco_shower3d_impact_parameter[i_shr] = dist_line_point(shr3d_ts,shr3d_te,shr3d_tv );
+      vars.m_reco_shower3d_implied_dirx[i_shr] = shr3d_start.X()-vars.m_vertex_pos_x;;
+      vars.m_reco_shower3d_implied_diry[i_shr] = shr3d_start.Y()-vars.m_vertex_pos_y;
+      vars.m_reco_shower3d_implied_dirz[i_shr] = shr3d_start.Z()-vars.m_vertex_pos_z;
 
-      double shr3d_norm = sqrt(pow(m_reco_shower3d_implied_dirx[i_shr],2)+pow(m_reco_shower3d_implied_diry[i_shr],2)+pow(m_reco_shower3d_implied_dirz[i_shr],2));
-      m_reco_shower3d_implied_dirx[i_shr] = m_reco_shower3d_implied_dirx[i_shr]/shr3d_norm;
-      m_reco_shower3d_implied_diry[i_shr] = m_reco_shower3d_implied_diry[i_shr]/shr3d_norm;
-      m_reco_shower3d_implied_dirz[i_shr] = m_reco_shower3d_implied_dirz[i_shr]/shr3d_norm;
-
-
-      m_reco_shower_theta_yz[i_shr] = atan2(m_reco_shower_diry[i_shr],m_reco_shower_dirz[i_shr]);
-      m_reco_shower_phi_yx[i_shr] = atan2(m_reco_shower_diry[i_shr],m_reco_shower_dirx[i_shr]);
-
-      m_reco_shower3d_theta_yz[i_shr] = atan2(m_reco_shower3d_diry[i_shr],m_reco_shower3d_dirz[i_shr]);
-      m_reco_shower3d_phi_yx[i_shr] = atan2(m_reco_shower3d_diry[i_shr],m_reco_shower3d_dirx[i_shr]);
+      double shr3d_norm = sqrt(pow(vars.m_reco_shower3d_implied_dirx[i_shr],2)+pow(vars.m_reco_shower3d_implied_diry[i_shr],2)+pow(vars.m_reco_shower3d_implied_dirz[i_shr],2));
+      vars.m_reco_shower3d_implied_dirx[i_shr] = vars.m_reco_shower3d_implied_dirx[i_shr]/shr3d_norm;
+      vars.m_reco_shower3d_implied_diry[i_shr] = vars.m_reco_shower3d_implied_diry[i_shr]/shr3d_norm;
+      vars.m_reco_shower3d_implied_dirz[i_shr] = vars.m_reco_shower3d_implied_dirz[i_shr]/shr3d_norm;
 
 
-      //      m_reco_shower_start_to_nearest_dead_wire_plane0[i_shr] = distanceToNearestDeadWire(0, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
-      //      m_reco_shower_start_to_nearest_dead_wire_plane1[i_shr] = distanceToNearestDeadWire(1, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
-      //      m_reco_shower_start_to_nearest_dead_wire_plane2[i_shr] = distanceToNearestDeadWire(2, m_reco_shower_starty[i_shr], m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      vars.m_reco_shower_theta_yz[i_shr] = atan2(vars.m_reco_shower_diry[i_shr],vars.m_reco_shower_dirz[i_shr]);
+      vars.m_reco_shower_phi_yx[i_shr] = atan2(vars.m_reco_shower_diry[i_shr],vars.m_reco_shower_dirx[i_shr]);
+
+      vars.m_reco_shower3d_theta_yz[i_shr] = atan2(vars.m_reco_shower3d_diry[i_shr],vars.m_reco_shower3d_dirz[i_shr]);
+      vars.m_reco_shower3d_phi_yx[i_shr] = atan2(vars.m_reco_shower3d_diry[i_shr],vars.m_reco_shower3d_dirx[i_shr]);
+
+
+      //      vars.m_reco_shower_start_to_nearest_dead_wire_plane0[i_shr] = distanceToNearestDeadWire(0, vars.m_reco_shower_starty[i_shr], vars.m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      //      vars.m_reco_shower_start_to_nearest_dead_wire_plane1[i_shr] = distanceToNearestDeadWire(1, vars.m_reco_shower_starty[i_shr], vars.m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
+      //      vars.m_reco_shower_start_to_nearest_dead_wire_plane2[i_shr] = distanceToNearestDeadWire(2, vars.m_reco_shower_starty[i_shr], vars.m_reco_shower_startz[i_shr],geom, bad_channel_list_fixed_mcc9);
       std::vector<int> t_num(3,0);   // num of triangles on each plane
       std::vector<int> t_numhits(3,0);  // num of hits on each plane
       std::vector<double> t_area(3,0.0);
 
       //Right, this basically loops over all hits in all planes and for each plane forms the Delaunay triangilization of it and calculates the 2D area inscribed by the convex hull
-      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Starting Delaunay Triangleization"<<std::endl;;
+      //            if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Starting Delaunay Triangleization"<<std::endl;;
 
       //auto start = std::chrono::high_resolution_clock::now();
-      delaunay_hit_wrapper(hits, t_numhits, t_num, t_area);
+      delaunay_hit_wrapper(hits, t_numhits, t_num, t_area, paras);
 
       //auto finish = std::chrono::high_resolution_clock::now();
       //auto microseconds = std::chrono::duration_cast<std::chrono::milliseconds>(finish-start);
-      //if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Finished Delaunay Triangleization. It took "<< microseconds.count() << "ms and found "<<t_num[0]+t_num[1]+t_num[2]<<" triangles"<<std::endl;;
+      //if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Finished Delaunay Triangleization. It took "<< microseconds.count() << "ms and found "<<t_num[0]+t_num[1]+t_num[2]<<" triangles"<<std::endl;;
 
-      m_reco_shower_delaunay_num_triangles_plane0[i_shr] = t_num[0];
-      m_reco_shower_delaunay_num_triangles_plane1[i_shr] = t_num[1];
-      m_reco_shower_delaunay_num_triangles_plane2[i_shr] = t_num[2];
+      vars.m_reco_shower_delaunay_num_triangles_plane0[i_shr] = t_num[0];
+      vars.m_reco_shower_delaunay_num_triangles_plane1[i_shr] = t_num[1];
+      vars.m_reco_shower_delaunay_num_triangles_plane2[i_shr] = t_num[2];
 
-      m_reco_shower_delaunay_area_plane0[i_shr] = t_area[0];
-      m_reco_shower_delaunay_area_plane1[i_shr] = t_area[1];
-      m_reco_shower_delaunay_area_plane2[i_shr] = t_area[2];
+      vars.m_reco_shower_delaunay_area_plane0[i_shr] = t_area[0];
+      vars.m_reco_shower_delaunay_area_plane1[i_shr] = t_area[1];
+      vars.m_reco_shower_delaunay_area_plane2[i_shr] = t_area[2];
 
-      m_reco_shower_num_hits_plane0[i_shr] = t_numhits[0];
-      m_reco_shower_num_hits_plane1[i_shr] = t_numhits[1];
-      m_reco_shower_num_hits_plane2[i_shr] = t_numhits[2];
+      vars.m_reco_shower_num_hits_plane0[i_shr] = t_numhits[0];
+      vars.m_reco_shower_num_hits_plane1[i_shr] = t_numhits[1];
+      vars.m_reco_shower_num_hits_plane2[i_shr] = t_numhits[2];
       //-------------- Calorimetry 3D --------------------
 
 
@@ -987,13 +986,13 @@ namespace single_photon
       //    std::cout<<en<<" ";
       //}
       if(shr3d_energy.size()==3){
-        m_reco_shower3d_energy_plane0[i_shr] = shr3d_energy[0];
-        m_reco_shower3d_energy_plane1[i_shr] = shr3d_energy[1];
-        m_reco_shower3d_energy_plane2[i_shr] = shr3d_energy[2];
+        vars.m_reco_shower3d_energy_plane0[i_shr] = shr3d_energy[0];
+        vars.m_reco_shower3d_energy_plane1[i_shr] = shr3d_energy[1];
+        vars.m_reco_shower3d_energy_plane2[i_shr] = shr3d_energy[2];
       }else{
-        m_reco_shower3d_energy_plane0[i_shr] =-99;
-        m_reco_shower3d_energy_plane1[i_shr] =-99;
-        m_reco_shower3d_energy_plane2[i_shr] =-999;
+        vars.m_reco_shower3d_energy_plane0[i_shr] =-99;
+        vars.m_reco_shower3d_energy_plane1[i_shr] =-99;
+        vars.m_reco_shower3d_energy_plane2[i_shr] =-999;
       }
 
       //         std::cout<<std::endl<<"SHOWER3D_DEDX: "<<std::endl;
@@ -1001,30 +1000,30 @@ namespace single_photon
       //    std::cout<<dedx<<" ";
       //}
       if(shr3d_dEdx.size()==3){
-        m_reco_shower3d_dEdx_plane0[i_shr] = shr3d_dEdx[0];
-        m_reco_shower3d_dEdx_plane1[i_shr] = shr3d_dEdx[1];
-        m_reco_shower3d_dEdx_plane2[i_shr] = shr3d_dEdx[2];
+        vars.m_reco_shower3d_dEdx_plane0[i_shr] = shr3d_dEdx[0];
+        vars.m_reco_shower3d_dEdx_plane1[i_shr] = shr3d_dEdx[1];
+        vars.m_reco_shower3d_dEdx_plane2[i_shr] = shr3d_dEdx[2];
       }else{
-        m_reco_shower3d_dEdx_plane0[i_shr] =-99;
-        m_reco_shower3d_dEdx_plane1[i_shr] =-99;
-        m_reco_shower3d_dEdx_plane2[i_shr] =-999;
+        vars.m_reco_shower3d_dEdx_plane0[i_shr] =-99;
+        vars.m_reco_shower3d_dEdx_plane1[i_shr] =-99;
+        vars.m_reco_shower3d_dEdx_plane2[i_shr] =-999;
       }
 
 
       //------------- calorimetry ------------
+      vars.m_reco_shower_energy_plane0[i_shr] = CalcEShowerPlane(hits, 0, paras);
+      vars.m_reco_shower_energy_plane1[i_shr] = CalcEShowerPlane(hits, 1, paras);
+      vars.m_reco_shower_energy_plane2[i_shr] = CalcEShowerPlane(hits, 2, paras);
 
-      m_reco_shower_energy_max[i_shr] = CalcEShower(hits);
-      m_reco_shower_energy_plane0[i_shr] = CalcEShowerPlane(hits, 0);
-      m_reco_shower_energy_plane1[i_shr] = CalcEShowerPlane(hits, 1);
-      m_reco_shower_energy_plane2[i_shr] = CalcEShowerPlane(hits, 2);
+      vars.m_reco_shower_energy_max[i_shr] = std::max( vars.m_reco_shower_energy_plane0[i_shr], std::max( vars.m_reco_shower_energy_plane1[i_shr] , vars.m_reco_shower_energy_plane2[i_shr]));
 
-      m_reco_shower_plane0_nhits[i_shr] = getNHitsPlane(hits, 0);
-      m_reco_shower_plane1_nhits[i_shr] = getNHitsPlane(hits, 1);
-      m_reco_shower_plane2_nhits[i_shr] = getNHitsPlane(hits, 2);
+      vars.m_reco_shower_plane0_nhits[i_shr] = getNHitsPlane(hits, 0);
+      vars.m_reco_shower_plane1_nhits[i_shr] = getNHitsPlane(hits, 1);
+      vars.m_reco_shower_plane2_nhits[i_shr] = getNHitsPlane(hits, 2);
 
-      m_reco_shower_plane0_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 0);
-      m_reco_shower_plane1_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 1);
-      m_reco_shower_plane2_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 2);
+      vars.m_reco_shower_plane0_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 0);
+      vars.m_reco_shower_plane1_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 1);
+      vars.m_reco_shower_plane2_meanRMS[i_shr] = getMeanHitWidthPlane(hits, 2);
 
 
       //currently only run on 1 shower events
@@ -1035,37 +1034,37 @@ namespace single_photon
           int wire = h->WireID().Wire;
           int tick = h->PeakTime();
 
-          m_reco_shower_hit_tick.push_back(tick);
-          m_reco_shower_hit_plane.push_back(plane);
-          m_reco_shower_hit_wire.push_back(wire);
+          vars.m_reco_shower_hit_tick.push_back(tick);
+          vars.m_reco_shower_hit_plane.push_back(plane);
+          vars.m_reco_shower_hit_wire.push_back(wire);
         }
       }
 
 
-      //std::cout<<"The energy on each plane is 0: "<< m_reco_shower_energy_plane0[i_shr]<<", 1: "<< m_reco_shower_energy_plane1[i_shr]<<", 2: "<<  m_reco_shower_energy_plane2[i_shr]<<std::endl;
+      //std::cout<<"The energy on each plane is 0: "<< vars.m_reco_shower_energy_plane0[i_shr]<<", 1: "<< vars.m_reco_shower_energy_plane1[i_shr]<<", 2: "<<  vars.m_reco_shower_energy_plane2[i_shr]<<std::endl;
 
 
-      m_reco_shower_dQdx_plane0[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 0 , triggeroffset, theDetector);
-      m_reco_shower_dQdx_plane1[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 1 , triggeroffset, theDetector);
-      m_reco_shower_dQdx_plane2[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 2 , triggeroffset, theDetector);
-      m_reco_shower_dEdx_plane0[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane0[i_shr]);
-      m_reco_shower_dEdx_plane1[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane1[i_shr]);
+      vars.m_reco_shower_dQdx_plane0[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 0 , triggeroffset, theDetector, paras);
+      vars.m_reco_shower_dQdx_plane1[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 1 , triggeroffset, theDetector, paras);
+      vars.m_reco_shower_dQdx_plane2[i_shr] = CalcdQdxShower(shower,clusters, clusterToHitMap, 2 , triggeroffset, theDetector, paras);
+      vars.m_reco_shower_dEdx_plane0[i_shr] = CalcdEdxFromdQdx(vars.m_reco_shower_dQdx_plane0[i_shr], paras);
+      vars.m_reco_shower_dEdx_plane1[i_shr] = CalcdEdxFromdQdx(vars.m_reco_shower_dQdx_plane1[i_shr], paras);
 
-      m_reco_shower_dEdx_plane2[i_shr] = CalcdEdxFromdQdx(m_reco_shower_dQdx_plane2[i_shr]);
+      vars.m_reco_shower_dEdx_plane2[i_shr] = CalcdEdxFromdQdx(vars.m_reco_shower_dQdx_plane2[i_shr], paras);
 
-      m_reco_shower_dEdx_plane0_median[i_shr] = getMedian(m_reco_shower_dEdx_plane0[i_shr]);
-      m_reco_shower_dEdx_plane1_median[i_shr] = getMedian(m_reco_shower_dEdx_plane1[i_shr]);
-      m_reco_shower_dEdx_plane2_median[i_shr] = getMedian(m_reco_shower_dEdx_plane2[i_shr]);
+      vars.m_reco_shower_dEdx_plane0_median[i_shr] = getMedian(vars.m_reco_shower_dEdx_plane0[i_shr]);
+      vars.m_reco_shower_dEdx_plane1_median[i_shr] = getMedian(vars.m_reco_shower_dEdx_plane1[i_shr]);
+      vars.m_reco_shower_dEdx_plane2_median[i_shr] = getMedian(vars.m_reco_shower_dEdx_plane2[i_shr]);
 
 
       std::vector< double > reco_shr_angles_wrt_wires;
-      for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+      for (geo::PlaneGeo const& plane: paras.s_geom->IteratePlanes()) {
         //6 planes in SBND
         //WireAngleToVertical  : 30 ,150,90,150,30 ,90
         //ub wire angles    : 30 ,150,90  (respected to beam,z)
         //Pitch        : 0.3,0.3,0.3,0.3,0.3,0.3
 
-        const double angToVert(geom->WireAngleToVertical(plane.View(), plane.ID())+0.5*M_PI);//wire angle respected to z + pi/2
+        const double angToVert(paras.s_geom->WireAngleToVertical(plane.View(), plane.ID())+0.5*M_PI);//wire angle respected to z + pi/2
 
         TVector3 wire_vector;  
         if(abs(angToVert) < 1e-9 ){
@@ -1079,97 +1078,97 @@ namespace single_photon
 
         if(reco_shr_angles_wrt_wires.size()==3) break;
       }
-      m_reco_shower_angle_wrt_wires_plane0[i_shr] = reco_shr_angles_wrt_wires[0];
-      m_reco_shower_angle_wrt_wires_plane1[i_shr] = reco_shr_angles_wrt_wires[1];
-      m_reco_shower_angle_wrt_wires_plane2[i_shr] = reco_shr_angles_wrt_wires[2];
+      vars.m_reco_shower_angle_wrt_wires_plane0[i_shr] = reco_shr_angles_wrt_wires[0];
+      vars.m_reco_shower_angle_wrt_wires_plane1[i_shr] = reco_shr_angles_wrt_wires[1];
+      vars.m_reco_shower_angle_wrt_wires_plane2[i_shr] = reco_shr_angles_wrt_wires[2];
 
-      m_reco_shower_dQdx_plane0_median[i_shr] = getMedian(m_reco_shower_dQdx_plane0[i_shr]);
-      m_reco_shower_dQdx_plane1_median[i_shr] = getMedian(m_reco_shower_dQdx_plane1[i_shr]);
-      m_reco_shower_dQdx_plane2_median[i_shr] = getMedian(m_reco_shower_dQdx_plane2[i_shr]);
-
-
-
-      m_reco_shower_dEdx_plane0_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane0[i_shr].size()); 
-      m_reco_shower_dEdx_plane1_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane1[i_shr].size()); 
-      m_reco_shower_dEdx_plane2_mean[i_shr] = std::accumulate(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end(), 0.0)/((double)m_reco_shower_dEdx_plane2[i_shr].size()); 
-
-      auto maxp0 = std::max_element(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end());
-      auto maxp1 = std::max_element(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end());
-      auto maxp2 = std::max_element(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end());
-      auto minp0 = std::min_element(m_reco_shower_dEdx_plane0[i_shr].begin(), m_reco_shower_dEdx_plane0[i_shr].end());
-      auto minp1 = std::min_element(m_reco_shower_dEdx_plane1[i_shr].begin(), m_reco_shower_dEdx_plane1[i_shr].end());
-      auto minp2 = std::min_element(m_reco_shower_dEdx_plane2[i_shr].begin(), m_reco_shower_dEdx_plane2[i_shr].end());
+      vars.m_reco_shower_dQdx_plane0_median[i_shr] = getMedian(vars.m_reco_shower_dQdx_plane0[i_shr]);
+      vars.m_reco_shower_dQdx_plane1_median[i_shr] = getMedian(vars.m_reco_shower_dQdx_plane1[i_shr]);
+      vars.m_reco_shower_dQdx_plane2_median[i_shr] = getMedian(vars.m_reco_shower_dQdx_plane2[i_shr]);
 
 
-      if(maxp0 == m_reco_shower_dEdx_plane0[i_shr].end()){
-        m_reco_shower_dEdx_plane0_max[i_shr] = -999; 
+
+      vars.m_reco_shower_dEdx_plane0_mean[i_shr] = std::accumulate(vars.m_reco_shower_dEdx_plane0[i_shr].begin(), vars.m_reco_shower_dEdx_plane0[i_shr].end(), 0.0)/((double)vars.m_reco_shower_dEdx_plane0[i_shr].size()); 
+      vars.m_reco_shower_dEdx_plane1_mean[i_shr] = std::accumulate(vars.m_reco_shower_dEdx_plane1[i_shr].begin(), vars.m_reco_shower_dEdx_plane1[i_shr].end(), 0.0)/((double)vars.m_reco_shower_dEdx_plane1[i_shr].size()); 
+      vars.m_reco_shower_dEdx_plane2_mean[i_shr] = std::accumulate(vars.m_reco_shower_dEdx_plane2[i_shr].begin(), vars.m_reco_shower_dEdx_plane2[i_shr].end(), 0.0)/((double)vars.m_reco_shower_dEdx_plane2[i_shr].size()); 
+
+      auto maxp0 = std::max_element(vars.m_reco_shower_dEdx_plane0[i_shr].begin(), vars.m_reco_shower_dEdx_plane0[i_shr].end());
+      auto maxp1 = std::max_element(vars.m_reco_shower_dEdx_plane1[i_shr].begin(), vars.m_reco_shower_dEdx_plane1[i_shr].end());
+      auto maxp2 = std::max_element(vars.m_reco_shower_dEdx_plane2[i_shr].begin(), vars.m_reco_shower_dEdx_plane2[i_shr].end());
+      auto minp0 = std::min_element(vars.m_reco_shower_dEdx_plane0[i_shr].begin(), vars.m_reco_shower_dEdx_plane0[i_shr].end());
+      auto minp1 = std::min_element(vars.m_reco_shower_dEdx_plane1[i_shr].begin(), vars.m_reco_shower_dEdx_plane1[i_shr].end());
+      auto minp2 = std::min_element(vars.m_reco_shower_dEdx_plane2[i_shr].begin(), vars.m_reco_shower_dEdx_plane2[i_shr].end());
+
+
+      if(maxp0 == vars.m_reco_shower_dEdx_plane0[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane0_max[i_shr] = -999; 
       }else{
-        m_reco_shower_dEdx_plane0_max[i_shr] = *maxp0; 
+        vars.m_reco_shower_dEdx_plane0_max[i_shr] = *maxp0; 
       }
 
-      if(maxp1 == m_reco_shower_dEdx_plane1[i_shr].end()){
-        m_reco_shower_dEdx_plane1_max[i_shr] = -999; 
+      if(maxp1 == vars.m_reco_shower_dEdx_plane1[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane1_max[i_shr] = -999; 
       }else{
-        m_reco_shower_dEdx_plane1_max[i_shr] = *maxp1; 
+        vars.m_reco_shower_dEdx_plane1_max[i_shr] = *maxp1; 
       }
 
-      if(maxp2 == m_reco_shower_dEdx_plane2[i_shr].end()){
-        m_reco_shower_dEdx_plane2_max[i_shr] = -999; 
+      if(maxp2 == vars.m_reco_shower_dEdx_plane2[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane2_max[i_shr] = -999; 
       }else{
-        m_reco_shower_dEdx_plane2_max[i_shr] = *maxp2; 
-      }
-
-
-      if(minp0 == m_reco_shower_dEdx_plane0[i_shr].end()){
-        m_reco_shower_dEdx_plane0_min[i_shr] = -999; 
-      }else{
-        m_reco_shower_dEdx_plane0_min[i_shr] = *minp0; 
-      }
-
-      if(minp1 == m_reco_shower_dEdx_plane1[i_shr].end()){
-        m_reco_shower_dEdx_plane1_min[i_shr] = -999; 
-      }else{
-        m_reco_shower_dEdx_plane1_min[i_shr] = *minp1; 
-      }
-
-      if(minp2 == m_reco_shower_dEdx_plane2[i_shr].end()){
-        m_reco_shower_dEdx_plane2_min[i_shr] = -999; 
-      }else{
-        m_reco_shower_dEdx_plane2_min[i_shr] = *minp2; 
+        vars.m_reco_shower_dEdx_plane2_max[i_shr] = *maxp2; 
       }
 
 
-      m_reco_shower_dEdx_plane0_nhits[i_shr] = m_reco_shower_dEdx_plane0[i_shr].size();
-      m_reco_shower_dEdx_plane1_nhits[i_shr] = m_reco_shower_dEdx_plane1[i_shr].size();
-      m_reco_shower_dEdx_plane2_nhits[i_shr] = m_reco_shower_dEdx_plane2[i_shr].size();
+      if(minp0 == vars.m_reco_shower_dEdx_plane0[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane0_min[i_shr] = -999; 
+      }else{
+        vars.m_reco_shower_dEdx_plane0_min[i_shr] = *minp0; 
+      }
 
-      m_reco_shower_dEdx_amalgamated[i_shr] = getAmalgamateddEdx( 
-          m_reco_shower_angle_wrt_wires_plane0[i_shr],  
-          m_reco_shower_angle_wrt_wires_plane1[i_shr],  
-          m_reco_shower_angle_wrt_wires_plane2[i_shr], 
-          m_reco_shower_dEdx_plane0_median[i_shr], 
-          m_reco_shower_dEdx_plane1_median[i_shr], 
-          m_reco_shower_dEdx_plane2_median[i_shr],
-          m_reco_shower_dEdx_plane0_nhits[i_shr], 
-          m_reco_shower_dEdx_plane1_nhits[i_shr], 
-          m_reco_shower_dEdx_plane2_nhits[i_shr] );
+      if(minp1 == vars.m_reco_shower_dEdx_plane1[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane1_min[i_shr] = -999; 
+      }else{
+        vars.m_reco_shower_dEdx_plane1_min[i_shr] = *minp1; 
+      }
 
-      m_reco_shower_dEdx_amalgamated_nhits[i_shr] = getAmalgamateddEdxNHits(
-          m_reco_shower_dEdx_amalgamated[i_shr], 
-          m_reco_shower_dEdx_plane0_median[i_shr], 
-          m_reco_shower_dEdx_plane1_median[i_shr], 
-          m_reco_shower_dEdx_plane2_median[i_shr],
-          m_reco_shower_dEdx_plane0_nhits[i_shr], 
-          m_reco_shower_dEdx_plane1_nhits[i_shr], 
-          m_reco_shower_dEdx_plane2_nhits[i_shr] );
+      if(minp2 == vars.m_reco_shower_dEdx_plane2[i_shr].end()){
+        vars.m_reco_shower_dEdx_plane2_min[i_shr] = -999; 
+      }else{
+        vars.m_reco_shower_dEdx_plane2_min[i_shr] = *minp2; 
+      }
 
-      //-------------- Flashes : Was there a flash in the beam_time and if so was it near in Z? --------------------
-      double zmin = m_reco_shower_startz[i_shr];
-      double zmax = zmin + m_reco_shower_dirz[i_shr]*m_reco_shower_length[i_shr];
+
+      vars.m_reco_shower_dEdx_plane0_nhits[i_shr] = vars.m_reco_shower_dEdx_plane0[i_shr].size();
+      vars.m_reco_shower_dEdx_plane1_nhits[i_shr] = vars.m_reco_shower_dEdx_plane1[i_shr].size();
+      vars.m_reco_shower_dEdx_plane2_nhits[i_shr] = vars.m_reco_shower_dEdx_plane2[i_shr].size();
+
+      vars.m_reco_shower_dEdx_amalgamated[i_shr] = getAmalgamateddEdx( 
+          vars.m_reco_shower_angle_wrt_wires_plane0[i_shr],  
+          vars.m_reco_shower_angle_wrt_wires_plane1[i_shr],  
+          vars.m_reco_shower_angle_wrt_wires_plane2[i_shr], 
+          vars.m_reco_shower_dEdx_plane0_median[i_shr], 
+          vars.m_reco_shower_dEdx_plane1_median[i_shr], 
+          vars.m_reco_shower_dEdx_plane2_median[i_shr],
+          vars.m_reco_shower_dEdx_plane0_nhits[i_shr], 
+          vars.m_reco_shower_dEdx_plane1_nhits[i_shr], 
+          vars.m_reco_shower_dEdx_plane2_nhits[i_shr] );
+
+      vars.m_reco_shower_dEdx_amalgamated_nhits[i_shr] = getAmalgamateddEdxNHits(
+          vars.m_reco_shower_dEdx_amalgamated[i_shr], 
+          vars.m_reco_shower_dEdx_plane0_median[i_shr], 
+          vars.m_reco_shower_dEdx_plane1_median[i_shr], 
+          vars.m_reco_shower_dEdx_plane2_median[i_shr],
+          vars.m_reco_shower_dEdx_plane0_nhits[i_shr], 
+          vars.m_reco_shower_dEdx_plane1_nhits[i_shr], 
+          vars.m_reco_shower_dEdx_plane2_nhits[i_shr] );
+
+      //-------------- Flashes : Was there a flash in the beavars.m_time and if so was it near in Z? --------------------
+      double zmin = vars.m_reco_shower_startz[i_shr];
+      double zmax = zmin + vars.m_reco_shower_dirz[i_shr]*vars.m_reco_shower_length[i_shr];
       if(zmin > zmax) std::swap(zmin, zmax);
 
-      double ymin = m_reco_shower_starty[i_shr];
-      double ymax = zmin + m_reco_shower_diry[i_shr]*m_reco_shower_length[i_shr];
+      double ymin = vars.m_reco_shower_starty[i_shr];
+      double ymax = zmin + vars.m_reco_shower_diry[i_shr]*vars.m_reco_shower_length[i_shr];
       if(ymin > ymax) std::swap(ymin, ymax);
 
       //Code property of Gray Yarbrough (all rights reserved)
@@ -1182,13 +1181,13 @@ namespace single_photon
       int shortest_dist_to_flash_index_y=-999;
       int shortest_dist_to_flash_index_yz=-999;
 
-      //            if(m_is_verbose) std::cout<<"AnalyzeShowers()\t||\tnumber of flashes: "<< m_reco_num_flashes<< ""<<std::endl;;
-      for(int i_flash = 0; i_flash < m_reco_num_flashes; ++i_flash) {
+      //            if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\tnumber of flashes: "<< vars.m_reco_num_flashes<< ""<<std::endl;;
+      for(int i_flash = 0; i_flash < vars.m_reco_num_flashes; ++i_flash) {
 
-        double const zcenter=m_reco_flash_zcenter[i_flash];
-        //                if(m_is_verbose) std::cout<< "AnalyzeShowers()\t||\tflash z center:" <<m_reco_flash_zcenter[i_flash]<< ""<<std::endl;;
-        double const ycenter=m_reco_flash_ycenter[i_flash];
-        //                if(m_is_verbose) std::cout<< "AnaluzeShowers()\t||\tflash y center:" <<m_reco_flash_ycenter[i_flash]<< ""<<std::endl;;
+        double const zcenter=vars.m_reco_flash_zcenter[i_flash];
+        //                if(g_is_verbose) std::cout<< "AnalyzeShowers()\t||\tflash z center:" <<vars.m_reco_flash_zcenter[i_flash]<< ""<<std::endl;;
+        double const ycenter=vars.m_reco_flash_ycenter[i_flash];
+        //                if(g_is_verbose) std::cout<< "AnaluzeShowers()\t||\tflash y center:" <<vars.m_reco_flash_ycenter[i_flash]<< ""<<std::endl;;
 
         //z plane
         double dist_z=DBL_MAX;
@@ -1235,31 +1234,31 @@ namespace single_photon
 
 
       //assume setting to nonsense value
-      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_z = -2;
-      m_reco_shower_flash_shortest_distz[i_shr]=shortest_dist_to_flash_z;
-      m_reco_shower_flash_shortest_index_z[i_shr]=shortest_dist_to_flash_index_z;
+      if(vars.m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_z = -2;
+      vars.m_reco_shower_flash_shortest_distz[i_shr]=shortest_dist_to_flash_z;
+      vars.m_reco_shower_flash_shortest_index_z[i_shr]=shortest_dist_to_flash_index_z;
 
-      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_y = -2;
-      m_reco_shower_flash_shortest_disty[i_shr]=shortest_dist_to_flash_y;
-      m_reco_shower_flash_shortest_index_y[i_shr]=shortest_dist_to_flash_index_y;
-      m_reco_shower_flash_shortest_distyz[i_shr]=shortest_dist_to_flash_yz;
-      m_reco_shower_flash_shortest_index_yz[i_shr]=shortest_dist_to_flash_index_yz;
-      if(m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_yz = -2;
+      if(vars.m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_y = -2;
+      vars.m_reco_shower_flash_shortest_disty[i_shr]=shortest_dist_to_flash_y;
+      vars.m_reco_shower_flash_shortest_index_y[i_shr]=shortest_dist_to_flash_index_y;
+      vars.m_reco_shower_flash_shortest_distyz[i_shr]=shortest_dist_to_flash_yz;
+      vars.m_reco_shower_flash_shortest_index_yz[i_shr]=shortest_dist_to_flash_index_yz;
+      if(vars.m_reco_num_flashes_in_beamgate == 0) shortest_dist_to_flash_yz = -2;
 
       //end optical flash code
 
 
-      m_reco_shower_num_daughters[i_shr] = pfp->NumDaughters();  //corresponding PFParticle
-      //      std::cout<<" CHECK numebr "<<m_reco_shower_num_daughters[i_shr]<<std::endl;
-      if(m_reco_shower_num_daughters[i_shr]>0){
+      vars.m_reco_shower_num_daughters[i_shr] = pfp->NumDaughters();  //corresponding PFParticle
+      //      std::cout<<" CHECK numebr "<<vars.m_reco_shower_num_daughters[i_shr]<<std::endl;
+      if(vars.m_reco_shower_num_daughters[i_shr]>0){
         //currently just look at 1 daughter
-        //m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
+        //vars.m_reco_shower_daughter_trackscore[i_shr] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
         int pfp_size = all_PPFPs.size();
         for(int index = 0; index < pfp_size; index++){
           //          std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
           //          " "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
           if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-          m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
+          vars.m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
           break;
         }
       }
@@ -1267,15 +1266,15 @@ namespace single_photon
 
       //------------and finally some slice info-----------------
 
-      m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
-      m_reco_shower_nuscore[i_shr] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_reco_shower_sliceId[i_shr]] ;
-      m_reco_shower_isclearcosmic[i_shr] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
-      m_reco_shower_is_nuslice[i_shr] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
+      vars.m_reco_shower_sliceId[i_shr] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_reco_shower_nuscore[i_shr] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_reco_shower_sliceId[i_shr]] ;
+      vars.m_reco_shower_isclearcosmic[i_shr] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
+      vars.m_reco_shower_is_nuslice[i_shr] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
-      m_reco_shower_trackscore[i_shr] = ppfp->get_TrackScore();
-      m_reco_shower_pfparticle_pdg[i_shr] = ppfp->get_PdgCode();
+      vars.m_reco_shower_trackscore[i_shr] = ppfp->get_TrackScore();
+      vars.m_reco_shower_pfparticle_pdg[i_shr] = ppfp->get_PdgCode();
 
-      //            if ( m_reco_shower_sliceId[i_shr] >0) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<". Pfp id = "<< pfp->Self()<<". The slice id for this shower is "<< m_reco_shower_sliceId[i_shr]<<", the neutrino score for this slice is "<< m_reco_shower_nuscore[i_shr]<<", and is_nuslice = "<<  m_reco_shower_is_nuslice[i_shr]<<". The track score is : "<< m_reco_shower_trackscore[i_shr]<<std::endl;
+      //            if ( vars.m_reco_shower_sliceId[i_shr] >0) std::cout<<"AnalyzeShowers()\t||\t On Shower: "<<i_shr<<". Pfp id = "<< pfp->Self()<<". The slice id for this shower is "<< vars.m_reco_shower_sliceId[i_shr]<<", the neutrino score for this slice is "<< vars.m_reco_shower_nuscore[i_shr]<<", and is_nuslice = "<<  vars.m_reco_shower_is_nuslice[i_shr]<<". The track score is : "<< vars.m_reco_shower_trackscore[i_shr]<<std::endl;
 
       i_shr++;
 
@@ -1293,6 +1292,6 @@ namespace single_photon
     }
 
     //Lets sort and order the showers
-    m_reco_shower_ordered_energy_index = sort_indexes(m_reco_shower_energy_max);
+    vars.m_reco_shower_ordered_energy_index = sort_indexes(vars.m_reco_shower_energy_max);
   }
 }
