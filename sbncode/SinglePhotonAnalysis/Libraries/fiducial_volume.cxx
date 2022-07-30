@@ -6,7 +6,7 @@
 namespace single_photon
 {
 
-int setTPCGeom(){
+int setTPCGeom(para_all& paras){
 
   //copy these from CAFMaker/CAFMaker_module.c
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
@@ -20,22 +20,22 @@ int setTPCGeom(){
       this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
       iTPC++;
     }
-    fTPCVolumes.push_back(std::move(this_tpc_volumes));
+    paras.fTPCVolumes.push_back(std::move(this_tpc_volumes));
   }
 
   // then combine them into active volumes
-  for (const std::vector<geo::BoxBoundedGeo> &tpcs: fTPCVolumes) {
-    m_tpc_active_XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
-    m_tpc_active_YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
-    m_tpc_active_ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
+  for (const std::vector<geo::BoxBoundedGeo> &tpcs: paras.fTPCVolumes) {
+    paras.s_tpc_active_XMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinX() < rhs.MinX(); })->MinX();
+    paras.s_tpc_active_YMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinY() < rhs.MinY(); })->MinY();
+    paras.s_tpc_active_ZMin = std::min_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MinZ() < rhs.MinZ(); })->MinZ();
 
-    m_tpc_active_XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
-    m_tpc_active_YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
-    m_tpc_active_ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
-    if(m_is_verbose){
-      std::cout<<""<<__FUNCTION__<<" || Active TPC info: X:("<<m_tpc_active_XMin<<","<<m_tpc_active_XMax<<")";
-      std::cout<<" Y:("<<m_tpc_active_YMin<<","<<m_tpc_active_YMax<<")";
-      std::cout<<" Z:("<<m_tpc_active_ZMin<<","<<m_tpc_active_ZMax<<")"<<std::endl;
+    paras.s_tpc_active_XMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxX() < rhs.MaxX(); })->MaxX();
+    paras.s_tpc_active_YMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxY() < rhs.MaxY(); })->MaxY();
+    paras.s_tpc_active_ZMax = std::max_element(tpcs.begin(), tpcs.end(), [](auto &lhs, auto &rhs) { return lhs.MaxZ() < rhs.MaxZ(); })->MaxZ();
+    if(g_is_verbose){
+      std::cout<<""<<__FUNCTION__<<" || Active TPC info: X:("<<paras.s_tpc_active_XMin<<","<<paras.s_tpc_active_XMax<<")";
+      std::cout<<" Y:("<<paras.s_tpc_active_YMin<<","<<paras.s_tpc_active_YMax<<")";
+      std::cout<<" Z:("<<paras.s_tpc_active_ZMin<<","<<paras.s_tpc_active_ZMax<<")"<<std::endl;
     }
   }
 
@@ -44,14 +44,14 @@ int setTPCGeom(){
 
 
 /* inside TPC or not? */
-int isInTPCActive(std::vector<double> & vec){
+int isInTPCActive(std::vector<double> & vec, para_all& paras){
   if( vec.size() != 3){
     throw cet::exception("single_photon") << " The coordinate dimension is not 3!";
   }
 
-  bool is_x = (vec[0] > m_tpc_active_XMin && vec[0]< m_tpc_active_XMax );
-  bool is_y = (vec[1] > m_tpc_active_YMin && vec[1]< m_tpc_active_YMax );
-  bool is_z = (vec[2] > m_tpc_active_ZMin && vec[2]< m_tpc_active_ZMax );
+  bool is_x = (vec[0] > paras.s_tpc_active_XMin && vec[0]< paras.s_tpc_active_XMax );
+  bool is_y = (vec[1] > paras.s_tpc_active_YMin && vec[1]< paras.s_tpc_active_YMax );
+  bool is_z = (vec[2] > paras.s_tpc_active_ZMin && vec[2]< paras.s_tpc_active_ZMax );
   bool inside = is_x&&is_y&&is_z;
 
   return inside;
@@ -59,19 +59,19 @@ int isInTPCActive(std::vector<double> & vec){
 
 
 /* returns minimum distance to the TPC active boundary; returns -999 if the point is not in TPC active volume */
-double distToTPCActive(std::vector<double>&vec){
-  if(isInTPCActive(vec)==0) return -999;
-  double min_x = std::min( fabs(vec[0] - m_tpc_active_XMin) ,  fabs(vec[0] - m_tpc_active_XMax));
-  double min_y = std::min( fabs(vec[1] - m_tpc_active_YMin) ,  fabs(vec[1] - m_tpc_active_YMax));
-  double min_z = std::min( fabs(vec[2] - m_tpc_active_ZMin) ,  fabs(vec[2] - m_tpc_active_ZMax));
+double distToTPCActive(std::vector<double>&vec, para_all& paras){
+  if(isInTPCActive(vec, paras)==0) return -999;
+  double min_x = std::min( fabs(vec[0] - paras.s_tpc_active_XMin) ,  fabs(vec[0] - paras.s_tpc_active_XMax));
+  double min_y = std::min( fabs(vec[1] - paras.s_tpc_active_YMin) ,  fabs(vec[1] - paras.s_tpc_active_YMax));
+  double min_z = std::min( fabs(vec[2] - paras.s_tpc_active_ZMin) ,  fabs(vec[2] - paras.s_tpc_active_ZMax));
 
   return ( (min_x<min_y) ? std::min(min_x,min_z)  : std::min(min_y,min_z)    );
 }
 
 
 /* returns minimum distance to the TPCActive boundary around the Cathode Plane Assemble; returns -999 if the point is not in TPC active volume */
-double distToCPA(std::vector<double>&vec){
-  if(isInTPCActive(vec)==0) return -999;
+double distToCPA(std::vector<double>&vec, para_all& paras){
+  if(isInTPCActive(vec, paras)==0) return -999;
   double dx = std::min( fabs(vec[0] - (-0.45)) ,  fabs(vec[0] - 0.45));
 
   return dx;
@@ -84,10 +84,10 @@ double distToCPA(std::vector<double>&vec){
 //        return isInSCB(0.0,vec);
 //    }
 
-int distToSCB(double & dist, std::vector<double> &vec){
+int distToSCB(double & dist, std::vector<double> &vec, para_all& paras){
   //CHECK!
-  dist = distToTPCActive( vec );
-  return isInTPCActive( vec);
+  dist = distToTPCActive( vec, paras);
+  return isInTPCActive( vec, paras);
   //NOT USE SCB YET, bring it back later!
   //
   //        //this one returns the distance to the boundary
@@ -133,8 +133,8 @@ int distToSCB(double & dist, std::vector<double> &vec){
   //        dist_yx = polyXY->Safety(testpt, iseg); // Compute minimum distance from testpt to any segment.
   //
   //        if(0<z_idx && z_idx<10){
-  //            double up_z = pt.Z()-m_tpc_active_z_low; // gonna bet, if it's middle enough to be up_z or down_z is smaller than the safefy in this z regime (1m,10m), it is safe to set up_z = z-0, down_z=1036.8-z 
-  //            double down_z = m_tpc_active_z_high-pt.Z();
+  //            double up_z = pt.Z()-s_tpc_active_z_low; // gonna bet, if it's middle enough to be up_z or down_z is smaller than the safefy in this z regime (1m,10m), it is safe to set up_z = z-0, down_z=1036.8-z 
+  //            double down_z = s_tpc_active_z_high-pt.Z();
   //            double min_z =  std::min(up_z,down_z);
   //
   //            XY_contain ?  dist = std::min(dist_yx,min_z) : dist = -1  ;
@@ -144,8 +144,8 @@ int distToSCB(double & dist, std::vector<double> &vec){
   //        }
   //
   //        //up or down
-  //        double top_y = m_tpc_active_y_high-pt.Y();
-  //        double bottom_y = pt.Y()+m_tpc_active_y_high;
+  //        double top_y = s_tpc_active_y_high-pt.Y();
+  //        double bottom_y = pt.Y()+s_tpc_active_y_high;
   //        double min_y = std::min(top_y, bottom_y);
   //
   //

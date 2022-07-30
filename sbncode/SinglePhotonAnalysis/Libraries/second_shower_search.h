@@ -4,6 +4,7 @@
 #include "TGraph.h"
 
 #include "sbncode/SinglePhotonAnalysis/HelperFunctions/helper_PandoraPFParticles.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/variables.h"
 
 namespace single_photon
 {
@@ -51,55 +52,59 @@ namespace single_photon
   }; //end of class sss_score
 
 
-    TGraph* GetNearestNpts(int p, int cl, std::vector<art::Ptr<recob::Hit>> &hitz, double vertex_wire, double vertex_tick, int Npts);
+  TGraph* GetNearestNpts(int p, int cl, std::vector<art::Ptr<recob::Hit>> &hitz, double vertex_wire, double vertex_tick, int Npts);
 
-    sss_score ScoreCluster(int p, int cl, std::vector<art::Ptr<recob::Hit>> &hits, double vertex_wire, double vertex_tick, const art::Ptr<recob::Shower> &shower);
+  sss_score ScoreCluster(int p, int cl, std::vector<art::Ptr<recob::Hit>> &hits, double vertex_wire, double vertex_tick, const art::Ptr<recob::Shower> &shower);
 
-    int CompareToShowers(int p ,int cl, std::vector<art::Ptr<recob::Hit>>& hitz,double vertex_wire,double vertex_tick,
-            const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & showerToPFParticleMap,      const   std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,                    double eps);
+  int CompareToShowers(int p ,int cl, std::vector<art::Ptr<recob::Hit>>& hitz,double vertex_wire,double vertex_tick,
+      const std::vector<art::Ptr<recob::Shower>>& showers, std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & showerToPFParticleMap,      const   std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> > & pfParticleToHitsMap,                    double eps);
 
 
 
-    std::vector<double>SecondShowerMatching(
+  std::vector<double>SecondShowerMatching(
       std::vector<art::Ptr<recob::Hit>>& hitz,
-            art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
-            std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-            std::map< int ,art::Ptr<simb::MCParticle>>  & MCParticleToTrackIdMap
-  );
+      art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
+      std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
+      std::map< int ,art::Ptr<simb::MCParticle>>  & MCParticleToTrackIdMap,
+      var_all& vars);
 
 
-    //************************************************ Shower Search Slice Second SSS3D ********** /
+  //************************************************ Shower Search Slice Second SSS3D ********** /
 
-    void SecondShowerSearch3D(
-    std::vector<art::Ptr<recob::Shower>> & showers,
-    std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  
-    std::vector<art::Ptr<recob::Track>> & tracks, 
-    std::map<art::Ptr<recob::Track>,  
-    art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
-    art::Event const & evt );
+  void SecondShowerSearch3D(
+      std::vector<art::Ptr<recob::Shower>> & showers,
+      std::map<art::Ptr<recob::Shower>,  art::Ptr<recob::PFParticle>> & NormalShowerToPFParticleMap,  
+      std::vector<art::Ptr<recob::Track>> & tracks, 
+      std::map<art::Ptr<recob::Track>,  
+      art::Ptr<recob::PFParticle>> & NormalTrackToPFParticleMap, 
+      art::Event const & evt ,
+      var_all& vars,
+	  para_all& paras);
 
-    void SimpleSecondShowerCluster();
+  void SimpleSecondShowerCluster(var_all& vars, para_all& paras);
 
-    std::pair<bool, std::vector<double>> clusterCandidateOverlap(const std::vector<int> & candidate_indices, const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks);
+  std::pair<bool, std::vector<double>> clusterCandidateOverlap(const std::vector<int> & candidate_indices, const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks);
 
-   
+
   std::pair<int, std::pair<std::vector<std::vector<double>>, std::vector<double>>> GroupClusterCandidate(int num_clusters,  const std::vector<int>& cluster_planes, const std::vector<double>& cluster_max_ticks, const std::vector<double>& cluster_min_ticks);
 
-//isolation.h
-bool  map_max_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pair<art::Ptr<recob::Hit>,  double> p2){
-  return (p1.second < p2.second);
-}
+  //isolation.h
+  bool  map_max_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pair<art::Ptr<recob::Hit>,  double> p2){
+    return (p1.second < p2.second);
+  }
 
-// override function of sorts for min_element function comparison
-bool  map_min_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pair<art::Ptr<recob::Hit>,  double> p2){
-  return (p1.second > p2.second);
-}
+  // override function of sorts for min_element function comparison
+  bool  map_min_fn(const std::pair<art::Ptr<recob::Hit>,double> p1, const std::pair<art::Ptr<recob::Hit>,  double> p2){
+    return (p1.second > p2.second);
+  }
 
   void IsolationStudy(
       std::vector<PandoraPFParticle> all_PPFPs,
       const std::vector<art::Ptr<recob::Track>>& tracks, 
       const std::vector<art::Ptr<recob::Shower>>& showers, 
-      detinfo::DetectorPropertiesData const & theDetector);
+      detinfo::DetectorPropertiesData const & theDetector,
+      var_all& vars,
+      para_all& paras);
 
 
 }

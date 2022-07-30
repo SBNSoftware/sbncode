@@ -13,18 +13,19 @@ namespace single_photon
       std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> & MCParticleToMCTruthMap,
       std::vector<art::Ptr<simb::MCParticle>> & mcParticleVector,  
       std::map< int, art::Ptr<simb::MCParticle> > &      MCParticleToTrackIdMap, 
-      std::vector<double> & vfrac
+      std::vector<double> & vfrac,
+	var_all& vars  
       ){
 
 
-    //if(m_is_verbose)           
+    //if(g_is_verbose)           
     std::cout<<"RecoMCTracks()\t||\t Begininning recob::Track Reco-MC suite on: "<<tracks.size()<<" tracks."<<std::endl;
 
     int i_trk = 0;
 
     for(size_t k =0; k< tracks.size();++k){
       const art::Ptr<recob::Track> track = tracks[k];
-      m_sim_track_matched[i_trk] = 0;
+      vars.m_sim_track_matched[i_trk] = 0;
 
       if(trackToMCParticleMap.count(track)>0){
 
@@ -46,40 +47,40 @@ namespace single_photon
         //std::cout<<"the corrected end of this mcparticle is "<<correctedend[0]<<", "<<correctedend[1]<<", "<<correctedend[2]<<std::endl;
 
 
-        m_sim_track_matched[i_trk] = 1;
-        m_sim_track_energy[i_trk] = mcparticle->E();
-        m_sim_track_mass[i_trk] = mcparticle->Mass();
-        m_sim_track_kinetic_energy[i_trk] = m_sim_track_energy[i_trk]-m_sim_track_mass[i_trk];
-        m_sim_track_pdg[i_trk] = mcparticle->PdgCode();
-        m_sim_track_process[i_trk] = mcparticle->Process();
-        m_sim_track_startx[i_trk] = correctedstart[0];
-        m_sim_track_starty[i_trk] = correctedstart[1];
-        m_sim_track_startz[i_trk] = correctedstart[2];
+        vars.m_sim_track_matched[i_trk] = 1;
+        vars.m_sim_track_energy[i_trk] = mcparticle->E();
+        vars.m_sim_track_mass[i_trk] = mcparticle->Mass();
+        vars.m_sim_track_kinetic_energy[i_trk] = vars.m_sim_track_energy[i_trk]-vars.m_sim_track_mass[i_trk];
+        vars.m_sim_track_pdg[i_trk] = mcparticle->PdgCode();
+        vars.m_sim_track_process[i_trk] = mcparticle->Process();
+        vars.m_sim_track_startx[i_trk] = correctedstart[0];
+        vars.m_sim_track_starty[i_trk] = correctedstart[1];
+        vars.m_sim_track_startz[i_trk] = correctedstart[2];
 
-        m_sim_track_endx[i_trk]= correctedend[0];
-        m_sim_track_endy[i_trk]= correctedend[1];
-        m_sim_track_endz[i_trk]= correctedend[2];
+        vars.m_sim_track_endx[i_trk]= correctedend[0];
+        vars.m_sim_track_endy[i_trk]= correctedend[1];
+        vars.m_sim_track_endz[i_trk]= correctedend[2];
 
-        m_sim_track_length[i_trk]= sqrt(pow( m_sim_track_endx[i_trk] -  m_sim_track_startx[i_trk], 2)+ pow( m_sim_track_endy[i_trk] -  m_sim_track_starty[i_trk], 2) + pow( m_sim_track_endz[i_trk] -  m_sim_track_startz[i_trk], 2));
+        vars.m_sim_track_length[i_trk]= sqrt(pow( vars.m_sim_track_endx[i_trk] -  vars.m_sim_track_startx[i_trk], 2)+ pow( vars.m_sim_track_endy[i_trk] -  vars.m_sim_track_starty[i_trk], 2) + pow( vars.m_sim_track_endz[i_trk] -  vars.m_sim_track_startz[i_trk], 2));
 
-        m_sim_track_px[i_trk]=  mcparticle->Px();
-        m_sim_track_py[i_trk]=  mcparticle->Py();
-        m_sim_track_pz[i_trk]=  mcparticle->Pz();
+        vars.m_sim_track_px[i_trk]=  mcparticle->Px();
+        vars.m_sim_track_py[i_trk]=  mcparticle->Py();
+        vars.m_sim_track_pz[i_trk]=  mcparticle->Pz();
 
 
-        m_sim_track_origin[i_trk] = mctruth->Origin();
-        m_sim_track_trackID[i_trk] = mcparticle->TrackId();
-        m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
+        vars.m_sim_track_origin[i_trk] = mctruth->Origin();
+        vars.m_sim_track_trackID[i_trk] = mcparticle->TrackId();
+        vars.m_sim_track_overlay_fraction[i_trk] = vfrac[i_trk];
 
-        m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
-        m_sim_track_nuscore[i_trk] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_track_sliceId[i_trk]] ;
-        m_sim_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp]; 
+        vars.m_sim_track_sliceId[i_trk] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+        vars.m_sim_track_nuscore[i_trk] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_sim_track_sliceId[i_trk]] ;
+        vars.m_sim_track_isclearcosmic[i_trk] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp]; 
 
 
         if(mcparticle->Mother()>=(int)mcParticleVector.size()){
-          m_sim_track_parent_pdg[i_trk] = -1;
+          vars.m_sim_track_parent_pdg[i_trk] = -1;
         }else{
-          m_sim_track_parent_pdg[i_trk] = mcParticleVector[mcparticle->Mother()]->PdgCode();
+          vars.m_sim_track_parent_pdg[i_trk] = mcParticleVector[mcparticle->Mother()]->PdgCode();
         }
 
       }
@@ -95,7 +96,9 @@ namespace single_photon
       std::map<art::Ptr<recob::Shower>,art::Ptr<simb::MCParticle>>& showerToMCParticleMap,
       art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
       std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
-      std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap){
+      std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
+	var_all& vars  
+	  ){
 
     std::vector<double> vec_fraction_matched;
     //processes that are "showery"
@@ -109,13 +112,11 @@ namespace single_photon
 
     std::vector<int> spacers = Printer_header({"pfpID", " matched_#simb", " pdg","    E_plane0","    E_plane1","    E_plane2"," cosmic?"});
     //for each recob::track/shower in the event
-    bool default_verbose = m_is_verbose;
-    m_is_verbose = false;
     for(size_t i=0; i<showerVector.size();++i){
       auto shower = showerVector[i];
 
       //get the associated reco PFP
-      //            if(m_is_verbose)std::cout<<"We have "<<showerToPFParticleMap.count(shower)<<" matches in map"<<std::endl;
+      //            if(g_is_verbose)std::cout<<"We have "<<showerToPFParticleMap.count(shower)<<" matches in map"<<std::endl;
 
       PandoraPFParticle* ppfp = PPFP_GetPPFPFromShower(all_PPFPs, shower);
       const art::Ptr<recob::PFParticle> pfp = ppfp->pPFParticle;
@@ -214,8 +215,8 @@ namespace single_photon
 
       double fraction_num_hits_overlay = (double)n_not_associated_hits/(double)obj_hits_ptrs.size();
 
-      if(m_is_verbose)std::cout << "recoMC()\t||\t On Object "<<i<<". The number of MCParticles associated with this PFP is "<<objide.size()<<std::endl;       
-      if(m_is_verbose) std::cout<<"recoMC()\t||\t the fraction of hits from overlay is is "<<fraction_num_hits_overlay<<" ("<<n_not_associated_hits<<"/"<<obj_hits_ptrs.size()<<")"<<std::endl;
+      if(g_is_verbose)std::cout << "recoMC()\t||\t On Object "<<i<<". The number of MCParticles associated with this PFP is "<<objide.size()<<std::endl;       
+      if(g_is_verbose) std::cout<<"recoMC()\t||\t the fraction of hits from overlay is is "<<fraction_num_hits_overlay<<" ("<<n_not_associated_hits<<"/"<<obj_hits_ptrs.size()<<")"<<std::endl;
 
 
       if(n_associated_mcparticle_hits == 0){
@@ -223,40 +224,40 @@ namespace single_photon
         found_a_match =false;
         if(!found_a_match){
         }
-        //Here we will fill every sim_shower_XXX variable with -999 or something like that 
+        //Here we will fill every sivars.m_shower_XXX variable with -999 or something like that 
 
-        m_sim_shower_matched[i] = 0;
-        m_sim_shower_energy[i] = -999;
-        m_sim_shower_mass[i] = -999;
-        m_sim_shower_kinetic_energy[i] = -999;
-        m_sim_shower_pdg[i] = -999;
-        m_sim_shower_trackID[i] = -999;
-        m_sim_shower_process[i] = "overlay";
-        m_sim_shower_end_process[i] = "overlay";
-        m_sim_shower_parent_pdg[i] = -999;
-        m_sim_shower_parent_trackID[i] = -999;
-        m_sim_shower_vertex_x[i] = -9999;
-        m_sim_shower_vertex_y[i] = -9999;
-        m_sim_shower_vertex_z[i] = -9999;
+        vars.m_sim_shower_matched[i] = 0;
+        vars.m_sim_shower_energy[i] = -999;
+        vars.m_sim_shower_mass[i] = -999;
+        vars.m_sim_shower_kinetic_energy[i] = -999;
+        vars.m_sim_shower_pdg[i] = -999;
+        vars.m_sim_shower_trackID[i] = -999;
+        vars.m_sim_shower_process[i] = "overlay";
+        vars.m_sim_shower_end_process[i] = "overlay";
+        vars.m_sim_shower_parent_pdg[i] = -999;
+        vars.m_sim_shower_parent_trackID[i] = -999;
+        vars.m_sim_shower_vertex_x[i] = -9999;
+        vars.m_sim_shower_vertex_y[i] = -9999;
+        vars.m_sim_shower_vertex_z[i] = -9999;
 
-        m_sim_shower_start_x[i] = -9999;
-        m_sim_shower_start_y[i] = -9999;
-        m_sim_shower_start_z[i] = -9999;
-        m_sim_shower_px[i] = -9999;
-        m_sim_shower_py[i] = -9999;
-        m_sim_shower_pz[i] = -9999;
+        vars.m_sim_shower_start_x[i] = -9999;
+        vars.m_sim_shower_start_y[i] = -9999;
+        vars.m_sim_shower_start_z[i] = -9999;
+        vars.m_sim_shower_px[i] = -9999;
+        vars.m_sim_shower_py[i] = -9999;
+        vars.m_sim_shower_pz[i] = -9999;
 
-        m_sim_shower_is_true_shower[i] = -999;
-        m_sim_shower_best_matched_plane[i] = -999;
-        m_sim_shower_matched_energy_fraction_plane0[i] = -999;
-        m_sim_shower_matched_energy_fraction_plane1[i] = -999;
-        m_sim_shower_matched_energy_fraction_plane2[i] = -999;
+        vars.m_sim_shower_is_true_shower[i] = -999;
+        vars.m_sim_shower_best_matched_plane[i] = -999;
+        vars.m_sim_shower_matched_energy_fraction_plane0[i] = -999;
+        vars.m_sim_shower_matched_energy_fraction_plane1[i] = -999;
+        vars.m_sim_shower_matched_energy_fraction_plane2[i] = -999;
 
-        m_sim_shower_overlay_fraction[i] = fraction_num_hits_overlay;
-        m_sim_shower_sliceId[i] = -999;
-        m_sim_shower_nuscore[i] = -999;
-        m_sim_shower_isclearcosmic[i] = -999;
-        m_sim_shower_is_nuslice[i] = -999;
+        vars.m_sim_shower_overlay_fraction[i] = fraction_num_hits_overlay;
+        vars.m_sim_shower_sliceId[i] = -999;
+        vars.m_sim_shower_nuscore[i] = -999;
+        vars.m_sim_shower_isclearcosmic[i] = -999;
+        vars.m_sim_shower_is_nuslice[i] = -999;
 
 
         continue;
@@ -282,13 +283,13 @@ namespace single_photon
 
       int num_bt_mothers =0;  // number of associated MCP that has mothers
 
-      //m_is_verbose = false;
+      //g_is_verbose = false;
       //for each MCP that's associated to the reco shower
       for(auto mcp:asso_mcparticles_vec){
 
-        if(m_is_verbose) std::cout<<"-----------------------------Start L1 Loop --------------------------------------------------"<<std::endl;
-        if(m_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Start by Looking at an MCP with pdg code "<<mcp->PdgCode()<<" and status code "<<mcp->StatusCode()<<" TrackID: "<<mcp->TrackId()<<std::endl;
-        if(m_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") This MCP gave "<<   map_asso_mcparticles_energy[mcp][0] <<" | "<<map_asso_mcparticles_energy[mcp][1]<<" | "<<map_asso_mcparticles_energy[mcp][2]<<" energy to the recob::Object on each plane"<<std::endl;
+        if(g_is_verbose) std::cout<<"-----------------------------Start L1 Loop --------------------------------------------------"<<std::endl;
+        if(g_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Start by Looking at an MCP with pdg code "<<mcp->PdgCode()<<" and status code "<<mcp->StatusCode()<<" TrackID: "<<mcp->TrackId()<<std::endl;
+        if(g_is_verbose) std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") This MCP gave "<<   map_asso_mcparticles_energy[mcp][0] <<" | "<<map_asso_mcparticles_energy[mcp][1]<<" | "<<map_asso_mcparticles_energy[mcp][2]<<" energy to the recob::Object on each plane"<<std::endl;
         //                std::cout<<"L1: the mother of this MCP is track id "<<mcp->Mother()<<" and there are "<<mcp->NumberDaughters()<<" daughters"<<std::endl;
 
         //get the track ID for the current MCP
@@ -304,13 +305,13 @@ namespace single_photon
 
           //check if it's a valid MCP
           if (this_mcp.isNull()){
-            if(m_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  null pointer at id "<<this_mcp_id<<std::endl;
+            if(g_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  null pointer at id "<<this_mcp_id<<std::endl;
             this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
             break;
           }
 
           //If primary particle will have process "primary"
-          if(m_is_verbose)    std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  going up the tree at an MCP with track id  "<<this_mcp_id<<", pdg code "<<this_mcp->PdgCode()<<", and status code "<<this_mcp->StatusCode()<<" and Mother: "<<this_mcp->Mother()<<" Process: "<<this_mcp->Process()<<" EndProcess: "<<this_mcp->EndProcess()<<std::endl;
+          if(g_is_verbose)    std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<")  going up the tree at an MCP with track id  "<<this_mcp_id<<", pdg code "<<this_mcp->PdgCode()<<", and status code "<<this_mcp->StatusCode()<<" and Mother: "<<this_mcp->Mother()<<" Process: "<<this_mcp->Process()<<" EndProcess: "<<this_mcp->EndProcess()<<std::endl;
 
           //if it is a valid particle, iterate forward to the mother
           last_mcp_id = this_mcp_id;
@@ -322,11 +323,11 @@ namespace single_photon
 
           }else if(this_mcp->Process()=="primary"){
             //if its primary, great! Note it.
-            if(m_is_verbose)  std::cout<<"L1: Backtracked to primary! breaking"<<std::endl;
+            if(g_is_verbose)  std::cout<<"L1: Backtracked to primary! breaking"<<std::endl;
             this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
             break;
           }else{
-            if(m_is_verbose) std::cout<<"L1: Backtracked to a particle created in "<<this_mcp->EndProcess()<<"! breaking"<<std::endl;
+            if(g_is_verbose) std::cout<<"L1: Backtracked to a particle created in "<<this_mcp->EndProcess()<<"! breaking"<<std::endl;
             this_mcp_id = last_mcp_id; //if invalid, move back a level to the previous MCP in parent tree and break the loop
             break;
           }
@@ -336,7 +337,7 @@ namespace single_photon
         if (this_mcp_id >= 0){
 
           //Guanqun: this line here doesn't really cosider other break cases than finding primary particle
-          if(m_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Storing the mother mother particle with track id "<<this_mcp_id<<" and pdg code "<<MCParticleToTrackIdMap[this_mcp_id]->PdgCode()<<" and status code "<<MCParticleToTrackIdMap[this_mcp_id]->StatusCode()<<std::endl;
+          if(g_is_verbose)   std::cout<<"L1: ("<<i<<" <-> "<<i_mcp<<") Storing the mother mother particle with track id "<<this_mcp_id<<" and pdg code "<<MCParticleToTrackIdMap[this_mcp_id]->PdgCode()<<" and status code "<<MCParticleToTrackIdMap[this_mcp_id]->StatusCode()<<std::endl;
 
           mother_MCP_map[this_mcp_id] = MCParticleToTrackIdMap[this_mcp_id];//putting it in a map allows for multiple contributing MCP's in the reco shower to have the same mother MCP
 
@@ -363,19 +364,19 @@ namespace single_photon
 
           num_bt_mothers++;
         } else{
-          if(m_is_verbose)  std::cout<<"L1: error, the mother mother id was "<<this_mcp_id <<std::endl;
+          if(g_is_verbose)  std::cout<<"L1: error, the mother mother id was "<<this_mcp_id <<std::endl;
 
         }
 
-        if(m_is_verbose)  std::cout<<"-----------------------------End L1 Loop --------------------------------------------------"<<std::endl;
+        if(g_is_verbose)  std::cout<<"-----------------------------End L1 Loop --------------------------------------------------"<<std::endl;
         i_mcp++;
       }//for each MCParticle that's associated to a the recob::Shower
 
-      //m_is_verbose = true;
+      //g_is_verbose = true;
       //there should be at least 1 mother MCP
-      if(m_is_verbose)           std::cout<<"recoMC()\t||\t the number of source mother particles is "<<mother_MCP_map.size()<<" of which : "<<marks_mother_vector.size()<<" are unique!"<<std::endl;
+      if(g_is_verbose)           std::cout<<"recoMC()\t||\t the number of source mother particles is "<<mother_MCP_map.size()<<" of which : "<<marks_mother_vector.size()<<" are unique!"<<std::endl;
 
-      if(m_is_verbose)       std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
+      if(g_is_verbose)       std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
 
       double best_mother_index = 0;
       double best_mother_energy = -9999;
@@ -384,8 +385,8 @@ namespace single_photon
       for(size_t p=0; p< marks_mother_vector.size(); p++){
         art::Ptr<simb::MCParticle> mother = marks_mother_vector[p];
         std::vector<double> mother_energy_recod = marks_mother_energy_fraction_map[mother];
-        if(m_is_verbose)    std::cout<<"L2: Mother candidate "<<p<<" TrackID "<<mother->TrackId()<<" Process: "<<mother->Process()<<" EndProcess: "<<mother->EndProcess()<<std::endl;
-        if(m_is_verbose)   std::cout<<"L2: Mother candidate "<<p<<" Energy "<<mother->E()<<" Reco'd Energy: "<<mother_energy_recod[0]<<" | "<<mother_energy_recod[1]<<" | "<<mother_energy_recod[2]<<" Fraction: ("<<mother_energy_recod[0]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[1]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[2]/(1000*mother->E())*100.0<<"% )"<<std::endl;
+        if(g_is_verbose)    std::cout<<"L2: Mother candidate "<<p<<" TrackID "<<mother->TrackId()<<" Process: "<<mother->Process()<<" EndProcess: "<<mother->EndProcess()<<std::endl;
+        if(g_is_verbose)   std::cout<<"L2: Mother candidate "<<p<<" Energy "<<mother->E()<<" Reco'd Energy: "<<mother_energy_recod[0]<<" | "<<mother_energy_recod[1]<<" | "<<mother_energy_recod[2]<<" Fraction: ("<<mother_energy_recod[0]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[1]/(1000*mother->E())*100.0<<"% , "<<mother_energy_recod[2]/(1000*mother->E())*100.0<<"% )"<<std::endl;
 
         if( mother_energy_recod[0] > best_mother_energy){
           best_mother_index = p;
@@ -410,7 +411,7 @@ namespace single_photon
 
 
       // now have found the best mother of the shower
-      if(m_is_verbose) std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
+      if(g_is_verbose) std::cout<<"---------------------------- L2-------------------------------"<<std::endl;
       const art::Ptr<simb::MCParticle> match = marks_mother_vector[best_mother_index];
 
       std::vector<double> corrected_vertex(3), corrected_start(3);
@@ -420,66 +421,66 @@ namespace single_photon
       if(match->PdgCode()==22){ // if it's a gamma
         std::vector<double> tmp  ={match->EndX(), match->EndY(), match->EndZ()};
         spacecharge_correction(match, corrected_start, tmp );
-        m_sim_shower_is_true_shower[i] = 1;
+        vars.m_sim_shower_is_true_shower[i] = 1;
       }else if(abs(match->PdgCode())==11){  // if it's e+/e-
         spacecharge_correction(match, corrected_start);
-        m_sim_shower_is_true_shower[i] = 1;
+        vars.m_sim_shower_is_true_shower[i] = 1;
       }else{
         corrected_start = {-999,-999,-999};
-        m_sim_shower_is_true_shower[i] = 0;
+        vars.m_sim_shower_is_true_shower[i] = 0;
       }
 
       art::Ptr<simb::MCParticle> match_mother = MCParticleToTrackIdMap[match->Mother()];
 
       if (match_mother.isNull()){
-        m_sim_shower_parent_pdg[i] = -1;
-        m_sim_shower_parent_trackID[i] = -1;
+        vars.m_sim_shower_parent_pdg[i] = -1;
+        vars.m_sim_shower_parent_trackID[i] = -1;
 
       }else{
-        m_sim_shower_parent_pdg[i] = match_mother->PdgCode();
-        m_sim_shower_parent_trackID[i] = match_mother->TrackId();
+        vars.m_sim_shower_parent_pdg[i] = match_mother->PdgCode();
+        vars.m_sim_shower_parent_trackID[i] = match_mother->TrackId();
       }
 
 
 
-      m_sim_shower_matched[i] = 1;
-      m_sim_shower_energy[i] = match->E();
-      m_sim_shower_mass[i] = match->Mass();
-      m_sim_shower_kinetic_energy[i] = match->E()-match->Mass();
-      m_sim_shower_pdg[i] = match->PdgCode();
-      m_sim_shower_trackID[i] = match->TrackId();
-      m_sim_shower_process[i] = match->Process();
-      m_sim_shower_end_process[i] = match->EndProcess();
-      m_sim_shower_vertex_x[i] = corrected_vertex[0];
-      m_sim_shower_vertex_y[i] = corrected_vertex[1];
-      m_sim_shower_vertex_z[i] =corrected_vertex[2];
+      vars.m_sim_shower_matched[i] = 1;
+      vars.m_sim_shower_energy[i] = match->E();
+      vars.m_sim_shower_mass[i] = match->Mass();
+      vars.m_sim_shower_kinetic_energy[i] = match->E()-match->Mass();
+      vars.m_sim_shower_pdg[i] = match->PdgCode();
+      vars.m_sim_shower_trackID[i] = match->TrackId();
+      vars.m_sim_shower_process[i] = match->Process();
+      vars.m_sim_shower_end_process[i] = match->EndProcess();
+      vars.m_sim_shower_vertex_x[i] = corrected_vertex[0];
+      vars.m_sim_shower_vertex_y[i] = corrected_vertex[1];
+      vars.m_sim_shower_vertex_z[i] =corrected_vertex[2];
 
-      m_sim_shower_start_x[i] = corrected_start[0];
-      m_sim_shower_start_y[i] = corrected_start[1];
-      m_sim_shower_start_z[i] =corrected_start[2];
+      vars.m_sim_shower_start_x[i] = corrected_start[0];
+      vars.m_sim_shower_start_y[i] = corrected_start[1];
+      vars.m_sim_shower_start_z[i] =corrected_start[2];
 
-      m_sim_shower_px[i] = match->Px();
-      m_sim_shower_py[i] = match->Py();
-      m_sim_shower_pz[i] = match->Pz();
+      vars.m_sim_shower_px[i] = match->Px();
+      vars.m_sim_shower_py[i] = match->Py();
+      vars.m_sim_shower_pz[i] = match->Pz();
 
       // should've use 'best_mother_plane' here
-      m_sim_shower_best_matched_plane[i] = best_mother_index;
-      m_sim_shower_matched_energy_fraction_plane0[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][0]/total_energy_on_plane[0];
-      m_sim_shower_matched_energy_fraction_plane1[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][1]/total_energy_on_plane[1];
-      m_sim_shower_matched_energy_fraction_plane2[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][2]/total_energy_on_plane[2];
+      vars.m_sim_shower_best_matched_plane[i] = best_mother_index;
+      vars.m_sim_shower_matched_energy_fraction_plane0[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][0]/total_energy_on_plane[0];
+      vars.m_sim_shower_matched_energy_fraction_plane1[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][1]/total_energy_on_plane[1];
+      vars.m_sim_shower_matched_energy_fraction_plane2[i] = marks_mother_energy_fraction_map[marks_mother_vector[best_mother_index]][2]/total_energy_on_plane[2];
 
-      m_sim_shower_overlay_fraction[i] = fraction_num_hits_overlay;
+      vars.m_sim_shower_overlay_fraction[i] = fraction_num_hits_overlay;
 
       mcParticleVector.push_back(match);
       showerToMCParticleMap[shower] = mcParticleVector.back();
 
-      m_sim_shower_sliceId[i] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
-      m_sim_shower_nuscore[i] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ m_sim_shower_sliceId[i]] ;
-      m_sim_shower_isclearcosmic[i] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
-      m_sim_shower_is_nuslice[i] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
+      vars.m_sim_shower_sliceId[i] = ppfp->get_SliceID();//PFPToSliceIdMap[pfp];
+      vars.m_sim_shower_nuscore[i] = ppfp->get_NuScore();//sliceIdToNuScoreMap[ vars.m_sim_shower_sliceId[i]] ;
+      vars.m_sim_shower_isclearcosmic[i] = ppfp->get_IsClearCosmic();//PFPToClearCosmicMap[pfp];
+      vars.m_sim_shower_is_nuslice[i] = ppfp->get_IsNuSlice();//PFPToNuSliceMap[pfp];
 
       //            if(marks_mother_vector.size()!=0){
-      //                //if(m_is_verbose)  std::cout<<"recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
+      //                //if(g_is_verbose)  std::cout<<"recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
       //    //std::vector<int> spacers = Printer_header({"pfpID", " matched_#simb", " pdg","    E_plane0","    E_plane1","    E_plane2"," cosmic?"});
       //                std::cout<<"recoMC()\t||\t The `BEST` mother is a "<<marks_mother_vector[best_mother_index]->PdgCode()<<" at "<<best_mother_index<<" on plane: "<<best_mother_plane<<std::endl;
       //                for(int l=0; l<3; l++){
@@ -488,7 +489,7 @@ namespace single_photon
       //            }
       //
       //
-      //            if (m_sim_shower_isclearcosmic[i]== false){
+      //            if (vars.m_sim_shower_isclearcosmic[i]== false){
       //                std::cout<<"sim shower is matched to non-clear cosmic PFP "<<pfp->Self()<<std::endl;
       //            }
       Printer_content({std::to_string(pfp->Self()),
@@ -500,10 +501,9 @@ namespace single_photon
           std::to_string(ppfp->get_IsClearCosmic())
           },spacers);
 
-      if (m_is_verbose)  std::cout<<"looking at pfp "<< pfp->Self()<<" with is matched to true particle with pdg  m_sim_shower_pdg[i]= "<<  m_sim_shower_pdg[i]<< ". is_nuslice = "<< m_sim_shower_is_nuslice[i]<<" in slice "<< m_sim_shower_sliceId[i]<<". The matched energy for this shower from mark's mother particle with pdg "<<marks_mother_vector[best_mother_index]->PdgCode()<< " is "<<m_sim_shower_matched_energy_fraction_plane0[i]<<"/"<<m_sim_shower_matched_energy_fraction_plane1[i]<<"/" <<m_sim_shower_matched_energy_fraction_plane2[i]<<std::endl;
+      if (g_is_verbose)  std::cout<<"looking at pfp "<< pfp->Self()<<" with is matched to true particle with pdg  vars.m_sim_shower_pdg[i]= "<<  vars.m_sim_shower_pdg[i]<< ". is_nuslice = "<< vars.m_sim_shower_is_nuslice[i]<<" in slice "<< vars.m_sim_shower_sliceId[i]<<". The matched energy for this shower from mark's mother particle with pdg "<<marks_mother_vector[best_mother_index]->PdgCode()<< " is "<<vars.m_sim_shower_matched_energy_fraction_plane0[i]<<"/"<<vars.m_sim_shower_matched_energy_fraction_plane1[i]<<"/" <<vars.m_sim_shower_matched_energy_fraction_plane2[i]<<std::endl;
 
     }//end vector loop.
-    m_is_verbose = default_verbose;
   }//end showerRecoMCmatching
 
 
@@ -520,7 +520,8 @@ namespace single_photon
         std::map<art::Ptr<recob::Track>,art::Ptr<recob::PFParticle>>& objectToPFParticleMap,
         std::map<art::Ptr<recob::PFParticle>, std::vector<art::Ptr<recob::Hit>> >& pfParticleToHitsMap,
         art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
-        std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector){
+        std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
+        var_all& vars ){
 
       std::vector<double> trk_overlay_vec;
       std::vector<double> vec_fraction_matched;
@@ -618,7 +619,7 @@ namespace single_photon
           // mcParticleVector.push_back(0);
         }
         vec_fraction_matched.push_back(maxe/tote);
-        // if(m_is_verbose){
+        // if(g_is_verbose){
         //     std::cout << "recoMC()\t||\t the fracrion matched is "<<maxe/tote<<std::endl;
         // }
 

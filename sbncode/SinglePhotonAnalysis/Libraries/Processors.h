@@ -23,7 +23,8 @@ namespace single_photon
     const std::string &label,
     std::map< art::Ptr<simb::MCTruth>, std::vector<art::Ptr<simb::MCParticle>>> &truthToParticles,
     std::map< art::Ptr<simb::MCParticle>, art::Ptr<simb::MCTruth>> &particlesToTruth,
-    std::map< int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap);
+    std::map< int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap,
+    var_all& vars);
 
     void CollectSimChannels(const art::Event &evt, const std::string &label,  std::vector< art::Ptr<sim::SimChannel> >  &simChannelVector);
 
@@ -34,34 +35,35 @@ namespace single_photon
       std::map< art::Ptr<simb::MCParticle>,  std::vector<art::Ptr<recob::Hit> >  >  &particlesToHits,         
       std::map< art::Ptr<recob::Hit>, art::Ptr<simb::MCParticle> >                  &hitsToParticles, 
       const lar_pandora::LArPandoraHelper::DaughterMode daughterMode, 
-      std::map< int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap);
+      std::map< int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap,
+    var_all& vars);
 
-    bool Pi0PreselectionFilter();
+    bool Pi0PreselectionFilter    (var_all& vars, para_all& paras);
 
-    bool Pi0PreselectionFilter2g0p();
+    bool Pi0PreselectionFilter2g0p(var_all& vars, para_all& paras);
 
-    bool IsEventInList(int run, int subrun, int event);
+    bool IsEventInList(int run, int subrun, int event, var_all& vars);
 
 //----------- Above are migrated from Singlephoton_module.cc
 
     //determines if a point is inside the rectangle by summing the areas of the four triangles made by 
     //if the point is inside, the sum of the triangles should exactly equal the area of the rectangle
     //also returns true if the point is on the boundary
-    bool isInsidev2(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle);
+    bool isInsidev2(std::vector<double> thishit_pos, std::vector<std::vector<double >> rectangle, para_all& paras);
 
 
   //helpers for calculating calometry
-    double CalcEShower(const std::vector<art::Ptr<recob::Hit>> &hits);
+//    double CalcEShower(const std::vector<art::Ptr<recob::Hit>> &hits, var_all& vars);
 
-    double CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int this_plane);
+    double CalcEShowerPlane(const std::vector<art::Ptr<recob::Hit>>& hits, int this_plane, para_all& paras);
 
-    double GetQHit(art::Ptr<recob::Hit> thishitptr, int plane);
-
-
-    double QtoEConversion(double Q);
+    double GetQHit(art::Ptr<recob::Hit> thishitptr, int plane, para_all& paras);
 
 
-    std::vector<double> CalcdEdxFromdQdx(std::vector<double> dqdx);
+    double QtoEConversion(double Q, para_all& paras);
+
+
+    std::vector<double> CalcdEdxFromdQdx(std::vector<double> dqdx, para_all& paras);
 
 
     std::vector<double> CalcdQdxShower(
@@ -69,9 +71,10 @@ namespace single_photon
             const std::vector<art::Ptr<recob::Cluster>> & clusters, 
             std::map<art::Ptr<recob::Cluster>,    std::vector<art::Ptr<recob::Hit>> > &  clusterToHitMap ,int plane,
       double triggeroffset,
-      detinfo::DetectorPropertiesData const & theDetector);
+      detinfo::DetectorPropertiesData const & theDetector,
+      para_all& paras);
 
-  std::vector<double> getPitch(TVector3 shower_dir);
+  std::vector<double> getPitch(TVector3 shower_dir, para_all& paras);
 
 
     double getMeanHitWidthPlane(std::vector<art::Ptr<recob::Hit>> hits, int this_plane);
@@ -86,7 +89,7 @@ namespace single_photon
 
     int quick_delaunay_fit(int n, double *X, double *Y, int *num_triangles, double * area);
 
-    int delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area);
+    int delaunay_hit_wrapper(const std::vector<art::Ptr<recob::Hit>>& hits, std::vector<int> & num_hits, std::vector<int>& num_triangles, std::vector<double> & area, para_all& paras);
 
 }
 #endif // SBNCODE_SINGLEPHOTONANALYSIS_LIBARIES_PROCESSORS_H
