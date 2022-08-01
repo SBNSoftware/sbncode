@@ -11,7 +11,7 @@ namespace single_photon
   void AnalyzeGeant4( const    std::vector<art::Ptr<simb::MCParticle>> &mcParticleVector, var_all& vars){
 
 
-    std::vector<int> spacers = Printer_header({"#MCP","   pdg", " Status"," trkID"," Mother"," Process", "            Process_End","     Energy", "      Vertex(x,  ","       y,      ",",      z     )"});
+    std::vector<int> spacers = Printer_header({"#MCP","  pdg", " Status"," trkID"," Mother"," Process", "      Process_End","   Energy", "    Vertex(x,  ","     y,     ","       z  )"});
     for(size_t j=0;j< mcParticleVector.size();j++){
 
       const art::Ptr<simb::MCParticle> mcp = mcParticleVector[j];
