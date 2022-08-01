@@ -1,4 +1,4 @@
-#ifndef SBNCODE_SINGLEPHOTONANALYS_ISINIT_BRANCHES_H
+#ifndef SBNCODE_SINGLEPHOTONANALYS_INIT_BRANCHES_H
 #define SBNCODE_SINGLEPHOTONANALYS_INIT_BRANCHES_H
 
 #include "sbncode/SinglePhotonAnalysis/Libraries/variables.h"
@@ -71,4 +71,4 @@ namespace single_photon
   void Save_PFParticleInfo( std::vector<PandoraPFParticle> PPFPs, var_all& vars, para_all& paras);
 
 }
-#endif
+#endif // SBNCODE_SINGLEPHOTONANALYS_INIT_BRANCHES_H
