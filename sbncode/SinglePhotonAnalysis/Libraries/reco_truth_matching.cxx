@@ -89,6 +89,7 @@ namespace single_photon
 
     return;
   }
+
   //recoMCmatching but specifically for recob::showers
   void showerRecoMCmatching(
       std::vector<PandoraPFParticle> all_PPFPs,
@@ -97,8 +98,7 @@ namespace single_photon
       art::FindManyP<simb::MCParticle,anab::BackTrackerHitMatchingData>& mcparticles_per_hit,
       std::vector<art::Ptr<simb::MCParticle>>& mcParticleVector,
       std::map< int ,art::Ptr<simb::MCParticle> >  &  MCParticleToTrackIdMap,
-	var_all& vars  
-	  ){
+      var_all& vars){
 
     std::vector<double> vec_fraction_matched;
     //processes that are "showery"
@@ -353,7 +353,7 @@ namespace single_photon
               break;
             }
           }
-          if(is_old==false){
+          if(is_old==false){//add one element in marks_mother_vector
             marks_mother_vector.push_back(MCParticleToTrackIdMap[this_mcp_id]);
             marks_mother_energy_fraction_map[marks_mother_vector.back()] = {0.0,0.0,0.0};
             marks_mother_energy_fraction_map[marks_mother_vector.back()][0] =  map_asso_mcparticles_energy[mcp][0];

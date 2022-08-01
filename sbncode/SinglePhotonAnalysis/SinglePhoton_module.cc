@@ -911,18 +911,18 @@ namespace single_photon
 
     //Only run if its not data, i.e. MC events :)
     if(!paras.s_is_data){
-
-      if(!paras.s_is_textgen){
-        std::vector<art::Ptr<simb::GTruth>> gTruthVector;
-        std::cout<<"\n Get some GTruth info."<<std::endl;
-        // if Text is in the generator label, skip it. TODO this is a bit simple but works, maybe add a boolean
-        art::ValidHandle<std::vector<simb::GTruth>> const & gTruthHandle= evt.getValidHandle<std::vector<simb::GTruth>>(paras.s_generatorLabel);
-        art::fill_ptr_vector(gTruthVector,gTruthHandle);
-        if(g_is_verbose){
-          for(size_t p=0; p< gTruthVector.size();p++) std::cout<<gTruthVector[p]<<" "<<*gTruthVector[p]<<std::endl;
-        }
-        std::cout<<"done"<<std::endl;
-      }
+//GTruth information, don't need this at the moment; 
+//      if(!paras.s_is_textgen){
+//        std::vector<art::Ptr<simb::GTruth>> gTruthVector;
+//        std::cout<<"\n Get some GTruth info."<<std::endl;
+//        // if Text is in the generator label, skip it. TODO this is a bit simple but works, maybe add a boolean
+//        art::ValidHandle<std::vector<simb::GTruth>> const & gTruthHandle= evt.getValidHandle<std::vector<simb::GTruth>>(paras.s_generatorLabel);
+//        art::fill_ptr_vector(gTruthVector,gTruthHandle);
+//        if(g_is_verbose){
+//          for(size_t p=0; p< gTruthVector.size();p++) std::cout<<gTruthVector[p]<<" "<<*gTruthVector[p]<<std::endl;
+//        }
+//        std::cout<<"done"<<std::endl;
+//      }
 
       //get MCTruth (GENIE)
       art::ValidHandle<std::vector<simb::MCTruth>> const & mcTruthHandle= evt.getValidHandle<std::vector<simb::MCTruth>>(paras.s_generatorLabel);
@@ -935,7 +935,7 @@ namespace single_photon
       //Found inanalyze_Geant4.h
       //Currently just saves first 2 particles. TODO have a input list of things to save. Dont want to save everything!!
 
-      if(g_is_verbose) std::cout<<"SinglePhoton::AnalyzeGeant4s()\t||\t Begininning recob::Geant4 analysis suite"<<std::endl;;
+      if(g_is_verbose) std::cout<<"SinglePhoton::AnalyzeGeant4()\t||\t Begininning recob::Geant4 analysis suite"<<std::endl;;
       AnalyzeGeant4(mcParticleVector, vars);
 
 
