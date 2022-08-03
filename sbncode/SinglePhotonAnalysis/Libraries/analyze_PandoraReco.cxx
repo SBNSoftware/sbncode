@@ -28,7 +28,7 @@ namespace single_photon
       std::map<int, art::Ptr<simb::MCParticle> > & MCParticleToTrackIdMap,
       std::map<int, double> &sliceIdToNuScoreMap,
       var_all& vars,
-	  para_all& paras){
+      para_all& paras){
 
 
     if(g_is_verbose) std::cout<<"AnalyzeTracks()\t||\t Starting recob::Track analysis"<<std::endl;;
@@ -167,9 +167,10 @@ namespace single_photon
         //                vars.m_reco_track_daughter_trackscore[i_trk] = PFPToTrackScoreMap[pfParticleMap[pfp->Daughters().front()]];
         int pfp_size = all_PPFPs.size();
         for(int index = 0; index < pfp_size; index++){
-          if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-          vars.m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].get_TrackScore();
-          break;
+          if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self()){
+            vars.m_reco_track_daughter_trackscore[i_trk] = all_PPFPs[index].get_TrackScore();
+            break;
+          }
         }
 
       }
@@ -729,7 +730,7 @@ namespace single_photon
 
   //Analyze falshes
   void AnalyzeFlashes(const std::vector<art::Ptr<recob::OpFlash>>& flashes, art::Handle<std::vector<sbn::crt::CRTHit>> crthit_h, double evt_timeGPS_nsec,  std::map<art::Ptr<recob::OpFlash>, std::vector< art::Ptr<sbn::crt::CRTHit>>> crtvetoToFlashMap,
-var_all& vars, para_all& paras){
+      var_all& vars, para_all& paras){
 
 
     for(auto pair: crtvetoToFlashMap){
@@ -843,8 +844,8 @@ var_all& vars, para_all& paras){
       std::map<art::Ptr<recob::Cluster>,  std::vector<art::Ptr<recob::Hit>> >  & clusterToHitMap , 
       double triggeroffset,
       detinfo::DetectorPropertiesData const & theDetector,
-	  var_all& vars,
-	  para_all& paras){
+      var_all& vars,
+      para_all& paras){
     //        if(g_is_verbose) std::cout<<"AnalyzeShowers()\t||\t Begininning recob::Shower analysis suite"<<std::endl;;
 
     int i_shr = 0;
@@ -1257,9 +1258,10 @@ var_all& vars, para_all& paras){
         for(int index = 0; index < pfp_size; index++){
           //          std::cout<<"CHECK Compare "<<pfp->Daughters().front()<<
           //          " "<<all_PPFPs[index].pPFParticle->Self()<<std::endl;
-          if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self());
-          vars.m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
-          break;
+          if( (pfp->Daughters().front()) == all_PPFPs[index].pPFParticle->Self()){
+            vars.m_reco_shower_daughter_trackscore[i_shr] = all_PPFPs[index].get_TrackScore();
+            break;
+          }
         }
       }
 
