@@ -164,7 +164,12 @@ class CAFMaker : public art::EDProducer {
   CAFMakerParams fParams;
 
   std::string fCafFilename;
+  std::string fCafBlindFilename;
+  std::string fCafPrescaleFilename;
+
   std::string fFlatCafFilename;
+  std::string fFlatCafBlindFilename;
+  std::string fFlatCafPrescaleFilename;
 
   bool fFirstInSubRun;
   bool fFirstInFile;
@@ -179,12 +184,24 @@ class CAFMaker : public art::EDProducer {
   // int fBatch;
 
   TFile* fFile = 0;
+  TFile* fFileb = 0;
+  TFile* fFilep = 0;
+
   TTree* fRecTree = 0;
+  TTree* fRecTreeb = 0;
+  TTree* fRecTreep = 0;
 
   TFile* fFlatFile = 0;
+  TFile* fFlatFileb = 0;
+  TFile* fFlatFilep = 0;
+
   TTree* fFlatTree = 0;
+  TTree* fFlatTreeb = 0;
+  TTree* fFlatTreep = 0;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
+  flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
+  flat::Flat<caf::StandardRecord>* fFlatRecordp = 0;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
@@ -194,6 +211,11 @@ class CAFMaker : public art::EDProducer {
 
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
+
+  // random number generator for prescaling
+  TRandom *fBlindTRandom;
+  bool keepprescale;
+
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -210,6 +232,8 @@ class CAFMaker : public art::EDProducer {
   void AddHistogramsToFile(TFile* outfile) const;
 
   void InitializeOutfiles();
+
+  void BlindEnergyParameters(StandardRecord* brec);
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
@@ -301,7 +325,68 @@ class CAFMaker : public art::EDProducer {
 
   // setup random number generator
   fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
 
+}
+
+//......................................................................
+void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
+
+  //simple cuts for trk and shower variables
+  //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
+  for (unsigned int i=0; i<brec->reco.ntrk; ++i) {
+    if ( ((brec->reco.trk[i].start.x < -71.1 - 25 && brec->reco.trk[i].start.x > -369.33 + 25 ) ||
+	  (brec->reco.trk[i].start.x > 71.1 + 25 && brec->reco.trk[i].start.x < 369.33 - 25 )) &&
+	 (brec->reco.trk[i].start.y > -181.7 + 25 && brec->reco.trk[i].start.y < 134.8 - 25 ) &&
+	 (brec->reco.trk[i].start.z  > -895.95 + 30 && brec->reco.trk[i].start.z < 895.95 - 50)) {
+
+      if (brec->reco.trk[i].mcsP.fwdP_muon > 0.6) {
+	brec->reco.trk[i].mcsP.fwdP_muon = NAN;    
+      }
+      if (brec->reco.trk[i].rangeP.p_muon > 0.6) {
+	brec->reco.trk[i].rangeP.p_muon = NAN;
+      }
+    }
+  }
+
+  for (unsigned int i=0; i<brec->reco.nshw; ++i) {
+    if ( ((brec->reco.shw[i].start.x < -71.1 - 25 && brec->reco.shw[i].start.x > -369.33 + 25 ) ||
+	  (brec->reco.shw[i].start.x > 71.1 + 25 && brec->reco.shw[i].start.x < 369.33 - 25 )) &&
+	 (brec->reco.shw[i].start.y > -181.7 + 25 && brec->reco.shw[i].start.y < 134.8 - 25 ) &&
+	 (brec->reco.shw[i].start.z  > -895.95 + 30 && brec->reco.shw[i].start.z < 895.95 - 50)) {
+      if (brec->reco.shw[i].bestplane_energy > 0.6) {
+	brec->reco.shw[i].bestplane_energy = NAN;
+	brec->reco.shw[i].plane[0].energy = NAN;
+	brec->reco.shw[i].plane[1].energy = NAN;
+	brec->reco.shw[i].plane[2].energy = NAN;
+      }
+    }
+  }
+
+  // And for slices, check vertex in FV and then check tracks and showers
+  for (int islc=0; islc<brec->nslc; ++islc) {
+    if ( ((brec->slc[islc].vertex.x < -71.1 - 25 && brec->slc[islc].vertex.x > -369.33 + 25 ) ||
+	  (brec->slc[islc].vertex.x > 71.1 + 25 && brec->slc[islc].vertex.x < 369.33 - 25 )) &&
+	 (brec->slc[islc].vertex.y > -181.7 + 25 && brec->slc[islc].vertex.y < 134.8 - 25 ) &&
+	 (brec->slc[islc].vertex.z  > -895.95 + 30 && brec->slc[islc].vertex.z < 895.95 - 50)) {
+
+      //std::cout << brec->slc[islc].reco.ntrk << ", " brec->slc[islc].reco.trk.size() << std::endl;
+      for (unsigned int itrk=0; itrk<brec->slc[islc].reco.ntrk; ++itrk) {
+	if (brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon > 0.6) {
+	  brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon = NAN;    
+	}
+	if (brec->slc[islc].reco.trk[itrk].rangeP.p_muon > 0.6) {
+	  brec->slc[islc].reco.trk[itrk].rangeP.p_muon = NAN;
+	}
+      }
+      for (unsigned int ishw=0; ishw<brec->slc[islc].reco.nshw; ++ishw) {
+	brec->slc[islc].reco.shw[ishw].bestplane_energy = NAN;
+	brec->slc[islc].reco.shw[ishw].plane[0].energy = NAN;
+	brec->slc[islc].reco.shw[ishw].plane[1].energy = NAN;
+	brec->slc[islc].reco.shw[ishw].plane[2].energy = NAN;
+      }
+    }
+  }
 }
 
 void CAFMaker::InitVolumes() {
@@ -338,13 +423,24 @@ void CAFMaker::InitVolumes() {
 CAFMaker::~CAFMaker()
 {
   delete fRecTree;
+  delete fRecTreeb;
+  delete fRecTreep;
   delete fFile;
+  delete fFileb;
+  delete fFilep;
 
   delete fFlatRecord;
+  delete fFlatRecordb;
+  delete fFlatRecordp;
   delete fFlatTree;
+  delete fFlatTreeb;
+  delete fFlatTreep;
   delete fFlatFile;
+  delete fFlatFileb;
+  delete fFlatFilep;
 
   delete fFakeRecoTRandom;
+  delete fBlindTRandom;
 }
 
 //......................................................................
@@ -369,10 +465,30 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
-      fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+      if (fParams.CreateBlindedCAF()){
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
+	fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+	fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+      }
+      else {
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+      }
     }
     if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
-      fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+      if (fParams.CreateBlindedCAF()){
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+      }
+      else {
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+      }
     }
 
     InitializeOutfiles();
@@ -496,7 +612,11 @@ void CAFMaker::beginRun(art::Run& run) {
   } // end for label
 
   if(fFile) AddGlobalTreeToFile(fFile, global);
+  if(fFileb) AddGlobalTreeToFile(fFileb, global);
+  if(fFilep) AddGlobalTreeToFile(fFilep, global);
   if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
+  if(fFlatFileb) AddGlobalTreeToFile(fFlatFileb, global);
+  if(fFlatFilep) AddGlobalTreeToFile(fFlatFilep, global);
 }
 
 //......................................................................
@@ -621,10 +741,11 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 void CAFMaker::InitializeOutfiles()
 {
   if(fParams.CreateCAF()){
+
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
 
     fFile = new TFile(fCafFilename.c_str(), "RECREATE");
-
+    
     fRecTree = new TTree("recTree", "records");
 
     // Tell the tree it's expecting StandardRecord objects
@@ -632,7 +753,23 @@ void CAFMaker::InitializeOutfiles()
     fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
     AddEnvToFile(fFile);
-  }
+ 
+    if (fParams.CreateBlindedCAF()) {
+      mf::LogInfo("CAFMaker") << "Blinded output filenames are " << fCafBlindFilename << ", and " << fCafPrescaleFilename;
+      fFileb = new TFile(fCafBlindFilename.c_str(), "RECREATE");
+      fFilep = new TFile(fCafPrescaleFilename.c_str(), "RECREATE");
+
+      fRecTreeb = new TTree("recTree", "records");
+      fRecTreep = new TTree("recTree", "records");
+
+      fRecTreeb->Branch("rec", "caf::StandardRecord", &rec);
+      fRecTreep->Branch("rec", "caf::StandardRecord", &rec);
+
+      AddEnvToFile(fFileb);
+      AddEnvToFile(fFilep);
+    }
+
+  }     
 
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
@@ -647,6 +784,29 @@ void CAFMaker::InitializeOutfiles()
     fFlatRecord = new flat::Flat<caf::StandardRecord>(fFlatTree, "rec", "", 0);
 
     AddEnvToFile(fFlatFile);
+
+    if (fParams.CreateBlindedCAF()) {
+
+      mf::LogInfo("CAFMaker") << "Blinded output flat filename are " << fFlatCafBlindFilename << ", and " << fFlatCafPrescaleFilename;
+
+      // LZ4 is the fastest format to decompress. I get 3x faster loading with
+      // this compared to the default, and the files are only slightly larger.
+      fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+
+      fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+
+      fFlatTreeb = new TTree("recTree", "recTree");
+      fFlatTreep = new TTree("recTree", "recTree");
+
+      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
+      fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
+
+      AddEnvToFile(fFlatFileb);
+      AddEnvToFile(fFlatFilep);
+    }
+
   }
 
   fFileNumber = -1;
@@ -659,6 +819,7 @@ void CAFMaker::InitializeOutfiles()
   // fCycle = -5;
   // fBatch = -5;
 }
+
 
 //......................................................................
 template <class T, class U>
@@ -1557,12 +1718,38 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     StandardRecord* prec = &rec;
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-  }
 
-  if(fFlatTree){
-    fFlatRecord->Clear();
-    fFlatRecord->Fill(rec);
-    fFlatTree->Fill();
+    if(fFlatTree){
+      fFlatRecord->Clear();
+      fFlatRecord->Fill(rec);
+      fFlatTree->Fill();
+    }
+
+    //Generate random number to decide if event is saved in prescale or blinded file
+    keepprescale = fBlindTRandom->Uniform() < 1/std::stof(fParams.PrescaleFactor());
+    if(fRecTreeb || fRecTreep) {
+      if (keepprescale) {
+      	StandardRecord* precp = new StandardRecord (*prec);
+      	fRecTreep->SetBranchAddress("rec", &precp);
+      	fRecTreep->Fill();
+	if (fFlatTree) {
+	  fFlatRecordp->Clear();
+	  fFlatRecordp->Fill(*precp);
+	  fFlatTreep->Fill();
+	}
+      }
+      else {
+	StandardRecord* precb = new StandardRecord (*prec);
+	BlindEnergyParameters(precb);
+	fRecTreeb->SetBranchAddress("rec", &precb);
+	fRecTreeb->Fill();
+	if (fFlatTree) {
+	  fFlatRecordb->Clear();
+	  fFlatRecordb->Fill(*precb);
+	  fFlatTreeb->Fill();
+	}
+      }
+    }
   }
 
   srcol->push_back(rec);
@@ -1610,17 +1797,45 @@ void CAFMaker::endJob() {
   if(fFile){
     // Make sure the recTree is in the file before filling other items
     // for debugging.
+    fRecTree->SetDirectory(fFile);
+    fFlatTree->SetDirectory(fFlatFile);
+    if (fFileb){
+      fRecTreeb->SetDirectory(fFileb);
+      fRecTreep->SetDirectory(fFilep);
+    }
+    if (fFlatFile) {
+      fFlatTreeb->SetDirectory(fFlatFileb);
+      fFlatTreep->SetDirectory(fFlatFilep);
+    }
+
     fFile->Write();
+    if (fFileb) {
+      fFileb->Write();
+      fFilep->Write();
+    }
 
     AddHistogramsToFile(fFile);
-    fFile->Write();
+    AddHistogramsToFile(fFileb);
+    AddHistogramsToFile(fFilep);
+
+    //CB is it ok to comment this out? Was making duplicate trees in file?
+    //fFile->Write();
+    //fFileb->Write();
+    //fFilep->Write();
   }
 
   if(fFlatFile){
     fFlatFile->Write();
+    fFlatFileb->Write();
+    fFlatFilep->Write();
 
     AddHistogramsToFile(fFlatFile);
-    fFlatFile->Write();
+    AddHistogramsToFile(fFlatFileb);
+    AddHistogramsToFile(fFlatFilep);
+
+    //fFlatFile->Write();
+    //fFlatFileb->Write();
+    //fFlatFilep->Write();
   }
 
   std::map<std::string, std::string> metamap;
@@ -1645,7 +1860,11 @@ void CAFMaker::endJob() {
   }
 
   if(fFile) AddMetadataToFile(fFile, metamap);
+  if(fFileb) AddMetadataToFile(fFileb, metamap);
+  if(fFilep) AddMetadataToFile(fFilep, metamap);
   if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
+  if(fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
+  if(fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
 }
 
 

@@ -20,18 +20,20 @@ namespace caf
     using string   = std::string;
     using InputTag = art::InputTag;
 
-    /* Atom<bool> EnableBlindness */
-    /* { */
-    /*   Name("EnableBlindness"), */
-    /*   Comment("true = hide sensitive info, false = include full record") */
-    /* }; */
-
     Atom<bool> CreateCAF { Name("CreateCAF"),
       Comment("Whether to produce an output file in CAF format"), true
     };
 
     Atom<bool> CreateFlatCAF { Name("CreateFlatCAF"),
       Comment("Whether to produce an output file in FlatCAF format"), true
+    };
+
+    Atom<bool> CreatePrescaledCAF { Name("CreatePrescaledCAF"),
+      Comment("Whether to produce an output file consisting of a fraction of the events"), true
+    };
+
+    Atom<bool> CreateBlindedCAF { Name("CreateBlindedCAF"),
+      Comment("Whether to produce an output file consisting of the remainder of the events with crtical information "), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
@@ -42,6 +44,10 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
+    Atom<std::string> PrescaleFactor { Name("PrescaleFactor"),
+	Comment("Factor by which to prescale unblind events"), "10"
+    };
+
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
       Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
       ""
@@ -50,6 +56,10 @@ namespace caf
     Atom<string> DataTier        { Name("DataTier") };
     Atom<string> FileExtension   { Name("FileExtension"), ".caf.root" };
     Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), ".flat.caf.root" };
+    Atom<string> UnblindFileExtension   { Name("UnblindFileExtension"), ".Unblind.DONOTLOOK.dum" };
+    Atom<string> BlindFileExtension { Name("BlindFileExtension"), ".Blind.OKTOLOOK.dum" };
+    Atom<string> PrescaleFileExtension { Name("PrescaleFileExtension"), ".Prescaled.OKTOLOOK.dum" };
+
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
 
     Atom<bool> StrictMode        { Name("StrictMode"),
