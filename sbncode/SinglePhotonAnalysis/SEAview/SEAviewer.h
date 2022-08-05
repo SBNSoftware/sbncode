@@ -1,5 +1,5 @@
-#ifndef SEAVIEWER_H
-#define SEAVIEWER_H
+#ifndef SBNCODE_SINGLEPHOTONANALYSIS_SEAVIEWER_H
+#define SBNCODE_SINGLEPHOTONANALYSIS_SEAVIEWER_H
 
 #include <iostream>
 
@@ -449,5 +449,5 @@ namespace seaview {
 
 }// namespace
 
-#endif
+#endif // SBNCODE_SINGLEPHOTONANALYSIS_SEAVIEWER_H
 

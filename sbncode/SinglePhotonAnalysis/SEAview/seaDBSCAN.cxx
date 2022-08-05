@@ -1,4 +1,4 @@
-#include "seaDBSCAN.h"
+#include "sbncode/SinglePhotonAnalysis/SEAview/seaDBSCAN.h"
 
 namespace seaview{
 

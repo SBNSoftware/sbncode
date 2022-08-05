@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef TRUNCMEAN_H
-#define TRUNCMEAN_H
+#ifndef SBNCODE_SINGLEPHOTONANALYSIS_TRUNCMEAN_H
+#define SBNCODE_SINGLEPHOTONANALYSIS_TRUNCMEAN_H
 
 #include <iostream>
 #include <algorithm>
@@ -106,5 +106,4 @@ namespace single_photon
 
 
 }
-#endif
-/** @} */ // end of doxygen group 
+#endif // SBNCODE_SINGLEPHOTONANALYSIS_TRUNCMEAN_H
