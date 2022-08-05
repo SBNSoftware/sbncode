@@ -1,4 +1,4 @@
-#include "TruncMean.h"
+#include "sbncode/SinglePhotonAnalysis/Libraries/TruncMean.h"
 
 namespace single_photon
 {

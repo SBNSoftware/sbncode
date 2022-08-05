@@ -1,4 +1,4 @@
-#include "SEAviewer.h"
+#include "sbncode/SinglePhotonAnalysis/SEAview/SEAviewer.h"
 #include <algorithm>
 #include <cmath>
 

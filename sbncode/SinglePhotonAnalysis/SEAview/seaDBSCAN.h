@@ -8,8 +8,8 @@
  * Written 20th May 2019.
  */
 
-#ifndef seaDBSCAN_H
-#define seaDBSCAN_H
+#ifndef SBNCODE_SINGLEPHOTONANALYSIS_seaDBSCAN_H
+#define SBNCODE_SINGLEPHOTONANALYSIS_seaDBSCAN_H
 
 #include <iostream>
 #include <algorithm>
@@ -45,4 +45,4 @@ class seaDBSCAN{
 
 }
 
-#endif
+#endif // SBNCODE_SINGLEPHOTONANALYSIS_seaDBSCAN_H
