@@ -94,7 +94,7 @@
 #include "sbncode/SinglePhotonAnalysis/Libraries/reco_truth_matching.h"
 #include "sbncode/SinglePhotonAnalysis/Libraries/fiducial_volume.h"
 #include "sbncode/SinglePhotonAnalysis/Libraries/second_shower_search.h"
-#include "sbncode/SinglePhotonAnalysis/Libraries/DBSCAN.h"
+//#include "sbncode/SinglePhotonAnalysis/Libraries/DBSCAN.h"
 #include "sbncode/SinglePhotonAnalysis/SEAview/SEAviewer.h"
 
 namespace single_photon
