@@ -3,11 +3,11 @@
 namespace single_photon
 {
     //ask YJ
-    int setTPCGeom(para_all& paras);
+    void setTPCGeom(para_all& paras);
 
 
   /* inside TPC or not? */
-    int isInTPCActive(std::vector<double> & vec, para_all& paras);
+    bool isInTPCActive(std::vector<double> & vec, para_all& paras);
 
 
     /* returns minimum distance to the TPC active boundary; returns -999 if the point is not in TPC active volume */

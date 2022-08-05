@@ -6,7 +6,7 @@
 namespace single_photon
 {
 
-int setTPCGeom(para_all& paras){
+void setTPCGeom(para_all& paras){
 
   //copy these from CAFMaker/CAFMaker_module.c
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
@@ -39,12 +39,11 @@ int setTPCGeom(para_all& paras){
     }
   }
 
-  return 0;
 }
 
 
 /* inside TPC or not? */
-int isInTPCActive(std::vector<double> & vec, para_all& paras){
+bool isInTPCActive(std::vector<double> & vec, para_all& paras){
   if( vec.size() != 3){
     throw cet::exception("single_photon") << " The coordinate dimension is not 3!";
   }
@@ -60,7 +59,7 @@ int isInTPCActive(std::vector<double> & vec, para_all& paras){
 
 /* returns minimum distance to the TPC active boundary; returns -999 if the point is not in TPC active volume */
 double distToTPCActive(std::vector<double>&vec, para_all& paras){
-  if(isInTPCActive(vec, paras)==0) return -999;
+  if(!isInTPCActive(vec, paras)) return -999;
   double min_x = std::min( fabs(vec[0] - paras.s_tpc_active_XMin) ,  fabs(vec[0] - paras.s_tpc_active_XMax));
   double min_y = std::min( fabs(vec[1] - paras.s_tpc_active_YMin) ,  fabs(vec[1] - paras.s_tpc_active_YMax));
   double min_z = std::min( fabs(vec[2] - paras.s_tpc_active_ZMin) ,  fabs(vec[2] - paras.s_tpc_active_ZMax));
@@ -71,7 +70,7 @@ double distToTPCActive(std::vector<double>&vec, para_all& paras){
 
 /* returns minimum distance to the TPCActive boundary around the Cathode Plane Assemble; returns -999 if the point is not in TPC active volume */
 double distToCPA(std::vector<double>&vec, para_all& paras){
-  if(isInTPCActive(vec, paras)==0) return -999;
+  if(!isInTPCActive(vec, paras)) return -999;
   double dx = std::min( fabs(vec[0] - (-0.45)) ,  fabs(vec[0] - 0.45));
 
   return dx;
@@ -87,7 +86,9 @@ double distToCPA(std::vector<double>&vec, para_all& paras){
 int distToSCB(double & dist, std::vector<double> &vec, para_all& paras){
   //CHECK!
   dist = distToTPCActive( vec, paras);
-  return isInTPCActive( vec, paras);
+  int is_it_in = 0;
+  if(isInTPCActive( vec, paras)) is_it_in++;
+  return is_it_in;
   //NOT USE SCB YET, bring it back later!
   //
   //        //this one returns the distance to the boundary

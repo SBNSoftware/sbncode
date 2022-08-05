@@ -301,7 +301,7 @@ namespace single_photon
     paras.s_make_sss_plots = true;
 
     //Misc setup  CHECK
-    //        setTPCGeom(); 
+    setTPCGeom(paras);//set activeTPC
     paras.rangen = new TRandom3(22);
 
     std::cout<<"SinglePhoton::"<<__FUNCTION__<<" finishes ------------------------------"<<std::endl;
