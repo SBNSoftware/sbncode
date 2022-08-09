@@ -178,6 +178,8 @@ class CAFMaker : public art::EDProducer {
   double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
+  double fBlindEvents;
+  double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   // int fCycle;
@@ -229,7 +231,7 @@ class CAFMaker : public art::EDProducer {
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
   void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
-  void AddHistogramsToFile(TFile* outfile, bool isBlindPOT) const;
+  void AddHistogramsToFile(TFile* outfile, bool isBlindPOT, bool isPrescalePOT) const;
 
   void InitializeOutfiles();
 
@@ -335,7 +337,7 @@ class CAFMaker : public art::EDProducer {
    int slen = bstring.length();
    std::string s1 = bstring.substr(0,int(slen/2));
    std::string s2 = bstring.substr(int(slen/2));
-   double rat = stoi(s1)/stoi(s2);
+   double rat = stod(s1)/stod(s2);
    while (abs(rat)>1){
      rat = -1 * (abs(rat) - 1);
    }
@@ -827,6 +829,8 @@ void CAFMaker::InitializeOutfiles()
   fSubRunPOT = 0;
   fTotalSinglePOT = 0;
   fTotalEvents = 0;
+  fBlindEvents = 0;
+  fPrescaleEvents = 0;
   fFirstInFile = false;
   fFirstInSubRun = false;
   // fCycle = -5;
@@ -1745,6 +1749,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       	StandardRecord* precp = new StandardRecord (*prec);
       	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
+	fPrescaleEvents += 1;
 	if (fFlatTree) {
 	  fFlatRecordp->Clear();
 	  fFlatRecordp->Fill(*precp);
@@ -1756,6 +1761,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	BlindEnergyParameters(precb);
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
+	fBlindEvents += 1;
 	if (fFlatTree) {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
@@ -1778,7 +1784,7 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-  void CAFMaker::AddHistogramsToFile(TFile* outfile, bool isBlindPOT=false) const
+  void CAFMaker::AddHistogramsToFile(TFile* outfile, bool isBlindPOT=false, bool isPrescalePOT=false) const
 {
   outfile->cd();
 
@@ -1788,13 +1794,18 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
-    double scale = 1 + 0.5*GetBlindPOTScale();
-    hPOT->Fill(0.5,fTotalPOT*scale);
+    double scale = 1.0 + 0.3*GetBlindPOTScale();
+    hPOT->Fill(0.5,fTotalPOT*scale*fBlindEvents/fTotalEvents);
+    hEvents->Fill(0.5, fBlindEvents);
+  }
+  else if (isPrescalePOT) {
+    hPOT->Fill(0.5, fTotalPOT*fPrescaleEvents/fTotalEvents);
+    hEvents->Fill(0.5, fPrescaleEvents);
   }
   else {
     hPOT->Fill(.5, fTotalPOT);
+    hEvents->Fill(.5, fTotalEvents);
   }
-  hEvents->Fill(.5, fTotalEvents);
 
   hPOT->Write();
   hEvents->Write();
@@ -1834,8 +1845,8 @@ void CAFMaker::endJob() {
     }
 
     AddHistogramsToFile(fFile);
-    AddHistogramsToFile(fFileb,true);
-    AddHistogramsToFile(fFilep);
+    AddHistogramsToFile(fFileb,true,false);
+    AddHistogramsToFile(fFilep,false,true);
 
     //CB is it ok to comment this out? Was making duplicate trees in file?
     //fFile->Write();
@@ -1849,8 +1860,8 @@ void CAFMaker::endJob() {
     fFlatFilep->Write();
 
     AddHistogramsToFile(fFlatFile);
-    AddHistogramsToFile(fFlatFileb,true);
-    AddHistogramsToFile(fFlatFilep);
+    AddHistogramsToFile(fFlatFileb,true,false);
+    AddHistogramsToFile(fFlatFilep,false,true);
 
     //fFlatFile->Write();
     //fFlatFileb->Write();
