@@ -36,7 +36,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fStoreTrueNus(p.get<bool>("StoreTrueNus", false))
   , fStoreCheatMCT0(p.get<bool>("StoreCheatMCT0", false))
     // , fUseCalo(p.get<bool>("UseCalo", false))
-  , fInputFilename(p.get<std::string>("InputFileName")) // root file with score metrics
+  , fRM(loadMetrics(p.get<std::string>("InputFileName")))
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
   , fMakeTree(p.get<bool>("MakeTree", false))
   , fChargeToNPhotonsShower(p.get<double>("ChargeToNPhotonsShower", 1.0))  // ~40000/1600
@@ -71,8 +71,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fYHigh(p.get<double>("YHigh", 0.)) // highest opdet position in cm
   , fZLow(p.get<double>("ZLow", 0.)) // most upstream opdet position in cm
   , fZHigh(p.get<double>("ZHigh", 0.)) // most downstream opdet position in cm
-  , fPolCoefsY(p.get<std::vector<double>>("PolCoefsY", std::vector<double>{3, 0.})) // correcting coefficients for flash Y
-  , fPolCoefsZ(p.get<std::vector<double>>("PolCoefsZ", std::vector<double>{3, 0.})) // correcting coefficients for flash Z
   , fSkewLimitY(p.get<double>("SkewLimitY", 10.)) //
   , fSkewLimitZ(p.get<double>("SkewLimitZ", 10.)) //
   , fOpDetNormalizer((fSBND) ? 4 : 1)
@@ -142,8 +140,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       << "selected OpHitTime parameter is: " << fOpHitTime << std::endl;
 
   if (fMakeTree) initTree();
-
-  loadMetrics();
 
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
   consumes<std::vector<recob::Slice>>(fPandoraProducer);
@@ -292,11 +288,16 @@ void FlashPredict::produce(art::Event& evt)
   std::vector<recob::OpHit> opHitsRght, opHitsLeft;
   const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
     makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
+  auto is_flash_in_time = [this](const SimpleFlash& f) -> bool
+  { return (fBeamSpillTimeStart<=f.maxpeak_time &&
+            f.maxpeak_time<=fBeamSpillTimeEnd); };
+  auto flash_in_time = std::find_if(simpleFlashes.begin(), simpleFlashes.end(),
+                                    is_flash_in_time);
   if(simpleFlashes.empty() ||
-     (simpleFlashes[0].maxpeak_time<fBeamSpillTimeStart || fBeamSpillTimeEnd<simpleFlashes[0].maxpeak_time)){
+     flash_in_time == simpleFlashes.end()){
     mf::LogWarning("FlashPredict")
-      << "\nNo OpHits in beam window [" << fBeamSpillTimeStart << ", " << fBeamSpillTimeEnd << "], "
-      << "\nor the integral is less or equal to " << fMinFlashPE << " or 0."
+      << "No SimpleFlashes in beam window [" << fBeamSpillTimeStart << ", " << fBeamSpillTimeEnd << "], "
+      << "\nor the sum of PE is less or equal to " << fMinFlashPE << " or 0."
       << "\nSkipping...";
     bk.nullophittime++;
     updateBookKeeping();
@@ -376,68 +377,15 @@ void FlashPredict::produce(art::Event& evt)
         flashMetricsMap[flashUId] = flash_tmp;
 
       Score score_tmp = computeScore(charge, flash_tmp);
-      if(score_tmp.total > 0. && score_tmp.total < score.total
+      if(0. <= score_tmp.total && score_tmp.total < score.total
          && flash_tmp.metric_ok){
-
-        // TODO: REMOVE IF BLOCK BELOW BEFORE MERGING
-        if (score.total < std::numeric_limits<double>::max()) {
-          // // TODO:
-          // // HACK: to avoid matching late light
-          // double flashes_time_diff = flash_tmp.time - flash.time;
-          // double f0_light_charge_ratio = std::log(flash.pe)/std::log(charge.q);
-          // double f1_light_charge_ratio = std::log(flash_tmp.pe)/std::log(charge.q);
-          // if ((0.05 < flashes_time_diff && flashes_time_diff < 1.6) &&
-          //     (0.55<f0_light_charge_ratio && f1_light_charge_ratio<0.55))
-          //   continue;
-          // // TODO:
-          // // HACK: to avoid matching late light
-          std::cout << "\n----Updating the score and matched flash"<< "\n";
-          std::cout << "_slices:\t" << _slices << "\n";
-          std::cout << "_mcT0:\t" << _mcT0 << "\n";
-          std::cout << "_petoq:\t" << _petoq << "\n";
-          std::cout << "_true_nus:\t" << _true_nus << "\n";
-          std::cout << "charge:\n";
-          std::cout << charge.dumpMetrics() << "\n";
-          std::cout << "score.total:    \t" << score.total << "  \t" << score_tmp.total << "\n";
-          std::cout << "  score.y:      \t" << score.y << "  \t" << score_tmp.y << "\n";
-          std::cout << "  score.z:      \t" << score.z << "  \t" << score_tmp.z << "\n";
-          std::cout << "  score.rr:     \t" << score.rr << "  \t" << score_tmp.rr << "\n";
-          std::cout << "  score.ratio:  \t" << score.ratio << "  \t" << score_tmp.ratio << "\n";
-          std::cout << "  score.slope:  \t" << score.slope << "  \t" << score_tmp.slope << "\n";
-          std::cout << "  score.petoq:  \t" << score.petoq << "  \t" << score_tmp.petoq << "\n";
-          std::cout << "----from " << "\n";
-          std::cout << "flash:\n"
-                    << "  id:      " << flash.id          << "\t" << flash_tmp.id          << "\n"
-                    << "  activity:" << flash.activity    << "\t" << flash_tmp.activity    << "\n"
-                    << "  x:       " << flash.x           << "\t" << flash_tmp.x           << "\n"
-                    << "  h_x:     " << flash.h_x         << "\t" << flash_tmp.h_x         << "\n"
-                    << "  x_gl:    " << flash.x_gl        << "\t" << flash_tmp.x_gl        << "\n"
-                    << "  y:       " << flash.y           << "\t" << flash_tmp.y           << "\n"
-                    << "  z:       " << flash.z           << "\t" << flash_tmp.z           << "\n"
-                    << "  yb:      " << flash.yb          << "\t" << flash_tmp.yb          << "\n"
-                    << "  zb:      " << flash.zb          << "\t" << flash_tmp.zb          << "\n"
-                    << "  xw:      " << flash.xw          << "\t" << flash_tmp.xw          << "\n"
-                    << "  yw:      " << flash.yw          << "\t" << flash_tmp.yw          << "\n"
-                    << "  zw:      " << flash.zw          << "\t" << flash_tmp.zw          << "\n"
-                    << "  rr:      " << flash.rr          << "\t" << flash_tmp.rr          << "\n"
-                    << "  pe:      " << flash.pe          << "\t" << flash_tmp.pe          << "\n"
-                    << "  unpe:    " << flash.unpe        << "\t" << flash_tmp.unpe        << "\n"
-                    << "  ratio:   " << flash.ratio       << "\t" << flash_tmp.ratio       << "\n"
-                    << "  slope:   " << flash.slope       << "\t" << flash_tmp.slope       << "\n"
-                    << "  time:    " << flash.time        << "\t" << flash_tmp.time        << "\n"
-                    << "  h_xerr:  " << flash.h_xerr      << "\t" << flash_tmp.h_xerr      << "\n"
-                    << "  h_xrr:   " << flash.h_xrr       << "\t" << flash_tmp.h_xrr       << "\n"
-                    << "  h_xratio:" << flash.h_xratio    << "\t" << flash_tmp.h_xratio    << "\n"
-                    << "  y_skew:  " << flash.y_skew      << "\t" << flash_tmp.y_skew      << "\n"
-                    << "  z_skew:  " << flash.z_skew      << "\t" << flash_tmp.z_skew      << "\n"
-                    << "  metric_ok: "<< std::boolalpha << flash.metric_ok << "\t" << flash_tmp.metric_ok  << "\n";
-        } // if (score.total < std::numeric_limits<double>::max())
-        // TODO: REMOVE ABOVE IF BEFORE MERGING
         score = score_tmp;
         flash = flash_tmp;
-        // TODO: update x position if new match is made
-        // charge.x = driftCorrection(charge.xb, flash.time);
-        // charge.x_gl  = xGlCorrection(charge.x_gl, charge.xb, flash.time);
+        // // TODO: create charge.xb and/or charge.xb_gl
+        // if (fCorrectDriftDistance){
+        //   charge.x = driftCorrection(charge.xb, flash.time);
+        //   charge.x_gl  = xGlCorrection(charge.x_gl, charge.xb, flash.time);
+        // }
       }
     } // for simpleFlashes
     if(!hits_ophits_concurrence) {
@@ -462,7 +410,7 @@ void FlashPredict::produce(art::Event& evt)
       continue;
     }
 
-    if(score.total > 0. &&
+    if(0. <= score.total &&
        score.total < std::numeric_limits<double>::max()){
       if(fMakeTree) {
         _mcT0 = chargeDigest.mcT0;
@@ -483,7 +431,7 @@ void FlashPredict::produce(art::Event& evt)
     }
     else{
       mf::LogError("FlashPredict")
-        << "ERROR: score <= 0. Dumping info.\n"
+        << "ERROR: score < 0. Dumping info.\n"
         << "score:       " << score.total << "\n"
         << "score.y:     " << score.y << "\t"
         << "score.z:     " << score.z << "\n"
@@ -561,19 +509,20 @@ void FlashPredict::initTree(void)
 }
 
 
-void FlashPredict::loadMetrics()
+FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
+  const std::string inputFilename) const
 {
-  // TODO: fill histos with less repetition and range for loops
+  ReferenceMetrics rm;
   // read histograms and fill vectors for match score calculation
   std::string fname;
   cet::search_path sp("FW_SEARCH_PATH");
-  if(!sp.find_file(fInputFilename, fname)) {
+  if(!sp.find_file(inputFilename, fname)) {
     mf::LogError("FlashPredict")
       << "Could not find the light-charge match root file '"
-      << fInputFilename << "' on FW_SEARCH_PATH\n";
+      << inputFilename << "' on FW_SEARCH_PATH\n";
     throw cet::exception("FlashPredict")
       << "Could not find the light-charge match root file '"
-      << fInputFilename << "' on FW_SEARCH_PATH\n";
+      << inputFilename << "' on FW_SEARCH_PATH\n";
   }
   mf::LogInfo("FlashPredict") << "Opening file with metrics: " << fname;
   TFile *infile = new TFile(fname.c_str(), "READ");
@@ -582,12 +531,16 @@ void FlashPredict::loadMetrics()
      !metricsInFile->Contains("dz_h1") ||
      !metricsInFile->Contains("rr_h1") ||
      !metricsInFile->Contains("ratio_h1") ||
+     !metricsInFile->Contains("slope_h1") ||
+     !metricsInFile->Contains("petoq_h1") ||
      !metricsInFile->Contains("rr_fit_l") ||
      !metricsInFile->Contains("rr_fit_m") ||
      !metricsInFile->Contains("rr_fit_h") ||
      !metricsInFile->Contains("ratio_fit_l") ||
      !metricsInFile->Contains("ratio_fit_m") ||
-     !metricsInFile->Contains("ratio_fit_h"))
+     !metricsInFile->Contains("ratio_fit_h") ||
+     !metricsInFile->Contains("pol_coeffs_y") ||
+     !metricsInFile->Contains("pol_coeffs_z"))
   {
     mf::LogError("FlashPredict")
       << "The metrics file '" << fname << "' lacks at least one metric.";
@@ -597,180 +550,100 @@ void FlashPredict::loadMetrics()
   //
   TH1 *temphisto = (TH1*)infile->Get("dy_h1");
   int bins = temphisto->GetNbinsX();
-  if (bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dy " << bins << " bins " << std::endl;
-    bins = 1;
-    fdYMeans.push_back(0);
-    fdYSpreads.push_back(0.001);
-  }
-  else {
-    for (int ib = 1; ib <= bins; ++ib) {
-      fdYMeans.push_back(temphisto->GetBinContent(ib));
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in dy" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      fdYSpreads.push_back(tt);
-    }
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.dYMeans.push_back(temphisto->GetBinContent(ib));
+    rm.dYSpreads.push_back(temphisto->GetBinError(ib));
   }
   //
   temphisto = (TH1*)infile->Get("dz_h1");
   bins = temphisto->GetNbinsX();
-  if (bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for dz " << bins << " bins " << std::endl;
-    bins = 1;
-    fdZMeans.push_back(0);
-    fdZSpreads.push_back(0.001);
-  }
-  else {
-    for (int ib = 1; ib <= bins; ++ib) {
-      fdZMeans.push_back(temphisto->GetBinContent(ib));
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in dz" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      fdZSpreads.push_back(tt);
-    }
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.dZMeans.push_back(temphisto->GetBinContent(ib));
+    rm.dZSpreads.push_back(temphisto->GetBinError(ib));
   }
   //
   temphisto = (TH1*)infile->Get("rr_h1");
   bins = temphisto->GetNbinsX();
-  if (bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for rr " << bins << " bins " << std::endl;
-    bins = 1;
-    fRRMeans.push_back(0);
-    fRRSpreads.push_back(0.001);
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.RRMeans.push_back(temphisto->GetBinContent(ib));
+    rm.RRSpreads.push_back(temphisto->GetBinError(ib));
   }
-  else {
-    for (int ib = 1; ib <= bins; ++ib) {
-      double me = temphisto->GetBinContent(ib);
-      fRRMeans.push_back(me);
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in rr" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      fRRSpreads.push_back(tt);
-    }
-    unsigned s = 0;
-    for(auto& rrF : fRRFits){
-      std::string nold = "rr_fit_" + kSuffixes[s];
-      std::string nnew = "rrFit_" + kSuffixes[s];
-      TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
-      auto params = tempF1->GetParameters();
-      rrF.f = std::make_unique<TF1>(nnew.c_str(), fRR_TF1_fit.c_str(),
-                                    0., fDriftDistance);
-      rrF.f->SetParameters(params);
-      rrF.min = rrF.f->GetMinimum(0., fDriftDistance, kEps);
-      rrF.max = rrF.f->GetMaximum(0., fDriftDistance, kEps);
-      s++;
-    }
-  }
+  // LEGACY, now broken
+  // unsigned s = 0;
+  // for(auto& rrF : rm.RRFits){
+  //   std::string nold = "rr_fit_" + kSuffixes[s];
+  //   std::string nnew = "rrFit_" + kSuffixes[s];
+  //   TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
+  //   auto params = tempF1->GetParameters();
+  //   rrF.f = std::make_unique<TF1>(nnew.c_str(), fRR_TF1_fit.c_str(),
+  //                                 0., fDriftDistance);
+  //   rrF.f->SetParameters(params);
+  //   rrF.min = rrF.f->GetMinimum(0., fDriftDistance, kEps);
+  //   rrF.max = rrF.f->GetMaximum(0., fDriftDistance, kEps);
+  //   s++;
+  // }
   //
   temphisto = (TH1*)infile->Get("ratio_h1");
   bins = temphisto->GetNbinsX();
-  if (bins <= 0 || fNoAvailableMetrics) {
-    std::cout << " problem with input histos for ratio " << bins << " bins " << std::endl;
-    bins = 1;
-    fRatioMeans.push_back(0);
-    fRatioSpreads.push_back(0.001);
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.RatioMeans.push_back(temphisto->GetBinContent(ib));
+    rm.RatioSpreads.push_back(temphisto->GetBinError(ib));
   }
-  else {
-    for (int ib = 1; ib <= bins; ++ib) {
-      double me = temphisto->GetBinContent(ib);
-      fRatioMeans.push_back(me);
-      double tt = temphisto->GetBinError(ib);
-      if (tt <= 0) {
-        std::cout << "zero value for bin spread in ratio" << std::endl;
-        std::cout << "ib:\t" << ib << "\n";
-        std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-        std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-        tt = 100.;
-      }
-      fRatioSpreads.push_back(tt);
-    }
-    unsigned s = 0;
-    for(auto& ratioF : fRatioFits){
-      std::string nold = "ratio_fit_" + kSuffixes[s];
-      std::string nnew = "ratioFit_" + kSuffixes[s];
-      TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
-      auto params = tempF1->GetParameters();
-      ratioF.f = std::make_unique<TF1>(nnew.c_str(), fRatio_TF1_fit.c_str(),
-                                       0., fDriftDistance);
-      ratioF.f->SetParameters(params);
-      ratioF.min = ratioF.f->GetMinimum(0., fDriftDistance, kEps);
-      ratioF.max = ratioF.f->GetMaximum(0., fDriftDistance, kEps);
-      s++;
-    }
+  // LEGACY, now broken
+  // s = 0;
+  // for(auto& ratioF : rm.RatioFits){
+  //   std::string nold = "ratio_fit_" + kSuffixes[s];
+  //   std::string nnew = "ratioFit_" + kSuffixes[s];
+  //   TF1* tempF1 = (TF1*)infile->Get(nold.c_str());
+  //   auto params = tempF1->GetParameters();
+  //   ratioF.f = std::make_unique<TF1>(nnew.c_str(), fRatio_TF1_fit.c_str(),
+  //                                    0., fDriftDistance);
+  //   ratioF.f->SetParameters(params);
+  //   ratioF.min = ratioF.f->GetMinimum(0., fDriftDistance, kEps);
+  //   ratioF.max = ratioF.f->GetMaximum(0., fDriftDistance, kEps);
+  //   s++;
+  // }
+  //
+  temphisto = (TH1*)infile->Get("slope_h1");
+  bins = temphisto->GetNbinsX();
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.SlopeMeans.push_back(temphisto->GetBinContent(ib));
+    rm.SlopeSpreads.push_back(temphisto->GetBinError(ib));
   }
-  // // TODO: enable the block below once some data is available
-  // //
-  // temphisto = (TH1*)infile->Get("slope_h1");
-  // bins = temphisto->GetNbinsX();
-  // if (bins <= 0 || fNoAvailableMetrics) {
-  //   std::cout << " problem with input histos for slope " << bins << " bins " << std::endl;
-  //   bins = 1;
-  //   fSlopeMeans.push_back(0);
-  //   fSlopeSpreads.push_back(0.001);
-  // }
-  // else {
-  //   for (int ib = 1; ib <= bins; ++ib) {
-  //     fSlopeMeans.push_back(temphisto->GetBinContent(ib));
-  //     double tt = temphisto->GetBinError(ib);
-  //     if (tt <= 0) {
-  //       std::cout << "zero value for bin spread in slope" << std::endl;
-  //       std::cout << "ib:\t" << ib << "\n";
-  //       std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-  //       std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-  //       tt = 100.;
-  //     }
-  //     fSlopeSpreads.push_back(tt);
-  //   }
-  // }
-  // //
-  // temphisto = (TH1*)infile->Get("petoq_h1");
-  // bins = temphisto->GetNbinsX();
-  // if (bins <= 0 || fNoAvailableMetrics) {
-  //   std::cout << " problem with input histos for petoq " << bins << " bins " << std::endl;
-  //   bins = 1;
-  //   fPEToQMeans.push_back(0);
-  //   fPEToQSpreads.push_back(0.001);
-  // }
-  // else {
-  //   for (int ib = 1; ib <= bins; ++ib) {
-  //     fPEToQMeans.push_back(temphisto->GetBinContent(ib));
-  //     double tt = temphisto->GetBinError(ib);
-  //     if (tt <= 0) {
-  //       std::cout << "zero value for bin spread in PEToQ" << std::endl;
-  //       std::cout << "ib:\t" << ib << "\n";
-  //       std::cout << "temphisto->GetBinContent(ib):\t" << temphisto->GetBinContent(ib) << "\n";
-  //       std::cout << "temphisto->GetBinError(ib):\t" << temphisto->GetBinError(ib) << "\n";
-  //       tt = 100.;
-  //     }
-  //     fPEToQSpreads.push_back(tt);
-  //   }
-  // }
-  // // TODO: enable the block above
+  //
+  temphisto = (TH1*)infile->Get("petoq_h1");
+  bins = temphisto->GetNbinsX();
+  for (int ib = 1; ib <= bins; ++ib) {
+    rm.PEToQMeans.push_back(temphisto->GetBinContent(ib));
+    rm.PEToQSpreads.push_back(temphisto->GetBinError(ib));
+  }
+
 
   TH2* tmp1_h2 = (TH2*)infile->Get("rr_h2");
-  fRRH2 = (TH2D*)tmp1_h2->Clone("fRRH2");
+  rm.RRH2 = (TH2D*)tmp1_h2->Clone("RRH2");
   TH2* tmp2_h2 = (TH2*)infile->Get("ratio_h2");
-  fRatioH2 = (TH2D*)tmp2_h2->Clone("fRatioH2");
+  rm.RatioH2 = (TH2D*)tmp2_h2->Clone("RatioH2");
+
+  std::vector<double>* polCoeffsY_p;
+  infile->GetObject("pol_coeffs_y", polCoeffsY_p);
+  rm.PolCoeffsY = std::vector(*polCoeffsY_p);
+  std::string tty = "Polynomial correction coefficients for Y: ( ";
+  for(double c : rm.PolCoeffsY) tty += std::to_string(c) + " ";
+  tty += ")";
+  mf::LogInfo("FlashPredict") << tty;
+
+  std::vector<double>* polCoeffsZ_p;
+  infile->GetObject("pol_coeffs_z", polCoeffsZ_p);
+  rm.PolCoeffsZ = std::vector(*polCoeffsZ_p);
+  std::string ttz = "Polynomial correction coefficients for Z: ( ";
+  for(double c : rm.PolCoeffsZ) ttz += std::to_string(c) + " ";
+  ttz += ")";
+  mf::LogInfo("FlashPredict") << ttz;
 
   infile->Close();
   delete infile;
   mf::LogInfo("FlashPredict") << "Finish loading metrics";
+  return rm;
 }
 
 
@@ -792,7 +665,6 @@ double FlashPredict::cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
 FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   const ChargeDigest& chargeDigest) const
 {
- // TODO: WIP. this function needs to be cleanud up before merging
   const unsigned pId = chargeDigest.pId;
   const int pfpPDGC = chargeDigest.pfpPDGC;
   const unsigned hitsInVolume = chargeDigest.hitsInVolume;
@@ -805,160 +677,47 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   ChargeMetrics charge;
   charge.id = pId; charge.activity = hitsInVolume; charge.pdgc = pfpPDGC;
   charge.q = charge_q; charge.metric_ok = true;
-
-  // double xmin = 9999; double ymin = 99999; double zmin = 999999;
-  // double xmax = -9999; double ymax = -99999; double zmax = -999999;
-  // double outlier_fraction = 0.025;
-  // for (auto& qp : qClusters) {
-  //   if(qp.x < xmin) xmin = qp.x;
-  //   if(qp.y < ymin) ymin = qp.y;
-  //   if(qp.z < zmin) zmin = qp.z;
-  //   if(qp.x > xmax) xmax = qp.x;
-  //   if(qp.y > ymax) ymax = qp.y;
-  //   if(qp.z > zmax) zmax = qp.z;
-  // }
   charge.x_gl =
     (std::accumulate(qClusters.begin(), qClusters.end(), 0.,
                      [](double x, Q_t q) {return x+q.q*q.x;}))/charge_q;
   charge.x = foldXGl(charge.x_gl);
-  // std::vector<double> x_diff(qClusters.size());
-  // std::transform(qClusters.begin(), qClusters.end(), x_diff.begin(),
-  //                [charge](Q_t q) { return q.x - charge.x_gl; });
-  // double x_sqsum = std::inner_product(x_diff.begin(), x_diff.end(), x_diff.begin(), 0.0);
-  // charge.x_glw = std::sqrt(x_sqsum / (qClusters.size()-1));
-
-  // {
-  //   auto qCSorted = qClusters;
-  //   std::sort(qCSorted.begin(), qCSorted.end(),
-  //             [] (Q_t q1, Q_t q2){ return (q1.x < q2.x); });
-  //   double qSum = 0.;
-  //   for (size_t i=0; i<qCSorted.size(); ++i) {
-  //     qSum += qCSorted[i].q;
-  //     xmin = qCSorted[i].x;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  //   qSum = 0.;
-  //   for (size_t i=qCSorted.size()-1; i>=0; --i) {
-  //     qSum += qCSorted[i].q;
-  //     xmax = qCSorted[i].x;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  // }
-  // charge.x_glw = (xmax-xmin);
-  // // charge.x_glw = (x_stdev<1.) ? 1. : x_stdev;
-
   charge.y =
     (std::accumulate(qClusters.begin(), qClusters.end(), 0.,
                      [](double y, Q_t q) {return y+q.q*q.y;}))/charge_q;
-  // std::vector<double> y_diff(qClusters.size());
-  // std::transform(qClusters.begin(), qClusters.end(), y_diff.begin(),
-  //                [charge](Q_t q) { return q.y - charge.y; });
-  // double y_sqsum = std::inner_product(y_diff.begin(), y_diff.end(), y_diff.begin(), 0.0);
-  // charge.yw = std::sqrt(y_sqsum / (qClusters.size()-1));
-
-  // {
-  //   auto qCSorted = qClusters;
-  //   std::sort(qCSorted.begin(), qCSorted.end(),
-  //             [] (Q_t q1, Q_t q2){ return (q1.y < q2.y); });
-  //   double qSum = 0.;
-  //   for (size_t i=0; i<qCSorted.size(); ++i) {
-  //     qSum += qCSorted[i].q;
-  //     ymin = qCSorted[i].y;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  //   qSum = 0.;
-  //   for (size_t i=qCSorted.size()-1; i>=0; --i) {
-  //     qSum += qCSorted[i].q;
-  //     ymax = qCSorted[i].y;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  // }
-  // charge.yw = (ymax-ymin);
-  // // charge.yw = (y_stdev<1.) ? 1. : y_stdev;
-
   charge.z =
     (std::accumulate(qClusters.begin(), qClusters.end(), 0.,
                      [](double z, Q_t q) {return z+q.q*q.z;}))/charge_q;
-  // std::vector<double> z_diff(qClusters.size());
-  // std::transform(qClusters.begin(), qClusters.end(), z_diff.begin(),
-  //                [charge](Q_t q) { return q.z - charge.z; });
-  // double z_sqsum = std::inner_product(z_diff.begin(), z_diff.end(), z_diff.begin(), 0.0);
-  // charge.zw = std::sqrt(z_sqsum / (qClusters.size()-1));
-  // {
-  //   auto qCSorted = qClusters;
-  //   std::sort(qCSorted.begin(), qCSorted.end(),
-  //             [] (Q_t q1, Q_t q2){ return (q1.z < q2.z); });
-  //   double qSum = 0.;
-  //   for (size_t i=0; i<qCSorted.size(); ++i) {
-  //     qSum += qCSorted[i].q;
-  //     zmin = qCSorted[i].z;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  //   qSum = 0.;
-  //   for (size_t i=qCSorted.size()-1; i>=0; --i) {
-  //     qSum += qCSorted[i].q;
-  //     zmax = qCSorted[i].z;
-  //     if (qSum >= charge_q*outlier_fraction) break;
-  //   }
-  // }
-  // charge.zw = (zmax-zmin);
-  // // charge.zw = (z_stdev<1.) ? 1. : z_stdev;
-
-  // charge.slope = charge.zw / charge.yw;
-  // charge.slope = charge.zw / (std::sqrt(charge.x_glw*charge.x_glw+charge.yw*charge.yw));
-  //
-  // double min_axis = std::min(charge.yw, charge.zw);
-  // double max_axis = std::max(charge.yw, charge.zw);
-  // double dir = (charge.zw>=charge.yw) ? 1. : -1.;
-  // charge.slope = dir * std::sqrt(1 - ((min_axis*min_axis)/(max_axis*max_axis)));
-  //
-  //   charge.slope = charge.zw / csize;
-  //
-
   std::unique_ptr<TH1F> qX = std::make_unique<TH1F>("qX", "", 80, -200., 200.);
   std::unique_ptr<TH1F> qY = std::make_unique<TH1F>("qY", "", 80, -200., 200.);
   std::unique_ptr<TH1F> qZ = std::make_unique<TH1F>("qZ", "", 100, 0., 500.);
+
+  // Compute the widths
   for (size_t i=0; i<qClusters.size(); ++i) {
     // double q2 = qClusters[i].q * qClusters[i].q;
-    double q2 = qClusters[i].q;
-    qX->Fill(qClusters[i].x, q2);
-    qY->Fill(qClusters[i].y, q2);
-    qZ->Fill(qClusters[i].z, q2);
+    double q = qClusters[i].q;
+    qX->Fill(qClusters[i].x, q);
+    qY->Fill(qClusters[i].y, q);
+    qZ->Fill(qClusters[i].z, q);
   }
   charge.x_glw = qX->GetStdDev();
   charge.yw = qY->GetStdDev();
   charge.zw = qZ->GetStdDev();
 
-
+  // Now fractional widths
   double csize = std::sqrt(charge.x_glw*charge.x_glw + charge.yw*charge.yw + charge.zw*charge.zw);
-  // double c_xy_size = std::sqrt(charge.x_glw*charge.x_glw + charge.yw*charge.yw);
-  // double csize = (charge.x_glw + charge.yw + charge.zw);
-  // double csize = std::sqrt(charge.yw*charge.yw + charge.zw*charge.zw);
-  double cx_fac = charge.x_glw / csize;
+  // double cx_fac = charge.x_glw / csize;
   double cy_fac = charge.yw / csize;
   double cz_fac = charge.zw / csize;
-  // double cxy_fac = c_xy_size / csize;
-  // double cy_fac = std::sqrt(charge.x_glw*charge.x_glw + charge.yw*charge.yw) / csize;
-  // double cz_fac = std::sqrt(0.25*charge.x_glw*charge.x_glw + charge.zw*charge.zw) / csize;
   double min_axis = std::min(cy_fac, cz_fac);
   double max_axis = std::max(cy_fac, cz_fac);
-  // double dir = ((1.2*cz_fac>=cx_fac) || (1.2*cz_fac>=cy_fac)) ? 1. : -1.;
-  // double dir = ( (cz_fac>=cy_fac)) ? (max_axis-min_axis)/max_axis : (-max_axis+min_axis)/max_axis;
   double dir = ((cz_fac>=cy_fac)) ? 1. : -1.;
-  // double dir = 1.;
-  // if      ((cz_fac >= cy_fac) && (cz_fac >= cx_fac)) dir = 1.;
-  // else if ((cz_fac >= cy_fac) && (cz_fac <  cx_fac)) dir = 0.5;
-  // // else if ((cz_fac <  cy_fac) && (cz_fac <  cx_fac)) dir = -1.;
-  // else dir = -1.;
 
-  // charge.slope = dir * std::sqrt(1 - ((min_axis*min_axis)/(max_axis*max_axis)));
   charge.slope = dir * std::sqrt((max_axis*max_axis) - (min_axis*min_axis));
-  // charge.slope = dir * (max_axis-min_axis)/max_axis;
-  // charge.slope = dir * max_axis / min_axis;
 
-  charge.x_glw = cx_fac;
-  charge.yw = cy_fac;
-  charge.zw = cz_fac;
+  // Store fractional widths?
+  // charge.x_glw = cx_fac;
+  // charge.yw = cy_fac;
+  // charge.zw = cz_fac;
 
   return charge;
 }
@@ -967,7 +726,6 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
 FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
   const SimpleFlash& simpleFlash) const
 {
-  // TODO: WIP. this function needs to be cleanud up before merging
   const OpHitIt opH_beg = simpleFlash.opH_beg;
   const OpHitIt opH_end = simpleFlash.opH_end;
 
@@ -975,9 +733,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
   std::unique_ptr<TH1F> ophZ = std::make_unique<TH1F>("ophZ", "", fZBins, fZLow, fZHigh);
   std::unique_ptr<TH1F> oph2Y = std::make_unique<TH1F>("oph2Y", "", fYBins, fYLow, fYHigh);
   std::unique_ptr<TH1F> oph2Z = std::make_unique<TH1F>("oph2Z", "", fZBins, fZLow, fZHigh);
-
-  // std::list<double> opdetY;
-  // std::list<double> opdetZ;
 
   double peSumMax_wallX = wallXWithMaxPE(opH_beg, opH_end);
 
@@ -1017,14 +772,10 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     sum_PE2Y2 += ophPE2 * opDetXYZ.Y() * opDetXYZ.Y();
     sum_PE2Z2 += ophPE2 * opDetXYZ.Z() * opDetXYZ.Z();
 
-    ophY->Fill(opDetXYZ.Y(), ophPE);// TODO: ophPE or ophPE2
-    ophZ->Fill(opDetXYZ.Z(), ophPE);// TODO: ophPE or ophPE2
-    // if (!is_pmt_vis || !is_ara_vis){
-      oph2Y->Fill(opDetXYZ.Y(), ophPE2);// TODO: ophPE or ophPE2
-      oph2Z->Fill(opDetXYZ.Z(), ophPE2);// TODO: ophPE or ophPE2
-    // }
-    // opdetY.push_back(opDetXYZ.Y());
-    // opdetZ.push_back(opDetXYZ.Z());
+    ophY->Fill(opDetXYZ.Y(), ophPE);
+    ophZ->Fill(opDetXYZ.Z(), ophPE);
+    oph2Y->Fill(opDetXYZ.Y(), ophPE2);
+    oph2Z->Fill(opDetXYZ.Z(), ophPE2);
 
     if(fICARUS){
       if(fUseOppVolMetric &&
@@ -1040,21 +791,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     }
   } // for opHits
 
-  // opdetY.sort();
-  // opdetY.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
-  // opdetZ.sort();
-  // opdetZ.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
-  // std::cout << "opdetY:\t";
-  // for(auto Y: opdetY){
-  //   std::cout << Y << "   ";
-  // }
-  // std::cout << std::endl;
-  // std::cout << "opdetZ:\t";
-  // for(auto Z: opdetZ){
-  //   std::cout << Z << "   ";
-  // }
-  // std::cout << std::endl;
-
   if (sum_PE > 0.) {
     FlashMetrics flash;
     flash.metric_ok = true;
@@ -1066,16 +802,13 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.z_skew = ophZ->GetSkewness();
     flash.y_kurt = ophY->GetKurtosis();
     flash.z_kurt = ophZ->GetKurtosis();
+    // Flash widths
     flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, 0.8); // TODO: unharcode
     // TODO: low values of flash.xw <0.5 are indicative of good
     // mcT0-flash_time matching, so akin to matching to prompt light
     // Note that around the middle of the detector (~(+-100, 0, 250)
     // cm for SBND) the values of flash.xw are slightly larger, this
     // is natural and has to do with the way light disperses
-
-    // TODO: decide which is the most useful
-    // flash.yw = ophY->GetStdDev() / oph2Y->GetStdDev();
-    // flash.zw = ophZ->GetStdDev() / oph2Z->GetStdDev();
     flash.yw = oph2Y->GetStdDev();
     flash.zw = oph2Z->GetStdDev();
 
@@ -1096,80 +829,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
       std::abs(sum_PE2Y2 + sum_PE2Z2 + sum_PE2 * (flash.yb * flash.yb + flash.zb * flash.zb)
                - 2.0 * (flash.yb * sum_PE2Y + flash.zb * sum_PE2Z) ) / sum_PE2);
 
-    //  TODO: corrections for short distance depositions that occur in
-    //  front of problematic places.
-    // SUPER EXPERIMENTAL.
-    if(fSBND && false &&
-       flash.xw < 0.236 &&
-       // ((flash.yw<40) && (flash.zw<50)) &&  NOT GOOD:  widths grow when in front of uncoated
-       ((flash.y_kurt>-1.) && (flash.z_kurt>0.))){// proxy for short distance
-      // TODO these proxies using kurtosis have naturally low kurt values around the middles (y ~ 0, z ~ 250), that is the region we want to amend
-      std::array<double, 3> hard_rr_y = {-135., 0., 135.}; // uncoated pmts
-      std::array<double, 2> medm_rr_y = {-67.5, 67.5}; // gaps
-      std::array<double, 3> hard_rr_z = {124.51, 254.7, 384.88}; // gaps
-      std::array<double, 4> medm_rr_z = {57.87, 191.16, 318.24, 451.52}; // uncoated pmts
-
-      std::array<double, 3> hard_ratio_y = hard_rr_y; // uncoated pmts
-      // std::array<double, 3> medm_ratio_y = nahhh;
-      std::array<double, 3> hard_ratio_z = hard_rr_z;
-      std::array<double, 2> medm_ratio_z = {191.16, 318.24}; // uncoated pmts
-
-      // double y_vicinity = 10000.; double z_vicinity = 10000.;
-      // double hard_vicinity = 5.;
-      // double hard_correction = 0.7;
-      // double medm_vicinity = 10.;
-      // double medm_correction = 0.82;
-
-      for (double rr_y : hard_rr_y) {
-        double vicinity = std::abs(flash.yb - rr_y);
-        if(vicinity <  5.) {flash.rr = flash.rr * 0.70; break;}
-        if(vicinity < 10.) {flash.rr = flash.rr * 0.80; break;}
-        // if(vicinity < 15.) {flash.rr = flash.rr * 0.90; break;}
-      }
-      for (double rr_y : medm_rr_y) {
-        double vicinity = std::abs(flash.yb - rr_y);
-        if(vicinity <  5.) {flash.rr = flash.rr * 0.8; break;}
-        if(vicinity < 10.) {flash.rr = flash.rr * 0.9; break;}
-      }
-      for (double rr_z : hard_rr_z) {
-        double vicinity = std::abs(flash.zb - rr_z);
-        if(vicinity <  5.) {flash.rr = flash.rr * 0.7; break;}
-        if(vicinity < 10.) {flash.rr = flash.rr * 0.8; break;}
-        // if(vicinity < 17.) {flash.rr = flash.rr * 0.9; break;}
-      }
-      for (double rr_z : medm_rr_z) {
-        double vicinity = std::abs(flash.zb - rr_z);
-        if(vicinity <  5.) {flash.rr = flash.rr * 0.8; break;}
-        if(vicinity < 10.) {flash.rr = flash.rr * 0.9; break;}
-      }
-
-      for (double ratio_y : hard_ratio_y) {
-        double vicinity = std::abs(flash.yb - ratio_y);
-        if(vicinity <  5.) {flash.ratio = flash.ratio * 0.70; break;}
-        if(vicinity < 10.) {flash.ratio = flash.ratio * 0.80; break;}
-        // if(vicinity < 15.) {flash.ratio = flash.ratio * 0.90; break;}
-      }
-      // for (double ratio_y : medm_ratio_y) {
-      //   double vicinity = std:abs(flash.yb - ratio_y);
-      //   if(vicinity <  5.) {flash.ratio = flash.ratio * 0.85; break;}
-      //   if(vicinity < 10.) {flash.ratio = flash.ratio * 0.95; break;}
-      // }
-      for (double ratio_z : hard_ratio_z) {
-        double vicinity = std::abs(flash.zb - ratio_z);
-        if(vicinity <  7.) {flash.ratio = flash.ratio * 0.82; break;}
-        if(vicinity < 12.) {flash.ratio = flash.ratio * 0.89; break;}
-        if(vicinity < 17.) {flash.ratio = flash.ratio * 0.96; break;}
-      }
-      for (double ratio_z : medm_ratio_z) {
-        double vicinity = std::abs(flash.zb - ratio_z);
-        if(vicinity <  7.) {flash.ratio = flash.ratio * 0.93; break;}
-        if(vicinity < 12.) {flash.ratio = flash.ratio * 0.99; break;}
-      }
-    }
-    //  TODO: corrections for short distance depositions that occur in
-    //  front of problematic places
-
-
     std::tie(flash.h_x, flash.h_xerr, flash.h_xrr, flash.h_xratio) =
       hypoFlashX_H2(flash.rr, flash.ratio);
 
@@ -1180,75 +839,23 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.x = peSumMax_wallX;
     flash.x_gl = flashXGl(flash.h_x, flash.x);
 
-    // // TODO: maybe need to update the range before getting the skew to
-    // // get a better representation? to only include bins that have
-    // // hits
-    // int firstNonEmptyYBin = 1;
-    // for (size_t i=1; i<fYBins; ++i) {
-    //   if (ophY->GetBinContent(i) > 0.) {
-    //     firstNonEmptyYBin = i;
-    //     break;
-    //   }
-    // }
-    // int lastNonEmptyYBin = fYBins;
-    // for (size_t i=fYBins; i>1; --i) {
-    //   if (ophY->GetBinContent(i) > 0.) {
-    //     lastNonEmptyYBin = i;
-    //     break;
-    //   }
-    // }
-    // int firstNonEmptyZBin = 1;
-    // for (size_t i=1; i<fZBins; ++i) {
-    //   if (ophZ->GetBinContent(i) > 0.) {
-    //     firstNonEmptyZBin = i;
-    //     break;
-    //   }
-    // }
-    // int lastNonEmptyZBin = fZBins;
-    // for (size_t i=fZBins; i>1; --i) {
-    //   if (ophZ->GetBinContent(i) > 0.) {
-    //     lastNonEmptyZBin = i;
-    //     break;
-    //   }
-    // }
-    // ophY->GetXaxis()->SetRange(firstNonEmptyYBin, lastNonEmptyYBin);
-    // ophZ->GetXaxis()->SetRange(firstNonEmptyZBin, lastNonEmptyZBin);
-
-    // ophY->ResetStats();
-    // ophZ->ResetStats();
-
-    // slope option 1
-    // flash.slope = flash.zw / flash.yw;
-    //
-    // slope option 2
-    // double min_axis = std::min(flash.yw, flash.zw);
-    // double max_axis = std::max(flash.yw, flash.zw);
-    // double dir = (flash.zw>=flash.yw) ? 1. : -1.;
-    // flash.slope = dir * std::sqrt(1 - ((min_axis*min_axis)/(max_axis*max_axis)));
-    //
-    // another option
+    // Fractional widths
     double fsize = std::sqrt(flash.yw*flash.yw + flash.zw*flash.zw);
-    //double fsize = (flash.yw + flash.zw);
     double fy_fac = flash.yw / fsize;
     double fz_fac = flash.zw / fsize;
     double min_axis = std::min(fy_fac, fz_fac);
     double max_axis = std::max(fy_fac, fz_fac);
     double dir = (fz_fac>=fy_fac) ? 1. : -1.;
-    // double dir = ( (fz_fac>=fy_fac)) ? (max_axis-min_axis)/max_axis : (-max_axis+min_axis)/max_axis;
-    // double dir = 1.;
-    // flash.slope = dir * std::sqrt(1 - ((min_axis*min_axis)/(max_axis*max_axis)));
     flash.slope = dir * std::sqrt((max_axis*max_axis) - (min_axis*min_axis));
-    // flash.slope = std::sqrt((max_axis*max_axis) - (min_axis*min_axis));
-    // flash.slope = dir * (max_axis-min_axis)/max_axis;
-    // flash.slope = fz_fac / fy_fac;
 
+    // store fractional widths?
     // flash.yw = fy_fac;
     // flash.zw = fz_fac;
 
-    flash.y = flash.yb - polinomialCorrection(flash.y_skew, flash.h_x,
-                                              fPolCoefsY, fSkewLimitY);
-    flash.z = flash.zb - polinomialCorrection(flash.z_skew, flash.h_x,
-                                              fPolCoefsZ, fSkewLimitZ);
+    flash.y = flash.yb - polynomialCorrection(flash.y_skew, flash.h_x,
+                                              fRM.PolCoeffsY, fSkewLimitY);
+    flash.z = flash.zb - polynomialCorrection(flash.z_skew, flash.h_x,
+                                              fRM.PolCoeffsZ, fSkewLimitZ);
 
     return flash;
   }
@@ -1271,7 +878,6 @@ FlashPredict::Score FlashPredict::computeScore(
   const ChargeMetrics& charge,
   const FlashMetrics& flash) const
 {
-  // TODO: WIP. this function needs to be cleanud up before merging
   Score score{0.};
   unsigned tcount = 0;
   double charge_x = (fCorrectDriftDistance) ?
@@ -1280,23 +886,23 @@ FlashPredict::Score FlashPredict::computeScore(
   if (charge_x < 0.) xbin = 0;
   else if (charge_x > fDriftDistance) xbin = fXBins - 1;
 
-  score.y = scoreTerm(flash.y, charge.y, fdYMeans[xbin], fdYSpreads[xbin]);
+  score.y = scoreTerm(flash.y, charge.y, fRM.dYMeans[xbin], fRM.dYSpreads[xbin]);
   if(score.y > fTermThreshold) printMetrics("Y", charge, flash, score.y,
                                             mf::LogWarning("FlashPredict"));
   score.total += score.y;
   tcount++;
-  score.z = scoreTerm(flash.z, charge.z, fdZMeans[xbin], fdZSpreads[xbin]);
+  score.z = scoreTerm(flash.z, charge.z, fRM.dZMeans[xbin], fRM.dZSpreads[xbin]);
   if(score.z > fTermThreshold) printMetrics("Z", charge, flash, score.z,
                                             mf::LogWarning("FlashPredict"));
   score.total += score.z;
   tcount++;
-  score.rr = scoreTerm(flash.rr, fRRMeans[xbin], fRRSpreads[xbin]);
+  score.rr = scoreTerm(flash.rr, fRM.RRMeans[xbin], fRM.RRSpreads[xbin]);
   if(score.rr > fTermThreshold) printMetrics("RR", charge, flash, score.rr,
                                              mf::LogWarning("FlashPredict"));
   score.total += score.rr;
   tcount++;
   if(fUseUncoatedPMT || fUseOppVolMetric) {
-    score.ratio = scoreTerm(flash.ratio, fRatioMeans[xbin], fRatioSpreads[xbin]);
+    score.ratio = scoreTerm(flash.ratio, fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
     if(fICARUS && !std::isnan(flash.h_x)){
       // TODO HACK to penalise matches with flash and charge on opposite volumes
       double charge_x_gl = (fCorrectDriftDistance) ?
@@ -1306,7 +912,7 @@ FlashPredict::Score FlashPredict::computeScore(
       double cathode_tolerance = 30.;
       if(x_gl_diff > x_diff + cathode_tolerance) { // ok if close to the cathode
         double penalization = scoreTerm((flash.pe-flash.unpe)/flash.pe,
-                                        fRatioMeans[xbin], fRatioSpreads[xbin]);
+                                        fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
         score.ratio += penalization;
         mf::LogWarning("FlashPredict")
           << "HACK: Penalizing match with flash and charge in opposite volumes."
@@ -1321,15 +927,14 @@ FlashPredict::Score FlashPredict::computeScore(
     score.total += score.ratio;
     tcount++;
   }
-  // TODO: add these two new scores
-  // score.slope = scoreTerm(flash.slope, charge.slope, fSlopeMeans[xbin], fSlopeSpreads[xbin]);
-  score.slope = scoreTerm(flash.slope, charge.slope, -.18, .30);
+  score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
   if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
                                                 mf::LogWarning("FlashPredict"));
+  // TODO: if useful add it to the total score
   // score.total += score.slope;
   // tcount++;
-  // score.petoq = scoreTerm(std::log(flash.pe)/std::log(charge.q), fPEToQMeans[xbin], fPEToQSpreads[xbin]);
-  score.petoq = (charge_x<70.) ? scoreTerm(PEToQ(flash.pe, charge.q), 0.71, 0.054) : scoreTerm(PEToQ(flash.pe, charge.q), 0.65, 0.046);
+ // TODO: if useful add it to the total score
+  score.petoq = scoreTerm(std::log(flash.pe)/std::log(charge.q), fRM.PEToQMeans[xbin], fRM.PEToQSpreads[xbin]);
   if(score.petoq > fTermThreshold) printMetrics("LIGHT/CHARGE", charge, flash, score.petoq,
                                                 mf::LogWarning("FlashPredict"));
   score.total += score.petoq;
@@ -1345,19 +950,19 @@ FlashPredict::Score FlashPredict::computeScore(
   return score;
 }
 
-
+// LEGACY
 std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
   double flash_rr, double flash_ratio) const
 {
   std::vector<double> rrXs;
   double rr_hypoX, rr_hypoXWgt;
-  for(const auto& rrF : fRRFits){
+  for(const auto& rrF : fRM.RRFits){
     if(rrF.min < flash_rr && flash_rr < rrF.max){
       try{
         rrXs.emplace_back(rrF.f->GetX(flash_rr, 0., fDriftDistance, kEps));
       }catch (...) {
         mf::LogWarning("FlashPredict")
-          << "Couldn't find root with fRRFits.\n"
+          << "Couldn't find root with fRM.RRFits.\n"
           << "min/_flash_rr/max:"
           << rrF.min << "/" << flash_rr << "/" << rrF.max;
       }
@@ -1373,7 +978,7 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
     rr_hypoXWgt = 0.;
   }
   else{//(rrXs.size() == 1)
-    if(flash_rr < fRRFits[2].min){//between: [l, m)
+    if(flash_rr < fRM.RRFits[2].min){//between: [l, m)
       rr_hypoX =  rrXs[0]/2.;
       double half_interval = rrXs[0]/2.;
       rr_hypoXWgt = 1./(half_interval*half_interval);
@@ -1390,13 +995,13 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
 
   std::vector<double> ratioXs;
   double ratio_hypoX, ratio_hypoXWgt;
-  for(const auto& ratioF : fRatioFits){
+  for(const auto& ratioF : fRM.RatioFits){
     if(ratioF.min < flash_ratio && flash_ratio < ratioF.max){
       try{
         ratioXs.emplace_back(ratioF.f->GetX(flash_ratio, 0., fDriftDistance, kEps));
       }catch (...) {
         mf::LogWarning("FlashPredict")
-          << "Couldn't find root with fRatioFits.\n"
+          << "Couldn't find root with fRM.RatioFits.\n"
           << "min/flash_ratio/max:"
           << ratioF.min << "/" << flash_ratio << "/" << ratioF.max;
       }
@@ -1412,7 +1017,7 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
     ratio_hypoXWgt = 0.;
   }
   else{//(ratioXs.size() == 1)
-    if(flash_ratio < fRatioFits[2].min){//between: [l, m)
+    if(flash_ratio < fRM.RatioFits[2].min){//between: [l, m)
       ratio_hypoX =  ratioXs[0]/2.;
       double half_interval = ratioXs[0]/2.;
       ratio_hypoXWgt = 1./(half_interval*half_interval);
@@ -1435,8 +1040,8 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
 std::tuple<double, double, double, double> FlashPredict::hypoFlashX_H2(
   double flash_rr, double flash_ratio) const
 {
-  auto[rr_hypoX, rr_hypoXRMS] = xEstimateAndRMS(flash_rr, fRRH2);
-  auto[ratio_hypoX, ratio_hypoXRMS] = xEstimateAndRMS(flash_ratio, fRatioH2);
+  auto[rr_hypoX, rr_hypoXRMS] = xEstimateAndRMS(flash_rr, fRM.RRH2);
+  auto[ratio_hypoX, ratio_hypoXRMS] = xEstimateAndRMS(flash_ratio, fRM.RatioH2);
 
   double drr2 = rr_hypoXRMS*rr_hypoXRMS;
   double dratio2 = ratio_hypoXRMS*ratio_hypoXRMS;
@@ -1627,7 +1232,10 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     else if(!in_right && in_left) hitsInVolume = kActivityInLeft;
     else {
       mf::LogError("FlashPredict")
-        << "ERROR!!! tpcWithHits.size() " << tpcWithHits.size();
+        << "ERROR!!! tpcWithHits.size() " << tpcWithHits.size() << "\n"
+        << "sliceQ:\t" << sliceQ << "\n"
+        << "particles_in_slice.size():\t" << particles_in_slice.size() << "\n"
+        << "particlesClusters.size():\t" << particlesClusters.size() << "\n";
     }
     chargeDigestMap[sliceQ] =
       ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, hitsInVolume, mcT0);
@@ -1894,8 +1502,7 @@ bool FlashPredict::findSimpleFlashes(
 {
   OpHitIt opH_beg = opHits.begin();
   for(unsigned flashId=0; flashId<fMaxFlashes; ++flashId){
-    int ibin = opHitsTimeHist->GetMaximumBin();
-    double maxpeak_time = opHitsTimeHist->GetBinCenter(ibin);
+    double maxpeak_time = std::numeric_limits<double>::min();
     if (flashId == 0 || flashId == 1) { // First flashes have to be within the beam spill
       int beam_start_bin = opHitsTimeHist->FindBin(fBeamSpillTimeStart);
       int beam_end_bin = opHitsTimeHist->FindBin(fBeamSpillTimeEnd);
@@ -1904,21 +1511,31 @@ bool FlashPredict::findSimpleFlashes(
       maxpeak_time = opHitsTimeHist->GetBinCenter(ibin_beam);
       opHitsTimeHist->GetXaxis()->SetRange(0, 0); // reset range
     }
+    else {
+      int ibin = opHitsTimeHist->GetMaximumBin();
+      maxpeak_time = opHitsTimeHist->GetBinCenter(ibin);
+    }
     double lowedge  = maxpeak_time + fFlashStart;
     double highedge = maxpeak_time + fFlashEnd;
-    mf::LogDebug("FlashPredict")
-      << "light window " << lowedge << " " << highedge << std::endl;
     int lowedge_bin = opHitsTimeHist->FindBin(lowedge);
     int highedge_bin = opHitsTimeHist->FindBin(highedge);
-    // check if flash has enough PEs, skip if is the first flash
-    if (opHitsTimeHist->Integral(lowedge_bin, highedge_bin) <= fMinFlashPE ||
-        opHitsTimeHist->Integral(lowedge_bin, highedge_bin) <= 0. ){
-      if(flashId == 0 || flashId == 1) continue;
-      break;
-    }
+    double ophits_integral = opHitsTimeHist->Integral(lowedge_bin, highedge_bin);
+    mf::LogDebug("FlashPredict")
+      << "Finding Simple Flashes, "
+      << "flashId: " << flashId << ",    "
+      << "ophsInVolume: " << ophsInVolume << ",    "
+      << "maxpeak_time: " << maxpeak_time <<  ",    "
+      << "ophits_integral: " << ophits_integral << "\n"
+      << "light window [" << lowedge << ", " << highedge << "] us, "
+      << "[ " << lowedge_bin << ", " << highedge_bin << "] bins";
     // clear this peak to enforce non-overlapping flashes
     for(int i=lowedge_bin; i<highedge_bin; ++i){
       opHitsTimeHist->SetBinContent(i, 0.);
+    }
+    // check if flash has enough PEs, skip if is the first two flashes
+    if (ophits_integral <= fMinFlashPE || ophits_integral <= 0.){
+      if(flashId == 0 || flashId == 1) continue;
+      break;
     }
     auto peakInsideEdges =
       [lowedge, highedge, this](const recob::OpHit& oph)-> bool
@@ -2049,17 +1666,18 @@ double FlashPredict::fractTimeWithFractionOfLight(
 
 
 inline
-double FlashPredict::polinomialCorrection(
+double FlashPredict::polynomialCorrection(
   const double skew, const double hypo_x,
-  const std::vector<double>& polCoefs,
+  const std::vector<double>& polCoeffs,
   const double skew_limit) const
 {
-  if (std::abs(skew)>skew_limit || std::isnan(hypo_x)) return 0.;
   // TODO: maybe some other condition to prevent corrections?
+  if (std::abs(skew)>skew_limit || std::isnan(skew) ||
+      std::isnan(hypo_x)) return 0.;
   double correction = 0.;
   double exponent = 1.;
-  for (double coef : polCoefs) {
-    correction += coef * exponent;
+  for (double coeff : polCoeffs) {
+    correction += coeff * exponent;
     exponent *= hypo_x;
   }
   return correction * skew;
@@ -2243,7 +1861,7 @@ void FlashPredict::printMetrics(const std::string metric,
                                 const double term,
                                 Stream&& out) const
 {
-  int xbin = static_cast<int>(fXBins * (_charge_x / fDriftDistance));
+  int xbin = static_cast<int>(fXBins * (charge.x / fDriftDistance));
   out
     << "Big term " << metric << ":\t" << term << "\n"
     << std::left << std::setw(12) << std::setfill(' ')

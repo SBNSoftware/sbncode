@@ -79,6 +79,22 @@ public:
   void beginJob() override;
   void endJob() override;
 
+  // Variables loaded from the metrics file
+  struct ReferenceMetrics {
+    std::vector<double> dYMeans, dZMeans, RRMeans, RatioMeans,
+      SlopeMeans, PEToQMeans;
+    std::vector<double> dYSpreads, dZSpreads, RRSpreads, RatioSpreads,
+      SlopeSpreads, PEToQSpreads;
+    std::vector<double> PolCoeffsY, PolCoeffsZ;
+    struct Fits {
+      double min, max;
+      std::unique_ptr<TF1> f;
+    };
+    TH2D* RRH2; TH2D* RatioH2;
+    std::array<Fits, 3> RRFits;
+    std::array<Fits, 3> RatioFits;
+  };
+
   struct ChargeDigest {
     size_t pId;
     int pfpPDGC;
@@ -240,7 +256,7 @@ private:
   //  ::flashmatch::FlashMatchManager m_flashMatchManager; ///< The flash match manager
   // art::InputTag fFlashProducer;
   void initTree(void);
-  void loadMetrics(void);
+  ReferenceMetrics loadMetrics(const std::string inputFilename) const;
   double cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
                    const std::vector<art::Ptr<simb::MCParticle>>& mcParticles);
   ChargeMetrics computeChargeMetrics(
@@ -248,7 +264,7 @@ private:
   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
-  std::tuple<double, double, double, double> hypoFlashX_fits(
+  std::tuple<double, double, double, double> hypoFlashX_fits(// LEGACY
     double flash_rr, double flash_ratio) const;
   std::tuple<double, double, double, double> hypoFlashX_H2(
     double flash_rr, double flash_ratio) const;
@@ -307,7 +323,7 @@ private:
                         const OpHitIt opH_end) const;
   double fractTimeWithFractionOfLight(const SimpleFlash& simpleFlash,
                                       double sum_pe, double fraction_pe) const;
-  inline double polinomialCorrection(const double skew, const double hypo_x,
+  inline double polynomialCorrection(const double skew, const double hypo_x,
                                      const std::vector<double>& polCoefs,
                                      const double skew_limit) const;
   std::list<double> wiresXGl() const;
@@ -344,7 +360,7 @@ private:
   const bool fUseARAPUCAS;
   const bool fStoreTrueNus;
   const bool fStoreCheatMCT0;
-  const std::string fInputFilename;
+  const ReferenceMetrics fRM;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
   const double fMinHitQ, fMinSpacePointQ, fMinParticleQ, fMinSliceQ;
@@ -367,7 +383,6 @@ private:
   const std::string fRR_TF1_fit, fRatio_TF1_fit;
   const unsigned fYBins,fZBins;
   const double fYLow, fYHigh, fZLow, fZHigh;
-  const std::vector<double> fPolCoefsY, fPolCoefsZ;
   const double fSkewLimitY, fSkewLimitZ;
   unsigned fDriftVolumes;
   unsigned fTPCPerDriftVolume;
@@ -381,20 +396,8 @@ private:
   static constexpr unsigned kActivityInLeft = 200;
   static constexpr unsigned kActivityInBoth = 300;
 
-  // root stuff
-  TTree* _flashmatch_nuslice_tree;
-  struct Fits {
-    double min, max;
-    std::unique_ptr<TF1> f;
-  };
-  TH2D* fRRH2; TH2D* fRatioH2;
-  static constexpr unsigned kMinEntriesInProjection = 100;
-  std::array<Fits, 3> fRRFits;
-  std::array<Fits, 3> fRatioFits;
-  const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
-  static constexpr double kEps = 1e-4;
-
   // Tree variables
+  TTree* _flashmatch_nuslice_tree;
   unsigned _charge_id, _charge_activity;
   int _charge_pdgc;
   double _charge_x_gl, _charge_x, _charge_y, _charge_z,
@@ -414,10 +417,9 @@ private:
   unsigned _slices = -1; unsigned _true_nus = -1;
   double _mcT0 = -9999.;
 
-  std::vector<double> fdYMeans, fdZMeans, fRRMeans, fRatioMeans,
-    fSlopeMeans, fPEToQMeans;
-  std::vector<double> fdYSpreads, fdZSpreads, fRRSpreads, fRatioSpreads,
-    fSlopeSpreads, fPEToQSpreads;
+  static constexpr unsigned kMinEntriesInProjection = 100;
+  const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
+  static constexpr double kEps = 1e-4;
 
   static constexpr bool kNoScr = false;
   static constexpr double kNoScrTime = -9999.;

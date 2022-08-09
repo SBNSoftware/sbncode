@@ -133,18 +133,19 @@ def quality_checks(e):
     if e.slices != 1: return False
     if e.true_nus != 1: return False
     if e.mcT0 < 0. or 1.6 < e.mcT0 : return False # TODO: unhardcode
+    if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > 0.3 : False # TODO: unhardcode
     if e.charge_x < 0.: return False
     return True
 
 
-def polinomial_correction(skew, hypo_x, pol_coefs, skew_high_limit=10.):
+def polynomial_correction(skew, hypo_x, pol_coeffs, skew_high_limit=10.):
     # TODO: maybe some other condition to prevent corrections?
-    if np.abs(skew) > skew_high_limit or np.isnan(hypo_x):
+    if np.abs(skew) > skew_high_limit or np.isnan(skew) or np.isnan(hypo_x):
         return 0.
     correction = 0.
     exponent = 1.
-    for coef in pol_coefs:
-        correction += coef * exponent
+    for coeff in pol_coeffs:
+        correction += coeff * exponent
         exponent *= hypo_x
     return correction * skew
 
@@ -156,23 +157,29 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
                         dist_to_anode_low, dist_to_anode_up)
     draw_expression = (f"((flash_{var}b-charge_{var})/{var}_skew):new_hypo_x"
                        f">>fit_prof_{var}")
+    # the filters are the same as in quality_checks()
     draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
                     f"abs({var}_skew)<{skew_high_limit} && "
                     f"true_nus==1 && slices==1 && "
-                    f"0.<mcT0 && mcT0<1.6")
-    draw_option = "prof" # TODO: maybe better to use "profs"
-    print(draw_expression, draw_filters, draw_option)
+                    f"0.<mcT0 && mcT0<1.6 &&" # TODO: unhardcode
+                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 &&" # TODO: unhardcode
+                    f"charge_x >= 0."
+                    )
+    draw_option = "profs"
+    print("Draw expression: ", draw_expression,
+          "\nfilters: ", draw_filters,
+          "\noptions: ", draw_option)
     can = TCanvas("can")
     nuslice_tree.Draw(draw_expression, draw_filters, draw_option)
-    fit_result = fit_prof.Fit("pol2", "S")
+    fit_result = fit_prof.Fit("pol2", "S") # TODO: unhardcode
     fit_prof.Write()
-    fit_result.Print("V")
+    # fit_result.Print("V")
     can.Print(f"{var}_correction_fit.pdf")
     params = []
     for p in fit_result.Parameters():
         params.append(sig_fig_round(p, 3))
     print("The fitted and rounded correction parameters for ", var, " are: ", params)
-    print("Please update the fcl files with these values")
+    print("These are now stored in the metrics file.\n")
     return params
 
 
@@ -323,9 +330,6 @@ def generator(nuslice_tree, rootfile, pset):
     match_score_h1.GetXaxis().SetTitle("match score (arbitrary)")
 
     metrics_filename = 'fm_metrics_' + detector + '.root'
-    hfile = gROOT.FindObject(metrics_filename)
-    if hfile:
-        hfile.Close()
     hfile = TFile(metrics_filename, 'RECREATE',
                   'Simple flash matching metrics for ' + detector.upper())
 
@@ -337,33 +341,60 @@ def generator(nuslice_tree, rootfile, pset):
         rr_prof.Fill(qX, e.flash_rr)
         ratio_h2.Fill(qX, e.flash_ratio)
         ratio_prof.Fill(qX, e.flash_ratio)
-    # store the new hypothesis of the flash x position hypo_x
+
+    # Use rr_h2 and ratio_h2 to compute hypo_x and store the new
+    # hypothesis of the flash x position new_hypo_x
     new_hypo_x = array('d',[0])
     new_hypo_x_branch = nuslice_tree.Branch("new_hypo_x", new_hypo_x, "new_hypo_x/D");
     for e in nuslice_tree:
+        # No need to check quality in this loop
         new_hypo_x[0] = hypo_flashx_from_H2(e.flash_rr, rr_h2,
                                             e.flash_ratio, ratio_h2)
         new_hypo_x_branch.Fill()
-    y_pol_coefs = parameters_correction_fitter(nuslice_tree, "y", profile_bins,
-                                               dist_to_anode_low, dist_to_anode_up,
-                                               pset.SkewLimitY)
-    z_pol_coefs = parameters_correction_fitter(nuslice_tree, "z", profile_bins,
-                                               dist_to_anode_low, dist_to_anode_up,
-                                               pset.SkewLimitZ)
 
-    # use rr_h2 and ratio_h2 to compute hypo_x
+    # Fit and create std::vector objects for polynomial correction
+    # coefficients
+    y_pol_coeffs = parameters_correction_fitter(nuslice_tree, "y", profile_bins,
+                                                dist_to_anode_low, dist_to_anode_up,
+                                                pset.SkewLimitY)
+    y_pol_coeffs_vec = ROOT.std.vector['double']()
+    for yp in y_pol_coeffs: y_pol_coeffs_vec.push_back(yp)
+
+    z_pol_coeffs = parameters_correction_fitter(nuslice_tree, "z", profile_bins,
+                                                dist_to_anode_low, dist_to_anode_up,
+                                                pset.SkewLimitZ)
+    z_pol_coeffs_vec = ROOT.std.vector['double']()
+    for zp in z_pol_coeffs: z_pol_coeffs_vec.push_back(zp)
+
+    # Using the new estimation new_hypo_x, and the just fitted
+    # polynomial coefficients; get the corrected new_flash_y and new_flash_z
+    new_flash_y = array('d',[0])
+    new_flash_y_branch = nuslice_tree.Branch("new_flash_y", new_flash_y, "new_flash_y/D");
+    new_flash_z = array('d',[0])
+    new_flash_z_branch = nuslice_tree.Branch("new_flash_z", new_flash_z, "new_flash_z/D");
+    for e in nuslice_tree:
+        # No need to check quality in this loop
+        new_flash_y[0] = e.flash_yb - polynomial_correction(
+            e.y_skew, e.new_hypo_x, y_pol_coeffs)
+        new_flash_y_branch.Fill()
+        new_flash_z[0] = e.flash_zb - polynomial_correction(
+            e.z_skew, e.new_hypo_x, z_pol_coeffs)
+        new_flash_z_branch.Fill()
+
+    # Update the file
+    rootfile.Write()
+    hfile.ReOpen("UPDATE")
+    hfile.Write()
+
+    # Use the new corrected terms to fill the H2s and Prof
     for e in nuslice_tree:
         if not quality_checks(e): continue
         qX = e.charge_x
-        corr_flash_y = e.flash_yb - polinomial_correction(e.y_skew, e.new_hypo_x,
-                                                          y_pol_coefs)
-        corr_flash_z = e.flash_zb - polinomial_correction(e.z_skew, e.new_hypo_x,
-                                                          z_pol_coefs)
-        dy_h2.Fill(qX, corr_flash_y - e.charge_y)
-        dy_prof.Fill(qX, corr_flash_y - e.charge_y)
-        dz_h2.Fill(qX, corr_flash_z - e.charge_z)
-        dz_prof.Fill(qX, corr_flash_z - e.charge_z)
-
+        dy_h2.Fill(qX, e.new_flash_y - e.charge_y)
+        dy_prof.Fill(qX, e.new_flash_y - e.charge_y)
+        dz_h2.Fill(qX, e.new_flash_z - e.charge_z)
+        dz_prof.Fill(qX, e.new_flash_z - e.charge_z)
+        # these H2s use no new corrections
         slope_h2.Fill(qX, e.flash_slope - e.charge_slope)
         slope_prof.Fill(qX, e.flash_slope - e.charge_slope)
         petoq_h2.Fill(qX, e.petoq)
@@ -428,18 +459,14 @@ def generator(nuslice_tree, rootfile, pset):
             print("Warning zero spread.\n",
                   f"qX: {qX}. isl: {isl}. petoq_spreads[isl]: {petoq_spreads[isl]} ")
             petoq_spreads[isl] = petoq_spreads[isl+1]
-        corr_flash_y = e.flash_yb - polinomial_correction(e.y_skew, e.new_hypo_x,
-                                                          y_pol_coefs)
-        corr_flash_z = e.flash_zb - polinomial_correction(e.z_skew, e.new_hypo_x,
-                                                          z_pol_coefs)
 
-        score += abs((corr_flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
-        score += abs((corr_flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
+        score += abs((e.new_flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
+        score += abs((e.new_flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_rr-rr_means[isl])/rr_spreads[isl]
         if (detector == "sbnd" and pset.UseUncoatedPMT) or \
            (detector == "icarus" and pset.UseOppVolMetric) :
             score += abs(e.flash_ratio-ratio_means[isl])/ratio_spreads[isl]
-        score += abs((e.flash_slope - e.charge_slope) - slope_means[isl])/slope_spreads[isl]
+        # score += abs((e.flash_slope - e.charge_slope) - slope_means[isl])/slope_spreads[isl] # TODO: if useful add it to the total score
         score += abs(e.petoq-petoq_means[isl])/petoq_spreads[isl]
 
         oldunfolded_score_scatter.Fill(qXGl, e.score)
@@ -465,7 +492,7 @@ def generator(nuslice_tree, rootfile, pset):
         graph = TGraph(x_bins,
                        array('f', xvals), array('f', yvals))
         name = "rr_fit" + suf
-        print("Fitting: ", name)
+        print("\nFitting: ", name)
         f = TF1(name, pset.rr_TF1_fit)
         graph.Fit(f)
         f.Write()
@@ -479,7 +506,7 @@ def generator(nuslice_tree, rootfile, pset):
         graph = TGraph(x_bins,
                        array('f', xvals), array('f', yvals))
         name = "ratio_fit" + suf
-        print("Fitting: ", name)
+        print("\nFitting: ", name)
         f = TF1(name, pset.ratio_TF1_fit)
         graph.Fit(f)
         f.Write()
@@ -490,6 +517,8 @@ def generator(nuslice_tree, rootfile, pset):
     petoq_h2.Write()
     petoq_prof.Write()
     petoq_h1.Write()
+    hfile.WriteObject(y_pol_coeffs_vec, "pol_coeffs_y")
+    hfile.WriteObject(z_pol_coeffs_vec, "pol_coeffs_z")
     match_score_scatter.Write()
     oldunfolded_score_scatter.Write()
     unfolded_score_scatter.Write()
@@ -609,28 +638,35 @@ def main():
         print('Input file %s does not exist.' % args.file)
         return 1
 
-    # TODO: better not modify the original file: open and read it, make a copy and then modify the copy
-    print('\nOpening %s' % args.file)
-    rootfile = TFile.Open(args.file, 'update')
-    if not rootfile.IsOpen() or rootfile.IsZombie():
-        print('Failed to open %s' % args.file)
+    print('\nOpening ', args.file)
+    rootfile_orig = TFile.Open(args.file, 'READ')
+    if not rootfile_orig.IsOpen() or rootfile_orig.IsZombie():
+        print('Failed to open ', args.file)
         return 1
+
+    file_updated = "updated_" + args.file
+    print('\nCopying  ', args.file, ' to ', file_updated)
+    if not rootfile_orig.Cp(file_updated):
+        print('Failed to copy ', args.file)
+        return 1
+    rootfile = TFile.Open(file_updated, 'UPDATE')
+    if not rootfile.IsOpen() or rootfile.IsZombie():
+        print('Failed to open ', file_updated)
+        return 1
+
     global detector
     if args.sbnd:
         fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
         detector = "sbnd"
-        dir = rootfile.Get(args.file+":/fmatch")
-        nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
-        # nuslice_tree.Print()
+        dir = rootfile.Get(file_updated+":/fmatch")
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
         # TODO: add option to use cryo 0 and cryo 1
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
         detector = "icarus"
-        dir = rootfile.Get(args.file+":/fmatchCryo0")
-        nuslice_tree = dir.Get("nuslicetree")  # , nuslice_tree)
-        # nuslice_tree.Print()
+        dir = rootfile.Get(file_updated+":/fmatchCryo0")
+    nuslice_tree = dir.Get("nuslicetree")
 
     generator(nuslice_tree, rootfile, pset)
 
