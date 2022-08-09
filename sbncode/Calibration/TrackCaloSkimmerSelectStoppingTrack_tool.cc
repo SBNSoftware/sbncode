@@ -53,6 +53,8 @@ private:
   double fFidTickMin;
   double fFidTickMax;
   double fMediandQdxRRMax;
+
+  bool fCheckFiducialX;
 };
 
 TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const fhicl::ParameterSet &p):
@@ -68,7 +70,8 @@ TrackCaloSkimmerSelectStoppingTrack::TrackCaloSkimmerSelectStoppingTrack(const f
   fEndMediandQdxCut(p.get<double>("EndMediandQdxCut")),
   fNumberTimeSamples(p.get<unsigned>("NumberTimeSamples")),
   fRequireDownwards(p.get<bool>("RequireDownwards", true)),
-  fMediandQdxRRMax(p.get<double>("MediandQdxRRMax", 5.))
+  fMediandQdxRRMax(p.get<double>("MediandQdxRRMax", 5.)),
+  fCheckFiducialX(p.get<bool>("CheckFiducialX"))
 {
   // Get the fiducial volume info
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
@@ -122,7 +125,9 @@ bool TrackCaloSkimmerSelectStoppingTrack::Select(const TrackInfo &t) {
   for (const geo::BoxBoundedGeo &g: fFiducialVolumes) {
     geo::Point_t end {t.end.x, t.end.y, t.end.z};
 
-    if (g.ContainsPosition(end)) {
+    bool is_contained = fCheckFiducialX ? g.ContainsPosition(end) : g.ContainsYZ(end.Y(), end.Z());
+
+    if (is_contained) {
       end_is_fid = true;
       break;
     }
