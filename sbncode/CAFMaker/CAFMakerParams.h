@@ -48,6 +48,10 @@ namespace caf
 	Comment("Factor by which to prescale unblind events"), "10"
     };
 
+    Atom<int> POTBlindSeed { Name("POTBlindNum"),
+	Comment("Integer used to derive POT scaling factor for blind events"), 345678
+    };
+
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
       Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
       ""

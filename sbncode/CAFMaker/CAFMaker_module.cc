@@ -229,11 +229,12 @@ class CAFMaker : public art::EDProducer {
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
   void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
-  void AddHistogramsToFile(TFile* outfile) const;
+  void AddHistogramsToFile(TFile* outfile, bool isBlindPOT) const;
 
   void InitializeOutfiles();
 
   void BlindEnergyParameters(StandardRecord* brec);
+  double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
@@ -323,12 +324,24 @@ class CAFMaker : public art::EDProducer {
   // setup volume definitions
   InitVolumes();
 
-  // setup random number generator
+  // setup random number generators
   fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
   fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-
 }
 
+//......................................................................
+  double CAFMaker::GetBlindPOTScale() const {
+   std::string bstring = std::to_string(fParams.POTBlindSeed());
+   int slen = bstring.length();
+   std::string s1 = bstring.substr(0,int(slen/2));
+   std::string s2 = bstring.substr(int(slen/2));
+   double rat = stoi(s1)/stoi(s2);
+   while (abs(rat)>1){
+     rat = -1 * (abs(rat) - 1);
+   }
+   return rat;
+   
+  }
 //......................................................................
 void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
@@ -1765,7 +1778,7 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-void CAFMaker::AddHistogramsToFile(TFile* outfile) const
+  void CAFMaker::AddHistogramsToFile(TFile* outfile, bool isBlindPOT=false) const
 {
   outfile->cd();
 
@@ -1774,7 +1787,13 @@ void CAFMaker::AddHistogramsToFile(TFile* outfile) const
   //    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
 
-  hPOT->Fill(.5, fTotalPOT);
+  if (isBlindPOT) {
+    double scale = 1 + 0.5*GetBlindPOTScale();
+    hPOT->Fill(0.5,fTotalPOT*scale);
+  }
+  else {
+    hPOT->Fill(.5, fTotalPOT);
+  }
   hEvents->Fill(.5, fTotalEvents);
 
   hPOT->Write();
@@ -1815,7 +1834,7 @@ void CAFMaker::endJob() {
     }
 
     AddHistogramsToFile(fFile);
-    AddHistogramsToFile(fFileb);
+    AddHistogramsToFile(fFileb,true);
     AddHistogramsToFile(fFilep);
 
     //CB is it ok to comment this out? Was making duplicate trees in file?
@@ -1830,7 +1849,7 @@ void CAFMaker::endJob() {
     fFlatFilep->Write();
 
     AddHistogramsToFile(fFlatFile);
-    AddHistogramsToFile(fFlatFileb);
+    AddHistogramsToFile(fFlatFileb,true);
     AddHistogramsToFile(fFlatFilep);
 
     //fFlatFile->Write();
