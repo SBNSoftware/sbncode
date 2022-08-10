@@ -35,9 +35,12 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
+#include "larreco/Calorimetry/INormalizeCharge.h"
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
+
+#include "art/Utilities/make_tool.h"
 
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbncode/TPCReco/VertexStub/StubMergeAlgorithms.h"
@@ -72,6 +75,8 @@ private:
   bool fCorrectSCE;
   bool fPositionsAreSCECorrected;
   bool fSelectNeutrino;
+  std::vector<fhicl::ParameterSet> fNormToolConfig;
+  std::vector<std::unique_ptr<INormalizeCharge>> fNormTools;
 
   // private data 
   calo::CalorimetryAlg fCaloAlg;
@@ -79,6 +84,7 @@ private:
   // helpers
   geo::Point_t PositionAtWires(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
   geo::Point_t PositionAbsolute(const geo::Point_t &p, const geo::GeometryCore *geo, const spacecharge::SpaceCharge *sce);
+  double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0);
 };
 
 
@@ -91,8 +97,13 @@ sbn::VertexChargeVacuum::VertexChargeVacuum(fhicl::ParameterSet const& p)
     fCorrectSCE(p.get<bool>("CorrectSCE")),
     fPositionsAreSCECorrected(p.get<bool>("PositionsAreSCECorrected")),
     fSelectNeutrino(p.get<bool>("SelectNeutrino")),
+    fNormToolConfig(p.get<std::vector<fhicl::ParameterSet>>("NormTools", {})),
     fCaloAlg(p.get<fhicl::ParameterSet >("CaloAlg"))
 {
+
+  for (const fhicl::ParameterSet &p: fNormToolConfig) {
+    fNormTools.push_back(art::make_tool<INormalizeCharge>(p));
+  }
 
   produces<std::vector<sbn::VertexHit>>();
   produces<art::Assns<recob::Slice, sbn::VertexHit>>();
@@ -202,6 +213,28 @@ geo::Point_t sbn::VertexChargeVacuum::PositionAbsolute(const geo::Point_t &p, co
 
   if (tpc && !fPositionsAreSCECorrected) return sbn::GetLocation(sce, p, tpc);
   return p;
+}
+
+double sbn::VertexChargeVacuum::Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
+    
+  double ret = dQdx;
+
+  // Normtools configured -- use those
+  if (fNormTools.size()) {
+    for (auto const &nt: fNormTools) {
+      ret = nt->Normalize(ret, e, h, location, direction, t0);
+    }
+  }
+  // Otherwise, fix using configured electron lifetime
+  else {
+    auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+    auto const dprop =
+      art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+
+    ret = ret * fCaloAlg.LifetimeCorrection(clock_data, dprop, h.PeakTime(), 0.);
+  }
+
+  return ret;
 }
 
 void sbn::VertexChargeVacuum::produce(art::Event& evt)
@@ -335,11 +368,18 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
 
 	sbn::VertexHit vhit;
         vhit.wire = hit.WireID();
-        vhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
 	vhit.proj_dist_to_vertex = Vert2HitDistance(hit, vert_atwires, geo, dprop);
         vhit.vtxw = geo->WireCoordinate(vert_atwires.position(), hit.WireID());
         vhit.vtxx = vert_atwires.position().x();
         vhit.vtxXYZ = vert_absolute.position();
+
+        // Compute the charge, using everything we have
+        vhit.charge = fCaloAlg.ElectronsFromADCArea(Normalize(hit.Integral(), evt, hit, 
+                                                              vert_absolute.position() /* close enuff to hit */, 
+                                                              geo::Vector_t() /* no direction available */,
+                                                              0. /* TODO: add T0*/),  
+                                   hit.WireID().Plane);
+
 
         // lookup the spacepoint location
         const std::vector<art::Ptr<recob::SpacePoint>> &hit_sp = hitSPs.at(i_hit);
@@ -386,7 +426,7 @@ void sbn::VertexChargeVacuum::produce(art::Event& evt)
           // pt and dir here are space-charge corrected regardless of the input configuration
           vhit.pitch = sbn::GetPitch(geo, sce, spXYZ, dir, hit.View(), hit.WireID(), fCorrectSCE, true); 
 
-          vhit.dqdx = fCaloAlg.ElectronsFromADCArea((hit.Integral() / vhit.pitch), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(clock_data, dprop, hit.PeakTime(), 0.);
+          vhit.dqdx = vhit.charge / vhit.pitch;
 
           // Same here -- input position is already corrected
           float EField = sbn::GetEfield(dprop, sce, spXYZ, hit.WireID(), false);
