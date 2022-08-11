@@ -191,6 +191,9 @@ namespace caf {
    srtruth.exit.x = truth.mevprtl_exit.X();
    srtruth.exit.y = truth.mevprtl_exit.Y();
    srtruth.exit.z = truth.mevprtl_exit.Z();
+   srtruth.start.x = truth.mevprtl_start.X();
+   srtruth.start.y = truth.mevprtl_start.Y();
+   srtruth.start.z = truth.mevprtl_start.Z();
 
    srtruth.C1 = truth.C1;
    srtruth.C2 = truth.C2;
