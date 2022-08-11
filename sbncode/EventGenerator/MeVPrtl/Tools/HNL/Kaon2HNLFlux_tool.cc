@@ -240,6 +240,9 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.secondary_pdg = (is_muon ? 11 : 13) * (kaon.kaon_pdg > 0 ? 1 : -1);
   hnl.generator = 1; // kHNL
 
+  // equivalent neutrino energy
+  hnl.equiv_enu = EnuLab(flux.fnecm, hnl.kmom, hnl.pos);
+
   return true;
 }
 
