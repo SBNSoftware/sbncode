@@ -1366,30 +1366,23 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const recob::Hit &thisHit = *slcHits[iHit];
       
       std::vector<art::Ptr<recob::PFParticle>> thisParticle;
-      if (fmSpacePointPFPs.isValid() && iHit < fmSpacePointPFPs.size()) {
+      if (fmSpacePointPFPs.isValid()) {
         thisParticle = fmSpacePointPFPs.at(iHit);
       }
       std::vector<art::Ptr<recob::SpacePoint>> thisPoint;
-      if (fmSpacePoint.isValid() && iHit < fmSpacePoint.size()) {
+      if (fmSpacePoint.isValid()) {
         thisPoint = fmSpacePoint.at(iHit); 
       }
-      assert(thisParticle.size() == 1);
-      assert(thisPoint.size() == 1);
-      rec.reco.nhit++;
-      rec.reco.hit.push_back(SRHit());
+      if (!thisParticle.empty() && !thisPoint.empty()) {
+        assert(thisParticle.size() == 1);
+        assert(thisPoint.size() == 1);
+        rec.reco.nhit++;
+        rec.reco.hit.push_back(SRHit());
 
-      recob::SpacePoint point;
-      recob::PFParticle particle;
-      if (!thisPoint.empty()) { 
-        point = *thisPoint[0];
+        FillHitVars(thisHit, producer, *thisPoint[0], *thisParticle[0], rec.reco.hit.back());
+        recslc.reco.hit.push_back(rec.reco.hit.back());
+        recslc.reco.nhit = recslc.reco.hit.size();
       }
-      if (!thisParticle.empty()) { 
-        particle = *thisParticle[0];
-      }
-
-      FillHitVars(thisHit, producer, point, particle, rec.reco.hit.back());
-      recslc.reco.hit.push_back(rec.reco.hit.back());
-      recslc.reco.nhit = recslc.reco.hit.size();
     }
 
     //#######################################################

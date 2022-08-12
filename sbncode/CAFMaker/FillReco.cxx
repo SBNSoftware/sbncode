@@ -684,12 +684,10 @@ namespace caf
                    bool allowEmpty)
   {
     srhit.producer = producer;
-    srhit.startTick = hit.StartTick();
-    srhit.endTick = hit.EndTick();  
+    srhit.peakTime = hit.PeakTime();
     srhit.RMS = hit.RMS();
 
     srhit.peakAmplitude = hit.PeakAmplitude();
-    srhit.summedADC = hit.PeakAmplitude();
     srhit.integral = hit.Integral();
 
     const geo::WireID wire = hit.WireID();
@@ -700,6 +698,7 @@ namespace caf
     srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
     srhit.spacepoint.chisq = spacepoint.Chisq();
     srhit.spacepoint.pfpID = particle.Self();
+    srhit.spacepoint.ID = spacepoint.ID();
   }
   //......................................................................
 
