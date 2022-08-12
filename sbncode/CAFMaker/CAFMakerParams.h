@@ -133,6 +133,12 @@ namespace caf
       "crumbs"
     };
 
+    Atom<bool> FillHits {
+      Name("FillHits"),
+      Comment("Label deciding if you want to fill SRHits"),
+      true
+    };
+
     Atom<string> HitLabel {
       Name("HitLabel"),
       Comment("Base label of the TPC Hit producer."),
