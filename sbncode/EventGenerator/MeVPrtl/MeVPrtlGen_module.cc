@@ -337,6 +337,15 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     simb::MCTruth mctruth;
 
+    // Add the "Neutrino" as the 0th MCParticle
+    // This hopefully (???) won't do anything too bad and will give us
+    // the chance to use the neutrino energy in other things
+    simb::MCParticle fakenu(0, kaon.fntype, "primary", -1, 0, -1/* don't track */);
+    fakenu.AddTrajectoryPoint(mevprtl_truth.decay_pos, TLorentzVector(0, 0, flux.equiv_enu, flux.equiv_enu));
+    mctruth.Add(fakenu);
+    mctruth.SetNeutrino(-1, -1, -1, -1, -1, -1, 
+                        -1., -1., -1., -1.); 
+
     for (unsigned i_d = 0; i_d < mevprtl_truth.daughter_mom.size(); i_d++) {
       TLorentzVector daughter4p(mevprtl_truth.daughter_mom[i_d], mevprtl_truth.daughter_e[i_d]);
       simb::MCParticle d(0, mevprtl_truth.daughter_pdg[i_d], "primary", -1, daughter4p.M());
