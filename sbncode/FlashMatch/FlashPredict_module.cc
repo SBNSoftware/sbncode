@@ -63,8 +63,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fDriftDistance(driftDistance())
   , fXBins(p.get<double>("XBins"))
   , fXBinWidth(fDriftDistance/fXBins)// cm
-  , fRR_TF1_fit(p.get<std::string>("rr_TF1_fit", "pol3"))
-  , fRatio_TF1_fit(p.get<std::string>("ratio_TF1_fit", "pol3"))
+  // , fRR_TF1_fit(p.get<std::string>("rr_TF1_fit", "pol3"))  // LEGACY
+  // , fRatio_TF1_fit(p.get<std::string>("ratio_TF1_fit", "pol3"))  // LEGACY
   , fYBins(p.get<unsigned>("YBins", 0.)) // roughly match the rows of opdets
   , fZBins(p.get<unsigned>("ZBins", 0.)) // roughly match the columns of opdets
   , fYLow(p.get<double>("YLow", 0.)) // lowest opdet position in cm
@@ -535,12 +535,14 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
      !metricsInFile->Contains("ratio_h1") ||
      !metricsInFile->Contains("slope_h1") ||
      !metricsInFile->Contains("petoq_h1") ||
-     !metricsInFile->Contains("rr_fit_l") ||
-     !metricsInFile->Contains("rr_fit_m") ||
-     !metricsInFile->Contains("rr_fit_h") ||
-     !metricsInFile->Contains("ratio_fit_l") ||
-     !metricsInFile->Contains("ratio_fit_m") ||
-     !metricsInFile->Contains("ratio_fit_h") ||
+     // LEGACY
+     // !metricsInFile->Contains("rr_fit_l") ||
+     // !metricsInFile->Contains("rr_fit_m") ||
+     // !metricsInFile->Contains("rr_fit_h") ||
+     // !metricsInFile->Contains("ratio_fit_l") ||
+     // !metricsInFile->Contains("ratio_fit_m") ||
+     // !metricsInFile->Contains("ratio_fit_h") ||
+     // LEGACY
      !metricsInFile->Contains("pol_coeffs_y") ||
      !metricsInFile->Contains("pol_coeffs_z"))
   {

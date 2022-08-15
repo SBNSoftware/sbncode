@@ -380,7 +380,7 @@ private:
   const double fDriftDistance;
   const int fXBins;
   const double fXBinWidth;
-  const std::string fRR_TF1_fit, fRatio_TF1_fit;
+  // const std::string fRR_TF1_fit, fRatio_TF1_fit; // LEGACY
   const unsigned fYBins,fZBins;
   const double fYLow, fYHigh, fZLow, fZHigh;
   const double fSkewLimitY, fSkewLimitZ;

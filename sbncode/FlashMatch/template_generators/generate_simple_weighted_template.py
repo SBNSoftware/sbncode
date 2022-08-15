@@ -538,34 +538,35 @@ def generator(nuslice_tree, rootfile, pset):
     rr_h2.Write()
     rr_prof.Write()
     rr_h1.Write()
-
-    errors = [1, 0, -1]
-    fitname_suffix = ["_h", "_m", "_l"]
-    rr_fit_funcs = []
-    for e,suf in zip(errors, fitname_suffix):
-        yvals = [a + e*b for a, b in zip(rr_means, rr_spreads)]
-        graph = TGraph(x_bins,
-                       array('f', xvals), array('f', yvals))
-        name = "rr_fit" + suf
-        print("\nFitting: ", name)
-        f = TF1(name, pset.rr_TF1_fit)
-        graph.Fit(f)
-        f.Write()
-        rr_fit_funcs.append(f)
+    # LEGACY
+    # errors = [1, 0, -1]
+    # fitname_suffix = ["_h", "_m", "_l"]
+    # rr_fit_funcs = []
+    # for e,suf in zip(errors, fitname_suffix):
+    #     yvals = [a + e*b for a, b in zip(rr_means, rr_spreads)]
+    #     graph = TGraph(x_bins,
+    #                    array('f', xvals), array('f', yvals))
+    #     name = "rr_fit" + suf
+    #     print("\nFitting: ", name)
+    #     f = TF1(name, pset.rr_TF1_fit)
+    #     graph.Fit(f)
+    #     f.Write()
+    #     rr_fit_funcs.append(f)
     ratio_h2.Write()
     ratio_prof.Write()
     ratio_h1.Write()
-    ratio_fit_funcs = []
-    for e,suf in zip(errors, fitname_suffix):
-        yvals = [a + e*b for a, b in zip(ratio_means, ratio_spreads)]
-        graph = TGraph(x_bins,
-                       array('f', xvals), array('f', yvals))
-        name = "ratio_fit" + suf
-        print("\nFitting: ", name)
-        f = TF1(name, pset.ratio_TF1_fit)
-        graph.Fit(f)
-        f.Write()
-        ratio_fit_funcs.append(f)
+    # LEGACY
+    # ratio_fit_funcs = []
+    # for e,suf in zip(errors, fitname_suffix):
+    #     yvals = [a + e*b for a, b in zip(ratio_means, ratio_spreads)]
+    #     graph = TGraph(x_bins,
+    #                    array('f', xvals), array('f', yvals))
+    #     name = "ratio_fit" + suf
+    #     print("\nFitting: ", name)
+    #     f = TF1(name, pset.ratio_TF1_fit)
+    #     graph.Fit(f)
+    #     f.Write()
+    #     ratio_fit_funcs.append(f)
     slope_h2.Write()
     slope_prof.Write()
     slope_h1.Write()
@@ -609,9 +610,10 @@ def generator(nuslice_tree, rootfile, pset):
     crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
-    for f in rr_fit_funcs:
-        f.SetLineColor(ROOT.kOrange+7)
-        f.DrawF1(0., drift_distance, "lsame")
+    # LEGACY
+    # for f in rr_fit_funcs:
+    #     f.SetLineColor(ROOT.kOrange+7)
+    #     f.DrawF1(0., drift_distance, "lsame")
     canv.Print("rr.pdf")
     canv.Update()
 
@@ -622,9 +624,10 @@ def generator(nuslice_tree, rootfile, pset):
     crosses.SetLineColor(ROOT.kAzure+9)
     crosses.SetLineWidth(3)
     crosses.Draw("Psame")
-    for f in ratio_fit_funcs:
-        f.SetLineColor(ROOT.kOrange+7)
-        f.DrawF1(0., drift_distance, "lsame")
+    # LEGACY
+    # for f in ratio_fit_funcs:
+    #     f.SetLineColor(ROOT.kOrange+7)
+    #     f.DrawF1(0., drift_distance, "lsame")
     canv.Print("ratio.pdf")
     canv.Update()
 
