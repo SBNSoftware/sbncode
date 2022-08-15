@@ -512,6 +512,8 @@ void FlashPredict::initTree(void)
 FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
   const std::string inputFilename) const
 {
+  // BIG TODO: Metrics should depend on X,Y,Z.
+  // Many changes needed everywhere
   ReferenceMetrics rm;
   // read histograms and fill vectors for match score calculation
   std::string fname;
@@ -1050,16 +1052,13 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_H2(
   double sum_weights = rr_hypoXWgt + ratio_hypoXWgt;
   double hypo_x =
     (rr_hypoX*rr_hypoXWgt + ratio_hypoX*ratio_hypoXWgt) / sum_weights;
-  if (std::abs(rr_hypoX - ratio_hypoX)<= 2.*std::sqrt(drr2+dratio2)){
-    // consistent estimates, resulting error is smaller
-    double hypo_x_err = std::sqrt(1./sum_weights);
-    return {hypo_x, hypo_x_err, rr_hypoX, ratio_hypoX};
-  }
-  else {
+  // consistent estimates, resulting error is smaller
+  double hypo_x_err = std::sqrt(1./sum_weights);
+  if (std::abs(rr_hypoX - ratio_hypoX) > 2.*std::sqrt(drr2+dratio2)){
     // inconsistent estimates, resulting error is larger
-    double hypo_x_err = std::sqrt(drr2 + dratio2);
-    return {hypo_x, hypo_x_err, rr_hypoX, ratio_hypoX};
+    hypo_x_err = std::sqrt(drr2 + dratio2);
   }
+  return {hypo_x, hypo_x_err, rr_hypoX, ratio_hypoX};
 }
 
 
@@ -1070,6 +1069,8 @@ std::tuple<double, double> FlashPredict::xEstimateAndRMS(
   int bins = metric_h2->GetNbinsY();
   int bin_buff = 0;
   // TODO: figure out a better method to make the estimates near the edges
+  // For instance with this answer to estimate truncated means and std dev
+  // https://stats.stackexchange.com/a/136929
   while(0 < bin-bin_buff || bin+bin_buff <= bins){
     int low_bin = (0 < bin-bin_buff) ? bin-bin_buff : 0;
     int high_bin = (bin+bin_buff <= bins) ? bin+bin_buff : -1;
@@ -1079,7 +1080,7 @@ std::tuple<double, double> FlashPredict::xEstimateAndRMS(
       double metric_hypoX = metric_px->GetRandom();
       // metric_hypoX = metric_px->GetMean(); // TODO: which one is more justified?
       double metric_rmsX = metric_px->GetRMS();
-      if(metric_rmsX < fXBinWidth){//something went wrong // TODO: better test to see if things are OK
+      if(metric_rmsX < fXBinWidth/2.){//something went wrong // TODO: better test to see if things are OK
         mf::LogDebug("FlashPredict")
           << "metric_h2 projected on metric_value: "<< metric_value
           << ", bin: " << bin
@@ -1087,13 +1088,13 @@ std::tuple<double, double> FlashPredict::xEstimateAndRMS(
           << "; has " << metric_px->GetEntries() << " entries."
           << "\nmetric_hypoX: " << metric_hypoX
           << ",  metric_rmsX: " << metric_rmsX;
-        return {-1., 0.}; // no estimate
+        return {-10., fDriftDistance}; // no estimate
       }
       return {metric_hypoX, metric_rmsX};
     }
     bin_buff += 1;
   }
-  return {-1., fDriftDistance}; // no estimate
+  return {-10., fDriftDistance}; // no estimate
 }
 
 

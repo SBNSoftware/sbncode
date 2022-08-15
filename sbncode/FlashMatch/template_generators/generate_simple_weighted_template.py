@@ -70,7 +70,11 @@ ROOT.gStyle.SetStatW(0.15)
 ROOT.gStyle.SetOptStat(1111)
 ROOT.gStyle.SetOptFit(1111)
 
+gROOT.SetBatch(True) # to not show plots
+
 detector = "experiment"
+drift_distance = 0.
+xbin_width = 0.
 # # Print help
 # def help():
 
@@ -93,19 +97,28 @@ detector = "experiment"
 
 
 def hypo_flashx_from_H2(flash_rr, rr_h2, flash_ratio, ratio_h2):
-    rr_hypoX, rr_hypoXWgt = x_estimate_and_rms(flash_rr, rr_h2);
-    ratio_hypoX, ratio_hypoXWgt = x_estimate_and_rms(flash_ratio, ratio_h2);
+    rr_hypoX, rr_hypoXRMS = x_estimate_and_rms(flash_rr, rr_h2);
+    ratio_hypoX, ratio_hypoXRMS = x_estimate_and_rms(flash_ratio, ratio_h2);
+
+    drr2 = rr_hypoXRMS * rr_hypoXRMS;
+    dratio2 = ratio_hypoXRMS * ratio_hypoXRMS;
+    rr_hypoXWgt = 1./drr2;
+    ratio_hypoXWgt = 1./dratio2;
 
     sum_weights = rr_hypoXWgt + ratio_hypoXWgt
+    if sum_weights < 0.0002: return (-10., -10., rr_hypoX, rr_hypoXRMS, ratio_hypoX, ratio_hypoXRMS)
     hypo_x = (rr_hypoX*rr_hypoXWgt + ratio_hypoX*ratio_hypoXWgt) / sum_weights
-    hypo_x_err = np.sqrt(sum_weights) / sum_weights
-    # return (hypo_x, hypo_x_err, rr_hypoX, ratio_hypoX)
-    return hypo_x
+    # consistent estimates, resulting error is smaller
+    hypo_x_err = np.sqrt( 1. / sum_weights)
+    if np.abs(rr_hypoX - ratio_hypoX) > 2.*np.sqrt(drr2+dratio2):
+        # inconsistent estimates, resulting error is larger
+        hypo_x_err = np.sqrt(drr2 + dratio2)
+    return (hypo_x, hypo_x_err, rr_hypoX, rr_hypoXRMS,
+            ratio_hypoX, ratio_hypoXRMS)
 
 
 def x_estimate_and_rms(metric_value, metric_h2):
     kMinEntriesInProjection = 100
-    fXBinWidth = 5.
     bin_ = metric_h2.GetYaxis().FindBin(metric_value);
     bins = metric_h2.GetNbinsY();
     metric_hypoX = -1.;
@@ -118,15 +131,14 @@ def x_estimate_and_rms(metric_value, metric_h2):
         if metric_px.GetEntries() > kMinEntriesInProjection :
             metric_hypoX = metric_px.GetRandom();
             metric_rmsX = metric_px.GetRMS();
-            if metric_rmsX < fXBinWidth: # something went wrong
+            if metric_rmsX < xbin_width/2.: # something went wrong
                 print(f"{metric_h2.GetName()} projected on metric_value: {metric_value}, "
                       f"bin: {bin_}, bin_buff: {bin_buff}; has {metric_px.GetEntries()} entries.")
                 print(f"  metric_hypoX: {metric_hypoX}, metric_rmsX: {metric_rmsX}")
-                return (-1., 0.); # no estimate
-            metric_hypoXWgt = 1/(metric_rmsX*metric_rmsX);
-            return (metric_hypoX, metric_hypoXWgt);
+                return (-10., drift_distance); # no estimate
+            return (metric_hypoX, metric_rmsX);
         bin_buff += 1;
-    return (-1., 0.); # no estimate
+    return (-10., drift_distance); # no estimate
 
 
 def quality_checks(e):
@@ -134,7 +146,7 @@ def quality_checks(e):
     if e.true_nus != 1: return False
     if e.mcT0 < 0. or 1.6 < e.mcT0 : return False # TODO: unhardcode
     if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > 0.3 : False # TODO: unhardcode
-    if e.charge_x < 0.: return False
+    if e.charge_x < 0. or e.charge_x > drift_distance: return False
     return True
 
 
@@ -157,15 +169,35 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
                         dist_to_anode_low, dist_to_anode_up)
     draw_expression = (f"((flash_{var}b-charge_{var})/{var}_skew):new_hypo_x"
                        f">>fit_prof_{var}")
-    # the filters are the same as in quality_checks()
+    # Another option for the fit: using charge_x instead of the hypoX estimate,
+    # it might be justified to use the "truth" to make the fit,
+    # however since the flashX estimate is biased towards shorter
+    # distances near the cathode it's better to use the same as in runtime
+    #
+    # draw_expression = (f"((flash_{var}b-charge_{var})/{var}_skew):charge_x"
+    #                    f">>fit_prof_{var}")
+    #
+    # HACK: Filter out from the fit the regions where discrepancy  is
+    # not as bad, to give more weight to the edges where there large discrepancy
+    filter_tolerable = "true"
+    if detector == "sbnd":
+        filter_tolerable = "abs(charge_y) > 60." if var=="y" \
+            else "(charge_z<120. || 380.<charge_z)"
+    elif detector == "icarus":
+        filter_tolerable = "(charge_y<-65. || 19.<charge_y)" if var=="y" \
+            else "(charge_z<0. || 0.<charge_z)" # no filter for Z in ICARUS
+
+    # the filters are the ones in quality_checks(), plus the one above
+    # to give more weight to the edges
     draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
                     f"abs({var}_skew)<{skew_high_limit} && "
                     f"true_nus==1 && slices==1 && "
                     f"0.<mcT0 && mcT0<1.6 &&" # TODO: unhardcode
                     f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 &&" # TODO: unhardcode
-                    f"charge_x >= 0."
+                    f"charge_x >= 0. &&"
+                    f"{filter_tolerable}"
                     )
-    draw_option = "profs"
+    draw_option = "prof"
     print("Draw expression: ", draw_expression,
           "\nfilters: ", draw_filters,
           "\noptions: ", draw_option)
@@ -184,6 +216,8 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
 
 
 def generator(nuslice_tree, rootfile, pset):
+    # BIG TODO: Metrics should depend on X,Y,Z.
+    # Many changes needed everywhere
     drift_distance = pset.DriftDistance
     x_bins = pset.XBins
     xbin_width = drift_distance/x_bins
@@ -342,15 +376,36 @@ def generator(nuslice_tree, rootfile, pset):
         ratio_h2.Fill(qX, e.flash_ratio)
         ratio_prof.Fill(qX, e.flash_ratio)
 
-    # Use rr_h2 and ratio_h2 to compute hypo_x and store the new
-    # hypothesis of the flash x position new_hypo_x
+    # Use rr_h2 and ratio_h2 to compute flash drift distance
+    # estimates, and store them as 'new_'...
     new_hypo_x = array('d',[0])
     new_hypo_x_branch = nuslice_tree.Branch("new_hypo_x", new_hypo_x, "new_hypo_x/D");
+    new_hypo_x_err = array('d',[0])
+    new_hypo_x_err_branch = nuslice_tree.Branch("new_hypo_x_err", new_hypo_x_err, "new_hypo_x_err/D");
+    new_hypo_x_rr = array('d',[0])
+    new_hypo_x_rr_branch = nuslice_tree.Branch("new_hypo_x_rr", new_hypo_x_rr, "new_hypo_x_rr/D");
+    new_hypo_x_rr_err = array('d',[0])
+    new_hypo_x_rr_err_branch = nuslice_tree.Branch("new_hypo_x_rr_err", new_hypo_x_rr_err, "new_hypo_x_rr_err/D");
+    new_hypo_x_ratio = array('d',[0])
+    new_hypo_x_ratio_branch = nuslice_tree.Branch("new_hypo_x_ratio", new_hypo_x_ratio, "new_hypo_x_ratio/D");
+    new_hypo_x_ratio_err = array('d',[0])
+    new_hypo_x_ratio_err_branch = nuslice_tree.Branch("new_hypo_x_ratio_err", new_hypo_x_ratio_err, "new_hypo_x_ratio_err/D");
     for e in nuslice_tree:
         # No need to check quality in this loop
-        new_hypo_x[0] = hypo_flashx_from_H2(e.flash_rr, rr_h2,
-                                            e.flash_ratio, ratio_h2)
+        hypo_x, hypo_x_err, rr_hypoX, rr_hypoXRMS, ratio_hypoX, ratio_hypoXRMS = \
+            hypo_flashx_from_H2(e.flash_rr, rr_h2, e.flash_ratio, ratio_h2)
+        new_hypo_x[0] = hypo_x
         new_hypo_x_branch.Fill()
+        new_hypo_x_err[0] = hypo_x_err
+        new_hypo_x_err_branch.Fill()
+        new_hypo_x_rr[0] = rr_hypoX
+        new_hypo_x_rr_branch.Fill()
+        new_hypo_x_rr_err[0] = rr_hypoXRMS
+        new_hypo_x_rr_err_branch.Fill()
+        new_hypo_x_ratio[0] = ratio_hypoX
+        new_hypo_x_ratio_branch.Fill()
+        new_hypo_x_ratio_err[0] = ratio_hypoXRMS
+        new_hypo_x_ratio_err_branch.Fill()
 
     # Fit and create std::vector objects for polynomial correction
     # coefficients
@@ -375,10 +430,10 @@ def generator(nuslice_tree, rootfile, pset):
     for e in nuslice_tree:
         # No need to check quality in this loop
         new_flash_y[0] = e.flash_yb - polynomial_correction(
-            e.y_skew, e.new_hypo_x, y_pol_coeffs)
+            e.y_skew, e.new_hypo_x, y_pol_coeffs, pset.SkewLimitY)
         new_flash_y_branch.Fill()
         new_flash_z[0] = e.flash_zb - polynomial_correction(
-            e.z_skew, e.new_hypo_x, z_pol_coeffs)
+            e.z_skew, e.new_hypo_x, z_pol_coeffs, pset.SkewLimitZ)
         new_flash_z_branch.Fill()
 
     # Update the file
@@ -386,7 +441,7 @@ def generator(nuslice_tree, rootfile, pset):
     hfile.ReOpen("UPDATE")
     hfile.Write()
 
-    # Use the new corrected terms to fill the H2s and Prof
+    # Use the new corrected terms to fill the rest of H2s and Profs
     for e in nuslice_tree:
         if not quality_checks(e): continue
         qX = e.charge_x
@@ -394,7 +449,7 @@ def generator(nuslice_tree, rootfile, pset):
         dy_prof.Fill(qX, e.new_flash_y - e.charge_y)
         dz_h2.Fill(qX, e.new_flash_z - e.charge_z)
         dz_prof.Fill(qX, e.new_flash_z - e.charge_z)
-        # these H2s use no new corrections
+        # these H2s below use no new corrections
         slope_h2.Fill(qX, e.flash_slope - e.charge_slope)
         slope_prof.Fill(qX, e.flash_slope - e.charge_slope)
         petoq_h2.Fill(qX, e.petoq)
@@ -429,10 +484,10 @@ def generator(nuslice_tree, rootfile, pset):
         petoq_spreads[int(ib)] = petoq_prof.GetBinError(ibp)
 
     for e in nuslice_tree:
+        # calculate match score
         if not quality_checks(e): continue
         qX = e.charge_x
         qXGl = e.charge_x_gl
-        # calculate match score
         isl = int(qX/xbin_width)
         score = 0.
         if dy_spreads[isl] <= 1.e-8:
@@ -655,6 +710,7 @@ def main():
         return 1
 
     global detector
+    global drift_distance
     if args.sbnd:
         fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
