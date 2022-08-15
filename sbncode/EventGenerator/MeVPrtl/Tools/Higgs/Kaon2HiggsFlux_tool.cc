@@ -282,6 +282,7 @@ bool Kaon2HiggsFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux 
   higgs.kaon_pdg = kaon.kaon_pdg;
   higgs.generator = 0; // kDissonantHiggs
   higgs.secondary_pdg = PionPdg(kaon.kaon_pdg);
+  higgs.equiv_enu = EnuLab(flux.fnecm, higgs.kmom, higgs.pos);
 
   return true;
 }
