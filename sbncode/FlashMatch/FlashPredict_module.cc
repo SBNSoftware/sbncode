@@ -220,71 +220,68 @@ void FlashPredict::produce(art::Event& evt)
   }
 
   // load OpHits previously created
-  // const std::vector<SimpleFlash> simpleFlashes; 
-  std::vector<SimpleFlash> simpleFlashes; 
-  if (!fUseOpFlashes){
-    art::Handle<std::vector<recob::OpHit>> ophits_h;
-    evt.getByLabel(fOpHitProducer, ophits_h);
-    if(!ophits_h.isValid()) {
+  // std::vector<SimpleFlash> simpleFlashes; 
+  art::Handle<std::vector<recob::OpHit>> ophits_h;
+  evt.getByLabel(fOpHitProducer, ophits_h);
+  if(!ophits_h.isValid()) {
+    mf::LogError("FlashPredict")
+      << "No optical hits from producer module "
+      << fOpHitProducer;
+    bk.nonvalidophit++;
+    updateBookKeeping();
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                              Flash(kNoScrPE), Score(kNoOpHInEvt)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
+    }
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
+    return;
+  }
+
+  std::vector<recob::OpHit> opHits(ophits_h->size());
+  copyOpHitsInBeamWindow(opHits, ophits_h);
+
+  if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
+    art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
+    evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
+    if(!ophits_ara_h.isValid()) {
       mf::LogError("FlashPredict")
-        << "No optical hits from producer module "
-        << fOpHitProducer;
-      bk.nonvalidophit++;
-      updateBookKeeping();
-      for(size_t pId=0; pId<pfps_h->size(); pId++) {
-        if(!pfps_h->at(pId).IsPrimary()) continue;
-        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                                Flash(kNoScrPE), Score(kNoOpHInEvt)));
-        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-      }
-      evt.put(std::move(sFM_v));
-      evt.put(std::move(pfp_sFM_assn_v));
-      return;
+        << "Non valid ophits from ARAPUCAS"
+        << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
+        << "\nfOpHitARAProducer: " << fOpHitARAProducer;
     }
-
-    std::vector<recob::OpHit> opHits(ophits_h->size());
-    copyOpHitsInBeamWindow(opHits, ophits_h);
-
-    if(fUseARAPUCAS && !fOpHitARAProducer.empty()){
-      art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
-      evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
-      if(!ophits_ara_h.isValid()) {
-        mf::LogError("FlashPredict")
-          << "Non valid ophits from ARAPUCAS"
-          << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
-          << "\nfOpHitARAProducer: " << fOpHitARAProducer;
-      }
-      else{
-        std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
-        copyOpHitsInBeamWindow(opHitsARA, ophits_ara_h);
-        opHits.insert(opHits.end(),
-                      opHitsARA.begin(), opHitsARA.end());
-      }
+    else{
+      std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
+      copyOpHitsInBeamWindow(opHitsARA, ophits_ara_h);
+      opHits.insert(opHits.end(),
+                    opHitsARA.begin(), opHitsARA.end());
     }
+  }
 
-    std::vector<recob::OpHit> opHitsRght, opHitsLeft;
-    simpleFlashes = (fSBND) ? makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
+  std::vector<recob::OpHit> opHitsRght, opHitsLeft;
+  const std::vector<SimpleFlash> simpleFlashes = (fSBND) ? makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
 
-    if(simpleFlashes.empty()){
-      mf::LogWarning("FlashPredict")
-        << "\nNo OpHits in beam window,"
-        << "\nor the integral is less or equal to " << fMinFlashPE << " or 0."
-        << "\nSkipping...";
-      bk.nullophittime++;
-      updateBookKeeping();
-      for(size_t pId=0; pId<pfps_h->size(); pId++) {
-        if(!pfps_h->at(pId).IsPrimary()) continue;
-        const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
-        sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
-                                Flash(kNoScrPE), Score(kNoOpHInEvt)));
-        util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
-      }
-      evt.put(std::move(sFM_v));
-      evt.put(std::move(pfp_sFM_assn_v));
-      return;
+  if(simpleFlashes.empty() && fUseOpFlashes==false){
+    mf::LogWarning("FlashPredict")
+      << "\nNo OpHits in beam window,"
+      << "\nor the integral is less or equal to " << fMinFlashPE << " or 0."
+      << "\nSkipping...";
+    bk.nullophittime++;
+    updateBookKeeping();
+    for(size_t pId=0; pId<pfps_h->size(); pId++) {
+      if(!pfps_h->at(pId).IsPrimary()) continue;
+      const art::Ptr<recob::PFParticle> pfp_ptr(pfps_h, pId);
+      sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
+                              Flash(kNoScrPE), Score(kNoOpHInEvt)));
+      util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
-  } // if UseOpFlash == false 
+    evt.put(std::move(sFM_v));
+    evt.put(std::move(pfp_sFM_assn_v));
+    return;
+  }
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
@@ -332,22 +329,37 @@ void FlashPredict::produce(art::Event& evt)
     }
 
     unsigned flashInVolume = 0;
-    if (fUseOpFlashes){
+    if (fUseOpFlashes==true){
       art::Handle<std::vector<recob::OpFlash>> flash_tpc0_h, flash_tpc1_h; 
       evt.getByLabel(fOpFlashProducer[0],flash_tpc0_h);
       evt.getByLabel(fOpFlashProducer[1],flash_tpc1_h);
-      bool flash_in_tpc0 = !(flash_tpc0_h->empty());
-      bool flash_in_tpc1 = !(flash_tpc1_h->empty());
+      bool flash_in_tpc0 = false;
+      bool flash_in_tpc1 = false;
+      for (size_t i=0; i < flash_tpc0_h->size(); i++){
+        auto const& opflash = (*flash_tpc0_h)[i];
+        if ((opflash.AbsTime()) > fBeamWindowStart && ((opflash.AbsTime() < fBeamWindowEnd)) && (opflash.TotalPE() > 500)){
+          flash_in_tpc0 = true;
+          break;
+        }
+      }
+      for (size_t i=0; i < flash_tpc1_h->size(); i++){
+        auto const& opflash = (*flash_tpc1_h)[i];
+        if ((opflash.AbsTime()) > fBeamWindowStart && ((opflash.AbsTime() < fBeamWindowEnd)) && (opflash.TotalPE() > 500)){
+          flash_in_tpc1 = true;
+          break;
+        }
+      }
       if (flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInBoth;
       else if(flash_in_tpc0 && !flash_in_tpc1) flashInVolume = kActivityInRght;
-      else if(!flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInLeft; 
+      else if(!flash_in_tpc0 && flash_in_tpc1) flashInVolume = kActivityInLeft;
+      // mf::LogInfo("FlashPredict") << "flashInVolume: " << flashInVolume << "hitsInVolume: " << hitsInVolume;
     }
 
     FlashMetrics flash = {};
     Score score = {std::numeric_limits<double>::max()};
     bool hits_ophits_concurrence = false;
-    // bool hits_flash_concurrence = false;
-    if (!fUseOpFlashes){
+    bool hits_flash_concurrence = false;
+    if (fUseOpFlashes==false){
       for(auto& simpleFlash : simpleFlashes) {
         unsigned ophsInVolume = simpleFlash.ophsInVolume;
         if(hitsInVolume != ophsInVolume){
@@ -384,10 +396,12 @@ void FlashPredict::produce(art::Event& evt)
           && flash_tmp.metric_ok){
           score = score_tmp;
           flash = flash_tmp;
+          mf::LogInfo("FlashPredict")
+            << "simpleFlash time: " << flash.time << " , fUseOpFlashes:" << fUseOpFlashes;
         }
       } // for simpleFlashes
     }
-    else{
+    if (fUseOpFlashes==true){
       if (hitsInVolume != flashInVolume){
         if (fSBND){
           if (fForceConcurrence) continue;
@@ -406,6 +420,8 @@ void FlashPredict::produce(art::Event& evt)
         for (size_t i_flash = 0; i_flash < flash_h->size(); i_flash++){
           flash_counter++; 
           auto const& opflash = (*flash_h)[i_flash];
+          if ((opflash.AbsTime()) < fBeamWindowStart || (opflash.AbsTime() > fBeamWindowEnd) )
+            continue;
           std::vector<art::Ptr<recob::OpHit>> ophit_v = OpFlashToOpHitAssns.at(i_flash);
           FlashMetrics flash_tmp = computeOpFlashMetrics(opflash, ophit_v);
           Score score_tmp = computeScore(charge, flash_tmp, tpcWithHits, pfpPDGC);
@@ -413,12 +429,14 @@ void FlashPredict::produce(art::Event& evt)
             && flash_tmp.metric_ok){
             score = score_tmp;
             flash = flash_tmp;
+            mf::LogInfo("FlashPredict")
+              << "OpFlash time: " << flash.time;
           }
         } // opflash (per tpc) loop 
       } // tpc loop 
     } // using OpFlashes 
     
-    if(!hits_ophits_concurrence && !fUseOpFlashes) {
+    if(!hits_ophits_concurrence && fUseOpFlashes==false) {
       std::string extra_message = (!fForceConcurrence) ? "" :
         "\nConsider setting ForceConcurrence to false to lower requirements";
       mf::LogInfo("FlashPredict")
@@ -430,11 +448,15 @@ void FlashPredict::produce(art::Event& evt)
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
       continue;
     }
-    if(!hits_flash_concurrence && fUseOpFlashes) {
+    if(!hits_flash_concurrence && fUseOpFlashes==true) {
       std::string extra_message = (!fForceConcurrence) ? "" :
         "\nConsider setting ForceConcurrence to false to lower requirements";
       mf::LogInfo("FlashPredict")
-        << "No OpFlash where there's charge. Skipping..." << extra_message;
+        << "No OpFlash where there's charge. hitsinVolume:"
+        << hitsInVolume 
+        << ", flashInVolume: " 
+        << flashInVolume 
+        << ", Skipping..." << extra_message;
       // bk.no_oph_hits++;
       // mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
       // sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
@@ -467,6 +489,7 @@ void FlashPredict::produce(art::Event& evt)
       Charge c{charge.q, TVector3(charge.x_gl, charge.y, charge.z)};
       Flash f{flash.pe, TVector3(flash.x_gl, flash.y, flash.z)};
       sFM_v->emplace_back(sFM(true, flash.time, c, f, score));
+      mf::LogInfo("FlashPredict") << "flashtime: " << flash.time;
       util::CreateAssn(*this, evt, *sFM_v, pfp_ptr, *pfp_sFM_assn_v);
     }
     else{
