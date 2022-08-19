@@ -30,6 +30,7 @@ art_make(
   lardataobj_Simulation
 
   larpandora_LArPandoraInterface
+  larsim_MCCheater_ParticleInventoryService_service
   larsim_Utils
 
   nusimdata_SimulationBase

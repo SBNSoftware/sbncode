@@ -35,6 +35,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 // #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
@@ -102,6 +103,7 @@ public:
     flashmatch::QCluster_t qClusters;
     unsigned hitsInVolume;
     double mcT0 = -9999;
+    bool isNu = false;
     ChargeDigest() = default;
     ChargeDigest(const size_t pId_, const int pfpPDGC_,
                  const art::Ptr<recob::PFParticle>& pfp_ptr_,
@@ -117,6 +119,14 @@ public:
                  const double mcT0_) :
       pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
       qClusters(qClusters_), hitsInVolume(hitsInVolume_), mcT0(mcT0_)
+      {}
+    ChargeDigest(const size_t pId_, const int pfpPDGC_,
+                 const art::Ptr<recob::PFParticle>& pfp_ptr_,
+                 const flashmatch::QCluster_t& qClusters_,
+                 const unsigned hitsInVolume_,
+                 const double mcT0_, bool isNu_) :
+      pId(pId_), pfpPDGC(pfpPDGC_), pfp_ptr(pfp_ptr_),
+      qClusters(qClusters_), hitsInVolume(hitsInVolume_), mcT0(mcT0_), isNu(isNu_)
       {}
   };
   using ChargeDigestMap = std::map<double, ChargeDigest, std::greater<double>>;
@@ -257,8 +267,9 @@ private:
   // art::InputTag fFlashProducer;
   void initTree(void);
   ReferenceMetrics loadMetrics(const std::string inputFilename) const;
-  double cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
-                   const std::vector<art::Ptr<simb::MCParticle>>& mcParticles);
+  std::tuple<double, bool> cheatMCT0_IsNu(
+    const std::vector<art::Ptr<recob::Hit>>& hits,
+    const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const;
   ChargeMetrics computeChargeMetrics(
     const ChargeDigest& chargeDigest) const;
   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
@@ -277,7 +288,7 @@ private:
                     const art::Ptr<recob::PFParticle>& pfp_ptr,
                     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h,
                     std::vector<art::Ptr<recob::PFParticle>>& pfp_v) const;
-  unsigned trueNus(art::Event& evt) const;
+  // unsigned trueNus(art::Event& evt) const; //LEGACY
   void updateChargeMetrics(const ChargeMetrics& chargeMetrics);
   void updateFlashMetrics(const FlashMetrics& flashMetrics);
   void updateScore(const Score& score);
@@ -358,8 +369,7 @@ private:
   const bool fCorrectDriftDistance;
   const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
   const bool fUseARAPUCAS;
-  const bool fStoreTrueNus;
-  const bool fStoreCheatMCT0;
+  const bool fStoreMCInfo;
   const ReferenceMetrics fRM;
   const bool fNoAvailableMetrics, fMakeTree;
   const double fChargeToNPhotonsShower, fChargeToNPhotonsTrack;
@@ -414,7 +424,7 @@ private:
   double _score, _scr_y, _scr_z, _scr_rr, _scr_ratio,
     _scr_slope, _scr_petoq;
   unsigned _evt, _run, _sub;
-  unsigned _slices = -1; unsigned _true_nus = -1;
+  unsigned _slices = -1; unsigned _is_nu = -1;
   double _mcT0 = -9999.;
 
   static constexpr unsigned kMinEntriesInProjection = 100;

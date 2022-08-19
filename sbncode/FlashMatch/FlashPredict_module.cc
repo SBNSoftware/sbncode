@@ -33,8 +33,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
   , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
-  , fStoreTrueNus(p.get<bool>("StoreTrueNus", false))
-  , fStoreCheatMCT0(p.get<bool>("StoreCheatMCT0", false))
+  , fStoreMCInfo(p.get<bool>("StoreMCInfo", false))
     // , fUseCalo(p.get<bool>("UseCalo", false))
   , fRM(loadMetrics(p.get<std::string>("InputFileName")))
   , fNoAvailableMetrics(p.get<bool>("NoAvailableMetrics", false))
@@ -139,6 +138,13 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
       << "Supported OpHit times are 'RiseTime', 'PeakTime' or 'StartTime', "
       << "selected OpHitTime parameter is: " << fOpHitTime << std::endl;
 
+  if (!fMakeTree && fStoreMCInfo)
+    throw cet::exception("FlashPredict")
+      << "Conflicting options:\n"
+      << "MakeTree: " << std::boolalpha << fMakeTree << ", and StoreMCInfo: "
+      <<  std::boolalpha << fStoreMCInfo << "\n"
+      << "Theres no point to store MC info if not making the tree" << std::endl;
+
   if (fMakeTree) initTree();
 
   consumes<std::vector<recob::PFParticle>>(fPandoraProducer);
@@ -166,7 +172,7 @@ void FlashPredict::produce(art::Event& evt)
     _sub = evt.subRun();
     _run = evt.run();
     _slices        = 0;
-    _true_nus      = -9999;
+    _is_nu         = -9999;
     _flash_time    = -9999.;
     _flash_pe      = -9999.;
     _flash_unpe    = -9999.;
@@ -181,9 +187,11 @@ void FlashPredict::produce(art::Event& evt)
   }
   bk.events++;
 
-  if(fMakeTree && fStoreTrueNus){
-    _true_nus = trueNus(evt);
-  }
+  // LEGACY
+  // if(fMakeTree && fStoreTrueNus){
+  //   // _true_nus = trueNus(evt);
+  //   _true_nus = false;
+  // }
 
   // grab PFParticles in event
   const auto pfps_h =
@@ -414,6 +422,7 @@ void FlashPredict::produce(art::Event& evt)
        score.total < std::numeric_limits<double>::max()){
       if(fMakeTree) {
         _mcT0 = chargeDigest.mcT0;
+        _is_nu = chargeDigest.isNu;
         _petoq = PEToQ(flash.pe, charge.q);
         updateChargeMetrics(charge);
         updateFlashMetrics(flash);
@@ -504,7 +513,7 @@ void FlashPredict::initTree(void)
   _flashmatch_nuslice_tree->Branch("scr_ratio", &_scr_ratio, "scr_ratio/D");
   _flashmatch_nuslice_tree->Branch("scr_slope", &_scr_slope, "scr_slope/D");
   _flashmatch_nuslice_tree->Branch("scr_petoq", &_scr_petoq, "scr_petoq/D");
-  _flashmatch_nuslice_tree->Branch("true_nus", &_true_nus, "true_nus/I");
+  _flashmatch_nuslice_tree->Branch("is_nu", &_is_nu, "is_nu/I");
   _flashmatch_nuslice_tree->Branch("mcT0", &_mcT0, "mcT0/D");
 }
 
@@ -651,18 +660,23 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
 }
 
 
-double FlashPredict::cheatMCT0(const std::vector<art::Ptr<recob::Hit>>& hits,
-                               const std::vector<art::Ptr<simb::MCParticle>>& mcParticles)
+std::tuple<double, bool> FlashPredict::cheatMCT0_IsNu(
+  const std::vector<art::Ptr<recob::Hit>>& hits,
+  const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const
 {
   auto clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
   int pidMaxEnergy =
     TruthMatchUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits, true);
   for(auto& mcp: mcParticles){
     if(mcp->TrackId() == pidMaxEnergy){
-      return mcp->Position().T();
+      double mcT0 = mcp->Position().T()/1000.;
+      art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+      art::Ptr<simb::MCTruth> truth = pi_serv->TrackIdToMCTruth_P(pidMaxEnergy);
+      bool isNu = (truth->Origin() == simb::kBeamNeutrino);
+      return {mcT0, isNu};
     }
   }
-  return -9999999.;
+  return {-9999.999, false};
 }
 
 
@@ -1121,7 +1135,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
   //                                                      evt, fCaloProducer);
 
   std::vector<art::Ptr<simb::MCParticle>> mcParticles;
-  if(fStoreCheatMCT0){
+  if(fStoreMCInfo){
     lar_pandora::LArPandoraHelper::CollectMCParticles(evt, "largeant",
                                                       mcParticles);
     // TODO: print particles identities, helpful for developing
@@ -1190,7 +1204,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
       for(const auto& spacepoint : particle_spacepoints) {
         const auto spacepoint_key = spacepoint.key();
         const auto& hits = spacepoint_hits_assns.at(spacepoint_key);
-        if(fStoreCheatMCT0){
+        if(fStoreMCInfo){
           hits_in_slice.insert(hits_in_slice.end(),
                                hits.begin(), hits.end());
         }
@@ -1222,8 +1236,9 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
                                spsClusters.begin(), spsClusters.end());
     } // for particles in slice
     if(sliceQ < fMinSliceQ) continue;
-    double mcT0 = (fStoreCheatMCT0) ? cheatMCT0(hits_in_slice, mcParticles)/1000.
-      : -9999.;
+    auto [mcT0, isNu] = (fStoreMCInfo) ?
+      cheatMCT0_IsNu(hits_in_slice, mcParticles, clockData, pi_serv) :
+      std::tuple{-9999., false};
     unsigned hitsInVolume = 0;
     bool in_right = false, in_left = false;
     for(unsigned t : tpcWithHits){
@@ -1234,14 +1249,16 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     else if(in_right && !in_left) hitsInVolume = kActivityInRght;
     else if(!in_right && in_left) hitsInVolume = kActivityInLeft;
     else {
-      mf::LogError("FlashPredict")
-        << "ERROR!!! tpcWithHits.size() " << tpcWithHits.size() << "\n"
-        << "sliceQ:\t" << sliceQ << "\n"
-        << "particles_in_slice.size():\t" << particles_in_slice.size() << "\n"
-        << "particlesClusters.size():\t" << particlesClusters.size() << "\n";
+      if(sliceQ > 0.)
+        mf::LogError("FlashPredict")
+          << "ERROR!!! tpcWithHits.size() " << tpcWithHits.size() << "\n"
+          << "sliceQ:\t" << sliceQ << "\n"
+          << "particles_in_slice.size():\t" << particles_in_slice.size() << "\n"
+          << "particlesClusters.size():\t" << particlesClusters.size() << "\n";
     }
     chargeDigestMap[sliceQ] =
-      ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, hitsInVolume, mcT0);
+      ChargeDigest(pId, pfpPDGC, pfp_ptr, particlesClusters, hitsInVolume,
+                   mcT0, isNu);
   } // over all slices
   return chargeDigestMap;
 }
@@ -1262,19 +1279,19 @@ void FlashPredict::addDaughters(
   return;
 }
 
-
-unsigned FlashPredict::trueNus(art::Event& evt) const
-{
-  art::Handle<std::vector<simb::MCTruth> > mctruthList_h;
-  std::vector<art::Ptr<simb::MCTruth> > mclist;
-  if(evt.getByLabel("generator", mctruthList_h))
-    art::fill_ptr_vector(mclist, mctruthList_h);
-  unsigned true_nus = 0;
-  for(auto const& mc: mclist){
-    if(mc->Origin() == simb::kBeamNeutrino) ++true_nus;
-  }
-  return true_nus;
-}
+// LEGACY
+// unsigned FlashPredict::trueNus(art::Event& evt) const
+// {
+//   art::Handle<std::vector<simb::MCTruth> > mctruthList_h;
+//   std::vector<art::Ptr<simb::MCTruth> > mclist;
+//   if(evt.getByLabel("generator", mctruthList_h))
+//     art::fill_ptr_vector(mclist, mctruthList_h);
+//   unsigned true_nus = 0;
+//   for(auto const& mc: mclist){
+//     if(mc->Origin() == simb::kBeamNeutrino) ++true_nus;
+//   }
+//   return true_nus;
+// }
 
 
 inline
@@ -1760,7 +1777,7 @@ double FlashPredict::foldXGl(const double x_gl) const
       return (x_gl<=mid) ? std::abs(x_gl-wxl) : std::abs(x_gl-wxh);
     }
   }
-  mf::LogWarning("FlashPredict")
+  mf::LogInfo("FlashPredict")
     << "Global charge center X position is out of bounds: " << x_gl;
   return -10.;
 }
@@ -1870,7 +1887,7 @@ void FlashPredict::printMetrics(const std::string metric,
     << std::left << std::setw(12) << std::setfill(' ')
     << "xbin:        \t" << xbin << "\n"
     << "_slices:    \t" << std::setw(8) << _slices   << "\n"
-    << "_true_nus:  \t" << std::setw(8) << _true_nus << "\n"
+    << "_is_nu:     \t" << std::setw(8) << _is_nu    << "\n"
     << "_mcT0:      \t" << std::setw(8) << _mcT0     << "\n"
     << "_petoq:     \t" << std::setw(8) << _petoq    << "\n"
     << "charge metrics:\n" << charge.dumpMetrics()   << "\n"

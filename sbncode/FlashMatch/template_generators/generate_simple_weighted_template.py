@@ -143,7 +143,7 @@ def x_estimate_and_rms(metric_value, metric_h2):
 
 def quality_checks(e):
     if e.slices != 1: return False
-    if e.true_nus != 1: return False
+    if e.is_nu != 1: return False
     if e.mcT0 < 0. or 1.6 < e.mcT0 : return False # TODO: unhardcode
     if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > 0.3 : False # TODO: unhardcode
     if e.charge_x < 0. or e.charge_x > drift_distance: return False
@@ -191,8 +191,8 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
     # to give more weight to the edges
     draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
                     f"abs({var}_skew)<{skew_high_limit} && "
-                    f"true_nus==1 && slices==1 && "
-                    f"0.<mcT0 && mcT0<1.6 &&" # TODO: unhardcode
+                    f"is_nu==1 && slices==1 && "
+                    f"0.<=mcT0 && mcT0<=1.6 &&" # TODO: unhardcode
                     f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 &&" # TODO: unhardcode
                     f"charge_x >= 0. &&"
                     f"{filter_tolerable}"
