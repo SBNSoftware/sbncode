@@ -74,7 +74,9 @@ gROOT.SetBatch(True) # to not show plots
 
 detector = "experiment"
 drift_distance = 0.
+xbins = 0
 xbin_width = 0.
+
 # # Print help
 # def help():
 
@@ -122,7 +124,6 @@ def x_estimate_and_rms(metric_value, metric_h2):
     bin_ = metric_h2.GetYaxis().FindBin(metric_value);
     bins = metric_h2.GetNbinsY();
     metric_hypoX = -1.;
-    metric_hypoXWgt = 0.;
     bin_buff = 0;
     while 0 < bin_-bin_buff or bin_+bin_buff <= bins :
         low_bin = bin_-bin_buff if 0 < bin_-bin_buff else 0
@@ -192,9 +193,9 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
     draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
                     f"abs({var}_skew)<{skew_high_limit} && "
                     f"is_nu==1 && slices==1 && "
-                    f"0.<=mcT0 && mcT0<=1.6 &&" # TODO: unhardcode
-                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 &&" # TODO: unhardcode
-                    f"charge_x >= 0. &&"
+                    f"0.<=mcT0 && mcT0<=1.6 && " # TODO: unhardcode
+                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 && " # TODO: unhardcode
+                    f"charge_x >= 0. && new_hypo_x >= 0."
                     f"{filter_tolerable}"
                     )
     draw_option = "prof"
@@ -218,9 +219,6 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
 def generator(nuslice_tree, rootfile, pset):
     # BIG TODO: Metrics should depend on X,Y,Z.
     # Many changes needed everywhere
-    drift_distance = pset.DriftDistance
-    x_bins = pset.XBins
-    xbin_width = drift_distance/x_bins
     half_bin_width = xbin_width/2.
 
     xvals = np.arange(half_bin_width, drift_distance, xbin_width)
@@ -714,6 +712,8 @@ def main():
 
     global detector
     global drift_distance
+    global x_bins
+    global xbin_width
     if args.sbnd:
         fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
@@ -726,6 +726,10 @@ def main():
         detector = "icarus"
         dir = rootfile.Get(file_updated+":/fmatchCryo0")
     nuslice_tree = dir.Get("nuslicetree")
+
+    drift_distance = pset.DriftDistance
+    x_bins = pset.XBins
+    xbin_width = drift_distance/x_bins
 
     generator(nuslice_tree, rootfile, pset)
 
