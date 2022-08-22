@@ -136,7 +136,7 @@ namespace caf
     Atom<bool> FillHits {
       Name("FillHits"),
       Comment("Label deciding if you want to fill SRHits"),
-      true
+      false // default is false; set to true if you want SRHits filled
     };
 
     Atom<string> HitLabel {
