@@ -247,6 +247,12 @@ namespace caf
       "crttrack" // same for icarus and sbnd
     };
 
+    Atom<string> OpFlashLabel {
+      Name("OpFlashLabel"),
+      Comment("Label of PMT flash."),
+      "OpFlash"
+    };
+
     Atom<long long> CRTSimT0Offset {
       Name("CRTSimT0Offset"),
       Comment("start of beam gate/simulation time in the simulated CRT clock"),

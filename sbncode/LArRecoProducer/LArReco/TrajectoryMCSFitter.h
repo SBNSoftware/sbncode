@@ -39,53 +39,53 @@ namespace trkf::sbn {
       using Comment = fhicl::Comment;
       fhicl::Atom<int> pIdHypothesis {
         Name("pIdHypothesis"),
-	Comment("Default particle Id Hypothesis to be used in the fit when not specified."),
-	13
+        Comment("Default particle Id Hypothesis to be used in the fit when not specified."),
+        13
       };
       fhicl::Atom<int> minNumSegments {
         Name("minNumSegments"),
-	Comment("Minimum number of segments the track is split into."),
-	3
+        Comment("Minimum number of segments the track is split into."),
+        3
       };
       fhicl::Atom<double> segmentLength {
         Name("segmentLength"),
-	Comment("Nominal length of track segments used in the fit."),
-	14.
+        Comment("Nominal length of track segments used in the fit."),
+        14.
       };
       fhicl::Atom<int> minHitsPerSegment {
         Name("minHitsPerSegment"),
-	Comment("Exclude segments with less hits than this value."),
-	2
+        Comment("Exclude segments with less hits than this value."),
+        2
       };
       fhicl::Atom<int> nElossSteps {
         Name("nElossSteps"),
-	Comment("Number of steps for computing energy loss uptream to current segment."),
-	10
+        Comment("Number of steps for computing energy loss uptream to current segment."),
+        10
       };
       fhicl::Atom<int> eLossMode {
         Name("eLossMode"),
-	Comment("Default is MPV Landau. Choose 1 for MIP (constant); 2 for Bethe-Bloch."),
-	0
+        Comment("Default is MPV Landau. Choose 1 for MIP (constant); 2 for Bethe-Bloch."),
+        0
       };
       fhicl::Atom<double> pMin {
         Name("pMin"),
-	Comment("Minimum momentum value in likelihood scan."),
-	0.01
+        Comment("Minimum momentum value in likelihood scan."),
+        0.01
       };
       fhicl::Atom<double> pMax {
         Name("pMax"),
-	Comment("Maximum momentum value in likelihood scan."),
-	7.50  
+        Comment("Maximum momentum value in likelihood scan."),
+        7.50  
       };
       fhicl::Atom<double> pStep {
         Name("pStep"),
-	Comment("Step in momentum value in likelihood scan."),
-	0.01
+        Comment("Step in momentum value in likelihood scan."),
+        0.01
       };
       fhicl::Atom<double> angResol {
         Name("angResol"),
-	Comment("Angular resolution parameter used in modified Highland formula. Unit is mrad."),
-	3.0
+        Comment("Angular resolution parameter used in modified Highland formula. Unit is mrad."),
+        3.0
       };
     };
     using Parameters = fhicl::Table<Config>;

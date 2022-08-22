@@ -80,19 +80,18 @@ namespace flashmatch {
 
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
 
-      std::map<size_t, double> direct_visibilities;
+      std::vector<double> direct_visibilities;
       _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
 
-      std::map<size_t, double> reflected_visibilities;
+      std::vector<double> reflected_visibilities;
       _semi_model->detectedReflectedVisibilities(reflected_visibilities, xyz);
 
       //
       // Fill Estimate with Direct light
       //
-      for (auto it = direct_visibilities.begin(); it != direct_visibilities.end(); ++it) {
+      for (size_t op_det=0; op_det<direct_visibilities.size(); ++op_det) {
 
-        const size_t op_det = it->first;
-        const double visibility = it->second;
+        const double visibility = direct_visibilities[op_det];
 
         double q = n_original_photons * visibility * _global_qe / _qe_v[op_det];
 
@@ -113,10 +112,9 @@ namespace flashmatch {
       //
       // Fill Estimate with Reflected light
       //
-      for (auto it = reflected_visibilities.begin(); it != reflected_visibilities.end(); ++it) {
+      for (size_t op_det=0; op_det<reflected_visibilities.size(); ++op_det) {
 
-        const size_t op_det = it->first;
-        const double visibility = it->second;
+        const double visibility = reflected_visibilities[op_det];
 
         double q = n_original_photons * visibility * _global_qe_refl / _qe_v[op_det];
 
