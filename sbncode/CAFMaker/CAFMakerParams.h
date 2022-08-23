@@ -145,12 +145,6 @@ namespace caf
       "gaushit"
     };
 
-    Atom<string> ClusterPFParticleLabel {
-      Name("ClusterPFParticleLabel"),
-      Comment("Base label of the SpacePoint producer."),
-      "pandora"
-    };
-
     Atom<string> RecoTrackLabel {
       Name("RecoTrackLabel"),
       Comment("Base label of reco-base track producer."),
