@@ -1162,7 +1162,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         else if (thisSpacePoints.size() == 1) {
           slcSpacePoints.push_back(fmSpacePoint.at(i).at(0));
         }
-        else assert(false); // bad
+        else abort();
       }
     }
 
