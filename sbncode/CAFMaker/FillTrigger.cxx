@@ -1,8 +1,6 @@
 
 #include "sbncode/CAFMaker/FillTrigger.h"
 
-#include <iostream>
-
 namespace caf
 {
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
@@ -16,7 +14,6 @@ namespace caf
     triggerInfo.back().beam_gate_time_abs = addltrig_info.beamGateTimestamp;
     beam_ts = addltrig_info.beamGateTimestamp;
     trigger_ts = addltrig_info.triggerTimestamp;
-    std::cout << addltrig_info.triggerTimestamp << " " << addltrig_info.beamGateTimestamp << std::endl;
     int64_t diff_ts = trigger_ts - beam_ts;
     triggerInfo.back().trigger_within_gate = diff_ts;
     for(const raw::Trigger& trig: trig_info)
