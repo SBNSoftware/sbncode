@@ -18,6 +18,7 @@
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/FillExposure.h"
+#include "sbncode/CAFMaker/FillTrigger.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -103,6 +104,7 @@
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
 
@@ -176,6 +178,7 @@ class CAFMaker : public art::EDProducer {
   double fTotalEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+  std::vector<caf::SRTrigger> fSRTrigger; ///< Store trigger and beam gate information
 
   // int fCycle;
   // int fBatch;
@@ -996,6 +999,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // Fill detector & reco
   //#######################################################
 
+  //Beam gate and Trigger info
+  fSRTrigger.clear();
+  if(isRealData)
+  {
+    art::Handle<sbn::ExtraTriggerInfo> addltrig_handle;
+    evt.getByLabel(fParams.TriggerLabel(), addltrig_handle);
+    const sbn::ExtraTriggerInfo& addltrig = *addltrig_handle;
+    art::Handle<std::vector<raw::Trigger> > trig_handle;
+    evt.getByLabel(fParams.TriggerLabel(), trig_handle);
+    const std::vector<raw::Trigger>& trig = *trig_handle;
+    if(trig.size()==1)
+    {
+      FillTrigger(addltrig, trig, fSRTrigger);
+    }
+  }
+
   // try to find the result of the Flash trigger if it was run
   bool pass_flash_trig = false;
   art::Handle<bool> flashtrig_handle;
@@ -1564,6 +1583,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
+  rec.hdr.triggerinfo = fSRTrigger;
+  rec.hdr.ntriggerinfo = fSRTrigger.size();
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
@@ -1591,6 +1612,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fBNBInfo.clear();
   fNuMIInfo.clear();
+  fSRTrigger.clear();
   rec.hdr.pot = 0;
 }
 
