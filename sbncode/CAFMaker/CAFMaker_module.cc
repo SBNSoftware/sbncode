@@ -103,6 +103,7 @@
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
 
@@ -172,10 +173,13 @@ class CAFMaker : public art::EDProducer {
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
+  double fEXTGateCount;
+  double fTotalEXTGateCount;
   double fTotalSinglePOT;
   double fTotalEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
+  std::vector<caf::SREXTInfo> fEXTInfo;
 
   // int fCycle;
   // int fBatch;
@@ -507,7 +511,9 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   // get POT information
   fBNBInfo.clear();
   fNuMIInfo.clear();
+  fEXTInfo.clear();
   fSubRunPOT = 0;
+  fEXTGateCount = 0;
 
   if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
     FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
@@ -517,16 +523,23 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
     fTotalPOT += fSubRunPOT;
   }
+  else if(auto ext_spill = sr.getHandle<std::vector<sbn::EXTCountInfo>>(fParams.EXTCountDataLabel()))
+  {
+    FillExposureEXT(*ext_spill, fEXTInfo, fEXTGateCount);
+    fTotalEXTGateCount += fEXTGateCount;
+  }
   else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
     fSubRunPOT = pot_handle->totgoodpot;
     fTotalPOT += fSubRunPOT;
   }
   else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty() ||!fParams.EXTCountDataLabel().empty()){
       std::cout << "Found neither BNB data POT info under '"
                 << fParams.BNBPOTDataLabel()
-                << "' not NuMIdata POT info under '"
+                << "' nor NuMI data POT info under '"
                 << fParams.NuMIPOTDataLabel()
+	        << "' nor EXT data count info under '"
+	        << fParams.EXTCountDataLabel()
                 << "' nor MC POT info under '"
                 << fParams.GenLabel() << "'"
                 << std::endl;
@@ -536,7 +549,8 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
     // Otherwise, if one label is blank, maybe no POT was the expected result
   }
 
-  std::cout << "POT: " << fSubRunPOT << std::endl;
+  std::cout << "POT (for Beam files): " << fSubRunPOT << std::endl;
+  std::cout << "OffBeam Gate Count (for OffBeam files): " << fEXTGateCount << std::endl;
 
   fFirstInSubRun = true;
 }
@@ -655,6 +669,8 @@ void CAFMaker::InitializeOutfiles()
   fTotalPOT = 0;
   fSubRunPOT = 0;
   fTotalSinglePOT = 0;
+  fEXTGateCount = 0;
+  fTotalEXTGateCount = 0;
   fTotalEvents = 0;
   fFirstInFile = false;
   fFirstInSubRun = false;
@@ -1555,10 +1571,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(fFirstInFile)
   {
     rec.hdr.pot   = fSubRunPOT;
+    rec.hdr.extcount = fEXTGateCount;
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
     rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
+    rec.hdr.nextinfo = fEXTInfo.size();
+    rec.hdr.extinfo = fEXTInfo;
   }
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
@@ -1591,6 +1610,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fBNBInfo.clear();
   fNuMIInfo.clear();
+  fEXTInfo.clear();
   rec.hdr.pot = 0;
 }
 

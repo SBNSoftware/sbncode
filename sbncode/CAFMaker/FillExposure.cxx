@@ -72,4 +72,19 @@ namespace caf
       NuMIInfo.back().daq_gates = info.daq_gates;
     }
   }
+  
+  void FillExposureEXT(const std::vector<sbn::EXTCountInfo>& ext_count_info,
+			std::vector<caf::SREXTInfo>& EXTInfo,
+			double& subRunEXTGateCount) {
+    for (const sbn::EXTCountInfo &info: ext_count_info) {
+      subRunEXTGateCount += info.gates_since_last_trigger;
+      EXTInfo.emplace_back();
+      EXTInfo.back().gates_since_last_trigger = info.gates_since_last_trigger;
+      EXTInfo.back().isBNBOffBeam = info.isBNBOffBeam;
+      EXTInfo.back().isNuMIOffBeam = info.isNuMIOffBeam;
+      EXTInfo.back().isMajority = info.isMajority;
+      EXTInfo.back().isMinBias = info.isMinBias;
+    }
+  }
+
 }

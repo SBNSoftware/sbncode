@@ -5,6 +5,8 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnanaobj/StandardRecord/SRNuMIInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
+#include "sbnanaobj/StandardRecord/SREXTInfo.h"
+#include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
 
 #include <vector>
 
@@ -20,7 +22,9 @@ namespace caf
 		    std::vector<caf::SRNuMIInfo>& NuMIInfo,
 		    double& subRunPOT);
 
-  
+  void FillExposureEXT(const std::vector<sbn::EXTCountInfo>& ext_count_info,
+		       std::vector<caf::SREXTInfo>& EXTInfo,
+		       double& subRunEXTGateCount);
 }
 
 #endif

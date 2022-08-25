@@ -1,0 +1,5 @@
+#include "run_extinfo_sbn.fcl"
+
+outputs.out1.outputCommands: [
+  "keep *_*_*_EXTInfoGen"
+]

@@ -217,8 +217,8 @@ void sbn::BNBRetriever::produce(art::Event& e)
   
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
-  //We only want to process BNB gates, i.e. type 1 
-  if(triggerInfo.gate_type != 1) return;
+  //We only want to process BNB gates or offbeam BNB gates, i.e. type 1 or 3, check this logic, just want to keep things like number of gates and total number of beam spills, etc. 
+  if(triggerInfo.gate_type != 1 || triggerInfo.gate_type == 3) return;
   // Keep track of the number of beam gates the DAQ thinks 
   //   are in this job
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
@@ -257,13 +257,25 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
     triggerInfo.gate_type = datastream_info.gate_type;
-    triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-  
+    if(triggerInfo.gate_type == 1)
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
+    else if(triggerInfo.gate_type == 3)
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBOff();
+    else 
+    {
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesOther();
+      mf::LogDebug("BNBRetriever") << "Possibly unsupported gate type: " << triggerInfo.gate_type << "! Using information stored in other gate type." << std::endl; 
+    }
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
+    else if(triggerInfo.gate_type == 3)
+      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBOff()))/(1e9);
     else
+    {
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
+      mf::LogDebug("BNBRetriever") << "Possibly unsupported gate type: " << triggerInfo.gate_type << "! Using information stored in other gate type." << std::endl;
+    }
     
   }
   

@@ -22,7 +22,7 @@
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -100,23 +100,42 @@ void sbn::EXTRetriever::produce(art::Event& e)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
   int gate_type = 0;
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerUDP" });
+  int trigger_type = 0;
+  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label_, "ICARUSTriggerV2" });
 
   unsigned int number_of_gates_since_previous_event = 0;
-  
+  bool isBNBOffBeam = false;
+  bool isNuMIOffBeam = false;
+  bool isMajority = false;
+  bool isMinBias = false;
+
   for(auto raw_datum : raw_data){
    
-    icarus::ICARUSTriggerUDPFragment frag(raw_datum);
+    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
     gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-  
+    trigger_type = datastream_info.trigger_type;
+    
+    if(gate_type == 3)
+    {
+      isBNBOffBeam = true;
+      number_of_gates_since_previous_event = frag.getDeltaGatesBNBOff();
+    }
+    if(gate_type == 4)
+    {
+      isNuMIOffBeam = true;
+      number_of_gates_since_previous_event = frag.getDeltaGatesNuMIOff();
+    }
+    if(trigger_type == 0)
+      isMajority = true;
+    if(trigger_type == 1)
+      isMinBias = true;
   }
   
-  //We only want to process EXT gates, i.e. type 3
-  if(gate_type == 3)
+  //We only want to process EXT gates, i.e. type 3 (BNBOffBeam) or 4 (NuMIOffBeam) 
+  if(gate_type == 3 || gate_type == 4)
   {
     // Keep track of the number of beam gates the DAQ thinks 
     //   are in this file
@@ -125,7 +144,10 @@ void sbn::EXTRetriever::produce(art::Event& e)
       //Store everything in our data-product
       sbn::EXTCountInfo extInfo;
       extInfo.gates_since_last_trigger = number_of_gates_since_previous_event;
-
+      extInfo.isBNBOffBeam = isBNBOffBeam;
+      extInfo.isNuMIOffBeam = isNuMIOffBeam;
+      extInfo.isMajority = isMajority;
+      extInfo.isMinBias = isMinBias;
       fOutExtInfos.push_back(extInfo);
       // We do not write these to the art::Events because 
       // we can filter events but want to keep all the POT 

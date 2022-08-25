@@ -85,6 +85,12 @@ namespace caf
       "numiinfo"
     };
 
+    Atom<string> EXTCountDataLabel {
+      Name("EXTCountDataLabel"),
+      Comment("Label of EXTRetriever module"),
+      "extinfo"
+    };
+
     Atom<string> G4Label {
       Name("G4Label"),
       Comment("Label of G4 module."),

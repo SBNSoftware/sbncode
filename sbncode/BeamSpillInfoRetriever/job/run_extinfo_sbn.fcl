@@ -16,7 +16,8 @@ physics: {
    extinfo: @local::extcountinfo
  }
 
- simulate: [extinfo ]
+ simulate: [ extinfo ]
+ trigger_paths: [ simulate  ]
  stream1: [ out1 ]
 
 }

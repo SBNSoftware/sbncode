@@ -107,18 +107,25 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     char *buffer = const_cast<char*>(data.c_str());
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
     gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
-
+    if(gate_type == 2)
+      number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
+    else
+    {
+      number_of_gates_since_previous_event = frag.getDeltaGatesOther();
+      //mf::LogDebug("NuMIRetriever") << "Possibly unsupported gate type: " << gate_type << "! Using information stored in gate type labeled other." << std::endl;
+    }
     t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
     if(gate_type == 2)
       t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
     else
+    {
       t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
-
+      //mf::LogDebug("NuMIRetriever") << "Possibly unsupported gate type: " << gate_type << "! Using information stored in gate type labeled other." << std::endl;
+    }
   }
 
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
-  //We only want to process NuMI gates, i.e. type 2
+  //We only want to process NuMI or offbeam NumI gates, i.e. type 2 or type 4. For offbeam spills, mainly want to keep track of total spills expected
   if(gate_type == 2)
   {
     // Keep track of the number of beam gates the DAQ thinks
