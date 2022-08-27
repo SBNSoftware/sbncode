@@ -720,7 +720,8 @@ namespace caf
                    caf::SRHit& srhit,
                    bool allowEmpty)
   {
-    srhit.producer = producer;
+    srhit.setDefault();
+
     srhit.peakTime = hit.PeakTime();
     srhit.RMS = hit.RMS();
 
