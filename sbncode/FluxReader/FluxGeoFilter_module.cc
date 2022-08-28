@@ -20,6 +20,7 @@
 
 //geometry
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "TGeoManager.h"
 
 #include "nusimdata/SimulationBase/MCFlux.h"

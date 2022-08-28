@@ -40,6 +40,8 @@
 //#include "cetlib/exception.h"
 
 #include "lardata/Utilities/AssociationUtil.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
+
 namespace fluxr {
 
   FluxReader::FluxReader(fhicl::ParameterSet const & ps,

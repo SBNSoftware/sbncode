@@ -10,23 +10,24 @@ art_make(    LIBRARY_NAME sbncode_GeoWrappers
                            lardataobj_RecoBase
                            lardata_RecoObjects  
                            larpandora_LArPandoraInterface
-                           nusimdata::SimulationBase
-                           cetlib::cetlib cetlib_except
-                           art::Framework_Core
-                           art::Framework_Principal
-                           art::Framework_Services_Registry
-                           art_root_io::tfile_support ROOT::Core
-                           art_root_io::TFileService_service
-                           art::Persistency_Common canvas::canvas
-                           art::Persistency_Provenance canvas::canvas
-                           art::Utilities canvas::canvas
-                           messagefacility::MF_MessageLogger
-                           fhiclcpp::fhiclcpp
-                           ROOT::Geom
-                           ROOT::XMLIO
-                           ROOT::Gdml
-                           ${ROOT_BASIC_LIB_LIST}
+                           nusimdata_SimulationBase
+                           cetlib cetlib_except
+                           ${ART_FRAMEWORK_CORE}
+                           ${ART_FRAMEWORK_PRINCIPAL}
+                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                           art_Persistency_Common canvas
+                           art_Persistency_Provenance canvas
+                           art_Utilities canvas
+                           ${MF_MESSAGELOGGER}
                            
+                           ${FHICLCPP}
+                           ${ROOT_GEOM}
+                           ${ROOT_XMLIO}
+                           ${ROOT_GDML}
+                           ${ROOT_BASIC_LIB_LIST}
+                           ${Boost_SYSTEM_LIBRARY}
         )
 
 install_headers()

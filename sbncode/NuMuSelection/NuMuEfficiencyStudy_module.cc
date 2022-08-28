@@ -24,6 +24,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
 #include "larsim/MCCheater/BackTrackerService.h"
