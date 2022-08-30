@@ -1333,7 +1333,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
         if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.pfp.back().trk);
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
