@@ -1286,9 +1286,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.pfp.back());
 
-      rec.reco.pfp.back().trk = SRTrack();
-      rec.reco.pfp.back().shw = SRShower();
-
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
 
@@ -1377,8 +1374,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       
       recslc.reco.pfp.push_back(rec.reco.pfp.back());
       recslc.reco.npfp = recslc.reco.pfp.size();
-      recslc.reco.pfp.back().trk = rec.reco.pfp.back().trk;
-      recslc.reco.pfp.back().shw = rec.reco.pfp.back().shw;
     }// end for pfparts
 
 
