@@ -1280,7 +1280,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
       assert(thisParticle.size() == 1);
      
-      rec.reco.pfp.push_back(SRPFP());
+      SRPFP pfp;
+      // ...
+      rec.reco.pfp.push_back(std::move(pfp));
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.pfp.back());
 
