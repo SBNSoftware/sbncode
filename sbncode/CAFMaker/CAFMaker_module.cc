@@ -1337,41 +1337,43 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
         // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), rec.reco.pfp.back().trk);
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), trk);
         }
         if (fmCRTTrackMatch.isValid()) {
-          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.pfp.back().trk);
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.pfp.back().shw);
+	
+        SRShower& shw = pfp.shr;
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
-           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.pfp.back().shw);
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }
         if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
-          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.pfp.back().shw);
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), shw);
         }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
-          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.pfp.back().shw);
+          FillShowerResiduals(fmShowerResiduals.at(iPart), shw);
         }
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
-          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.pfp.back().shw);
+          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), shw);
         }
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
-          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.pfp.back().shw);
+          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), shw);
         }
         if (fmShowerHit.isValid()) {
-          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.pfp.back().shw);
+          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, shw);
         }
 
       } // thisShower exists
       
-      recslc.reco.pfp.push_back(rec.reco.pfp.back());
+      recslc.reco.pfp.push_back(std::move(pfp));
       recslc.reco.npfp = recslc.reco.pfp.size();
     }// end for pfparts
 
