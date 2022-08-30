@@ -1318,7 +1318,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
-           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.pfp.back().trk);
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
            FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.pfp.back().trk);
