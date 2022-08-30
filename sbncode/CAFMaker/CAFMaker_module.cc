@@ -1324,7 +1324,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
            FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), trk);
         }
         if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
-           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.pfp.back().trk);
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
