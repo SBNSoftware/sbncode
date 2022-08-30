@@ -1330,7 +1330,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.pfp.back().trk);
+              lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
         if (fmTrackHit.isValid()) {
           if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.pfp.back().trk);
