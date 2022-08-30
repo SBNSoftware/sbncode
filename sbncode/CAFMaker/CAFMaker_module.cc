@@ -1309,9 +1309,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         }
 
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], producer, rec.reco.pfp.back().trk);
-        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.pfp.back().trk);
-        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.pfp.back().trk);
+        SRTrack& trk = pfp.trk;
+        FillTrackVars(*thisTrack[0], producer, trk);
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, trk);
+        FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.pfp.back().trk);
