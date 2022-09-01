@@ -40,14 +40,6 @@ bool isFromNuVertex(const simb::MCTruth& mc, const sim::MCTrack& track,
   return (trkStart - nuVtx).Mag() < distance;
 }
 
-bool isFromNuVertex(const simb::MCTruth& mc, const simb::MCParticle& particle,
-                    float distance=5.0) {
-  TVector3 nuVtx = mc.GetNeutrino().Nu().Trajectory().Position(0).Vect();
-  TVector3 partStart = particle.Position().Vect();
-  return (partStart - nuVtx).Mag() < distance;
-}
-
-
 // returns particle mass in MeV
 double PDGMass(int pdg) {
   const TDatabasePDG *PDGTable = TDatabasePDG::Instance();
