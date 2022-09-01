@@ -879,14 +879,15 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
   // energy smearing
   auto smear_lepton = [&rand](const caf::SRTrueParticle &lepton) -> float {
     const double smearing = 0.15;
+    // Oscillation tech note says smear ionization deposition, but
+    // code in old samples seems to use true energy.
     const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
     const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
     return std::max(smeared_E, 0.0);
   };
   auto smear_hadron = [&rand](const caf::SRTrueParticle &hadron) -> float {
     const double smearing = 0.05;
-    //const double true_E = hadron.plane[0][2].visE + hadron.plane[1][2].visE - PDGMass(hadron.pdg);
-    const double true_E = hadron.genE - PDGMass(hadron.pdg);
+    const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
     const double smeared_E = rand.Gaus(true_E, smearing * true_E);
     return std::max(smeared_E, 0.0);
   };
@@ -963,11 +964,8 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
                                                   nuVtx.Y() - particle.start.y,
                                                   nuVtx.Z() - particle.start.z);
 
-    if((pdg == 2212 || pdg == 211 || pdg == 321) && distance_from_vertex < 5 && particle.start_process == caf::kG4primary) std::cout << "Energy: " << ke << std::endl;
     if((pdg == 2212 || pdg == 211 || pdg == 321) && distance_from_vertex < 5
        && particle.start_process == caf::kG4primary && ke > hadronic_energy_threshold) {
-      std::cout << "Found Hadron\n";
-
       caf::SRFakeRecoParticle fake_hadron;
       fake_hadron.pid = pdg;
       fake_hadron.len = ContainedLength(TVector3(particle.start), TVector3(particle.end), aa_volumes);
@@ -1038,8 +1036,6 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
 
   fakereco.nhad = fakereco.hadrons.size();
   fakereco.filled = true;
-
-  std::cout << "Filled fake reco\n";
 
   return true;
 }
