@@ -44,6 +44,7 @@
 #include "TFile.h"
 #include "TH1D.h"
 #include "TTree.h"
+#include "TMath.h"
 #include "TTimeStamp.h"
 #include "TRandomGen.h"
 #include "TObjString.h"
@@ -358,10 +359,10 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (brec->reco.trk[i].start.z  > -895.95 + 30 && brec->reco.trk[i].start.z < 895.95 - 50)) {
 
       if (brec->reco.trk[i].mcsP.fwdP_muon > 0.6) {
-	brec->reco.trk[i].mcsP.fwdP_muon = NAN;    
+	brec->reco.trk[i].mcsP.fwdP_muon = TMath::QuietNaN();    
       }
       if (brec->reco.trk[i].rangeP.p_muon > 0.6) {
-	brec->reco.trk[i].rangeP.p_muon = NAN;
+	brec->reco.trk[i].rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
@@ -372,10 +373,10 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (brec->reco.shw[i].start.y > -181.7 + 25 && brec->reco.shw[i].start.y < 134.8 - 25 ) &&
 	 (brec->reco.shw[i].start.z  > -895.95 + 30 && brec->reco.shw[i].start.z < 895.95 - 50)) {
       if (brec->reco.shw[i].bestplane_energy > 0.6) {
-	brec->reco.shw[i].bestplane_energy = NAN;
-	brec->reco.shw[i].plane[0].energy = NAN;
-	brec->reco.shw[i].plane[1].energy = NAN;
-	brec->reco.shw[i].plane[2].energy = NAN;
+	brec->reco.shw[i].bestplane_energy = TMath::QuietNaN();
+	brec->reco.shw[i].plane[0].energy = TMath::QuietNaN();
+	brec->reco.shw[i].plane[1].energy = TMath::QuietNaN();
+	brec->reco.shw[i].plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -390,17 +391,17 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
       //std::cout << brec->slc[islc].reco.ntrk << ", " brec->slc[islc].reco.trk.size() << std::endl;
       for (unsigned int itrk=0; itrk<brec->slc[islc].reco.ntrk; ++itrk) {
 	if (brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon > 0.6) {
-	  brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon = NAN;    
+	  brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
 	if (brec->slc[islc].reco.trk[itrk].rangeP.p_muon > 0.6) {
-	  brec->slc[islc].reco.trk[itrk].rangeP.p_muon = NAN;
+	  brec->slc[islc].reco.trk[itrk].rangeP.p_muon = TMath::QuietNaN();
 	}
       }
       for (unsigned int ishw=0; ishw<brec->slc[islc].reco.nshw; ++ishw) {
-	brec->slc[islc].reco.shw[ishw].bestplane_energy = NAN;
-	brec->slc[islc].reco.shw[ishw].plane[0].energy = NAN;
-	brec->slc[islc].reco.shw[ishw].plane[1].energy = NAN;
-	brec->slc[islc].reco.shw[ishw].plane[2].energy = NAN;
+	brec->slc[islc].reco.shw[ishw].bestplane_energy = TMath::QuietNaN();
+	brec->slc[islc].reco.shw[ishw].plane[0].energy = TMath::QuietNaN();
+	brec->slc[islc].reco.shw[ishw].plane[1].energy = TMath::QuietNaN();
+	brec->slc[islc].reco.shw[ishw].plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -774,12 +775,11 @@ void CAFMaker::InitializeOutfiles()
     if (fParams.CreateBlindedCAF()) {
       mf::LogInfo("CAFMaker") << "Blinded output filenames are " << fCafBlindFilename << ", and " << fCafPrescaleFilename;
       fFileb = new TFile(fCafBlindFilename.c_str(), "RECREATE");
-      fFilep = new TFile(fCafPrescaleFilename.c_str(), "RECREATE");
-
       fRecTreeb = new TTree("recTree", "records");
-      fRecTreep = new TTree("recTree", "records");
-
       fRecTreeb->Branch("rec", "caf::StandardRecord", &rec);
+
+      fFilep = new TFile(fCafPrescaleFilename.c_str(), "RECREATE");
+      fRecTreep = new TTree("recTree", "records");
       fRecTreep->Branch("rec", "caf::StandardRecord", &rec);
 
       AddEnvToFile(fFileb);
@@ -1840,9 +1840,12 @@ void CAFMaker::endJob() {
       fFlatTreep->SetDirectory(fFlatFilep);
     }
 
+    fFile->cd();
     fFile->Write();
     if (fFileb) {
+      fFileb->cd();
       fFileb->Write();
+      fFilep->cd();
       fFilep->Write();
     }
 
@@ -1850,10 +1853,11 @@ void CAFMaker::endJob() {
     AddHistogramsToFile(fFileb,true,false);
     AddHistogramsToFile(fFilep,false,true);
 
-    //CB is it ok to comment this out? Was making duplicate trees in file?
     //fFile->Write();
+    //if (fFileb) {
     //fFileb->Write();
     //fFilep->Write();
+    //}
   }
 
   if(fFlatFile){
