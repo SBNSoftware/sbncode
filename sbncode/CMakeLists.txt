@@ -25,3 +25,8 @@ add_subdirectory(EventGenerator)
 add_subdirectory(PID)
 add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
+
+# Supera
+execute_process(COMMAND sh setup.sh icarus
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Supera )
+add_subdirectory(Supera)
