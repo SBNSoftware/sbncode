@@ -111,6 +111,8 @@ protected:
   TLorentzVector BeamOrigin() {
     double toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() + fGlobalTimeOffset : 0.;
 
+    //time offset here is the beam innert structure i.e. bucket structure
+
     // TODO: what to do here? For now -- don't shift time at all
     // Set T0 here or later in calculating ToF??
     // subtract out the delay of neutrinos reaching the beam

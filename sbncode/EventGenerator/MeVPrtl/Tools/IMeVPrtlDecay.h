@@ -50,27 +50,21 @@ protected:
 double IMeVPrtlDecay::TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay){
 
   // TODO: should the neutrino TOF be subtracted here to get the correct T0?
-  // The current temporary fix in GENIE doesn't subtract first neutrino arrival time 
+  // TODO: clean up comments and maths
  
-  //Work in detector coordinate
-  //Calculate kaon ToF
-  double kaonvel = flux.kpmom_beamcoord.Beta() * Constants::Instance().c_cm_per_ns;  
-  TVector3 kaondecay = TVector3(flux.pos.X(), flux.pos.Y(), flux.pos.Z());  
-  double kaonToF = kaondecay.Mag() / kaonvel;
+  double dist = (decay - flux.pos.Vect()).Mag(); 
+  double vel =  flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  
+  //Time of flight = hadron ToT + hnl ToF
+  double ToF = flux.pos.T() + dist / vel;
 
-  //Calculate distance of from flux to decay pos
-  double hnlvel = flux.mom.Beta() * Constants::Instance().c_cm_per_ns; 
-  double hnlToF = (decay - kaondecay).Mag() / hnlvel; // s -> ns
+  std::cout << "flight distance: " << dist << " cm" << std::endl;
+  std::cout << "hnl vel: " << vel << " cm/ns" << std::endl;
+  std::cout << "hadron ToF: " << flux.pos.T() << " ns" << std::endl;
+  std::cout << "hnl ToF: " << dist/vel << " ns" << std::endl;
+  std::cout << "total ToF: " << ToF << " ns" << std::endl;
 
-  std::cout << "=-----------------------------------------------------=" << std::endl;
-  std::cout << "kaon ToF: " << kaonToF << std::endl;
-  std::cout << "kaon vel: " << kaonvel << std::endl;
-  std::cout << "=-----------------------------------------------------=" << std::endl;
-  std::cout << "hnl ToF: " << hnlToF << std::endl;
-  std::cout << "hnl vel: " << hnlvel << std::endl;
-  std::cout << "=-----------------------------------------------------=" << std::endl;
-
-  return kaonToF + hnlToF;
+  return ToF;
 }//Time Of Flight
 
 
