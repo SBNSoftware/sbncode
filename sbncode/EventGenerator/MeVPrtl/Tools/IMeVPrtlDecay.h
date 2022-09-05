@@ -44,12 +44,7 @@ public:
     virtual bool Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) = 0;
 
 protected:
-    double TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay) {
-      // TODO: should the neutrino TOF be subtracted here to get the correct T0?
-      //
-      // TODO: implement time of flight
-      return 0.;
-    }
+    double TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay);
 };
 
 double IMeVPrtlDecay::TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay){
