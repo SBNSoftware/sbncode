@@ -52,6 +52,26 @@ protected:
     }
 };
 
+double IMeVPrtlDecay::TimeOfFlight(const MeVPrtlFlux &flux, TVector3 decay){
+
+  // TODO: should the neutrino TOF be subtracted here to get the correct T0?
+  // TODO: clean up comments and maths
+ 
+  double dist = (decay - flux.pos.Vect()).Mag(); 
+  double vel =  flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
+  
+  //Time of flight = hadron ToT + hnl ToF
+  double ToF = flux.pos.T() + dist / vel;
+
+  std::cout << "flight distance: " << dist << " cm" << std::endl;
+  std::cout << "hnl vel: " << vel << " cm/ns" << std::endl;
+  std::cout << "hadron ToF: " << flux.pos.T() << " ns" << std::endl;
+  std::cout << "hnl ToF: " << dist/vel << " ns" << std::endl;
+  std::cout << "total ToF: " << ToF << " ns" << std::endl;
+
+  return ToF;
+}//Time Of Flight
+
 } // namespace ldm
 } // namespace evgen
 #endif
