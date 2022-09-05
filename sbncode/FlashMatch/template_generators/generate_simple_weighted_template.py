@@ -195,7 +195,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
                     f"is_nu==1 && slices==1 && "
                     f"0.<=mcT0 && mcT0<=1.6 && " # TODO: unhardcode
                     f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 && " # TODO: unhardcode
-                    f"charge_x >= 0. && new_hypo_x >= 0."
+                    f"charge_x >= 0. && charge_x <= {drift_distance} && new_hypo_x >= 0. &&"
                     f"{filter_tolerable}"
                     )
     draw_option = "prof"
@@ -344,21 +344,21 @@ def generator(nuslice_tree, rootfile, pset):
 
     unfolded_score_scatter = TH2D("unfolded_score_scatter", "Scatter plot of match scores",
                                   2*dist_to_anode_bins, x_gl_low, x_gl_up,
-                                  pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+                                  pset.score_bins, pset.score_low, pset.score_up)
     unfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
     unfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     oldunfolded_score_scatter = TH2D("oldunfolded_score_scatter", "Scatter plot of match scores, old metrics",
                                      2*dist_to_anode_bins, x_gl_low, x_gl_up,
-                                     pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+                                     pset.score_bins, pset.score_low, pset.score_up)
     oldunfolded_score_scatter.GetXaxis().SetTitle("X global (cm)")
     oldunfolded_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_scatter = TH2D("match_score_scatter", "Scatter plot of match scores",
                                dist_to_anode_bins, dist_to_anode_low, dist_to_anode_up,
-                               pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up*(3./5.))
+                               pset.score_bins, pset.score_low, pset.score_up)
     match_score_scatter.GetXaxis().SetTitle("distance from anode (cm)")
     match_score_scatter.GetYaxis().SetTitle("match score (arbitrary)")
     match_score_h1 = TH1D("match_score", "Match Score",
-                          pset.score_hist_bins, pset.score_hist_low, pset.score_hist_up)
+                          pset.score_bins, pset.score_low, pset.score_up)
     match_score_h1.GetXaxis().SetTitle("match score (arbitrary)")
 
     metrics_filename = 'fm_metrics_' + detector + '.root'
