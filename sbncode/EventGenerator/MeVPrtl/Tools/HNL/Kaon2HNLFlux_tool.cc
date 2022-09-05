@@ -187,11 +187,36 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
 
   TLorentzVector Beam4 = BeamOrigin();
 
+  std::cout << "Beam Origin (x,y,z, toff): " << Beam4.X() 
+					<< " " << Beam4.Y()
+					<< " " << Beam4.Z()
+					<< " " << Beam4.T()
+  					<< std::endl;
+
   // get position in detector frame
   hnl.pos_beamcoord = kaon.pos;
+
+  std::cout << "hnl pos beam coord: " << hnl.pos_beamcoord.X()
+			<< " " << hnl.pos_beamcoord.Y() 
+			<< " " << hnl.pos_beamcoord.Z() 
+			<< " " << hnl.pos_beamcoord.T() 
+			<< std::endl;
+
   hnl.pos = kaon.pos;
   hnl.pos.Transform(fBeam2Det);
+  
+  std::cout << "hnl pos det coord: " << hnl.pos.X()
+			<< " " << hnl.pos.Y() 
+			<< " " << hnl.pos.Z() 
+			<< " " << hnl.pos.T() 
+			<< std::endl;
   hnl.pos += Beam4;
+  
+  std::cout << "hnl pos det coord: " << hnl.pos.X()
+			<< " " << hnl.pos.Y() 
+			<< " " << hnl.pos.Z() 
+			<< " " << hnl.pos.T() 
+			<< std::endl;
 
   // Branch the parent Kaon Decay
   double hnl_mass = fM;
@@ -200,7 +225,7 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   bool is_muon = decay.second;
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
 
-  std::cout << "BR: " << br << std::endl;
+  std::cout << "Kaon 2 HNL BR: " << br << std::endl;
 
   // ignore if we can't make this hnl
   // Ignore if branching ratio is exactly 0.
@@ -222,7 +247,6 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.mom.Transform(fBeam2Det);
 
   hnl.kmom_beamcoord = kaon.mom;
-  hnl.kpmom_beamcoord = kaon.pmom;
   // also save the kaon momentum in the detector frame
   hnl.kmom = kaon.mom;
   hnl.kmom.Transform(fBeam2Det);
