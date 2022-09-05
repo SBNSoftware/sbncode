@@ -56,6 +56,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fICARUS((fDetector == "ICARUS") ? true : false )
   , fPDMapAlgPtr(art::make_tool<opdet::PDMapAlg>(p.get<fhicl::ParameterSet>("PDMapAlg")))
   , fNTPC(fGeometry->NTPC())
+  , fTPCPerDriftVolume(fNTPC/2) // 2 drift volumes: kRght and kLeft
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 or =1 for ICARUS to match reco chain selection
   , fGeoCryo(std::make_unique<geo::CryostatGeo>(fGeometry->Cryostat(fCryostat)))
   , fWiresX_gl(wiresXGl())
@@ -100,8 +101,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
         << "UseOppVolMetric: " << std::boolalpha << fUseOppVolMetric << "\n"
         << "Not supported on SBND. Stopping.";
     }
-    fTPCPerDriftVolume = 1;
-    fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
   else if(fICARUS && !fSBND) {
     if(fUseUncoatedPMT || fUseARAPUCAS) {
@@ -110,8 +109,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
         << "UseARAPUCAS:      " << std::boolalpha << fUseARAPUCAS << "\n"
         << "Not supported on ICARUS. Stopping.\n";
     }
-    fTPCPerDriftVolume = 2;
-    fDriftVolumes = fNTPC/fTPCPerDriftVolume;
   }
   else {
     throw cet::exception("FlashPredict")
@@ -705,11 +702,31 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   charge.z =
     (std::accumulate(qClusters.begin(), qClusters.end(), 0.,
                      [](double z, Q_t q) {return z+q.q*q.z;}))/charge_q;
+
+  unsigned charge_center_in_volume = fGeometry->PositionToTPCID(
+    {charge.x_gl, charge.y, charge.z}).TPC/fTPCPerDriftVolume;
+  if (charge_center_in_volume>2 && fSBND){
+    // TODO HACK
+    charge_center_in_volume = fGeometry->PositionToTPCID(
+      {charge.x_gl/2., charge.y, charge.z}).TPC/fTPCPerDriftVolume;
+  }
+  unsigned activity = 0;
+  if (charge_center_in_volume == kRght) activity = kActivityInRght;
+  else if (charge_center_in_volume == kLeft) activity = kActivityInLeft;
+  if (charge.activity < kActivityInBoth &&
+      (activity != charge.activity)){
+    mf::LogError("FlashPredict")
+      << "ERROR!!!  The charge center: ("
+      << charge.x_gl << ", " << charge.y << ", " << charge.z << "), "
+      << "belonging to volume " << charge_center_in_volume << "\n"
+      << "is not inside the volume of the chargeDigest activity "
+      << charge.activity;
+  }
+
+  // Compute the widths
   std::unique_ptr<TH1F> qX = std::make_unique<TH1F>("qX", "", 80, -200., 200.);
   std::unique_ptr<TH1F> qY = std::make_unique<TH1F>("qY", "", 80, -200., 200.);
   std::unique_ptr<TH1F> qZ = std::make_unique<TH1F>("qZ", "", 100, 0., 500.);
-
-  // Compute the widths
   for (size_t i=0; i<qClusters.size(); ++i) {
     // double q2 = qClusters[i].q * qClusters[i].q;
     double q = qClusters[i].q;
@@ -1188,19 +1205,19 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
         ChargeDigest(pId, pfpPDGC, pfp_ptr, flashmatch::QCluster_t{}, 0, -9999.);
       continue;
     }
-    std::set<unsigned> tpcWithHits;
-
     std::vector<art::Ptr<recob::PFParticle>> particles_in_slice;
     addDaughters(pfpMap, pfp_ptr, pfps_h, particles_in_slice);
 
     double sliceQ = 0.;
     std::vector<art::Ptr<recob::Hit>> hits_in_slice;
     flashmatch::QCluster_t particlesClusters;
+    std::set<unsigned> particlesTPCs;
     for(const auto& particle: particles_in_slice) {
       const auto particle_key = particle.key();
       const auto& particle_spacepoints = pfp_spacepoints_assns.at(particle_key);
       double particleQ = 0.;
       flashmatch::QCluster_t spsClusters;
+      std::set<unsigned> spsTPCs;
       for(const auto& spacepoint : particle_spacepoints) {
         const auto spacepoint_key = spacepoint.key();
         const auto& hits = spacepoint_hits_assns.at(spacepoint_key);
@@ -1211,6 +1228,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
         const auto& pos = spacepoint->XYZ();
         double spacepointQ = 0.;
         flashmatch::QCluster_t hitsClusters;
+        std::set<unsigned> hitsTPCs;
         for(const auto& hit : hits) {
           geo::WireID wId = hit->WireID();
           if(fOnlyCollectionWires &&
@@ -1220,12 +1238,13 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
           spacepointQ += hitQ;
           hitsClusters.emplace_back(pos[0], pos[1], pos[2], hitQ);
           const auto itpc = wId.TPC;
-          tpcWithHits.insert(itpc);
+          if(itpc<=fNTPC) hitsTPCs.insert(itpc);
         } // for hits associated to spacepoint
         if(spacepointQ < fMinSpacePointQ) continue;
         particleQ += spacepointQ;
         spsClusters.insert(spsClusters.end(),
                            hitsClusters.begin(), hitsClusters.end());
+        spsTPCs.insert(hitsTPCs.begin(), hitsTPCs.end());
       } // for spacepoints in particle
       double chargeToNPhots = lar_pandora::LArPandoraHelper::IsTrack(particle) ?
         fChargeToNPhotonsTrack : fChargeToNPhotonsShower;
@@ -1234,6 +1253,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
       sliceQ += particleQ;
       particlesClusters.insert(particlesClusters.end(),
                                spsClusters.begin(), spsClusters.end());
+      particlesTPCs.insert(spsTPCs.begin(), spsTPCs.end());
     } // for particles in slice
     if(sliceQ < fMinSliceQ) continue;
     auto [mcT0, isNu] = (fStoreMCInfo) ?
@@ -1241,9 +1261,9 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
       std::tuple{-9999., false};
     unsigned hitsInVolume = 0;
     bool in_right = false, in_left = false;
-    for(unsigned t : tpcWithHits){
-      if(t/fTPCPerDriftVolume == kRght) in_right = true;
-      else if(t/fTPCPerDriftVolume == kLeft) in_left = true;
+    for(unsigned itpc : particlesTPCs){
+      if(itpc/fTPCPerDriftVolume == kRght) in_right = true;
+      else if(itpc/fTPCPerDriftVolume == kLeft) in_left = true;
     }
     if(in_right && in_left) hitsInVolume = kActivityInBoth;
     else if(in_right && !in_left) hitsInVolume = kActivityInRght;
@@ -1251,7 +1271,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     else {
       if(sliceQ > 0.)
         mf::LogError("FlashPredict")
-          << "ERROR!!! tpcWithHits.size() " << tpcWithHits.size() << "\n"
+          << "ERROR!!! particlesTPCs.size() " << particlesTPCs.size() << "    " << *(particlesTPCs.begin()) <<  "\n"
           << "sliceQ:\t" << sliceQ << "\n"
           << "particles_in_slice.size():\t" << particles_in_slice.size() << "\n"
           << "particlesClusters.size():\t" << particlesClusters.size() << "\n";

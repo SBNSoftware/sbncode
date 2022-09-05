@@ -383,6 +383,7 @@ private:
   const bool fSBND, fICARUS;
   const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;
   const size_t fNTPC;
+  const unsigned fTPCPerDriftVolume;
   const int fCryostat;  // =0 or =1 to match ICARUS reco chain selection
   // geo::CryostatID fCryostat;  // TODO: use this type instead
   const std::unique_ptr<geo::CryostatGeo> fGeoCryo;
@@ -394,8 +395,6 @@ private:
   const unsigned fYBins,fZBins;
   const double fYLow, fYHigh, fZLow, fZHigh;
   const double fSkewLimitY, fSkewLimitZ;
-  unsigned fDriftVolumes;
-  unsigned fTPCPerDriftVolume;
   const unsigned fOpDetNormalizer;
   const double fTermThreshold;
 
