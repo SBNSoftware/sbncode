@@ -58,6 +58,23 @@ double PDGMass(int pdg) {
   }
 }
 
+double SmearLepton(const caf::SRTrueParticle &lepton, TRandom& rand) {
+  const double smearing = 0.15;
+  // Oscillation tech note says smear ionization deposition, but
+  // code in old samples seems to use true energy.
+  const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
+  const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+  return std::max(smeared_E, 0.0);
+}
+
+double SmearHadron(const caf::SRTrueParticle &hadron, TRandom& rand) {
+  const double smearing = 0.05;
+  const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
+  const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+  return std::max(smeared_E, 0.0);
+}
+
+
 //......................................................................
 void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
 {
@@ -869,7 +886,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
   float zmax = 100.;
 
   // energy smearing
-  auto smear_lepton = [&rand](const caf::SRTrueParticle &lepton) -> float {
+/*  auto smear_lepton = [&rand](const caf::SRTrueParticle &lepton) -> float {
     const double smearing = 0.15;
     // Oscillation tech note says smear ionization deposition, but
     // code in old samples seems to use true energy.
@@ -883,7 +900,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
     const double smeared_E = rand.Gaus(true_E, smearing * true_E);
     return std::max(smeared_E, 0.0);
   };
-
+*/
   // visible energy threshold
   const float hadronic_energy_threshold = 0.021; // GeV
 
@@ -929,7 +946,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
         });
       if((parent == srparticles.end()
            || !(std::abs((*parent).pdg) == 11 || std::abs((*parent).pdg) == 22))
-         && smear_lepton(particle) > 0.1) {
+         && SmearLepton(particle, rand) > 0.1) {
         lepton_candidates.push_back(&particle);
       }
     }
@@ -939,7 +956,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
   const caf::SRTrueParticle* lepton = lepton_candidates[0];
   caf::SRFakeRecoParticle fake_lepton;
   fake_lepton.pid = 11;
-  fake_lepton.ke = smear_lepton(*lepton) - PDGMass(11) / 1000;
+  fake_lepton.ke = SmearLepton(*lepton, rand) - PDGMass(11) / 1000;
   // Should these be set for a shower?
   // fake_lepton.len = ???;
   // fake_lepton.costh = ???;
@@ -951,7 +968,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
   float hadronic_E = 0.0;
   for(const auto& particle: srparticles) {
     const int pdg = std::abs(particle.pdg);
-    const float ke = smear_hadron(particle);
+    const float ke = SmearHadron(particle, rand);
     const float distance_from_vertex = std::hypot(nuVtx.X() - particle.start.x,
                                                   nuVtx.Y() - particle.start.y,
                                                   nuVtx.Z() - particle.start.z);
