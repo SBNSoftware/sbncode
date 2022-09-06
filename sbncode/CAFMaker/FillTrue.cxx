@@ -1003,7 +1003,7 @@ bool FRFillNueCC(const simb::MCTruth &mctruth,
          && (muon == NULL || muon->startE < particle.startE))
         muon = &particle;
     }
-    if(muon != NULL && ContainedLength(TVector3(muon->start), TVector3(muon->end), aa_volumes) < 100)
+    if(muon != NULL && ContainedLength(TVector3(muon->start), TVector3(muon->end), aa_volumes) > 100)
       return false;
   }
 
