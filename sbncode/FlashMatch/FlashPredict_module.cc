@@ -720,7 +720,9 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
       << charge.x_gl << ", " << charge.y << ", " << charge.z << "), "
       << "belonging to volume " << charge_center_in_volume << "\n"
       << "is not inside the volume of the chargeDigest activity "
-      << charge.activity;
+      << charge.activity << ".\n"
+      << "Will update the charge activity to have both volumes.";
+    charge.activity = kActivityInBoth;
   }
 
   // Compute the widths
