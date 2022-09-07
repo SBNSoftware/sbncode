@@ -63,7 +63,7 @@ sbn::TrackCaloSkimmer::TrackCaloSkimmer(fhicl::ParameterSet const& p)
 {
   // Grab config
   fPFPproducer  = p.get< art::InputTag > ("PFPproducer","pandoraGausCryo0");
-  fT0Producer   = p.get< art::InputTag > ("T0producer", "pandoraGausCryo0");
+  fT0producers   = p.get< std::vector<art::InputTag> > ("T0producers", {"pandoraGausCryo0"} );
   fCALOproducer = p.get< art::InputTag > ("CALOproducer");
   fTRKproducer  = p.get< art::InputTag > ("TRKproducer" );
   fTRKHMproducer= p.get< art::InputTag   > ("TRKHMproducer", "");
@@ -209,7 +209,10 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   }
 
   // PFP-associated data
-  art::FindManyP<anab::T0> fmT0(PFParticleList, e, fT0Producer);
+  std::vector<art::FindManyP<anab::T0>> fmT0;
+  for (unsigned i_label = 0; i_label < fT0producers.size(); i_label++) {
+    fmT0.emplace_back(PFParticleList, e, fT0producers[i_label]);
+  }
   art::FindManyP<recob::SpacePoint> PFParticleSPs(PFParticleList, e, fPFPproducer);
 
   // Now we don't need to guard access to further data. If this is an empty event it should be caught by PFP's or Hit's
@@ -279,7 +282,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   std::vector<GlobalTrackInfo> track_infos;
   for (const recob::Track &t: *tracks) {
     track_infos.push_back({
-      t.Start(), t.End(), t.StartDirection(), t.EndDirection()
+      t.Start(), t.End(), t.StartDirection(), t.EndDirection(), t.ID()
     });
   }
 
@@ -317,10 +320,20 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
       }
     }
 
+    int whicht0 = -1;
     float t0 = std::numeric_limits<float>::signaling_NaN();
-    if (fmT0.isValid() && fmT0.at(p_pfp.key()).size()) t0 = fmT0.at(p_pfp.key()).at(0)->Time();
+    for (unsigned i_t0 = 0; i_t0 < fmT0.size(); i_t0++) {
+      if (fmT0[i_t0].isValid() && fmT0[i_t0].at(p_pfp.key()).size()) {
+        t0 = fmT0[i_t0].at(p_pfp.key()).at(0)->Time();
+        whicht0 = i_t0;
 
-    if (fRequireT0 && fmT0.at(p_pfp.key()).size() == 0) {
+        if (fVerbose) std::cout << "Track: " << trkPtr->ID() << " Has T0 (" << fT0producers[i_t0] << ")\n";
+
+        break;
+      }
+    }
+
+    if (fRequireT0 && whicht0 < 0) {
       continue;
     }
 
@@ -335,6 +348,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     // Fill the track!
     FillTrack(*trkPtr, pfp, t0, trkHits, trkHitMetas, trkHitSPs, calo, rawdigits, track_infos, geometry, clock_data, bt, det);
+    fTrack->whicht0 = whicht0;
 
     FillTrackDaughterRays(*trkPtr, pfp, PFParticleList, PFParticleSPs);
 
@@ -361,7 +375,7 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
 
     // Save!
     if (select) {
-      if (fVerbose) std::cout << "Track Selected!\n";
+      if (fVerbose) std::cout << "Track Selected! By tool: " << i_select << std::endl;
       fTree->Fill();
     }
   }
@@ -1074,11 +1088,24 @@ void sbn::TrackCaloSkimmer::FillTrack(const recob::Track &track,
 
   // get information on nearby tracks
   for (const GlobalTrackInfo &othr: tracks) {
+    if (othr.ID == track.ID()) continue;
+
     if ((track.End() - othr.start).r() < 50. || (track.End() - othr.end).r() < 50.) {
       fTrack->tracks_near_end_dist.push_back(std::min((track.End() - othr.start).r(), (track.End() - othr.end).r())); 
       fTrack->tracks_near_end_costh.push_back(
         (track.End() - othr.start).r() < (track.End() - othr.end).r() ? 
           track.EndDirection().Dot(othr.dir) : track.EndDirection().Dot(othr.enddir)); 
+    }
+  }
+
+  for (const GlobalTrackInfo &othr: tracks) {
+    if (othr.ID == track.ID()) continue;
+
+    if ((track.Start() - othr.start).r() < 50. || (track.Start() - othr.end).r() < 50.) {
+      fTrack->tracks_near_start_dist.push_back(std::min((track.Start() - othr.start).r(), (track.Start() - othr.end).r())); 
+      fTrack->tracks_near_start_costh.push_back(
+        (track.Start() - othr.start).r() < (track.Start() - othr.end).r() ? 
+          track.StartDirection().Dot(othr.dir) : track.StartDirection().Dot(othr.enddir)); 
     }
   }
 
