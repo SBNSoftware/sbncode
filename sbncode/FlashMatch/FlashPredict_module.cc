@@ -1259,7 +1259,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
     } // for particles in slice
     if(sliceQ < fMinSliceQ) continue;
     auto [mcT0, isNu] = (fStoreMCInfo) ?
-      cheatMCT0_IsNu(hits_in_slice, mcParticles, clockData, pi_serv) :
+      cheatMCT0_IsNu(hits_in_slice, mcParticles) :
       std::tuple{-9999., false};
     unsigned hitsInVolume = 0;
     bool in_right = false, in_left = false;
