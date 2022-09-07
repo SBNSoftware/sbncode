@@ -44,12 +44,12 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
-    Atom<std::string> PrescaleFactor { Name("PrescaleFactor"),
-	Comment("Factor by which to prescale unblind events"), "10"
+    Atom<float> PrescaleFactor { Name("PrescaleFactor"),
+	Comment("Factor by which to prescale unblind events"), 10
     };
 
     Atom<int> POTBlindSeed { Name("POTBlindNum"),
-	Comment("Integer used to derive POT scaling factor for blind events"), 345678
+	Comment("Integer used to derive POT scaling factor for blind events"), 655277
     };
 
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),

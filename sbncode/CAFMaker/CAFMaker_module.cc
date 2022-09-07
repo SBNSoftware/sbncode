@@ -175,6 +175,8 @@ class CAFMaker : public art::EDProducer {
 
   bool fFirstInSubRun;
   bool fFirstInFile;
+  bool fFirstBlindInFile;
+  bool fFirstPrescaleInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
@@ -234,7 +236,7 @@ class CAFMaker : public art::EDProducer {
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
   void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
-  void AddHistogramsToFile(TFile* outfile, bool isBlindPOT, bool isPrescalePOT) const;
+  void AddHistogramsToFile(TFile* outfile,bool isBlindPOT, bool isPrescalePOT) const;
 
   void InitializeOutfiles();
 
@@ -344,7 +346,7 @@ class CAFMaker : public art::EDProducer {
    while (abs(rat)>1){
      rat = -1 * (abs(rat) - 1);
    }
-   return rat;
+   return 1 + rat*0.3;
    
   }
 //......................................................................
@@ -367,6 +369,7 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
     }
   }
 
+  //Note shower energy may not be currently very functional
   for (unsigned int i=0; i<brec->reco.nshw; ++i) {
     if ( ((brec->reco.shw[i].start.x < -71.1 - 25 && brec->reco.shw[i].start.x > -369.33 + 25 ) ||
 	  (brec->reco.shw[i].start.x > 71.1 + 25 && brec->reco.shw[i].start.x < 369.33 - 25 )) &&
@@ -514,6 +517,8 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 
   fFileNumber ++;
   fFirstInFile = true;
+  fFirstBlindInFile = true;
+  fFirstPrescaleInFile = true;
 
 }
 
@@ -1713,12 +1718,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.fno     = fFileNumber;
   if(fFirstInFile)
   {
-    rec.hdr.pot   = fSubRunPOT;
     rec.hdr.nbnbinfo = fBNBInfo.size();
     rec.hdr.bnbinfo = fBNBInfo;
     rec.hdr.nnumiinfo = fNuMIInfo.size();
     rec.hdr.numiinfo = fNuMIInfo;
+    rec.hdr.pot   = fSubRunPOT;
   }
+
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
@@ -1728,9 +1734,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
 
-  // reset
-  fFirstInFile = false;
-  fFirstInSubRun = false;
 
   if(fRecTree){
     // Save the standard-record
@@ -1745,10 +1748,13 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     //Generate random number to decide if event is saved in prescale or blinded file
-    keepprescale = fBlindTRandom->Uniform() < 1/std::stof(fParams.PrescaleFactor());
+    keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
     if(fRecTreeb || fRecTreep) {
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
+	if (fFirstPrescaleInFile) {
+	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
+	  }
       	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
 	fPrescaleEvents += 1;
@@ -1757,10 +1763,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fFlatRecordp->Fill(*precp);
 	  fFlatTreep->Fill();
 	}
+      fFirstPrescaleInFile = false;
       }
       else {
 	StandardRecord* precb = new StandardRecord (*prec);
 	BlindEnergyParameters(precb);
+	if (fFirstBlindInFile) {
+	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
+	  }
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
 	fBlindEvents += 1;
@@ -1768,11 +1778,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
 	  fFlatTreeb->Fill();
+	fFirstBlindInFile = false;
 	}
       }
-    }
+    }  
   }
 
+// reset
+  fFirstInFile = false;
+  fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 
@@ -1786,31 +1800,36 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-  void CAFMaker::AddHistogramsToFile(TFile* outfile, bool isBlindPOT=false, bool isPrescalePOT=false) const
+  void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
 {
+
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
-  //  TH1* hSinglePOT =
-  //    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
 
   if (isBlindPOT) {
-    double scale = 1.0 + 0.3*GetBlindPOTScale();
-    hPOT->Fill(0.5,fTotalPOT*scale*fBlindEvents/fTotalEvents);
-    hEvents->Fill(0.5, fBlindEvents);
+    hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
   }
   else if (isPrescalePOT) {
-    hPOT->Fill(0.5, fTotalPOT*fPrescaleEvents/fTotalEvents);
-    hEvents->Fill(0.5, fPrescaleEvents);
+    hPOT->Fill(0.5,fTotalPOT*(1/fParams.PrescaleFactor()));
   }
   else {
-    hPOT->Fill(.5, fTotalPOT);
-    hEvents->Fill(.5, fTotalEvents);
+    hPOT->Fill(0.5,fTotalPOT);
   }
+  hEvents->Fill(0.5,fTotalEvents);
 
   hPOT->Write();
   hEvents->Write();
+
+  if (fParams.CreateBlindedCAF()) {
+    TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
+    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
+    hBlindEvents->Fill(0.5, fBlindEvents);
+    hPrescaleEvents->Fill(0.5, fPrescaleEvents);
+    hBlindEvents->Write();
+    hPrescaleEvents->Write();
+  }
 }
 
 //......................................................................
@@ -1825,6 +1844,9 @@ void CAFMaker::endJob() {
     return;
   }
 
+  AddHistogramsToFile(fFile);
+  AddHistogramsToFile(fFileb,true,false);
+  AddHistogramsToFile(fFilep,false,true);
 
   if(fFile){
     // Make sure the recTree is in the file before filling other items
@@ -1849,29 +1871,17 @@ void CAFMaker::endJob() {
       fFilep->Write();
     }
 
-    AddHistogramsToFile(fFile);
-    AddHistogramsToFile(fFileb,true,false);
-    AddHistogramsToFile(fFilep,false,true);
-
-    //fFile->Write();
-    //if (fFileb) {
-    //fFileb->Write();
-    //fFilep->Write();
-    //}
   }
 
   if(fFlatFile){
-    fFlatFile->Write();
-    fFlatFileb->Write();
-    fFlatFilep->Write();
-
     AddHistogramsToFile(fFlatFile);
     AddHistogramsToFile(fFlatFileb,true,false);
     AddHistogramsToFile(fFlatFilep,false,true);
 
-    //fFlatFile->Write();
-    //fFlatFileb->Write();
-    //fFlatFilep->Write();
+    fFlatFile->Write();
+    fFlatFileb->Write();
+    fFlatFilep->Write();
+
   }
 
   std::map<std::string, std::string> metamap;
