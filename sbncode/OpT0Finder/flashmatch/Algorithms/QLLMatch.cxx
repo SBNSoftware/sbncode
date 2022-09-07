@@ -23,8 +23,8 @@ namespace flashmatch {
     _record = pset.get<bool>("RecordHistory");
     _normalize = pset.get<bool>("NormalizeHypothesis");
     _mode   = (QLLMode_t)(pset.get<unsigned short>("QLLMode"));
-    _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 0.0);
-    _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 0.0);
+    _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 1.e-6);
+    _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 1.e-6);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
 
     this->set_verbosity((msg::Level_t)(pset.get<unsigned int>("Verbosity", 3)));
@@ -93,8 +93,8 @@ namespace flashmatch {
     auto res2 = PESpectrumMatch(pt_v,flash,false);
     FLASH_INFO() << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
     FLASH_INFO() << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
-    std::cout << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
-    std::cout << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
+    // std::cout << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
+    // std::cout << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
     auto res = (res1.score > res2.score ? res1 : res2);
     /*
     if(res.score < _onepmt_score_threshold) {
@@ -218,7 +218,7 @@ namespace flashmatch {
     else
       res.score = 1. / _qll;
 
-    std::cout << "score: " << res.score << std::endl;
+    // std::cout << "score: " << res.score << std::endl;
     // Compute X-weighting
     /*
     double x0 = _raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity();
@@ -312,6 +312,7 @@ namespace flashmatch {
       throw OpT0FinderException("Cannot compute QLL for unmatched length!");
 
     double O, H, Error;
+    // const double epsilon = 1.e-9;
 
     for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
 
@@ -323,7 +324,7 @@ namespace flashmatch {
       // }
       if( H < 0 ) throw OpT0FinderException("Cannot have hypothesis value < 0!");
 
-      if(O < 0) {
+      if(O < _pe_observation_threshold) {
         if (!_penalty_value_v.empty()) {
           O = _penalty_value_v[pmt_index];
         }
@@ -341,29 +342,20 @@ namespace flashmatch {
       }
 
       if(_mode == kLLHD) {
-        // double val = 0;
-        // if (H == 0 && O == 0){
-        //   nvalid_pmt += 1;
-        // }
-        // // skip if hypo is nonzero and observed is zero (for now)
-        // else if (H != 0 && O == 0)
-        //   continue;
-        // else{
-        //   val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
-        // }
-        // // check that the values make sense 
-        // if (!std::isnan(val) && !std::isinf(val)){
-        //   _current_llhd -= val; 
-        //   nvalid_pmt += 1;
-        //   if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
-        // }
-        // else{
-        //   std::cout << "fail; idx, O, H, val: " << pmt_index << ", " << O << ", " << H << ", " << val << std::endl;        
-        // }
+        // TMath::Poisson(x, mu)
 
+        // NOT FLIPPED 
         double arg = TMath::Poisson(O,H);
-        double val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
-        // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", arg: " << arg << std::endl;
+        double val = O*std::log10(H) - H*std::log10(std::exp(1)) - std::log10(TMath::Gamma(O+1));
+        // stirling's approximation 
+        double val_2 = O*std::log10(H) - H*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*O) - O*std::log10(O) + O*std::log10(std::exp(1)); 
+        
+        // // FLIPPED 
+        // double arg = TMath::Poisson(H,O);
+        // double val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
+        // double val_2 = H*std::log10(O) - O*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*H) - H*std::log10(H) + H*std::log10(std::exp(1)); 
+
+        // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", log10(arg): " << std::log10(arg) << ", val: " << val << ", val2: " << val_2 << std::endl;
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
@@ -374,6 +366,11 @@ namespace flashmatch {
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
         }
+        else if (!std::isnan(val_2) && !std::isinf(val_2)){
+          _current_llhd -= val_2;
+          nvalid_pmt += 1;
+          if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
+        }
         // else
         //   std::cout << "fail; idx, O, H, val: " << pmt_index << ", " << O << ", " << H << ", " << val << std::endl;        
       } else if (_mode == kSimpleLLHD) {
@@ -381,7 +378,6 @@ namespace flashmatch {
         double arg = (H - O * std::log(H));
         _current_llhd += arg;
         if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " ... -LLHD " << arg << std::endl;
-        //nvalid_pmt += 1;
 
       } else if (_mode == kChi2) {
 
@@ -400,7 +396,7 @@ namespace flashmatch {
 
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
-    std::cout << "current_llhd: " << _current_llhd << std::endl;
+    // std::cout << "current_llhd: " << _current_llhd << std::endl;
     if(_converged)
       FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_pmt+1 = " << nvalid_pmt+1<<")"<<std::endl;
 
@@ -434,7 +430,7 @@ namespace flashmatch {
     //std::cout << "Duration QLL = " << duration.count() << "us" << std::endl;
 
     QLLMatch::GetME()->Record(Xval[0]);
-    std::cout << "xval: " << Xval[0] << std::endl;
+    // std::cout << "xval: " << Xval[0] << std::endl;
     QLLMatch::GetME()->OneStep();
 
     return;
@@ -483,8 +479,13 @@ namespace flashmatch {
     _num_steps = 0;
 
     if (!_minuit_ptr) _minuit_ptr = new TMinuit(4);
+     
+    // DEFAULT 0
+    // double reco_x = _vol_xmin + 10;
 
-    double reco_x = _vol_xmin + 10;
+    // // OPTION 5 
+    double reco_x = _vol_xmin + 100;
+
     if (!init_x0) {
       //reco_x = ((_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x)) / 2. + _vol_xmin;
       // Assume this is the right flash... then
@@ -497,7 +498,6 @@ namespace flashmatch {
 
       // DEFAULT 0 
       // if(reco_x < _vol_xmin || (reco_x + _raw_xmax_pt.x - _raw_xmin_pt.x) > _vol_xmax)
-
       // OPTION 2 
       if(reco_x < _vol_xmin || reco_x > _vol_xmax)
       return kINVALID_DOUBLE;
@@ -508,24 +508,28 @@ namespace flashmatch {
     // double xmin = _vol_xmin;
     // double xmax = (_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x) + _vol_xmin;
 
-    // OPTION 1 + OPTION 2 
-    // double xmin = _vol_xmin;
-    // double xmax = _vol_xmax;
+    // // OPTION 1 + OPTION 2 
+    double xmin = _vol_xmin;
+    double xmax = _vol_xmax;
 
-    // OPTION 3 
-    double xmin = _vol_xmin + 10;
-    double xmax = _vol_xmax - 10;
+    // // OPTION 3 
+    // double xmin = _vol_xmin + 10;
+    // double xmax = _vol_xmax - 10;
+
+    // OPTION 4 
+    // double xmin = _vol_xmin + 5;
+    // double xmax = _vol_xmax - 5;
 
     // std::cout << "vol_xmax: " << _vol_xmax << std::endl;
     // std::cout << "vol_xmin: " << _vol_xmin << std::endl;
-    std::cout << "_raw_xmax: "<< _raw_xmax_pt.x << std::endl;
-    std::cout << "_raw_xmin: "<< _raw_xmin_pt.x << std::endl;
+    // std::cout << "_raw_xmax: "<< _raw_xmax_pt.x << std::endl;
+    // std::cout << "_raw_xmin: "<< _raw_xmin_pt.x << std::endl;
 
     FLASH_INFO() << "Running Minuit x: " << xmin << " => " << xmax
 		 << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err << std::endl;
-     std::cout << "Running Minuit x: " << xmin << " => " << xmax
-		 << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err
-     << " ... init_x0: " << init_x0 << std::endl; 
+    //  std::cout << "Running Minuit x: " << xmin << " => " << xmax
+		//  << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err
+    //  << " ... init_x0: " << init_x0 << std::endl; 
     double MinFval;
     int ierrflag, npari, nparx, istat;
     double arglist[4], Fmin, Fedm, Errdef;
