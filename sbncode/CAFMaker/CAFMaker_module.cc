@@ -350,9 +350,8 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
   //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (const caf::SRTrack& trk: brk->reco.trk) {
+  for (caf::SRTrack& trk: brec->reco.trk) {
     const caf::SRVector3D start = trk.start;
-    const caf::SRVector3D end = trk.end;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
@@ -368,16 +367,17 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 
   //Note shower energy may not be currently very functional
-  for (unsigned int i=0; i<brec->reco.nshw; ++i) {
-    if ( ((brec->reco.shw[i].start.x < -71.1 - 25 && brec->reco.shw[i].start.x > -369.33 + 25 ) ||
-	  (brec->reco.shw[i].start.x > 71.1 + 25 && brec->reco.shw[i].start.x < 369.33 - 25 )) &&
-	 (brec->reco.shw[i].start.y > -181.7 + 25 && brec->reco.shw[i].start.y < 134.8 - 25 ) &&
-	 (brec->reco.shw[i].start.z  > -895.95 + 30 && brec->reco.shw[i].start.z < 895.95 - 50)) {
-      if (brec->reco.shw[i].bestplane_energy > 0.6) {
-	brec->reco.shw[i].bestplane_energy = TMath::QuietNaN();
-	brec->reco.shw[i].plane[0].energy = TMath::QuietNaN();
-	brec->reco.shw[i].plane[1].energy = TMath::QuietNaN();
-	brec->reco.shw[i].plane[2].energy = TMath::QuietNaN();
+  for (caf::SRShower& shw: brec->reco.shw) {
+    const caf::SRVector3D start = shw.start;
+    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+      if (shw.bestplane_energy > 0.6) {
+	shw.bestplane_energy = TMath::QuietNaN();
+	shw.plane[0].energy = TMath::QuietNaN();
+	shw.plane[1].energy = TMath::QuietNaN();
+	shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
