@@ -28,12 +28,8 @@ namespace caf
       Comment("Whether to produce an output file in FlatCAF format"), true
     };
 
-    Atom<bool> CreatePrescaledCAF { Name("CreatePrescaledCAF"),
-      Comment("Whether to produce an output file consisting of a fraction of the events"), true
-    };
-
     Atom<bool> CreateBlindedCAF { Name("CreateBlindedCAF"),
-      Comment("Whether to produce an output file consisting of the remainder of the events with critical information obscured"), true
+      Comment("Whether to produce output files with one consisting of a fraction of events and the other consisting of the remainder of the events with critical information obscured"), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),

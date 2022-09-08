@@ -331,7 +331,9 @@ class CAFMaker : public art::EDProducer {
 
   // setup random number generators
   fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  if (fParams.CreateBlindedCAF()) {
+    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  }
 }
 
 //......................................................................
@@ -444,24 +446,28 @@ void CAFMaker::InitVolumes() {
 CAFMaker::~CAFMaker()
 {
   delete fRecTree;
-  delete fRecTreeb;
-  delete fRecTreep;
   delete fFile;
-  delete fFileb;
-  delete fFilep;
 
   delete fFlatRecord;
-  delete fFlatRecordb;
-  delete fFlatRecordp;
   delete fFlatTree;
-  delete fFlatTreeb;
-  delete fFlatTreep;
   delete fFlatFile;
-  delete fFlatFileb;
-  delete fFlatFilep;
+
+  if (fParams.CreateBlindedCAF()) {
+    delete fRecTreeb;
+    delete fRecTreep;
+    delete fFileb;
+    delete fFilep;
+    delete fFlatRecordb;
+    delete fFlatRecordp;
+    delete fFlatTreeb;
+    delete fFlatTreep;
+    delete fFlatFileb;
+    delete fFlatFilep;
+    delete fBlindTRandom;
+  }
 
   delete fFakeRecoTRandom;
-  delete fBlindTRandom;
+
 }
 
 //......................................................................
@@ -635,11 +641,11 @@ void CAFMaker::beginRun(art::Run& run) {
   } // end for label
 
   if(fFile) AddGlobalTreeToFile(fFile, global);
-  if(fFileb) AddGlobalTreeToFile(fFileb, global);
-  if(fFilep) AddGlobalTreeToFile(fFilep, global);
+  if(fParams.CreateBlindedCAF() && fFileb) AddGlobalTreeToFile(fFileb, global);
+  if(fParams.CreateBlindedCAF() && fFilep) AddGlobalTreeToFile(fFilep, global);
   if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
-  if(fFlatFileb) AddGlobalTreeToFile(fFlatFileb, global);
-  if(fFlatFilep) AddGlobalTreeToFile(fFlatFilep, global);
+  if(fParams.CreateBlindedCAF() && fFlatFileb) AddGlobalTreeToFile(fFlatFileb, global);
+  if(fParams.CreateBlindedCAF() && fFlatFilep) AddGlobalTreeToFile(fFlatFilep, global);
 }
 
 //......................................................................
@@ -1748,8 +1754,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     //Generate random number to decide if event is saved in prescale or blinded file
-    const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
-    if(fRecTreeb || fRecTreep) {
+    if (fParams.CreateBlindedCAF()) {
+      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
@@ -1794,7 +1800,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	}
 	fFirstBlindInFile = false;
       }
-    }  
+    }
   }
 
 // reset
@@ -1857,27 +1863,26 @@ void CAFMaker::endJob() {
     return;
   }
 
-  AddHistogramsToFile(fFile);
-  AddHistogramsToFile(fFileb,true,false);
-  AddHistogramsToFile(fFilep,false,true);
+
 
   if(fFile){
-    // Make sure the recTree is in the file before filling other items
-    // for debugging.
+    AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
     fFlatTree->SetDirectory(fFlatFile);
-    if (fFileb){
+    if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
     }
-    if (fFlatFile) {
+    if (fParams.CreateBlindedCAF() && fFlatFileb) {
       fFlatTreeb->SetDirectory(fFlatFileb);
       fFlatTreep->SetDirectory(fFlatFilep);
     }
 
     fFile->cd();
     fFile->Write();
-    if (fFileb) {
+    if (fParams.CreateBlindedCAF()) {
+      AddHistogramsToFile(fFileb,true,false);
+      AddHistogramsToFile(fFilep,false,true);
       fFileb->cd();
       fFileb->Write();
       fFilep->cd();
@@ -1888,13 +1893,14 @@ void CAFMaker::endJob() {
 
   if(fFlatFile){
     AddHistogramsToFile(fFlatFile);
-    AddHistogramsToFile(fFlatFileb,true,false);
-    AddHistogramsToFile(fFlatFilep,false,true);
-
     fFlatFile->Write();
-    fFlatFileb->Write();
-    fFlatFilep->Write();
 
+    if (fParams.CreateBlindedCAF()) {
+      AddHistogramsToFile(fFlatFileb,true,false);
+      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFileb->Write();
+      fFlatFilep->Write();
+    }
   }
 
   std::map<std::string, std::string> metamap;
@@ -1919,11 +1925,11 @@ void CAFMaker::endJob() {
   }
 
   if(fFile) AddMetadataToFile(fFile, metamap);
-  if(fFileb) AddMetadataToFile(fFileb, metamap);
-  if(fFilep) AddMetadataToFile(fFilep, metamap);
+  if(fParams.CreateBlindedCAF() && fFileb) AddMetadataToFile(fFileb, metamap);
+  if(fParams.CreateBlindedCAF() && fFilep) AddMetadataToFile(fFilep, metamap);
   if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
-  if(fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
-  if(fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
+  if(fParams.CreateBlindedCAF() && fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
+  if(fParams.CreateBlindedCAF() && fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
 }
 
 
