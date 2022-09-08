@@ -354,17 +354,19 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
   //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (unsigned int i=0; i<brec->reco.ntrk; ++i) {
-    if ( ((brec->reco.trk[i].start.x < -71.1 - 25 && brec->reco.trk[i].start.x > -369.33 + 25 ) ||
-	  (brec->reco.trk[i].start.x > 71.1 + 25 && brec->reco.trk[i].start.x < 369.33 - 25 )) &&
-	 (brec->reco.trk[i].start.y > -181.7 + 25 && brec->reco.trk[i].start.y < 134.8 - 25 ) &&
-	 (brec->reco.trk[i].start.z  > -895.95 + 30 && brec->reco.trk[i].start.z < 895.95 - 50)) {
+  for (const caf::SRTrack& trk: brk->reco.trk) {
+    const caf::SRVector3D start = trk.start;
+    const caf::SRVector3D end = trk.end;
+    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
-      if (brec->reco.trk[i].mcsP.fwdP_muon > 0.6) {
-	brec->reco.trk[i].mcsP.fwdP_muon = TMath::QuietNaN();    
+      if (trk.mcsP.fwdP_muon > 0.6) {
+	trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
-      if (brec->reco.trk[i].rangeP.p_muon > 0.6) {
-	brec->reco.trk[i].rangeP.p_muon = TMath::QuietNaN();
+      if (trk.rangeP.p_muon > 0.6) {
+	trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
