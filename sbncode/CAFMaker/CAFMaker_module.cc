@@ -1722,7 +1722,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.numiinfo = fNuMIInfo;
     rec.hdr.pot   = fSubRunPOT;
   }
-
+  
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
@@ -1748,12 +1748,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     //Generate random number to decide if event is saved in prescale or blinded file
     keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
     if(fRecTreeb || fRecTreep) {
+      rec.hdr.evt = 0;
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
 	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
-	  }
-      	fRecTreep->SetBranchAddress("rec", &precp);
+	  precp->hdr.first_in_file = true;
+	  precp->hdr.first_in_subrun = true;
+	  precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
+	  precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
+	}
+	precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
+	precp->hdr.evt = evtID;
+	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
 	fPrescaleEvents += 1;
 	if (fFlatTree) {
@@ -1761,14 +1768,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fFlatRecordp->Fill(*precp);
 	  fFlatTreep->Fill();
 	}
-      fFirstPrescaleInFile = false;
+	fFirstPrescaleInFile = false;
       }
       else {
 	StandardRecord* precb = new StandardRecord (*prec);
 	BlindEnergyParameters(precb);
 	if (fFirstBlindInFile) {
 	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
-	  }
+	  precb->hdr.first_in_file = true;
+	  precb->hdr.first_in_subrun = true;
+	  precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
+	  precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
+	}
+	precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
+	precb->hdr.evt = evtID;
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
 	fBlindEvents += 1;
@@ -1776,8 +1789,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
 	  fFlatTreeb->Fill();
-	fFirstBlindInFile = false;
 	}
+	fFirstBlindInFile = false;
       }
     }  
   }
