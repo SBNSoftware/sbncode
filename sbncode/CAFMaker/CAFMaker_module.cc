@@ -1746,8 +1746,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     //Generate random number to decide if event is saved in prescale or blinded file
-    bool keepprescale;
-    keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
+    const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
     if(fRecTreeb || fRecTreep) {
       rec.hdr.evt = 0;
       if (keepprescale) {
