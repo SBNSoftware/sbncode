@@ -1004,7 +1004,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if(isRealData)
   {
     const auto& addltrig = evt.getProduct<sbn::ExtraTriggerInfo>(fParams.TriggerLabel());
-    const auto& trig = evt.getProduct<raw::Trigger>(fParams.TriggerLabel());
+    const auto& trig = evt.getProduct<std::vector<raw::Trigger>>(fParams.TriggerLabel());
     if(trig.size()==1)
     {
       FillTrigger(addltrig, trig, fSRTrigger);
