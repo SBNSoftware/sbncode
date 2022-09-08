@@ -33,7 +33,7 @@ namespace caf
     };
 
     Atom<bool> CreateBlindedCAF { Name("CreateBlindedCAF"),
-      Comment("Whether to produce an output file consisting of the remainder of the events with crtical information "), true
+      Comment("Whether to produce an output file consisting of the remainder of the events with critical information obscured"), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
