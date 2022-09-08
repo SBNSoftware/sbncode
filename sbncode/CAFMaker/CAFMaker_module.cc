@@ -1003,12 +1003,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   fSRTrigger.clear();
   if(isRealData)
   {
-    art::Handle<sbn::ExtraTriggerInfo> addltrig_handle;
-    evt.getByLabel(fParams.TriggerLabel(), addltrig_handle);
-    const sbn::ExtraTriggerInfo& addltrig = *addltrig_handle;
-    art::Handle<std::vector<raw::Trigger> > trig_handle;
-    evt.getByLabel(fParams.TriggerLabel(), trig_handle);
-    const std::vector<raw::Trigger>& trig = *trig_handle;
+    const auto& addltrig = evt.getProduct<sbn::ExtraTriggerInfo>(fParams.TriggerLabel());
+    const auto& trig = evt.getProduct<raw::Trigger>(fParams.TriggerLabel());
     if(trig.size()==1)
     {
       FillTrigger(addltrig, trig, fSRTrigger);
