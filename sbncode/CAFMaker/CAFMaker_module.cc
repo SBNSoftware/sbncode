@@ -1175,7 +1175,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1552,8 +1552,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-			*pi_serv, clock_data, recslc, mctracks, fActiveVolumes,
-			*fFakeRecoTRandom);
+			*pi_serv, clock_data, recslc, true_particles, mctracks, 
+                        fActiveVolumes, *fFakeRecoTRandom);
     }
 
     //#######################################################
