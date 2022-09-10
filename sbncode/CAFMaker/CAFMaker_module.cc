@@ -390,26 +390,28 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 
   // And for slices, check vertex in FV and then check tracks and showers
-  for (int islc=0; islc<brec->nslc; ++islc) {
-    if ( ((brec->slc[islc].vertex.x < -71.1 - 25 && brec->slc[islc].vertex.x > -369.33 + 25 ) ||
-	  (brec->slc[islc].vertex.x > 71.1 + 25 && brec->slc[islc].vertex.x < 369.33 - 25 )) &&
-	 (brec->slc[islc].vertex.y > -181.7 + 25 && brec->slc[islc].vertex.y < 134.8 - 25 ) &&
-	 (brec->slc[islc].vertex.z  > -895.95 + 30 && brec->slc[islc].vertex.z < 895.95 - 50)) {
+  for (caf::SRSlice& slc: brec->slc) {
+    const caf::SRVector3D vtx = slc.vertex;
+    if ( ((vtx.x < -71.1 - 25 && vtx.x > -369.33 + 25 ) ||
+	  (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
+	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
+	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
-      //std::cout << brec->slc[islc].reco.ntrk << ", " brec->slc[islc].reco.trk.size() << std::endl;
-      for (unsigned int itrk=0; itrk<brec->slc[islc].reco.ntrk; ++itrk) {
-	if (brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon > 0.6) {
-	  brec->slc[islc].reco.trk[itrk].mcsP.fwdP_muon = TMath::QuietNaN();    
+      for (caf::SRTrack& trk: slc.reco.trk) {
+	if (trk.mcsP.fwdP_muon > 0.6) {
+	  trk.mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
-	if (brec->slc[islc].reco.trk[itrk].rangeP.p_muon > 0.6) {
-	  brec->slc[islc].reco.trk[itrk].rangeP.p_muon = TMath::QuietNaN();
+	if (trk.rangeP.p_muon > 0.6) {
+	  trk.rangeP.p_muon = TMath::QuietNaN();
 	}
       }
-      for (unsigned int ishw=0; ishw<brec->slc[islc].reco.nshw; ++ishw) {
-	brec->slc[islc].reco.shw[ishw].bestplane_energy = TMath::QuietNaN();
-	brec->slc[islc].reco.shw[ishw].plane[0].energy = TMath::QuietNaN();
-	brec->slc[islc].reco.shw[ishw].plane[1].energy = TMath::QuietNaN();
-	brec->slc[islc].reco.shw[ishw].plane[2].energy = TMath::QuietNaN();
+      for (caf::SRShower& shw: slc.reco.shw) {
+	if (shw.bestplane_energy > 0.6) {
+	  shw.bestplane_energy = TMath::QuietNaN();
+	  shw.plane[0].energy = TMath::QuietNaN();
+	  shw.plane[1].energy = TMath::QuietNaN();
+	  shw.plane[2].energy = TMath::QuietNaN();
+	}
       }
     }
   }
@@ -491,7 +493,8 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   if ((fParams.CreateCAF() && !fFile) ||
-      (fParams.CreateFlatCAF() && !fFlatFile)) {
+      (fParams.CreateFlatCAF() && !fFlatFile) ||
+      (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
@@ -520,7 +523,20 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
       }
     }
-
+    if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
+      const std::string basename = fCafFilename;
+      fCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+      fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+    }
+    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+      const std::string basename = fFlatCafFilename;
+      fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+    }
     InitializeOutfiles();
   }
 
