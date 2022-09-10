@@ -488,7 +488,8 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   if ((fParams.CreateCAF() && !fFile) ||
-      (fParams.CreateFlatCAF() && !fFlatFile)) {
+      (fParams.CreateFlatCAF() && !fFlatFile) ||
+      (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
@@ -517,7 +518,20 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
 	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
       }
     }
-
+    if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
+      const std::string basename = fCafFilename;
+      fCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+      fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+    }
+    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+      const std::string basename = fFlatCafFilename;
+      fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+    }
     InitializeOutfiles();
   }
 
