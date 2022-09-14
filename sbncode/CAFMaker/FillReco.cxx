@@ -479,6 +479,9 @@ namespace caf
         p.dedx = dedx[i];
         p.pitch = pitch[i];
         p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+        p.p.x = xyz[i].x();
+        p.p.y = xyz[i].y();
+        p.p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
