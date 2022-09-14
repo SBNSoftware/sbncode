@@ -55,6 +55,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -97,6 +98,7 @@ private:
     geo::Point_t end;
     geo::Vector_t dir;
     geo::Vector_t enddir;
+    int ID;
   };
 
 
@@ -166,7 +168,7 @@ private:
 
   // tags
   art::InputTag fPFPproducer;
-  art::InputTag fT0Producer;
+  std::vector<art::InputTag> fT0producers;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;

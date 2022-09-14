@@ -10,18 +10,18 @@ art_make(
         larcorealg_GeoAlgo
         # sbncode_OpT0Finder_flashmatch_GeoAlgo
         sbncode_OpT0Finder_flashmatch_Base
-        art::Framework_Core
-        art::Framework_Principal
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_PRINCIPAL}
         ${ART_FRAMEWORK_BASIC}
-        art::Framework_Services_Registry
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-        
-        art::Persistency_Common
-        art::Persistency_Provenance
-        art::Utilities
+        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+        ${ART_PERSISTENCY_COMMON}
+        ${ART_PERSISTENCY_PROVENANCE}
+        ${ART_UTILITIES}
         ${ROOT_BASIC_LIB_LIST}
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib
+        ${FHICLCPP}
+        ${CETLIB}
 )
 
 install_headers()

@@ -47,6 +47,7 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"

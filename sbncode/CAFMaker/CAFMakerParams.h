@@ -20,18 +20,16 @@ namespace caf
     using string   = std::string;
     using InputTag = art::InputTag;
 
-    /* Atom<bool> EnableBlindness */
-    /* { */
-    /*   Name("EnableBlindness"), */
-    /*   Comment("true = hide sensitive info, false = include full record") */
-    /* }; */
-
     Atom<bool> CreateCAF { Name("CreateCAF"),
       Comment("Whether to produce an output file in CAF format"), true
     };
 
     Atom<bool> CreateFlatCAF { Name("CreateFlatCAF"),
-      Comment("Whether to produce an output file in FlatCAF format"), false
+      Comment("Whether to produce an output file in FlatCAF format"), true
+    };
+
+    Atom<bool> CreateBlindedCAF { Name("CreateBlindedCAF"),
+      Comment("Whether to produce output files with one consisting of a fraction of events and the other consisting of the remainder of the events with critical information obscured"), true
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
@@ -42,6 +40,14 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
+    Atom<float> PrescaleFactor { Name("PrescaleFactor"),
+	Comment("Factor by which to prescale unblind events"), 10
+    };
+
+    Atom<int> POTBlindSeed { Name("POTBlindNum"),
+	Comment("Integer used to derive POT scaling factor for blind events"), 655277
+    };
+
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
       Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
       ""
@@ -50,6 +56,10 @@ namespace caf
     Atom<string> DataTier        { Name("DataTier") };
     Atom<string> FileExtension   { Name("FileExtension"), ".caf.root" };
     Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), ".flat.caf.root" };
+    Atom<string> UnblindFileExtension   { Name("UnblindFileExtension"), ".Unblind.DONOTLOOK.dum" };
+    Atom<string> BlindFileExtension { Name("BlindFileExtension"), ".Blind.OKTOLOOK.dum" };
+    Atom<string> PrescaleFileExtension { Name("PrescaleFileExtension"), ".Prescaled.OKTOLOOK.dum" };
+
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
 
     Atom<bool> StrictMode        { Name("StrictMode"),
@@ -77,6 +87,12 @@ namespace caf
       Name("BNBPOTDataLabel"),
       Comment("Label of BNBRetriever module"),
       "bnbinfo"
+    };
+
+    Atom<string> NuMIPOTDataLabel {
+      Name("NuMIPOTDataLabel"),
+      Comment("Label of NuMIRetriever module"),
+      "numiinfo"
     };
 
     Atom<string> G4Label {
@@ -119,6 +135,18 @@ namespace caf
       Name("FlashMatchLabel"),
       Comment("Base label of flash match producer."),
       "fmatch" // same for icarus and sbnd
+    };
+
+    Atom<string> CRUMBSLabel {
+      Name("CRUMBSLabel"),
+      Comment("Base label of CRUMBS ID producer."),
+      "crumbs"
+    };
+
+    Atom<bool> FillHits {
+      Name("FillHits"),
+      Comment("Label deciding if you want to fill SRHits"),
+      false // default is false; set to true if you want SRHits filled
     };
 
     Atom<string> HitLabel {
@@ -222,7 +250,25 @@ namespace caf
       Comment("Label of sbn CRT tracks."),
       "crttrack" // same for icarus and sbnd
     };
-    
+
+    Atom<string> OpFlashLabel {
+      Name("OpFlashLabel"),
+      Comment("Label of PMT flash."),
+      "OpFlash"
+    };
+
+    Atom<long long> CRTSimT0Offset {
+      Name("CRTSimT0Offset"),
+      Comment("start of beam gate/simulation time in the simulated CRT clock"),
+      0,
+    };
+
+    Atom<art::InputTag> TriggerLabel {
+      Name("TriggerLabel"),
+      Comment("Label of trigger."),
+      "daqTrigger"
+    };
+
     Atom<string> FlashTrigLabel {
       Name("FlashTrigLabel"),
       Comment("Label of bool of passing flash trigger."),

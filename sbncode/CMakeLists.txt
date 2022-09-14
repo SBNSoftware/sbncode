@@ -5,6 +5,7 @@ cet_find_library( WDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH )
 
 find_ups_product(sbnanaobj)
 
+add_subdirectory(SinglePhotonAnalysis)
 add_subdirectory(SBNEventWeight)
 add_subdirectory(NuMuSelection)
 add_subdirectory(OpDet)
@@ -24,3 +25,4 @@ add_subdirectory(FluxReader)
 add_subdirectory(EventGenerator)
 add_subdirectory(PID)
 add_subdirectory(GeometryTools)
+add_subdirectory(CosmicID)
