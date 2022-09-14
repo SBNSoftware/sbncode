@@ -357,34 +357,34 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
   //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (caf::SRTrack& trk: brec->reco.trk) {
-    const caf::SRVector3D start = trk.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.trk.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
-      if (trk.mcsP.fwdP_muon > 0.6) {
-	trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
-      if (trk.rangeP.p_muon > 0.6) {
-	trk.rangeP.p_muon = TMath::QuietNaN();
+      if (pfp.trk.rangeP.p_muon > 0.6) {
+	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
 
   //Note shower energy may not be currently very functional
-  for (caf::SRShower& shw: brec->reco.shw) {
-    const caf::SRVector3D start = shw.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.shw.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
-      if (shw.bestplane_energy > 0.6) {
-	shw.bestplane_energy = TMath::QuietNaN();
-	shw.plane[0].energy = TMath::QuietNaN();
-	shw.plane[1].energy = TMath::QuietNaN();
-	shw.plane[2].energy = TMath::QuietNaN();
+      if (pfp.shw.bestplane_energy > 0.6) {
+	pfp.shw.bestplane_energy = TMath::QuietNaN();
+	pfp.shw.plane[0].energy = TMath::QuietNaN();
+	pfp.shw.plane[1].energy = TMath::QuietNaN();
+	pfp.shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -397,20 +397,20 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
 	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
-      for (caf::SRTrack& trk: slc.reco.trk) {
-	if (trk.mcsP.fwdP_muon > 0.6) {
-	  trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
-	if (trk.rangeP.p_muon > 0.6) {
-	  trk.rangeP.p_muon = TMath::QuietNaN();
+	if (pfp.trk.rangeP.p_muon > 0.6) {
+	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
 	}
       }
-      for (caf::SRShower& shw: slc.reco.shw) {
-	if (shw.bestplane_energy > 0.6) {
-	  shw.bestplane_energy = TMath::QuietNaN();
-	  shw.plane[0].energy = TMath::QuietNaN();
-	  shw.plane[1].energy = TMath::QuietNaN();
-	  shw.plane[2].energy = TMath::QuietNaN();
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.shw.bestplane_energy > 0.6) {
+	  pfp.shw.bestplane_energy = TMath::QuietNaN();
+	  pfp.shw.plane[0].energy = TMath::QuietNaN();
+	  pfp.shw.plane[1].energy = TMath::QuietNaN();
+	  pfp.shw.plane[2].energy = TMath::QuietNaN();
 	}
       }
     }
@@ -1708,7 +1708,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
 	
-        SRShower& shw = pfp.shr;
+        SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
