@@ -131,9 +131,9 @@ find_ups_product( sbndaq_artdaq_core )
   cet_find_library( GPHSTRXS     NAMES GPhStrXS     PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GPHSTREG     NAMES GPhStrEG     PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GPHNDCY      NAMES GPhNDcy      PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
-  cet_find_library( GTLGEO       NAMES GTlGeo       PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GTLEVTLIB    NAMES GTlEvtLib    PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GTLFLX       NAMES GTlFlx       PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
+  cet_find_library( GTLGEO       NAMES GTlGeo       PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GRWFWK       NAMES GRwFwk       PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GRWIO        NAMES GRwIO        PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
   cet_find_library( GRWCLC       NAMES GRwClc       PATHS ENV GENIE_LIB NO_DEFAULT_PATH )
@@ -163,6 +163,8 @@ cet_find_library( GSL NAMES gsl PATHS ENV GSL_LIB NO_DEFAULT_PATH )
       ${GPHDEEX}
       ${GPHAMNGXS}
       ${GPHAMNGEG}
+      ${GPHBDMEG}
+      ${GPHBDMXS}
       ${GPHCHMXS}
       ${GPHCOHXS}
       ${GPHCOHEG}
@@ -170,13 +172,19 @@ cet_find_library( GSL NAMES gsl PATHS ENV GSL_LIB NO_DEFAULT_PATH )
       ${GPHDISEG}
       ${GPHDFRCXS}
       ${GPHDFRCEG}
-      ${GPHGLWRESXS}
-      ${GPHGLWRESEG}
+      ${GPHDNUXS}
+      ${GPHDNUEG}
+      ${GPHHADTENS}
+      ${GPHHEDISXS}
+      ${GPHHEDISEG}
+      ${GPHHELPTNXS}
+      ${GPHHELPTNEG}
       ${GPHIBDXS}
       ${GPHIBDEG}
       ${GPHMNUCXS}
       ${GPHMNUCEG}
       ${GPHMEL}
+      ${GPHNNBAROSC}
       ${GPHNUELXS}
       ${GPHNUELEG}
       ${GPHQELXS}
@@ -186,8 +194,9 @@ cet_find_library( GSL NAMES gsl PATHS ENV GSL_LIB NO_DEFAULT_PATH )
       ${GPHSTRXS}
       ${GPHSTREG}
       ${GPHNDCY}
-      ${GTLGEO}
+      ${GTLEVTLIB}
       ${GTLFLX}
+      ${GTLGEO}
       ${GRWFWK}
       ${GRWIO}
       ${GRWCLC}
