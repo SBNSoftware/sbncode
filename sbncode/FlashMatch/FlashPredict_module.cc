@@ -17,15 +17,13 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fOpHitARAProducer(p.get<std::string>("OpHitARAProducer", ""))
     // , fCaloProducer(p.get<std::string>("CaloProducer"))
     // , fTrackProducer(p.get<std::string>("TrackProducer"))
-  , fClockData(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob())
-  , fTickPeriod(fClockData.OpticalClock().TickPeriod()) // us
   , fBeamSpillTimeStart(p.get<double>("BeamSpillTimeStart")) //us
   , fBeamSpillTimeEnd(p.get<double>("BeamSpillTimeEnd"))// us
   , fFlashFindingTimeStart(p.get<double>("FlashFindingTimeStart")) //us
   , fFlashFindingTimeEnd(p.get<double>("FlashFindingTimeEnd"))// us
   , fFlashStart(p.get<double>("FlashStart")) // in us w.r.t. flash time
   , fFlashEnd(p.get<double>("FlashEnd"))  // in us w.r.t flash time
-  , fTimeBins(unsigned(1/fTickPeriod * (fFlashFindingTimeEnd - fFlashFindingTimeStart)))
+  , fTimeBins(timeBins())
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true)) // only attempt to match potential neutrino slices
   , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
@@ -1155,7 +1153,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
 
   std::vector<art::Ptr<simb::MCParticle>> mcParticles;
   if(fStoreMCInfo){
-    lar_pandora::LArPandoraHelper::CollectMCParticles(evt, "largeant",
+    lar_pandora::LArPandoraHelper::CollectMCParticles(evt, "largeant", // TODO: unharcode
                                                       mcParticles);
     // TODO: print particles identities, helpful for developing
   }
@@ -1735,6 +1733,15 @@ std::list<double> FlashPredict::wiresXGl() const
   }
   wiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
   return wiresX_gl;
+}
+
+
+unsigned FlashPredict::timeBins() const
+{
+  // TODO: this needs to be revisted on the fix to incorporate XARAPUCAS
+  auto clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+  double tickPeriod = clockData.OpticalClock().TickPeriod();
+  return unsigned(1./tickPeriod * (fFlashFindingTimeEnd - fFlashFindingTimeStart));
 }
 
 

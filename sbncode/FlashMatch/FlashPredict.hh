@@ -338,6 +338,7 @@ private:
                                      const std::vector<double>& polCoefs,
                                      const double skew_limit) const;
   std::list<double> wiresXGl() const;
+  unsigned timeBins() const;
   double driftDistance() const;
   inline double driftCorrection(const double c_xb, const double f_time) const;
   inline double xGlCorrection(const double c_x_glb, const double c_xb,
@@ -357,8 +358,6 @@ private:
 
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
-  detinfo::DetectorClocksData const fClockData;
-  const double fTickPeriod;
   const double fBeamSpillTimeStart, fBeamSpillTimeEnd;
   const double fFlashFindingTimeStart, fFlashFindingTimeEnd;
   const double fFlashStart, fFlashEnd;
