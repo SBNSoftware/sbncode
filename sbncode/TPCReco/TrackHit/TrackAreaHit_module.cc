@@ -30,6 +30,7 @@
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "lardataobj/AnalysisBase/T0.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"

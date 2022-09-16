@@ -42,4 +42,34 @@ namespace caf
         BNBInfo.push_back(makeSRBNBInfo(info));
       }
   }
+  void FillExposureNuMI(const std::vector<sbn::NuMISpillInfo>& numi_spill_info,
+		    std::vector<caf::SRNuMIInfo>& NuMIInfo,
+		    double& subRunPOT) {
+    for (const sbn::NuMISpillInfo &info: numi_spill_info) {
+      subRunPOT += info.POT();
+
+      NuMIInfo.emplace_back();
+      NuMIInfo.back().HP121 = info.HP121;
+      NuMIInfo.back().VP121 = info.VP121;
+      NuMIInfo.back().HPTGT = info.HPTGT;
+      NuMIInfo.back().VPTGT = info.VPTGT;
+      NuMIInfo.back().HITGT = info.HITGT;
+      NuMIInfo.back().VITGT = info.VITGT;
+      NuMIInfo.back().MTGTDS = info.MTGTDS;
+      NuMIInfo.back().HRNDIR = info.HRNDIR;
+      NuMIInfo.back().NSLINA = info.NSLINA;
+      NuMIInfo.back().NSLINB = info.NSLINB;
+      NuMIInfo.back().NSLINC = info.NSLINC;
+      NuMIInfo.back().NSLIND = info.NSLIND;
+      NuMIInfo.back().TRTGTD = info.TRTGTD;
+      NuMIInfo.back().TR101D = info.TR101D;
+      NuMIInfo.back().TORTGT = info.TORTGT;
+      NuMIInfo.back().TOR101 = info.TOR101;
+      NuMIInfo.back().time = info.time;
+      NuMIInfo.back().spill_time_s = info.spill_time_s;
+      NuMIInfo.back().spill_time_ns = info.spill_time_ns;
+      NuMIInfo.back().event = info.event;
+      NuMIInfo.back().daq_gates = info.daq_gates;
+    }
+  }
 }

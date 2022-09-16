@@ -26,6 +26,7 @@
 #include "lardataobj/RecoBase/Shower.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/Exceptions.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"

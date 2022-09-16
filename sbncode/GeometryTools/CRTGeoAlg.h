@@ -21,6 +21,7 @@
 
 // LArSoft
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/AuxDetGeometry.h"

@@ -4,16 +4,16 @@ art_make(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_BNBFlux
   LIB_LIBRARIES
     sbncode_SBNEventWeight_Base
-    nugen::EventGeneratorBase_GENIE
-    nugen::NuReweight_art
-    nugen::NuReweight
-    nurandom::RandomUtils_NuRandomService_service
-    art::Framework_Principal
-    art::Persistency_Provenance
-    art::Framework_Services_Registry
-    fhiclcpp::fhiclcpp
-    cetlib::cetlib
-    nusimdata::SimulationBase
+    nugen_EventGeneratorBase_GENIE
+    nugen_NuReweight_art
+    nugen_NuReweight
+    nurandom_RandomUtils_NuRandomService_service
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_PERSISTENCY_PROVENANCE}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${FHICLCPP}
+    ${CETLIB}
+    nusimdata_SimulationBase
 )
 
 install_headers()

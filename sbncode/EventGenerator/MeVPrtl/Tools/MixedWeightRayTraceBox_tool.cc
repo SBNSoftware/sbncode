@@ -192,6 +192,13 @@ TLorentzVector MixedWeightRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &f
 }
 
 std::pair<double, double> MixedWeightRayTraceBox::DeltaPhi(TVector3 origin, TRotation &R) {
+  // If the parent hits the detector, then delta-phi is 2Pi 
+  TVector3 pdir = R.Inverse()*TVector3(0, 0, 1);
+  if (fBox.GetIntersections(origin, pdir).size()) {
+    std::cout << "Parent Direction: " << pdir.X() << " " << pdir.Y() << " " << pdir.Z() << " at location: " << origin.X() << " " << origin.Y() << " " << origin.Z() << " hits detector!\n";
+    return {-M_PI, M_PI};
+  }
+
   // Iterate over all corners and compute the limits of Phi
   double phihi = -M_PI;
   double philo = M_PI;

@@ -40,6 +40,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -164,7 +165,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
       if (!passcut) continue;
 
       sbn::StubInfo sinfo;
-      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, geo, sce, clock_data, dprop, sinfo.hits, sinfo.pfp); 
+      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, geo, sce, clock_data, dprop, e, sinfo.hits, sinfo.pfp); 
       sinfo.vhit = vhits[i_vhit];
       sinfo.vhit_hit = vhitHits.at(i_vhit).at(0);
 

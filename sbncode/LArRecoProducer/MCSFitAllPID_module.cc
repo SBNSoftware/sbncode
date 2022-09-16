@@ -44,7 +44,7 @@ public:
 
 private:
 
-  trkf::TrajectoryMCSFitter fMCSCalculator;
+  trkf::sbn::TrajectoryMCSFitter fMCSCalculator;
   art::InputTag fTrackLabel;
   float fMinTrackLength;
 };

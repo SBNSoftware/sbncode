@@ -1,15 +1,15 @@
 art_make_library(
         SOURCE StubBuilder.cxx StubMergeAlgorithms.cxx
         LIBRARIES
-	art::Framework_Core
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Persistency_Provenance
-	canvas::canvas art::Utilities
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Persistency_Provenance
+	canvas art_Utilities
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -19,18 +19,18 @@ art_make_library(
 	lardataalg_DetectorInfo
 )
 simple_plugin(VertexChargeVacuum module
-	art::Framework_Core
-	art::Framework_Principal
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_PRINCIPAL}
 	${ART_FRAMEWORK_SERVICES}
-	art::Framework_Services_Registry
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	art_Persistency_Common
+	art_Utilities canvas
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -42,21 +42,21 @@ simple_plugin(VertexChargeVacuum module
 )
 
 simple_plugin(VertexStubTracker module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Persistency_Provenance
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
+	${ART_FRAMEWORK_CORE}
+	${ART_FRAMEWORK_SERVICES_REGISTRY}
+	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+	${ART_FRAMEWORK_PRINCIPAL}
+	art_Persistency_Common
+	art_Persistency_Provenance
+	art_Utilities canvas
+	${MF_MESSAGELOGGER}
+	${MF_UTILITIES}
+	${FHICLCPP}
+	cetlib cetlib_except
 	${ROOT_EVE_LIB_LIST}
 	${ROOT_X3d}
 	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
+	MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -68,21 +68,21 @@ simple_plugin(VertexStubTracker module
 )
 
 simple_plugin(PlaneStubMerge tool
-        art::Framework_Core
-        art::Framework_Services_Registry
-        art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-        art::Framework_Principal
-        art::Persistency_Common
-	art::Persistency_Provenance
-        art::Utilities canvas::canvas
-        messagefacility::MF_MessageLogger
-        
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib cetlib_except
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Common
+	art_Persistency_Provenance
+        art_Utilities canvas
+        ${MF_MESSAGELOGGER}
+        ${MF_UTILITIES}
+        ${FHICLCPP}
+        cetlib cetlib_except
         ${ROOT_EVE_LIB_LIST}
         ${ROOT_X3d}
         ${ROOT_BASIC_LIB_LIST}
-        messagefacility::MF_MessageLogger
+        MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
@@ -94,20 +94,20 @@ simple_plugin(PlaneStubMerge tool
 )
 
 simple_plugin(TwoPlaneStubMerge tool
-        art::Framework_Core
-        art::Framework_Services_Registry
-        art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-        art::Framework_Principal
-        art::Persistency_Common
-        art::Utilities canvas::canvas
-        messagefacility::MF_MessageLogger
-        
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib cetlib_except
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Common
+        art_Utilities canvas
+        ${MF_MESSAGELOGGER}
+        ${MF_UTILITIES}
+        ${FHICLCPP}
+        cetlib cetlib_except
         ${ROOT_EVE_LIB_LIST}
         ${ROOT_X3d}
         ${ROOT_BASIC_LIB_LIST}
-        messagefacility::MF_MessageLogger
+        MF_MessageLogger
 
 	sbnobj_Common_Reco
 	lardataobj_AnalysisBase
