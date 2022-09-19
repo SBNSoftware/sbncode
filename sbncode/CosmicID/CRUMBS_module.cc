@@ -63,7 +63,10 @@ namespace sbn {
     // Required functions.
     void produce(art::Event& e) override;
 
+    void InitialiseMVAReader(TMVA::Reader *mvaReader, std::string &mvaName, std::string &mvaFileName);
+
     void ResetVars();
+
     void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap,
 		 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
 
@@ -106,7 +109,7 @@ namespace sbn {
       fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel;
 
     // MVA location and type for loading
-    std::string fMVAName, fMVAFileName;
+    std::string fMVAName, fMVAFileName, fCCNuMuMVAName, fCCNuMuMVAFileName, fCCNuEMVAName, fCCNuEMVAFileName, fNCMVAName, fNCMVAFileName;
 
     // Parameter set to pass to the stopping chi2 alg
     fhicl::ParameterSet fChi2FitParams;
@@ -115,7 +118,7 @@ namespace sbn {
     TTree *fSliceTree;
     
     // TMVA reader for calculating CRUMBS score
-    TMVA::Reader *fMVAReader;
+    TMVA::Reader *fMVAReader, *fCCNuMuMVAReader, *fCCNuEMVAReader, *fNCMVAReader;
 
     // Other useful information for training tree
     float tpc_NuScore;
@@ -180,41 +183,22 @@ namespace sbn {
     fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
     fMVAName                      (p.get<std::string>("MVAName")),
     fMVAFileName                  (p.get<std::string>("MVAFileName")),
+    fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
+    fCCNuMuMVAFileName            (p.get<std::string>("CCNuMuMVAFileName")),
+    fCCNuEMVAName                 (p.get<std::string>("CCNuEMVAName")),
+    fCCNuEMVAFileName             (p.get<std::string>("CCNuEMVAFileName")),
+    fNCMVAName                    (p.get<std::string>("NCMVAName")),
+    fNCMVAFileName                (p.get<std::string>("NCMVAFileName")),
     fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
     fTrackStoppingChi2Alg(fChi2FitParams)
     {
       produces<std::vector<CRUMBSResult>>();
       produces<art::Assns<recob::Slice, CRUMBSResult>>();
 
-      fMVAReader = new TMVA::Reader("V");
-
-      fMVAReader->AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
-      fMVAReader->AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
-      fMVAReader->AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
-      fMVAReader->AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
-      fMVAReader->AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
-      fMVAReader->AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
-      fMVAReader->AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
-      fMVAReader->AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
-      fMVAReader->AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
-      fMVAReader->AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
-      fMVAReader->AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
-
-      fMVAReader->AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
-      fMVAReader->AddVariable("pds_FMPE",&pds_FMPE);
-      fMVAReader->AddVariable("pds_FMTime",&pds_FMTime);
-
-      fMVAReader->AddVariable("crt_TrackScore",&crt_TrackScore);
-      fMVAReader->AddVariable("crt_HitScore",&crt_HitScore);
-      fMVAReader->AddVariable("crt_TrackTime",&crt_TrackTime);
-      fMVAReader->AddVariable("crt_HitTime",&crt_HitTime);
-
-      cet::search_path searchPath("FW_SEARCH_PATH");
-      std::string weightFileFullPath;
-      if (!searchPath.find_file(fMVAFileName, weightFileFullPath))
-        throw cet::exception("CRUMBS") << "Unable to find weight file: " << fMVAFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
-
-      fMVAReader->BookMVA(fMVAName, weightFileFullPath);
+      InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
+      InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
+      InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
+      InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
 
       art::ServiceHandle<art::TFileService> tfs;
       if(fTrainingMode)
@@ -254,6 +238,39 @@ namespace sbn {
           fSliceTree->Branch("nutype",&nutype);
         }
     }
+
+  void CRUMBS::InitialiseMVAReader(TMVA::Reader *mvaReader, std::string &mvaName, std::string &mvaFileName)
+  {
+    mvaReader = new TMVA::Reader("V");
+
+    mvaReader->AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
+    mvaReader->AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
+    mvaReader->AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
+    mvaReader->AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
+    mvaReader->AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
+    mvaReader->AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
+    mvaReader->AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
+    mvaReader->AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
+    mvaReader->AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
+    mvaReader->AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
+    mvaReader->AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
+
+    mvaReader->AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
+    mvaReader->AddVariable("pds_FMPE",&pds_FMPE);
+    mvaReader->AddVariable("pds_FMTime",&pds_FMTime);
+
+    mvaReader->AddVariable("crt_TrackScore",&crt_TrackScore);
+    mvaReader->AddVariable("crt_HitScore",&crt_HitScore);
+    mvaReader->AddVariable("crt_TrackTime",&crt_TrackTime);
+    mvaReader->AddVariable("crt_HitTime",&crt_HitTime);
+
+    cet::search_path searchPath("FW_SEARCH_PATH");
+    std::string weightFileFullPath;
+    if (!searchPath.find_file(fMVAFileName, weightFileFullPath))
+      throw cet::exception("CRUMBS") << "Unable to find weight file: " << mvaFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
+
+    mvaReader->BookMVA(mvaName, weightFileFullPath);
+  }
 
   void CRUMBS::ResetVars()
   {
@@ -394,11 +411,18 @@ namespace sbn {
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
       
-        const float score = fMVAReader->EvaluateMVA(fMVAName);
+        const float score       = fMVAReader->EvaluateMVA(fMVAName);
+        const float ccnumuscore = fCCNuMuMVAReader->EvaluateMVA(fCCNuMuMVAName);
+        const float ccnuescore  = fCCNuEMVAReader->EvaluateMVA(fCCNuEMVAName);
+        const float ncscore     = fNCMVAReader->EvaluateMVA(fNCMVAName);
 
-        resultsVec->emplace_back(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax),
-                                 tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), 
-                                 tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
+        const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
+        const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
+
+        resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
+                                 tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
+                                 std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
+                                 tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
                                  crt_TrackTime, crt_HitTime);
         
         util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);

@@ -1,5 +1,7 @@
 BEGIN_PROLOG
 
+crumbs_sbnd_file_location: "CRUMBS/CRUMBS_SBND.weights.xml"
+
 crumbs_sbnd:
 {
   module_type:     "CRUMBS"
@@ -17,8 +19,14 @@ crumbs_sbnd:
   CRTHitMatchModuleLabel:		"crthitt0"
   CalorimetryModuleLabel:		"pandoraCalo"
   
-  MVAName:				"BDT Method"
-  MVAFileName:				"CRUMBS/CRUMBS_SBND.weights.xml"
+  MVAName:                              "StandardBDT"
+  MVAFileName:                          @local::crumbs_sbnd_file_location
+  CCNuMuMVAName:                        "CCNuMuBDT"
+  CCNuMuMVAFileName:                    @local::crumbs_sbnd_file_location
+  CCNuEMVAName:                         "CCNuEBDT"
+  CCNuEMVAFileName:                     @local::crumbs_sbnd_file_location
+  NCMVAName:                            "NCBDT"
+  NCMVAFileName:                        @local::crumbs_sbnd_file_location
     
   Chi2FitParams: {
     TrackLabel: pandoraTrack
