@@ -64,7 +64,8 @@ namespace sbn {
     void produce(art::Event& e) override;
 
     void ResetVars();
-    void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap);
+    void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap,
+		 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
 
     art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, 
                                                 const art::Ptr<recob::Slice> &slice, 
@@ -119,6 +120,7 @@ namespace sbn {
     // Other useful information for training tree
     float tpc_NuScore;
     unsigned eventID, subRunID, runID, slicePDG;
+    int ccnc, nutype;
     std::string matchedType;
     double matchedPurity, matchedCompleteness;
 
@@ -248,6 +250,8 @@ namespace sbn {
           fSliceTree->Branch("matchedType",&matchedType);
           fSliceTree->Branch("matchedPurity",&matchedPurity);
           fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
+          fSliceTree->Branch("ccnc",&ccnc);
+          fSliceTree->Branch("nutype",&nutype);
         }
     }
 
@@ -264,9 +268,11 @@ namespace sbn {
     slicePDG = 999999;
     matchedType = "";
     matchedPurity = -999999.; matchedCompleteness = -999999.;
+    ccnc = 999999; nutype = 999999;
   }
 
-  void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap)
+  void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap, 
+		       std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap)
   {
 
     unsigned nNu(0), nCos(0);
@@ -293,6 +299,9 @@ namespace sbn {
               trackIDToGenMap[particle->TrackId()] = i;
             }
           ++nNu;
+
+	  genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
+	  genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
         }
       }
 
@@ -315,9 +324,12 @@ namespace sbn {
               trackIDToGenMap[particle->TrackId()] = i + nNu;
             }
           ++nCos;
+
+	  genCCNCMap[i + nNu]   = -1;
+	  genNuTypeMap[i + nNu] = -1;
         }
       }
-  
+
     eventID = e.event();
     subRunID = e.subRun();
     runID = e.run();
@@ -327,9 +339,11 @@ namespace sbn {
   {
     std::map<int, int> trackIDToGenMap;
     std::map<int, std::string> genTypeMap;
+    std::map<int, int> genCCNCMap;
+    std::map<int, int> genNuTypeMap;
 
     if(fTrainingMode)
-      this->GetMaps(e, trackIDToGenMap, genTypeMap);
+      this->GetMaps(e, trackIDToGenMap, genTypeMap, genCCNCMap, genNuTypeMap);
 
     auto resultsVec = std::make_unique<std::vector<CRUMBSResult>>();
     auto sliceAssns = std::make_unique<art::Assns<recob::Slice, CRUMBSResult>>();
@@ -399,6 +413,9 @@ namespace sbn {
             slicePDG = primary->PdgCode();
             matchedType = genTypeMap[matchedID];
       
+	    ccnc   = genCCNCMap[matchedID];
+	    nutype = genNuTypeMap[matchedID];
+
             fSliceTree->Fill();
           }
       }
