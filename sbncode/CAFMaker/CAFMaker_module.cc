@@ -1551,6 +1551,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
 
+    // Fill flash match time wrt beam spill
+    if(isRealData) {
+      // If no trigger just ignore this variable
+      if(fSRTrigger.size() > 0) {
+        // fSRTrigger is vector of events, but we should only be looking at
+        // one event at a time. So just use first trigger in the vector.
+        recslc.fmatch.time_beam = recslc.fmatch.time + fSRTrigger[0].trigger_within_gate/1000.0;
+      }
+    } else {
+      // In MC fmatch.time is currently time wrt to beam. 
+      // If this changes this code will need to change.
+      recslc.fmatch.time_beam = recslc.fmatch.time;
+    }
+
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
 
