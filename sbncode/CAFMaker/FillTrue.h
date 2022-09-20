@@ -67,6 +67,7 @@ namespace caf
                          const cheat::ParticleInventoryService &inventory_service,
                          const detinfo::DetectorClocksData &clockData,
                          caf::SRSlice &srslice, 
+                         const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                          const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand);
 
@@ -118,6 +119,7 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths, 
+                    const std::vector<caf::SRTrueParticle> &srparticles, 
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks, 
                     const std::vector<geo::BoxBoundedGeo> &volumes,
                     TRandom &rand,
