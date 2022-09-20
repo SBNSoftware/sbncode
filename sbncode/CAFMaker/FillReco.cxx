@@ -559,6 +559,9 @@ namespace caf
         p.dedx = dedx[i];
         p.pitch = pitch[i];
         p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+        p.p.x = xyz[i].x();
+        p.p.y = xyz[i].y();
+        p.p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
@@ -713,6 +716,31 @@ namespace caf
     }
   }
 
+  void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle& particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty)
+  {
+    srhit.setDefault();
+
+    srhit.peakTime = hit.PeakTime();
+    srhit.RMS = hit.RMS();
+
+    srhit.peakAmplitude = hit.PeakAmplitude();
+    srhit.integral = hit.Integral();
+
+    const geo::WireID wire = hit.WireID();
+    srhit.cryoID = wire.Cryostat;
+    srhit.tpcID = wire.TPC;
+    srhit.planeID = wire.Plane;
+    srhit.wireID = wire.Wire;
+    srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
+    srhit.spacepoint.chisq = spacepoint.Chisq();
+    srhit.spacepoint.pfpID = particle.Self();
+    srhit.spacepoint.ID = spacepoint.ID();
+  }
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,

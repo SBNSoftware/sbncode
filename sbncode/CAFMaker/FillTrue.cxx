@@ -25,6 +25,11 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
                   const std::vector<geo::BoxBoundedGeo> &volumes,
                   TRandom &rand,
                   caf::SRFakeReco &fakereco);
+bool FRFillNueCC(const simb::MCTruth &mctruth,
+                  const std::vector<caf::SRTrueParticle> &srparticle,
+                  const std::vector<geo::BoxBoundedGeo> &volumes,
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco);
 
 // helper function definitions
 
@@ -52,6 +57,23 @@ double PDGMass(int pdg) {
             PDGTable->GetParticle(2112)->Mass() * n) * 1000.0;
   }
 }
+
+double SmearLepton(const caf::SRTrueParticle &lepton, TRandom& rand) {
+  const double smearing = 0.15;
+  // Oscillation tech note says smear ionization deposition, but
+  // code in old samples seems to use true energy.
+  const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
+  const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+  return std::max(smeared_E, 0.0);
+}
+
+double SmearHadron(const caf::SRTrueParticle &hadron, TRandom& rand) {
+  const double smearing = 0.05;
+  const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
+  const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+  return std::max(smeared_E, 0.0);
+}
+
 
 //......................................................................
 void CopyTMatrixDToVector(const TMatrixD& m, std::vector<float>& v)
@@ -219,11 +241,16 @@ namespace caf {
                          const cheat::ParticleInventoryService &inventory_service,
                          const detinfo::DetectorClocksData &clockData,
                          caf::SRSlice &srslice,
+                         const std::vector<caf::SRTrueParticle> &srparticles,
                          const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                          const std::vector<geo::BoxBoundedGeo> &volumes, TRandom &rand)
   {
     caf::SRTruthMatch tmatch = MatchSlice2Truth(hits, neutrinos, srmc, inventory_service, clockData);
-    if(tmatch.index >= 0) FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
+    if(tmatch.index >= 0) {
+      FRFillNumuCC(*neutrinos[tmatch.index], mctracks, volumes, rand, srslice.fake_reco);
+      if(!srslice.fake_reco.filled)
+        FRFillNueCC(*neutrinos[tmatch.index], srparticles, volumes, rand, srslice.fake_reco);
+    }
   }//FillSliceFakeReco
 
 
@@ -607,6 +634,7 @@ namespace caf {
   } //FillTrueG4Particle
 
   void FillFakeReco(const std::vector<art::Ptr<simb::MCTruth>> &mctruths,
+                    const std::vector<caf::SRTrueParticle> &srparticles,
                     const std::vector<art::Ptr<sim::MCTrack>> &mctracks,
                     const std::vector<geo::BoxBoundedGeo> &volumes,
                     TRandom &rand,
@@ -616,11 +644,13 @@ namespace caf {
       bool do_fill = false;
       caf::SRFakeReco this_fakereco;
       do_fill = FRFillNumuCC(*mctruth, mctracks, volumes, rand, this_fakereco);
+      if(!do_fill) do_fill = FRFillNueCC(*mctruth, srparticles, volumes, rand, this_fakereco);
 
       // TODO: others?
       // if (!do_fill) ...
 
       if (do_fill) srfakereco.push_back(this_fakereco);
+      
     }
   }
 
@@ -834,6 +864,185 @@ bool FRFillNumuCC(const simb::MCTruth &mctruth,
   else {
     fakereco.wgt = 1.;
   }
+  fakereco.nhad = fakereco.hadrons.size();
+  fakereco.filled = true;
+
+  return true;
+}
+
+bool FRFillNueCC(const simb::MCTruth &mctruth,
+                  const std::vector<caf::SRTrueParticle> &srparticles,
+                  const std::vector<geo::BoxBoundedGeo> &volumes,
+                  TRandom &rand,
+                  caf::SRFakeReco &fakereco) {
+  // Configuration -- TODO: make configurable?
+
+  // Fiducial Volume
+  float xmin = 10.;
+  float xmax = 10.;
+  float ymin = 10.;
+  float ymax = 10.;
+  float zmin = 10.;
+  float zmax = 100.;
+
+  // energy smearing
+/*  auto smear_lepton = [&rand](const caf::SRTrueParticle &lepton) -> float {
+    const double smearing = 0.15;
+    // Oscillation tech note says smear ionization deposition, but
+    // code in old samples seems to use true energy.
+    const double true_E = lepton.plane[0][2].visE + lepton.plane[1][2].visE;
+    const double smeared_E = rand.Gaus(true_E, smearing * true_E / std::sqrt(true_E));
+    return std::max(smeared_E, 0.0);
+  };
+  auto smear_hadron = [&rand](const caf::SRTrueParticle &hadron) -> float {
+    const double smearing = 0.05;
+    const double true_E = hadron.startE - PDGMass(hadron.pdg) / 1000;
+    const double smeared_E = rand.Gaus(true_E, smearing * true_E);
+    return std::max(smeared_E, 0.0);
+  };
+*/
+  // visible energy threshold
+  const float hadronic_energy_threshold = 0.021; // GeV
+
+  fakereco.filled = false;
+
+  // first check if neutrino exists
+  if (!mctruth.NeutrinoSet()) return false;
+
+  TVector3 nuVtx = mctruth.GetNeutrino().Nu().Position().Vect();
+
+  // then check if fiducial
+  int cryo_index = -1;
+  for (unsigned i = 0; i < volumes.size(); i++) {
+    const geo::BoxBoundedGeo &vol = volumes[i];
+    geo::BoxBoundedGeo FV(vol.MinX() + xmin, vol.MaxX() - xmax, vol.MinY() + ymin, vol.MaxY() - ymax, vol.MinZ() + zmin, vol.MaxZ() - zmax);
+    if (FV.ContainsPosition(nuVtx)) {
+      cryo_index = i;
+      break;
+    }
+  }
+
+  if (cryo_index == -1) return false;
+
+  std::vector<geoalgo::AABox> aa_volumes;
+  const geo::BoxBoundedGeo &v = volumes.at(cryo_index);
+  aa_volumes.emplace_back(v.MinX(), v.MinY(), v.MinZ(), v.MaxX(), v.MaxY(), v.MaxZ());
+
+  //Showers arising from the vertex are identified and the reconstructed energy is found
+  //from smearing the ionisation deposition. If more than one shower with energy above
+  //100 MeV exists, the event is removed. This removes neutral pion events where the
+  //pion decays into two photon showers.
+
+  std::vector<const caf::SRTrueParticle*> lepton_candidates;
+  for(const auto& particle: srparticles) {
+    const int pdg = std::abs(particle.pdg);
+    const float distance_from_vertex = std::hypot(nuVtx.X() - particle.start.x,
+                                                  nuVtx.Y() - particle.start.y,
+                                                  nuVtx.Z() - particle.start.z);
+    if((pdg == 11 || pdg == 22) && distance_from_vertex < 5) {
+      const auto parent = std::find_if(srparticles.begin(), srparticles.end(),
+        [&particle](const caf::SRTrueParticle& parent_candidate) -> bool {
+          return particle.parent == std::abs(parent_candidate.G4ID);
+        });
+      if((parent == srparticles.end()
+           || !(std::abs((*parent).pdg) == 11 || std::abs((*parent).pdg) == 22))
+         && SmearLepton(particle, rand) > 0.1) {
+        lepton_candidates.push_back(&particle);
+      }
+    }
+  }
+  if(lepton_candidates.size() != 1) return false;
+  
+  const caf::SRTrueParticle* lepton = lepton_candidates[0];
+  caf::SRFakeRecoParticle fake_lepton;
+  fake_lepton.pid = 11;
+  fake_lepton.ke = SmearLepton(*lepton, rand) - PDGMass(11) / 1000;
+  // Should these be set for a shower?
+  // fake_lepton.len = ???;
+  // fake_lepton.costh = ???;
+  // fake_lepton.contained = false;
+
+  // Get hadrons
+
+  std::vector<caf::SRFakeRecoParticle> fake_hadrons;
+  float hadronic_E = 0.0;
+  for(const auto& particle: srparticles) {
+    const int pdg = std::abs(particle.pdg);
+    const float ke = SmearHadron(particle, rand);
+    const float distance_from_vertex = std::hypot(nuVtx.X() - particle.start.x,
+                                                  nuVtx.Y() - particle.start.y,
+                                                  nuVtx.Z() - particle.start.z);
+
+    if((pdg == 2212 || pdg == 211 || pdg == 321) && distance_from_vertex < 5
+       && particle.start_process == caf::kG4primary && ke > hadronic_energy_threshold) {
+      caf::SRFakeRecoParticle fake_hadron;
+      fake_hadron.pid = pdg;
+      fake_hadron.len = ContainedLength(TVector3(particle.start), TVector3(particle.end), aa_volumes);
+      fake_hadron.contained = false;
+      for(const geo::BoxBoundedGeo &vol: volumes) {
+        if(vol.ContainsPosition(TVector3(particle.start)) 
+           && vol.ContainsPosition(TVector3(particle.end))) {
+          fake_hadron.contained = true;
+        }
+      }
+      fake_hadron.costh = TVector3(particle.start).CosTheta();
+      fake_hadron.ke = ke;
+      hadronic_E += ke;
+      fake_hadrons.push_back(fake_hadron);
+    }
+  }
+
+  // If there is only one photon candidate in the event, a conversion gap cut is applied.
+  // If the vertex is deemed visible, due to the presence of at least 50 MeV of hadronic
+  // kinetic energy, and the photon starts to shower further than 3 cm from the vertex the
+  // event is removed.
+  
+  if(lepton->pdg == 22 && hadronic_E > 0.05 && (TVector3(lepton->end) - nuVtx).Mag() > 3)
+    return false;
+
+  // Remaining photons undergo a dE/dx cut resulting in a 94% background rejection.
+
+  double weight = 1.0;
+  if(lepton->pdg == 22) weight *= 0.06;
+
+  // If a misidentified photon originates from a resonant numuCC interaction, the muon
+  // lepton is identified. Events where a muon travels greater than 1 m are assumed to be
+  // from numuCC interactions and the event is removed.
+
+  if(std::abs(mctruth.GetNeutrino().Nu().PdgCode()) == 14 && mctruth.GetNeutrino().CCNC() == 0) {
+    const caf::SRTrueParticle* muon = NULL;
+    for(const auto& particle: srparticles) {
+      const int pdg = std::abs(particle.pdg);
+      const float distance_from_vertex = std::hypot(nuVtx.X() - particle.start.x,
+                                                    nuVtx.Y() - particle.start.y,
+                                                    nuVtx.Z() - particle.start.z);
+      if(pdg == 13 && distance_from_vertex < 5 && particle.start_process == caf::kG4primary
+         && (muon == NULL || muon->startE < particle.startE))
+        muon = &particle;
+    }
+    if(muon != NULL && ContainedLength(TVector3(muon->start), TVector3(muon->end), aa_volumes) > 100)
+      return false;
+  }
+
+  // Events where the shower has an energy less than 200 MeV are removed
+
+  if((lepton->plane[0][2].visE + lepton->plane[1][2].visE) < 0.2) return false;
+
+  // total up the energy to get the reco neutrino energy
+  fakereco.nuE = fake_lepton.ke + PDGMass(11) / 1000 + hadronic_E;
+
+  // save the particles
+  fakereco.lepton = fake_lepton;
+  fakereco.hadrons = fake_hadrons;
+
+  // other info
+  fakereco.vtx.x = nuVtx.X();
+  fakereco.vtx.y = nuVtx.Y();
+  fakereco.vtx.z = nuVtx.Z();
+
+  fakereco.wgt = 0.8;
+  fakereco.wgt *= weight;
+
   fakereco.nhad = fakereco.hadrons.size();
   fakereco.filled = true;
 
