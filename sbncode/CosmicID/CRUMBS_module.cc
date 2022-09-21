@@ -63,7 +63,7 @@ namespace sbn {
     // Required functions.
     void produce(art::Event& e) override;
 
-    void InitialiseMVAReader(TMVA::Reader *mvaReader, std::string &mvaName, std::string &mvaFileName);
+    void InitialiseMVAReader(TMVA::Reader &mvaReader, std::string &mvaName, std::string &mvaFileName);
 
     void ResetVars();
 
@@ -118,7 +118,7 @@ namespace sbn {
     TTree *fSliceTree;
     
     // TMVA reader for calculating CRUMBS score
-    TMVA::Reader *fMVAReader, *fCCNuMuMVAReader, *fCCNuEMVAReader, *fNCMVAReader;
+    TMVA::Reader fMVAReader, fCCNuMuMVAReader, fCCNuEMVAReader, fNCMVAReader;
 
     // Other useful information for training tree
     float tpc_NuScore;
@@ -239,37 +239,35 @@ namespace sbn {
         }
     }
 
-  void CRUMBS::InitialiseMVAReader(TMVA::Reader *mvaReader, std::string &mvaName, std::string &mvaFileName)
+  void CRUMBS::InitialiseMVAReader(TMVA::Reader &mvaReader, std::string &mvaName, std::string &mvaFileName)
   {
-    mvaReader = new TMVA::Reader("V");
+    mvaReader.AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
+    mvaReader.AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
+    mvaReader.AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
+    mvaReader.AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
+    mvaReader.AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
+    mvaReader.AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
+    mvaReader.AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
+    mvaReader.AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
+    mvaReader.AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
+    mvaReader.AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
+    mvaReader.AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
 
-    mvaReader->AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
-    mvaReader->AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
-    mvaReader->AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
-    mvaReader->AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
-    mvaReader->AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
-    mvaReader->AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
-    mvaReader->AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
-    mvaReader->AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
-    mvaReader->AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
-    mvaReader->AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
-    mvaReader->AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
+    mvaReader.AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
+    mvaReader.AddVariable("pds_FMPE",&pds_FMPE);
+    mvaReader.AddVariable("pds_FMTime",&pds_FMTime);
 
-    mvaReader->AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
-    mvaReader->AddVariable("pds_FMPE",&pds_FMPE);
-    mvaReader->AddVariable("pds_FMTime",&pds_FMTime);
-
-    mvaReader->AddVariable("crt_TrackScore",&crt_TrackScore);
-    mvaReader->AddVariable("crt_HitScore",&crt_HitScore);
-    mvaReader->AddVariable("crt_TrackTime",&crt_TrackTime);
-    mvaReader->AddVariable("crt_HitTime",&crt_HitTime);
+    mvaReader.AddVariable("crt_TrackScore",&crt_TrackScore);
+    mvaReader.AddVariable("crt_HitScore",&crt_HitScore);
+    mvaReader.AddVariable("crt_TrackTime",&crt_TrackTime);
+    mvaReader.AddVariable("crt_HitTime",&crt_HitTime);
 
     cet::search_path searchPath("FW_SEARCH_PATH");
     std::string weightFileFullPath;
-    if (!searchPath.find_file(fMVAFileName, weightFileFullPath))
+    if (!searchPath.find_file(mvaFileName, weightFileFullPath))
       throw cet::exception("CRUMBS") << "Unable to find weight file: " << mvaFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
 
-    mvaReader->BookMVA(mvaName, weightFileFullPath);
+    mvaReader.BookMVA(mvaName, weightFileFullPath);
   }
 
   void CRUMBS::ResetVars()
@@ -411,10 +409,10 @@ namespace sbn {
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
       
-        const float score       = fMVAReader->EvaluateMVA(fMVAName);
-        const float ccnumuscore = fCCNuMuMVAReader->EvaluateMVA(fCCNuMuMVAName);
-        const float ccnuescore  = fCCNuEMVAReader->EvaluateMVA(fCCNuEMVAName);
-        const float ncscore     = fNCMVAReader->EvaluateMVA(fNCMVAName);
+        const float score       = fMVAReader.EvaluateMVA(fMVAName);
+        const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
+        const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
+        const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
 
         const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
         const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
