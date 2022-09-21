@@ -12,7 +12,7 @@
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
 
-int CRUMBSTMVADriver()
+int CRUMBSTMVADriver_CCNuMu()
 {
   TMVA::Tools::Instance();
 
