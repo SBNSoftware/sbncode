@@ -102,7 +102,7 @@ namespace sbn {
   private:
 
     // Bools to control training
-    bool fTrainingMode, fProcessNeutrinos, fProcessCosmics;
+    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics;
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
@@ -168,6 +168,7 @@ namespace sbn {
   CRUMBS::CRUMBS(fhicl::ParameterSet const& p)
     : EDProducer{p},
     fTrainingMode                 (p.get<bool>("TrainingMode",false)),
+    fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
     fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
     fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
     fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
@@ -192,13 +193,16 @@ namespace sbn {
     fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
     fTrackStoppingChi2Alg(fChi2FitParams)
     {
-      produces<std::vector<CRUMBSResult>>();
-      produces<art::Assns<recob::Slice, CRUMBSResult>>();
+      if(!fTrainingMode || fEvaluateResultInTrainingMode)
+	{
+	  produces<std::vector<CRUMBSResult>>();
+	  produces<art::Assns<recob::Slice, CRUMBSResult>>();
 
-      InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
-      InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
-      InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
-      InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
+	  InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
+	  InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
+	  InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
+	  InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
+	}
 
       art::ServiceHandle<art::TFileService> tfs;
       if(fTrainingMode)
@@ -409,21 +413,24 @@ namespace sbn {
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
       
-        const float score       = fMVAReader.EvaluateMVA(fMVAName);
-        const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
-        const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
-        const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
+	if(!fTrainingMode || fEvaluateResultInTrainingMode)
+	  {
+	    const float score       = fMVAReader.EvaluateMVA(fMVAName);
+	    const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
+	    const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
+	    const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
 
-        const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
-        const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
-
-        resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
-                                 tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
-                                 std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
-                                 tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
-                                 crt_TrackTime, crt_HitTime);
-        
-        util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
+	    const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
+	    const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
+	    
+	    resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
+				     tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
+				     std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
+				     tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
+				     crt_TrackTime, crt_HitTime);
+	    
+	    util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
+	  }
 
         if(fTrainingMode)
           {
@@ -442,8 +449,11 @@ namespace sbn {
           }
       }
 
-    e.put(std::move(resultsVec));
-    e.put(std::move(sliceAssns));
+    if(!fTrainingMode || fEvaluateResultInTrainingMode)
+      {
+	e.put(std::move(resultsVec));
+	e.put(std::move(sliceAssns));
+      }
   }
 
   void CRUMBS::FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &hitT0s)
