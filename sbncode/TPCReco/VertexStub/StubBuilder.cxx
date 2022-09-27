@@ -190,6 +190,28 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel,
   }
 }
 
+double sbn::StubBuilder::Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0) {
+    
+  double ret = dQdx;
+
+  // Normtools configured -- use those
+  if (fNormTools.size()) {
+    for (auto const &nt: fNormTools) {
+      ret = nt->Normalize(ret, e, h, location, direction, t0);
+    }
+  }
+  // Otherwise, fix using configured electron lifetime
+  else {
+    auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+    auto const dprop =
+      art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
+
+    ret = ret * fCaloAlg.LifetimeCorrection(clock_data, dprop, h.PeakTime(), 0.);
+  }
+
+  return ret;
+}
+
 sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
                                   const sbn::VertexHit &vhit,
                                   const recob::Hit &vhit_hit, 
@@ -197,6 +219,7 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
                                   const spacecharge::SpaceCharge *sce,
                                   const detinfo::DetectorClocksData &dclock,
                                   const detinfo::DetectorPropertiesData &dprop,
+                                  const art::Event &e,
                                   std::vector<art::Ptr<recob::Hit>> &stub_hits,
                                   art::Ptr<recob::PFParticle> &stub_pfp) {
     // look up stuff
@@ -230,7 +253,11 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
       sbn::StubHit stubhit; 
 
-      stubhit.charge = fCaloAlg.ElectronsFromADCArea(hit.Integral(), hit.WireID().Plane) * fCaloAlg.LifetimeCorrection(dclock, dprop, hit.PeakTime(), 0.);
+      stubhit.charge = fCaloAlg.ElectronsFromADCArea(Normalize(hit.Integral(), e, hit, 
+                                                              vhit.vtxXYZ /* close enuff to hit */, 
+                                                              geo::Vector_t() /* no direction available */,
+                                                              0. /* TODO: add T0*/),  
+                                   hit.WireID().Plane);
       stubhit.ontrack = (pfp_ind >= 0) ? HitOnTrack(stub_hits[i_hit], trks[pfp_ind], trk_hits[pfp_ind], trk_thms[pfp_ind]) : false;
       stubhit.wire = hit.WireID().Wire;
 

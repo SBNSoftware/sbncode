@@ -559,6 +559,9 @@ namespace caf
         p.dedx = dedx[i];
         p.pitch = pitch[i];
         p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+        p.p.x = xyz[i].x();
+        p.p.y = xyz[i].y();
+        p.p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
@@ -710,9 +713,48 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+
+      // Pfo Characterisation features
+      srpfp.pfochar.setDefault();
+
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
     }
   }
 
+  void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle& particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty)
+  {
+    srhit.setDefault();
+
+    srhit.peakTime = hit.PeakTime();
+    srhit.RMS = hit.RMS();
+
+    srhit.peakAmplitude = hit.PeakAmplitude();
+    srhit.integral = hit.Integral();
+
+    const geo::WireID wire = hit.WireID();
+    srhit.cryoID = wire.Cryostat;
+    srhit.tpcID = wire.TPC;
+    srhit.planeID = wire.Plane;
+    srhit.wireID = wire.Wire;
+    srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
+    srhit.spacepoint.chisq = spacepoint.Chisq();
+    srhit.spacepoint.pfpID = particle.Self();
+    srhit.spacepoint.ID = spacepoint.ID();
+  }
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
