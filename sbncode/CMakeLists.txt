@@ -28,6 +28,6 @@ add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
 
 # Supera
-execute_process(COMMAND sh setup.sh icarus
+execute_process(COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/Supera/setup.sh icarus
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Supera )
 add_subdirectory(Supera)
