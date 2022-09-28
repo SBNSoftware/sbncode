@@ -837,17 +837,14 @@ void CAFMaker::InitializeOutfiles()
       // this compared to the default, and the files are only slightly larger.
       fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+      fFlatTreeb = new TTree("recTree", "recTree");
+      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
+      AddEnvToFile(fFlatFileb);
 
       fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
-
-      fFlatTreeb = new TTree("recTree", "recTree");
       fFlatTreep = new TTree("recTree", "recTree");
-
-      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
       fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
-
-      AddEnvToFile(fFlatFileb);
       AddEnvToFile(fFlatFilep);
     }
 
@@ -1787,7 +1784,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
 	fPrescaleEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreep) {
 	  fFlatRecordp->Clear();
 	  fFlatRecordp->Fill(*precp);
 	  fFlatTreep->Fill();
@@ -1809,7 +1806,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
 	fBlindEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreeb) {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
 	  fFlatTreeb->Fill();
@@ -1898,9 +1895,9 @@ void CAFMaker::endJob() {
     fFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFileb,true,false);
-      AddHistogramsToFile(fFilep,false,true);
       fFileb->cd();
       fFileb->Write();
+      AddHistogramsToFile(fFilep,false,true);
       fFilep->cd();
       fFilep->Write();
     }
@@ -1913,8 +1910,8 @@ void CAFMaker::endJob() {
 
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFlatFileb,true,false);
-      AddHistogramsToFile(fFlatFilep,false,true);
       fFlatFileb->Write();
+      AddHistogramsToFile(fFlatFilep,false,true);
       fFlatFilep->Write();
     }
   }
