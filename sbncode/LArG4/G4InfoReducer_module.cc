@@ -143,7 +143,8 @@ void G4InfoReducer::produce(art::Event& e)
       double new_energy = sed_lite.E() + it->E();
       double new_time = std::min(sed_lite.T(), it->T());
       sedlite_v2.erase(it);
-      sedlite_v2.insert(std::move(sim::SimEnergyDepositLite(new_energy, geo::Point_t(x, y, z), new_time, sed.OrigTrackID())));
+      sim::SimEnergyDepositLite new_sed_lite(new_energy, geo::Point_t(x, y, z), new_time, sed.OrigTrackID());
+      sedlite_v2.insert(new_sed_lite);
     }
     else {
       sedlite_v2.insert(std::move(sed_lite));
