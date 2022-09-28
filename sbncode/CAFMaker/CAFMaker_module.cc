@@ -1770,6 +1770,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (fParams.CreateBlindedCAF()) {
       const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
+      rec.hdr.isblind = true;
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
