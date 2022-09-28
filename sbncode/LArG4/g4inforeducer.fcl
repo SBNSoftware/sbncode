@@ -1,6 +1,6 @@
 BEGIN_PROLOG
 
-icarus_largeant_info_reducer: {
+sbn_largeant_info_reducer: {
 	module_type: "G4InfoReducer"
 	SimEnergyDepositLabel: "largeant:TPCActive"
 	VoxelSizeX: 0.3
