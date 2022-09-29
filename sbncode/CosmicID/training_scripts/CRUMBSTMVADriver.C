@@ -12,12 +12,15 @@
 #include "TMVA/Tools.h"
 #include "TMVA/TMVAGui.h"
 
+void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
+                         const TCut sigCut, const TCut backCut,
+                         const double signalWeight = 1.0, const double backgroundWeight = 1.0);
 int CRUMBSTMVADriver()
 {
   TMVA::Tools::Instance();
 
   std::cout << std::endl;
-  std::cout << "==> Start TMVAClassification" << std::endl;
+  std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
 
   TFile *input(0);
   TString fname = "PATH/TO/YOUR/TREE/FILE/HERE";
@@ -28,20 +31,48 @@ int CRUMBSTMVADriver()
     std::cout << "ERROR: could not open data file" << std::endl;
     exit(1);
   }
-  std::cout << "--- TMVAClassification       : Using input file: " << input->GetName() << std::endl;
+  std::cout << "--- CRUMBS TMVA Training     : Using input file: " << input->GetName() << std::endl;
 
-  TTree *signalTree     = (TTree*)input->Get("crumbs/SliceTree");
-  TTree *background     = (TTree*)input->Get("crumbs/SliceTree");
+  TTree *inputTree     = (TTree*)input->Get("crumbs/SliceTree");
 
-  TString outDirName("CRUMBSDataset");
-  gSystem->Exec("mkdir " + outDirName);
+  if (!input) {
+    std::cout << "ERROR: could not access tree" << std::endl;
+    exit(1);
+  }
+  std::cout << "--- CRUMBS TMVA Training     : Accessed tree: " << inputTree->GetName() << std::endl;
+
+  TCut background      = "!strstr(matchedType,\"Nu\")";
+  TCut inclusiveSignal = "strstr(matchedType,\"Nu\") && !strstr(matchedType,\"DirtNu\") && matchedPurity > 0.8 && matchedCompleteness > 0.8";
+  TCut ccnumuSignal    = inclusiveSignal += "ccnc == 0 && abs(nutype) == 14";
+  TCut ccnueSignal     = inclusiveSignal += "ccnc == 0 && abs(nutype) == 12";
+  TCut ncSignal        = inclusiveSignal += "ccnc == 1";
+
+  TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background);
+  TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background);
+  TrainCRUMBSInstance("CRUMBS_CCNuE", inputTree, ccnueSignal, background);
+  TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background);
+
+  std::cout << std::endl;
+  std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
+
+  return 0;
+}
+
+void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree, 
+                         const TCut sigCut, const TCut backCut,
+                         const double signalWeight, const double backgroundWeight)
+{
+  std::cout << std::endl;
+  std::cout << "--- CRUMBS TMVA Training     : Beginning instance: " << outDirName << std::endl;
+
+  gSystem->Exec("mkdir -v" + outDirName);
   TMVA::DataLoader *dataloader=new TMVA::DataLoader(outDirName);
 
   TString outfileName( outDirName + "/CRUMBSTMVA.root" );
   TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
 
   TMVA::Factory *factory = new TMVA::Factory( "CrumbsTMVAClassification", outputFile,
-					      "!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification" );
+                                              "!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification" );
 
   dataloader->AddVariable("tpc_CRFracHitsInLongestTrack","Fraction of Hits in Longest Track (Cosmic Reco)","",'F');
   dataloader->AddVariable("tpc_CRLongestTrackDeflection","Longest Track Deflection (Cosmic Reco)","",'F');
@@ -64,19 +95,13 @@ int CRUMBSTMVADriver()
   dataloader->AddVariable("crt_TrackTime","CRT Track Match Time","#mu s",'F');
   dataloader->AddVariable("crt_HitTime","CRT Hit Match Time","#mu s",'F');
 
-  Double_t signalWeight     = 1.0;
-  Double_t backgroundWeight = 1.0;
+  dataloader->AddSignalTree    (inputTree, signalWeight);
+  dataloader->AddBackgroundTree(inputTree, backgroundWeight);
 
-  dataloader->AddSignalTree    (signalTree, signalWeight);
-  dataloader->AddBackgroundTree(background, backgroundWeight);
-
-  TCut mycuts = "strstr(matchedType,\"Nu\") && !strstr(matchedType,\"DirtNu\") && matchedPurity > 0.8 && matchedCompleteness > 0.8";
-  TCut mycutb = "!strstr(matchedType,\"Nu\")";
-
-  dataloader->PrepareTrainingAndTestTree( mycuts, mycutb, "SplitMode=random:!V" );
+  dataloader->PrepareTrainingAndTestTree( sigCut, backCut, "SplitMode=random:!V" );
   
   factory->BookMethod( dataloader, TMVA::Types::kBDT, "BDT",
-		       "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
+                       "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=20");
 
   factory->TrainAllMethods();
   
@@ -86,13 +111,12 @@ int CRUMBSTMVADriver()
   
   outputFile->Close();
   
-  std::cout << "==> Wrote root file: " << outputFile->GetName() << std::endl;
-  std::cout << "==> TMVAClassification is done!" << std::endl;
+  std::cout << "--- CRUMBS TMVA Training     : Wrote root file: " << outputFile->GetName() 
+            << std::endl;
+  std::cout << "--- CRUMBS TMVA Training     : Finishing instance: " << outDirName << std::endl;
 
   delete factory;
   delete dataloader;
 
   if (!gROOT->IsBatch()) TMVA::TMVAGui( outfileName );
-
-  return 0;
 }
