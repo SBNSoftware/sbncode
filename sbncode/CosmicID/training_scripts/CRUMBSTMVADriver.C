@@ -35,7 +35,7 @@ int CRUMBSTMVADriver()
 
   TTree *inputTree     = (TTree*)input->Get("crumbs/SliceTree");
 
-  if (!input) {
+  if (!inputTree) {
     std::cout << "ERROR: could not access tree" << std::endl;
     exit(1);
   }
@@ -43,9 +43,9 @@ int CRUMBSTMVADriver()
 
   TCut background      = "!strstr(matchedType,\"Nu\")";
   TCut inclusiveSignal = "strstr(matchedType,\"Nu\") && !strstr(matchedType,\"DirtNu\") && matchedPurity > 0.8 && matchedCompleteness > 0.8";
-  TCut ccnumuSignal    = inclusiveSignal += "ccnc == 0 && abs(nutype) == 14";
-  TCut ccnueSignal     = inclusiveSignal += "ccnc == 0 && abs(nutype) == 12";
-  TCut ncSignal        = inclusiveSignal += "ccnc == 1";
+  TCut ccnumuSignal    = inclusiveSignal + "ccnc == 0 && abs(nutype) == 14";
+  TCut ccnueSignal     = inclusiveSignal + "ccnc == 0 && abs(nutype) == 12";
+  TCut ncSignal        = inclusiveSignal + "ccnc == 1";
 
   TrainCRUMBSInstance("CRUMBS_Inclusive", inputTree, inclusiveSignal, background);
   TrainCRUMBSInstance("CRUMBS_CCNuMu", inputTree, ccnumuSignal, background);
@@ -53,7 +53,7 @@ int CRUMBSTMVADriver()
   TrainCRUMBSInstance("CRUMBS_NC", inputTree, ncSignal, background);
 
   std::cout << std::endl;
-  std::cout << "==> Start CRUMBS TMVA Training" << std::endl;
+  std::cout << "==> Finish CRUMBS TMVA Training" << std::endl;
 
   return 0;
 }
@@ -65,7 +65,7 @@ void TrainCRUMBSInstance(const TString outDirName, TTree *inputTree,
   std::cout << std::endl;
   std::cout << "--- CRUMBS TMVA Training     : Beginning instance: " << outDirName << std::endl;
 
-  gSystem->Exec("mkdir -v" + outDirName);
+  gSystem->Exec("mkdir -v " + outDirName);
   TMVA::DataLoader *dataloader=new TMVA::DataLoader(outDirName);
 
   TString outfileName( outDirName + "/CRUMBSTMVA.root" );
