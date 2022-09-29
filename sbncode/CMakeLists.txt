@@ -29,7 +29,8 @@ add_subdirectory(CosmicID)
 
 # Supera
 if ( NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Supera/.git" )
-  execute_process(COMMAND git submodule update --init --recursive)
+  execute_process(COMMAND git submodule update --init --recursive
+                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 # We need to run Supera/setup.sh first, otherwise it won't have a CMakeLists.txt.
