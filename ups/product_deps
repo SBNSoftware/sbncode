@@ -40,8 +40,8 @@ sbnanaobj           v09_19_04
 sbndaq_artdaq_core  v1_01_00of0
 genie_xsec          v3_00_04a
 sbndata             v01_03
-systematicstools    v01_00_03
-nusystematics       v01_00_03_01
+systematicstools    v01_00_04
+nusystematics       v01_00_15
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
