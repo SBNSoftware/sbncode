@@ -18,6 +18,7 @@
 #include "sbncode/CAFMaker/FillTrue.h"
 #include "sbncode/CAFMaker/FillReco.h"
 #include "sbncode/CAFMaker/FillExposure.h"
+#include "sbncode/CAFMaker/FillTrigger.h"
 #include "sbncode/CAFMaker/Utils.h"
 
 // C/C++ includes
@@ -44,6 +45,7 @@
 #include "TFile.h"
 #include "TH1D.h"
 #include "TTree.h"
+#include "TMath.h"
 #include "TTimeStamp.h"
 #include "TRandomGen.h"
 #include "TObjString.h"
@@ -104,6 +106,7 @@
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
 #include "sbnobj/Common/POTAccounting/NuMISpillInfo.h"
 #include "sbnobj/Common/POTAccounting/EXTCountInfo.h"
+#include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
 
@@ -166,10 +169,17 @@ class CAFMaker : public art::EDProducer {
   CAFMakerParams fParams;
 
   std::string fCafFilename;
+  std::string fCafBlindFilename;
+  std::string fCafPrescaleFilename;
+
   std::string fFlatCafFilename;
+  std::string fFlatCafBlindFilename;
+  std::string fFlatCafPrescaleFilename;
 
   bool fFirstInSubRun;
   bool fFirstInFile;
+  bool fFirstBlindInFile;
+  bool fFirstPrescaleInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
@@ -177,20 +187,35 @@ class CAFMaker : public art::EDProducer {
   double fTotalEXTGateCount;
   double fTotalSinglePOT;
   double fTotalEvents;
+  double fBlindEvents;
+  double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
   std::vector<caf::SREXTInfo> fEXTInfo;
+  std::vector<caf::SRTrigger> fSRTrigger; ///< Store trigger and beam gate information
 
   // int fCycle;
   // int fBatch;
 
   TFile* fFile = 0;
+  TFile* fFileb = 0;
+  TFile* fFilep = 0;
+
   TTree* fRecTree = 0;
+  TTree* fRecTreeb = 0;
+  TTree* fRecTreep = 0;
 
   TFile* fFlatFile = 0;
+  TFile* fFlatFileb = 0;
+  TFile* fFlatFilep = 0;
+
   TTree* fFlatTree = 0;
+  TTree* fFlatTreeb = 0;
+  TTree* fFlatTreep = 0;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
+  flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
+  flat::Flat<caf::StandardRecord>* fFlatRecordp = 0;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
@@ -200,6 +225,9 @@ class CAFMaker : public art::EDProducer {
 
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
+
+  // random number generator for prescaling
+  TRandom *fBlindTRandom;
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -213,9 +241,12 @@ class CAFMaker : public art::EDProducer {
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
   void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
-  void AddHistogramsToFile(TFile* outfile) const;
+  void AddHistogramsToFile(TFile* outfile,bool isBlindPOT, bool isPrescalePOT) const;
 
   void InitializeOutfiles();
+
+  void BlindEnergyParameters(StandardRecord* brec);
+  double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
@@ -305,9 +336,89 @@ class CAFMaker : public art::EDProducer {
   // setup volume definitions
   InitVolumes();
 
-  // setup random number generator
+  // setup random number generators
   fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  if (fParams.CreateBlindedCAF()) {
+    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
+  }
+}
 
+//......................................................................
+  double CAFMaker::GetBlindPOTScale() const {
+   std::string bstring = std::to_string(fParams.POTBlindSeed());
+   int slen = bstring.length();
+   std::string s1 = bstring.substr(0,int(slen/2));
+   std::string s2 = bstring.substr(int(slen/2));
+   double rat = stod(s1)/stod(s2);
+   while (abs(rat)>1){
+     rat = -1 * (abs(rat) - 1);
+   }
+   return 1 + rat*0.3;
+   
+  }
+//......................................................................
+void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
+
+  //simple cuts for trk and shower variables
+  //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
+  for (caf::SRTrack& trk: brec->reco.trk) {
+    const caf::SRVector3D start = trk.start;
+    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+
+      if (trk.mcsP.fwdP_muon > 0.6) {
+	trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      }
+      if (trk.rangeP.p_muon > 0.6) {
+	trk.rangeP.p_muon = TMath::QuietNaN();
+      }
+    }
+  }
+
+  //Note shower energy may not be currently very functional
+  for (caf::SRShower& shw: brec->reco.shw) {
+    const caf::SRVector3D start = shw.start;
+    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
+	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
+	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
+	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
+      if (shw.bestplane_energy > 0.6) {
+	shw.bestplane_energy = TMath::QuietNaN();
+	shw.plane[0].energy = TMath::QuietNaN();
+	shw.plane[1].energy = TMath::QuietNaN();
+	shw.plane[2].energy = TMath::QuietNaN();
+      }
+    }
+  }
+
+  // And for slices, check vertex in FV and then check tracks and showers
+  for (caf::SRSlice& slc: brec->slc) {
+    const caf::SRVector3D vtx = slc.vertex;
+    if ( ((vtx.x < -71.1 - 25 && vtx.x > -369.33 + 25 ) ||
+	  (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
+	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
+	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
+
+      for (caf::SRTrack& trk: slc.reco.trk) {
+	if (trk.mcsP.fwdP_muon > 0.6) {
+	  trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+	}
+	if (trk.rangeP.p_muon > 0.6) {
+	  trk.rangeP.p_muon = TMath::QuietNaN();
+	}
+      }
+      for (caf::SRShower& shw: slc.reco.shw) {
+	if (shw.bestplane_energy > 0.6) {
+	  shw.bestplane_energy = TMath::QuietNaN();
+	  shw.plane[0].energy = TMath::QuietNaN();
+	  shw.plane[1].energy = TMath::QuietNaN();
+	  shw.plane[2].energy = TMath::QuietNaN();
+	}
+      }
+    }
+  }
 }
 
 void CAFMaker::InitVolumes() {
@@ -350,7 +461,22 @@ CAFMaker::~CAFMaker()
   delete fFlatTree;
   delete fFlatFile;
 
+  if (fParams.CreateBlindedCAF()) {
+    delete fRecTreeb;
+    delete fRecTreep;
+    delete fFileb;
+    delete fFilep;
+    delete fFlatRecordb;
+    delete fFlatRecordp;
+    delete fFlatTreeb;
+    delete fFlatTreep;
+    delete fFlatFileb;
+    delete fFlatFilep;
+    delete fBlindTRandom;
+  }
+
   delete fFakeRecoTRandom;
+
 }
 
 //......................................................................
@@ -371,21 +497,57 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
   if ((fParams.CreateCAF() && !fFile) ||
-      (fParams.CreateFlatCAF() && !fFlatFile)) {
+      (fParams.CreateFlatCAF() && !fFlatFile) ||
+      (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
-      fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+      if (fParams.CreateBlindedCAF()){
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
+	fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+	fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+      }
+      else {
+	fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
+      }
     }
     if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
-      fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+      if (fParams.CreateBlindedCAF()){
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
+	fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
+	fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
+	fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+      }
+      else {
+	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
+      }
     }
-
+    if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
+      const std::string basename = fCafFilename;
+      fCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
+      fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+    }
+    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+      const std::string basename = fFlatCafFilename;
+      fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
+      fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
+      fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+    }
     InitializeOutfiles();
   }
 
   fFileNumber ++;
   fFirstInFile = true;
+  fFirstBlindInFile = true;
+  fFirstPrescaleInFile = true;
 
 }
 
@@ -502,7 +664,11 @@ void CAFMaker::beginRun(art::Run& run) {
   } // end for label
 
   if(fFile) AddGlobalTreeToFile(fFile, global);
+  if(fParams.CreateBlindedCAF() && fFileb) AddGlobalTreeToFile(fFileb, global);
+  if(fParams.CreateBlindedCAF() && fFilep) AddGlobalTreeToFile(fFilep, global);
   if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
+  if(fParams.CreateBlindedCAF() && fFlatFileb) AddGlobalTreeToFile(fFlatFileb, global);
+  if(fParams.CreateBlindedCAF() && fFlatFilep) AddGlobalTreeToFile(fFlatFilep, global);
 }
 
 //......................................................................
@@ -637,10 +803,11 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 void CAFMaker::InitializeOutfiles()
 {
   if(fParams.CreateCAF()){
+
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
 
     fFile = new TFile(fCafFilename.c_str(), "RECREATE");
-
+    
     fRecTree = new TTree("recTree", "records");
 
     // Tell the tree it's expecting StandardRecord objects
@@ -648,7 +815,22 @@ void CAFMaker::InitializeOutfiles()
     fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
     AddEnvToFile(fFile);
-  }
+ 
+    if (fParams.CreateBlindedCAF()) {
+      mf::LogInfo("CAFMaker") << "Blinded output filenames are " << fCafBlindFilename << ", and " << fCafPrescaleFilename;
+      fFileb = new TFile(fCafBlindFilename.c_str(), "RECREATE");
+      fRecTreeb = new TTree("recTree", "records");
+      fRecTreeb->Branch("rec", "caf::StandardRecord", &rec);
+
+      fFilep = new TFile(fCafPrescaleFilename.c_str(), "RECREATE");
+      fRecTreep = new TTree("recTree", "records");
+      fRecTreep->Branch("rec", "caf::StandardRecord", &rec);
+
+      AddEnvToFile(fFileb);
+      AddEnvToFile(fFilep);
+    }
+
+  }     
 
   if(fParams.CreateFlatCAF()){
     mf::LogInfo("CAFMaker") << "Output flat filename is " << fFlatCafFilename;
@@ -663,6 +845,29 @@ void CAFMaker::InitializeOutfiles()
     fFlatRecord = new flat::Flat<caf::StandardRecord>(fFlatTree, "rec", "", 0);
 
     AddEnvToFile(fFlatFile);
+
+    if (fParams.CreateBlindedCAF()) {
+
+      mf::LogInfo("CAFMaker") << "Blinded output flat filename are " << fFlatCafBlindFilename << ", and " << fFlatCafPrescaleFilename;
+
+      // LZ4 is the fastest format to decompress. I get 3x faster loading with
+      // this compared to the default, and the files are only slightly larger.
+      fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+
+      fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+
+      fFlatTreeb = new TTree("recTree", "recTree");
+      fFlatTreep = new TTree("recTree", "recTree");
+
+      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
+      fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
+
+      AddEnvToFile(fFlatFileb);
+      AddEnvToFile(fFlatFilep);
+    }
+
   }
 
   fFileNumber = -1;
@@ -672,11 +877,14 @@ void CAFMaker::InitializeOutfiles()
   fEXTGateCount = 0;
   fTotalEXTGateCount = 0;
   fTotalEvents = 0;
+  fBlindEvents = 0;
+  fPrescaleEvents = 0;
   fFirstInFile = false;
   fFirstInSubRun = false;
   // fCycle = -5;
   // fBatch = -5;
 }
+
 
 //......................................................................
 template <class T, class U>
@@ -999,7 +1207,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   std::vector<caf::SRFakeReco> srfakereco;
-  FillFakeReco(mctruths, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
+  FillFakeReco(mctruths, true_particles, mctracks, fActiveVolumes, *fFakeRecoTRandom, srfakereco);
 
   // Fill the MeVPrtl stuff
   for (unsigned i_prtl = 0; i_prtl < mevprtl_truths.size(); i_prtl++) {
@@ -1011,6 +1219,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
   // Fill detector & reco
   //#######################################################
+
+  //Beam gate and Trigger info
+  fSRTrigger.clear();
+  if(isRealData)
+  {
+    const auto& addltrig = evt.getProduct<sbn::ExtraTriggerInfo>(fParams.TriggerLabel());
+    const auto& trig = evt.getProduct<std::vector<raw::Trigger>>(fParams.TriggerLabel());
+    if(trig.size()==1)
+    {
+      FillTrigger(addltrig, trig, fSRTrigger);
+    }
+  }
 
   // try to find the result of the Flash trigger if it was run
   bool pass_flash_trig = false;
@@ -1142,8 +1362,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     }
 
     art::FindManyP<recob::Hit> fmSlcHits =
-      FindManyPStrict<recob::Hit>(sliceList, evt,
-          fParams.PFParticleLabel() + slice_tag_suff);
+      FindManyPStrict<recob::Hit>(sliceList, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
     std::vector<art::Ptr<recob::Hit>> slcHits;
     if (fmSlcHits.isValid()) {
       slcHits = fmSlcHits.at(0);
@@ -1164,6 +1384,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::FindManyP<larpandoraobj::PFParticleMetadata> fmPFPMeta =
       FindManyPStrict<larpandoraobj::PFParticleMetadata>(fmPFPart, evt,
                fParams.PFParticleLabel() + slice_tag_suff);
+
+    art::FindManyP<recob::SpacePoint> fmSpacePoint =
+      FindManyPStrict<recob::SpacePoint>(slcHits, evt, fParams.PFParticleLabel() + slice_tag_suff);
+
+    std::vector<art::Ptr<recob::SpacePoint>> slcSpacePoints;
+    if (fmSpacePoint.isValid()) {
+      for (unsigned i = 0; i < fmSpacePoint.size(); i++) {
+        const std::vector<art::Ptr<recob::SpacePoint>> &thisSpacePoints = fmSpacePoint.at(i);
+        if (thisSpacePoints.size() == 0) {
+          slcSpacePoints.emplace_back(); // nullptr
+        }
+        else if (thisSpacePoints.size() == 1) {
+          slcSpacePoints.push_back(fmSpacePoint.at(i).at(0));
+        }
+        else abort();
+      }
+    }
+
+    art::FindManyP<recob::PFParticle> fmSpacePointPFPs =
+      FindManyPStrict<recob::PFParticle>(slcSpacePoints, evt, fParams.PFParticleLabel() + slice_tag_suff);
 
     art::FindManyP<recob::Shower> fmShower =
       FindManyPStrict<recob::Shower>(fmPFPart, evt, fParams.RecoShowerLabel() + slice_tag_suff);
@@ -1344,8 +1584,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 		     *pi_serv, clock_data, recslc);
 
       FillSliceFakeReco(slcHits, mctruths, srtruthbranch,
-			*pi_serv, clock_data, recslc, mctracks, fActiveVolumes,
-			*fFakeRecoTRandom);
+			*pi_serv, clock_data, recslc, true_particles, mctracks, 
+                        fActiveVolumes, *fFakeRecoTRandom);
     }
 
     //#######################################################
@@ -1374,6 +1614,31 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       recslc.reco.stub.push_back(rec.reco.stub.back());
       recslc.reco.nstub = recslc.reco.stub.size();
     }
+ 
+    if (fParams.FillHits()) {
+      for ( size_t iHit = 0; iHit < slcHits.size(); ++iHit ) {
+        const recob::Hit &thisHit = *slcHits[iHit];
+      
+        std::vector<art::Ptr<recob::PFParticle>> thisParticle;
+        if (fmSpacePointPFPs.isValid()) {
+          thisParticle = fmSpacePointPFPs.at(iHit);
+        }
+        std::vector<art::Ptr<recob::SpacePoint>> thisPoint;
+        if (fmSpacePoint.isValid()) {
+          thisPoint = fmSpacePoint.at(iHit); 
+        }
+        if (!thisParticle.empty() && !thisPoint.empty()) {
+          assert(thisParticle.size() == 1);
+          assert(thisPoint.size() == 1);
+          rec.reco.nhit++;
+          rec.reco.hit.push_back(SRHit());
+
+          FillHitVars(thisHit, producer, *thisPoint[0], *thisParticle[0], rec.reco.hit.back());
+          recslc.reco.hit.push_back(rec.reco.hit.back());
+          recslc.reco.nhit = recslc.reco.hit.size();
+        }
+      }
+    }
 
     //#######################################################
     // Add track/shower reconstructed objects.
@@ -1391,7 +1656,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-
       if (!thisTrack.empty())  { // it's a track!
         assert(thisTrack.size() == 1);
         assert(thisShower.size() == 0);
@@ -1578,39 +1842,93 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.hdr.numiinfo = fNuMIInfo;
     rec.hdr.nextinfo = fEXTInfo.size();
     rec.hdr.extinfo = fEXTInfo;
+    rec.hdr.pot   = fSubRunPOT;
   }
+  
   rec.hdr.ngenevt = n_gen_evt;
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
+  rec.hdr.triggerinfo = fSRTrigger;
+  rec.hdr.ntriggerinfo = fSRTrigger.size();
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
   // rec.hdr.filt = rb::IsFiltered(evt, slices, sliceID);
 
-  // reset
-  fFirstInFile = false;
-  fFirstInSubRun = false;
 
   if(fRecTree){
     // Save the standard-record
     StandardRecord* prec = &rec;
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
+
+    if(fFlatTree){
+      fFlatRecord->Clear();
+      fFlatRecord->Fill(rec);
+      fFlatTree->Fill();
+    }
+
+    //Generate random number to decide if event is saved in prescale or blinded file
+    if (fParams.CreateBlindedCAF()) {
+      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
+      rec.hdr.evt = 0;
+      if (keepprescale) {
+      	StandardRecord* precp = new StandardRecord (*prec);
+	if (fFirstPrescaleInFile) {
+	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
+	  precp->hdr.first_in_file = true;
+	  precp->hdr.first_in_subrun = true;
+	  precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
+	  precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
+	}
+	precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
+	precp->hdr.evt = evtID;
+	fRecTreep->SetBranchAddress("rec", &precp);
+      	fRecTreep->Fill();
+	fPrescaleEvents += 1;
+	if (fFlatTree) {
+	  fFlatRecordp->Clear();
+	  fFlatRecordp->Fill(*precp);
+	  fFlatTreep->Fill();
+	}
+	fFirstPrescaleInFile = false;
+      }
+      else {
+	StandardRecord* precb = new StandardRecord (*prec);
+	BlindEnergyParameters(precb);
+	if (fFirstBlindInFile) {
+	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
+	  precb->hdr.first_in_file = true;
+	  precb->hdr.first_in_subrun = true;
+	  precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
+	  precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
+	}
+	precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
+	precb->hdr.evt = evtID;
+	fRecTreeb->SetBranchAddress("rec", &precb);
+	fRecTreeb->Fill();
+	fBlindEvents += 1;
+	if (fFlatTree) {
+	  fFlatRecordb->Clear();
+	  fFlatRecordb->Fill(*precb);
+	  fFlatTreeb->Fill();
+	}
+	fFirstBlindInFile = false;
+      }
+    }
   }
 
-  if(fFlatTree){
-    fFlatRecord->Clear();
-    fFlatRecord->Fill(rec);
-    fFlatTree->Fill();
-  }
-
+// reset
+  fFirstInFile = false;
+  fFirstInSubRun = false;
   srcol->push_back(rec);
   evt.put(std::move(srcol));
 
   fBNBInfo.clear();
   fNuMIInfo.clear();
   fEXTInfo.clear();
+  fSRTrigger.clear();
   rec.hdr.pot = 0;
 }
 
@@ -1619,20 +1937,36 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-void CAFMaker::AddHistogramsToFile(TFile* outfile) const
+  void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
 {
+
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
-  //  TH1* hSinglePOT =
-  //    new TH1D("TotalSinglePOT", "TotalSinglePOT;; Single POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
 
-  hPOT->Fill(.5, fTotalPOT);
-  hEvents->Fill(.5, fTotalEvents);
+  if (isBlindPOT) {
+    hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
+  }
+  else if (isPrescalePOT) {
+    hPOT->Fill(0.5,fTotalPOT*(1/fParams.PrescaleFactor()));
+  }
+  else {
+    hPOT->Fill(0.5,fTotalPOT);
+  }
+  hEvents->Fill(0.5,fTotalEvents);
 
   hPOT->Write();
   hEvents->Write();
+
+  if (fParams.CreateBlindedCAF()) {
+    TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
+    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
+    hBlindEvents->Fill(0.5, fBlindEvents);
+    hPrescaleEvents->Fill(0.5, fPrescaleEvents);
+    hBlindEvents->Write();
+    hPrescaleEvents->Write();
+  }
 }
 
 //......................................................................
@@ -1648,20 +1982,43 @@ void CAFMaker::endJob() {
   }
 
 
-  if(fFile){
-    // Make sure the recTree is in the file before filling other items
-    // for debugging.
-    fFile->Write();
 
+  if(fFile){
     AddHistogramsToFile(fFile);
+    fRecTree->SetDirectory(fFile);
+    fFlatTree->SetDirectory(fFlatFile);
+    if (fParams.CreateBlindedCAF()) {
+      fRecTreeb->SetDirectory(fFileb);
+      fRecTreep->SetDirectory(fFilep);
+    }
+    if (fParams.CreateBlindedCAF() && fFlatFileb) {
+      fFlatTreeb->SetDirectory(fFlatFileb);
+      fFlatTreep->SetDirectory(fFlatFilep);
+    }
+
+    fFile->cd();
     fFile->Write();
+    if (fParams.CreateBlindedCAF()) {
+      AddHistogramsToFile(fFileb,true,false);
+      AddHistogramsToFile(fFilep,false,true);
+      fFileb->cd();
+      fFileb->Write();
+      fFilep->cd();
+      fFilep->Write();
+    }
+
   }
 
   if(fFlatFile){
-    fFlatFile->Write();
-
     AddHistogramsToFile(fFlatFile);
     fFlatFile->Write();
+
+    if (fParams.CreateBlindedCAF()) {
+      AddHistogramsToFile(fFlatFileb,true,false);
+      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFileb->Write();
+      fFlatFilep->Write();
+    }
   }
 
   std::map<std::string, std::string> metamap;
@@ -1686,7 +2043,11 @@ void CAFMaker::endJob() {
   }
 
   if(fFile) AddMetadataToFile(fFile, metamap);
+  if(fParams.CreateBlindedCAF() && fFileb) AddMetadataToFile(fFileb, metamap);
+  if(fParams.CreateBlindedCAF() && fFilep) AddMetadataToFile(fFilep, metamap);
   if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
+  if(fParams.CreateBlindedCAF() && fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
+  if(fParams.CreateBlindedCAF() && fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
 }
 
 

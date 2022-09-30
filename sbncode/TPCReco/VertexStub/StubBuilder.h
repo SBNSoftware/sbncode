@@ -18,8 +18,11 @@
 #include "larevt/SpaceCharge/SpaceCharge.h"
 #include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
+#include "larreco/Calorimetry/INormalizeCharge.h"
 #include "sbnobj/Common/Reco/VertexHit.h"
 #include "sbnobj/Common/Reco/Stub.h"
+
+#include "art/Utilities/make_tool.h"
 
 #include <map>
 #include <memory>
@@ -41,17 +44,26 @@ public:
             const spacecharge::SpaceCharge *sce,
 	    const detinfo::DetectorClocksData &dclock,
 	    const detinfo::DetectorPropertiesData &dprop,
+            const art::Event &e,
 	    std::vector<art::Ptr<recob::Hit>> &stub_hits,
 	    art::Ptr<recob::PFParticle> &stub_pfp);
 
   StubBuilder(fhicl::ParameterSet const& p, bool PositionsAreSCECorrected): 
     fCaloAlg(p),
-    fPositionsAreSCECorrected(PositionsAreSCECorrected) {}
+    fPositionsAreSCECorrected(PositionsAreSCECorrected),
+    fNormToolConfig(p.get<std::vector<fhicl::ParameterSet>>("NormTools", {}))
+  {
+    for (const fhicl::ParameterSet &p: fNormToolConfig) {
+      fNormTools.push_back(art::make_tool<INormalizeCharge>(p));
+    }
+  }
 
 private:
   // config
   calo::CalorimetryAlg fCaloAlg;
   bool fPositionsAreSCECorrected;
+  std::vector<fhicl::ParameterSet> fNormToolConfig;
+  std::vector<std::unique_ptr<INormalizeCharge>> fNormTools;
 
   // data holders
   std::map<unsigned, std::vector<art::Ptr<recob::Hit>>> fSliceHits;
@@ -61,6 +73,8 @@ private:
   std::map<unsigned, std::vector<std::vector<art::Ptr<recob::Hit>>>> fSliceTrkHits;
   std::map<unsigned, std::vector<std::vector<const recob::TrackHitMeta *>>> fSliceTrkTHMs;
 
+  // Helper Function
+  double Normalize(double dQdx, const art::Event &e, const recob::Hit &h, const geo::Point_t &location, const geo::Vector_t &direction, double t0);
 };
 
 } // end namespace sbn
