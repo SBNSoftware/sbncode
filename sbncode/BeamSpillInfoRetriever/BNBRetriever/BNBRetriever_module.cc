@@ -218,7 +218,7 @@ void sbn::BNBRetriever::produce(art::Event& e)
   TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
   //We only want to process BNB gates or offbeam BNB gates, i.e. type 1 or 3, check this logic, just want to keep things like number of gates and total number of beam spills, etc. 
-  if(triggerInfo.gate_type != 1 || triggerInfo.gate_type == 3) return;
+  if(triggerInfo.gate_type != 1) return;
   // Keep track of the number of beam gates the DAQ thinks 
   //   are in this job
   TotalBeamSpills += triggerInfo.number_of_gates_since_previous_event;
@@ -259,8 +259,6 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
     triggerInfo.gate_type = datastream_info.gate_type;
     if(triggerInfo.gate_type == 1)
       triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-    else if(triggerInfo.gate_type == 3)
-      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBOff();
     else 
     {
       triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesOther();
@@ -269,8 +267,6 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
-    else if(triggerInfo.gate_type == 3)
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBOff()))/(1e9);
     else
     {
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
