@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class: TEMPMODULENAME
+// Class: SystToolsEventWeight
 // Module Type: producer
-// File: TEMPMODULENAME_module.cc
+// File: SystToolsEventWeight_module.cc
 //
 // Generated at Mon Feb 21 09:36:11 2015 by Jaesung Kim (jae.sung.kim.3426@gmail.com)
 //
@@ -36,14 +36,14 @@
 namespace sbn {
   namespace evwgh {
 
-class TEMPMODULENAME : public art::EDProducer {
+class SystToolsEventWeight : public art::EDProducer {
 public:
-  explicit TEMPMODULENAME(fhicl::ParameterSet const& p);
+  explicit SystToolsEventWeight(fhicl::ParameterSet const& p);
 
-  TEMPMODULENAME(TEMPMODULENAME const &) = delete;
-  TEMPMODULENAME(TEMPMODULENAME &&) = delete;
-  TEMPMODULENAME& operator = (TEMPMODULENAME const&) = delete;
-  TEMPMODULENAME& operator = (TEMPMODULENAME&&) = delete;
+  SystToolsEventWeight(SystToolsEventWeight const &) = delete;
+  SystToolsEventWeight(SystToolsEventWeight &&) = delete;
+  SystToolsEventWeight& operator = (SystToolsEventWeight const&) = delete;
+  SystToolsEventWeight& operator = (SystToolsEventWeight&&) = delete;
 
 private:
   void produce(art::Event& e) override;
@@ -61,7 +61,7 @@ private:
 };
 
 
-TEMPMODULENAME::TEMPMODULENAME(fhicl::ParameterSet const& p)
+SystToolsEventWeight::SystToolsEventWeight(fhicl::ParameterSet const& p)
   : EDProducer{p}
 {
 
@@ -71,13 +71,13 @@ TEMPMODULENAME::TEMPMODULENAME(fhicl::ParameterSet const& p)
 
   fhicl::ParameterSet syst_provider_config = p.get<fhicl::ParameterSet>("generated_systematic_provider_configuration");
 
-  MF_LOG_INFO("TEMPMODULENAME") << "Configuring ISystProvider";
+  MF_LOG_INFO("SystToolsEventWeight") << "Configuring ISystProvider";
 
   fSystProviders = systtools::ConfigureISystProvidersFromParameterHeaders(syst_provider_config);
   fParamHeaderMap = systtools::BuildParameterHeaders(fSystProviders);
   fParamHeaderHelper = systtools::ParamHeaderHelper(fParamHeaderMap);
 
-  MF_LOG_INFO("TEMPMODULENAME") << "ISystProvider is configuered" << std::endl;
+  MF_LOG_INFO("SystToolsEventWeight") << "ISystProvider is configuered" << std::endl;
 
   produces<std::vector<sbn::evwgh::EventWeightMap> >();
   produces<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
@@ -86,7 +86,7 @@ TEMPMODULENAME::TEMPMODULENAME(fhicl::ParameterSet const& p)
 }
 
 
-void TEMPMODULENAME::produce(art::Event& e) {
+void SystToolsEventWeight::produce(art::Event& e) {
 
   auto mcwghvec = std::make_unique<std::vector<sbn::evwgh::EventWeightMap> >();
   auto wghassns = std::make_unique<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
@@ -103,8 +103,8 @@ void TEMPMODULENAME::produce(art::Event& e) {
     art::fill_ptr_vector(mclist, mcTruthHandle);
 
     if(fDebugMode){
-      std::cout << "[TEMPMODULENAME::produce] mclist.size() = " << mclist.size() << "\n"
-                << "[TEMPMODULENAME::produce] fSystProviders.size() = " << fSystProviders.size() << std::endl;
+      std::cout << "[SystToolsEventWeight::produce] mclist.size() = " << mclist.size() << "\n"
+                << "[SystToolsEventWeight::produce] fSystProviders.size() = " << fSystProviders.size() << std::endl;
     }
 
     for( auto &sp : fSystProviders ){
@@ -119,7 +119,7 @@ void TEMPMODULENAME::produce(art::Event& e) {
       //==== syst_resp->size() is (Number of MCTruth)
       //==== Each index corresponds to each of MCTruth
       int nMCTruthIndex(0);
-      if(fDebugMode) std::cout << "[TEMPMODULENAME::produce]   syst_resp.size() (= Number of MCTruth) of this SystProvider = " << syst_resp->size() << std::endl;
+      if(fDebugMode) std::cout << "[SystToolsEventWeight::produce]   syst_resp.size() (= Number of MCTruth) of this SystProvider = " << syst_resp->size() << std::endl;
 
       //==== Looping over syst_resp is identical to looping over MCTruth
       for( systtools::EventResponse::iterator itResp = syst_resp->begin(); itResp != syst_resp->end(); ++itResp ){
@@ -128,12 +128,12 @@ void TEMPMODULENAME::produce(art::Event& e) {
         //==== resp.size() corresponds to number of knobs we altered;
         //==== e.g., MaCCQE, MaCCRES, MvCCRE -> resp.size() = 3
         if(fDebugMode){
-          std::cout << "[TEMPMODULENAME::produce]     sp->GetSystMetaData().size() (expected) = " << sp->GetSystMetaData().size() << "\n"
-                    << "[TEMPMODULENAME::produce]     resp.size() of this syst_resp (produced) = " << resp.size() << std::endl;
+          std::cout << "[SystToolsEventWeight::produce]     sp->GetSystMetaData().size() (expected) = " << sp->GetSystMetaData().size() << "\n"
+                    << "[SystToolsEventWeight::produce]     resp.size() of this syst_resp (produced) = " << resp.size() << std::endl;
         }
         if(sp->GetSystMetaData().size()!=resp.size()){
-          std::cerr << "[TEMPMODULENAME::produce]     sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << std::endl;
-          std::cerr << "[TEMPMODULENAME::produce]     We expect to have " << sp->GetSystMetaData().size() << " knobs for this SystProvider, but "
+          std::cerr << "[SystToolsEventWeight::produce]     sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << std::endl;
+          std::cerr << "[SystToolsEventWeight::produce]     We expect to have " << sp->GetSystMetaData().size() << " knobs for this SystProvider, but "
                     << resp.size() << " are produced. "
                     << "Probably this particular event is not relevant to this systematic variation." << std::endl;
           throw std::exception();
@@ -148,14 +148,14 @@ void TEMPMODULENAME::produce(art::Event& e) {
           std::string prettyName = sph.prettyName;
 
           if(fDebugMode){
-            std::cout << "[TEMPMODULENAME::produce]       pid of this resp = " << (*it).pid << "\n"
-                      << "[TEMPMODULENAME::produce]       prettyName of this resp = " << prettyName << "\n"
-                      << "[TEMPMODULENAME::produce]       paramVariations.size() of this resp (expected) = " << sph.paramVariations.size() << "\n"
-                      << "[TEMPMODULENAME::produce]       responses.size() of this resp (produced) = " << (*it).responses.size() << std::endl;
+            std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << (*it).pid << "\n"
+                      << "[SystToolsEventWeight::produce]       prettyName of this resp = " << prettyName << "\n"
+                      << "[SystToolsEventWeight::produce]       paramVariations.size() of this resp (expected) = " << sph.paramVariations.size() << "\n"
+                      << "[SystToolsEventWeight::produce]       responses.size() of this resp (produced) = " << (*it).responses.size() << std::endl;
           }
           if(sph.paramVariations.size()!=(*it).responses.size()){
-            std::cerr << "[TEMPMODULENAME::produce]       prettyName of this resp = " << prettyName << std::endl;
-            std::cerr << "[TEMPMODULENAME::produce]       We expect to have " << sph.paramVariations.size() << " universes, but "
+            std::cerr << "[SystToolsEventWeight::produce]       prettyName of this resp = " << prettyName << std::endl;
+            std::cerr << "[SystToolsEventWeight::produce]       We expect to have " << sph.paramVariations.size() << " universes, but "
                       << (*it).responses.size() << " are produced. "
                       << "Probably this particular event is not relevant to this systematic variation." << std::endl;
             throw std::exception();
@@ -164,7 +164,7 @@ void TEMPMODULENAME::produce(art::Event& e) {
           std::vector<float> wgts;
           for( unsigned int i = 0; i < (*it).responses.size(); ++i ){
 
-            if(fDebugMode) std::cout << "[TEMPMODULENAME::produce]         (*it).responses[i] = " << (*it).responses[i] << std::endl;
+            if(fDebugMode) std::cout << "[SystToolsEventWeight::produce]         (*it).responses[i] = " << (*it).responses[i] << std::endl;
             wgts.push_back( (*it).responses[i] );
 
           } // END loop over universes of this knob
@@ -191,11 +191,11 @@ void TEMPMODULENAME::produce(art::Event& e) {
 }
 
 
-void TEMPMODULENAME::beginRun(art::Run& run) {
+void SystToolsEventWeight::beginRun(art::Run& run) {
 
   auto p = std::make_unique<std::vector<sbn::evwgh::EventWeightParameterSet> >();
   for( auto &sp : fSystProviders ) {
-    MF_LOG_INFO("TEMPMODULENAME") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
+    MF_LOG_INFO("SystToolsEventWeight") << "sp->GetToolType() = " << sp->GetToolType() << "\n"
                                   << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
                                   << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
                                   << "Printing each SystParamHeader of this ISystProviderTool..";
@@ -234,5 +234,5 @@ void TEMPMODULENAME::beginRun(art::Run& run) {
   }  // namespace evwgh
 }  // namespace sbn
 
-DEFINE_ART_MODULE(sbn::evwgh::TEMPMODULENAME)
+DEFINE_ART_MODULE(sbn::evwgh::SystToolsEventWeight)
 
