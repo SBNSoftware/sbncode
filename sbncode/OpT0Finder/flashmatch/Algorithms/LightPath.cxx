@@ -38,6 +38,7 @@ namespace flashmatch {
       q_pt.y = mid_pt[1];
       q_pt.z = mid_pt[2];
       q_pt.q = _light_yield * _dEdxMIP * dist;
+      q_pt.trk = -1;
       FLASH_DEBUG() << "Smaller than gap threshold (" << _gap << ")" << std::endl
 		   << "Traj pt (" << q_pt.x << "," << q_pt.y << "," << q_pt.z << ") q=" << q_pt.q << std::endl;
       Q_cluster.emplace_back(q_pt);

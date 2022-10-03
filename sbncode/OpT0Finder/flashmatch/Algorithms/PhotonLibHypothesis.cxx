@@ -75,10 +75,18 @@ namespace flashmatch {
       /// Get the 3D point in space from where photons should be propagated
       auto const& pt = trk[ipt];
 
-      // Get the number of photons produced in such point
-      double n_original_photons = pt.q;
-
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
+      
+      // **TURN LIFETIME CORRECTION ON**
+      // attempt to correct for attenuation (only for constant charge-current calculation!)
+      // double drift_time = abs(200.0 - abs(pt.x))/(0.16); // in us, drift velocity = 0.16 cm/us 
+      // double atten_correction = std::exp(drift_time/10e3); // electron lifetime = 10e3 us, or 10 ms 
+      // **TURN LIFETIME CORRECTION OFF**: 
+      double atten_correction = 1; 
+
+      // Get the number of photons produced in such point
+      double n_original_photons = atten_correction*pt.q;
+      // end attempt 
 
       std::vector<double> direct_visibilities;
       _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
