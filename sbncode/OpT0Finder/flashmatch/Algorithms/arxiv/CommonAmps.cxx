@@ -86,6 +86,7 @@ namespace flashmatch {
 	_tpc_qcluster[i].y = pt_v[i].y;
 	_tpc_qcluster[i].z = pt_v[i].z;
 	_tpc_qcluster[i].q = pt_v[i].q;
+  _tpc_qcluster[i].trk = pt_v[i].trk;
       }
             
       FillEstimate(_tpc_qcluster,_vis_array);

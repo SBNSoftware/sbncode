@@ -1316,7 +1316,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
           const double hitQ = hit->Integral();
           if(hitQ < fMinHitQ) continue;
           spacepointQ += hitQ;
-          hitsClusters.emplace_back(pos[0], pos[1], pos[2], hitQ);
+          hitsClusters.emplace_back(pos[0], pos[1], pos[2], hitQ, -1);
           const auto itpc = wId.TPC;
           tpcWithHits.insert(itpc);
         } // for hits associated to spacepoint
