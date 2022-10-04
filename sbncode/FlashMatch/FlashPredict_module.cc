@@ -28,8 +28,6 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fCorrectDriftDistance(p.get<bool>("CorrectDriftDistance", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
-  , fUseUncoatedPMT(p.get<bool>("UseUncoatedPMT", false))
-  , fUseOppVolMetric(p.get<bool>("UseOppVolMetric", false))
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
   , fStoreMCInfo(p.get<bool>("StoreMCInfo", false))
     // , fUseCalo(p.get<bool>("UseCalo", false))
@@ -95,35 +93,28 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   }
 
   if(fSBND && !fICARUS) {
-    if(fUseOppVolMetric) {
+    if(fCryostat != 0) {
       throw cet::exception("FlashPredict")
-        << "UseOppVolMetric: " << std::boolalpha << fUseOppVolMetric << "\n"
-        << "Not supported on SBND. Stopping.";
+        << "SBND has only one cryostat. \n"
+        << "Check Detector and Cryostat parameter." << std::endl;
     }
   }
   else if(fICARUS && !fSBND) {
-    if(fUseUncoatedPMT || fUseARAPUCAS) {
+    if(fUseARAPUCAS) {
       throw cet::exception("FlashPredict")
-        << "UseUncoatedPMT:   " << std::boolalpha << fUseUncoatedPMT << ",\n"
         << "UseARAPUCAS:      " << std::boolalpha << fUseARAPUCAS << "\n"
         << "Not supported on ICARUS. Stopping.\n";
+    }
+    if(fCryostat > 1) {
+      throw cet::exception("FlashPredict")
+        << "ICARUS has only two cryostats. \n"
+        << "Check Detector and Cryostat parameter." << std::endl;
     }
   }
   else {
     throw cet::exception("FlashPredict")
       << "Detector: " << fDetector
       << ", not supported. Stopping.\n";
-  }
-
-  if (fSBND && fCryostat != 0) {
-    throw cet::exception("FlashPredict")
-      << "SBND has only one cryostat. \n"
-      << "Check Detector and Cryostat parameter." << std::endl;
-  }
-  else if (fICARUS && fCryostat > 1) {
-    throw cet::exception("FlashPredict")
-      << "ICARUS has only two cryostats. \n"
-      << "Check Detector and Cryostat parameter." << std::endl;
   }
 
   if (((fOpHitTime != "RiseTime" && fOpHitTime != "PeakTime" &&
@@ -792,7 +783,6 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     if(fSBND){// because VIS light
       auto op_type = fPDMapAlgPtr->pdType(opChannel);
       if(op_type == "pmt_uncoated") {
-        if(!fUseUncoatedPMT) continue;
         is_pmt_vis = true, is_ara_vis = false;
       }
       else if(op_type == "xarapuca_vis" || op_type == "arapuca_vis") {
@@ -817,11 +807,10 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     oph2Z->Fill(opDetXYZ.Z(), ophPE2);
 
     if(fICARUS){
-      if(fUseOppVolMetric &&
-         std::abs(peSumMax_wallX-opDetXYZ.X()) > 5.) sum_unPE += ophPE;
+      if(std::abs(peSumMax_wallX-opDetXYZ.X()) > 5.) sum_unPE += ophPE;
     }
     else {// fSBND
-      if(fUseUncoatedPMT && is_pmt_vis) {
+      if(is_pmt_vis) {
         sum_unPE += ophPE;
       }
       else if(fUseARAPUCAS && is_ara_vis) {
@@ -940,32 +929,30 @@ FlashPredict::Score FlashPredict::computeScore(
                                              mf::LogDebug("FlashPredict"));
   score.total += score.rr;
   tcount++;
-  if(fUseUncoatedPMT || fUseOppVolMetric) {
-    score.ratio = scoreTerm(flash.ratio, fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
-    if(fICARUS && !std::isnan(flash.h_x)){
-      // TODO HACK to penalise matches with flash and charge on opposite volumes
-      double charge_x_gl = (fCorrectDriftDistance) ?
-        xGlCorrection(charge.x_gl, charge.x, flash.time) : charge.x_gl;
-      double x_gl_diff = std::abs(flash.x_gl-charge_x_gl);
-      double x_diff = std::abs(flash.h_x-charge_x);
-      double cathode_tolerance = 30.;
-      if(x_gl_diff > x_diff + cathode_tolerance) { // ok if close to the cathode
-        double penalization = scoreTerm((flash.pe-flash.unpe)/flash.pe,
-                                        fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
-        score.ratio += penalization;
-        mf::LogWarning("FlashPredict")
-          << "HACK: Penalizing match with flash and charge in opposite volumes."
-          << "\nflash.x_gl: " << flash.x_gl << " charge.x_gl: " << charge.x_gl
-          << "\nX distance between them: " << x_gl_diff
-          << "\nscore.ratio: " << score.ratio
-          << "\nscore penalization: " << penalization;
-      }
+  score.ratio = scoreTerm(flash.ratio, fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
+  if(fICARUS && !std::isnan(flash.h_x)){
+    // TODO HACK to penalise matches with flash and charge on opposite volumes
+    double charge_x_gl = (fCorrectDriftDistance) ?
+      xGlCorrection(charge.x_gl, charge.x, flash.time) : charge.x_gl;
+    double x_gl_diff = std::abs(flash.x_gl-charge_x_gl);
+    double x_diff = std::abs(flash.h_x-charge_x);
+    double cathode_tolerance = 30.;
+    if(x_gl_diff > x_diff + cathode_tolerance) { // ok if close to the cathode
+      double penalization = scoreTerm((flash.pe-flash.unpe)/flash.pe,
+                                      fRM.RatioMeans[xbin], fRM.RatioSpreads[xbin]);
+      score.ratio += penalization;
+      mf::LogWarning("FlashPredict")
+        << "HACK: Penalizing match with flash and charge in opposite volumes."
+        << "\nflash.x_gl: " << flash.x_gl << " charge.x_gl: " << charge.x_gl
+        << "\nX distance between them: " << x_gl_diff
+        << "\nscore.ratio: " << score.ratio
+        << "\nscore penalization: " << penalization;
     }
-    if(score.ratio > fTermThreshold) printMetrics("RATIO", charge, flash, score.ratio,
-                                                  mf::LogDebug("FlashPredict"));
-    score.total += score.ratio;
-    tcount++;
   }
+  if(score.ratio > fTermThreshold) printMetrics("RATIO", charge, flash, score.ratio,
+                                                mf::LogDebug("FlashPredict"));
+  score.total += score.ratio;
+  tcount++;
   score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
   if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
                                                 mf::LogDebug("FlashPredict"));
@@ -1028,9 +1015,6 @@ std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
       rr_hypoXWgt = 1./(half_interval*half_interval);
     }
   }
-
-  if(!fUseUncoatedPMT && !fUseOppVolMetric)
-    return {rr_hypoX, rr_hypoXWgt, rr_hypoX, 0.};
 
   std::vector<double> ratioXs;
   double ratio_hypoX, ratio_hypoXWgt;
@@ -1486,8 +1470,6 @@ bool FlashPredict::createOpHitsTimeHist(
 {
   for(const auto& oph : opHits) {
     auto ch = oph.OpChannel();
-    if(!fUseUncoatedPMT &&
-       fPDMapAlgPtr->isPDType(ch, "pmt_uncoated")) continue;
     opHitsTimeHist->Fill(opHitTime(oph), oph.PE());
     if(sbndPDinTPC(ch) == kRght){
       opHitsRght.emplace_back(oph);

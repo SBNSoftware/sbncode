@@ -516,9 +516,7 @@ def generator(nuslice_tree, rootfile, pset):
         score += abs((e.new_flash_y-e.charge_y) - dy_means[isl])/dy_spreads[isl]
         score += abs((e.new_flash_z-e.charge_z) - dz_means[isl])/dz_spreads[isl]
         score += abs(e.flash_rr-rr_means[isl])/rr_spreads[isl]
-        if (detector == "sbnd" and pset.UseUncoatedPMT) or \
-           (detector == "icarus" and pset.UseOppVolMetric) :
-            score += abs(e.flash_ratio-ratio_means[isl])/ratio_spreads[isl]
+        score += abs(e.flash_ratio-ratio_means[isl])/ratio_spreads[isl]
         # score += abs((e.flash_slope - e.charge_slope) - slope_means[isl])/slope_spreads[isl] # TODO: if useful add it to the total score
         score += abs(e.petoq-petoq_means[isl])/petoq_spreads[isl]
 

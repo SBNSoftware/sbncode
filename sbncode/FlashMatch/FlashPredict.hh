@@ -366,7 +366,7 @@ private:
   const bool fOnlyCollectionWires;
   const bool fForceConcurrence;
   const bool fCorrectDriftDistance;
-  const bool fUseUncoatedPMT, fUseOppVolMetric;//, fUseCalo;
+  // const bool fUseCalo; TODO: Use calorimetry
   const bool fUseARAPUCAS;
   const bool fStoreMCInfo;
   const ReferenceMetrics fRM;
