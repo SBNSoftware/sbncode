@@ -49,6 +49,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fMaxFlashes(p.get<unsigned>("MaxFlashes", 1))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
+  , fFlashPEFraction(p.get<double>("FlashPEFraction", 0.8))
   , fDetector(detectorName(fGeometry->DetectorName()))
   , fSBND((fDetector == "SBND") ? true : false )
   , fICARUS((fDetector == "ICARUS") ? true : false )
@@ -336,7 +337,10 @@ void FlashPredict::produce(art::Event& evt)
 
     ChargeMetrics charge = computeChargeMetrics(chargeDigest);
     if(!charge.metric_ok){
-      mf::LogWarning("FlashPredict") << "Clusters with No Charge. Skipping...";
+      mf::LogWarning("FlashPredict")
+        << "Clusters with No Charge.\n"
+        << "the charge computed in the digest: " <<  chargeDigestPair.first
+        << "\nSkipping...";
       bk.no_charge++;
       mf::LogDebug("FlashPredict") << "Creating sFM and PFP-sFM association";
       sFM_v->emplace_back(sFM(kNoScr, kNoScrTime, Charge(kNoScrQ),
@@ -838,7 +842,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.y_kurt = ophY->GetKurtosis();
     flash.z_kurt = ophZ->GetKurtosis();
     // Flash widths
-    flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, 0.8); // TODO: unharcode
+    flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, fFlashPEFraction);
     // TODO: low values of flash.xw <0.5 are indicative of good
     // mcT0-flash_time matching, so akin to matching to prompt light
     // Note that around the middle of the detector (~(+-100, 0, 250)
@@ -923,17 +927,17 @@ FlashPredict::Score FlashPredict::computeScore(
 
   score.y = scoreTerm(flash.y, charge.y, fRM.dYMeans[xbin], fRM.dYSpreads[xbin]);
   if(score.y > fTermThreshold) printMetrics("Y", charge, flash, score.y,
-                                            mf::LogWarning("FlashPredict"));
+                                            mf::LogDebug("FlashPredict"));
   score.total += score.y;
   tcount++;
   score.z = scoreTerm(flash.z, charge.z, fRM.dZMeans[xbin], fRM.dZSpreads[xbin]);
   if(score.z > fTermThreshold) printMetrics("Z", charge, flash, score.z,
-                                            mf::LogWarning("FlashPredict"));
+                                            mf::LogDebug("FlashPredict"));
   score.total += score.z;
   tcount++;
   score.rr = scoreTerm(flash.rr, fRM.RRMeans[xbin], fRM.RRSpreads[xbin]);
   if(score.rr > fTermThreshold) printMetrics("RR", charge, flash, score.rr,
-                                             mf::LogWarning("FlashPredict"));
+                                             mf::LogDebug("FlashPredict"));
   score.total += score.rr;
   tcount++;
   if(fUseUncoatedPMT || fUseOppVolMetric) {
@@ -958,20 +962,20 @@ FlashPredict::Score FlashPredict::computeScore(
       }
     }
     if(score.ratio > fTermThreshold) printMetrics("RATIO", charge, flash, score.ratio,
-                                                  mf::LogWarning("FlashPredict"));
+                                                  mf::LogDebug("FlashPredict"));
     score.total += score.ratio;
     tcount++;
   }
   score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
   if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
-                                                mf::LogWarning("FlashPredict"));
+                                                mf::LogDebug("FlashPredict"));
   // TODO: if useful add it to the total score
   // score.total += score.slope;
   // tcount++;
- // TODO: if useful add it to the total score
+  // TODO: if useful add it to the total score
   score.petoq = scoreTerm(std::log(flash.pe)/std::log(charge.q), fRM.PEToQMeans[xbin], fRM.PEToQSpreads[xbin]);
   if(score.petoq > fTermThreshold) printMetrics("LIGHT/CHARGE", charge, flash, score.petoq,
-                                                mf::LogWarning("FlashPredict"));
+                                                mf::LogDebug("FlashPredict"));
   score.total += score.petoq;
   tcount++;
   mf::LogDebug("FlashPredict")

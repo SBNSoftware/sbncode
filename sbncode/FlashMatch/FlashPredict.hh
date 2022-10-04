@@ -92,8 +92,8 @@ public:
       std::unique_ptr<TF1> f;
     };
     TH2D* RRH2; TH2D* RatioH2;
-    std::array<Fits, 3> RRFits;
-    std::array<Fits, 3> RatioFits;
+    std::array<Fits, 3> RRFits; // LEGACY
+    std::array<Fits, 3> RatioFits; // LEGACY
   };
 
   struct ChargeDigest {
@@ -376,7 +376,7 @@ private:
   const std::string fOpHitTime;
   const bool fUseOpHitRiseTime, fUseOpHitPeakTime, fUseOpHitStartTime;
   const unsigned fMaxFlashes;
-  const double fMinOpHPE, fMinFlashPE;
+  const double fMinOpHPE, fMinFlashPE, fFlashPEFraction;
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS
   const bool fSBND, fICARUS;
