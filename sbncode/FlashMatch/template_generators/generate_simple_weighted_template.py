@@ -31,7 +31,7 @@ from array import array
 
 from ROOT import TStyle, TCanvas, TColor, TGraph, TGraphErrors
 from ROOT import TH1D, TH2D, TProfile, TFile, TF1
-from ROOT import gROOT
+from ROOT import gROOT, TList, TTree
 import ROOT
 
 try:
@@ -719,13 +719,22 @@ def main():
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
         detector = "sbnd"
         dir = rootfile.Get(file_updated+":/fmatch")
+        nuslice_tree = dir.Get("nuslicetree")
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
-        # TODO: add option to use cryo 0 and cryo 1
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
         detector = "icarus"
-        dir = rootfile.Get(file_updated+":/fmatchCryo0")
-    nuslice_tree = dir.Get("nuslicetree")
+        # by default merge the trees from both Cryos
+        dir0 = rootfile.Get(file_updated+":/fmatchCryo0")
+        nuslice_tree0 = dir0.Get("nuslicetree")
+        dir1 = rootfile.Get(file_updated+":/fmatchCryo1")
+        nuslice_tree1 = dir1.Get("nuslicetree")
+        treelist = TList()
+        treelist.Add(nuslice_tree0)
+        treelist.Add(nuslice_tree1)
+        nuslice_tree = TTree.MergeTrees(treelist);
+        nuslice_tree.SetName("nuslice_tree");
+        # nuslice_tree.Write();
 
     drift_distance = pset.DriftDistance
     x_bins = pset.XBins
