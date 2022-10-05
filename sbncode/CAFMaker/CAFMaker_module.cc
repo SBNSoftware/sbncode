@@ -530,7 +530,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
       fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
       fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
     }
-    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+    if (fParams.CreateBlindedCAF() && fParams.CreateFlatCAF() && fFlatCafBlindFilename.empty()) {
       const std::string basename = fFlatCafFilename;
       fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
       fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
