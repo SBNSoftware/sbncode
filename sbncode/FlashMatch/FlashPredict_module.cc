@@ -1441,7 +1441,7 @@ inline
 double FlashPredict::scoreTerm(const double m,
                                const double mean, const double spread) const
 {
-  return std::abs(m - mean) / spread;
+  return scoreTerm(m, 0., mean, spread);
 }
 
 
@@ -1461,7 +1461,7 @@ double FlashPredict::scoreTerm3D(
   else if (zb > prof3->GetZaxis()->GetNbins()) zb = prof3->GetZaxis()->GetNbins();
   double mean = prof3->GetBinContent(xb, yb, zb);
   double spread = prof3->GetBinError(xb, yb, zb);
-  return std::abs((m - n) - mean) / spread;
+  return scoreTerm(m, n, mean, spread);
 }
 
 
