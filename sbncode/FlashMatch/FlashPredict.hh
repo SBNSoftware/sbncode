@@ -388,7 +388,7 @@ private:
   const double fMinHitQ, fMinSpacePointQ, fMinParticleQ, fMinSliceQ;
   const std::string fOpHitTime;
   const bool fUseOpHitRiseTime, fUseOpHitPeakTime, fUseOpHitStartTime;
-  const unsigned fMaxFlashes;
+  const unsigned fMinInTimeFlashes, fMaxFlashes;
   const double fMinOpHPE, fMinFlashPE, fFlashPEFraction;
   const art::ServiceHandle<geo::Geometry> fGeometry;
   const std::string fDetector; // SBND or ICARUS

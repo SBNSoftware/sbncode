@@ -44,7 +44,8 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fUseOpHitRiseTime("RiseTime" == fOpHitTime)
   , fUseOpHitPeakTime("PeakTime" == fOpHitTime)
   , fUseOpHitStartTime("StartTime" == fOpHitTime)
-  , fMaxFlashes(p.get<unsigned>("MaxFlashes", 1))
+  , fMinInTimeFlashes(p.get<unsigned>("MinInTimeFlashes", 1))
+  , fMaxFlashes(p.get<unsigned>("MaxFlashes", fMinInTimeFlashes))
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
   , fFlashPEFraction(p.get<double>("FlashPEFraction", 0.8))
@@ -78,6 +79,12 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
 
   // TODO: check that
   // fBeamSpillTime(Start/End) and fFlashFindingTime(Start/End) are sane
+
+  if(fMinInTimeFlashes > fMaxFlashes){
+    throw cet::exception("FlashPredict")
+      << "Minimum number of flashes fMinInTimeFlashes: " << fMinInTimeFlashes << ",\n"
+      << "has to be at least equal to the maximum number of flashes fMaxFlashes: " << fMaxFlashes;
+  }
 
   // TODO: check that all params are sane
   if(fFlashStart > 0. || fFlashEnd < 0.){
@@ -1651,7 +1658,7 @@ bool FlashPredict::findSimpleFlashes(
   OpHitIt opH_beg = opHits.begin();
   for(unsigned flashId=0; flashId<fMaxFlashes; ++flashId){
     double maxpeak_time = std::numeric_limits<double>::min();
-    if (flashId == 0 || flashId == 1) { // First flashes have to be within the beam spill
+    if (flashId < fMinInTimeFlashes) { // First flashes have to be within the beam spill
       int beam_start_bin = opHitsTimeHist->FindBin(fBeamSpillTimeStart);
       int beam_end_bin = opHitsTimeHist->FindBin(fBeamSpillTimeEnd);
       opHitsTimeHist->GetXaxis()->SetRange(beam_start_bin, beam_end_bin);

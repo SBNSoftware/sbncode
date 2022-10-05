@@ -196,6 +196,7 @@ detector = "experiment"
 drift_distance = 0.
 xbins = 0
 xbin_width = 0.
+tolerable_time_diff = 0.3
 
 # # Print help
 # def help():
@@ -262,11 +263,11 @@ def x_estimate_and_rms(metric_value, metric_h2):
     return (-10., drift_distance); # no estimate
 
 
-def quality_checks(e):
+def quality_checks(e, beam_spill_time_end):
     if e.slices != 1: return False
     if e.is_nu != 1: return False
-    if e.mcT0 < 0. or 1.6 < e.mcT0 : return False # TODO: unhardcode
-    if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > 0.3 : False # TODO: unhardcode
+    if e.mcT0 < 0. or beam_spill_time_end < e.mcT0 : return False
+    if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > tolerable_time_diff : False
     if e.charge_x < 0. or e.charge_x > drift_distance: return False
     return True
 
@@ -284,7 +285,7 @@ def polynomial_correction(skew, hypo_x, pol_coeffs, skew_high_limit=10.):
 
 
 def parameters_correction_fitter(nuslice_tree, var, profile_bins,
-                                 x_low, x_up,
+                                 x_low, x_up, fit_func, beam_spill_time_end,
                                  skew_high_limit=10., skew_low_limit=0.05):
     fit_prof = TProfile(f"fit_prof_{var}", "", profile_bins,
                         x_low, x_up)
@@ -313,8 +314,8 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
     draw_filters = (f"abs({var}_skew)>{skew_low_limit} && "
                     f"abs({var}_skew)<{skew_high_limit} && "
                     f"is_nu==1 && slices==1 && "
-                    f"0.<=mcT0 && mcT0<=1.6 && " # TODO: unhardcode
-                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 && " # TODO: unhardcode
+                    f"0.<=mcT0 && mcT0<={beam_spill_time_end} && "
+                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= {tolerable_time_diff} && "
                     f"charge_x >= {x_low} && charge_x <= {x_up} && new_hypo_x >= 0. &&"
                     f"{filter_tolerable}"
                     )
@@ -324,7 +325,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
           "\noptions: ", draw_option)
     can = TCanvas("can")
     nuslice_tree.Draw(draw_expression, draw_filters, draw_option)
-    fit_result = fit_prof.Fit("pol2", "S") # TODO: unhardcode
+    fit_result = fit_prof.Fit(fit_func, "S")
     fit_prof.Write()
     # fit_result.Print("V")
     can.Print(f"{var}_correction_fit.pdf")
@@ -351,6 +352,7 @@ def generator(nuslice_tree, rootfile, pset):
         if pset.Cryostat == 1:
             x_gl_low = 380
             x_gl_up = 50
+    beam_spill_time_end = pset.BeamSpillTimeEnd - pset.BeamSpillTimeStart
 
     md = {
         'dy':    metrics_stuff('dy', pset),
@@ -392,7 +394,7 @@ def generator(nuslice_tree, rootfile, pset):
 
     # fill rr_h2 and ratio_h2 first
     for e in nuslice_tree:
-        if not quality_checks(e): continue
+        if not quality_checks(e, beam_spill_time_end): continue
         qX = e.charge_x
         md['rr'].h2.Fill(qX, e.flash_rr)
         md['rr'].prof.Fill(qX, e.flash_rr)
@@ -437,12 +439,16 @@ def generator(nuslice_tree, rootfile, pset):
     # coefficients
     y_pol_coeffs = parameters_correction_fitter(nuslice_tree, "y", pset.XBins,
                                                 0., pset.DriftDistance,
+                                                pset.fit_func_y,
+                                                beam_spill_time_end,
                                                 pset.SkewLimitY)
     y_pol_coeffs_vec = ROOT.std.vector['double']()
     for yp in y_pol_coeffs: y_pol_coeffs_vec.push_back(yp)
 
     z_pol_coeffs = parameters_correction_fitter(nuslice_tree, "z", pset.XBins,
                                                 0., pset.DriftDistance,
+                                                pset.fit_func_z,
+                                                beam_spill_time_end,
                                                 pset.SkewLimitZ)
     z_pol_coeffs_vec = ROOT.std.vector['double']()
     for zp in z_pol_coeffs: z_pol_coeffs_vec.push_back(zp)
@@ -469,7 +475,7 @@ def generator(nuslice_tree, rootfile, pset):
 
     # Use the new corrected terms to fill the rest of H2s and Profs
     for e in nuslice_tree:
-        if not quality_checks(e): continue
+        if not quality_checks(e, beam_spill_time_end): continue
         qX = e.charge_x
         md['dy'].h2.Fill(qX, e.new_flash_y - e.charge_y)
         md['dy'].prof.Fill(qX, e.new_flash_y - e.charge_y)
@@ -494,7 +500,7 @@ def generator(nuslice_tree, rootfile, pset):
 
     for e in nuslice_tree:
         # calculate match score
-        if not quality_checks(e): continue
+        # if not quality_checks(e, beam_spill_time_end): continue
         qX = e.charge_x
         qXGl = e.charge_x_gl
         isl = int(qX/xbin_width)
