@@ -845,7 +845,9 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
     flash.y_kurt = ophY->GetKurtosis();
     flash.z_kurt = ophZ->GetKurtosis();
     // Flash widths
-    flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, fFlashPEFraction);
+    // flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.pe, fFlashPEFraction);
+    flash.xw = fractTimeWithFractionOfLight(simpleFlash, sum_PE2, fFlashPEFraction, true);
+    // flash.xw = fractTimeWithFractionOfLight(simpleFlash, flash.unpe, fFlashPEFraction, false, true); // TODO:
     // TODO: low values of flash.xw <0.5 are indicative of good
     // mcT0-flash_time matching, so akin to matching to prompt light
     // Note that around the middle of the detector (~(+-100, 0, 250)
@@ -1789,7 +1791,8 @@ double FlashPredict::wallXWithMaxPE(const OpHitIt opH_beg,
 
 
 double FlashPredict::fractTimeWithFractionOfLight(
-  const SimpleFlash& simpleFlash, double sum_pe, double fraction_pe) const
+  const SimpleFlash& simpleFlash, const double sum_pe, const double fraction_pe,
+  const bool use_square_pe, const bool only_unpe) const
 {
   std::vector<recob::OpHit> timeSortedOpH(simpleFlash.opH_beg, simpleFlash.opH_end);
   std::sort(timeSortedOpH.begin(), timeSortedOpH.end(),
@@ -1801,7 +1804,9 @@ double FlashPredict::fractTimeWithFractionOfLight(
   double threshold_time = 0.;
   double running_sum = 0.;
   for (auto& oph : timeSortedOpH) {
-    running_sum += oph.PE();
+    if (only_unpe && false) continue;// TODO: check if oph is un_pe
+    if (use_square_pe) running_sum += oph.PE() * oph.PE();
+    else running_sum += oph.PE();
     if (running_sum >= threshold_fraction){
       threshold_time = opHitTime(oph);
       break;

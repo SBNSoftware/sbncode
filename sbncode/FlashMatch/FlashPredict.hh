@@ -343,8 +343,10 @@ private:
   double opHitTime(const recob::OpHit& oph) const;
   double wallXWithMaxPE(const OpHitIt opH_beg,
                         const OpHitIt opH_end) const;
-  double fractTimeWithFractionOfLight(const SimpleFlash& simpleFlash,
-                                      double sum_pe, double fraction_pe) const;
+  double fractTimeWithFractionOfLight(
+    const SimpleFlash& simpleFlash,
+    const double sum_pe, const double fraction_pe,
+    const bool use_square_pe = false, const bool only_unpe = false) const;
   inline double polynomialCorrection(const double skew, const double hypo_x,
                                      const std::vector<double>& polCoefs,
                                      const double skew_limit) const;
