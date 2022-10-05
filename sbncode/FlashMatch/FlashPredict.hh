@@ -44,6 +44,7 @@
 #include "TFile.h"
 #include "TH1.h"
 #include "TH2.h"
+#include "TProfile3D.h"
 
 #include "sbncode/OpT0Finder/flashmatch/Base/OpT0FinderTypes.h"
 #include "sbncode/OpDet/PDMapAlg.h"
@@ -94,6 +95,8 @@ public:
     TH2D* RRH2; TH2D* RatioH2;
     std::array<Fits, 3> RRFits; // LEGACY
     std::array<Fits, 3> RatioFits; // LEGACY
+    TProfile3D* dYP3; TProfile3D* dZP3; TProfile3D* RRP3;
+    TProfile3D* RatioP3; TProfile3D* SlopeP3; TProfile3D* PEToQP3;
   };
 
   struct ChargeDigest {
@@ -275,6 +278,8 @@ private:
   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
+  Score computeScore3D(const ChargeMetrics& charge,
+                       const FlashMetrics& flash) const;
   std::tuple<double, double, double, double> hypoFlashX_fits(// LEGACY
     double flash_rr, double flash_ratio) const;
   std::tuple<double, double, double, double> hypoFlashX_H2(
@@ -296,6 +301,12 @@ private:
                           const double mean, const double spread) const;
   inline double scoreTerm(const double m,
                           const double mean, const double spread) const;
+  inline double scoreTerm3D(
+    const double m, const double n,
+    const std::array<double, 3>& xyz, const TProfile3D* prof3) const;
+  inline double scoreTerm3D(
+    const double m,
+    const std::array<double, 3>& xyz, const TProfile3D* prof3) const;
   inline double PEToQ(const double pe, const double q) const;
   inline bool pfpNeutrinoOnEvent(
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;

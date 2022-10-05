@@ -511,7 +511,6 @@ void FlashPredict::initTree(void)
 FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
   const std::string inputFilename) const
 {
-  // BIG TODO: Metrics should depend on X,Y,Z.
   // Many changes needed everywhere
   ReferenceMetrics rm;
   // read histograms and fill vectors for match score calculation
@@ -642,6 +641,21 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
   for(double c : rm.PolCoeffsZ) ttz += std::to_string(c) + " ";
   ttz += ")";
   mf::LogInfo("FlashPredict") << ttz;
+
+  // BIG TODO: Metrics should depend on X,Y,Z.
+  // TODO: Test!
+  TProfile3D* tmp1_prof3 = (TProfile3D*)infile->Get("dy_prof3");
+  rm.dYP3 = (TProfile3D*)tmp1_prof3->Clone("dYP3");
+  TProfile3D* tmp2_prof3 = (TProfile3D*)infile->Get("dz_prof3");
+  rm.dZP3 = (TProfile3D*)tmp2_prof3->Clone("dZP3");
+  TProfile3D* tmp3_prof3 = (TProfile3D*)infile->Get("rr_prof3");
+  rm.RRP3 = (TProfile3D*)tmp3_prof3->Clone("RRP3");
+  TProfile3D* tmp4_prof3 = (TProfile3D*)infile->Get("ratio_prof3");
+  rm.RatioP3 = (TProfile3D*)tmp4_prof3->Clone("RatioP3");
+  TProfile3D* tmp5_prof3 = (TProfile3D*)infile->Get("slope_prof3");
+  rm.SlopeP3 = (TProfile3D*)tmp5_prof3->Clone("SlopeP3");
+  TProfile3D* tmp6_prof3 = (TProfile3D*)infile->Get("petoq_prof3");
+  rm.PEToQP3 = (TProfile3D*)tmp6_prof3->Clone("PEToQP3");
 
   infile->Close();
   delete infile;
@@ -976,6 +990,82 @@ FlashPredict::Score FlashPredict::computeScore(
     << "score.petoq: " << score.petoq << "\n";
   return score;
 }
+
+
+FlashPredict::Score FlashPredict::computeScore3D(
+  const ChargeMetrics& charge,
+  const FlashMetrics& flash) const
+{
+  Score score{0.};
+  unsigned tcount = 0;
+  double charge_x = (fCorrectDriftDistance) ?
+    driftCorrection(charge.x, flash.time) : charge.x;
+  const std::array<double, 3> xyz = {charge_x, charge.y, charge.z};
+
+  score.y = scoreTerm3D(flash.y, charge.y, xyz, fRM.dYP3);
+  if(score.y > fTermThreshold) printMetrics("Y", charge, flash, score.y,
+                                            mf::LogDebug("FlashPredict"));
+  score.total += score.y;
+  tcount++;
+  score.z = scoreTerm3D(flash.z, charge.z, xyz, fRM.dZP3);
+  if(score.z > fTermThreshold) printMetrics("Z", charge, flash, score.z,
+                                            mf::LogDebug("FlashPredict"));
+  score.total += score.z;
+  tcount++;
+  score.rr = scoreTerm3D(flash.rr, xyz, fRM.RRP3);
+  if(score.rr > fTermThreshold) printMetrics("RR", charge, flash, score.rr,
+                                             mf::LogDebug("FlashPredict"));
+  score.total += score.rr;
+  tcount++;
+  score.ratio = scoreTerm3D(flash.ratio, xyz, fRM.RatioP3);
+  if(fICARUS && !std::isnan(flash.h_x)){
+    // TODO HACK to penalise matches with flash and charge on opposite volumes
+    double charge_x_gl = (fCorrectDriftDistance) ?
+      xGlCorrection(charge.x_gl, charge.x, flash.time) : charge.x_gl;
+    double x_gl_diff = std::abs(flash.x_gl-charge_x_gl);
+    double x_diff = std::abs(flash.h_x-charge_x);
+    double cathode_tolerance = 30.;
+    if(x_gl_diff > x_diff + cathode_tolerance) { // ok if close to the cathode
+      double penalization = scoreTerm3D((flash.pe-flash.unpe)/flash.pe,
+                                        xyz, fRM.RatioP3);
+      score.ratio += penalization;
+      mf::LogInfo("FlashPredict")
+        << "HACK: Penalizing match with flash and charge in opposite volumes."
+        << "\nflash.x_gl: " << flash.x_gl << " charge.x_gl: " << charge.x_gl
+        << "\nX distance between them: " << x_gl_diff
+        << "\nscore.ratio: " << score.ratio
+        << "\nscore penalization: " << penalization;
+    }
+  }
+  if(score.ratio > fTermThreshold) printMetrics("RATIO", charge, flash, score.ratio,
+                                                mf::LogDebug("FlashPredict"));
+  score.total += score.ratio;
+  tcount++;
+
+  // score.slope = scoreTerm3D(flash.slope, charge.slope, xyz, fRM.SlopeP3);
+  score.slope = scoreTerm3D(flash.xw, xyz, fRM.SlopeP3);
+  if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
+                                                mf::LogDebug("FlashPredict"));
+  // TODO: if useful add it to the total score
+  // score.total += score.slope;
+  // tcount++;
+  // TODO: if useful add it to the total score
+  score.petoq = scoreTerm3D(std::log(flash.pe)/std::log(charge.q), xyz, fRM.PEToQP3);
+  if(score.petoq > fTermThreshold) printMetrics("LIGHT/CHARGE", charge, flash, score.petoq,
+                                                mf::LogDebug("FlashPredict"));
+    score.total += score.petoq;
+    tcount++;
+    mf::LogDebug("FlashPredict")
+      << "score:       " << score.total << "using " << tcount << " terms\n"
+      << "score.y:     " << score.y << "\t"
+      << "score.z:     " << score.z << "\n"
+      << "score.rr:    " << score.rr << "\t"
+      << "score.ratio: " << score.ratio << "\n"
+      << "score.slope: " << score.slope << "\t"
+      << "score.petoq: " << score.petoq << "\n";
+  return score;
+}
+
 
 // LEGACY
 std::tuple<double, double, double, double> FlashPredict::hypoFlashX_fits(
@@ -1352,6 +1442,35 @@ double FlashPredict::scoreTerm(const double m,
                                const double mean, const double spread) const
 {
   return std::abs(m - mean) / spread;
+}
+
+
+inline
+double FlashPredict::scoreTerm3D(
+  const double m, const double n,
+  const std::array<double, 3>& xyz, const TProfile3D* prof3) const
+{
+  int xb = prof3->GetXaxis()->FindBin(xyz[0]);
+  if (xb < 1) xb = 1;
+  else if (xb > prof3->GetXaxis()->GetNbins()) xb = prof3->GetXaxis()->GetNbins();
+  int yb = prof3->GetYaxis()->FindBin(xyz[1]);
+  if (yb < 1) yb = 1;
+  else if (yb > prof3->GetYaxis()->GetNbins()) yb = prof3->GetYaxis()->GetNbins();
+  int zb = prof3->GetZaxis()->FindBin(xyz[2]);
+  if (zb < 1) zb = 1;
+  else if (zb > prof3->GetZaxis()->GetNbins()) zb = prof3->GetZaxis()->GetNbins();
+  double mean = prof3->GetBinContent(xb, yb, zb);
+  double spread = prof3->GetBinError(xb, yb, zb);
+  return std::abs((m - n) - mean) / spread;
+}
+
+
+inline
+double FlashPredict::scoreTerm3D(
+  const double m,
+  const std::array<double, 3>& xyz, const TProfile3D* prof3) const
+{
+  return scoreTerm3D(m, 0., xyz, prof3);
 }
 
 
