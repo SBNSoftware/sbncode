@@ -1961,18 +1961,13 @@ void CAFMaker::endJob() {
 
 
   if(fFile){
+
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
-    fFlatTree->SetDirectory(fFlatFile);
     if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
-
     fFile->cd();
     fFile->Write();
     if (fParams.CreateBlindedCAF()) {
@@ -1987,13 +1982,21 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-    AddHistogramsToFile(fFlatFile);
-    fFlatFile->Write();
 
+    AddHistogramsToFile(fFlatFile);
+    fFlatTree->SetDirectory(fFlatFile);
+    if (fParams.CreateBlindedCAF() && fFlatFileb) {
+      fFlatTreeb->SetDirectory(fFlatFileb);
+      fFlatTreep->SetDirectory(fFlatFilep);
+    }
+    fFlatFile->cd();
+    fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFlatFileb,true,false);
+      fFlatFileb->cd();
       fFlatFileb->Write();
       AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFilep->cd();
       fFlatFilep->Write();
     }
   }
