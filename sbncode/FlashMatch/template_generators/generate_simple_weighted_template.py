@@ -448,10 +448,12 @@ def generator(nuslice_tree, rootfile, pset):
         dz_h2.Fill(qX, e.new_flash_z - e.charge_z)
         dz_prof.Fill(qX, e.new_flash_z - e.charge_z)
         # these H2s below use no new corrections
-        slope_h2.Fill(qX, e.flash_slope - e.charge_slope)
-        slope_prof.Fill(qX, e.flash_slope - e.charge_slope)
         petoq_h2.Fill(qX, e.petoq)
         petoq_prof.Fill(qX, e.petoq)
+        # slope_h2.Fill(qX, e.flash_slope - e.charge_slope)
+        # slope_prof.Fill(qX, e.flash_slope - e.charge_slope)
+        slope_h2.Fill(qX, e.flash_xw)
+        slope_prof.Fill(qX, e.flash_xw)
 
     # fill histograms for match score calculation from profile histograms
     for ib in list(range(0, profile_bins)):
@@ -519,6 +521,7 @@ def generator(nuslice_tree, rootfile, pset):
         score += abs(e.flash_ratio-ratio_means[isl])/ratio_spreads[isl]
         # score += abs((e.flash_slope - e.charge_slope) - slope_means[isl])/slope_spreads[isl] # TODO: if useful add it to the total score
         score += abs(e.petoq-petoq_means[isl])/petoq_spreads[isl]
+        score += abs(e.flash_xw - slope_means[isl])/slope_spreads[isl] # TODO: if useful add it to the total score
 
         oldunfolded_score_scatter.Fill(qXGl, e.score)
         unfolded_score_scatter.Fill(qXGl, score)

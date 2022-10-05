@@ -953,7 +953,8 @@ FlashPredict::Score FlashPredict::computeScore(
                                                 mf::LogDebug("FlashPredict"));
   score.total += score.ratio;
   tcount++;
-  score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
+  // score.slope = scoreTerm(flash.slope, charge.slope, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]);
+  score.slope = scoreTerm(flash.xw, fRM.SlopeMeans[xbin], fRM.SlopeSpreads[xbin]); // TODO: are you a better metric?
   if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
                                                 mf::LogDebug("FlashPredict"));
   // TODO: if useful add it to the total score
