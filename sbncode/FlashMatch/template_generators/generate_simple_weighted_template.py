@@ -284,10 +284,10 @@ def polynomial_correction(skew, hypo_x, pol_coeffs, skew_high_limit=10.):
 
 
 def parameters_correction_fitter(nuslice_tree, var, profile_bins,
-                                 dist_to_anode_low, dist_to_anode_up,
+                                 x_low, x_up,
                                  skew_high_limit=10., skew_low_limit=0.05):
     fit_prof = TProfile(f"fit_prof_{var}", "", profile_bins,
-                        dist_to_anode_low, dist_to_anode_up)
+                        x_low, x_up)
     draw_expression = (f"((flash_{var}b-charge_{var})/{var}_skew):new_hypo_x"
                        f">>fit_prof_{var}")
     # Another option for the fit: using charge_x instead of the hypoX estimate,
@@ -315,7 +315,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
                     f"is_nu==1 && slices==1 && "
                     f"0.<=mcT0 && mcT0<=1.6 && " # TODO: unhardcode
                     f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= 0.3 && " # TODO: unhardcode
-                    f"charge_x >= 0. && charge_x <= {drift_distance} && new_hypo_x >= 0. &&"
+                    f"charge_x >= {x_low} && charge_x <= {x_up} && new_hypo_x >= 0. &&"
                     f"{filter_tolerable}"
                     )
     draw_option = "prof"
