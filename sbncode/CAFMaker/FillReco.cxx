@@ -347,6 +347,11 @@ namespace caf
                        bool allowEmpty) {
     if (crumbs != nullptr) {
       slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.ccnumuscore = crumbs->ccnumuscore;
+      slice.crumbs_result.ccnuescore = crumbs->ccnuescore;
+      slice.crumbs_result.ncscore = crumbs->ncscore;
+      slice.crumbs_result.bestscore = crumbs->bestscore;
+      slice.crumbs_result.bestid = crumbs->bestid;
       slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
       slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
       slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
