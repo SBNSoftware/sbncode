@@ -196,7 +196,8 @@ detector = "experiment"
 drift_distance = 0.
 xbins = 0
 xbin_width = 0.
-tolerable_time_diff = 0.3
+time_delay = 0.
+tolerable_time_diff = 0.1
 
 # # Print help
 # def help():
@@ -267,7 +268,7 @@ def quality_checks(e, beam_spill_time_end):
     if e.slices != 1: return False
     if e.is_nu != 1: return False
     if e.mcT0 < 0. or beam_spill_time_end < e.mcT0 : return False
-    if (e.flash_time - e.mcT0) < 0. or (e.flash_time - e.mcT0) > tolerable_time_diff : False
+    if (e.flash_time-time_delay - e.mcT0) < 0. or (e.flash_time-time_delay - e.mcT0) > tolerable_time_diff : False
     if e.charge_x < 0. or e.charge_x > drift_distance: return False
     return True
 
@@ -307,7 +308,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
             else "(charge_z<120. || 380.<charge_z)"
     elif detector == "icarus":
         filter_tolerable = "(charge_y<-65. || 19.<charge_y)" if var=="y" \
-            else "(charge_z<0. || 0.<charge_z)" # no filter for Z in ICARUS
+            else "(charge_z<-800. || 800.<charge_z)"
 
     # the filters are the ones in quality_checks(), plus the one above
     # to give more weight to the edges
@@ -315,7 +316,7 @@ def parameters_correction_fitter(nuslice_tree, var, profile_bins,
                     f"abs({var}_skew)<{skew_high_limit} && "
                     f"is_nu==1 && slices==1 && "
                     f"0.<=mcT0 && mcT0<={beam_spill_time_end} && "
-                    f"(flash_time - mcT0) >= 0. && (flash_time - mcT0) <= {tolerable_time_diff} && "
+                    f"(flash_time-{time_delay} - mcT0) >= 0. && (flash_time-{time_delay} - mcT0) <= {tolerable_time_diff} && "
                     f"charge_x >= {x_low} && charge_x <= {x_up} && new_hypo_x >= 0. &&"
                     f"{filter_tolerable}"
                     )
@@ -450,6 +451,8 @@ def generator(nuslice_tree, rootfile, pset):
                                                 pset.fit_func_z,
                                                 beam_spill_time_end,
                                                 pset.SkewLimitZ)
+    if detector == "icarus":
+        z_pol_coeffs = [0.] # No Z corrections for ICARUS
     z_pol_coeffs_vec = ROOT.std.vector['double']()
     for zp in z_pol_coeffs: z_pol_coeffs_vec.push_back(zp)
 
@@ -627,16 +630,20 @@ def main():
     global drift_distance
     global x_bins
     global xbin_width
+    global time_delay
+    global tolerable_time_diff
     if args.sbnd:
         fcl_params = fhicl.make_pset('flashmatch_sbnd.fcl')
         pset = dotDict(fcl_params['sbnd_simple_flashmatch'])
         detector = "sbnd"
+        time_delay = 0.15
         dir = rootfile.Get(file_updated+":/fmatch")
         nuslice_tree = dir.Get("nuslicetree")
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
         pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
         detector = "icarus"
+        time_delay = 0.
         # by default merge the trees from both Cryos
         dir0 = rootfile.Get(file_updated+":/fmatchCryo0")
         nuslice_tree0 = dir0.Get("nuslicetree")

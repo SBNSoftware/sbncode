@@ -740,9 +740,10 @@ FlashPredict::ChargeMetrics FlashPredict::computeChargeMetrics(
   }
 
   // Compute the widths
-  std::unique_ptr<TH1F> qX = std::make_unique<TH1F>("qX", "", 80, -200., 200.);
-  std::unique_ptr<TH1F> qY = std::make_unique<TH1F>("qY", "", 80, -200., 200.);
-  std::unique_ptr<TH1F> qZ = std::make_unique<TH1F>("qZ", "", 100, 0., 500.);
+  // TODO: unharcode... but these numbers work for SBND and ICARUS
+  std::unique_ptr<TH1F> qX = std::make_unique<TH1F>("qX", "", 160, -400., 400.);
+  std::unique_ptr<TH1F> qY = std::make_unique<TH1F>("qY", "",  84, -210., 210.);
+  std::unique_ptr<TH1F> qZ = std::make_unique<TH1F>("qZ", "", 364, -910., 910.);
   for (size_t i=0; i<qClusters.size(); ++i) {
     // double q2 = qClusters[i].q * qClusters[i].q;
     double q = qClusters[i].q;
