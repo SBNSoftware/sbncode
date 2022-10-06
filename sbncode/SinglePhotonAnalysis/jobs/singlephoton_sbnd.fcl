@@ -1,0 +1,88 @@
+BEGIN_PROLOG
+
+singlephoton_analyzer:{
+
+    module_type:    SinglePhoton
+
+    PandoraLabel:   "pandoraSCE"
+    TrackLabel:     "pandoraTrack" #pandoraSCETrack does not have enough objects;
+    ShowerLabel:    "pandoraSCEShower"
+    ParticleIDLabel:"pandoraSCEPid"
+    CaloLabel:      "pandoraCalo"
+    FlashLabel:     "opflashtpc0"
+    POTLabel:       "generator"
+
+  #ShowerTrackFitter:    "pandoraTrack"
+  #ShowerTrackFitterCalo:  "pandoraCalo"
+  Shower3DLabel:      "pandoraSCEShower"
+
+    input_param:    "optional" 
+
+    Verbose: true
+
+    runSEAviewShower: true
+    SEAviewShowerHitThreshold: 25
+    SEAviewShowerDBSCANMinPts: 8
+    SEAviewShowerDBSCANEps: 4
+    SEAviewShowerPlotDistance: 80
+    SEAviewShowerMaxHitsLinFit: 20.0
+    SEAviewShowerMakePDF: false 
+    SEAviewShowerNumRecoShower: 1
+    SEAviewShowerNumRecoTrack: -1
+
+    runSEAviewStub: true
+    SEAviewStubHitThreshold: 25
+    SEAviewStubDBSCANMinPts: 1
+    SEAviewStubDBSCANEps: 1
+    SEAviewStubPlotDistance: 80
+    SEAviewStubMakePDF: false 
+    SEAviewStubNumRecoShower: 1
+    SEAviewStubNumRecoTrack: 0
+
+    FillTrees: true
+    RunPi0Filter: false
+    FilterMode2g1p: false
+    FilterMode2g0p: false
+ 
+    SelectEvent: false
+    SelectEventList:""
+
+    usePID: true 
+    work_function: 23.6  # eV, average energy needed to produce an ionization electron
+    recombination_factor: 0.62 # the electron recombination survival rate
+    gain_mc: [49.774521418, 49.9600319744, 49.6788263874]  #for SBND
+# also documented at SBN-doc-19505-v1 from Varunna Meddage
+# formula used in SBN-doc-18701-v1 NOTE:origin values are in MicroBooNE-doc-20227 with inversed units;
+#see SBN-doc-25161 for ICARUS?
+    gain_data: [230.3, 237.6, 243.7] #not used yet, to be updated;
+    wire_spacing : 0.3 
+    width_box : 1. #2d dEdx is calcualted with a box of 1cmx4cm
+    length_box : 4.
+    
+    truthmatching_signaldef : "ncdelta"
+    runAllPFPs: "false"
+    exiting_photon_energy: 0.02
+  convention_distance_cutoff: 80.0
+    exiting_proton_energy: 0.978  #40Mev + proton mass 
+
+    runCRT: "false"
+    DTOffset: 68600.0 #us, taken from ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+    Resolution: 1.0 #same as above
+    DAQHeaderProducer: "daq" #ubcrt/UBCRTCosmicFilter/UBCRTCosmicFilter.fcl
+
+    }
+
+singlephoton_filter: @local::singlephoton_analyzer
+singlephoton_filter.FillTrees: false
+singlephoton_filter.RunPi0Filter: true
+singlephoton_filter.FilterMode2g1p: true
+singlephoton_filter.FilterMode2g0p: false
+singlephoton_filter.isData: false
+singlephoton_filter.usePID: false
+singlephoton_filter.work_function: 23
+
+singlephoton_filter_2g0p: @local::singlephoton_filter
+singlephoton_filter_2g0p.FilterMode2g1p: false
+singlephoton_filter_2g0p.FilterMode2g0p: true
+
+END_PROLOG
