@@ -123,10 +123,14 @@ void sbn::EXTRetriever::produce(art::Event& e)
       isBNBOffBeam = true;
       number_of_gates_since_previous_event = frag.getDeltaGatesBNBOff();
     }
-    if(gate_type == 4)
+    else if(gate_type == 4)
     {
       isNuMIOffBeam = true;
       number_of_gates_since_previous_event = frag.getDeltaGatesNuMIOff();
+    }
+    else 
+    {
+      throw art::Exception(art::errors::StdException) << "Unsupported gate type for EXTRetriever Module: " << gate_type << "! Aborting";
     }
     if(trigger_type == 0)
       isMajority = true;

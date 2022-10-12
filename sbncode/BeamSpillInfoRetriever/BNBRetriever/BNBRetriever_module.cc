@@ -15,6 +15,7 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcorealg/CoreUtils/counter.h"
@@ -261,14 +262,14 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
       triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
     else 
     {
-      throw art::Exception(art::errors:StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting" << std::endl; 
+      throw art::Exception(art::errors::StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting"; 
     }
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
     else
     {
-      throw art::Exception(art::errors:StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting" << std::endl;
+      throw art::Exception(art::errors::StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting";
     }
     
   }
