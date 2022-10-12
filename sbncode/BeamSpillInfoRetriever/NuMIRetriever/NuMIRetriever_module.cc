@@ -111,16 +111,14 @@ void sbn::NuMIRetriever::produce(art::Event &e)
       number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
     else
     {
-      number_of_gates_since_previous_event = frag.getDeltaGatesOther();
-      //mf::LogDebug("NuMIRetriever") << "Possibly unsupported gate type: " << gate_type << "! Using information stored in gate type labeled other." << std::endl;
+      throw art::Exception(art::errors:StdException) << "Unsupported gate type for NuMIRetriever Module: " << triggerInfo.gate_type << "! Aborting" << std::endl;
     }
     t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
     if(gate_type == 2)
       t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
     else
     {
-      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
-      //mf::LogDebug("NuMIRetriever") << "Possibly unsupported gate type: " << gate_type << "! Using information stored in gate type labeled other." << std::endl;
+      throw art::Exception(art::errors:StdException) << "Unsupported gate type for NuMIRetriever Module: " << triggerInfo.gate_type << "! Aborting" << std::endl;
     }
   }
 

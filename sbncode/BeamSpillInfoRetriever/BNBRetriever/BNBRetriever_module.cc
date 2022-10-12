@@ -261,16 +261,14 @@ sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Even
       triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
     else 
     {
-      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesOther();
-      mf::LogDebug("BNBRetriever") << "Possibly unsupported gate type: " << triggerInfo.gate_type << "! Using information stored in other gate type." << std::endl; 
+      throw art::Exception(art::errors:StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting" << std::endl; 
     }
     triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
     else
     {
-      triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
-      mf::LogDebug("BNBRetriever") << "Possibly unsupported gate type: " << triggerInfo.gate_type << "! Using information stored in other gate type." << std::endl;
+      throw art::Exception(art::errors:StdException) << "Unsupported gate type for BNBRetriever module: " << triggerInfo.gate_type << "! Aborting" << std::endl;
     }
     
   }
