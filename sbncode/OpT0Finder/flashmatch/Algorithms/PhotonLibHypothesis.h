@@ -68,6 +68,7 @@ namespace flashmatch {
     double _sigma_qe;              ///< Sigma for Gaussian centered on Global QE
     std::vector<double> _qe_v;     ///< PMT-wise relative QE
     bool _use_semi_analytical;     ///< If the semi-analytical approach should be used
+    bool _calc_recombination;      ///< If calculating photons including recombination 
     #if USING_LARSOFT == 1
     phot::PhotonVisibilityService const* const _vis;
     #endif
