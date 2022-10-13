@@ -67,6 +67,7 @@ PhotonLibHypothesis:
   GlobalQE: 0.03
   GlobalQERefl: 0.03
   UseSemiAnalytical: true
+  CalcRecombination: true
   ChannelMask: []
   CCVCorrection: []
 }

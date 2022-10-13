@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "OpT0FinderTypes.h"
+#include <math.h> 
 
 namespace flashmatch {
   
@@ -30,6 +31,38 @@ namespace flashmatch {
       another.push_back(pt);
     }
     (*this) = another;
+  }
+
+  double QCluster_t::pitch() const
+  {
+    double pitch=0.3;
+    // find first track point
+    auto init_pt = (*this)[0];
+    for (auto const& pt : (*this)){
+      if (pt.trk!=1) continue;
+      else{ 
+        init_pt = pt;
+        break;
+      }
+    }
+    double min_x = init_pt.x; 
+    double max_x = init_pt.x;
+    double min_z = init_pt.z;
+    double max_z = init_pt.z;
+    for (auto const& pt : (*this)){
+      // std::cout << pt.trk << std::endl;
+      if(pt.trk!= 1) continue;// if the point does not belong to a track, skip
+      if(pt.x > max_x) max_x = pt.x;
+      if(pt.x < min_x) min_x = pt.x;
+      if(pt.z > max_z) max_z = pt.z;
+      if(pt.z < min_z) min_z = pt.z;
+    }
+    // std::cout << "x: (min, max) // z: (min, max): (" << min_x << ", " << max_x << "), (" << min_z << ", " << max_z << ")" << std::endl;
+    double gamma = atan(abs(max_x - min_x) / abs(max_z - min_z));
+    // std::cout << "gamma: " << gamma << std::endl;
+    pitch = 0.3/cos(gamma); 
+    // std::cout << "pitch: " << pitch << std::endl;
+    return pitch;
   }
 
   /// streamer override
