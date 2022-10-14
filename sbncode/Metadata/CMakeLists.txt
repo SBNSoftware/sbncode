@@ -1,15 +1,13 @@
 cet_enable_asserts()
 
-set( sbn_meta_lib_list   ${ART_FRAMEWORK_CORE}
-                         ${ART_FRAMEWORK_PRINCIPAL}
-                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                         ${ART_FRAMEWORK_SERVICES_BASIC}
-                         ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-                         art_Framework_Services_System_TriggerNamesService_service
-			 art_Persistency_Common canvas
-			 art_Persistency_Provenance canvas
-                         ${MF_MESSAGELOGGER}
-                         ${ROOT_BASIC_LIB_LIST}
+set( sbn_meta_lib_list   art::Framework_Core
+                         art::Framework_Principal
+                         art::Framework_Services_Registry
+                         art::Framework_Services_System_TriggerNamesService_service
+			 art::Persistency_Common canvas::canvas
+			 art::Persistency_Provenance canvas::canvas
+                         ROOT::Core
+                         larcoreobj::SummaryData
     )
 
 simple_plugin( FileCatalogMetadataSBN  "service"
@@ -18,8 +16,8 @@ simple_plugin( FileCatalogMetadataSBN  "service"
 
 simple_plugin( MetadataSBN "service"
                ${sbn_meta_lib_list}
-               art_Framework_IO
-               art_Framework_IO_detail
+               art::Framework_IO
+               art::Framework_IO_detail
         )
 
 install_headers()

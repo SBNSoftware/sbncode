@@ -8,7 +8,7 @@ find_package(Python COMPONENTS Interpreter Development)
 include_directories(${Python_INCLUDE_DIRS})
 
 art_make( LIBRARY_NAME fcl
-	  LIB_LIBRARIES fhiclcpp
+	  LIB_LIBRARIES fhiclcpp::fhiclcpp
 	  		cetlib::cetlib
 			cetlib_except::cetlib_except
 			Python::Python )

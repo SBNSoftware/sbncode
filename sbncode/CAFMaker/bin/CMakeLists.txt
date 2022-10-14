@@ -1,6 +1,6 @@
 cet_make_exec( extractCAFMetadata
                SOURCE extractCAFMetadata.cc
-               LIBRARIES ${ROOT_BASIC_LIB_LIST}
+               LIBRARIES ROOT::Core ROOT::RIO
                )
 
 cet_script(diff_cafs)

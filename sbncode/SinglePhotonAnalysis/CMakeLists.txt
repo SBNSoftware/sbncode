@@ -1,47 +1,32 @@
 
 art_make( BASENAME_ONLY
         LIB_LIBRARIES
-          larcorealg_Geometry
-          larcore_Geometry_Geometry_service
-          lardata_Utilities
-          larevt_Filters
+          larcorealg::Geometry
+          larcore::Geometry_Geometry_service
+          lardata::Utilities
+          larevt::Filters
           larpandoraobj
-          lardataobj_RawData
-          lardataobj_RecoBase
-          lardataobj_MCBase
-          larcoreobj_SummaryData
-          larsim_MCCheater_BackTrackerService_service
-          larsim_MCCheater_ParticleInventoryService_service
-          larpandora_LArPandoraInterface
-          ${PANDORASDK}
-          ${PANDORAMONITORING}
+          lardataobj::RawData
+          lardataobj::RecoBase
+          lardataobj::MCBase
+          larcoreobj::SummaryData
+          larsim::MCCheater_BackTrackerService_service
+          larsim::MCCheater_ParticleInventoryService_service
+          larpandora::LArPandoraInterface
           LArPandoraContent 
-          nusimdata_SimulationBase
-          ${Boost_SERIALIZATION_LIBRARY}
-          ${ART_FRAMEWORK_CORE}
-          ${ART_FRAMEWORK_PRINCIPAL}
-          ${ART_FRAMEWORK_SERVICES_REGISTRY}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-          art_Persistency_Common canvas
-          art_Persistency_Provenance canvas
-          art_Utilities canvas
-          ${MF_MESSAGELOGGER}
-          ${FHICLCPP}
-          cetlib cetlib_except
-          ${CLHEP}
-          ${ROOT_BASIC_LIB_LIST}
-          ${ROOT_GEOM} 
-          ${ROOT_CORE}
-          ${ART_ROOT_IO_TFILE_SUPPORT} 
+          nusimdata::SimulationBase
+          art::Persistency_Common canvas::canvas
+          art::Persistency_Provenance
+          art::Utilities
+          cetlib::cetlib cetlib_except::cetlib_except
+          ROOT::Geom 
+          ROOT::Core
         MODULE_LIBRARIES
-          sbncode_SinglePhotonAnalysis_Libraries
-          ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-          sbncode_SinglePhotonAnalysis_SEAview
+          sbncode::SinglePhotonAnalysis_Libraries
+          sbncode::SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
           )
-
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
 
 include_directories( $ENV{SRPROXY_INC} )
 add_subdirectory(SEAview)

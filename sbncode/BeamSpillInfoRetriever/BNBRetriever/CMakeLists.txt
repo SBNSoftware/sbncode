@@ -1,48 +1,39 @@
-find_ups_product(ifbeam)
-find_ups_product(ifbeam_art)
+find_package(ifbeam)
+find_package(ifbeam_art)
 
-include_directories( $ENV{IFBEAM_FQ_DIR}/include )
-include_directories( $ENV{LIBWDA_FQ_DIR}/include )
-include_directories( $ENV{IFDHC_FQ_DIR}/inc )
-include_directories( $ENV{IFDH_ART_INC} )
-cet_find_library( IFBEAMSERVICE        NAMES IFBeam_service    PATHS ENV IFDH_ART_LIB NO_DEFAULT_PATH )
-cet_find_library( IFBEAM               NAMES ifbeam            PATHS ENV IFBEAM_LIB   NO_DEFAULT_PATH )
+include_directories( $ENV{IFBEAM_DIR}/include )
+include_directories( $ENV{LIBWDA_DIR}/include )
+link_directories( $ENV{LIBWDA_DIR}/lib )
+include_directories( $ENV{IFDHC_DIR}/inc )
+link_directories( $ENV{IFDHC_DIR}/lib )
+include_directories( $ENV{IFDH_ART_DIR}/include )
+include_directories( $ENV{TRACE_INC} )
+find_library( IFBEAM               NAMES ifbeam            PATHS $ENV{IFBEAM_DIR} )
 
 link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
 
-art_make_library(
+cet_make_library(LIBRARIES Boost::system
 	LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
 	SOURCE MWRData.cpp
 )
 
 
 simple_plugin(BNBRetriever module
-	${ART_FRAMEWORK_CORE}
-	${ART_FRAMEWORK_SERVICES_REGISTRY}
-	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-	${ART_FRAMEWORK_PRINCIPAL}
-	art_Persistency_Common
-	art_Utilities canvas
-	${MF_MESSAGELOGGER}
-	${MF_UTILITIES}
-	${FHICLCPP}
-	cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-        ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_SERIALIZATION_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
-	MF_MessageLogger
-       	sbnobj_Common_POTAccounting
-	#${IFBEAMSERVICE}
-	#${IFBEAM}
-	ifbeam
-	ifdh_art::IFBeam_service
+	art::Persistency_Common
+	art::Utilities canvas::canvas
+	cetlib::cetlib cetlib_except::cetlib_except
+	ROOT::X3d
+        Boost::system
+	messagefacility::MF_MessageLogger
+	ifbeam::ifbeam
+        ifdh_art::IFBeam_service
 	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
   	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
-	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS	
+	sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS
         artdaq_core::artdaq-core_Utilities
-	sbn_BNBSpillInfoRetriever_MWRData	
+	sbn_BNBSpillInfoRetriever_MWRData
+        sbnobj::Common_POTAccounting
+        larcorealg::CoreUtils
 )
 
 install_headers()
