@@ -27,7 +27,6 @@ add_subdirectory(PID)
 add_subdirectory(GeometryTools)
 add_subdirectory(CosmicID)
 
-#
 # Supera
 #
 # Why are we checking explicitly for git submodule initialization?
@@ -52,3 +51,5 @@ endif()
 execute_process(COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/Supera/setup.sh icarus
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Supera )
 add_subdirectory(Supera)
+
+add_subdirectory(LArG4)
