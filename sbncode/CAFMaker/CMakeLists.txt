@@ -1,5 +1,5 @@
 # for classes_def.xml
-include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} ) ### MIGRATE-ACTION-RECOMMENDED: use target_link_directories() with target semantics
+include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 #set( PACKAGE CAFMaker )
 FILE( GLOB src_files *.cxx )
 
@@ -40,7 +40,7 @@ art_make_library( LIBRARY_NAME sbncode::CAFMaker
                   larsim::Utils
                   )
 
-include_directories( $ENV{IFDHC_DIR}/inc ) ### MIGRATE-ACTION-RECOMMENDED: use target_link_directories() with target semantics
+include_directories( $ENV{IFDHC_DIR}/inc )
 link_directories( $ENV{IFDHC_DIR}/lib )
 
 cet_build_plugin ( CAFMaker art::module

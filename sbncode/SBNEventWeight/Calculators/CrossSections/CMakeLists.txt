@@ -3,6 +3,8 @@ include_directories ( $ENV{GENIE_INC} )
 include_directories ( $ENV{GENIE_INC}/GENIE )
 include_directories ( $ENV{LOG4CPP_INC} )
 include_directories($ENV{GENIE}/include/GENIE) 
+include_directories( ${GSL_INCLUDE_DIR} )
+
 
 art_make( 
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_CrossSection

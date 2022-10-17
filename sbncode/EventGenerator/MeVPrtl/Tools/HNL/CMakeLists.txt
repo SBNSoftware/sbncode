@@ -5,6 +5,8 @@ art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Dalitz
                         sbnobj::Common_EventGen_MeVPrtl
         )
 
+include_directories( $ENV{GSL_INC} )
+
 simple_plugin( Kaon2HNLFlux tool
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -18,7 +20,7 @@ simple_plugin( Kaon2HNLFlux tool
 			sbnobj::Common_EventGen_MeVPrtl
 			nugen::EventGeneratorBase_GENIE
 			nurandom::RandomUtils_NuRandomService_service
-			gsl
+			GSL
 			sbncode::EventGenerator_MeVPrtl_Constants
                         sbnobj::Common_EventGen_MeVPrtl
 )
