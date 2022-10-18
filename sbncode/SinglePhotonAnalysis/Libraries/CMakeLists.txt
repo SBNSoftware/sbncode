@@ -23,5 +23,3 @@ art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                     cetlib::cetlib cetlib_except::cetlib_except
                     )
 
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
-

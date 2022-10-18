@@ -1,11 +1,10 @@
 art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Dalitz
           SOURCE HNLDecayDalitz.cpp
           LIBRARIES
-			sbncode::EventGenerator_MeVPrtl_Constants
+                        sbncode::EventGenerator_MeVPrtl_Constants
                         sbnobj::Common_EventGen_MeVPrtl
         )
 
-include_directories( $ENV{GSL_INC} )
 
 simple_plugin( Kaon2HNLFlux tool
                             art::Framework_Core
@@ -15,14 +14,14 @@ simple_plugin( Kaon2HNLFlux tool
                             art::Persistency_Common
                             art::Utilities canvas::canvas
                             cetlib::cetlib cetlib_except::cetlib_except
-			ROOT::EGPythia6
-			CLHEP::CLHEP
-			sbnobj::Common_EventGen_MeVPrtl
-			nugen::EventGeneratorBase_GENIE
-			nurandom::RandomUtils_NuRandomService_service
-			GSL
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            ROOT::EGPythia6
+                            CLHEP::CLHEP
+                            sbnobj::Common_EventGen_MeVPrtl
+                            nugen::EventGeneratorBase_GENIE
+                            nurandom::RandomUtils_NuRandomService_service
+                            GSL::gsl
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 simple_plugin( HNLMakeDecay tool
@@ -33,13 +32,14 @@ simple_plugin( HNLMakeDecay tool
                             art::Persistency_Common
                             art::Utilities canvas::canvas
                             cetlib::cetlib cetlib_except::cetlib_except
-			CLHEP::CLHEP
-			nurandom::RandomUtils_NuRandomService_service
-			nusimdata::SimulationBase
-			gsl larcorealg::Geometry
-			sbncode::EventGenerator_MeVPrtl_Dalitz
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            CLHEP::CLHEP
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            GSL::gsl
+                            larcorealg::Geometry
+                            sbncode::EventGenerator_MeVPrtl_Dalitz
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 

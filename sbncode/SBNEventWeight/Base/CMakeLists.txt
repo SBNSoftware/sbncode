@@ -1,5 +1,5 @@
 art_make( 
-  LIBRARY_NAME sbncode::SBNEventWeight_Base
+  LIBRARY_NAME sbncode_SBNEventWeight_Base
   LIB_LIBRARIES
     sbnobj::Common_SBNEventWeight
     nurandom::RandomUtils_NuRandomService_service

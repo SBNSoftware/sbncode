@@ -28,7 +28,7 @@ art_make(
             art::Persistency_Provenance
             art::Utilities
             canvas::canvas
-	    ROOT::EG
+            ROOT::EG
         )
 
 install_headers()

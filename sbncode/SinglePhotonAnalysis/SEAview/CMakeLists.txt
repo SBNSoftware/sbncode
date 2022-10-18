@@ -1,4 +1,3 @@
-link_libraries( -L$ENV{BOOST_LIB} -lboost_system -lboost_filesystem )
 find_package(larpandora)
 
 art_make( 
@@ -15,7 +14,7 @@ art_make(
       larsim::MCCheater_BackTrackerService_service
       larsim::MCCheater_ParticleInventoryService_service
       larpandora::LArPandoraInterface
-      LArPandoraContent 
+      larpandoracontent::LArPandoraContent 
       nusimdata::SimulationBase
       nurandom::RandomUtils_NuRandomService_service
       art::Persistency_Common canvas::canvas

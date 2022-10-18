@@ -14,14 +14,11 @@ art_make(
   art::Persistency_Common
   art::Persistency_Provenance
   art::Utilities canvas::canvas
-
   canvas::canvas
   cetlib::cetlib
   cetlib_except::cetlib_except
-
   larcore::Geometry_Geometry_service
   larcorealg::Geometry
-
   lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
   lardata::Utilities
   lardataalg::DetectorInfo
@@ -29,7 +26,6 @@ art_make(
   lardataobj::RawData
   lardataobj::RecoBase
   lardataobj::Simulation
-
   larpandora::LArPandoraInterface
   larsim::Utils
   sbnobj::Common_Reco

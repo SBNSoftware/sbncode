@@ -7,7 +7,7 @@ add_subdirectory(RecoUtils)
 add_subdirectory(bin)
 
 include_directories( $ENV{SRPROXY_DIR}/include )
-art_make_library( LIBRARY_NAME sbncode::CAFMaker
+art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   SOURCE ${src_files}
                   LIBRARIES
                   ifdh_art::IFDH_service
@@ -34,14 +34,12 @@ art_make_library( LIBRARY_NAME sbncode::CAFMaker
                   sbnobj::Common_CRT
                   sbnobj::Common_Reco
                   sbnobj::Common_Analysis
-		  lardataalg::DetectorInfo
+                  lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode::Metadata_MetadataSBN_service
                   larsim::Utils
                   )
 
-include_directories( $ENV{IFDHC_DIR}/inc )
-link_directories( $ENV{IFDHC_DIR}/lib )
 
 cet_build_plugin ( CAFMaker art::module
                LIBRARIES

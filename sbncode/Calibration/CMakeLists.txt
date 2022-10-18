@@ -8,22 +8,22 @@ simple_plugin( TrackCaloSkimmer module
                             art::Utilities canvas::canvas
                             cetlib::cetlib cetlib_except::cetlib_except
                             ROOT::X3d
-	art_root_io::tfile_support
-	art_root_io::art_root_io
-	art_root_io::dict
-        lardataobj::AnalysisBase
-        lardataobj::RecoBase
-        larcorealg::Geometry
-        larcore::Geometry_Geometry_service
-        larcorealg::GeoAlgo
-	sbnobj::Common_Reco
-	larcorealg::GeoAlgo
-	lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
-	lardataalg::DetectorInfo
-	ROOT::Minuit
-	sbncode::CAFMaker
-        sbnobj::Common_Calibration_dict
-        larevt::SpaceCharge
+                            art_root_io::tfile_support
+                            art_root_io::art_root_io
+                            art_root_io::dict
+                            lardataobj::AnalysisBase
+                            lardataobj::RecoBase
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            larcorealg::GeoAlgo
+                            sbnobj::Common_Reco
+                            larcorealg::GeoAlgo
+                            lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+                            lardataalg::DetectorInfo
+                            ROOT::Minuit
+                            sbncode::CAFMaker
+                            sbnobj::Common_Calibration_dict
+                            larevt::SpaceCharge
 )
 
 simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
@@ -36,12 +36,12 @@ simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
                             cetlib::cetlib cetlib_except::cetlib_except
                             ROOT::X3d
                             larcore::Geometry_Geometry_service
-        larcorealg::Geometry
-	larcorealg::GeoAlgo
-	lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
-	lardataalg::DetectorInfo
-        larevt::SpaceCharge
-        sbnobj::Common_Calibration_dict
+                            larcorealg::Geometry
+                            larcorealg::GeoAlgo
+                            lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+                            lardataalg::DetectorInfo
+                            larevt::SpaceCharge
+                            sbnobj::Common_Calibration_dict
 )
 
 simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
@@ -53,11 +53,10 @@ simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
                             art::Utilities canvas::canvas
                             cetlib::cetlib cetlib_except::cetlib_except
                             ROOT::X3d
-        sbnobj::Common_Calibration_dict
-        larevt::SpaceCharge
+                            sbnobj::Common_Calibration_dict
+                            larevt::SpaceCharge
 )
 
-link_directories( $ENV{IFDHC_DIR}/lib )
 simple_plugin(TrackCaloSkimmerSelectAllTrack tool
                             art::Persistency_Common
                             art::Utilities canvas::canvas
@@ -73,10 +72,10 @@ simple_plugin ( DataSelect module
                art::Framework_Services_Registry
                art::Utilities canvas::canvas
                cetlib::cetlib cetlib_except::cetlib_except
-        ROOT::X3d
-        sbnobj::Common_Calibration_dict
-	larevt::SpaceCharge
-        lardataobj::RecoBase
+               ROOT::X3d
+               sbnobj::Common_Calibration_dict
+               larevt::SpaceCharge
+               lardataobj::RecoBase
 )
 
 add_subdirectory(fcl)

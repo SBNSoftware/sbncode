@@ -9,24 +9,24 @@ simple_plugin( CalorimetryAnalysis module
                             ROOT::EG
                             ROOT::X3d
                             ROOT::Core
-	art_root_io::tfile_support
-	art_root_io::art_root_io
-	art_root_io::dict
-        caf_RecoUtils
-        larreco::RecoAlg
-        lardataobj::AnalysisBase
-        lardataobj::RecoBase
-        larcorealg::Geometry
-        larcore::Geometry_Geometry_service
-        larcorealg::GeoAlgo
-        larsim::MCCheater_BackTrackerService_service
-        nusimdata::SimulationBase
-        larsim::MCCheater_ParticleInventoryService_service
-	sbnobj::Common_Reco
-	larcorealg::GeoAlgo
-	lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
-	lardataalg::DetectorInfo
-        larevt::SpaceCharge
+                            art_root_io::tfile_support
+                            art_root_io::art_root_io
+                            art_root_io::dict
+                            caf_RecoUtils
+                            larreco::RecoAlg
+                            lardataobj::AnalysisBase
+                            lardataobj::RecoBase
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            larcorealg::GeoAlgo
+                            larsim::MCCheater_BackTrackerService_service
+                            nusimdata::SimulationBase
+                            larsim::MCCheater_ParticleInventoryService_service
+                            sbnobj::Common_Reco
+                            larcorealg::GeoAlgo
+                            lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+                            lardataalg::DetectorInfo
+                            larevt::SpaceCharge
 )
 
 

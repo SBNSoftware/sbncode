@@ -1,14 +1,10 @@
-find_package(dk2nudata REQUIRED PUBLIC)
-
-find_library( IFDH NAMES ifdh PATHS $ENV{IFDHC_DIR}/lib)
-include_directories( $ENV{IFDHC_DIR}/inc )
 
 art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Constants
           SOURCE Constants.cpp
           LIBRARIES
-                        ROOT::Core
-                        ROOT::Eve
-                        ROOT::X3d
+                            ROOT::Core
+                            ROOT::Eve
+                            ROOT::X3d
                             fhiclcpp::fhiclcpp
                             cetlib::cetlib cetlib_except::cetlib_except
         )
@@ -26,13 +22,13 @@ simple_plugin( EmptyKaonGen tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-                        dk2nu::Tree
-			CLHEP::CLHEP
-                        nugen::EventGeneratorBase_GENIE
-			nurandom::RandomUtils_NuRandomService_service
-			nusimdata::SimulationBase
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            dk2nu::Tree
+                            CLHEP::CLHEP
+                            nugen::EventGeneratorBase_GENIE
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 
@@ -49,13 +45,13 @@ simple_plugin( NuMiKaonGen tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-			CLHEP::CLHEP
-			ifdh::ifdh
-                        dk2nu::Tree
-			nurandom::RandomUtils_NuRandomService_service
-			nusimdata::SimulationBase
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            CLHEP::CLHEP
+                            ifdh::ifdh
+                            dk2nu::Tree
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 simple_plugin( WeightedRayTraceBox tool
@@ -70,13 +66,13 @@ simple_plugin( WeightedRayTraceBox tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-			CLHEP::CLHEP
-			larcorealg::Geometry
-                        larcore::Geometry_Geometry_service
-			nurandom::RandomUtils_NuRandomService_service
-                        dk2nu::Tree
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            CLHEP::CLHEP
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            nurandom::RandomUtils_NuRandomService_service
+                            dk2nu::Tree
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 simple_plugin( MixedWeightRayTraceBox tool
@@ -91,13 +87,13 @@ simple_plugin( MixedWeightRayTraceBox tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-                        dk2nu::Tree
-			CLHEP::CLHEP
-			larcorealg::Geometry
-                        larcore::Geometry_Geometry_service
-			nurandom::RandomUtils_NuRandomService_service
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            dk2nu::Tree
+                            CLHEP::CLHEP
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            nurandom::RandomUtils_NuRandomService_service
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 
@@ -115,12 +111,12 @@ simple_plugin( ReThrowRayTraceBox tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-			CLHEP::CLHEP
-			larcorealg::Geometry
-                        larcore::Geometry_Geometry_service
-			nurandom::RandomUtils_NuRandomService_service
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            CLHEP::CLHEP
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            nurandom::RandomUtils_NuRandomService_service
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 simple_plugin( RayTraceBox tool
@@ -135,12 +131,12 @@ simple_plugin( RayTraceBox tool
                             ROOT::Eve
                             ROOT::X3d
                             ROOT::Core
-			CLHEP::CLHEP
-			larcorealg::Geometry
-                        larcore::Geometry_Geometry_service
-			nurandom::RandomUtils_NuRandomService_service
-			sbncode::EventGenerator_MeVPrtl_Constants
-                        sbnobj::Common_EventGen_MeVPrtl
+                            CLHEP::CLHEP
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            nurandom::RandomUtils_NuRandomService_service
+                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 add_subdirectory(Higgs)

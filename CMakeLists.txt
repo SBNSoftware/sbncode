@@ -18,7 +18,6 @@ cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 find_package(cetmodules 3.19.02 REQUIRED)
 project(sbncode VERSION 09.60.01 LANGUAGES CXX)
 
-
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
 # cetbuildtools contains our cmake modules
@@ -76,124 +75,14 @@ find_package( trace )
 find_package( libwda )
 find_package(dk2nudata EXPORT)
 find_package(dk2nugenie EXPORT)
-
+find_package(log4cpp)
+find_package(LibXml2)
+find_package( GSL )
 
 find_package(CLHEP REQUIRED)
 find_package(ROOT REQUIRED)
 find_package(Geant4 REQUIRED)
 find_package(Boost COMPONENTS system filesystem REQUIRED)
-find_package( GSL )
-find_library( GSL NAMES gsl )
-find_library( LOG4CPP NAMES log4cpp )
-find_library( XML2 NAMES xml2 )
-
-
-# GENIE libraries are needed, added Aug2021 by Keng
-# genie (copied from nugen)
-  cet_find_library( LOG4CPP      NAMES log4cpp      PATHS ENV LOG4CPP_LIB NO_DEFAULT_PATH )
-  set( GFWMSG       ${GFwMsg_LIBRARY}        )
-  set( GFWREG       ${GFwReg_LIBRARY}       )
-  set( GFWALG       ${GFwAlg_LIBRARY}       )
-  set( GFWINT       ${GFwInt_LIBRARY}        )
-  set( GFWGHEP      ${GFwGHEP_LIBRARY}       )
-  set( GFWNUM       ${GFwNum_LIBRARY}        )
-  set( GFWUTL       ${GFwUtl_LIBRARY}        )
-  set( GFWPARDAT    ${GFwParDat_LIBRARY}     )
-  set( GFWEG        ${GFwEG_LIBRARY}         )
-  set( GFWNTP       ${GFwNtp_LIBRARY}        )
-  set( GPHXSIG      ${GPhXSIg_LIBRARY}       )
-  set( GPHPDF       ${GPhPDF_LIBRARY}        )
-  set( GPHNUCLST    ${GPhNuclSt_LIBRARY}     )
-  set( GPHCMN       ${GPhCmn_LIBRARY}        )
-  set( GPHDCY       ${GPhDcy_LIBRARY}        )
-  set( GPHHADTRANSP ${GPhHadTransp_LIBRARY}  )
-  set( GPHHADNZ     ${GPhHadnz_LIBRARY}      )
-  set( GPHDEEX      ${GPhDeEx_LIBRARY}       )
-  set( GPHAMNGXS    ${GPhAMNGXS_LIBRARY}     )
-  set( GPHAMNGEG    ${GPhAMNGEG_LIBRARY}     )
-  set( GPHCHMXS     ${GPhChmXS_LIBRARY}      )
-  set( GPHCOHXS     ${GPhCohXS_LIBRARY}      )
-  set( GPHCOHEG     ${GPhCohEG_LIBRARY}      )
-  set( GPHDISXS     ${GPhDISXS_LIBRARY}      )
-  set( GPHDISEG     ${GPhDISEG_LIBRARY}      )
-  set( GPHDFRCXS    ${GPhDfrcXS_LIBRARY}     )
-  set( GPHDFRCEG    ${GPhDfrcEG_LIBRARY}     )
-  set( GPHGLWRESXS  ${GPhGlwResXS_LIBRARY}   )
-  set( GPHGLWRESEG  ${GPhGlwResEG_LIBRARY}   )
-  set( GPHIBDXS     ${GPhIBDXS_LIBRARY}      )
-  set( GPHIBDEG     ${GPhIBDEG_LIBRARY}      )
-  set( GPHMNUCXS    ${GPhMNucXS_LIBRARY}     )
-  set( GPHMNUCEG    ${GPhMNucEG_LIBRARY}     )
-  set( GPHMEL       ${GPhMEL_LIBRARY}        )
-  set( GPHNUELXS    ${GPhNuElXS_LIBRARY}     )
-  set( GPHNUELEG    ${GPhNuElEG_LIBRARY}     )
-  set( GPHQELXS     ${GPhQELXS_LIBRARY}      )
-  set( GPHQELEG     ${GPhQELEG_LIBRARY}      )
-  set( GPHRESXS     ${GPhResXS_LIBRARY}      )
-  set( GPHRESEG     ${GPhResEG_LIBRARY}      )
-  set( GPHSTRXS     ${GPhStrXS_LIBRARY}      )
-  set( GPHSTREG     ${GPhStrEG_LIBRARY}      )
-  set( GPHNDCY      ${GPhNDcy_LIBRARY}       )
-  set( GTLGEO       ${GTlGeo_LIBRARY}        )
-  set( GTLFLX       ${GTlFlx_LIBRARY}        )
-  set( GRWFWK       ${GRwFwk_LIBRARY}        )
-  set( GRWIO        ${GRwIO_LIBRARY}         )
-  set( GRWCLC       ${GRwClc_LIBRARY}        )
-
-## (continued) GENIE pre-R-3 used GSL via ROOT's Math libs, now makes direct call not available via that route
-cet_find_library( GSL NAMES gsl PATHS ENV GSL_LIB NO_DEFAULT_PATH )
-
-  set (GENIE_LIB_LIST ${GFWMSG}
-      ${GFWREG}
-      ${GFWALG}
-      ${GFWINT}
-      ${GFWGHEP}
-      ${GFWNUM}
-      ${GSL}  # FWNUM relies on GSL
-      ${GFWUTL}
-      ${GFWPARDAT}
-      ${GFWEG}
-      ${GFWNTP}
-      ${GPHXSIG}
-      ${GPHPDF}
-      ${GPHNUCLST}
-      ${GPHCMN}
-      ${GPHDCY}
-      ${GPHHADTRANSP}
-      ${GPHHADNZ}
-      ${GPHDEEX}
-      ${GPHAMNGXS}
-      ${GPHAMNGEG}
-      ${GPHCHMXS}
-      ${GPHCOHXS}
-      ${GPHCOHEG}
-      ${GPHDISXS}
-      ${GPHDISEG}
-      ${GPHDFRCXS}
-      ${GPHDFRCEG}
-      ${GPHGLWRESXS}
-      ${GPHGLWRESEG}
-      ${GPHIBDXS}
-      ${GPHIBDEG}
-      ${GPHMNUCXS}
-      ${GPHMNUCEG}
-      ${GPHMEL}
-      ${GPHNUELXS}
-      ${GPHNUELEG}
-      ${GPHQELXS}
-      ${GPHQELEG}
-      ${GPHRESXS}
-      ${GPHRESEG}
-      ${GPHSTRXS}
-      ${GPHSTREG}
-      ${GPHNDCY}
-      ${GTLGEO}
-      ${GTLFLX}
-      ${GRWFWK}
-      ${GRWIO}
-      ${GRWCLC}
-      ${LOG4CPP}
-  )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

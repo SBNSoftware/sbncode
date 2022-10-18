@@ -1,13 +1,13 @@
+# for classes_def.xml
+include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
+
 cet_enable_asserts()
-include_directories ( $ENV{GENIE}/include/GENIE )
-include_directories ( $ENV{GENIE}/include )
-find_package(dk2nudata REQUIRED)
 
 file(GLOB INTERFACEFILES *Interface* )
 
 simple_plugin( FluxReader
                "source"
-               sbncode::FluxReader
+               sbncode_FluxReader
                larcore::Geometry_Geometry_service
                nutools::EventGeneratorBase_CRY
                lardata::Utilities
@@ -24,22 +24,21 @@ simple_plugin ( FluxGeoFilter "module"
                 art::Persistency_Provenance canvas::canvas
                 art::Utilities canvas::canvas
                 nusimdata::SimulationBase
-              nugen::EventGeneratorBase_GENIE
+                nugen::EventGeneratorBase_GENIE
                 larcore::Geometry_Geometry_service
-               lardata::Utilities
+                lardata::Utilities
                 larcorealg::Geometry
                 ROOT::Geom
 )
 
-art_make_library( LIBRARY_NAME sbncode::FluxReader_FluxInterface
-                  SOURCE	${INTERFACEFILES}
+art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
+                  SOURCE        ${INTERFACEFILES}
                   LIBRARIES
-                art::Framework_IO_Sources
+                  art::Framework_IO_Sources
                   nusimdata::SimulationBase
-               larcore::Geometry_Geometry_service
+                  larcore::Geometry_Geometry_service
                   # GENIE STUFF #####################################
-                  xml2
-
+                  LibXml2::LibXml2
                   log4cpp::log4cpp
                   GENIE::GFwEG
                   GENIE::GFwAlg
@@ -48,50 +47,49 @@ art_make_library( LIBRARY_NAME sbncode::FluxReader_FluxInterface
                   GENIE::GTlFlx
                   dk2nu::Tree
                   GENIE::GFwParDat
-                  #${DK2NUDATA}
-                  ${DK2NUGENIE}
+                  dk2nu::Genie
                   ####################################################
                   cetlib::cetlib cetlib_except::cetlib_except
-               lardata::Utilities
-
+                  lardata::Utilities
                   CLHEP::CLHEP
                   ROOT::Core ROOT::Tree
 )
 
 art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
-          LIB_LIBRARIES	nusimdata_SimulationBase
+          NO_DICTIONARY
+          LIB_LIBRARIES nusimdata::SimulationBase
                         sbncode_FluxReader_FluxInterface
                         larcoreobj_SummaryData
                         art_root_io::TFileService_service
                         art_root_io::tfile_support
-                art::Framework_IO_Sources
+                        art::Framework_IO_Sources
                         art::Persistency_Common canvas::canvas
                         art::Persistency_Provenance canvas::canvas
                         art::Utilities canvas::canvas
                         ROOT::Core ROOT::Tree
                         cetlib::cetlib cetlib_except::cetlib_except
-               nutools::EventGeneratorBase_CRY
-               lardata::Utilities
+                        nutools::EventGeneratorBase_CRY
+                        lardata::Utilities
 
-          MODULE_LIBRARIES sbncode::FluxReader
-                        sbncode::FluxReader_FluxInterface
+          MODULE_LIBRARIES sbncode_FluxReader
+                        sbncode_FluxReader_FluxInterface
                         nusimdata::SimulationBase
                         larcoreobj::SummaryData
-               larcore::Geometry_Geometry_service
-               lardata::Utilities
+                        larcore::Geometry_Geometry_service
+                        lardata::Utilities
                         art::Framework_Core
                         art::Framework_IO_Sources
                         art::Framework_Principal
                         art::Framework_Services_Registry
-                art::Framework_IO_Sources
+                        art::Framework_IO_Sources
                         art_root_io::TFileService_service
                         art_root_io::TFileService_service
                         art_root_io::tfile_support
                         messagefacility::MF_MessageLogger
                         fhiclcpp::fhiclcpp
-                        cetlib cetlib_except
+                        cetlib::cetlib cetlib_except::cetlib_except
                         # GENIE STUFF #####################################
-                        xml2
+                        LibXml2::LibXml2
                         log4cpp::log4cpp
                         GENIE::GFwEG
                         GENIE::GFwAlg
@@ -102,6 +100,8 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         ####################################################
                         ROOT::Core ROOT::Tree ROOT::EG
 )
+
+art_dictionary(DICTIONARY_LIBRARIES PRIVATE nusimdata::SimulationBase dk2nu::Tree)
 
 install_headers()
 install_source()
