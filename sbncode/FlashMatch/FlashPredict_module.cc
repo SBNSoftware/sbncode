@@ -27,6 +27,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fSelectNeutrino(p.get<bool>("SelectNeutrino", true)) // only attempt to match potential neutrino slices
   , fOnlyCollectionWires(p.get<bool>("OnlyCollectionWires", true))
   , fForceConcurrence(p.get<bool>("ForceConcurrence", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
+  , fUse3DMetrics(p.get<bool>("Use3DMetrics", false)) // use metrics that depend on (X,Y,Z)
   , fCorrectDriftDistance(p.get<bool>("CorrectDriftDistance", false)) // require light and charge to coincide, different requirements for SBND and ICARUS
   , fUseARAPUCAS(p.get<bool>("UseARAPUCAS", false))
   , fStoreMCInfo(p.get<bool>("StoreMCInfo", false))
@@ -381,7 +382,8 @@ void FlashPredict::produce(art::Event& evt)
       else
         flashMetricsMap[flashUId] = flash_tmp;
 
-      Score score_tmp = computeScore(charge, flash_tmp);
+      Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, flash_tmp) :
+        computeScore(charge, flash_tmp);
       if(0. <= score_tmp.total && score_tmp.total < score.total
          && flash_tmp.metric_ok){
         score = score_tmp;
@@ -651,6 +653,8 @@ FlashPredict::ReferenceMetrics FlashPredict::loadMetrics(
 
   // BIG TODO: Metrics should depend on X,Y,Z.
   // TODO: Test!
+  // TODO: store 3D-arrays of means and spreads, instead of the
+  // TProfile3D
   TProfile3D* tmp1_prof3 = (TProfile3D*)infile->Get("dy_prof3");
   rm.dYP3 = (TProfile3D*)tmp1_prof3->Clone("dYP3");
   TProfile3D* tmp2_prof3 = (TProfile3D*)infile->Get("dz_prof3");
@@ -1006,28 +1010,40 @@ FlashPredict::Score FlashPredict::computeScore3D(
   const ChargeMetrics& charge,
   const FlashMetrics& flash) const
 {
+  // TODO: this function shouldn't exist, as it's essentially a copy
+  // of computeScore(). For now OK for testing, in the future the test
+  // of fUse3DMetrics should be done inside computeScore().
   Score score{0.};
   unsigned tcount = 0;
   double charge_x = (fCorrectDriftDistance) ?
     driftCorrection(charge.x, flash.time) : charge.x;
-  const std::array<double, 3> xyz = {charge_x, charge.y, charge.z};
 
-  score.y = scoreTerm3D(flash.y, charge.y, xyz, fRM.dYP3);
+  int xb = fRM.dYP3->GetXaxis()->FindBin(charge_x);
+  if (xb < 1) xb = 1;
+  else if (xb > fRM.dYP3->GetXaxis()->GetNbins()) xb = fRM.dYP3->GetXaxis()->GetNbins();
+  int yb = fRM.dYP3->GetYaxis()->FindBin(charge.y);
+  if (yb < 1) yb = 1;
+  else if (yb > fRM.dYP3->GetYaxis()->GetNbins()) yb = fRM.dYP3->GetYaxis()->GetNbins();
+  int zb = fRM.dYP3->GetZaxis()->FindBin(charge.z);
+  if (zb < 1) zb = 1;
+  else if (zb > fRM.dYP3->GetZaxis()->GetNbins()) zb = fRM.dYP3->GetZaxis()->GetNbins();
+ 
+  score.y = scoreTerm3D(flash.y, charge.y, xb, yb, zb, fRM.dYP3);
   if(score.y > fTermThreshold) printMetrics("Y", charge, flash, score.y,
                                             mf::LogDebug("FlashPredict"));
   score.total += score.y;
   tcount++;
-  score.z = scoreTerm3D(flash.z, charge.z, xyz, fRM.dZP3);
+  score.z = scoreTerm3D(flash.z, charge.z, xb, yb, zb, fRM.dZP3);
   if(score.z > fTermThreshold) printMetrics("Z", charge, flash, score.z,
                                             mf::LogDebug("FlashPredict"));
   score.total += score.z;
   tcount++;
-  score.rr = scoreTerm3D(flash.rr, xyz, fRM.RRP3);
+  score.rr = scoreTerm3D(flash.rr, xb, yb, zb, fRM.RRP3);
   if(score.rr > fTermThreshold) printMetrics("RR", charge, flash, score.rr,
                                              mf::LogDebug("FlashPredict"));
   score.total += score.rr;
   tcount++;
-  score.ratio = scoreTerm3D(flash.ratio, xyz, fRM.RatioP3);
+  score.ratio = scoreTerm3D(flash.ratio, xb, yb, zb, fRM.RatioP3);
   if(fICARUS && !std::isnan(flash.h_x)){
     // TODO HACK to penalise matches with flash and charge on opposite volumes
     double charge_x_gl = (fCorrectDriftDistance) ?
@@ -1037,7 +1053,7 @@ FlashPredict::Score FlashPredict::computeScore3D(
     double cathode_tolerance = 30.;
     if(x_gl_diff > x_diff + cathode_tolerance) { // ok if close to the cathode
       double penalization = scoreTerm3D((flash.pe-flash.unpe)/flash.pe,
-                                        xyz, fRM.RatioP3);
+                                        xb, yb, zb, fRM.RatioP3);
       score.ratio += penalization;
       mf::LogInfo("FlashPredict")
         << "HACK: Penalizing match with flash and charge in opposite volumes."
@@ -1052,15 +1068,16 @@ FlashPredict::Score FlashPredict::computeScore3D(
   score.total += score.ratio;
   tcount++;
 
-  // score.slope = scoreTerm3D(flash.slope, charge.slope, xyz, fRM.SlopeP3);
-  score.slope = scoreTerm3D(flash.xw, xyz, fRM.SlopeP3);
+  // score.slope = scoreTerm3D(flash.slope, charge.slope, xb, yb, zb, fRM.SlopeP3);
+  score.slope = scoreTerm3D(flash.xw, xb, yb, zb, fRM.SlopeP3);
   if(score.slope > fTermThreshold) printMetrics("SLOPE", charge, flash, score.slope,
                                                 mf::LogDebug("FlashPredict"));
   // TODO: if useful add it to the total score
   // score.total += score.slope;
   // tcount++;
   // TODO: if useful add it to the total score
-  score.petoq = scoreTerm3D(std::log(flash.pe)/std::log(charge.q), xyz, fRM.PEToQP3);
+  score.petoq = scoreTerm3D(std::log(flash.pe)/std::log(charge.q),
+                            xb, yb, zb, fRM.PEToQP3);
   if(score.petoq > fTermThreshold) printMetrics("LIGHT/CHARGE", charge, flash, score.petoq,
                                                 mf::LogDebug("FlashPredict"));
     score.total += score.petoq;
@@ -1458,17 +1475,11 @@ double FlashPredict::scoreTerm(const double m,
 inline
 double FlashPredict::scoreTerm3D(
   const double m, const double n,
-  const std::array<double, 3>& xyz, const TProfile3D* prof3) const
+  const int xb, const int yb, const int zb, const TProfile3D* prof3) const
 {
-  int xb = prof3->GetXaxis()->FindBin(xyz[0]);
-  if (xb < 1) xb = 1;
-  else if (xb > prof3->GetXaxis()->GetNbins()) xb = prof3->GetXaxis()->GetNbins();
-  int yb = prof3->GetYaxis()->FindBin(xyz[1]);
-  if (yb < 1) yb = 1;
-  else if (yb > prof3->GetYaxis()->GetNbins()) yb = prof3->GetYaxis()->GetNbins();
-  int zb = prof3->GetZaxis()->FindBin(xyz[2]);
-  if (zb < 1) zb = 1;
-  else if (zb > prof3->GetZaxis()->GetNbins()) zb = prof3->GetZaxis()->GetNbins();
+  // TODO: these means and spreads should be stored in 3D-arrays
+  // during loadMetrics(), instead of computing them every time. When
+  // that's done, these functions (scoreTerm3D()) should be removed.
   double mean = prof3->GetBinContent(xb, yb, zb);
   double spread = prof3->GetBinError(xb, yb, zb);
   return scoreTerm(m, n, mean, spread);
@@ -1478,9 +1489,9 @@ double FlashPredict::scoreTerm3D(
 inline
 double FlashPredict::scoreTerm3D(
   const double m,
-  const std::array<double, 3>& xyz, const TProfile3D* prof3) const
+  const int xb, const int yb, const int zb, const TProfile3D* prof3) const
 {
-  return scoreTerm3D(m, 0., xyz, prof3);
+  return scoreTerm3D(m, 0., xb, yb, zb, prof3);
 }
 
 

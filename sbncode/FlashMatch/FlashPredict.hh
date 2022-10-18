@@ -303,10 +303,10 @@ private:
                           const double mean, const double spread) const;
   inline double scoreTerm3D(
     const double m, const double n,
-    const std::array<double, 3>& xyz, const TProfile3D* prof3) const;
+    const int xb, const int yb, const int zb, const TProfile3D* prof3) const;
   inline double scoreTerm3D(
     const double m,
-    const std::array<double, 3>& xyz, const TProfile3D* prof3) const;
+    const int xb, const int yb, const int zb, const TProfile3D* prof3) const;
   inline double PEToQ(const double pe, const double q) const;
   inline bool pfpNeutrinoOnEvent(
     const art::ValidHandle<std::vector<recob::PFParticle>>& pfps_h) const;
@@ -378,6 +378,7 @@ private:
   const bool fSelectNeutrino;
   const bool fOnlyCollectionWires;
   const bool fForceConcurrence;
+  const bool fUse3DMetrics;
   const bool fCorrectDriftDistance;
   // const bool fUseCalo; TODO: Use calorimetry
   const bool fUseARAPUCAS;
