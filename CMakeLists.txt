@@ -1,4 +1,4 @@
-#======================================================================
+# ======================================================================
 #  larsoft main build file
 #
 #  cd .../path/to/build/directory
@@ -11,13 +11,20 @@
 #  make install
 #  make package (builds distribution tarfile)
 # ======================================================================
+
+
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-find_package(cetmodules 2.29.07 REQUIRED)
+find_package(cetmodules 3.19.02 REQUIRED)
 project(sbncode VERSION 09.60.01 LANGUAGES CXX)
+
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
+# cetbuildtools contains our cmake modules
+find_package(cetbuildtools REQUIRED)
+
+list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -57,16 +64,19 @@ find_package(larsim)
 find_package(larreco)
 find_package(larpandora)
 find_package(larpandoracontent)
-find_package(artdaq_core )
+find_package(artdaq_core EXPORT)
 find_package(sbnobj )
 find_package(sbnanaobj )
-find_package(sbndaq_artdaq_core )
+find_package(sbndaq_artdaq_core EXPORT)
 find_package(sbndata)
 find_package(ifdhc)
 find_package(ifdh_art)
 find_package(ifbeam)
 find_package( trace )
 find_package( libwda )
+find_package(dk2nudata EXPORT)
+find_package(dk2nugenie EXPORT)
+
 
 find_package(CLHEP REQUIRED)
 find_package(ROOT REQUIRED)
@@ -191,8 +201,12 @@ include(ArtMake)
 include(BuildPlugins)
 
 add_subdirectory(sbncode)
+#add_subdirectory(ups)
 add_subdirectory(fcl)
 add_subdirectory(fclmodule)
 
 # packaging utility
+#include(UseCPack)
+
+#generate cmake config files
 cet_cmake_config()
