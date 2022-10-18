@@ -641,13 +641,13 @@ def main():
         nuslice_tree = dir.Get("nuslicetree")
     elif args.icarus:
         fcl_params = fhicl.make_pset('flashmatch_simple_icarus.fcl')
-        pset = dotDict(fcl_params['icarus_simple_flashmatch_0'])
+        pset = dotDict(fcl_params['icarus_simple_flashmatch_E'])
         detector = "icarus"
         time_delay = 0.
         # by default merge the trees from both Cryos
-        dir0 = rootfile.Get(file_updated+":/fmatchCryo0")
+        dir0 = rootfile.Get(file_updated+":/fmatchCryoE")
         nuslice_tree0 = dir0.Get("nuslicetree")
-        dir1 = rootfile.Get(file_updated+":/fmatchCryo1")
+        dir1 = rootfile.Get(file_updated+":/fmatchCryoW")
         nuslice_tree1 = dir1.Get("nuslicetree")
         treelist = TList()
         treelist.Add(nuslice_tree0)
