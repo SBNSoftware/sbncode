@@ -3,7 +3,7 @@ add_subdirectory(LArReco)
 art_make( 
   LIB_LIBRARIES
                 fhiclcpp::fhiclcpp
-                art::Persistency_Provenance canvas
+                art::Persistency_Provenance canvas::canvas
                 sbncode_GeoWrappers
 
   MODULE_LIBRARIES

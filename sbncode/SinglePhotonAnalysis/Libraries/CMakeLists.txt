@@ -15,7 +15,7 @@ art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                     larsim::MCCheater_BackTrackerService_service
                     larsim::MCCheater_ParticleInventoryService_service
                     larpandora::LArPandoraInterface
-                    LArPandoraContent 
+                    larpandoracontent::LArPandoraContent
                     nusimdata::SimulationBase
                     art::Persistency_Common canvas::canvas
                     art::Persistency_Provenance

@@ -4,7 +4,7 @@ find_package(ifbeam_art)
 simple_plugin(NuMIRetriever module
         art::Persistency_Common
         art::Utilities canvas::canvas
-        cetlib cetlib_except
+        cetlib::cetlib cetlib_except::cetlib_except
         messagefacility::MF_MessageLogger
         sbnobj::Common_POTAccounting
         ifbeam::ifbeam

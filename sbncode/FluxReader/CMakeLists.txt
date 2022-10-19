@@ -59,7 +59,7 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
           NO_DICTIONARY
           LIB_LIBRARIES nusimdata::SimulationBase
                         sbncode_FluxReader_FluxInterface
-                        larcoreobj_SummaryData
+                        larcoreobj::SummaryData
                         art_root_io::TFileService_service
                         art_root_io::tfile_support
                         art::Framework_IO_Sources
