@@ -13,19 +13,27 @@ Constants::Constants() {
   // Masses
   elec_mass = 0.0005109989461; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   muon_mass = 0.1056583745; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-muon.pdf
+  tau_mass  = 1.77686; // GeV https://pdg.lbl.gov/2019/tables/rpp2019-sum-leptons.pdf
   piplus_mass = 0.13957039; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
   pizero_mass = 0.1349768; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-tab-mesons-light.pdf
   kplus_mass = 0.493677; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_mass = 0.497611; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero.pdf
   tquark_mass = 172.76; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-sum-quarks.pdf (direct measurements)
+  eta_mass = 0.547862; // GeV
+  rho_mass = 0.77526; // GeV
+  etap_mass = 0.95778; // GeV
 
   // Couplings
+  fine_structure_constant = 7.2973525693e-3;// https://pdg.lbl.gov/2019/reviews/rpp2019-rev-phys-constants.pdf
   Gfermi = 1.166379e-5; // 1/GeV^2 https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   higgs_vev = 1. / sqrt(sqrt(2)*Gfermi); // GeV (246.22)
   sin2thetaW = 0.2312; // electroweak mixing angle https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   gL = -0.5 + sin2thetaW;
   gR = sin2thetaW;
   fpion = 0.1302; // Pion decay constant [GeV] https://pdg.lbl.gov/2020/reviews/rpp2020-rev-pseudoscalar-meson-decay-cons.pdf (FLAG 19 average)
+  feta = 1.2*fpion;
+  fetap = -0.45*fpion;
+  grho = 0.102; // [GeV^2]
 
   // unit conversion
   hbar = 6.582119569e-16; // GeV*ns or eV*s https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
@@ -34,6 +42,9 @@ Constants::Constants() {
   // kaon lifetimes
   kplus_lifetime = 1.238e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
   klong_lifetime = 5.116e1; // ns https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero-L.pdf (FIT)
+
+  // other lifetimes
+  tau_lifetime = 290.3e-6; // ns https://pdg.lbl.gov/2019/tables/rpp2019-sum-leptons.pdf
 
   // Kaon decay branching ratios
   kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf
@@ -233,8 +244,15 @@ double forwardPrtlEnergy(double parentM, double secM, double prtlM, double paren
 }
 
 // TODO: use particle database
-double secPDG2Mass(int pdg) {
+double PDG2Mass(int pdg) {
   switch (pdg) {
+    case 321:
+    case -321:
+      return Constants::Instance().kplus_mass;
+    case 130:
+      return Constants::Instance().klong_mass;
+    case 221:
+      return Constants::Instance().eta_mass;
     case 11:
     case -11:
       return Constants::Instance().elec_mass;
@@ -243,6 +261,9 @@ double secPDG2Mass(int pdg) {
     case -13:
       return Constants::Instance().muon_mass;
       break;
+    case 15:
+    case -15:
+      return Constants::Instance().tau_mass;
     case 211:
     case -211:
       return Constants::Instance().piplus_mass;
