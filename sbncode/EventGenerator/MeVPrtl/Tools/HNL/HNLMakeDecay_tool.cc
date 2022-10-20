@@ -172,6 +172,11 @@ double flat_to_exp_rand(double x, double mean, double a, double b) {
   return - mean * log(1 - x * A) + a;
 }
 
+// returns the weight associated with forcing the decay to happen within a center length
+double forcedecay_weight(double mean, double a, double b) {
+    return exp(-a/mean) - exp(-b/mean);
+}
+
 double HNLMakeDecay::MuPiWidth(double hnl_mass, double ue4, double um4, double ut4) {
   return LepPiWidth(hnl_mass, Constants::Instance().muon_mass, um4);
 }
@@ -724,7 +729,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   // }
 
   double in_dist = (flux.pos.Vect() - in).Mag();
-  double det_dist = (in - out).Mag();
+  double out_dist = (flux.pos.Vect() - out).Mag();
 
   // Total width
   double total_width = TotalWidth(flux);
@@ -733,18 +738,17 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
 
-  std::cout << "TOTAL DECAY DIST: " << total_mean_dist << " SELECTED DECAY DIST: " << mean_dist << " DISTANCE TO DETECTOR: " << in_dist << " DISTANCE IN DETECTOR: " << det_dist << std::endl;
+  std::cout << "TOTAL DECAY DIST: " << total_mean_dist << " SELECTED DECAY DIST: " << mean_dist << " DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
 
   // saves the weight
-  // weight = (1. - exp(-in_dist / total_mean_dist))*exp(-det_dist / mean_dist);
-  weight = (1. - exp(-det_dist / mean_dist))*exp(-in_dist / total_mean_dist);
+  weight = forcedecay_weight(total_mean_dist, in_dist, out_dist) * decay_width / total_width; 
 
   // ignore events that will never reach the detector
   if (weight == 0.) return false;
 
   // Get the decay location 
   double flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
-  double decay_rand = flat_to_exp_rand(flat_rand, total_mean_dist, in_dist, in_dist + det_dist);
+  double decay_rand = flat_to_exp_rand(flat_rand, total_mean_dist, in_dist, out_dist);
   TVector3 decay_pos = flux.pos.Vect() + decay_rand * (in - flux.pos.Vect()).Unit();
 
   // Save the decay info
