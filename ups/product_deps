@@ -34,9 +34,10 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
-larsoft             v09_59_00
-sbnobj              v09_14_09
-sbnanaobj           v09_19_04
+
+larsoft             v09_60_01
+sbnobj              v09_14_10
+sbnanaobj           v09_19_06
 sbndaq_artdaq_core  v1_01_00of0
 genie_xsec          v3_00_04a
 sbndata             v01_03
@@ -51,7 +52,6 @@ end_product_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
-
 
 qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec              sbndata   larcv2         systematicstools  nusystematics   notes
 e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000  -nq-      -nq-           e20:debug         e20:debug       -nq-
