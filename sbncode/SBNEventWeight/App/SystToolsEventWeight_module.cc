@@ -8,7 +8,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include <iostream>
-#include <assert.h>
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
@@ -33,8 +32,8 @@
 #include "canvas/Persistency/Common/Assns.h"
 #include "art/Framework/Principal/Run.h"
 
-namespace sbn {
-  namespace evwgh {
+
+namespace sbn::evwgh {
 
 class SystToolsEventWeight : public art::EDProducer {
 public:
@@ -65,19 +64,19 @@ SystToolsEventWeight::SystToolsEventWeight(fhicl::ParameterSet const& p)
   : EDProducer{p}
 {
 
-  fGenieModuleLabel = p.get<std::string>("generator_module_label", "generator");
+  fGenieModuleLabel = p.get<std::string>("GeneratorModuleLabel", "generator");
   fAllowMissingTruth = p.get<bool>("AllowMissingTruth");
-  fDebugMode = p.get<bool>("debugMode");
+  fDebugMode = p.get<bool>("DebugMode", false);
 
   fhicl::ParameterSet syst_provider_config = p.get<fhicl::ParameterSet>("generated_systematic_provider_configuration");
 
-  MF_LOG_INFO("SystToolsEventWeight") << "Configuring ISystProvider";
+  MF_LOG_DEBUG("SystToolsEventWeight") << "Configuring ISystProvider";
 
   fSystProviders = systtools::ConfigureISystProvidersFromParameterHeaders(syst_provider_config);
   fParamHeaderMap = systtools::BuildParameterHeaders(fSystProviders);
   fParamHeaderHelper = systtools::ParamHeaderHelper(fParamHeaderMap);
 
-  MF_LOG_INFO("SystToolsEventWeight") << "ISystProvider is configuered" << std::endl;
+  MF_LOG_DEBUG("SystToolsEventWeight") << "ISystProvider is configuered";
 
   produces<std::vector<sbn::evwgh::EventWeightMap> >();
   produces<art::Assns<simb::MCTruth, sbn::evwgh::EventWeightMap> >();
@@ -95,7 +94,8 @@ void SystToolsEventWeight::produce(art::Event& e) {
 
   std::vector<art::Ptr<simb::MCTruth> > mclist;
   art::Handle<std::vector<simb::MCTruth>> mcTruthHandle;
-  if(!fGenieModuleLabel.empty()) e.getByLabel(fGenieModuleLabel, mcTruthHandle);
+  if(!fGenieModuleLabel.empty()) mcTruthHandle = e.getHandle<std::vector<simb::MCTruth>>(fGenieModuleLabel);
+
   // Prooceed even with missing handle if we want to require the MCTruth to be
   // found, so that an exception will be thrown explaining the problem.
   if(mcTruthHandle.isValid() || !fAllowMissingTruth){
@@ -111,20 +111,18 @@ void SystToolsEventWeight::produce(art::Event& e) {
 
       std::unique_ptr<systtools::EventResponse> syst_resp = sp->GetEventResponse(e);
       if( !syst_resp ){
-        std::cout << "[ERROR]: Got nullptr systtools::EventResponse from provider "
-                  << sp->GetFullyQualifiedName();
-        throw std::exception();
+        throw cet::exception{ "SystToolsEventWeight" }
+          << "Got nullptr systtools::EventResponse from provider "
+          << sp->GetFullyQualifiedName() << "\n";
       }
 
       //==== syst_resp->size() is (Number of MCTruth)
       //==== Each index corresponds to each of MCTruth
-      int nMCTruthIndex(0);
+      int nMCTruthIndex = 0;
       if(fDebugMode) std::cout << "[SystToolsEventWeight::produce]   syst_resp.size() (= Number of MCTruth) of this SystProvider = " << syst_resp->size() << std::endl;
 
       //==== Looping over syst_resp is identical to looping over MCTruth
-      for( systtools::EventResponse::iterator itResp = syst_resp->begin(); itResp != syst_resp->end(); ++itResp ){
-
-        systtools::event_unit_response_t resp = *itResp;
+      for(systtools::event_unit_response_t const& resp: *syst_resp) {
         //==== resp.size() corresponds to number of knobs we altered;
         //==== e.g., MaCCQE, MaCCRES, MvCCRE -> resp.size() = 3
         if(fDebugMode){
@@ -132,44 +130,38 @@ void SystToolsEventWeight::produce(art::Event& e) {
                     << "[SystToolsEventWeight::produce]     resp.size() of this syst_resp (produced) = " << resp.size() << std::endl;
         }
         if(sp->GetSystMetaData().size()!=resp.size()){
-          std::cerr << "[SystToolsEventWeight::produce]     sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << std::endl;
-          std::cerr << "[SystToolsEventWeight::produce]     We expect to have " << sp->GetSystMetaData().size() << " knobs for this SystProvider, but "
+          throw cet::exception{ "SystToolsEventWeight" } 
+            << "sp->GetFullyQualifiedName() = " << sp->GetFullyQualifiedName() << "\n"
+            << "We expect to have " << sp->GetSystMetaData().size() << " knobs for this SystProvider, but "
                     << resp.size() << " are produced. "
-                    << "Probably this particular event is not relevant to this systematic variation." << std::endl;
-          throw std::exception();
+                    << "Probably this particular event is not relevant to this systematic variation.\n";
         }
 
         sbn::evwgh::EventWeightMap mcwgh;
 
-        for( systtools::event_unit_response_t::iterator it = resp.begin(); it != resp.end(); ++it ){
+        for( auto const& r: resp){
 
           //==== responses.size() is the number of universes
-          systtools::SystParamHeader const &sph = fParamHeaderHelper.GetHeader( (*it).pid );
+          systtools::SystParamHeader const &sph = fParamHeaderHelper.GetHeader( r.pid );
           std::string prettyName = sph.prettyName;
 
           if(fDebugMode){
-            std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << (*it).pid << "\n"
+            std::cout << "[SystToolsEventWeight::produce]       pid of this resp = " << r.pid << "\n"
                       << "[SystToolsEventWeight::produce]       prettyName of this resp = " << prettyName << "\n"
                       << "[SystToolsEventWeight::produce]       paramVariations.size() of this resp (expected) = " << sph.paramVariations.size() << "\n"
-                      << "[SystToolsEventWeight::produce]       responses.size() of this resp (produced) = " << (*it).responses.size() << std::endl;
+                      << "[SystToolsEventWeight::produce]       responses.size() of this resp (produced) = " << r.responses.size() << std::endl;
           }
-          if(sph.paramVariations.size()!=(*it).responses.size()){
-            std::cerr << "[SystToolsEventWeight::produce]       prettyName of this resp = " << prettyName << std::endl;
-            std::cerr << "[SystToolsEventWeight::produce]       We expect to have " << sph.paramVariations.size() << " universes, but "
-                      << (*it).responses.size() << " are produced. "
-                      << "Probably this particular event is not relevant to this systematic variation." << std::endl;
-            throw std::exception();
+          if(sph.paramVariations.size()!=r.responses.size()){
+            throw cet::exception{ "SystToolsEventWeight" }
+              << "prettyName of this resp = " << prettyName << "\n"
+              << "We expect to have " << sph.paramVariations.size() << " universes, but "
+                      << r.responses.size() << " are produced. "
+                      << "Probably this particular event is not relevant to this systematic variation.\n";
           }
 
-          std::vector<float> wgts;
-          for( unsigned int i = 0; i < (*it).responses.size(); ++i ){
-
-            if(fDebugMode) std::cout << "[SystToolsEventWeight::produce]         (*it).responses[i] = " << (*it).responses[i] << std::endl;
-            wgts.push_back( (*it).responses[i] );
-
-          } // END loop over universes of this knob
-
-          mcwgh[sp->GetFullyQualifiedName()+"_"+prettyName] = wgts;
+          //==== r.responses : std::vector<double>
+          //==== std::map<std::string, std::vector<float> > EventWeightMap
+          mcwgh[sp->GetFullyQualifiedName()+"_"+prettyName].assign(r.responses.cbegin(), r.responses.cend());
 
         } // END loop over knobs
 
@@ -200,25 +192,23 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
                                   << "sp->GetInstanceName() = " << sp->GetInstanceName() << "\n"
                                   << "Printing each SystParamHeader of this ISystProviderTool..";
     //==== Note: typedef std::vector<SystParamHeader> SystMetaData;
-    auto smd = sp->GetSystMetaData();
+    auto const& smd = sp->GetSystMetaData();
     for( auto &sph : smd ){
-      std::cout << "  sph.prettyName = " << sph.prettyName << std::endl;
+      if (fDebugMode) {
+        std::cout << "  sph.prettyName = " << sph.prettyName << std::endl;
+      }
 
       std::string rwmode = "multisigma";
       if(sph.isRandomlyThrown) rwmode = "multisim";
 
-      std::cout << "  rwmode = " << rwmode << std::endl;
-
-      std::vector<float> withds;
-      std::cout << "    paramVariation = ";
-      for(auto pV : sph.paramVariations){
-        std::cout << pV << " ";
-        withds.push_back(pV);
+      if (fDebugMode) {
+        std::cout << "  rwmode = " << rwmode << std::endl;
       }
-      std::cout << std::endl;
+
+      std::vector<float> widths { sph.paramVariations.begin(), sph.paramVariations.end() };
 
       sbn::evwgh::EventWeightParameterSet fParameterSet;
-      fParameterSet.AddParameter(sph.prettyName, withds);
+      fParameterSet.AddParameter(sph.prettyName, std::move(widths));
       fParameterSet.Configure(sp->GetFullyQualifiedName()+"_"+sph.prettyName, rwmode, sph.paramVariations.size());
       fParameterSet.FillKnobValues();
 
@@ -231,8 +221,7 @@ void SystToolsEventWeight::beginRun(art::Run& run) {
 
 }
 
-  }  // namespace evwgh
-}  // namespace sbn
+}  // namespace sbn::evwgh
 
 DEFINE_ART_MODULE(sbn::evwgh::SystToolsEventWeight)
 
