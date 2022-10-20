@@ -538,21 +538,21 @@ double HNLMakeDecay::CalculateMaxWeight() {
 
   std::cout << "Reference Energy: " << E <<  " P: " << P << std::endl;
 
-  double width = TotalWidth(hnl_mass, ue4, um4, ut4);
-  std::cout << "REFERENCE ALL DECAY WIDTH: " << width << std::endl;
-  double lifetime_ns = Constants::Instance().hbar / width;
-  double mean_dist = lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
-  std::cout << "REFERENCE ALL DECAY LENGTH: " << mean_dist << std::endl;
+  double total_width = TotalWidth(hnl_mass, ue4, um4, ut4);
+  std::cout << "REFERENCE ALL DECAY WIDTH: " << total_width << std::endl;
+  double total_lifetime_ns = Constants::Instance().hbar / total_width;
+  double total_mean_dist = total_lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
+  std::cout << "REFERENCE ALL DECAY LENGTH: " << total_mean_dist << std::endl;
 
-  double decay_width = SelectedWidth(hnl_mass, ue4, um4, ut4);
-  std::cout << "REFERENCE SELECTED DECAY WIDTH: " << decay_width << std::endl;
-  double decay_lifetime_ns = Constants::Instance().hbar / decay_width;
-  double decay_mean_dist = decay_lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
-  std::cout << "REFERENCE SELECTED DECAY LENGTH: " << decay_mean_dist << std::endl;
+  double partial_width = SelectedWidth(hnl_mass, ue4, um4, ut4);
+  std::cout << "REFERENCE SELECTED DECAY WIDTH: " << partial_width << std::endl;
+  double partial_lifetime_ns = Constants::Instance().hbar / partial_width;
+  double partial_mean_dist = partial_lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
+  std::cout << "REFERENCE SELECTED DECAY LENGTH: " << partial_mean_dist << std::endl;
 
 
-  // return (1 - exp(-length / mean_dist))*exp(-det_length / decay_mean_dist);
-  return (1 - exp(-det_length / decay_mean_dist)) * exp(-length / mean_dist);
+  double weight = forcedecay_weight(total_mean_dist, length, length + det_length) * partial_width / total_width; 
+  return weight;
 }
 
 
@@ -691,14 +691,14 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   // Run the selected decay channels
   std::vector<HNLMakeDecay::DecayFinalState> decays;
-  double decay_width = 0.;
+  double partial_width = 0.;
   for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
     decays.push_back((*this.*F)(flux));
-    decay_width += decays.back().width;
+    partial_width += decays.back().width;
   }
 
-  std::cout << "SELECTED DECAY WIDTH: " << decay_width << std::endl;
-  if (decay_width == 0.) return false;
+  std::cout << "SELECTED DECAY WIDTH: " << partial_width << std::endl;
+  if (partial_width == 0.) return false;
 
   // pick one
   double sum_width = 0.;
@@ -706,7 +706,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double rand = GetRandom();
   for (unsigned i = 0; i < decays.size()-1; i++) {
     sum_width += decays[i].width;
-    if (rand < sum_width / decay_width) {
+    if (rand < sum_width / partial_width) {
       idecay = i;
       break;
     }
@@ -714,19 +714,11 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   // Get the decay probability
 
-  // total lifetime
-  double lifetime_ns = Constants::Instance().hbar / decay_width;
+  // partial lifetime
+  double partial_lifetime_ns = Constants::Instance().hbar / partial_width;
 
   // multiply by gamma*v to get the length
-  double mean_dist = lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
-
-  // Get the weight (NOTE: this negelects the probability that the HNL decays before the detector)
-  // I.e. it is only valid in the limit mean_dist >> 100m (distance from beam to SBN)
-  // if (mean_dist < fMinDetectorDistance) {
-  //  std::cerr << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid. Ignoring event." << std::endl;
-  //  std::cout << "ERROR: bad mean_dist value (" << mean_dist << "). Decay weighting approximations invalid. Ignoring event." << std::endl;
-  //  return false;
-  // }
+  double partial_mean_dist = partial_lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
   double in_dist = (flux.pos.Vect() - in).Mag();
   double out_dist = (flux.pos.Vect() - out).Mag();
@@ -738,10 +730,10 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
 
-  std::cout << "TOTAL DECAY DIST: " << total_mean_dist << " SELECTED DECAY DIST: " << mean_dist << " DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
+  std::cout << "TOTAL DECAY DIST: " << total_mean_dist << " SELECTED DECAY DIST: " << partial_mean_dist << " DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
 
   // saves the weight
-  weight = forcedecay_weight(total_mean_dist, in_dist, out_dist) * decay_width / total_width; 
+  weight = forcedecay_weight(total_mean_dist, in_dist, out_dist) * partial_width / total_width; 
 
   // ignore events that will never reach the detector
   if (weight == 0.) return false;
@@ -758,9 +750,11 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     decay.daughter_e.push_back(p.E());
   }
   decay.daughter_pdg = decays[idecay].pdg;
-  decay.decay_width = decay_width;
-  decay.mean_lifetime = lifetime_ns;
-  decay.mean_distance = mean_dist;
+
+  decay.total_decay_width = total_width;
+  decay.total_mean_lifetime = total_lifetime_ns;
+  decay.total_mean_distance = total_mean_dist;
+  decay.allowed_decay_fraction = partial_width / total_width;
 
   return true;
 }
