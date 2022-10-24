@@ -40,7 +40,7 @@ sbnobj              v09_14_10
 sbnanaobj           v09_19_06
 sbndaq_artdaq_core  v1_01_00of0
 genie_xsec          v3_00_04a
-sbndata             v01_03
+sbndata             v01_04
 larcv2              v2_1_0
 
 # list products required ONLY for the build
