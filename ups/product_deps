@@ -34,6 +34,7 @@ fwdir   product_dir scripts
 # Add the dependent product and version
 
 product             version
+
 larsoft             v09_60_01
 sbnobj              v09_14_10
 sbnanaobj           v09_19_06
@@ -42,6 +43,7 @@ genie_xsec          v3_00_04a
 sbndata             v01_03
 systematicstools    v01_00_04
 nusystematics       v01_00_15
+larcv2              v2_1_0
 
 # list products required ONLY for the build
 # any products here must NOT have qualifiers
