@@ -558,7 +558,6 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
-        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
         p.p.x = xyz[i].x();
         p.p.y = xyz[i].y();
         p.p.z = xyz[i].z();
@@ -570,6 +569,7 @@ namespace caf
             p.wire = h->WireID().Wire;
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
+            p.t = h->PeakTime();
           }
         }
 
