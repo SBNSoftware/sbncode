@@ -51,12 +51,11 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-
-qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec              sbndata   systematicstools  nusystematics   notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000  -nq-      e20:debug         e20:debug       -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000  -nq-      e20:prof          e20:prof        -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000  -nq-      c7:debug          c7:debug        -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000  -nq-      c7:prof           c7:prof         -nq-
+qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec              sbndata   larcv2         systematicstools  nusystematics   notes
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000  -nq-      -nq-           e20:debug         e20:debug       -nq-
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000  -nq-      e20:p392:prof  e20:prof          e20:prof        -nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000  -nq-      -nq-           c7:debug          c7:debug        -nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000  -nq-      c7:p392:prof   c7:prof           c7:prof         -nq-
 end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
@@ -72,4 +71,3 @@ table_fragment_end
 ### Local Variables:OA
 ### tab-width: 8
 ### End:
-
