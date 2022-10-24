@@ -1423,6 +1423,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
 
+    art::FindManyP<anab::T0> fmPFPT0 =
+      FindManyPStrict<anab::T0>(fmPFPart, evt,
+            fParams.PFParticleLabel() + slice_tag_suff);
+
     // make Ptr's to tracks for track -> other object associations
     std::vector<art::Ptr<recob::Track>> slcTracks;
     if (fmTrack.isValid()) {
@@ -1673,8 +1677,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
+        art::Ptr<anab::T0> thisPFPT0;
+        if (fmPFPT0.isValid()) {
+          if (!fmPFPT0.at(iPart).empty()) {
+            thisPFPT0 = fmPFPT0.at(iPart).at(0);
+          }
+        }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.trk.back().pfp);
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
@@ -1716,8 +1726,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
 
+        art::Ptr<anab::T0> thisPFPT0;
+        if (fmPFPT0.isValid()) {
+          if (!fmPFPT0.at(iPart).empty()) {
+            thisPFPT0 = fmPFPT0.at(iPart).at(0);
+          }
+        }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.shw.back().pfp);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
