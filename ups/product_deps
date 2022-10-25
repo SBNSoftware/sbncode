@@ -52,9 +52,9 @@ end_product_list
 # Make the table by adding columns before "notes".
 
 qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec			sbndata	 larcv2 notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000	-nq- -nq-	-nq-
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000	-nq- debug:e20:p392	-nq-
 e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000   	-nq- e20:p392:prof	-nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq- -nq-	-nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq- c7:debug:p392	-nq-
 c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000   	-nq- c7:p392:prof	-nq-
 end_qualifier_list
 
