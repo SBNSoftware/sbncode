@@ -35,7 +35,7 @@ fwdir   product_dir scripts
 
 product             version
 
-larsoft             v09_60_01
+larsoft             v09_61_00
 sbnobj              v09_14_10
 sbnanaobj           v09_19_06
 sbndaq_artdaq_core  v1_01_00of0
@@ -56,6 +56,7 @@ e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k
 e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000   	-nq- 	  e20:p392:prof	 -nq-
 c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000	-nq- 	  c7:debug:p392	 -nq-
 c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000   	-nq- 	  c7:p392:prof	 -nq-
+
 end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
