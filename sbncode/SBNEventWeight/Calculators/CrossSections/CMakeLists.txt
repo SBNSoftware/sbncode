@@ -6,6 +6,7 @@ art_make(
     nugen::EventGeneratorBase_GENIE
     nugen::NuReweight_art
     nugen::NuReweight
+    nusimdata::SimulationBase
     nurandom::RandomUtils_NuRandomService_service
     art::Framework_Principal
     art::Framework_Services_Registry
