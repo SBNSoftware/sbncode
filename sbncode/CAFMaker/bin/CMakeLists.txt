@@ -1,4 +1,4 @@
-cet_make_exec( extractCAFMetadata
+cet_make_exec( NAME extractCAFMetadata
                SOURCE extractCAFMetadata.cc
                LIBRARIES ROOT::Core ROOT::RIO
                )

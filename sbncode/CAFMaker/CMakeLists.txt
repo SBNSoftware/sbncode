@@ -1,14 +1,13 @@
 # for classes_def.xml
 include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 #set( PACKAGE CAFMaker )
-FILE( GLOB src_files *.cxx )
+
+include_directories( $ENV{SRPROXY_DIR}/include )
 
 add_subdirectory(RecoUtils)
 add_subdirectory(bin)
 
-include_directories( $ENV{SRPROXY_DIR}/include )
 art_make_library( LIBRARY_NAME sbncode_CAFMaker
-                  SOURCE ${src_files}
                   LIBRARIES
                   ifdh_art::IFDH_service
                   sbnanaobj::StandardRecord

@@ -1,4 +1,5 @@
-simple_plugin(TrackAreaHit module
+cet_build_plugin(TrackAreaHit art::module
+     LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -8,8 +9,8 @@ simple_plugin(TrackAreaHit module
         cetlib::cetlib cetlib_except::cetlib_except
         messagefacility::MF_MessageLogger
         lardataobj::RecoBase_AssnsDicts_dict
-        lardataobj::RecoBase     
-        lardataobj::RecoBase_dict        
+        lardataobj::RecoBase
+        lardataobj::RecoBase_dict
         larcorealg::Geometry
         larcore::Geometry_Geometry_service
         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
@@ -18,7 +19,9 @@ simple_plugin(TrackAreaHit module
         larsim::Simulation
 )
 
-simple_plugin(TrackHitFilter module
+cet_build_plugin(TrackHitFilter art::module
+     LIBRARIES
+        art::Framework_Core
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -28,15 +31,17 @@ simple_plugin(TrackHitFilter module
         cetlib::cetlib cetlib_except::cetlib_except
         messagefacility::MF_MessageLogger
         lardataobj::RecoBase_AssnsDicts_dict
-        lardataobj::RecoBase     
-        lardataobj::RecoBase_dict        
+        lardataobj::RecoBase
+        lardataobj::RecoBase_dict
         lardataalg::DetectorInfo
         lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
         larcorealg::Geometry
         larcore::Geometry_Geometry_service
 )
 
-simple_plugin(TrackHitDumper module
+cet_build_plugin(TrackHitDumper art::module
+     LIBRARIES
+        art::Framework_Core
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service

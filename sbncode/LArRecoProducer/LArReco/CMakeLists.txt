@@ -1,6 +1,4 @@
-
-art_make_library( LIBRARY_NAME sbn_LArReco
-                  SOURCE  TrackMomentumCalculator.cxx TrajectoryMCSFitter.cxx
+art_make_library( NAME sbn_LArReco
                   LIBRARIES
                        art::Framework_Core
                        art::Framework_Services_Registry

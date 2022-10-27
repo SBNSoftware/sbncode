@@ -1,4 +1,4 @@
-art_make( 
+art_make(
   LIBRARY_NAME sbncode_SBNEventWeight_Base
   LIB_LIBRARIES
     sbnobj::Common_SBNEventWeight

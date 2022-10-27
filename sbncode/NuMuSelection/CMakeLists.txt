@@ -1,4 +1,5 @@
-simple_plugin( MuPVertexStudy module
+cet_build_plugin( MuPVertexStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -23,7 +24,8 @@ simple_plugin( MuPVertexStudy module
                             larcorealg::GeoAlgo
                             larreco::RecoAlg
 )
-simple_plugin( MuonS2NStudy module
+cet_build_plugin( MuonS2NStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -48,7 +50,8 @@ simple_plugin( MuonS2NStudy module
                             larcorealg::GeoAlgo
                             larreco::RecoAlg
 )
-simple_plugin( NuMuEfficiencyStudy module
+cet_build_plugin( NuMuEfficiencyStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

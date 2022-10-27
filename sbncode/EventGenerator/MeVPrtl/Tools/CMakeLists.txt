@@ -1,5 +1,5 @@
 
-art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Constants
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Constants
           SOURCE Constants.cpp
           LIBRARIES
                             ROOT::Core
@@ -10,7 +10,8 @@ art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Constants
         )
 
 
-simple_plugin( EmptyKaonGen tool
+cet_build_plugin( EmptyKaonGen art::tool
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -32,7 +33,8 @@ simple_plugin( EmptyKaonGen tool
 )
 
 
-simple_plugin( NuMiKaonGen tool
+cet_build_plugin( NuMiKaonGen art::tool
+                       LIBRARIES
                             ifdh_art::IFDH_service
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -54,7 +56,8 @@ simple_plugin( NuMiKaonGen tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( WeightedRayTraceBox tool
+cet_build_plugin( WeightedRayTraceBox art::tool
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -75,7 +78,8 @@ simple_plugin( WeightedRayTraceBox tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( MixedWeightRayTraceBox tool
+cet_build_plugin( MixedWeightRayTraceBox art::tool
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -99,7 +103,8 @@ simple_plugin( MixedWeightRayTraceBox tool
 
 
 
-simple_plugin( ReThrowRayTraceBox tool
+cet_build_plugin( ReThrowRayTraceBox art::tool
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -119,7 +124,8 @@ simple_plugin( ReThrowRayTraceBox tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( RayTraceBox tool
+cet_build_plugin( RayTraceBox art::tool
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

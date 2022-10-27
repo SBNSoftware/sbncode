@@ -1,5 +1,6 @@
 
-simple_plugin(EXTRetriever module
+cet_build_plugin(EXTRetriever art::module
+    LIBRARIES
         art::Persistency_Common
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except

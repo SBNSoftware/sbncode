@@ -1,4 +1,4 @@
-art_make_library(
+cet_make_library(
         SOURCE StubBuilder.cxx StubMergeAlgorithms.cxx
         LIBRARIES
         art::Framework_Core
@@ -17,7 +17,8 @@ art_make_library(
         lardataalg::DetectorInfo
         larevt::SpaceCharge
 )
-simple_plugin(VertexChargeVacuum module
+cet_build_plugin(VertexChargeVacuum art::module
+        LIBRARIES
         art::Framework_Core
         art::Framework_Principal
         art::Framework_Services_Registry
@@ -36,7 +37,8 @@ simple_plugin(VertexChargeVacuum module
         larevt::SpaceCharge
 )
 
-simple_plugin(VertexStubTracker module
+cet_build_plugin(VertexStubTracker art::module
+        LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -57,7 +59,8 @@ simple_plugin(VertexStubTracker module
         larevt::SpaceCharge
 )
 
-simple_plugin(PlaneStubMerge tool
+cet_build_plugin(PlaneStubMerge art::tool
+        LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -78,7 +81,8 @@ simple_plugin(PlaneStubMerge tool
         larevt::SpaceCharge
 )
 
-simple_plugin(TwoPlaneStubMerge tool
+cet_build_plugin(TwoPlaneStubMerge art::tool
+        LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service

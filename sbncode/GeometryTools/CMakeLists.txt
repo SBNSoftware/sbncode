@@ -1,5 +1,5 @@
-art_make(    LIBRARY_NAME sbncode_GeoWrappers
-             LIB_LIBRARIES larcorealg::Geometry
+art_make_library(    LIBRARY_NAME sbncode_GeoWrappers
+             LIBRARIES larcorealg::Geometry
                            larcore::Geometry_Geometry_service
                            larsim::Simulation lardataobj::Simulation
                            larsim::MCCheater_BackTrackerService_service
@@ -8,7 +8,7 @@ art_make(    LIBRARY_NAME sbncode_GeoWrappers
                            larevt::Filters
                            lardataobj::RawData
                            lardataobj::RecoBase
-                           lardata::RecoObjects  
+                           lardata::RecoObjects
                            larpandora::LArPandoraInterface
                            nusimdata::SimulationBase
                            cetlib::cetlib cetlib_except::cetlib_except

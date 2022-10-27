@@ -4,8 +4,8 @@
 #  EXTRA_FLAGS  -Wall -Wextra  -pedantic  #-Wconversion
 #  )
 
-art_make( 
-  MODULE_LIBRARIES
+art_make_library()
+set( MODULE_LIBRARIES
   art::Framework_Core
   art::Framework_Principal
   art::Framework_Services_Registry
@@ -34,6 +34,9 @@ art_make(
   ROOT::XMLIO
   ROOT::Gdml
   )
+
+cet_build_plugin(FlashPredict art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_fhicl()

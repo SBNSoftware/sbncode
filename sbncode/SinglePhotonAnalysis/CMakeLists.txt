@@ -1,5 +1,5 @@
 
-art_make( BASENAME_ONLY
+art_make_library( BASENAME_ONLY
         LIB_LIBRARIES
           larcorealg::Geometry
           larcore::Geometry_Geometry_service
@@ -13,22 +13,38 @@ art_make( BASENAME_ONLY
           larsim::MCCheater_BackTrackerService_service
           larsim::MCCheater_ParticleInventoryService_service
           larpandora::LArPandoraInterface
-          LArPandoraContent 
+          LArPandoraContent
           nusimdata::SimulationBase
           art::Persistency_Common canvas::canvas
           art::Persistency_Provenance
           art::Utilities
           cetlib::cetlib cetlib_except::cetlib_except
-          ROOT::Geom 
+          ROOT::Geom
           ROOT::Core
-        MODULE_LIBRARIES
+)
+
+cet_build_plugin(NCDeltaRadiative art::module LIBRARIES
           sbncode::SinglePhotonAnalysis_Libraries
           sbncode::SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-include_directories( $ENV{SRPROXY_INC} )
+cet_build_plugin(NCRadiativeResonant art::module LIBRARIES
+          sbncode::SinglePhotonAnalysis_Libraries
+          sbncode::SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
+          )
+
+cet_build_plugin(SinglePhoton art::module LIBRARIES
+          sbncode::SinglePhotonAnalysis_Libraries
+          sbncode::SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
+          )
+
+
 add_subdirectory(SEAview)
 add_subdirectory(jobs)
 add_subdirectory(Libraries)

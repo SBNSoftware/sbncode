@@ -1,7 +1,8 @@
 find_package(ifbeam)
-find_package(ifbeam_art)
+find_package(ifdh_art)
 
-simple_plugin(NuMIRetriever module
+cet_build_plugin(NuMIRetriever art::module
+    LIBRARIES
         art::Persistency_Common
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except

@@ -1,4 +1,4 @@
-art_make( 
+art_make(
     LIB_LIBRARIES
         larsim::PhotonPropagation
         larsim::PhotonPropagation_PhotonVisibilityService_service

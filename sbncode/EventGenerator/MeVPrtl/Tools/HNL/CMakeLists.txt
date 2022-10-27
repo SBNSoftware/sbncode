@@ -6,7 +6,8 @@ art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Dalitz
         )
 
 
-simple_plugin( Kaon2HNLFlux tool
+cet_build_plugin( Kaon2HNLFlux art::tool
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -24,7 +25,8 @@ simple_plugin( Kaon2HNLFlux tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( HNLMakeDecay tool
+cet_build_plugin( HNLMakeDecay art::tool
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

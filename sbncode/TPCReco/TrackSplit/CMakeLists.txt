@@ -1,4 +1,5 @@
-simple_plugin(TrackSplitter module
+cet_build_plugin(TrackSplitter art::module
+  LIBRARIES
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service
@@ -16,7 +17,8 @@ simple_plugin(TrackSplitter module
   sbnobj::Common_Reco
 )
 
-simple_plugin(MergedTrackIdentifier module
+cet_build_plugin(MergedTrackIdentifier art::module
+  LIBRARIES
   art::Framework_Core
   art::Framework_Services_Registry
   art_root_io::TFileService_service

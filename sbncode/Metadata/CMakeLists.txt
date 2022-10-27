@@ -10,11 +10,12 @@ set( sbn_meta_lib_list   art::Framework_Core
                          larcoreobj::SummaryData
     )
 
-simple_plugin( FileCatalogMetadataSBN  "service"
-               ${sbn_meta_lib_list}
+cet_build_plugin( FileCatalogMetadataSBN  art::service
+               LIBRARIES ${sbn_meta_lib_list}
         )
 
-simple_plugin( MetadataSBN "service"
+cet_build_plugin( MetadataSBN art::service
+               LIBRARIES
                ${sbn_meta_lib_list}
                art::Framework_IO
                art::Framework_IO_detail

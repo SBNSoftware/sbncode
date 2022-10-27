@@ -1,4 +1,5 @@
-simple_plugin( CalorimetryAnalysis module
+cet_build_plugin( CalorimetryAnalysis art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service

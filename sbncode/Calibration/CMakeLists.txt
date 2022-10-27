@@ -1,5 +1,6 @@
 
-simple_plugin( TrackCaloSkimmer module
+cet_build_plugin( TrackCaloSkimmer art::module
+                       LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -26,7 +27,8 @@ simple_plugin( TrackCaloSkimmer module
                             larevt::SpaceCharge
 )
 
-simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
+cet_build_plugin(TrackCaloSkimmerSelectStoppingTrack art::tool
+                      LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -44,7 +46,8 @@ simple_plugin(TrackCaloSkimmerSelectStoppingTrack tool
                             sbnobj::Common_Calibration_dict
 )
 
-simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
+cet_build_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack art::tool
+                      LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
                             art_root_io::TFileService_service
@@ -57,7 +60,8 @@ simple_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack tool
                             larevt::SpaceCharge
 )
 
-simple_plugin(TrackCaloSkimmerSelectAllTrack tool
+cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
+                      LIBRARIES
                             art::Persistency_Common
                             art::Utilities canvas::canvas
                             larcore::Geometry_Geometry_service
@@ -65,7 +69,8 @@ simple_plugin(TrackCaloSkimmerSelectAllTrack tool
                             ROOT::X3d
 )
 
-simple_plugin ( DataSelect module
+cet_build_plugin ( DataSelect art::module
+           LIBRARIES
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal

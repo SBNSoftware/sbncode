@@ -1,4 +1,5 @@
-simple_plugin(G4InfoReducer "module"
+cet_build_plugin(G4InfoReducer art::module
+                       LIBRARIES
                            larsim::Simulation
                            larcore::Geometry_Geometry_service
                            lardata::DetectorInfoServices_DetectorClocksServiceStandard_service

@@ -1,7 +1,8 @@
 add_subdirectory(Tools)
 add_subdirectory(config)
 
-simple_plugin( MeVPrtlGen module
+cet_build_plugin( MeVPrtlGen art::module
+          LIBRARIES
               art::Framework_Core
               art::Framework_Services_Registry
               art_root_io::TFileService_service
@@ -22,7 +23,8 @@ simple_plugin( MeVPrtlGen module
               sbncode::EventGenerator_MeVPrtl_Constants
 )
 
-simple_plugin( MeVPrtlTestRayTrace module
+cet_build_plugin( MeVPrtlTestRayTrace art::module
+                    LIBRARIES
                         art::Framework_Core
                         art::Framework_Services_Registry
                         art_root_io::TFileService_service

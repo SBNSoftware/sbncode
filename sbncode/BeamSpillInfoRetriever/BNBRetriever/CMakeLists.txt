@@ -1,14 +1,15 @@
 find_package(ifbeam)
-find_package(ifbeam_art)
+find_package(ifdh_art)
 
 
-cet_make_library(LIBRARIES Boost::system
+art_make_library(LIBRARIES Boost::system
         LIBRARY_NAME sbn_BNBSpillInfoRetriever_MWRData
         SOURCE MWRData.cpp
 )
 
 
-simple_plugin(BNBRetriever module
+cet_build_plugin(BNBRetriever art::module
+    LIBRARIES
         art::Persistency_Common
         art::Utilities canvas::canvas
         cetlib::cetlib cetlib_except::cetlib_except

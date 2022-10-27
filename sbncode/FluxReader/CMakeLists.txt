@@ -5,15 +5,16 @@ cet_enable_asserts()
 
 file(GLOB INTERFACEFILES *Interface* )
 
-simple_plugin( FluxReader
-               "source"
+cet_build_plugin( FluxReader art::source
+          LIBRARIES
                sbncode_FluxReader
                larcore::Geometry_Geometry_service
                nutools::EventGeneratorBase_CRY
                lardata::Utilities
 )
 
-simple_plugin ( FluxGeoFilter "module"
+cet_build_plugin ( FluxGeoFilter art::module
+            LIBRARIES
                 art::Framework_Core
                 art::Framework_Principal
                 art::Framework_Services_Registry
@@ -31,7 +32,7 @@ simple_plugin ( FluxGeoFilter "module"
                 ROOT::Geom
 )
 
-art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
+cet_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   SOURCE        ${INTERFACEFILES}
                   LIBRARIES
                   art::Framework_IO_Sources
@@ -55,9 +56,9 @@ art_make_library( LIBRARY_NAME sbncode_FluxReader_FluxInterface
                   ROOT::Core ROOT::Tree
 )
 
-art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
-          NO_DICTIONARY
-          LIB_LIBRARIES nusimdata::SimulationBase
+cet_make_library(
+          SOURCE FluxReader.cxx
+          LIBRARIES     nusimdata::SimulationBase
                         sbncode_FluxReader_FluxInterface
                         larcoreobj::SummaryData
                         art_root_io::TFileService_service
@@ -70,8 +71,10 @@ art_make( EXCLUDE FluxReader_source.cc ${INTERFACEFILES} FluxGeoFilter_module.cc
                         cetlib::cetlib cetlib_except::cetlib_except
                         nutools::EventGeneratorBase_CRY
                         lardata::Utilities
+)
 
-          MODULE_LIBRARIES sbncode_FluxReader
+cet_build_plugin(FluxReaderAna art::module LIBRARIES
+                        sbncode_FluxReader
                         sbncode_FluxReader_FluxInterface
                         nusimdata::SimulationBase
                         larcoreobj::SummaryData

@@ -4,7 +4,8 @@ add_subdirectory(VertexStub)
 add_subdirectory(CalorimetryAnalysis)
 
 
-simple_plugin(NuVertexChargeTree module
+cet_build_plugin(NuVertexChargeTree art::module
+    LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -17,7 +18,7 @@ simple_plugin(NuVertexChargeTree module
         lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
         sbnobj::Common_Reco
         lardataobj::AnalysisBase
-        lardataalg::DetectorInfo        
+        lardataalg::DetectorInfo
         art_root_io::tfile_support
         art_root_io::art_root_io
         art_root_io::dict
@@ -33,14 +34,15 @@ simple_plugin(NuVertexChargeTree module
 )
 
 
-simple_plugin ( EventSelect module
+cet_build_plugin( EventSelect art::module
+     LIBRARIES
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal
                art::Framework_Services_Registry
                art::Utilities canvas::canvas
                cetlib::cetlib cetlib_except::cetlib_except
-               lardataalg::DetectorInfo        
+               lardataalg::DetectorInfo
                ROOT::X3d
 )
 
