@@ -263,7 +263,7 @@ namespace caf
       0,
     };
 
-    Atom<art::InputTag> TriggerLabel {
+    Atom<string> TriggerLabel {
       Name("TriggerLabel"),
       Comment("Label of trigger."),
       "daqTrigger"
@@ -321,6 +321,12 @@ namespace caf
       Name("TrackHitFillRREndCut"),
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
+    };
+
+    Atom<bool> ReferencePMTFromTriggerToBeam {
+      Name("ReferencePMTFromTriggerToBeam"),
+      Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
+      true,
     };
   };
 }

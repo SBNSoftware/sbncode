@@ -188,7 +188,6 @@ class CAFMaker : public art::EDProducer {
   double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
-  std::vector<caf::SRTrigger> fSRTrigger; ///< Store trigger and beam gate information
 
   // int fCycle;
   // int fBatch;
@@ -245,6 +244,8 @@ class CAFMaker : public art::EDProducer {
   double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
+
+  void ReferencePMTTimes(StandardRecord &rec, double PMT_refernce_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -415,6 +416,25 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
       }
     }
   }
+}
+
+void CAFMaker::ReferencePMTTimes(StandardRecord &rec, double PMT_refernce_time) {
+  // Fix the flashes
+  for (SROpFlash &f: rec.opflashes) {
+    f.time += PMT_refernce_time;
+    f.timemean += PMT_refernce_time;
+    f.firsttime += PMT_refernce_time;
+  }
+
+  // Fix the flash matches
+  for (SRSlice &s: rec.slc) {
+    s.fmatch.time += PMT_refernce_time;
+    s.fmatch_a.time += PMT_refernce_time;
+    s.fmatch_b.time += PMT_refernce_time;
+  }
+
+  // TODO: fix more?
+
 }
 
 void CAFMaker::InitVolumes() {
@@ -1205,15 +1225,15 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
 
   //Beam gate and Trigger info
-  fSRTrigger.clear();
-  if(isRealData)
-  {
-    const auto& addltrig = evt.getProduct<sbn::ExtraTriggerInfo>(fParams.TriggerLabel());
-    const auto& trig = evt.getProduct<std::vector<raw::Trigger>>(fParams.TriggerLabel());
-    if(trig.size()==1)
-    {
-      FillTrigger(addltrig, trig, fSRTrigger);
-    }
+  art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
+  GetByLabelStrict(evt, fParams.TriggerLabel(), extratrig_handle);
+
+  art::Handle<std::vector<raw::Trigger>> trig_handle;
+  GetByLabelStrict(evt, fParams.TriggerLabel(), trig_handle);
+
+  caf::SRTrigger srtrigger; 
+  if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
+    FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
   }
 
   // try to find the result of the Flash trigger if it was run
@@ -1257,7 +1277,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
       else{
         std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
-          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
+          << " triggers in '" << fParams.TriggerLabel() << "' data product."
           << " Please contact CAFmaker maintainer." << std::endl;
         abort();
       }
@@ -1784,6 +1804,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
   rec.ntrue_particles = true_particles.size();
 
+  // Fix the Reference time
+  //
+  // We want MC and Data to have the same reference time.
+  // In MC/LArSoft the "reference time" is canonically defined
+  // as the time when the start of the beam spill reaches the detector.
+  //
+  // In data it may be defined differently for different subsystems. In 
+  // particular, some sub-systems define the reference time as the time
+  // of the trigger. We want to correct those to the universal reference
+  // time from MC.
+  //
+  // PMT's:
+  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  ReferencePMTTimes(rec, PMT_reference_time);
+  // TODO: CRT, TPC?
+
   // Get metadata information for header
   unsigned int run = evt.run();
   unsigned int subrun = evt.subRun();
@@ -1829,8 +1865,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
-  rec.hdr.triggerinfo = fSRTrigger;
-  rec.hdr.ntriggerinfo = fSRTrigger.size();
+  rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
@@ -1907,7 +1942,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fBNBInfo.clear();
   fNuMIInfo.clear();
-  fSRTrigger.clear();
   rec.hdr.pot = 0;
 }
 
