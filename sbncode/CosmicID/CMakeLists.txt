@@ -5,7 +5,7 @@ cet_build_plugin( CRUMBS art::module
           art::Persistency_Provenance canvas::canvas
           sbnobj::Common_Reco
           sbncode::GeoWrappers
-          sbncode::LArRecoProducer_LArReco
+          sbncode::LArRecoProducer
           lardataobj::RecoBase_AssnsDicts_dict
           lardataobj::RecoBase_dict
           lardataobj::RecoBase
