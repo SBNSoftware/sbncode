@@ -254,10 +254,10 @@ libdir	fq_dir		lib
 product			version		qual	flags		<table_format=2>
 genie_xsec		v3_00_04a	-
 larcv2			v2_1_0		-
-larsoft			v09_60_01	-
+larsoft			v09_61_00	-
 sbnanaobj		v09_19_06	-
 sbndaq_artdaq_core	v1_01_00of0	-
-sbndata			v01_03		-
+sbndata			v01_04		-
 sbnobj			v09_14_10	-
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
@@ -315,9 +315,9 @@ end_product_list
 #
 ####################################
 qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core	genie_xsec		sbndata	larcv2		notes
-c7:debug	c7:debug	c7:debug	c7:debug	c7:s112:debug		e1000:G1810a0211a:k250	-nq-	-nq-		-nq-
+c7:debug	c7:debug	c7:debug	c7:debug	c7:s112:debug		e1000:G1810a0211a:k250	-nq-	c7:p392:debug	-nq-
 c7:prof		c7:prof		c7:prof		c7:prof		c7:s112:prof		e1000:G1810a0211a:k250	-nq-	c7:p392:prof	-nq-
-e20:debug	e20:debug	e20:debug	e20:debug	e20:s112:debug		e1000:G1810a0211a:k250	-nq-	-nq-		-nq-
+e20:debug	e20:debug	e20:debug	e20:debug	e20:s112:debug		e1000:G1810a0211a:k250	-nq-	e20:p392:debug	-nq-
 e20:prof	e20:prof	e20:prof	e20:prof	e20:s112:prof		e1000:G1810a0211a:k250	-nq-	e20:p392:prof	-nq-
 end_qualifier_list
 ####################################
