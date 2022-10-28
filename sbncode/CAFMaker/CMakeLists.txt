@@ -60,7 +60,7 @@ cet_build_plugin ( CAFMaker art::module
                BASENAME_ONLY
             )
 
-build_dictionary( CAFMaker
+art_dictionary( CAFMaker
                   DICTIONARY_LIBRARIES
                   sbnanaobj::StandardRecord
                   sbnanaobj::StandardRecord_dict

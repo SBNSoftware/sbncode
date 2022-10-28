@@ -1,5 +1,5 @@
 
-art_make_library( BASENAME_ONLY
+art_make_library(
         LIB_LIBRARIES
           larcorealg::Geometry
           larcore::Geometry_Geometry_service

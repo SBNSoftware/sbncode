@@ -1,7 +1,6 @@
-include_directories(${GENIE_INCLUDE_DIRS})
-art_make(
+art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_BNBFlux
-  LIB_LIBRARIES
+  LIBRARIES
     ${GENIE_LIB_LIST}
     sbncode::SBNEventWeight_Base
     nugen::EventGeneratorBase_GENIE
@@ -15,9 +14,8 @@ art_make(
     cetlib::cetlib
     nusimdata::SimulationBase
     ROOT::Hist
-  MODULE_LIBRARIES
-    ${GENIE_LIB_LIST}
 )
+
 
 install_headers()
 install_fhicl()

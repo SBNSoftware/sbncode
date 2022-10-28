@@ -1,5 +1,5 @@
-art_make(
-    LIB_LIBRARIES
+art_make_library(
+    LIBRARIES
         ROOT::Core ROOT::Physics
 )
 

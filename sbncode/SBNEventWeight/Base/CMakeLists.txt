@@ -1,6 +1,6 @@
-art_make(
+art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Base
-  LIB_LIBRARIES
+  LIBRARIES
     sbnobj::Common_SBNEventWeight
     nurandom::RandomUtils_NuRandomService_service
     art::Framework_Services_Registry
@@ -9,7 +9,6 @@ art_make(
     canvas::canvas
     cetlib_except::cetlib_except
 )
-
 install_headers()
 install_fhicl()
 install_source()

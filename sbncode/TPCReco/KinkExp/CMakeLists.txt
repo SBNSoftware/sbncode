@@ -9,7 +9,8 @@ art_make_library(
         sbndcode_OpDetSim
 )
 
-simple_plugin(PCAnglePlaneMaker module
+cet_build_plugin(PCAnglePlaneMaker art::module
+     LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -25,7 +26,8 @@ simple_plugin(PCAnglePlaneMaker module
         sbn_LArReco_PCA
 )
 
-simple_plugin(PCAngleKinkFinder module
+cet_build_plugin(PCAngleKinkFinder art::module
+     LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service
@@ -41,7 +43,8 @@ simple_plugin(PCAngleKinkFinder module
         larcore::Geometry_Geometry_service
 )
 
-simple_plugin(PCAngleKinkTree module
+cet_build_plugin(PCAngleKinkTree art::module
+     LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
         art_root_io::TFileService_service

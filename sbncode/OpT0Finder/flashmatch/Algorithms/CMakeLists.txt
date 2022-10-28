@@ -1,5 +1,5 @@
-art_make(
-    LIB_LIBRARIES
+art_make_library(
+    LIBRARIES
         larsim::PhotonPropagation
         larsim::PhotonPropagation_PhotonVisibilityService_service
         larsim::LegacyLArG4

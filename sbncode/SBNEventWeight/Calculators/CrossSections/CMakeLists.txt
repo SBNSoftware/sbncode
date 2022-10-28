@@ -1,7 +1,7 @@
 
-art_make( 
+art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_CrossSection
-  LIB_LIBRARIES
+  LIBRARIES
     sbncode::SBNEventWeight_Base
     nugen::EventGeneratorBase_GENIE
     nugen::NuReweight_art
