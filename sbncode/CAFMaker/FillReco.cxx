@@ -558,15 +558,16 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
-        p.p.x = xyz[i].x();
-        p.p.y = xyz[i].y();
-        p.p.z = xyz[i].z();
+        p.x = xyz[i].x();
+        p.y = xyz[i].y();
+        p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
         for (const art::Ptr<recob::Hit> &h: hits) {
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
+            p.tpc = h->WireID().TPC;
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
