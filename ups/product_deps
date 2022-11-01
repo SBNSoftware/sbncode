@@ -258,7 +258,7 @@ larsoft			v09_61_00	-
 sbnanaobj		v09_19_06	-
 sbndaq_artdaq_core	v1_01_00of0	-
 sbndata			v01_04		-
-sbnobj			v09_14_10	-
+sbnobj			v09_14_11	-
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
 ####################################
