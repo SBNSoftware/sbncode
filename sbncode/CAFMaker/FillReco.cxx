@@ -717,7 +717,7 @@ namespace caf
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
     }
     if (t0) {
-      srpfp.t0 = t0->Time();
+      srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
     }
   }
 
