@@ -35,12 +35,12 @@ fwdir   product_dir scripts
 
 product             version
 
-larsoft             v09_60_01
-sbnobj              v09_14_10
+larsoft             v09_61_00
+sbnobj              v09_14_11
 sbnanaobj           v09_19_06
 sbndaq_artdaq_core  v1_01_00of0
 genie_xsec          v3_00_04a
-sbndata             v01_03
+sbndata             v01_04
 larcv2              v2_1_0
 systematicstools    v01_00_04
 nusystematics       v01_00_15
@@ -53,11 +53,12 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make the table by adding columns before "notes".
 
-qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec              sbndata   larcv2         systematicstools  nusystematics   notes
-e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000  -nq-      -nq-           e20:debug         e20:debug       -nq-
-e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000  -nq-      e20:p392:prof  e20:prof          e20:prof        -nq-
-c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000  -nq-      -nq-           c7:debug          c7:debug        -nq-
-c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000  -nq-      c7:p392:prof   c7:prof           c7:prof         -nq-
+qualifier     larsoft     sbnobj     sbnanaobj  sbndaq_artdaq_core genie_xsec              sbndata  larcv2         systematicstools  nusystematics   notes
+e20:debug     e20:debug   e20:debug  e20:debug  e20:debug:s112     G1810a0211a:k250:e1000  -nq-     debug:e20:p392 e20:debug         e20:debug       -nq-
+e20:prof      e20:prof    e20:prof   e20:prof   e20:prof:s112      G1810a0211a:k250:e1000  -nq-     e20:p392:prof  e20:prof          e20:prof        -nq-
+c7:debug      c7:debug    c7:debug   c7:debug   c7:debug:s112      G1810a0211a:k250:e1000  -nq-     c7:debug:p392  c7:debug          c7:debug        -nq-
+c7:prof       c7:prof     c7:prof    c7:prof    c7:prof:s112       G1810a0211a:k250:e1000  -nq-     c7:p392:prof   c7:prof           c7:prof         -nq-
+
 end_qualifier_list
 
 # table fragment to set FW_SEARCH_PATH needed to find XML files:
