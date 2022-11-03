@@ -315,10 +315,10 @@ end_product_list
 #
 ####################################
 qualifier	larsoft		sbnobj		sbnanaobj	sbndaq_artdaq_core	genie_xsec		sbndata	larcv2		notes
-c7:debug	c7:debug	c7:debug	c7:debug	c7:s117:debug		e1000:G1810a0211a:k250	-nq-	c7:p392:debug	-nq-
-c7:prof		c7:prof		c7:prof		c7:prof		c7:s117:prof		e1000:G1810a0211a:k250	-nq-	c7:p392:prof	-nq-
-e20:debug	e20:debug	e20:debug	e20:debug	e20:s117:debug		e1000:G1810a0211a:k250	-nq-	e20:p392:debug	-nq-
-e20:prof	e20:prof	e20:prof	e20:prof	e20:s117:prof		e1000:G1810a0211a:k250	-nq-	e20:p392:prof	-nq-
+c7:debug	c7:debug	c7:debug	c7:debug	c7:s117:debug		G1810a0211a:k250:e1000	-nq-	c7:p392:debug	-nq-
+c7:prof		c7:prof		c7:prof		c7:prof		c7:s117:prof		G1810a0211a:k250:e1000	-nq-	c7:p392:prof	-nq-
+e20:debug	e20:debug	e20:debug	e20:debug	e20:s117:debug		G1810a0211a:k250:e1000	-nq-	e20:p392:debug	-nq-
+e20:prof	e20:prof	e20:prof	e20:prof	e20:s117:prof		G1810a0211a:k250:e1000	-nq-	e20:p392:prof	-nq-
 end_qualifier_list
 ####################################
 
