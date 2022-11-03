@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(sbncode VERSION 09.61.00.01 LANGUAGES CXX)
+project(sbncode VERSION 09.62.00.01 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -64,6 +64,7 @@ find_ups_product(larreco)
 find_ups_product(larpandora)
 find_ups_product(larsoft v09_00_00)
 find_ups_product(artdaq_core v3_06_01)
+find_ups_product( TRACE )
 find_ups_product(ifbeam)
 find_ups_product(libwda) 
 find_ups_product(sbnobj v09_10_00)
