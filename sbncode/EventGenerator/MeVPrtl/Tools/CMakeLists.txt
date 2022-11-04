@@ -73,6 +73,7 @@ cet_build_plugin( WeightedRayTraceBox art::tool
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
                             dk2nu::Tree
                             sbncode::EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
@@ -96,6 +97,7 @@ cet_build_plugin( MixedWeightRayTraceBox art::tool
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
                             sbncode::EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
@@ -120,6 +122,7 @@ cet_build_plugin( ReThrowRayTraceBox art::tool
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
                             sbncode::EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
@@ -141,6 +144,7 @@ cet_build_plugin( RayTraceBox art::tool
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
                             sbncode::EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
