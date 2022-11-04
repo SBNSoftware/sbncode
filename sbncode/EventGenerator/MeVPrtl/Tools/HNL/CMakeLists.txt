@@ -19,6 +19,7 @@ cet_build_plugin( Kaon2HNLFlux art::tool
                             CLHEP::CLHEP
                             sbnobj::Common_EventGen_MeVPrtl
                             nugen::EventGeneratorBase_GENIE
+                            nusimdata::SimulationBase
                             nurandom::RandomUtils_NuRandomService_service
                             GSL::gsl
                             sbncode::EventGenerator_MeVPrtl_Constants
