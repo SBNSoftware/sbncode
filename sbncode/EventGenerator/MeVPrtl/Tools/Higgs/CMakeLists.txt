@@ -11,6 +11,7 @@ cet_build_plugin( MonoEnergyHiggsFlux art::tool
                             nugen::EventGeneratorBase_GENIE
                             nurandom::RandomUtils_NuRandomService_service
                             sbncode::EventGenerator_MeVPrtl_Constants
+                            nusimdata::SimulationBase
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -29,6 +30,7 @@ cet_build_plugin( Kaon2HiggsFlux art::tool
                             sbnobj::Common_EventGen_MeVPrtl
                             nugen::EventGeneratorBase_GENIE
                             nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
                             GSL::gsl
                             sbncode::EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
