@@ -37,6 +37,7 @@ cet_build_plugin( MeVPrtlTestRayTrace art::module
                         CLHEP::CLHEP
                         nugen::EventGeneratorBase_GENIE
                         nurandom::RandomUtils_NuRandomService_service
+                        nusimdata::SimulationBase
                         larcoreobj::SummaryData
                         sbnobj::Common_EventGen_MeVPrtl
                         sbncode::EventGenerator_MeVPrtl_Constants
