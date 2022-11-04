@@ -1,6 +1,6 @@
 
-art_make_library(
-        LIB_LIBRARIES
+art_make_library( BASENAME_ONLY
+        LIBRARIES
           larcorealg::Geometry
           larcore::Geometry_Geometry_service
           lardata::Utilities
@@ -23,21 +23,21 @@ art_make_library(
           ROOT::Core
 )
 
-cet_build_plugin(NCDeltaRadiative art::module LIBRARIES
+cet_build_plugin(NCDeltaRadiative art::module BASENAME_ONLY LIBRARIES
           sbncode::SinglePhotonAnalysis_Libraries
           sbncode::SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-cet_build_plugin(NCRadiativeResonant art::module LIBRARIES
+cet_build_plugin(NCRadiativeResonant art::module BASENAME_ONLY LIBRARIES
           sbncode::SinglePhotonAnalysis_Libraries
           sbncode::SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
           ROOT::Tree
           )
 
-cet_build_plugin(SinglePhoton art::module LIBRARIES
+cet_build_plugin(SinglePhoton art::module BASENAME_ONLY LIBRARIES
           sbncode::SinglePhotonAnalysis_Libraries
           sbncode::SinglePhotonAnalysis_SEAview
           art_root_io::TFileService_service
