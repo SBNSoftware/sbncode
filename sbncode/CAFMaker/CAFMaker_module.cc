@@ -1423,8 +1423,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
 
-    art::FindManyP<anab::T0> fmPFPT0 =
-      FindManyPStrict<anab::T0>(fmPFPart, evt,
+    art::FindOneP<anab::T0> f1PFPT0 =
+      FindOnePStrict<anab::T0>(fmPFPart, evt,
             fParams.PFParticleLabel() + slice_tag_suff);
 
     // make Ptr's to tracks for track -> other object associations
@@ -1678,10 +1678,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
         art::Ptr<anab::T0> thisPFPT0;
-        if (fmPFPT0.isValid()) {
-          if (!fmPFPT0.at(iPart).empty()) {
-            thisPFPT0 = fmPFPT0.at(iPart).at(0);
-          }
+        if (f1PFPT0.isValid()) {
+          thisPFPT0 = f1PFPT0.at(iPart);
         }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
         FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.trk.back().pfp);
@@ -1727,10 +1725,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
 
         art::Ptr<anab::T0> thisPFPT0;
-        if (fmPFPT0.isValid()) {
-          if (!fmPFPT0.at(iPart).empty()) {
-            thisPFPT0 = fmPFPT0.at(iPart).at(0);
-          }
+        if (f1PFPT0.isValid()) {
+          thisPFPT0 = f1PFPT0.at(iPart);
         }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
         FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.shw.back().pfp);
