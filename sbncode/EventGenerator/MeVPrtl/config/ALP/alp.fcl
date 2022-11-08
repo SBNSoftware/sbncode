@@ -1,0 +1,51 @@
+#include "numi_kaon_common.fcl"
+BEGIN_PROLOG
+
+alpM: 0.4
+fa: 1e6 # GeV
+cAl: 0.333333
+
+eta2alp: {
+  tool_type: Meson2ALP
+  M: @local::alpM
+  fa: @local::fa
+  cAl: @local::cAl
+
+  Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
+  BeamOrigin: @local::icarus_numi_beam_origin
+
+  // timing config
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset
+}
+
+decay_alp: {
+  tool_type: ALPMakeDecay
+  ReferenceALPMass: @local::alpM
+  ReferenceALPDecayConstant: @local::fa
+  ReferenceALPcAl: @local::cAl
+  ReferenceRayLength: 2100 # 21m
+  ReferenceRayDistance: 10400 # 104m
+  ReferenceALPEnergy: 30 # GeV
+}
+
+# ALPs are produced in interactions, not decays.
+# So we can re-throw the phi but not theta
+phiraytrace: @local::mixedweight_ray_trace_box
+phiraytrace.MaxWeight: 3e-2 # equal to the phi-range of ICARUS at the target
+phiraytrace.RethrowTheta: false 
+
+alp_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_eta
+  Flux: @local::eta2alp
+  RayTrace: @local::phiraytrace
+  Decay: @local::decay_alp
+}
+
+alp: @local::alp_gen
+alp.Deweight: false
+alp.Produce: false
+alp.AnaOutput: true
+
+END_PROLOG

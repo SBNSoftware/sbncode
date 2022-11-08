@@ -328,8 +328,8 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay,
       intersection,
       flux_weight,
-      1.,
-      ray_decay_weight,
+      ray_weight,
+      decay_weight,
       thisPOT
     );
 
