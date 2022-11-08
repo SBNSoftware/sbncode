@@ -17,6 +17,7 @@ art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                     larpandora::LArPandoraInterface
                     larpandoracontent::LArPandoraContent
                     nusimdata::SimulationBase
+                    ROOT::Core ROOT::Geom ROOT::Graf ROOT::Gpad
                     art::Persistency_Common canvas::canvas
                     art::Persistency_Provenance
                     art::Utilities
