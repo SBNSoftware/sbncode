@@ -77,6 +77,7 @@ private:
   double fReferenceALPcAl;
   double fReferenceALPDecayConstant;
   double fReferenceALPEnergy;
+  bool fAllowEMDecay;
 
   double fMaxWeight;
 };
@@ -171,6 +172,7 @@ void ALPMakeDecay::configure(fhicl::ParameterSet const &pset)
   fReferenceALPcAl = pset.get<double>("ReferenceALPcAl", -1);
   fReferenceALPDecayConstant = pset.get<double>("ReferenceALPDecayConstant", -1);
   fReferenceALPEnergy = pset.get<double>("ReferenceALPEnergy", -1.);
+  fAllowEMDecay = pset.get<bool>("AllowEMDecay");
 
   // if configured to, divide out some of the decay weight
   if (fReferenceRayLength > 0. && fReferenceALPMass > 0. && fReferenceALPDecayConstant > 0. && fReferenceALPcAl > 0. && fReferenceALPEnergy > 0.) {
@@ -179,7 +181,7 @@ void ALPMakeDecay::configure(fhicl::ParameterSet const &pset)
     double width_gamma = GammaPartialWidth(fReferenceALPMass, 1, 1, 1, fReferenceALPcAl, fReferenceALPDecayConstant);
 
     std::cout << "MU WIDTH: " << width_muon << " GAMMA WIDTH: " << width_gamma << std::endl;
-    double partial_width = width_muon;
+    double partial_width = width_muon + width_gamma*fAllowEMDecay;
     double total_width = width_muon + width_gamma;
 
     // total lifetime
@@ -213,7 +215,7 @@ bool ALPMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double width_gamma = GammaPartialWidth(flux.mass, 1, 1, 1, cAl, fA);
 
   double total_width = width_muon + width_gamma;
-  double partial_width = width_muon;
+  double partial_width = width_muon + width_gamma*fAllowEMDecay;
 
   double partial_to_total = partial_width / total_width;
 
@@ -249,9 +251,10 @@ bool ALPMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   TLorentzVector decay_pos(decay_pos3, decay_time);
 
   // get the decay type
-  int daughter_pdg = 13;
-
-  double daughter_mass = TDatabasePDG::Instance()->GetParticle(daughter_pdg)->Mass();
+  bool daughter_is_muon = GetRandom() < (width_muon / partial_width);
+  int daughter_pdgA = daughter_is_muon ? 13 : 22;
+  int daughter_pdgB = daughter_is_muon ? -13 : 22; // anti-particle of A
+  double daughter_mass = daughter_is_muon ? Constants::Instance().muon_mass : 0;
 
   // daughter mom+energy in the parent rest-frame
   double daughterE_HRF = flux.mass / 2.;
@@ -279,12 +282,11 @@ bool ALPMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   decay.daughter_mom.push_back(p4A.Vect());
   decay.daughter_e.push_back(p4A.E());
-  decay.daughter_pdg.push_back(daughter_pdg);
+  decay.daughter_pdg.push_back(daughter_pdgA);
 
   decay.daughter_mom.push_back(p4B.Vect());
   decay.daughter_e.push_back(p4B.E());
-  // daughter B is anti-particle 
-  decay.daughter_pdg.push_back(-daughter_pdg);
+  decay.daughter_pdg.push_back(daughter_pdgB);
 
   return true;
 }
