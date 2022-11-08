@@ -3,7 +3,7 @@ FILE( GLOB local_src_libs *.cxx )
 art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_Libraries
                   SOURCE ${local_src_libs}
                   LIBRARIES
-                    sbncode::SinglePhotonAnalysis_HelperFunctions
+                    sbncode_SinglePhotonAnalysis_HelperFunctions
                     larcorealg::Geometry
                     larcore::Geometry_Geometry_service
                     lardata::Utilities

@@ -35,7 +35,7 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   sbnobj::Common_Analysis
                   lardataalg::DetectorInfo
                   art::Framework_Services_System_TriggerNamesService_service
-                  sbncode::Metadata_MetadataSBN_service
+                  sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
                   )
 
@@ -44,7 +44,7 @@ cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
 cet_build_plugin ( CAFMaker art::module
                LIBRARIES
-               sbncode::CAFMaker
+               sbncode_CAFMaker
                sbnanaobj::StandardRecord
                larcorealg::Geometry
                ifdh_art::IFDH_service

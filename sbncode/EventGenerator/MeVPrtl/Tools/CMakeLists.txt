@@ -28,7 +28,7 @@ cet_build_plugin( EmptyKaonGen art::tool
                             nugen::EventGeneratorBase_GENIE
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -55,7 +55,7 @@ cet_build_plugin( NuMiKaonGen art::tool
                             dk2nu::Tree
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -78,7 +78,7 @@ cet_build_plugin( WeightedRayTraceBox art::tool
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
                             dk2nu::Tree
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -101,7 +101,7 @@ cet_build_plugin( MixedWeightRayTraceBox art::tool
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -126,7 +126,7 @@ cet_build_plugin( ReThrowRayTraceBox art::tool
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -148,7 +148,7 @@ cet_build_plugin( RayTraceBox art::tool
                             larcore::Geometry_Geometry_service
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 

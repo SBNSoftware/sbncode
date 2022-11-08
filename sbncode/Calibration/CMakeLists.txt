@@ -22,7 +22,7 @@ cet_build_plugin( TrackCaloSkimmer art::module
                             lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
                             lardataalg::DetectorInfo
                             ROOT::Minuit
-                            sbncode::CAFMaker
+                            sbncode_CAFMaker
                             sbnobj::Common_Calibration_dict
                             larevt::SpaceCharge
 )

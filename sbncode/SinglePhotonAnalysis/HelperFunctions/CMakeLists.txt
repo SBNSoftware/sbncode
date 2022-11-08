@@ -1,6 +1,6 @@
 FILE( GLOB local_src_helpers *.cxx )
 
-cet_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_HelperFunctions
+art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_HelperFunctions
                   SOURCE  ${local_src_helpers}
                   LIBRARIES
                     art::Persistency_Common

@@ -1,6 +1,6 @@
 art_make_library( 
     LIB_LIBRARIES
-        #sbncode::OpT0Finder_flashmatch_GeoAlgo
+        #sbncode_OpT0Finder_flashmatch_GeoAlgo
         larcorealg::GeoAlgo
         larcorealg::Geometry
         larcore::Geometry_Geometry_service

@@ -3,8 +3,8 @@ art_make_library(
         larsim::PhotonPropagation
         larsim::PhotonPropagation_PhotonVisibilityService_service
         larsim::LegacyLArG4
-        #sbncode::OpT0Finder_flashmatch_GeoAlgo
-        sbncode::OpT0Finder_flashmatch_Base
+        #sbncode_OpT0Finder_flashmatch_GeoAlgo
+        sbncode_OpT0Finder_flashmatch_Base
         larcorealg::GeoAlgo
         art::Framework_Core
         art::Framework_Principal

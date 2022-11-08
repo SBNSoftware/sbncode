@@ -2,7 +2,7 @@ art_make_library(
   LIBRARY_NAME sbncode_SBNEventWeight_Calculators_BNBFlux
   LIBRARIES
     ${GENIE_LIB_LIST}
-    sbncode::SBNEventWeight_Base
+    sbncode_SBNEventWeight_Base
     nugen::EventGeneratorBase_GENIE
     nugen::NuReweight_art
     nugen::NuReweight

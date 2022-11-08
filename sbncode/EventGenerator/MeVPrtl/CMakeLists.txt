@@ -20,7 +20,7 @@ cet_build_plugin( MeVPrtlGen art::module
               nurandom::RandomUtils_NuRandomService_service
               larcoreobj::SummaryData
               sbnobj::Common_EventGen_MeVPrtl
-              sbncode::EventGenerator_MeVPrtl_Constants
+              sbncode_EventGenerator_MeVPrtl_Constants
 )
 
 cet_build_plugin( MeVPrtlTestRayTrace art::module
@@ -40,7 +40,7 @@ cet_build_plugin( MeVPrtlTestRayTrace art::module
                         nusimdata::SimulationBase
                         larcoreobj::SummaryData
                         sbnobj::Common_EventGen_MeVPrtl
-                        sbncode::EventGenerator_MeVPrtl_Constants
+                        sbncode_EventGenerator_MeVPrtl_Constants
                         lardata::Utilities
 )
 

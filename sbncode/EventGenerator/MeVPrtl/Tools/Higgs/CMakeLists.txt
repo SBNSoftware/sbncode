@@ -10,7 +10,7 @@ cet_build_plugin( MonoEnergyHiggsFlux art::tool
                             CLHEP::CLHEP
                             nugen::EventGeneratorBase_GENIE
                             nurandom::RandomUtils_NuRandomService_service
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             nusimdata::SimulationBase
                             sbnobj::Common_EventGen_MeVPrtl
 )
@@ -32,7 +32,7 @@ cet_build_plugin( Kaon2HiggsFlux art::tool
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
                             GSL::gsl
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -48,7 +48,7 @@ cet_build_plugin( HiggsMakeDecay art::tool
                             CLHEP::CLHEP
                             nurandom::RandomUtils_NuRandomService_service
                             nusimdata::SimulationBase
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
                             larcorealg::Geometry
                             larcore::Geometry_Geometry_service

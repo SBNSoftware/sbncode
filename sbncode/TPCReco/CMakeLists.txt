@@ -30,7 +30,7 @@ cet_build_plugin(NuVertexChargeTree art::module
         larpandora::LArPandoraInterface
         larsim::MCCheater_ParticleInventoryService_service
         sbn_LArReco
-        sbncode::TPCReco_VertexStub
+        sbncode_TPCReco_VertexStub
 )
 
 

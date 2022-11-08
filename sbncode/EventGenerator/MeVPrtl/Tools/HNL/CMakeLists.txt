@@ -1,7 +1,7 @@
-art_make_library( LIBRARY_NAME sbncode::EventGenerator_MeVPrtl_Dalitz
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Dalitz
           SOURCE HNLDecayDalitz.cpp
           LIBRARIES
-                        sbncode::EventGenerator_MeVPrtl_Constants
+                        sbncode_EventGenerator_MeVPrtl_Constants
                         sbnobj::Common_EventGen_MeVPrtl
         )
 
@@ -22,7 +22,7 @@ cet_build_plugin( Kaon2HNLFlux art::tool
                             nusimdata::SimulationBase
                             nurandom::RandomUtils_NuRandomService_service
                             GSL::gsl
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
@@ -40,8 +40,8 @@ cet_build_plugin( HNLMakeDecay art::tool
                             nusimdata::SimulationBase
                             GSL::gsl
                             larcorealg::Geometry
-                            sbncode::EventGenerator_MeVPrtl_Dalitz
-                            sbncode::EventGenerator_MeVPrtl_Constants
+                            sbncode_EventGenerator_MeVPrtl_Dalitz
+                            sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
 )
 

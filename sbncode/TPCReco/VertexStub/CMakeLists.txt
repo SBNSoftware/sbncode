@@ -33,7 +33,7 @@ cet_build_plugin(VertexChargeVacuum art::module
         larreco::Calorimetry
         lardataobj::RecoBase
         lardataalg::DetectorInfo
-        sbncode::TPCReco_VertexStub
+        sbncode_TPCReco_VertexStub
         larevt::SpaceCharge
 )
 
@@ -55,7 +55,7 @@ cet_build_plugin(VertexStubTracker art::module
         larcore::Geometry_Geometry_service
         larreco::Calorimetry
         lardataalg::DetectorInfo
-        sbncode::TPCReco_VertexStub
+        sbncode_TPCReco_VertexStub
         larevt::SpaceCharge
 )
 
@@ -77,7 +77,7 @@ cet_build_plugin(PlaneStubMerge art::tool
         larcore::Geometry_Geometry_service
         larreco::Calorimetry
         lardataalg::DetectorInfo
-        sbncode::TPCReco_VertexStub
+        sbncode_TPCReco_VertexStub
         larevt::SpaceCharge
 )
 
@@ -98,7 +98,7 @@ cet_build_plugin(TwoPlaneStubMerge art::tool
         larcore::Geometry_Geometry_service
         larreco::Calorimetry
         lardataalg::DetectorInfo
-        sbncode::TPCReco_VertexStub
+        sbncode_TPCReco_VertexStub
         larevt::SpaceCharge
 )
 
