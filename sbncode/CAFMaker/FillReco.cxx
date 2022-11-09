@@ -347,6 +347,11 @@ namespace caf
                        bool allowEmpty) {
     if (crumbs != nullptr) {
       slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.ccnumuscore = crumbs->ccnumuscore;
+      slice.crumbs_result.ccnuescore = crumbs->ccnuescore;
+      slice.crumbs_result.ncscore = crumbs->ncscore;
+      slice.crumbs_result.bestscore = crumbs->bestscore;
+      slice.crumbs_result.bestid = crumbs->bestid;
       slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
       slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
       slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
@@ -715,6 +720,20 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+
+      // Pfo Characterisation features
+      srpfp.pfochar.setDefault();
+
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
     }
     if (t0) {
       srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
