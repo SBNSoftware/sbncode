@@ -228,8 +228,14 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   // Collect raw digits for saving hits
   std::vector<art::Ptr<raw::RawDigit>> rawdigitlist;
   for (const art::InputTag &t: fRawDigitproducers) {
-    art::ValidHandle<std::vector<raw::RawDigit>> thisdigits = e.getValidHandle<std::vector<raw::RawDigit>>(t);
-    art::fill_ptr_vector(rawdigitlist, thisdigits);
+    try {
+      art::ValidHandle<std::vector<raw::RawDigit>> thisdigits = e.getValidHandle<std::vector<raw::RawDigit>>(t);
+      art::fill_ptr_vector(rawdigitlist, thisdigits);
+    }
+    catch(...) {
+      if (!fSilenceMissingDataProducts) throw;
+      else {} // Allow Raw Digits to not be present
+    }
   }
 
   // The raw digit list is not sorted, so make it into a map on the WireID
@@ -721,7 +727,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   for (sbn::TrueHit &h: truehits_v) {
     h.time = dprop.ConvertXToTicks(h.p.x, h.plane, h.tpc, h.cryo);
 
-    double xdrift = abs(h.p.x - geo->TPC(h.tpc, h.cryo).PlaneLocation(0)[0]);
+    double xdrift = abs(h.p.x - geo->Plane(0, h.tpc, h.cryo).GetCenter()[0]);
     h.tdrift = xdrift / dprop.DriftVelocity(); 
   }
 

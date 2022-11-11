@@ -5,7 +5,6 @@
 #define TrackMomentumCalculator_H
 
 #include "canvas/Persistency/Common/Ptr.h"
-#include "larcorealg/CoreUtils/quiet_Math_Functor.h"
 #include "lardataobj/RecoBase/Track.h"
 
 #include "TAxis.h"
