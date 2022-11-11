@@ -6,6 +6,8 @@
 #include "cetlib/pow.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "Math/Functor.h"
+
 #include <array>
 #include <cassert>
 
