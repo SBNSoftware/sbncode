@@ -563,18 +563,19 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
-        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
-        p.p.x = xyz[i].x();
-        p.p.y = xyz[i].y();
-        p.p.z = xyz[i].z();
+        p.x = xyz[i].x();
+        p.y = xyz[i].y();
+        p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
         for (const art::Ptr<recob::Hit> &h: hits) {
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
+            p.tpc = h->WireID().TPC;
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
+            p.t = h->PeakTime();
           }
         }
 
@@ -698,6 +699,7 @@ namespace caf
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty)
   {
@@ -732,6 +734,9 @@ namespace caf
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
       CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+    }
+    if (t0) {
+      srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
     }
   }
 
