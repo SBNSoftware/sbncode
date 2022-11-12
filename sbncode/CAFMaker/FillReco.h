@@ -108,6 +108,7 @@ namespace caf
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty= false);
 
