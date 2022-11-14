@@ -530,7 +530,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
       fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
       fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
     }
-    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+    if (fParams.CreateBlindedCAF() && fParams.CreateFlatCAF() && fFlatCafBlindFilename.empty()) {
       const std::string basename = fFlatCafFilename;
       fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
       fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
@@ -840,17 +840,14 @@ void CAFMaker::InitializeOutfiles()
       // this compared to the default, and the files are only slightly larger.
       fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+      fFlatTreeb = new TTree("recTree", "recTree");
+      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
+      AddEnvToFile(fFlatFileb);
 
       fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
-
-      fFlatTreeb = new TTree("recTree", "recTree");
       fFlatTreep = new TTree("recTree", "recTree");
-
-      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
       fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
-
-      AddEnvToFile(fFlatFileb);
       AddEnvToFile(fFlatFilep);
     }
 
@@ -1853,6 +1850,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (fParams.CreateBlindedCAF()) {
       const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
+      rec.hdr.isblind = true;
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
@@ -1867,7 +1865,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
 	fPrescaleEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreep) {
 	  fFlatRecordp->Clear();
 	  fFlatRecordp->Fill(*precp);
 	  fFlatTreep->Fill();
@@ -1889,7 +1887,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
 	fBlindEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreeb) {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
 	  fFlatTreeb->Fill();
@@ -1963,25 +1961,20 @@ void CAFMaker::endJob() {
 
 
   if(fFile){
+
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
-    fFlatTree->SetDirectory(fFlatFile);
     if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
-
     fFile->cd();
     fFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFileb,true,false);
-      AddHistogramsToFile(fFilep,false,true);
       fFileb->cd();
       fFileb->Write();
+      AddHistogramsToFile(fFilep,false,true);
       fFilep->cd();
       fFilep->Write();
     }
@@ -1989,13 +1982,21 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-    AddHistogramsToFile(fFlatFile);
-    fFlatFile->Write();
 
+    AddHistogramsToFile(fFlatFile);
+    fFlatTree->SetDirectory(fFlatFile);
+    if (fParams.CreateBlindedCAF() && fFlatFileb) {
+      fFlatTreeb->SetDirectory(fFlatFileb);
+      fFlatTreep->SetDirectory(fFlatFilep);
+    }
+    fFlatFile->cd();
+    fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFlatFileb,true,false);
-      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFileb->cd();
       fFlatFileb->Write();
+      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFilep->cd();
       fFlatFilep->Write();
     }
   }
