@@ -530,7 +530,7 @@ void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
       fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
       fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
     }
-    if (fParams.CreateBlindedCAF() && fFlatCafBlindFilename.empty()) {
+    if (fParams.CreateBlindedCAF() && fParams.CreateFlatCAF() && fFlatCafBlindFilename.empty()) {
       const std::string basename = fFlatCafFilename;
       fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
       fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
@@ -840,17 +840,14 @@ void CAFMaker::InitializeOutfiles()
       // this compared to the default, and the files are only slightly larger.
       fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
+      fFlatTreeb = new TTree("recTree", "recTree");
+      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
+      AddEnvToFile(fFlatFileb);
 
       fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
 			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
-
-      fFlatTreeb = new TTree("recTree", "recTree");
       fFlatTreep = new TTree("recTree", "recTree");
-
-      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
       fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
-
-      AddEnvToFile(fFlatFileb);
       AddEnvToFile(fFlatFilep);
     }
 
@@ -1423,6 +1420,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
 
+    art::FindOneP<anab::T0> f1PFPT0 =
+      FindOnePStrict<anab::T0>(fmPFPart, evt,
+            fParams.PFParticleLabel() + slice_tag_suff);
+
     // make Ptr's to tracks for track -> other object associations
     std::vector<art::Ptr<recob::Track>> slcTracks;
     if (fmTrack.isValid()) {
@@ -1673,8 +1674,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
         FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
 
+        art::Ptr<anab::T0> thisPFPT0;
+        if (f1PFPT0.isValid()) {
+          thisPFPT0 = f1PFPT0.at(iPart);
+        }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.trk.back().pfp);
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
@@ -1716,8 +1721,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         rec.reco.shw.push_back(SRShower());
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
 
+        art::Ptr<anab::T0> thisPFPT0;
+        if (f1PFPT0.isValid()) {
+          thisPFPT0 = f1PFPT0.at(iPart);
+        }
         const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.shw.back().pfp);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
@@ -1853,6 +1862,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (fParams.CreateBlindedCAF()) {
       const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
       rec.hdr.evt = 0;
+      rec.hdr.isblind = true;
       if (keepprescale) {
       	StandardRecord* precp = new StandardRecord (*prec);
 	if (fFirstPrescaleInFile) {
@@ -1867,7 +1877,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreep->SetBranchAddress("rec", &precp);
       	fRecTreep->Fill();
 	fPrescaleEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreep) {
 	  fFlatRecordp->Clear();
 	  fFlatRecordp->Fill(*precp);
 	  fFlatTreep->Fill();
@@ -1889,7 +1899,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	fRecTreeb->SetBranchAddress("rec", &precb);
 	fRecTreeb->Fill();
 	fBlindEvents += 1;
-	if (fFlatTree) {
+	if (fFlatTreeb) {
 	  fFlatRecordb->Clear();
 	  fFlatRecordb->Fill(*precb);
 	  fFlatTreeb->Fill();
@@ -1963,25 +1973,20 @@ void CAFMaker::endJob() {
 
 
   if(fFile){
+
     AddHistogramsToFile(fFile);
     fRecTree->SetDirectory(fFile);
-    fFlatTree->SetDirectory(fFlatFile);
     if (fParams.CreateBlindedCAF()) {
       fRecTreeb->SetDirectory(fFileb);
       fRecTreep->SetDirectory(fFilep);
     }
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
-
     fFile->cd();
     fFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFileb,true,false);
-      AddHistogramsToFile(fFilep,false,true);
       fFileb->cd();
       fFileb->Write();
+      AddHistogramsToFile(fFilep,false,true);
       fFilep->cd();
       fFilep->Write();
     }
@@ -1989,13 +1994,21 @@ void CAFMaker::endJob() {
   }
 
   if(fFlatFile){
-    AddHistogramsToFile(fFlatFile);
-    fFlatFile->Write();
 
+    AddHistogramsToFile(fFlatFile);
+    fFlatTree->SetDirectory(fFlatFile);
+    if (fParams.CreateBlindedCAF() && fFlatFileb) {
+      fFlatTreeb->SetDirectory(fFlatFileb);
+      fFlatTreep->SetDirectory(fFlatFilep);
+    }
+    fFlatFile->cd();
+    fFlatFile->Write();
     if (fParams.CreateBlindedCAF()) {
       AddHistogramsToFile(fFlatFileb,true,false);
-      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFileb->cd();
       fFlatFileb->Write();
+      AddHistogramsToFile(fFlatFilep,false,true);
+      fFlatFilep->cd();
       fFlatFilep->Write();
     }
   }
