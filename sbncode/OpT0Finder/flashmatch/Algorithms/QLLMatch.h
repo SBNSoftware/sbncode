@@ -123,6 +123,7 @@ namespace flashmatch {
     QLLMode_t _mode;   ///< Minimizer mode
     bool _record;      ///< Boolean switch to record minimizer history
     double _normalize; ///< Noramalize hypothesis PE spectrum
+    bool _use_minuit;  ///< Minimize or not
 
     std::vector<double>  _penalty_threshold_v;
     std::vector<double>  _penalty_value_v;

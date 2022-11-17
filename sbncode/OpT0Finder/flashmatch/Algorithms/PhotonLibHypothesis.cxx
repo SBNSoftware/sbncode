@@ -70,52 +70,20 @@ namespace flashmatch {
 
   void PhotonLibHypothesis::FillEstimateSemiAnalytical(const QCluster_t& trk, Flash_t &flash) const
   {
-    // double test_pitch  = trk.pitch();
-    // std::cout << "pitch: " << test_pitch << std::endl;
-
     for ( size_t ipt = 0; ipt < trk.size(); ++ipt) {
 
       /// Get the 3D point in space from where photons should be propagated
       auto const& pt = trk[ipt];
 
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
-      auto const track = pt.trk; // track==1 if point belongs to a track, != 1 if belongs to a shower/non-track/unassociated
 
-      // recomb calculation
-      double n_original_photons = 0;
-      if (track!=1){
-        // attempt to correct for attenuation
-        double drift_time = abs(200.0 - abs(pt.x))/(0.16); // in us, drift velocity = 0.16 cm/us 
-        double atten_correction = std::exp(drift_time/10e3); // electron lifetime = 10e3 us, or 10 ms 
-
-        // Get the number of photons produced in such point
-        double charge = atten_correction*pt.q;
-      // end attempt 
-        // set up recomb variables
-        // double E_field = 0.5;
-        double W_ion = 2.36016*1e-5; 
-        double W_ph  = 19.5*1e-6;
-        double ds = 0.5;
-        // double ds = (track==1)? test_pitch : 0.5; 
-        // if (track==1 && (std::isnan(test_pitch) || std::isinf(test_pitch)))
-          // ds = 0.5; 
-        // Modified Box constants 
-        double ModBoxA = 0.93;
-        double ModBoxB = 0.305344; 
-
-        // Birks Model constants 
-        // double A_b = 0.8;
-        // double k_b = 0.0349993;
-        
-        double e_dep = (ds/ModBoxB)*(exp(ModBoxB*W_ion*charge/ds)-ModBoxA); // energy deposition 
-        // if (charge > 26000) // use modbox
-        // else // use birks 
-        //   e_dep = (charge)/((A_b/W_ion) - (k_b/E_field)*(charge/ds));
-        n_original_photons = (e_dep/W_ph) - charge;
-      }
-      if (track==1){
-        n_original_photons = pt.q;
-      }
+      double n_original_photons = pt.q;
+      // if (track!=1){
+      //   n_original_photons = 1.1272408*charge;
+      // }
+      // if (track==1){
+      //   n_original_photons = pt.q;
+      // }
 
       std::vector<double> direct_visibilities;
       _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
