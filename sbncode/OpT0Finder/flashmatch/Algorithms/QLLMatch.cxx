@@ -23,6 +23,7 @@ namespace flashmatch {
     _record = pset.get<bool>("RecordHistory");
     _normalize = pset.get<bool>("NormalizeHypothesis");
     _mode   = (QLLMode_t)(pset.get<unsigned short>("QLLMode"));
+    _use_minuit = pset.get<bool>("UseMinuit");
     _pe_observation_threshold = pset.get<double>("PEObservationThreshold", 1.e-6);
     _pe_hypothesis_threshold  = pset.get<double>("PEHypothesisThreshold", 1.e-6);
     _migrad_tolerance         = pset.get<double>("MIGRADTolerance", 0.1);
@@ -78,6 +79,7 @@ namespace flashmatch {
     //
     // Prepare TPC
     //
+    std::cout << "_tpc " << _tpc  << std::endl;
     _raw_trk.resize(pt_v.size());
     double min_x =  1e20;
     double max_x = -1e20;
@@ -87,15 +89,20 @@ namespace flashmatch {
       if (pt.x < min_x) { min_x = pt.x; _raw_xmin_pt = pt; }
       if (pt.x > max_x) { max_x = pt.x; _raw_xmax_pt = pt; }
     }
-    for (auto &pt : _raw_trk) pt.x -= min_x;
+    // for (auto &pt : _raw_trk) pt.x -= min_x; TODO: why this?? why this 
 
-    auto res1 = PESpectrumMatch(pt_v,flash,true);
-    auto res2 = PESpectrumMatch(pt_v,flash,false);
-    FLASH_INFO() << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
-    FLASH_INFO() << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
-    // std::cout << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
-    // std::cout << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
-    auto res = (res1.score > res2.score ? res1 : res2);
+    FlashMatch_t res; 
+    if (_use_minuit){
+      auto res1 = PESpectrumMatch(pt_v,flash,true);
+      auto res2 = PESpectrumMatch(pt_v,flash,false);
+      FLASH_INFO() << "Using   mid-x-init ... maximized 1/param Score=" << res1.score << " @ X=" << res1.tpc_point.x << " [cm]" << std::endl;
+      FLASH_INFO() << "Without mid-x-init ... maximized 1/param Score=" << res2.score << " @ X=" << res2.tpc_point.x << " [cm]" << std::endl;
+      res = (res1.score > res2.score ? res1 : res2);
+    }
+    else{
+      // std::cout << "Not minimizing, using spacepoint position info with no offset..." << std::endl;
+      res = OnePMTMatch(flash);
+    }
     /*
     if(res.score < _onepmt_score_threshold) {
 
@@ -118,7 +125,7 @@ namespace flashmatch {
     // Check if pesum threshold condition is met to use this method
     double pesum = flash.TotalPE();
     if(pesum < _onepmt_pesum_threshold) {
-      //std::cout <<"PESumThreshold not met (pesum=" << pesum << ")" << std::endl;
+      std::cout <<"PESumThreshold not met (pesum=" << pesum << ")" << std::endl;
       return res;
     }
 
@@ -131,35 +138,49 @@ namespace flashmatch {
       maxpmt = pmt;
     }
     if(maxpe / pesum < _onepmt_pefrac_threshold) {
-      //std::cout << "PERatioThreshold not met (peratio=" << maxpe/pesum << ")" << std::endl;
+      std::cout << "PERatioThreshold not met (peratio=" << maxpe/pesum << ")" << std::endl;
       return res;
     }
 
     // Now see if Flash T0 can be consistent with an assumption MinX @ X=0.
-    double xdiff = fabs(_raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity());
-    if( xdiff > _onepmt_xdiff_threshold ) {
-      //std::cout << "XDiffThreshold not met (xdiff=" << xdiff << ")" << std::endl;
-      return res;
-    }
+    // double xdiff = fabs(_raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity());
+    // if( xdiff > _onepmt_xdiff_threshold ) {
+    //   //std::cout << "XDiffThreshold not met (xdiff=" << xdiff << ")" << std::endl;
+    //   return res;
+    // }
 
     // Reaching this point means it is an acceptable match
     _reco_x_offset = 0.;
     _reco_x_offset_err = std::fabs(_xpos_v.at(maxpmt));
 
     // Compute hypothesis with MinX @ X=0 assumption.
-    _hypothesis = flash;
-    FillEstimate(_raw_trk,_hypothesis);
-    res.hypothesis = _hypothesis.pe_v;
+    // _hypothesis = flash;
+    // initialize the hypothesis 
+    Flash_t one_hypothesis;
+    auto    one_measurement = flash;
+    one_hypothesis.pe_v.resize(DetectorSpecs::GetME().NOpDets(), 0.);
+    for (auto &v : one_hypothesis.pe_v) v = 0;
+
+    // std::cout << "flash.pe_v size:    " << flash.pe_v.size() << std::endl;
+    // std::cout << "one_hypo.pe_v size: " << one_hypothesis.pe_v.size() << std::endl;
+    
+    FillEstimate(_raw_trk,one_hypothesis);
+    res.hypothesis = one_hypothesis.pe_v;
+    _qll = QLLMatch::GetME()->QLL(one_hypothesis, one_measurement);
+    
+    if (std::isnan(_qll) || std::isinf(_qll)) {
+      return res;
+    }
 
     // Compute TPC point
     res.tpc_point.x = res.tpc_point.y = res.tpc_point.z = 0;
     double weight = 0;
     for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index) {
 
-      res.tpc_point.y += _ypos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
-      res.tpc_point.z += _zpos_v.at(pmt_index) * _hypothesis.pe_v[pmt_index];
+      res.tpc_point.y += _ypos_v.at(pmt_index) * one_hypothesis.pe_v[pmt_index];
+      res.tpc_point.z += _zpos_v.at(pmt_index) * one_hypothesis.pe_v[pmt_index];
 
-      weight += _hypothesis.pe_v[pmt_index];
+      weight += one_hypothesis.pe_v[pmt_index];
     }
 
     res.tpc_point.y /= weight;
@@ -169,13 +190,18 @@ namespace flashmatch {
     res.tpc_point_err.x = _reco_x_offset_err;
 
     // Use MinX point YZ distance to the max PMT and X0 diff as weight
-    res.score = 1.;
+    // res.score = 1.;
     // FIXME For now we do not have time distribution, so ignore this weighting
     //res.score *= 1. / xdiff;
-    res.score *= 1. / (sqrt(pow(_raw_xmin_pt.y - _ypos_v.at(maxpmt),2) + pow(_raw_xmin_pt.z - _zpos_v.at(maxpmt),2)));
+    // res.score *= 1. / (sqrt(pow(_raw_xmin_pt.y - _ypos_v.at(maxpmt),2) + pow(_raw_xmin_pt.z - _zpos_v.at(maxpmt),2)));
+    
+    // use the qll score 
+    if(_mode == kSimpleLLHD)
+      res.score = _qll * -1.;
+    else
+      res.score = 1. / _qll;
 
     return res;
-
   }
 
   FlashMatch_t QLLMatch::PESpectrumMatch(const QCluster_t &pt_v, const Flash_t &flash, const bool init_x0) {
@@ -355,25 +381,26 @@ namespace flashmatch {
         // double arg = TMath::Poisson(H,O);
         // double val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
         // double val_2 = H*std::log10(O) - O*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*H) - H*std::log10(H) + H*std::log10(std::exp(1)); 
-
-        // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", log10(arg): " << std::log10(arg) << ", val: " << val << ", val2: " << val_2 << std::endl;
+        // if (!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold))
+          // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", log10(arg): " << std::log10(arg) << ", val: " << val << ", val2: " << val_2 << std::endl;
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
         }
-        // else
-        //   std::cout << "fail; idx, O, H, val: " << pmt_index << ", " << O << ", " << H << ", " << val << std::endl;        
       } else if (_mode == kSimpleLLHD) {
 
         double arg = (H - O * std::log(H));
@@ -397,7 +424,7 @@ namespace flashmatch {
 
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
-    // std::cout << "current_llhd: " << _current_llhd << std::endl;
+    std::cout << "current_llhd: " << _current_llhd << std::endl;
     if(_converged)
       FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_pmt+1 = " << nvalid_pmt+1<<")"<<std::endl;
 
@@ -470,9 +497,11 @@ namespace flashmatch {
     if (_normalize) {
       max_pe = 0;
       for (auto const &v : pmt.pe_v) if (v > max_pe) max_pe = v;
+      for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i] / max_pe;
     }
-
-    for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i] / max_pe;
+    else{
+      for (size_t i = 0; i < pmt.pe_v.size(); ++i)  _measurement.pe_v[i] = pmt.pe_v[i];
+    }
 
     _minimizer_record_chi2_v.clear();
     _minimizer_record_llhd_v.clear();
