@@ -16,21 +16,22 @@ caloskim_calorimetry: {
   T0ModuleLabel: ""
   TrackIsFieldDistortionCorrected: false
   TrackModuleLabel: "tracks"
+  NormTools: []
   module_type: "GnocchiCalorimetry"
 }
     
 caloskim_cryoe: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "calorimetryCryoE"
+  CALOproducer: "caloskimCalorimetryCryoE"
   TRKproducer:  "pandoraTrackGausCryoE"
-  T0producer: "pandoraGausCryoE"
+  T0producers: ["pandoraGausCryoE"]
   PFPproducer: "pandoraGausCryoE"
   G4producer: ""
   SimChannelproducer: ""
   HITproducer: "cluster3DCryoE"
-  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCEW", "daqTPC:PHYSCRATEDATATPCEE"]
+  RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCEW", "daqTPCROI:PHYSCRATEDATATPCEE"]
   RequireT0: true
-  HitRawDigitsTickCollectWidth: 100
+  HitRawDigitsTickCollectWidth: 200
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []
@@ -38,16 +39,16 @@ caloskim_cryoe: {
 
 caloskim_cryow: {
   module_type: TrackCaloSkimmer
-  CALOproducer: "calorimetryCryoW"
+  CALOproducer: "caloskimCalorimetryCryoW"
   TRKproducer:  "pandoraTrackGausCryoW"
-  T0producer: "pandoraGausCryoW"
+  T0producers: ["pandoraGausCryoW"]
   PFPproducer: "pandoraGausCryoW"
   G4producer: ""
   SimChannelproducer: ""
-  HITproducer: "cluster3DCryoE"
-  RawDigitproducers: ["daqTPC:PHYSCRATEDATATPCWW", "daqTPC:PHYSCRATEDATATPCWE"]
+  HITproducer: "cluster3DCryoW"
+  RawDigitproducers: ["daqTPCROI:PHYSCRATEDATATPCWW", "daqTPCROI:PHYSCRATEDATATPCWE"]
   RequireT0: true
-  HitRawDigitsTickCollectWidth: 100
+  HitRawDigitsTickCollectWidth: 200
   DoTailFit: false
   SilenceMissingDataProducts: true
   SelectionTools: []
@@ -60,6 +61,7 @@ caloskim_cryoe_nodigits.RawDigitproducers: []
 
 stopping_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
+
   FVInsetMinX: 15
   FVInsetMaxX: 15
   FVInsetMinY: 25
@@ -70,11 +72,18 @@ stopping_selection: {
   MaxTimeTickInset: 100
   EndMediandQdxCut: 1000
   NumberTimeSamples: 4096
-  MediandQdxRRMax: 2.
+  MediandQdxRRMax: 5.
+  CheckFiducialX: true
+  RequireT0: true
 }
+
+stopping_selection_not0: @local::stopping_selection
+stopping_selection_not0.CheckFiducialX: false
+stopping_selection_not0.RequireT0: false
 
 throughgoing_selection: {
   tool_type: TrackCaloSkimmerSelectStoppingTrack
+
   Invert: true
   PreScale: 1
   FVInsetMinX: 5
@@ -88,16 +97,47 @@ throughgoing_selection: {
   EndMediandQdxCut: -1
   RequireDownwards: false
   NumberTimeSamples: 4096
+  CheckFiducialX: true
+  RequireT0: true
 }
 
 a2c_selection: {
   tool_type: TrackCaloSkimmerSelectAnode2CathodeTrack
   TickCut: 2300
+  RequireT0: true
 }
 
+selectall: {
+  tool_type: TrackCaloSkimmerSelectAllTrack
+  RequireT0: false
+}
+
+# Require T0 tag, don't save raw waveforms, 
 caloskim_cryow_nodigits_goldentracks: @local::caloskim_cryow_nodigits
 caloskim_cryow_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
 caloskim_cryoe_nodigits_goldentracks: @local::caloskim_cryoe_nodigits
 caloskim_cryoe_nodigits_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+
+# Require T0 tag, do save raw waveforms
+caloskim_cryow_goldentracks: @local::caloskim_cryow
+caloskim_cryow_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+caloskim_cryoe_goldentracks: @local::caloskim_cryoe
+caloskim_cryoe_goldentracks.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+
+# Don't require T0 tag, save all tracks, do save raw waveforms
+caloskim_cryow_goldentracks_not0: @local::caloskim_cryow
+caloskim_cryow_goldentracks_not0.RequireT0: false
+caloskim_cryow_goldentracks_not0.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+caloskim_cryoe_goldentracks_not0: @local::caloskim_cryoe
+caloskim_cryoe_goldentracks_not0.RequireT0: false
+caloskim_cryoe_goldentracks_not0.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+
+# Don't require T0 tag, save all tracks don't save raw waveforms
+caloskim_cryow_nodigits_goldentracks_not0: @local::caloskim_cryow_nodigits
+caloskim_cryow_nodigits_goldentracks_not0.RequireT0: false
+caloskim_cryow_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
+caloskim_cryoe_nodigits_goldentracks_not0: @local::caloskim_cryoe_nodigits
+caloskim_cryoe_nodigits_goldentracks_not0.RequireT0: false
+caloskim_cryoe_nodigits_goldentracks_not0.SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection, @local::selectall]
 
 END_PROLOG

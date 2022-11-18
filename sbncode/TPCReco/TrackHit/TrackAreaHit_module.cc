@@ -385,7 +385,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         double effpitch = geo->WirePitch() / cosgamma;
 
         // Add in the contribution from diffusion
-        float xdrift = abs(x - geo->TPC(planeID).PlaneLocation(0)[0]); // Copied from G4 / DriftIonizationElectrons
+        float xdrift = abs(x - geo->TPC(planeID).Plane(0).GetCenter()[0]); // Copied from G4 / DriftIonizationElectrons
         float tdrift = xdrift / dprop.DriftVelocity();
         effpitch += fTransverseDiffusionScale * sqrt(2*tdrift*g4param->TransverseDiffusion());
 
