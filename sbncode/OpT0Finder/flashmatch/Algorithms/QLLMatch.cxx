@@ -79,7 +79,6 @@ namespace flashmatch {
     //
     // Prepare TPC
     //
-    std::cout << "_tpc " << _tpc  << std::endl;
     _raw_trk.resize(pt_v.size());
     double min_x =  1e20;
     double max_x = -1e20;
@@ -343,12 +342,13 @@ namespace flashmatch {
 
     for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
 
+      // ignore PMTs that are in the opposite TPC that we're considering
+      if ( int(pmt_index)%2 != _tpc%2)
+        continue;
+
       O = measurement.pe_v[pmt_index]; // observation
       H = hypothesis.pe_v[pmt_index];  // hypothesis
-      // if (O != 0 && H !=0){
-      //   std::cout << "O: " << O << std::endl;
-      //   std::cout << "H: " << H << std::endl;
-      // }
+
       if( H < 0 ) throw OpT0FinderException("Cannot have hypothesis value < 0!");
 
       if(O < _pe_observation_threshold) {
@@ -381,25 +381,24 @@ namespace flashmatch {
         // double arg = TMath::Poisson(H,O);
         // double val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
         // double val_2 = H*std::log10(O) - O*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*H) - H*std::log10(H) + H*std::log10(std::exp(1)); 
-        // if (!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold))
-          // std::cout << "[QLLMatch] pmt_index " << pmt_index << " - O: " << O << ", H: " << H << ", log10(arg): " << std::log10(arg) << ", val: " << val << ", val2: " << val_2 << std::endl;
+
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * std::log10(arg) << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
@@ -424,7 +423,7 @@ namespace flashmatch {
 
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
-    std::cout << "current_llhd: " << _current_llhd << std::endl;
+    // std::cout << "current_llhd: " << _current_llhd << std::endl;
     if(_converged)
       FLASH_INFO() << "Combined LLHD: " << _current_llhd << " (divided by nvalid_pmt+1 = " << nvalid_pmt+1<<")"<<std::endl;
 
