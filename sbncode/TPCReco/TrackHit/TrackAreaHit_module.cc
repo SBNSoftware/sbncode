@@ -305,7 +305,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
 
     // get the cryostat
     geo::CryostatID cid(fCryostat);
-    for (auto const &planeID: geo->IteratePlaneIDs(cid)) {
+    for (auto const &planeID: geo->Iterate<geo::PlaneID>(cid)) {
       int lastWire = -100000;
       for (size_t j = 0; j < track.NumberTrajectoryPoints()-1; j++) {
         // go to the next valid point
@@ -373,7 +373,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         // Get time from X [ticks]
         //
         // Undo any T0 correction to the track to get back to the hits
-        float time = dprop.ConvertXToTicks(x, planeID) + track_t0 * geo->TPC(planeID).DriftDir()[0] / dclock.TPCClock().TickPeriod();
+        float time = dprop.ConvertXToTicks(x, planeID) + track_t0 * geo->TPC(planeID).DriftDir().X() / dclock.TPCClock().TickPeriod();
 
         // get the geometric time window [ticks]
         //
@@ -385,7 +385,7 @@ void sbn::TrackAreaHit::produce(art::Event& e)
         double effpitch = geo->WirePitch() / cosgamma;
 
         // Add in the contribution from diffusion
-        float xdrift = abs(x - geo->TPC(planeID).Plane(0).GetCenter()[0]); // Copied from G4 / DriftIonizationElectrons
+        float xdrift = abs(x - geo->TPC(planeID).Plane(0).GetCenter().X()); // Copied from G4 / DriftIonizationElectrons
         float tdrift = xdrift / dprop.DriftVelocity();
         effpitch += fTransverseDiffusionScale * sqrt(2*tdrift*g4param->TransverseDiffusion());
 
