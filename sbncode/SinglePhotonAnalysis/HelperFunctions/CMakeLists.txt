@@ -2,19 +2,12 @@ FILE( GLOB local_src_helpers *.cxx )
 
 art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_HelperFunctions
                   SOURCE  ${local_src_helpers}
-                  LIBRARIES 
-                    ${ART_FRAMEWORK_CORE}
-                    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                    ${ART_FRAMEWORK_SERVICES}
-                    ${ART_FRAMEWORK_PRINCIPAL}
-                    art_Persistency_Common
-                    art_Utilities canvas
-                    ${ROOT_BASIC_LIB_LIST}
-                    ${MF_MESSAGELOGGER}
-                    ${MF_UTILITIES}
-                    ${FHICLCPP}
-                    cetlib cetlib_except
-                    larsim_MCCheater_BackTrackerService_service
-                    larsim_MCCheater_ParticleInventoryService_service
-                    larcorealg_Geometry
+                  LIBRARIES
+                    art::Persistency_Common
+                    art::Utilities canvas::canvas
+                    cetlib::cetlib cetlib_except::cetlib_except
+                    larsim::MCCheater_BackTrackerService_service
+                    larsim::MCCheater_ParticleInventoryService_service
+                    larcorealg::Geometry
+                    larpandora::LArPandoraInterface
                     )

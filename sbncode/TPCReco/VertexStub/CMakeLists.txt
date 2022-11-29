@@ -1,121 +1,105 @@
-art_make_library(
+cet_make_library(
         SOURCE StubBuilder.cxx StubMergeAlgorithms.cxx
         LIBRARIES
-	${ART_FRAMEWORK_CORE}
-	${ART_FRAMEWORK_PRINCIPAL}
-	art_Persistency_Common
-	art_Persistency_Provenance
-	canvas art_Utilities
-	${FHICLCPP}
-	cetlib cetlib_except
-	${ROOT_BASIC_LIB_LIST}
-	MF_MessageLogger
-
-	sbnobj_Common_Reco
-	lardataobj_AnalysisBase
-        larcorealg_Geometry
-	larreco_Calorimetry
-	lardataobj_RecoBase
-	lardataalg_DetectorInfo
+        art::Framework_Core
+        art::Framework_Principal
+        art::Persistency_Common
+        art::Persistency_Provenance
+        canvas::canvas art::Utilities
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        sbnobj::Common_Reco
+        lardataobj::AnalysisBase
+        larcorealg::Geometry
+        larreco::Calorimetry
+        lardataobj::RecoBase
+        lardataalg::DetectorInfo
+        larevt::SpaceCharge
 )
-simple_plugin(VertexChargeVacuum module
-	${ART_FRAMEWORK_CORE}
-	${ART_FRAMEWORK_PRINCIPAL}
-	${ART_FRAMEWORK_SERVICES}
-	${ART_FRAMEWORK_SERVICES_REGISTRY}
-	art_Persistency_Common
-	art_Utilities canvas
-	${FHICLCPP}
-	cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-	MF_MessageLogger
-
-	sbnobj_Common_Reco
-	lardataobj_AnalysisBase
-        larcorealg_Geometry
-	larreco_Calorimetry
-	lardataobj_RecoBase
-	lardataalg_DetectorInfo
-	sbncode_TPCReco_VertexStub
+cet_build_plugin(VertexChargeVacuum art::module
+        LIBRARIES
+        art::Framework_Core
+        art::Framework_Principal
+        art::Framework_Services_Registry
+        art::Persistency_Common
+        art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        sbnobj::Common_Reco
+        lardataobj::AnalysisBase
+        larcorealg::Geometry
+        larreco::Calorimetry
+        lardataobj::RecoBase
+        lardataalg::DetectorInfo
+        sbncode_TPCReco_VertexStub
+        larevt::SpaceCharge
 )
 
-simple_plugin(VertexStubTracker module
-	${ART_FRAMEWORK_CORE}
-	${ART_FRAMEWORK_SERVICES_REGISTRY}
-	${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-	${ART_FRAMEWORK_PRINCIPAL}
-	art_Persistency_Common
-	art_Persistency_Provenance
-	art_Utilities canvas
-	${MF_MESSAGELOGGER}
-	${MF_UTILITIES}
-	${FHICLCPP}
-	cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-	MF_MessageLogger
-
-	sbnobj_Common_Reco
-	lardataobj_AnalysisBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	larreco_Calorimetry
-	lardataalg_DetectorInfo
-	sbncode_TPCReco_VertexStub
+cet_build_plugin(VertexStubTracker art::module
+        LIBRARIES
+        art::Framework_Core
+        art::Framework_Services_Registry
+        art_root_io::TFileService_service
+        art::Framework_Principal
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        sbnobj::Common_Reco
+        lardataobj::AnalysisBase
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        larreco::Calorimetry
+        lardataalg::DetectorInfo
+        sbncode_TPCReco_VertexStub
+        larevt::SpaceCharge
 )
 
-simple_plugin(PlaneStubMerge tool
-        ${ART_FRAMEWORK_CORE}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-        ${ART_FRAMEWORK_PRINCIPAL}
-        art_Persistency_Common
-	art_Persistency_Provenance
-        art_Utilities canvas
-        ${MF_MESSAGELOGGER}
-        ${MF_UTILITIES}
-        ${FHICLCPP}
-        cetlib cetlib_except
-        ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
-        ${ROOT_BASIC_LIB_LIST}
-        MF_MessageLogger
-
-	sbnobj_Common_Reco
-	lardataobj_AnalysisBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	larreco_Calorimetry
-	lardataalg_DetectorInfo
-	sbncode_TPCReco_VertexStub
+cet_build_plugin(PlaneStubMerge art::tool
+        LIBRARIES
+        art::Framework_Core
+        art::Framework_Services_Registry
+        art_root_io::TFileService_service
+        art::Framework_Principal
+        art::Persistency_Common
+        art::Persistency_Provenance
+        art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        sbnobj::Common_Reco
+        lardataobj::AnalysisBase
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        larreco::Calorimetry
+        lardataalg::DetectorInfo
+        sbncode_TPCReco_VertexStub
+        larevt::SpaceCharge
 )
 
-simple_plugin(TwoPlaneStubMerge tool
-        ${ART_FRAMEWORK_CORE}
-        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-        ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-        ${ART_FRAMEWORK_PRINCIPAL}
-        art_Persistency_Common
-        art_Utilities canvas
-        ${MF_MESSAGELOGGER}
-        ${MF_UTILITIES}
-        ${FHICLCPP}
-        cetlib cetlib_except
-        ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
-        ${ROOT_BASIC_LIB_LIST}
-        MF_MessageLogger
-
-	sbnobj_Common_Reco
-	lardataobj_AnalysisBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	larreco_Calorimetry
-	lardataalg_DetectorInfo
-	sbncode_TPCReco_VertexStub
+cet_build_plugin(TwoPlaneStubMerge art::tool
+        LIBRARIES
+        art::Framework_Core
+        art::Framework_Services_Registry
+        art_root_io::TFileService_service
+        art::Framework_Principal
+        art::Persistency_Common
+        art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        sbnobj::Common_Reco
+        lardataobj::AnalysisBase
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        larreco::Calorimetry
+        lardataalg::DetectorInfo
+        sbncode_TPCReco_VertexStub
+        larevt::SpaceCharge
 )
 
 add_subdirectory(config)

@@ -1,0 +1,4 @@
+[submodule "sbncode/Supera"]
+	path = sbncode/Supera
+	url = https://github.com/DeepLearnPhysics/Supera.git
+	branch = icarus
