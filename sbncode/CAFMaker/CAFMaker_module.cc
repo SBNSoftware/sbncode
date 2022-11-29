@@ -1644,8 +1644,14 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       assert(thisParticle.size() == 1);
      
       SRPFP pfp;
+
+      art::Ptr<anab::T0> thisPFPT0;
+      if (f1PFPT0.isValid()) {
+        thisPFPT0 = f1PFPT0.at(iPart);
+      }
+
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-      FillPFPVars(thisParticle, primary, pfpMeta, pfp);
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
 
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
@@ -1676,13 +1682,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackVars(*thisTrack[0], producer, trk);
         FillTrackMCS(*thisTrack[0], trajectoryMCS, trk);
         FillTrackRangeP(*thisTrack[0], rangePs, trk);
-
-        art::Ptr<anab::T0> thisPFPT0;
-        if (f1PFPT0.isValid()) {
-          thisPFPT0 = f1PFPT0.at(iPart);
-        }
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.trk.back().pfp);
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
@@ -1719,16 +1718,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	
         SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
-
-        rec.reco.nshw ++;
-        rec.reco.shw.push_back(SRShower());
-
-        art::Ptr<anab::T0> thisPFPT0;
-        if (f1PFPT0.isValid()) {
-          thisPFPT0 = f1PFPT0.at(iPart);
-        }
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.shw.back().pfp);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
