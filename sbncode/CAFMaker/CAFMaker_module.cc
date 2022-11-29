@@ -245,7 +245,7 @@ class CAFMaker : public art::EDProducer {
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
-  void ReferencePMTTimes(StandardRecord &rec, double PMT_refernce_time);
+  void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -418,19 +418,19 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
   }
 }
 
-void CAFMaker::ReferencePMTTimes(StandardRecord &rec, double PMT_refernce_time) {
+void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
   // Fix the flashes
   for (SROpFlash &f: rec.opflashes) {
-    f.time += PMT_refernce_time;
-    f.timemean += PMT_refernce_time;
-    f.firsttime += PMT_refernce_time;
+    f.time += PMT_reference_time;
+    f.timemean += PMT_reference_time;
+    f.firsttime += PMT_reference_time;
   }
 
   // Fix the flash matches
   for (SRSlice &s: rec.slc) {
-    s.fmatch.time += PMT_refernce_time;
-    s.fmatch_a.time += PMT_refernce_time;
-    s.fmatch_b.time += PMT_refernce_time;
+    s.fmatch.time += PMT_reference_time;
+    s.fmatch_a.time += PMT_reference_time;
+    s.fmatch_b.time += PMT_reference_time;
   }
 
   // TODO: fix more?
@@ -1277,7 +1277,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
       else{
         std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
-          << " triggers in '" << fParams.TriggerLabel() << "' data product."
+          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
           << " Please contact CAFmaker maintainer." << std::endl;
         abort();
       }
@@ -1817,7 +1817,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //
   // PMT's:
   double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
-  ReferencePMTTimes(rec, PMT_reference_time);
+  FixPMTReferenceTimes(rec, PMT_reference_time);
   // TODO: CRT, TPC?
 
   // Get metadata information for header
