@@ -63,8 +63,12 @@ namespace sbn {
     // Required functions.
     void produce(art::Event& e) override;
 
+    void InitialiseMVAReader(TMVA::Reader &mvaReader, std::string &mvaName, std::string &mvaFileName);
+
     void ResetVars();
-    void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap);
+
+    void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap,
+		 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
 
     art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, 
                                                 const art::Ptr<recob::Slice> &slice, 
@@ -98,14 +102,14 @@ namespace sbn {
   private:
 
     // Bools to control training
-    bool fTrainingMode, fProcessNeutrinos, fProcessCosmics;
+    bool fTrainingMode, fEvaluateResultInTrainingMode, fProcessNeutrinos, fProcessCosmics;
 
     // Module labels
     std::string fMCParticleModuleLabel, fGeneratorModuleLabel, fCosmicModuleLabel, fPFParticleModuleLabel, fHitModuleLabel, fTrackModuleLabel, fSliceModuleLabel, 
       fFlashMatchModuleLabel, fCRTTrackMatchModuleLabel, fCRTHitMatchModuleLabel, fCalorimetryModuleLabel;
 
     // MVA location and type for loading
-    std::string fMVAName, fMVAFileName;
+    std::string fMVAName, fMVAFileName, fCCNuMuMVAName, fCCNuMuMVAFileName, fCCNuEMVAName, fCCNuEMVAFileName, fNCMVAName, fNCMVAFileName;
 
     // Parameter set to pass to the stopping chi2 alg
     fhicl::ParameterSet fChi2FitParams;
@@ -114,11 +118,12 @@ namespace sbn {
     TTree *fSliceTree;
     
     // TMVA reader for calculating CRUMBS score
-    TMVA::Reader *fMVAReader;
+    TMVA::Reader fMVAReader, fCCNuMuMVAReader, fCCNuEMVAReader, fNCMVAReader;
 
     // Other useful information for training tree
     float tpc_NuScore;
     unsigned eventID, subRunID, runID, slicePDG;
+    int ccnc, nutype;
     std::string matchedType;
     double matchedPurity, matchedCompleteness;
 
@@ -163,6 +168,7 @@ namespace sbn {
   CRUMBS::CRUMBS(fhicl::ParameterSet const& p)
     : EDProducer{p},
     fTrainingMode                 (p.get<bool>("TrainingMode",false)),
+    fEvaluateResultInTrainingMode (p.get<bool>("EvaluateResultInTrainingMode",false)),
     fProcessNeutrinos             (p.get<bool>("ProcessNeutrinos",true)),
     fProcessCosmics               (p.get<bool>("ProcessCosmics",true)),
     fMCParticleModuleLabel        (p.get<std::string>("MCParticleModuleLabel","")),
@@ -178,41 +184,25 @@ namespace sbn {
     fCalorimetryModuleLabel       (p.get<std::string>("CalorimetryModuleLabel")),
     fMVAName                      (p.get<std::string>("MVAName")),
     fMVAFileName                  (p.get<std::string>("MVAFileName")),
+    fCCNuMuMVAName                (p.get<std::string>("CCNuMuMVAName")),
+    fCCNuMuMVAFileName            (p.get<std::string>("CCNuMuMVAFileName")),
+    fCCNuEMVAName                 (p.get<std::string>("CCNuEMVAName")),
+    fCCNuEMVAFileName             (p.get<std::string>("CCNuEMVAFileName")),
+    fNCMVAName                    (p.get<std::string>("NCMVAName")),
+    fNCMVAFileName                (p.get<std::string>("NCMVAFileName")),
     fChi2FitParams                (p.get<fhicl::ParameterSet>("Chi2FitParams")),
     fTrackStoppingChi2Alg(fChi2FitParams)
     {
-      produces<std::vector<CRUMBSResult>>();
-      produces<art::Assns<recob::Slice, CRUMBSResult>>();
+      if(!fTrainingMode || fEvaluateResultInTrainingMode)
+	{
+	  produces<std::vector<CRUMBSResult>>();
+	  produces<art::Assns<recob::Slice, CRUMBSResult>>();
 
-      fMVAReader = new TMVA::Reader("V");
-
-      fMVAReader->AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
-      fMVAReader->AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
-      fMVAReader->AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
-      fMVAReader->AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
-      fMVAReader->AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
-      fMVAReader->AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
-      fMVAReader->AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
-      fMVAReader->AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
-      fMVAReader->AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
-      fMVAReader->AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
-      fMVAReader->AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
-
-      fMVAReader->AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
-      fMVAReader->AddVariable("pds_FMPE",&pds_FMPE);
-      fMVAReader->AddVariable("pds_FMTime",&pds_FMTime);
-
-      fMVAReader->AddVariable("crt_TrackScore",&crt_TrackScore);
-      fMVAReader->AddVariable("crt_HitScore",&crt_HitScore);
-      fMVAReader->AddVariable("crt_TrackTime",&crt_TrackTime);
-      fMVAReader->AddVariable("crt_HitTime",&crt_HitTime);
-
-      cet::search_path searchPath("FW_SEARCH_PATH");
-      std::string weightFileFullPath;
-      if (!searchPath.find_file(fMVAFileName, weightFileFullPath))
-        throw cet::exception("CRUMBS") << "Unable to find weight file: " << fMVAFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
-
-      fMVAReader->BookMVA(fMVAName, weightFileFullPath);
+	  InitialiseMVAReader(fMVAReader, fMVAName, fMVAFileName);
+	  InitialiseMVAReader(fCCNuMuMVAReader, fCCNuMuMVAName, fCCNuMuMVAFileName);
+	  InitialiseMVAReader(fCCNuEMVAReader, fCCNuEMVAName, fCCNuEMVAFileName);
+	  InitialiseMVAReader(fNCMVAReader, fNCMVAName, fNCMVAFileName);
+	}
 
       art::ServiceHandle<art::TFileService> tfs;
       if(fTrainingMode)
@@ -248,8 +238,41 @@ namespace sbn {
           fSliceTree->Branch("matchedType",&matchedType);
           fSliceTree->Branch("matchedPurity",&matchedPurity);
           fSliceTree->Branch("matchedCompleteness",&matchedCompleteness);
+          fSliceTree->Branch("ccnc",&ccnc);
+          fSliceTree->Branch("nutype",&nutype);
         }
     }
+
+  void CRUMBS::InitialiseMVAReader(TMVA::Reader &mvaReader, std::string &mvaName, std::string &mvaFileName)
+  {
+    mvaReader.AddVariable("tpc_CRFracHitsInLongestTrack",&tpc_CRFracHitsInLongestTrack);
+    mvaReader.AddVariable("tpc_CRLongestTrackDeflection",&tpc_CRLongestTrackDeflection);
+    mvaReader.AddVariable("tpc_CRLongestTrackDirY",&tpc_CRLongestTrackDirY);
+    mvaReader.AddVariable("tpc_CRNHitsMax",&tpc_CRNHitsMax);
+    mvaReader.AddVariable("tpc_NuEigenRatioInSphere",&tpc_NuEigenRatioInSphere);
+    mvaReader.AddVariable("tpc_NuNFinalStatePfos",&tpc_NuNFinalStatePfos);
+    mvaReader.AddVariable("tpc_NuNHitsTotal",&tpc_NuNHitsTotal);
+    mvaReader.AddVariable("tpc_NuNSpacePointsInSphere",&tpc_NuNSpacePointsInSphere);
+    mvaReader.AddVariable("tpc_NuVertexY",&tpc_NuVertexY);
+    mvaReader.AddVariable("tpc_NuWeightedDirZ",&tpc_NuWeightedDirZ);
+    mvaReader.AddVariable("tpc_StoppingChi2CosmicRatio",&tpc_StoppingChi2CosmicRatio);
+
+    mvaReader.AddVariable("pds_FMTotalScore",&pds_FMTotalScore);
+    mvaReader.AddVariable("pds_FMPE",&pds_FMPE);
+    mvaReader.AddVariable("pds_FMTime",&pds_FMTime);
+
+    mvaReader.AddVariable("crt_TrackScore",&crt_TrackScore);
+    mvaReader.AddVariable("crt_HitScore",&crt_HitScore);
+    mvaReader.AddVariable("crt_TrackTime",&crt_TrackTime);
+    mvaReader.AddVariable("crt_HitTime",&crt_HitTime);
+
+    cet::search_path searchPath("FW_SEARCH_PATH");
+    std::string weightFileFullPath;
+    if (!searchPath.find_file(mvaFileName, weightFileFullPath))
+      throw cet::exception("CRUMBS") << "Unable to find weight file: " << mvaFileName << " in FW_SEARCH_PATH: " << searchPath.to_string();
+
+    mvaReader.BookMVA(mvaName, weightFileFullPath);
+  }
 
   void CRUMBS::ResetVars()
   {
@@ -264,9 +287,11 @@ namespace sbn {
     slicePDG = 999999;
     matchedType = "";
     matchedPurity = -999999.; matchedCompleteness = -999999.;
+    ccnc = 999999; nutype = 999999;
   }
 
-  void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap)
+  void CRUMBS::GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap, 
+		       std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap)
   {
 
     unsigned nNu(0), nCos(0);
@@ -293,6 +318,9 @@ namespace sbn {
               trackIDToGenMap[particle->TrackId()] = i;
             }
           ++nNu;
+
+	  genCCNCMap[i]   = mcTruth->GetNeutrino().CCNC();
+	  genNuTypeMap[i] = mcTruth->GetNeutrino().Nu().PdgCode();
         }
       }
 
@@ -315,9 +343,12 @@ namespace sbn {
               trackIDToGenMap[particle->TrackId()] = i + nNu;
             }
           ++nCos;
+
+	  genCCNCMap[i + nNu]   = -1;
+	  genNuTypeMap[i + nNu] = -1;
         }
       }
-  
+
     eventID = e.event();
     subRunID = e.subRun();
     runID = e.run();
@@ -327,9 +358,11 @@ namespace sbn {
   {
     std::map<int, int> trackIDToGenMap;
     std::map<int, std::string> genTypeMap;
+    std::map<int, int> genCCNCMap;
+    std::map<int, int> genNuTypeMap;
 
     if(fTrainingMode)
-      this->GetMaps(e, trackIDToGenMap, genTypeMap);
+      this->GetMaps(e, trackIDToGenMap, genTypeMap, genCCNCMap, genNuTypeMap);
 
     auto resultsVec = std::make_unique<std::vector<CRUMBSResult>>();
     auto sliceAssns = std::make_unique<art::Assns<recob::Slice, CRUMBSResult>>();
@@ -380,14 +413,24 @@ namespace sbn {
         pds_FMPE = flashmatch->light.pe;
         pds_FMTime = std::max(flashmatch->time, -100.);
       
-        const float score = fMVAReader->EvaluateMVA(fMVAName);
+	if(!fTrainingMode || fEvaluateResultInTrainingMode)
+	  {
+	    const float score       = fMVAReader.EvaluateMVA(fMVAName);
+	    const float ccnumuscore = fCCNuMuMVAReader.EvaluateMVA(fCCNuMuMVAName);
+	    const float ccnuescore  = fCCNuEMVAReader.EvaluateMVA(fCCNuEMVAName);
+	    const float ncscore     = fNCMVAReader.EvaluateMVA(fNCMVAName);
 
-        resultsVec->emplace_back(score, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax),
-                                 tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), 
-                                 tpc_NuVertexY, tpc_NuWeightedDirZ, tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
-                                 crt_TrackTime, crt_HitTime);
-        
-        util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
+	    const float bestscore   = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? ccnumuscore : (ccnuescore > ncscore) ? ccnuescore : ncscore;
+	    const int   bestid      = (ccnumuscore > ccnuescore && ccnumuscore > ncscore) ? 14 : (ccnuescore > ncscore) ? 12 : 1;
+	    
+	    resultsVec->emplace_back(score, ccnumuscore, ccnuescore, ncscore, bestscore, bestid, tpc_CRFracHitsInLongestTrack, tpc_CRLongestTrackDeflection, 
+				     tpc_CRLongestTrackDirY, std::round(tpc_CRNHitsMax), tpc_NuEigenRatioInSphere, std::round(tpc_NuNFinalStatePfos), 
+				     std::round(tpc_NuNHitsTotal), std::round(tpc_NuNSpacePointsInSphere), tpc_NuVertexY, tpc_NuWeightedDirZ, 
+				     tpc_StoppingChi2CosmicRatio, pds_FMTotalScore, pds_FMPE, pds_FMTime, crt_TrackScore, crt_HitScore, 
+				     crt_TrackTime, crt_HitTime);
+	    
+	    util::CreateAssn(*this, e, *resultsVec, slice, *sliceAssns);
+	  }
 
         if(fTrainingMode)
           {
@@ -399,12 +442,18 @@ namespace sbn {
             slicePDG = primary->PdgCode();
             matchedType = genTypeMap[matchedID];
       
+	    ccnc   = genCCNCMap[matchedID];
+	    nutype = genNuTypeMap[matchedID];
+
             fSliceTree->Fill();
           }
       }
 
-    e.put(std::move(resultsVec));
-    e.put(std::move(sliceAssns));
+    if(!fTrainingMode || fEvaluateResultInTrainingMode)
+      {
+	e.put(std::move(resultsVec));
+	e.put(std::move(sliceAssns));
+      }
   }
 
   void CRUMBS::FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &hitT0s)
