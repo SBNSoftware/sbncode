@@ -246,7 +246,7 @@ class CAFMaker : public art::EDProducer {
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
-  void ReferenceCRTTimes(StandardRecord &rec, double CRT_reference_time);
+  void FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -438,7 +438,7 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
 
 }
 
-void CAFMaker::ReferenceCRTTimes(StandardRecord &rec, double CRT_reference_time) {
+void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time) {
   // Fix the hits
   for (SRCRTHit &h: rec.crt_hits) {
     h.time += CRT_reference_time;
@@ -1823,11 +1823,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // PMT's:
   double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
   FixPMTReferenceTimes(rec, PMT_reference_time);
-  ReferencePMTTimes(rec, PMT_reference_time);
 
   // CRT's
   double CRT_reference_time = fParams.ReferenceCRTToBeam() ? -srtrigger.beam_gate_time_abs/1e3 /* ns -> us*/  : 0.;
-  ReferenceCRTTimes(rec, CRT_reference_time);
+  FixCRTReferenceTimes(rec, CRT_reference_time);
 
   // TODO: TPC?
 
