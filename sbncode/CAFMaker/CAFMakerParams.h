@@ -263,7 +263,7 @@ namespace caf
       0,
     };
 
-    Atom<string> TriggerLabel {
+    Atom<art::InputTag> TriggerLabel {
       Name("TriggerLabel"),
       Comment("Label of trigger."),
       "daqTrigger"
@@ -326,7 +326,7 @@ namespace caf
     Atom<bool> ReferencePMTFromTriggerToBeam {
       Name("ReferencePMTFromTriggerToBeam"),
       Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
-      true,
+      true
     };
 
     Atom<bool> ReferenceCRTToBeam {
