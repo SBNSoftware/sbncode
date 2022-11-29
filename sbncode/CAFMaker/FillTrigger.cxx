@@ -13,10 +13,10 @@ namespace caf
     triggerInfo.beam_gate_time_abs = addltrig_info.beamGateTimestamp;
     beam_ts = addltrig_info.beamGateTimestamp;
     trigger_ts = addltrig_info.triggerTimestamp;
-    double diff_ts = (trigger_ts - beam_ts) / 1000.;
-    triggerInfo.trigger_within_gate = diff_ts;
     triggerInfo.beam_gate_det_time = trig.BeamGateTime();
     triggerInfo.global_trigger_det_time = trig.TriggerTime();
+    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+    triggerInfo.trigger_within_gate = diff_ts;
   }
     
 }
