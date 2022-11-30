@@ -284,6 +284,9 @@ class CAFMaker : public art::EDProducer {
   template <class EvtT, class T>
   void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
+  template <class EvtT, class T>
+  void GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
+                        art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message.
@@ -965,6 +968,20 @@ bool CAFMaker::GetAssociatedProduct(const art::FindManyP<T>& fm, int idx,
 //......................................................................
 template <class EvtT, class T>
 void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
+                                art::Handle<T>& handle) const {
+  evt.getByLabel(label, handle);
+  if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No product of type '"
+              << cet::demangle_symbol(typeid(*handle).name())
+              << "' found under label '" << label << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+}
+
+//......................................................................
+template <class EvtT, class T>
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
                                 art::Handle<T>& handle) const {
   evt.getByLabel(label, handle);
   if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
