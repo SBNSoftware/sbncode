@@ -1,65 +1,47 @@
-find_ups_product(ifdhc)
-find_ups_product(dk2nudata)
-find_ups_product(dk2nugenie)
-
-link_directories( $ENV{ROOTSYS}/lib )
-link_directories( $ENV{DK2NUDATA_LIB} )
-link_directories( $ENV{DK2NUGENIE_LIB} )
-
 add_subdirectory(Tools)
 add_subdirectory(config)
 
-simple_plugin( MeVPrtlGen module
-              ${ART_FRAMEWORK_CORE}
-              ${ART_FRAMEWORK_SERVICES_REGISTRY}
-              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-              ${ART_FRAMEWORK_SERVICES}
-				      ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-				      ${ART_ROOT_IO_TFILE_SUPPORT}
-              ${ART_FRAMEWORK_PRINCIPAL}
-              art_Persistency_Common
-              art_Utilities canvas
-              ${MF_MESSAGELOGGER}
-              ${MF_UTILITIES}
-              ${FHICLCPP}
-              cetlib cetlib_except
-              ${ROOT_EVE_LIB_LIST}
-              ${ROOT_X3d}
-              ${ROOT_CORE}
-              ${ROOT_BASIC_LIB_LIST}
-        			${ROOT_XMLIO}
-        			${CLHEP}
-		nusimdata_SimulationBase
-              larcorealg_Geometry
-        			nurandom_RandomUtils_NuRandomService_service
-        			larcoreobj_SummaryData
-        			sbnobj_Common_EventGen_MeVPrtl
-        			sbncode_EventGenerator_MeVPrtl_Constants
+cet_build_plugin( MeVPrtlGen art::module
+          LIBRARIES
+              art::Framework_Core
+              art::Framework_Services_Registry
+              art_root_io::TFileService_service
+              art_root_io::TFileService_service
+              art_root_io::tfile_support
+              art::Framework_Principal
+              art::Persistency_Common
+              art::Utilities canvas::canvas
+              cetlib::cetlib cetlib_except::cetlib_except
+              CLHEP::CLHEP
+              nugen::EventGeneratorBase_GENIE
+              nusimdata::SimulationBase
+              larcorealg::Geometry
+              lardata::Utilities
+              nurandom::RandomUtils_NuRandomService_service
+              larcoreobj::SummaryData
+              sbnobj::Common_EventGen_MeVPrtl
+              sbncode_EventGenerator_MeVPrtl_Constants
 )
 
-simple_plugin( MeVPrtlTestRayTrace module
-                            ${ART_FRAMEWORK_CORE}
-                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}                ${ART_FRAMEWORK_SERVICES}
-				${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-				${ART_ROOT_IO_TFILE_SUPPORT}
-                            ${ART_FRAMEWORK_PRINCIPAL}
-                            art_Persistency_Common
-                            art_Utilities canvas
-                            ${MF_MESSAGELOGGER}
-                            ${MF_UTILITIES}
-                            ${FHICLCPP}
-                            cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_CORE}
-                            ${ROOT_BASIC_LIB_LIST}
-			${ROOT_XMLIO}
-			${CLHEP}
-			nurandom_RandomUtils_NuRandomService_service
-			larcoreobj_SummaryData
-        		sbnobj_Common_EventGen_MeVPrtl
-			sbncode_EventGenerator_MeVPrtl_Constants
+cet_build_plugin( MeVPrtlTestRayTrace art::module
+                    LIBRARIES
+                        art::Framework_Core
+                        art::Framework_Services_Registry
+                        art_root_io::TFileService_service
+                        art_root_io::TFileService_service
+                        art_root_io::tfile_support
+                        art::Framework_Principal
+                        art::Persistency_Common
+                        art::Utilities canvas::canvas
+                        cetlib::cetlib cetlib_except::cetlib_except
+                        CLHEP::CLHEP
+                        nugen::EventGeneratorBase_GENIE
+                        nurandom::RandomUtils_NuRandomService_service
+                        nusimdata::SimulationBase
+                        larcoreobj::SummaryData
+                        sbnobj::Common_EventGen_MeVPrtl
+                        sbncode_EventGenerator_MeVPrtl_Constants
+                        lardata::Utilities
 )
 
 

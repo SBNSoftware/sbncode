@@ -359,34 +359,34 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
   //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (caf::SRTrack& trk: brec->reco.trk) {
-    const caf::SRVector3D start = trk.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.trk.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
-      if (trk.mcsP.fwdP_muon > 0.6) {
-	trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
-      if (trk.rangeP.p_muon > 0.6) {
-	trk.rangeP.p_muon = TMath::QuietNaN();
+      if (pfp.trk.rangeP.p_muon > 0.6) {
+	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
 
   //Note shower energy may not be currently very functional
-  for (caf::SRShower& shw: brec->reco.shw) {
-    const caf::SRVector3D start = shw.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.shw.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
-      if (shw.bestplane_energy > 0.6) {
-	shw.bestplane_energy = TMath::QuietNaN();
-	shw.plane[0].energy = TMath::QuietNaN();
-	shw.plane[1].energy = TMath::QuietNaN();
-	shw.plane[2].energy = TMath::QuietNaN();
+      if (pfp.shw.bestplane_energy > 0.6) {
+	pfp.shw.bestplane_energy = TMath::QuietNaN();
+	pfp.shw.plane[0].energy = TMath::QuietNaN();
+	pfp.shw.plane[1].energy = TMath::QuietNaN();
+	pfp.shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -399,20 +399,20 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
 	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
-      for (caf::SRTrack& trk: slc.reco.trk) {
-	if (trk.mcsP.fwdP_muon > 0.6) {
-	  trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
-	if (trk.rangeP.p_muon > 0.6) {
-	  trk.rangeP.p_muon = TMath::QuietNaN();
+	if (pfp.trk.rangeP.p_muon > 0.6) {
+	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
 	}
       }
-      for (caf::SRShower& shw: slc.reco.shw) {
-	if (shw.bestplane_energy > 0.6) {
-	  shw.bestplane_energy = TMath::QuietNaN();
-	  shw.plane[0].energy = TMath::QuietNaN();
-	  shw.plane[1].energy = TMath::QuietNaN();
-	  shw.plane[2].energy = TMath::QuietNaN();
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.shw.bestplane_energy > 0.6) {
+	  pfp.shw.bestplane_energy = TMath::QuietNaN();
+	  pfp.shw.plane[0].energy = TMath::QuietNaN();
+	  pfp.shw.plane[1].energy = TMath::QuietNaN();
+	  pfp.shw.plane[2].energy = TMath::QuietNaN();
 	}
       }
     }
@@ -1438,6 +1438,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Track>(fmPFPart, evt,
             fParams.RecoTrackLabel() + slice_tag_suff);
 
+    art::FindOneP<anab::T0> f1PFPT0 =
+      FindOnePStrict<anab::T0>(fmPFPart, evt,
+            fParams.PFParticleLabel() + slice_tag_suff);
+
     // make Ptr's to tracks for track -> other object associations
     std::vector<art::Ptr<recob::Track>> slcTracks;
     if (fmTrack.isValid()) {
@@ -1647,7 +1651,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // This depends on the findMany object created above.
     for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
-
       std::vector<art::Ptr<recob::Track>> thisTrack;
       if (fmTrack.isValid()) {
         thisTrack = fmTrack.at(iPart);
@@ -1656,11 +1659,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-      if (!thisTrack.empty())  { // it's a track!
+     
+      SRPFP pfp;
+
+      art::Ptr<anab::T0> thisPFPT0;
+      if (f1PFPT0.isValid()) {
+        thisPFPT0 = f1PFPT0.at(iPart);
+      }
+
+      const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+
+      if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
-        assert(thisShower.size() == 0);
-        rec.reco.ntrk ++;
-        rec.reco.trk.push_back(SRTrack());
 
         // collect all the stuff
         std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
@@ -1683,35 +1694,32 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
-        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
-        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
-
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.trk.back().pfp);
+        SRTrack& trk = pfp.trk;
+        FillTrackVars(*thisTrack[0], producer, trk);
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, trk);
+        FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
-           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
-           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), trk);
         }
         if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
-           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
+              lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
         if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
         }
         if (fmCRTHitMatch.isValid()) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
@@ -1720,55 +1728,45 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
           if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
 
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), rec.reco.trk.back());
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), trk);
         }
         // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid()) {
-          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.trk.push_back(rec.reco.trk.back());
-        recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
 
-      else if (!thisShower.empty()) { // it's a shower!
-        assert(thisTrack.size() == 0);
+      if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-        rec.reco.nshw ++;
-        rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
-
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, rec.reco.shw.back().pfp);
+	
+        SRShower& shw = pfp.shw;
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
-           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }
         if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
-          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), shw);
         }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
-          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
+          FillShowerResiduals(fmShowerResiduals.at(iPart), shw);
         }
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
-          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), shw);
         }
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
-          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), shw);
         }
         if (fmShowerHit.isValid()) {
-          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
+          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, shw);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.shw.push_back(rec.reco.shw.back());
-        recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
-
-      else {}
-
+      
+      recslc.reco.pfp.push_back(std::move(pfp));
+      recslc.reco.npfp = recslc.reco.pfp.size();
     }// end for pfparts
 
 

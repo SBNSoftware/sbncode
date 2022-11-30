@@ -1,6 +1,6 @@
-art_make(
-    LIB_LIBRARIES
-        ${ROOT_BASIC_LIB_LIST}
+art_make_library(
+    LIBRARIES
+        ROOT::Core ROOT::Physics
 )
 
 install_headers()
