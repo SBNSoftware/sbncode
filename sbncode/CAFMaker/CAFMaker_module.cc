@@ -246,6 +246,7 @@ class CAFMaker : public art::EDProducer {
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
+  void FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -437,6 +438,27 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
   }
 
   // TODO: fix more?
+
+}
+
+void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time) {
+  // Fix the hits
+  for (SRCRTHit &h: rec.crt_hits) {
+    h.time += CRT_reference_time;
+  }
+
+  // Fix the hit matches
+  for (SRSlice &s: rec.slc) {
+    for (SRTrack &t: s.reco.trk) {
+      t.crthit.hit.time += CRT_reference_time;
+    }
+  }
+  for (SRTrack &t: rec.reco.trk) {
+    t.crthit.hit.time += CRT_reference_time;
+  }
+
+  // TODO: fix more?
+  // Tracks?
 
 }
 
@@ -1249,6 +1271,11 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
     FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
   }
+  // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT 
+  // time referencing work. TODO: add more stuff to a "MC"-Trigger?
+  else if(!isRealData) {
+    FillTriggerMC(fParams.CRTSimT0Offset(), srtrigger);
+  }
 
   // try to find the result of the Flash trigger if it was run
   bool pass_flash_trig = false;
@@ -1268,39 +1295,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
   if (crthits_handle.isValid()) {
-
-    //==== gate start time
-    //==== 03/31/22 : 1600000 ns = 1.6 ms is the default T0Offset in MC
-    //==== https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
-    uint64_t m_gate_start_timestamp = fParams.CRTSimT0Offset(); // ns
-    if(isRealData){
-
-      art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
-      evt.getByLabel( fParams.TriggerLabel(), externalTrigger_handle );
-      const std::vector<raw::ExternalTrigger> &externalTrgs = *externalTrigger_handle;
-
-      art::Handle< std::vector<raw::Trigger> > trigger_handle;
-      evt.getByLabel( fParams.TriggerLabel(), trigger_handle );
-      const std::vector<raw::Trigger> &trgs = *trigger_handle;
-
-      if(externalTrgs.size()==1 && trgs.size()==1){
-        long long TriggerAbsoluteTime = externalTrgs[0].GetTrigTime(); // Absolute time of trigger
-        double BeamGateRelativeTime = trgs[0].BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
-        double TriggerRelativeTime = trgs[0].TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
-        m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
-      }
-      else{
-        std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
-          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
-          << " Please contact CAFmaker maintainer." << std::endl;
-        abort();
-      }
-    }
-
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 
@@ -1531,7 +1529,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Hit>(slcShowers, evt,
           fParams.RecoShowerLabel() + slice_tag_suff);
 
-    // TODO: also save the sbn::crt::CRTHit in the matching so that CAFMaker has access to it
+    // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to 
+    // access that here, so we do it per-track (see code where fmCRTHitMatch is accessed below)
     art::FindManyP<anab::T0> fmCRTHitMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1739,10 +1738,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmTrackHit.isValid()) {
           if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
         }
-        // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), trk);
+          art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
+              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
+         
+          std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
+          if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
+
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), trk);
         }
+        // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
@@ -1830,7 +1835,12 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   // PMT's:
   double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
   FixPMTReferenceTimes(rec, PMT_reference_time);
-  // TODO: CRT, TPC?
+
+  // CRT's
+  double CRT_reference_time = fParams.ReferenceCRTToBeam() ? -srtrigger.beam_gate_time_abs/1e3 /* ns -> us*/  : 0.;
+  FixCRTReferenceTimes(rec, CRT_reference_time);
+
+  // TODO: TPC?
 
   // Get metadata information for header
   unsigned int run = evt.run();

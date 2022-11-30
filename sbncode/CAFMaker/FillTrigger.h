@@ -14,6 +14,8 @@ namespace caf
                    const raw::Trigger& trig_info,
                    caf::SRTrigger& triggerInfo);
 
+  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
+
 }
 
 #endif

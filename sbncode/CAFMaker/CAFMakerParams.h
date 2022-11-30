@@ -328,6 +328,12 @@ namespace caf
       Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
       true
     };
+
+    Atom<bool> ReferenceCRTToBeam {
+      Name("ReferenceCRTToBeam"),
+      Comment("Whether to switch the reference time of CRT reco to the 'beam spill' time."),
+      true
+    };
   };
 }
 
