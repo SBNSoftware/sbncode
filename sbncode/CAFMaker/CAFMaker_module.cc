@@ -1640,8 +1640,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-
-      assert(thisParticle.size() == 1);
      
       SRPFP pfp;
 
