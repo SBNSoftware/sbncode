@@ -1088,7 +1088,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
-  GetByLabelStrict(evt, "generator", mcflux_handle);
+  GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   if (mcflux_handle.isValid()) {
@@ -1097,7 +1097,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
-  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  GetByLabelStrict(evt, std::string("mcreco"), mctrack_handle);
   std::vector<art::Ptr<sim::MCTrack>> mctracks;
   if (mctrack_handle.isValid()) {
     art::fill_ptr_vector(mctracks, mctrack_handle);
