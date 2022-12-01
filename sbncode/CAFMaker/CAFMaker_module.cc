@@ -285,6 +285,9 @@ class CAFMaker : public art::EDProducer {
   template <class EvtT, class T>
   void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
+  template <class EvtT, class T>
+  void GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
+                        art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message.
@@ -996,6 +999,20 @@ void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
 }
 
 //......................................................................
+template <class EvtT, class T>
+void CAFMaker::GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
+                                art::Handle<T>& handle) const {
+  evt.getByLabel(label, handle);
+  if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
+    std::cout << "CAFMaker: No product of type '"
+              << cet::demangle_symbol(typeid(*handle).name())
+              << "' found under label '" << label << "'. "
+              << "Set 'StrictMode: false' to continue anyway." << std::endl;
+    abort();
+  }
+}
+
+//......................................................................
 template <class T>
 void CAFMaker::GetByLabelIfExists(const art::Event& evt,
                                   const std::string& label,
@@ -1090,7 +1107,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
-  GetByLabelStrict(evt, "generator", mcflux_handle);
+  GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   if (mcflux_handle.isValid()) {
@@ -1099,7 +1116,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
-  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  GetByLabelStrict(evt, std::string("mcreco"), mctrack_handle);
   std::vector<art::Ptr<sim::MCTrack>> mctracks;
   if (mctrack_handle.isValid()) {
     art::fill_ptr_vector(mctracks, mctrack_handle);
