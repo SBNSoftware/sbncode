@@ -446,12 +446,12 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_ti
 
   // Fix the hit matches
   for (SRSlice &s: rec.slc) {
-    for (SRTrack &t: s.reco.trk) {
-      t.crthit.hit.time += CRT_reference_time;
+    for (SRPFP &pfp: s.reco.pfp) {
+      pfp.trk.crthit.hit.time += CRT_reference_time;
     }
   }
-  for (SRTrack &t: rec.reco.trk) {
-    t.crthit.hit.time += CRT_reference_time;
+  for (SRPFP &pfp: rec.reco.pfp) {
+    pfp.trk.crthit.hit.time += CRT_reference_time;
   }
 
   // TODO: fix more?
