@@ -19,6 +19,7 @@
 #include "larcorealg/Geometry/Exceptions.h"
 
 #include "artdaq-core/Data/Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
@@ -44,11 +45,12 @@ public:
   NuMIRetriever(NuMIRetriever &&) = delete;
   NuMIRetriever& operator=(NuMIRetriever const&) = delete;
   NuMIRetriever& operator=(NuMIRetriever&&) = delete;
-  
   // Required functions.
   void produce(art::Event& e) override;
   void beginSubRun(art::SubRun& sr) override;
   void endSubRun(art::SubRun& sr) override;
+
+  
   
 private:
   // input labels
@@ -62,6 +64,16 @@ private:
   int TotalBeamSpills;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
+
+  struct TriggerInfo_t {
+    int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
+    double t_current_event  = 0;
+    double t_previous_event = 0;
+    unsigned int number_of_gates_since_previous_event = 0; // FIXME needs to be integral type                        
+  };
+
+  template <class T> TriggerInfo_t extractTriggerInfo(art::Event const& e, T frag) const;
+
 };
 
 sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
@@ -79,6 +91,55 @@ sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
   TotalBeamSpills = 0;
 }
 
+template <class T>
+sbn::NuMIRetriever::TriggerInfo_t sbn::NuMIRetriever::extractTriggerInfo(art::Event const& e, T frag) const {
+
+  TriggerInfo_t triggerInfo;
+  std::string data = frag.GetDataString();
+  char *buffer = const_cast<char*>(data.c_str());
+  if constexpr (std::is_same_v<T, icarus::ICARUSTriggerV3Fragment>)
+  {
+    std::cout<<"Found V3 fragment, parsing fragment information"<<std::endl;
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
+    int gate_type = datastream_info.gate_type;
+    triggerInfo.gate_type = gate_type;
+    int trig_type = datastream_info.trigger_type;
+    if(trig_type == 0)
+    {
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesNuMIMaj();
+      if(gate_type == 2)
+        triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampNuMIMaj()))/(1000000000.);
+      else
+        triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
+    }
+    if(trig_type == 1)
+    {
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesNuMIMinbias();
+      if(gate_type == 2)
+	triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampNuMIMinbias()))/(1000000000.);
+      else
+        triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
+    }
+  }
+  if constexpr (std::is_same_v<T, icarus::ICARUSTriggerV2Fragment>)
+    {
+      icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
+      int gate_type = datastream_info.gate_type;
+      int trig_type = datastream_info.trigger_type;
+      triggerInfo.gate_type = gate_type;
+      if(trig_type == 0)
+	{
+	  triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
+	  if(gate_type == 2)
+	    triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
+	  else
+	    triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
+	}
+    }           
+
+  return triggerInfo;
+}
+
 void sbn::NuMIRetriever::produce(art::Event &e)
 {
 
@@ -90,36 +151,51 @@ void sbn::NuMIRetriever::produce(art::Event &e)
   // TODO: long-term goal -- can we fix this?
   if (e.event() == 1) return;
 
-  int gate_type = 0;
-  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
-  e.getByLabel(raw_data_label_, "ICARUSTriggerV2", raw_data_ptr);
-  auto const & raw_data = (*raw_data_ptr);
-
+  //int gate_type = 0;
   double t_current_event  = 0;
   double t_previous_event = 0;
+  TriggerInfo_t triggerInfo;
   double number_of_gates_since_previous_event = 0;
-
-  for(auto raw_datum : raw_data){
-
-    uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
-    std::string data = frag.GetDataString();
-    char *buffer = const_cast<char*>(data.c_str());
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
-    gate_type = datastream_info.gate_type;
-    number_of_gates_since_previous_event = frag.getDeltaGatesNuMI();
-
-    t_current_event = static_cast<double>(artdaq_ts)/(1000000000.); //check this offset... 
-    if(gate_type == 2)
-      t_previous_event = (static_cast<double>(frag.getLastTimestampNuMI()))/(1000000000.);
-    else
-      t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.);
+  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
+  e.getByLabel(raw_data_label_, "ICARUSTriggerV3", raw_data_ptr);
+  if(raw_data_ptr.isValid())
+  {
+    auto const & raw_data = (*raw_data_ptr);
+    if(raw_data.size() > 1)
+    {
+      std::cout<<"More than one trigger fragment in this event, this should not happen! Skipping this event!"<<std::endl;
+	return;
+    }
+    for(auto raw_datum : raw_data){
+      uint64_t artdaq_ts = raw_datum.timestamp();
+      triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0);
+      triggerInfo = extractTriggerInfo<icarus::ICARUSTriggerV3Fragment>(e, raw_datum);
+    }
+  }
+  e.getByLabel(raw_data_label_, "ICARUSTriggerV2", raw_data_ptr);
+  if(raw_data_ptr.isValid())
+  {
+    auto const & raw_data = (*raw_data_ptr);
+    if(raw_data.size() > 1)
+      {
+	std::cout<<"More than one trigger fragment in this event, this should not happen! Skipping this event!"<<std::endl;
+        return;
+      }
+    for(auto raw_datum : raw_data){
+      uint64_t artdaq_ts = raw_datum.timestamp();
+      triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0);
+      triggerInfo = extractTriggerInfo<icarus::ICARUSTriggerV2Fragment>(e, raw_datum);
+    }
 
   }
 
+  t_current_event = triggerInfo.t_current_event;
+  t_previous_event = triggerInfo.t_previous_event;
+  number_of_gates_since_previous_event = triggerInfo.number_of_gates_since_previous_event;
+
   std::cout << std::setprecision(19) << "Previous : " << t_previous_event << ", Current : " << t_current_event << std::endl;
   //We only want to process NuMI gates, i.e. type 2
-  if(gate_type == 2)
+  if(triggerInfo.gate_type == 2)
   {
     // Keep track of the number of beam gates the DAQ thinks
     //   are in this job   

@@ -20,6 +20,7 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 #include "artdaq-core/Data/Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV3Fragment.hh"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerV2Fragment.hh"
 
 #include "sbnobj/Common/POTAccounting/BNBSpillInfo.h"
@@ -134,8 +135,10 @@ private:
 
   static constexpr double MWRtoroidDelay = -0.035; ///< the same time point is measured _t_ by MWR and _t + MWRtoroidDelay`_ by the toroid [ms]
 
+  template <class T> TriggerInfo_t extractTriggerInfo(art::Event const& e, T frag) const;
+
   /// Returns the information of the trigger in the current event.
-  TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
+  //TriggerInfo_t extractTriggerInfo(art::Event const& e) const;
   
   /**
    * @brief Determines spill times and extracts data based on multiwire devices.
@@ -172,6 +175,8 @@ private:
     (art::EventID const& eventID, double time, MWRdata_t const& MWRdata, std::vector<int> const& matched_MWR) const;
 
 };
+
+
 
 sbn::BNBRetriever::BNBRetriever(Parameters const& params)
   : EDProducer{params},
@@ -214,8 +219,45 @@ void sbn::BNBRetriever::produce(art::Event& e)
   //
   // TODO: long-term goal -- can we fix this?
   if (e.event() == 1) return;
+
+  TriggerInfo_t triggerInfo;
+
+  //auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV3" });
+  art::Handle< std::vector<artdaq::Fragment> > raw_data_ptr;
+  e.getByLabel(raw_data_label, "ICARUSTriggerV3", raw_data_ptr);
+  if(raw_data_ptr.isValid())
+  {
+    auto const & raw_data = (*raw_data_ptr);
+    if(raw_data.size() > 1)
+    {
+      mf::LogDebug("BNBRetriever")<<"More than one trigger fragment in this event, this should not happen! Skipping this event!"<<std::endl;
+      return;
+    }
+    for(auto raw_datum : raw_data){
+      uint64_t artdaq_ts = raw_datum.timestamp();
+      triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0);
+      triggerInfo = extractTriggerInfo<icarus::ICARUSTriggerV3Fragment>(e, raw_datum);
+    }
+  }
+  //auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV2" });
+  e.getByLabel(raw_data_label, "ICARUSTriggerV2", raw_data_ptr);
+  if(raw_data_ptr.isValid())
+  {
+    auto const & raw_data = (*raw_data_ptr);
+    if(raw_data.size() > 1)
+      {
+	mf::LogDebug("BNBRetriever")<<"More than one trigger fragment in this event, this should not happen! Skipping this event!"<<std::endl;
+	return;
+      }
+    for(auto raw_datum : raw_data){
+      uint64_t artdaq_ts = raw_datum.timestamp();
+      triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0);
+      triggerInfo = extractTriggerInfo<icarus::ICARUSTriggerV2Fragment>(e, raw_datum);
+    }
+  }
+
   
-  TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
+  //TriggerInfo_t const triggerInfo = extractTriggerInfo(e);
   
   //We only want to process BNB gates, i.e. type 1 
   if(triggerInfo.gate_type != 1) return;
@@ -237,41 +279,63 @@ void sbn::BNBRetriever::produce(art::Event& e)
   
 }//end iteration over art::Events
 
-
-sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Event const& e) const {
+template <class T>
+sbn::BNBRetriever::TriggerInfo_t sbn::BNBRetriever::extractTriggerInfo(art::Event const& e, T frag) const {
   
   //Here we read in the artdaq Fragments and extract three pieces of information:
   // 1. The time of the current event, t_current_event
   // 2. the time of the previously triggered event, t_previous_event (NOTE: Events are non-sequential!)
   // 3. the number of beam spills since the previously triggered event, number_of_gates_since_previous_event
   
-  auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV2" });
+  //auto const & raw_data = e.getProduct< std::vector<artdaq::Fragment> >({ raw_data_label, "ICARUSTriggerV2" });
   
   TriggerInfo_t triggerInfo;
 
-  for(auto raw_datum : raw_data){
+  //for(auto raw_datum : raw_data){
    
-    uint64_t artdaq_ts = raw_datum.timestamp();
-    icarus::ICARUSTriggerV2Fragment frag(raw_datum);
-    std::string data = frag.GetDataString();
-    char *buffer = const_cast<char*>(data.c_str());
+  std::string data = frag.GetDataString();
+  char *buffer = const_cast<char*>(data.c_str());
+  if constexpr (std::is_same_v<T, icarus::ICARUSTriggerV3Fragment>)
+  {
+    mf::LogDebug("BNBRetriever")<<"Found V3 fragment, parsing fragment information"<<std::endl;
+    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV3String(buffer);
+    triggerInfo.gate_type = datastream_info.gate_type;
+    int trig_type = datastream_info.trigger_type;
+    if(trig_type == 0)
+    {
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMaj();
+      if(triggerInfo.gate_type == 1)
+	triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMaj()))/(1e9);
+      else
+	triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
+    }
+    if(trig_type == 1)
+    {
+      triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNBMinbias();
+      if(triggerInfo.gate_type == 1)
+	triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNBMinbias()))/(1e9);
+      else
+	triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
+    }
+  }
+  if constexpr (std::is_same_v<T, icarus::ICARUSTriggerV2Fragment>)
+  {
     icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerV2String(buffer);
     triggerInfo.gate_type = datastream_info.gate_type;
     triggerInfo.number_of_gates_since_previous_event = frag.getDeltaGatesBNB();
-  
-    triggerInfo.t_current_event = static_cast<double>(artdaq_ts)/(1000000000.0); //check this offset...
     if(triggerInfo.gate_type == 1)
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampBNB()))/(1e9);
     else
+    {
+      mf::LogDebug("BNBRetriever")<<"This fragment is not a BNB on-beam gate, these values will not be correct!"<<std::endl;
       triggerInfo.t_previous_event = (static_cast<double>(frag.getLastTimestampOther()))/(1000000000.0);
     
   }
   
   mf::LogDebug("BNBRetriever") << std::setprecision(19) << "Previous : " << triggerInfo.t_previous_event << ", Current : " << triggerInfo.t_current_event << std::endl;
-
+  }
   return triggerInfo;
 }
-
 
 sbn::BNBRetriever::MWRdata_t sbn::BNBRetriever::extractSpillTimes(TriggerInfo_t const& triggerInfo) const {
   
