@@ -285,9 +285,6 @@ class CAFMaker : public art::EDProducer {
   template <class EvtT, class T>
   void GetByLabelStrict(const EvtT& evt, const std::string& label,
                         art::Handle<T>& handle) const;
-  template <class EvtT, class T>
-  void GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
-                        art::Handle<T>& handle) const;
 
   /// Equivalent of evt.getByLabel(label, handle) except failedToGet
   /// prints a message.
@@ -449,12 +446,12 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_ti
 
   // Fix the hit matches
   for (SRSlice &s: rec.slc) {
-    for (SRTrack &t: s.reco.trk) {
-      t.crthit.hit.time += CRT_reference_time;
+    for (SRPFP &pfp: s.reco.pfp) {
+      pfp.trk.crthit.hit.time += CRT_reference_time;
     }
   }
-  for (SRTrack &t: rec.reco.trk) {
-    t.crthit.hit.time += CRT_reference_time;
+  for (SRPFP &pfp: rec.reco.pfp) {
+    pfp.trk.crthit.hit.time += CRT_reference_time;
   }
 
   // TODO: fix more?
@@ -999,20 +996,6 @@ void CAFMaker::GetByLabelStrict(const EvtT& evt, const std::string& label,
 }
 
 //......................................................................
-template <class EvtT, class T>
-void CAFMaker::GetByLabelStrict(const EvtT& evt, const art::InputTag& label,
-                                art::Handle<T>& handle) const {
-  evt.getByLabel(label, handle);
-  if (!label.empty() && handle.failedToGet() && fParams.StrictMode()) {
-    std::cout << "CAFMaker: No product of type '"
-              << cet::demangle_symbol(typeid(*handle).name())
-              << "' found under label '" << label << "'. "
-              << "Set 'StrictMode: false' to continue anyway." << std::endl;
-    abort();
-  }
-}
-
-//......................................................................
 template <class T>
 void CAFMaker::GetByLabelIfExists(const art::Event& evt,
                                   const std::string& label,
@@ -1262,10 +1245,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   //Beam gate and Trigger info
   art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
-  GetByLabelStrict(evt, fParams.TriggerLabel(), extratrig_handle);
+  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
 
   art::Handle<std::vector<raw::Trigger>> trig_handle;
-  GetByLabelStrict(evt, fParams.TriggerLabel(), trig_handle);
+  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
 
   caf::SRTrigger srtrigger; 
   if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
