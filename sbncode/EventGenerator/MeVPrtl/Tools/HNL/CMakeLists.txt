@@ -26,7 +26,7 @@ cet_build_plugin( Kaon2HNLFlux art::tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( Tau2HNLFlux art::tool
+cet_build_plugin( Tau2HNLFlux art::tool
                         LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
@@ -43,6 +43,7 @@ simple_plugin( Tau2HNLFlux art::tool
                             sbncode_EventGenerator_MeVPrtl_Dalitz
                             sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
+                            nugen::EventGeneratorBase_GENIE
 )
 
 cet_build_plugin( HNLMakeDecay art::tool
