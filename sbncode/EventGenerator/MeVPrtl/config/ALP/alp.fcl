@@ -26,6 +26,7 @@ decay_alp: {
   ReferenceRayLength: 2100 # 21m
   ReferenceRayDistance: 10400 # 104m
   ReferenceALPEnergy: 30 # GeV
+  AllowEMDecay: false
 }
 
 # ALPs are produced in interactions, not decays.
