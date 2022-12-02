@@ -57,14 +57,13 @@ private:
   std::vector< sbn::NuMISpillInfo > fOutbeamInfos;
   double fTimePad;
   double fBFPEpsilion;
-  std::string fURL;
   //MWRData mwrdata;
   std::string raw_data_label_;
   std::string fDeviceUsedForTiming;
   int TotalBeamSpills;
   art::ServiceHandle<ifbeam_ns::IFBeam> ifbeam_handle;
   std::unique_ptr<ifbeam_ns::BeamFolder> bfp;
-
+  
   struct TriggerInfo_t {
     int gate_type = 0; ///< Source of the spill: `1`: BNB, `2`: NuMI
     double t_current_event  = 0;
@@ -73,8 +72,19 @@ private:
   };
 
   template <class T> TriggerInfo_t extractTriggerInfo(art::Event const& e, T frag) const;
-
+  // Beam Folder config
+  std::string fBundle;
+  std::string fURL;
+  double fTimeWindow;
+  // Makes the BeamFoler
+  void MakeBFP();
 };
+
+void sbn::NuMIRetriever::MakeBFP() {
+  bfp = ifbeam_handle->getBeamFolder(fBundle, fURL, fTimeWindow); 
+  bfp->set_epsilon(fBFPEpsilion);
+  bfp->setValidWindow(500.);
+}
 
 sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
   : EDProducer{p},
@@ -82,11 +92,12 @@ sbn::NuMIRetriever::NuMIRetriever(fhicl::ParameterSet const& p)
   fBFPEpsilion(p.get<double>("BFPEpsilon", 0.02)), // 20 ms, tuned for BNB, check for NuMI here might need to be larger
   raw_data_label_(p.get<std::string>("raw_data_label")),
   fDeviceUsedForTiming(p.get<std::string>("DeviceUsedForTiming")),
-  bfp(ifbeam_handle->getBeamFolder(p.get<std::string>("Bundle"), p.get<std::string>("URL"), p.get<double>("TimeWindow")))
+  fBundle(p.get<std::string>("Bundle")),
+  fURL(p.get<std::string>("URL")),
+  fTimeWindow(p.get<double>("TimeWindow"))
 {
+  MakeBFP();
 
-  bfp->set_epsilon(fBFPEpsilion);
-  bfp->setValidWindow(500.);
   produces<std::vector<sbn::NuMISpillInfo>, art::InSubRun>();
   TotalBeamSpills = 0;
 }
@@ -201,12 +212,22 @@ void sbn::NuMIRetriever::produce(art::Event &e)
     //   are in this job   
     TotalBeamSpills += number_of_gates_since_previous_event;
     
-    // These lines get everything primed within the IFBeamDB
-    //   They seem redundant but they are needed
-    try{auto cur_vec_temp = bfp->GetNamedVector((t_previous_event)-fTimePad,"E:HP121[]");} catch (WebAPIException &we) {}
-    
-    try{auto cur_vec_temp_2 = bfp->GetNamedVector((t_current_event)+fTimePad,"E:VP121[]");} catch (WebAPIException &we) {}
-    try{auto packed_MTGTDS_temp = bfp->GetNamedVector((t_current_event)+fTimePad, "E:MTGTDS[]");} catch(WebAPIException &we) {}
+    // Fill up the BFP cache with times starting at the previous event
+    //
+    // If the difference in time between events is bigger than the fcl-provided TimeWindow, then 
+    // we won't be able to fill up the cache to be big enough. In that case, resize the window as 
+    // necessary. 
+    double this_window_size = t_current_event - t_previous_event + 2*fTimePad;
+    if (this_window_size > fTimeWindow) {
+      std::cout << "Resizing time window from: " << fTimeWindow << " to: " << this_window_size << std::endl;
+      fTimeWindow = this_window_size;
+      MakeBFP();
+    }
+
+    // DO NOT CHANGE THESE LINES OR THEIR ORDER
+    // If you really think you need to, please reach out to grayputnam <at> uchicago.edu
+    bfp->FillCache(t_current_event + fTimePad);
+    bfp->FillCache(t_previous_event - fTimePad);
     std::vector<double> times_temps = bfp->GetTimeList(fDeviceUsedForTiming);
 
     int spill_count = 0;

@@ -108,10 +108,13 @@ namespace caf
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty= false);
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       bool use_ts0,
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -167,7 +170,6 @@ namespace caf
                            unsigned truth_ind);
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
-                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
