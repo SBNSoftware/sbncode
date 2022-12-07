@@ -260,7 +260,7 @@ sbndaq_artdaq_core	v1_04_02of0	-
 sbndata			v01_04		-
 sbnobj			v09_15_01	-
 systematicstools	v01_02_00	-
-nusystematics		v01_01_00	-
+nusystematics		v01_01_01	-
 cetmodules		v3_20_00	-	only_for_build
 end_product_list
 ####################################
