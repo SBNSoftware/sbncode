@@ -37,6 +37,9 @@ art_make_library( LIBRARY_NAME sbncode_CAFMaker
                   art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
                   larsim::Utils
+                  systematicstools::interface
+                  systematicstools::interpreters
+                  systematicstools::utility
                   )
 
 # this can be removed once icaruscode moves to cetmodules
