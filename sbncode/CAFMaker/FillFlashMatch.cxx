@@ -28,8 +28,12 @@ namespace caf
     srslice.fmatch.scoreZ     = fmatch->score.z;
     srslice.fmatch.scoreRR    = fmatch->score.rr;
     srslice.fmatch.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch.scoreSlope = fmatch->score.slope;
+    srslice.fmatch.scorePEToQ = fmatch->score.petoq;
     srslice.fmatch.chargeCenter = fmatch->charge.center;
+    srslice.fmatch.chargeWidth = fmatch->charge.width;
     srslice.fmatch.lightCenter  = fmatch->light.center;
+    srslice.fmatch.lightWidth  = fmatch->light.width;
   }
 
   //......................................................................
@@ -50,8 +54,12 @@ namespace caf
     srslice.fmatch_a.scoreZ     = fmatch->score.z;
     srslice.fmatch_a.scoreRR    = fmatch->score.rr;
     srslice.fmatch_a.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch_a.scoreSlope = fmatch->score.slope;
+    srslice.fmatch_a.scorePEToQ = fmatch->score.petoq;
     srslice.fmatch_a.chargeCenter = fmatch->charge.center;
+    srslice.fmatch_a.chargeWidth  = fmatch->charge.width;
     srslice.fmatch_a.lightCenter  = fmatch->light.center;
+    srslice.fmatch_a.lightWidth   = fmatch->light.width;
   }
 
   //......................................................................
@@ -72,8 +80,12 @@ namespace caf
     srslice.fmatch_b.scoreZ     = fmatch->score.z;
     srslice.fmatch_b.scoreRR    = fmatch->score.rr;
     srslice.fmatch_b.scoreRatio = fmatch->score.ratio;
+    srslice.fmatch_b.scoreSlope = fmatch->score.slope;
+    srslice.fmatch_b.scorePEToQ = fmatch->score.petoq;
     srslice.fmatch_b.chargeCenter = fmatch->charge.center;
+    srslice.fmatch_b.chargeWidth  = fmatch->charge.width;
     srslice.fmatch_b.lightCenter  = fmatch->light.center;
+    srslice.fmatch_b.lightWidth   = fmatch->light.width;
   }
 
   //......................................................................
