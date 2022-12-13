@@ -1821,7 +1821,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // CRT's
   double CRT_reference_time = fParams.ReferenceCRTToBeam() ? 
-                              (fParams.CRTUseTS0() ? -srtrigger.beam_gate_time_abs/1e3 : srtrigger.trigger_within_gate)/* ns -> us*/  
+                              (fParams.CRTUseTS0() ? -srtrigger.beam_gate_time_abs/1e3 : srtrigger.trigger_within_gate)
                               : 0.;
   FixCRTReferenceTimes(rec, CRT_reference_time);
 
