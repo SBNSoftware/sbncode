@@ -1820,7 +1820,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // CRT's
-  double CRT_reference_time = fParams.ReferenceCRTToBeam() ? -srtrigger.beam_gate_time_abs/1e3 /* ns -> us*/  : 0.;
+  double CRT_reference_time = fParams.ReferenceCRTToBeam() ? 
+                              (fParams.CRTUseTS0() ? -srtrigger.beam_gate_time_abs/1e3 : srtrigger.trigger_within_gate)/* ns -> us*/  
+                              : 0.;
   FixCRTReferenceTimes(rec, CRT_reference_time);
 
   // TODO: TPC?
