@@ -330,8 +330,8 @@ simb::MCFlux BNBKaonGen::MakeMCFlux(const bsim::BooNe &boone) {
   int ptype_input = fBooneNtp.id[1];
   int tptype_input = fBooneNtp.id[npart-2];
 
-  if (ptype_input != 0) ptype_input =  genie::GeantToPdg(ptype_input);
-  if (tptype_input != 0) tptype_input= genie::GeantToPdg(tptype_input);
+  if (ptype_input != 0) ptype_input =  evgen::GeantToPdg(ptype_input);
+  if (tptype_input != 0) tptype_input= evgen::GeantToPdg(tptype_input);
 
   flux.fptype    = ptype_input;
   flux.ftptype   = tptype_input;
@@ -449,7 +449,7 @@ simb::MCFlux BNBKaonGen::MakeMCFlux(const bsim::BooNe &boone) {
   
   flux.frun      = fBooneNtp.run;
   flux.fevtno    = fBooneNtp.eventn;
-  flux.ftgptype  = genie::GeantToPdg(fBooneNtp.id[npart-2]);
+  flux.ftgptype  = evgen::GeantToPdg(fBooneNtp.id[npart-2]);
 
   // flux.fnenergyn = flux.fnenergyf = enu;
   // flux.fnwtnear  = flux.fnwtfar = wgt; 
