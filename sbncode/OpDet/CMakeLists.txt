@@ -1,9 +1,7 @@
 cet_enable_asserts()
 
-art_make(   TOOL_LIBRARIES
-	    art_Utilities
-	    ${FHICLCPP}
-	    ${CETLIB}
+cet_build_plugin(PDMapAlgSimple art::tool LIBRARIES
+            art::Utilities
 )
 
 install_headers()
