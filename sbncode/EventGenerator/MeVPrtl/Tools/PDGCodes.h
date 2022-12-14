@@ -23,7 +23,7 @@
 #ifndef _PDG_CODES_H_
 #define _PDG_CODES_H_
 
-namespace genie {
+namespace evgen {
 
   const int kPdgNuE              =  12;   //
   const int kPdgAntiNuE          = -12;   //
@@ -291,6 +291,6 @@ int GeantToPdg(int geant_code)
 //         << "Can not convert geant code: " << geant_code << " to PDG";
   return 0;
 }
-}      // genie namespace
+}      // evgen namespace
 
 #endif // _PDG_CODES_H_
