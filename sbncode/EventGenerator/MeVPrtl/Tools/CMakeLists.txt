@@ -59,27 +59,27 @@ cet_build_plugin( NuMiKaonGen art::tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
-cet_build_plugin( BNBKaonGen tool
+cet_build_plugin( BNBKaonGen art::tool
+                       LIBRARIES
                             ifdh_art::IFDH_service
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service 
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            
                             fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-			CLHEP::CLHEP
-			ifdh
-			dk2nuTree
-			nurandom::RandomUtils_NuRandomService_service
-			nusimdata::SimulationBase
-			sbncode_EventGenerator_MeVPrtl_Constants
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            ROOT::Eve
+                            ROOT::X3d
+                            ROOT::Core
+                            CLHEP::CLHEP
+                            ifdh::ifdh
+                            dk2nu::Tree
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            sbncode_EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 cet_build_plugin( WeightedRayTraceBox art::tool
