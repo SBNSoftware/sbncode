@@ -25,7 +25,7 @@ QLLMatch: {
   RecordHistory: false
   NormalizeHypothesis: false
   QLLMode: 1 # 0 for Chi2, 1 for LLHD
-  UseMinuit: true
+  UseMinuit: false
   PEPenaltyThreshold: []
   PEPenaltyValue: []
   XPenaltyThreshold: 30
