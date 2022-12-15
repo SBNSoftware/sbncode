@@ -11,8 +11,10 @@ namespace caf
 {
 
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
-                   const std::vector<raw::Trigger>& trig_info,
-                   std::vector<caf::SRTrigger>& triggerInfo);
+                   const raw::Trigger& trig_info,
+                   caf::SRTrigger& triggerInfo);
+
+  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo);
 
 }
 
