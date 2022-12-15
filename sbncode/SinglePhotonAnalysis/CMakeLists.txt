@@ -1,49 +1,50 @@
 
-art_make( BASENAME_ONLY
-        LIB_LIBRARIES
-          larcorealg_Geometry
-          larcore_Geometry_Geometry_service
-          lardata_Utilities
-          larevt_Filters
+art_make_library( BASENAME_ONLY
+        LIBRARIES
+          larcorealg::Geometry
+          larcore::Geometry_Geometry_service
+          lardata::Utilities
+          larevt::Filters
           larpandoraobj
-          lardataobj_RawData
-          lardataobj_RecoBase
-          lardataobj_MCBase
-          larcoreobj_SummaryData
-          larsim_MCCheater_BackTrackerService_service
-          larsim_MCCheater_ParticleInventoryService_service
-          larpandora_LArPandoraInterface
-          ${PANDORASDK}
-          ${PANDORAMONITORING}
-          LArPandoraContent 
-          nusimdata_SimulationBase
-          ${Boost_SERIALIZATION_LIBRARY}
-          ${ART_FRAMEWORK_CORE}
-          ${ART_FRAMEWORK_PRINCIPAL}
-          ${ART_FRAMEWORK_SERVICES_REGISTRY}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-          ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-          art_Persistency_Common canvas
-          art_Persistency_Provenance canvas
-          art_Utilities canvas
-          ${MF_MESSAGELOGGER}
-          ${FHICLCPP}
-          cetlib cetlib_except
-          ${CLHEP}
-          ${ROOT_BASIC_LIB_LIST}
-          ${ROOT_GEOM} 
-          ${ROOT_CORE}
-          ${ART_ROOT_IO_TFILE_SUPPORT} 
-        MODULE_LIBRARIES
+          lardataobj::RawData
+          lardataobj::RecoBase
+          lardataobj::MCBase
+          larcoreobj::SummaryData
+          larsim::MCCheater_BackTrackerService_service
+          larsim::MCCheater_ParticleInventoryService_service
+          larpandora::LArPandoraInterface
+          LArPandoraContent
+          nusimdata::SimulationBase
+          art::Persistency_Common canvas::canvas
+          art::Persistency_Provenance
+          art::Utilities
+          cetlib::cetlib cetlib_except::cetlib_except
+          ROOT::Geom
+          ROOT::Core
+)
+
+cet_build_plugin(NCDeltaRadiative art::module BASENAME_ONLY LIBRARIES
           sbncode_SinglePhotonAnalysis_Libraries
-          ${ART_ROOT_IO_TFILESERVICE_SERVICE}
           sbncode_SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
           )
 
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
+cet_build_plugin(NCRadiativeResonant art::module BASENAME_ONLY LIBRARIES
+          sbncode_SinglePhotonAnalysis_Libraries
+          sbncode_SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
+          )
 
-include_directories( $ENV{SRPROXY_INC} )
+cet_build_plugin(SinglePhoton art::module BASENAME_ONLY LIBRARIES
+          sbncode_SinglePhotonAnalysis_Libraries
+          sbncode_SinglePhotonAnalysis_SEAview
+          art_root_io::TFileService_service
+          ROOT::Tree
+          )
+
+
 add_subdirectory(SEAview)
 add_subdirectory(jobs)
 add_subdirectory(Libraries)
