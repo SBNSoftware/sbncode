@@ -61,14 +61,13 @@ namespace caf
   }
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
-                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
-    srhit.time = (use_ts0 ? (float)hit.ts0() : hit.ts1()) / 1000.;
-    srhit.t0 = ((long long)(hit.ts0())-(long long)(gate_start_timestamp))/1000.;
-    srhit.t1 = hit.ts1()/1000.;
+    srhit.t0 = hit.ts0()/1000.; // ns -> us
+    srhit.t1 = hit.ts1()/1000.; // ns -> us
+    srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -377,6 +376,8 @@ namespace caf
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       bool use_ts0,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -384,15 +385,9 @@ namespace caf
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
-
-      // TODO/FIXME: FILL THESE ONCE WE HAVE THE CRT HIT!!!
-      // srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
-      // srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
-      // srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
-      // srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
-      // srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
-      // srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
-
+    }
+    if (hitmatch.size()) {
+      FillCRTHit(*hitmatch[0], use_ts0, srtrack.crthit.hit, allowEmpty);
     }
   }
 

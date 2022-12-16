@@ -3,7 +3,10 @@ cet_build_plugin(SBNEventWeight art::module
   sbnobj::Common_SBNEventWeight sbncode_SBNEventWeight_Base
   sbncode_SBNEventWeight_Calculators_CrossSection
   sbncode_SBNEventWeight_Calculators_BNBFlux nusimdata::SimulationBase
-  ROOT::Geom)
+  ROOT::Geom
+  systematicstools::interface
+  systematicstools::interpreters
+  systematicstools::utility)
 
 install_headers()
 install_fhicl()

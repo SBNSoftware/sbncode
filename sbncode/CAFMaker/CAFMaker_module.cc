@@ -188,7 +188,6 @@ class CAFMaker : public art::EDProducer {
   double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
-  std::vector<caf::SRTrigger> fSRTrigger; ///< Store trigger and beam gate information
 
   // int fCycle;
   // int fBatch;
@@ -245,6 +244,9 @@ class CAFMaker : public art::EDProducer {
   double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
+
+  void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
+  void FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -357,34 +359,34 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 
   //simple cuts for trk and shower variables
   //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (caf::SRTrack& trk: brec->reco.trk) {
-    const caf::SRVector3D start = trk.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.trk.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
 
-      if (trk.mcsP.fwdP_muon > 0.6) {
-	trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
       }
-      if (trk.rangeP.p_muon > 0.6) {
-	trk.rangeP.p_muon = TMath::QuietNaN();
+      if (pfp.trk.rangeP.p_muon > 0.6) {
+	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
       }
     }
   }
 
   //Note shower energy may not be currently very functional
-  for (caf::SRShower& shw: brec->reco.shw) {
-    const caf::SRVector3D start = shw.start;
+  for (caf::SRPFP& pfp: brec->reco.pfp) {
+    const caf::SRVector3D start = pfp.shw.start;
     if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
 	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
 	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
 	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
-      if (shw.bestplane_energy > 0.6) {
-	shw.bestplane_energy = TMath::QuietNaN();
-	shw.plane[0].energy = TMath::QuietNaN();
-	shw.plane[1].energy = TMath::QuietNaN();
-	shw.plane[2].energy = TMath::QuietNaN();
+      if (pfp.shw.bestplane_energy > 0.6) {
+	pfp.shw.bestplane_energy = TMath::QuietNaN();
+	pfp.shw.plane[0].energy = TMath::QuietNaN();
+	pfp.shw.plane[1].energy = TMath::QuietNaN();
+	pfp.shw.plane[2].energy = TMath::QuietNaN();
       }
     }
   }
@@ -397,24 +399,64 @@ void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
 	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
 	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
 
-      for (caf::SRTrack& trk: slc.reco.trk) {
-	if (trk.mcsP.fwdP_muon > 0.6) {
-	  trk.mcsP.fwdP_muon = TMath::QuietNaN();    
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
+	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
 	}
-	if (trk.rangeP.p_muon > 0.6) {
-	  trk.rangeP.p_muon = TMath::QuietNaN();
+	if (pfp.trk.rangeP.p_muon > 0.6) {
+	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
 	}
       }
-      for (caf::SRShower& shw: slc.reco.shw) {
-	if (shw.bestplane_energy > 0.6) {
-	  shw.bestplane_energy = TMath::QuietNaN();
-	  shw.plane[0].energy = TMath::QuietNaN();
-	  shw.plane[1].energy = TMath::QuietNaN();
-	  shw.plane[2].energy = TMath::QuietNaN();
+      for (caf::SRPFP& pfp: slc.reco.pfp) {
+	if (pfp.shw.bestplane_energy > 0.6) {
+	  pfp.shw.bestplane_energy = TMath::QuietNaN();
+	  pfp.shw.plane[0].energy = TMath::QuietNaN();
+	  pfp.shw.plane[1].energy = TMath::QuietNaN();
+	  pfp.shw.plane[2].energy = TMath::QuietNaN();
 	}
       }
     }
   }
+}
+
+void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
+  // Fix the flashes
+  for (SROpFlash &f: rec.opflashes) {
+    f.time += PMT_reference_time;
+    f.timemean += PMT_reference_time;
+    f.firsttime += PMT_reference_time;
+  }
+
+  // Fix the flash matches
+  for (SRSlice &s: rec.slc) {
+    s.fmatch.time += PMT_reference_time;
+    s.fmatch_a.time += PMT_reference_time;
+    s.fmatch_b.time += PMT_reference_time;
+  }
+
+  // TODO: fix more?
+
+}
+
+void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time) {
+  // Fix the hits
+  for (SRCRTHit &h: rec.crt_hits) {
+    h.time += CRT_reference_time;
+  }
+
+  // Fix the hit matches
+  for (SRSlice &s: rec.slc) {
+    for (SRPFP &pfp: s.reco.pfp) {
+      pfp.trk.crthit.hit.time += CRT_reference_time;
+    }
+  }
+  for (SRPFP &pfp: rec.reco.pfp) {
+    pfp.trk.crthit.hit.time += CRT_reference_time;
+  }
+
+  // TODO: fix more?
+  // Tracks?
+
 }
 
 void CAFMaker::InitVolumes() {
@@ -1048,7 +1090,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   }
 
   art::Handle<std::vector<simb::MCFlux>> mcflux_handle;
-  GetByLabelStrict(evt, "generator", mcflux_handle);
+  GetByLabelStrict(evt, std::string("generator"), mcflux_handle);
 
   std::vector<art::Ptr<simb::MCFlux>> mcfluxes;
   if (mcflux_handle.isValid()) {
@@ -1057,7 +1099,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   // get the MCReco for the fake-reco
   art::Handle<std::vector<sim::MCTrack>> mctrack_handle;
-  GetByLabelStrict(evt, "mcreco", mctrack_handle);
+  GetByLabelStrict(evt, std::string("mcreco"), mctrack_handle);
   std::vector<art::Ptr<sim::MCTrack>> mctracks;
   if (mctrack_handle.isValid()) {
     art::fill_ptr_vector(mctracks, mctrack_handle);
@@ -1202,15 +1244,20 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   //#######################################################
 
   //Beam gate and Trigger info
-  fSRTrigger.clear();
-  if(isRealData)
-  {
-    const auto& addltrig = evt.getProduct<sbn::ExtraTriggerInfo>(fParams.TriggerLabel());
-    const auto& trig = evt.getProduct<std::vector<raw::Trigger>>(fParams.TriggerLabel());
-    if(trig.size()==1)
-    {
-      FillTrigger(addltrig, trig, fSRTrigger);
-    }
+  art::Handle<sbn::ExtraTriggerInfo> extratrig_handle;
+  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), extratrig_handle);
+
+  art::Handle<std::vector<raw::Trigger>> trig_handle;
+  GetByLabelStrict(evt, fParams.TriggerLabel().encode(), trig_handle);
+
+  caf::SRTrigger srtrigger; 
+  if (extratrig_handle.isValid() && trig_handle.isValid() && trig_handle->size() == 1) {
+    FillTrigger(*extratrig_handle, trig_handle->at(0), srtrigger);
+  }
+  // If not real data, fill in enough of the SRTrigger to make (e.g.) the CRT 
+  // time referencing work. TODO: add more stuff to a "MC"-Trigger?
+  else if(!isRealData) {
+    FillTriggerMC(fParams.CRTSimT0Offset(), srtrigger);
   }
 
   // try to find the result of the Flash trigger if it was run
@@ -1231,39 +1278,10 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   GetByLabelStrict(evt, fParams.CRTHitLabel(), crthits_handle);
   // fill into event
   if (crthits_handle.isValid()) {
-
-    //==== gate start time
-    //==== 03/31/22 : 1600000 ns = 1.6 ms is the default T0Offset in MC
-    //==== https://github.com/SBNSoftware/icaruscode/blob/v09_37_02_01/icaruscode/CRT/crtsimmodules_icarus.fcl#L11
-    uint64_t m_gate_start_timestamp = fParams.CRTSimT0Offset(); // ns
-    if(isRealData){
-
-      art::Handle< std::vector<raw::ExternalTrigger> > externalTrigger_handle;
-      evt.getByLabel( fParams.TriggerLabel(), externalTrigger_handle );
-      const std::vector<raw::ExternalTrigger> &externalTrgs = *externalTrigger_handle;
-
-      art::Handle< std::vector<raw::Trigger> > trigger_handle;
-      evt.getByLabel( fParams.TriggerLabel(), trigger_handle );
-      const std::vector<raw::Trigger> &trgs = *trigger_handle;
-
-      if(externalTrgs.size()==1 && trgs.size()==1){
-        long long TriggerAbsoluteTime = externalTrgs[0].GetTrigTime(); // Absolute time of trigger
-        double BeamGateRelativeTime = trgs[0].BeamGateTime(); // BeamGate time w.r.t. electronics clock T0 in us
-        double TriggerRelativeTime = trgs[0].TriggerTime(); // Trigger time w.r.t. electronics clock T0 in us
-        m_gate_start_timestamp = TriggerAbsoluteTime + (int)(BeamGateRelativeTime*1000-TriggerRelativeTime*1000);
-      }
-      else{
-        std::cout << "Unexpected in " << evt.id() << ": there are " << trgs.size()
-          << " triggers in '" << fParams.TriggerLabel().encode() << "' data product."
-          << " Please contact CAFmaker maintainer." << std::endl;
-        abort();
-      }
-    }
-
     const std::vector<sbn::crt::CRTHit> &crthits = *crthits_handle;
     for (unsigned i = 0; i < crthits.size(); i++) {
       srcrthits.emplace_back();
-      FillCRTHit(crthits[i], m_gate_start_timestamp, fParams.CRTUseTS0(), srcrthits.back());
+      FillCRTHit(crthits[i], fParams.CRTUseTS0(), srcrthits.back());
     }
   }
 
@@ -1494,7 +1512,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       FindManyPStrict<recob::Hit>(slcShowers, evt,
           fParams.RecoShowerLabel() + slice_tag_suff);
 
-    // TODO: also save the sbn::crt::CRTHit in the matching so that CAFMaker has access to it
+    // NOTE: The sbn::crt::CRTHit is associated to the T0. It's a bit awkward to 
+    // access that here, so we do it per-track (see code where fmCRTHitMatch is accessed below)
     art::FindManyP<anab::T0> fmCRTHitMatch =
       FindManyPStrict<anab::T0>(slcTracks, evt,
                fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1632,7 +1651,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     // This depends on the findMany object created above.
     for ( size_t iPart = 0; iPart < fmPFPart.size(); ++iPart ) {
       const recob::PFParticle &thisParticle = *fmPFPart[iPart];
-
       std::vector<art::Ptr<recob::Track>> thisTrack;
       if (fmTrack.isValid()) {
         thisTrack = fmTrack.at(iPart);
@@ -1641,11 +1659,19 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       if (fmShower.isValid()) {
         thisShower = fmShower.at(iPart);
       }
-      if (!thisTrack.empty())  { // it's a track!
+     
+      SRPFP pfp;
+
+      art::Ptr<anab::T0> thisPFPT0;
+      if (f1PFPT0.isValid()) {
+        thisPFPT0 = f1PFPT0.at(iPart);
+      }
+
+      const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
+      FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
+
+      if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
-        assert(thisShower.size() == 0);
-        rec.reco.ntrk ++;
-        rec.reco.trk.push_back(SRTrack());
 
         // collect all the stuff
         std::array<std::vector<art::Ptr<recob::MCSFitResult>>, 4> trajectoryMCS;
@@ -1668,94 +1694,79 @@ void CAFMaker::produce(art::Event& evt) noexcept {
           }
         }
 
-
         // fill all the stuff
-        FillTrackVars(*thisTrack[0], producer, rec.reco.trk.back());
-        FillTrackMCS(*thisTrack[0], trajectoryMCS, rec.reco.trk.back());
-        FillTrackRangeP(*thisTrack[0], rangePs, rec.reco.trk.back());
-
-        art::Ptr<anab::T0> thisPFPT0;
-        if (f1PFPT0.isValid()) {
-          thisPFPT0 = f1PFPT0.at(iPart);
-        }
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.trk.back().pfp);
+        SRTrack& trk = pfp.trk;
+        FillTrackVars(*thisTrack[0], producer, trk);
+        FillTrackMCS(*thisTrack[0], trajectoryMCS, trk);
+        FillTrackRangeP(*thisTrack[0], rangePs, trk);
 
         if (fmChi2PID.isValid()) {
-           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), rec.reco.trk.back());
+           FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
         }
         if (fmScatterClosestApproach.isValid() && fmScatterClosestApproach.at(iPart).size()==1) {
-           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), rec.reco.trk.back());
+           FillTrackScatterClosestApproach(fmScatterClosestApproach.at(iPart).front(), trk);
         }
         if (fmStoppingChi2Fit.isValid() && fmStoppingChi2Fit.at(iPart).size()==1) {
-           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), rec.reco.trk.back());
+           FillTrackStoppingChi2Fit(fmStoppingChi2Fit.at(iPart).front(), trk);
         }
         if (fmTrackDazzle.isValid() && fmTrackDazzle.at(iPart).size()==1) {
-           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), rec.reco.trk.back());
+           FillTrackDazzle(fmTrackDazzle.at(iPart).front(), trk);
         }
         if (fmCalo.isValid()) {
           FillTrackCalo(fmCalo.at(iPart), fmTrackHit.at(iPart),
               (fParams.FillHitsNeutrinoSlices() && NeutrinoSlice) || fParams.FillHitsAllSlices(), 
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
-              lar::providerFrom<geo::Geometry>(), dprop, rec.reco.trk.back());
+              lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
         if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.trk.back());
+          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
         }
-        // NOTE: SEE TODO's AT fmCRTHitMatch and fmCRTTrackMatch
         if (fmCRTHitMatch.isValid()) {
-          FillTrackCRTHit(fmCRTHitMatch.at(iPart), rec.reco.trk.back());
+          art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
+              (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
+         
+          std::vector<art::Ptr<sbn::crt::CRTHit>> crthitmatch;
+          if (CRTT02Hit.isValid() && CRTT02Hit.size() == 1) crthitmatch = CRTT02Hit.at(0);
+
+          FillTrackCRTHit(fmCRTHitMatch.at(iPart), crthitmatch, fParams.CRTUseTS0(), trk);
         }
+        // NOTE: SEE TODO AT fmCRTTrackMatch
         if (fmCRTTrackMatch.isValid()) {
-          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), rec.reco.trk.back());
+          FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.trk.push_back(rec.reco.trk.back());
-        recslc.reco.ntrk = recslc.reco.trk.size();
       } // thisTrack exists
 
-      else if (!thisShower.empty()) { // it's a shower!
-        assert(thisTrack.size() == 0);
+      if (!thisShower.empty()) { // it has shower!
         assert(thisShower.size() == 1);
-        rec.reco.nshw ++;
-        rec.reco.shw.push_back(SRShower());
-        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, rec.reco.shw.back());
-
-        art::Ptr<anab::T0> thisPFPT0;
-        if (f1PFPT0.isValid()) {
-          thisPFPT0 = f1PFPT0.at(iPart);
-        }
-        const larpandoraobj::PFParticleMetadata *pfpMeta = (iPart == fmPFPart.size()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
-        FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, rec.reco.shw.back().pfp);
+	
+        SRShower& shw = pfp.shw;
+        FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
-           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), rec.reco.shw.back());
+           FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }
         if (fmShowerCosmicDist.isValid() && fmShowerCosmicDist.at(iPart).size() != 0) {
-          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), rec.reco.shw.back());
+          FillShowerCosmicDist(fmShowerCosmicDist.at(iPart), shw);
         }
         if (fmShowerResiduals.isValid() && fmShowerResiduals.at(iPart).size() != 0) {
-          FillShowerResiduals(fmShowerResiduals.at(iPart), rec.reco.shw.back());
+          FillShowerResiduals(fmShowerResiduals.at(iPart), shw);
         }
         if (fmShowerTrackFit.isValid() && fmShowerTrackFit.at(iPart).size()  == 1) {
-          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerTrackFit(*fmShowerTrackFit.at(iPart).front(), shw);
         }
         if (fmShowerDensityFit.isValid() && fmShowerDensityFit.at(iPart).size() == 1) {
-          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), rec.reco.shw.back());
+          FillShowerDensityFit(*fmShowerDensityFit.at(iPart).front(), shw);
         }
         if (fmShowerHit.isValid()) {
-          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, rec.reco.shw.back());
+          if ( !isRealData ) FillShowerTruth(fmShowerHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, shw);
         }
-        // Duplicate track reco info in the srslice
-        recslc.reco.shw.push_back(rec.reco.shw.back());
-        recslc.reco.nshw = recslc.reco.shw.size();
 
       } // thisShower exists
-
-      else {}
-
+      
+      recslc.reco.pfp.push_back(std::move(pfp));
+      recslc.reco.npfp = recslc.reco.pfp.size();
     }// end for pfparts
 
 
@@ -1792,6 +1803,27 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     rec.true_particles  = true_particles;
   }
   rec.ntrue_particles = true_particles.size();
+
+  // Fix the Reference time
+  //
+  // We want MC and Data to have the same reference time.
+  // In MC/LArSoft the "reference time" is canonically defined
+  // as the time when the start of the beam spill reaches the detector.
+  //
+  // In data it may be defined differently for different subsystems. In 
+  // particular, some sub-systems define the reference time as the time
+  // of the trigger. We want to correct those to the universal reference
+  // time from MC.
+  //
+  // PMT's:
+  double PMT_reference_time = fParams.ReferencePMTFromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  FixPMTReferenceTimes(rec, PMT_reference_time);
+
+  // CRT's
+  double CRT_reference_time = fParams.ReferenceCRTToBeam() ? -srtrigger.beam_gate_time_abs/1e3 /* ns -> us*/  : 0.;
+  FixCRTReferenceTimes(rec, CRT_reference_time);
+
+  // TODO: TPC?
 
   // Get metadata information for header
   unsigned int run = evt.run();
@@ -1838,8 +1870,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   rec.hdr.mctype  = mctype;
   rec.hdr.first_in_file = fFirstInFile;
   rec.hdr.first_in_subrun = fFirstInSubRun;
-  rec.hdr.triggerinfo = fSRTrigger;
-  rec.hdr.ntriggerinfo = fSRTrigger.size();
+  rec.hdr.triggerinfo = srtrigger;
   // rec.hdr.cycle = fCycle;
   // rec.hdr.batch = fBatch;
   // rec.hdr.blind = 0;
@@ -1917,7 +1948,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
   fBNBInfo.clear();
   fNuMIInfo.clear();
-  fSRTrigger.clear();
   rec.hdr.pot = 0;
 }
 
