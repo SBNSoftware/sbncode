@@ -2,8 +2,8 @@
 BEGIN_PROLOG
 
 alpM: 0.4
-fa: 1e6 # GeV
-cAl: 0.333333
+fa: 1e5 # GeV
+cAl: 0.01
 
 eta2alp: {
   tool_type: Meson2ALP
@@ -25,7 +25,7 @@ decay_alp: {
   ReferenceALPcAl: @local::cAl
   ReferenceRayLength: 2100 # 21m
   ReferenceRayDistance: 10400 # 104m
-  ReferenceALPEnergy: 30 # GeV
+  ReferenceALPEnergy: 0.5 # GeV
   AllowEMDecay: false
 }
 

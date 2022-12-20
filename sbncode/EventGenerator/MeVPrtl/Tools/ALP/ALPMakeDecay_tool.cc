@@ -175,7 +175,7 @@ void ALPMakeDecay::configure(fhicl::ParameterSet const &pset)
   fAllowEMDecay = pset.get<bool>("AllowEMDecay");
 
   // if configured to, divide out some of the decay weight
-  if (fReferenceRayLength > 0. && fReferenceALPMass > 0. && fReferenceALPDecayConstant > 0. && fReferenceALPcAl > 0. && fReferenceALPEnergy > 0.) {
+  if (fReferenceRayLength > 0. && fReferenceALPMass > 0. && fReferenceALPDecayConstant >= 0. && fReferenceALPcAl >= 0. && fReferenceALPEnergy > 0.) {
     // Get each partial width
     double width_muon = MuonPartialWidth(fReferenceALPMass, fReferenceALPcAl, fReferenceALPDecayConstant);
     double width_gamma = GammaPartialWidth(fReferenceALPMass, 1, 1, 1, fReferenceALPcAl, fReferenceALPDecayConstant);

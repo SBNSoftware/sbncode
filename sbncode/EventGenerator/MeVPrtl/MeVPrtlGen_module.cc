@@ -250,9 +250,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     // (void) is_meson;
     if (is_meson) {
-     std::cout << "Flux is meson (" << is_meson << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E()
-             << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
-             << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
+     // std::cout << "Flux is meson (" << is_meson << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E()
+     //        << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
+     //        << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
     }
 
     bool success;
