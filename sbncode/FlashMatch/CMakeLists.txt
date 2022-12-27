@@ -4,12 +4,12 @@
 #  EXTRA_FLAGS  -Wall -Wextra  -pedantic  #-Wconversion
 #  )
 
-art_make(
-  MODULE_LIBRARIES
+art_make_library()
+set( MODULE_LIBRARIES
   art::Framework_Core
   art::Framework_Principal
   art::Framework_Services_Registry
-  art_root_io::tfile_support ROOT::Core
+  art_root_io::tfile_support ROOT::Core ROOT::Tree
   art_root_io::TFileService_service
   art::Persistency_Common
   art::Persistency_Provenance
@@ -17,24 +17,27 @@ art_make(
   canvas::canvas
   cetlib::cetlib
   cetlib_except::cetlib_except
-  larcore_Geometry_Geometry_service
-  larcorealg_Geometry
-  lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-  lardata_Utilities
-  lardataobj_AnalysisBase
-  lardataobj_RawData
-  lardataobj_RecoBase
-  lardataobj_Simulation
-  larpandora_LArPandoraInterface
-  larsim_Utils
+  larcore::Geometry_Geometry_service
+  larcorealg::Geometry
+  lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+  lardata::Utilities
+  lardataalg::DetectorInfo
+  lardataobj::AnalysisBase
+  lardataobj::RawData
+  lardataobj::RecoBase
+  lardataobj::Simulation
+  larpandora::LArPandoraInterface
+  larsim::Utils
+  sbnobj::Common_Reco
   nusimdata::SimulationBase
-  messagefacility::MF_MessageLogger
-  fhiclcpp::fhiclcpp
+  larsim::MCCheater_ParticleInventoryService_service
   ROOT::Geom
   ROOT::XMLIO
   ROOT::Gdml
-  ${ROOT_BASIC_LIB_LIST}
   )
+
+cet_build_plugin(FlashPredict art::module LIBRARIES ${MODULE_LIBRARIES})
+
 
 install_headers()
 install_fhicl()

@@ -55,6 +55,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -97,6 +98,7 @@ private:
     geo::Point_t end;
     geo::Vector_t dir;
     geo::Vector_t enddir;
+    int ID;
   };
 
 
@@ -120,6 +122,7 @@ private:
     const recob::PFParticle &pfp, float t0, 
     const std::vector<art::Ptr<recob::Hit>> &hits,
     const std::vector<const recob::TrackHitMeta*> &thms,
+    const std::vector<art::Ptr<recob::SpacePoint>> &sps,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const std::map<geo::WireID, art::Ptr<raw::RawDigit>> &rawdigits,
     const std::vector<GlobalTrackInfo> &tracks,
@@ -153,6 +156,7 @@ private:
     unsigned hkey,
     const recob::TrackHitMeta &thm,
     const recob::Track &trk,
+    const art::Ptr<recob::SpacePoint> &sp,
     const std::vector<art::Ptr<anab::Calorimetry>> &calo,
     const geo::GeometryCore *geo,
     const detinfo::DetectorClocksData &dclock,
@@ -164,7 +168,7 @@ private:
 
   // tags
   art::InputTag fPFPproducer;
-  art::InputTag fT0Producer;
+  std::vector<art::InputTag> fT0producers;
   art::InputTag fCALOproducer;
   art::InputTag fTRKproducer;
   art::InputTag fTRKHMproducer;

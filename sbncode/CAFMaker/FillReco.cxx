@@ -64,7 +64,10 @@ namespace caf
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
-    srhit.time = (use_ts0 ? (float)hit.ts0_ns : hit.ts1_ns) / 1000.;
+
+    srhit.t0 = hit.ts0()/1000.; // ns -> us
+    srhit.t1 = hit.ts1()/1000.; // ns -> us
+    srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -107,6 +110,43 @@ namespace caf
     srtrack.hitb.plane = track.plane2;
   }
 
+  void FillOpFlash(const recob::OpFlash &flash,
+                  int cryo, 
+                  caf::SROpFlash &srflash,
+                  bool allowEmpty) {
+
+    srflash.setDefault();
+
+    srflash.time = flash.Time();
+    srflash.timewidth = flash.TimeWidth();
+    srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
+
+    // Sum over each wall, not very SBND-compliant
+    float sumEast = 0.;
+    float sumWest = 0.;
+    int countingOffset = 0;
+    if ( cryo == 1 ) countingOffset += 180;
+    for ( int PMT = 0 ; PMT < 180 ; PMT++ ) {
+      if ( PMT <= 89 ) sumEast += flash.PEs().at(PMT + countingOffset);
+      else sumWest += flash.PEs().at(PMT + countingOffset);
+    }
+    srflash.peperwall[0] = sumEast;
+    srflash.peperwall[1] = sumWest;
+
+    srflash.totalpe = flash.TotalPE();
+    srflash.fasttototal = flash.FastToTotal();
+    srflash.onbeamtime = flash.OnBeamTime();
+
+    srflash.center.SetXYZ( -9999.f, flash.YCenter(), flash.ZCenter() );
+    srflash.width.SetXYZ( -9999.f, flash.YWidth(), flash.ZWidth() );
+
+    // Checks if ( recob::OpFlash.XCenter() != std::numeric_limits<double>::max() )
+    // See LArSoft OpFlash.h at https://nusoft.fnal.gov/larsoft/doxsvn/html/OpFlash_8h_source.html
+    if ( flash.hasXCenter() ) {
+      srflash.center.SetX( flash.XCenter() );
+      srflash.width.SetX( flash.XWidth() );
+    }
+  }
 
   std::vector<float> double_to_float_vector(const std::vector<double>& v)
   {
@@ -255,6 +295,7 @@ namespace caf
     // default values
     srslice.nu_score = -1;
     srslice.is_clear_cosmic = true;
+    srslice.nuid.setDefault();
 
     // collect the properties
     if (primary_meta != NULL) {
@@ -273,6 +314,17 @@ namespace caf
       else {
         srslice.nu_score = -1;
       }
+      // NeutrinoID (SliceID) features
+      CopyPropertyIfSet(properties, "NuNFinalStatePfos",        srslice.nuid.nufspfos);
+      CopyPropertyIfSet(properties, "NuNHitsTotal",             srslice.nuid.nutothits);
+      CopyPropertyIfSet(properties, "NuVertexY",                srslice.nuid.nuvtxy);
+      CopyPropertyIfSet(properties, "NuWeightedDirZ",           srslice.nuid.nuwgtdirz);
+      CopyPropertyIfSet(properties, "NuNSpacePointsInSphere",   srslice.nuid.nusps);
+      CopyPropertyIfSet(properties, "NuEigenRatioInSphere",     srslice.nuid.nueigen);
+      CopyPropertyIfSet(properties, "CRLongestTrackDirY",       srslice.nuid.crlongtrkdiry);
+      CopyPropertyIfSet(properties, "CRLongestTrackDeflection", srslice.nuid.crlongtrkdef);
+      CopyPropertyIfSet(properties, "CRFracHitsInLongestTrack", srslice.nuid.crlongtrkhitfrac);
+      CopyPropertyIfSet(properties, "CRNHitsMax",               srslice.nuid.crmaxhits);
     }
 
   }
@@ -289,9 +341,43 @@ namespace caf
   }
 
 
+  void FillSliceCRUMBS(const sbn::CRUMBSResult *crumbs,
+                       caf::SRSlice& slice,
+                       bool allowEmpty) {
+    if (crumbs != nullptr) {
+      slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.ccnumuscore = crumbs->ccnumuscore;
+      slice.crumbs_result.ccnuescore = crumbs->ccnuescore;
+      slice.crumbs_result.ncscore = crumbs->ncscore;
+      slice.crumbs_result.bestscore = crumbs->bestscore;
+      slice.crumbs_result.bestid = crumbs->bestid;
+      slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
+      slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
+      slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
+      slice.crumbs_result.tpc.crnhitsmax = crumbs->tpc_CRNHitsMax;
+      slice.crumbs_result.tpc.nusphereeigenratio = crumbs->tpc_NuEigenRatioInSphere;
+      slice.crumbs_result.tpc.nufinalstatepfos = crumbs->tpc_NuNFinalStatePfos;
+      slice.crumbs_result.tpc.nutotalhits = crumbs->tpc_NuNHitsTotal;
+      slice.crumbs_result.tpc.nuspherespacepoints = crumbs->tpc_NuNSpacePointsInSphere;
+      slice.crumbs_result.tpc.nuvertexy = crumbs->tpc_NuVertexY;
+      slice.crumbs_result.tpc.nuwgtdirz = crumbs->tpc_NuWeightedDirZ;
+      slice.crumbs_result.tpc.stoppingchi2ratio = crumbs->tpc_StoppingChi2CosmicRatio;
+      slice.crumbs_result.pds.fmtotalscore = crumbs->pds_FMTotalScore;
+      slice.crumbs_result.pds.fmpe = crumbs->pds_FMPE;
+      slice.crumbs_result.pds.fmtime = crumbs->pds_FMTime;
+      slice.crumbs_result.crt.trackscore = crumbs->crt_TrackScore;
+      slice.crumbs_result.crt.hitscore = crumbs->crt_HitScore;
+      slice.crumbs_result.crt.tracktime = crumbs->crt_TrackTime;
+      slice.crumbs_result.crt.hittime = crumbs->crt_HitTime;
+    }
+  }
+
+
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       bool use_ts0,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -299,15 +385,9 @@ namespace caf
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
-
-      // TODO/FIXME: FILL THESE ONCE WE HAVE THE CRT HIT!!!
-      // srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
-      // srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
-      // srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
-      // srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
-      // srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
-      // srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
-
+    }
+    if (hitmatch.size()) {
+      FillCRTHit(*hitmatch[0], use_ts0, srtrack.crthit.hit, allowEmpty);
     }
   }
 
@@ -478,15 +558,19 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
-        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+        p.x = xyz[i].x();
+        p.y = xyz[i].y();
+        p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
         for (const art::Ptr<recob::Hit> &h: hits) {
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
+            p.tpc = h->WireID().TPC;
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
+            p.t = h->PeakTime();
           }
         }
 
@@ -610,6 +694,7 @@ namespace caf
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty)
   {
@@ -630,9 +715,51 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+
+      // Pfo Characterisation features
+      srpfp.pfochar.setDefault();
+
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+    }
+    if (t0) {
+      srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
     }
   }
 
+  void FillHitVars(const recob::Hit& hit,
+                   unsigned producer,
+                   const recob::SpacePoint& spacepoint,
+                   const recob::PFParticle& particle,
+                   caf::SRHit& srhit,
+                   bool allowEmpty)
+  {
+    srhit.setDefault();
+
+    srhit.peakTime = hit.PeakTime();
+    srhit.RMS = hit.RMS();
+
+    srhit.peakAmplitude = hit.PeakAmplitude();
+    srhit.integral = hit.Integral();
+
+    const geo::WireID wire = hit.WireID();
+    srhit.cryoID = wire.Cryostat;
+    srhit.tpcID = wire.TPC;
+    srhit.planeID = wire.Plane;
+    srhit.wireID = wire.Wire;
+    srhit.spacepoint.XYZ = SRVector3D (spacepoint.XYZ());
+    srhit.spacepoint.chisq = spacepoint.Chisq();
+    srhit.spacepoint.pfpID = particle.Self();
+    srhit.spacepoint.ID = spacepoint.ID();
+  }
   //......................................................................
 
   void SetNuMuCCPrimary(std::vector<caf::StandardRecord> &recs,
@@ -770,5 +897,12 @@ namespace caf
     return;
   }
 
+  //......................................................................
+  template<class T, class U>
+  void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value )
+  {
+    auto it = props.find(search);
+    if ( it != props.end() ) value = it->second;
+  }
 
 } // end namespace

@@ -1,55 +1,48 @@
 art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_Dalitz
           SOURCE HNLDecayDalitz.cpp
           LIBRARIES
-                        ${ROOT_BASIC_LIB_LIST}
-                        ${ROOT_EVE_LIB_LIST}
-                        ${ROOT_X3d}
-			sbncode_EventGenerator_MeVPrtl_Constants
+                        sbncode_EventGenerator_MeVPrtl_Constants
+                        sbnobj::Common_EventGen_MeVPrtl
         )
 
-simple_plugin( Kaon2HNLFlux tool
+
+cet_build_plugin( Kaon2HNLFlux art::tool
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            
-                            fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-			EGPythia6
-			CLHEP::CLHEP
-			sbnobj_Common_EventGen_MeVPrtl
-			nugen::EventGeneratorBase_GENIE
-			nurandom::RandomUtils_NuRandomService_service
-			GSL
-			sbncode_EventGenerator_MeVPrtl_Constants
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            ROOT::EGPythia6
+                            CLHEP::CLHEP
+                            sbnobj::Common_EventGen_MeVPrtl
+                            nugen::EventGeneratorBase_GENIE
+                            nusimdata::SimulationBase
+                            nurandom::RandomUtils_NuRandomService_service
+                            GSL::gsl
+                            sbncode_EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
-simple_plugin( HNLMakeDecay tool
+cet_build_plugin( HNLMakeDecay art::tool
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            
-                            fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-			CLHEP::CLHEP
-			nurandom::RandomUtils_NuRandomService_service
-			nusimdata::SimulationBase
-			GSL
-			sbncode_EventGenerator_MeVPrtl_Dalitz
-			sbncode_EventGenerator_MeVPrtl_Constants
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            CLHEP::CLHEP
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            GSL::gsl
+                            larcorealg::Geometry
+                            sbncode_EventGenerator_MeVPrtl_Dalitz
+                            sbncode_EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
 )
 
 

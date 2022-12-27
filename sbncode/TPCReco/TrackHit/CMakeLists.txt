@@ -1,73 +1,62 @@
-simple_plugin(TrackAreaHit module
+cet_build_plugin(TrackAreaHit art::module
+     LIBRARIES
         art::Framework_Core
         art::Framework_Services_Registry
-        art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+        art_root_io::TFileService_service
         art::Framework_Principal
         art::Persistency_Common
         art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
         messagefacility::MF_MessageLogger
-        
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib cetlib_except
-        ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
-        ${ROOT_BASIC_LIB_LIST}
-        messagefacility::MF_MessageLogger
-        lardataobj_RecoBase_AssnsDicts_dict
-        lardataobj_RecoBase     
-        lardataobj_RecoBase_dict        
-
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-	lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-	lardata_DetectorInfoServices_DetectorPropertiesServiceStandard_service
-	lardataalg_DetectorInfo
+        lardataobj::RecoBase_AssnsDicts_dict
+        lardataobj::RecoBase
+        lardataobj::RecoBase_dict
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
+        lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        lardataalg::DetectorInfo
+        larsim::Simulation
 )
 
-simple_plugin(TrackHitFilter module
+cet_build_plugin(TrackHitFilter art::module
+     LIBRARIES
+        art::Framework_Core
         art::Framework_Core
         art::Framework_Services_Registry
-        art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+        art_root_io::TFileService_service
         art::Framework_Principal
         art::Persistency_Common
         art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
         messagefacility::MF_MessageLogger
-        
-        fhiclcpp::fhiclcpp
-        cetlib::cetlib cetlib_except
-        ${ROOT_EVE_LIB_LIST}
-        ${ROOT_X3d}
-        ${ROOT_BASIC_LIB_LIST}
-        messagefacility::MF_MessageLogger
-        lardataobj_RecoBase_AssnsDicts_dict
-        lardataobj_RecoBase     
-        lardataobj_RecoBase_dict        
-
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
+        lardataobj::RecoBase_AssnsDicts_dict
+        lardataobj::RecoBase
+        lardataobj::RecoBase_dict
+        lardataalg::DetectorInfo
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
 )
 
-simple_plugin(TrackHitDumper module
-	art::Framework_Core
-	art::Framework_Services_Registry
-	art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
-	art::Framework_Principal
-	art::Persistency_Common
-	art::Utilities canvas::canvas
-	messagefacility::MF_MessageLogger
-	
-	fhiclcpp::fhiclcpp
-	cetlib::cetlib cetlib_except
-	${ROOT_EVE_LIB_LIST}
-	${ROOT_X3d}
-	${ROOT_BASIC_LIB_LIST}
-	messagefacility::MF_MessageLogger
-	lardataobj_RecoBase_AssnsDicts_dict
-	lardataobj_RecoBase	
-	lardataobj_RecoBase_dict	
-
-	larcorealg_Geometry
-	larcore_Geometry_Geometry_service
+cet_build_plugin(TrackHitDumper art::module
+     LIBRARIES
+        art::Framework_Core
+        art::Framework_Core
+        art::Framework_Services_Registry
+        art_root_io::TFileService_service
+        art::Framework_Principal
+        art::Persistency_Common
+        art::Utilities canvas::canvas
+        cetlib::cetlib cetlib_except::cetlib_except
+        messagefacility::MF_MessageLogger
+        lardataobj::RecoBase_AssnsDicts_dict
+        lardataobj::RecoBase
+        lardataobj::RecoBase_dict
+        lardataalg::DetectorInfo
+        lardata::DetectorInfoServices_DetectorPropertiesServiceStandard_service
+        larcorealg::Geometry
+        larcore::Geometry_Geometry_service
 )
 
 install_headers()

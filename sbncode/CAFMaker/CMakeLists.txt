@@ -1,87 +1,82 @@
 # for classes_def.xml
 include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 #set( PACKAGE CAFMaker )
-FILE( GLOB src_files *.cxx )
+
+include_directories( $ENV{SRPROXY_DIR}/include )
 
 add_subdirectory(RecoUtils)
 add_subdirectory(bin)
 
 art_make_library( LIBRARY_NAME sbncode_CAFMaker
-                  SOURCE ${src_files}
                   LIBRARIES
-                  sbnanaobj_StandardRecord
-                  sbnanaobj_StandardRecordFlat
-                  ${ART_FRAMEWORK_CORE}
-                  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                  ${ART_FRAMEWORK_SERVICES}
+                  ifdh_art::IFDH_service
+                  sbnanaobj::StandardRecord
+                  sbnanaobj::StandardRecordFlat
+                  art::Framework_Core
+                  art::Framework_Services_Registry
+                  art_root_io::TFileService_service
                   art::Framework_Principal
                   art::Persistency_Common
                   art::Utilities canvas::canvas
-                  messagefacility::MF_MessageLogger
-                  fhiclcpp::fhiclcpp
-                  cetlib::cetlib cetlib_except
-                  ${ROOT_EVE_LIB_LIST}
-                  ${ROOT_X3d}
-                  ${ROOT_BASIC_LIB_LIST}
+                  cetlib::cetlib cetlib_except::cetlib_except
+                  ROOT::X3d
+                  ROOT::EG
                   caf_RecoUtils
-                  lardataobj_AnalysisBase
-                  lardataobj_RecoBase
-                  larcorealg_Geometry
-                  larcore_Geometry_Geometry_service
-                  larcorealg_GeoAlgo
-                  larsim_MCCheater_BackTrackerService_service
-                  larsim_Utils
+                  lardataobj::AnalysisBase
+                  lardataobj::RecoBase
+                  larcorealg::Geometry
+                  larcore::Geometry_Geometry_service
+                  larcorealg::GeoAlgo
+                  larsim::MCCheater_BackTrackerService_service
                   nusimdata::SimulationBase
-                  larsim_MCCheater_ParticleInventoryService_service
-                  sbnobj_Common_CRT
-                  sbnobj_Common_Reco
-                  sbnobj_Common_Analysis
-		  lardataalg_DetectorInfo
-                  art_Framework_Services_System_TriggerNamesService_service
+                  larsim::MCCheater_ParticleInventoryService_service
+                  sbnobj::Common_CRT
+                  sbnobj::Common_Reco
+                  sbnobj::Common_Analysis
+                  lardataalg::DetectorInfo
+                  art::Framework_Services_System_TriggerNamesService_service
                   sbncode_Metadata_MetadataSBN_service
+                  larsim::Utils
+                  systematicstools::interface
+                  systematicstools::interpreters
+                  systematicstools::utility
                   )
 
-cet_find_library( IFDH NAMES ifdh PATHS ENV IFDHC_LIB NO_DEFAULT_PATH )
-##include_directories( $ENV{IFDHC_FQ_DIR}/inc )
-##include_directories( $ENV{IFDH_ART_FQ_DIR}/inc )
-
-include_directories( $ENV{SRPROXY_INC} )
-
+# this can be removed once icaruscode moves to cetmodules
 cet_find_library( IFDH_SERVICE NAMES IFDH_service PATHS ENV IFDH_ART_LIB )
 
-simple_plugin ( CAFMaker module
+cet_build_plugin ( CAFMaker art::module
+               LIBRARIES
                sbncode_CAFMaker
-               sbnanaobj_StandardRecord
+               sbnanaobj::StandardRecord
+               larcorealg::Geometry
                ifdh_art::IFDH_service
                art::Framework_Core
                art::Framework_Principal
                art::Framework_Services_Registry
-               ${ART_FRAMEWORK_SERVICES_BASIC}
-               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
                art::Utilities canvas::canvas
-               messagefacility::MF_MessageLogger
-               fhiclcpp::fhiclcpp
-               cetlib::cetlib cetlib_except
-               ${ROOT_BASIC_LIB_LIST}
-               art_root_io_RootDB
-               hep_concurrency
+               cetlib::cetlib cetlib_except::cetlib_except
+               ROOT::Core ROOT::Tree
+               art_root_io::RootDB
+               hep_concurrency::hep_concurrency
+               lardataobj::RecoBase
                nurandom::RandomUtils_NuRandomService_service
+               lardata::DetectorClocksService
                BASENAME_ONLY
             )
 
-build_dictionary( CAFMaker
+art_dictionary( CAFMaker
                   DICTIONARY_LIBRARIES
-                  sbnanaobj_StandardRecord
-                  sbnanaobj_StandardRecord_dict
+                  sbnanaobj::StandardRecord
+                  sbnanaobj::StandardRecord_dict
+                  lardataobj::RecoBase
+                  larcorealg::Geometry
                   art::Framework_Core
                   art::Framework_Principal
                   art::Persistency_Common
                   art::Persistency_Provenance
                   art::Utilities canvas::canvas
-                  cetlib::cetlib cetlib_except
-                  messagefacility::MF_MessageLogger
-                  
+                  cetlib::cetlib cetlib_except::cetlib_except
                   )
 
 

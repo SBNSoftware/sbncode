@@ -147,7 +147,7 @@ bool TPCGeoAlg::InsideTPC(geo::Point_t point, const geo::TPCGeo& tpc, double buf
 }
 
 // Minimum distance to a TPC wall
-double TPCGeoAlg::MinDistToWall(geo::Point_t point){
+double TPCGeoAlg::MinDistToWall(geo::Point_t point) const{
 
   std::vector<double> dists;
   

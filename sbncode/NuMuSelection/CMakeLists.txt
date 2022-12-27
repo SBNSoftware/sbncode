@@ -1,83 +1,80 @@
-simple_plugin( MuPVertexStudy module
+cet_build_plugin( MuPVertexStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-	art_root_io_tfile_support
-	art_root_io
-	art_root_io_dict
-        caf_RecoUtils
-        lardataobj_AnalysisBase
-        lardataobj_RecoBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-        larcorealg_GeoAlgo
-        larsim_MCCheater_BackTrackerService_service
-        nusimdata::SimulationBase
-        larsim_MCCheater_ParticleInventoryService_service
-	larcorealg_GeoAlgo
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            art_root_io::tfile_support
+                            art_root_io::art_root_io
+                            art_root_io::dict
+                            caf_RecoUtils
+                            lardataobj::AnalysisBase
+                            lardataobj::RecoBase
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            larcorealg::GeoAlgo
+                            lardataalg::DetectorInfo
+                            lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+                            larsim::MCCheater_BackTrackerService_service
+                            nusimdata::SimulationBase
+                            larsim::MCCheater_ParticleInventoryService_service
+                            larcorealg::GeoAlgo
+                            larreco::RecoAlg
 )
-simple_plugin( MuonS2NStudy module
+cet_build_plugin( MuonS2NStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-	art_root_io_tfile_support
-	art_root_io
-	art_root_io_dict
-        caf_RecoUtils
-        lardataobj_AnalysisBase
-        lardataobj_RecoBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-        larcorealg_GeoAlgo
-        larsim_MCCheater_BackTrackerService_service
-        nusimdata::SimulationBase
-        larsim_MCCheater_ParticleInventoryService_service
-	larcorealg_GeoAlgo
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            art_root_io::tfile_support
+                            art_root_io::art_root_io
+                            art_root_io::dict
+                            caf_RecoUtils
+                            lardataobj::AnalysisBase
+                            lardataobj::RecoBase
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            larcorealg::GeoAlgo
+                            lardataalg::DetectorInfo
+                            lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+                            larsim::MCCheater_BackTrackerService_service
+                            nusimdata::SimulationBase
+                            larsim::MCCheater_ParticleInventoryService_service
+                            larcorealg::GeoAlgo
+                            larreco::RecoAlg
 )
-simple_plugin( NuMuEfficiencyStudy module
+cet_build_plugin( NuMuEfficiencyStudy art::module
+                        LIBRARIES
                             art::Framework_Core
                             art::Framework_Services_Registry
-                            art_root_io::TFileService_service                ${ART_FRAMEWORK_SERVICES}
+                            art_root_io::TFileService_service
                             art::Framework_Principal
                             art::Persistency_Common
                             art::Utilities canvas::canvas
-                            messagefacility::MF_MessageLogger
-                            fhiclcpp::fhiclcpp
-                            cetlib::cetlib cetlib_except
-                            ${ROOT_EVE_LIB_LIST}
-                            ${ROOT_X3d}
-                            ${ROOT_BASIC_LIB_LIST}
-	art_root_io_tfile_support
-	art_root_io
-	art_root_io_dict
-        caf_RecoUtils
-        lardataobj_AnalysisBase
-        lardataobj_RecoBase
-        larcorealg_Geometry
-        larcore_Geometry_Geometry_service
-        larcorealg_GeoAlgo
-        larsim_MCCheater_BackTrackerService_service
-        nusimdata::SimulationBase
-        larsim_MCCheater_ParticleInventoryService_service
-	larcorealg_GeoAlgo
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            art_root_io::tfile_support
+                            art_root_io::art_root_io
+                            art_root_io::dict
+                            caf_RecoUtils
+                            lardataobj::AnalysisBase
+                            lardataobj::RecoBase
+                            larcorealg::Geometry
+                            larcore::Geometry_Geometry_service
+                            larcorealg::GeoAlgo
+                            lardataalg::DetectorInfo
+                            lardata::DetectorInfoServices_DetectorClocksServiceStandard_service
+                            larsim::MCCheater_BackTrackerService_service
+                            nusimdata::SimulationBase
+                            larsim::MCCheater_ParticleInventoryService_service
+                            larcorealg::GeoAlgo
+                            larreco::RecoAlg
 )
 
 install_headers()

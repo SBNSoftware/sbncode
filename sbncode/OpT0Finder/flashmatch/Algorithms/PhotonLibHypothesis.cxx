@@ -17,7 +17,6 @@ namespace flashmatch {
 
   PhotonLibHypothesis::PhotonLibHypothesis(const std::string name)
     : BaseFlashHypothesis(name)
-    , _opfast_scintillation(new larg4::OpFastScintillation())
     , _vis(art::ServiceHandle<phot::PhotonVisibilityService const>().get())
   {}
 
@@ -81,21 +80,20 @@ namespace flashmatch {
 
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
 
-      std::map<size_t, int> direct_photons;
-      _opfast_scintillation->detectedDirectHits(direct_photons, n_original_photons, xyz);
+      std::vector<double> direct_visibilities;
+      _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
 
-      std::map<size_t, int> reflected_photons;
-      _opfast_scintillation->detectedReflecHits(reflected_photons, n_original_photons, xyz);
+      std::vector<double> reflected_visibilities;
+      _semi_model->detectedReflectedVisibilities(reflected_visibilities, xyz);
 
       //
       // Fill Estimate with Direct light
       //
-      for (auto it = direct_photons.begin(); it != direct_photons.end(); ++it) {
+      for (size_t op_det=0; op_det<direct_visibilities.size(); ++op_det) {
 
-        const size_t op_det = it->first;
-        const int n_photons = it->second;
+        const double visibility = direct_visibilities[op_det];
 
-        double q = n_photons * _global_qe / _qe_v[op_det];
+        double q = n_original_photons * visibility * _global_qe / _qe_v[op_det];
 
         // Coated PMTs don't see direct photons
         if (std::find(_uncoated_pmt_list.begin(), _uncoated_pmt_list.end(), op_det) != _uncoated_pmt_list.end()) {
@@ -114,12 +112,11 @@ namespace flashmatch {
       //
       // Fill Estimate with Reflected light
       //
-      for (auto it = reflected_photons.begin(); it != reflected_photons.end(); ++it) {
+      for (size_t op_det=0; op_det<reflected_visibilities.size(); ++op_det) {
 
-        const size_t op_det = it->first;
-        const int n_photons = it->second;
+        const double visibility = reflected_visibilities[op_det];
 
-        double q = n_photons * _global_qe_refl / _qe_v[op_det];
+        double q = n_original_photons * visibility * _global_qe_refl / _qe_v[op_det];
 
         if (std::find(_channel_mask.begin(), _channel_mask.end(), op_det) != _channel_mask.end()) {
           flash.pe_v[op_det] += q;

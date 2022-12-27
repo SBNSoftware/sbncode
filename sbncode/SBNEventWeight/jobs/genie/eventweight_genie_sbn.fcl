@@ -21,18 +21,33 @@ sbn_eventweight_genie: {
   AllowMissingTruth: true # allow running over cosmics. The alternative approach is genie_module_label: ""
 
   #Off-set central value of knobs here:
+  # Note that the chosen central value here should match to the central value used for generating the input sample.
   genie_central_values: {
   # Example of shifting below two knobs 1 sigma
   # MaCCQE : 1
   # MaCCRES : 1
   }
 
-  weight_functions_genie: [ 
-   genie_sbnd_multisim
+  weight_functions_genie: [
+    # multisim
+    multisim,
+    # multisigma
+    # CCQE
+    MaCCQE_multisigma,
+    # Resonance
+    MaCCRES_multisigma, MvCCRES_multisigma, MaNCRES_multisigma, MvNCRES_multisigma,
+    # Non-Resonance
+    NonRESBGvpCC1pi_multisigma, NonRESBGvbarnCC1pi_multisigma, NonRESBGvpNC1pi_multisigma, NonRESBGvbarnNC1pi_multisigma, NonRESBGvnCC1pi_multisigma, NonRESBGvbarpCC1pi_multisigma, NonRESBGvnNC1pi_multisigma, NonRESBGvbarpNC1pi_multisigma, NonRESBGvpCC2pi_multisigma, NonRESBGvbarnCC2pi_multisigma, NonRESBGvpNC2pi_multisigma, NonRESBGvbarpNC2pi_multisigma, NonRESBGvnCC2pi_multisigma, NonRESBGvbarpCC2pi_multisigma, NonRESBGvnNC2pi_multisigma, NonRESBGvbarnNC2pi_multisigma,
+    # NC
+    MaNCEL_multisigma, EtaNCEL_multisigma,
+    # DIS
+    AhtBY_multisigma, BhtBY_multisigma, CV1uBY_multisigma, CV2uBY_multisigma, FormZone_multisigma,
+    # FSI
+    MFP_N_multisigma, FrCEx_N_multisigma, FrInel_N_multisigma, FrAbs_N_multisigma, FrPiProd_N_multisigma, MFP_pi_multisigma, FrCEx_pi_multisigma, FrInel_pi_multisigma, FrAbs_pi_multisigma, FrPiProd_pi_multisigma
   ]
- 
-  # Knobs that are used in both sbnd and ub
-  genie_sbnd_multisim: {
+
+  # Define each knob
+  multisim: {
     type: Genie
     random_seed: 100
     parameter_list: [
@@ -55,8 +70,7 @@ sbn_eventweight_genie: {
       "AhtBY","BhtBY","CV1uBY","CV2uBY", #"FormZone",
 
     #FSI
-      "MFP_N" ,"FrCEx_N" ,"FrInel_N" ,"FrAbs_N" , #"FrPiProd_N",
-      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #,"FrPiProd_pi"
+      "MFP_pi","FrCEx_pi","FrInel_pi","FrAbs_pi" #, "FrPiProd_pi"
       ]
     parameter_sigma: [
       #CCQE
@@ -75,7 +89,234 @@ sbn_eventweight_genie: {
     mode: multisim
     number_of_multisims: @local::n_universes
   }
-
+  MaCCQE_multisigma: {
+      type: Genie
+      parameter_list: ["MaCCQE"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MaCCRES_multisigma: {
+      type: Genie
+      parameter_list: ["MaCCRES"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MvCCRES_multisigma: {
+      type: Genie
+      parameter_list: ["MvCCRES"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MaNCRES_multisigma: {
+      type: Genie
+      parameter_list: ["MaNCRES"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MvNCRES_multisigma: {
+      type: Genie
+      parameter_list: ["MvNCRES"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvpCC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpCC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarnCC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnCC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvpNC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpNC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarnNC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnNC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvnCC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnCC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarpCC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpCC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvnNC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnNC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarpNC1pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpNC1pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvpCC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpCC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarnCC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnCC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvpNC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvpNC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarpNC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpNC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvnCC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnCC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarpCC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarpCC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvnNC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvnNC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  NonRESBGvbarnNC2pi_multisigma: {
+      type: Genie
+      parameter_list: ["NonRESBGvbarnNC2pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MaNCEL_multisigma: {
+      type: Genie
+      parameter_list: ["MaNCEL"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  EtaNCEL_multisigma: {
+      type: Genie
+      parameter_list: ["EtaNCEL"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  AhtBY_multisigma: {
+      type: Genie
+      parameter_list: ["AhtBY"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  BhtBY_multisigma: {
+      type: Genie
+      parameter_list: ["BhtBY"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  CV1uBY_multisigma: {
+      type: Genie
+      parameter_list: ["CV1uBY"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  CV2uBY_multisigma: {
+      type: Genie
+      parameter_list: ["CV2uBY"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FormZone_multisigma: {
+      type: Genie
+      parameter_list: ["FormZone"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MFP_N_multisigma: {
+      type: Genie
+      parameter_list: ["MFP_N"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrCEx_N_multisigma: {
+      type: Genie
+      parameter_list: ["FrCEx_N"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrInel_N_multisigma: {
+      type: Genie
+      parameter_list: ["FrInel_N"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrAbs_N_multisigma: {
+      type: Genie
+      parameter_list: ["FrAbs_N"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrPiProd_N_multisigma: {
+      type: Genie
+      parameter_list: ["FrPiProd_N"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  MFP_pi_multisigma: {
+      type: Genie
+      parameter_list: ["MFP_pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrCEx_pi_multisigma: {
+      type: Genie
+      parameter_list: ["FrCEx_pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrInel_pi_multisigma: {
+      type: Genie
+      parameter_list: ["FrInel_pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrAbs_pi_multisigma: {
+      type: Genie
+      parameter_list: ["FrAbs_pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
+  FrPiProd_pi_multisigma: {
+      type: Genie
+      parameter_list: ["FrPiProd_pi"]
+      parameter_sigma: [-1,+1,-2,+2,-3,+3]
+      mode: multisigma
+  }
 }
 
 END_PROLOG
