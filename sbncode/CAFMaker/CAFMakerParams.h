@@ -40,6 +40,10 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
+    Atom<bool> OverrideRealData { Name("OverrideRealData"),
+      Comment("Whether to ignore things aimed at real data -- e.g. if instead the event in an overlay"), false
+    };
+
     Atom<float> PrescaleFactor { Name("PrescaleFactor"),
 	Comment("Factor by which to prescale unblind events"), 10
     };

@@ -175,6 +175,8 @@ class CAFMaker : public art::EDProducer {
   std::string fFlatCafBlindFilename;
   std::string fFlatCafPrescaleFilename;
 
+  bool fOverrideRealData;
+
   bool fFirstInSubRun;
   bool fFirstInFile;
   bool fFirstBlindInFile;
@@ -322,6 +324,8 @@ class CAFMaker : public art::EDProducer {
 
   fCafFilename = fParams.CAFFilename();
   fFlatCafFilename = fParams.FlatCAFFilename();
+
+  fOverrideRealData = fParams.OverrideRealData();
 
   // Normally CAFMaker is run wit no output ART stream, so these go
   // nowhere, but can be occasionally useful for filtering in ART
@@ -675,31 +679,45 @@ void CAFMaker::beginSubRun(art::SubRun& sr) {
   fNuMIInfo.clear();
   fSubRunPOT = 0;
 
-  if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
-    FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
-    fTotalPOT += fSubRunPOT;
-  }
-  else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
-    FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
-    fTotalPOT += fSubRunPOT;
-  }
-  else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
-    fSubRunPOT = pot_handle->totgoodpot;
-    fTotalPOT += fSubRunPOT;
-  }
-  else{
-    if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
-      std::cout << "Found neither BNB data POT info under '"
-                << fParams.BNBPOTDataLabel()
-                << "' not NuMIdata POT info under '"
-                << fParams.NuMIPOTDataLabel()
-                << "' nor MC POT info under '"
-                << fParams.GenLabel() << "'"
-                << std::endl;
+  // TODO (BH) I think this will "work" but I'm not sure if it's really the best way...
+  if ( fOverrideRealData ) {
+    // Expects a generator POT summary then...
+    if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      fSubRunPOT = pot_handle->totgoodpot;
+      fTotalPOT += fSubRunPOT;
+    }
+    else{
+      std::cout << "Did not find MC POT info under " << fParams.GenLabel() << std::endl;
       if(fParams.StrictMode()) abort();
     }
+  }
+  else {
+    if(auto bnb_spill = sr.getHandle<std::vector<sbn::BNBSpillInfo>>(fParams.BNBPOTDataLabel())){
+      FillExposure(*bnb_spill, fBNBInfo, fSubRunPOT);
+      fTotalPOT += fSubRunPOT;
+    }
+    else if (auto numi_spill = sr.getHandle<std::vector<sbn::NuMISpillInfo>>(fParams.NuMIPOTDataLabel())) {
+      FillExposureNuMI(*numi_spill, fNuMIInfo, fSubRunPOT);
+      fTotalPOT += fSubRunPOT;
+    }
+    else if(auto pot_handle = sr.getHandle<sumdata::POTSummary>(fParams.GenLabel())){
+      fSubRunPOT = pot_handle->totgoodpot;
+      fTotalPOT += fSubRunPOT;
+    }
+    else{
+      if(!fParams.BNBPOTDataLabel().empty() || !fParams.GenLabel().empty() || !fParams.NuMIPOTDataLabel().empty()){
+	std::cout << "Found neither BNB data POT info under '"
+		  << fParams.BNBPOTDataLabel()
+		  << "' not NuMIdata POT info under '"
+		  << fParams.NuMIPOTDataLabel()
+		  << "' nor MC POT info under '"
+		  << fParams.GenLabel() << "'"
+		  << std::endl;
+	if(fParams.StrictMode()) abort();
+      }
 
-    // Otherwise, if one label is blank, maybe no POT was the expected result
+      // Otherwise, if one label is blank, maybe no POT was the expected result
+    }
   }
 
   std::cout << "POT: " << fSubRunPOT << std::endl;
@@ -988,8 +1006,8 @@ bool CAFMaker::GetPsetParameter(const fhicl::ParameterSet& pset,
 //......................................................................
 void CAFMaker::produce(art::Event& evt) noexcept {
 
-  // is this event real data?
-  bool isRealData = evt.isRealData();
+  // is this event real data? -- BH: if fOverrideRealData, treat it as MC. Otherwise, get the info from the art event.
+  bool isRealData = ( fOverrideRealData ? false : evt.isRealData() );
 
   std::unique_ptr<std::vector<caf::StandardRecord>> srcol(
       new std::vector<caf::StandardRecord>);
