@@ -33,7 +33,7 @@
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/Slice.h"
 #include "lardataobj/RecoBase/OpHit.h"
-#include "lardataobj/RecoBase/OpFlash.h"
+// #include "lardataobj/RecoBase/OpFlash.h"
 #include "larpandora/LArPandoraInterface/LArPandoraHelper.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
@@ -276,8 +276,6 @@ private:
   ChargeMetrics computeChargeMetrics(
     const ChargeDigest& chargeDigest) const;
   FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
-  FlashMetrics computeOpFlashMetrics(const recob::OpFlash& opflash,
-                                     std::vector<art::Ptr<recob::OpHit>> ophit_v) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -440,7 +438,6 @@ private:
   unsigned _evt, _run, _sub;
   unsigned _slices = -1; unsigned _is_nu = -1;
   double _mcT0 = -9999.;
-  unsigned _pId = -1;
 
   static constexpr unsigned kMinEntriesInProjection = 100;
   const std::array<std::string, 3> kSuffixes{"l", "h", "m"};// low, high, medium
