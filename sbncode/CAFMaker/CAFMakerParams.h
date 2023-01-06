@@ -326,6 +326,18 @@ namespace caf
       Comment("How long from the end of a track to save calo-point information. Set to -1 to save nothing"),
       25.
     };
+
+    Atom<bool> ReferencePMTFromTriggerToBeam {
+      Name("ReferencePMTFromTriggerToBeam"),
+      Comment("Whether to switch the reference time of PMT reco from 'trigger' to 'beam spill' time."),
+      true
+    };
+
+    Atom<bool> ReferenceCRTToBeam {
+      Name("ReferenceCRTToBeam"),
+      Comment("Whether to switch the reference time of CRT reco to the 'beam spill' time."),
+      true
+    };
   };
 }
 

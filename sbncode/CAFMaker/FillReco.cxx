@@ -61,14 +61,13 @@ namespace caf
   }
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
-                  uint64_t gate_start_timestamp,
                   bool use_ts0,
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
-    srhit.time = (use_ts0 ? (float)hit.ts0() : hit.ts1()) / 1000.;
-    srhit.t0 = ((long long)(hit.ts0())-(long long)(gate_start_timestamp))/1000.;
-    srhit.t1 = hit.ts1()/1000.;
+    srhit.t0 = hit.ts0()/1000.; // ns -> us
+    srhit.t1 = hit.ts1()/1000.; // ns -> us
+    srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
     srhit.position.y = hit.y_pos;
@@ -347,6 +346,11 @@ namespace caf
                        bool allowEmpty) {
     if (crumbs != nullptr) {
       slice.crumbs_result.score = crumbs->score;
+      slice.crumbs_result.ccnumuscore = crumbs->ccnumuscore;
+      slice.crumbs_result.ccnuescore = crumbs->ccnuescore;
+      slice.crumbs_result.ncscore = crumbs->ncscore;
+      slice.crumbs_result.bestscore = crumbs->bestscore;
+      slice.crumbs_result.bestid = crumbs->bestid;
       slice.crumbs_result.tpc.crlongtrackhitfrac = crumbs->tpc_CRFracHitsInLongestTrack;
       slice.crumbs_result.tpc.crlongtrackdefl = crumbs->tpc_CRLongestTrackDeflection;
       slice.crumbs_result.tpc.crlongtrackdiry = crumbs->tpc_CRLongestTrackDirY;
@@ -372,6 +376,8 @@ namespace caf
   //......................................................................
 
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
+                       const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
+                       bool use_ts0,
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -379,15 +385,9 @@ namespace caf
       assert(t0match.size() == 1);
       srtrack.crthit.distance = t0match[0]->fTriggerConfidence;
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
-
-      // TODO/FIXME: FILL THESE ONCE WE HAVE THE CRT HIT!!!
-      // srtrack.crthit.hit.position.x = hitmatch[0]->x_pos;
-      // srtrack.crthit.hit.position.y = hitmatch[0]->y_pos;
-      // srtrack.crthit.hit.position.z = hitmatch[0]->z_pos;
-      // srtrack.crthit.hit.position_err.x = hitmatch[0]->x_err;
-      // srtrack.crthit.hit.position_err.y = hitmatch[0]->y_err;
-      // srtrack.crthit.hit.position_err.z = hitmatch[0]->z_err;
-
+    }
+    if (hitmatch.size()) {
+      FillCRTHit(*hitmatch[0], use_ts0, srtrack.crthit.hit, allowEmpty);
     }
   }
 
@@ -558,15 +558,19 @@ namespace caf
         p.dqdx = dqdx[i];
         p.dedx = dedx[i];
         p.pitch = pitch[i];
-        p.t = dprop.ConvertXToTicks(xyz[i].x(), calo.PlaneID());
+        p.x = xyz[i].x();
+        p.y = xyz[i].y();
+        p.z = xyz[i].z();
 
         // lookup the wire -- the Calorimery object makes this
         // __way__ harder than it should be
         for (const art::Ptr<recob::Hit> &h: hits) {
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
+            p.tpc = h->WireID().TPC;
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
+            p.t = h->PeakTime();
           }
         }
 
@@ -690,6 +694,7 @@ namespace caf
   void FillPFPVars(const recob::PFParticle &particle,
                    const recob::PFParticle *primary,
                    const larpandoraobj::PFParticleMetadata *pfpMeta,
+                   const art::Ptr<anab::T0> t0,
                    caf::SRPFP& srpfp,
                    bool allowEmpty)
   {
@@ -710,6 +715,23 @@ namespace caf
       auto const &propertiesMap (pfpMeta->GetPropertiesMap());
       auto const &pfpTrackScoreIter(propertiesMap.find("TrackScore"));
       srpfp.trackScore = (pfpTrackScoreIter == propertiesMap.end()) ? -5.f : pfpTrackScoreIter->second;
+
+      // Pfo Characterisation features
+      srpfp.pfochar.setDefault();
+
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_EndFraction",             srpfp.pfochar.chgendfrac);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDChargeFeatureTool_FractionalSpread",        srpfp.pfochar.chgfracspread);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_DiffStraightLineMean", srpfp.pfochar.linfitdiff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_Length",               srpfp.pfochar.linfitlen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_MaxFitGapLength",      srpfp.pfochar.linfitgaplen);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDLinearFitFeatureTool_SlidingLinearFitRMS",  srpfp.pfochar.linfitrms);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDOpeningAngleFeatureTool_AngleDiff",         srpfp.pfochar.openanglediff);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_SecondaryPCARatio",          srpfp.pfochar.pca2ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDPCAFeatureTool_TertiaryPCARatio",           srpfp.pfochar.pca3ratio);
+      CopyPropertyIfSet(propertiesMap, "LArThreeDVertexDistanceFeatureTool_VertexDistance",  srpfp.pfochar.vtxdist);
+    }
+    if (t0) {
+      srpfp.t0 = t0->Time() / 1e3; /* ns -> us */
     }
   }
 
