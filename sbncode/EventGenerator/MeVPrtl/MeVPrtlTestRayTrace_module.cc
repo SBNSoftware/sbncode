@@ -36,7 +36,7 @@
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 #include "Tools/IMesonGen.h"
 #include "Tools/IMeVPrtlFlux.h"
@@ -118,8 +118,8 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
   while (1) {
     simb::MCFlux kaon = fGenTool->GetNext();
 
-    evgen::ldm::KaonParent kaonp(kaon);
-    bool is_kaon = kaonp.kaon_pdg != 0;
+    evgen::ldm::MesonParent kaonp(kaon);
+    bool is_kaon = kaonp.isKaon();
 
     // (void) is_kaon;
     if (is_kaon) { 
@@ -142,9 +142,9 @@ void evgen::ldm::MeVPrtlTestRayTrace::analyze(const art::Event& evt)
 
 
     // See if an intersection is possible
-    double costh_crit = minKinematicCosTheta(flux.kmom.M(), flux.sec.M(), flux.mom.M(), flux.kmom.E());
+    double costh_crit = minKinematicCosTheta(flux.mmom.M(), flux.sec.M(), flux.mom.M(), flux.mmom.E());
     TVector3 det(0., 0., 0.); // detector should be near origin
-    double costh = flux.kmom.Vect().Unit().Dot((det - flux.pos.Vect()).Unit());
+    double costh = flux.mmom.Vect().Unit().Dot((det - flux.pos.Vect()).Unit());
     std::cout << "COSTH CRIT: " << costh_crit << " DETECTOR COSTH: " << costh << std::endl;
     if (costh < costh_crit) continue;
 

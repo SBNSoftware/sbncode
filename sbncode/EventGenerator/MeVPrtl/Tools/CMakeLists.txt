@@ -59,6 +59,29 @@ cet_build_plugin( NuMiKaonGen art::tool
                             sbnobj::Common_EventGen_MeVPrtl
 )
 
+cet_build_plugin( TxtFileGen art::tool
+                       LIBRARIES
+                            ifdh_art::IFDH_service
+                            art::Framework_Core
+                            art::Framework_Services_Registry
+                            art_root_io::TFileService_service
+                            art::Framework_Principal
+                            art::Persistency_Common
+                            art::Utilities canvas::canvas
+                            fhiclcpp::fhiclcpp
+                            cetlib::cetlib cetlib_except::cetlib_except
+                            ROOT::Eve
+                            ROOT::X3d
+                            ROOT::Core
+                            CLHEP::CLHEP
+                            ifdh::ifdh
+                            dk2nu::Tree
+                            nurandom::RandomUtils_NuRandomService_service
+                            nusimdata::SimulationBase
+                            sbncode_EventGenerator_MeVPrtl_Constants
+                            sbnobj::Common_EventGen_MeVPrtl
+)
+
 cet_build_plugin( BNBKaonGen art::tool
                        LIBRARIES
                             ifdh_art::IFDH_service
