@@ -455,10 +455,14 @@ void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_
   // Fix the hit matches
   for (SRSlice &s: rec.slc) {
     for (SRPFP &pfp: s.reco.pfp) {
+      pfp.trk.crthit.hit.t0 += CRTT0_reference_time; 
+      pfp.trk.crthit.hit.t1 += CRTT1_reference_time;
       pfp.trk.crthit.hit.time += crttime_to_shift;
     }
   }
   for (SRPFP &pfp: rec.reco.pfp) {
+    pfp.trk.crthit.hit.t0 += CRTT0_reference_time;
+    pfp.trk.crthit.hit.t1 += CRTT1_reference_time;
     pfp.trk.crthit.hit.time += crttime_to_shift;
   }
 
