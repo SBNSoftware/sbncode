@@ -246,7 +246,7 @@ class CAFMaker : public art::EDProducer {
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
   void FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time);
-  void FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time);
+  void FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time);
 
   /// Equivalent of FindManyP except a return that is !isValid() prints a
   /// messsage and aborts if StrictMode is true.
@@ -438,20 +438,28 @@ void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_ti
 
 }
 
-void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRT_reference_time) {
+void CAFMaker::FixCRTReferenceTimes(StandardRecord &rec, double CRTT0_reference_time, double CRTT1_reference_time) {
   // Fix the hits
+
+  double crttime_to_shift = fParams.CRTUseTS0() ? CRTT0_reference_time : CRTT1_reference_time;
+
+  // As discussed/described in https://github.com/SBNSoftware/sbncode/pull/251,
+  // we added CRTHit::t0 and CRTHit::t1 in addition to CRTHit::time,
+  // not to break any existing studies that still use "CRTHit::time"
   for (SRCRTHit &h: rec.crt_hits) {
-    h.time += CRT_reference_time;
+    h.t0 += CRTT0_reference_time;
+    h.t1 += CRTT1_reference_time;
+    h.time += crttime_to_shift;
   }
 
   // Fix the hit matches
   for (SRSlice &s: rec.slc) {
     for (SRPFP &pfp: s.reco.pfp) {
-      pfp.trk.crthit.hit.time += CRT_reference_time;
+      pfp.trk.crthit.hit.time += crttime_to_shift;
     }
   }
   for (SRPFP &pfp: rec.reco.pfp) {
-    pfp.trk.crthit.hit.time += CRT_reference_time;
+    pfp.trk.crthit.hit.time += crttime_to_shift;
   }
 
   // TODO: fix more?
@@ -1820,10 +1828,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
   FixPMTReferenceTimes(rec, PMT_reference_time);
 
   // CRT's
-  double CRT_reference_time = fParams.ReferenceCRTToBeam() ? 
-                              (fParams.CRTUseTS0() ? -srtrigger.beam_gate_time_abs/1e3 : srtrigger.trigger_within_gate)
-                              : 0.;
-  FixCRTReferenceTimes(rec, CRT_reference_time);
+  double CRT_T0_reference_time = fParams.ReferenceCRTT0ToBeam() ? -srtrigger.beam_gate_time_abs/1e3 /* ns -> us*/  : 0.;
+  double CRT_T1_reference_time = fParams.ReferenceCRTT1FromTriggerToBeam() ? srtrigger.trigger_within_gate : 0.;
+  FixCRTReferenceTimes(rec, CRT_T0_reference_time, CRT_T1_reference_time);
 
   // TODO: TPC?
 
