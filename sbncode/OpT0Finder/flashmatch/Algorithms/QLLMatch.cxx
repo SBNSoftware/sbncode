@@ -60,6 +60,14 @@ namespace flashmatch {
       _vol_xmin = bbox.Min()[0];
     }
 
+    // By default, add all opdets to the channel mask
+    // Note that this may be overridden by the manager
+    // via the SetChannelMask() method.
+    _channel_mask.clear();
+    _channel_mask.reserve(DetectorSpecs::GetME().NOpDets());
+    for (size_t i = 0; i < DetectorSpecs::GetME().NOpDets(); i++) {
+      _channel_mask[i] = i;
+    }
   }
 
   void QLLMatch::SetTPCCryo(int tpc, int cryo) {
@@ -339,13 +347,20 @@ namespace flashmatch {
 
     double O, H, Error;
     // const double epsilon = 1.e-9;
+    std::vector<int> apsia_ch{134,135,150,151,152,153,154,155,156,157,158,159,160,161,176,177};
 
     for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
+      // TO-DO: this is a TEMPORARY FIX!!!! skip the arapucas that seem to not contain any PE information
+      if (std::find(apsia_ch.begin(), apsia_ch.end(), int(pmt_index)) != apsia_ch.end())
+        continue;
 
-      // ignore PMTs that are in the opposite TPC that we're considering
+      // ignore OpDets that are in the opposite TPC that we're considering
       if ( int(pmt_index)%2 != _tpc%2)
         continue;
 
+      if (std::find(_channel_mask.begin(), _channel_mask.end(), pmt_index) == _channel_mask.end())
+        continue;
+        
       O = measurement.pe_v[pmt_index]; // observation
       H = hypothesis.pe_v[pmt_index];  // hypothesis
 
@@ -368,6 +383,11 @@ namespace flashmatch {
         }
       }
 
+      if (O==_pe_observation_threshold && H > 600.0){
+        continue;
+        // skip signals that seem to be empty because of saturation 
+      }
+
       if(_mode == kLLHD) {
         // TMath::Poisson(x, mu)
 
@@ -386,19 +406,19 @@ namespace flashmatch {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
-          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * std::log10(arg) << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
-          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
-          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
@@ -420,7 +440,7 @@ namespace flashmatch {
 
     }
     //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-
+    std::cout << "nvalid opdets: " << nvalid_pmt << std::endl;
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
     // std::cout << "current_llhd: " << _current_llhd << std::endl;
