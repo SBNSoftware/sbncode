@@ -60,6 +60,9 @@ namespace flashmatch {
     /// Method to simply fill provided reference of flashmatch::Flash_t
     void FillEstimate(const QCluster_t&, Flash_t&) const;
 
+    /// Sets the channels to use
+    void SetChannelMask(std::vector<int> ch_mask) { _channel_mask = ch_mask; }
+
     /// Sets the TPC and Cryo numbers
     virtual void SetTPCCryo(int tpc, int cryo) = 0;
 
@@ -73,6 +76,8 @@ namespace flashmatch {
 
     int _tpc = 0; ///< The TPC number to use
     int _cryo = 0; ///< The Cryostat number to use
+
+    std::vector<int> _channel_mask; ///< The list of channels to use
 
   };
 }

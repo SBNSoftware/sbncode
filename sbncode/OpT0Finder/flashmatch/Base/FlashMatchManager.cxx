@@ -384,6 +384,10 @@ namespace flashmatch {
     }
 
     _alg_flash_hypothesis->SetChannelMask(ch_mask);
+    
+    if (_alg_flash_match) {
+      _alg_flash_match->SetChannelMask(ch_mask);
+    }
   }
 
   void FlashMatchManager::SetTPCCryo(int tpc, int cryo) {
