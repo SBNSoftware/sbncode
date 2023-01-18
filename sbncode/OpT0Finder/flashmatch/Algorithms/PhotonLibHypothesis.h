@@ -66,9 +66,9 @@ namespace flashmatch {
     double _global_qe;             ///< Global QE for direct light
     double _global_qe_refl;        ///< Global QE for reflected light
     double _sigma_qe;              ///< Sigma for Gaussian centered on Global QE
-    std::vector<double> _qe_v;     ///< PMT-wise relative QE
+    std::vector<double> _qe_v;     ///< OpDet-wise relative QE for direct light
+    std::vector<double> _qe_refl_v;///< OpDet-wise relative QE for reflected light 
     bool _use_semi_analytical;     ///< If the semi-analytical approach should be used
-    bool _calc_recombination;      ///< If calculating photons including recombination 
     #if USING_LARSOFT == 1
     phot::PhotonVisibilityService const* const _vis;
     #endif
