@@ -178,10 +178,10 @@ double forcedecay_weight(double mean, double a, double b) {
 }
 
 double HNLMakeDecay::MuPiWidth(double hnl_mass, double ue4, double um4, double ut4) {
-  return LepPiWidth(hnl_mass, Constants::Instance().muon_mass, um4);
+  return LepPiWidth(hnl_mass, um4, Constants::Instance().muon_mass);
 }
 double HNLMakeDecay::EPiWidth(double hnl_mass, double ue4, double um4, double ut4) {
-  return LepPiWidth(hnl_mass, Constants::Instance().elec_mass, ue4);
+  return LepPiWidth(hnl_mass, ue4, Constants::Instance().elec_mass);
 }
 double HNLMakeDecay::NuMuMuWidth(double hnl_mass, double ue4, double um4, double ut4) {
   return NuDiLepDecayWidth(hnl_mass, ue4, 12, 13) + NuDiLepDecayWidth(hnl_mass, um4, 14, 13) + NuDiLepDecayWidth(hnl_mass, ut4, 16, 13);
