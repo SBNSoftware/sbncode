@@ -107,7 +107,7 @@ namespace flashmatch {
       res = (res1.score > res2.score ? res1 : res2);
     }
     else{
-      // std::cout << "Not minimizing, using spacepoint position info with no offset..." << std::endl;
+      // Not minimizing, using spacepoint position info with no offset..."
       res = OnePMTMatch(flash);
     }
     /*
@@ -388,6 +388,10 @@ namespace flashmatch {
         // skip signals that seem to be empty because of saturation 
       }
 
+      // skip signals that have unphysical PE values 
+      if (O>1e10)
+        continue;
+
       if(_mode == kLLHD) {
         // TMath::Poisson(x, mu)
 
@@ -406,19 +410,19 @@ namespace flashmatch {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * std::log10(arg) << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(std::log10(arg)) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * val << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"PMT | O | H | val :"<<pmt_index<<", " << O << ", " << H << ", " << -1 * val_2 << std::endl;
+          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val_2) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
