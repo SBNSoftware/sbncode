@@ -63,6 +63,7 @@ public:
 private:
   geo::BoxBoundedGeo fBox;
   unsigned fNThrows;
+  bool fVerbose;
 
   double fReferenceLabSolidAngle;
   double fReferencePrtlMass;
@@ -90,7 +91,9 @@ ReThrowRayTraceBox::~ReThrowRayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
-  if (pset.has_key("Box")) {
+   fVerbose = pset.get<bool>("Verbose", true);
+
+   if (pset.has_key("Box")) {
     std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
     // xmin, xmax, ymin, ymax, zmin, zmax
     fBox = geo::BoxBoundedGeo(box_config[0], box_config[1], box_config[2], box_config[3], box_config[4], box_config[5]);
@@ -102,10 +105,12 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 
   fNThrows = pset.get<unsigned>("NThrows", 10000);
 
-  std::cout << "Detector Box." << std::endl;
-  std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
-  std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
-  std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  if (fVerbose){
+    std::cout << "Detector Box." << std::endl;
+    std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
+    std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
+    std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  }
 
   fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
   fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
@@ -172,10 +177,10 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
 
     // if the ray points the wrong way, it doesn't intersect
     if (mevprtl_mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
-      std::cout << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
-      std::cout << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
-      std::cout << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
-      std::cout << "P: " << mevprtl_mom.Vect().Unit().X() << " " << mevprtl_mom.Vect().Unit().Y() << " " << mevprtl_mom.Vect().Unit().Z() << std::endl;
+      std::cerr << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
+      std::cerr << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
+      std::cerr << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
+      std::cerr << "P: " << mevprtl_mom.Vect().Unit().X() << " " << mevprtl_mom.Vect().Unit().Y() << " " << mevprtl_mom.Vect().Unit().Z() << std::endl;
       continue;
     }
 
@@ -184,7 +189,7 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     allHMom.push_back(mevprtl_mom);
   }
 
-  std::cout << "Prtl intersected (" << allIntersections.size() << " / " << fNThrows << ") times.\n";
+  if (fVerbose) std::cout << "Prtl intersected (" << allIntersections.size() << " / " << fNThrows << ") times.\n";
 
   // did we get a hit?
   if (allIntersections.size() == 0) {
@@ -228,9 +233,11 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     intersection = {B, A}; // reversed
   }
 
-  std::cout << "Primary 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
-  std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
-  std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  if (fVerbose){
+    std::cout << "Primary 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
+    std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+    std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  }
 
   return true;
 }
