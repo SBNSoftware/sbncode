@@ -89,6 +89,7 @@ public:
 private:
   bool fProduce;
   bool fAnaOutput;
+  bool fVerbose;
 
   bool fDoDeweight;
   double fSubRunPOT;
@@ -122,6 +123,7 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
 
   fProduce = p.get<bool>("Produce", true);
   fAnaOutput = p.get<bool>("AnaOutput", false);
+  fVerbose = p.get<bool>("Verbose", true);
 
   fDoDeweight = p.get<bool>("Deweight", false);
   fSubRunPOT = 0.;
@@ -136,16 +138,16 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   fDecayTool = art::make_tool<IMeVPrtlDecay>(p.get<fhicl::ParameterSet>("Decay"));
 
   fGenMaxWeight = fGenTool->MaxWeight();
-  std::cout << "Gen max weight: " << fGenMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Gen max weight: " << fGenMaxWeight << std::endl;
 
   fFluxMaxWeight = fFluxTool->MaxWeight();
-  std::cout << "Flux max weight: " << fFluxMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Flux max weight: " << fFluxMaxWeight << std::endl;
 
   fRayMaxWeight = fRayTool->MaxWeight();
-  std::cout << "Ray max weight: " << fRayMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Ray max weight: " << fRayMaxWeight << std::endl;
 
   fDecayMaxWeight = fDecayTool->MaxWeight();
-  std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
 
   fRayDecayMaxWeight = fDecayMaxWeight*fRayMaxWeight;
 
@@ -194,6 +196,7 @@ void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
 }
 
 bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
+  
   if (!fDoDeweight || max_weight < 0) { //  don't do deweighting procedure
     return true;
   }
@@ -221,6 +224,7 @@ bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
 
   // update the weight value
   weight = max_weight;
+  
   return rand <= test;
 }
 
@@ -249,10 +253,12 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     bool is_meson = mesonp.meson_pdg != 0;
 
     // (void) is_meson;
-    if (is_meson) {
-     std::cout << "Flux is meson (" << is_meson << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E()
-             << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
-             << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
+    if (fVerbose){
+      if (is_meson) {
+       std::cout << "Flux is meson (" << is_meson << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E()
+               << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
+               << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
+      }
     }
 
     bool success;
@@ -268,10 +274,12 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fNTime[1] += duration.count();
 
     if (!success) continue;
-
-    std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
-    std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
-    std::cout << "Flux weight: " << flux_weight << std::endl;
+    
+    if (fVerbose){
+      std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
+      std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
+      std::cout << "Flux weight: " << flux_weight << std::endl;
+    }
 
     std::array<TVector3, 2> intersection;
     double ray_weight;
@@ -284,7 +292,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fNTime[2] += duration.count();
 
     if (!success) continue;
-    std::cout << "Ray weight: " << ray_weight << std::endl;
+    if (fVerbose) std::cout << "Ray weight: " << ray_weight << std::endl;
 
     evgen::ldm::MeVPrtlDecay decay;
     double decay_weight;
@@ -298,7 +306,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "Decay weight: " << decay_weight << std::endl;
+    if (fVerbose) std::cout << "Decay weight: " << decay_weight << std::endl;
 
     // Deweight the ray and decay weights together because they have some anti-correlation
     double ray_decay_weight = ray_weight * decay_weight;
@@ -306,9 +314,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+    if (fVerbose) std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+    if (fVerbose) std::cout << "PASSED!\n";
 
-    std::cout << "PASSED!\n";
 
     // get the POT
     double thisPOT = fGenTool->GetPOT();

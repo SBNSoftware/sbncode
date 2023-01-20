@@ -183,7 +183,7 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
 
   // select on the kaon
   if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < fTarget2Absorber)) return false;
-  if (fKDAROnly) std::cout << "FOUND KDAR\n";
+  if (fKDAROnly & fVerbose) std::cout << "FOUND KDAR\n";
 
   TLorentzVector Beam4 = BeamOrigin();
 
@@ -200,7 +200,7 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   bool is_muon = decay.second;
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
 
-  std::cout << "BR: " << br << std::endl;
+  if (fVerbose) std::cout << "BR: " << br << std::endl;
 
   // ignore if we can't make this hnl
   // Ignore if branching ratio is exactly 0.
