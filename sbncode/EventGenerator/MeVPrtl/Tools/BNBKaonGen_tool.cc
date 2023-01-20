@@ -82,7 +82,8 @@ private:
   unsigned long fMaxFluxFileMB;
   std::string fFluxCopyMethod;
   bool fRandomizeFiles;
-
+  bool fVerbose;
+  
   std::string fTreeName;
   std::string fMetaTreeName;
 
@@ -146,11 +147,15 @@ void BNBKaonGen::configure(fhicl::ParameterSet const &pset)
   fTreeName = pset.get<std::string>("TreeName");
   fMetaTreeName = pset.get<std::string>("MetaTreeName");
   fRandomizeFiles = pset.get<bool>("RandomizeFiles");
+  fVerbose = pset.get<bool>("Verbose", true);
 
-  std::cout << "Searching for flux files at path: " << fSearchPath << std::endl;
-  std::cout << "With patterns:\n";
-  for (const std::string &s: fSearchPatterns) std::cout << s << std::endl;
-  std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
+  if(fVerbose){
+    std::cout << "Searching for flux files at path: " << fSearchPath << std::endl;
+    std::cout << "With patterns:\n";
+    for (const std::string &s: fSearchPatterns) std::cout << s << std::endl;
+    std::cout << "With copy method: " << fFluxCopyMethod << std::endl;
+  }
+
   fFluxFiles = pset.get<std::vector<std::string>>("FluxFilesFullPath");
 }
 
@@ -180,7 +185,7 @@ std::vector<std::string> BNBKaonGen::LoadFluxFiles() {
 
   // If we are directly accessing the files, no need to copy
   if (fFluxCopyMethod == "DIRECT") {
-    std::cout << "DIRECTLY ACCESSING FLUX FILES.\n";
+    if(fVerbose) std::cout << "DIRECTLY ACCESSING FLUX FILES.\n";
     std::vector<std::string> files(allFiles.size());
     for (unsigned i = 0; i < order.size(); i++) {
       files[i] = allFiles[order[i]].first;
@@ -241,7 +246,7 @@ const bsim::BooNe *BNBKaonGen::GetNextEntry() {
     //                       "At file index (" + std::to_string(fFileIndex) + ") of available files (" + std::to_string(fFluxFiles.size()) + ").");
     // }
 
-    std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
+    if(fVerbose) std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
     if (fFluxFile) delete fFluxFile;
     fFluxFile = new TFile(fFluxFiles[fFileIndex].c_str());
     fFluxTree = (TTree*)fFluxFile->Get(fTreeName.c_str());
