@@ -99,13 +99,10 @@ CRTGeoAlg::CRTGeoAlg(geo::GeometryCore const *geometry, geo::AuxDetGeometryCore 
         double halfLength = auxDet.Length()/2;
 
         // Transform to world coordinates
-        double limits[3] = {halfWidth, halfHeight, halfLength};
-        double limitsWorld[3];
-        auxDet.LocalToWorld(limits, limitsWorld);
-
-        double limits2[3] = {-halfWidth, -halfHeight, -halfLength};
-        double limitsWorld2[3];
-        auxDet.LocalToWorld(limits2, limitsWorld2);
+        geo::AuxDetGeo::LocalPoint_t const limits{halfWidth, halfHeight, halfLength};
+        geo::AuxDetGeo::LocalPoint_t const limits2{-halfWidth, -halfHeight, -halfLength};
+        auto const limitsWorld = auxDet.toWorldCoords(limits);
+        auto const limitsWorld2 = auxDet.toWorldCoords(limits2);
 
         // Determine which plane the module is in in the tagger (XY configuration)
         double origin[3] = {0, 0, 0};
@@ -119,12 +116,12 @@ CRTGeoAlg::CRTGeoAlg(geo::GeometryCore const *geometry, geo::AuxDetGeometryCore 
         CRTModuleGeo module = {};
         module.name = moduleName;
         module.auxDetID = ad_i;
-        module.minX = std::min(limitsWorld[0], limitsWorld2[0]);
-        module.maxX = std::max(limitsWorld[0], limitsWorld2[0]);
-        module.minY = std::min(limitsWorld[1], limitsWorld2[1]);
-        module.maxY = std::max(limitsWorld[1], limitsWorld2[1]);
-        module.minZ = std::min(limitsWorld[2], limitsWorld2[2]);
-        module.maxZ = std::max(limitsWorld[2], limitsWorld2[2]);
+        module.minX = std::min(limitsWorld.X(), limitsWorld2.X());
+        module.maxX = std::max(limitsWorld.X(), limitsWorld2.X());
+        module.minY = std::min(limitsWorld.Y(), limitsWorld2.Y());
+        module.maxY = std::max(limitsWorld.Y(), limitsWorld2.Y());
+        module.minZ = std::min(limitsWorld.Z(), limitsWorld2.Z());
+        module.maxZ = std::max(limitsWorld.Z(), limitsWorld2.Z());
         module.normal = auxDet.GetNormalVector();
         module.null = false;
         module.planeID = planeID;
@@ -144,24 +141,21 @@ CRTGeoAlg::CRTGeoAlg(geo::GeometryCore const *geometry, geo::AuxDetGeometryCore 
         double halfLength = auxDetSensitive.Length()/2;
 
         // Transform to world coordinates
-        double limits[3] = {halfWidth, halfHeight, halfLength};
-        double limitsWorld[3];
-        auxDetSensitive.LocalToWorld(limits, limitsWorld);
-
-        double limits2[3] = {-halfWidth, -halfHeight, -halfLength};
-        double limitsWorld2[3];
-        auxDetSensitive.LocalToWorld(limits2, limitsWorld2);
+        geo::AuxDetSensitiveGeo::LocalPoint_t const limits{halfWidth, halfHeight, halfLength};
+        geo::AuxDetSensitiveGeo::LocalPoint_t const limits2{-halfWidth, -halfHeight, -halfLength};
+        auto const limitsWorld = auxDetSensitive.toWorldCoords(limits);
+        auto const limitsWorld2 = auxDetSensitive.toWorldCoords(limits2);
 
         // Create a strip geometry object
         CRTStripGeo strip = {};
         strip.name = stripName;
         strip.sensitiveVolumeID = sv_i;
-        strip.minX = std::min(limitsWorld[0], limitsWorld2[0]);
-        strip.maxX = std::max(limitsWorld[0], limitsWorld2[0]);
-        strip.minY = std::min(limitsWorld[1], limitsWorld2[1]);
-        strip.maxY = std::max(limitsWorld[1], limitsWorld2[1]);
-        strip.minZ = std::min(limitsWorld[2], limitsWorld2[2]);
-        strip.maxZ = std::max(limitsWorld[2], limitsWorld2[2]);
+        strip.minX = std::min(limitsWorld.X(), limitsWorld2.X());
+        strip.maxX = std::max(limitsWorld.X(), limitsWorld2.X());
+        strip.minY = std::min(limitsWorld.Y(), limitsWorld2.Y());
+        strip.maxY = std::max(limitsWorld.Y(), limitsWorld2.Y());
+        strip.minZ = std::min(limitsWorld.Z(), limitsWorld2.Z());
+        strip.maxZ = std::max(limitsWorld.Z(), limitsWorld2.Z());
         strip.normal = auxDetSensitive.GetNormalVector();
         strip.width = halfWidth * 2.;
         strip.null = false;
@@ -176,28 +170,26 @@ CRTGeoAlg::CRTGeoAlg(geo::GeometryCore const *geometry, geo::AuxDetGeometryCore 
         // In local coordinates the Y position is at half height (top if top) (bottom if not)
         double sipmY = halfHeight;
         if(!fModules[moduleName].top) sipmY = - halfHeight;
-        double sipm0XYZ[3] = {sipm0X, sipmY, 0};
-        double sipm0XYZWorld[3];
-        auxDetSensitive.LocalToWorld(sipm0XYZ, sipm0XYZWorld);
+        geo::AuxDetSensitiveGeo::LocalPoint_t const sipm0XYZ{sipm0X, sipmY, 0};
+        auto const sipm0XYZWorld = auxDetSensitive.toWorldCoords(sipm0XYZ);
 
         CRTSipmGeo sipm0 = {};
         sipm0.channel = channel0;
-        sipm0.x = sipm0XYZWorld[0];
-        sipm0.y = sipm0XYZWorld[1];
-        sipm0.z = sipm0XYZWorld[2];
+        sipm0.x = sipm0XYZWorld.X();
+        sipm0.y = sipm0XYZWorld.Y();
+        sipm0.z = sipm0XYZWorld.Z();
         sipm0.strip = stripName;
         sipm0.null = false;
         fSipms[channel0] = sipm0;
 
-        double sipm1XYZ[3] = {sipm1X, sipmY, 0};
-        double sipm1XYZWorld[3];
-        auxDetSensitive.LocalToWorld(sipm1XYZ, sipm1XYZWorld);
+        geo::AuxDetSensitiveGeo::LocalPoint_t const sipm1XYZ{sipm1X, sipmY, 0};
+        auto const sipm1XYZWorld = auxDetSensitive.toWorldCoords(sipm1XYZ);
 
         CRTSipmGeo sipm1 = {};
         sipm1.channel = channel1;
-        sipm1.x = sipm1XYZWorld[0];
-        sipm1.y = sipm1XYZWorld[1];
-        sipm1.z = sipm1XYZWorld[2];
+        sipm1.x = sipm1XYZWorld.X();
+        sipm1.y = sipm1XYZWorld.Y();
+        sipm1.z = sipm1XYZWorld.Z();
         sipm1.strip = stripName;
         sipm1.null = false;
         fSipms[channel1] = sipm1;
@@ -466,19 +458,15 @@ std::vector<double> CRTGeoAlg::StripLimitsWithChargeSharing(std::string stripNam
   double halfLength = sensitiveGeo.HalfLength();
 
   // Get the maximum strip limits in world coordinates
-  double l1[3] = {-halfWidth + x + ex, halfHeight, halfLength};
-  double w1[3];
-  sensitiveGeo.LocalToWorld(l1, w1);
-
-  // Get the minimum strip limits in world coordinates
-  double l2[3] = {-halfWidth + x - ex, -halfHeight, -halfLength};
-  double w2[3];
-  sensitiveGeo.LocalToWorld(l2, w2);
+  geo::AuxDetSensitiveGeo::LocalPoint_t const l1{-halfWidth + x + ex, halfHeight, halfLength};
+  geo::AuxDetSensitiveGeo::LocalPoint_t const l2{-halfWidth + x - ex, -halfHeight, -halfLength};
+  auto const w1 = sensitiveGeo.toWorldCoords(l1);
+  auto const w2 = sensitiveGeo.toWorldCoords(l2);
 
   // Use this to get the limits in the two variable directions
-  std::vector<double> limits = {std::min(w1[0],w2[0]), std::max(w1[0],w2[0]),
-                                std::min(w1[1],w2[1]), std::max(w1[1],w2[1]),
-                                std::min(w1[2],w2[2]), std::max(w1[2],w2[2])};
+  std::vector<double> limits = {std::min(w1.X(),w2.X()), std::max(w1.X(),w2.X()),
+                                std::min(w1.Y(),w2.Y()), std::max(w1.Y(),w2.Y()),
+                                std::min(w1.Z(),w2.Z()), std::max(w1.Z(),w2.Z())};
   return limits;
 }
 
@@ -953,4 +941,3 @@ bool CRTGeoAlg::ValidCrossingPoint(std::string taggerName, const simb::MCParticl
 }
 
 }
-

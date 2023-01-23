@@ -1,4 +1,3 @@
-
 #include "TPCGeoAlg.h"
 
 namespace sbn{
@@ -16,12 +15,7 @@ TPCGeoAlg::TPCGeoAlg(){
 
   fGeometryService = lar::providerFrom<geo::Geometry>();
 
-  for(size_t cryo_i = 0; cryo_i < fGeometryService->Ncryostats(); cryo_i++){
-    const geo::CryostatGeo& cryostat = fGeometryService->Cryostat(cryo_i);
-
-    for (size_t tpc_i = 0; tpc_i < cryostat.NTPC(); tpc_i++)
-    {
-      const geo::TPCGeo& tpcg = cryostat.TPC(tpc_i);
+  for(auto const& tpcg : fGeometryService->Iterate<geo::TPCGeo>()) {
       if (tpcg.MinX() < fMinX) fMinX = tpcg.MinX();
       if (tpcg.MaxX() > fMaxX) fMaxX = tpcg.MaxX();
       if (tpcg.MinY() < fMinY) fMinY = tpcg.MinY();
@@ -31,7 +25,6 @@ TPCGeoAlg::TPCGeoAlg(){
       fCpaWidth = std::min(std::abs(tpcg.MinX()), std::abs(tpcg.MaxX()));
     }
   }
-}
 
 
 TPCGeoAlg::~TPCGeoAlg(){
@@ -295,5 +288,3 @@ double TPCGeoAlg::TpcLength(const simb::MCParticle& particle){
 
 
 }
-
-

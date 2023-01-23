@@ -213,7 +213,7 @@ namespace caf
     for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
     for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
-    for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+    for (geo::PlaneGeo const& plane: geom->Iterate<geo::PlaneGeo>()) {
 
       const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));

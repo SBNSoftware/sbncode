@@ -194,14 +194,10 @@ numu::NuMuEfficiencyStudy::NuMuEfficiencyStudy(fhicl::ParameterSet const& p)
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // first the TPC volumes 
-  for (auto const &cryo: geometry->IterateCryostats()) {
-    geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
-                                    tend = geometry->end_TPC(cryo.ID());
+  for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
     std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    while (iTPC != tend) {
-      geo::TPCGeo const& TPC = *iTPC;
+    for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
       this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
-      iTPC++;
     }
      fTPCVolumes.push_back(std::move(this_tpc_volumes));
   }
@@ -621,4 +617,3 @@ const simb::MCParticle *Genie2G4MCParticle(
   }
   return ret;
 }
-

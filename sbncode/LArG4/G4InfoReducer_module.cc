@@ -74,7 +74,7 @@ G4InfoReducer::G4InfoReducer(fhicl::ParameterSet const& p)
   double min_x = std::numeric_limits<double>::max();
   double min_y = std::numeric_limits<double>::max();
   double min_z = std::numeric_limits<double>::max();
-  for(geo::TPCGeo const& tpc: fGeometry.IterateTPCs()) {
+  for(geo::TPCGeo const& tpc: fGeometry.Iterate<geo::TPCGeo>()) {
     auto const& tpcabox = tpc.ActiveBoundingBox();
     min_x = std::min(min_x, tpcabox.MinX());
     min_y = std::min(min_y, tpcabox.MinY());

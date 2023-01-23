@@ -33,7 +33,7 @@ double sbn::GetEfield(const detinfo::DetectorPropertiesData &dprop, const spacec
 geo::Point_t sbn::GetLocationAtWires(const spacecharge::SpaceCharge *sce, const geo::GeometryCore *geo, geo::Point_t loc, geo::TPCID TPC, float xsign) { 
   if (sce && sce->EnableCalSpatialSCE()) {
     // Returned X is the drift -- multiply by the drift direction to undo this
-    int corr = geo->TPC(TPC).DriftDir()[0];
+    int corr = geo->TPC(TPC).DriftDir().X();
 
     geo::Vector_t offset = sce->GetPosOffsets(loc);
     loc.SetX(loc.X() + corr * xsign * offset.X());
@@ -223,4 +223,3 @@ float sbn::StubPeakdQdxOffset(const sbn::StubInfo &A, const sbn::StubInfo &B,
 
   return abs(A.vhit->charge / Apitch - B.vhit->charge / Bpitch);
 }
-
