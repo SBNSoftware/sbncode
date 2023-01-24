@@ -66,17 +66,22 @@ public:
 
     double EtaBR() const;
     double EtaPBR() const;
+    double Pi0BR() const;
 
 private:
   // config
   double fM; //!< Mass of axion [GeV]
   double ffa; //!< Axion decay constant [GeV]
   double fcAl; //!< Axial coupling to leptons
-  int fParentPDG; //!< PDG code of parent particle to axion
 
   // branching ratios
+  double fPi0BR;
   double fEtaBR;
   double fEtaPBR;
+
+  double fMaxWeightPi0;
+  double fMaxWeightEta;
+  double fMaxWeightEtaP;
 
   // weight
   double fMaxWeight;
@@ -101,20 +106,17 @@ void Meson2ALP::configure(fhicl::ParameterSet const &pset)
   ffa = pset.get<double>("fa");
   fcAl = pset.get<double>("cAl");
 
+  fMaxWeightPi0 = pset.get<double>("MaxWeightPi0", 1.);
+  fMaxWeightEta = pset.get<double>("MaxWeightEta", 1.);
+  fMaxWeightEtaP = pset.get<double>("MaxWeightEtaP", 1.);
+
+  fPi0BR = Pi0BR();
   fEtaBR = EtaBR();
   fEtaPBR = EtaPBR();
 
-  // set the max weight depending on flux input, if configured
-  fParentPDG = pset.get<int>("ParentPDG", -1);
-  if (fParentPDG == 221) { // eta
-    fMaxWeight = fEtaBR;
-  }
-  else if (fParentPDG == 331) { // eta'
-    fMaxWeight = fEtaPBR;
-  }
-  else { // otherwise, assume mixed
-    fMaxWeight = std::max(fEtaBR, fEtaPBR);
-  }
+  fMaxWeight = std::max(fPi0BR*fMaxWeightPi0, std::max(fEtaBR*fMaxWeightEta, fEtaPBR*fMaxWeightEtaP));
+
+  std::cout << "Branching Ratios -- " << "Pi0: " << fPi0BR << " Eta: " << fEtaBR << " Eta': " << fEtaPBR << std::endl;
 }
 
 double Meson2ALP::MaxWeight() {
@@ -124,7 +126,7 @@ double Meson2ALP::MaxWeight() {
 double Meson2ALP::EtaBR() const {
   double eta_mass = Constants::Instance().eta_mass;
   double pzero_mass = Constants::Instance().pizero_mass;
-  double fpion = Constants::Instance().fpion;
+  double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
   double mixing_angle = (1. / sqrt(6)) * (fpion / ffa) * (fM*fM - (4./9.)*pzero_mass*pzero_mass) / (fM*fM - eta_mass*eta_mass);
   double qcd_rate_f = 1.;
@@ -136,11 +138,23 @@ double Meson2ALP::EtaBR() const {
 double Meson2ALP::EtaPBR() const {
   double etap_mass = Constants::Instance().etap_mass;
   double pzero_mass = Constants::Instance().pizero_mass;
-  double fpion = Constants::Instance().fpion;
+  double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
   double mixing_angle = (1. / sqrt(12)) * (fpion / ffa) * (fM*fM - (16./9.)*pzero_mass*pzero_mass) / (fM*fM - etap_mass*etap_mass);
   double qcd_rate_f = 1.;
   if (fM > etap_mass) qcd_rate_f = pow(fM/etap_mass, -1.6);
+
+  return mixing_angle*mixing_angle*qcd_rate_f;
+}
+
+double Meson2ALP::Pi0BR() const {
+  double pzero_mass = Constants::Instance().pizero_mass;
+  double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
+
+  double mixing_angle = (1./6) * (fpion / ffa) * fM*fM / (fM*fM - pzero_mass*pzero_mass);
+
+  double qcd_rate_f = 1.;
+  if (fM > pzero_mass) qcd_rate_f = pow(fM/pzero_mass, -1.6);
 
   return mixing_angle*mixing_angle*qcd_rate_f;
 }
@@ -175,12 +189,16 @@ bool Meson2ALP::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &alp,
 
   // The weight is the importance weight times the branching-ratio weight 
   weight = meson.weight;
-  if (meson.meson_pdg == 221 /* eta */) {
+  if (meson.meson_pdg == 111 /* pi0 */) {
+    weight = weight * fPi0BR;
+  }
+  else if (meson.meson_pdg == 221 /* eta */) {
     weight = weight * fEtaBR;
   }
   else if (meson.meson_pdg == 331 /* eta' */) { 
     weight = weight * fEtaPBR;
   }
+  else return false;
 
   // set the mixing
   alp.C1 = ffa;

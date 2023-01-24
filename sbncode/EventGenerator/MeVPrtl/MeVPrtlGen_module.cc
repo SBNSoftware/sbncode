@@ -269,9 +269,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
-    std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
-    std::cout << "Flux weight: " << flux_weight << std::endl;
+    // std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
+    // std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
+    // std::cout << "Flux weight: " << flux_weight << std::endl;
 
     std::array<TVector3, 2> intersection;
     double ray_weight;
@@ -284,7 +284,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fNTime[2] += duration.count();
 
     if (!success) continue;
-    std::cout << "Ray weight: " << ray_weight << std::endl;
+    // std::cout << "Ray weight: " << ray_weight << std::endl;
 
     evgen::ldm::MeVPrtlDecay decay;
     double decay_weight;
@@ -298,7 +298,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "Decay weight: " << decay_weight << std::endl;
+    // std::cout << "Decay weight: " << decay_weight << std::endl;
 
     // Deweight the ray and decay weights together because they have some anti-correlation
     double ray_decay_weight = ray_weight * decay_weight;
@@ -306,9 +306,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+    // std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
 
-    std::cout << "PASSED!\n";
+    // std::cout << "PASSED!\n";
 
     // get the POT
     double thisPOT = fGenTool->GetPOT();
