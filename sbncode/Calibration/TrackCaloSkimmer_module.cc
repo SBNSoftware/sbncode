@@ -763,8 +763,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
       geo::PlaneID plane(h.cryo, h.tpc, h.plane);
       float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
 
-      TVector3 loc_mdx_v = h_p - direction * (geo->WirePitch(geo->View(plane) / 2.));
-      TVector3 loc_pdx_v = h_p + direction * (geo->WirePitch(geo->View(plane) / 2.));
+      TVector3 loc_mdx_v = h_p - direction * (geo->WirePitch(geo->View(plane)) / 2.);
+      TVector3 loc_pdx_v = h_p + direction * (geo->WirePitch(geo->View(plane)) / 2.);
 
       // Convert types for helper functions
       geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());
