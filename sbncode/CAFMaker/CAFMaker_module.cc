@@ -1718,9 +1718,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
-        if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
-        }
         if (fmCRTHitMatch.isValid()) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1734,6 +1731,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
+        // Truth matching
+        if (fmTrackHit.isValid()) {
+          if ( !isRealData ) {
+            // Track -> particle matching
+            FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
+            // Hit truth information corresponding to Calo-Points
+            // Assumes truth matching and calo-points are filled
+            if (mc_particles.isValid()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, trk);
+          }
+        }
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
@@ -1743,7 +1750,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
-
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
            FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }

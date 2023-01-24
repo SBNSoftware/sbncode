@@ -1,6 +1,9 @@
 #include "FillTrue.h"
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "RecoUtils/RecoUtils.h"
 
 #include <functional>
@@ -126,6 +129,160 @@ namespace caf {
     srtrack.truth = MatchTrack2Truth(clockData, particles, hits, id_hits_map);
 
   }//FillTrackTruth
+
+  // Assumes truth matching and calo-points are filled
+  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+                          const std::vector<simb::MCParticle> &mc_particles,
+                          const geo::GeometryCore *geo,
+                          caf::SRTrack& srtrack) {
+
+    // require track to be truth matched
+    if (srtrack.truth.p.G4ID < 0) return;
+    if (!id_to_ide_map.count(srtrack.truth.p.G4ID)) return;
+
+    // Look up the true particle trajectory
+    const simb::MCParticle *match = NULL;
+    for (const simb::MCParticle &p: mc_particles) {
+      if (p.TrackId() == srtrack.truth.p.G4ID) {
+        match = &p;
+        break;
+      }
+    }
+    if (!match) return;
+    const simb::MCParticle &particle = *match;
+
+    // Get service
+    auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+
+    // Load the hits
+    // match on the channel, which is unique
+    const std::vector<std::pair<geo::WireID, const sim::IDE*>> match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
+    std::map<unsigned, std::vector<const sim::IDE*>> chan_2_ides;
+    for (auto const &ide_pair: match_ides) {
+      chan_2_ides[geo->PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
+    }
+
+    // Loop through the reco calo points
+    for (unsigned iplane = 0; iplane < 3; iplane++) {
+      for (caf::SRCaloPoint &p: srtrack.calo[iplane].points) {
+        if (!chan_2_ides.count(p.channel)) continue;
+
+        const std::vector<const sim::IDE *> &ides = chan_2_ides.at(p.channel);
+
+        // Sum energy, nelec
+        // Charge-weighted position
+        SRTrueCaloPoint truep;
+        truep.nelec = 0.;
+        truep.e = 0.;
+        truep.x = 0.;
+        truep.y = 0.;
+        truep.z = 0.;
+
+        for (const sim::IDE *ide: ides) {
+          truep.x = (truep.x*truep.nelec + ide->x*ide->numElectrons) / (truep.nelec + ide->numElectrons);
+          truep.y = (truep.y*truep.nelec + ide->y*ide->numElectrons) / (truep.nelec + ide->numElectrons);
+          truep.z = (truep.z*truep.nelec + ide->z*ide->numElectrons) / (truep.nelec + ide->numElectrons);
+
+          truep.e += ide->energy;
+          truep.nelec += ide->numElectrons;
+        }
+
+        // sim::IDE's are saved after shift from SpaceCharge
+        //
+        // Correct the mean position for space charge to find the MCParticle trajectory match
+        geo::Point_t loc_sce {truep.x, truep.y, truep.z}; // perturbed by space charge
+        geo::Point_t loc_nosce; // corrected for space charge
+        if (sce && sce->EnableSimSpatialSCE()) {
+          loc_nosce = loc_sce + sce->GetCalPosOffsets(loc_sce, p.tpc);
+        }
+        else loc_nosce = loc_sce;
+
+        TVector3 loc_nosce_v(loc_nosce.x(), loc_nosce.y(), loc_nosce.z());
+        
+        // Match to MC-trajectory
+        TVector3 direction;
+        float closest_dist = -1.;
+        int traj_index = -1;
+        for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
+          if (closest_dist < 0. || (particle.Position(i_traj).Vect() - loc_nosce_v).Mag() < closest_dist) {
+            direction = particle.Momentum(i_traj).Vect().Unit();
+            closest_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag();
+            traj_index = i_traj;
+          }
+        }
+
+        // residual range
+        truep.rr = 0;
+        if (traj_index >= 0) {
+          for (int i_traj = traj_index+1; i_traj < (int)particle.NumberTrajectoryPoints(); i_traj++) {
+            truep.rr += (particle.Position(i_traj).Vect() - particle.Position(i_traj-1).Vect()).Mag();
+          }
+
+          // Also account for the distance from the Hit point to the matched trajectory point
+          double hit_distance_along_particle = (loc_nosce_v - particle.Position(traj_index).Vect()).Dot(particle.Momentum(traj_index).Vect().Unit());
+          truep.rr += -hit_distance_along_particle;
+        }
+        else truep.rr = -1;
+
+        // pitch
+        //
+        // The true pitch is affected by the presence of space charge, so we cannot
+        // directly apply the true direction. We include the effect of space charge
+        // on the true pitch here
+        if (closest_dist >= 0. && direction.Mag() > 1e-4) {
+          geo::PlaneID plane(srtrack.producer, p.tpc, iplane);
+          float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
+          TVector3 loc_mdx_v = loc_nosce_v - direction * (geo->WirePitch(geo->View(plane)) / 2.);
+          TVector3 loc_pdx_v = loc_nosce_v + direction * (geo->WirePitch(geo->View(plane)) / 2.);
+
+          // Convert types for helper functions
+          geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());
+          geo::Point_t loc_pdx(loc_pdx_v.X(), loc_pdx_v.Y(), loc_pdx_v.Z());
+
+          // Map to wires
+          if (sce && sce->EnableSimSpatialSCE()) { 
+            int corr = geo->TPC(plane.TPC).DriftDir()[0];
+
+            geo::Vector_t offset_m = sce->GetPosOffsets(loc_mdx);
+            offset_m.SetX(offset_m.X()*corr); // convert from drift direction to detector direction
+            loc_mdx = loc_mdx + offset_m;
+
+            geo::Vector_t offset_p = sce->GetPosOffsets(loc_pdx);
+            offset_p.SetX(offset_p.X()*corr); // convert from drift direction to detector direction
+            loc_pdx = loc_pdx + offset_p;
+          }
+
+          // Direction at wires
+          geo::Vector_t dir = (loc_pdx - loc_mdx) /  (loc_mdx - loc_pdx).r();
+
+          // Pitch at wires
+          double cosgamma = std::abs(std::sin(angletovert)*dir.Y() + std::cos(angletovert)*dir.Z());
+          double pitch;
+          if (cosgamma) {
+            pitch = geo->WirePitch(geo->View(plane))/cosgamma;
+          }
+          else {
+            pitch = 0.;
+          }
+
+          // Bring it back to particle trajectory
+          geo::Point_t loc_atwires_alongpitch = loc_sce + dir*pitch; 
+          geo::Point_t loc_alongpitch;
+          if (sce && sce->EnableSimSpatialSCE()) { 
+            geo::Vector_t offset = sce->GetCalPosOffsets(loc_atwires_alongpitch, plane.TPC);
+            loc_alongpitch = loc_atwires_alongpitch + offset;
+          }
+          else loc_alongpitch = loc_atwires_alongpitch;
+
+          truep.pitch = (loc_alongpitch - loc_nosce).R();
+        }
+        else truep.pitch = -1;
+
+        p.truth = truep;
+
+      }
+    }
+  }
 
   //------------------------------------------------
 
