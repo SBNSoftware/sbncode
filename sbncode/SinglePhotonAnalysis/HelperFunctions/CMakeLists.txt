@@ -10,4 +10,5 @@ art_make_library( LIBRARY_NAME sbncode_SinglePhotonAnalysis_HelperFunctions
                     larsim::MCCheater_ParticleInventoryService_service
                     larcorealg::Geometry
                     larpandora::LArPandoraInterface
+		    sbnobj::Common_CRT
                     )
