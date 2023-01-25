@@ -16,7 +16,7 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 find_package(cetmodules 3.20.00 REQUIRED)
-project(sbncode VERSION 09.63.00 LANGUAGES CXX)
+project(sbncode VERSION 09.65.03 LANGUAGES CXX)
 
 message(STATUS "\n\n  ==========================   ${PROJECT_NAME}   ==========================")
 
@@ -47,6 +47,8 @@ find_package( nug4 REQUIRED )
 find_package( nugen REQUIRED )
 find_package( nurandom REQUIRED )
 find_package( nutools REQUIRED )
+find_package( systematicstools REQUIRED )
+find_package( nusystematics REQUIRED )
 find_package( GENIE REQUIRED )
 find_package( lardataobj REQUIRED )
 find_package( larcoreobj REQUIRED )
@@ -71,7 +73,6 @@ find_package( dk2nudata REQUIRED )
 find_package( dk2nugenie EXPORT REQUIRED )
 find_package( log4cpp REQUIRED )
 find_package( LibXml2 REQUIRED )
-
 find_package( CLHEP REQUIRED )
 find_package( ROOT REQUIRED )
 find_package( Geant4 REQUIRED )

@@ -41,7 +41,7 @@ decay_higgs: {
   ReferenceRayLength: 2100 # 21m
   ReferenceHiggsMass: @local::higgsM
   ReferenceHiggsMixing: 5e-5
-  ReferenceRayDistance: 10400 # 104m
+  ReferenceRayDistance: 80000 # 800m
   ReferenceHiggsEnergyFromKaonEnergy: 15. # GeV
 }
 
