@@ -1059,7 +1059,7 @@ namespace single_photon
 
 
       std::vector< double > reco_shr_angles_wrt_wires;
-      for (geo::PlaneGeo const& plane: paras.s_geom->IteratePlanes()) {
+      for (geo::PlaneGeo const& plane: paras.s_geom->Iterate<geo::PlaneGeo>()) {
         //6 planes in SBND
         //WireAngleToVertical  : 30 ,150,90,150,30 ,90
         //ub wire angles    : 30 ,150,90  (respected to beam,z)
