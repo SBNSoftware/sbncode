@@ -19,7 +19,7 @@
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 // ROOT
 #include "TVector3.h"
@@ -178,8 +178,8 @@ double Kaon2HNLFlux::MaxWeight() {
 
 bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &hnl, double &weight) {
   // make the kaon parent
-  evgen::ldm::KaonParent kaon(flux);
-  if (abs(kaon.kaon_pdg) != 321) return false; // Only take charged kaons
+  evgen::ldm::MesonParent kaon(flux);
+  if (abs(kaon.meson_pdg) != 321) return false; // Only take charged kaons
 
   // select on the kaon
   if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < fTarget2Absorber)) return false;
@@ -221,29 +221,30 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   hnl.mom = mom;
   hnl.mom.Transform(fBeam2Det);
 
-  hnl.kmom_beamcoord = kaon.mom;
+  hnl.mmom_beamcoord = kaon.mom;
   // also save the kaon momentum in the detector frame
-  hnl.kmom = kaon.mom;
-  hnl.kmom.Transform(fBeam2Det);
+  hnl.mmom = kaon.mom;
+  hnl.mmom.Transform(fBeam2Det);
 
   // and save the secondary momentum
-  hnl.sec = hnl.kmom - hnl.mom;
-  hnl.sec_beamcoord = hnl.kmom_beamcoord - hnl.mom_beamcoord;
+  hnl.sec = hnl.mmom - hnl.mom;
+  hnl.sec_beamcoord = hnl.mmom_beamcoord - hnl.mom_beamcoord;
 
   // The weight is the importance weight times the branching-ratio weight 
-  weight = kaon.weight * br / SMKaonBR(kaon.kaon_pdg);
+  weight = kaon.weight * br / SMKaonBR(kaon.meson_pdg);
 
   // set the mixing
   hnl.C1 = fMagUe4;
   hnl.C2 = fMagUm4;
+  hnl.C3 = 0.;
   hnl.mass = fM;
 
-  hnl.kaon_pdg = kaon.kaon_pdg;
-  hnl.secondary_pdg = (is_muon ? 11 : 13) * (kaon.kaon_pdg > 0 ? 1 : -1);
+  hnl.meson_pdg = kaon.meson_pdg;
+  hnl.secondary_pdg = (is_muon ? 11 : 13) * (kaon.meson_pdg > 0 ? 1 : -1);
   hnl.generator = 1; // kHNL
 
   // equivalent neutrino energy
-  hnl.equiv_enu = EnuLab(flux.fnecm, hnl.kmom, hnl.pos);
+  hnl.equiv_enu = EnuLab(flux.fnecm, hnl.mmom, hnl.pos);
 
   return true;
 }
