@@ -23,6 +23,8 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 
+#include "TLorentzRotation.h"
+
 // std includes
 #include <string>
 #include <iostream>
@@ -73,12 +75,14 @@ private:
   double fReferenceLabSolidAngle;
   double fReferencePrtlMass;
   int fReferenceScndPDG;
-  double fReferenceKaonEnergy;
+  int fReferencePrimPDG;
+  double fReferencePrimaryEnergy;
   double fMaxWeightFudge;
 
   unsigned fNThrow;
   unsigned fNSuccess;
   bool fFixNSuccess;
+  bool fRethrowTheta;
 
   double fMaxWeight;
 
@@ -87,7 +91,7 @@ private:
   TLorentzVector ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux, TRotation &RInv, double phi);
   RayWeightInfo ThrowFixedSuccess(const MeVPrtlFlux &flux, TRotation &RInv, double phi);
   RayWeightInfo ThrowFixedThrows(const MeVPrtlFlux &flux, TRotation &RInv, double phi);
-
+  RayWeightInfo NoThrow(const MeVPrtlFlux &flux, TRotation &RInv, double phi);
 };
 
 // Helpers
@@ -129,31 +133,51 @@ void MixedWeightRayTraceBox::configure(fhicl::ParameterSet const &pset)
   std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
   std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
 
-  fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
-  fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
-  fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
-  fReferenceKaonEnergy = pset.get<double>("ReferenceKaonEnergy");
+  // either set the max weight, or provide the information to calculate it
+  fMaxWeight = pset.get<double>("MaxWeight", -1.);
 
-  fMaxWeightFudge = pset.get<double>("MaxWeightFudge", 1.);
+  if (fMaxWeight < 0.) {
+    fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
+    fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
+    // You must specify either the portal energy or the primary
+    fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
+    fReferencePrimPDG = pset.get<int>("ReferencePrimPDG");
+    fReferencePrimaryEnergy = pset.get<double>("ReferencePrimaryEnergy");
+    
+    fMaxWeightFudge = pset.get<double>("MaxWeightFudge", 1.);
+    
+    CalculateMaxWeight();
+  }
 
-  CalculateMaxWeight();
+  fRethrowTheta = pset.get<bool>("RethrowTheta", true);
+  if (fRethrowTheta) {
+    fNThrow = pset.get<unsigned>("NThrow");
+    fFixNSuccess = pset.get<bool>("FixNSuccess");
+    if (fFixNSuccess) {
+      fNSuccess = pset.get<unsigned>("NSuccess");
+    }
+    else {
+      fNSuccess = 0; // doesn't do anything
+    }
+  }
+  else {
+    fNThrow = 0; // doesn't do anything
+    fFixNSuccess = false;
+  }
 
-  fNThrow = pset.get<unsigned>("NThrow");
-  fFixNSuccess = pset.get<bool>("FixNSuccess");
-  fNSuccess = pset.get<unsigned>("NSuccess", 2);
 }
   
 void MixedWeightRayTraceBox::CalculateMaxWeight() {
-  double kplus_mass = Constants::Instance().kplus_mass;
-  double secondary_mass = secPDG2Mass(fReferenceScndPDG);
+  double primary_mass = PDG2Mass(fReferencePrimPDG);
+  double secondary_mass = PDG2Mass(fReferenceScndPDG);
+  double p = twobody_momentum(primary_mass, secondary_mass, fReferencePrtlMass);
 
-  double p = twobody_momentum(kplus_mass, secondary_mass, fReferencePrtlMass);
-  double beta = sqrt(fReferenceKaonEnergy*fReferenceKaonEnergy - kplus_mass*kplus_mass) / fReferenceKaonEnergy;
+  double beta = sqrt(fReferencePrimaryEnergy*fReferencePrimaryEnergy - primary_mass*primary_mass) / fReferencePrimaryEnergy;
 
   // Doen't affect weight
   double rand = 1.;
 
-  // For the maxweight, make the kaon and daughter direction aligned
+  // For the maxweight, make the parent and daughter direction aligned
   TVector3 dir(1, 0, 0);
   TVector3 boost(beta, 0., 0.);
 
@@ -182,12 +206,12 @@ TLorentzVector MixedWeightRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &f
 
   // make the mevprtl momentum this
   TLorentzVector mevprtl_mom = flux.mom;
-  mevprtl_mom.Boost(-flux.kmom.BoostVector());
+  mevprtl_mom.Boost(-flux.mmom.BoostVector());
 
   mevprtl_mom = TLorentzVector(mevprtl_mom.P() * dir, mevprtl_mom.E());
 
   // boost back
-  mevprtl_mom.Boost(flux.kmom.BoostVector());
+  mevprtl_mom.Boost(flux.mmom.BoostVector());
   return mevprtl_mom;
 }
 
@@ -273,6 +297,30 @@ RayWeightInfo MixedWeightRayTraceBox::ThrowFixedThrows(const MeVPrtlFlux &flux, 
 
 }
 
+RayWeightInfo MixedWeightRayTraceBox::NoThrow(const MeVPrtlFlux &flux, TRotation &RInv, double phi) {
+  RayWeightInfo ret;
+
+  // Rotate the flux momentum to the specified phi
+  TLorentzVector mevprtl_mom = flux.mom;
+  // Go to frame where parent direction is along z
+  mevprtl_mom.Transform(RInv.Inverse());
+  // Set phi
+  mevprtl_mom.SetPhi(phi);
+  // Go back
+  mevprtl_mom.Transform(RInv);
+
+  std::vector<TVector3> box_intersections = fBox.GetIntersections(flux.pos.Vect(), mevprtl_mom.Vect().Unit());
+  ret.pass = (box_intersections.size() == 2) && // ray intersects detector
+    (mevprtl_mom.Vect().Unit().Dot((box_intersections[0] - flux.pos.Vect()).Unit()) > 0.); // and points at detector
+  if (ret.pass) {
+    ret.allIntersections.push_back(box_intersections);
+    ret.allPrtlMom.push_back(mevprtl_mom);
+  } 
+
+  ret.weight = 1.;
+  return ret;
+}
+
 RayWeightInfo MixedWeightRayTraceBox::ThrowFixedSuccess(const MeVPrtlFlux &flux, TRotation &RInv, double phi) {
   RayWeightInfo ret;
   unsigned ithrow = 0;
@@ -339,7 +387,7 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   // to weight we just need dphi/dphi' = 1.
 
   // Setup the axes so that the parent Momentum is along the z axis
-  TVector3 parent_dir = flux.kmom.Vect().Unit();
+  TVector3 parent_dir = flux.mmom.Vect().Unit();
   TVector3 zdir(0, 0, 1);
   TVector3 perp_parent_dir = zdir.Cross(parent_dir);
   double angle = acos(parent_dir.Z());
@@ -356,6 +404,12 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   TVector3 parent_dir_rotated = R * parent_dir;
   std::cout << "PARENT DIR ROTATED: " << parent_dir_rotated.X() << " " << parent_dir_rotated.Y() << " " << parent_dir_rotated.Z() << std::endl;
 
+  // Setup the lorentz transformation from the detector frame to the beam frame -- we'll need this later
+  TLorentzRotation det_2_beam;
+  det_2_beam.Boost(-flux.mmom.BoostVector());
+  det_2_beam.Boost(flux.mmom_beamcoord.BoostVector());
+  // ^ 2 boosts make a rotation! Crazy
+
   // Compute the Delta Phi of the detector
   std::pair<double, double> philim = DeltaPhi(flux.pos.Vect(), R);
   double philo = philim.first;
@@ -369,7 +423,8 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
 
   std::cout << "THISPHI: " << phi << std::endl;
 
-  RayWeightInfo info = (fFixNSuccess) ? ThrowFixedSuccess(flux, RInv, phi) : ThrowFixedThrows(flux, RInv, phi);
+  RayWeightInfo info = (!fRethrowTheta) ? NoThrow(flux, RInv, phi) : 
+                                          ((fFixNSuccess) ? ThrowFixedSuccess(flux, RInv, phi) : ThrowFixedThrows(flux, RInv, phi));
 
   if (!info.pass) return false;
 
@@ -398,14 +453,11 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
 
   flux.mom = mevprtl_mom;
   // transform to beam-coord frame
-  flux.mom_beamcoord = mevprtl_mom;
-  flux.mom_beamcoord.Boost(-flux.kmom.BoostVector()); // Boost to kaon rest frame
-  flux.mom_beamcoord.Boost(flux.kmom_beamcoord.BoostVector()); // And to beam coordinate frame
-  // Two boosts make a rotation!
+  flux.mom_beamcoord = det_2_beam*mevprtl_mom;
 
   // Set the secondary 4-momentum
-  flux.sec = flux.kmom - flux.mom;
-  flux.sec_beamcoord = flux.kmom_beamcoord - flux.mom_beamcoord;
+  flux.sec = flux.mmom - flux.mom;
+  flux.sec_beamcoord = flux.mmom_beamcoord - flux.mom_beamcoord;
 
   if ((flux.pos.Vect() - A).Mag() < (flux.pos.Vect() - B).Mag()) {
     intersection = {A, B}; // A is entry, B is exit
@@ -414,7 +466,7 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
     intersection = {B, A}; // reversed
   }
 
-  std::cout << "Kaon 4P: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
+  std::cout << "Parent 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
   std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
   std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
 

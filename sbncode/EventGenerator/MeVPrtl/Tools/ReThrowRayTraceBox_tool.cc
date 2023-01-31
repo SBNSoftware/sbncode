@@ -67,7 +67,8 @@ private:
   double fReferenceLabSolidAngle;
   double fReferencePrtlMass;
   int fReferenceScndPDG;
-  double fReferenceKaonEnergy;
+  int fReferencePrimPDG;
+  double fReferencePrimaryEnergy;
 
   void CalculateMaxWeight();
 
@@ -108,8 +109,10 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 
   fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
   fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
+
   fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
-  fReferenceKaonEnergy = pset.get<double>("ReferenceKaonEnergy");
+  fReferencePrimPDG = pset.get<int>("ReferencePrimPDG");
+  fReferencePrimaryEnergy = pset.get<double>("ReferencePrimaryEnergy");
 
   CalculateMaxWeight();
 
@@ -118,33 +121,16 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 }
   
 void ReThrowRayTraceBox::CalculateMaxWeight() {
-  double secondary_mass = 0.;
-  switch (fReferenceScndPDG) {
-    case 11:
-    case -11:
-      secondary_mass = Constants::Instance().elec_mass;
-      break;
-    case 13:
-    case -13:
-      secondary_mass = Constants::Instance().muon_mass;
-      break;
-    case 211:
-    case -211:
-      secondary_mass = Constants::Instance().piplus_mass;
-      break;
-    default:
-      std::cerr << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
-      std::cout << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
-      break;
-  }
+  double primary_mass = PDG2Mass(fReferencePrimPDG);
+  double secondary_mass = PDG2Mass(fReferenceScndPDG);
+  double p = twobody_momentum(primary_mass, secondary_mass, fReferencePrtlMass);
 
-  double p = twobody_momentum(Constants::Instance().kplus_mass, secondary_mass, fReferencePrtlMass);
   double E = sqrt(p*p + fReferencePrtlMass*fReferencePrtlMass);
 
-  double kgamma = fReferenceKaonEnergy / Constants::Instance().kplus_mass;
-  double kbeta = sqrt(1 - 1. / (kgamma * kgamma));
+  double pgamma = fReferencePrimaryEnergy / primary_mass;
+  double pbeta = sqrt(1 - 1. / (pgamma * pgamma));
 
-  double scale = kgamma * kgamma * (p + kbeta*E) * (p + kbeta*E) / (p*p);
+  double scale = pgamma * pgamma * (p + pbeta*E) * (p + pbeta*E) / (p*p);
 
   fMaxWeight = scale * fReferenceLabSolidAngle;
 }
@@ -157,12 +143,12 @@ TLorentzVector ReThrowRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux)
   // 
   // Move the mevprtl momentum back to the kaon rest frame
   TLorentzVector mevprtl_mom = flux.mom;
-  mevprtl_mom.Boost(-flux.kmom.BoostVector());
+  mevprtl_mom.Boost(-flux.mmom.BoostVector());
 
   mevprtl_mom = TLorentzVector(mevprtl_mom.P() * dir, mevprtl_mom.E());
 
   // boost back
-  mevprtl_mom.Boost(flux.kmom.BoostVector());
+  mevprtl_mom.Boost(flux.mmom.BoostVector());
 
   return mevprtl_mom;
   
@@ -227,13 +213,13 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
   flux.mom = mevprtl_mom;
   // transform to beam-coord frame
   flux.mom_beamcoord = mevprtl_mom;
-  flux.mom_beamcoord.Boost(-flux.kmom.BoostVector()); // Boost to kaon rest frame
-  flux.mom_beamcoord.Boost(flux.kmom_beamcoord.BoostVector()); // And to beam coordinate frame
+  flux.mom_beamcoord.Boost(-flux.mmom.BoostVector()); // Boost to kaon rest frame
+  flux.mom_beamcoord.Boost(flux.mmom_beamcoord.BoostVector()); // And to beam coordinate frame
   // Two boosts make a rotation!
 
   // Set the secondary 4-momentum
-  flux.sec = flux.kmom - flux.mom;
-  flux.sec_beamcoord = flux.kmom_beamcoord - flux.mom_beamcoord;
+  flux.sec = flux.mmom - flux.mom;
+  flux.sec_beamcoord = flux.mmom_beamcoord - flux.mom_beamcoord;
 
   if ((flux.pos.Vect() - A).Mag() < (flux.pos.Vect() - B).Mag()) {
     intersection = {A, B}; // A is entry, B is exit
@@ -242,7 +228,7 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     intersection = {B, A}; // reversed
   }
 
-  std::cout << "Kaon 4P: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
+  std::cout << "Primary 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
   std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
   std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
 
