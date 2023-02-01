@@ -266,6 +266,13 @@ HNLMakeDecay::ThreebodyMomentum HNLMakeDecay::isotropic_threebody_momentum(doubl
   ret.B = TLorentzVector(P_B*dirB, E_B);
   ret.C = TLorentzVector(P_C*dirC, E_C);
 
+
+  std::cout <<"HNL mass: " << parent_mass << "\n";
+  std::cout <<"Particle A Momentum (Preboost) (E,px,py,pz): " <<"("<< ret.A.E() << "," <<ret.A.Px() << "," << ret.A.Py()<< ","<< ret.A.Pz()  <<")"<<"\n";
+  std::cout <<"Particle B Momentum (Preboost) (E,px,py,pz): " <<"("<< ret.B.E() << "," <<ret.B.Px() << "," << ret.B.Py()<< ","<< ret.B.Pz()  <<")"<<"\n";
+  std::cout <<"Particle C Momentum (Preboost) (E,px,py,pz): " <<"("<< ret.C.E() << "," <<ret.C.Px() << "," << ret.C.Py()<< ","<< ret.C.Pz() <<")" <<"\n";
+  std::cout << "s:" << sqrt(ret.A*ret.A+ret.B*ret.B+ret.C*ret.C+2*(ret.A*ret.B+ret.A*ret.C+ret.B*ret.C))    <<"\n";
+  std::cout << "t: "<< parent_mass*parent_mass-2*parent_mass*ret.A.E()-ret.C*ret.C-ret.B*ret.B-2*ret.B*ret.C << "\n";
   return ret;
 }
 
