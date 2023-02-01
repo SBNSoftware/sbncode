@@ -852,7 +852,6 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     std::cout << "DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
     std::cout << "force decay weight: " << forcedecay_weight(total_mean_dist, in_dist, out_dist) << std::endl;
     std::cout << "partial/total width: " << partial_width/total_width << std::endl;
-    std::cout << "Max Weight: " << fMaxWeight << std::endl;
     std::cout << std::endl;
   }  
 
