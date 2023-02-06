@@ -33,6 +33,7 @@ void read_numu_file(const char *input_file, const char *output_file) {
   TTreeReaderArray<float> reco_lep_energy(myReader, "reco.lepton_energy");
   TTreeReaderArray<float> reco_lep_costh(myReader, "reco.lepton_costh");
   TTreeReaderArray<int> reco_npion(myReader, "reco.npion");
+  TTreeReaderArray<int> reco_npi0(myReader, "reco.npi0");
   TTreeReaderArray<int> reco_nproton(myReader, "reco.nproton");
   TTreeReaderValue<int> experiment(myReader, "experiment");
   TTreeReaderValue<int> m_run(myReader, "metadata.run");
@@ -56,6 +57,7 @@ void read_numu_file(const char *input_file, const char *output_file) {
       reco_event->reco.lepton_energy = reco_lep_energy[i];
       reco_event->reco.lepton_costh = reco_lep_costh[i];
       reco_event->reco.npion = reco_npion[i];
+      reco_event->reco.npi0 = reco_npi0[i];
       reco_event->reco.nproton = reco_nproton[i];
       reco_event->reco.truth_index = -1;
       reco_event->reco.index = i;

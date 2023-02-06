@@ -1,6 +1,6 @@
 #include "NumuConfig.fcl"
 
-OutputFile: "output_SBNOsc_NumuSelection_Modern_Icarus1.root"
+OutputFile: "output_SBNOsc_NumuSelection_Modern_Icarus6.root"
 
 # MCWeightTags: @local::eventweight_tags
 #MCWeightTags: ["bnbcorrection"]
@@ -11,6 +11,6 @@ NumuSelection: {
   active_volumes: @local::ICARUS_active_volumes 
   @table::standard_cuts
 #  uniformWeights: @local::standard_uniformWeights
-  fakeDataMode: 1
+  fakeDataMode: 6
 }
 

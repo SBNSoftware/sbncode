@@ -1,25 +1,34 @@
-BASE=/sbnd/data/users/gputnam/NuMu/workshop-game-0320/private/outputs
-BASEOUT=/sbnd/data/users/gputnam/NuMu/workshop-game-0320/211a
-SBND=sbnd/data/
-UBOONE=uboone/data/
-ICARUS=icarus/data/
+base=/sbnd/data/users/rsjones/NuMu/workshop-game-0320/211a
 
-INPUTDIRS="$SBND $ICARUS $UBOONE"
-#INPUTDIRS="$SBND $UBOONE"
-for exp in $INPUTDIRS
-do
-  inp=$BASE/$exp/211a
-  mkdir -p $BASEOUT/$exp
-  for file in $inp/*.root
-  do
-    out=$BASEOUT/$exp/`basename $file`
- 
-    echo $file
-    echo $out
-    echo -e .include /sbnd/app/users/gputnam/sbncode-gen/srcs/sbncode/sbnanalysis/"\n" \
-          .L ../macro/erase_truth.cc "\n" \
-          .L $SBN_LIB_DIR/libsbnanalysis_Event.so "\n" \
-          "read_numu_file("\"${file}\", \"${out}\"");" | root -l
+detectors=("sbnd" "icarus")
+models=("susav2_nieves" "smith_nieves" "lse_nieves")
+
+#models
+for i in ${!models[@]}; do
+  m=${models[$i]}
+
+  # detectors
+  for j in ${!detectors[@]}; do
+    d=${detectors[$j]}
+
+    input=$base/${d}/data_full/v3_${m}
+    output=$base/${d}/data/v3_${m}
+
+    if [ ! -d $output ]; then
+      mkdir -p $output
+    fi
+
+    for file in $input/*.root
+    do
+      outfile=$output/`basename $file`
+
+      echo $file
+      echo $outfile
+      echo -e .include /sbnd/app/users/rsjones/SBNCode_Repository/sbncode-v08_47_00/srcs/sbncode/sbnanalysis/"\n" \
+        .L ../macro/erase_truth.cc "\n" \
+        .L $SBN_LIB_DIR/libsbnanalysis_Event.so "\n" \
+        "read_numu_file("\"${file}\", \"${outfile}\"");" | root -l
+    done
   done
 done
 

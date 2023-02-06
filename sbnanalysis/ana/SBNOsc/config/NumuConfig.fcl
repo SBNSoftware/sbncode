@@ -190,6 +190,21 @@ standard_cuts: {
   selectionEfficiency: 0.8 // from proposal
 }
 
+standard_cuts_uboone_track_threshold: {
+  acceptShakyTracks: false
+  trajPointLength: true
+  doFVCut: true
+  minLengthContainedTrack: 50 // value taken from proposal
+  minLengthExitingTrack: 100 // value taken from proposal
+  trackVisibleEnergyThreshold: 0.047 // [GeV] taken from MicroBooNE
+  showerEnergyDistortion: 0.05 // not sure about this one
+  trackEnergyDistortion: 0.05 // taken from proposal
+  leptonEnergyDistortionContained: 0.02 // needs update
+  leptonEnergyDistortionLeavingA: 0.102 // from joseph email
+  leptonEnergyDistortionLeavingB: 0.000612 // from joseph email
+  selectionEfficiency: 0.8 // from proposal
+}
+
 standard_cuts_proposal: {
   cutKMEC: true
   acceptShakyTracks: false

@@ -226,6 +226,8 @@ void NumuSelection::Finalize() {
     std::cout << "Category: " << it->first << " " << it->second << std::endl;
     it ++;
   }
+  std::cout << " Total events counted: " << _event_counter << std::endl;
+  std::cout << " Total neutrinos selected: " << _nu_count << std::endl;
 }
 
 

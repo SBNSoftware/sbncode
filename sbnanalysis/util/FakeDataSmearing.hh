@@ -7,7 +7,7 @@
 namespace util {
 
 typedef enum {
-  kMode1 = 1, kMode2 = 2, kMode3 = 3, kMode4 = 4, kMode5 = 5
+  kMode1 = 1, kMode2 = 2, kMode3 = 3, kMode4 = 4, kMode5 = 5, kMode6 = 6, kMode7 = 7
 } SmearingMode;
 
 /**
