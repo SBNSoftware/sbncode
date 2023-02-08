@@ -78,6 +78,7 @@ private:
   int fReferencePrimPDG;
   double fReferencePrimaryEnergy;
   double fMaxWeightFudge;
+  bool fVerbose;
 
   unsigned fNThrow;
   unsigned fNSuccess;
@@ -118,6 +119,9 @@ MixedWeightRayTraceBox::~MixedWeightRayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void MixedWeightRayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
+ 
+  fVerbose = pset.get<bool>("Verbose", true);
+ 
   if (pset.has_key("Box")) {
     std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
     // xmin, xmax, ymin, ymax, zmin, zmax
@@ -128,10 +132,12 @@ void MixedWeightRayTraceBox::configure(fhicl::ParameterSet const &pset)
     fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
   }
 
-  std::cout << "Detector Box." << std::endl;
-  std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
-  std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
-  std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  if (fVerbose){
+    std::cout << "Detector Box." << std::endl;
+    std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
+    std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
+    std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  }
 
   // either set the max weight, or provide the information to calculate it
   fMaxWeight = pset.get<double>("MaxWeight", -1.);
@@ -182,7 +188,7 @@ void MixedWeightRayTraceBox::CalculateMaxWeight() {
   TVector3 boost(beta, 0., 0.);
 
   double lab_frame_p, costh_rest, weight;
-  int err = calcPrtlRayWgt(p, fReferencePrtlMass, dir, boost, rand, lab_frame_p, costh_rest, weight);
+  int err = calcPrtlRayWgt(p, fReferencePrtlMass, dir, boost, rand, lab_frame_p, costh_rest, weight, fVerbose);
 
   if (err) { // Shouldn't happen
     throw cet::exception("Weighted Ray Trace: Bad max weight calculation.");
@@ -219,7 +225,7 @@ std::pair<double, double> MixedWeightRayTraceBox::DeltaPhi(TVector3 origin, TRot
   // If the parent hits the detector, then delta-phi is 2Pi 
   TVector3 pdir = R.Inverse()*TVector3(0, 0, 1);
   if (fBox.GetIntersections(origin, pdir).size()) {
-    std::cout << "Parent Direction: " << pdir.X() << " " << pdir.Y() << " " << pdir.Z() << " at location: " << origin.X() << " " << origin.Y() << " " << origin.Z() << " hits detector!\n";
+    if (fVerbose) std::cout << "Parent Direction: " << pdir.X() << " " << pdir.Y() << " " << pdir.Z() << " at location: " << origin.X() << " " << origin.Y() << " " << origin.Z() << " hits detector!\n";
     return {-M_PI, M_PI};
   }
 
@@ -246,7 +252,7 @@ std::pair<double, double> MixedWeightRayTraceBox::DeltaPhi(TVector3 origin, TRot
 
   // If we should go phihi -> philo switch them and re-order them around
   if (!order_is_up) {
-    std::cout << "FLIP PHILIM! " << philo << " " << phihi << std::endl;
+    if (fVerbose) std::cout << "FLIP PHILIM! " << philo << " " << phihi << std::endl;
     double temp = phihi;
     phihi = philo + 2*M_PI;
     philo = temp;
@@ -286,9 +292,11 @@ RayWeightInfo MixedWeightRayTraceBox::ThrowFixedThrows(const MeVPrtlFlux &flux, 
     nsuccess ++;
   }
 
-  std::cout << "NTHROW: " << fNThrow << std::endl;
-  std::cout << "NSUCCESS: " << nsuccess << std::endl;
-  std::cout << "P: " << (((double)nsuccess) / fNThrow) << std::endl;
+  if (fVerbose) {
+    std::cout << "NTHROW: " << fNThrow << std::endl;
+    std::cout << "NSUCCESS: " << nsuccess << std::endl;
+    std::cout << "P: " << (((double)nsuccess) / fNThrow) << std::endl;
+  }
 
   ret.weight = ((double)nsuccess) / fNThrow;
   ret.pass = nsuccess > 0;
@@ -351,9 +359,11 @@ RayWeightInfo MixedWeightRayTraceBox::ThrowFixedSuccess(const MeVPrtlFlux &flux,
     nsuccess ++;
   }
 
-  std::cout << "NFAIL: " << nfail << std::endl;
-  std::cout << "NSUCCESS: " << nsuccess << std::endl;
-  std::cout << "Q: " << QEstimator(nsuccess, nfail, fNSuccess) << std::endl;
+  if (fVerbose){
+    std::cout << "NFAIL: " << nfail << std::endl;
+    std::cout << "NSUCCESS: " << nsuccess << std::endl;
+    std::cout << "Q: " << QEstimator(nsuccess, nfail, fNSuccess) << std::endl;
+  }
 
   if (nsuccess == fNSuccess) {
     ret.weight = QEstimator(nsuccess, nfail, fNSuccess);
@@ -400,9 +410,11 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   }
   TRotation RInv = R.Inverse();
 
-  std::cout << "PARENT DIR: " << parent_dir.X() << " " << parent_dir.Y() << " " << parent_dir.Z() << std::endl;
   TVector3 parent_dir_rotated = R * parent_dir;
-  std::cout << "PARENT DIR ROTATED: " << parent_dir_rotated.X() << " " << parent_dir_rotated.Y() << " " << parent_dir_rotated.Z() << std::endl;
+  if (fVerbose){
+    std::cout << "PARENT DIR ROTATED: " << parent_dir_rotated.X() << " " << parent_dir_rotated.Y() << " " << parent_dir_rotated.Z() << std::endl;
+    std::cout << "PARENT DIR: " << parent_dir.X() << " " << parent_dir.Y() << " " << parent_dir.Z() << std::endl;
+  }
 
   // Setup the lorentz transformation from the detector frame to the beam frame -- we'll need this later
   TLorentzRotation det_2_beam;
@@ -415,13 +427,14 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   double philo = philim.first;
   double phihi = philim.second;
 
-  std::cout << "PHILIM: " << philo << " " << phihi << std::endl;
-  std::cout << "DELTAPHI: " << (phihi - philo) << std::endl;
-
   // Pick a phi
   double phi = GetRandom() * (phihi - philo) + philo;
-
-  std::cout << "THISPHI: " << phi << std::endl;
+  
+  if (fVerbose){
+    std::cout << "PHILIM: " << philo << " " << phihi << std::endl;
+    std::cout << "DELTAPHI: " << (phihi - philo) << std::endl;
+    std::cout << "THISPHI: " << phi << std::endl;
+  }
 
   RayWeightInfo info = (!fRethrowTheta) ? NoThrow(flux, RInv, phi) : 
                                           ((fFixNSuccess) ? ThrowFixedSuccess(flux, RInv, phi) : ThrowFixedThrows(flux, RInv, phi));
@@ -449,7 +462,7 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
   // Total weight
   weight = phiweight * info.weight;
 
-  std::cout << "Final WEIGHT: " << weight << std::endl;
+  if (fVerbose) std::cout << "Final WEIGHT: " << weight << std::endl;
 
   flux.mom = mevprtl_mom;
   // transform to beam-coord frame
@@ -466,9 +479,11 @@ bool MixedWeightRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVe
     intersection = {B, A}; // reversed
   }
 
-  std::cout << "Parent 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
-  std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
-  std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  if (fVerbose){
+    std::cout << "Parent 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
+    std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+    std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  }
 
   return true;
 }
