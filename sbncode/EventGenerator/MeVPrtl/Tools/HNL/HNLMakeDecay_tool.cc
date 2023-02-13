@@ -75,6 +75,9 @@ public:
     }
 
 private:
+  
+  bool fVerbose;
+
   // Internal data
   double fMaxWeight;
   gsl_integration_workspace *fIntegrator;
@@ -140,6 +143,7 @@ private:
   double NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const);
   double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const);
   double LepPiWidth(double hnl_mass, double u4, double lep_mass);
+  int GetWeightedNuPDG(double ue4, double um4, double ut4);
 
   // Width implementation functions
   double MuPiWidth(double hnl_mass, double ue4, double um4, double ut4);
@@ -153,10 +157,16 @@ private:
   double NuRho0Width(double hnl_mass, double ue4, double um4, double ut4);
 
   // Decay implementation functions
-  DecayFinalState NuMupMum(const MeVPrtlFlux &flux);
+  DecayFinalState NuDiLep(const MeVPrtlFlux &flux, bool is_muon);
+  DecayFinalState NuMupMum(const MeVPrtlFlux &flux) { return NuDiLep(flux, true); }
+  DecayFinalState NuEpEm(const MeVPrtlFlux &flux) { return NuDiLep(flux, false); }
   DecayFinalState LepPi(const MeVPrtlFlux &flux, bool is_muon);
   DecayFinalState EPi(const MeVPrtlFlux &flux) { return LepPi(flux, false); }
   DecayFinalState MuPi(const MeVPrtlFlux &flux) { return LepPi(flux, true); }
+  DecayFinalState NuP0(const MeVPrtlFlux &flux, int meson_pdg);
+  DecayFinalState NuPi0(const MeVPrtlFlux &flux) { return NuP0(flux, 111); }
+  DecayFinalState NuEta(const MeVPrtlFlux &flux) { return NuP0(flux, 221); }
+  DecayFinalState NuEtaP(const MeVPrtlFlux &flux) { return NuP0(flux, 331); }
 };
 
 // helpers
@@ -328,14 +338,6 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
 //   return (1+2*y)*(1-y)*sqrt(lambda(1,x,y));
 // }
 
-double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const) {
-  double Gfermi = Constants::Instance().Gfermi;
-  double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
-  double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
-
-  return Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
-}
-
 double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const) {
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
@@ -368,13 +370,13 @@ double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, i
   return width;
 }
 
-HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
+HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, bool is_muon) {
   HNLMakeDecay::DecayFinalState ret;
-
-  double muon_mass = Constants::Instance().muon_mass;
+  double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
+  int lep_pdg = is_muon ? 13 : 11;
 
   // Decay not kinematically allowed
-  if (2*muon_mass > flux.mass) {
+  if (2*lep_mass > flux.mass) {
     ret.width = 0.;
     return ret;
   } 
@@ -393,7 +395,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
   // Three body decay
   //
   // TODO: account for anisotropies in decay
-  ThreebodyMomentum momenta = isotropic_threebody_momentum(flux.mass, 0., muon_mass, muon_mass); 
+  ThreebodyMomentum momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass); 
 
   // Boost it!
   momenta.A.Boost(flux.mom.BoostVector());
@@ -422,9 +424,9 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuMupMum(const MeVPrtlFlux &flux) {
   ret.pdg.push_back(nu_pdg);
   ret.mom.push_back(momenta.A);
 
-  ret.pdg.push_back(13);
+  ret.pdg.push_back(lep_pdg);
   ret.mom.push_back(momenta.B);
-  ret.pdg.push_back(-13);
+  ret.pdg.push_back(lep_pdg*-1);
   ret.mom.push_back(momenta.C);
 
   return ret;
@@ -445,10 +447,9 @@ double HNLMakeDecay::LepPiWidth(double hnl_mass, double u4, double lep_mass) {
   double pion_ratio = (piplus_mass * piplus_mass) / (hnl_mass * hnl_mass);
   double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
   double width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * hnl_mass * hnl_mass * hnl_mass * Ifunc) / (16 * M_PI);
-
   // Majorana gets an extra factor b.c. it can go to pi+l- and pi-l+
   if (fMajorana) width *= 2;
-
+  
   return width;
 }
 
@@ -513,7 +514,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
     }
   } while (GetRandom() > this_dalitz / dalitz_max);
 
-  // lepton
+  // lep
   ret.mom.push_back(LB);
   ret.pdg.push_back(lep_pdg*lep_pdg_sign);
 
@@ -524,6 +525,97 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
   return ret;
 }
 
+double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const) {
+  double Gfermi = Constants::Instance().Gfermi;
+  double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
+  double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
+
+  return Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+}
+
+HNLMakeDecay::DecayFinalState HNLMakeDecay::NuP0(const MeVPrtlFlux &flux, int meson_pdg) {
+  HNLMakeDecay::DecayFinalState ret;
+  double meson_mass = 0;
+  double meson_decay_constant = 0;
+
+  switch (meson_pdg) {
+    case 111:
+      meson_mass = Constants::Instance().pizero_mass;
+      meson_decay_constant = Constants::Instance().fpion;
+      break;
+    case 221:
+      meson_mass = Constants::Instance().eta_mass;
+      meson_decay_constant = Constants::Instance().feta;
+      break;
+    case 331:
+      meson_mass = Constants::Instance().etap_mass;
+      meson_decay_constant = Constants::Instance().fetap;
+      break;
+    default:
+      std::cout << "Wrong pdg for NuP0 decay. Only 111, 221, 331 allowed" <<std::endl;
+      exit(1);
+  }
+
+  double ue4 = flux.C1;
+  double um4 = flux.C2;
+  double ut4 = flux.C3;
+  double total_u4 = ue4 + um4 + ut4; 
+
+  ret.width =  NuP0DecayWidth(flux.mass, total_u4, meson_mass, meson_decay_constant);
+
+  // Decay not kinematically allowed
+  if (ret.width == 0.) {
+    return ret;
+  }
+
+  // For Majorana: isotropic decay
+  // For Dirac: the helicity of the initial neutrino determines the final state direction arxiv:1905.00284
+  // TODO: Dirac case
+  
+  double p = evgen::ldm::twobody_momentum(flux.mass, 0, meson_mass);
+
+  TLorentzVector NU;
+  TLorentzVector P0;
+
+  TVector3 dir = RandomUnitVector(); 
+
+  NU = TLorentzVector(p*dir, sqrt(p*p + 0 * 0));
+  P0 = TLorentzVector(-p*dir, sqrt(p*p + meson_mass * meson_mass));
+
+  NU.Boost(flux.mom.BoostVector());
+  P0.Boost(flux.mom.BoostVector());
+ 
+  // Pick a neutrino pdg + sign 
+  int nu_pdg_sign;
+  if (fMajorana) {
+    nu_pdg_sign = (GetRandom() > 0.5) ? 1:-1;
+  }
+  else {
+    // same as the HNL
+    nu_pdg_sign = (flux.secondary_pdg > 0) ? -1 : 1;
+  }
+
+  double nu_pdg = 12;
+  double nu_pdg_r = GetRandom();
+  if (nu_pdg_r > (ue4 + um4) / total_u4) {
+    nu_pdg = 16;
+  }
+  else if (nu_pdg_r > ue4 / total_u4) {
+    nu_pdg = 14;
+  }
+  
+  nu_pdg = nu_pdg * nu_pdg_sign;
+
+  // nu
+  ret.mom.push_back(NU);
+  ret.pdg.push_back(nu_pdg);
+
+  // p0
+  ret.mom.emplace_back(P0);
+  ret.pdg.push_back(meson_pdg); 
+
+  return ret;
+}
 double HNLMakeDecay::CalculateMaxWeight() {
   double ue4 = fReferenceUE4;
   double um4 = fReferenceUM4;
@@ -536,19 +628,27 @@ double HNLMakeDecay::CalculateMaxWeight() {
   double P = sqrt(E*E - hnl_mass * hnl_mass);
   double hnl_gamma_beta = P/hnl_mass;
 
-  std::cout << "Reference Energy: " << E <<  " P: " << P << std::endl;
 
   double total_width = TotalWidth(hnl_mass, ue4, um4, ut4);
-  std::cout << "REFERENCE ALL DECAY WIDTH: " << total_width << std::endl;
+
   double total_lifetime_ns = Constants::Instance().hbar / total_width;
   double total_mean_dist = total_lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
-  std::cout << "REFERENCE ALL DECAY LENGTH: " << total_mean_dist << std::endl;
 
   double partial_width = SelectedWidth(hnl_mass, ue4, um4, ut4);
-  std::cout << "REFERENCE SELECTED DECAY WIDTH: " << partial_width << std::endl;
+  
   double partial_lifetime_ns = Constants::Instance().hbar / partial_width;
   double partial_mean_dist = partial_lifetime_ns * hnl_gamma_beta * Constants::Instance().c_cm_per_ns;
-  std::cout << "REFERENCE SELECTED DECAY LENGTH: " << partial_mean_dist << std::endl;
+
+  if (fVerbose){
+    std::cout << "Reference ue4: " << ue4 << std::endl;
+    std::cout << "Reference um4: " << um4 << std::endl;
+    std::cout << "Reference ut4: " << ut4 << std::endl;
+    std::cout << "Reference Energy: " << E <<  " P: " << P << std::endl;
+    std::cout << "REFERENCE ALL DECAY WIDTH: " << total_width << std::endl;
+    std::cout << "REFERENCE ALL DECAY LENGTH: " << total_mean_dist << std::endl;
+    std::cout << "REFERENCE SELECTED DECAY WIDTH: " << partial_width << std::endl;
+    std::cout << "REFERENCE SELECTED DECAY LENGTH: " << partial_mean_dist << std::endl;
+  }
 
 
   double weight = forcedecay_weight(total_mean_dist, length, length + det_length) * partial_width / total_width; 
@@ -572,6 +672,8 @@ HNLMakeDecay::~HNLMakeDecay()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
 {
+  fVerbose = pset.get<bool>("Verbose", true);
+
   fIntegratorSize = 1000;
 
   fIntegrator = gsl_integration_workspace_alloc(fIntegratorSize);
@@ -579,9 +681,24 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   // Setup available decays
   fAvailableDecays["mu_pi"] = &HNLMakeDecay::MuPi;
   fAvailableDecayMasses["mu_pi"] = Constants::Instance().muon_mass + Constants::Instance().piplus_mass;
+  
   fAvailableDecays["e_pi"] = &HNLMakeDecay::EPi;
   fAvailableDecayMasses["e_pi"] = Constants::Instance().elec_mass + Constants::Instance().piplus_mass;
+  
   fAvailableDecays["nu_mu_mu"] = &HNLMakeDecay::NuMupMum;
+  fAvailableDecayMasses["nu_mu_mu"] = Constants::Instance().muon_mass + Constants::Instance().muon_mass;
+  
+  fAvailableDecays["nu_e_e"] = &HNLMakeDecay::NuEpEm;
+  fAvailableDecayMasses["nu_e_e"] = Constants::Instance().elec_mass + Constants::Instance().elec_mass;
+  
+  fAvailableDecays["nu_pi0"] = &HNLMakeDecay::NuPi0;
+  fAvailableDecayMasses["nu_pi0"] = Constants::Instance().pizero_mass;
+  
+  fAvailableDecays["nu_eta"] = &HNLMakeDecay::NuEta;
+  fAvailableDecayMasses["nu_eta"] = Constants::Instance().eta_mass;
+  
+  fAvailableDecays["nu_etap"] = &HNLMakeDecay::NuEtaP;
+  fAvailableDecayMasses["nu_etap"] = Constants::Instance().etap_mass;
 
   // Setup available widths
   fAvailableWidths["mu_pi"] = &HNLMakeDecay::MuPiWidth;
@@ -602,6 +719,8 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
     if (fAvailableDecays.count(d)) {
       fSelectedDecays.push_back(fAvailableDecays.at(d));
       fSelectedWidths.push_back(fAvailableWidths.at(d));
+      
+      if (fVerbose) std::cout << "Selected Decay: " << d << std::endl;
     }
     else {
       std::cerr << "ERROR: Selected unavailable decay (" << d << ")" << std::endl;
@@ -654,9 +773,8 @@ double HNLMakeDecay::SelectedWidth(const MeVPrtlFlux &flux) {
 
 double HNLMakeDecay::TotalWidth(double hnl_mass, double ue4, double um4, double ut4) {
   double ret = 0.;
-
   for (const HNLMakeDecay::HNLWidthFunction F: fAllWidths) {
-    ret += (*this.*F)(hnl_mass, ue4, um4, ut4); 
+    ret += (*this.*F)(hnl_mass, ue4, um4, ut4);
   }
 
   return ret;
@@ -665,9 +783,8 @@ double HNLMakeDecay::TotalWidth(double hnl_mass, double ue4, double um4, double 
 
 double HNLMakeDecay::SelectedWidth(double hnl_mass, double ue4, double um4, double ut4) {
   double ret = 0.;
-
   for (const HNLMakeDecay::HNLWidthFunction F: fSelectedWidths) {
-    ret += (*this.*F)(hnl_mass, ue4, um4, ut4); 
+    ret += (*this.*F)(hnl_mass, ue4, um4, ut4);
   }
 
   return ret;
@@ -693,11 +810,10 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   std::vector<HNLMakeDecay::DecayFinalState> decays;
   double partial_width = 0.;
   for (const HNLMakeDecay::HNLDecayFunction F: fSelectedDecays) {
-    decays.push_back((*this.*F)(flux));
+    decays.push_back((*this.*F)(flux)); 
     partial_width += decays.back().width;
   }
-
-  std::cout << "SELECTED DECAY WIDTH: " << partial_width << std::endl;
+  
   if (partial_width == 0.) return false;
 
   // pick one
@@ -728,9 +844,16 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double total_lifetime_ns = Constants::Instance().hbar / total_width;
   double total_mean_dist = total_lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
-  std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
-
-  std::cout << "TOTAL DECAY DIST: " << total_mean_dist << " SELECTED DECAY DIST: " << partial_mean_dist << " DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
+  if (fVerbose){
+    std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
+    std::cout << "TOTAL DECAY DIST: " << total_mean_dist << std::endl;
+    std::cout << "SELECTED DECAY WIDTH: " << partial_width << std::endl;
+    std::cout << "SELECTED DECAY DIST: " << partial_mean_dist << std::endl;
+    std::cout << "DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
+    std::cout << "force decay weight: " << forcedecay_weight(total_mean_dist, in_dist, out_dist) << std::endl;
+    std::cout << "partial/total width: " << partial_width/total_width << std::endl;
+    std::cout << std::endl;
+  }  
 
   // saves the weight
   weight = forcedecay_weight(total_mean_dist, in_dist, out_dist) * partial_width / total_width; 
@@ -740,6 +863,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   // Get the decay location 
   double flat_rand = CLHEP::RandFlat::shoot(fEngine, 0, 1.);
+
   double decay_rand = flat_to_exp_rand(flat_rand, total_mean_dist, in_dist, out_dist);
   TVector3 decay_pos = flux.pos.Vect() + decay_rand * (in - flux.pos.Vect()).Unit();
 
