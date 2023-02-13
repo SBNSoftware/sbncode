@@ -592,7 +592,8 @@ namespace evgen {
       double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
 
       //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
-      double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+      //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+      double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (16*M_PI);
       
       return width;
     }
@@ -911,7 +912,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   double total_lifetime_ns = Constants::Instance().hbar / total_width;
   double total_mean_dist = total_lifetime_ns * flux.mom.Gamma() * flux.mom.Beta() * Constants::Instance().c_cm_per_ns;
 
-  if (fVerbose){  
+  
   std::cout <<"Trinu Branching Ratio: " << HNLMakeDecay::TriNuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"NuPi0 Branching Ratio: " << HNLMakeDecay::NuPi0Width(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"mupi Branching Ratio: " << HNLMakeDecay::MuPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
@@ -925,7 +926,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   std::cout <<"nurho0 Branching Ratio: " << HNLMakeDecay::NuRho0Width(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   
   std::cout << "total Branching Ratio: " << total_width/total_width << std::endl;
-  }
+
 
 if (fVerbose){
     std::cout << "TOTAL DECAY WIDTH: " << total_width << std::endl;
