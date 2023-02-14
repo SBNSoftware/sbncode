@@ -489,7 +489,7 @@ double HNLMakeDecay::LepPiWidth(double hnl_mass, double u4, double lep_mass) {
   
   double lep_ratio = (lep_mass * lep_mass) / (hnl_mass * hnl_mass);
   double pion_ratio = (piplus_mass * piplus_mass) / (hnl_mass * hnl_mass);
-  double Ifunc = ((1+lep_ratio-pion_ratio)*(1+lep_ratio)-4*lep_ratio) * sqrt(lambda(1.,pion_ratio,lep_ratio));
+  double Ifunc = ((1+lep_ratio-pion_ratio)*(1+lep_ratio)-4*lep_ratio) * sqrt(lambda(1.,lep_ratio,pion_ratio));
   //double Ifunc = (1-pion_ratio-lep_ratio*(2+pion_ratio-lep_ratio)) * sqrt(lambda(1.,pion_ratio,lep_ratio));
   //double Ifunc = ((1-lep_ratio)*(1-lep_ratio)-pion_ratio*(1+lep_ratio)) * sqrt(lambda(1.,lep_ratio,pion_ratio));
   
