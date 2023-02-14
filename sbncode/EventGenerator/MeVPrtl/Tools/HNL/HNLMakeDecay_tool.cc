@@ -143,6 +143,7 @@ private:
   double NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const);
   double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const);
   double LepPiWidth(double hnl_mass, double u4, double lep_mass);
+  double Nul1l2Width(double hnl_mass, double ue4, double um4, double ut4,int lepplus_pdg,int lepminus_pdg);
   int GetWeightedNuPDG(double ue4, double um4, double ut4);
 
   // Width implementation functions
@@ -150,6 +151,7 @@ private:
   double EPiWidth(double hnl_mass, double ue4, double um4, double ut4);
   double NuMuMuWidth(double hnl_mass, double ue4, double um4, double ut4);
   double NuEEWidth(double hnl_mass, double ue4, double um4, double ut4);
+  double NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4);
   double TriNuWidth(double hnl_mass, double ue4, double um4, double ut4);
   double NuPi0Width(double hnl_mass, double ue4, double um4, double ut4);
   double NuEtaWidth(double hnl_mass, double ue4, double um4, double ut4);
@@ -455,7 +457,6 @@ double HNLMakeDecay::LepPiWidth(double hnl_mass, double u4, double lep_mass) {
 
   double lep_ratio = (lep_mass * lep_mass) / (hnl_mass * hnl_mass);
   double pion_ratio = (piplus_mass * piplus_mass) / (hnl_mass * hnl_mass);
-//  double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
   double Ifunc = ((1 + lep_ratio - pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
   double width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * hnl_mass * hnl_mass * hnl_mass * Ifunc) / (16 * M_PI);
 
@@ -547,7 +548,7 @@ double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mas
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
   double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
 
-  double width = Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
+  double width = Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
   return width;
 }
 
@@ -634,6 +635,40 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuP0(const MeVPrtlFlux &flux, int me
 
   return ret;
 }
+
+double HNLMakeDecay::NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
+  return Nul1l2Width(hnl_mass, ue4,um4,ut4,11,13)+Nul1l2Width(hnl_mass, ue4,um4,ut4,13,11); 
+}
+
+double HNLMakeDecay::Nul1l2Width(double hnl_mass, double ue4, double um4, double ut4,int lepplus_pdg,int lepminus_pdg) {
+  double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
+  double lepplus_mass=0;
+  double lepminus_mass=0;
+
+  if(lepminus_pdg==std::abs(11)) lepminus_mass= Constants::Instance().elec_mass;
+  if(lepminus_pdg==std::abs(13)) lepminus_mass= Constants::Instance().muon_mass;
+
+  if(lepplus_pdg==std::abs(11)) lepplus_mass= Constants::Instance().elec_mass;
+  if(lepplus_pdg==std::abs(13)) lepplus_mass= Constants::Instance().muon_mass;;
+
+  double u4minus=0;
+  if(lepminus_pdg==std::abs(11)) u4minus=ue4;
+  if(lepminus_pdg==std::abs(13)) u4minus=um4;
+  if(lepminus_pdg==std::abs(15)) u4minus=ut4;
+
+  double Gfermi = Constants::Instance().Gfermi;
+
+  double I1val1 = I1(lepminus_mass / hnl_mass,0, lepplus_mass / hnl_mass);
+
+  double width = (Gfermi*Gfermi*hnl_mass_pow5) * (u4minus * I1val1)/(192*M_PI*M_PI*M_PI);
+
+  if (fMajorana) width *= 2;
+
+  return width;
+}
+
+
+
 double HNLMakeDecay::CalculateMaxWeight() {
   double ue4 = fReferenceUE4;
   double um4 = fReferenceUM4;
@@ -873,9 +908,11 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     
     std::cout <<"Trinu Branching Ratio: " << HNLMakeDecay::TriNuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
     std::cout <<"NuPi0 Branching Ratio: " << HNLMakeDecay::NuPi0Width(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
-    std::cout <<"mupi Branching Ratio: " << HNLMakeDecay::MuPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
-    std::cout <<"epi Branching Ratio: " << HNLMakeDecay::EPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
-    std::cout <<"nuMuMu Branching Ratio: " << HNLMakeDecay::NuMuMuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"Mupi Branching Ratio: " << HNLMakeDecay::MuPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"Epi Branching Ratio: " << HNLMakeDecay::EPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"NuMuMu Branching Ratio: " << HNLMakeDecay::NuMuMuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"NuEE Branching Ratio: " << HNLMakeDecay::NuEEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"NuMuE Branching Ratio: " << HNLMakeDecay::NuMuEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   
   }  
 
