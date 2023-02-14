@@ -151,8 +151,7 @@ namespace evgen {
       double MuPiWidth(double hnl_mass, double ue4, double um4, double ut4);
       double EPiWidth(double hnl_mass, double ue4, double um4, double ut4);
       double NuMuMuWidth(double hnl_mass, double ue4, double um4, double ut4);
-      double NueMuEWidth(double hnl_mass, double ue4, double um4, double ut4);
-      double NumuMuEWidth(double hnl_mass, double ue4, double um4, double ut4);
+      double NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4);
       double NuEEWidth(double hnl_mass, double ue4, double um4, double ut4);
       double TriNuWidth(double hnl_mass, double ue4, double um4, double ut4);
       double NuPi0Width(double hnl_mass, double ue4, double um4, double ut4);
@@ -219,13 +218,9 @@ namespace evgen {
     double HNLMakeDecay::NuRho0Width(double hnl_mass, double ue4, double um4, double ut4) {
       return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().grho); 
     }
-    double HNLMakeDecay::NueMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
-      return Nul1l2Width(hnl_mass, ue4,um4,ut4,11,13); 
+    double HNLMakeDecay::NuMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
+      return Nul1l2Width(hnl_mass, ue4,um4,ut4,11,13)+Nul1l2Width(hnl_mass, ue4,um4,ut4,13,11); 
     }
-    double HNLMakeDecay::NumuMuEWidth(double hnl_mass, double ue4, double um4, double ut4) {
-      return Nul1l2Width(hnl_mass, ue4,um4,ut4,13,11); 
-    }
-
 
     double HNLMakeDecay::Nul1l2Width(double hnl_mass, double ue4, double um4, double ut4,int lepplus_pdg,int lepminus_pdg) {
       double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
@@ -238,17 +233,16 @@ namespace evgen {
       if(lepplus_pdg==std::abs(11)) lepplus_mass= Constants::Instance().elec_mass;
       if(lepplus_pdg==std::abs(13)) lepplus_mass= Constants::Instance().muon_mass;;
       
-      double u4=0;
-      if(lepplus_pdg==std::abs(11)) u4=ue4;
-      if(lepplus_pdg==std::abs(13)) u4=um4;
-    if(lepplus_pdg==std::abs(15)) u4=ut4;
-      
+      double u4minus=0;
+      if(lepminus_pdg==std::abs(11)) u4minus=ue4;
+      if(lepminus_pdg==std::abs(13)) u4minus=um4;
+      if(lepminus_pdg==std::abs(15)) u4minus=ut4;
 
       double Gfermi = Constants::Instance().Gfermi;
 
-      double I1val = I1(lepminus_mass / hnl_mass, 0. , lepplus_mass / hnl_mass);
+      double I1val1 = I1(lepminus_mass / hnl_mass,0, lepplus_mass / hnl_mass);
 
-      double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * I1val/(192*M_PI*M_PI*M_PI);
+      double width = (Gfermi*Gfermi*hnl_mass_pow5) * (u4minus * I1val1)/(192*M_PI*M_PI*M_PI);
 
       if (fMajorana) width *= 2;
 
@@ -497,9 +491,9 @@ namespace evgen {
 
       double lep_ratio = (lep_mass * lep_mass) / (hnl_mass * hnl_mass);
       double pion_ratio = (piplus_mass * piplus_mass) / (hnl_mass * hnl_mass);
-      //double Ifunc = ((1+lep_ratio-pion_ratio)*(1+lep_ratio)-4*lep_ratio) * sqrt(lambda(1.,pion_ratio,lep_ratio));
+      double Ifunc = ((1+lep_ratio-pion_ratio)*(1+lep_ratio)-4*lep_ratio) * sqrt(lambda(1.,pion_ratio,lep_ratio));
       //double Ifunc = (1-pion_ratio-lep_ratio*(2+pion_ratio-lep_ratio)) * sqrt(lambda(1.,pion_ratio,lep_ratio));
-      double Ifunc = ((1-lep_ratio)*(1-lep_ratio)-pion_ratio*(1+lep_ratio)) * sqrt(lambda(1.,lep_ratio,pion_ratio));
+      //double Ifunc = ((1-lep_ratio)*(1-lep_ratio)-pion_ratio*(1+lep_ratio)) * sqrt(lambda(1.,lep_ratio,pion_ratio));
 
 
       double width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * hnl_mass * hnl_mass * hnl_mass * Ifunc) / (16 * M_PI);
@@ -591,8 +585,8 @@ namespace evgen {
       double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
       double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
 
-      //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
-      double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+      double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
+      //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
       
       return width;
     }
@@ -774,8 +768,7 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fAvailableWidths["nu_eta"] = &HNLMakeDecay::NuEtaWidth;
   fAvailableWidths["nu_etap"] = &HNLMakeDecay::NuEtaPWidth;
   fAvailableWidths["nu_rho0"] = &HNLMakeDecay::NuRho0Width;
-  fAvailableWidths["nue_mu_e"] = &HNLMakeDecay::NueMuEWidth;
-  fAvailableWidths["numu_mu_e"] = &HNLMakeDecay::NumuMuEWidth;
+  fAvailableWidths["nu_mu_e"] = &HNLMakeDecay::NuMuEWidth;
 
   // Select which ones are configued
   fDecayConfig = pset.get<std::vector<std::string>>("Decays");
@@ -917,8 +910,7 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
   std::cout <<"mupi Branching Ratio: " << HNLMakeDecay::MuPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"epi Branching Ratio: " << HNLMakeDecay::EPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"nuMuMu Branching Ratio: " << HNLMakeDecay::NuMuMuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
-  std::cout <<"NueMuE Branching Ratio: " << HNLMakeDecay::NueMuEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
-  std::cout <<"NumuMuE Branching Ratio: " << HNLMakeDecay::NumuMuEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+  std::cout <<"NuMuE Branching Ratio: " << HNLMakeDecay::NuMuEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"nuEE Branching Ratio: " << HNLMakeDecay::NuEEWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"nueta Branching Ratio: " << HNLMakeDecay::NuEtaWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
   std::cout <<"nuetaP Branching Ratio: " << HNLMakeDecay::NuEtaPWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
