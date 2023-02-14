@@ -294,7 +294,7 @@ double I2_integrand(double s, void *param) {
   double y = xyz[1];
   double z = xyz[2];
 
-  return 24*y*z*(1. + x*x - s)*sqrt(lambda(s,y*y,z*z)*lambda(s,y*y,z*z))/s;
+  return 24*y*z*(1. + x*x - s)*sqrt(lambda(s,y*y,z*z)*lambda(1,s,x*x))/s;
 }
 
 double HNLMakeDecay::I1(double x, double y, double z) {
@@ -331,7 +331,11 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
 
-  return Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
+  double width = Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
+ 
+  if (fMajorana) width *= 2;
+
+  return width;
 }
 
 // double I3(double x, double y) {
@@ -339,13 +343,19 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
 // }
 
 double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const) {
+
+  if(hnl_mass < m0_mass) return 0;
+
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
 
   double mu_m0 = m0_mass*m0_mass / hnl_mass*hnl_mass;
 
-  return ((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0)); 
+  double width = ((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0)); 
+  
+  if (fMajorana) width *= 2;
 
+  return width;
 }
 
 double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, int lep_pdg) {
@@ -363,7 +373,7 @@ double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, i
   double I1val = I1(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
   double I2val = I2(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
 
-  double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I2val + (gL*gL+gR*gR+CC*(1+2.*gL))*I1val);
+  double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I2val + (gL*gL+gR*gR+CC*(1+2.*gL))*I1val)/(96*M_PI*M_PI*M_PI);
 
   if (fMajorana) width *= 2;
 
@@ -445,8 +455,10 @@ double HNLMakeDecay::LepPiWidth(double hnl_mass, double u4, double lep_mass) {
 
   double lep_ratio = (lep_mass * lep_mass) / (hnl_mass * hnl_mass);
   double pion_ratio = (piplus_mass * piplus_mass) / (hnl_mass * hnl_mass);
-  double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
+//  double Ifunc = ((1 + lep_ratio + pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
+  double Ifunc = ((1 + lep_ratio - pion_ratio)*(1.+lep_ratio) - 4*lep_ratio) * sqrt(lambda(1., lep_ratio, pion_ratio));
   double width = u4 * (Gfermi * Gfermi *fpion * fpion * abs_Vud_squared * hnl_mass * hnl_mass * hnl_mass * Ifunc) / (16 * M_PI);
+
   // Majorana gets an extra factor b.c. it can go to pi+l- and pi-l+
   if (fMajorana) width *= 2;
   
@@ -526,11 +538,17 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::LepPi(const MeVPrtlFlux &flux, bool 
 }
 
 double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const) {
+
+  if (m0_mass > hnl_mass) {
+    return 0;
+  } 
+
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
   double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
 
-  return Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+  double width = Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
+  return width;
 }
 
 HNLMakeDecay::DecayFinalState HNLMakeDecay::NuP0(const MeVPrtlFlux &flux, int meson_pdg) {
@@ -852,7 +870,13 @@ bool HNLMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
     std::cout << "DISTANCE TO DETECTOR: " << in_dist << " DISTANCE OUT OF DETECTOR: " << out_dist << std::endl;
     std::cout << "force decay weight: " << forcedecay_weight(total_mean_dist, in_dist, out_dist) << std::endl;
     std::cout << "partial/total width: " << partial_width/total_width << std::endl;
-    std::cout << std::endl;
+    
+    std::cout <<"Trinu Branching Ratio: " << HNLMakeDecay::TriNuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"NuPi0 Branching Ratio: " << HNLMakeDecay::NuPi0Width(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"mupi Branching Ratio: " << HNLMakeDecay::MuPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"epi Branching Ratio: " << HNLMakeDecay::EPiWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+    std::cout <<"nuMuMu Branching Ratio: " << HNLMakeDecay::NuMuMuWidth(flux.mass, flux.C1, flux.C2, flux.C3)/total_width << std::endl;
+  
   }  
 
   // saves the weight
