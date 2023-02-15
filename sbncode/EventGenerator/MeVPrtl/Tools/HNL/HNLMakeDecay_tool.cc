@@ -327,13 +327,15 @@ double HNLMakeDecay::I2(double x, double y, double z) {
   gsl_integration_qags(&F, (y+z)*(y+z), (1.-x)*(1.-x), 0., 1e-7, fIntegratorSize, fIntegrator, &result, &error);
 
   return result;
+  double NuEEWidth(double hnl_mass, double ue4, double um4, double ut4);
 }
 
 double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
 
-  double width = Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
+  double width = Gfermi*Gfermi*hnl_mass_pow5*u4tot / (96*M_PI*M_PI*M_PI);
+//  double width = Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
  
   if (fMajorana) width *= 2;
 
