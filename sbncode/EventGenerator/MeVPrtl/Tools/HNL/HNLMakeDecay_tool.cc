@@ -225,13 +225,19 @@ double HNLMakeDecay::Nul1l2Width(double hnl_mass, double ue4, double um4, double
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
   double lepplus_mass=0;
   double lepminus_mass=0;
+
   
   if(lepminus_pdg==std::abs(11)) lepminus_mass= Constants::Instance().elec_mass;
   if(lepminus_pdg==std::abs(13)) lepminus_mass= Constants::Instance().muon_mass;
   
   if(lepplus_pdg==std::abs(11)) lepplus_mass= Constants::Instance().elec_mass;
   if(lepplus_pdg==std::abs(13)) lepplus_mass= Constants::Instance().muon_mass;;
-  
+ 
+
+ if (lepminus_mass+lepplus_mass > hnl_mass) {
+    return 0;
+  }  
+ 
   double u4minus=0;
   if(lepminus_pdg==std::abs(11)) u4minus=ue4;
   if(lepminus_pdg==std::abs(13)) u4minus=um4;
@@ -366,8 +372,9 @@ double HNLMakeDecay::TriNuDecayWidth(double hnl_mass, double u4tot) {
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow5 = hnl_mass*hnl_mass*hnl_mass*hnl_mass*hnl_mass;
   
-  double width=Gfermi*Gfermi*hnl_mass_pow5*u4tot / (96*M_PI*M_PI*M_PI);
-  //double width=Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
+  double width=Gfermi*Gfermi*hnl_mass_pow5*u4tot / (192*M_PI*M_PI*M_PI);
+
+  if (fMajorana) width *= 2;
   
   return width;
 }
@@ -408,9 +415,10 @@ double HNLMakeDecay::NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, i
   double I1val = I1(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
   double I2val = I2(0., lep_mass / hnl_mass, lep_mass / hnl_mass);
   
-  double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I2val + (gL*gL+gR*gR+CC*(1+2.*gL))*I1val)/(96*M_PI*M_PI*M_PI);
-  //double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I2val + (gL*gL+gR*gR+CC*(1+2.*gL))*I1val)/(192*M_PI*M_PI*M_PI);
+  double width = (Gfermi*Gfermi*hnl_mass_pow5) * u4 * ((gL*gR/*NC*/ + CC*gR/*CC*/)*I2val + (gL*gL+gR*gR+CC*(1+2.*gL))*I1val)/(192*M_PI*M_PI*M_PI);
   
+  if (fMajorana) width *= 2;
+
   return width;
 }
   
@@ -583,9 +591,11 @@ double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mas
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
   double mu_m0 = m0_mass*m0_mass/(hnl_mass*hnl_mass);
   
-  double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (64*M_PI);
-  //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
+  //double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (128*M_PI);
+  double width=Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
   
+  if (fMajorana) width *= 2;
+
   return width;
 }
   
