@@ -115,6 +115,8 @@ namespace caf
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        bool use_ts0,
+                       int64_t CRT_T0_reference_time, // ns, signed
+                       double CRT_T1_reference_time, // us
                        caf::SRTrack &srtrack,
                        bool allowEmpty = false);
 
@@ -171,6 +173,8 @@ namespace caf
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
+                  int64_t CRT_T0_reference_time, // ns, signed
+                  double CRT_T1_reference_time, // us
                   caf::SRCRTHit &srhit,
                   bool allowEmpty = false);
   void FillCRTTrack(const sbn::crt::CRTTrack &track,

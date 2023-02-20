@@ -2,7 +2,8 @@
 add_subdirectory(LArReco)
 art_make_library(
   LIBRARIES
-                fhiclcpp::fhiclcpp
+                sbnobj::Common_Reco
+		fhiclcpp::fhiclcpp
                 art::Persistency_Provenance canvas::canvas
                 sbncode_GeoWrappers
 )
