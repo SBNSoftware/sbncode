@@ -577,14 +577,10 @@ CalorimetryAnalysis::CalorimetryAnalysis(const fhicl::ParameterSet &p)
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
   // first the TPC volumes 
-  for (auto const &cryo: geometry->IterateCryostats()) {
-    geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
-                                    tend = geometry->end_TPC(cryo.ID());
+  for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
     std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    while (iTPC != tend) {
-      geo::TPCGeo const& TPC = *iTPC;
+    for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
       this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
-      iTPC++;
     }
      fTPCVolumes.push_back(std::move(this_tpc_volumes));
   }
@@ -1929,8 +1925,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
     _backtracked_pitch_c_y.insert(_backtracked_pitch_c_y.end(), _backtracked_c_y.size(), 0.);
     _backtracked_scepitch_c_y.insert(_backtracked_scepitch_c_y.end(), _backtracked_c_y.size(), 0.);
 
-    for (geo::TPCID tpc: geometry->IterateTPCIDs()) {
-      for (geo::PlaneID planeID: geometry->IteratePlaneIDs(tpc)) {
+    for (geo::PlaneID planeID: geometry->Iterate<geo::PlaneID>()) {
         auto const &plane = planeID.Plane;
         if (plane > 2) continue; // protect against bad plane ID
 
@@ -1978,7 +1973,7 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
           int incl = wireStart < wireEnd ? 1: -1;
           for (int wire = wireStart; wire != wireEnd; wire += incl) {
             lastWire = wire;
-            unsigned channel = geometry->PlaneWireToChannel(planeID.Plane, wire, planeID.TPC, planeID.Cryostat);
+          unsigned channel = geometry->PlaneWireToChannel(geo::WireID(planeID, wire));
 
             if (plane == 0) {
               int index = -1;
@@ -2048,7 +2043,6 @@ void CalorimetryAnalysis::FillCalorimetry(art::Event const &e,
           }
           last_traj = i_traj;
         }
-      }
     }
 
     // TODO: implement spacecharge
