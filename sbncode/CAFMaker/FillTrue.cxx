@@ -134,6 +134,7 @@ namespace caf {
   void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore *geo,
+                          const detinfo::DetectorClocksData &clockData,
                           caf::SRTrack& srtrack) {
 
     // require track to be truth matched
@@ -165,26 +166,55 @@ namespace caf {
     // Loop through the reco calo points
     for (unsigned iplane = 0; iplane < 3; iplane++) {
       for (caf::SRCaloPoint &p: srtrack.calo[iplane].points) {
-        if (!chan_2_ides.count(p.channel)) continue;
+        SRTrueCaloPoint truep;
+
+        // Hit based truth matching
+
+        // The default BackTracking function goes from (peak - width, peak + width).
+        //
+        // This time range does not match well hits with a non-Gaussian shape where
+        // the Gaussian-fit-width does not replicate the width of the pulse. 
+        //
+        // Instead, we use the Hit (start, end) time range. This is also more relevant
+        // for (e.g.) the SummedADC charge extraction method.
+        //
+        // Don't use this:
+        // std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(clockData, hit);
+        //
+        // Use this:
+        art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+        std::vector<sim::TrackIDE> h_ides = bt_serv->ChannelToTrackIDEs(clockData, p.channel, p.start, p.end);
+        truep.h_nelec = 0.;
+        truep.h_e = 0.;
+        for (const sim::TrackIDE &ide: h_ides) {
+          truep.h_e += ide.energy;
+          truep.h_nelec += ide.numElectrons;
+        }
+
+        // Particle based truth matching
+
+        if (!chan_2_ides.count(p.channel)) { 
+          p.truth = truep;
+          continue; 
+        }
 
         const std::vector<const sim::IDE *> &ides = chan_2_ides.at(p.channel);
 
         // Sum energy, nelec
         // Charge-weighted position
-        SRTrueCaloPoint truep;
-        truep.nelec = 0.;
-        truep.e = 0.;
+        truep.p_nelec = 0.;
+        truep.p_e = 0.;
         truep.x = 0.;
         truep.y = 0.;
         truep.z = 0.;
 
         for (const sim::IDE *ide: ides) {
-          truep.x = (truep.x*truep.nelec + ide->x*ide->numElectrons) / (truep.nelec + ide->numElectrons);
-          truep.y = (truep.y*truep.nelec + ide->y*ide->numElectrons) / (truep.nelec + ide->numElectrons);
-          truep.z = (truep.z*truep.nelec + ide->z*ide->numElectrons) / (truep.nelec + ide->numElectrons);
+          truep.x = (truep.x*truep.p_nelec + ide->x*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
+          truep.y = (truep.y*truep.p_nelec + ide->y*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
+          truep.z = (truep.z*truep.p_nelec + ide->z*ide->numElectrons) / (truep.p_nelec + ide->numElectrons);
 
-          truep.e += ide->energy;
-          truep.nelec += ide->numElectrons;
+          truep.p_e += ide->energy;
+          truep.p_nelec += ide->numElectrons;
         }
 
         // sim::IDE's are saved after shift from SpaceCharge

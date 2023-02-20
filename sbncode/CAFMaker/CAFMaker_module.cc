@@ -1738,7 +1738,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
             // Hit truth information corresponding to Calo-Points
             // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, trk);
+            if (mc_particles.isValid()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, trk);
           }
         }
       } // thisTrack exists

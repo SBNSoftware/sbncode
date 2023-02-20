@@ -107,6 +107,7 @@ namespace caf
   void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore *geo,
+                          const detinfo::DetectorClocksData &clockData,
                           caf::SRTrack& srtrack);
 
 

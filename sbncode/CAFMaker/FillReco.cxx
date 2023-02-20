@@ -574,6 +574,8 @@ namespace caf
             p.t = h->PeakTime();
             p.width = h->RMS();
             p.mult = h->Multiplicity();
+            p.start = h->StartTick();
+            p.end = h->EndTick();
           }
         }
 
