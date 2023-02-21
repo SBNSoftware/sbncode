@@ -392,7 +392,8 @@ namespace caf {
    srtruth.flux_weight = truth.flux_weight;
    srtruth.ray_weight = truth.ray_weight;
    srtruth.decay_weight = truth.decay_weight;
-   srtruth.decay_length = truth.mean_distance;
+   srtruth.decay_length = truth.total_mean_distance;
+   srtruth.allowed_decay_fraction = truth.allowed_decay_fraction;
 
    srtruth.enter.x = truth.mevprtl_enter.X();
    srtruth.enter.y = truth.mevprtl_enter.Y();
