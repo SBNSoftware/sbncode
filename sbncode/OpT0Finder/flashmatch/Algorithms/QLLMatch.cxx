@@ -172,6 +172,23 @@ namespace flashmatch {
     // std::cout << "one_hypo.pe_v size: " << one_hypothesis.pe_v.size() << std::endl;
     
     FillEstimate(_raw_trk,one_hypothesis);
+
+    std::vector<int> apsia_ch{134,135,150,151,152,153,154,155,156,157,158,159,160,161,176,177};
+
+    // ** TO-DO: temp  saturated opdets & apsia fix ** 
+    // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
+    //   measured flash PE was set to 0 due to saturation
+    // - skip apsia xarapucas (empty PE information)
+    for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index ) { 
+      if (one_measurement.pe_v[pmt_index] == 0 && one_hypothesis.pe_v[pmt_index] > 600.0){
+        std::cout << "Guessing " << pmt_index << " is saturated, setting hypothesis to 0..." << std::endl;
+        one_hypothesis.pe_v[pmt_index] = 0;
+      }
+      if (std::find(apsia_ch.begin(), apsia_ch.end(), int(pmt_index)) != apsia_ch.end())
+        one_hypothesis.pe_v[pmt_index] = 0; 
+    }
+    // ** end saturated & apsia fix ** 
+
     res.hypothesis = one_hypothesis.pe_v;
     _qll = QLLMatch::GetME()->QLL(one_hypothesis, one_measurement);
     
@@ -288,7 +305,7 @@ namespace flashmatch {
       _var_trk[pt_index].y = _raw_trk[pt_index].y;
       _var_trk[pt_index].z = _raw_trk[pt_index].z;
       _var_trk[pt_index].q = _raw_trk[pt_index].q;
-      _var_trk[pt_index].trk = _raw_trk[pt_index].trk;
+      // _var_trk[pt_index].trk = _raw_trk[pt_index].trk;
       if (_raw_trk[pt_index].q > 1e20) std::cout << "[QLLMatch::ChargeHypothesis] n_original_photons " << _raw_trk[pt_index].q << std::endl;
     }
     //auto end = high_resolution_clock::now();
@@ -346,13 +363,8 @@ namespace flashmatch {
       throw OpT0FinderException("Cannot compute QLL for unmatched length!");
 
     double O, H, Error;
-    // const double epsilon = 1.e-9;
-    std::vector<int> apsia_ch{134,135,150,151,152,153,154,155,156,157,158,159,160,161,176,177};
 
     for (size_t pmt_index = 0; pmt_index < hypothesis.pe_v.size(); ++pmt_index) {
-      // TO-DO: this is a TEMPORARY FIX!!!! skip the arapucas that seem to not contain any PE information
-      if (std::find(apsia_ch.begin(), apsia_ch.end(), int(pmt_index)) != apsia_ch.end())
-        continue;
 
       // ignore OpDets that are in the opposite TPC that we're considering
       if ( int(pmt_index)%2 != _tpc%2)
@@ -383,15 +395,6 @@ namespace flashmatch {
         }
       }
 
-      if (O==_pe_observation_threshold && H > 600.0){
-        continue;
-        // skip signals that seem to be empty because of saturation 
-      }
-
-      // skip signals that have unphysical PE values 
-      if (O>1e10)
-        continue;
-
       if(_mode == kLLHD) {
         // TMath::Poisson(x, mu)
 
@@ -410,19 +413,19 @@ namespace flashmatch {
           _current_llhd -= std::log10(arg);
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " LHD "<<arg << " -LLHD " << -1 * std::log10(arg) << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(std::log10(arg)) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * std::log10(arg) << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(std::log10(arg)) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * std::log10(arg) << std::endl;
         }
         else if(!std::isnan(val) && !std::isinf(val)){
           _current_llhd -= val;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val << std::endl;
         }
         else if (!std::isnan(val_2) && !std::isinf(val_2)){
           _current_llhd -= val_2;
           nvalid_pmt += 1;
           if(_converged) FLASH_INFO() <<"PMT "<<pmt_index<<" O/H " << O << " / " << H << " -LLHD " << -1 * val_2 << std::endl;
-          if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val_2) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val_2 << std::endl;
+          // if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold) && abs(val_2) > 100) std::cout <<"CH | O | H | val : "<<pmt_index<<", " << O << ", " << H << ", " << -1 * val_2 << std::endl;
         }
       } else if (_mode == kSimpleLLHD) {
 
@@ -444,7 +447,7 @@ namespace flashmatch {
 
     }
     //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-    std::cout << "nvalid opdets: " << nvalid_pmt << std::endl;
+    std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring." << std::endl;
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
     // std::cout << "current_llhd: " << _current_llhd << std::endl;
