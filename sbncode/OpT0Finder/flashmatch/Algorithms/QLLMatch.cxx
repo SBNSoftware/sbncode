@@ -305,7 +305,6 @@ namespace flashmatch {
       _var_trk[pt_index].y = _raw_trk[pt_index].y;
       _var_trk[pt_index].z = _raw_trk[pt_index].z;
       _var_trk[pt_index].q = _raw_trk[pt_index].q;
-      // _var_trk[pt_index].trk = _raw_trk[pt_index].trk;
       if (_raw_trk[pt_index].q > 1e20) std::cout << "[QLLMatch::ChargeHypothesis] n_original_photons " << _raw_trk[pt_index].q << std::endl;
     }
     //auto end = high_resolution_clock::now();
