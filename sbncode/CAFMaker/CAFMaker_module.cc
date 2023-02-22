@@ -59,6 +59,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/System/TriggerNamesService.h"
+#include "art/Utilities/make_tool.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
@@ -122,6 +123,7 @@
 
 // // CAFMaker
 #include "sbncode/CAFMaker/AssociationUtil.h"
+#include "sbncode/CAFMaker/ICAFSelectionTool.h"
 // #include "sbncode/CAFMaker/Blinding.h"
 
 // Metadata
@@ -168,24 +170,18 @@ class CAFMaker : public art::EDProducer {
   CAFMakerParams fParams;
 
   std::string fCafFilename;
-  std::string fCafBlindFilename;
-  std::string fCafPrescaleFilename;
+  std::vector<std::string> fSelectCafFilename;
 
   std::string fFlatCafFilename;
-  std::string fFlatCafBlindFilename;
-  std::string fFlatCafPrescaleFilename;
+  std::vector<std::string> fSelectFlatCafFilename;
 
   bool fFirstInSubRun;
   bool fFirstInFile;
-  bool fFirstBlindInFile;
-  bool fFirstPrescaleInFile;
   int fFileNumber;
   double fTotalPOT;
   double fSubRunPOT;
   double fTotalSinglePOT;
   double fTotalEvents;
-  double fBlindEvents;
-  double fPrescaleEvents;
   std::vector<caf::SRBNBInfo> fBNBInfo; ///< Store detailed BNB info to save into the first StandardRecord of the output file
   std::vector<caf::SRNuMIInfo> fNuMIInfo; ///< Store detailed NuMI info to save into the first StandardRecord of the output file
 
@@ -193,24 +189,23 @@ class CAFMaker : public art::EDProducer {
   // int fBatch;
 
   TFile* fFile = 0;
-  TFile* fFileb = 0;
-  TFile* fFilep = 0;
+  std::vector<TFile *> fSelectFile;
+  bool fInitializedFiles;
 
   TTree* fRecTree = 0;
-  TTree* fRecTreeb = 0;
-  TTree* fRecTreep = 0;
+  std::vector<TTree *> fSelectRecTree;
 
   TFile* fFlatFile = 0;
-  TFile* fFlatFileb = 0;
-  TFile* fFlatFilep = 0;
+  std::vector<TFile *> fSelectFlatFile;
 
   TTree* fFlatTree = 0;
-  TTree* fFlatTreeb = 0;
-  TTree* fFlatTreep = 0;
+  std::vector<TTree *> fSelectFlatTree;
 
   flat::Flat<caf::StandardRecord>* fFlatRecord = 0;
-  flat::Flat<caf::StandardRecord>* fFlatRecordb = 0;
-  flat::Flat<caf::StandardRecord>* fFlatRecordp = 0;
+  std::vector<flat::Flat<caf::StandardRecord>*> fSelectFlatRecord;
+
+  std::vector<std::unique_ptr<ICAFSelectionTool>> fSelectionTools;
+  std::vector<caf::StandardRecord> fSelectRec;
 
   Det_t fDet;  ///< Detector ID in caf namespace typedef
 
@@ -220,9 +215,6 @@ class CAFMaker : public art::EDProducer {
 
   // random number generator for fake reco
   TRandom *fFakeRecoTRandom;
-
-  // random number generator for prescaling
-  TRandom *fBlindTRandom;
 
   /// What position in the vector each parameter set take
   std::map<std::string, unsigned int> fWeightPSetIndex;
@@ -236,12 +228,9 @@ class CAFMaker : public art::EDProducer {
   void AddMetadataToFile(TFile* f,
                          const std::map<std::string, std::string>& metadata);
   void AddGlobalTreeToFile(TFile* outfile, caf::SRGlobal& global) const;
-  void AddHistogramsToFile(TFile* outfile,bool isBlindPOT, bool isPrescalePOT) const;
+  void AddHistogramsToFile(TFile* outfile, float prescale, int nevent) const;
 
   void InitializeOutfiles();
-
-  void BlindEnergyParameters(StandardRecord* brec);
-  double GetBlindPOTScale() const;
 
   void InitVolumes(); ///< Initialize volumes from Gemotry service
 
@@ -336,87 +325,17 @@ class CAFMaker : public art::EDProducer {
 
   // setup random number generators
   fFakeRecoTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  if (fParams.CreateBlindedCAF()) {
-    fBlindTRandom = new TRandomMT64(art::ServiceHandle<rndm::NuRandomService>()->getSeed());
-  }
-}
 
-//......................................................................
-  double CAFMaker::GetBlindPOTScale() const {
-   std::string bstring = std::to_string(fParams.POTBlindSeed());
-   int slen = bstring.length();
-   std::string s1 = bstring.substr(0,int(slen/2));
-   std::string s2 = bstring.substr(int(slen/2));
-   double rat = stod(s1)/stod(s2);
-   while (abs(rat)>1){
-     rat = -1 * (abs(rat) - 1);
-   }
-   return 1 + rat*0.3;
-   
-  }
-//......................................................................
-void CAFMaker::BlindEnergyParameters(StandardRecord* brec) {
+  std::vector<fhicl::ParameterSet> selection_tool_configs =
+      fParams.SelectionTools.get<std::vector<fhicl::ParameterSet>>();
 
-  //simple cuts for trk and shower variables
-  //blind events with a potential lepton with momentum > 0.6 that starts in fiducial volume
-  for (caf::SRPFP& pfp: brec->reco.pfp) {
-    const caf::SRVector3D start = pfp.trk.start;
-    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
-
-      if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
-      }
-      if (pfp.trk.rangeP.p_muon > 0.6) {
-	pfp.trk.rangeP.p_muon = TMath::QuietNaN();
-      }
-    }
+  for (const fhicl::ParameterSet &p: selection_tool_configs) {
+    fSelectionTools.push_back(art::make_tool<ICAFSelectionTool>(p));
+    fSelectRec.emplace_back();
   }
 
-  //Note shower energy may not be currently very functional
-  for (caf::SRPFP& pfp: brec->reco.pfp) {
-    const caf::SRVector3D start = pfp.shw.start;
-    if ( ((start.x < -71.1 - 25 && start.x > -369.33 + 25 ) ||
-	  (start.x > 71.1 + 25 && start.x < 369.33 - 25 )) &&
-	 (start.y > -181.7 + 25 && start.y < 134.8 - 25 ) &&
-	 (start.z  > -895.95 + 30 && start.z < 895.95 - 50)) {
-      if (pfp.shw.bestplane_energy > 0.6) {
-	pfp.shw.bestplane_energy = TMath::QuietNaN();
-	pfp.shw.plane[0].energy = TMath::QuietNaN();
-	pfp.shw.plane[1].energy = TMath::QuietNaN();
-	pfp.shw.plane[2].energy = TMath::QuietNaN();
-      }
-    }
-  }
+  fInitializedFiles = false; // starts out un-initialized
 
-  // And for slices, check vertex in FV and then check tracks and showers
-  for (caf::SRSlice& slc: brec->slc) {
-    const caf::SRVector3D vtx = slc.vertex;
-    if ( ((vtx.x < -71.1 - 25 && vtx.x > -369.33 + 25 ) ||
-	  (vtx.x > 71.1 + 25 && vtx.x < 369.33 - 25 )) &&
-	 (vtx.y > -181.7 + 25 && vtx.y < 134.8 - 25 ) &&
-	 (vtx.z  > -895.95 + 30 && vtx.z < 895.95 - 50)) {
-
-      for (caf::SRPFP& pfp: slc.reco.pfp) {
-	if (pfp.trk.mcsP.fwdP_muon > 0.6) {
-	  pfp.trk.mcsP.fwdP_muon = TMath::QuietNaN();    
-	}
-	if (pfp.trk.rangeP.p_muon > 0.6) {
-	  pfp.trk.rangeP.p_muon = TMath::QuietNaN();
-	}
-      }
-      for (caf::SRPFP& pfp: slc.reco.pfp) {
-	if (pfp.shw.bestplane_energy > 0.6) {
-	  pfp.shw.bestplane_energy = TMath::QuietNaN();
-	  pfp.shw.plane[0].energy = TMath::QuietNaN();
-	  pfp.shw.plane[1].energy = TMath::QuietNaN();
-	  pfp.shw.plane[2].energy = TMath::QuietNaN();
-	}
-      }
-    }
-  }
 }
 
 void CAFMaker::FixPMTReferenceTimes(StandardRecord &rec, double PMT_reference_time) {
@@ -499,18 +418,14 @@ CAFMaker::~CAFMaker()
   delete fFlatTree;
   delete fFlatFile;
 
-  if (fParams.CreateBlindedCAF()) {
-    delete fRecTreeb;
-    delete fRecTreep;
-    delete fFileb;
-    delete fFilep;
-    delete fFlatRecordb;
-    delete fFlatRecordp;
-    delete fFlatTreeb;
-    delete fFlatTreep;
-    delete fFlatFileb;
-    delete fFlatFilep;
-    delete fBlindTRandom;
+  for (unsigned i = 0; i < fSelectFile.size(); i++) {
+    delete fSelectRecTree[i];
+    delete fSelectFile[i];
+    if (fParams.CreateFlatCAF()) {
+      delete fSelectFlatRecord[i];
+      delete fSelectFlatTree[i];
+      delete fSelectFlatFile[i];
+    }
   }
 
   delete fFakeRecoTRandom;
@@ -534,58 +449,39 @@ std::string CAFMaker::DeriveFilename(const std::string& inname,
 
 //......................................................................
 void CAFMaker::respondToOpenInputFile(const art::FileBlock& fb) {
-  if ((fParams.CreateCAF() && !fFile) ||
-      (fParams.CreateFlatCAF() && !fFlatFile) ||
-      (fParams.CreateBlindedCAF() && (!fFileb || !fFilep))) {
+  if ((fParams.CreateCAF() || fParams.CreateFlatCAF()) && !fInitializedFiles) {
+
+    // Basename for SelectionFiles
+    std::string basename = fCafFilename;
+    if (fCafFilename.empty()) {
+      basename = fb.fileName();
+    }
+
     // If Filename wasn't set in the FCL, and this is the
     // first file we've seen
     if(fParams.CreateCAF() && fCafFilename.empty()){
-      if (fParams.CreateBlindedCAF()){
-	fCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-	fCafFilename = DeriveFilename(fCafFilename, fParams.FileExtension());
-	fCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-	fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
-	fCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-	fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
-      }
-      else {
-	fCafFilename = DeriveFilename(fb.fileName(), fParams.FileExtension());
-      }
+      fCafFilename = DeriveFilename(DeriveFilename(fb.fileName(), fParams.BaseFileExtension()), fParams.FileExtension());
     }
     if(fParams.CreateFlatCAF() && fFlatCafFilename.empty()){
-      if (fParams.CreateBlindedCAF()){
-	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.UnblindFileExtension());
-	fFlatCafFilename = DeriveFilename(fFlatCafFilename, fParams.FlatCAFFileExtension());
-	fFlatCafBlindFilename = DeriveFilename(fb.fileName(), fParams.BlindFileExtension());
-	fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
-	fFlatCafPrescaleFilename = DeriveFilename(fb.fileName(), fParams.PrescaleFileExtension());
-	fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
-      }
-      else {
-	fFlatCafFilename = DeriveFilename(fb.fileName(), fParams.FlatCAFFileExtension());
-      }
+      fFlatCafFilename = DeriveFilename(DeriveFilename(fb.fileName(), fParams.BaseFileExtension()), fParams.FlatCAFFileExtension());
     }
-    if (fParams.CreateBlindedCAF() && fCafBlindFilename.empty()) {
-      const std::string basename = fCafFilename;
-      fCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
-      fCafBlindFilename = DeriveFilename(fCafBlindFilename, fParams.FileExtension());
-      fCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
-      fCafPrescaleFilename = DeriveFilename(fCafPrescaleFilename, fParams.FileExtension());
+
+    for (auto const &s: fSelectionTools) {
+      fSelectCafFilename.push_back(DeriveFilename(DeriveFilename(basename, s->Extension()), fParams.FileExtension()));
     }
-    if (fParams.CreateBlindedCAF() && fParams.CreateFlatCAF() && fFlatCafBlindFilename.empty()) {
-      const std::string basename = fFlatCafFilename;
-      fFlatCafBlindFilename = DeriveFilename(basename, fParams.BlindFileExtension());
-      fFlatCafBlindFilename = DeriveFilename(fFlatCafBlindFilename, fParams.FlatCAFFileExtension());
-      fFlatCafPrescaleFilename = DeriveFilename(basename, fParams.PrescaleFileExtension());
-      fFlatCafPrescaleFilename = DeriveFilename(fFlatCafPrescaleFilename, fParams.FlatCAFFileExtension());
+    for (auto const &s: fSelectionTools) {
+      fSelectFlatCafFilename.push_back(DeriveFilename(DeriveFilename(basename, s->Extension()), fParams.FlatCAFFileExtension()));
     }
+
     InitializeOutfiles();
   }
 
   fFileNumber ++;
   fFirstInFile = true;
-  fFirstBlindInFile = true;
-  fFirstPrescaleInFile = true;
+
+  for (auto const &s: fSelectionTools) {
+    s->NextFile();
+  }
 
 }
 
@@ -701,12 +597,18 @@ void CAFMaker::beginRun(art::Run& run) {
     } // end for pset
   } // end for label
 
-  if(fFile) AddGlobalTreeToFile(fFile, global);
-  if(fParams.CreateBlindedCAF() && fFileb) AddGlobalTreeToFile(fFileb, global);
-  if(fParams.CreateBlindedCAF() && fFilep) AddGlobalTreeToFile(fFilep, global);
-  if(fFlatFile) AddGlobalTreeToFile(fFlatFile, global);
-  if(fParams.CreateBlindedCAF() && fFlatFileb) AddGlobalTreeToFile(fFlatFileb, global);
-  if(fParams.CreateBlindedCAF() && fFlatFilep) AddGlobalTreeToFile(fFlatFilep, global);
+  if(fFile) {
+    AddGlobalTreeToFile(fFile, global);
+    for (TFile *f: fSelectFile) {
+      AddGlobalTreeToFile(f, global); 
+    }
+  }
+  if(fFlatFile) {
+    AddGlobalTreeToFile(fFlatFile, global);
+    for (TFile *f: fSelectFlatFile) {
+      AddGlobalTreeToFile(f, global);
+    }
+  }
 }
 
 //......................................................................
@@ -830,6 +732,8 @@ void CAFMaker::AddMetadataToFile(TFile* outfile, const std::map<std::string, std
 //......................................................................
 void CAFMaker::InitializeOutfiles()
 {
+  fInitializedFiles = true;
+
   if(fParams.CreateCAF()){
 
     mf::LogInfo("CAFMaker") << "Output filename is " << fCafFilename;
@@ -843,19 +747,13 @@ void CAFMaker::InitializeOutfiles()
     fRecTree->Branch("rec", "caf::StandardRecord", &rec);
 
     AddEnvToFile(fFile);
- 
-    if (fParams.CreateBlindedCAF()) {
-      mf::LogInfo("CAFMaker") << "Blinded output filenames are " << fCafBlindFilename << ", and " << fCafPrescaleFilename;
-      fFileb = new TFile(fCafBlindFilename.c_str(), "RECREATE");
-      fRecTreeb = new TTree("recTree", "records");
-      fRecTreeb->Branch("rec", "caf::StandardRecord", &rec);
 
-      fFilep = new TFile(fCafPrescaleFilename.c_str(), "RECREATE");
-      fRecTreep = new TTree("recTree", "records");
-      fRecTreep->Branch("rec", "caf::StandardRecord", &rec);
-
-      AddEnvToFile(fFileb);
-      AddEnvToFile(fFilep);
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      mf::LogInfo("CAFMaker") << "Selection " << i << " output file is " << fSelectCafFilename[i];
+      fSelectFile.push_back(new TFile(fSelectCafFilename[i].c_str(), "RECREATE"));
+      fSelectRecTree.push_back(new TTree("recTree", "records"));
+      fSelectRecTree[i]->Branch("rec", "caf::StandardRecord", &rec);
+      AddEnvToFile(fSelectFile[i]);
     }
 
   }     
@@ -874,25 +772,14 @@ void CAFMaker::InitializeOutfiles()
 
     AddEnvToFile(fFlatFile);
 
-    if (fParams.CreateBlindedCAF()) {
-
-      mf::LogInfo("CAFMaker") << "Blinded output flat filename are " << fFlatCafBlindFilename << ", and " << fFlatCafPrescaleFilename;
-
-      // LZ4 is the fastest format to decompress. I get 3x faster loading with
-      // this compared to the default, and the files are only slightly larger.
-      fFlatFileb = new TFile(fFlatCafBlindFilename.c_str(), "RECREATE", "",
-			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
-      fFlatTreeb = new TTree("recTree", "recTree");
-      fFlatRecordb = new flat::Flat<caf::StandardRecord>(fFlatTreeb, "rec", "", 0);
-      AddEnvToFile(fFlatFileb);
-
-      fFlatFilep = new TFile(fFlatCafPrescaleFilename.c_str(), "RECREATE", "",
-			     ROOT::CompressionSettings(ROOT::kLZ4, 1));
-      fFlatTreep = new TTree("recTree", "recTree");
-      fFlatRecordp = new flat::Flat<caf::StandardRecord>(fFlatTreep, "rec", "", 0);
-      AddEnvToFile(fFlatFilep);
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      mf::LogInfo("CAFMaker") << "Selection " << i << " flat output file is " << fSelectFlatCafFilename[i];
+      fSelectFlatFile.push_back(new TFile(fSelectFlatCafFilename[i].c_str(), "RECREATE", "",
+			     ROOT::CompressionSettings(ROOT::kLZ4, 1)));
+      fSelectFlatTree.push_back(new TTree("recTree", "recTree"));
+      fSelectFlatRecord.push_back(new flat::Flat<caf::StandardRecord>(fSelectFlatTree[i], "rec", "", 0));
+      AddEnvToFile(fSelectFlatFile[i]);
     }
-
   }
 
   fFileNumber = -1;
@@ -900,8 +787,6 @@ void CAFMaker::InitializeOutfiles()
   fSubRunPOT = 0;
   fTotalSinglePOT = 0;
   fTotalEvents = 0;
-  fBlindEvents = 0;
-  fPrescaleEvents = 0;
   fFirstInFile = false;
   fFirstInSubRun = false;
   // fCycle = -5;
@@ -1882,65 +1767,31 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     StandardRecord* prec = &rec;
     fRecTree->SetBranchAddress("rec", &prec);
     fRecTree->Fill();
-
     if(fFlatTree){
       fFlatRecord->Clear();
       fFlatRecord->Fill(rec);
       fFlatTree->Fill();
     }
 
-    //Generate random number to decide if event is saved in prescale or blinded file
-    if (fParams.CreateBlindedCAF()) {
-      const bool keepprescale = fBlindTRandom->Uniform() < 1/fParams.PrescaleFactor();
-      rec.hdr.evt = 0;
-      rec.hdr.isblind = true;
-      if (keepprescale) {
-      	StandardRecord* precp = new StandardRecord (*prec);
-	if (fFirstPrescaleInFile) {
-	  precp->hdr.pot = fSubRunPOT*(1/fParams.PrescaleFactor());
-	  precp->hdr.first_in_file = true;
-	  precp->hdr.first_in_subrun = true;
-	  precp->hdr.nbnbinfo = fBNBInfo.size()*(1/fParams.PrescaleFactor());
-	  precp->hdr.nnumiinfo = fNuMIInfo.size()*(1/fParams.PrescaleFactor());
-	}
-	precp->hdr.ngenevt = n_gen_evt*(1/fParams.PrescaleFactor());
-	precp->hdr.evt = evtID;
-	fRecTreep->SetBranchAddress("rec", &precp);
-      	fRecTreep->Fill();
-	fPrescaleEvents += 1;
-	if (fFlatTreep) {
-	  fFlatRecordp->Clear();
-	  fFlatRecordp->Fill(*precp);
-	  fFlatTreep->Fill();
-	}
-	fFirstPrescaleInFile = false;
-      }
-      else {
-	StandardRecord* precb = new StandardRecord (*prec);
-	BlindEnergyParameters(precb);
-	if (fFirstBlindInFile) {
-	  precb->hdr.pot = fSubRunPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale();
-	  precb->hdr.first_in_file = true;
-	  precb->hdr.first_in_subrun = true;
-	  precb->hdr.nbnbinfo = fBNBInfo.size()*(1 - (1/fParams.PrescaleFactor()));
-	  precb->hdr.nnumiinfo = fNuMIInfo.size()*(1-(1/fParams.PrescaleFactor()));
-	}
-	precb->hdr.ngenevt = n_gen_evt*(1 - (1/fParams.PrescaleFactor()));
-	precb->hdr.evt = evtID;
-	fRecTreeb->SetBranchAddress("rec", &precb);
-	fRecTreeb->Fill();
-	fBlindEvents += 1;
-	if (fFlatTreeb) {
-	  fFlatRecordb->Clear();
-	  fFlatRecordb->Fill(*precb);
-	  fFlatTreeb->Fill();
-	}
-	fFirstBlindInFile = false;
+    // Run the selection tools
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      // make a local copy of the record
+      StandardRecord thisrec = rec;
+      if (fSelectionTools[i]->DoSelect(thisrec)) { // allowed to edit thisrec
+        StandardRecord *pthisrec = &thisrec;
+        fSelectRecTree[i]->SetBranchAddress("rec", &pthisrec);
+        fSelectRecTree[i]->Fill();
+        if (fParams.CreateFlatCAF()) {
+          fSelectFlatRecord[i]->Clear();
+          fSelectFlatRecord[i]->Fill(thisrec);
+          fSelectFlatTree[i]->Fill();
+        }
       }
     }
+
   }
 
-// reset
+  // reset
   fFirstInFile = false;
   fFirstInSubRun = false;
   srcol->push_back(rec);
@@ -1956,36 +1807,23 @@ void CAFMaker::endSubRun(art::SubRun& sr) {
 }
 
 //......................................................................
-  void CAFMaker::AddHistogramsToFile(TFile* outfile,bool isBlindPOT = false, bool isPrescalePOT = false) const
+  void CAFMaker::AddHistogramsToFile(TFile* outfile, float prescale, int nevent) const
 {
 
   outfile->cd();
 
   TH1* hPOT = new TH1D("TotalPOT", "TotalPOT;; POT", 1, 0, 1);
   TH1* hEvents = new TH1D("TotalEvents", "TotalEvents;; Events", 1, 0, 1);
+  TH1* hselEvents = new TH1D("SelectedEvents", "SelectedEvents;; Events", 1, 0, 1);
 
-  if (isBlindPOT) {
-    hPOT->Fill(0.5,fTotalPOT*(1-(1/fParams.PrescaleFactor()))*GetBlindPOTScale());
-  }
-  else if (isPrescalePOT) {
-    hPOT->Fill(0.5,fTotalPOT*(1/fParams.PrescaleFactor()));
-  }
-  else {
-    hPOT->Fill(0.5,fTotalPOT);
-  }
-  hEvents->Fill(0.5,fTotalEvents);
-
+  hPOT->Fill(0.5, fTotalPOT/prescale);
   hPOT->Write();
+
+  hEvents->Fill(0.5, fTotalEvents);
   hEvents->Write();
 
-  if (fParams.CreateBlindedCAF()) {
-    TH1*hBlindEvents = new TH1D("BlindEvents", "BlindEvents;; Events", 1, 0, 1);
-    TH1* hPrescaleEvents = new TH1D("PrescaleEvents", "PrescaleEvents;; Events", 1, 0, 1);
-    hBlindEvents->Fill(0.5, fBlindEvents);
-    hPrescaleEvents->Fill(0.5, fPrescaleEvents);
-    hBlindEvents->Write();
-    hPrescaleEvents->Write();
-  }
+  hselEvents->Fill(0.5, nevent);
+  hselEvents->Write();
 }
 
 //......................................................................
@@ -2000,46 +1838,31 @@ void CAFMaker::endJob() {
     return;
   }
 
-
-
   if(fFile){
-
-    AddHistogramsToFile(fFile);
+    AddHistogramsToFile(fFile, 1, fTotalEvents);
     fRecTree->SetDirectory(fFile);
-    if (fParams.CreateBlindedCAF()) {
-      fRecTreeb->SetDirectory(fFileb);
-      fRecTreep->SetDirectory(fFilep);
-    }
     fFile->cd();
     fFile->Write();
-    if (fParams.CreateBlindedCAF()) {
-      AddHistogramsToFile(fFileb,true,false);
-      fFileb->cd();
-      fFileb->Write();
-      AddHistogramsToFile(fFilep,false,true);
-      fFilep->cd();
-      fFilep->Write();
-    }
 
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      AddHistogramsToFile(fSelectFile[i], fSelectionTools[i]->GetPrescale(), fSelectionTools[i]->GetTotalEvents());
+      fSelectRecTree[i]->SetDirectory(fSelectFile[i]);
+      fSelectFile[i]->cd();
+      fSelectFile[i]->Write();
+    }
   }
 
   if(fFlatFile){
-
-    AddHistogramsToFile(fFlatFile);
+    AddHistogramsToFile(fFlatFile, 1, fTotalEvents);
     fFlatTree->SetDirectory(fFlatFile);
-    if (fParams.CreateBlindedCAF() && fFlatFileb) {
-      fFlatTreeb->SetDirectory(fFlatFileb);
-      fFlatTreep->SetDirectory(fFlatFilep);
-    }
     fFlatFile->cd();
     fFlatFile->Write();
-    if (fParams.CreateBlindedCAF()) {
-      AddHistogramsToFile(fFlatFileb,true,false);
-      fFlatFileb->cd();
-      fFlatFileb->Write();
-      AddHistogramsToFile(fFlatFilep,false,true);
-      fFlatFilep->cd();
-      fFlatFilep->Write();
+
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      AddHistogramsToFile(fSelectFlatFile[i], fSelectionTools[i]->GetPrescale(), fSelectionTools[i]->GetTotalEvents());
+      fSelectFlatTree[i]->SetDirectory(fSelectFlatFile[i]);
+      fSelectFlatFile[i]->cd();
+      fSelectFlatFile[i]->Write();
     }
   }
 
@@ -2064,12 +1887,19 @@ void CAFMaker::endJob() {
     std::cout << "\n\nCAFMaker: TFileMetadataSBN service not configured -- this CAF will not have any metadata saved.\n" << std::endl;
   }
 
-  if(fFile) AddMetadataToFile(fFile, metamap);
-  if(fParams.CreateBlindedCAF() && fFileb) AddMetadataToFile(fFileb, metamap);
-  if(fParams.CreateBlindedCAF() && fFilep) AddMetadataToFile(fFilep, metamap);
-  if(fFlatFile) AddMetadataToFile(fFlatFile, metamap);
-  if(fParams.CreateBlindedCAF() && fFlatFileb) AddMetadataToFile(fFlatFileb, metamap);
-  if(fParams.CreateBlindedCAF() && fFlatFilep) AddMetadataToFile(fFlatFilep, metamap);
+  if(fFile) {
+    AddMetadataToFile(fFile, metamap);
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      AddMetadataToFile(fSelectFile[i], metamap); 
+    }
+  }
+
+  if(fFlatFile) {
+    AddMetadataToFile(fFlatFile, metamap);
+    for (unsigned i = 0; i < fSelectionTools.size(); i++) {
+      AddMetadataToFile(fSelectFlatFile[i], metamap); 
+    }
+  }
 }
 
 

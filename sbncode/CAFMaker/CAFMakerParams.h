@@ -8,6 +8,8 @@
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDAnalyzer.h"
 
+#include "fhiclcpp/types/DelegatedParameter.h"
+
 namespace caf
 {
   struct CAFMakerParams
@@ -28,8 +30,10 @@ namespace caf
       Comment("Whether to produce an output file in FlatCAF format"), true
     };
 
-    Atom<bool> CreateBlindedCAF { Name("CreateBlindedCAF"),
-      Comment("Whether to produce output files with one consisting of a fraction of events and the other consisting of the remainder of the events with critical information obscured"), true
+    Atom<bool> ProduceArtROOT {
+      Name("ProduceArtROOT"),
+      Comment("Produce a StandardRecord for the output art ROOT file."),
+      false
     };
 
     Atom<std::string> CAFFilename { Name("CAFFilename"),
@@ -40,14 +44,6 @@ namespace caf
       Comment("Provide a string to override the automatic filename."), ""
     };
 
-    Atom<float> PrescaleFactor { Name("PrescaleFactor"),
-	Comment("Factor by which to prescale unblind events"), 10
-    };
-
-    Atom<int> POTBlindSeed { Name("POTBlindNum"),
-	Comment("Integer used to derive POT scaling factor for blind events"), 655277
-    };
-
     Atom<std::string> DetectorOverride { Name("DetectorOverride"),
       Comment("Override the automatically detectected detector using 'sbnd' or 'icarus'. This parameter should usually be unset - ''"),
       ""
@@ -56,9 +52,7 @@ namespace caf
     Atom<string> DataTier        { Name("DataTier") };
     Atom<string> FileExtension   { Name("FileExtension"), ".caf.root" };
     Atom<string> FlatCAFFileExtension { Name("FlatCAFFileExtension"), ".flat.caf.root" };
-    Atom<string> UnblindFileExtension   { Name("UnblindFileExtension"), ".Unblind.DONOTLOOK.dum" };
-    Atom<string> BlindFileExtension { Name("BlindFileExtension"), ".Blind.OKTOLOOK.dum" };
-    Atom<string> PrescaleFileExtension { Name("PrescaleFileExtension"), ".Prescaled.OKTOLOOK.dum" };
+    Atom<string> BaseFileExtension   { Name("BaseFileExtension"), "" };
 
     Atom<string> GeneratorLabel  { Name("GeneratorInput") };
 
@@ -334,6 +328,12 @@ namespace caf
       Comment("Whether to switch the reference time of CRT reco to the 'beam spill' time."),
       true
     };
+
+    fhicl::DelegatedParameter SelectionTools {
+        Name("SelectionTools"),
+        Comment("List of ICAFSelection tool configurations to use.")
+    };
+
   };
 }
 

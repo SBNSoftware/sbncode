@@ -5,6 +5,7 @@ include_directories ( ${CMAKE_CURRENT_SOURCE_DIR} )
 include_directories( $ENV{SRPROXY_DIR}/include )
 
 add_subdirectory(RecoUtils)
+add_subdirectory(SelectionTools)
 add_subdirectory(bin)
 
 art_make_library( LIBRARY_NAME sbncode_CAFMaker
