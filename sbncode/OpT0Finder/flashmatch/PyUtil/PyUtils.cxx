@@ -23,7 +23,7 @@ namespace flashmatch {
     SetPyUtil();
     std::vector<size_t> dims(2,0);
     dims[0] = traj.size();
-    dims[1] = 5;
+    dims[1] = 4;
     auto pyarray = numpy_array<double>(dims);
 
     double **carray;
