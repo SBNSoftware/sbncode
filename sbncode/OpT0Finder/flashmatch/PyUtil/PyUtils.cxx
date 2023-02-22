@@ -39,9 +39,8 @@ namespace flashmatch {
     for(size_t idx=0; idx<dims[0]; ++idx) {
       carray[idx][0] = traj[idx].x;
       carray[idx][1] = traj[idx].y;
-      carray[idx][2] = traj[idx].z; 
+      carray[idx][2] = traj[idx].z;
       carray[idx][3] = traj[idx].q;
-      carray[idx][4] = traj[idx].trk;
     }
     PyArray_Free(pyarray,  (void *)carray);
     return pyarray;

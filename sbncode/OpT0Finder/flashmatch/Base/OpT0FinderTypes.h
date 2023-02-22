@@ -66,26 +66,22 @@ namespace flashmatch {
 
     double x,y,z; ///< Spatial position in [cm]
     double q;     ///< Charge in an arbitrary unit
-    int    trk;   ///< If QPoint belongs to a trk or to a shower (1 == trk, 0 == non-trk)
     /// Default ctor assigns invalid values
     QPoint_t()
       : x(kINVALID_DOUBLE)
       , y(kINVALID_DOUBLE)
       , z(kINVALID_DOUBLE)
       , q(kINVALID_DOUBLE)
-      , trk(kINVALID_INT)  
     {}
     /// Alternative ctor
     QPoint_t(double xvalue,
              double yvalue,
              double zvalue,
-             double qvalue,
-             int    trkvalue)
+             double qvalue)
       : x(xvalue)
       , y(yvalue)
       , z(zvalue)
       , q(qvalue)
-      , trk(trkvalue)
     {}
     /// distance
     inline double dist(const QPoint_t& pt)
