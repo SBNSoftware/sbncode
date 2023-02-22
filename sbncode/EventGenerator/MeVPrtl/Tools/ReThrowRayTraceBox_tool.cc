@@ -63,11 +63,13 @@ public:
 private:
   geo::BoxBoundedGeo fBox;
   unsigned fNThrows;
+  bool fVerbose;
 
   double fReferenceLabSolidAngle;
   double fReferencePrtlMass;
   int fReferenceScndPDG;
-  double fReferenceKaonEnergy;
+  int fReferencePrimPDG;
+  double fReferencePrimaryEnergy;
 
   void CalculateMaxWeight();
 
@@ -89,7 +91,9 @@ ReThrowRayTraceBox::~ReThrowRayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
-  if (pset.has_key("Box")) {
+   fVerbose = pset.get<bool>("Verbose", true);
+
+   if (pset.has_key("Box")) {
     std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
     // xmin, xmax, ymin, ymax, zmin, zmax
     fBox = geo::BoxBoundedGeo(box_config[0], box_config[1], box_config[2], box_config[3], box_config[4], box_config[5]);
@@ -101,15 +105,19 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 
   fNThrows = pset.get<unsigned>("NThrows", 10000);
 
-  std::cout << "Detector Box." << std::endl;
-  std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
-  std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
-  std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  if (fVerbose){
+    std::cout << "Detector Box." << std::endl;
+    std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
+    std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
+    std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  }
 
   fReferenceLabSolidAngle = pset.get<double>("ReferenceLabSolidAngle");
   fReferencePrtlMass = pset.get<double>("ReferencePrtlMass");
+
   fReferenceScndPDG = pset.get<int>("ReferenceScndPDG");
-  fReferenceKaonEnergy = pset.get<double>("ReferenceKaonEnergy");
+  fReferencePrimPDG = pset.get<int>("ReferencePrimPDG");
+  fReferencePrimaryEnergy = pset.get<double>("ReferencePrimaryEnergy");
 
   CalculateMaxWeight();
 
@@ -118,33 +126,16 @@ void ReThrowRayTraceBox::configure(fhicl::ParameterSet const &pset)
 }
   
 void ReThrowRayTraceBox::CalculateMaxWeight() {
-  double secondary_mass = 0.;
-  switch (fReferenceScndPDG) {
-    case 11:
-    case -11:
-      secondary_mass = Constants::Instance().elec_mass;
-      break;
-    case 13:
-    case -13:
-      secondary_mass = Constants::Instance().muon_mass;
-      break;
-    case 211:
-    case -211:
-      secondary_mass = Constants::Instance().piplus_mass;
-      break;
-    default:
-      std::cerr << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
-      std::cout << "RETHROWRAYTACE -- bad secondary pdg: " << fReferenceScndPDG << std::endl;
-      break;
-  }
+  double primary_mass = PDG2Mass(fReferencePrimPDG);
+  double secondary_mass = PDG2Mass(fReferenceScndPDG);
+  double p = twobody_momentum(primary_mass, secondary_mass, fReferencePrtlMass);
 
-  double p = twobody_momentum(Constants::Instance().kplus_mass, secondary_mass, fReferencePrtlMass);
   double E = sqrt(p*p + fReferencePrtlMass*fReferencePrtlMass);
 
-  double kgamma = fReferenceKaonEnergy / Constants::Instance().kplus_mass;
-  double kbeta = sqrt(1 - 1. / (kgamma * kgamma));
+  double pgamma = fReferencePrimaryEnergy / primary_mass;
+  double pbeta = sqrt(1 - 1. / (pgamma * pgamma));
 
-  double scale = kgamma * kgamma * (p + kbeta*E) * (p + kbeta*E) / (p*p);
+  double scale = pgamma * pgamma * (p + pbeta*E) * (p + pbeta*E) / (p*p);
 
   fMaxWeight = scale * fReferenceLabSolidAngle;
 }
@@ -157,12 +148,12 @@ TLorentzVector ReThrowRayTraceBox::ThrowMeVPrtlMomentum(const MeVPrtlFlux &flux)
   // 
   // Move the mevprtl momentum back to the kaon rest frame
   TLorentzVector mevprtl_mom = flux.mom;
-  mevprtl_mom.Boost(-flux.kmom.BoostVector());
+  mevprtl_mom.Boost(-flux.mmom.BoostVector());
 
   mevprtl_mom = TLorentzVector(mevprtl_mom.P() * dir, mevprtl_mom.E());
 
   // boost back
-  mevprtl_mom.Boost(flux.kmom.BoostVector());
+  mevprtl_mom.Boost(flux.mmom.BoostVector());
 
   return mevprtl_mom;
   
@@ -186,10 +177,10 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
 
     // if the ray points the wrong way, it doesn't intersect
     if (mevprtl_mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
-      std::cout << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
-      std::cout << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
-      std::cout << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
-      std::cout << "P: " << mevprtl_mom.Vect().Unit().X() << " " << mevprtl_mom.Vect().Unit().Y() << " " << mevprtl_mom.Vect().Unit().Z() << std::endl;
+      std::cerr << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
+      std::cerr << "Pos: " << flux.pos.X() << " " << flux.pos.Y() << " " << flux.pos.Z() << std::endl;
+      std::cerr << "A: " << A.X() << " " << A.Y() << " " << A.Z() << std::endl;
+      std::cerr << "P: " << mevprtl_mom.Vect().Unit().X() << " " << mevprtl_mom.Vect().Unit().Y() << " " << mevprtl_mom.Vect().Unit().Z() << std::endl;
       continue;
     }
 
@@ -198,7 +189,7 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     allHMom.push_back(mevprtl_mom);
   }
 
-  std::cout << "Prtl intersected (" << allIntersections.size() << " / " << fNThrows << ") times.\n";
+  if (fVerbose) std::cout << "Prtl intersected (" << allIntersections.size() << " / " << fNThrows << ") times.\n";
 
   // did we get a hit?
   if (allIntersections.size() == 0) {
@@ -227,13 +218,13 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
   flux.mom = mevprtl_mom;
   // transform to beam-coord frame
   flux.mom_beamcoord = mevprtl_mom;
-  flux.mom_beamcoord.Boost(-flux.kmom.BoostVector()); // Boost to kaon rest frame
-  flux.mom_beamcoord.Boost(flux.kmom_beamcoord.BoostVector()); // And to beam coordinate frame
+  flux.mom_beamcoord.Boost(-flux.mmom.BoostVector()); // Boost to kaon rest frame
+  flux.mom_beamcoord.Boost(flux.mmom_beamcoord.BoostVector()); // And to beam coordinate frame
   // Two boosts make a rotation!
 
   // Set the secondary 4-momentum
-  flux.sec = flux.kmom - flux.mom;
-  flux.sec_beamcoord = flux.kmom_beamcoord - flux.mom_beamcoord;
+  flux.sec = flux.mmom - flux.mom;
+  flux.sec_beamcoord = flux.mmom_beamcoord - flux.mom_beamcoord;
 
   if ((flux.pos.Vect() - A).Mag() < (flux.pos.Vect() - B).Mag()) {
     intersection = {A, B}; // A is entry, B is exit
@@ -242,9 +233,11 @@ bool ReThrowRayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector
     intersection = {B, A}; // reversed
   }
 
-  std::cout << "Kaon 4P: " << flux.kmom.E() << " " << flux.kmom.Px() << " " << flux.kmom.Py() << " " << flux.kmom.Pz() << std::endl;
-  std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
-  std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  if (fVerbose){
+    std::cout << "Primary 4P: " << flux.mmom.E() << " " << flux.mmom.Px() << " " << flux.mmom.Py() << " " << flux.mmom.Pz() << std::endl;
+    std::cout << "Selected Prtl 4P: " << flux.mom.E() << " " << flux.mom.Px() << " " << flux.mom.Py() << " " << flux.mom.Pz() << std::endl;
+    std::cout << "Selected Scdy 4P: " << flux.sec.E() << " " << flux.sec.Px() << " " << flux.sec.Py() << " " << flux.sec.Pz() << std::endl;
+  }
 
   return true;
 }

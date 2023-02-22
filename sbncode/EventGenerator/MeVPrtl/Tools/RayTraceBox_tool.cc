@@ -53,10 +53,11 @@ public:
     bool IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &intersection, double &weight) override;
 
     // no weights
-    double MaxWeight() override { return -1.; }
+    double MaxWeight() override { return 1.; }
 
 private:
   geo::BoxBoundedGeo fBox;
+  bool fVerbose;
 };
 
 RayTraceBox::RayTraceBox(fhicl::ParameterSet const &pset):
@@ -74,6 +75,8 @@ RayTraceBox::~RayTraceBox()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void RayTraceBox::configure(fhicl::ParameterSet const &pset)
 {
+  fVerbose = pset.get<bool>("Verbose", true);  
+  
   if (pset.has_key("Box")) {
     std::array<double, 6> box_config = pset.get<std::array<double, 6>>("Box");
     // xmin, xmax, ymin, ymax, zmin, zmax
@@ -84,11 +87,12 @@ void RayTraceBox::configure(fhicl::ParameterSet const &pset)
     fBox = geometry->DetectorEnclosureBox(pset.get<std::string>("Volume"));
   }
 
-  std::cout << "Detector Box." << std::endl;
-  std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
-  std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
-  std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
-
+  if (fVerbose){
+    std::cout << "Detector Box." << std::endl;
+    std::cout << "X " << fBox.MinX() << " " << fBox.MaxX() << std::endl;
+    std::cout << "Y " << fBox.MinY() << " " << fBox.MaxY() << std::endl;
+    std::cout << "Z " << fBox.MinZ() << " " << fBox.MaxZ() << std::endl;
+  }
 }
 
     
@@ -111,7 +115,7 @@ bool RayTraceBox::IntersectDetector(MeVPrtlFlux &flux, std::array<TVector3, 2> &
 
   // if the ray points the wrong way, it doesn't intersect
   if (flux.mom.Vect().Unit().Dot((A - flux.pos.Vect()).Unit()) < 0.) {
-    std::cout << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
+    if (fVerbose) std::cout << "RAYTRACE: MeVPrtl points wrong way" << std::endl;
     return false;
   }
 

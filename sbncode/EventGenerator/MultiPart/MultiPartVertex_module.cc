@@ -212,7 +212,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
         assert(tpc_id.size() == 2);
         size_t cid = tpc_id[0];
         size_t tid = tpc_id[1];
-        auto const& cryostat = geop->Cryostat(cid);
+        auto const& cryostat = geop->Cryostat(geo::CryostatID(cid));
         assert(cryostat.HasTPC(tid));
 
         auto const& tpc = cryostat.TPC(tid);
