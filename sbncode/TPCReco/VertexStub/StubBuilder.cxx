@@ -57,7 +57,6 @@ std::vector<art::Ptr<recob::Hit>> CollectHits(
     const std::vector<art::Ptr<recob::Hit>> &hits, 
     const sbn::VertexHit &vhit, 
     const recob::Hit &vhit_hit, 
-    const geo::GeometryCore *geo, 
     const detinfo::DetectorPropertiesData &dprop) {
 
   // project the vertex onto the wireplane
@@ -218,7 +217,8 @@ double sbn::StubBuilder::Normalize(double dQdx, const art::Event &e, const recob
 sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
                                   const sbn::VertexHit &vhit,
                                   const recob::Hit &vhit_hit, 
-                                  const geo::GeometryCore *geo,
+                                  const geo::GeometryCore& geom,
+                                  const geo::WireReadoutGeom& channelMap,
                                   const spacecharge::SpaceCharge *sce,
                                   const detinfo::DetectorClocksData &dclock,
                                   const detinfo::DetectorPropertiesData &dprop,
@@ -233,7 +233,7 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
     const std::vector<std::vector<art::Ptr<recob::Hit>>> &trk_hits = fSliceTrkHits.at(slice.key());
     const std::vector<std::vector<const recob::TrackHitMeta *>> &trk_thms = fSliceTrkTHMs.at(slice.key());
     
-    stub_hits = CollectHits(hits, vhit, vhit_hit, geo, dprop);
+    stub_hits = CollectHits(hits, vhit, vhit_hit, dprop);
 
     // Sort hits along the vtx -> end direction
     float vertex_w = vhit.vtxw;
@@ -269,7 +269,7 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     // See if we can compute a track pitch
     if (pfp_ind >= 0 && trks[pfp_ind]) {
-      stub.trkpitch.push_back(sbn::GetPitch(geo, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), geo->View(vhit_hit.WireID()), vhit_hit.WireID(), true, fPositionsAreSCECorrected));
+      stub.trkpitch.push_back(sbn::GetPitch(geom, channelMap, sce, trks[pfp_ind]->Start(), trks[pfp_ind]->StartDirection(), channelMap.Plane(vhit_hit.WireID()).View(), vhit_hit.WireID(), true, fPositionsAreSCECorrected));
     }
     else {
       stub.trkpitch.push_back(-1.);
@@ -288,4 +288,3 @@ sbn::Stub sbn::StubBuilder::FromVertexHit(const art::Ptr<recob::Slice> &slice,
 
     return stub;
 }
-

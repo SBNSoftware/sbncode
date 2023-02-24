@@ -4,6 +4,9 @@
 // \author  $Author: psihas@fnal.gov
 //////////////////////////////////////////////////////////////////////
 
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/WireReadoutGeom.h"
+
 #include "FillReco.h"
 #include "RecoUtils/RecoUtils.h"
 
@@ -203,7 +206,7 @@ namespace caf
   void FillShowerVars(const recob::Shower& shower,
                       const recob::Vertex* vertex,
                       const std::vector<art::Ptr<recob::Hit>> &hits,
-                      const geo::GeometryCore *geom,
+                      const geo::WireReadoutGeom& channelMap,
                       unsigned producer,
                       caf::SRShower &srshower,
                       bool allowEmpty)
@@ -256,9 +259,9 @@ namespace caf
     for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
     for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
-    for (geo::PlaneGeo const& plane: geom->Iterate<geo::PlaneGeo>()) {
+    for (geo::PlaneGeo const& plane: channelMap.Iterate<geo::PlaneGeo>()) {
 
-      const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
+      const double angleToVert(channelMap.WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
 
       srshower.plane[plane.ID().Plane].wirePitch = plane.WirePitch()/cosgamma;
@@ -646,7 +649,6 @@ namespace caf
   }
 
   void FillTrackChi2PID(const std::vector<art::Ptr<anab::ParticleID>> particleIDs,
-                        const geo::GeometryCore *geom,
                         caf::SRTrack& srtrack,
                         bool allowEmpty)
   {
@@ -766,7 +768,7 @@ namespace caf
   void FillTrackCalo(const std::vector<art::Ptr<anab::Calorimetry>> &calos,
                      const std::vector<art::Ptr<recob::Hit>> &hits,
                      bool fill_calo_points, float fillhit_rrstart, float fillhit_rrend,
-                     const geo::GeometryCore *geom, const detinfo::DetectorPropertiesData &dprop,
+                     const detinfo::DetectorPropertiesData &dprop,
                      caf::SRTrack& srtrack,
                      bool allowEmpty)
   {

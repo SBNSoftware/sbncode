@@ -8,7 +8,6 @@
 ////////////////////////////////////////////////////////////////////////
 #include "sbncode/FlashMatch/FlashPredict.hh"
 
-
 FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   : EDProducer{p}
   , fPandoraProducer(p.get<std::string>("PandoraProducer"))
@@ -50,6 +49,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fMinOpHPE(p.get<double>("MinOpHPE", 0.0))
   , fMinFlashPE(p.get<double>("MinFlashPE", 0.0))
   , fFlashPEFraction(p.get<double>("FlashPEFraction", 0.8))
+  , fWireReadoutGeom{&art::ServiceHandle<geo::WireReadout>()->Get()}
   , fDetector(detectorName(fGeometry->DetectorName()))
   , fSBND((fDetector == "SBND") ? true : false )
   , fICARUS((fDetector == "ICARUS") ? true : false )
@@ -802,8 +802,7 @@ FlashPredict::FlashMetrics FlashPredict::computeFlashMetrics(
 
   for(auto oph=opH_beg; oph!=opH_end; ++oph){
     int opChannel = oph->OpChannel();
-    auto& opDet = fGeometry->OpDetGeoFromOpChannel(opChannel);
-    auto opDetXYZ = opDet.GetCenter();
+    auto opDetXYZ = fWireReadoutGeom->OpDetGeoFromOpChannel(opChannel).GetCenter();
 
     bool is_pmt_vis = false, is_ara_vis = false;
     if(fSBND){// because VIS light
@@ -1338,7 +1337,7 @@ FlashPredict::ChargeDigestMap FlashPredict::makeChargeDigest(
         for(const auto& hit : hits) {
           geo::WireID wId = hit->WireID();
           if(fOnlyCollectionWires &&
-             fGeometry->SignalType(wId) != geo::kCollection) continue;
+             fWireReadoutGeom->SignalType(wId) != geo::kCollection) continue;
           const double hitQ = hit->Integral();
           if(hitQ < fMinHitQ) continue;
           spacepointQ += hitQ;
@@ -1644,7 +1643,7 @@ unsigned FlashPredict::createOpHitsTimeHist(
   bool in_right = false, in_left = false;
   for(auto const& oph : opHits) {
     auto ch = oph.OpChannel();
-    auto opDetXYZ = fGeometry->OpDetGeoFromOpChannel(ch).GetCenter();
+    auto opDetXYZ = fWireReadoutGeom->OpDetGeoFromOpChannel(ch).GetCenter();
     if(!fGeoCryo->ContainsPosition(opDetXYZ)) continue;
     opHitsTimeHist->Fill(opHitTime(oph), oph.PE());
     unsigned t = icarusPDinTPC(ch);
@@ -1734,7 +1733,7 @@ bool FlashPredict::isPDInCryo(const int pdChannel) const
   else { // fICARUS
     // BUG: I believe this function is not working, every now and then
     // I get ophits from the other cryo
-    auto& p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+    auto& p = fWireReadoutGeom->OpDetGeoFromOpChannel(pdChannel).GetCenter();
     // if the channel is in the Cryostat is relevant
     return fGeoCryo->ContainsPosition(p);
   }
@@ -1745,7 +1744,7 @@ bool FlashPredict::isPDInCryo(const int pdChannel) const
 // TODO: find better, less hacky solution
 unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
 {
-  auto p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  auto p = fWireReadoutGeom->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   p.SetX(p.X()/2.);//OpDets are outside the TPCs
   return (fGeometry->PositionToTPCID(p)).TPC;
 }
@@ -1754,7 +1753,7 @@ unsigned FlashPredict::sbndPDinTPC(const int pdChannel) const
 // TODO: find better, less hacky solution
 unsigned FlashPredict::icarusPDinTPC(const int pdChannel) const
 {
-  auto p = fGeometry->OpDetGeoFromOpChannel(pdChannel).GetCenter();
+  auto p = fWireReadoutGeom->OpDetGeoFromOpChannel(pdChannel).GetCenter();
   if(fCryostat == 0) p.SetX((p.X() + 222.)/2. - 222.);//OpDets are outside the TPCs
   if(fCryostat == 1) p.SetX((p.X() - 222.)/2. + 222.);//OpDets are outside the TPCs
   return (fGeometry->PositionToTPCID(p)).TPC;
@@ -1790,8 +1789,7 @@ double FlashPredict::wallXWithMaxPE(const OpHitIt opH_beg,
   for(auto oph=opH_beg; oph!=opH_end; ++oph){
     double ophPE = oph->PE();
     double ophPE2 = ophPE*ophPE;
-    double opdetX = fGeometry->OpDetGeoFromOpChannel(
-      oph->OpChannel()).GetCenter().X();
+    double opdetX = fWireReadoutGeom->OpDetGeoFromOpChannel(oph->OpChannel()).GetCenter().X();
     bool stored = false;
     for(auto& m : opdetX_PE){
       if(std::abs(m.first - opdetX) < 5.) {
@@ -1858,8 +1856,9 @@ std::list<double> FlashPredict::wiresXGl() const
 {
   std::list<double> wiresX_gl;
   for (size_t t = 0; t < fNTPC; t++) {
-    const geo::TPCGeo& tpcg = fGeoCryo->TPC(t);
-    wiresX_gl.push_back(tpcg.LastPlane().GetCenter().X());
+    const geo::TPCID& tpcid = fGeoCryo->TPC(t).ID();
+    unsigned int const n_planes = fWireReadoutGeom->Nplanes(tpcid);
+    wiresX_gl.push_back(fWireReadoutGeom->Plane({tpcid, n_planes - 1}).GetCenter().X());
   }
   wiresX_gl.unique([](double l, double r) { return std::abs(l - r) < 0.00001;});
   return wiresX_gl;

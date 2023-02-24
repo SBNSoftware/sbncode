@@ -21,6 +21,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/WireGeo.h"
@@ -392,6 +393,7 @@ private:
   const unsigned fMinInTimeFlashes, fMaxFlashes;
   const double fMinOpHPE, fMinFlashPE, fFlashPEFraction;
   const art::ServiceHandle<geo::Geometry> fGeometry;
+  const geo::WireReadoutGeom* const fWireReadoutGeom;
   const std::string fDetector; // SBND or ICARUS
   const bool fSBND, fICARUS;
   const std::unique_ptr<opdet::PDMapAlg> fPDMapAlgPtr;

@@ -39,9 +39,8 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/TrackHitMeta.h"
-#include "larcore/Geometry/Geometry.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larreco/Calorimetry/CalorimetryAlg.h"
@@ -115,7 +114,8 @@ sbn::VertexStubTracker::VertexStubTracker(fhicl::ParameterSet const& p)
 void sbn::VertexStubTracker::produce(art::Event& e)
 {
   // collect services
-  const geo::GeometryCore *geo = lar::providerFrom<geo::Geometry>();
+  auto const& geom = *art::ServiceHandle<geo::Geometry>();
+  auto const& channelMap = art::ServiceHandle<geo::WireReadout>()->Get();
   auto const clock_data = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   auto const dprop =
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(e, clock_data);
@@ -165,7 +165,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
       if (!passcut) continue;
 
       sbn::StubInfo sinfo;
-      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, geo, sce, clock_data, dprop, e, sinfo.hits, sinfo.pfp); 
+      sinfo.stub = fStubBuilder.FromVertexHit(thisSlice, thisVHit, thisVHitHit, geom, channelMap, sce, clock_data, dprop, e, sinfo.hits, sinfo.pfp);
       sinfo.vhit = vhits[i_vhit];
       sinfo.vhit_hit = vhitHits.at(i_vhit).at(0);
 
@@ -175,7 +175,7 @@ void sbn::VertexStubTracker::produce(art::Event& e)
 
     // Run all of the merging tools
     for (unsigned i_mrg = 0; i_mrg < fStubMergeTools.size(); i_mrg++) {
-      stubs = fStubMergeTools[i_mrg]->Merge(stubs, geo, sce, clock_data, dprop);
+      stubs = fStubMergeTools[i_mrg]->Merge(stubs, channelMap, sce, clock_data, dprop);
     }
 
     // Save!
