@@ -37,6 +37,7 @@
 
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larcore/Geometry/WireReadout.h"
 #include "larcore/Geometry/Geometry.h"
 
 #include "nusimdata/SimulationBase/MCParticle.h"
@@ -158,6 +159,7 @@ namespace single_photon
     //        detClocks   = lar::providerFrom<detinfo::DetectorClocksService>();
     paras.s_SCE = lar::providerFrom<spacecharge::SpaceChargeService>();//Get space charge service
     paras.s_geom =  lar::providerFrom<geo::Geometry>();
+    paras.s_wireReadout = &art::ServiceHandle<geo::WireReadout>()->Get();
     std::cout<<"SinglePhoton::"<<__FUNCTION__<<" now can start jobs --------------------"<<std::endl;
 
   }
@@ -1097,7 +1099,7 @@ namespace single_photon
       //Setup seaviewr object
       ////CHECK undefined reference? Found in header, but not defined;
       //Solution: add MODULE_LIBRARIES in cmake;
-      seaview::SEAviewer sevd("Stub_"+uniq_tag,paras.s_geom, theDetector);
+      seaview::SEAviewer sevd("Stub_"+uniq_tag,paras.s_geom, paras.s_wireReadout, theDetector);
       //Pass in any bad channels you like
       //            sevd.setBadChannelList(bad_channel_list_fixed_mcc9);
       //Give it a vertex to center around
@@ -1277,7 +1279,7 @@ namespace single_photon
       std::string uniq_tag = "HitThres_"+ std::to_string(static_cast<int>(paras.s_SEAviewHitThreshold)) + "_" + std::to_string(vars.m_run_number)+"_"+std::to_string(vars.m_subrun_number)+"_"+std::to_string(vars.m_event_number);
 
       //Setup seaviewr object
-      seaview::SEAviewer sevd("Shower_"+uniq_tag, paras.s_geom, theDetector );
+      seaview::SEAviewer sevd("Shower_"+uniq_tag, paras.s_geom, paras.s_wireReadout, theDetector );
       //Pass in any bad channels you like
       //            sevd.setBadChannelList(bad_channel_list_fixed_mcc9);
       //Give it a vertex to center around

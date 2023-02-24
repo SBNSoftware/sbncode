@@ -1,4 +1,3 @@
-
 #include "larproperties.fcl"
 #include "backtrackerservice.fcl"
 #include "particleinventoryservice.fcl"
@@ -26,8 +25,7 @@ services:
 {
   TFileService: { fileName: "fullchain_production_hist_prod5.root" closeFileFast: false }
 
-  AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
-  ExptGeoHelperInterface:    @local::sbnd_geometry_helper
+  WireReadout:               @local::sbnd_wire_readout
   Geometry:                  @local::sbnd_geo
   AuxDetGeometry:            @local::sbnd_auxdetgeo
   LArPropertiesService:      @local::standard_properties
