@@ -113,6 +113,7 @@ namespace caf
   }
 
   void FillOpFlash(const recob::OpFlash &flash,
+                  const std::vector<art::Ptr<recob::OpHit>> &hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
@@ -121,6 +122,14 @@ namespace caf
 
     srflash.time = flash.Time();
     srflash.timewidth = flash.TimeWidth();
+
+    double firstTime = 999999;
+    for(const auto& hit: hits){
+      if (firstTime > hit->PeakTime())
+        firstTime = hit->PeakTime();
+    }
+    srflash.firsttime = firstTime;
+
     srflash.cryo = cryo; // 0 in SBND, 0/1 for E/W in ICARUS
 
     // Sum over each wall, not very SBND-compliant
