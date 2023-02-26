@@ -1330,6 +1330,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 
         srflashes.emplace_back();
         FillOpFlash(flash, ophits, cryostat, srflashes.back());
+        iflash++;
       }
     }
   }
