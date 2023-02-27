@@ -428,10 +428,13 @@ void ALPMakeDecay::configure(fhicl::ParameterSet const &pset)
     // Get each partial width
     double width_muon = MuonPartialWidth(fReferenceALPMass, fReferenceALPcAl, fReferenceALPDecayConstant);
     double width_gamma = GammaPartialWidth(fReferenceALPMass, fReferenceALPcB, fReferenceALPcW, fReferenceALPcG, fReferenceALPcAl, fReferenceALPDecayConstant);
+    double width_2pig = PiPPiMGammaPartialWidth(fReferenceALPMass, fReferenceALPcG, fReferenceALPDecayConstant);
+    double width_3pi = PiPPiMPi0PartialWidth(fReferenceALPMass, fReferenceALPcG, fReferenceALPDecayConstant) +\
+                       Pi0Pi0Pi0PartialWidth(fReferenceALPMass, fReferenceALPcG, fReferenceALPDecayConstant);
 
     std::cout << "MU WIDTH: " << width_muon << " GAMMA WIDTH: " << width_gamma << std::endl;
     double partial_width = width_muon + width_gamma*fAllowEMDecay;
-    double total_width = width_muon + width_gamma;
+    double total_width = width_muon + width_gamma + width_3pi + width_2pig;
 
     // total lifetime
     double lifetime_ns = Constants::Instance().hbar / total_width;
@@ -458,12 +461,18 @@ bool ALPMakeDecay::Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVec
 
   double fA = flux.C1; 
   double cAl = flux.C2;
+  double cG = flux.C3;
+  double cB = flux.C4;
+  double cW = flux.C5;
 
   // Get each partial width
   double width_muon = MuonPartialWidth(flux.mass, cAl, fA);
-  double width_gamma = GammaPartialWidth(flux.mass, 1, 1, 1, cAl, fA);
+  double width_gamma = GammaPartialWidth(flux.mass, cB, cW, cG, cAl, fA);
+  // TODO: allow decays to hadronic final states
+  double width_2pig = PiPPiMGammaPartialWidth(flux.mass, cG, fA); 
+  double width_3pi = PiPPiMPi0PartialWidth(flux.mass, cG, fA) + Pi0Pi0Pi0PartialWidth(flux.mass, cG, fA); 
 
-  double total_width = width_muon + width_gamma;
+  double total_width = width_muon + width_gamma + width_2pig + width_3pi;
   double partial_width = width_muon + width_gamma*fAllowEMDecay;
 
   double partial_to_total = partial_width / total_width;
