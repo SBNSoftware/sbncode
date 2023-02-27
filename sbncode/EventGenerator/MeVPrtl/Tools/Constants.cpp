@@ -30,10 +30,20 @@ Constants::Constants() {
   sin2thetaW = 0.2312; // electroweak mixing angle https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf
   gL = -0.5 + sin2thetaW;
   gR = sin2thetaW;
+
   fpion = 0.1302; // Pion decay constant [GeV] https://pdg.lbl.gov/2020/reviews/rpp2020-rev-pseudoscalar-meson-decay-cons.pdf (FLAG 19 average)
-  feta = 1.2*fpion;
-  fetap = -0.45*fpion;
-  grho = 0.102; // [GeV^2]
+
+  // compute the eta decay constants
+  // From https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
+  double f0 = 0.148; // GeV
+  double f8 = 0.165; // GeV
+  double th0 = -6.9*M_PI/180; // rad
+  double th8 = -21.2*M_PI/180.; // rad
+  feta = cos(th8)*f8/sqrt(3) + sin(th0)*f0/sqrt(6); // eq 83
+  fetap = sin(th8)*f8/sqrt(3) - cos(th0)*f0/sqrt(6); // eq 83
+
+  frho = 0.171; // GeV^2
+  grho = 1 - 2*sin2thetaW; // https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
 
   // unit conversion
   hbar = 6.582119569e-16; // GeV*ns or eV*s https://pdg.lbl.gov/2020/reviews/rpp2020-rev-phys-constants.pdf

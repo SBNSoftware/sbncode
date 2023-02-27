@@ -43,6 +43,7 @@ public:
   double fpion;
   double feta;
   double fetap;
+  double frho;
   double grho;
 
   // unit conversion

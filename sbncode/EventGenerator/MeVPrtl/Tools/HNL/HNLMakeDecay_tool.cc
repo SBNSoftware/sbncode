@@ -52,6 +52,7 @@ namespace ldm {
  *  Implementation of HNL decay ->mupi taken from:
  *      https://arxiv.org/abs/1610.08512
  *      https://arxiv.org/abs/0901.3589
+ *      https://link.springer.com/article/10.1140/epjc/s10052-021-08861-y
  */
 class HNLMakeDecay : public IMeVPrtlDecay {
 public:
@@ -138,7 +139,7 @@ private:
   double NuDiLepDecayWidth(double hnl_mass, double u4, int nu_pdg, int lep_pdg);
   double TriNuDecayWidth(double hnl_mass, double u4tot);
   double NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const);
-  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const);
+  double NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const);
   double LepPiWidth(double hnl_mass, double u4, double lep_mass);
 
   // Width implementation functions
@@ -202,7 +203,7 @@ double HNLMakeDecay::NuEtaPWidth(double hnl_mass, double ue4, double um4, double
   return NuP0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().etap_mass, Constants::Instance().fetap); 
 }
 double HNLMakeDecay::NuRho0Width(double hnl_mass, double ue4, double um4, double ut4) {
-  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().grho); 
+  return NuV0DecayWidth(hnl_mass, ue4 + um4 + ut4, Constants::Instance().rho_mass, Constants::Instance().frho, Constants::Instance().grho); 
 }
 
 // Valid for decays where the matix element has no kinematic dependence (i.e. a constant Dalitz density)
@@ -336,13 +337,13 @@ double HNLMakeDecay::NuP0DecayWidth(double hnl_mass, double u4tot, double m0_mas
   return Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*u4tot*(1-mu_m0)*(1-mu_m0) / (32*M_PI);
 }
 
-double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_g_const) {
+double HNLMakeDecay::NuV0DecayWidth(double hnl_mass, double u4tot, double m0_mass, double m0_decay_const, double m0_g_const) {
   double Gfermi = Constants::Instance().Gfermi;
   double hnl_mass_pow3 = hnl_mass*hnl_mass*hnl_mass;
 
   double mu_m0 = m0_mass*m0_mass / hnl_mass*hnl_mass;
 
-  return ((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0)); 
+  return ((u4tot*Gfermi*Gfermi*hnl_mass_pow3*m0_decay_const*m0_decay_const*m0_g_const*m0_g_const) / (16*M_PI*m0_mass*m0_mass) * (1+2*m0_mass*m0_mass/(hnl_mass*hnl_mass)) * (1-mu_m0)*(1-mu_m0)); 
 
 }
 
