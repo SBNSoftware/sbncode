@@ -20,7 +20,7 @@ Constants::Constants() {
   klong_mass = 0.497611; // GeV https://pdg.lbl.gov/2020/listings/rpp2020-list-K-zero.pdf
   tquark_mass = 172.76; // GeV https://pdg.lbl.gov/2020/tables/rpp2020-sum-quarks.pdf (direct measurements)
   eta_mass = 0.547862; // GeV
-  rho_mass = 0.77526; // GeV
+  rho_mass = 0.77526; // GeV https://pdg.lbl.gov/2019/listings/rpp2019-list-rho-770.pdf
   etap_mass = 0.95778; // GeV
 
   // Couplings
@@ -45,6 +45,9 @@ Constants::Constants() {
 
   // other lifetimes
   tau_lifetime = 290.3e-6; // ns https://pdg.lbl.gov/2019/tables/rpp2019-sum-leptons.pdf
+
+  // and widths
+  rho_width = 0.1478; // GeV https://pdg.lbl.gov/2019/listings/rpp2019-list-rho-770.pdf
 
   // Kaon decay branching ratios
   kaonp_mup_numu = 0.6356; // From PDG: https://pdg.lbl.gov/2020/listings/rpp2020-list-K-plus-minus.pdf

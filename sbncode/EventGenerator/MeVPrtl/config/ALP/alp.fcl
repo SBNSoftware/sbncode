@@ -4,12 +4,18 @@ BEGIN_PROLOG
 alpM: 0.4
 fa: 1e5 # GeV
 cAl: 0.01
+cB: 1
+cW: 1
+cG: 1
 
 m02alp: {
   tool_type: Meson2ALP
   M: @local::alpM
   fa: @local::fa
   cAl: @local::cAl
+  cB: @local::cB
+  cW: @local::cW
+  cG: @local::cG
 
   # Weight from 87% of protons interacting in the target
   MaxWeightEta: 0.87
@@ -28,6 +34,9 @@ decay_alp: {
   ReferenceALPMass: @local::alpM
   ReferenceALPDecayConstant: @local::fa
   ReferenceALPcAl: @local::cAl
+  ReferenceALPcB: @local::cB
+  ReferenceALPcG: @local::cG
+  ReferenceALPcW: @local::cW
   ReferenceRayLength: 2100 # 21m
   ReferenceRayDistance: 10400 # 104m
   ReferenceALPEnergy: 1 # GeV

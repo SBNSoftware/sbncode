@@ -56,6 +56,9 @@ public:
   // other lifetimes
   double tau_lifetime;
 
+  // and widths
+  double rho_width;
+
   // kaon decay branching ratios
   double kaonp_mup_numu;
   double kaonp_ep_nue;

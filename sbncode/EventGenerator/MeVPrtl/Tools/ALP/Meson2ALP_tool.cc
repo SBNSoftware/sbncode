@@ -73,6 +73,9 @@ private:
   double fM; //!< Mass of axion [GeV]
   double ffa; //!< Axion decay constant [GeV]
   double fcAl; //!< Axial coupling to leptons
+  double fcG; //!< Axion coupling to gluon
+  double fcB; //!< Axion coupling to U(1) B boson (before EW symmetry breaking)
+  double fcW; //!< Axion coupling to SU(2) W bosons (before EW symmetry breaking)
 
   // branching ratios
   double fPi0BR;
@@ -105,6 +108,9 @@ void Meson2ALP::configure(fhicl::ParameterSet const &pset)
   fM = pset.get<double>("M");
   ffa = pset.get<double>("fa");
   fcAl = pset.get<double>("cAl");
+  fcG = pset.get<double>("cG");
+  fcB = pset.get<double>("cB");
+  fcW = pset.get<double>("cW");
 
   fMaxWeightPi0 = pset.get<double>("MaxWeightPi0", 1.);
   fMaxWeightEta = pset.get<double>("MaxWeightEta", 1.);
@@ -128,7 +134,7 @@ double Meson2ALP::EtaBR() const {
   double pzero_mass = Constants::Instance().pizero_mass;
   double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
-  double mixing_angle = (1. / sqrt(6)) * (fpion / ffa) * (fM*fM - (4./9.)*pzero_mass*pzero_mass) / (fM*fM - eta_mass*eta_mass);
+  double mixing_angle = (1. / sqrt(6)) * (fcG * fpion / ffa) * (fM*fM - (4./9.)*pzero_mass*pzero_mass) / (fM*fM - eta_mass*eta_mass);
   double qcd_rate_f = 1.;
   if (fM > eta_mass) qcd_rate_f = pow(fM/eta_mass, -1.6);
 
@@ -140,7 +146,7 @@ double Meson2ALP::EtaPBR() const {
   double pzero_mass = Constants::Instance().pizero_mass;
   double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
-  double mixing_angle = (1. / sqrt(12)) * (fpion / ffa) * (fM*fM - (16./9.)*pzero_mass*pzero_mass) / (fM*fM - etap_mass*etap_mass);
+  double mixing_angle = (1. / sqrt(12)) * (fcG * fpion / ffa) * (fM*fM - (16./9.)*pzero_mass*pzero_mass) / (fM*fM - etap_mass*etap_mass);
   double qcd_rate_f = 1.;
   if (fM > etap_mass) qcd_rate_f = pow(fM/etap_mass, -1.6);
 
@@ -151,7 +157,7 @@ double Meson2ALP::Pi0BR() const {
   double pzero_mass = Constants::Instance().pizero_mass;
   double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
-  double mixing_angle = (1./6) * (fpion / ffa) * fM*fM / (fM*fM - pzero_mass*pzero_mass);
+  double mixing_angle = (1./6) * (fcG * fpion / ffa) * fM*fM / (fM*fM - pzero_mass*pzero_mass);
 
   double qcd_rate_f = 1.;
   if (fM > pzero_mass) qcd_rate_f = pow(fM/pzero_mass, -1.6);
@@ -203,6 +209,9 @@ bool Meson2ALP::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &alp,
   // set the mixing
   alp.C1 = ffa;
   alp.C2 = fcAl;
+  alp.C3 = fcG;
+  alp.C4 = fcB;
+  alp.C5 = fcW;
   alp.mass = fM;
 
   alp.meson_pdg = meson.meson_pdg;

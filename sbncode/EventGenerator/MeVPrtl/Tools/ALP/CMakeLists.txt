@@ -1,3 +1,9 @@
+art_make_library( LIBRARY_NAME sbncode_EventGenerator_MeVPrtl_ALP_ThreeBodyIntegrator
+          SOURCE ThreeBodyIntegrator.cc
+          LIBRARIES
+                            GSL::gsl
+)
+
 cet_build_plugin( Meson2ALP art::tool
                         LIBRARIES
                             art::Framework_Core
@@ -35,6 +41,7 @@ cet_build_plugin( ALPMakeDecay art::tool
                             sbncode_EventGenerator_MeVPrtl_Dalitz
                             sbncode_EventGenerator_MeVPrtl_Constants
                             sbnobj::Common_EventGen_MeVPrtl
+			    sbncode_EventGenerator_MeVPrtl_ALP_ThreeBodyIntegrator
 )
 
 install_headers()

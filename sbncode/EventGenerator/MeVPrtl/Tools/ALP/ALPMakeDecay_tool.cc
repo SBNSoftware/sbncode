@@ -16,6 +16,7 @@
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
+#include "sbncode/EventGenerator/MeVPrtl/Tools/ALP/ThreeBodyIntegrator.h"
 
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 
@@ -33,9 +34,14 @@
 #include <utility>
 #include <complex>
 #include <cmath>
+#include <functional>
+
+#include <gsl/gsl_integration.h>
 
 // constants
 #include "TDatabasePDG.h"
+
+using namespace std::complex_literals;
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
@@ -63,7 +69,6 @@ public:
     void configure(fhicl::ParameterSet const &pset) override;
 
     bool Decay(const MeVPrtlFlux &flux, const TVector3 &in, const TVector3 &out, MeVPrtlDecay &decay, double &weight) override;
-    int RandDaughter(double elec_width, double muon_width, double piplus_width, double pizero_width);
 
     // returns the max weight of configured
     double MaxWeight() override { 
@@ -75,6 +80,9 @@ private:
   double fReferenceRayDistance;
   double fReferenceALPMass;
   double fReferenceALPcAl;
+  double fReferenceALPcG;
+  double fReferenceALPcB;
+  double fReferenceALPcW;
   double fReferenceALPDecayConstant;
   double fReferenceALPEnergy;
   bool fAllowEMDecay;
@@ -111,17 +119,17 @@ std::complex<double> B1(double x) {
     g = asin(1./sqrt(x));
   }
   else {
-    g = std::complex<double>(M_PI/2., std::log((1+sqrt(1-x)) / (1-sqrt(1-x))));
+    g = std::complex<double>(M_PI/2., std::log((1+sqrt(1-x)) / (1-sqrt(1-x)))/2);
   }
   return 1. - x*g*g;
 }
 
 // a -> gamma+gamma
-double GammaPartialWidth(double alp_mass, double c1, double c2, double c3, double cAl, double fa) {
+double GammaPartialWidth(double alp_mass, double cB, double cW, double cG, double cAl, double fa) {
   double pion_mass = Constants::Instance().pizero_mass;
   double eta_mass = Constants::Instance().eta_mass;
   double etap_mass = Constants::Instance().etap_mass;
-  double cgluon = c3*(-1.92 /*low-E QCD*/ + 
+  double cgluon = cG*(-1.92 /*low-E QCD*/ + 
                      (1./3.)*alp_mass*alp_mass / (alp_mass*alp_mass - pion_mass*pion_mass) /* pion */ +
                      (8./9.)*(alp_mass*alp_mass - (4./9.)*pion_mass*pion_mass) / (alp_mass*alp_mass - eta_mass * eta_mass) /* eta */ +
                      (7./9.)*(alp_mass*alp_mass - (16./9.)*pion_mass*pion_mass) / (alp_mass*alp_mass - etap_mass*etap_mass) /* eta' */); 
@@ -133,7 +141,7 @@ double GammaPartialWidth(double alp_mass, double c1, double c2, double c3, doubl
                        B1(4*muon_mass*muon_mass / (alp_mass*alp_mass)) +
                        B1(4*tau_mass*tau_mass / (alp_mass*alp_mass)));
 
-  std::complex<double> cgamma = (5./3.)*c1 + c2 + cgluon + clep;
+  std::complex<double> cgamma = (5./3.)*cB + cW + cgluon + clep;
 
   double fsc = Constants::Instance().fine_structure_constant;
   double width = fsc*fsc*std::norm(cgamma)*alp_mass*alp_mass*alp_mass/(256*M_PI*M_PI*M_PI*fa*fa);
@@ -142,14 +150,247 @@ double GammaPartialWidth(double alp_mass, double c1, double c2, double c3, doubl
 }
 
 // a -> pi+pi-pi0 
+double AmplitudePiPPiMPi0(double alp_mass, double fa_eff, double m2_pip_pim) {
+  double deltaI = 1./3.; // isospin violation
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double eta_mass = Constants::Instance().eta_mass;
+  double etap_mass = Constants::Instance().etap_mass;
+  double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
+
+  double M2_pi0_pi0 = pizero_mass*pizero_mass;
+  double M2_eta_pi0 = - M2_pi0_pi0*sqrt(2./3.);
+  double M2_etap_pi0 = -M2_pi0_pi0/sqrt(3.);
+  double S_eta_pi0 = M2_eta_pi0 / (eta_mass*eta_mass - pizero_mass*pizero_mass);
+  double S_etap_pi0 = M2_etap_pi0 / (etap_mass*etap_mass - pizero_mass*pizero_mass);
+
+  double expct_a_pi = (deltaI / 2.) * (alp_mass*alp_mass) / (alp_mass*alp_mass - pizero_mass*pizero_mass);
+  double expct_a_eta = (alp_mass*alp_mass/sqrt(6.) - pizero_mass*pizero_mass/sqrt(24.)) / (alp_mass*alp_mass - eta_mass*eta_mass);
+  double expct_a_etap = (alp_mass*alp_mass/sqrt(12.) - pizero_mass*pizero_mass/sqrt(3.)) / (alp_mass*alp_mass - etap_mass*etap_mass);
+
+
+  return (1. / (3.*fa_eff*fpion))*((3*m2_pip_pim - alp_mass*alp_mass - 2*pizero_mass*pizero_mass)*expct_a_pi\
+                               - deltaI*pizero_mass*pizero_mass*(1./sqrt(3.) + sqrt(2.)*S_eta_pi0 + S_etap_pi0)*(sqrt(2)*expct_a_eta + expct_a_etap)\
+                               + deltaI*(pizero_mass*pizero_mass - 2*eta_mass*eta_mass)/(pizero_mass*pizero_mass-4*eta_mass*eta_mass)*\
+                                   (sqrt(3.)*pizero_mass*pizero_mass*(sqrt(2.)*S_eta_pi0 + S_etap_pi0) - 3*m2_pip_pim + alp_mass*alp_mass + 3*pizero_mass*pizero_mass));
+}
+
+double PiPPiMPi0PartialWidth(double alp_mass, double cG, double fa) {
+  double piplus_mass = Constants::Instance().piplus_mass;
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double kfactor = 2.7; // Fudge factor to match eta, eta' decay widths
+  double S = 1; // symmetry factor
+
+  if (2*piplus_mass + pizero_mass >= alp_mass) return 0.;
+
+  // setup integration
+  std::array<double, 4> masses {alp_mass, piplus_mass, piplus_mass, pizero_mass};
+  std::function<double (double, double)> integrand = [alp_mass, fa, cG](double m122, double m232) -> double {return AmplitudePiPPiMPi0(alp_mass, fa/cG, m122);};
+  ThreeBodyIntegrator integral(masses, integrand);
+
+  return (kfactor / (2*S*alp_mass)) * integral.Integrate(); 
+}
 
 // a -> pi0pi0pi0
+double AmplitudePi0Pi0Pi0(double alp_mass, double fa_eff) {
+  double deltaI = 1./3.; // isospin violation
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double eta_mass = Constants::Instance().eta_mass;
+  double etap_mass = Constants::Instance().etap_mass;
+  double fpion = Constants::Instance().fpion / sqrt(2); // fpi ~ 93MeV convention
 
-// a -> pi0pi0pi0
+  double M2_pi0_pi0 = pizero_mass*pizero_mass;
+  double M2_eta_pi0 = - M2_pi0_pi0*sqrt(2./3.);
+  double M2_etap_pi0 = -M2_pi0_pi0/sqrt(3.);
+  double S_eta_pi0 = M2_eta_pi0 / (eta_mass*eta_mass - pizero_mass*pizero_mass);
+  double S_etap_pi0 = M2_etap_pi0 / (etap_mass*etap_mass - pizero_mass*pizero_mass);
 
-// a-> pi0pi0gamma
+  double expct_a_pi = (deltaI / 2.) * (alp_mass*alp_mass) / (alp_mass*alp_mass - pizero_mass*pizero_mass);
+  double expct_a_eta = (alp_mass*alp_mass/sqrt(6.) - pizero_mass*pizero_mass/sqrt(24.)) / (alp_mass*alp_mass - eta_mass*eta_mass);
+  double expct_a_etap = (alp_mass*alp_mass/sqrt(12.) - pizero_mass*pizero_mass/sqrt(3.)) / (alp_mass*alp_mass - etap_mass*etap_mass);
+
+  return (pizero_mass*pizero_mass / (fa_eff*fpion)) * (expct_a_pi - deltaI*(1./sqrt(3) + sqrt(2)*S_eta_pi0 + S_etap_pi0)*(sqrt(2.)*expct_a_eta + expct_a_etap) +\
+                                                     sqrt(3)*deltaI*((pizero_mass*pizero_mass - 2*eta_mass*eta_mass) / (pizero_mass*pizero_mass - 4*eta_mass*eta_mass))*\
+                                                     (sqrt(2.)*S_eta_pi0 + S_etap_pi0));
+}
+
+double Pi0Pi0Pi0PartialWidth(double alp_mass, double cG, double fa) {
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double kfactor = 2.7; // Fudge factor to match eta, eta' decay widths
+  double S = 6; // symmetry factor
+
+  if (3*pizero_mass >= alp_mass) return 0.;
+
+  // setup integration
+  std::array<double, 4> masses {alp_mass, pizero_mass, pizero_mass, pizero_mass};
+  // auto integrand = [alp_mass, cG, fa](double m122, double m232) {return pow(AmplitudePi0Pi0Pi0(alp_mass, fa/cG), 2.);};
+  std::function<double (double, double)> integrand = [alp_mass, fa, cG](double m122, double m232) -> double {return AmplitudePi0Pi0Pi0(alp_mass, fa/cG);};
+  ThreeBodyIntegrator integral(masses, integrand);
+
+  return (kfactor / (2*S*alp_mass)) * integral.Integrate(); 
+}
 
 // a-> pi+pi-gamma
+double PiPPiMGammaGSLIntegrand(double s, void *param);
+double PiPPiMGammaIntegrand(double m2pipi, double alp_mass, double expct_a_eta, double expct_a_etap);
+double GS_BW_betapi(double s);
+double GS_BW_Gamma(double s, double m, double G);
+double GS_BW_k(double s);
+double GS_BW_h(double s);
+double GS_BW_hprime(double s);
+double GS_BW_d(double m);
+double GS_BW_f(double s, double m, double G);
+std::complex<double> RhoBreitWeitner(double s);
+
+double PiPPiMGammaPartialWidth(double alp_mass, double cG, double fa, bool a_is_etap=false) {
+  double piplus_mass = Constants::Instance().piplus_mass;
+  double alpha_em = Constants::Instance().fine_structure_constant;
+  double pizero_mass = Constants::Instance().pizero_mass;
+  double eta_mass = Constants::Instance().eta_mass;
+  double etap_mass = Constants::Instance().etap_mass;
+
+  if (2*piplus_mass >= alp_mass) return 0.;
+
+  double fa_eff = fa/cG;
+
+  double m2pipi_min = 4*piplus_mass*piplus_mass;
+  double m2pipi_max = alp_mass*alp_mass;
+
+  double expct_a_eta = a_is_etap ? 0. : (alp_mass*alp_mass/sqrt(6.) - pizero_mass*pizero_mass/sqrt(24.)) / (alp_mass*alp_mass - eta_mass*eta_mass);
+  double expct_a_etap = a_is_etap ? 1. :(alp_mass*alp_mass/sqrt(12.) - pizero_mass*pizero_mass/sqrt(3.)) / (alp_mass*alp_mass - etap_mass*etap_mass);
+
+  int integrator_size = 1000;
+  gsl_integration_workspace *integrator = gsl_integration_workspace_alloc(integrator_size);
+
+  gsl_function F;
+  double fparms[3] {alp_mass, expct_a_eta, expct_a_etap};
+  F.function = &PiPPiMGammaGSLIntegrand; 
+  F.params = fparms;
+  double result, error;
+  gsl_integration_qags(&F, m2pipi_min, m2pipi_max, 0., 1e-7, integrator_size, integrator, &result, &error);
+ 
+  double integral = result;
+  double prefactor = 3*alpha_em*alp_mass*alp_mass*alp_mass / (2048*pow(M_PI, 6)*fa_eff*fa_eff);
+
+  gsl_integration_workspace_free(integrator);
+
+  /*
+  double rho_mass = Constants::Instance().rho_mass;
+  double rho_width = Constants::Instance().rho_width;
+  std::cout << "BETAPI: " << GS_BW_betapi(0.5) << std::endl;
+  std::cout << "GAMMA: " << GS_BW_Gamma(0.5, rho_mass, rho_width) << std::endl;
+  std::cout << "k: " << GS_BW_k(0.5) << std::endl;
+  std::cout << "h: " << GS_BW_h(0.5) << std::endl;
+  std::cout << "hprime: " << GS_BW_hprime(0.5) << std::endl;
+  std::cout << "d: " << GS_BW_d(rho_mass) << std::endl;
+  std::cout << "f: " << GS_BW_f(0.5, rho_mass, rho_width) << std::endl;
+  std::cout << "BW: " << RhoBreitWeitner(0.5) << std::endl;
+  std::cout << "PREFACTOR: " << prefactor << " INTEGRAL: " << integral << " INTEGRAND 0.5: " << PiPPiMGammaIntegrand(0.5 ,alp_mass, expct_a_eta, expct_a_etap) << std::endl;
+  */
+
+  return integral*prefactor;
+}
+
+double GS_BW_betapi(double s) {
+  double pimass = Constants::Instance().piplus_mass;
+
+  return sqrt(1 - 4.*pimass*pimass / s);
+}
+
+double GS_BW_Gamma(double s, double m, double G) {
+  double beta_frac = GS_BW_betapi(s) / GS_BW_betapi(m*m);
+  return G*(s/(m*m))*beta_frac*beta_frac*beta_frac;
+}
+
+double GS_BW_k(double s) {
+  return (1./2.)*sqrt(s)*GS_BW_betapi(s);
+}
+
+double GS_BW_h(double s) {
+  double pimass = Constants::Instance().piplus_mass;
+
+  return (2./M_PI)*(GS_BW_k(s)/sqrt(s))*std::log((sqrt(s) + 2*GS_BW_k(s)) / (2*pimass));
+}
+
+double GS_BW_hprime(double s) {
+  double pimass = Constants::Instance().piplus_mass;
+
+  return (1./(2*M_PI*s)) + (2*pimass*pimass / (M_PI*s*s*GS_BW_betapi(s))) * std::log((1+GS_BW_betapi(s))*sqrt(s)/(2*pimass));
+}
+
+double GS_BW_d(double m) {
+  double pimass = Constants::Instance().piplus_mass;
+  double kval = GS_BW_k(m*m);
+
+  return (3/M_PI)*(pimass*pimass/(kval*kval))*std::log((m+2*kval)/(2*pimass)) + m/(2*M_PI*kval) - pimass*pimass*m/(M_PI*kval*kval*kval);
+}
+
+double GS_BW_f(double s, double m, double G) {
+  double kval_s = GS_BW_k(s);
+  double kval_m2 = GS_BW_k(m*m);
+  double hval_s = GS_BW_h(s); 
+  double hval_m2 = GS_BW_h(m*m);
+  double hpval = GS_BW_hprime(m*m);
+
+  return (G*m*m/(kval_m2*kval_m2*kval_m2))*(kval_s*kval_s*(hval_s-hval_m2) + (m*m-s)*kval_m2*kval_m2*hpval);
+}
+
+std::complex<double> RhoBreitWeitner(double s) {
+  double rho_mass = Constants::Instance().rho_mass;
+  double rho_width = Constants::Instance().rho_width;
+
+   return (1. + GS_BW_d(rho_mass) * rho_width / rho_mass) /\
+          (rho_mass*rho_mass - s + GS_BW_f(s, rho_mass, rho_width) - 1i*rho_mass*GS_BW_Gamma(s, rho_mass, rho_width)); 
+}
+
+double PiPPiMGammaIntegrand(double m2pipi, double alp_mass, double expct_a_eta, double expct_a_etap) {
+  double pimass = Constants::Instance().piplus_mass;
+
+  double g2 = 12*M_PI;
+
+  double arhorho = expct_a_eta/sqrt(6) + expct_a_etap/sqrt(12);
+  double BW2 = std::norm(RhoBreitWeitner(m2pipi));
+
+  return g2*g2*m2pipi*BW2*arhorho*arhorho*pow((1-m2pipi/(alp_mass*alp_mass)), 3)*pow(1-4*pimass*pimass/m2pipi, 3./2.);
+}
+
+double PiPPiMGammaGSLIntegrand(double s, void *param) {
+  double *d_param = (double*)param;
+  return PiPPiMGammaIntegrand(s, d_param[0], d_param[1], d_param[2]);
+}
+
+void ValidateWidths() {
+  // Test out partial width calculations
+  std::cout << "Expected etap -> pipigamma: 6e-5. Value: " << PiPPiMGammaPartialWidth(Constants::Instance().etap_mass, 1., Constants::Instance().fpion/sqrt(2.), true) << std::endl;
+
+  // Checks from: https://arxiv.org/pdf/2207.08448.pdf
+  // Gamma-Gamma
+  std::cout << "Gamma-Gamma width check. fa=1Tev, cAl=1/100, cG=cW=cB=1\n";
+  std::cout << "Ma: 0.2222, Width: 1.0972e-16. Computed: " << GammaPartialWidth(0.222, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.2910, Width: 1.6518e-16. Computed: " << GammaPartialWidth(0.291, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.4002, Width: 1.5805e-17. Computed: " << GammaPartialWidth(0.4002, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.5006, Width: 9.4747e-15. Computed: " << GammaPartialWidth(0.5006, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.6013, Width: 5.6408e-14. Computed: " << GammaPartialWidth(0.6013, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.7003, Width: 1.7404e-14. Computed: " << GammaPartialWidth(0.7003, 1., 1., 1., 0.01, 1e3) << std::endl;
+  std::cout << "Ma: 0.8011, Width: 4.0770e-15. Computed: " << GammaPartialWidth(0.8011, 1., 1., 1., 0.01, 1e3) << std::endl;
+
+  // 2Pi-Gamma
+  std::cout << "pi+ - pi- - Gamma width check. fa=1Tev, cAl=1/100, cG=cW=cB=1\n";
+  std::cout << "Ma: 0.4187, Width: 1.1543e-18. Computed: " << PiPPiMGammaPartialWidth(0.4187, 1., 1e3) << std::endl;
+  std::cout << "Ma: 0.5007, Width: 2.0839e-15. Computed: " << PiPPiMGammaPartialWidth(0.5007, 1., 1e3) << std::endl;
+  std::cout << "Ma: 0.6013, Width: 2.6454e-14. Computed: " << PiPPiMGammaPartialWidth(0.6013, 1., 1e3) << std::endl;
+  std::cout << "Ma: 0.7003, Width: 1.8644e-14. Computed: " << PiPPiMGammaPartialWidth(0.7003, 1., 1e3) << std::endl;
+  std::cout << "Ma: 0.8027, Width: 1.1448e-14. Computed: " << PiPPiMGammaPartialWidth(0.8027, 1., 1e3) << std::endl;
+
+  // 3Pi
+  std::cout << "3pi width check. fa=1Tev, cAl=1/100, cG=cW=cB=1\n";
+  std::cout << "Ma: 0.4184, Width: 1.0128e-16. Computed: " << (PiPPiMPi0PartialWidth(0.4184, 1., 1e3) + Pi0Pi0Pi0PartialWidth(0.4184, 1., 1e3)) << std::endl;
+  std::cout << "Ma: 0.5006, Width: 2.4837e-14. Computed: " << (PiPPiMPi0PartialWidth(0.5006, 1., 1e3) + Pi0Pi0Pi0PartialWidth(0.5006, 1., 1e3)) << std::endl;
+  std::cout << "Ma: 0.6013, Width: 3.4839e-14. Computed: " << (PiPPiMPi0PartialWidth(0.6013, 1., 1e3) + Pi0Pi0Pi0PartialWidth(0.6013, 1., 1e3)) << std::endl;
+  std::cout << "Ma: 0.7004, Width: 2.0601e-15. Computed: " << (PiPPiMPi0PartialWidth(0.7004, 1., 1e3) + Pi0Pi0Pi0PartialWidth(0.7004, 1., 1e3)) << std::endl;
+  std::cout << "Ma: 0.8027, Width: 1.0128e-16. Computed: " << (PiPPiMPi0PartialWidth(0.8027, 1., 1e3) + Pi0Pi0Pi0PartialWidth(0.8027, 1., 1e3)) << std::endl;
+
+}
+
 
 ALPMakeDecay::ALPMakeDecay(fhicl::ParameterSet const &pset):
   IMeVPrtlStage("ALPMakeDecay") 
@@ -166,19 +407,27 @@ ALPMakeDecay::~ALPMakeDecay()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void ALPMakeDecay::configure(fhicl::ParameterSet const &pset)
 {
+  ValidateWidths();
+
   fReferenceRayLength = pset.get<double>("ReferenceRayLength", -1);
   fReferenceRayDistance = pset.get<double>("ReferenceRayDistance", 0.);
   fReferenceALPMass = pset.get<double>("ReferenceALPMass", -1);
   fReferenceALPcAl = pset.get<double>("ReferenceALPcAl", -1);
+  fReferenceALPcG = pset.get<double>("ReferenceALPcG", -1);
+  fReferenceALPcB = pset.get<double>("ReferenceALPcB", -1);
+  fReferenceALPcW = pset.get<double>("ReferenceALPcW", -1);
   fReferenceALPDecayConstant = pset.get<double>("ReferenceALPDecayConstant", -1);
   fReferenceALPEnergy = pset.get<double>("ReferenceALPEnergy", -1.);
   fAllowEMDecay = pset.get<bool>("AllowEMDecay");
 
   // if configured to, divide out some of the decay weight
-  if (fReferenceRayLength > 0. && fReferenceALPMass > 0. && fReferenceALPDecayConstant >= 0. && fReferenceALPcAl >= 0. && fReferenceALPEnergy > 0.) {
+  if (fReferenceRayLength > 0. && fReferenceALPMass > 0. && fReferenceALPDecayConstant >= 0. && 
+      fReferenceALPcAl >= 0. && fReferenceALPcG >= 0. && fReferenceALPcB >= 0. && fReferenceALPcW >= 0. &&
+      fReferenceALPEnergy > 0.) {
+
     // Get each partial width
     double width_muon = MuonPartialWidth(fReferenceALPMass, fReferenceALPcAl, fReferenceALPDecayConstant);
-    double width_gamma = GammaPartialWidth(fReferenceALPMass, 1, 1, 1, fReferenceALPcAl, fReferenceALPDecayConstant);
+    double width_gamma = GammaPartialWidth(fReferenceALPMass, fReferenceALPcB, fReferenceALPcW, fReferenceALPcG, fReferenceALPcAl, fReferenceALPDecayConstant);
 
     std::cout << "MU WIDTH: " << width_muon << " GAMMA WIDTH: " << width_gamma << std::endl;
     double partial_width = width_muon + width_gamma*fAllowEMDecay;
