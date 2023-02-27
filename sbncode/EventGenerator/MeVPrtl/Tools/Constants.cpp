@@ -124,7 +124,7 @@ double twobody_momentum(double parent_mass, double childA_mass, double childB_ma
 //
 // Returns 0 if the calculation works. Returns -1 if the perscribed kinematics are not possible.
 int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, double rand,
-                     double& lab_frame_p_out, double& costh_rest_out, double& wgt)
+                     double& lab_frame_p_out, double& costh_rest_out, double& wgt, bool verbose)
 {
   // preset values
   lab_frame_p_out = 0.;
@@ -182,22 +182,24 @@ int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, 
   bool select_minus = minus_valid && (!plus_valid || (rand < threshold));
 
   // Prints out stuff
-  std::cout << "COSTH LAB: " << costh_lab << std::endl;
-  std::cout << "PREST: " << rest_frame_p << std::endl;
-  std::cout << "MASS: " << M << std::endl;
-  std::cout << "BETA: " << beta << std::endl;
-  std::cout << "GAMMA: " << gamma << std::endl;
+  if (verbose){ 
+    std::cout << "COSTH LAB: " << costh_lab << std::endl;
+    std::cout << "PREST: " << rest_frame_p << std::endl;
+    std::cout << "MASS: " << M << std::endl;
+    std::cout << "BETA: " << beta << std::endl;
+    std::cout << "GAMMA: " << gamma << std::endl;
 
-  std::cout << "COSTH REST PLUS: " << costh_rest_plus << std::endl;
-  std::cout << "COSTH REST MINUS: " << costh_rest_minus << std::endl;
-  std::cout << "PLAB PLUS: " << lab_frame_p_plus << std::endl;
-  std::cout << "PLAB MINUS: " << lab_frame_p_minus << std::endl;
-  std::cout << "WGT PLUS: " << plus_wgt << std::endl;
-  std::cout << "WGT MINUS: " << minus_wgt << std::endl;
+    std::cout << "COSTH REST PLUS: " << costh_rest_plus << std::endl;
+    std::cout << "COSTH REST MINUS: " << costh_rest_minus << std::endl;
+    std::cout << "PLAB PLUS: " << lab_frame_p_plus << std::endl;
+    std::cout << "PLAB MINUS: " << lab_frame_p_minus << std::endl;
+    std::cout << "WGT PLUS: " << plus_wgt << std::endl;
+    std::cout << "WGT MINUS: " << minus_wgt << std::endl;
 
-  if (select_plus) std::cout << "SELECTED PLUS" << std::endl;
-  else if (select_minus) std::cout << "SELECTED MINUS" << std::endl;
-  else std::cout << "SELECTED NONE" << std::endl;
+    if (select_plus) std::cout << "SELECTED PLUS" << std::endl;
+    else if (select_minus) std::cout << "SELECTED MINUS" << std::endl;
+    else std::cout << "SELECTED NONE" << std::endl;
+  }
 
   if (select_plus) {
     costh_rest_out = costh_rest_plus;
@@ -247,8 +249,9 @@ double forwardPrtlEnergy(double parentM, double secM, double prtlM, double paren
   double rand = 1.;
 
   double lab_frame_p_out, costh_rest_out, wgt;
+  bool verbose = false;
   int err = calcPrtlRayWgt(rest_prtlP, prtlM, dir, boost, rand,
-    lab_frame_p_out, costh_rest_out, wgt);
+    lab_frame_p_out, costh_rest_out, wgt, verbose);
   assert(!err);
   (void) err;
 

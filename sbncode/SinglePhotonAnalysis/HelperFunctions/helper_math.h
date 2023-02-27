@@ -52,8 +52,10 @@ namespace single_photon
 
 //inline functions
   inline double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::GeometryCore const& geo ){
-    double wire = geo.WireCoordinate(Y, Z, plane, fTPC, fCryostat);
-    return wire;
+    return geo.WireCoordinate(geo::Point_t{0, Y, Z},
+                              geo::PlaneID{static_cast<unsigned>(fCryostat),
+                                           static_cast<unsigned>(fTPC),
+                                           static_cast<unsigned>(plane)});
   }
 
 

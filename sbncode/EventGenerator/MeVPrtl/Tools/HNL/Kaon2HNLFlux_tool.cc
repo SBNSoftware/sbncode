@@ -65,6 +65,7 @@ private:
   double fM; //!< Mass of HNL [GeV]
   double fMagUe4;
   double fMagUm4;
+  double fTarget2Absorber;
   bool fKDAROnly;
 };
 
@@ -156,6 +157,7 @@ void Kaon2HNLFlux::configure(fhicl::ParameterSet const &pset)
   fMagUm4 = pset.get<double>("MagUm4");
   fMagUe4 = pset.get<double>("MagUe4");
 
+  fTarget2Absorber = pset.get<double>("Target2Absorber", 5000);
   fKDAROnly = pset.get<bool>("KDAROnly", false);
 
   double max_mass = (fMagUe4 > 0.) ? (Constants::Instance().kplus_mass - Constants::Instance().elec_mass) : 
@@ -180,8 +182,8 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   if (abs(kaon.meson_pdg) != 321) return false; // Only take charged kaons
 
   // select on the kaon
-  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < 72000.)) return false;
-  if (fKDAROnly) std::cout << "FOUND KDAR\n";
+  if (fKDAROnly && (kaon.mom.P() > 1e-3 || kaon.pos.Z() < fTarget2Absorber)) return false;
+  if (fKDAROnly & fVerbose) std::cout << "FOUND KDAR\n";
 
   TLorentzVector Beam4 = BeamOrigin();
 
@@ -198,7 +200,7 @@ bool Kaon2HNLFlux::MakeFlux(const simb::MCFlux &flux, evgen::ldm::MeVPrtlFlux &h
   bool is_muon = decay.second;
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
 
-  std::cout << "BR: " << br << std::endl;
+  if (fVerbose) std::cout << "BR: " << br << std::endl;
 
   // ignore if we can't make this hnl
   // Ignore if branching ratio is exactly 0.

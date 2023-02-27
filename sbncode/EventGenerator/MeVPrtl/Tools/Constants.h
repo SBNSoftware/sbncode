@@ -86,7 +86,7 @@ public:
 // Useful computations
 double twobody_momentum(double parent_mass, double childA_mass, double childB_mass);
 int calcPrtlRayWgt(double rest_frame_p, double M, TVector3 dir, TVector3 boost, double rand,
-                     double& lab_frame_p_out, double& costh_rest_out, double& wgt);
+                     double& lab_frame_p_out, double& costh_rest_out, double& wgt, bool verbose);
 double forwardPrtlEnergy(double parentM, double secM, double prtlM, double parentE);
 double PDG2Mass(int pdg);
 

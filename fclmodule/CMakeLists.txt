@@ -7,11 +7,11 @@ find_package(Python COMPONENTS Interpreter Development)
 
 include_directories(${Python_INCLUDE_DIRS})
 
-art_make( LIBRARY_NAME fcl
-	  LIB_LIBRARIES fhiclcpp
-	  		cetlib::cetlib
-			cetlib_except::cetlib_except
-			Python::Python )
+art_make_library( LIBRARY_NAME fcl
+          LIBRARIES fhiclcpp::fhiclcpp
+                        cetlib::cetlib
+                        cetlib_except::cetlib_except
+                        Python::Python )
 set_target_properties(fcl PROPERTIES PREFIX "" SUFFIX ".so")
 
 install_source()

@@ -305,13 +305,14 @@ namespace seaview {
 
       double calcWire(double Y, double Z, int plane, int fTPC, int fCryostat, geo::GeometryCore const& geo ){
         //WireCoordinate returns the index of the nearest wire to the specified position.
-        double wire = geo.WireCoordinate(Y, Z, plane, fTPC, fCryostat);
-        return wire;
+        return geo.WireCoordinate(geo::Point_t{0, Y, Z},
+                                  geo::PlaneID{static_cast<unsigned>(fCryostat),
+                                               static_cast<unsigned>(fTPC),
+                                               static_cast<unsigned>(plane)});
       }
 
       double calcTime(double X,int plane,int fTPC,int fCryostat, detinfo::DetectorPropertiesData const& detprop){
-        double time = detprop.ConvertXToTicks(X, plane, fTPC,fCryostat);
-        return time;
+        return detprop.ConvertXToTicks(X, plane, fTPC,fCryostat);
       }
 
       /* @brief: given a 3D space point, calculate the [wire, tick] of the point on 3 planes */
@@ -450,4 +451,3 @@ namespace seaview {
 }// namespace
 
 #endif // SBNCODE_SINGLEPHOTONANALYSIS_SEAVIEWER_H
-

@@ -4,23 +4,25 @@
 namespace caf
 {
   void FillTrigger(const sbn::ExtraTriggerInfo& addltrig_info,
-		   const std::vector<raw::Trigger>& trig_info,
-		   std::vector<caf::SRTrigger>& triggerInfo)
+		   const raw::Trigger& trig,
+		   caf::SRTrigger& triggerInfo)
   {
-    uint64_t beam_ts = 0;
-    uint64_t trigger_ts = 0;
-    triggerInfo.emplace_back();
-    triggerInfo.back().global_trigger_time = addltrig_info.triggerTimestamp;
-    triggerInfo.back().beam_gate_time_abs = addltrig_info.beamGateTimestamp;
-    beam_ts = addltrig_info.beamGateTimestamp;
-    trigger_ts = addltrig_info.triggerTimestamp;
-    int64_t diff_ts = trigger_ts - beam_ts;
-    triggerInfo.back().trigger_within_gate = diff_ts;
-    for(const raw::Trigger& trig: trig_info)
-    {
-      triggerInfo.back().beam_gate_det_time = trig.BeamGateTime();
-      triggerInfo.back().global_trigger_det_time = trig.TriggerTime();
-    }
+    triggerInfo.global_trigger_time = addltrig_info.triggerTimestamp;
+    triggerInfo.beam_gate_time_abs = addltrig_info.beamGateTimestamp;
+    triggerInfo.beam_gate_det_time = trig.BeamGateTime();
+    triggerInfo.global_trigger_det_time = trig.TriggerTime();
+    double diff_ts = triggerInfo.global_trigger_det_time - triggerInfo.beam_gate_det_time;
+    triggerInfo.trigger_within_gate = diff_ts;
+  }
+
+  void FillTriggerMC(double absolute_time, caf::SRTrigger& triggerInfo) {
+    triggerInfo.global_trigger_time = absolute_time;
+    triggerInfo.beam_gate_time_abs = absolute_time;
+
+    // Set this to 0 since the "MC" trigger is (for now) always at the spill time
+    triggerInfo.trigger_within_gate = 0.; 
+
+    // TODO: fill others?
   }
     
 }

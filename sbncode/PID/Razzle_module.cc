@@ -472,7 +472,7 @@ void Razzle::FillShowerMetrics(const recob::Shower& shower, const std::vector<ar
   }
 
   std::array<float, 3> showerPlanePitches { -1.f, -1.f, -1.f };
-  for (geo::PlaneGeo const& plane : geom->IteratePlanes()) {
+  for (geo::PlaneGeo const& plane : geom->Iterate<geo::PlaneGeo>()) {
 
     const float angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5 * M_PI);
     const float cosgamma(std::abs(std::sin(angleToVert) * shower.Direction().Y() + std::cos(angleToVert) * shower.Direction().Z()));
