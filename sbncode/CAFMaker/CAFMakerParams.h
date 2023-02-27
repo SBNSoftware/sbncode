@@ -143,6 +143,12 @@ namespace caf
       "crumbs"
     };
 
+    Atom<string> CNNScoreLabel {
+      Name("CNNScoreLabel"),
+      Comment("Base label of CNNScore producer."),
+      "cnnid"
+    };
+
     Atom<bool> FillHits {
       Name("FillHits"),
       Comment("Label deciding if you want to fill SRHits"),

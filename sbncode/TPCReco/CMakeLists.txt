@@ -2,6 +2,7 @@ add_subdirectory(TrackHit)
 add_subdirectory(TrackSplit)
 add_subdirectory(VertexStub)
 add_subdirectory(CalorimetryAnalysis)
+add_subdirectory(CNNHitClassification)
 
 
 cet_build_plugin(NuVertexChargeTree art::module

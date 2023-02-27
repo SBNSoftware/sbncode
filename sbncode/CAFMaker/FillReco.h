@@ -27,6 +27,7 @@
 #include "lardataobj/RecoBase/MCSFitResult.h"
 #include "sbnobj/Common/Reco/Stub.h"
 #include "sbnobj/Common/Reco/RangeP.h"
+#include "sbnobj/Common/Reco/CNNScore.h"
 #include "sbnobj/Common/Reco/ShowerSelectionVars.h"
 #include "sbnobj/Common/Reco/MVAPID.h"
 #include "sbnobj/Common/Reco/ScatterClosestApproach.h"
@@ -132,6 +133,16 @@ namespace caf
   void FillTrackRangeP(const recob::Track& track,
                      const std::array<std::vector<art::Ptr<sbn::RangeP>>, 3> &range_results,
                      caf::SRTrack& srtrack,
+                     bool allowEmpty = false);
+
+  void FillTrackCNNScore(const recob::Track& track,
+                     const sbn::PFPCNNScore &cnnscores,
+                     caf::SRTrack& srtrack,
+                     bool allowEmpty = false);
+
+  void FillShowerCNNScore(const recob::Shower& shower,
+                     const sbn::PFPCNNScore &cnnscores,
+                     caf::SRShower& srshower,
                      bool allowEmpty = false);
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid);
