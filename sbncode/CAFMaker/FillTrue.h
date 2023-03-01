@@ -14,6 +14,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -108,6 +109,7 @@ namespace caf
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore *geo,
                           const detinfo::DetectorClocksData &clockData,
+                          const spacecharge::SpaceCharge *sce,
                           caf::SRTrack& srtrack);
 
 
