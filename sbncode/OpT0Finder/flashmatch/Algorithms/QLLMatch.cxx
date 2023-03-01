@@ -175,20 +175,35 @@ namespace flashmatch {
 
     std::vector<int> apsia_ch{134,135,150,151,152,153,154,155,156,157,158,159,160,161,176,177};
 
-    // ** TO-DO: temp  saturated opdets & apsia fix ** 
+    // ** TO-DO: temp saturated opdets & apsia fix ** 
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
     //   measured flash PE was set to 0 due to saturation
     // - skip apsia xarapucas (empty PE information)
     for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index ) { 
       if (one_measurement.pe_v[pmt_index] == 0 && one_hypothesis.pe_v[pmt_index] > 600.0){
-        std::cout << "Guessing " << pmt_index << " is saturated, setting hypothesis to 0..." << std::endl;
         one_hypothesis.pe_v[pmt_index] = 0;
+        if (std::find(_channel_mask.begin(), _channel_mask.end(), pmt_index) != _channel_mask.end())
+          std::cout << "Guessing " << pmt_index << " is saturated, setting hypothesis to 0..." << std::endl;
       }
       if (std::find(apsia_ch.begin(), apsia_ch.end(), int(pmt_index)) != apsia_ch.end())
         one_hypothesis.pe_v[pmt_index] = 0; 
     }
     // ** end saturated & apsia fix ** 
 
+    if (_normalize){
+      double hmax = 0;
+      double mmax = 0;
+      for (auto const &v : one_hypothesis.pe_v) if (v > hmax) hmax = v;
+      for (auto const &v : one_measurement.pe_v) if (v > mmax) mmax = v;
+      // double hsum = std::accumulate(std::begin(one_hypothesis.pe_v), std::end(_hypothesis.pe_v), 0.0);
+      // double msum = std::accumulate(std::begin(one_measurement.pe_v), std::end(one_measurement.pe_v), 0.0);
+      if (hmax!=0){
+        for (auto &v : one_hypothesis.pe_v) v /= hsum;
+      }
+      if (mmax!=0){
+      for (auto &v : one_measurement.pe_v) v /= msum;
+      }
+    }
     res.hypothesis = one_hypothesis.pe_v;
     _qll = QLLMatch::GetME()->QLL(one_hypothesis, one_measurement);
     
@@ -326,12 +341,12 @@ namespace flashmatch {
     //std::cout << "Duration ChargeHypothesis 2 = " << duration.count() << "us" << std::endl;
 
     //start = high_resolution_clock::now();
-    if (_normalize) {
-      double qsum = std::accumulate(std::begin(_hypothesis.pe_v),
-				    std::end(_hypothesis.pe_v),
-				    0.0);
-      for (auto &v : _hypothesis.pe_v) v /= qsum;
-    }
+    // if (_normalize) {
+    //   double qsum = std::accumulate(std::begin(_hypothesis.pe_v),
+		// 		    std::end(_hypothesis.pe_v),
+		// 		    0.0);
+    //   for (auto &v : _hypothesis.pe_v) v /= qsum;
+    // }
     auto end = high_resolution_clock::now();
     auto duration = duration_cast<nanoseconds>(end - start);
     _construct_hypo_time += duration.count();
@@ -402,11 +417,6 @@ namespace flashmatch {
         double val = O*std::log10(H) - H*std::log10(std::exp(1)) - std::log10(TMath::Gamma(O+1));
         // stirling's approximation 
         double val_2 = O*std::log10(H) - H*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*O) - O*std::log10(O) + O*std::log10(std::exp(1)); 
-        
-        // // FLIPPED 
-        // double arg = TMath::Poisson(H,O);
-        // double val = H*std::log10(O) - O*std::log10(std::exp(1)) - std::log10(TMath::Gamma(H+1));
-        // double val_2 = H*std::log10(O) - O*std::log10(std::exp(1)) - 0.5*std::log10(2*TMath::Pi()*H) - H*std::log10(H) + H*std::log10(std::exp(1)); 
 
         if(arg > 0. && !std::isnan(arg) && !std::isinf(arg)) {
           _current_llhd -= std::log10(arg);
@@ -434,9 +444,11 @@ namespace flashmatch {
 
       } else if (_mode == kChi2) {
 
-      Error = O;
-      if( Error < 1.0 ) Error = 1.0;
-      _current_chi2 += std::pow((O - H), 2) / (Error);
+      // Error = O;
+        Error = H;
+      // if( Error < 1.0 ) Error = 1.0;
+      _current_chi2 += std::pow((O - H), 2) / (Error + std::pow(0.1*Error,2));
+      if(!(O==_pe_observation_threshold && H == _pe_hypothesis_threshold)) std::cout <<"CH | O | H | chisq : "<<pmt_index<<", " << O << ", " << H << ", " << std::pow((O - H), 2) / (Error + std::pow(0.1*Error,2)) << std::endl;
       nvalid_pmt += 1;
 
       } else {
@@ -446,7 +458,7 @@ namespace flashmatch {
 
     }
     //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-    std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring." << std::endl;
+    std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
     // std::cout << "current_llhd: " << _current_llhd << std::endl;
@@ -535,56 +547,23 @@ namespace flashmatch {
 
     if (!_minuit_ptr) _minuit_ptr = new TMinuit(4);
      
-    // DEFAULT 0
-    // double reco_x = _vol_xmin + 10;
-
-    // // OPTION 5 
+     // TODO: don't have the 100 cm hardcoded (use detector half or something)
     double reco_x = _vol_xmin + 100;
 
     if (!init_x0) {
-      //reco_x = ((_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x)) / 2. + _vol_xmin;
-      // Assume this is the right flash... then
-
-      // DEFAULT 0 
-      // reco_x = _raw_xmin_pt.x - pmt.time * DetectorSpecs::GetME().DriftVelocity();
-
-      // Option 2
       reco_x = (_raw_xmax_pt.x - _raw_xmin_pt.x) / 2. - pmt.time * DetectorSpecs::GetME().DriftVelocity() + _raw_xmin_pt.x;
 
-      // DEFAULT 0 
-      // if(reco_x < _vol_xmin || (reco_x + _raw_xmax_pt.x - _raw_xmin_pt.x) > _vol_xmax)
-      // OPTION 2 
       if(reco_x < _vol_xmin || reco_x > _vol_xmax)
       return kINVALID_DOUBLE;
     }
     double reco_x_err = ((_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x)) / 2.;
 
-    // DEFAULT 0 
-    // double xmin = _vol_xmin;
-    // double xmax = (_vol_xmax - _vol_xmin) - (_raw_xmax_pt.x - _raw_xmin_pt.x) + _vol_xmin;
-
-    // // OPTION 1 + OPTION 2 
     double xmin = _vol_xmin;
     double xmax = _vol_xmax;
 
-    // // OPTION 3 
-    // double xmin = _vol_xmin + 10;
-    // double xmax = _vol_xmax - 10;
-
-    // OPTION 4 
-    // double xmin = _vol_xmin + 5;
-    // double xmax = _vol_xmax - 5;
-
-    // std::cout << "vol_xmax: " << _vol_xmax << std::endl;
-    // std::cout << "vol_xmin: " << _vol_xmin << std::endl;
-    // std::cout << "_raw_xmax: "<< _raw_xmax_pt.x << std::endl;
-    // std::cout << "_raw_xmin: "<< _raw_xmin_pt.x << std::endl;
-
     FLASH_INFO() << "Running Minuit x: " << xmin << " => " << xmax
 		 << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err << std::endl;
-    //  std::cout << "Running Minuit x: " << xmin << " => " << xmax
-		//  << " ... initial state x=" <<reco_x <<" x_err=" << reco_x_err
-    //  << " ... init_x0: " << init_x0 << std::endl; 
+
     double MinFval;
     int ierrflag, npari, nparx, istat;
     double arglist[4], Fmin, Fedm, Errdef;
