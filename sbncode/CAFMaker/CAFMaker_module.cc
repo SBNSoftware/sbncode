@@ -64,6 +64,8 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -1125,6 +1127,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
+  auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+
   // Collect the input TPC reco tags
   std::vector<std::string> pandora_tag_suffixes;
   fParams.PandoraTagSuffixes(pandora_tag_suffixes);
@@ -1748,7 +1752,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
             FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
             // Hit truth information corresponding to Calo-Points
             // Assumes truth matching and calo-points are filled
-            if (mc_particles.isValid()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, trk);
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
           }
         }
       } // thisTrack exists

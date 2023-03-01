@@ -2,7 +2,6 @@
 
 #include "larcorealg/GeoAlgo/GeoAlgo.h"
 #include "larevt/SpaceCharge/SpaceCharge.h"
-#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "RecoUtils/RecoUtils.h"
 
@@ -135,7 +134,10 @@ namespace caf {
                           const std::vector<simb::MCParticle> &mc_particles,
                           const geo::GeometryCore *geo,
                           const detinfo::DetectorClocksData &clockData,
+                          const spacecharge::SpaceCharge *sce,
                           caf::SRTrack& srtrack) {
+
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
 
     // require track to be truth matched
     if (srtrack.truth.p.G4ID < 0) return;
@@ -152,15 +154,18 @@ namespace caf {
     if (!match) return;
     const simb::MCParticle &particle = *match;
 
-    // Get service
-    auto const* sce = lar::providerFrom<spacecharge::SpaceChargeService>();
-
     // Load the hits
     // match on the channel, which is unique
-    const std::vector<std::pair<geo::WireID, const sim::IDE*>> match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
-    std::map<unsigned, std::vector<const sim::IDE*>> chan_2_ides;
+    const std::vector<std::pair<geo::WireID, const sim::IDE*>> &match_ides = id_to_ide_map.at(srtrack.truth.p.G4ID);
+    std::map<unsigned, std::vector<const sim::IDE *>> chan_2_ides;
     for (auto const &ide_pair: match_ides) {
       chan_2_ides[geo->PlaneWireToChannel(ide_pair.first)].push_back(ide_pair.second);
+    }
+
+    // pre-compute partial ranges
+    std::vector<double> partial_ranges(particle.NumberTrajectoryPoints(), 0);
+    for (int i = particle.NumberTrajectoryPoints() - 2; i >=0; i--) {
+      partial_ranges[i] = partial_ranges[i+1] + (particle.Position(i+1).Vect() - particle.Position(i).Vect()).Mag();
     }
 
     // Loop through the reco calo points
@@ -182,7 +187,6 @@ namespace caf {
         // std::vector<sim::TrackIDE> ides = bt_serv->HitToTrackIDEs(clockData, hit);
         //
         // Use this:
-        art::ServiceHandle<cheat::BackTrackerService> bt_serv;
         std::vector<sim::TrackIDE> h_ides = bt_serv->ChannelToTrackIDEs(clockData, p.channel, p.start, p.end);
         truep.h_nelec = 0.;
         truep.h_e = 0.;
@@ -234,9 +238,10 @@ namespace caf {
         float closest_dist = -1.;
         int traj_index = -1;
         for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
-          if (closest_dist < 0. || (particle.Position(i_traj).Vect() - loc_nosce_v).Mag() < closest_dist) {
+          double this_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag(); 
+          if (closest_dist < 0. || this_dist < closest_dist) {
             direction = particle.Momentum(i_traj).Vect().Unit();
-            closest_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag();
+            closest_dist = this_dist;
             traj_index = i_traj;
           }
         }
@@ -244,9 +249,7 @@ namespace caf {
         // residual range
         truep.rr = 0;
         if (traj_index >= 0) {
-          for (int i_traj = traj_index+1; i_traj < (int)particle.NumberTrajectoryPoints(); i_traj++) {
-            truep.rr += (particle.Position(i_traj).Vect() - particle.Position(i_traj-1).Vect()).Mag();
-          }
+          truep.rr = partial_ranges[traj_index];
 
           // Also account for the distance from the Hit point to the matched trajectory point
           double hit_distance_along_particle = (loc_nosce_v - particle.Position(traj_index).Vect()).Dot(particle.Momentum(traj_index).Vect().Unit());
