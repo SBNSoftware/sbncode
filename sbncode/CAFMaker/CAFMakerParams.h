@@ -329,11 +329,18 @@ namespace caf
       true
     };
 
-    Atom<bool> ReferenceCRTToBeam {
-      Name("ReferenceCRTToBeam"),
-      Comment("Whether to switch the reference time of CRT reco to the 'beam spill' time."),
+    Atom<bool> ReferenceCRTT0ToBeam {
+      Name("ReferenceCRTT0ToBeam"),
+      Comment("Whether to switch the reference time of CRT T0 reco to the 'beam spill' time."),
       true
     };
+
+    Atom<bool> ReferenceCRTT1FromTriggerToBeam {
+      Name("ReferenceCRTT1FromTriggerToBeam"),
+      Comment("Whether to switch the reference time of CRT T1 reco from 'trigger' to the 'beam spill' time."),
+      true
+    };
+
   };
 }
 

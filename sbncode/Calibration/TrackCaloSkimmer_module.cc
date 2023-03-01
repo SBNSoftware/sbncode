@@ -158,14 +158,10 @@ void sbn::TrackCaloSkimmer::analyze(art::Event const& e)
   std::vector<geo::BoxBoundedGeo> AVs;
 
   // First the TPC
-  for (auto const &cryo: geometry->IterateCryostats()) {
-    geo::GeometryCore::TPC_iterator iTPC = geometry->begin_TPC(cryo.ID()),
-                                    tend = geometry->end_TPC(cryo.ID());
+  for (auto const &cryo: geometry->Iterate<geo::CryostatGeo>()) {
     std::vector<geo::BoxBoundedGeo> this_tpc_volumes;
-    while (iTPC != tend) {
-      geo::TPCGeo const& TPC = *iTPC;
+    for (auto const& TPC : geometry->Iterate<geo::TPCGeo>(cryo.ID())) {
       this_tpc_volumes.push_back(TPC.ActiveBoundingBox());
-      iTPC++;
     }
      TPCVols.push_back(std::move(this_tpc_volumes));
   }
@@ -454,7 +450,7 @@ geo::Point_t TrajectoryToWirePosition(const geo::Point_t &loc, const geo::TPCID 
   geo::Point_t ret = loc;
 
   // Returned X is the drift -- multiply by the drift direction to undo this
-  int corr = geom->TPC(tpc.TPC).DriftDir()[0];
+  int corr = geom->TPC(tpc).DriftDir().X();
   
   if (sce && sce->EnableSimSpatialSCE()) {
     geo::Vector_t offset = sce->GetPosOffsets(ret);
@@ -727,7 +723,7 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
   for (sbn::TrueHit &h: truehits_v) {
     h.time = dprop.ConvertXToTicks(h.p.x, h.plane, h.tpc, h.cryo);
 
-    double xdrift = abs(h.p.x - geo->Plane(0, h.tpc, h.cryo).GetCenter()[0]);
+    double xdrift = abs(h.p.x - geo->Plane(geo::PlaneID(h.cryo, h.tpc, 0)).GetCenter().X());
     h.tdrift = xdrift / dprop.DriftVelocity(); 
   }
 
@@ -763,8 +759,8 @@ sbn::TrueParticle TrueParticleInfo(const simb::MCParticle &particle,
       geo::PlaneID plane(h.cryo, h.tpc, h.plane);
       float angletovert = geo->WireAngleToVertical(geo->View(plane), plane) - 0.5*::util::pi<>();
 
-      TVector3 loc_mdx_v = h_p - direction * (geo->WirePitch(geo->View(plane) / 2.));
-      TVector3 loc_pdx_v = h_p + direction * (geo->WirePitch(geo->View(plane) / 2.));
+      TVector3 loc_mdx_v = h_p - direction * (geo->WirePitch(geo->View(plane)) / 2.);
+      TVector3 loc_pdx_v = h_p + direction * (geo->WirePitch(geo->View(plane)) / 2.);
 
       // Convert types for helper functions
       geo::Point_t loc_mdx(loc_mdx_v.X(), loc_mdx_v.Y(), loc_mdx_v.Z());

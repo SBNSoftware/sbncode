@@ -328,7 +328,7 @@ namespace seaview{
 
   std::vector<std::vector<double>> SEAviewer::to2D(std::vector<double> & threeD){
 
-    auto const TPC = (*geom).begin_TPC();  //returns iterator pointing to the first TPC of detector
+    auto const& TPC = *geom->begin<geo::TPCGeo>();  // first TPC of detector
     auto ID = TPC.ID(); 
     int fCryostat = ID.Cryostat;
     int fTPC = ID.TPC;
@@ -349,7 +349,7 @@ namespace seaview{
 
   int SEAviewer::loadVertex(double m_vertex_pos_x, double m_vertex_pos_y, double m_vertex_pos_z){
 
-    auto const TPC = (*geom).begin_TPC();
+    auto const& TPC = *geom->begin<geo::TPCGeo>();
     auto ID = TPC.ID();
     int fCryostat = ID.Cryostat;
     int fTPC = ID.TPC;
@@ -378,7 +378,7 @@ namespace seaview{
 
     plot_true_vertex = true;
 
-    auto const TPC = (*geom).begin_TPC();
+    auto const& TPC = *geom->begin<geo::TPCGeo>();
     auto ID = TPC.ID();
     int fCryostat = ID.Cryostat;
     int fTPC = ID.TPC;

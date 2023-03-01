@@ -62,11 +62,13 @@ namespace caf
 
   void FillCRTHit(const sbn::crt::CRTHit &hit,
                   bool use_ts0,
+                  int64_t CRT_T0_reference_time, // ns, signed
+                  double CRT_T1_reference_time, // us
                   caf::SRCRTHit &srhit,
                   bool allowEmpty) {
 
-    srhit.t0 = hit.ts0()/1000.; // ns -> us
-    srhit.t1 = hit.ts1()/1000.; // ns -> us
+    srhit.t0 = ( (long long)(hit.ts0()) /*u_int64_t to int64_t*/ + CRT_T0_reference_time )/1000.;
+    srhit.t1 = hit.ts1()/1000.-CRT_T1_reference_time; // ns -> us
     srhit.time = use_ts0 ? srhit.t0 : srhit.t1;
 
     srhit.position.x = hit.x_pos;
@@ -213,7 +215,7 @@ namespace caf
     for(int p = 0; p < 3; ++p) srshower.plane[p].nHits = 0;
     for (auto const& hit:hits) ++srshower.plane[hit->WireID().Plane].nHits;
 
-    for (geo::PlaneGeo const& plane: geom->IteratePlanes()) {
+    for (geo::PlaneGeo const& plane: geom->Iterate<geo::PlaneGeo>()) {
 
       const double angleToVert(geom->WireAngleToVertical(plane.View(), plane.ID()) - 0.5*M_PI);
       const double cosgamma(std::abs(std::sin(angleToVert)*shower.Direction().Y()+std::cos(angleToVert)*shower.Direction().Z()));
@@ -378,6 +380,8 @@ namespace caf
   void FillTrackCRTHit(const std::vector<art::Ptr<anab::T0>> &t0match,
                        const std::vector<art::Ptr<sbn::crt::CRTHit>> &hitmatch,
                        bool use_ts0,
+                       int64_t CRT_T0_reference_time, // ns, signed
+                       double CRT_T1_reference_time, // us
                        caf::SRTrack &srtrack,
                        bool allowEmpty)
   {
@@ -387,7 +391,7 @@ namespace caf
       srtrack.crthit.hit.time = t0match[0]->fTime / 1e3; /* ns -> us */
     }
     if (hitmatch.size()) {
-      FillCRTHit(*hitmatch[0], use_ts0, srtrack.crthit.hit, allowEmpty);
+      FillCRTHit(*hitmatch[0], use_ts0, CRT_T0_reference_time, CRT_T1_reference_time, srtrack.crthit.hit, allowEmpty);
     }
   }
 

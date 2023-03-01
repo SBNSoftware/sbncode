@@ -57,7 +57,7 @@ FlashPredict::FlashPredict(fhicl::ParameterSet const& p)
   , fNTPC(fGeometry->NTPC())
   , fTPCPerDriftVolume(fNTPC/2) // 2 drift volumes: kRght and kLeft
   , fCryostat(p.get<int>("Cryostat", 0)) //set =0 or =1 for ICARUS to match reco chain selection
-  , fGeoCryo(std::make_unique<geo::CryostatGeo>(fGeometry->Cryostat(fCryostat)))
+  , fGeoCryo(std::make_unique<geo::CryostatGeo>(fGeometry->Cryostat(geo::CryostatID(fCryostat))))
   , fWiresX_gl(wiresXGl())
   , fDriftDistance(driftDistance())
   , fXBins(p.get<double>("XBins"))

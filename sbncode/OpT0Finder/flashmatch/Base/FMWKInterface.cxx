@@ -80,10 +80,9 @@ namespace flashmatch{
 
     for (size_t opdet = 0; opdet < geo->NOpDets(); opdet++) {
 
-      std::vector<double> pos(3, 0.);
-      geo->OpDetGeoFromOpDet(opdet).GetCenter(&pos[0]);
+      auto const pos = geo->OpDetGeoFromOpDet(opdet).GetCenter();
 
-      geoalgo::Point_t pmt(pos);
+      geoalgo::Point_t pmt(pos.X(), pos.Y(), pos.Z());
       _pmt_v[opdet] = pmt;
     }
 
@@ -93,9 +92,8 @@ namespace flashmatch{
 
     _bbox_map.reserve(geo->Ncryostats() * geo->NTPC());
 
-    for (size_t cryo = 0; cryo < geo->Ncryostats(); cryo++) {
-      for (size_t tpc = 0; tpc < geo->NTPC(cryo); tpc++) {
-        const geo::TPCGeo tpc_geo = geo->TPC(tpc, cryo);
+    for (auto const& cryoID : geo->Iterate<geo::CryostatID>()) {
+      for (auto const& tpc_geo : geo->Iterate<geo::TPCGeo>(cryoID)) {
         double x_min = tpc_geo.GetCenter().X() - tpc_geo.HalfWidth();
         double x_max = tpc_geo.GetCenter().X() + tpc_geo.HalfWidth();
 
@@ -112,7 +110,8 @@ namespace flashmatch{
         if (z_min < global_z_min) global_z_min = z_min;
         if (z_max > global_z_max) global_z_max = z_max;
 
-        _bbox_map.emplace(std::make_pair(tpc, cryo), geoalgo::AABox(x_min, y_min, z_min, x_max, y_max, z_max));
+        _bbox_map.emplace(std::make_pair(tpc_geo.ID().TPC, tpc_geo.ID().Cryostat),
+                          geoalgo::AABox(x_min, y_min, z_min, x_max, y_max, z_max));
       }
 
       _bbox = geoalgo::AABox(global_x_min, global_y_min, global_z_min,
@@ -154,4 +153,3 @@ namespace flashmatch{
 #endif
 
 #endif
-

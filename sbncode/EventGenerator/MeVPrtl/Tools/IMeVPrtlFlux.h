@@ -48,6 +48,8 @@ public:
 
     IMeVPrtlFlux(const fhicl::ParameterSet &pset)
     {
+      fVerbose = pset.get<bool>("Verbose", true);
+       
       // rotation matrix
       std::vector<double> rotation = pset.get<std::vector<double>>("Beam2DetectorRotation");
       assert(rotation.size() == 9);
@@ -74,8 +76,9 @@ public:
 
       // get random seed for stuff
       unsigned seed = art::ServiceHandle<rndm::NuRandomService>()->getSeed();
-
+      
       // use the time-shifting tools from GENIE
+      fSpillTimeConfig = pset.get<std::string>("SpillTimeConfig", "");
       fTimeShiftMethod = NULL;
       if (fSpillTimeConfig != "") {
         fTimeShiftMethod = evgb::EvtTimeShiftFactory::Instance().GetEvtTimeShift(fSpillTimeConfig);
@@ -89,12 +92,14 @@ public:
           evgb::EvtTimeShiftFactory::Instance().Print();
         }
       }
-      if (fTimeShiftMethod) {
+    
+     if (fTimeShiftMethod && fVerbose) {
         std::cout << "Timing Config:\n";
         fTimeShiftMethod->PrintConfig();
         std::cout << std::endl;
       }
-      std::cout << "Neutrino TIF: " << (fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns) << std::endl;
+      if (fVerbose) std::cout << "Neutrino TIF: " << (fBeamOrigin.Mag()/Constants::Instance().c_cm_per_ns) << std::endl;
+      fGlobalTimeOffset = pset.get<double>("GlobalTimeOffset", 0); 
     }
 
 protected:
@@ -103,9 +108,13 @@ protected:
   TRotation fBeam2Det;
   TVector3 fBeamOrigin;
   std::string fSpillTimeConfig;
-
+  double fGlobalTimeOffset;
+  bool fVerbose;
+  
   TLorentzVector BeamOrigin() {
-    double toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() : 0.;
+    double toff = fTimeShiftMethod ? fTimeShiftMethod->TimeOffset() + fGlobalTimeOffset : 0.;
+
+    //time offset here is the beam innert structure i.e. bucket structure
 
     // TODO: what to do here? For now -- don't shift time at all
     //

@@ -101,13 +101,13 @@ bool MonoEnergyHiggsFlux::MakeFlux(const simb::MCFlux &flux/*ignored*/, MeVPrtlF
   higgs.mass = fM;
 
   // no kaon here
-  higgs.kmom = TLorentzVector(0, 0, 0, 0);
-  higgs.kaon_pdg = -1;
+  higgs.mmom = TLorentzVector(0, 0, 0, 0);
+  higgs.meson_pdg = -1;
 
   // beam is same as detector coord
   higgs.pos_beamcoord = higgs.pos;
   higgs.mom_beamcoord = higgs.mom;
-  higgs.kmom_beamcoord = higgs.kmom;
+  higgs.mmom_beamcoord = higgs.mmom;
   higgs.generator = 0; // kDissonantHiggs
 
 

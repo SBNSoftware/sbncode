@@ -1505,7 +1505,7 @@ namespace single_photon
       }
 
       std::cout<<"*Tick Min: "<<tick_min<<" Max: "<<tick_max<<std::endl;
-      auto const TPC = (*paras.s_geom).begin_TPC();
+      auto const& TPC = *paras.s_geom->begin<geo::TPCGeo>();
       auto ID = TPC.ID();
       int fCryostat = ID.Cryostat;
       int fTPC = ID.TPC;

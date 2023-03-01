@@ -62,6 +62,7 @@ cet_build_plugin(TrackCaloSkimmerSelectAnode2CathodeTrack art::tool
 
 cet_build_plugin(TrackCaloSkimmerSelectAllTrack art::tool
                       LIBRARIES
+			    sbnobj::Common_Calibration_dict
                             art::Persistency_Common
                             art::Utilities canvas::canvas
                             larcore::Geometry_Geometry_service
