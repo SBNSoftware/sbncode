@@ -25,6 +25,28 @@ numi_kaon: {
   RandomizeFiles: true
 }
 
+numi_tau: {
+  tool_type: TxtFileGen
+  SearchPath: "/pnfs/icarus/persistent/users/gputnam/numi_unconventional_fluxes/"
+  FluxFiles: ["tau*.txt"]
+  RandomizeFiles: true
+  NSkipLines: 2
+  FluxCopyMethod: DIRECT
+  POTPerMeson: 2.253e6 # 6.06194e5
+  PDGCode: 15
+}
+
+numi_eta: {
+  tool_type: TxtFileGen
+  SearchPath: "/pnfs/icarus/persistent/users/gputnam/numi_unconventional_fluxes/"
+  FluxFiles: ["eta*.txt"]
+  RandomizeFiles: true
+  NSkipLines: 2
+  FluxCopyMethod: DIRECT
+  POTPerMeson: 3.109
+  PDGCode: 221
+}
+
 ray_trace_box: {
   tool_type: RayTraceBox
   # Volume: volCryostat
@@ -38,10 +60,10 @@ rethrow_ray_trace_box: {
 
   # weight computation
   #ReferenceLabSolidAngle: 1.6e-6 # approx solid angle of ICARUS @NuMI target
-  #ReferenceKaonEnergy: 15 # GeV
+  #ReferencePriamryEnergy: 15 # GeV
 
   ReferenceLabSolidAngle: 1e-4
-  ReferenceKaonEnergy: 7.5 # GeV
+  ReferencePrimPDG: 321 
 }
 
 weighted_ray_trace_box: {
@@ -51,7 +73,8 @@ weighted_ray_trace_box: {
 
   # weight computation
   ReferenceLabSolidAngle: 1e-4
-  ReferenceKaonEnergy: 15. # GeV
+  ReferencePrimaryEnergy: 15. # GeV
+  ReferencePrimPDG: 321 
 }
 
 mixedweight_ray_trace_box: {
@@ -59,7 +82,8 @@ mixedweight_ray_trace_box: {
   Box: @local::icarus_detector_box
   ReferenceLabSolidAngle: 4e-4
   MaxWeightFudge: 2.
-  ReferenceKaonEnergy: 15. # GeV
+  ReferencePrimaryEnergy: 15. # GeV
+  ReferencePrimPDG: 321 
   NThrow: 250
   FixNSuccess: false
 }

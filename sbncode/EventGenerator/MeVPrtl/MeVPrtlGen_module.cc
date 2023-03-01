@@ -36,7 +36,7 @@
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlTruth.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlFlux.h"
 #include "sbnobj/Common/EventGen/MeVPrtl/MeVPrtlDecay.h"
-#include "sbnobj/Common/EventGen/MeVPrtl/KaonParent.h"
+#include "sbnobj/Common/EventGen/MeVPrtl/MesonParent.h"
 
 #include "Tools/IMesonGen.h"
 #include "Tools/IMeVPrtlFlux.h"
@@ -89,6 +89,7 @@ public:
 private:
   bool fProduce;
   bool fAnaOutput;
+  bool fVerbose;
 
   bool fDoDeweight;
   double fSubRunPOT;
@@ -122,6 +123,7 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
 
   fProduce = p.get<bool>("Produce", true);
   fAnaOutput = p.get<bool>("AnaOutput", false);
+  fVerbose = p.get<bool>("Verbose", true);
 
   fDoDeweight = p.get<bool>("Deweight", false);
   fSubRunPOT = 0.;
@@ -136,16 +138,16 @@ evgen::ldm::MeVPrtlGen::MeVPrtlGen(fhicl::ParameterSet const& p)
   fDecayTool = art::make_tool<IMeVPrtlDecay>(p.get<fhicl::ParameterSet>("Decay"));
 
   fGenMaxWeight = fGenTool->MaxWeight();
-  std::cout << "Gen max weight: " << fGenMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Gen max weight: " << fGenMaxWeight << std::endl;
 
   fFluxMaxWeight = fFluxTool->MaxWeight();
-  std::cout << "Flux max weight: " << fFluxMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Flux max weight: " << fFluxMaxWeight << std::endl;
 
   fRayMaxWeight = fRayTool->MaxWeight();
-  std::cout << "Ray max weight: " << fRayMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Ray max weight: " << fRayMaxWeight << std::endl;
 
   fDecayMaxWeight = fDecayTool->MaxWeight();
-  std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
+  if (fVerbose) std::cout << "Decay max weight: " << fDecayMaxWeight << std::endl;
 
   fRayDecayMaxWeight = fDecayMaxWeight*fRayMaxWeight;
 
@@ -194,6 +196,7 @@ void evgen::ldm::MeVPrtlGen::endSubRun(art::SubRun& sr) {
 }
 
 bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
+  
   if (!fDoDeweight || max_weight < 0) { //  don't do deweighting procedure
     return true;
   }
@@ -221,6 +224,7 @@ bool evgen::ldm::MeVPrtlGen::Deweight(double &weight, double &max_weight) {
 
   // update the weight value
   weight = max_weight;
+  
   return rand <= test;
 }
 
@@ -239,20 +243,22 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
   while (1) {
 
     std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-    simb::MCFlux kaon = fGenTool->GetNext();
+    simb::MCFlux meson = fGenTool->GetNext();
     fNCalls[0] ++;
     std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> duration = t2 - t1;
     fNTime[0] = duration.count();
 
-    evgen::ldm::KaonParent kaonp(kaon);
-    bool is_kaon = kaonp.kaon_pdg != 0;
+    evgen::ldm::MesonParent mesonp(meson);
+    bool is_meson = mesonp.meson_pdg != 0;
 
-    // (void) is_kaon;
-    if (is_kaon) {
-     std::cout << "Flux is kaon (" << is_kaon << "). Weight: " << kaonp.weight << ". Produced with energy: " << kaonp.mom.E()
-             << " M=" << kaonp.mom.M() << " P=(" << kaonp.mom.Px() << ", " << kaonp.mom.Py() << ", " << kaonp.mom.Pz() << ") At: ("
-             << kaonp.pos.X() << ", " << kaonp.pos.Y() << ", " << kaonp.pos.Z() << ")" << std::endl;
+    // (void) is_meson;
+    if (fVerbose){
+      if (is_meson) {
+       std::cout << "Flux is meson (" << is_meson << "). Weight: " << mesonp.weight << ". Produced with energy: " << mesonp.mom.E()
+               << " M=" << mesonp.mom.M() << " P=(" << mesonp.mom.Px() << ", " << mesonp.mom.Py() << ", " << mesonp.mom.Pz() << ") At: ("
+               << mesonp.pos.X() << ", " << mesonp.pos.Y() << ", " << mesonp.pos.Z() << ")" << std::endl;
+      }
     }
 
     bool success;
@@ -262,16 +268,18 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     fNCalls[1] ++;
     t1 = std::chrono::high_resolution_clock::now();
-    success = fFluxTool->MakeFlux(kaon, flux, flux_weight) && Deweight(flux_weight, fFluxMaxWeight);
+    success = fFluxTool->MakeFlux(meson, flux, flux_weight) && Deweight(flux_weight, fFluxMaxWeight);
     t2 = std::chrono::high_resolution_clock::now();
     duration = t2 - t1;
     fNTime[1] += duration.count();
 
     if (!success) continue;
-
-    std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
-    std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
-    std::cout << "Flux weight: " << flux_weight << std::endl;
+    
+    if (fVerbose){
+      std::cout << "New flux. E=" << flux.mom.E() << " At: (" << flux.pos.X() << ", " << flux.pos.Y() << ", " << flux.pos.Z() << ")" << std::endl;
+      std::cout << "P=(" << flux.mom.Px() << ", " << flux.mom.Py() << ", " << flux.mom.Pz() << ")" << std::endl;
+      std::cout << "Flux weight: " << flux_weight << std::endl;
+    }
 
     std::array<TVector3, 2> intersection;
     double ray_weight;
@@ -284,7 +292,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     fNTime[2] += duration.count();
 
     if (!success) continue;
-    std::cout << "Ray weight: " << ray_weight << std::endl;
+    if (fVerbose) std::cout << "Ray weight: " << ray_weight << std::endl;
 
     evgen::ldm::MeVPrtlDecay decay;
     double decay_weight;
@@ -298,7 +306,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "Decay weight: " << decay_weight << std::endl;
+    if (fVerbose) std::cout << "Decay weight: " << decay_weight << std::endl;
 
     // Deweight the ray and decay weights together because they have some anti-correlation
     double ray_decay_weight = ray_weight * decay_weight;
@@ -306,9 +314,9 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
 
     if (!success) continue;
 
-    std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+    if (fVerbose) std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
+    if (fVerbose) std::cout << "PASSED!\n";
 
-    std::cout << "PASSED!\n";
 
     // get the POT
     double thisPOT = fGenTool->GetPOT();
@@ -340,7 +348,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     // Add the "Neutrino" as the 0th MCParticle
     // This hopefully (???) won't do anything too bad and will give us
     // the chance to use the neutrino energy in other things
-    simb::MCParticle fakenu(0, kaon.fntype, "primary", -1, 0, -1/* don't track */);
+    simb::MCParticle fakenu(0, meson.fntype, "primary", -1, 0, -1/* don't track */);
     fakenu.AddTrajectoryPoint(mevprtl_truth.decay_pos, TLorentzVector(0, 0, flux.equiv_enu, flux.equiv_enu));
     mctruth.Add(fakenu);
     mctruth.SetNeutrino(-1, -1, -1, -1, -1, -1, 
@@ -364,7 +372,7 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     // This is __very__ very annoying.
 
     mctruthColl->push_back(mctruth);
-    mcfluxColl->push_back(kaon);
+    mcfluxColl->push_back(meson);
 
     // Make the associations only if we are producing stuff
     // Otherwise this crashes
