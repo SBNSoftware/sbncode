@@ -454,6 +454,45 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   momenta.B.Boost(flux.mom.BoostVector());
   momenta.C.Boost(flux.mom.BoostVector());
     
+  //Anysotropies:
+  TLorentzVector aux_p(flux.mom); // flux.mom is const, SetDecay needs non const or crashes ~rodrigoa
+  TLorentzVector pN(aux_p); // flux.mom is const, SetDecay needs non const or crashes ~rodrigoa
+  TLorentzVector *p1=&pN; // flux.mom is const, SetDecay needs non const or crashes ~rodrigoa
+  TVector3 z(0.0, 0.0, 1.0);
+
+  TLorentzVector *pNu=&momenta.A;
+  TLorentzVector *pE3=&momenta.B;
+  TLorentzVector *pE4=&momenta.C;
+  
+  Double_t sw2 = 0.22290;
+  Double_t a = 4.0*sw2 - 1;
+  Double_t m_z = 91.1876;
+  Double_t m_e = 0.000511  ;
+  Double_t m_N=flux.mass;
+
+  Double_t Den = (m_N*m_N - 2*p1->Dot(*pNu) - m_z*m_z)*(m_N*m_N - 2*p1->Dot(*pNu) - m_z*m_z);
+  Double_t Num = m_e*m_e*(a*a-1)*(p1->Dot(*pNu)) + (a*a+1)*((pNu->Dot(*pE4))*(p1->Dot(*pE3))+(pNu->Dot(*pE3))*(p1->Dot(*pE4)));
+  Double_t weight = Num / Den; 
+
+  //Angles:
+  Double_t E3 = pE3->E();
+  Double_t E4 = pE4->E();
+  
+  Double_t tll = pE3->Angle(pE4->Vect()) * 180./3.141592;
+  Double_t tLead0;
+  if ( E3 > E4) {
+      tLead0 = pE3->Angle(z);
+      momenta.A.SetE(E3); 
+  } else {
+      tLead0 = pE4->Angle(z);
+      momenta.A.SetE(E4); 
+  }
+  Double_t tLead = tLead0 * 180./3.141592;
+
+  momenta.A.SetX(weight); //using neutrino vars as container for the weight
+  momenta.A.SetY(tLead); 
+  momenta.A.SetZ(tll); 
+
   // pick whether the neutrino is nue or numu
   int nu_pdg_sign;
   if (fMajorana) {
