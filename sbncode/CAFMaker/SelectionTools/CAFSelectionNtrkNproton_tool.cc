@@ -50,8 +50,8 @@ bool CAFSelectionNtrkNproton::Select(StandardRecord &rec) {
 
   rec.slc = outslc;
 
-  // save the slice if we kept any events
-  return !rec.slc.empty();
+  // Save all slices so we normalize correctly
+  return true;
 }
 
 DEFINE_ART_CLASS_TOOL(CAFSelectionNtrkNproton)
