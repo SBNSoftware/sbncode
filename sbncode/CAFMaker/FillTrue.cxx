@@ -7,7 +7,6 @@
 #include <algorithm>
 
 // helper function declarations
-
 caf::SRTrackTruth MatchTrack2Truth(const detinfo::DetectorClocksData &clockData, const std::vector<caf::SRTrueParticle> &particles, const std::vector<art::Ptr<recob::Hit>> &hits,
 				   const std::map<int, caf::HitsEnergy> &all_hits_map);
 
@@ -603,6 +602,8 @@ namespace caf {
     srparticle.start_process = GetG4ProcessID(particle.Process());
     srparticle.end_process = GetG4ProcessID(particle.EndProcess());
 
+    srparticle.gstatus = GetGenieStatusID(particle.StatusCode());
+
     srparticle.G4ID = particle.TrackId();
     srparticle.parent = particle.Mother();
 
@@ -1167,7 +1168,34 @@ caf::g4_process_ caf::GetG4ProcessID(const std::string &process_name) {
 #undef MATCH_PROCESS_NAMED
 
 }//GetG4ProcessID
+
 //-------------------------------------------
+
+caf::genie_status_ caf::GetGenieStatusID(const int &status_code) {
+//#define MATCH_PROCESS(num) if (status_name == num) {return num;}
+#define MATCH_PROCESS(strname, id) if (status_code == id) {return caf::k ## strname;}
+  MATCH_PROCESS(IStUndefined,-1)
+  MATCH_PROCESS(IStInitialState,0)
+  MATCH_PROCESS(IStStableFinalState,1)
+  MATCH_PROCESS(IStIntermediateState,2)
+  MATCH_PROCESS(IStDecayedState,3)
+  MATCH_PROCESS(IStCorrelatedNucleon,10)
+  MATCH_PROCESS(IStNucleonTarget,11)
+  MATCH_PROCESS(IStDISPreFragmHadronicState,12)
+  MATCH_PROCESS(IStPreDecayResonantState,13)
+  MATCH_PROCESS(IStHadronInTheNucleus,14)
+  MATCH_PROCESS(IStFinalStateNuclearRemnant,15)
+  MATCH_PROCESS(IStNucleonClusterTarget,16)
+  MATCH_PROCESS(NotGenie,17)
+  std::cerr << "Error: Status code with no match (" << status_code << ")\n";
+  assert(false);
+  return caf::kIStUndefined; // unreachable
+#undef MATCH_PROCESS
+#undef MATCH_PROCESS_NAMED
+}
+ 
+ //-------------------------------------------
+
 
 float ContainedLength(const TVector3 &v0, const TVector3 &v1,
                        const std::vector<geoalgo::AABox> &boxes) {

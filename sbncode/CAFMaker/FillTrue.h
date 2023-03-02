@@ -47,6 +47,7 @@ namespace caf
         const TVector3 p0,
         const TVector3 p1);
 
+  caf::genie_status_ GetGenieStatusID(const int &status_code);
   caf::g4_process_ GetG4ProcessID(const std::string &name);
   
   void FillSRGlobal(const sbn::evwgh::EventWeightParameterSet& pset,
