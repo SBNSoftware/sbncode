@@ -113,7 +113,7 @@ namespace caf
   }
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  const std::vector<art::Ptr<recob::OpHit>> &hits,
+                  std::vector<recob::OpHit const*> const& hits,
                   int cryo, 
                   caf::SROpFlash &srflash,
                   bool allowEmpty) {
@@ -123,10 +123,11 @@ namespace caf
     srflash.time = flash.Time();
     srflash.timewidth = flash.TimeWidth();
 
-    double firstTime = 999999;
+    double firstTime = std::numeric_limits<double>::max();
     for(const auto& hit: hits){
-      if (firstTime > hit->PeakTime())
-        firstTime = hit->PeakTime();
+      double const hitTime = hit->HasStartTime()? hit->StartTime(): hit->PeakTime();
+      if (firstTime > hitTime)
+        firstTime = hitTime;
     }
     srflash.firsttime = firstTime;
 

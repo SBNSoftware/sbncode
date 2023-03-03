@@ -184,7 +184,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillOpFlash(const recob::OpFlash &flash,
-                  const std::vector<art::Ptr<recob::OpHit>> &hits,
+                  std::vector<recob::OpHit const*> const& hits,
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
