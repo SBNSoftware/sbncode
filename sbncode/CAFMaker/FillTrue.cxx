@@ -238,7 +238,7 @@ namespace caf {
         float closest_dist = -1.;
         int traj_index = -1;
         for (unsigned i_traj = 0; i_traj < particle.NumberTrajectoryPoints(); i_traj++) {
-          double this_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag(); 
+          double this_dist = (particle.Position(i_traj).Vect() - loc_nosce_v).Mag2(); 
           if (closest_dist < 0. || this_dist < closest_dist) {
             direction = particle.Momentum(i_traj).Vect().Unit();
             closest_dist = this_dist;
