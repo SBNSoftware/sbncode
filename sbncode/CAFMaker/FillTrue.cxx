@@ -274,7 +274,7 @@ namespace caf {
 
           // Map to wires
           if (sce && sce->EnableSimSpatialSCE()) { 
-            int corr = geo->TPC(plane).DriftDir()[0];
+            int corr = geo->TPC(plane).DriftDir().X();
 
             geo::Vector_t offset_m = sce->GetPosOffsets(loc_mdx);
             offset_m.SetX(offset_m.X()*corr); // convert from drift direction to detector direction
