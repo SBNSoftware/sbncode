@@ -198,10 +198,10 @@ namespace flashmatch {
       // double hsum = std::accumulate(std::begin(one_hypothesis.pe_v), std::end(_hypothesis.pe_v), 0.0);
       // double msum = std::accumulate(std::begin(one_measurement.pe_v), std::end(one_measurement.pe_v), 0.0);
       if (hmax!=0){
-        for (auto &v : one_hypothesis.pe_v) v /= hsum;
+        for (auto &v : one_hypothesis.pe_v) v /= hmax;
       }
       if (mmax!=0){
-      for (auto &v : one_measurement.pe_v) v /= msum;
+      for (auto &v : one_measurement.pe_v) v /= mmax;
       }
     }
     res.hypothesis = one_hypothesis.pe_v;
