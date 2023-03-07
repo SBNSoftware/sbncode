@@ -294,6 +294,12 @@ namespace caf
       true
     };
 
+    Atom<bool> FillTrackCaloTruth {
+      Name("FillTrackCaloTruth"),
+      Comment("Whether to save truth information associated with CaloPoints"),
+      true
+    };
+
     Sequence<std::string> SystWeightLabels {
       Name("SystWeightLabels"),
       Comment("Labels for EventWeightMap objects for mc.nu.wgt")

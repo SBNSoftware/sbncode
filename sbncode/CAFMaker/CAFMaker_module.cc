@@ -64,6 +64,8 @@
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
+#include "larevt/SpaceChargeServices/SpaceChargeService.h"
 
 #include "art_root_io/TFileService.h"
 
@@ -1125,6 +1127,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clock_data);
   const geo::GeometryCore *geometry = lar::providerFrom<geo::Geometry>();
 
+  auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
+
   // Collect the input TPC reco tags
   std::vector<std::string> pandora_tag_suffixes;
   fParams.PandoraTagSuffixes(pandora_tag_suffixes);
@@ -1728,9 +1732,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
               fParams.TrackHitFillRRStartCut(), fParams.TrackHitFillRREndCut(),
               lar::providerFrom<geo::Geometry>(), dprop, trk);
         }
-        if (fmTrackHit.isValid()) {
-          if ( !isRealData ) FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
-        }
         if (fmCRTHitMatch.isValid()) {
           art::FindManyP<sbn::crt::CRTHit> CRTT02Hit = FindManyPStrict<sbn::crt::CRTHit>
               (fmCRTHitMatch.at(iPart), evt, fParams.CRTHitMatchLabel() + slice_tag_suff);
@@ -1744,6 +1745,16 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         if (fmCRTTrackMatch.isValid()) {
           FillTrackCRTTrack(fmCRTTrackMatch.at(iPart), trk);
         }
+        // Truth matching
+        if (fmTrackHit.isValid()) {
+          if ( !isRealData ) {
+            // Track -> particle matching
+            FillTrackTruth(fmTrackHit.at(iPart), id_to_hit_energy_map, true_particles, clock_data, trk);
+            // Hit truth information corresponding to Calo-Points
+            // Assumes truth matching and calo-points are filled
+            if (mc_particles.isValid() && fParams.FillTrackCaloTruth()) FillTrackCaloTruth(id_to_ide_map, *mc_particles, geometry, clock_data, sce, trk);
+          }
+        }
       } // thisTrack exists
 
       if (!thisShower.empty()) { // it has shower!
@@ -1753,7 +1764,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
-
         if (fmShowerRazzle.isValid() && fmShowerRazzle.at(iPart).size()==1) {
            FillShowerRazzle(fmShowerRazzle.at(iPart).front(), shw);
         }

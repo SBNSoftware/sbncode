@@ -572,9 +572,14 @@ namespace caf
           if (h.key() == tps[i]) {
             p.wire = h->WireID().Wire;
             p.tpc = h->WireID().TPC;
+            p.channel = h->Channel();
             p.sumadc = h->SummedADC();
             p.integral = h->Integral();
             p.t = h->PeakTime();
+            p.width = h->RMS();
+            p.mult = h->Multiplicity();
+            p.start = h->StartTick();
+            p.end = h->EndTick();
           }
         }
 
