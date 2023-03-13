@@ -1198,6 +1198,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     srtruthbranch.nnu ++;
 
     if ( !isRealData ) FillTrueNeutrino(mctruth, mcflux, gtruth, true_particles, id_to_truehit_map, srtruthbranch.nu.back(), i, fActiveVolumes);
+    std::cout << " CAFMaker" << std::endl;
+    std::cout << " CC: " << srtruthbranch.nu.back().iscc << " NC: " << srtruthbranch.nu.back().isnc << std::endl;
 
     // Don't check for syst weight assocations until we have something (MCTruth
     // corresponding to a neutrino) that could plausibly be reweighted. This
@@ -1221,6 +1223,26 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillEventWeight(*wgtmap, srtruthbranch.nu.back(), fWeightPSetIndex);
       } // end for wgtmap
     } // end for fm
+
+    // Loop over the particle list and fill all with final state != 1 (not covered by G4)
+    art::ServiceHandle<cheat::ParticleInventoryService> pi_serv;
+    art::ServiceHandle<cheat::BackTrackerService> bt_serv;
+
+    for(int p = 0; p < mctruth->NParticles(); ++p){
+      true_particles.emplace_back();
+      const simb::MCParticle part = mctruth->GetParticle(p);
+      if(part.StatusCode() == 1 || part.StatusCode() == -1) continue;
+
+      
+      FillTrueGenParticle(part,
+                         fActiveVolumes,
+                         fTPCVolumes,
+                         id_to_ide_map,
+                         id_to_truehit_map,
+                         *bt_serv,
+                         *pi_serv,
+                         true_particles.back());                        
+    } // MCTruth particles
   } // end for i (mctruths)
 
   // get the number of events generated in the gen stage
