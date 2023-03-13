@@ -1323,9 +1323,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     if (flashes_handle.isValid()) {
       const std::vector<recob::OpFlash> &opflashes = *flashes_handle;
       int cryostat = ( pandora_tag_suffix.find("W") != std::string::npos ) ? 1 : 0;
+
+      // get associated OpHits for each OpFlash
+      art::FindMany<recob::OpHit> findManyHits(flashes_handle, evt, fParams.OpFlashLabel() + pandora_tag_suffix);
+
+      int iflash=0;
       for (const recob::OpFlash& flash : opflashes) {
+
+        std::vector<recob::OpHit const*> const& ophits = findManyHits.at(iflash);
+
         srflashes.emplace_back();
-        FillOpFlash(flash, cryostat, srflashes.back());
+        FillOpFlash(flash, ophits, cryostat, srflashes.back());
+        iflash++;
       }
     }
   }
