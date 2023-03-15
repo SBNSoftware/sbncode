@@ -18,6 +18,7 @@
 // local includes
 #include "sbncode/EventGenerator/MeVPrtl/Tools/IMeVPrtlDecay.h"
 #include "sbncode/EventGenerator/MeVPrtl/Tools/Constants.h"
+#include "AnisotropicThreeBodyDecay.h"
 
 // LArSoft includes
 #include "larcorealg/Geometry/BoxBoundedGeo.h"
@@ -99,6 +100,9 @@ private:
   
   // Configure the particle
   bool fMajorana;
+
+  //Configure the decay                                                                            
+  bool fDecayIsThreeBodyAnisotropic;
   
   // Internal struct for holding decay information
   struct DecayFinalState {
@@ -427,6 +431,8 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   double lep_mass = is_muon ? Constants::Instance().muon_mass : Constants::Instance().elec_mass;
   int lep_pdg = is_muon ? 13 : 11;
 
+  ThreebodyMomentum momenta;
+
   // Decay not kinematically allowed
   if (2*lep_mass > flux.mass) {
     ret.width = 0.;
@@ -444,10 +450,58 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   ret.width = total_width;
   if (ret.width == 0.) return ret;
   
-  // Three body decay
-  //
-  // TODO: account for anisotropies in decay
-  ThreebodyMomentum momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass); 
+  // Three body decay                                                                                                                  
+  //                                                                                                                                   
+  // Choose between Anisotropic and Isotropic decay(Must be selected in configuration FHICL) @LuisPelegrina                            
+  if(fDecayIsThreeBodyAnisotropic)
+    {
+      //Get the Parent meson mass and the lepton produced with the HNL mass to calculate polarization                                    
+      double m_meson=Constants::Instance().kplus_mass;
+      if(abs(flux.meson_pdg)==321)
+        {
+          m_meson=Constants::Instance().kplus_mass;
+        }else if(abs(flux.meson_pdg)==211)
+        {
+          m_meson=Constants::Instance().piplus_mass;
+        }
+
+      double m_parentlepton=Constants::Instance().muon_mass;
+      if(abs(flux.meson_pdg)==13)
+        {
+          m_meson=Constants::Instance().muon_mass;
+        }else if(abs(flux.meson_pdg)==11)
+        {
+          m_meson=Constants::Instance().elec_mass;
+        }
+
+      //Get the polarization, currently it only supports HNL produced by meson decays to a lepton and a HNL                            
+      double Pol=evgen::ldm::AnThreeBD::PolHNL(flux.mass,m_parentlepton,m_meson);
+
+      TLorentzVector PA;
+      TLorentzVector PB;
+      TLorentzVector PC;
+
+      //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
+
+      evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA,PB,PC,flux.mass,ue4,um4,ut4,lep_pdg,fMajorana,Pol);
+
+      momenta.A=PA;
+      momenta.B=PB;
+      momenta.C=PC;
+      if (fVerbose)
+	{
+	  std::cout <<"Using Anisotropic ThreeBody Momentum" << "\n";
+	}
+    }else
+    {
+      //use the isotropic Threebody Momentum function                                                                                  
+      momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass);
+      if (fVerbose)
+        {
+	  std::cout << "Using Isotropic ThreeBody Momentum"<< "\n";
+        }
+    }
+  
 
   // Boost it!
   momenta.A.Boost(flux.mom.BoostVector());
@@ -824,7 +878,8 @@ void HNLMakeDecay::configure(fhicl::ParameterSet const &pset)
   fMinDetectorDistance = pset.get<double>("MinDetectorDistance", 100e2); // 100m for NuMI -> SBN/ICARUS
   
   fMajorana = pset.get<bool>("Majorana");
-  
+  fDecayIsThreeBodyAnisotropic=pset.get<bool>("DecayIsThreeBodyAnisotropic");
+
   fMaxWeight = CalculateMaxWeight();
   
 }
