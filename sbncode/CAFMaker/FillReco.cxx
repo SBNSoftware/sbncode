@@ -473,35 +473,6 @@ namespace caf
     }
   }
 
-  void FillTrackCNNScore(const recob::Track& track,
-                     const sbn::PFPCNNScore &cnnscores,
-                     caf::SRTrack& srtrack,
-                     bool allowEmpty)
-  {
-//    if (cnnscores){
-      std::cout << "Filling track cnnscore" << std::endl;
-      srtrack.cnnscore.track = cnnscores.pfpTrackScore;
-      srtrack.cnnscore.shower = cnnscores.pfpShowerScore;
-      srtrack.cnnscore.noise = cnnscores.pfpNoiseScore;
-      srtrack.cnnscore.michel = cnnscores.pfpMichelScore;
-      srtrack.cnnscore.ncluster = cnnscores.nClusters;
-//    }
-  }
-
-  void FillShowerCNNScore(const recob::Shower& shower,
-                     const sbn::PFPCNNScore &cnnscores,
-                     caf::SRShower& srshower,
-                     bool allowEmpty)
-  {
-//    if (cnnscores){
-      srshower.cnnscore.track = cnnscores.pfpTrackScore;
-      srshower.cnnscore.shower = cnnscores.pfpShowerScore;
-      srshower.cnnscore.noise = cnnscores.pfpNoiseScore;
-      srshower.cnnscore.michel = cnnscores.pfpMichelScore;
-      srshower.cnnscore.ncluster = cnnscores.nClusters;
-//    }
-  }
-
 
   void FillPlaneChi2PID(const anab::ParticleID &particle_id, caf::SRTrkChi2PID &srpid) {
 
@@ -723,6 +694,23 @@ namespace caf
     srtrack.end.y = track.End().Y();
     srtrack.end.z = track.End().Z();
 
+  }
+
+
+  void FillCNNScore(const recob::PFParticle &particle,
+                         const sbn::PFPCNNScore &cnnscores,
+                         caf::SRPFP& srpfp,
+                         bool allowEmpty)
+  {
+//    std::cout << "filling PFP CNN Score" << std::endl;
+//    std::cout << cnnscores.pfpTrackScore << "   " << cnnscores.pfpShowerScore << std::endl;
+//    float sum = cnnscores.pfpTrackScore+cnnscores.pfpShowerScore;
+//    std::cout << "sum : " << sum << std::endl;
+    srpfp.cnnscore.track = cnnscores.pfpTrackScore;
+    srpfp.cnnscore.shower = cnnscores.pfpShowerScore;
+    srpfp.cnnscore.noise = cnnscores.pfpNoiseScore;
+    srpfp.cnnscore.michel = cnnscores.pfpMichelScore;
+    srpfp.cnnscore.ncluster = cnnscores.nClusters;
   }
 
   void FillPFPVars(const recob::PFParticle &particle,

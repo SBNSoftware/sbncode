@@ -32,10 +32,16 @@ physics:
       BatchSize:                    256 
       WireLabel:                    "caldata"
       HitModuleLabel:               "gaushit"
+ # 		TrackModuleLabel: "pandoraTrack"
+#			ShowerModuleLabel: "pandoraShower"
+			PFParticleModuleLabel: "pandora"
       ClusterModuleLabel:           "pandora"
-      PFParticleModuleLabel:           "pandora"
+#      PFParticleModuleLabel:        "pandoraSCE"
       DoNeutrinoOnly:               true
-      DoPFPs:                       true
+ #     DoClusters:               true
+ #     DoPFPs:               true
+			SparseLengthCut: 150
+			SparseRate: 3
       Views:                        []
       PointIdAlg: @local::pointidalg_sbnd
     }

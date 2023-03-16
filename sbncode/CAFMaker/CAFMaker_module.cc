@@ -1686,10 +1686,18 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       const larpandoraobj::PFParticleMetadata *pfpMeta = (fmPFPMeta.at(iPart).empty()) ? NULL : fmPFPMeta.at(iPart).at(0).get();
       FillPFPVars(thisParticle, primary, pfpMeta, thisPFPT0, pfp);
 
+
       art::Ptr<sbn::PFPCNNScore> cnnScores;
       if (fmCNNScores.isValid()) {
           cnnScores = fmCNNScores.at(iPart);
       }
+      FillCNNScore(thisParticle, *cnnScores, pfp);
+      auto cnncheck = *cnnScores;
+      // print all content of cnnScores
+      std::cout << "trackscore " << cnncheck.pfpTrackScore << std::endl;
+      std::cout << "showerscore " << cnncheck.pfpShowerScore << std::endl;
+      std::cout << "noise score " << cnncheck.pfpNoiseScore << std::endl;
+      std::cout << "sum " << cnncheck.pfpTrackScore + cnncheck.pfpShowerScore + cnncheck.pfpNoiseScore << std::endl;
 
       if (!thisTrack.empty())  { // it has a track!
         assert(thisTrack.size() == 1);
@@ -1720,7 +1728,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         FillTrackVars(*thisTrack[0], producer, trk);
         FillTrackMCS(*thisTrack[0], trajectoryMCS, trk);
         FillTrackRangeP(*thisTrack[0], rangePs, trk);
-        FillTrackCNNScore(*thisTrack[0], *cnnScores, trk);
 
         if (fmChi2PID.isValid()) {
            FillTrackChi2PID(fmChi2PID.at(iPart), lar::providerFrom<geo::Geometry>(), trk);
@@ -1763,7 +1770,6 @@ void CAFMaker::produce(art::Event& evt) noexcept {
 	
         SRShower& shw = pfp.shw;
         FillShowerVars(*thisShower[0], vertex, fmShowerHit.at(iPart), lar::providerFrom<geo::Geometry>(), producer, shw);
-        FillShowerCNNScore(*thisShower[0], *cnnScores, shw);
 
         // We may have many residuals per shower depending on how many showers ar in the slice
 
