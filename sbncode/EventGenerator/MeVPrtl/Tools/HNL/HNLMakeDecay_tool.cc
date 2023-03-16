@@ -450,9 +450,9 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   ret.width = total_width;
   if (ret.width == 0.) return ret;
   
-  // Three body decay                                                                                                                  
-  //                                                                                                                                   
-  // Choose between Anisotropic and Isotropic decay(Must be selected in configuration FHICL) @LuisPelegrina                            
+  // Three body decay                                                   
+  //
+  // Choose between Anisotropic and Isotropic decay(Must be selected in configuration FHICL) @LuisPelegrina                    
   if(fDecayIsThreeBodyAnisotropic)
     {
       //Get the Parent meson mass and the lepton produced with the HNL mass to calculate polarization                                    
@@ -481,9 +481,15 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
       TLorentzVector PB;
       TLorentzVector PC;
 
-      //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
-
-      evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA,PB,PC,flux.mass,ue4,um4,ut4,lep_pdg,fMajorana,Pol);
+      //Get the PDG sing of the lepton produced in the meson decay and select if the HNL is an AntiHNl or not (Only important for dirac decays and valid for M->Nl decays)
+      double AntiHNL=false;
+      if(flux.secondary_pdg>0)
+	{
+	  AntiHNL=false;
+	}else AntiHNL=true;
+      
+       //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
+      evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA,PB,PC,flux.mass,ue4,um4,ut4,lep_pdg,fMajorana,AntiHNL,Pol);
 
       momenta.A=PA;
       momenta.B=PB;
@@ -494,7 +500,7 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
 	}
     }else
     {
-      //use the isotropic Threebody Momentum function                                                                                  
+      //use the isotropic Threebody Momentum function           
       momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass);
       if (fVerbose)
         {

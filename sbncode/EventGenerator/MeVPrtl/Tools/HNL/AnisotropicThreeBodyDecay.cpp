@@ -58,7 +58,7 @@ void evgen::ldm::AnThreeBD::CMgLgR(double (&CM)[6],double Ue4,double Umu4,double
 //Coefficients of Lorentz-Invariant Objects given couplings gL and gR (Dirac HNL)
 //See arXiv:2104.05719 (Table 3) for more details
 //Valid as long as the HNL is decaying into a neutrino and identical final-state charged leptons 
-void evgen::ldm::AnThreeBD::CDgLgR(double (&CD)[6],double Ue4,double Umu4,double Ut4, int LeptonPDG)
+void evgen::ldm::AnThreeBD::CDNgLgR(double (&CD)[6],double Ue4,double Umu4,double Ut4, int LeptonPDG)
 {
   double U4[3]={Ue4,Umu4,Ut4};
   
@@ -80,11 +80,44 @@ void evgen::ldm::AnThreeBD::CDgLgR(double (&CD)[6],double Ue4,double Umu4,double
       CD[2]+=64*U4[i]*(gr*gr);//C5
       CD[3]+=-64*U4[i]*gr*gl;//C8
       CD[4]+=-64*U4[i]*(gl*gl);//C9
-      CD[5]+=-64*U4[i]*(gr*gr);//C1
+      CD[5]+=-64*U4[i]*(gr*gr);//C10
     }
   
   return;
 }
+
+
+//Coefficients of Lorentz-Invariant Objects given couplings gL and gR (Dirac bar{HNL} (AntiHNL))
+//See arXiv:2104.05719 (Table 3) for more details
+//Valid as long as the HNL is decaying into a neutrino and identical final-state charged leptons 
+void evgen::ldm::AnThreeBD::CDAgLgR(double (&CD)[6],double Ue4,double Umu4,double Ut4, int LeptonPDG)
+{
+  double U4[3]={Ue4,Umu4,Ut4};
+
+  for (int i=0;i<6;i++)
+    {
+      CD[i]=0;
+    }
+
+  double gl;
+  double gr=GR();
+  //Calculate the contribution of each mixing matrix element and sum them 
+  for (int i=0;i<3;i++)
+    {
+      if (LeptonPDG==11+2*i) gl=GL(true);// Take into account the CC contribution 
+      else gl=GL(false); 
+      
+      CD[0]+=64*U4[i]*gr*gl; //C1
+      CD[1]+=64*U4[i]*(gr*gr);//C4
+      CD[2]+=64*U4[i]*(gl*gl);//C5
+      CD[3]+=64*U4[i]*gr*gl;//C8
+      CD[4]+=64*U4[i]*(gr*gr);//C9
+      CD[5]+=64*U4[i]*(gl*gl);//C10
+    }
+  
+  return;
+}
+
 
 //Polarization of a HNL emerging from a two body meson decay (M-> l N)
 //m_l is the mass of the lepton and m_M the mass of the parent meson 
@@ -399,9 +432,10 @@ void evgen::ldm::AnThreeBD::RF4vecs(TLorentzVector &pnu,TLorentzVector &pm,TLore
 //Ue4, Umu4 and Ut4: Mixing matrix element squared
 //Lepton PDG: The Pdg of the lepton pair 13=Muon, 11=Electron
 //Majorana: Wether the HNL is a Majorana Particle or not
+//AntiHNL: Wether the HNL is a AntiHNL or a HNL (Only relevant in Dirac case)
 //Pol: Polarization of the HNL
 //See arXiv:2104.05719 for more details
-void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu,TLorentzVector &pm,TLorentzVector& pp,double m_HNL,double Ue4,double Umu4,double Ut4,int LeptonPDG,bool Majorana,double Pol)
+void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu,TLorentzVector &pm,TLorentzVector& pp,double m_HNL,double Ue4,double Umu4,double Ut4,int LeptonPDG,bool Majorana,bool AntiHNL,double Pol)
 {
   //By default select the electron as the lepton pair
   double m_p= evgen::ldm::Constants::Instance().elec_mass;
@@ -427,7 +461,11 @@ void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu,TLorent
   //See arXiv:2104.05719 for more details
   double C[6]={0,0,0,0,0,0};
   if (Majorana) evgen::ldm::AnThreeBD::CMgLgR(C,Ue4,Umu4,Ut4,LeptonPDG);
-  else evgen::ldm::AnThreeBD::CDgLgR(C,Ue4,Umu4,Ut4,LeptonPDG);
+  else
+    {
+      if (AntiHNL) evgen::ldm::AnThreeBD::CDAgLgR(C,Ue4,Umu4,Ut4,LeptonPDG);
+      else evgen::ldm::AnThreeBD::CDNgLgR(C,Ue4,Umu4,Ut4,LeptonPDG);
+    }
   
   double z_num=0;
   double z_ll=0;
