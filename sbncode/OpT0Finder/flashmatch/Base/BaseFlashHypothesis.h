@@ -52,7 +52,7 @@ namespace flashmatch {
 
     #if USING_LARSOFT == 1
     /// Sets the semi analytical model
-    void SetSemiAnalyticalModel(std::unique_ptr<SemiAnalyticalModel> model) { _semi_model = std::move(model); }
+    void SetSemiAnalyticalModel(std::unique_ptr<phot::SemiAnalyticalModel> model) { _semi_model = std::move(model); }
     #endif
 
   protected:
@@ -61,7 +61,7 @@ namespace flashmatch {
     std::vector<int> _uncoated_pmt_list; ///< A list of opdet sensitive to visible (reflected) light
 
     #if USING_LARSOFT == 1
-    std::unique_ptr<SemiAnalyticalModel> _semi_model;
+    std::unique_ptr<phot::SemiAnalyticalModel> _semi_model;
     #endif
 
   };
