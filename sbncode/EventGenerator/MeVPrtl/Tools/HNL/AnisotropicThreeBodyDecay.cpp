@@ -353,8 +353,8 @@ double evgen::ldm::AnThreeBD::MaxMSqDM(double m_HNL,int  LeptonPDG,double Ue4,do
 	      double r3 = rand->Rndm();
 	      double r4 = rand->Rndm();
 	      
-	      z_ll=(m_HNL*m_HNL*r1+(m_p+m_m)*(m_p+m_m))/(m_HNL*m_HNL);
-	      z_num=((m_HNL-m_m)*(m_HNL-m_m)*r2+m_p*m_p)/(m_HNL*m_HNL);
+	      z_ll=((m_HNL*m_HNL-(m_m+m_p)*(m_m+m_p))*r1+(m_m+m_p)*(m_m+m_p))/(m_HNL*m_HNL);
+	      z_num=(((m_HNL-m_p)*(m_HNL-m_p)-m_m*m_m)*r2+m_m*m_m)/(m_HNL*m_HNL);
 	      ct_ll=r3*2-1;
 	      gam_ll=2*TMath::Pi()*r4;
 	      MSq=MSqDM(C,z_num,z_ll,ct_ll,gam_ll,m_HNL,m_p,m_m,Pol);
@@ -491,12 +491,12 @@ void evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(TLorentzVector &pnu,TLorent
 	  double r3 = rand->Rndm();
 	  double r4 = rand->Rndm();
 	  
-	  z_ll=(m_HNL*m_HNL*r1+4*m_p*m_m)/(m_HNL*m_HNL);
-	  z_num=((m_HNL-m_m)*(m_HNL-m_m)*r2+m_p*m_p)/(m_HNL*m_HNL);
+	  z_ll=((m_HNL*m_HNL-(m_m+m_p)*(m_m+m_p))*r1+(m_m+m_p)*(m_m+m_p))/(m_HNL*m_HNL);
+	  z_num=(((m_HNL-m_p)*(m_HNL-m_p)-m_m*m_m)*r2+m_m*m_m)/(m_HNL*m_HNL);
 	  ct_ll=r3*2-1;
 	  gam_ll=2*TMath::Pi()*r4;
 	  MSq=evgen::ldm::AnThreeBD::MSqDM(C,z_num,z_ll,ct_ll,gam_ll,m_HNL,m_p,m_m,Pol);
-	}while(MSq==0);//Check if the randomly selected kinematical quantities  where allowed in the Dalitz
+	}while(MSq==0);//Check if the randomly selected kinematical quantities were allowed in the Dalitz
       double r5 = rand->Rndm();
       if(r5<MSq/MSqMax) IsW=true;
     }while(!IsW); //Use rejection-sampling to select each final state given its probability to happen
