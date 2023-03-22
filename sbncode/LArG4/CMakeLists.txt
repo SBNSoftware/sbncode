@@ -8,5 +8,28 @@ cet_build_plugin(G4InfoReducer art::module
                            art::Utilities canvas::canvas
                            BASENAME_ONLY)
 
+cet_make_library(SOURCE MergeSimSourcesLiteUtility.cxx
+  LIBRARIES
+  PUBLIC
+  lardataobj::MCBase
+  larsim::MergeSimSources
+)
+
+cet_build_plugin(MergeSimSourcesLite art::module
+  LIBRARIES
+  sbncode::LArG4
+  larsim::MergeSimSources
+  lardataobj::MCBase
+  larcorealg::headers
+  art::Framework_Principal
+  art::Framework_Services_Registry
+  art::Persistency_Common
+  messagefacility::MF_MessageLogger
+  canvas::canvas
+  fhiclcpp::types
+  fhiclcpp::fhiclcpp
+)
+
+install_headers()
 install_fhicl()
 install_source()
