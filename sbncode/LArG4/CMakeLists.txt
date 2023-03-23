@@ -15,7 +15,7 @@ cet_make_library(SOURCE MergeSimSourcesLiteUtility.cxx
   larsim::MergeSimSources
 )
 
-cet_build_plugin(MergeSimSourcesLite art::module
+cet_build_plugin(MergeSimSourcesSBN art::EDProducer
   LIBRARIES
   sbncode::LArG4
   larsim::MergeSimSources
@@ -28,6 +28,7 @@ cet_build_plugin(MergeSimSourcesLite art::module
   canvas::canvas
   fhiclcpp::types
   fhiclcpp::fhiclcpp
+  BASENAME_ONLY
 )
 
 install_headers()
