@@ -14,6 +14,7 @@
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "larsim/Utils/TruthMatchUtils.h"
+#include "larevt/SpaceCharge/SpaceCharge.h"
 
 #include "nusimdata/SimulationBase/GTruth.h"
 #include "nusimdata/SimulationBase/MCFlux.h"
@@ -103,6 +104,14 @@ namespace caf
                       const detinfo::DetectorClocksData &clockData,
                       caf::SRTrack& srtrack,
                       bool allowEmpty = false);
+
+  void FillTrackCaloTruth(const std::map<int, std::vector<std::pair<geo::WireID, const sim::IDE*>>> &id_to_ide_map,
+                          const std::vector<simb::MCParticle> &mc_particles,
+                          const geo::GeometryCore *geo,
+                          const detinfo::DetectorClocksData &clockData,
+                          const spacecharge::SpaceCharge *sce,
+                          caf::SRTrack& srtrack);
+
 
   void FillStubTruth(const std::vector<art::Ptr<recob::Hit>> &hits,
                      const std::map<int, caf::HitsEnergy> &id_hits_map,

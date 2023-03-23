@@ -20,6 +20,7 @@
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/SpacePoint.h"
 #include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/AnalysisBase/Calorimetry.h"
 #include "lardataobj/AnalysisBase/ParticleID.h"
 #include "lardataobj/AnalysisBase/T0.h"
@@ -183,6 +184,7 @@ namespace caf
                   bool allowEmpty = false);
 
   void FillOpFlash(const recob::OpFlash &flash,
+                  std::vector<recob::OpHit const*> const& hits,
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
