@@ -17,8 +17,8 @@ void sbn::MergeSimSourcesLiteUtility::MergeMCParticleLites(
   //fMCParticleLiteListMap[source_index].resize(input_vector.size());
   merged_vector.reserve(merged_vector.size() + input_vector.size());
 
-  std::pair<int, int> range_trackID(std::numeric_limits<int>::max(),
-                                    std::numeric_limits<int>::min());
+  //std::pair<int, int> range_trackID(std::numeric_limits<int>::max(),
+  //                                  std::numeric_limits<int>::min());
 
   for (size_t i_p = 0; i_p < input_vector.size(); ++i_p) {
     // sim::MCParticleLite does not have (yet?) the nice copy constructor with offset
