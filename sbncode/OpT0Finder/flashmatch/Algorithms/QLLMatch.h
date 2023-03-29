@@ -114,6 +114,8 @@ namespace flashmatch {
 
   private:
 
+    FlashMatch_t OnePMTSpectrumMatch(const Flash_t &flash);
+
     FlashMatch_t PESpectrumMatch(const QCluster_t &pt_v, const Flash_t &flash, const bool init_x0);
 
     FlashMatch_t OnePMTMatch(const Flash_t &flash);
