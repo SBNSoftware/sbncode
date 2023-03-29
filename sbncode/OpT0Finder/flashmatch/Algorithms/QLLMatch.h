@@ -122,8 +122,11 @@ namespace flashmatch {
 
     QLLMode_t _mode;   ///< Minimizer mode
     bool _record;      ///< Boolean switch to record minimizer history
-    double _normalize; ///< Noramalize hypothesis PE spectrum
+    double _normalize; ///< Noramalize hypothesis and measured PE spectrum
+    double _chi_error; ///< width of an additional uncertainty to add to Chi2 method 
     bool _use_minuit;  ///< Minimize or not
+    
+    double _saturated_thresh; // threshold for hypothesis PE to ignore due to saturated measured PE 
 
     std::vector<double>  _penalty_threshold_v;
     std::vector<double>  _penalty_value_v;

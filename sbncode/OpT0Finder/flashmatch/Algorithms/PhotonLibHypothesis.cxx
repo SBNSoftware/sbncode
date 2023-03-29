@@ -85,12 +85,6 @@ namespace flashmatch {
       geo::Point_t const xyz = {pt.x, pt.y, pt.z};
 
       double n_original_photons = pt.q;
-      // if (track!=1){
-      //   n_original_photons = 1.1272408*charge;
-      // }
-      // if (track==1){
-      //   n_original_photons = pt.q;
-      // }
 
       std::vector<double> direct_visibilities;
       _semi_model->detectedDirectVisibilities(direct_visibilities, xyz);
