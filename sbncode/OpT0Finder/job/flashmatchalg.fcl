@@ -23,9 +23,11 @@ FlashMatchManager: {
 QLLMatch: {
   Verbosity: 3
   RecordHistory: false
-  NormalizeHypothesis: false
+  NormalizeFlash: false
   QLLMode: 1 # 0 for Chi2, 1 for LLHD
+  ChiErrorWidth: 0 # applies an additional uncertainty in the denominator of the chisq calculation proportional to H
   UseMinuit: false
+  SaturatedThreshold: -1. # -1. if not correcting for saturated PMTs, otherwise a value > 0 will be the threshold value  
   PEPenaltyThreshold: []
   PEPenaltyValue: []
   XPenaltyThreshold: 30
