@@ -11,6 +11,8 @@ Joshua Berger 01/22/2023
 #include "ThreeBodyIntegrator.h"
 #include <gsl/gsl_integration.h>
 
+// Wrapper functions for doing the integration.
+// Uses extern "C" to avoid C++ symbol mangling
 namespace IntegratorWrapper {
   extern "C" {
     struct inner_params {
@@ -18,6 +20,7 @@ namespace IntegratorWrapper {
       ThreeBodyIntegrator *integrator;
     };
 
+    // Wrapper for inner integral
     double SquaredAmp_wrapper(double m232, void * params) {
       inner_params& this_params = *(inner_params *)params;
       double m122 = this_params.m122;
@@ -26,6 +29,7 @@ namespace IntegratorWrapper {
       return result;
     }
 
+    // Wrapper for outer integral
     double FirstIntegral_wrapper(double m122, void * params) {
       ThreeBodyIntegrator *this_integrator = (ThreeBodyIntegrator *)params;
       double result = this_integrator->GetFirstIntegral(m122);
@@ -38,6 +42,8 @@ namespace IntegratorWrapper {
 ThreeBodyIntegrator::ThreeBodyIntegrator(std::array<double, 4> masses, std::function<double (double, double)> amp):
   fAmp(amp)
 {
+  // We treat m_{12}^2 as the "outer" integral, so the limits are computed once
+  // The limits of m_{23}^2 (the inner integral) then come per-m_{12}^2 value
   fMasses = masses;
   fM122Min = pow(masses[1] + masses[2], 2.0);
   fM122Max = pow(masses[0] - masses[3], 2.0);
@@ -59,6 +65,7 @@ double ThreeBodyIntegrator::GetE3st(double m122) {
   return 0.5 * (pow(M, 2.0) - m122 - pow(m3, 2.0)) / sqrt(m122);
 }
 
+// Get limits of m_{23}^2
 double ThreeBodyIntegrator::M232Min(double m122) {
   double m2 = fMasses[2];
   double m3 = fMasses[3];
@@ -75,11 +82,13 @@ double ThreeBodyIntegrator::M232Max(double m122) {
   return pow(E2st + E3st, 2.0) - pow(sqrt(E2st*E2st - m2*m2) - sqrt(E3st*E3st - m3*m3), 2.0);
 }
 
+// Amplitude
 double ThreeBodyIntegrator::GetSquaredAmp(double m122, double m232) {
   double amp = fAmp(m122, m232);
   return amp*amp;
 }
 
+// inner integral
 double ThreeBodyIntegrator::GetFirstIntegral(double m122) {
   double m232min = M232Min(m122);
   double m232max = M232Max(m122);
@@ -96,6 +105,7 @@ double ThreeBodyIntegrator::GetFirstIntegral(double m122) {
   return result;
 }
 
+// outer integral
 double ThreeBodyIntegrator::Integrate() {
   if (fWidth >= 0.0)
     return fWidth;

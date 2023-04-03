@@ -66,6 +66,7 @@ private:
   std::string fFluxCopyMethod;
   bool fRandomizeFiles;
   int fNSkipLines;
+  bool fVerbose;
 
   // info for tracking files
   unsigned fFileIndex;
@@ -113,6 +114,7 @@ void TxtFileGen::configure(fhicl::ParameterSet const &pset)
   fFluxCopyMethod = pset.get<std::string>("FluxCopyMethod", "IFDH");
   fRandomizeFiles = pset.get<bool>("RandomizeFiles");
   fNSkipLines = pset.get<int>("NSkipLines");
+  fVerbose = pset.get<bool>("Verbose", false);
 
   std::cout << "Searching for flux files at path: " << fSearchPath << std::endl;
   std::cout << "With patterns:\n";
@@ -189,7 +191,7 @@ std::string TxtFileGen::GetNextEntry() {
       fFileIndex = 0;
     }
 
-    std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
+    if (fVerbose) std::cout << "New file: " << fFluxFiles[fFileIndex] << " at index: " << fFileIndex << " of: " << fFluxFiles.size() << std::endl;
     fCurrentFile.open(fFluxFiles[fFileIndex]);
 
     // count the number of lines
@@ -252,7 +254,7 @@ simb::MCFlux TxtFileGen::MakeMCFlux(std::string line) {
   std::stringstream l4vec(line);
   l4vec >> px >> py >> pz >> E >> pdgcode >> wgt >> npot;
 
-  std::cout << "Values: " << px << " " << py << " " << pz << " " << E << " " << pdgcode << " " << wgt << std::endl;
+  if (fVerbose) std::cout << "Values: " << px << " " << py << " " << pz << " " << E << " " << pdgcode << " " << wgt << std::endl;
 
   simb::MCFlux flux;
   
