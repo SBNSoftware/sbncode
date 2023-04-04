@@ -147,7 +147,7 @@ void sbn::EXTRetriever::endSubRun(art::SubRun& sr)
   // art::SubRun so it persists 
   auto p =  std::make_unique< std::vector< sbn::EXTCountInfo > >(fOutExtInfos);
 
-  sr.put(std::move(p));
+  sr.put(std::move(p), art::subRunFragment());
 
   return;
 }
