@@ -453,60 +453,36 @@ HNLMakeDecay::DecayFinalState HNLMakeDecay::NuDiLep(const MeVPrtlFlux &flux, boo
   // Three body decay                                                   
   //
   // Choose between Anisotropic and Isotropic decay(Must be selected in configuration FHICL) @LuisPelegrina                    
-  if(fDecayIsThreeBodyAnisotropic)
-    {
-      //Get the Parent meson mass and the lepton produced with the HNL mass to calculate polarization                                    
-      double m_meson=Constants::Instance().kplus_mass;
-      if(abs(flux.meson_pdg)==321)
-        {
-          m_meson=Constants::Instance().kplus_mass;
-        }else if(abs(flux.meson_pdg)==211)
-        {
-          m_meson=Constants::Instance().piplus_mass;
-        }
-
-      double m_parentlepton=Constants::Instance().muon_mass;
-      if(abs(flux.meson_pdg)==13)
-        {
-          m_meson=Constants::Instance().muon_mass;
-        }else if(abs(flux.meson_pdg)==11)
-        {
-          m_meson=Constants::Instance().elec_mass;
-        }
-
-      //Get the polarization, currently it only supports HNL produced by meson decays to a lepton and a HNL                            
-      double Pol=evgen::ldm::AnThreeBD::PolHNL(flux.mass,m_parentlepton,m_meson);
-
-      TLorentzVector PA;
-      TLorentzVector PB;
-      TLorentzVector PC;
-
-      //Get the PDG sing of the lepton produced in the meson decay and select if the HNL is an AntiHNl or not (Only important for dirac decays and valid for M->Nl decays)
-      double AntiHNL=false;
-      if(flux.secondary_pdg>0)
-	{
-	  AntiHNL=false;
-	}else AntiHNL=true;
+  if(fDecayIsThreeBodyAnisotropic) {
+    //Get the polarization from flux
+    double Pol = flux.polarization;
+    
+    TLorentzVector PA;
+    TLorentzVector PB;
+    TLorentzVector PC;
+    
+    //Get the PDG sing of the lepton produced in the meson decay and select if the HNL is an AntiHNl or not (Only important for dirac decays and valid for M->Nl decays)
+    double AntiHNL = false;
+    if(flux.secondary_pdg > 0) {
+      AntiHNL = false;
+    }else AntiHNL = true;
       
-       //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
-      evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA,PB,PC,flux.mass,ue4,um4,ut4,lep_pdg,fMajorana,AntiHNL,Pol);
+    //Calculate the Anisotropic distribution, comments about how the code works can be found in "AnisotropicThreeBodyDecay.cpp", currently the function is optimized for m_HNL<390 MeV and decays N->eenu and N->mumunu
+    evgen::ldm::AnThreeBD::AnisotropicThreeBodyDist(PA, PB, PC, flux.mass, ue4, um4, ut4, lep_pdg, fMajorana, AntiHNL, Pol);
 
-      momenta.A=PA;
-      momenta.B=PB;
-      momenta.C=PC;
-      if (fVerbose)
-	{
-	  std::cout <<"Using Anisotropic ThreeBody Momentum" << "\n";
-	}
-    }else
-    {
-      //use the isotropic Threebody Momentum function           
-      momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass);
-      if (fVerbose)
-        {
-	  std::cout << "Using Isotropic ThreeBody Momentum"<< "\n";
-        }
+    momenta.A = PA;
+    momenta.B = PB;
+    momenta.C = PC;
+    if (fVerbose) {
+      std::cout <<"Using Anisotropic ThreeBody Momentum" << "\n";
     }
+  }else {
+    //use the isotropic Threebody Momentum function           
+    momenta = isotropic_threebody_momentum(flux.mass, 0., lep_mass, lep_mass);
+    if (fVerbose) {
+      std::cout << "Using Isotropic ThreeBody Momentum"<< "\n";
+    }
+  }
   
 
   // Boost it!
