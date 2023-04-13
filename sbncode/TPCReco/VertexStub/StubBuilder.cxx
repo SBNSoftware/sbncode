@@ -144,6 +144,9 @@ void sbn::StubBuilder::Setup(const art::Event &e, const art::InputTag &pfplabel,
 
   art::FindManyP<recob::PFParticle> slicePFPs(slices, e, pfplabel);
   art::FindManyP<recob::Hit> sliceHits(slices, e, pfplabel);
+  
+  for (auto const &nt: fNormTools)
+    nt->setup(e);
 
   for (unsigned i_slc = 0; i_slc < slices.size(); i_slc++) {
     const std::vector<art::Ptr<recob::PFParticle>> thisSlicePFPs = slicePFPs.at(i_slc);
