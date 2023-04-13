@@ -38,6 +38,9 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 
+// FRAMS object
+#include "sbnobj/SBND/FRAMSObj/FRAMSObj.h"
+
 #include "sbnanaobj/StandardRecord/SRSlice.h"
 #include "sbnanaobj/StandardRecord/StandardRecord.h"
 
@@ -188,6 +191,10 @@ namespace caf
                   int cryo,
                   caf::SROpFlash &srflash,
                   bool allowEmpty = false);
+
+  void FillFRAMSScore(const sbnd::FRAMSObj *frams_score,
+                       caf::SRSlice& slice,
+                       bool allowEmpty = false);
 
   template<class T, class U>
   void CopyPropertyIfSet( const std::map<std::string, T>& props, const std::string& search, U& value );

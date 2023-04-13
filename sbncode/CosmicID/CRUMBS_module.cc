@@ -403,6 +403,10 @@ namespace sbn {
 
         const art::Ptr<larpandoraobj::PFParticleMetadata> pfpMeta = pfpMetaVec.front();
         std::map<std::string, float> propertiesMap = pfpMeta->GetPropertiesMap();
+
+        auto propertiesMapIter = propertiesMap.find("NuScore");
+        if(propertiesMapIter->second == 0)
+          continue;
       
         this->FillPandoraNuScoreVars(propertiesMap);
 

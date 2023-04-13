@@ -143,6 +143,12 @@ namespace caf
       "crumbs"
     };
 
+    Atom<string> FRAMSLabel {
+      Name("FRAMSLabel"),
+      Comment("Base label of FRAMS producer."),
+      "framsTrue"
+    };
+
     Atom<bool> FillHits {
       Name("FillHits"),
       Comment("Label deciding if you want to fill SRHits"),

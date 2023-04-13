@@ -924,4 +924,42 @@ namespace caf
     if ( it != props.end() ) value = it->second;
   }
 
+
+  void FillFRAMSScore(const sbnd::FRAMSObj *frams_score,
+                      caf::SRSlice& slice,
+                      bool allowEmpty)
+  {
+    if (frams_score != nullptr) {
+      std::cout<<"Filling FRAMS Score in CAFMaker\n";
+      slice.frams_score.Delta_U = frams_score->Delta_U;
+      slice.frams_score.Eta_U = frams_score->Eta_U;
+      slice.frams_score.FitScore_U = frams_score->FitScore_U;
+      slice.frams_score.Alpha_U = frams_score->Alpha_U;
+      slice.frams_score.Omega_U = frams_score->Omega_U;
+      slice.frams_score.Tau_U = frams_score->Tau_U;
+      slice.frams_score.Iota_U = frams_score->Iota_U;
+      slice.frams_score.ScoreBDT_U = frams_score->ScoreBDT_U;
+      slice.frams_score.Delta_V = frams_score->Delta_V;
+      slice.frams_score.Eta_V = frams_score->Eta_V;
+      slice.frams_score.FitScore_V = frams_score->FitScore_V;
+      slice.frams_score.Alpha_V = frams_score->Alpha_V;
+      slice.frams_score.Omega_V = frams_score->Omega_V;
+      slice.frams_score.Tau_V = frams_score->Tau_V;
+      slice.frams_score.Iota_V = frams_score->Iota_V;
+      slice.frams_score.ScoreBDT_V = frams_score->ScoreBDT_V;
+      slice.frams_score.Delta_C = frams_score->Delta_C;
+      slice.frams_score.Eta_C = frams_score->Eta_C;
+      slice.frams_score.FitScore_C = frams_score->FitScore_C;
+      slice.frams_score.Alpha_C = frams_score->Alpha_C;
+      slice.frams_score.Omega_C = frams_score->Omega_C;
+      slice.frams_score.Tau_C = frams_score->Tau_C;
+      slice.frams_score.Iota_C = frams_score->Iota_C;
+      slice.frams_score.ScoreBDT_C = frams_score->ScoreBDT_C;
+      slice.frams_score.Gap = frams_score->Gap;
+      slice.frams_score.ProtonKE = frams_score->ProtonKE;
+      slice.frams_score.PionKE = frams_score->PionKE;
+    }
+  }
+
+
 } // end namespace

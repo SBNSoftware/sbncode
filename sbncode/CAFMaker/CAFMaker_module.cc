@@ -110,6 +110,9 @@
 #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
+// FRAMS object
+#include "sbnobj/SBND/FRAMSObj/FRAMSObj.h"
+
 
 #include "canvas/Persistency/Provenance/ProcessConfiguration.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
@@ -1581,6 +1584,17 @@ void CAFMaker::produce(art::Event& evt) noexcept {
         fmatch = fmatches[0].get();
       }
     }
+
+    //get the FRAMS score (one per slice)
+    std::cout<<" Looking for FRAMS objects in CAFMaker\n";
+    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScore = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSLabel() + slice_tag_suff);
+    const sbnd::FRAMSObj *slcFRAMSScore = nullptr;
+    if (foSlcFRAMSScore.isValid()) {
+      std::cout<<"Found for FRAMS objects in CAFMaker\n";
+      slcFRAMSScore = foSlcFRAMSScore.at(0).get();
+    }
+
+
     // get the primary vertex
     const recob::Vertex *vertex = (iPart == fmPFPart.size() || !fmVertex.at(iPart).size()) ? NULL : fmVertex.at(iPart).at(0).get();
 
@@ -1593,6 +1607,9 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+
+    // fill frams score
+    FillFRAMSScore(slcFRAMSScore, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
