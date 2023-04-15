@@ -1585,13 +1585,22 @@ void CAFMaker::produce(art::Event& evt) noexcept {
       }
     }
 
-    //get the FRAMS score (one per slice)
-    std::cout<<" Looking for FRAMS objects in CAFMaker\n";
-    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScore = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSLabel() + slice_tag_suff);
-    const sbnd::FRAMSObj *slcFRAMSScore = nullptr;
-    if (foSlcFRAMSScore.isValid()) {
-      std::cout<<"Found for FRAMS objects in CAFMaker\n";
-      slcFRAMSScore = foSlcFRAMSScore.at(0).get();
+    //get the FRAMS true score (one per slice)
+    std::cout<<" Looking for FRAMS true objects in CAFMaker\n";
+    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScoreTrue = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSTrueLabel() + slice_tag_suff);
+    const sbnd::FRAMSObj *slcFRAMSScoreTrue = nullptr;
+    if (foSlcFRAMSScoreTrue.isValid()) {
+      std::cout<<"Found for FRAMS true objects in CAFMaker\n";
+      slcFRAMSScoreTrue = foSlcFRAMSScoreTrue.at(0).get();
+    }
+
+    //get the FRAMS reco score (one per slice)
+    std::cout<<" Looking for FRAMS reco objects in CAFMaker\n";
+    art::FindOneP<sbnd::FRAMSObj> foSlcFRAMSScoreReco = FindOnePStrict<sbnd::FRAMSObj>(sliceList, evt, fParams.FRAMSRecoLabel() + slice_tag_suff);
+    const sbnd::FRAMSObj *slcFRAMSScoreReco = nullptr;
+    if (foSlcFRAMSScoreReco.isValid()) {
+      std::cout<<"Found for FRAMS reco objects in CAFMaker\n";
+      slcFRAMSScoreReco = foSlcFRAMSScoreReco.at(0).get();
     }
 
 
@@ -1609,7 +1618,8 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceCRUMBS(slcCRUMBS, recslc);
 
     // fill frams score
-    FillFRAMSScore(slcFRAMSScore, recslc);
+    FillFRAMSScoreTrue(slcFRAMSScoreTrue, recslc);
+    FillFRAMSScoreReco(slcFRAMSScoreReco, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
