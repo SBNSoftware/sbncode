@@ -1593,6 +1593,7 @@ void CAFMaker::produce(art::Event& evt) noexcept {
     FillSliceFlashMatchA(fmatch, recslc);
     FillSliceVertex(vertex, recslc);
     FillSliceCRUMBS(slcCRUMBS, recslc);
+    FillSliceBarycenter(slcHits, fmSpacePoint, recslc);
 
     // select slice
     if (!SelectSlice(recslc, fParams.CutClearCosmic())) continue;
