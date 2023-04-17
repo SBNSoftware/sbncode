@@ -89,12 +89,15 @@ void util::FileCatalogMetadataSBN::postEndSubRun(art::SubRun const& sr)
 
   art::Handle< sumdata::POTSummary > potListHandle;
   if(sr.getByLabel(fPOTModuleLabel,potListHandle)){
-    fTotPOT+=potListHandle->totpot;}
+    std::lock_guard lock(fMutex);
+    fTotPOT+=potListHandle->totpot;
+  }
 }
 
 // PreCloseOutputFile callback.
 void util::FileCatalogMetadataSBN::preCloseOutputFile(const std::string& label)
 {
+  std::lock_guard lock(fMutex);
 
   art::ServiceHandle<art::FileCatalogMetadata> mds;
 
