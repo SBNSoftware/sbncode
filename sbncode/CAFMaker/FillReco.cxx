@@ -415,7 +415,13 @@ namespace caf
       }
     }
 
-    if ( sumCharge != 0. ) {
+    //Just in case there are no valid spacepoints in this slice...
+    if (  sumCharge == 0. ) {
+      slice.charge_center.SetXYZ( -9999.f, -9999f., -9999.f );
+      slice.charge_width.SetXYZ( -9999.f, -9999.f, -9999.f );
+    }
+
+    else {
       chargeCenter[0] = sumX / sumCharge;
       chargeCenter[1] = sumY / sumCharge;
       chargeCenter[2] = sumZ / sumCharge;
