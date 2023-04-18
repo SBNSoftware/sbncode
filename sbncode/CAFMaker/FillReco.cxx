@@ -388,7 +388,7 @@ namespace caf
                            const art::FindManyP<recob::SpacePoint> &inputPoints,
                            caf::SRSlice &slice)
   {
-    unsigned int nHits = inputHits.Size();
+    unsigned int nHits = inputHits.size();
     double sumCharge = 0.;
     double sumX = 0.; double sumY = 0.; double sumZ = 0.;
     double sumXX = 0.; double sumYY = 0.; double sumZZ = 0.;
@@ -417,7 +417,7 @@ namespace caf
 
     //Just in case there are no valid spacepoints in this slice...
     if (  sumCharge == 0. ) {
-      slice.charge_center.SetXYZ( -9999.f, -9999f., -9999.f );
+      slice.charge_center.SetXYZ( -9999.f, -9999.f, -9999.f );
       slice.charge_width.SetXYZ( -9999.f, -9999.f, -9999.f );
     }
 
