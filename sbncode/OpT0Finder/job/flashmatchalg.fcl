@@ -34,8 +34,8 @@ QLLMatch: {
   ZPenaltyThreshold: 30
   OnePMTScoreThreshold:  0.00001
   OnePMTXDiffThreshold:  35.
-  OnePMTPESumThreshold:  1     #500, change to test OnePMTMatch
-  OnePMTPEFracThreshold: 0.001 #0.3, change to test OnePMTMatch
+  OnePMTPESumThreshold:  500    
+  OnePMTPEFracThreshold: 0.3
 }
 
 QWeightPoint: {
