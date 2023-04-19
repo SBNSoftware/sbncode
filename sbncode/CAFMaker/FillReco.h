@@ -7,7 +7,6 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
 #include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "canvas/Persistency/Common/FindManyP.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
