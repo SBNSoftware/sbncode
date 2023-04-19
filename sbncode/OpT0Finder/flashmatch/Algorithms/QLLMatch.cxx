@@ -145,7 +145,7 @@ namespace flashmatch {
 
     // ** temp saturated opdets fix ** 
     // - when the measured flash PE is equal to 0 and the hypothesis is large, assume that the 
-    //   measured flash PE was set to 0 due to saturatio
+    //   measured flash PE was set to 0 due to saturation
     if (_saturated_thresh > 0){
       for (size_t pmt_index = 0; pmt_index < DetectorSpecs::GetME().NOpDets(); ++pmt_index ) { 
         if (one_measurement.pe_v[pmt_index] == 0 && one_hypothesis.pe_v[pmt_index] >= _saturated_thresh){
@@ -157,13 +157,14 @@ namespace flashmatch {
     }
     // ** end saturated fix ** 
 
+    res.hypothesis = one_hypothesis.pe_v;
+    
     if (_normalize){
       double hsum = std::accumulate(one_hypothesis.pe_v.begin(),  one_hypothesis.pe_v.end(), 0.0);
       double msum = std::accumulate(one_measurement.pe_v.begin(), one_measurement.pe_v.end(), 0.0);
       if (hsum!=0) for (auto &v : one_hypothesis.pe_v) v /= hsum;
       if (msum!=0) for (auto &v : one_measurement.pe_v) v /= msum;
     }
-    res.hypothesis = one_hypothesis.pe_v;
 
     // perform likelihood calculation
     _qll = QLLMatch::GetME()->QLL(one_hypothesis, one_measurement);
@@ -288,7 +289,6 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
     else
       res.score = 1. / _qll;
 
-    // std::cout << "score: " << res.score << std::endl;
     // Compute X-weighting
     /*
     double x0 = _raw_xmin_pt.x - flash.time * DetectorSpecs::GetME().DriftVelocity();
@@ -452,7 +452,7 @@ FlashMatch_t QLLMatch::OnePMTMatch(const Flash_t& flash) {
 
     }
     //FLASH_DEBUG() <<"Mode " << (int)(_mode) << " Chi2 " << _current_chi2 << " LLHD " << _current_llhd << " nvalid " << nvalid_pmt << std::endl;
-    std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
+    // std::cout << "Using " << nvalid_pmt <<  " optical detectors for the scoring in TPC " << _tpc << std::endl;
     _current_chi2 /= nvalid_pmt;
     _current_llhd /= (nvalid_pmt +1);
     if(_converged)
