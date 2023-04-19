@@ -94,7 +94,7 @@ namespace caf
                        bool allowEmpty = false);
 
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-                           const art::FindManyP<recob::SpacePoint> &inputPoints,
+                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice);
 
   bool SelectSlice(const caf::SRSlice &slice, bool cut_clear_cosmic);

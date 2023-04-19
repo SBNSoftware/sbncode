@@ -385,7 +385,7 @@ namespace caf
   }
 
   void FillSliceBarycenter(const std::vector<art::Ptr<recob::Hit>> &inputHits,
-                           const art::FindManyP<recob::SpacePoint> &inputPoints,
+                           const std::vector<art::Ptr<recob::SpacePoint>> &inputPoints,
                            caf::SRSlice &slice)
   {
     unsigned int nHits = inputHits.size();
@@ -396,32 +396,25 @@ namespace caf
 
     for ( unsigned int i = 0; i < nHits; i++ ) {
       const recob::Hit &thisHit = *inputHits[i];
-      std::vector<art::Ptr<recob::SpacePoint>> thisPoint;
-      if ( inputPoints.isValid() ) thisPoint = inputPoints.at(i);
+      if ( thisHit.SignalType() != geo::kCollection ) continue;
+      art::Ptr<recob::SpacePoint> const& thisPoint = inputPoints.at(i);
+      if ( !thisPoint ) continue;
 
-      if ( thisPoint.size() == 1 && thisHit.SignalType() == geo::kCollection ) {
-        thisHitCharge = thisHit.Integral();
-        thisPointXYZ[0] = (*thisPoint[0]).XYZ()[0];
-        thisPointXYZ[1] = (*thisPoint[0]).XYZ()[1];
-        thisPointXYZ[2] = (*thisPoint[0]).XYZ()[2];
+      thisHitCharge = thisHit.Integral();
+      thisPointXYZ[0] = thisPoint->XYZ()[0];
+      thisPointXYZ[1] = thisPoint->XYZ()[1];
+      thisPointXYZ[2] = thisPoint->XYZ()[2];
 
-        sumCharge += thisHitCharge;
-        sumX += thisPointXYZ[0] * thisHitCharge;
-        sumY += thisPointXYZ[1] * thisHitCharge;
-        sumZ += thisPointXYZ[2] * thisHitCharge;
-        sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
-        sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
-        sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
-      }
+      sumCharge += thisHitCharge;
+      sumX += thisPointXYZ[0] * thisHitCharge;
+      sumY += thisPointXYZ[1] * thisHitCharge;
+      sumZ += thisPointXYZ[2] * thisHitCharge;
+      sumXX += thisPointXYZ[0] * thisPointXYZ[0] * thisHitCharge;
+      sumYY += thisPointXYZ[1] * thisPointXYZ[1] * thisHitCharge;
+      sumZZ += thisPointXYZ[2] * thisPointXYZ[2] * thisHitCharge;
     }
 
-    //Just in case there are no valid spacepoints in this slice...
-    if (  sumCharge == 0. ) {
-      slice.charge_center.SetXYZ( -9999.f, -9999.f, -9999.f );
-      slice.charge_width.SetXYZ( -9999.f, -9999.f, -9999.f );
-    }
-
-    else {
+    if( sumCharge != 0 ) {
       chargeCenter[0] = sumX / sumCharge;
       chargeCenter[1] = sumY / sumCharge;
       chargeCenter[2] = sumZ / sumCharge;
