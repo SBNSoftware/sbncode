@@ -275,7 +275,7 @@ private:
     const std::vector<art::Ptr<simb::MCParticle>>& mcParticles) const;
   ChargeMetrics computeChargeMetrics(
     const ChargeDigest& chargeDigest) const;
-  FlashMetrics computeFlashMetrics(const SimpleFlash& simpleFlash) const;
+  template <typename Flash_t> FlashMetrics computeFlashMetrics(const Flash_t& origFlash) const;
   Score computeScore(const ChargeMetrics& charge,
                      const FlashMetrics& flash) const;
   Score computeScore3D(const ChargeMetrics& charge,
@@ -369,6 +369,8 @@ private:
                     const double term,
                     Stream&& out) const;
 
+  const bool fIsSimple;
+  const std::string fFlashType;
   const art::InputTag fPandoraProducer, fSpacePointProducer,
     fOpHitProducer, fOpHitARAProducer;//, fCaloProducer, fTrackProducer;
   const double fBeamSpillTimeStart, fBeamSpillTimeEnd;
