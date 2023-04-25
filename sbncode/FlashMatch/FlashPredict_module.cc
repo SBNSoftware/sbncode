@@ -249,8 +249,10 @@ void FlashPredict::produce(art::Event& evt)
   }
 
   // load OpHits previously created
-  art::Handle<std::vector<recob::OpHit>> ophits_h;
-//  if(fIsSimple) {
+  std::vector<SimpleFlash> simpleFlashes;
+  std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;;
+  if(fIsSimple) {
+    art::Handle<std::vector<recob::OpHit>> ophits_h;
     evt.getByLabel(fOpHitProducer, ophits_h);
     if(!ophits_h.isValid()) {
       mf::LogError("FlashPredict")
@@ -269,43 +271,40 @@ void FlashPredict::produce(art::Event& evt)
       evt.put(std::move(pfp_sFM_assn_v));
       return;
     }
-//  }
 
-  std::vector<recob::OpHit> opHits(ophits_h->size());
- copyOpHitsInFlashFindingWindow(opHits, ophits_h);
+    opHits.resize(ophits_h->size());
+    copyOpHitsInFlashFindingWindow(opHits, ophits_h);
+  
+    mf::LogInfo("FlashPredict")
+      << "OpHits found: " << opHits.size() << std::endl;
 
-  mf::LogInfo("FlashPredict")
-    << "OpHits found: " << opHits.size() << std::endl;
-
-  if(fUseARAPUCAS && !fOpHitARAProducer.empty() && fIsSimple){
-    art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
-    evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
-    if(!ophits_ara_h.isValid()) {
-      mf::LogError("FlashPredict")
-        << "Non valid ophits from ARAPUCAS"
-        << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
-        << "\nfOpHitARAProducer: " << fOpHitARAProducer;
+    if(fUseARAPUCAS && !fOpHitARAProducer.empty() && fIsSimple){
+      art::Handle<std::vector<recob::OpHit>> ophits_ara_h;
+      evt.getByLabel(fOpHitARAProducer, ophits_ara_h);
+      if(!ophits_ara_h.isValid()) {
+        mf::LogError("FlashPredict")
+          << "Non valid ophits from ARAPUCAS"
+          << "\nfUseARAPUCAS: " << std::boolalpha << fUseARAPUCAS
+          << "\nfOpHitARAProducer: " << fOpHitARAProducer;
+      }
+      else{
+        std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
+        copyOpHitsInFlashFindingWindow(opHitsARA, ophits_ara_h);
+        opHits.insert(opHits.end(),
+                      opHitsARA.begin(), opHitsARA.end());
+      }
     }
-    else{
-      std::vector<recob::OpHit> opHitsARA(ophits_ara_h->size());
-      copyOpHitsInFlashFindingWindow(opHitsARA, ophits_ara_h);
-      opHits.insert(opHits.end(),
-                    opHitsARA.begin(), opHitsARA.end());
-    }
-  }
 
-
-//  if(fIsSimple) {
-    std::vector<recob::OpHit> opHitsRght, opHitsLeft;
-    const std::vector<SimpleFlash> simpleFlashes = (fSBND) ?
+    const std::vector<SimpleFlash> simpleFlashes_tmp = (fSBND) ?
       makeSimpleFlashes(opHits, opHitsRght, opHitsLeft) : makeSimpleFlashes(opHits);
     auto is_flash_in_time = [this](const SimpleFlash& f) -> bool
     { return (fBeamSpillTimeStart<=f.maxpeak_time &&
               f.maxpeak_time<=fBeamSpillTimeEnd); };
-    auto flash_in_time = std::find_if(simpleFlashes.begin(), simpleFlashes.end(),
+    auto flash_in_time = std::find_if(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(),
                                       is_flash_in_time);
-    if(simpleFlashes.empty() ||
-       flash_in_time == simpleFlashes.end()){
+
+    if(simpleFlashes_tmp.empty() ||
+       flash_in_time == simpleFlashes_tmp.end()){
       mf::LogWarning("FlashPredict")
         << "No SimpleFlashes in beam window [" << fBeamSpillTimeStart << ", " << fBeamSpillTimeEnd << "], "
         << "\nor the sum of PE is less or equal to " << fMinFlashPE << " or 0."
@@ -322,14 +321,17 @@ void FlashPredict::produce(art::Event& evt)
       evt.put(std::move(sFM_v));
       evt.put(std::move(pfp_sFM_assn_v));
       return;
+    } else {
+      std::copy(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(), std::back_inserter(simpleFlashes));
     }
-//  }
+  }
+
   mf::LogInfo("FlashPredict")
     << "SimpleFlashes found: " << simpleFlashes.size() << std::endl;
 
   // TODO: Get vector of intime OpFlashes and set allFlashes if !fIsSimple
 
-  const auto& allFlashes = simpleFlashes;
+  const auto allFlashes = simpleFlashes;
 
 
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
