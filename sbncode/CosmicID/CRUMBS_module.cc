@@ -40,6 +40,8 @@
 #include "sbnobj/Common/Reco/SimpleFlashMatchVars.h"
 #include "sbnobj/Common/Reco/StoppingChi2Fit.h"
 #include "sbncode/LArRecoProducer/TrackStoppingChi2Alg.h"
+#include "sbnobj/SBND/CRT/CRTTrack.hh"
+#include "sbnobj/SBND/CRT/CRTSpacePoint.hh"
 #include "sbnobj/Common/Reco/CRUMBSResult.h"
 
 #include "TTree.h"
@@ -70,31 +72,31 @@ namespace sbn {
     void GetMaps(art::Event const& e, std::map<int, int> &trackIDToGenMap, std::map<int, std::string> &genTypeMap,
 		 std::map<int, int> &genCCNCMap, std::map<int, int> &genNuTypeMap);
 
-    art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e, 
-                                                const art::Ptr<recob::Slice> &slice, 
+    art::Ptr<recob::PFParticle> GetSlicePrimary(art::Event const& e,
+                                                const art::Ptr<recob::Slice> &slice,
                                                 const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::vector<art::Ptr<anab::T0> > GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
-                                                    const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
-                                                    const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
+    std::vector<anab::T0> GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice,
+                                         const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+                                         const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    std::vector<art::Ptr<anab::T0> > GetCRTSPT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
-                                                 const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
-                                                 const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
+    std::vector<anab::T0> GetCRTSPT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice,
+                                      const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+                                      const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    float GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> &slice, 
+    float GetLongestTrackStoppingChi2Ratio(art::Event const& e, const art::Ptr<recob::Slice> &slice,
                                            const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
                                            const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    void FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &hitT0s);
+    void FillCRTVars(const std::vector<anab::T0> &trackT0s, const std::vector<anab::T0> &hitT0s);
 
     void FillPandoraNuScoreVars(std::map<std::string, float> &propertiesMap);
 
-    std::vector<art::Ptr<recob::Hit> > GetAllSliceHits(art::Event const& e, 
-                                                       const art::Ptr<recob::Slice> &slice, 
+    std::vector<art::Ptr<recob::Hit> > GetAllSliceHits(art::Event const& e,
+                                                       const art::Ptr<recob::Slice> &slice,
                                                        const art::ValidHandle<std::vector<recob::Slice> > &handleSlices);
 
-    void GetTruthMatching(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits, 
+    void GetTruthMatching(art::Event const& e, const std::vector<art::Ptr<recob::Hit> > &sliceHits, const std::vector<art::Ptr<recob::Hit> > &allHits,
                           std::map<int, int> &trackIDToGenMap, int &matchedID, double &purity, double &completeness);
 
     int SliceTruthId(std::map<int, float> &purities);
@@ -396,14 +398,14 @@ namespace sbn {
 
         const std::vector<art::Ptr<larpandoraobj::PFParticleMetadata> > pfpMetaVec = pfpMetadataAssoc.at(primary.key());
         const std::vector<art::Ptr<sbn::SimpleFlashMatch> > pfpFMVec = pfpFMAssoc.at(primary.key());
-        const std::vector<art::Ptr<anab::T0> > sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
-        const std::vector<art::Ptr<anab::T0> > sliceCRTSPT0s = this->GetCRTSPT0s(e, slice, handlePFPs, handleSlices);
+        const std::vector<anab::T0> sliceCRTTrackT0s = this->GetCRTTrackT0s(e, slice, handlePFPs, handleSlices);
+        const std::vector<anab::T0> sliceCRTSPT0s = this->GetCRTSPT0s(e, slice, handlePFPs, handleSlices);
 
         this->FillCRTVars(sliceCRTTrackT0s, sliceCRTSPT0s);
 
         const art::Ptr<larpandoraobj::PFParticleMetadata> pfpMeta = pfpMetaVec.front();
         std::map<std::string, float> propertiesMap = pfpMeta->GetPropertiesMap();
-      
+
         this->FillPandoraNuScoreVars(propertiesMap);
 
         tpc_StoppingChi2CosmicRatio = this->GetLongestTrackStoppingChi2Ratio(e, slice, handlePFPs, handleSlices);
@@ -456,16 +458,16 @@ namespace sbn {
       }
   }
 
-  void CRUMBS::FillCRTVars(const std::vector<art::Ptr<anab::T0> > &trackT0s, const std::vector<art::Ptr<anab::T0> > &spT0s)
+  void CRUMBS::FillCRTVars(const std::vector<anab::T0> &trackT0s, const std::vector<anab::T0> &spT0s)
   {
     if (!trackT0s.empty()){
       crt_TrackScore = std::numeric_limits<float>::max();
       for(auto const crttrackmatcht0 : trackT0s)
         {
-          if(crttrackmatcht0->TriggerConfidence() < crt_TrackScore)
+          if(crttrackmatcht0.TriggerConfidence() < crt_TrackScore)
             {
-              crt_TrackScore = crttrackmatcht0->TriggerConfidence();
-              crt_TrackTime  = crttrackmatcht0->Time() * 1e-3;
+              crt_TrackScore = crttrackmatcht0.TriggerConfidence();
+              crt_TrackTime  = crttrackmatcht0.Time() * 1e-3;
             }
         }
     }
@@ -474,10 +476,10 @@ namespace sbn {
       crt_SPScore = std::numeric_limits<float>::max();
       for(auto const crtspmatcht0 : spT0s)
         {
-          if(crtspmatcht0->TriggerConfidence() < crt_SPScore)
+          if(crtspmatcht0.TriggerConfidence() < crt_SPScore)
             {
-              crt_SPScore = crtspmatcht0->TriggerConfidence();
-              crt_SPTime  = crtspmatcht0->Time() * 1e-3;
+              crt_SPScore = crtspmatcht0.TriggerConfidence();
+              crt_SPTime  = crtspmatcht0.Time() * 1e-3;
             }
         }
     }
@@ -625,10 +627,10 @@ namespace sbn {
       completeness = sliceHitMap[matchedID] / (float) totalTrueHits;
   }
 
-  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
-                                                          const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
+  std::vector<anab::T0> CRUMBS::GetCRTTrackT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+                                               const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
-    std::vector<art::Ptr<anab::T0> > t0Vec;
+    std::vector<anab::T0> t0Vec;
 
     art::Handle<std::vector<recob::Track> > handleTracks;
     e.getByLabel(fTrackModuleLabel, handleTracks);
@@ -663,17 +665,17 @@ namespace sbn {
     return t0Vec;
   }
 
-  std::vector<art::Ptr<anab::T0> > CRUMBS::GetCRTSPT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
-                                                       const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
+  std::vector<anab::T0> CRUMBS::GetCRTSPT0s(art::Event const& e, const art::Ptr<recob::Slice> &slice, const art::ValidHandle<std::vector<recob::PFParticle> > &handlePFPs,
+                                            const art::ValidHandle<std::vector<recob::Slice> > &handleSlices)
   {
-    std::vector<art::Ptr<anab::T0> > t0Vec;
+    std::vector<anab::T0> t0Vec;
 
     art::Handle<std::vector<recob::Track> > handleTracks;
     e.getByLabel(fTrackModuleLabel, handleTracks);
 
     art::FindManyP<recob::PFParticle> slicePFPAssn(handleSlices,e,fSliceModuleLabel);
     art::FindManyP<recob::Track> pfpTrackAssn(handlePFPs,e,fTrackModuleLabel);
-    art::FindOneeP<sbnd::crt::CRTSpacePoint, anab::T0> trackT0Assn(handleTracks,e,fCRTSPMatchModuleLabel);
+    art::FindOneP<sbnd::crt::CRTSpacePoint, anab::T0> trackT0Assn(handleTracks,e,fCRTSPMatchModuleLabel);
 
     const std::vector<art::Ptr<recob::PFParticle> > pfps = slicePFPAssn.at(slice.key());
   
