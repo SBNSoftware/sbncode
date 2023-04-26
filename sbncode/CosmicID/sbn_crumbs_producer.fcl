@@ -14,7 +14,7 @@ crumbs_sbnd:
   SliceModuleLabel:			"pandora"
   FlashMatchModuleLabel:		"fmatch"
   CRTTrackMatchModuleLabel:		"crttrackt0"
-  CRTHitMatchModuleLabel:		"crthitt0"
+  CRTSPMatchModuleLabel:		"crthitt0"
   CalorimetryModuleLabel:		"pandoraCalo"
   
   MVAName:                              "BDT"
