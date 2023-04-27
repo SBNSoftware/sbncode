@@ -251,6 +251,7 @@ void FlashPredict::produce(art::Event& evt)
   // load OpHits previously created
   std::vector<SimpleFlash> simpleFlashes;
   std::vector<recob::OpHit> opHitsRght, opHitsLeft, opHits;;
+  std::vector<FlashMetrics> flashMetrics;
   if(fIsSimple) {
     art::Handle<std::vector<recob::OpHit>> ophits_h;
     evt.getByLabel(fOpHitProducer, ophits_h);
@@ -322,21 +323,19 @@ void FlashPredict::produce(art::Event& evt)
       evt.put(std::move(pfp_sFM_assn_v));
       return;
     } else {
-      std::copy(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(), std::back_inserter(simpleFlashes));
+    std::copy(simpleFlashes_tmp.begin(), simpleFlashes_tmp.end(), std::back_inserter(simpleFlashes));
+    for(auto& sf : simpleFlashes) flashMetrics.push_back(getFlashMetrics(sf));
     }
   }
 
   mf::LogInfo("FlashPredict")
-    << "SimpleFlashes found: " << simpleFlashes.size() << std::endl;
+    << "SimpleFlashes found: " << simpleFlashes.size() << "\n"
+    << "Metrics calculated: " << flashMetrics.size() << std::endl;
 
   // TODO: Get vector of intime OpFlashes and set allFlashes if !fIsSimple
 
-  const auto allFlashes = simpleFlashes;
-
-
   ChargeDigestMap chargeDigestMap = makeChargeDigest(evt, pfps_h);
 
-  std::map<unsigned, FlashMetrics> flashMetricsMap;
   for(auto& chargeDigestPair : chargeDigestMap) {
     const auto& chargeDigest = chargeDigestPair.second;
     const auto& pfp_ptr = chargeDigest.pfp_ptr;
@@ -369,8 +368,8 @@ void FlashPredict::produce(art::Event& evt)
     FlashMetrics flash = {};
     Score score = {std::numeric_limits<double>::max()};
     bool hits_ophits_concurrence = false;
-    for(auto& origFlash : allFlashes) {
-      unsigned ophsInVolume = origFlash.ophsInVolume;
+    for(auto& origFlash : flashMetrics) {
+      unsigned ophsInVolume = origFlash.activity;
       if(hitsInVolume != ophsInVolume){
         if(fSBND){
           if(fForceConcurrence) continue;
@@ -389,23 +388,12 @@ void FlashPredict::produce(art::Event& evt)
       }
       hits_ophits_concurrence = true;
 
-      unsigned flashUId = origFlash.ophsInVolume * 10 + origFlash.flashId;
-      bool mets_in_map = flashMetricsMap.find(flashUId) != flashMetricsMap.end();
-      FlashMetrics flash_tmp = (mets_in_map) ?
-        flashMetricsMap[flashUId] : getFlashMetrics(origFlash);
-      if(mets_in_map){
-        mf::LogDebug("FlashPredict")
-          << "Reusing metrics previously computed, for flashUId " << flashUId;
-      }
-      else
-        flashMetricsMap[flashUId] = flash_tmp;
-
-      Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, flash_tmp) :
-        computeScore(charge, flash_tmp);
+      Score score_tmp = (fUse3DMetrics) ? computeScore3D(charge, origFlash) :
+        computeScore(charge, origFlash);
       if(0. <= score_tmp.total && score_tmp.total < score.total
-         && flash_tmp.metric_ok){
+         && origFlash.metric_ok){
         score = score_tmp;
-        flash = flash_tmp;
+        flash = origFlash;
         // // TODO: create charge.xb and/or charge.xb_gl
         // if (fCorrectDriftDistance){
         //   charge.x = driftCorrection(charge.xb, flash.time);
@@ -952,6 +940,7 @@ FlashPredict::FlashMetrics FlashPredict::getFlashMetrics(
   auto fm = computeFlashMetrics(ophits);
   fm.id = sf.flashId;
   fm.time = sf.maxpeak_time;
+  fm.activity = sf.ophsInVolume;
   return fm;
 }
 
