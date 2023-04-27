@@ -1,0 +1,67 @@
+#include "numi_kaon_common.fcl"
+BEGIN_PROLOG
+
+alpM: 0.4
+fa: 1e5 # GeV
+cAl: 0.01
+cB: 1
+cW: 1
+cG: 1
+
+m02alp: {
+  tool_type: Meson2ALP
+  M: @local::alpM
+  fa: @local::fa
+  cAl: @local::cAl
+  cB: @local::cB
+  cW: @local::cW
+  cG: @local::cG
+
+  # Weight from 87% of protons interacting in the target
+  MaxWeightEta: 0.87
+  MaxWeightEtaP: 0.87
+  MaxWeightPi0: 87 # Pi0s are pre-scaled in the input file
+
+  Beam2DetectorRotation: @local::icarus_numi_beam2detector_rotation
+  BeamOrigin: @local::icarus_numi_beam_origin
+
+  // timing config
+  SpillTimeConfig: "" #"evgb::EvtTimeFlat 10000 0" // 10us duration, no offset
+}
+
+decay_alp: {
+  tool_type: ALPMakeDecay
+  ReferenceALPMass: @local::alpM
+  ReferenceALPDecayConstant: @local::fa
+  ReferenceALPcAl: @local::cAl
+  ReferenceALPcB: @local::cB
+  ReferenceALPcG: @local::cG
+  ReferenceALPcW: @local::cW
+  ReferenceRayLength: 2100 # 21m
+  ReferenceRayDistance: 10400 # 104m
+  ReferenceALPEnergy: 1 # GeV
+  AllowEMDecay: false
+}
+
+# ALPs are produced in interactions, not decays.
+# So we can re-throw the phi but not theta
+phiraytrace: @local::mixedweight_ray_trace_box
+phiraytrace.MaxWeight: 4e-2 # equal to the phi-range of ICARUS at the target (3e-2), fudged up a bit
+phiraytrace.RethrowTheta: false 
+
+alp_gen: {
+  module_type: MeVPrtlGen
+  Deweight: true
+  MesonGen: @local::numi_psuedoscalar
+  Flux: @local::m02alp
+  # RayTrace: @local::phiraytrace
+  RayTrace: @local::ray_trace_box
+  Decay: @local::decay_alp
+}
+
+alp: @local::alp_gen
+alp.Deweight: false
+alp.Produce: false
+alp.AnaOutput: true
+
+END_PROLOG
