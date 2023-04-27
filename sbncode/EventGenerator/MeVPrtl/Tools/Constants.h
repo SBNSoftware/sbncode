@@ -43,6 +43,7 @@ public:
   double fpion;
   double feta;
   double fetap;
+  double frho;
   double grho;
 
   // unit conversion
@@ -55,6 +56,9 @@ public:
 
   // other lifetimes
   double tau_lifetime;
+
+  // and widths
+  double rho_width;
 
   // kaon decay branching ratios
   double kaonp_mup_numu;

@@ -1,0 +1,2 @@
+physics.producers.generator.Flux.fa: @local::alpfa
+physics.producers.generator.Decay.ReferenceALPDecayConstant: @local::alpfa

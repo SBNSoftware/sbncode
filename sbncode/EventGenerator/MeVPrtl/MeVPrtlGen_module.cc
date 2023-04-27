@@ -317,7 +317,6 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     if (fVerbose) std::cout << "RayDecay weight: " << ray_decay_weight << std::endl;
     if (fVerbose) std::cout << "PASSED!\n";
 
-
     // get the POT
     double thisPOT = fGenTool->GetPOT();
 
@@ -336,8 +335,8 @@ void evgen::ldm::MeVPrtlGen::produce(art::Event& evt)
     evgen::ldm::MeVPrtlTruth mevprtl_truth(flux, decay,
       intersection,
       flux_weight,
-      1.,
-      ray_decay_weight,
+      ray_weight,
+      decay_weight,
       thisPOT
     );
 
